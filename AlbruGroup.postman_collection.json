@@ -1,0 +1,438 @@
+{
+  "info": {
+    "_postman_id": "2fa5e937-3dc2-4fa9-82b0-14a9a5e452ec",
+    "name": "AlbruGroup",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "32906795"
+  },
+  "item": [
+    {
+      "name": "auth-service",
+      "item": []
+    },
+    {
+      "name": "rrhh-service",
+      "item": [
+        {
+          "name": "Empleados",
+          "item": [
+            {
+              "name": "Empleados",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/empleados",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "empleados"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Empleado Por ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/empleados/2",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "empleados",
+                    "2"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Empleado/Postulante",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"nombres\": \"Pablo Ernesto\",\r\n    \"apellidos\": \"Mamani Quispe\",\r\n    \"tipoDocumento\": \"CE\",\r\n    \"numeroDocumento\": \"25413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"CASADO\",\r\n    \"tieneHijos\": false,\r\n    \"celularPersonal\": \"923763302\",\r\n    \"celularCorporativo\": \"943763301\",\r\n    \"correo\": \"pablo@gmail.com\",\r\n    \"distrito\": \"SAN_MARTÍN_DE_PORRES\",\r\n    \"direccion\": \"Fermin Tanguis 079\",\r\n    \"banco\": \"BCP\",\r\n    \"cuentaBancaria\": \"12344677890\",\r\n    \"cuentaInterbancaria\": \"09876543234343\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/empleados",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "empleados"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Datos Personales",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"nombres\": \"Pablo Picapiedra\",\r\n    \"apellidos\": \"Mamani Quispe\",\r\n    \"tipoDocumento\": \"CE\",\r\n    \"numeroDocumento\": \"25413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"VIUDO\",\r\n    \"tieneHijos\": false\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/empleados/4/datos-personales",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "empleados",
+                    "4",
+                    "datos-personales"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Datos Contacto Ubicacion",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"celularPersonal\": \"999888777\",\r\n    \"celularCorporativo\": \"999888777\",\r\n    \"correo\": \"picapiedra@gmail.com\",\r\n    \"distrito\": \"SAN_MARTÍN_DE_PORRES\",\r\n    \"direccion\": \"Fermin Tanguis 078\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/empleados/4/datos-contacto-ubicacion",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "empleados",
+                    "4",
+                    "datos-contacto-ubicacion"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Datos Financieros",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"banco\": \"BBVA\",\r\n    \"cuentaBancaria\": \"222344677890\",\r\n    \"cuentaInterbancaria\": \"0000543234343\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/empleados/4/datos-financieros",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "empleados",
+                    "4",
+                    "datos-financieros"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Cambiar Estado Operativo",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/empleados/4/cesar-empleado",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "empleados",
+                    "4",
+                    "cesar-empleado"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Contratos",
+          "item": [
+            {
+              "name": "Contratos Vigentes",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"nombres\": \"Pablo Ernesto\",\r\n    \"apellidos\": \"Mamani Quispe\",\r\n    \"tipoDocumento\": \"CE\",\r\n    \"numeroDocumento\": \"25413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"CASADO\",\r\n    \"tieneHijos\": false,\r\n    \"celularPersonal\": \"923763302\",\r\n    \"celularCorporativo\": \"943763301\",\r\n    \"correo\": \"pablo@gmail.com\",\r\n    \"distrito\": \"SAN_MARTÍN_DE_PORRES\",\r\n    \"direccion\": \"Fermin Tanguis 079\",\r\n    \"banco\": \"BCP\",\r\n    \"cuentaBancaria\": \"12344677890\",\r\n    \"cuentaInterbancaria\": \"09876543234343\"\r\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:8080/contratos/vigentes",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "contratos",
+                    "vigentes"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Contratos Por Empleado",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"nombres\": \"Pablo Ernesto\",\r\n    \"apellidos\": \"Mamani Quispe\",\r\n    \"tipoDocumento\": \"CE\",\r\n    \"numeroDocumento\": \"25413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"CASADO\",\r\n    \"tieneHijos\": false,\r\n    \"celularPersonal\": \"923763302\",\r\n    \"celularCorporativo\": \"943763301\",\r\n    \"correo\": \"pablo@gmail.com\",\r\n    \"distrito\": \"SAN_MARTÍN_DE_PORRES\",\r\n    \"direccion\": \"Fermin Tanguis 079\",\r\n    \"banco\": \"BCP\",\r\n    \"cuentaBancaria\": \"12344677890\",\r\n    \"cuentaInterbancaria\": \"09876543234343\"\r\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:8080/contratos/3/vigentes",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "contratos",
+                    "3",
+                    "vigentes"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Contrato Vigente de Empleado",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/contratos/2/vigente",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "contratos",
+                    "2",
+                    "vigente"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Contrato",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"puestoTrabajo\": \"ADMINISTRADOR\",\r\n    \"modalidad\": \"RECIBO_POR_HONORARIOS\",\r\n    \"sueldoBase\": 1500.00,\r\n    \"fechaInicio\": \"2025-11-01\",\r\n    \"fechaFin\": null\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/contratos/1/registrar",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "contratos",
+                    "1",
+                    "registrar"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Cesar Contrato",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"fechaFin\": \"2026-03-31\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/contratos/2/cesar-contrato",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "contratos",
+                    "2",
+                    "cesar-contrato"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Pagos",
+          "item": [
+            {
+              "name": "Pagos por Contrato",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"nombres\": \"Pablo Ernesto\",\r\n    \"apellidos\": \"Mamani Quispe\",\r\n    \"tipoDocumento\": \"CE\",\r\n    \"numeroDocumento\": \"25413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"CASADO\",\r\n    \"tieneHijos\": false,\r\n    \"celularPersonal\": \"923763302\",\r\n    \"celularCorporativo\": \"943763301\",\r\n    \"correo\": \"pablo@gmail.com\",\r\n    \"distrito\": \"SAN_MARTÍN_DE_PORRES\",\r\n    \"direccion\": \"Fermin Tanguis 079\",\r\n    \"banco\": \"BCP\",\r\n    \"cuentaBancaria\": \"12344677890\",\r\n    \"cuentaInterbancaria\": \"09876543234343\"\r\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:8080/pagos/2/contrato",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "pagos",
+                    "2",
+                    "contrato"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Pagos por Empleado",
+              "protocolProfileBehavior": {
+                "disableBodyPruning": true
+              },
+              "request": {
+                "method": "GET",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"nombres\": \"Pablo Ernesto\",\r\n    \"apellidos\": \"Mamani Quispe\",\r\n    \"tipoDocumento\": \"CE\",\r\n    \"numeroDocumento\": \"25413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"CASADO\",\r\n    \"tieneHijos\": false,\r\n    \"celularPersonal\": \"923763302\",\r\n    \"celularCorporativo\": \"943763301\",\r\n    \"correo\": \"pablo@gmail.com\",\r\n    \"distrito\": \"SAN_MARTÍN_DE_PORRES\",\r\n    \"direccion\": \"Fermin Tanguis 079\",\r\n    \"banco\": \"BCP\",\r\n    \"cuentaBancaria\": \"12344677890\",\r\n    \"cuentaInterbancaria\": \"09876543234343\"\r\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:8080/pagos/3/empleado",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "pagos",
+                    "3",
+                    "empleado"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Pago",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "    {\r\n        \"fechaInicio\": \"2026-02-01\",\r\n        \"fechaFin\": \"2026-02-28\",\r\n        \"sueldoBase\": 1030.00,\r\n        \"asignacionFamiliar\": 80.00,\r\n        \"comision\": 150.00,\r\n        \"sueldoTotal\": 2200.00\r\n    }",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/pagos/2/pagar-contrato",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "pagos",
+                    "2",
+                    "pagar-contrato"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "lead-service",
+      "item": []
+    }
+  ]
+}
