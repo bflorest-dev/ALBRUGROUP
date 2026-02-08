@@ -78,13 +78,13 @@ public class DataLoader implements CommandLineRunner {
     private void crearContratos() {
         RegistrarContratoRequest c1 = RegistrarContratoRequest.builder()
                 .puestoTrabajo(PuestoTrabajo.ASESOR_GTR)
-                .modalidad(Modalidad.RECIBO_POR_HONORARIOS)
+                .regimen(Regimen.RECIBO_POR_HONORARIOS)
                 .sueldoBase(BigDecimal.valueOf(1150.00))
                 .fechaInicio(LocalDate.of(2025, 11,1))
                 .build();
         RegistrarContratoRequest c2 = RegistrarContratoRequest.builder()
                 .puestoTrabajo(PuestoTrabajo.COMMUNITY)
-                .modalidad(Modalidad.PLANILLA)
+                .regimen(Regimen.PLANILLA)
                 .sueldoBase(BigDecimal.valueOf(1030.00))
                 .fechaInicio(LocalDate.of(2026, 1,1))
                 .build();

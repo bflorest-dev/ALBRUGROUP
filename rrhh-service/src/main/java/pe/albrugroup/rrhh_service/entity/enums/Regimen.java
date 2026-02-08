@@ -1,6 +1,6 @@
 package pe.albrugroup.rrhh_service.entity.enums;
 
-public enum Modalidad {
+public enum Regimen {
     RECIBO_POR_HONORARIOS,
     PLANILLA
 }

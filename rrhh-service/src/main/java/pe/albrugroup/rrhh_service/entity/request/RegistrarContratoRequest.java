@@ -4,7 +4,7 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import pe.albrugroup.rrhh_service.entity.enums.Modalidad;
+import pe.albrugroup.rrhh_service.entity.enums.Regimen;
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 
 import java.math.BigDecimal;
@@ -18,7 +18,7 @@ public class RegistrarContratoRequest {
     @NotNull
     private PuestoTrabajo puestoTrabajo;
     @NotNull
-    private Modalidad modalidad;
+    private Regimen regimen;
     @NotNull @DecimalMin(value = "0.00", inclusive = false)
     @Digits(integer = 10, fraction = 2)
     private BigDecimal sueldoBase;
