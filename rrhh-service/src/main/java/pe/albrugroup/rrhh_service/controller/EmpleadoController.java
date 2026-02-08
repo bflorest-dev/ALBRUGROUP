@@ -23,6 +23,7 @@ public class EmpleadoController {
 
     private final IEmpleado empleadoService;
 
+    // Postulantes
     @PostMapping("/postulante")
     public ResponseEntity<PostulanteResponse> registrarPostulante(@RequestBody RegistrarPostulanteRequest request) {
         var postulante = empleadoService.registrarPostulante(request);
@@ -31,6 +32,19 @@ public class EmpleadoController {
     @GetMapping("/postulantes-mensual")
     public ResponseEntity<List<PostulanteResponse>> listarPostulantesMensual() {
         return ResponseEntity.ok(empleadoService.getPostulantesPeriodoMensual());
+    }
+    // Empleados
+    @GetMapping("/activos")
+    public ResponseEntity<List<EmpleadoResponse>> listarEmpleadosActivos() {
+        return ResponseEntity.ok(empleadoService.getEmpleadosActivos());
+    }
+    @GetMapping("/{documento}/numero-documento")
+    public ResponseEntity<EmpleadoResponse> obtenerEmpleadoNumeroDocumento(@PathVariable @Positive String documento) {
+        return ResponseEntity.ok(empleadoService.getEmpleadoDocumento(documento));
+    }
+    @GetMapping("/{dato}/universal")
+    public ResponseEntity<List<EmpleadoResponse>> obtenerEmpleadoFiltroUniversal(@PathVariable String dato) {
+        return ResponseEntity.ok(empleadoService.getEmpleadoUniversal(dato));
     }
     @PatchMapping("/{id}/datos-personales")
     public ResponseEntity<EmpleadoResponse> actulizarDatosPersonales(@RequestBody DatosPersonalesRequest request,
@@ -50,18 +64,7 @@ public class EmpleadoController {
         var empleado = empleadoService.actualizarDatosFinancieros(id, request);
         return ResponseEntity.ok(empleado);
     }
-    @GetMapping("/activos")
-    public ResponseEntity<List<EmpleadoResponse>> listarEmpleadosActivos() {
-        return ResponseEntity.ok(empleadoService.getEmpleadosActivos());
-    }
-    @GetMapping("/{documento}/numero-documento")
-    public ResponseEntity<EmpleadoResponse> obtenerEmpleadoNumeroDocumento(@PathVariable @Positive String documento) {
-        return ResponseEntity.ok(empleadoService.getEmpleadoDocumento(documento));
-    }
-    @GetMapping("/{dato}/universal")
-    public ResponseEntity<List<EmpleadoResponse>> obtenerEmpleadoFiltroUniversal(@PathVariable String dato) {
-        return ResponseEntity.ok(empleadoService.getEmpleadoUniversal(dato));
-    }
+
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //    @GetMapping

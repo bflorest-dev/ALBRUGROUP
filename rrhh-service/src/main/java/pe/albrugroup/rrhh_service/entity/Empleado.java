@@ -35,9 +35,6 @@ public class Empleado {
     @Column(name = "numero_documento")
     private String numeroDocumento;
     @Enumerated(EnumType.STRING)
-    private Origen origen;
-
-    @Enumerated(EnumType.STRING)
     private Nacionalidad nacionalidad;
     @Column(name = "fecha_nacimiento")
     private LocalDate fechaNacimiento;
@@ -48,10 +45,13 @@ public class Empleado {
     // CONTACTO
     @Column(name = "celular_personal")
     private String celularPersonal;
-    @Column(name = "celular_corporativo")
-    private String celularCorporativo;
     @Column(unique = true, nullable = false)
     private String correo;
+    // CONTACTO CORPORATIVO
+    @Column(name = "celular_corporativo")
+    private String celularCorporativo;
+    @Column(name = "correo_corporativo")
+    private String correoCorporativo;
     // UBICACION
     @Enumerated(EnumType.STRING)
     private Distrito distrito;
@@ -67,6 +67,4 @@ public class Empleado {
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_operativo")
     private EstadoOperativo estadoOperativo;
-
-
 }

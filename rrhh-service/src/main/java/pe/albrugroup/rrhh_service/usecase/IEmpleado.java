@@ -20,6 +20,7 @@ public interface IEmpleado {
     EmpleadoResponse actualizarDatosFinancieros(Long idEmpleado, DatosFinancierosRequest datosFinancieros);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 //    List<EmpleadoResponse> getEmpleados();
 //    EmpleadoResponse getEmpleado(Long idEmpleado);
 //    List<EmpleadoResponse> registrarEmpleados(List<RegistrarEmpleadoRequest> nuevosEmpleados);
