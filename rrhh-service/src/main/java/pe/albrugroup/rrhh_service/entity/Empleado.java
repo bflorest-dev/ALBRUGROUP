@@ -26,7 +26,7 @@ public class Empleado {
     @OneToMany(mappedBy = "empleado", fetch = FetchType.LAZY)
     @Builder.Default
     private List<Contrato> contratos = new ArrayList<>();
-    // DATOS PERSONALES
+    // DATOS POSTULANTE
     private String nombres;
     private String apellidos;
     @Enumerated(EnumType.STRING)
@@ -34,6 +34,9 @@ public class Empleado {
     private Documento tipoDocumento;
     @Column(name = "numero_documento")
     private String numeroDocumento;
+    @Enumerated(EnumType.STRING)
+    private Origen origen;
+
     @Enumerated(EnumType.STRING)
     private Nacionalidad nacionalidad;
     @Column(name = "fecha_nacimiento")
@@ -64,4 +67,6 @@ public class Empleado {
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_operativo")
     private EstadoOperativo estadoOperativo;
+
+
 }
