@@ -59,6 +59,7 @@ public class DataLoader implements CommandLineRunner {
                 .nombres("Bernardo Alonso")
                 .apellidos("Montes Mesa")
                 .numeroDocumento("23334546")
+                .celularPersonal("989888777")
                 .build();
 
         postulanteService.registrarPostulante(p1);

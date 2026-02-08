@@ -22,7 +22,7 @@ public class PostulanteController {
     private final IPostulante postulanteService;
 
     @GetMapping
-    public ResponseEntity<List<PostulanteResponse>> getPostulantes(
+    public ResponseEntity<List<PostulanteResponse>> getPostulantesPorEstadoYFechas(
             @RequestParam(required = false) EstadoPostulacion estado,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta)

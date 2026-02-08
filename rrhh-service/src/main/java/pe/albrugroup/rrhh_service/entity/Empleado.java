@@ -15,7 +15,7 @@ import java.util.List;
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_empleado_numero_documento", columnNames = "numero_documento"),
                 @UniqueConstraint(name = "uk_empleado_celular_personal", columnNames = "celular_personal"),
-                @UniqueConstraint(name = "uk_empleado_correo", columnNames = "correo")
+                @UniqueConstraint(name = "uk_empleado_correo_personal", columnNames = "correo_personal")
         }
 )
 public class Empleado {
@@ -45,8 +45,8 @@ public class Empleado {
     // CONTACTO
     @Column(name = "celular_personal")
     private String celularPersonal;
-    @Column(unique = true, nullable = false)
-    private String correo;
+    @Column(name = "correo_personal")
+    private String correoPersonal;
     // CONTACTO CORPORATIVO
     @Column(name = "celular_corporativo")
     private String celularCorporativo;
