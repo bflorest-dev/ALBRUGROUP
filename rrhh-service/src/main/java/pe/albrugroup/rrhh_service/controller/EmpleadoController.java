@@ -23,17 +23,6 @@ public class EmpleadoController {
 
     private final IEmpleado empleadoService;
 
-    // Postulantes
-    @PostMapping("/postulante")
-    public ResponseEntity<PostulanteResponse> registrarPostulante(@RequestBody RegistrarPostulanteRequest request) {
-        var postulante = empleadoService.registrarPostulante(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(postulante);
-    }
-    @GetMapping("/postulantes-mensual")
-    public ResponseEntity<List<PostulanteResponse>> listarPostulantesMensual() {
-        return ResponseEntity.ok(empleadoService.getPostulantesPeriodoMensual());
-    }
-    // Empleados
     @GetMapping("/activos")
     public ResponseEntity<List<EmpleadoResponse>> listarEmpleadosActivos() {
         return ResponseEntity.ok(empleadoService.getEmpleadosActivos());

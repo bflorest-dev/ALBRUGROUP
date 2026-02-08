@@ -10,8 +10,6 @@ import java.util.List;
 @Component
 public interface IEmpleado {
 
-    PostulanteResponse registrarPostulante(RegistrarPostulanteRequest nuevoPostulante);
-    List<PostulanteResponse> getPostulantesPeriodoMensual();
     List<EmpleadoResponse> getEmpleadosActivos();
     List<EmpleadoResponse> getEmpleadoUniversal(String dato);
     EmpleadoResponse getEmpleadoDocumento(String documento);

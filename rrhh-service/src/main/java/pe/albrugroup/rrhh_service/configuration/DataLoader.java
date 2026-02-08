@@ -7,12 +7,15 @@ import pe.albrugroup.rrhh_service.entity.enums.*;
 import pe.albrugroup.rrhh_service.entity.request.RegistrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.RegistrarEmpleadoRequest;
 import pe.albrugroup.rrhh_service.entity.request.RegistrarPagoRequest;
+import pe.albrugroup.rrhh_service.entity.request.RegistrarPostulanteRequest;
 import pe.albrugroup.rrhh_service.repository.ContratoRepository;
 import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
 import pe.albrugroup.rrhh_service.repository.PagoRepository;
+import pe.albrugroup.rrhh_service.repository.PostulanteRepository;
 import pe.albrugroup.rrhh_service.service.ContratoService;
 import pe.albrugroup.rrhh_service.service.EmpleadoService;
 import pe.albrugroup.rrhh_service.service.PagoService;
+import pe.albrugroup.rrhh_service.service.PostulanteService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -22,6 +25,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DataLoader implements CommandLineRunner {
 
+    private final PostulanteRepository postulanteRepository;
+    private final PostulanteService postulanteService;
     private final EmpleadoRepository empleadoRepository;
     private final EmpleadoService empleadoService;
     private final ContratoRepository contratoRepository;
@@ -31,9 +36,33 @@ public class DataLoader implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if(empleadoRepository.count() == 0) { crearEmpleados(); }
-        if(contratoRepository.count() == 0) { crearContratos(); }
-        if(pagoRepository.count() == 0) { crearPagos(); }
+        if(postulanteService.DataBaseIsEmpty()) { crearPostulantes(); }
+//        if(empleadoRepository.count() == 0) { crearEmpleados(); }
+//        if(contratoRepository.count() == 0) { crearContratos(); }
+//        if(pagoRepository.count() == 0) { crearPagos(); }
+    }
+
+    private void crearPostulantes() {
+        RegistrarPostulanteRequest p1 = RegistrarPostulanteRequest.builder()
+                .nombres("Alejandro Matias")
+                .apellidos("Flores Huanaco")
+                .tipoDocumento(Documento.DNI)
+                .numeroDocumento("84365398")
+                .celularPersonal("999888777")
+                .origen(Origen.COMPUTRABAJO)
+                .puestoTrabajo(PuestoTrabajo.ASESOR_POSTVENTA)
+                .pagoDiaCapacitacion(BigDecimal.valueOf(15.00))
+                .fechaInicio(LocalDate.of(2026, 2, 9))
+                .fechaFin(LocalDate.of(2026, 2, 14))
+                .build();
+        RegistrarPostulanteRequest p2 = p1.toBuilder()
+                .nombres("Bernardo Alonso")
+                .apellidos("Montes Mesa")
+                .numeroDocumento("23334546")
+                .build();
+
+        postulanteService.registrarPostulante(p1);
+        postulanteService.registrarPostulante(p2);
     }
 
     private void crearEmpleados() {
@@ -72,7 +101,7 @@ public class DataLoader implements CommandLineRunner {
                 .tieneHijos(false)
                 .build();
 
-        empleadoService.registrarEmpleados(List.of(e1, e2, e3));
+//        empleadoService.registrarEmpleados(List.of(e1, e2, e3));
     }
 
     private void crearContratos() {

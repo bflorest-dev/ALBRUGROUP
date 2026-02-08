@@ -17,23 +17,12 @@ import pe.albrugroup.rrhh_service.usecase.IEmpleado;
 
 import java.util.List;
 
-@Service
-@Transactional
+@Service @Transactional
 @RequiredArgsConstructor
 public class EmpleadoService implements IEmpleado {
 
     private final EmpleadoRepository repository;
     private final EmpleadoMapper mapper;
-
-    @Override
-    public PostulanteResponse registrarPostulante(RegistrarPostulanteRequest nuevoPostulante) {
-        return null;
-    }
-
-    @Override
-    public List<PostulanteResponse> getPostulantesPeriodoMensual() {
-        return List.of();
-    }
 
     @Override
     public List<EmpleadoResponse> getEmpleadosActivos() {

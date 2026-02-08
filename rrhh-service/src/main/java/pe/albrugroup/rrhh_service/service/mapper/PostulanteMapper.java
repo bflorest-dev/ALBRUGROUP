@@ -1,6 +1,7 @@
 package pe.albrugroup.rrhh_service.service.mapper;
 
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import pe.albrugroup.rrhh_service.entity.Postulante;
 import pe.albrugroup.rrhh_service.entity.request.RegistrarPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.response.PostulanteResponse;
@@ -9,5 +10,10 @@ import pe.albrugroup.rrhh_service.entity.response.PostulanteResponse;
 public interface PostulanteMapper {
 
     Postulante toEntity(RegistrarPostulanteRequest request);
-    PostulanteResponse toResponse(Postulante postulante);
+    @Mapping(target = "nombres", source = "empleado.nombres")
+    @Mapping(target = "apellidos", source = "empleado.apellidos")
+    @Mapping(target = "tipoDocumento", source = "empleado.tipoDocumento")
+    @Mapping(target = "numeroDocumento", source = "empleado.numeroDocumento")
+    @Mapping(target = "celularPersonal", source = "empleado.celularPersonal")
+    PostulanteResponse toResponse(Postulante entity);
 }

@@ -14,10 +14,8 @@ import java.util.Optional;
 @Repository
 public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
 
-    // Búsqueda por número de documento (único)
     Optional<Empleado> findByNumeroDocumento(String numeroDocumento);
 
-    // Búsqueda por tipo y número de documento
     Optional<Empleado> findByTipoDocumentoAndNumeroDocumento(Documento tipoDocumento, String numeroDocumento);
 
     // Empleados por estado operativo

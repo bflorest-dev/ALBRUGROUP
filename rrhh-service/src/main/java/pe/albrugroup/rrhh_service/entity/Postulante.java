@@ -17,6 +17,7 @@ public class Postulante {
     private Long id;
     @ManyToOne @JoinColumn(name = "empleado_id", nullable = false)
     private Empleado empleado;
+
     @Enumerated(EnumType.STRING)
     private Origen origen;
     @Enumerated(EnumType.STRING) @Column(name = "puesto_objetivo")
