@@ -1,6 +1,5 @@
 package pe.albrugroup.rrhh_service.service;
 
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -68,8 +67,7 @@ public class PostulanteService implements IPostulante {
 
         return postulanteMapper.toResponse(postulanteRepository.save(postulante));
     }
-
-    @Override @Transactional
+    @Override
     public List<PostulanteResponse> actualizarEstadosPostulacion(CambiosEstadoPostulacionRequest cambios) {
         Map<Long, EstadoPostulacion> destino = cambios.getCambios().stream()
                 .collect(Collectors.toMap(
@@ -77,7 +75,8 @@ public class PostulanteService implements IPostulante {
                         (a, b) ->
                         { throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "IDs duplicados"); }
                 ));
-        List<Postulante> postulantes = postulanteRepository.findAllByIdIn(new ArrayList<>(destino.keySet()));
+        List<Postulante> postulantes = postulanteRepository
+                .findAllByIdInWithEmpleado(new ArrayList<>(destino.keySet()));
         if (postulantes.size() != destino.size()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Uno o más postulantes no existen");
         }
@@ -90,6 +89,4 @@ public class PostulanteService implements IPostulante {
         postulantes.forEach(postulante -> postulante.setEstadoPostulacion(destino.get(postulante.getId())));
         return postulantes.stream().map(postulanteMapper::toResponse).toList();
     }
-
-
 }

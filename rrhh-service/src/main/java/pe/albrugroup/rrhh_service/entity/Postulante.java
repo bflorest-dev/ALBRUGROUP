@@ -9,6 +9,13 @@ import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+@Table(
+        name = "postulantes",
+        indexes = {
+                @Index(name = "idx_postulante_estado_inicio", columnList = "estado_postulacion, inicio_capacitacion"),
+                @Index(name = "idx_postulante_empleado_estado", columnList = "empleado_id, estado_postulacion")
+        }
+)
 @Entity @Getter @Setter @Builder
 @AllArgsConstructor @NoArgsConstructor
 public class Postulante {

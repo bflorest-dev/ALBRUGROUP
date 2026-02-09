@@ -14,13 +14,13 @@ import java.time.LocalDate;
 public class PostulanteResponse {
 
     private Long id;
-    // Empleado
+    // EMPLEADO
     private String nombres;
     private String apellidos;
     private Documento tipoDocumento;
     private String numeroDocumento;
     private String celularPersonal;
-    // Postulante
+    // POSTULANTE
     private Origen origen;
     private PuestoTrabajo puestoTrabajo;
     private EstadoPostulacion estadoPostulacion;
