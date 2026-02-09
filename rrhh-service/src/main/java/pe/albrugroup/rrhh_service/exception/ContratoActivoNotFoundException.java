@@ -1,7 +1,13 @@
 package pe.albrugroup.rrhh_service.exception;
 
-public class ContratoActivoNotFoundException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+public class ContratoActivoNotFoundException extends BusinessException {
     public ContratoActivoNotFoundException(Long idEmpleado) {
-        super("Empleado[" + idEmpleado + "] no tiene un contrato ACTIVO");
+        super(
+                HttpStatus.NOT_FOUND,
+                "Empleado no cuenta con un Contrato Vigente",
+                idEmpleado
+        );
     }
 }

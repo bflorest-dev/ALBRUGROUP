@@ -9,16 +9,14 @@ import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.request.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.RegistrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.response.ContratoResponse;
-import pe.albrugroup.rrhh_service.exception.ContratoActivoNotFoundException;
-import pe.albrugroup.rrhh_service.exception.ContratoNotFoundException;
-import pe.albrugroup.rrhh_service.exception.EmpleadoNotFoundException;
-import pe.albrugroup.rrhh_service.exception.FechaFinInvalidException;
+import pe.albrugroup.rrhh_service.exception.*;
 import pe.albrugroup.rrhh_service.service.mapper.ContratoMapper;
 import pe.albrugroup.rrhh_service.repository.ContratoRepository;
 import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
 import pe.albrugroup.rrhh_service.usecase.IContrato;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -71,6 +69,23 @@ public class ContratoService implements IContrato {
         Contrato contrato = mapper.toEntity(nuevoContrato);
         contrato.setEmpleado(empleado);
         return mapper.toResponse(contratoRepository.save(contrato));
+    }
+    private List<String> camposFaltantesEmpleado(Empleado e) {
+        List<String> faltantes = new ArrayList<>();
+
+        if (e.getNombres() == null) faltantes.add("nombres");
+        if (e.getApellidos() == null) faltantes.add("apellidos");
+        if (e.getTipoDocumento() == null) faltantes.add("tipoDocumento");
+        if (e.getNumeroDocumento() == null) faltantes.add("numeroDocumento");
+        if (e.getFechaNacimiento() == null) faltantes.add("fechaNacimiento");
+        if (e.getCelularPersonal() == null) faltantes.add("celularPersonal");
+        if (e.getCorreoPersonal() == null) faltantes.add("correoPersonal");
+        if (e.getBanco() == null) faltantes.add("banco");
+        if (e.getCuentaBancaria() == null) faltantes.add("cuentaBancaria");
+        if (!faltantes.isEmpty()) {
+            throw new EmpleadoIncompletoException(e.getId(), faltantes);
+        }
+
     }
 
     @Override

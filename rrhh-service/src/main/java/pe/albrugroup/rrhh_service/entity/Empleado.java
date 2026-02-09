@@ -3,7 +3,6 @@ package pe.albrugroup.rrhh_service.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import pe.albrugroup.rrhh_service.entity.enums.*;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +33,11 @@ public class Empleado {
     private Documento tipoDocumento;
     @Column(name = "numero_documento")
     private String numeroDocumento;
+    // CONTACTO
+    @Column(name = "celular_personal")
+    private String celularPersonal;
+    @Column(name = "correo_personal")
+    private String correoPersonal;
     @Enumerated(EnumType.STRING)
     private Nacionalidad nacionalidad;
     @Column(name = "fecha_nacimiento")
@@ -42,11 +46,6 @@ public class Empleado {
     @Column(name = "estado_civil")
     private EstadoCivil estadoCivil;
     private boolean tieneHijos;
-    // CONTACTO
-    @Column(name = "celular_personal")
-    private String celularPersonal;
-    @Column(name = "correo_personal")
-    private String correoPersonal;
     // CONTACTO CORPORATIVO
     @Column(name = "celular_corporativo")
     private String celularCorporativo;

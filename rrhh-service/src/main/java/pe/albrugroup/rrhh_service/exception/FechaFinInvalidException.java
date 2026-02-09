@@ -1,7 +1,12 @@
 package pe.albrugroup.rrhh_service.exception;
 
-public class FechaFinInvalidException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+public class FechaFinInvalidException extends BusinessException {
     public FechaFinInvalidException() {
-        super("Fecha de Cese, no puede ser anterior a la Fecha de contratacion");
+        super(
+                HttpStatus.BAD_REQUEST,
+                "Fecha de Cese, no puede ser anterior a la Fecha de contratacion"
+        );
     }
 }

@@ -1,7 +1,13 @@
 package pe.albrugroup.rrhh_service.exception;
 
-public class EmpleadoPostulanteException extends RuntimeException{
+import org.springframework.http.HttpStatus;
+
+public class EmpleadoPostulanteException extends BusinessException{
     public EmpleadoPostulanteException(Long idEmpleado){
-        super("Posulante["+ idEmpleado +"] aun no es empleado");
+        super(
+                HttpStatus.UNPROCESSABLE_ENTITY,
+                "Posulante aun no es empleado",
+                idEmpleado
+        );
     }
 }

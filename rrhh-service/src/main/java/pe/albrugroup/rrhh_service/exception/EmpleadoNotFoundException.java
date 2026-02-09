@@ -1,8 +1,13 @@
 package pe.albrugroup.rrhh_service.exception;
 
-public class EmpleadoNotFoundException extends RuntimeException {
+import org.springframework.http.HttpStatus;
 
+public class EmpleadoNotFoundException extends BusinessException {
     public EmpleadoNotFoundException(Long idEmpleado) {
-        super("Empleado[" + idEmpleado +"] no encontrado");
+        super(
+                HttpStatus.NOT_FOUND,
+                "Empleado no existe",
+                idEmpleado
+        );
     }
 }

@@ -1,7 +1,12 @@
 package pe.albrugroup.rrhh_service.exception;
 
-public class PagoContratoInactivoException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+public class PagoContratoInactivoException extends BusinessException {
     public PagoContratoInactivoException(Long idContrato) {
-        super("No se puede pagar el Contrato[" + idContrato + "] porque esta Inactivo");
+        super(
+                HttpStatus.CONFLICT,
+                "No se puede pagar el Contrato de un Empleado Inactivo"
+        );
     }
 }
