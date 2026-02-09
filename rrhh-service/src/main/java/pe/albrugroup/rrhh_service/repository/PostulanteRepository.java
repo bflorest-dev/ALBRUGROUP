@@ -14,4 +14,5 @@ public interface PostulanteRepository extends JpaRepository<Postulante, Long> {
     List<Postulante> findByEstadoPostulacionAndFechaInicioBetween(EstadoPostulacion estado,
                                                                   LocalDate desde, LocalDate hasta);
     boolean existsByEmpleadoIdAndEstadoPostulacion(Long empleadoId, EstadoPostulacion estado);
+    List<Postulante> findAllByIdIn(List<Long> ids);
 }

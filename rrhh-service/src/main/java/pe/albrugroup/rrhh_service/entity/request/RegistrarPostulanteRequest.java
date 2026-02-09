@@ -15,25 +15,15 @@ import java.time.LocalDate;
 public class RegistrarPostulanteRequest {
 
     // EMPLEADO
-    @NotBlank
-    private String nombres;
-    @NotBlank
-    private String apellidos;
-    @NotNull
-    private Documento tipoDocumento;
-    @NotBlank
-    private String numeroDocumento;
-    @NotBlank
-    private String celularPersonal;
+    @NotBlank private String nombres;
+    @NotBlank private String apellidos;
+    @NotNull private Documento tipoDocumento;
+    @NotBlank private String numeroDocumento;
+    @NotBlank private String celularPersonal;
     // POSTULANTE
-    @NotNull
-    private Origen origen;
-    @NotNull
-    private PuestoTrabajo puestoTrabajo;
-    @NotNull
-    private BigDecimal pagoDiaCapacitacion;
-    @NotNull
-    private LocalDate fechaInicio;
-    @NotNull
-    private LocalDate fechaFin;
+    @NotNull private Origen origen;
+    @NotNull private PuestoTrabajo puestoTrabajo;
+    @NotNull private BigDecimal pagoDiaCapacitacion;
+    @NotNull private LocalDate fechaInicio;
+    @NotNull private LocalDate fechaFin;
 }

@@ -60,6 +60,8 @@ public class DataLoader implements CommandLineRunner {
                 .apellidos("Montes Mesa")
                 .numeroDocumento("23334546")
                 .celularPersonal("989888777")
+                .fechaInicio(LocalDate.of(2025, 9, 9))
+                .fechaFin(LocalDate.of(2026, 9, 14))
                 .build();
 
         postulanteService.registrarPostulante(p1);
