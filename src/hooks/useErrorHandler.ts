@@ -40,7 +40,7 @@ export const createError = (message: string, context?: Record<string, unknown>):
 
   if (context) {
     // Agregar contexto adicional al error
-    (error as any).context = context;
+    (error as Error & { context: Record<string, unknown> }).context = context;
   }
 
   return error;

@@ -5,11 +5,7 @@
  * con un backend real, reemplazando los datos mockeados.
  */
 
-// ============================================================================
-// 1. SERVICIO API - src/services/employeeService.ts
-// ============================================================================
-
-import { Employee, Statistic } from '../types';
+/* eslint-disable react-refresh/only-export-components */
 
 const API_BASE_URL = 'https://api.example.com/api';
 
@@ -151,7 +147,7 @@ export const deleteEmployee = async (id: string): Promise<void> => {
 // 2. HOOK PERSONALIZADO - src/hooks/useFetchEmployees.ts
 // ============================================================================
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface UseFetchEmployeesOptions {
   page?: number;
@@ -258,10 +254,10 @@ export const EmployeeDashboardWithAPI = () => {
             <>
               <EmployeeTable employees={employees} />
               <Pagination
-                currentPage={currentPage}
-                totalPages={Math.ceil(total / ITEMS_PER_PAGE)}
-                totalItems={total}
-                itemsPerPage={ITEMS_PER_PAGE}
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                totalItems={pagination.totalItems}
+                itemsPerPage={pagination.itemsPerPage}
                 onPageChange={setCurrentPage}
               />
             </>
@@ -350,7 +346,7 @@ export const useAsync = <T,>(
     error: null,
   });
 
-  const execute = async () => {
+  const execute = useCallback(async () => {
     setState({ data: null, loading: true, error: null });
     try {
       const response = await asyncFunction();
@@ -362,13 +358,13 @@ export const useAsync = <T,>(
         error: error instanceof Error ? error : new Error('Unknown error'),
       });
     }
-  };
+  }, [asyncFunction]);
 
   useEffect(() => {
     if (immediate) {
       execute();
     }
-  }, []);
+  }, [immediate, execute]);
 
   return { ...state, execute };
 };
