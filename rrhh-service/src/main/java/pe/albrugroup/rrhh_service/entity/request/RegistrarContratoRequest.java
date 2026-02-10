@@ -3,6 +3,7 @@ package pe.albrugroup.rrhh_service.entity.request;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
 import lombok.*;
 import pe.albrugroup.rrhh_service.entity.enums.Regimen;
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
@@ -15,15 +16,12 @@ import java.time.LocalDate;
 public class RegistrarContratoRequest {
 
     // PUESTO DE TRABAJO
-    @NotNull
-    private PuestoTrabajo puestoTrabajo;
-    @NotNull
-    private Regimen regimen;
+    @NotNull private PuestoTrabajo puestoTrabajo;
+    @NotNull private Regimen regimen;
     @NotNull @DecimalMin(value = "0.00", inclusive = false)
     @Digits(integer = 10, fraction = 2)
     private BigDecimal sueldoBase;
     // VIGENCIA
-    @NotNull
-    private LocalDate fechaInicio;
-    private LocalDate fechaFin;
+    @NotNull private LocalDate fechaInicio;
+    @Null private LocalDate fechaFin;
 }

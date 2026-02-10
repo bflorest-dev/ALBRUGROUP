@@ -2,8 +2,7 @@ package pe.albrugroup.rrhh_service.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
-import pe.albrugroup.rrhh_service.entity.enums.Regimen;
+import pe.albrugroup.rrhh_service.entity.enums.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -29,7 +28,15 @@ public class Contrato {
     private PuestoTrabajo puestoTrabajo;
     @Enumerated(EnumType.STRING)
     private Regimen regimen;
-    @Column(name = "sueldo_base", precision = 10, scale = 2)
+    @Enumerated(EnumType.STRING)
+    private Modalidad modalidad;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "seguro_salud")
+    private SeguroSalud seguroSalud;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sistema_pensiones")
+    private SistemaPensiones sistemaPensiones;
+    @Column(name = "sueldo_base", precision = 6, scale = 2)
     private BigDecimal sueldoBase;
     // VIGENCIA
     @Column(name = "fecha_contratacion")

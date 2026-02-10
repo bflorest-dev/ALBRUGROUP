@@ -20,12 +20,18 @@ public class Pago {
     private LocalDate fechaInicio;
     private LocalDate fechaFin;
     // ABONO
-    @Column(precision = 10, scale = 2, nullable = false)
+    @Column(precision = 10, scale = 2)
     private BigDecimal sueldoBase;
-    @Column(precision = 10, scale = 2, nullable = false)
+    @Column(name = "asignacion_familiar", precision = 5, scale = 2)
     private BigDecimal asignacionFamiliar;
-    @Column(precision = 10, scale = 2, nullable = false)
-    private BigDecimal comision;
+    @Column(name = "bono_puntualidad", precision = 5, scale = 2)
+    private BigDecimal bonoPuntualidad;
+    @Column(name = "comision_semanal", precision = 5, scale = 2)
+    private BigDecimal comisionSemanal;
+    @Column(name = "comision_mensual", precision = 5, scale = 2)
+    private BigDecimal comisionMensual;
+    @Column(name = "bono_extra", precision = 5, scale = 2)
+    private BigDecimal bonoExtra;
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal sueldoTotal;
 }
