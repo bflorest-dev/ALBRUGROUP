@@ -10,12 +10,10 @@ import java.util.List;
 @Component
 public interface IContrato {
 
-    List<ContratoResponse> listarContratosVigentes();
-    List<ContratoResponse> listarContratosVencidos();
     List<ContratoResponse> listarContratosEmpleado(Long idEmpleado);
     ContratoResponse getContratoVigente(Long idEmpleado);
 
-    List<ContratoResponse> registrarContratos(List<Long> idEmpleados, List<RegistrarContratoRequest> nuevosContratosVigentes);
     ContratoResponse registrarContrato(Long idEmpleado, RegistrarContratoRequest nuevoContrato);
-    ContratoResponse cerrarContrato(Long idEmpleado, CerrarContratoRequest contratoCerrado);
+    ContratoResponse finalizarContrato(Long idEmpleado, CerrarContratoRequest contratoCerrado);
+    void registrarContratos(List<Long> idEmpleados, List<RegistrarContratoRequest> nuevosContratosVigentes);
 }

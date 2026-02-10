@@ -22,10 +22,6 @@ public class ContratoController {
 
     private final IContrato contratoService;
 
-    @GetMapping("/vigentes")
-    public ResponseEntity<List<ContratoResponse>> listarContratosVigentes() {
-        return ResponseEntity.ok(contratoService.listarContratosVigentes());
-    }
     @GetMapping("/{id}/vigentes")
     public ResponseEntity<List<ContratoResponse>> listarContratosEmpleado(@PathVariable @Positive Long id) {
         return ResponseEntity.ok(contratoService.listarContratosEmpleado(id));
@@ -41,9 +37,9 @@ public class ContratoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(contrato);
     }
     @PatchMapping("/{id}/cesar-contrato")
-    public ResponseEntity<ContratoResponse> cerrarContrato(@RequestBody CerrarContratoRequest request,
+    public ResponseEntity<ContratoResponse> finalizarContrato(@RequestBody CerrarContratoRequest request,
                                                            @PathVariable @Positive Long id) {
-        var contrato = contratoService.cerrarContrato(id, request);
+        var contrato = contratoService.finalizarContrato(id, request);
         return ResponseEntity.ok(contrato);
     }
 }
