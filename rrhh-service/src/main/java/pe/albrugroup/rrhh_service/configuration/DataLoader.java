@@ -36,8 +36,8 @@ public class DataLoader implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if(postulanteService.DataBaseIsEmpty()) { crearPostulantes(); }
-//        if(empleadoRepository.count() == 0) { crearEmpleados(); }
+        if(empleadoRepository.count() == 0) { crearEmpleados(); }
+        if(postulanteRepository.count() == 0) { crearPostulantes(); }
 //        if(contratoRepository.count() == 0) { crearContratos(); }
 //        if(pagoRepository.count() == 0) { crearPagos(); }
     }
@@ -79,8 +79,7 @@ public class DataLoader implements CommandLineRunner {
                 .estadoCivil(EstadoCivil.SOLTERO)
                 .tieneHijos(false)
                 .celularPersonal("943763301")
-                .celularCorporativo("943763301")
-                .correo("jevbxx@gmail.com")
+                .correoPersonal("jevbxx@gmail.com")
                 .distrito(Distrito.SAN_MARTÍN_DE_PORRES)
                 .direccion("Fermin Tanguis 079")
                 .banco(Banco.BCP)
@@ -92,7 +91,7 @@ public class DataLoader implements CommandLineRunner {
                 .apellidos("Linare Castellano")
                 .numeroDocumento("65413802")
                 .celularPersonal("943763302")
-                .correo("leslie@gmail.com")
+                .correoPersonal("leslie@gmail.com")
                 .tieneHijos(true)
                 .build();
         RegistrarEmpleadoRequest e3 = e1.toBuilder()
@@ -100,11 +99,11 @@ public class DataLoader implements CommandLineRunner {
                 .apellidos("Cjuno Palacions")
                 .numeroDocumento("55413802")
                 .celularPersonal("943763303")
-                .correo("grace@gmail.com")
+                .correoPersonal("grace@gmail.com")
                 .tieneHijos(false)
                 .build();
 
-//        empleadoService.registrarEmpleados(List.of(e1, e2, e3));
+        empleadoService.registrarEmpleados(List.of(e1, e2, e3));
     }
 
     private void crearContratos() {

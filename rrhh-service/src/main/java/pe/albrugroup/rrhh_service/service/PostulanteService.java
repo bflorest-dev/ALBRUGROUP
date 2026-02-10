@@ -13,6 +13,7 @@ import pe.albrugroup.rrhh_service.entity.request.CambioEstadoPostulacionItem;
 import pe.albrugroup.rrhh_service.entity.request.CambiosEstadoPostulacionRequest;
 import pe.albrugroup.rrhh_service.entity.request.RegistrarPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.response.PostulanteResponse;
+import pe.albrugroup.rrhh_service.exception.PostulanteEnProcesoException;
 import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
 import pe.albrugroup.rrhh_service.repository.PostulanteRepository;
 import pe.albrugroup.rrhh_service.service.mapper.EmpleadoMapper;
@@ -58,7 +59,7 @@ public class PostulanteService implements IPostulante {
                     return empleadoRepository.save(e);
                 });
         if(postulanteRepository.existsByEmpleadoIdAndEstadoPostulacion(empleado.getId(), EstadoPostulacion.EN_PROCESO)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "El registro ya existe");
+            throw new PostulanteEnProcesoException();
         }
 
         Postulante postulante = postulanteMapper.toEntity(nuevoPostulante);

@@ -18,11 +18,13 @@ public class EmpleadoResponse {
     private Nacionalidad nacionalidad;
     private LocalDate fechaNacimiento;
     private EstadoCivil estadoCivil;
-    private boolean tieneHijos;
+    private Boolean tieneHijos;
     // CONTACTO
     private String celularPersonal;
+    private String correoPersonal;
+    // CONTACTO CORPORATIVO
     private String celularCorporativo;
-    private String correo;
+    private String correoCorporativo;
     // UBICACION
     private Distrito distrito;
     private String direccion;

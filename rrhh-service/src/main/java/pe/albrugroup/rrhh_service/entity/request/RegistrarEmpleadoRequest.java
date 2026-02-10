@@ -13,38 +13,22 @@ import java.time.LocalDate;
 public class RegistrarEmpleadoRequest {
 
     // DATOS PERSONALES
-    @NotBlank
-    private String nombres;
-    @NotBlank
-    private String apellidos;
-    @NotNull
-    private Documento tipoDocumento;
-    @NotBlank
-    private String numeroDocumento;
-    @NotNull
-    private Nacionalidad nacionalidad;
-    @NotNull @Past
-    private LocalDate fechaNacimiento;
-    @NotNull
-    private EstadoCivil estadoCivil;
-    @NotNull
-    private Boolean tieneHijos;
+    @NotBlank private String nombres;
+    @NotBlank private String apellidos;
+    @NotNull private Documento tipoDocumento;
+    @NotBlank private String numeroDocumento;
+    @NotNull private Nacionalidad nacionalidad;
+    @NotNull @Past private LocalDate fechaNacimiento;
+    @NotNull private EstadoCivil estadoCivil;
+    @NotNull private Boolean tieneHijos;
     // CONTACTO
-    @NotBlank
-    private String celularPersonal;
-    private String celularCorporativo;
-    @NotBlank @Email
-    private String correo;
+    @NotBlank private String celularPersonal;
+    @NotBlank @Email private String correoPersonal;
     // UBICACION
-    @NotNull
-    private Distrito distrito;
-    @NotBlank
-    private String direccion;
+    @NotNull private Distrito distrito;
+    @NotBlank private String direccion;
     // INFORMACION FINANCIERA
-    @NotNull
-    private Banco banco;
-    @NotBlank
-    private String cuentaBancaria;
-    @NotBlank
-    private String cuentaInterbancaria;
+    @NotNull private Banco banco;
+    @NotBlank private String cuentaBancaria;
+    @NotBlank private String cuentaInterbancaria;
 }

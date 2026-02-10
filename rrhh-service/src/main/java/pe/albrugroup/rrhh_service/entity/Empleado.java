@@ -33,11 +33,6 @@ public class Empleado {
     private Documento tipoDocumento;
     @Column(name = "numero_documento")
     private String numeroDocumento;
-    // CONTACTO
-    @Column(name = "celular_personal")
-    private String celularPersonal;
-    @Column(name = "correo_personal")
-    private String correoPersonal;
     @Enumerated(EnumType.STRING)
     private Nacionalidad nacionalidad;
     @Column(name = "fecha_nacimiento")
@@ -45,7 +40,12 @@ public class Empleado {
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_civil")
     private EstadoCivil estadoCivil;
-    private boolean tieneHijos;
+    private Boolean tieneHijos;
+    // CONTACTO
+    @Column(name = "celular_personal")
+    private String celularPersonal;
+    @Column(name = "correo_personal")
+    private String correoPersonal;
     // CONTACTO CORPORATIVO
     @Column(name = "celular_corporativo")
     private String celularCorporativo;

@@ -11,14 +11,9 @@ import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 public class DatosContactoUbicacionRequest {
 
     // CONTACTO
-    @NotBlank
-    private String celularPersonal;
-    private String celularCorporativo;
-    @NotBlank @Email
-    private String correo;
+    @NotBlank private String celularPersonal;
+    @NotBlank @Email private String correoPersonal;
     // UBICACION
-    @NotNull
-    private Distrito distrito;
-    @NotBlank
-    private String direccion;
+    @NotNull private Distrito distrito;
+    @NotBlank private String direccion;
 }

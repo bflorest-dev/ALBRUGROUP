@@ -15,20 +15,12 @@ import java.time.LocalDate;
 public class DatosPersonalesRequest {
 
     // DATOS PERSONALES
-    @NotBlank
-    private String nombres;
-    @NotBlank
-    private String apellidos;
-    @NotNull
-    private Documento tipoDocumento;
-    @NotBlank
-    private String numeroDocumento;
-    @NotNull
-    private Nacionalidad nacionalidad;
-    @NotNull @Past
-    private LocalDate fechaNacimiento;
-    @NotNull
-    private EstadoCivil estadoCivil;
-    @NotNull
-    private Boolean tieneHijos;
+    @NotBlank private String nombres;
+    @NotBlank private String apellidos;
+    @NotNull private Documento tipoDocumento;
+    @NotBlank private String numeroDocumento;
+    @NotNull private Nacionalidad nacionalidad;
+    @NotNull @Past private LocalDate fechaNacimiento;
+    @NotNull private EstadoCivil estadoCivil;
+    @NotNull private Boolean tieneHijos;
 }

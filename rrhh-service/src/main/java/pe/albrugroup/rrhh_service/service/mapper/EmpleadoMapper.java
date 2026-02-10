@@ -23,4 +23,7 @@ public interface EmpleadoMapper {
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateDatosContactoUbicacion(DatosContactoUbicacionRequest request, @MappingTarget Empleado entity);
+
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    void updateDatosContactoCorporativo(DatosContactoCorporativoRequest request, @MappingTarget Empleado entity);
 }

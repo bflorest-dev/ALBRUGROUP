@@ -58,7 +58,7 @@ public class ContratoService implements IContrato {
     }
     @Override
     public ContratoResponse registrarContrato(Long idEmpleado, RegistrarContratoRequest nuevoContrato) {
-        Empleado empleado = empleadoRepository.findByIdAndEstadoOperativoNot(idEmpleado, EstadoOperativo.INACTIVO)
+        Empleado empleado = empleadoRepository.findById(idEmpleado)
                 .orElseThrow(() -> new EmpleadoNotFoundException(idEmpleado));
 
         LocalDate fechaInicioNuevo = nuevoContrato.getFechaInicio();
@@ -85,7 +85,7 @@ public class ContratoService implements IContrato {
         if (!faltantes.isEmpty()) {
             throw new EmpleadoIncompletoException(e.getId(), faltantes);
         }
-
+        return faltantes;
     }
 
     @Override

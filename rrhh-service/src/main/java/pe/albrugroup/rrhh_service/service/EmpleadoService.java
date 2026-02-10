@@ -1,13 +1,18 @@
 package pe.albrugroup.rrhh_service.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.rrhh_service.entity.Empleado;
+import pe.albrugroup.rrhh_service.entity.enums.Banco;
+import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.request.*;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 import pe.albrugroup.rrhh_service.entity.response.PostulanteResponse;
+import pe.albrugroup.rrhh_service.exception.EmpleadoDocumentoNotFoundException;
 import pe.albrugroup.rrhh_service.exception.EmpleadoInactivoException;
 import pe.albrugroup.rrhh_service.exception.EmpleadoNotFoundException;
 import pe.albrugroup.rrhh_service.exception.EmpleadoPostulanteException;
@@ -24,19 +29,35 @@ public class EmpleadoService implements IEmpleado {
     private final EmpleadoRepository repository;
     private final EmpleadoMapper mapper;
 
-    @Override
-    public List<EmpleadoResponse> getEmpleadosActivos() {
-        return List.of();
+    @Override @Transactional(readOnly = true)
+    public Page<EmpleadoResponse> getEmpleados(String q, String dni, String celular, Distrito distrito, Banco banco,
+                                              EstadoOperativo estado, Pageable pageable)
+    {
+        EstadoOperativo estadoOperativo = estado != null ? estado : EstadoOperativo.ACTIVO;
+        return repository.getEmpleados(q, dni, celular, distrito, banco, estadoOperativo, pageable)
+                .map(mapper::toResponse);
     }
-
-    @Override
-    public List<EmpleadoResponse> getEmpleadoUniversal(String dato) {
-        return List.of();
-    }
-
-    @Override
+    @Override @Transactional(readOnly = true)
     public EmpleadoResponse getEmpleadoDocumento(String documento) {
-        return null;
+        Empleado empleado = repository.findByNumeroDocumento(documento)
+                .orElseThrow(() -> new EmpleadoDocumentoNotFoundException(documento));
+        return mapper.toResponse(empleado);
+    }
+    @Override @Transactional(readOnly = true)
+    public Page<EmpleadoResponse> getEmpleadoUniversal(String dato, Pageable pageable) {
+        return repository.busquedaUniversal(dato, pageable)
+                .map(mapper::toResponse);
+    }
+
+    @Override
+    public void registrarEmpleados(List<RegistrarEmpleadoRequest> nuevosEmpleados) {
+        nuevosEmpleados.stream().map(this::registrarEmpleado);
+    }
+    @Override
+    public EmpleadoResponse registrarEmpleado(RegistrarEmpleadoRequest nuevoEmpleado) {
+        Empleado empleado = mapper.toEntity(nuevoEmpleado);
+        empleado.setEstadoOperativo(EstadoOperativo.POSTULANTE);
+        return mapper.toResponse(repository.save(empleado));
     }
 
     @Override
@@ -63,37 +84,15 @@ public class EmpleadoService implements IEmpleado {
         mapper.updateDatosFinancieros(datosFinancieros, empleado);
         return mapper.toResponse(empleado);
     }
+    @Override
+    public EmpleadoResponse actualizarContactoCorporativo(Long idEmpleado, DatosContactoCorporativoRequest datosCorporativos) {
+        Empleado empleado = repository.findById(idEmpleado)
+                .orElseThrow(() -> new EmpleadoNotFoundException(idEmpleado));
+        mapper.updateDatosContactoCorporativo(datosCorporativos, empleado);
+        return mapper.toResponse(empleado);
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////
-
-//    @Transactional(readOnly = true) @Override
-//    public List<EmpleadoResponse> getEmpleados() {
-//        return repository.findAll().stream()
-//                .map(mapper::toResponse)
-//                .toList();
-//    }
-//
-//    @Transactional(readOnly = true) @Override
-//    public EmpleadoResponse getEmpleado(Long idEmpleado) {
-//        Empleado empleado = repository.findById(idEmpleado)
-//                .orElseThrow(() -> new EmpleadoNotFoundException(idEmpleado));
-//        return mapper.toResponse(empleado);
-//    }
-//
-//    @Override
-//    public List<EmpleadoResponse> registrarEmpleados(List<RegistrarEmpleadoRequest> nuevosEmpleados) {
-//        return nuevosEmpleados.stream()
-//                .map(this::registrarEmpleado)
-//                .toList();
-//    }
-//
-//    @Override
-//    public EmpleadoResponse registrarEmpleado(RegistrarEmpleadoRequest nuevoEmpleado) {
-//        Empleado empleado = mapper.toEntity(nuevoEmpleado);
-//        empleado.setEstadoOperativo(EstadoOperativo.POSTULANTE);
-//        return mapper.toResponse(repository.save(empleado));
-//    }
-//
 //    @Override
 //    public void cambiarEstadoOperativo(Long idEmpleado) {
 //        Empleado empleado = repository.findById(idEmpleado)
