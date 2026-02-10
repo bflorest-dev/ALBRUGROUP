@@ -9,6 +9,5 @@ import java.time.LocalDate;
 @AllArgsConstructor @NoArgsConstructor
 public class CerrarContratoRequest {
 
-    @NotBlank
-    private LocalDate fechaFin;
+    @NotBlank private LocalDate fechaFin;
 }

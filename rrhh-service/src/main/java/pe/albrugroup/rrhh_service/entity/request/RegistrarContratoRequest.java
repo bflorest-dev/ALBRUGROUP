@@ -1,12 +1,8 @@
 package pe.albrugroup.rrhh_service.entity.request;
 
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Digits;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Null;
+import jakarta.validation.constraints.*;
 import lombok.*;
-import pe.albrugroup.rrhh_service.entity.enums.Regimen;
-import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
+import pe.albrugroup.rrhh_service.entity.enums.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -18,6 +14,9 @@ public class RegistrarContratoRequest {
     // PUESTO DE TRABAJO
     @NotNull private PuestoTrabajo puestoTrabajo;
     @NotNull private Regimen regimen;
+    @NotNull private Modalidad modalidad;
+    @NotNull private SeguroSalud seguroSalud;
+    @NotNull private SistemaPensiones sistemaPensiones;
     @NotNull @DecimalMin(value = "0.00", inclusive = false)
     @Digits(integer = 10, fraction = 2)
     private BigDecimal sueldoBase;

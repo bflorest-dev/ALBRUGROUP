@@ -1,8 +1,7 @@
 package pe.albrugroup.rrhh_service.entity.response;
 
 import lombok.*;
-import pe.albrugroup.rrhh_service.entity.enums.Regimen;
-import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
+import pe.albrugroup.rrhh_service.entity.enums.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -16,6 +15,9 @@ public class ContratoResponse {
     // PUESTO DE TRABAJO
     private PuestoTrabajo puestoTrabajo;
     private Regimen regimen;
+    private Modalidad modalidad;
+    private SeguroSalud seguroSalud;
+    private SistemaPensiones sistemaPensiones;
     private BigDecimal sueldoBase;
     // VIGENCIA
     private LocalDate fechaInicio;
