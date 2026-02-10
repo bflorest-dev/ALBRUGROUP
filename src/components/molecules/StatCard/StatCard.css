@@ -1,0 +1,45 @@
+.stat-card {
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  padding: 20px;
+  flex: 1;
+  min-width: 200px;
+  transition: all 0.2s ease;
+}
+
+.stat-card:hover {
+  border-color: #D1D5DB;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9CA3AF;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.stat-percentage {
+  font-size: 12px;
+  color: #9CA3AF;
+  font-weight: 500;
+}

@@ -1,0 +1,33 @@
+.main-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.layout-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-left: 80px;
+  transition: margin-left 0.3s ease;
+}
+
+.main-layout:has(.sidebar:hover) .layout-content {
+  margin-left: 280px;
+}
+
+.sidebar-footer {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .main-layout {
+    flex-direction: column;
+  }
+
+  .sidebar-footer {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    width: auto;
+  }
+}

@@ -1,0 +1,116 @@
+/* Formulario de baja de empleado */
+.checkout-form {
+  padding: 24px;
+  min-width: 400px;
+}
+
+.checkout-subtitle {
+  font-size: 14px;
+  color: #6B7280;
+  margin: 0 0 24px 0;
+  line-height: 1.5;
+}
+
+.checkout-subtitle strong {
+  color: #2563EB;
+  font-weight: 600;
+}
+
+.checkout-form .form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1F2937;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1F2937;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-input.textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-input.error {
+  border-color: #EF4444;
+  background-color: #FEE2E2;
+}
+
+.form-input.error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.error-message {
+  display: block;
+  font-size: 12px;
+  color: #EF4444;
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.btn-cancel,
+.btn-confirm {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-cancel {
+  background-color: #F3F4F6;
+  color: #6B7280;
+}
+
+.btn-cancel:hover {
+  background-color: #E5E7EB;
+  color: #374151;
+}
+
+.btn-confirm {
+  background-color: #2563EB;
+  color: white;
+}
+
+.btn-confirm:hover {
+  background-color: #1D4ED8;
+}
+
+.btn-confirm:active {
+  transform: scale(0.98);
+}

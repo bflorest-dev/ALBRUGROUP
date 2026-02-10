@@ -1,0 +1,302 @@
+```
+╔══════════════════════════════════════════════════════════════════════════════╗
+║          SISTEMA DE GESTIÓN DE EMPLEADOS - ARQUITECTURA GENERAL              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                           📱 APLICACIÓN REACT                                 │
+│                     (src/App.tsx → MainLayout)                                │
+└──────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                  ┌───────────────────┴───────────────────┐
+                  │                                       │
+         ┌────────▼─────────┐              ┌─────────────▼─────────┐
+         │  🎨 COMPONENTES  │              │   📊 ESTADO & DATA    │
+         └──────────────────┘              └───────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📦 CARPETA: components/layout/
+────────────────────────────────
+Responsables de la estructura de la aplicación
+
+    ┌────────────────────────────────────────────────────────┐
+    │                  MainLayout (Principal)                │
+    │  ┌──────────────────────────────────────────────────┐  │
+    │  │                                                  │  │
+    │  │  ┌──────────┐    ┌──────────────────────────┐  │  │
+    │  │  │ Sidebar  │    │   EmployeeDashboard     │  │  │
+    │  │  │          │    │  (Página Principal)     │  │  │
+    │  │  │ • Logo   │    │                        │  │  │
+    │  │  │ • Menú   │    │  ┌──────────────────┐  │  │  │
+    │  │  │ • Links  │    │  │  Header          │  │  │  │
+    │  │  │          │    │  │                  │  │  │  │
+    │  │  │ ┌──────┐ │    │  ├──────────────────┤  │  │  │
+    │  │  │ │User  │ │    │  │ Stats x 4        │  │  │  │
+    │  │  │ │Prof. │ │    │  ├──────────────────┤  │  │  │
+    │  │  │ └──────┘ │    │  │ EmployeeTable    │  │  │  │
+    │  │  │          │    │  │                  │  │  │  │
+    │  │  └──────────┘    │  ├──────────────────┤  │  │  │
+    │  │                  │  │ Pagination       │  │  │  │
+    │  │                  │  └──────────────────┘  │  │  │
+    │  │                  └────────────────────────┘  │  │
+    │  │                                              │  │
+    │  └──────────────────────────────────────────────┘  │
+    │                                                    │
+    └────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📦 CARPETA: components/common/
+──────────────────────────────
+Componentes reutilizables
+
+    ┌─────────────────────┬─────────────────────┬──────────────────────┐
+    │   StatCard          │   StatusBadge       │   EmployeeTable      │
+    │ ┌────────────────┐  │ ┌────────────────┐  │ ┌────────────────┐   │
+    │ │ Nombre         │  │ │ ● ACTIVO       │  │ │ Nombre | Pos   │   │
+    │ │ 1,248  5.6%    │  │ │ ● DE LICENCIA  │  │ │ Maria  | Líder │   │
+    │ └────────────────┘  │ │ ● CAPACITACIÓN │  │ │ Alex   | Agent │   │
+    │                     │ └────────────────┘  │ │ ............ │   │
+    │   (Reutilizable)    │   (Reutilizable)    │ │ (Reutilizable)  │   │
+    └─────────────────────┴─────────────────────┴──────────────────────┘
+                                    │
+                         ┌──────────┴──────────┐
+                         │                     │
+                    ┌────▼────┐         ┌─────▼─────┐
+                    │Pagination        │   Header   │
+                    │ 1-4 de 1248      │  Gestión   │
+                    └─────────┘        └────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📂 CARPETA: types/
+──────────────────
+Definiciones TypeScript centralizadas
+
+    index.ts
+    ├── Employee (Interfaz)
+    │   ├── id: string
+    │   ├── fullName: string
+    │   ├── position: string
+    │   ├── department: string
+    │   ├── status: EmployeeStatus
+    │   └── initials: string
+    │
+    ├── EmployeeStatus (Type)
+    │   └── 'ACTIVO' | 'DE LICENCIA' | 'CAPACITACIÓN'
+    │
+    ├── Statistic (Interfaz)
+    │   ├── label: string
+    │   ├── value: number
+    │   └── percentage?: number
+    │
+    ├── PaginationInfo (Interfaz)
+    │   ├── currentPage: number
+    │   ├── totalItems: number
+    │   ├── itemsPerPage: number
+    │   └── totalPages: number
+    │
+    └── UserProfile (Interfaz)
+        ├── name: string
+        ├── role: string
+        └── avatar?: string
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🎣 CARPETA: hooks/
+──────────────────
+Lógica reutilizable
+
+    usePagination.ts
+    └── usePagination({ totalItems, itemsPerPage })
+        ├── currentPage
+        ├── totalPages
+        ├── startIndex, endIndex
+        ├── goToPage(page)
+        ├── nextPage()
+        └── prevPage()
+
+═══════════════════════════════════════════════════════════════════════════════
+
+⚙️  CARPETA: utils/
+──────────────────
+Funciones y datos auxiliares
+
+    ├── mockData.ts
+    │   ├── mockEmployees (Array<Employee>)
+    │   ├── mockStatistics (Array<Statistic>)
+    │   ├── mockUserProfile (UserProfile)
+    │   ├── ITEMS_PER_PAGE = 4
+    │   └── TOTAL_ITEMS = 1248
+    │
+    └── constants.ts
+        ├── EMPLOYEE_STATUS_COLORS
+        │   ├── 'ACTIVO': '#10B981'
+        │   ├── 'DE LICENCIA': '#F59E0B'
+        │   └── 'CAPACITACIÓN': '#3B82F6'
+        │
+        └── EMPLOYEE_STATUS_BG_COLORS
+            ├── 'ACTIVO': '#D1FAE5'
+            ├── 'DE LICENCIA': '#FEF3C7'
+            └── 'CAPACITACIÓN': '#DBEAFE'
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🎨 DISEÑO VISUAL
+────────────────
+
+    Dashboard Layout:
+    
+    ┌──────────────────────────────────────────────────────────────────┐
+    │ 🔔 ⚙️                   Gestión de Empleados              │
+    │ Visión ejecutiva del directorio de personal y estados...         │
+    └──────────────────────────────────────────────────────────────────┘
+    
+    ┌─────────┬─────────┬──────────┬────────────┐
+    │  1248   │  1120   │   84     │     44     │
+    │ Total   │ Activos │ Licencia │Capacitación│
+    │ +5.6%   │ 90%     │ 5.4%     │            │
+    └─────────┴─────────┴──────────┴────────────┘
+    
+    ┌───────────────────────────────────────────┐
+    │ DIRECTORIO DE PERSONAL         🔽 ⬇️     │
+    ├───────────┬─────────┬──────────┬─────────┤
+    │ NOMBRE    │POSICIÓN │ DEPTO    │ ESTADO  │
+    ├───────────┼─────────┼──────────┼─────────┤
+    │ AJ Alex J │ Agente  │ Soporte  │ ● Activo│
+    │ MG María  │ Líder   │ Factura  │ ● Activo│
+    │ JW James  │ Junior  │ Soporte  │ ● Licen │
+    │ RT Robert │ Pasante │ Gamma    │ ●Cap.   │
+    ├───────────┴─────────┴──────────┴─────────┤
+    │ 1-4 de 1,248        PREV [1] [2] [3] NEXT│
+    └───────────────────────────────────────────┘
+    
+    Sidebar:
+    ┌─────────────┐
+    │ ✓ Connect   │
+    │             │
+    │ 👥 Empleados│ ← Activo
+    │ 🎯 Recluta. │
+    │ 📊 Reportes │
+    │ ⏰ Horario   │
+    │             │
+    │ ┌─────────┐ │
+    │ │CM Carlos│ │
+    │ │ADMINIST │ │
+    │ └─────────┘ │
+    └─────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🔄 FLUJO DE DATOS
+─────────────────
+
+    Estado Global:
+    ├── currentPage (useState)
+    ├── searchTerm (useState)
+    └── Datos mockeados (mockData.ts)
+    
+    Derivados:
+    ├── paginatedEmployees (useMemo)
+    └── pagination (usePagination hook)
+    
+    Comunicación:
+    ├── Props tipadas
+    ├── Callbacks (onAction, onPageChange)
+    └── Event handlers
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📱 RESPONSIVIDAD
+────────────────
+
+    Desktop (>768px):
+    ┌────────┬─────────────────────┐
+    │Sidebar │  Contenido Principal │
+    │        │                     │
+    │(Fixed) │  (Flexible)         │
+    └────────┴─────────────────────┘
+    
+    Mobile (<768px):
+    ┌──────────────────────┐
+    │ Contenido Principal   │
+    ├──────────────────────┤
+    │ Sidebar (Adaptado)    │
+    └──────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🚀 FLUJO DE EJECUCIÓN
+─────────────────────
+
+    1. npm run dev
+       ↓
+    2. src/main.tsx (Entry point)
+       ↓
+    3. React monta App.tsx
+       ↓
+    4. App → MainLayout
+       ↓
+    5. MainLayout → Sidebar + EmployeeDashboard
+       ↓
+    6. EmployeeDashboard → Header + Stats + Table + Pagination
+       ↓
+    7. Componentes render con datos mockeados
+       ↓
+    8. ✅ Interfaz visible en navegador
+
+═══════════════════════════════════════════════════════════════════════════════
+
+✨ CARACTERÍSTICAS CLAVE
+────────────────────────
+
+    ✅ TypeScript Strict Mode      Validación de tipos total
+    ✅ Componentes Funcionales     Hooks modernos
+    ✅ CSS Modular                 Estilos aislados por componente
+    ✅ Paginación                  Control de datos eficiente
+    ✅ Estados Dinámicos           Visualización clara
+    ✅ Responsive Design            Adaptable a todos los dispositivos
+    ✅ Accesibilidad               Atributos HTML semánticos
+    ✅ Performance Optimizado       useMemo y renders eficientes
+    ✅ Documentación Completa      README, guías y ejemplos
+
+═══════════════════════════════════════════════════════════════════════════════
+
+📚 ARCHIVOS DE CONFIGURACIÓN
+────────────────────────────
+
+    package.json          → Dependencias y scripts
+    tsconfig.json         → Configuración TypeScript
+    tsconfig.app.json     → Config app (strict mode)
+    tsconfig.node.json    → Config herramientas
+    vite.config.ts        → Configuración Vite
+    eslint.config.js      → Reglas de linting
+    index.html            → HTML base
+
+═══════════════════════════════════════════════════════════════════════════════
+
+🎯 PRÓXIMA INTEGRACIÓN API
+──────────────────────────
+
+    Actualmente: mockData.ts
+    ↓
+    Futuro: API Backend
+    
+    Pasos:
+    1. Crear src/services/employeeService.ts
+    2. Implementar fetchEmployees()
+    3. Usar useFetchEmployees hook
+    4. Reemplazar mockData
+    
+    Ver: EJEMPLOS_INTEGRACION_API.ts
+
+═══════════════════════════════════════════════════════════════════════════════
+
+```
+
+---
+
+**Fecha**: 5 de febrero de 2026
+**Versión**: 1.0.0
+**Estado**: ✅ COMPLETADO Y FUNCIONAL
