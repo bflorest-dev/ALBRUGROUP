@@ -1,6 +1,7 @@
 package pe.albrugroup.rrhh_service.exception;
 
 import org.springframework.context.support.DefaultMessageSourceResolvable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -77,6 +78,39 @@ public class GlobalExceptionHandler {
                 "message", e.getMessage()
         ));
     }
+
+    // VIOLACIONES DE INTEGRIDAD (UNIQUE CONSTRAINTS, FK, etc)
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(DataIntegrityViolationException e) {
+        Map<String, Object> body = new LinkedHashMap<>();
+
+        // Mapa de constraints a mensajes amigables
+        Map<String, String> constraintMessages = Map.of(
+                "UK_EMPLEADO_NUMERO_DOCUMENTO", "El número de documento ya está registrado",
+                "UK_EMPLEADO_CELULAR_PERSONAL", "El celular personal ya está registrado",
+                "UK_EMPLEADO_CORREO_PERSONAL", "El correo personal ya está registrado"
+                // Aquí puedes agregar más constraints de otras entidades
+        );
+
+        String message = "Ya existe un registro con estos datos";
+        String errorMsg = e.getMostSpecificCause().getMessage();
+
+        // Buscar qué constraint fue violado
+        if (errorMsg != null) {
+            message = constraintMessages.entrySet().stream()
+                    .filter(entry -> errorMsg.contains(entry.getKey()))
+                    .map(Map.Entry::getValue)
+                    .findFirst()
+                    .orElse(message);
+        }
+
+        body.put("status", HttpStatus.CONFLICT.value());
+        body.put("error", "Conflict");
+        body.put("message", message);
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    }
+
     // CATCH-ALL - Exceptions No Mapeados
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleUnexpected(Exception e) {

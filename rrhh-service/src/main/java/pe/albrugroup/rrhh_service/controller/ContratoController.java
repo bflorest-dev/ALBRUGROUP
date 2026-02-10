@@ -22,7 +22,7 @@ public class ContratoController {
 
     private final IContrato contratoService;
 
-    @GetMapping("/{id}/vigentes")
+    @GetMapping("/{id}/historico")
     public ResponseEntity<List<ContratoResponse>> listarContratosEmpleado(@PathVariable @Positive Long id) {
         return ResponseEntity.ok(contratoService.listarContratosEmpleado(id));
     }

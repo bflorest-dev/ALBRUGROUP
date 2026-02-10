@@ -36,8 +36,8 @@ public class DataLoader implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if(empleadoRepository.count() == 0) { crearEmpleados(); }
-        if(postulanteRepository.count() == 0) { crearPostulantes(); }
+//        if(empleadoRepository.count() == 0) { crearEmpleados(); }
+//        if(postulanteRepository.count() == 0) { crearPostulantes(); }
 //        if(contratoRepository.count() == 0) { crearContratos(); }
 //        if(pagoRepository.count() == 0) { crearPagos(); }
     }

@@ -30,20 +30,6 @@ public class ContratoService implements IContrato {
     private final ContratoMapper mapper;
 
     @Transactional(readOnly = true) @Override
-    public List<ContratoResponse> listarContratosVigentes() {
-        LocalDate hoy = LocalDate.now();
-        return contratoRepository.findContratosVigentes(hoy).stream()
-                .map(mapper::toResponse)
-                .toList();
-    }
-    @Transactional(readOnly = true) @Override
-    public List<ContratoResponse> listarContratosVencidos() {
-        LocalDate hoy = LocalDate.now();
-        return contratoRepository.findContratosVencidos(hoy).stream()
-                .map(mapper::toResponse)
-                .toList();
-    }
-    @Transactional(readOnly = true) @Override
     public List<ContratoResponse> listarContratosEmpleado(Long idEmpleado) {
         return contratoRepository.findByEmpleadoId(idEmpleado).stream()
                 .map(mapper::toResponse)
@@ -51,8 +37,8 @@ public class ContratoService implements IContrato {
     }
     @Transactional(readOnly = true) @Override
     public ContratoResponse getContratoVigente(Long idEmpleado) {
-        LocalDate hoy = LocalDate.now();
-        Contrato contrato = contratoRepository.findContratoVigenteByEmpleadoId(idEmpleado, hoy)
+        Contrato contrato = contratoRepository
+                .findContratoVigenteByEmpleadoId(idEmpleado, LocalDate.now())
                 .orElseThrow(() -> new ContratoNotFoundException(idEmpleado));
         return mapper.toResponse(contrato);
     }
@@ -60,7 +46,7 @@ public class ContratoService implements IContrato {
     public ContratoResponse registrarContrato(Long idEmpleado, RegistrarContratoRequest nuevoContrato) {
         Empleado empleado = empleadoRepository.findById(idEmpleado)
                 .orElseThrow(() -> new EmpleadoNotFoundException(idEmpleado));
-
+        validarDatosCompletosEmpleado(empleado);
         LocalDate fechaInicioNuevo = nuevoContrato.getFechaInicio();
         LocalDate fechaCierreAnterior = fechaInicioNuevo.minusDays(1);
         contratoRepository.findContratoVigenteByEmpleadoId(idEmpleado, fechaInicioNuevo)
@@ -70,43 +56,46 @@ public class ContratoService implements IContrato {
         contrato.setEmpleado(empleado);
         return mapper.toResponse(contratoRepository.save(contrato));
     }
-    private List<String> camposFaltantesEmpleado(Empleado e) {
+    private void validarDatosCompletosEmpleado(Empleado e) {
         List<String> faltantes = new ArrayList<>();
 
-        if (e.getNombres() == null) faltantes.add("nombres");
-        if (e.getApellidos() == null) faltantes.add("apellidos");
+        if (e.getNombres() == null || e.getNombres().isBlank()) faltantes.add("nombres");
+        if (e.getApellidos() == null || e.getApellidos().isBlank()) faltantes.add("apellidos");
         if (e.getTipoDocumento() == null) faltantes.add("tipoDocumento");
-        if (e.getNumeroDocumento() == null) faltantes.add("numeroDocumento");
+        if (e.getNumeroDocumento() == null || e.getNumeroDocumento().isBlank()) faltantes.add("numeroDocumento");
+        if(e.getNacionalidad() == null) faltantes.add("nacionalidad");
         if (e.getFechaNacimiento() == null) faltantes.add("fechaNacimiento");
-        if (e.getCelularPersonal() == null) faltantes.add("celularPersonal");
-        if (e.getCorreoPersonal() == null) faltantes.add("correoPersonal");
-        if (e.getBanco() == null) faltantes.add("banco");
-        if (e.getCuentaBancaria() == null) faltantes.add("cuentaBancaria");
-        if (!faltantes.isEmpty()) {
-            throw new EmpleadoIncompletoException(e.getId(), faltantes);
-        }
-        return faltantes;
+        if(e.getEstadoCivil() == null) faltantes.add("estadoCivil");
+        if(e.getTieneHijos() == null) faltantes.add("tieneHijos");
+        if (e.getCelularPersonal() == null || e.getCelularPersonal().isBlank()) faltantes.add("celularPersonal");
+        if (e.getCorreoPersonal() == null || e.getCorreoPersonal().isBlank()) faltantes.add("correoPersonal");
+        if(e.getDistrito() == null) faltantes.add("distrito");
+        if(e.getDireccion() == null || e.getDireccion().isBlank()) faltantes.add("direccion");
+        if(e.getBanco() == null) faltantes.add("banco");
+        if(e.getCuentaBancaria() == null || e.getCuentaBancaria().isBlank()) faltantes.add("cuentaBancaria");
+        if(e.getCuentaInterbancaria() == null || e.getCuentaInterbancaria().isBlank()) faltantes.add("cuentaInterbancaria");
+
+        if (!faltantes.isEmpty()) throw new EmpleadoIncompletoException(e.getId(), faltantes);
     }
 
     @Override
-    public ContratoResponse cerrarContrato(Long idEmpleado, CerrarContratoRequest contratoCerrado) {
+    public ContratoResponse finalizarContrato(Long idEmpleado, CerrarContratoRequest contratoCerrado) {
         LocalDate fechaFin = contratoCerrado.getFechaFin();
         Contrato contrato = contratoRepository.findContratoVigenteByEmpleadoId(idEmpleado, fechaFin)
                 .orElseThrow(() -> new ContratoActivoNotFoundException(idEmpleado));
+
         if(fechaFin.isBefore(contrato.getFechaInicio())) throw new FechaFinInvalidException();
         mapper.updateFechaFinContrato(contratoCerrado, contrato);
-        LocalDate diaSiguiente = fechaFin.plusDays(1);
-        if (!contratoRepository.tieneContratosVigentes(idEmpleado, diaSiguiente)) {
-            Empleado empleado = contrato.getEmpleado();
-            empleado.setEstadoOperativo(EstadoOperativo.INACTIVO);
-        }
+
+        Empleado empleado = contrato.getEmpleado();
+        empleado.setEstadoOperativo(EstadoOperativo.INACTIVO);
         return mapper.toResponse(contrato);
     }
 
     @Override
-    public List<ContratoResponse> registrarContratos(List<Long> idEmpleados,
+    public void registrarContratos(List<Long> idEmpleados,
                                                      List<RegistrarContratoRequest> nuevosContratosVigentes) {
-        return IntStream.range(0, idEmpleados.size())
+        IntStream.range(0, idEmpleados.size())
                 .mapToObj(i -> registrarContrato(
                         idEmpleados.get(i),
                         nuevosContratosVigentes.get(i)
