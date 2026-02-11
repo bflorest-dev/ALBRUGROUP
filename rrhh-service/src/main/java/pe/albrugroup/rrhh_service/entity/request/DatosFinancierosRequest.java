@@ -10,10 +10,7 @@ import pe.albrugroup.rrhh_service.entity.enums.Banco;
 public class DatosFinancierosRequest {
 
     // INFORMACION FINANCIERA
-    @NotNull
-    private Banco banco;
-    @NotBlank
-    private String cuentaBancaria;
-    @NotBlank
-    private String cuentaInterbancaria;
+    @NotNull private Banco banco;
+    @NotBlank private String cuentaBancaria;
+    @NotBlank private String cuentaInterbancaria;
 }

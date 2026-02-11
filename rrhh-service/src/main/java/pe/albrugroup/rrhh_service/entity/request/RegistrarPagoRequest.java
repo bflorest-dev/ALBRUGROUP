@@ -1,5 +1,6 @@
 package pe.albrugroup.rrhh_service.entity.request;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -13,8 +14,10 @@ public class RegistrarPagoRequest {
     private LocalDate fechaInicio;
     private LocalDate fechaFin;
     // ABONO
-    private BigDecimal sueldoBase;
-    private BigDecimal asignacionFamiliar;
-    private BigDecimal comision;
-    private BigDecimal sueldoTotal;
+    @NotNull private BigDecimal sueldoBase;
+    @NotNull private BigDecimal asignacionFamiliar;
+    @NotNull private BigDecimal bonoPuntualidad;
+    @NotNull private BigDecimal comisionSemanal;
+    @NotNull private BigDecimal comisionMensual;
+    @NotNull private BigDecimal bonoExtra;
 }

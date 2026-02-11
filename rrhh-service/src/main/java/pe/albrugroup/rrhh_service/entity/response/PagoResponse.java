@@ -1,5 +1,6 @@
 package pe.albrugroup.rrhh_service.entity.response;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -17,6 +18,9 @@ public class PagoResponse {
     // ABONO
     private BigDecimal sueldoBase;
     private BigDecimal asignacionFamiliar;
-    private BigDecimal comision;
+    private BigDecimal bonoPuntualidad;
+    private BigDecimal comisionSemanal;
+    private BigDecimal comisionMensual;
+    private BigDecimal bonoExtra;
     private BigDecimal sueldoTotal;
 }

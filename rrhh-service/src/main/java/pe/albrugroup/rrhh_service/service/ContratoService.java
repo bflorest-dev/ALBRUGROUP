@@ -67,9 +67,8 @@ public class ContratoService implements IContrato {
             boolean hayContratosFuturos = contratoRepository.existenContratosFuturos(idEmpleado, fechaInicio);
             if (hayContratosFuturos) {
                 throw new ContratoConflictoException(
-                        "No se puede registrar un contrato indefinido que comienza en " + fechaInicio +
-                                " porque ya existen contratos programados para fechas posteriores. " +
-                                "Por favor, especifica una fecha de fin para este contrato."
+                        "Existe contrato vigente con fecha posterior a " + fechaInicio +
+                        ". Por favor, especifica una fecha de fin para este contrato."
                 );
             }
         }
@@ -123,11 +122,11 @@ public class ContratoService implements IContrato {
 
     @Override
     public void registrarContratos(List<Long> idEmpleados,
-                                                     List<RegistrarContratoRequest> nuevosContratosVigentes) {
+                                   List<RegistrarContratoRequest> nuevosContratosVigentes) {
         IntStream.range(0, idEmpleados.size())
-                .mapToObj(i -> registrarContrato(
+                .forEach(i -> registrarContrato(
                         idEmpleados.get(i),
                         nuevosContratosVigentes.get(i)
-                )).toList();
+                ));
     }
 }

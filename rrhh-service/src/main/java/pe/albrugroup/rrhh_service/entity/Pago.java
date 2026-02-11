@@ -32,6 +32,6 @@ public class Pago {
     private BigDecimal comisionMensual;
     @Column(name = "bono_extra", precision = 5, scale = 2)
     private BigDecimal bonoExtra;
-    @Column(precision = 10, scale = 2, nullable = false)
+    @Column(name = "sueldo_total", precision = 10, scale = 2)
     private BigDecimal sueldoTotal;
 }
