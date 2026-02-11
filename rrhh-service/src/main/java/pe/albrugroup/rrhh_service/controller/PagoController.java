@@ -11,6 +11,7 @@ import pe.albrugroup.rrhh_service.entity.request.RegistrarPagoRequest;
 import pe.albrugroup.rrhh_service.entity.response.PagoResponse;
 import pe.albrugroup.rrhh_service.usecase.IPago;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController @Validated
@@ -21,14 +22,16 @@ public class PagoController {
 
     private final IPago pagoService;
 
-    @GetMapping("/{id}/contrato")
-    public ResponseEntity<List<PagoResponse>>  listarPagosPorContrato(@PathVariable Long id) {
-        return ResponseEntity.ok(pagoService.getPagosPorContrato(id));
+    @GetMapping
+    public ResponseEntity<List<PagoResponse>> getPagos(
+            @RequestParam(required = false) @Positive Long contrato,
+            @RequestParam(required = false) @Positive Long empleado,
+            @RequestParam(required = false) LocalDate desde,
+            @RequestParam(required = false) LocalDate hasta)
+    {
+        return ResponseEntity.ok(pagoService.getPagos(contrato, empleado, desde, hasta));
     }
-    @GetMapping("/{id}/empleado")
-    public ResponseEntity<List<PagoResponse>>  listarPagosPorEmpleado(@PathVariable Long id) {
-        return ResponseEntity.ok(pagoService.getPagosPorEmpleado(id));
-    }
+
     @PostMapping("/{id}/pagar-contrato")
     public ResponseEntity<PagoResponse> registrarPago(@RequestBody RegistrarPagoRequest request,
                                                       @PathVariable @Positive Long id) {

@@ -9,7 +9,6 @@ import pe.albrugroup.rrhh_service.entity.request.RegistrarPagoRequest;
 import pe.albrugroup.rrhh_service.entity.response.PagoResponse;
 import pe.albrugroup.rrhh_service.exception.ContratoConflictoException;
 import pe.albrugroup.rrhh_service.exception.ContratoNotFoundException;
-import pe.albrugroup.rrhh_service.exception.PagoContratoInactivoException;
 import pe.albrugroup.rrhh_service.service.mapper.PagoMapper;
 import pe.albrugroup.rrhh_service.repository.ContratoRepository;
 import pe.albrugroup.rrhh_service.repository.PagoRepository;
@@ -30,8 +29,13 @@ public class PagoService implements IPago {
     private final PagoMapper mapper;
 
     @Transactional(readOnly = true) @Override
-    public List<PagoResponse> getPagosContratoEmpleado(Long idContrato, Long idEmpleado) {
-        return List.of();
+    public List<PagoResponse> getPagos(Long idContrato, Long idEmpleado,
+                                                       LocalDate desde, LocalDate hasta)
+    {
+        return pagoRepository.getPagosContratoEmpleadoFechas(idContrato, idEmpleado, desde, hasta)
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
     }
 
     @Override

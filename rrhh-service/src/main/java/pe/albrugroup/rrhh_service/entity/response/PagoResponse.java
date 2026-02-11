@@ -1,6 +1,5 @@
 package pe.albrugroup.rrhh_service.entity.response;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.math.BigDecimal;

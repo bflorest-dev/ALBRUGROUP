@@ -35,8 +35,6 @@ public class PostulanteService implements IPostulante {
     private final PostulanteMapper postulanteMapper;
     private final EmpleadoMapper  empleadoMapper;
 
-    public Boolean DataBaseIsEmpty() { return postulanteRepository.count() == 0; }
-
     @Transactional(readOnly = true) @Override
     public List<PostulanteResponse> getPostulantesEstadoFechas(
             EstadoPostulacion e, LocalDate d, LocalDate h)

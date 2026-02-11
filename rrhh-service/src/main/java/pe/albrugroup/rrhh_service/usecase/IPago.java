@@ -4,12 +4,13 @@ import org.springframework.stereotype.Component;
 import pe.albrugroup.rrhh_service.entity.request.RegistrarPagoRequest;
 import pe.albrugroup.rrhh_service.entity.response.PagoResponse;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Component
 public interface IPago {
 
-    List<PagoResponse> getPagosContratoEmpleado(Long idContrato, Long idEmpleado);
+    List<PagoResponse> getPagos(Long idContrato, Long idEmpleado, LocalDate desde, LocalDate hasta);
 
     PagoResponse registrarPago(Long idContrato, RegistrarPagoRequest nuevoPago);
     void registrarPagos(List<Long> idContratos, List<RegistrarPagoRequest> nuevosPagos);
