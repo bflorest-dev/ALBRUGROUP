@@ -42,19 +42,48 @@ public class ContratoService implements IContrato {
                 .orElseThrow(() -> new ContratoNotFoundException(idEmpleado));
         return mapper.toResponse(contrato);
     }
-    @Override
+    @Override @Transactional
     public ContratoResponse registrarContrato(Long idEmpleado, RegistrarContratoRequest nuevoContrato) {
         Empleado empleado = empleadoRepository.findById(idEmpleado)
                 .orElseThrow(() -> new EmpleadoNotFoundException(idEmpleado));
         validarDatosCompletosEmpleado(empleado);
+
         LocalDate fechaInicioNuevo = nuevoContrato.getFechaInicio();
+        LocalDate fechaFinNuevo = nuevoContrato.getFechaFin();
+        validarNoHayConflictosDeContrato(idEmpleado, fechaInicioNuevo, fechaFinNuevo);
+
         LocalDate fechaCierreAnterior = fechaInicioNuevo.minusDays(1);
         contratoRepository.findContratoVigenteByEmpleadoId(idEmpleado, fechaInicioNuevo)
                 .ifPresent(contrato -> contrato.setFechaFin(fechaCierreAnterior));
+
         empleado.setEstadoOperativo(EstadoOperativo.ACTIVO);
         Contrato contrato = mapper.toEntity(nuevoContrato);
         contrato.setEmpleado(empleado);
         return mapper.toResponse(contratoRepository.save(contrato));
+    }
+
+    private void validarNoHayConflictosDeContrato(Long idEmpleado, LocalDate fechaInicio, LocalDate fechaFin) {
+        if (fechaFin == null) {
+            boolean hayContratosFuturos = contratoRepository.existenContratosFuturos(idEmpleado, fechaInicio);
+            if (hayContratosFuturos) {
+                throw new ContratoConflictoException(
+                        "No se puede registrar un contrato indefinido que comienza en " + fechaInicio +
+                                " porque ya existen contratos programados para fechas posteriores. " +
+                                "Por favor, especifica una fecha de fin para este contrato."
+                );
+            }
+        }
+        else {
+            boolean haySolapamiento = contratoRepository.existeSolapamientoContratos(
+                    idEmpleado, fechaInicio, fechaFin
+            );
+            if (haySolapamiento) {
+                throw new ContratoConflictoException(
+                        "El rango de fechas [" + fechaInicio + " - " + fechaFin + "] " +
+                                "se solapa con un contrato existente."
+                );
+            }
+        }
     }
     private void validarDatosCompletosEmpleado(Empleado e) {
         List<String> faltantes = new ArrayList<>();
