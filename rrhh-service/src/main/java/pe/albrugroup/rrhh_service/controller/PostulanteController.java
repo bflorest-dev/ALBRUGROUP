@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoPostulacion;
+import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.rrhh_service.entity.request.CambiosEstadoPostulacionRequest;
 import pe.albrugroup.rrhh_service.entity.request.RegistrarPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.response.PostulanteResponse;
@@ -25,10 +26,11 @@ public class PostulanteController {
     @GetMapping
     public ResponseEntity<List<PostulanteResponse>> getPostulantesPorEstadoYFechas(
             @RequestParam(required = false) EstadoPostulacion estado,
+            @RequestParam(required = false) PuestoTrabajo puesto,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta)
     {
-        return ResponseEntity.ok(postulanteService.getPostulantesEstadoFechas(estado, desde, hasta));
+        return ResponseEntity.ok(postulanteService.getPostulantesFiltrados(estado, puesto, desde, hasta));
     }
     @PostMapping
     public ResponseEntity<PostulanteResponse> registrarPostulante(@RequestBody RegistrarPostulanteRequest request) {

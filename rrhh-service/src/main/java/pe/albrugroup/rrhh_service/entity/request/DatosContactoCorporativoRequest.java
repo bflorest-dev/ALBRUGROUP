@@ -7,7 +7,7 @@ import lombok.*;
 @AllArgsConstructor @NoArgsConstructor
 public class DatosContactoCorporativoRequest {
 
-    // CONTACTO CORPORATIVO // Se agrega despues
+    // CONTACTO CORPORATIVO
     @NotBlank private String celularCorporativo;
     @NotBlank private String correoCorporativo;
 }

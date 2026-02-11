@@ -22,5 +22,5 @@ public class RegistrarContratoRequest {
     private BigDecimal sueldoBase;
     // VIGENCIA
     @NotNull private LocalDate fechaInicio;
-    @Null private LocalDate fechaFin;
+    private LocalDate fechaFin;
 }

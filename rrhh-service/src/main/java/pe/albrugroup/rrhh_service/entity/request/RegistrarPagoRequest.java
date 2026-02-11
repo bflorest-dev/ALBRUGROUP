@@ -1,5 +1,6 @@
 package pe.albrugroup.rrhh_service.entity.request;
 
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
@@ -13,11 +14,17 @@ public class RegistrarPagoRequest {
     // PERIODO
     private LocalDate fechaInicio;
     private LocalDate fechaFin;
+
     // ABONO
-    @NotNull private BigDecimal sueldoBase;
-    @NotNull private BigDecimal asignacionFamiliar;
-    @NotNull private BigDecimal bonoPuntualidad;
-    @NotNull private BigDecimal comisionSemanal;
-    @NotNull private BigDecimal comisionMensual;
-    @NotNull private BigDecimal bonoExtra;
+    @NotNull(message = "La asignación familiar es obligatoria")
+    @DecimalMin(value = "0.0", inclusive = false, message = "Asignación familiar invalida")
+    private BigDecimal asignacionFamiliar;
+    @DecimalMin(value = "0.0", inclusive = false, message = "Bono de puntualidad invalido")
+    private BigDecimal bonoPuntualidad;
+    @DecimalMin(value = "0.0", inclusive = false, message = "Comisión semanal invalida")
+    private BigDecimal comisionSemanal;
+    @DecimalMin(value = "0.0", inclusive = false, message = "Comisión mensual invalida")
+    private BigDecimal comisionMensual;
+    @DecimalMin(value = "0.0", inclusive = false, message = "Bono extra invalido")
+    private BigDecimal bonoExtra;
 }

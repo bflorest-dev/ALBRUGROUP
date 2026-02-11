@@ -2,6 +2,7 @@ package pe.albrugroup.rrhh_service.usecase;
 
 import org.springframework.stereotype.Component;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoPostulacion;
+import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.rrhh_service.entity.request.CambiosEstadoPostulacionRequest;
 import pe.albrugroup.rrhh_service.entity.request.RegistrarPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.response.PostulanteResponse;
@@ -12,7 +13,8 @@ import java.util.List;
 @Component
 public interface IPostulante {
 
-    List<PostulanteResponse> getPostulantesEstadoFechas(EstadoPostulacion estado, LocalDate desde, LocalDate hasta);
+    List<PostulanteResponse> getPostulantesFiltrados(
+            EstadoPostulacion estado, PuestoTrabajo puesto, LocalDate desde, LocalDate hasta);
     PostulanteResponse registrarPostulante(RegistrarPostulanteRequest nuevoPostulante);
     List<PostulanteResponse> actualizarEstadosPostulacion(CambiosEstadoPostulacionRequest cambios);
 }

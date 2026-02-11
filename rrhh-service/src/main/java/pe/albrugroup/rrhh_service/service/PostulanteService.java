@@ -9,6 +9,7 @@ import pe.albrugroup.rrhh_service.entity.Empleado;
 import pe.albrugroup.rrhh_service.entity.Postulante;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoPostulacion;
+import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.rrhh_service.entity.request.CambioEstadoPostulacionItem;
 import pe.albrugroup.rrhh_service.entity.request.CambiosEstadoPostulacionRequest;
 import pe.albrugroup.rrhh_service.entity.request.RegistrarPostulanteRequest;
@@ -36,14 +37,13 @@ public class PostulanteService implements IPostulante {
     private final EmpleadoMapper  empleadoMapper;
 
     @Transactional(readOnly = true) @Override
-    public List<PostulanteResponse> getPostulantesEstadoFechas(
-            EstadoPostulacion e, LocalDate d, LocalDate h)
-    {
-        EstadoPostulacion estado = e != null ? e : EstadoPostulacion.EN_PROCESO;
-        LocalDate haceUnMes = d != null ? d : LocalDate.now().minusMonths(1);
-        LocalDate dentroUnMes = h != null ? h : LocalDate.now().plusMonths(1);
-
-        return postulanteRepository.findByEstadoPostulacionAndFechaInicioBetween(estado, haceUnMes, dentroUnMes)
+    public List<PostulanteResponse> getPostulantesFiltrados(
+            EstadoPostulacion estado,
+            PuestoTrabajo puesto,
+            LocalDate desde,
+            LocalDate hasta
+    ) {
+        return postulanteRepository.getPostulantes(estado, puesto, desde, hasta)
                 .stream()
                 .map(postulanteMapper::toResponse)
                 .toList();

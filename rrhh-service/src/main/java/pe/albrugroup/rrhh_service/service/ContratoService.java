@@ -111,8 +111,6 @@ public class ContratoService implements IContrato {
         LocalDate fechaFin = contratoCerrado.getFechaFin();
         Contrato contrato = contratoRepository.findContratoVigenteByEmpleadoId(idEmpleado, fechaFin)
                 .orElseThrow(() -> new ContratoActivoNotFoundException(idEmpleado));
-
-        if(fechaFin.isBefore(contrato.getFechaInicio())) throw new FechaFinInvalidException();
         mapper.updateFechaFinContrato(contratoCerrado, contrato);
 
         Empleado empleado = contrato.getEmpleado();

@@ -12,6 +12,6 @@ import java.util.List;
 @Getter @Setter
 @AllArgsConstructor @NoArgsConstructor
 public class CambiosEstadoPostulacionRequest {
-    @NotEmpty @Valid
-    List<CambioEstadoPostulacionItem> cambios;
+
+    @NotEmpty @Valid List<CambioEstadoPostulacionItem> cambios;
 }

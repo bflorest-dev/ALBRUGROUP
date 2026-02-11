@@ -14,6 +14,7 @@ import pe.albrugroup.rrhh_service.repository.ContratoRepository;
 import pe.albrugroup.rrhh_service.repository.PagoRepository;
 import pe.albrugroup.rrhh_service.usecase.IPago;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
@@ -43,7 +44,24 @@ public class PagoService implements IPago {
         Contrato contrato = contratoRepository.findById(idContrato)
                 .orElseThrow(() -> new ContratoNotFoundException(idContrato));
         Pago pago = mapper.toEntity(nuevoPago);
-
+        validarPeriodoAPagar(nuevoPago, pago);
+        validarPagoDentroDelContrato(contrato, pago.getFechaInicio(), pago.getFechaFin());
+        calcularPagoTotal(pago, contrato);
+        pago.setContrato(contrato);
+        return mapper.toResponse(pagoRepository.save(pago));
+    }
+    private void validarPagoDentroDelContrato(Contrato contrato, LocalDate pagoInicio, LocalDate pagoFin) {
+        if (pagoInicio.isBefore(contrato.getFechaInicio())) {
+            throw new ContratoConflictoException("El pago no puede iniciar antes del contrato (" + contrato.getFechaInicio() + ")");
+        }
+        if (contrato.getFechaFin() != null && pagoFin.isAfter(contrato.getFechaFin())) {
+            throw new ContratoConflictoException("El pago no puede terminar después del contrato (" + contrato.getFechaFin() + ")");
+        }
+        if (pagoFin.isBefore(pagoInicio)) {
+            throw new ContratoConflictoException("La fecha de fin no puede ser anterior a la fecha de inicio");
+        }
+    }
+    private void validarPeriodoAPagar(RegistrarPagoRequest nuevoPago, Pago pago) {
         LocalDate fechaInicio = nuevoPago.getFechaInicio();
         LocalDate fechaFin = nuevoPago.getFechaFin();
         // PERIODO DE PAGO
@@ -70,21 +88,17 @@ public class PagoService implements IPago {
             pago.setFechaInicio(fechaInicio);
             pago.setFechaFin(fechaFin);
         }
-
-        validarPagoDentroDelContrato(contrato, pago.getFechaInicio(), pago.getFechaFin());
-        pago.setContrato(contrato);
-        return mapper.toResponse(pagoRepository.save(pago));
     }
-    private void validarPagoDentroDelContrato(Contrato contrato, LocalDate pagoInicio, LocalDate pagoFin) {
-        if (pagoInicio.isBefore(contrato.getFechaInicio())) {
-            throw new ContratoConflictoException("El pago no puede iniciar antes del contrato (" + contrato.getFechaInicio() + ")");
-        }
-        if (contrato.getFechaFin() != null && pagoFin.isAfter(contrato.getFechaFin())) {
-            throw new ContratoConflictoException("El pago no puede terminar después del contrato (" + contrato.getFechaFin() + ")");
-        }
-        if (pagoFin.isBefore(pagoInicio)) {
-            throw new ContratoConflictoException("La fecha de fin no puede ser anterior a la fecha de inicio");
-        }
+    private void calcularPagoTotal(Pago pago, Contrato contrato) {
+        pago.setSueldoBase(contrato.getSueldoBase());
+        BigDecimal total = pago.getSueldoBase();
+        if (pago.getAsignacionFamiliar() != null) {total = total.add(pago.getAsignacionFamiliar());}
+        if (pago.getBonoPuntualidad() != null) {total = total.add(pago.getBonoPuntualidad());}
+        if (pago.getComisionSemanal() != null) {total = total.add(pago.getComisionSemanal());}
+        if (pago.getComisionMensual() != null) {total = total.add(pago.getComisionMensual());}
+        if (pago.getBonoExtra() != null) {total = total.add(pago.getBonoExtra());}
+
+        pago.setSueldoTotal(total);
     }
 
     @Override

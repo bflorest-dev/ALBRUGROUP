@@ -14,5 +14,5 @@ public enum PuestoTrabajo {
     SUPERVISOR_GTR,
     ASESOR_GTR,
     SUPERVISOR_POSTVENTA,
-    ASESOR_POSTVENTA,
+    ASESOR_POSTVENTA
 }
