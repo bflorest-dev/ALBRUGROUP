@@ -50,6 +50,9 @@ export interface Applicant {
   positionOfInterest: string;
   modality: string;
   campaign: string;
+  trainingDayPayment?: number;
+  startDate?: string;
+  endDate?: string;
   personalEmail?: string;
 }
 
@@ -100,6 +103,9 @@ export interface NewApplicantFormData {
   positionOfInterest: string;
   modality: string;
   campaign: string;
+  trainingDayPayment?: number;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface EditApplicantFormData extends NewApplicantFormData {

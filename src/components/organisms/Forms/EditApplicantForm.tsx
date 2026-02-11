@@ -23,6 +23,9 @@ export const EditApplicantForm = ({ applicant, onSubmit, onCancel }: EditApplica
     positionOfInterest: applicant.positionOfInterest,
     modality: applicant.modality,
     campaign: applicant.campaign,
+    trainingDayPayment: applicant.trainingDayPayment,
+    startDate: applicant.startDate || '',
+    endDate: applicant.endDate || '',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -52,6 +55,21 @@ export const EditApplicantForm = ({ applicant, onSubmit, onCancel }: EditApplica
       setFormData((prev) => ({
         ...prev,
         [name]: slicedValue,
+      }));
+    }
+    // Validar pago de capacitación: solo números
+    else if (name === 'trainingDayPayment') {
+      const numericValue = value.replace(/\D/g, '');
+      setFormData((prev) => ({
+        ...prev,
+        [name]: numericValue ? parseFloat(numericValue) : undefined,
+      }));
+    }
+    // Validar fechas
+    else if (name === 'startDate' || name === 'endDate') {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
       }));
     } else {
       setFormData((prev) => ({
@@ -190,6 +208,44 @@ export const EditApplicantForm = ({ applicant, onSubmit, onCancel }: EditApplica
             value={formData.campaign}
             onChange={handleChange}
             required
+          />
+        </div>
+      </div>
+
+      <div className="form-row">
+        <div className="form-group">
+          <label htmlFor="trainingDayPayment">PAGO DEL DÍA DE CAPACITACIÓN</label>
+          <input
+            type="number"
+            id="trainingDayPayment"
+            name="trainingDayPayment"
+            placeholder="Monto en S/."
+            value={formData.trainingDayPayment ?? ''}
+            onChange={handleChange}
+            step="0.01"
+            min="0"
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="startDate">FECHA INICIO</label>
+          <input
+            type="date"
+            id="startDate"
+            name="startDate"
+            value={formData.startDate ?? ''}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="endDate">FECHA FIN</label>
+          <input
+            type="date"
+            id="endDate"
+            name="endDate"
+            value={formData.endDate ?? ''}
+            onChange={handleChange}
           />
         </div>
       </div>
