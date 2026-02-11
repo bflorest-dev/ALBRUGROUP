@@ -8,8 +8,8 @@ import io.swagger.v3.oas.annotations.servers.Server;
 
 @OpenAPIDefinition(
         info = @Info(
-                title = "API<SpringBoot> para gestion de Empleados/Contratos/Pagos",
-                version = "1.0.1",
+                title = "API<SpringBoot> para gestion de Postulantes/Empleados/Contratos/Pagos",
+                version = "1.1.0",
                 contact = @Contact(
                         name = "Edinson Vitterio", email = "jevbxx@gmail.com",
                         url = "https://github.com/Bizzard4eva"
