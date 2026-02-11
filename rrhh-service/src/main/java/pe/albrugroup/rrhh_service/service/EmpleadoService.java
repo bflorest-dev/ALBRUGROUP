@@ -11,11 +11,8 @@ import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.request.*;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
-import pe.albrugroup.rrhh_service.entity.response.PostulanteResponse;
 import pe.albrugroup.rrhh_service.exception.EmpleadoDocumentoNotFoundException;
-import pe.albrugroup.rrhh_service.exception.EmpleadoInactivoException;
 import pe.albrugroup.rrhh_service.exception.EmpleadoNotFoundException;
-import pe.albrugroup.rrhh_service.exception.EmpleadoPostulanteException;
 import pe.albrugroup.rrhh_service.service.mapper.EmpleadoMapper;
 import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
 import pe.albrugroup.rrhh_service.usecase.IEmpleado;
@@ -51,7 +48,7 @@ public class EmpleadoService implements IEmpleado {
 
     @Override
     public void registrarEmpleados(List<RegistrarEmpleadoRequest> nuevosEmpleados) {
-        nuevosEmpleados.stream().map(this::registrarEmpleado);
+        nuevosEmpleados.forEach(this::registrarEmpleado);
     }
     @Override
     public EmpleadoResponse registrarEmpleado(RegistrarEmpleadoRequest nuevoEmpleado) {
@@ -91,18 +88,4 @@ public class EmpleadoService implements IEmpleado {
         mapper.updateDatosContactoCorporativo(datosCorporativos, empleado);
         return mapper.toResponse(empleado);
     }
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-//    @Override
-//    public void cambiarEstadoOperativo(Long idEmpleado) {
-//        Empleado empleado = repository.findById(idEmpleado)
-//                .orElseThrow(() -> new EmpleadoNotFoundException(idEmpleado));
-//        if(empleado.getEstadoOperativo() == EstadoOperativo.ACTIVO){
-//            throw new EmpleadoInactivoException(idEmpleado);
-//        }
-//        if(empleado.getEstadoOperativo() == EstadoOperativo.POSTULANTE){
-//            throw new EmpleadoPostulanteException(idEmpleado);
-//        }
-//        empleado.setEstadoOperativo(EstadoOperativo.INACTIVO);
-//    }
 }

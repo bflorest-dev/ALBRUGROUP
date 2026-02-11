@@ -9,9 +9,8 @@ import java.util.List;
 @Component
 public interface IPago {
 
-    List<PagoResponse> getPagosPorContrato(Long idContrato);
-    List<PagoResponse> getPagosPorEmpleado(Long idEmpleado);
+    List<PagoResponse> getPagosContratoEmpleado(Long idContrato, Long idEmpleado);
 
-    List<PagoResponse> registrarPagos(List<Long> idContratos, List<RegistrarPagoRequest> nuevosPagos);
     PagoResponse registrarPago(Long idContrato, RegistrarPagoRequest nuevoPago);
+    void registrarPagos(List<Long> idContratos, List<RegistrarPagoRequest> nuevosPagos);
 }
