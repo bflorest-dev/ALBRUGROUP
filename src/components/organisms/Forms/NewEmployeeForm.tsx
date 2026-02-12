@@ -153,6 +153,7 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
                 placeholder="Ingrese los nombres"
                 value={formData.nombres}
                 onChange={handleChange}
+                disabled
                 required
               />
             </div>
@@ -168,6 +169,7 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
                 placeholder="Ingrese los apellidos"
                 value={formData.apellidos}
                 onChange={handleChange}
+                disabled
                 required
               />
             </div>
@@ -181,6 +183,7 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
                 name="documentType"
                 value={formData.documentType}
                 onChange={handleChange}
+                disabled
               >
                 <option value="DNI">DNI</option>
                 <option value="CE">CE</option>
@@ -198,6 +201,7 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
                 placeholder="Número de documento"
                 value={formData.documentNumber}
                 onChange={handleChange}
+                disabled
                 required
               />
             </div>
