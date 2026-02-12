@@ -10,7 +10,6 @@ import pe.albrugroup.rrhh_service.entity.response.PostulanteResponse;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @Component
 public interface IPostulante {
