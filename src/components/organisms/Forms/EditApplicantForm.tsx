@@ -14,15 +14,10 @@ interface EditApplicantFormProps {
 }
 
 export const EditApplicantForm = ({ applicant, onSubmit, onCancel }: EditApplicantFormProps) => {
-  // Separar fullName en nombres y apellidos
-  const applicantNames = applicant.fullName ? applicant.fullName.trim().split(/\s+/) : [];
-  const apellidos = applicantNames.length > 1 ? applicantNames.slice(-1).join(' ') : '';
-  const nombres = applicantNames.length > 1 ? applicantNames.slice(0, -1).join(' ') : applicantNames[0] || '';
-
   const [formData, setFormData] = useState<EditApplicantFormData>({
     id: applicant.id,
-    nombres: nombres || '',
-    apellidos: apellidos || '',
+    nombres: '',
+    apellidos: '',
     phoneMobile: applicant.phoneMobile || '',
     documentType: (applicant.documentType as 'DNI' | 'CE') || 'DNI',
     documentNumber: applicant.documentNumber || '',
