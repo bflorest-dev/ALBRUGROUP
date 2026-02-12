@@ -101,7 +101,6 @@ export interface NewApplicantFormData {
   documentType: 'DNI' | 'CE';
   documentNumber: string;
   positionOfInterest: string;
-  modality: string;
   campaign: string;
   trainingDayPayment?: number;
   startDate?: string;
@@ -155,4 +154,117 @@ export interface EditFormProps<T = Record<string, unknown>> extends BaseFormProp
   initialData?: Partial<T>;
   isEditing?: boolean;
 }
+
+// Tipos para respuestas del backend
+export interface EmpleadoResponse {
+  id: number;
+  nombres: string;
+  apellidos: string;
+  tipoDocumento: string;
+  numeroDocumento: string;
+  nacionalidad: string;
+  fechaNacimiento: string;
+  estadoCivil: string;
+  tieneHijos: boolean;
+  celularPersonal: string;
+  correoPersonal: string;
+  celularCorporativo: string;
+  correoCorporativo: string;
+  distrito: string;
+  direccion: string;
+  banco: string;
+  cuentaBancaria: string;
+  cuentaInterbancaria: string;
+  estadoOperativo: string;
+}
+
+export interface PostulanteResponse {
+  id: number;
+  nombres: string;
+  apellidos: string;
+  tipoDocumento: string;
+  numeroDocumento: string;
+  celularPersonal: string;
+  origen: string;
+  puestoTrabajo: string;
+  estadoPostulacion: string;
+  pagoDiaCapacitacion: number;
+  fechaInicio: string;
+  fechaFin: string;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  pageable: {
+    pageNumber: number;
+    pageSize: number;
+    sort: {
+      sorted: boolean;
+      empty: boolean;
+      unsorted: boolean;
+    };
+    offset: number;
+    paged: boolean;
+    unpaged: boolean;
+  };
+  totalPages: number;
+  totalElements: number;
+  last: boolean;
+  first: boolean;
+  numberOfElements: number;
+  size: number;
+  number: number;
+  sort: {
+    sorted: boolean;
+    empty: boolean;
+    unsorted: boolean;
+  };
+  empty: boolean;
+}
+
+// Adapters para convertir respuestas del backend a modelos internos
+export const adaptEmpleadoResponseToEmployee = (backend: EmpleadoResponse): Employee => ({
+  id: backend.id.toString(),
+  initials: `${backend.nombres.charAt(0)}${backend.apellidos.charAt(0)}`.toUpperCase(),
+  fullName: `${backend.nombres} ${backend.apellidos}`,
+  position: '', // No disponible en backend
+  department: '', // No disponible
+  status: backend.estadoOperativo as EmployeeStatus,
+  documentType: backend.tipoDocumento,
+  documentNumber: backend.numeroDocumento,
+  nationality: backend.nacionalidad,
+  birthDate: backend.fechaNacimiento,
+  civilStatus: backend.estadoCivil,
+  hasChildren: backend.tieneHijos,
+  district: backend.distrito,
+  address: backend.direccion,
+  phoneFixed: '', // No disponible
+  phoneMobile: backend.celularPersonal,
+  phoneWork: backend.celularCorporativo,
+  personalEmail: backend.correoPersonal,
+  bank: backend.banco,
+  accountNumber: backend.cuentaBancaria,
+  interbankNumber: backend.cuentaInterbancaria,
+  startDate: '', // No disponible
+  endDate: '', // No disponible
+  modality: '', // No disponible
+  scheduleType: '', // No disponible
+  googleEmail: backend.correoCorporativo,
+  baseSalary: '', // No disponible
+});
+
+export const adaptPostulanteResponseToApplicant = (backend: PostulanteResponse): Applicant => ({
+  id: backend.id.toString(),
+  fullName: `${backend.nombres} ${backend.apellidos}`.trim(),
+  phoneMobile: backend.celularPersonal,
+  documentType: backend.tipoDocumento,
+  documentNumber: backend.numeroDocumento,
+  positionOfInterest: backend.puestoTrabajo,
+  modality: '', // No disponible en backend
+  campaign: backend.origen,
+  trainingDayPayment: backend.pagoDiaCapacitacion,
+  startDate: backend.fechaInicio,
+  endDate: backend.fechaFin,
+  personalEmail: '',
+});
 

@@ -41,13 +41,22 @@ export const EmployeeDashboard = () => {
   const loadInitialData = useCallback(async () => {
     try {
       setLoading(true);
-      const [employeesData, statisticsData] = await Promise.all([
-        EmployeeService.getAllEmployees(),
-        EmployeeService.getEmployeeStatistics(),
+      const employeesData = await EmployeeService.getAllEmployees();
+      
+      // Extraer empleados del objeto paginado
+      const employees = Array.isArray(employeesData) ? employeesData : employeesData.employees || [];
+      setEmployees(employees);
+      
+      // Calcular estadísticas localmente (el backend no tiene endpoint para esto)
+      const total = employees.length;
+      const active = employees.filter(e => e.status === 'ACTIVO').length;
+      const inactive = total - active;
+      
+      setStatistics([
+        { label: 'TOTAL EMPLEADOS', value: total },
+        { label: 'ACTIVOS', value: active },
+        { label: 'INACTIVOS', value: inactive },
       ]);
-
-      setEmployees(employeesData);
-      setStatistics(statisticsData);
     } catch (error) {
       handleError(error instanceof Error ? error : new Error('Error cargando datos'), {
         componentStack: 'EmployeeDashboard.loadInitialData'
@@ -102,9 +111,16 @@ export const EmployeeDashboard = () => {
       // Actualizar estado local
       setEmployees(prev => [...prev, newEmployee]);
 
-      // Actualizar estadísticas
-      const updatedStats = await EmployeeService.getEmployeeStatistics();
-      setStatistics(updatedStats);
+      // Actualizar estadísticas localmente
+      const total = [...employees, newEmployee].length;
+      const active = [...employees, newEmployee].filter(e => e.status === 'ACTIVO').length;
+      const inactive = total - active;
+      
+      setStatistics([
+        { label: 'TOTAL EMPLEADOS', value: total },
+        { label: 'ACTIVOS', value: active },
+        { label: 'INACTIVOS', value: inactive },
+      ]);
 
       setIsModalOpen(false);
       showSuccess(`Empleado ${newEmployee.fullName} registrado exitosamente`);
@@ -174,9 +190,19 @@ export const EmployeeDashboard = () => {
         emp.id === selectedEmployee.id ? updatedEmployee : emp
       ));
 
-      // Actualizar estadísticas
-      const updatedStats = await EmployeeService.getEmployeeStatistics();
-      setStatistics(updatedStats);
+      // Actualizar estadísticas localmente
+      const updatedEmployees = employees.map(emp =>
+        emp.id === selectedEmployee.id ? updatedEmployee : emp
+      );
+      const total = updatedEmployees.length;
+      const active = updatedEmployees.filter(e => e.status === 'ACTIVO').length;
+      const inactive = total - active;
+      
+      setStatistics([
+        { label: 'TOTAL EMPLEADOS', value: total },
+        { label: 'ACTIVOS', value: active },
+        { label: 'INACTIVOS', value: inactive },
+      ]);
 
       setCheckoutModalOpen(false);
       setSelectedEmployee(null);
@@ -204,15 +230,29 @@ export const EmployeeDashboard = () => {
     if (!selectedEmployee) return;
 
     try {
-      const activatedEmployee = await EmployeeService.toggleEmployeeStatus(selectedEmployee.id);
+      // Cambiar estado del empleado a ACTIVO localmente
+      const activatedEmployee = {
+        ...selectedEmployee,
+        status: 'ACTIVO' as const,
+      };
 
       setEmployees(prev => prev.map(emp =>
         emp.id === selectedEmployee.id ? activatedEmployee : emp
       ));
 
-      // Actualizar estadísticas
-      const updatedStats = await EmployeeService.getEmployeeStatistics();
-      setStatistics(updatedStats);
+      // Actualizar estadísticas localmente
+      const updatedEmployees = employees.map(emp =>
+        emp.id === selectedEmployee.id ? activatedEmployee : emp
+      );
+      const total = updatedEmployees.length;
+      const active = updatedEmployees.filter(e => e.status === 'ACTIVO').length;
+      const inactive = total - active;
+      
+      setStatistics([
+        { label: 'TOTAL EMPLEADOS', value: total },
+        { label: 'ACTIVOS', value: active },
+        { label: 'INACTIVOS', value: inactive },
+      ]);
 
       setActivateModalOpen(false);
       setSelectedEmployee(null);

@@ -23,7 +23,6 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire, onBlacklist }: App
     documentNumber: '',
     position: '',
     phone: '',
-    modality: '',
     campaign: '',
   });
 
@@ -41,7 +40,6 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire, onBlacklist }: App
       documentNumber: '',
       position: '',
       phone: '',
-      modality: '',
       campaign: '',
     });
     setActiveFilter(null);
@@ -54,7 +52,6 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire, onBlacklist }: App
     if (filters.documentNumber && !app.documentNumber.includes(filters.documentNumber)) return false;
     if (filters.position && app.positionOfInterest !== filters.position) return false;
     if (filters.phone && !app.phoneMobile.includes(filters.phone)) return false;
-    if (filters.modality && app.modality !== filters.modality) return false;
     if (filters.campaign && app.campaign !== filters.campaign) return false;
     return true;
   });
@@ -73,8 +70,8 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire, onBlacklist }: App
   // Obtener valores únicos para los selects
   const uniqueDocTypes = Array.from(new Set(applicants.map(app => app.documentType)));
   const uniquePositions = Array.from(new Set(applicants.map(app => app.positionOfInterest)));
-  const uniqueModalities = Array.from(new Set(applicants.map(app => app.modality)));
   const uniqueCampaigns = Array.from(new Set(applicants.map(app => app.campaign)));
+
   return (
     <div className="applicants-table-container">
       {/* Panel de filtros activos */}
@@ -227,35 +224,6 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire, onBlacklist }: App
                 <span>Modalidad</span>
                 <div className="filter-dropdown-container">
                   <button 
-                    className={`filter-header-btn ${activeFilter === 'modality' ? 'active' : ''}`}
-                    title="Filtrar"
-                    onClick={() => setActiveFilter(activeFilter === 'modality' ? null : 'modality')}
-                  >
-                    <BiFilter size={14} />
-                  </button>
-                  {activeFilter === 'modality' && (
-                    <div className="filter-dropdown">
-                      <select
-                        value={filters.modality}
-                        onChange={(e) => handleFilterChange('modality', e.target.value)}
-                        className="filter-select"
-                        autoFocus
-                      >
-                        <option value="">Todos</option>
-                        {uniqueModalities.map((mod) => (
-                          <option key={mod} value={mod}>{mod}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </th>
-            <th>
-              <div className="th-content">
-                <span>Campaña</span>
-                <div className="filter-dropdown-container">
-                  <button 
                     className={`filter-header-btn ${activeFilter === 'campaign' ? 'active' : ''}`}
                     title="Filtrar"
                     onClick={() => setActiveFilter(activeFilter === 'campaign' ? null : 'campaign')}
@@ -300,7 +268,6 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire, onBlacklist }: App
               <td>{applicant.documentType}</td>
               <td>{applicant.documentNumber}</td>
               <td>{applicant.positionOfInterest}</td>
-              <td>{applicant.modality}</td>
               <td>{applicant.campaign}</td>
               <td className="cell-actions">
                 <button

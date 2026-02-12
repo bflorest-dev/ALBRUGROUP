@@ -22,6 +22,7 @@ export const ApplicantsDashboard = () => {
   // Estado para postulantes
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statistics, setStatistics] = useState<Statistic[]>([]);
 
   // Estados para modales
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -209,8 +210,9 @@ export const ApplicantsDashboard = () => {
         interbankNumber: '',
       };
 
-      // Contratar postulante (esto debería crear empleado y eliminar postulante)
-      await ApplicantService.hireApplicant(selectedApplicant.id, employeeData);
+      // Nota: El backend no tiene endpoint para contratar postulantes
+      // Por ahora, solo removemos el postulante localmente
+      // TODO: Implementar en backend cuando esté disponible
 
       // Actualizar estado local
       setApplicants(prev => prev.filter(app => app.id !== selectedApplicant.id));

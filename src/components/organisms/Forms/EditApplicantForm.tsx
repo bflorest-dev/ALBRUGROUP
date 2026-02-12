@@ -16,14 +16,13 @@ interface EditApplicantFormProps {
 export const EditApplicantForm = ({ applicant, onSubmit, onCancel }: EditApplicantFormProps) => {
   const [formData, setFormData] = useState<EditApplicantFormData>({
     id: applicant.id,
-    fullName: applicant.fullName,
-    phoneMobile: applicant.phoneMobile,
-    documentType: applicant.documentType as 'DNI' | 'CE',
-    documentNumber: applicant.documentNumber,
-    positionOfInterest: applicant.positionOfInterest,
-    modality: applicant.modality,
-    campaign: applicant.campaign,
-    trainingDayPayment: applicant.trainingDayPayment,
+    fullName: applicant.fullName || '',
+    phoneMobile: applicant.phoneMobile || '',
+    documentType: (applicant.documentType as 'DNI' | 'CE') || 'DNI',
+    documentNumber: applicant.documentNumber || '',
+    positionOfInterest: applicant.positionOfInterest || '',
+    campaign: applicant.campaign || '',
+    trainingDayPayment: applicant.trainingDayPayment || undefined,
     startDate: applicant.startDate || '',
     endDate: applicant.endDate || '',
   });
@@ -83,7 +82,7 @@ export const EditApplicantForm = ({ applicant, onSubmit, onCancel }: EditApplica
     e.preventDefault();
     if (formData.fullName.trim() && formData.phoneMobile.trim() && 
         formData.documentNumber.trim() && formData.positionOfInterest.trim() && 
-        formData.modality.trim() && formData.campaign.trim()) {
+        formData.campaign.trim()) {
       onSubmit(formData);
     }
   };
@@ -179,23 +178,6 @@ export const EditApplicantForm = ({ applicant, onSubmit, onCancel }: EditApplica
       </div>
 
       <div className="form-row">
-        <div className="form-group">
-          <label htmlFor="modality">MODALIDAD <span className="required">*</span></label>
-          <select
-            id="modality"
-            name="modality"
-            value={formData.modality}
-            onChange={handleChange}
-            required
-          >
-            <option value="">Seleccionar modalidad...</option>
-            <option value="PART TIME">PART TIME</option>
-            <option value="SEMI FULL">SEMI FULL</option>
-            <option value="FULL TIME">FULL TIME</option>
-            <option value="SUPER FULL">SUPER FULL</option>
-          </select>
-        </div>
-
         <div className="form-group">
           <label htmlFor="campaign">
             CAMPAÑA <span className="required">*</span>

@@ -6,17 +6,12 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { env } from '../config/env';
 
-// Tipos para respuestas de API
-export interface ApiResponse<T = unknown> {
-  data: T;
-  message?: string;
-  success: boolean;
-}
-
+// Tipos para respuestas de API (removido ApiResponse ya que backend devuelve directamente los datos)
 export interface ApiError {
   message: string;
   code?: string;
   status?: number;
+  details?: any[];
 }
 
 // Crear instancia de Axios configurada
@@ -35,21 +30,28 @@ http.interceptors.response.use(
     return response;
   },
   (error: AxiosError) => {
-    // Manejar errores de forma centralizada
+    // Manejar errores de forma centralizada según formato del backend
     if (error.response) {
       // Error de respuesta del servidor
+      const data = error.response.data as any;
       const apiError: ApiError = {
-        message: (error.response.data as { message?: string })?.message || 'Error del servidor',
-        code: (error.response.data as { code?: string })?.code,
+        message: data.message || 'Error del servidor',
+        code: data.error,
         status: error.response.status,
+        details: data.details,
       };
 
       // Log detallado en desarrollo
       if (import.meta.env.DEV) {
-        console.error('API Error:', {
+        console.error('[HTTP Interceptor] API Error Response:', {
           status: error.response.status,
-          data: error.response.data,
-          config: error.config,
+          statusText: error.response.statusText,
+          message: data.message,
+          error: data.error,
+          details: data.details,
+          fullData: error.response.data,
+          requestUrl: error.config?.url,
+          requestData: error.config?.data,
         });
       }
 
@@ -62,7 +64,7 @@ http.interceptors.response.use(
       };
 
       if (import.meta.env.DEV) {
-        console.error('Network Error:', error.request);
+        console.error('[HTTP Interceptor] Network Error:', error.request);
       }
 
       throw networkError;
@@ -74,7 +76,7 @@ http.interceptors.response.use(
       };
 
       if (import.meta.env.DEV) {
-        console.error('Unknown Error:', error);
+        console.error('[HTTP Interceptor] Unknown Error:', error);
       }
 
       throw unknownError;

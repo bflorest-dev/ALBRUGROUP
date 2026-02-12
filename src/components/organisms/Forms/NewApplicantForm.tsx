@@ -19,7 +19,6 @@ export const NewApplicantForm = ({ onSubmit, onCancel }: NewApplicantFormProps) 
     documentType: 'DNI',
     documentNumber: '',
     positionOfInterest: '',
-    modality: 'PRESENCIAL',
     campaign: '',
     trainingDayPayment: undefined,
     startDate: '',
@@ -81,7 +80,7 @@ export const NewApplicantForm = ({ onSubmit, onCancel }: NewApplicantFormProps) 
     e.preventDefault();
     if (formData.fullName.trim() && formData.phoneMobile.trim() && 
         formData.documentNumber.trim() && formData.positionOfInterest.trim() && 
-        formData.modality.trim() && formData.campaign.trim()) {
+        formData.campaign.trim()) {
       onSubmit(formData);
     }
   };
@@ -178,35 +177,21 @@ export const NewApplicantForm = ({ onSubmit, onCancel }: NewApplicantFormProps) 
 
       <div className="form-row">
         <div className="form-group">
-          <label htmlFor="modality">MODALIDAD <span className="required">*</span></label>
-          <select
-            id="modality"
-            name="modality"
-            value={formData.modality}
-            onChange={handleChange}
-            required
-          >
-            <option value="">Seleccionar modalidad...</option>
-            <option value="PART TIME">PART TIME</option>
-            <option value="SEMI FULL">SEMI FULL</option>
-            <option value="FULL TIME">FULL TIME</option>
-            <option value="SUPER FULL">SUPER FULL</option>
-          </select>
-        </div>
-
-        <div className="form-group">
           <label htmlFor="campaign">
             CAMPAÑA <span className="required">*</span>
           </label>
-          <input
-            type="text"
+          <select
             id="campaign"
             name="campaign"
-            placeholder="Nombre de la campaña"
             value={formData.campaign}
             onChange={handleChange}
             required
-          />
+          >
+            <option value="">Selecciona una campaña</option>
+            <option value="COMPUTRABAJO">COMPUTRABAJO</option>
+            <option value="INDEED">INDEED</option>
+            <option value="REFERIDO">REFERIDO</option>
+          </select>
         </div>
       </div>
 

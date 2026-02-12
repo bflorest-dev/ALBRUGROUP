@@ -3,4 +3,4 @@
  */
 
 export { http } from './http';
-export type { ApiResponse, ApiError } from './http';
+export type { ApiError } from './http';

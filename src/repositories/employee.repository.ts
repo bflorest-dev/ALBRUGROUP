@@ -4,79 +4,91 @@
  * Solo contiene llamadas HTTP puras sin lógica de negocio
  */
 
-import { http, type ApiResponse } from '../api/http';
-import type { Employee, NewEmployeeFormData } from '../types';
+import { http } from '../api/http';
+import type { Employee, EmpleadoResponse, PageResponse } from '../types';
 
 // Tipos específicos para las respuestas de la API
-export type EmployeeApiResponse = ApiResponse<Employee>;
-export type EmployeesApiResponse = ApiResponse<Employee[]>;
-export type CreateEmployeeApiResponse = ApiResponse<Employee>;
-export type UpdateEmployeeApiResponse = ApiResponse<Employee>;
-export type DeleteEmployeeApiResponse = ApiResponse<void>;
+export type EmployeesPageResponse = PageResponse<EmpleadoResponse>;
+export type EmployeeResponse = EmpleadoResponse;
+export type CreateEmployeeResponse = EmpleadoResponse;
+export type UpdateEmployeeResponse = EmpleadoResponse;
 
 export class EmployeeRepository {
   /**
-   * Obtener todos los empleados
+   * Obtener todos los empleados con filtros y paginación
    */
-  static async getAll(): Promise<Employee[]> {
-    const response = await http.get<EmployeesApiResponse>('/employees');
-    return response.data.data;
+  static async getAll(params?: {
+    q?: string;
+    dni?: string;
+    celular?: string;
+    distrito?: string;
+    banco?: string;
+    estado?: string;
+    page?: number;
+    size?: number;
+    sort?: string;
+  }): Promise<PageResponse<EmpleadoResponse>> {
+    const response = await http.get<EmployeesPageResponse>('/empleados', { params });
+    return response.data;
   }
 
   /**
-   * Obtener empleado por ID
+   * Obtener empleado por número de documento
    */
-  static async getById(id: string): Promise<Employee> {
-    const response = await http.get<EmployeeApiResponse>(`/employees/${id}`);
-    return response.data.data;
+  static async getByDocument(documento: string): Promise<EmpleadoResponse> {
+    const response = await http.get<EmployeeResponse>(`/empleados/${documento}/numero-documento`);
+    return response.data;
+  }
+
+  /**
+   * Búsqueda universal de empleados
+   */
+  static async searchUniversal(dato: string, params?: {
+    page?: number;
+    size?: number;
+    sort?: string;
+  }): Promise<PageResponse<EmpleadoResponse>> {
+    const response = await http.get<EmployeesPageResponse>(`/empleados/${dato}/universal`, { params });
+    return response.data;
   }
 
   /**
    * Crear nuevo empleado
    */
-  static async create(employeeData: NewEmployeeFormData): Promise<Employee> {
-    const response = await http.post<CreateEmployeeApiResponse>('/employees', employeeData);
-    return response.data.data;
+  static async create(employeeData: any): Promise<EmpleadoResponse> {
+    const response = await http.post<CreateEmployeeResponse>('/empleados', employeeData);
+    return response.data;
   }
 
   /**
-   * Actualizar empleado existente
+   * Actualizar datos personales
    */
-  static async update(id: string, employeeData: Partial<Employee>): Promise<Employee> {
-    const response = await http.put<UpdateEmployeeApiResponse>(`/employees/${id}`, employeeData);
-    return response.data.data;
+  static async updatePersonalData(id: number, data: any): Promise<EmpleadoResponse> {
+    const response = await http.patch<UpdateEmployeeResponse>(`/empleados/${id}/datos-personales`, data);
+    return response.data;
   }
 
   /**
-   * Eliminar empleado
+   * Actualizar datos de contacto y ubicación
    */
-  static async delete(id: string): Promise<void> {
-    await http.delete<DeleteEmployeeApiResponse>(`/employees/${id}`);
+  static async updateContactLocation(id: number, data: any): Promise<EmpleadoResponse> {
+    const response = await http.patch<UpdateEmployeeResponse>(`/empleados/${id}/datos-contacto-ubicacion`, data);
+    return response.data;
   }
 
   /**
-   * Buscar empleados por término
+   * Actualizar datos financieros
    */
-  static async search(searchTerm: string): Promise<Employee[]> {
-    const response = await http.get<EmployeesApiResponse>(`/employees/search`, {
-      params: { q: searchTerm }
-    });
-    return response.data.data;
+  static async updateFinancialData(id: number, data: any): Promise<EmpleadoResponse> {
+    const response = await http.patch<UpdateEmployeeResponse>(`/empleados/${id}/datos-financieros`, data);
+    return response.data;
   }
 
   /**
-   * Cambiar estado del empleado (activar/desactivar)
+   * Actualizar datos corporativos
    */
-  static async toggleStatus(id: string): Promise<Employee> {
-    const response = await http.patch<EmployeeApiResponse>(`/employees/${id}/toggle-status`);
-    return response.data.data;
-  }
-
-  /**
-   * Obtener estadísticas de empleados
-   */
-  static async getStatistics(): Promise<{ total: number; active: number; inactive: number }> {
-    const response = await http.get<ApiResponse<{ total: number; active: number; inactive: number }>>('/employees/statistics');
-    return response.data.data;
+  static async updateCorporateData(id: number, data: any): Promise<EmpleadoResponse> {
+    const response = await http.patch<UpdateEmployeeResponse>(`/empleados/${id}/datos-corporativos`, data);
+    return response.data;
   }
 }

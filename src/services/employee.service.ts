@@ -5,16 +5,32 @@
  */
 
 import { EmployeeRepository } from '../repositories/employee.repository';
-import type { Employee, NewEmployeeFormData, Statistic } from '../types';
+import { adaptEmpleadoResponseToEmployee } from '../types';
+import type { Employee, NewEmployeeFormData, EmpleadoResponse, PageResponse } from '../types';
 
 export class EmployeeService {
   /**
-   * Obtener todos los empleados con transformación de datos
+   * Obtener todos los empleados con filtros y paginación
    */
-  static async getAllEmployees(): Promise<Employee[]> {
+  static async getAllEmployees(params?: {
+    q?: string;
+    dni?: string;
+    celular?: string;
+    distrito?: string;
+    banco?: string;
+    estado?: string;
+    page?: number;
+    size?: number;
+    sort?: string;
+  }): Promise<{ employees: Employee[]; total: number; totalPages: number }> {
     try {
-      const employees = await EmployeeRepository.getAll();
-      return this.transformEmployees(employees);
+      const pageResponse = await EmployeeRepository.getAll(params);
+      const employees = pageResponse.content.map(adaptEmpleadoResponseToEmployee);
+      return {
+        employees,
+        total: pageResponse.totalElements,
+        totalPages: pageResponse.totalPages,
+      };
     } catch (error) {
       console.error('Error fetching employees:', error);
       throw new Error('No se pudieron cargar los empleados');
@@ -22,15 +38,37 @@ export class EmployeeService {
   }
 
   /**
-   * Obtener empleado por ID
+   * Obtener empleado por número de documento
    */
-  static async getEmployeeById(id: string): Promise<Employee> {
+  static async getEmployeeByDocument(documento: string): Promise<Employee> {
     try {
-      const employee = await EmployeeRepository.getById(id);
-      return this.transformEmployee(employee);
+      const employee = await EmployeeRepository.getByDocument(documento);
+      return adaptEmpleadoResponseToEmployee(employee);
     } catch (error) {
       console.error('Error fetching employee:', error);
       throw new Error('No se pudo cargar el empleado');
+    }
+  }
+
+  /**
+   * Búsqueda universal de empleados
+   */
+  static async searchEmployeesUniversal(dato: string, params?: {
+    page?: number;
+    size?: number;
+    sort?: string;
+  }): Promise<{ employees: Employee[]; total: number; totalPages: number }> {
+    try {
+      const pageResponse = await EmployeeRepository.searchUniversal(dato, params);
+      const employees = pageResponse.content.map(adaptEmpleadoResponseToEmployee);
+      return {
+        employees,
+        total: pageResponse.totalElements,
+        totalPages: pageResponse.totalPages,
+      };
+    } catch (error) {
+      console.error('Error searching employees:', error);
+      throw new Error('Error en la búsqueda de empleados');
     }
   }
 
@@ -46,7 +84,7 @@ export class EmployeeService {
       const transformedData = this.prepareEmployeeData(employeeData);
 
       const newEmployee = await EmployeeRepository.create(transformedData);
-      return this.transformEmployee(newEmployee);
+      return adaptEmpleadoResponseToEmployee(newEmployee);
     } catch (error) {
       console.error('Error creating employee:', error);
       throw new Error('No se pudo crear el empleado');
@@ -54,12 +92,12 @@ export class EmployeeService {
   }
 
   /**
-   * Actualizar empleado
+   * Actualizar datos personales
    */
-  static async updateEmployee(id: string, employeeData: Partial<Employee>): Promise<Employee> {
+  static async updateEmployeePersonalData(id: number, data: any): Promise<Employee> {
     try {
-      const updatedEmployee = await EmployeeRepository.update(id, employeeData);
-      return this.transformEmployee(updatedEmployee);
+      const updatedEmployee = await EmployeeRepository.updatePersonalData(id, data);
+      return adaptEmpleadoResponseToEmployee(updatedEmployee);
     } catch (error) {
       console.error('Error updating employee:', error);
       throw new Error('No se pudo actualizar el empleado');
@@ -67,105 +105,45 @@ export class EmployeeService {
   }
 
   /**
-   * Eliminar empleado
+   * Actualizar datos de contacto y ubicación
    */
-  static async deleteEmployee(id: string): Promise<void> {
+  static async updateEmployeeContactLocation(id: number, data: any): Promise<Employee> {
     try {
-      await EmployeeRepository.delete(id);
+      const updatedEmployee = await EmployeeRepository.updateContactLocation(id, data);
+      return adaptEmpleadoResponseToEmployee(updatedEmployee);
     } catch (error) {
-      console.error('Error deleting employee:', error);
-      throw new Error('No se pudo eliminar el empleado');
+      console.error('Error updating employee:', error);
+      throw new Error('No se pudo actualizar el empleado');
     }
   }
 
   /**
-   * Buscar empleados
+   * Actualizar datos financieros
    */
-  static async searchEmployees(searchTerm: string): Promise<Employee[]> {
+  static async updateEmployeeFinancialData(id: number, data: any): Promise<Employee> {
     try {
-      const employees = await EmployeeRepository.search(searchTerm);
-      return this.transformEmployees(employees);
+      const updatedEmployee = await EmployeeRepository.updateFinancialData(id, data);
+      return adaptEmpleadoResponseToEmployee(updatedEmployee);
     } catch (error) {
-      console.error('Error searching employees:', error);
-      throw new Error('Error en la búsqueda de empleados');
+      console.error('Error updating employee:', error);
+      throw new Error('No se pudo actualizar el empleado');
     }
   }
 
   /**
-   * Cambiar estado del empleado
+   * Actualizar datos corporativos
    */
-  static async toggleEmployeeStatus(id: string): Promise<Employee> {
+  static async updateEmployeeCorporateData(id: number, data: any): Promise<Employee> {
     try {
-      const employee = await EmployeeRepository.toggleStatus(id);
-      return this.transformEmployee(employee);
+      const updatedEmployee = await EmployeeRepository.updateCorporateData(id, data);
+      return adaptEmpleadoResponseToEmployee(updatedEmployee);
     } catch (error) {
-      console.error('Error toggling employee status:', error);
-      throw new Error('No se pudo cambiar el estado del empleado');
+      console.error('Error updating employee:', error);
+      throw new Error('No se pudo actualizar el empleado');
     }
   }
 
-  /**
-   * Obtener estadísticas de empleados
-   */
-  static async getEmployeeStatistics(): Promise<Statistic[]> {
-    try {
-      const stats = await EmployeeRepository.getStatistics();
-
-      // Transformar a formato de Statistic usado en la UI
-      return [
-        {
-          label: 'TOTAL EMPLEADOS',
-          value: stats.total,
-        },
-        {
-          label: 'ACTIVOS',
-          value: stats.active,
-        },
-        {
-          label: 'INACTIVOS',
-          value: stats.inactive,
-        },
-      ];
-    } catch (error) {
-      console.error('Error fetching employee statistics:', error);
-      throw new Error('No se pudieron cargar las estadísticas');
-    }
-  }
-
-  // Métodos privados para transformación y validación
-
-  /**
-   * Transformar lista de empleados
-   */
-  private static transformEmployees(employees: Employee[]): Employee[] {
-    return employees.map(employee => this.transformEmployee(employee));
-  }
-
-  /**
-   * Transformar empleado individual
-   */
-  private static transformEmployee(employee: Employee): Employee {
-    return {
-      ...employee,
-      // Aquí se pueden hacer transformaciones adicionales
-      // Por ejemplo, formatear fechas, calcular campos derivados, etc.
-      fullName: employee.fullName?.trim() || '',
-      initials: this.generateInitials(employee.fullName),
-    };
-  }
-
-  /**
-   * Generar iniciales del nombre
-   */
-  private static generateInitials(fullName: string): string {
-    if (!fullName) return '';
-    return fullName
-      .split(' ')
-      .map(name => name.charAt(0))
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  }
+  // Métodos privados para validación
 
   /**
    * Validar datos del empleado
