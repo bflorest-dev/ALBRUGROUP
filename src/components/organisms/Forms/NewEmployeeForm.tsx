@@ -14,7 +14,8 @@ interface NewEmployeeFormProps {
 
 export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) => {
   const [formData, setFormData] = useState<NewEmployeeFormData>({
-    fullName: '',
+    nombres: '',
+    apellidos: '',
     documentType: 'DNI',
     documentNumber: '',
     nationality: 'Peruana',
@@ -55,8 +56,8 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    // Validar nombre: solo letras y espacios
-    if (name === 'fullName') {
+    // Validar nombres: solo letras y espacios
+    if (name === 'nombres' || name === 'apellidos') {
       const alphabeticValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
       setFormData((prev) => ({
         ...prev,
@@ -140,19 +141,36 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
         {/* Información Personal */}
         <div className="form-section">
           <h3>Información Personal</h3>
-          <div className="form-group">
-            <label htmlFor="fullName">
-              NOMBRE COMPLETO <span className="required">*</span>
-            </label>
-            <input
-              type="text"
-              id="fullName"
-              name="fullName"
-              placeholder="Ingrese el nombre completo"
-              value={formData.fullName}
-              onChange={handleChange}
-              required
-            />
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="nombres">
+                NOMBRES <span className="required">*</span>
+              </label>
+              <input
+                type="text"
+                id="nombres"
+                name="nombres"
+                placeholder="Ingrese los nombres"
+                value={formData.nombres}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="apellidos">
+                APELLIDOS <span className="required">*</span>
+              </label>
+              <input
+                type="text"
+                id="apellidos"
+                name="apellidos"
+                placeholder="Ingrese los apellidos"
+                value={formData.apellidos}
+                onChange={handleChange}
+                required
+              />
+            </div>
           </div>
 
           <div className="form-row">

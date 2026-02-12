@@ -149,8 +149,11 @@ export class EmployeeService {
    * Validar datos del empleado
    */
   private static validateEmployeeData(data: NewEmployeeFormData): void {
-    if (!data.fullName?.trim()) {
-      throw new Error('El nombre completo es requerido');
+    if (!data.nombres?.trim()) {
+      throw new Error('Los nombres are requeridos');
+    }
+    if (!data.apellidos?.trim()) {
+      throw new Error('Los apellidos son requeridos');
     }
     if (!data.documentNumber?.trim()) {
       throw new Error('El número de documento es requerido');
@@ -169,7 +172,8 @@ export class EmployeeService {
   private static prepareEmployeeData(data: NewEmployeeFormData): NewEmployeeFormData {
     return {
       ...data,
-      fullName: data.fullName.trim(),
+      nombres: data.nombres.trim(),
+      apellidos: data.apellidos.trim(),
       documentNumber: data.documentNumber.trim(),
       googleEmail: data.googleEmail.trim().toLowerCase(),
       personalEmail: data.personalEmail?.trim().toLowerCase(),

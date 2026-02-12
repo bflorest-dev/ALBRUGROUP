@@ -77,8 +77,11 @@ export class ApplicantService {
    * Validar datos del postulante
    */
   private static validateApplicantData(data: NewApplicantFormData): void {
-    if (!data.fullName?.trim()) {
-      throw new Error('El nombre completo es requerido');
+    if (!data.nombres?.trim()) {
+      throw new Error('Los nombres son requeridos');
+    }
+    if (!data.apellidos?.trim()) {
+      throw new Error('Los apellidos son requeridos');
     }
     if (!data.phoneMobile?.trim()) {
       throw new Error('El número de celular es requerido');
@@ -99,25 +102,16 @@ export class ApplicantService {
 
   /**
    * Preparar datos del postulante para envío al backend
-   * Transforma los nombres del frontend al formato del backend
-   * Incluye todos los campos que el backend espera
+   * Ya vienen separados en nombres y apellidos desde el formulario
+   * Solo necesita transformar el puesto de trabajo y origen
    */
   private static prepareApplicantData(data: NewApplicantFormData): any {
-    // Separar el nombre en nombres y apellidos
-    const nameParts = data.fullName.trim().split(/\s+/);
-    const apellidos = nameParts.length > 1 
-      ? nameParts.slice(-1).join(' ') // Último palabra es apellido
-      : '';
-    const nombres = nameParts.length > 1 
-      ? nameParts.slice(0, -1).join(' ') // El resto son nombres
-      : nameParts[0]; // Si es una sola palabra, es el nombre
-    
     // Convertir puestoTrabajo: reemplazar espacios con guiones bajos
     const puestoTrabajo = data.positionOfInterest.trim().replace(/\s+/g, '_').toUpperCase();
     
     const transformedData: any = {
-      nombres: nombres.trim(),
-      apellidos: apellidos.trim(),
+      nombres: data.nombres.trim(),
+      apellidos: data.apellidos.trim(),
       tipoDocumento: data.documentType,
       numeroDocumento: data.documentNumber.trim(),
       celularPersonal: data.phoneMobile.trim(),

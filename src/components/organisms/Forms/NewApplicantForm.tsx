@@ -14,7 +14,8 @@ interface NewApplicantFormProps {
 
 export const NewApplicantForm = ({ onSubmit, onCancel }: NewApplicantFormProps) => {
   const [formData, setFormData] = useState<NewApplicantFormData>({
-    fullName: '',
+    nombres: '',
+    apellidos: '',
     phoneMobile: '',
     documentType: 'DNI',
     documentNumber: '',
@@ -28,8 +29,8 @@ export const NewApplicantForm = ({ onSubmit, onCancel }: NewApplicantFormProps) 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    // Validar nombre: solo letras y espacios
-    if (name === 'fullName') {
+    // Validar nombres: solo letras y espacios
+    if (name === 'nombres' || name === 'apellidos') {
       const alphabeticValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
       setFormData((prev) => ({
         ...prev,
@@ -78,7 +79,7 @@ export const NewApplicantForm = ({ onSubmit, onCancel }: NewApplicantFormProps) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.fullName.trim() && formData.phoneMobile.trim() && 
+    if (formData.nombres.trim() && formData.apellidos.trim() && formData.phoneMobile.trim() && 
         formData.documentNumber.trim() && formData.positionOfInterest.trim() && 
         formData.campaign.trim()) {
       onSubmit(formData);
@@ -87,19 +88,36 @@ export const NewApplicantForm = ({ onSubmit, onCancel }: NewApplicantFormProps) 
 
   return (
     <form className="applicant-form" onSubmit={handleSubmit}>
-      <div className="form-group">
-        <label htmlFor="fullName">
-          NOMBRES COMPLETOS <span className="required">*</span>
-        </label>
-        <input
-          type="text"
-          id="fullName"
-          name="fullName"
-          placeholder="Ingrese nombres y apellidos"
-          value={formData.fullName}
-          onChange={handleChange}
-          required
-        />
+      <div className="form-row">
+        <div className="form-group">
+          <label htmlFor="nombres">
+            NOMBRES <span className="required">*</span>
+          </label>
+          <input
+            type="text"
+            id="nombres"
+            name="nombres"
+            placeholder="Ingrese nombres"
+            value={formData.nombres}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="apellidos">
+            APELLIDOS <span className="required">*</span>
+          </label>
+          <input
+            type="text"
+            id="apellidos"
+            name="apellidos"
+            placeholder="Ingrese apellidos"
+            value={formData.apellidos}
+            onChange={handleChange}
+            required
+          />
+        </div>
       </div>
 
       <div className="form-row">
@@ -134,7 +152,7 @@ export const NewApplicantForm = ({ onSubmit, onCancel }: NewApplicantFormProps) 
               <optgroup key={category} label={category}>
                 {positions.map((position) => (
                   <option key={position} value={position}>
-                    {category === 'RRHH' || category === 'CONTADOR' || category === 'COMMUNITY' 
+                    {category === 'RRHH' || category === 'CONTABILIDAD' || category === 'COMMUNITY' 
                       ? position 
                       : `  ${position}`}
                   </option>

@@ -71,7 +71,8 @@ export interface UserProfile {
 
 // Tipos específicos para formularios
 export interface NewEmployeeFormData {
-  fullName: string;
+  nombres: string;
+  apellidos: string;
   documentType: 'DNI' | 'CE';
   documentNumber: string;
   nationality: string;
@@ -96,7 +97,8 @@ export interface NewEmployeeFormData {
 }
 
 export interface NewApplicantFormData {
-  fullName: string;
+  nombres: string;
+  apellidos: string;
   phoneMobile: string;
   documentType: 'DNI' | 'CE';
   documentNumber: string;
@@ -117,7 +119,8 @@ export interface HireApplicantFormData extends NewEmployeeFormData {
 }
 
 export interface EmployeeDetailFormData {
-  fullName: string;
+  nombres: string;
+  apellidos: string;
   documentType: string;
   documentNumber: string;
   nationality: string;
