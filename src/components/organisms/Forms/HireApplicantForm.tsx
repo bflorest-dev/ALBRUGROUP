@@ -139,7 +139,7 @@ export const HireApplicantForm = ({ applicant, onSubmit, onCancel }: HireApplica
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.fullName || !formData.documentNumber || !formData.role || !formData.startDate) {
+    if (!formData.nombres || !formData.apellidos || !formData.documentNumber || !formData.role || !formData.startDate) {
       alert('Por favor completa los campos requeridos');
       return;
     }
