@@ -1,6 +1,9 @@
 # ALBRUGROUP - RRHH 👥
 
-Este documento describe, en lenguaje simple, el flujo de negocio del sistema de RRHH para **Postulantes**, **Empleados**, **Contratos** y **Pagos**. La documentacion tecnica y los endpoints estan disponibles en OpenAPI/Swagger.
+**Proposito del sistema**
+Sistema profesional para la gestion del personal de una empresa, pensado para un flujo de trabajo coordinado entre el area de recursos humanos y contabilidad. Centraliza la informacion del ciclo completo de personal (postulacion, contratacion y pago), y guarda datos estructurados para reportes y metricas operativas.
+
+Este documento resume el flujo de negocio para **Postulantes**, **Empleados**, **Contratos** y **Pagos**. La documentacion tecnica y los endpoints estan disponibles en OpenAPI/Swagger.
 
 **Flujo general** 🔄
 1. Un candidato se registra como **Postulante**.
