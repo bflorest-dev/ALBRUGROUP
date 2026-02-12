@@ -22,7 +22,8 @@ export const EmployeeDetailForm = ({
 }: EmployeeDetailFormProps) => {
   const [editMode, setEditMode] = useState(isEditMode);
   const [formData, setFormData] = useState<EmployeeDetailFormData>({
-    fullName: employee.fullName || '',
+    nombres: employee.nombres || '',
+    apellidos: employee.apellidos || '',
     documentType: employee.documentType || '',
     documentNumber: employee.documentNumber || '',
     nationality: employee.nationality || '',
@@ -69,7 +70,7 @@ export const EmployeeDetailForm = ({
     const inputElement = e.target as HTMLInputElement;
     
     // Validar nombre: solo letras y espacios
-    if (name === 'fullName') {
+    if (name === 'nombres' || name === 'apellidos') {
       const alphabeticValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
       setFormData((prev) => ({
         ...prev,
@@ -151,7 +152,8 @@ export const EmployeeDetailForm = ({
   const handleCancel = () => {
     setEditMode(false);
     setFormData({
-      fullName: employee.fullName || '',
+      nombres: employee.nombres || '',
+      apellidos: employee.apellidos || '',
       documentType: employee.documentType || '',
       documentNumber: employee.documentNumber || '',
       nationality: employee.nationality || '',
@@ -229,9 +231,16 @@ export const EmployeeDetailForm = ({
 
             <div className="form-row">
               <div className="form-item">
-                <label>NOMBRE COMPLETO</label>
-                {editMode ? renderField('fullName') : <p className="value">{renderValue(formData.fullName)}</p>}
+                <label>NOMBRES</label>
+                {editMode ? renderField('nombres') : <p className="value">{renderValue(formData.nombres)}</p>}
               </div>
+              <div className="form-item">
+                <label>APELLIDOS</label>
+                {editMode ? renderField('apellidos') : <p className="value">{renderValue(formData.apellidos)}</p>}
+              </div>
+            </div>
+
+            <div className="form-row">
               <div className="form-item">
                 <label>TIPO DOCUMENTO</label>
                 {editMode ? (
