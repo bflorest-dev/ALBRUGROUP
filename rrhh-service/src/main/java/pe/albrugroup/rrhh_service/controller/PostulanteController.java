@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoPostulacion;
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.rrhh_service.entity.request.CambiosEstadoPostulacionRequest;
+import pe.albrugroup.rrhh_service.entity.request.DatosPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.request.RegistrarPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.response.PostulanteResponse;
 import pe.albrugroup.rrhh_service.usecase.IPostulante;
@@ -60,8 +62,14 @@ public class PostulanteController {
     @Operation(summary = "Actualiza el estado de postulacion" ,
             description = "Envia un grupo de Postulantes por su ID + Estado de Postulacion")
     @PatchMapping
-    public ResponseEntity<List<PostulanteResponse>> actualizarEstadoPostulacion(@RequestBody CambiosEstadoPostulacionRequest cambios) {
-        var postulante = postulanteService.actualizarEstadosPostulacion(cambios);
+    public ResponseEntity<List<PostulanteResponse>> actualizarEstadoPostulacion(@RequestBody CambiosEstadoPostulacionRequest request) {
+        var postulante = postulanteService.actualizarEstadosPostulacion(request);
+        return ResponseEntity.ok(postulante);
+    }
+    @PatchMapping("/{id}")
+    public ResponseEntity<PostulanteResponse> actualizarDatosPostulacion(@RequestBody DatosPostulanteRequest request,
+                                                                         @PathVariable @Positive Long id) {
+        var postulante = postulanteService.actulizarPostulante(id, request);
         return ResponseEntity.ok(postulante);
     }
 }

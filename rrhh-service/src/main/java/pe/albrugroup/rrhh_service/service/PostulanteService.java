@@ -12,9 +12,11 @@ import pe.albrugroup.rrhh_service.entity.enums.EstadoPostulacion;
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.rrhh_service.entity.request.CambioEstadoPostulacionItem;
 import pe.albrugroup.rrhh_service.entity.request.CambiosEstadoPostulacionRequest;
+import pe.albrugroup.rrhh_service.entity.request.DatosPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.request.RegistrarPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.response.PostulanteResponse;
 import pe.albrugroup.rrhh_service.exception.PostulanteEnProcesoException;
+import pe.albrugroup.rrhh_service.exception.PostulanteNotFoundException;
 import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
 import pe.albrugroup.rrhh_service.repository.PostulanteRepository;
 import pe.albrugroup.rrhh_service.service.mapper.EmpleadoMapper;
@@ -25,6 +27,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service @Transactional
@@ -66,6 +69,15 @@ public class PostulanteService implements IPostulante {
 
         return postulanteMapper.toResponse(postulanteRepository.save(postulante));
     }
+
+    @Override
+    public PostulanteResponse actulizarPostulante(Long idPostulante, DatosPostulanteRequest infoPostulante) {
+        Postulante postulante = postulanteRepository.findById(idPostulante)
+                .orElseThrow(() -> new PostulanteNotFoundException(idPostulante));
+        postulanteMapper.updateDatosPostulacion(infoPostulante, postulante);
+        return postulanteMapper.toResponse(postulante);
+    }
+
     @Override
     public List<PostulanteResponse> actualizarEstadosPostulacion(CambiosEstadoPostulacionRequest cambios) {
         Map<Long, EstadoPostulacion> destino = cambios.getCambios().stream()

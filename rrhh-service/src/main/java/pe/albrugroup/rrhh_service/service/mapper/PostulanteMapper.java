@@ -1,8 +1,8 @@
 package pe.albrugroup.rrhh_service.service.mapper;
 
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+import org.mapstruct.*;
 import pe.albrugroup.rrhh_service.entity.Postulante;
+import pe.albrugroup.rrhh_service.entity.request.DatosPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.request.RegistrarPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.response.PostulanteResponse;
 
@@ -16,4 +16,7 @@ public interface PostulanteMapper {
     @Mapping(target = "numeroDocumento", source = "empleado.numeroDocumento")
     @Mapping(target = "celularPersonal", source = "empleado.celularPersonal")
     PostulanteResponse toResponse(Postulante entity);
+
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    void updateDatosPostulacion(DatosPostulanteRequest request, @MappingTarget Postulante entity);
 }
