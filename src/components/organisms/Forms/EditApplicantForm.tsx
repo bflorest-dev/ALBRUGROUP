@@ -16,8 +16,8 @@ interface EditApplicantFormProps {
 export const EditApplicantForm = ({ applicant, onSubmit, onCancel }: EditApplicantFormProps) => {
   const [formData, setFormData] = useState<EditApplicantFormData>({
     id: applicant.id,
-    nombres: '',
-    apellidos: '',
+    nombres: applicant.nombres || '',
+    apellidos: applicant.apellidos || '',
     phoneMobile: applicant.phoneMobile || '',
     documentType: (applicant.documentType as 'DNI' | 'CE') || 'DNI',
     documentNumber: applicant.documentNumber || '',

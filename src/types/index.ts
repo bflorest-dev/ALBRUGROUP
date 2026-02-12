@@ -44,6 +44,8 @@ export interface Statistic {
 export interface Applicant {
   id: string;
   fullName: string;
+  nombres?: string;
+  apellidos?: string;
   phoneMobile: string;
   documentType: string;
   documentNumber: string;
@@ -259,6 +261,8 @@ export const adaptEmpleadoResponseToEmployee = (backend: EmpleadoResponse): Empl
 export const adaptPostulanteResponseToApplicant = (backend: PostulanteResponse): Applicant => ({
   id: backend.id.toString(),
   fullName: `${backend.nombres} ${backend.apellidos}`.trim(),
+  nombres: backend.nombres,
+  apellidos: backend.apellidos,
   phoneMobile: backend.celularPersonal,
   documentType: backend.tipoDocumento,
   documentNumber: backend.numeroDocumento,
