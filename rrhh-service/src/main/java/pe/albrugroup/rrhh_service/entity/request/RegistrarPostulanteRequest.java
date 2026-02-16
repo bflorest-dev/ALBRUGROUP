@@ -10,7 +10,7 @@ import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-@Builder(toBuilder = true) @Getter @Setter
+@Builder @Getter @Setter
 @AllArgsConstructor @NoArgsConstructor
 public class RegistrarPostulanteRequest {
 
@@ -23,7 +23,7 @@ public class RegistrarPostulanteRequest {
     // POSTULANTE
     @NotNull private Origen origen;
     @NotNull private PuestoTrabajo puestoTrabajo;
-    @NotNull private BigDecimal pagoDiaCapacitacion;
-    @NotNull private LocalDate fechaInicio;
-    @NotNull private LocalDate fechaFin;
+//    @NotNull private BigDecimal pagoDiaCapacitacion;
+//    @NotNull private LocalDate fechaInicio;
+//    @NotNull private LocalDate fechaFin;
 }
