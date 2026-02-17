@@ -3,12 +3,16 @@ package pe.albrugroup.auth_service.configuration;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import pe.albrugroup.auth_service.entity.Permiso;
 import pe.albrugroup.auth_service.entity.Rol;
+import pe.albrugroup.auth_service.entity.Usuario;
 import pe.albrugroup.auth_service.repository.PermisoRepository;
 import pe.albrugroup.auth_service.repository.RolRepository;
 import pe.albrugroup.auth_service.repository.UsuarioRepository;
+
+import java.util.Set;
 
 @Component @Slf4j
 @RequiredArgsConstructor
@@ -17,6 +21,7 @@ public class DataLoader {
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final PermisoRepository  permisoRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @PostConstruct
     public void loadData() {
@@ -25,7 +30,7 @@ public class DataLoader {
 
         crearPermisos();
         crearRoles();
-        crearUsuarios();
+        crearUsuariosIniciales();
 
         log.info("✅ DATOS CARGADOS");
         log.info("=================================");
@@ -34,44 +39,103 @@ public class DataLoader {
     private void crearPermisos() {
         log.info("Creando Permisos...");
         // POSTULANTES
+        savePermiso("CREATE_POSTULANTE", "Puede registrar postulantes nuevos", "POSTULANTE", "CREATE");
         savePermiso("READ_POSTULANTE", "Puede listar y ver postulantes", "POSTULANTE", "READ");
-        savePermiso("WRITE_POSTULANTE", "Puede crear y editar postulantes", "POSTULANTE", "READ");
-//        savePermiso("EVALUATE_POSTULANTE")
+        savePermiso("UPDATE_POSTULANTE", "Puede editar postulantes", "POSTULANTE", "UPDATE");
+        savePermiso("BLACKLIST_POSTULANTE", "Puede marcar como lista negra a los postulantes", "POSTULANTE", "BLACKLIST");
+        savePermiso("EVALUATE_POSTULANTE_RECLUTAMIENTO", "Puede evaluar a los postulantes", "POSTULANTE", "EVALUATE");
+        savePermiso("EVALUATE_POSTULANTE_CAPACITACION", "Puede evaluar a los postulantes", "POSTULANTE", "EVALUATE");
         // EMPLEADOS
+        savePermiso("CREATE_EMPLEADOS", "Puede ver empleados", "EMPLEADO", "CREATE");
         savePermiso("READ_EMPLEADOS", "Puede ver empleados", "EMPLEADO", "READ");
-        savePermiso("WRITE_EMPLEADOS", "Puede crear y editar empleados", "EMPLEADO", "WRITE");
-        savePermiso("DELETE_EMPLEADOS", "Puede eliminar empleados", "EMPLEADO", "DELETE");
+        savePermiso("UPDATE_EMPLEADOS", "Puede editar empleados", "EMPLEADO", "UPDATE");
+        savePermiso("DELETE_EMPLEADOS", "Puede dar de baja a empleados", "EMPLEADO", "DELETE");
+
+        // TODO
         // CONTRATOS
-        savePermiso("READ_CONTRATOS", "Puede ver contratos", "CONTRATO", "READ");
-        savePermiso("WRITE_CONTRATOS", "Puede crear y editar contratos", "CONTRATO", "WRITE");
-        savePermiso("APPROVE_CONTRATOS", "Puede aprobar contratos", "CONTRATO", "APPROVE");
         // PAGOS
-        savePermiso("READ_PAGOS", "Puede ver pagos", "PAGO", "READ");
-        savePermiso("WRITE_PAGOS", "Puede procesar pagos",  "PAGO", "WRITE");
+        // LEADS
 
         log.info("✅ Permisos Creados");
     }
-    private Permiso savePermiso(String nombre, String descripcion, String recurso, String accion) {
+    private void savePermiso(String nombre, String descripcion, String recurso, String accion) {
         Permiso permiso = Permiso.builder()
                 .nombre(nombre)
                 .descripcion(descripcion)
                 .recurso(recurso)
                 .accion(accion)
                 .build();
-        return permisoRepository.save(permiso);
+        permisoRepository.save(permiso);
     }
 
     private void crearRoles() {
         log.info("Creando Roles...");
+        // RRHH
+        Set<Permiso> rrhhPermisos = Set.of(
+                getPermiso("CREATE_POSTULANTE"),
+                getPermiso("UPDATE_POSTULANTE"),
+                getPermiso("READ_POSTULANTE"),
+                getPermiso("BLACKLIST_POSTULANTE"),
+
+                getPermiso("CREATE_EMPLEADOS"),
+                getPermiso("UPDATE_EMPLEADOS"),
+                getPermiso("READ_EMPLEADOS"),
+                getPermiso("DELETE_EMPLEADOS")
+        );
+        saveRol("RRHH", "Recursos Humanos - Gestion de personal", rrhhPermisos);
+        // RECLUTADOR
+        Set<Permiso> reclutadorPermisos = Set.of(
+                getPermiso("READ_POSTULANTE"),
+                getPermiso("UPDATE_POSTULANTE"),
+                getPermiso("EVALUATE_POSTULANTE_RECLUTAMIENTO")
+        );
+        saveRol("RECLUTADOR", "Recursos Humanos - Contacto con postulantes", reclutadorPermisos);
+        // CAPACITADOR
+        Set<Permiso> capacitadorPermisos = Set.of(
+                getPermiso("READ_POSTULANTE"),
+                getPermiso("EVALUATE_POSTULANTE_CAPACITACION")
+        );
+        saveRol("CAPACITADOR", "Capacitacion - Gestion de postulantes", capacitadorPermisos);
 
         log.info("✅ Roles Creados");
     }
-    private Rol saveRol(Rol rol) {
-        return rolRepository.save(rol);
+    private Permiso getPermiso(String nombre) {
+        return permisoRepository.findByNombre(nombre)
+                .orElseThrow(() -> new RuntimeException("Permiso no encontrado " + nombre));
+    }
+    private void saveRol(String nombre, String descripcion, Set<Permiso> permisos) {
+        Rol rol = Rol.builder()
+                .nombre(nombre)
+                .descripcion(descripcion)
+                .permisos(permisos)
+                .build();
+        rolRepository.save(rol);
     }
 
-    private void crearUsuarios() {
+    private void crearUsuariosIniciales() {
         log.info("Creando Usuarios...");
+
+        log.info("Creando Usuario RRHH INICIAL");
+        Rol rrhhRol = rolRepository.findByNombre("RRHH")
+                        .orElseThrow(() -> new RuntimeException("Rol RRHH no encontrado"));
+        Usuario rrhhUsuario = Usuario.builder()
+                .username("J75413802B@albru.recruiter.pe")
+                .password(passwordEncoder.encode("123456"))
+                .email("jevbxx@gmail.com")
+                .empleadoId(1L)
+                .activo(true)
+                .roles(Set.of(rrhhRol))
+                .build();
+        usuarioRepository.save(rrhhUsuario);
+
+        log.info("══════════════════════════════════════════════════════");
+        log.info("✓ Usuario RRHH creado:");
+        log.info("  Username: J75413802B@albru.recruiter.pe");
+        log.info("  Password: 123456");
+        log.info("  Email: jevbxx@gmail.com");
+        log.info("  EmpleadoId: 1");
+        log.info("  Roles: [RRHH]");
+        log.info("═══════════════════════════════════════════════════════");
 
         log.info("✅ Usuarios Creados");
     }

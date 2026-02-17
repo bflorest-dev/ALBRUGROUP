@@ -2,10 +2,11 @@ package pe.albrugroup.rrhh_service.entity.enums;
 
 public enum PuestoTrabajo {
     ADMINISTRADOR,
-    DESARROLLADOR,
     RRHH,
-    CAPACITACION,
-    CONTABILIDAD,
+    RECLUTADOR,
+    CAPACITADOR,
+    DESARROLLADOR,
+    CONTADOR,
     COMMUNITY,
     SUPERVISOR_VENTAS,
     ASESOR_VENTAS,
