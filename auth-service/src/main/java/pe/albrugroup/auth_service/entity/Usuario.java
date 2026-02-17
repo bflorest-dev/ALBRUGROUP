@@ -20,7 +20,7 @@ public class Usuario {
     @Column(unique = true)
     private String email;
 
-    @Column(name = "empleado_id")
+    @Column(name = "empleado_id", unique = true)
     private Long empleadoId;
     @Column(nullable = false)
     @Builder.Default

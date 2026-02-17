@@ -13,14 +13,14 @@ import pe.albrugroup.auth_service.entity.request.RegistrarUsuarioRequest;
 import pe.albrugroup.auth_service.mapper.Mapper;
 import pe.albrugroup.auth_service.repository.RolRepository;
 import pe.albrugroup.auth_service.repository.UsuarioRepository;
+import pe.albrugroup.auth_service.usecase.IUsuario;
 
 import java.security.SecureRandom;
-import java.util.HashSet;
 import java.util.Set;
 
 @Service @Slf4j
 @RequiredArgsConstructor @Transactional
-public class UsuarioService {
+public class UsuarioService implements IUsuario {
 
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
@@ -28,6 +28,7 @@ public class UsuarioService {
 
     private static final int PASSWORD_LENGTH = 10;
 
+    @Override
     public UsuarioResponse registrarUsuario(RegistrarUsuarioRequest request) {
         log.info("Registrando nuevo usuario: DNI[{}]", request.getDni());
 
@@ -79,7 +80,7 @@ public class UsuarioService {
         }
         return pass.toString();
     }
-
+    @Override
     public UsuarioResponse actualizarRolesUsuario(Long usuarioId, PuestoTrabajo puesto) {
         log.info("Actualizando roles del usuario ID: {}", usuarioId);
 
@@ -91,5 +92,21 @@ public class UsuarioService {
         log.info("Rol actualizado para el usuario: {}|{}", usuario.getUsername(), rol.getNombre());
         return Mapper.toResponse(usuario);
     }
-
+    @Override
+    public UsuarioResponse getUsuarioPorEmpleadoID(Long empleadoId) {
+        log.info("Buscando usuario por EmpleadoID: {}", empleadoId);
+        Usuario usuario = usuarioRepository.findByEmpleadoId(empleadoId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado por EmpleadoID: " + empleadoId));
+        return Mapper.toResponse(usuario);
+    }
+    @Override
+    public void deshabilitarUsuario(Long empleadoId) {
+        log.info("Deshabilitando Empleado ID: {}", empleadoId);
+        Usuario usuario = usuarioRepository.findByEmpleadoId(empleadoId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + empleadoId));
+        if(!usuario.getActivo()) { log.warn("El usuario ya se encuentra deshabilitado"); return; }
+        usuario.setActivo(false);
+        usuarioRepository.save(usuario);
+        log.info("Usuario deshabilitado: {}", usuario.getUsername());
+    }
 }
