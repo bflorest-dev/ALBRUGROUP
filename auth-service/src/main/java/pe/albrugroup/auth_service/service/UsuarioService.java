@@ -81,10 +81,10 @@ public class UsuarioService implements IUsuario {
         return pass.toString();
     }
     @Override
-    public UsuarioResponse actualizarRolesUsuario(Long usuarioId, PuestoTrabajo puesto) {
-        log.info("Actualizando roles del usuario ID: {}", usuarioId);
+    public UsuarioResponse actualizarRolesUsuario(Long empleadoId, PuestoTrabajo puesto) {
+        log.info("Actualizando roles del usuario ID: {}", empleadoId);
 
-        Usuario usuario = usuarioRepository.findById(usuarioId)
+        Usuario usuario = usuarioRepository.findByEmpleadoId(empleadoId)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         Rol rol = rolRepository.findByNombre(puesto.name())
                 .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + puesto.name()));
