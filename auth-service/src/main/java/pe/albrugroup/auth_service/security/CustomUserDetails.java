@@ -1,4 +1,4 @@
-package pe.albrugroup.auth_service.configuration;
+package pe.albrugroup.auth_service.security;
 
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;

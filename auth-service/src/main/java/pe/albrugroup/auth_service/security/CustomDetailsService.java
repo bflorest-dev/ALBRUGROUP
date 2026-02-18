@@ -1,4 +1,4 @@
-package pe.albrugroup.auth_service.configuration;
+package pe.albrugroup.auth_service.security;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -10,7 +10,7 @@ import pe.albrugroup.auth_service.repository.UsuarioRepository;
 
 @Service
 @RequiredArgsConstructor
-public class CustomDetailsService  implements UserDetailsService {
+public class CustomDetailsService implements UserDetailsService {
 
     private final UsuarioRepository repository;
 

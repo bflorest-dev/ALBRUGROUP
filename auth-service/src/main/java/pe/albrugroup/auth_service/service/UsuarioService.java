@@ -61,6 +61,7 @@ public class UsuarioService implements IUsuario {
         Usuario guardado = usuarioRepository.save(usuario);
         log.info("Usuario registrado: {} (ID: {})", guardado.getUsername(), guardado.getId());
         log.info("Rol asignado: {}", rol.getNombre());
+
         return Mapper.toResponse(guardado);
     }
     private String usernameGenerator(String nombres, String apellidos, String dni, PuestoTrabajo puesto) {
@@ -89,12 +90,14 @@ public class UsuarioService implements IUsuario {
         Rol rol = rolRepository.findByNombre(puesto.name())
                 .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + puesto.name()));
         usuario.setRoles(Set.of(rol));
+
         log.info("Rol actualizado para el usuario: {}|{}", usuario.getUsername(), rol.getNombre());
         return Mapper.toResponse(usuario);
     }
     @Override
     public UsuarioResponse getUsuarioPorEmpleadoID(Long empleadoId) {
         log.info("Buscando usuario por EmpleadoID: {}", empleadoId);
+
         Usuario usuario = usuarioRepository.findByEmpleadoId(empleadoId)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado por EmpleadoID: " + empleadoId));
         return Mapper.toResponse(usuario);
@@ -102,11 +105,13 @@ public class UsuarioService implements IUsuario {
     @Override
     public void deshabilitarUsuario(Long empleadoId) {
         log.info("Deshabilitando Empleado ID: {}", empleadoId);
+
         Usuario usuario = usuarioRepository.findByEmpleadoId(empleadoId)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + empleadoId));
         if(!usuario.getActivo()) { log.warn("El usuario ya se encuentra deshabilitado"); return; }
         usuario.setActivo(false);
         usuarioRepository.save(usuario);
+
         log.info("Usuario deshabilitado: {}", usuario.getUsername());
     }
 }

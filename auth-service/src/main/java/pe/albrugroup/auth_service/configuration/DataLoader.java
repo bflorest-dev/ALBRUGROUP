@@ -26,7 +26,7 @@ public class DataLoader {
     @PostConstruct
     public void loadData() {
         log.info("=================================");
-        log.info("INICIANDO CARGA DE DATOS INICIAL");
+        log.info("🚀 INICIANDO CARGA DE DATOS INICIAL");
 
         crearPermisos();
         crearRoles();
@@ -37,7 +37,7 @@ public class DataLoader {
     }
 
     private void crearPermisos() {
-        log.info("Creando Permisos...");
+        log.info("🚀 Creando Permisos...");
         // POSTULANTES
         savePermiso("CREATE_POSTULANTE", "Puede registrar postulantes nuevos", "POSTULANTE", "CREATE");
         savePermiso("READ_POSTULANTE", "Puede listar y ver postulantes", "POSTULANTE", "READ");
@@ -69,7 +69,7 @@ public class DataLoader {
     }
 
     private void crearRoles() {
-        log.info("Creando Roles...");
+        log.info("🚀 Creando Roles...");
         // RRHH
         Set<Permiso> rrhhPermisos = Set.of(
                 getPermiso("CREATE_POSTULANTE"),
@@ -113,7 +113,7 @@ public class DataLoader {
     }
 
     private void crearUsuariosIniciales() {
-        log.info("Creando Usuarios...");
+        log.info("🚀 Creando Usuarios...");
 
         log.info("Creando Usuario RRHH INICIAL");
         Rol rrhhRol = rolRepository.findByNombre("RRHH")
