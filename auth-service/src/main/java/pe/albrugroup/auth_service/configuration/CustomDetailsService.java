@@ -12,7 +12,7 @@ import pe.albrugroup.auth_service.repository.UsuarioRepository;
 @RequiredArgsConstructor
 public class CustomDetailsService  implements UserDetailsService {
 
-    private UsuarioRepository repository;
+    private final UsuarioRepository repository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
