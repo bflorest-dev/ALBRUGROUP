@@ -5,14 +5,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import pe.albrugroup.auth_service.entity.Response.LoginResponse;
 import pe.albrugroup.auth_service.entity.Response.UsuarioResponse;
 import pe.albrugroup.auth_service.entity.enums.PuestoTrabajo;
+import pe.albrugroup.auth_service.entity.request.LoginRequest;
 import pe.albrugroup.auth_service.entity.request.RegistrarUsuarioRequest;
+import pe.albrugroup.auth_service.security.CustomUserDetails;
+import pe.albrugroup.auth_service.security.JWTUtil;
 import pe.albrugroup.auth_service.usecase.IUsuario;
-
-import java.util.Set;
 
 @RestController @Validated
 @RequiredArgsConstructor @Slf4j
@@ -20,6 +26,40 @@ import java.util.Set;
 public class AuthController {
 
     private final IUsuario usuarioService;
+    private final AuthenticationManager authManager;
+    private final JWTUtil jwtUtil;
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        log.info("Intento de login: {}", request.getUsername());
+
+        try {
+            Authentication authentication = authManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getUsername(),
+                            request.getPassword()
+                    )
+            );
+            CustomUserDetails  userDetails = (CustomUserDetails) authentication.getPrincipal();
+            String token = jwtUtil.generateToken(userDetails);
+
+            LoginResponse response = LoginResponse.builder()
+                    .token(token)
+                    .type("Bearer")
+                    .username(userDetails.getUsername())
+                    .empleadoId(userDetails.getEmpleadoId())
+                    .roles(userDetails.getAuthorities().stream()
+                            .filter(auth -> auth.getAuthority().startsWith("ROLE_"))
+                            .map(auth -> auth.getAuthority().replace("ROLE_", ""))
+                            .toList())
+                    .build();
+            log.info("Login Exitoso: {}", request.getUsername());
+            return ResponseEntity.ok(response);
+        } catch (BadCredentialsException e) {
+            log.error("Credenciales inválidas para: {}", request.getUsername());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales inválidas");
+        }
+    }
 
     @PostMapping("/registro")
     public ResponseEntity<UsuarioResponse> registrarUsuario(@RequestBody RegistrarUsuarioRequest request) {
