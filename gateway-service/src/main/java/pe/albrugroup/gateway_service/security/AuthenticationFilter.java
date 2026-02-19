@@ -59,7 +59,6 @@ public class AuthenticationFilter implements   WebFilter {
                             null,
                             authorities
                     );
-
             return chain.filter(exchange)
                     .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
 
