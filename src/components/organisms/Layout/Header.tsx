@@ -88,8 +88,8 @@ export const Header = ({ title, subtitle }: HeaderProps) => {
           {subtitle && <p className="header-subtitle">{subtitle}</p>}
         </div>
 
-        <div className="break-section">
-          <div className="break-controls">
+        <div className="header-right">
+          <div className="break-section">
             <select
               value={selectedBreak}
               onChange={handleBreakSelect}
@@ -111,35 +111,37 @@ export const Header = ({ title, subtitle }: HeaderProps) => {
             )}
           </div>
 
-          {breakList.length > 0 && (
-            <ul className="break-list">
-              {breakList.map((item) => (
-                <li key={item.id} className="break-item">
-                  <span className="break-type">{item.type}</span>
-                  <span className="break-time">{item.timestamp}</span>
-                  <button
-                    className="remove-btn"
-                    onClick={() => handleRemoveBreak(item.id)}
-                    title="Eliminar"
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="header-actions">
-          <button className="icon-btn notification-btn" title="Notificaciones">
-            <BiBell size={20} />
-            <span className="notification-badge">3</span>
-          </button>
-          <button className="icon-btn logout-btn" title="Cerrar sesión">
-            <BiLogOut size={20} />
-          </button>
+          <div className="header-actions">
+            <button className="icon-btn notification-btn" title="Notificaciones">
+              <BiBell size={20} />
+              <span className="notification-badge">3</span>
+            </button>
+            <button className="icon-btn logout-btn" title="Cerrar sesión">
+              <BiLogOut size={20} />
+            </button>
+          </div>
         </div>
       </div>
+
+      {breakList.length > 0 && (
+        <div className="break-list-container">
+          <ul className="break-list">
+            {breakList.map((item) => (
+              <li key={item.id} className="break-item">
+                <span className="break-type">{item.type}</span>
+                <span className="break-time">{item.timestamp}</span>
+                <button
+                  className="remove-btn"
+                  onClick={() => handleRemoveBreak(item.id)}
+                  title="Eliminar"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </header>
   );
 };

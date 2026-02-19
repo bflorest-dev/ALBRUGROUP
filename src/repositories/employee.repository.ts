@@ -5,7 +5,7 @@
  */
 
 import { http } from '../api/http';
-import type { Employee, EmpleadoResponse, PageResponse } from '../types';
+import type { EmpleadoResponse, PageResponse } from '../types';
 
 // Tipos específicos para las respuestas de la API
 export type EmployeesPageResponse = PageResponse<EmpleadoResponse>;

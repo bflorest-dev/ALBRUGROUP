@@ -32,9 +32,17 @@
   margin: 0;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
 .header-actions {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
 .icon-btn {
@@ -85,17 +93,10 @@
 
 /* Break Times Section */
 .break-section {
-  flex-shrink: 0;
-}
-
-.break-controls {
   display: flex;
   gap: 8px;
   align-items: center;
-  padding: 12px;
-  background: #F9FAFB;
-  border-radius: 6px;
-  border: 1px solid #E5E7EB;
+  flex-shrink: 0;
 }
 
 .break-select {
@@ -139,27 +140,39 @@
 }
 
 .break-list {
-  margin: 8px 12px 0 12px;
-  padding: 8px;
+  margin: 0;
+  padding: 0;
   list-style: none;
-  background: white;
-  border: 1px solid #E5E7EB;
-  border-radius: 4px;
-  max-height: 120px;
-  overflow-y: auto;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  max-height: none;
+  overflow-y: visible;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .break-item {
-  display: flex;
+  display: inline-flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 8px;
-  font-size: 12px;
-  border-bottom: 1px solid #F3F4F6;
+  padding: 6px 10px;
+  font-size: 11px;
+  border: 1px solid #E5E7EB;
+  border-radius: 4px;
+  background: white;
+  gap: 8px;
 }
 
 .break-item:last-child {
   border-bottom: none;
+}
+
+.break-list-container {
+  padding: 8px 24px 12px 24px;
+  background: #F9FAFB;
+  border-bottom: 1px solid #E5E7EB;
 }
 
 .break-type {

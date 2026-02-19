@@ -1,19 +1,19 @@
 /**
- * Componente ApplicantsDashboard - Página de postulantes
+ * ApplicantsDashboard (moved copy into features/RRHH/pages)
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { BiPlus, BiSearch, BiDownload } from 'react-icons/bi';
-import { ApplicantsTable } from '../organisms/Tables';
-import { Modal } from '../molecules/Modal';
-import { NewApplicantForm, EditApplicantForm, HireApplicantForm } from '../organisms/Forms';
-import { StatCard } from '../molecules/StatCard';
-import { Pagination } from '../molecules/Pagination';
-import { Header } from '../organisms/Layout/Header';
-import { useNotification } from '../../contexts/useNotification';
-import { useErrorHandler } from '../../hooks/useErrorHandler';
-import { ApplicantService } from '../../services/applicant.service';
-import type { Applicant, NewApplicantFormData, EditApplicantFormData, HireApplicantFormData, Statistic } from '../../types';
+import { ApplicantsTable } from '../components/organisms/Tables';
+import { Modal } from '../../../components/molecules/Modal';
+import { NewApplicantForm, EditApplicantForm, HireApplicantForm } from '../components/organisms/Forms';
+import { StatCard } from '../../../components/molecules/StatCard';
+import { Pagination } from '../../../components/molecules/Pagination';
+import { Header } from '../../../components/organisms/Layout/Header';
+import { useNotification } from '../../../contexts/useNotification';
+import { useErrorHandler } from '../../../hooks/useErrorHandler';
+import { ApplicantService } from '../../../services/applicant.service';
+import type { Applicant, NewApplicantFormData, EditApplicantFormData, HireApplicantFormData, Statistic } from '../../../types';
 import './ApplicantsDashboard.css';
 
 const ITEMS_PER_PAGE = 10;
@@ -22,7 +22,7 @@ export const ApplicantsDashboard = () => {
   // Estado para postulantes
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statistics, setStatistics] = useState<Statistic[]>([]);
+  const [_statistics, _setStatistics] = useState<Statistic[]>([]);
 
   // Estados para modales
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -55,7 +55,7 @@ export const ApplicantsDashboard = () => {
       ];
 
       setApplicants(applicantsData);
-      setStatistics(stats);
+      _setStatistics(stats);
     } catch (error) {
       handleError(error instanceof Error ? error : new Error('Error cargando postulantes'), {
         componentStack: 'ApplicantsDashboard.loadInitialData'
@@ -179,36 +179,36 @@ export const ApplicantsDashboard = () => {
     handleOpenHireModal(applicant);
   };
 
-  const handleHireSubmit = async (formData: HireApplicantFormData) => {
+  const handleHireSubmit = async (_formData: HireApplicantFormData) => {
     if (!selectedApplicant) return;
 
     try {
       // Crear empleado desde el postulante
-      const employeeData = {
-        fullName: selectedApplicant.fullName,
-        documentType: selectedApplicant.documentType,
-        documentNumber: selectedApplicant.documentNumber,
-        phoneMobile: selectedApplicant.phoneMobile,
-        personalEmail: selectedApplicant.personalEmail,
-        role: formData.position,
-        startDate: formData.startDate,
-        modality: formData.modality,
-        scheduleType: formData.scheduleType,
-        googleEmail: formData.googleEmail,
-        baseSalary: formData.baseSalary,
-        // Campos requeridos adicionales con valores por defecto
-        nationality: 'Peruana',
-        birthDate: '',
-        civilStatus: 'Soltero',
-        hasChildren: false,
-        district: '',
-        address: '',
-        phoneFixed: '',
-        phoneWork: '',
-        bank: '',
-        accountNumber: '',
-        interbankNumber: '',
-      };
+      // const _employeeData = {
+      //   fullName: selectedApplicant.fullName,
+      //   documentType: selectedApplicant.documentType,
+      //   documentNumber: selectedApplicant.documentNumber,
+      //   phoneMobile: selectedApplicant.phoneMobile,
+      //   personalEmail: selectedApplicant.personalEmail,
+      //   role: formData.role,
+      //   startDate: formData.startDate,
+      //   modality: formData.modality,
+      //   scheduleType: formData.scheduleType,
+      //   googleEmail: formData.googleEmail,
+      //   baseSalary: formData.baseSalary,
+      //   // Campos requeridos adicionales con valores por defecto
+      //   nationality: 'Peruana',
+      //   birthDate: '',
+      //   civilStatus: 'Soltero',
+      //   hasChildren: false,
+      //   district: '',
+      //   address: '',
+      //   phoneFixed: '',
+      //   phoneWork: '',
+      //   bank: '',
+      //   accountNumber: '',
+      //   interbankNumber: '',
+      // };
 
       // Nota: El backend no tiene endpoint para contratar postulantes
       // Por ahora, solo removemos el postulante localmente
@@ -222,7 +222,7 @@ export const ApplicantsDashboard = () => {
       const processingCount = Math.ceil(total * 0.75);
       const blacklistCount = total - processingCount;
 
-      setStatistics([
+      _setStatistics([
         { label: 'TOTAL POSTULANTES', value: total },
         { label: 'EN PROCESO', value: processingCount },
         { label: 'LISTA NEGRA', value: blacklistCount },
@@ -248,7 +248,7 @@ export const ApplicantsDashboard = () => {
   if (loading) {
     return (
       <div className="applicants-dashboard">
-        <Header />
+        <Header title="Cargando..." />
         <main className="dashboard-content">
           <div className="loading">Cargando postulantes...</div>
         </main>

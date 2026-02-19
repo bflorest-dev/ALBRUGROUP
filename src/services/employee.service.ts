@@ -6,7 +6,7 @@
 
 import { EmployeeRepository } from '../repositories/employee.repository';
 import { adaptEmpleadoResponseToEmployee } from '../types';
-import type { Employee, NewEmployeeFormData, EmpleadoResponse, PageResponse } from '../types';
+import type { Employee, NewEmployeeFormData } from '../types';
 
 export class EmployeeService {
   /**
@@ -88,6 +88,19 @@ export class EmployeeService {
     } catch (error) {
       console.error('Error creating employee:', error);
       throw new Error('No se pudo crear el empleado');
+    }
+  }
+
+  /**
+   * Dar de baja empleado
+   */
+  static async updateEmployee(id: string, data: any): Promise<Employee> {
+    try {
+      const updatedEmployee = await EmployeeRepository.updatePersonalData(Number(id), data);
+      return adaptEmpleadoResponseToEmployee(updatedEmployee);
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      throw new Error('No se pudo actualizar el empleado');
     }
   }
 

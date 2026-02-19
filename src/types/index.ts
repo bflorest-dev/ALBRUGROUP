@@ -8,6 +8,8 @@ export interface Employee {
   id: string;
   initials: string;
   fullName: string;
+  nombres?: string;
+  apellidos?: string;
   position: string;
   department: string;
   status: EmployeeStatus;
@@ -52,6 +54,7 @@ export interface Applicant {
   positionOfInterest: string;
   modality: string;
   campaign: string;
+  status?: string;
   trainingDayPayment?: number;
   startDate?: string;
   endDate?: string;
@@ -269,6 +272,7 @@ export const adaptPostulanteResponseToApplicant = (backend: PostulanteResponse):
   positionOfInterest: backend.puestoTrabajo,
   modality: '', // No disponible en backend
   campaign: backend.origen,
+  status: backend.estadoPostulacion,
   trainingDayPayment: backend.pagoDiaCapacitacion,
   startDate: backend.fechaInicio,
   endDate: backend.fechaFin,

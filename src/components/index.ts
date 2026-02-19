@@ -16,6 +16,6 @@ export * from './organisms/Layout';
 export * from './templates/DashboardTemplate';
 
 // Pages
-export { EmployeeDashboard } from './pages/EmployeeDashboard';
-export { ApplicantsDashboard } from './pages/ApplicantsDashboard';
-export { ComingSoonPage } from './pages/ComingSoonPage';
+export { EmployeeDashboard } from '../features/RRHH/pages/EmployeeDashboard';
+export { ApplicantsDashboard } from '../features/RRHH/pages/ApplicantsDashboard';
+export { ComingSoonPage } from '../features/RRHH/pages/ComingSoonPage';

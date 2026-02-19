@@ -1,0 +1,16 @@
+/* Formulario de nuevo empleado (moved to features/RRHH) */
+.employee-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* (styles kept identical to original) */
+.form-sections { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.form-section { padding: 8px; background: #F9FAFB; border-radius: 6px; border: 1px solid #E5E7EB; }
+.form-actions { padding-top: 12px; border-top: 1px solid #E5E7EB; text-align: right; }
+.btn-submit { background: #374151; color: white; }
+.btn-cancel { background: #F3F4F6; color: #6B7280; }
+
+@media (max-width: 1400px) { .form-sections { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 768px) { .form-sections { grid-template-columns: 1fr; } .btn-submit, .btn-cancel { width: 100%; } }

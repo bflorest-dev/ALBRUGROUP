@@ -1,5 +1,5 @@
 /**
- * Componente ComingSoonPage - Página de "Proximamente Habilitado"
+ * ComingSoonPage (moved copy into features/RRHH/pages)
  */
 
 import './ComingSoonPage.css';

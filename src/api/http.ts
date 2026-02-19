@@ -3,7 +3,8 @@
  * Instancia de Axios con interceptores para manejo de errores y configuración global
  */
 
-import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
+import axios from 'axios';
+import type { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { env } from '../config/env';
 
 // Tipos para respuestas de API (removido ApiResponse ya que backend devuelve directamente los datos)

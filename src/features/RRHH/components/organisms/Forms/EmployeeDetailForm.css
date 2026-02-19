@@ -1,0 +1,6 @@
+/* EmployeeDetailForm styles (moved to features/RRHH) */
+.employee-detail-form { display:flex; flex-direction:column; gap:16px }
+.employee-header { display:flex; gap:16px; padding:16px; background:#F9FAFB; border-radius:8px }
+.form-sections-detail { display:grid; grid-template-columns:repeat(4,1fr); gap:16px }
+.form-actions-detail { padding-top:12px; border-top:1px solid #E5E7EB; text-align:right }
+.btn-submit{background:#374151;color:#fff;padding:8px 12px;border-radius:6px}

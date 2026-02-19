@@ -1,0 +1,8 @@
+/* Formulario de nuevo postulante (moved to features/RRHH) */
+.applicant-form { display:flex; flex-direction:column; gap:10px }
+.form-group { display:flex; flex-direction:column; gap:3px }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px }
+.form-actions { display:flex; justify-content:flex-end; gap:6px; padding-top:10px; border-top:1px solid #E5E7EB }
+.btn-submit { background:#374151; color:white }
+.btn-cancel { background:#F3F4F6; color:#6B7280 }
+@media (max-width:768px) { .form-row{grid-template-columns:1fr} .form-actions{flex-direction:column} .btn-submit,.btn-cancel{width:100%} }

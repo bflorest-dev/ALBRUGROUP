@@ -5,7 +5,7 @@
  */
 
 import { ApplicantRepository } from '../repositories/applicant.repository';
-import type { Applicant, NewApplicantFormData, PostulanteResponse } from '../types';
+import type { Applicant, NewApplicantFormData } from '../types';
 import { adaptPostulanteResponseToApplicant } from '../types';
 
 export class ApplicantService {
@@ -50,6 +50,19 @@ export class ApplicantService {
         console.error('[ApplicantService.createApplicant] Error stack:', error.stack);
       }
       throw new Error('No se pudo crear el postulante');
+    }
+  }
+
+  /**
+   * Actualizar postulante
+   */
+  static async updateApplicant(id: string, applicantData: any): Promise<Applicant> {
+    try {
+      const updatedApplicant = await ApplicantRepository.update(id, applicantData);
+      return adaptPostulanteResponseToApplicant(updatedApplicant);
+    } catch (error) {
+      console.error('Error updating applicant:', error);
+      throw new Error('No se pudo actualizar el postulante');
     }
   }
 
