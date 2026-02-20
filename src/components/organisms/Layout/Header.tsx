@@ -45,7 +45,8 @@ export const Header = ({ title, subtitle }: HeaderProps) => {
       };
       
       setBreakList([...breakList, newBreak]);
-      setSelectedBreak('');
+      // keep the selected value visible until confirmation
+      setSelectedBreak(value);
     }
   };
 
@@ -71,6 +72,7 @@ export const Header = ({ title, subtitle }: HeaderProps) => {
     
     showSuccess(mensaje);
     setBreakList([]);
+    setSelectedBreak(''); // clear after confirming
   };
 
   const getButtonText = () => {

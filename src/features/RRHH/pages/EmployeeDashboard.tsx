@@ -396,7 +396,7 @@ export const EmployeeDashboard = () => {
         timestamp: time
       };
       setBreakList([...breakList, breakItem]);
-      setSelectedBreak('');
+      setSelectedBreak(value); // retain selection
     }
   };
 
@@ -410,6 +410,7 @@ export const EmployeeDashboard = () => {
     const mensaje = `${breakTypesStr} registrado${breakList.length > 1 ? 's' : ''}`;
     showSuccess(mensaje);
     setBreakList([]);
+    setSelectedBreak('');
   };
 
   const getButtonText = () => {
