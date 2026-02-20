@@ -613,7 +613,12 @@ export const EmployeeDashboard = () => {
                   onSubmit={async (formData) => {
                     try {
                       const newApplicant = await ApplicantService.createApplicant(formData);
-                      setApplicants(prev => [...prev, newApplicant]);
+                      newApplicant.status = newApplicant.status || 'POSTULANTE';
+                      setApplicants(prev => {
+                        const updated = [...prev, newApplicant];
+                        saveApplicantsToStorage(updated);
+                        return updated;
+                      });
                       setNewApplicantModalOpen(false);
                       showSuccess(`Postulante ${newApplicant.fullName} registrado exitosamente`);
                     } catch (error) {
