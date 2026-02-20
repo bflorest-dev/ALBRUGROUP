@@ -25,6 +25,7 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlackli
     phone: '',
     campaign: '',
     company: '',
+    status: '',
   });
 
   const handleFilterChange = (filterKey: string, value: string) => {
@@ -55,6 +56,7 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlackli
     if (filters.phone && !app.phoneMobile.includes(filters.phone)) return false;
     if (filters.campaign && app.campaign !== filters.campaign) return false;
     if (filters.company && app.company !== filters.company) return false;
+    if (filters.status && app.status !== filters.status) return false;
     return true;
   });
 
@@ -72,6 +74,7 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlackli
   const uniquePositions = Array.from(new Set(applicants.map(app => app.positionOfInterest)));
   const uniqueCampaigns = Array.from(new Set(applicants.map(app => app.campaign)));
   const uniqueCompanies = Array.from(new Set(applicants.map(app => app.company)));
+  const uniqueStatuses = Array.from(new Set(applicants.map(app => app.status)));
 
   return (
     <div className="applicants-table-container">
@@ -251,6 +254,35 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlackli
 
             <th>
               <div className="th-content">
+                <span>STATUS</span>
+                <div className="filter-dropdown-container">
+                  <button 
+                    className={`filter-header-btn ${activeFilter === 'status' ? 'active' : ''}`}
+                    title="Filtrar"
+                    onClick={() => setActiveFilter(activeFilter === 'status' ? null : 'status')}
+                  >
+                    <BiFilter size={14} />
+                  </button>
+                  {activeFilter === 'status' && (
+                    <div className="filter-dropdown">
+                      <select
+                        value={filters.status}
+                        onChange={(e) => handleFilterChange('status', e.target.value)}
+                        className="filter-select"
+                        autoFocus
+                      >
+                        <option value="">Todos</option>
+                        {uniqueStatuses.map((st) => (
+                          <option key={st} value={st}>{st}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </th>
+            <th>
+              <div className="th-content">
                 <span>CAMPAÑA</span>
                 <div className="filter-dropdown-container">
                   <button 
@@ -299,6 +331,7 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlackli
               <td>{applicant.documentNumber}</td>
               <td>{applicant.positionOfInterest}</td>
               <td className={`company-cell ${applicant.company?.toLowerCase()}`}>{applicant.company}</td>
+              <td>{applicant.status || 'POSTULANTE'}</td>
               <td>{applicant.campaign}</td>
               <td className="cell-actions">
                 <button
