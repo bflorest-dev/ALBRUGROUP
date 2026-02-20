@@ -13,15 +13,11 @@ interface HeaderProps {
   subtitle?: string;
 }
 
-interface BreakItem {
-  id: string;
-  type: string;
-  timestamp: string;
-}
 
 export const Header = ({ title, subtitle }: HeaderProps) => {
   const [selectedBreak, setSelectedBreak] = useState('');
-  const [breakList, setBreakList] = useState<BreakItem[]>([]);
+  // only track last start timestamp
+  const [startTime, setStartTime] = useState<Date | null>(null);
   const { showSuccess } = useNotification();
   const { collapsed, toggle } = useSidebar();
 
@@ -34,54 +30,32 @@ export const Header = ({ title, subtitle }: HeaderProps) => {
 
   const handleBreakSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
-    if (value) {
-      const now = new Date();
-      const time = now.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-      
-      const newBreak: BreakItem = {
-        id: Math.random().toString(36).substr(2, 9),
-        type: value,
-        timestamp: time,
-      };
-      
-      setBreakList([...breakList, newBreak]);
-      // keep the selected value visible until confirmation
-      setSelectedBreak(value);
-    }
-  };
+    if (!value) return;
+    const now = new Date();
+    const time = now.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
 
-  const handleRemoveBreak = (id: string) => {
-    setBreakList(breakList.filter(item => item.id !== id));
+    const nowDate = new Date();
+    if (value.includes('INICIO')) {
+      setStartTime(nowDate);
+      showSuccess(`Inicio baño ${time}`);
+    } else if (value.includes('FIN')) {
+      if (startTime) {
+        const diffMs = nowDate.getTime() - startTime.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const hours = Math.floor(diffMins / 60);
+        const mins = diffMins % 60;
+        showSuccess(`Duración ${hours}h ${mins}m`);
+      } else {
+        showSuccess(`Fin baño ${time}`);
+      }
+      setStartTime(null);
+    }
+
+    setSelectedBreak('');
   };
 
   const handleConfirm = () => {
-    console.log('Registros de descanso:', breakList);
-    
-    // Determinar el tipo de evento
-    const hasInicio = breakList.some(item => item.type.includes('INICIO'));
-    const hasFin = breakList.some(item => item.type.includes('FIN'));
-    
-    let mensaje = '';
-    if (hasInicio && !hasFin) {
-      mensaje = 'Eventualidad iniciada correctamente';
-    } else if (hasFin && !hasInicio) {
-      mensaje = 'Eventualidad finalizada correctamente';
-    } else {
-      mensaje = `${breakList.length} registros guardados correctamente`;
-    }
-    
-    showSuccess(mensaje);
-    setBreakList([]);
-    setSelectedBreak(''); // clear after confirming
-  };
-
-  const getButtonText = () => {
-    if (breakList.length === 0) return 'Confirmar';
-    const hasInicio = breakList.some(item => item.type.includes('INICIO'));
-    const hasFin = breakList.some(item => item.type.includes('FIN'));
-    if (hasInicio) return 'Iniciar';
-    if (hasFin) return 'Finalizar';
-    return 'Confirmar';
+    setSelectedBreak('');
   };
 
   return (
@@ -116,11 +90,6 @@ export const Header = ({ title, subtitle }: HeaderProps) => {
               ))}
             </select>
 
-            {breakList.length > 0 && (
-              <button className="confirm-btn" onClick={handleConfirm}>
-                {getButtonText()}
-              </button>
-            )}
           </div>
 
           <div className="header-actions">
@@ -135,25 +104,6 @@ export const Header = ({ title, subtitle }: HeaderProps) => {
         </div>
       </div>
 
-      {breakList.length > 0 && (
-        <div className="break-list-container">
-          <ul className="break-list">
-            {breakList.map((item) => (
-              <li key={item.id} className="break-item">
-                <span className="break-type">{item.type}</span>
-                <span className="break-time">{item.timestamp}</span>
-                <button
-                  className="remove-btn"
-                  onClick={() => handleRemoveBreak(item.id)}
-                  title="Eliminar"
-                >
-                  ×
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </header>
   );
 };

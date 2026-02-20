@@ -374,7 +374,7 @@ export const EmployeeDashboard = () => {
   const [applicantsLoading, setApplicantsLoading] = useState(true);
   const [newApplicantModalOpen, setNewApplicantModalOpen] = useState(false);
   const [selectedBreak, setSelectedBreak] = useState('');
-  const [startTime, setStartTime] = useState<string | null>(null);
+  const [startTime, setStartTime] = useState<Date | null>(null);
   const { showError, showSuccess } = useNotification();
   const { handleError } = useErrorHandler();
 
@@ -391,18 +391,16 @@ export const EmployeeDashboard = () => {
     const now = new Date();
     const time = now.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
 
+    const nowDate = new Date();
     if (value.includes('INICIO')) {
-      setStartTime(time);
+      setStartTime(nowDate);
       showSuccess(`Inicio baño ${time}`);
     } else if (value.includes('FIN')) {
       if (startTime) {
-        const [h1, m1] = startTime.split(':').map(Number);
-        const [h2, m2] = time.split(':').map(Number);
-        const d1 = h1 * 60 + m1;
-        const d2 = h2 * 60 + m2;
-        const diff = d2 - d1;
-        const hours = Math.floor(diff / 60);
-        const mins = diff % 60;
+        const diffMs = nowDate.getTime() - startTime.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const hours = Math.floor(diffMins / 60);
+        const mins = diffMins % 60;
         showSuccess(`Duración ${hours}h ${mins}m`);
       } else {
         showSuccess(`Fin baño ${time}`);
