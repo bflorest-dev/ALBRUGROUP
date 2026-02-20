@@ -91,6 +91,15 @@ export { NewApplicantForm } from '../../../features/RRHH/components/organisms/Fo
             <option value="REFERIDO">REFERIDO</option>
           </select>
         </div>
+
+        <div className="form-group">
+          <label htmlFor="company">COMPAÑÍA <span className="required">*</span></label>
+          <select id="company" name="company" value={formData.company} onChange={handleChange} required>
+            <option value="CLARO">CLARO</option>
+            <option value="WIN">WIN</option>
+          </select>
+        </div>
+        </div>
       </div>
 
       <div className="form-row">

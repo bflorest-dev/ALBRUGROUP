@@ -108,6 +108,7 @@ export interface NewApplicantFormData {
   documentType: 'DNI' | 'CE';
   documentNumber: string;
   positionOfInterest: string;
+  company: string; // CLARO | WIN
   campaign: string;
   trainingDayPayment?: number;
   startDate?: string;

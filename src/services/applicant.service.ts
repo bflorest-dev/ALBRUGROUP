@@ -108,6 +108,9 @@ export class ApplicantService {
     if (!data.positionOfInterest?.trim()) {
       throw new Error('La posición de interés es requerida');
     }
+    if (!data.company?.trim()) {
+      throw new Error('La compañía es requerida');
+    }
     if (!data.campaign?.trim()) {
       throw new Error('La campaña/origen es requerida');
     }
@@ -129,8 +132,9 @@ export class ApplicantService {
       numeroDocumento: data.documentNumber.trim(),
       celularPersonal: data.phoneMobile.trim(),
       puestoTrabajo: puestoTrabajo,
+      compania: data.company?.trim().toUpperCase() || undefined,
       origen: data.campaign.trim().toUpperCase(),
-      estadoPostulacion: 'EN_PROCESO',
+      estadoPostulacion: 'POSTULANTE',
       pagoDiaCapacitacion: data.trainingDayPayment ? parseFloat(String(data.trainingDayPayment)) : 0,
       fechaInicio: data.startDate || '',
       fechaFin: data.endDate || '',
