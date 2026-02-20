@@ -370,6 +370,10 @@
   font-family: inherit;
   cursor: pointer;
   min-width: 120px;
+  color: #374151;
+  background: white;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .break-select:focus {

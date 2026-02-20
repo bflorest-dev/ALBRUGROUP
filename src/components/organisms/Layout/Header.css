@@ -114,6 +114,10 @@
   /* no flex so it doesn't grow too large */
   flex: none;
   min-width: 120px;
+  color: #374151;
+  background: white;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .break-select:focus {
