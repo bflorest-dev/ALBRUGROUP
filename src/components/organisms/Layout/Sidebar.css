@@ -1,23 +1,25 @@
 .sidebar {
-  width: 70px;
+  /* use the same variables defined by MainLayout */
+  width: var(--sidebar-width, 280px);
   height: 100vh;
   background: white;
   border-right: 1px solid #E5E7EB;
-  padding: 16px 8px;
+  padding: 16px 20px;
   display: flex;
   flex-direction: column;
   position: fixed;
   left: 0;
   top: 0;
   overflow-y: auto;
-  transition: width 0.3s ease;
-  align-items: center;
+  transition: width 0.3s ease, padding 0.3s ease;
+  align-items: flex-start;
 }
 
-.sidebar:hover {
-  width: 280px;
-  align-items: flex-start;
-  padding: 16px 20px;
+/* collapsed modifier */
+.sidebar.collapsed {
+  width: var(--sidebar-collapsed-width, 80px);
+  padding: 16px 8px;
+  align-items: center;
 }
 
 .sidebar-header {
@@ -26,12 +28,11 @@
   opacity: 1;
   transition: opacity 0.3s ease;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
-.sidebar:hover .sidebar-header {
-  opacity: 1;
-  justify-content: flex-start;
+.sidebar.collapsed .sidebar-header {
+  justify-content: center;
 }
 
 .logo {
@@ -58,14 +59,14 @@
 }
 
 .logo-text {
-  opacity: 0;
+  opacity: 1;
   transition: opacity 0.3s ease;
-  display: none;
+  display: inline-block;
 }
 
-.sidebar:hover .logo-text {
-  opacity: 1;
-  display: block;
+.sidebar.collapsed .logo-text {
+  opacity: 0;
+  display: none;
 }
 
 .sidebar-nav {
@@ -94,9 +95,9 @@
   width: 100%;
 }
 
-.sidebar:hover .nav-item {
-  justify-content: flex-start;
-  padding: 12px 16px;
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 12px 0;
 }
 
 .nav-item:hover {
@@ -123,13 +124,14 @@
 .nav-label {
   flex: 1;
   text-align: left;
-  opacity: 0;
+  opacity: 1;
   transition: opacity 0.3s ease;
   min-width: 0;
 }
 
-.sidebar:hover .nav-label {
-  opacity: 1;
+.sidebar.collapsed .nav-label {
+  opacity: 0;
+  display: none;
 }
 
 .sidebar-user-profile {
@@ -143,8 +145,6 @@
   justify-content: center;
 }
 
-.sidebar:hover .sidebar-user-profile {
-  opacity: 1;
-  padding: 16px 20px;
-  justify-content: flex-start;
+.sidebar.collapsed .sidebar-user-profile {
+  justify-content: center;
 }

@@ -3,8 +3,9 @@
  */
 
 import { useState } from 'react';
-import { BiBell, BiLogOut } from 'react-icons/bi';
+import { BiBell, BiLogOut, BiChevronLeft, BiChevronRight } from 'react-icons/bi';
 import { useNotification } from '../../../contexts/useNotification';
+import { useSidebar } from '../../../contexts/SidebarContext';
 import './Header.css';
 
 interface HeaderProps {
@@ -22,6 +23,7 @@ export const Header = ({ title, subtitle }: HeaderProps) => {
   const [selectedBreak, setSelectedBreak] = useState('');
   const [breakList, setBreakList] = useState<BreakItem[]>([]);
   const { showSuccess } = useNotification();
+  const { collapsed, toggle } = useSidebar();
 
   const breakTypes = [
     'INICIO DE BAÑO',
@@ -84,6 +86,15 @@ export const Header = ({ title, subtitle }: HeaderProps) => {
     <header className="header">
       <div className="header-content">
         <div className="header-text">
+          <button
+            className="icon-btn sidebar-toggle-btn"
+            title={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+            aria-label={collapsed ? 'Expandir menú' : 'Colapsar menú'}
+            onClick={toggle}
+          >
+            {collapsed ? <BiChevronRight size={20} /> : <BiChevronLeft size={20} />}
+          </button>
+
           <h1 className="header-title">{title}</h1>
           {subtitle && <p className="header-subtitle">{subtitle}</p>}
         </div>

@@ -87,6 +87,10 @@
   color: #2563EB;
 }
 
+.sidebar-toggle-btn {
+  margin-right: 12px;
+}
+
 .icon-btn:active {
   transform: scale(0.95);
 }

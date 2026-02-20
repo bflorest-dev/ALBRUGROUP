@@ -3,7 +3,8 @@
  */
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { BiDownload, BiSearch, BiUserPlus, BiCheckCircle, BiUser, BiBell, BiLogOut } from 'react-icons/bi';
+import { BiDownload, BiSearch, BiUserPlus, BiCheckCircle, BiUser, BiBell, BiLogOut, BiChevronLeft, BiChevronRight } from 'react-icons/bi';
+import { useSidebar } from '../../../contexts/SidebarContext';
 import { StatCard } from '../../../components/molecules/StatCard';
 import { EmployeeTable } from '../components/organisms/Tables';
 import { Pagination } from '../../../components/molecules/Pagination';
@@ -367,6 +368,7 @@ const EmployeeContent = () => {
 
 export const EmployeeDashboard = () => {
   const [activeTab, setActiveTab] = useState<RRHHTab>('postulantes');
+  const { collapsed: sidebarCollapsed, toggle: toggleSidebar } = useSidebar();
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [acceptedApplicants, setAcceptedApplicants] = useState<Applicant[]>([]);
   const [applicantsLoading, setApplicantsLoading] = useState(true);
@@ -448,7 +450,7 @@ export const EmployeeDashboard = () => {
   }, [activeTab, handleError, showError]);
 
   return (
-    <div className="employee-dashboard">
+    <div className={`employee-dashboard${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
       <div className="sidebar">
         <h1 className="sidebar-title">Gestión de RRHH</h1>
         
@@ -478,6 +480,15 @@ export const EmployeeDashboard = () => {
       </div>
 
       <header className="dashboard-header">
+          <button
+            className="icon-btn sidebar-toggle-btn"
+            title={sidebarCollapsed ? 'Expandir menú' : 'Colapsar menú'}
+            aria-label={sidebarCollapsed ? 'Expandir menú' : 'Colapsar menú'}
+            onClick={toggleSidebar}
+          >
+            {sidebarCollapsed ? <BiChevronRight size={20} /> : <BiChevronLeft size={20} />}
+          </button>
+
           <h2>Gestión de RRHH</h2>
           
           <select

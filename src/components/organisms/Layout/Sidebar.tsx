@@ -5,6 +5,7 @@
 import type { ComponentType } from 'react';
 import type { UserProfile } from '../../../types';
 import { UserProfileComponent } from './UserProfile';
+import { useSidebar } from '../../../contexts/SidebarContext';
 import './Sidebar.css';
 
 interface NavItem {
@@ -20,8 +21,10 @@ interface SidebarProps {
 }
 
 export const Sidebar = ({ navItems, onNavClick, user }: SidebarProps) => {
+  const { collapsed } = useSidebar();
+
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${collapsed ? ' collapsed' : ''}`}>
       <div className="sidebar-header">
         <div className="logo">
           <span className="logo-text">ALBRU</span>

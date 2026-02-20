@@ -7,12 +7,14 @@ import RouterByRole from '../../../RouterByRole';
 import { NotificationProvider } from '../../../contexts/NotificationContext';
 import { useNotification } from '../../../contexts/useNotification';
 import { useDevRole } from '../../../contexts/DevRoleContext';
+import { SidebarProvider, useSidebar } from '../../../contexts/SidebarContext';
 import { ToastContainer } from '../../molecules/Toast';
 import './MainLayout.css';
 
 const MainLayoutContent = () => {
   const { selectedRole } = useDevRole();
   const mainRef = useRef<HTMLDivElement | null>(null);
+  const { collapsed } = useSidebar();
 
   const renderPage = () => {
     return <RouterByRole role={selectedRole} />;
@@ -58,7 +60,7 @@ const MainLayoutContent = () => {
     <>
       <div
         ref={mainRef}
-        className="main-layout"
+        className={`main-layout${collapsed ? ' sidebar-collapsed' : ''}`}
         onMouseMove={handlePointerMove}
         onTouchMove={handlePointerMove}
         onMouseLeave={handlePointerLeave}
@@ -101,7 +103,9 @@ const MainLayoutContent = () => {
 export const MainLayout = () => {
   return (
     <NotificationProvider>
-      <MainLayoutContent />
+      <SidebarProvider>
+        <MainLayoutContent />
+      </SidebarProvider>
     </NotificationProvider>
   );
 };
