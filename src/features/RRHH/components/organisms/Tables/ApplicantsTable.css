@@ -167,12 +167,12 @@
 
 /* company cell color variants */
 .company-cell.claro {
-  background: #E11D48;
-  color: #FFFFFF;
+  background: #FEE2E2; /* light red */
+  color: #B91C1C; /* dark red text */
 }
 .company-cell.win {
-  background: #F97316;
-  color: #FFFFFF;
+  background: #FFEDD5; /* light orange */
+  color: #C2410C; /* dark orange text */
 }
 .name-with-avatar {
   display: flex;
