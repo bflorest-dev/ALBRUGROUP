@@ -171,7 +171,7 @@ export const EditApplicantForm = ({ applicant, onSubmit, onCancel }: EditApplica
 
         <div className="form-group">
           <label htmlFor="company">COMPAÑÍA <span className="required">*</span></label>
-          <select id="company" name="company" value={formData.company} onChange={handleChange} required>
+          <select id="company" name="company" value={formData.company} onChange={handleChange} required className={`company-select ${formData.company.toLowerCase()}`}>
             <option value="CLARO">CLARO</option>
             <option value="WIN">WIN</option>
           </select>
