@@ -5,6 +5,9 @@
 import { useState } from 'react';
 import { AVAILABLE_POSITIONS_GROUPED } from '../../../../../utils/mockData';
 import type { EditApplicantFormData, Applicant } from '../../../../../types';
+import { Input } from '@atoms/Input';
+import { Select } from '@atoms/Select';
+import { Button } from '@atoms/Button';
 import './EditApplicantForm.css';
 
 interface EditApplicantFormProps {
@@ -59,129 +62,124 @@ export const EditApplicantForm = ({ applicant, onSubmit, onCancel }: EditApplica
     <form className="applicant-form" onSubmit={handleSubmit}>
       <div className="form-row">
         <div className="form-group">
-          <label htmlFor="nombres">NOMBRES <span className="required">*</span></label>
-          <input
-            type="text"
+          <Input
             id="nombres"
             name="nombres"
+            label="NOMBRES"
+            required
             placeholder="Nombres"
             value={formData.nombres}
             onChange={handleChange}
-            required
           />
         </div>
 
         <div className="form-group">
-          <label htmlFor="apellidos">APELLIDOS <span className="required">*</span></label>
-          <input
-            type="text"
+          <Input
             id="apellidos"
             name="apellidos"
+            label="APELLIDOS"
+            required
             placeholder="Apellidos"
             value={formData.apellidos}
             onChange={handleChange}
-            required
           />
         </div>
       </div>
 
       <div className="form-row">
         <div className="form-group">
-          <label htmlFor="phoneMobile">CELULAR PERSONAL <span className="required">*</span></label>
-          <input
-            type="tel"
+          <Input
             id="phoneMobile"
             name="phoneMobile"
+            label="CELULAR PERSONAL"
+            required
+            type="tel"
             placeholder="Número de celular"
             value={formData.phoneMobile}
             onChange={handleChange}
-            required
           />
         </div>
 
         <div className="form-group">
-          <label htmlFor="positionOfInterest">PUESTO DE INTERÉS <span className="required">*</span></label>
-          <select
+          <Select
             id="positionOfInterest"
             name="positionOfInterest"
+            label="PUESTO DE INTERÉS"
+            required
+            options={
+              Object.entries(AVAILABLE_POSITIONS_GROUPED).flatMap(([_category, positions]) =>
+                positions.map((position) => ({ label: position, value: position }))
+              )
+            }
             value={formData.positionOfInterest}
             onChange={handleChange}
-            required
-          >
-            <option value="">Selecciona un puesto</option>
-            {Object.entries(AVAILABLE_POSITIONS_GROUPED).map(([category, positions]) => (
-              <optgroup key={category} label={category}>
-                {positions.map((position) => (
-                  <option key={position} value={position}>
-                    {category === 'RRHH' || category === 'CONTABILIDAD' || category === 'COMMUNITY' 
-                      ? position 
-                      : `  ${position}`}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
+          />
         </div>
       </div>
 
       <div className="form-row">
         <div className="form-group">
-          <label htmlFor="documentType">TIPO DE DOCUMENTO</label>
-          <select
+          <Select
             id="documentType"
             name="documentType"
+            label="TIPO DE DOCUMENTO"
+            options={[{ label: 'DNI', value: 'DNI' }, { label: 'CE', value: 'CE' }]}
             value={formData.documentType}
             onChange={handleChange}
-          >
-            <option value="DNI">DNI</option>
-            <option value="CE">CE</option>
-          </select>
+          />
         </div>
 
         <div className="form-group">
-          <label htmlFor="documentNumber">Nº DOCUMENTO <span className="required">*</span></label>
-          <input
-            type="text"
+          <Input
             id="documentNumber"
             name="documentNumber"
+            label="Nº DOCUMENTO"
+            required
             placeholder="Número de documento"
             value={formData.documentNumber}
             onChange={handleChange}
-            required
           />
         </div>
       </div>
 
       <div className="form-row">
         <div className="form-group">
-          <label htmlFor="campaign">CAMPAÑA <span className="required">*</span></label>
-          <select
+          <Select
             id="campaign"
             name="campaign"
+            label="CAMPAÑA"
+            required
+            options={[
+              { label: 'COMPUTRABAJO', value: 'COMPUTRABAJO' },
+              { label: 'INDEED', value: 'INDEED' },
+              { label: 'REFERIDO', value: 'REFERIDO' },
+            ]}
             value={formData.campaign}
             onChange={handleChange}
-            required
-          >
-            <option value="">Selecciona una campaña</option>
-            <option value="COMPUTRABAJO">COMPUTRABAJO</option>
-            <option value="INDEED">INDEED</option>
-            <option value="REFERIDO">REFERIDO</option>
-          </select>
+          />
         </div>
 
         <div className="form-group">
-          <label htmlFor="company">COMPAÑÍA <span className="required">*</span></label>
-          <select id="company" name="company" value={formData.company} onChange={handleChange} required>
-            <option value="CLARO">CLARO</option>
-            <option value="WIN">WIN</option>
-          </select>
+          <Select
+            id="company"
+            name="company"
+            label="COMPAÑÍA"
+            required
+            options={[{ label: 'CLARO', value: 'CLARO' }, { label: 'WIN', value: 'WIN' }]}
+            value={formData.company}
+            onChange={handleChange}
+          />
         </div>
       </div>
 
 
       <div className="form-actions">
-        <button type="button" className="btn-cancel" onClick={onCancel}>CANCELAR</button>
-        <button type="submit" className="btn-submit">GUARDAR CAMBIOS</button>
+        <Button type="button" variant="ghost" onClick={onCancel}>
+          CANCELAR
+        </Button>
+        <Button type="submit" variant="primary">
+          GUARDAR CAMBIOS
+        </Button>
       </div>
     </form>
   );

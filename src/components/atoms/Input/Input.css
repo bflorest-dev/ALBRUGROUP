@@ -1,0 +1,25 @@
+.atom-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.atom-input:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.atom-input.error {
+  border-color: #dc2626;
+}
+
+.atom-input-label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+  font-size: 13px;
+  color: #374151;
+}

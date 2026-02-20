@@ -1,0 +1,28 @@
+.atom-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s, color 0.2s;
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
+.atom-button.primary { background-color: #2563eb; color: white; }
+.atom-button.primary:hover { background-color: #1d4ed8; }
+
+.atom-button.secondary { background-color: #e5e7eb; color: #374151; }
+.atom-button.secondary:hover { background-color: #d1d5db; }
+
+.atom-button.ghost { background: transparent; color: #374151; }
+.atom-button.ghost:hover { background: #f3f4f6; }
+
+/* sizes */
+.atom-button.sm { padding: 6px 12px; font-size: 13px; }
+.atom-button.md { padding: 8px 16px; font-size: 14px; }
+.atom-button.lg { padding: 10px 20px; font-size: 15px; }
+
+.atom-button:disabled { opacity: 0.6; cursor: not-allowed; }
