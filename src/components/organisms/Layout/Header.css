@@ -104,14 +104,16 @@
 }
 
 .break-select {
-  padding: 6px 8px;
-  border: 1px solid #E5E7EB;
+  padding: 4px 6px;
+  border: 1px solid #D1D5DB;
   border-radius: 4px;
-  font-size: 12px;
+  font-size: 11px;
   font-family: inherit;
   cursor: pointer;
   transition: all 0.2s ease;
-  flex: 1;
+  /* no flex so it doesn't grow too large */
+  flex: none;
+  min-width: 120px;
 }
 
 .break-select:focus {
