@@ -135,17 +135,17 @@
 }
 
 .confirm-btn {
-  padding: 6px 12px;
+  padding: 4px 8px;
   background: #374151;
   color: white;
   border: none;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.2px;
+  transition: background 0.2s ease, transform 0.1s ease;
+  text-transform: none;
+  letter-spacing: 0.1px;
   white-space: nowrap;
 }
 
