@@ -2,6 +2,7 @@
   /* use the same variables defined by MainLayout */
   --sidebar-accent: #2563EB;
   --sidebar-accent-rgb: 37,99,235;
+  --sidebar-accent-light: rgba(var(--sidebar-accent-rgb), 0.14);
   width: var(--sidebar-width, 280px);
   height: 100vh;
   background: white;
@@ -109,7 +110,8 @@
 } 
 
 .nav-item.active {
-  /* painted full row for expanded sidebar */n  background: linear-gradient(90deg, rgba(var(--sidebar-accent-rgb),0.12), rgba(var(--sidebar-accent-rgb),0.06));
+  /* painted full row for expanded sidebar using light-blue */
+  background: var(--sidebar-accent-light);
   color: var(--sidebar-accent);
   font-weight: 700;
   border-left: 4px solid var(--sidebar-accent);
@@ -117,9 +119,9 @@
   box-shadow: inset 0 -1px 0 rgba(2,6,23,0.02);
 }
 
-/* also color the icon inside the active item (expanded view) */
+/* icon color for active item (expanded view): keep icon visible on light-blue */
 .nav-item.active .nav-icon {
-  background: rgba(255,255,255,0.06);
+  background: transparent;
   color: var(--sidebar-accent);
   transform: translateY(-1px);
   box-shadow: none;
@@ -184,9 +186,10 @@
 }
 
 .sidebar.collapsed .nav-item.active .nav-icon {
-  background: var(--sidebar-accent);
-  color: #FFFFFF;
-  box-shadow: 0 8px 28px rgba(var(--sidebar-accent-rgb),0.18);
+  /* light-blue pill + dark-blue icon for selected collapsed item */
+  background: var(--sidebar-accent-light);
+  color: var(--sidebar-accent);
+  box-shadow: 0 6px 18px rgba(var(--sidebar-accent-rgb),0.08);
   transform: translateY(-1px) scale(1.02);
 }
 
