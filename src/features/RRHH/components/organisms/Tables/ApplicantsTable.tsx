@@ -2,10 +2,11 @@
  * Componente ApplicantsTable (moved to features/RRHH)
  */
 
-import { useState } from 'react';
-import { BiEdit, BiBlock, BiFilter, BiSortAlt2 } from 'react-icons/bi';
+import { BiFilter, BiSortAlt2 } from 'react-icons/bi';
 import type { Applicant } from '../../../../../types';
 import './ApplicantsTable.css';
+import { useApplicantsTable } from '../../../../../hooks/useApplicantsTable';
+import { ApplicantsTableRow } from './ApplicantsTable/ApplicantsTableRow';
 
 interface ApplicantsTableProps {
   applicants: Applicant[];
@@ -15,66 +16,22 @@ interface ApplicantsTableProps {
 }
 
 export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlacklist }: ApplicantsTableProps) => {
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const [filters, setFilters] = useState<Record<string, string>>({
-    name: '',
-    documentType: '',
-    documentNumber: '',
-    position: '',
-    phone: '',
-    campaign: '',
-    company: '',
-    status: '',
-  });
-
-  const handleFilterChange = (filterKey: string, value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      [filterKey]: value
-    }));
-  };
-
-  const handleClearFilters = () => {
-    setFilters({
-      name: '',
-      documentType: '',
-      documentNumber: '',
-      position: '',
-      phone: '',
-      campaign: '',
-      company: '',
-    });
-    setActiveFilter(null);
-  };
-
-  let filteredApplicants = applicants.filter(app => {
-    if (filters.name && !app.fullName.toLowerCase().includes(filters.name.toLowerCase())) return false;
-    if (filters.documentType && app.documentType !== filters.documentType) return false;
-    if (filters.documentNumber && !app.documentNumber.includes(filters.documentNumber)) return false;
-    if (filters.position && app.positionOfInterest !== filters.position) return false;
-    if (filters.phone && !app.phoneMobile.includes(filters.phone)) return false;
-    if (filters.campaign && app.campaign !== filters.campaign) return false;
-    if (filters.company && app.company !== filters.company) return false;
-    if (filters.status && app.status !== filters.status) return false;
-    return true;
-  });
-
-  if (sortOrder) {
-    filteredApplicants = [...filteredApplicants].sort((a, b) => {
-      const aName = a.fullName.toLowerCase();
-      const bName = b.fullName.toLowerCase();
-      return sortOrder === 'asc' ? aName.localeCompare(bName) : bName.localeCompare(aName);
-    });
-  }
-
-  const hasActiveFilters = Object.values(filters).some(f => f !== '');
-
-  const uniqueDocTypes = Array.from(new Set(applicants.map(app => app.documentType)));
-  const uniquePositions = Array.from(new Set(applicants.map(app => app.positionOfInterest)));
-  const uniqueCampaigns = Array.from(new Set(applicants.map(app => app.campaign)));
-  const uniqueCompanies = Array.from(new Set(applicants.map(app => app.company)));
-  const uniqueStatuses = Array.from(new Set(applicants.map(app => app.status)));
+  const {
+    filteredApplicants,
+    sortOrder,
+    setSortOrder,
+    filters,
+    handleFilterChange,
+    handleClearFilters,
+    hasActiveFilters,
+    uniqueDocTypes,
+    uniquePositions,
+    uniqueCampaigns,
+    uniqueCompanies,
+    uniqueStatuses,
+    activeFilter,
+    setActiveFilter,
+  } = useApplicantsTable(applicants);
 
   return (
     <div className="applicants-table-container">
@@ -316,40 +273,14 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlackli
           </tr>
         </thead>
         <tbody>
-          {filteredApplicants.map((applicant, index) => (
-            <tr key={applicant.id} className={index % 2 === 0 ? 'even-row' : 'odd-row'}>
-              <td className="cell-name">
-                <div className="name-with-avatar">
-                  <div className="avatar">
-                    {applicant.fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                  </div>
-                  <span>{applicant.fullName}</span>
-                </div>
-              </td>
-              <td>{applicant.phoneMobile}</td>
-              <td>{applicant.documentType}</td>
-              <td>{applicant.documentNumber}</td>
-              <td>{applicant.positionOfInterest}</td>
-              <td className={`company-cell ${applicant.company?.toLowerCase()}`}>{applicant.company}</td>
-              <td>{applicant.status || 'POSTULANTE'}</td>
-              <td>{applicant.campaign}</td>
-              <td className="cell-actions">
-                <button
-                  className="action-btn edit-btn"
-                  onClick={() => onEdit(applicant)}
-                  title="Editar postulante"
-                >
-                  <BiEdit size={18} />
-                </button>
-                <button
-                  className="action-btn blacklist-btn"
-                  onClick={() => onBlacklist(applicant)}
-                  title="Pasar a lista negra"
-                >
-                  <BiBlock size={18} />
-                </button>
-              </td>
-            </tr>
+          {filteredApplicants.map((applicant) => (
+            <ApplicantsTableRow
+              key={applicant.id}
+              applicant={applicant}
+              onEdit={onEdit}
+              onHire={_onHire}
+              onBlacklist={onBlacklist}
+            />
           ))}
         </tbody>
       </table>
