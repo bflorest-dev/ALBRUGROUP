@@ -370,6 +370,12 @@ const EmployeeContent = () => {
 export const EmployeeDashboard = () => {
   const [activeTab, setActiveTab] = useState<RRHHTab>('postulantes');
   const { collapsed: sidebarCollapsed, toggle: toggleSidebar } = useSidebar();
+
+  const headerTitle = activeTab === 'postulantes'
+    ? 'POSTULANTES'
+    : activeTab === 'aceptados'
+    ? 'ACEPTADOS'
+    : 'EMPLEADOS';
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [acceptedApplicants, setAcceptedApplicants] = useState<Applicant[]>([]);
   const [applicantsLoading, setApplicantsLoading] = useState(true);
@@ -545,7 +551,7 @@ export const EmployeeDashboard = () => {
             {sidebarCollapsed ? <BiChevronRight size={20} /> : <BiChevronLeft size={20} />}
           </button>
 
-          <h2>Gestión de RRHH</h2>
+          <h2>{headerTitle}</h2>
           
           <select
             value={selectedBreak}
