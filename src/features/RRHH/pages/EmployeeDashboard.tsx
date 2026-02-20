@@ -365,7 +365,7 @@ const EmployeeContent = () => {
 };
 
 export const EmployeeDashboard = () => {
-  const [activeTab, setActiveTab] = useState<RRHHTab>('empleados');
+  const [activeTab, setActiveTab] = useState<RRHHTab>('postulantes');
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [acceptedApplicants, setAcceptedApplicants] = useState<Applicant[]>([]);
   const [applicantsLoading, setApplicantsLoading] = useState(true);
