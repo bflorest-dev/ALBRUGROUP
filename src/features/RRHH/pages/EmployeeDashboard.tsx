@@ -9,7 +9,7 @@ import { StatCard } from '../../../components/molecules/StatCard';
 import { EmployeeTable } from '../components/organisms/Tables';
 import { Pagination } from '../../../components/molecules/Pagination';
 import { Modal } from '../../../components/molecules/Modal';
-import { NewEmployeeForm, NewApplicantForm, EmployeeDetailForm, EmployeeCheckoutForm, ActivateEmployeeModal } from '../components/organisms/Forms';
+import { NewEmployeeForm, NewApplicantForm, EditApplicantForm, EmployeeDetailForm, EmployeeCheckoutForm, ActivateEmployeeModal } from '../components/organisms/Forms';
 import { IconButton } from '../../../components/atoms/IconButton';
 import { ApplicantsTable } from '../components/organisms/Tables';
 import { useNotification } from '../../../contexts/useNotification';
@@ -17,7 +17,7 @@ import { usePagination } from '../../../hooks/usePagination';
 import { useErrorHandler } from '../../../hooks/useErrorHandler';
 import { EmployeeService } from '../../../services/employee.service';
 import { ApplicantService } from '../../../services/applicant.service';
-import type { Employee, Applicant, NewEmployeeFormData, EmployeeDetailFormData, Statistic } from '../../../types';
+import type { Employee, Applicant, NewEmployeeFormData, EmployeeDetailFormData, Statistic, EditApplicantFormData } from '../../../types';
 import './EmployeeDashboard.css';
 
 const ITEMS_PER_PAGE = 10;
@@ -373,10 +373,49 @@ export const EmployeeDashboard = () => {
   const [acceptedApplicants, setAcceptedApplicants] = useState<Applicant[]>([]);
   const [applicantsLoading, setApplicantsLoading] = useState(true);
   const [newApplicantModalOpen, setNewApplicantModalOpen] = useState(false);
+
+  // edición de postulante
+  const [isEditApplicantModalOpen, setIsEditApplicantModalOpen] = useState(false);
+  const [selectedApplicantForEdit, setSelectedApplicantForEdit] = useState<Applicant | null>(null);
+
+  const handleEditApplicant = (applicant: Applicant) => {
+    setSelectedApplicantForEdit(applicant);
+    setIsEditApplicantModalOpen(true);
+  };
+
+  const handleCloseEditApplicant = () => {
+    setIsEditApplicantModalOpen(false);
+    setSelectedApplicantForEdit(null);
+  };
+
+  const handleEditApplicantSubmit = async (formData: EditApplicantFormData) => {
+    if (!selectedApplicantForEdit) return;
+
+    try {
+      const updated = await ApplicantService.updateApplicant(selectedApplicantForEdit.id, formData);
+
+      // actualizar tanto candidatos como aceptados si aplica
+      setApplicants(prev => prev.map(a => a.id === updated.id ? updated : a));
+      setAcceptedApplicants(prev => prev.map(a => a.id === updated.id ? updated : a));
+
+      setIsEditApplicantModalOpen(false);
+      setSelectedApplicantForEdit(null);
+      showSuccess(`Postulante ${updated.fullName} actualizado`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error al actualizar postulante';
+      handleError(error instanceof Error ? error : new Error(errorMessage), {
+        componentStack: 'EmployeeDashboard.handleEditApplicantSubmit'
+      });
+      showError(`Error: ${errorMessage}`);
+    }
+  };
+
+  // break tracking state (separado de la edición)
   const [selectedBreak, setSelectedBreak] = useState('');
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [startedBanho, setStartedBanho] = useState(false);
   const [startedBreak, setStartedBreak] = useState(false);
+
   const { showError, showSuccess } = useNotification();
   const { handleError } = useErrorHandler();
 
@@ -550,7 +589,7 @@ export const EmployeeDashboard = () => {
 
               <ApplicantsTable 
                 applicants={applicants}
-                onEdit={(_applicant: Applicant) => {}}
+                onEdit={handleEditApplicant}
                 onHire={(_applicant: Applicant) => {}}
                 onBlacklist={(_applicant: Applicant) => {}}
               />
@@ -574,6 +613,21 @@ export const EmployeeDashboard = () => {
                   onCancel={() => setNewApplicantModalOpen(false)}
                 />
               </Modal>
+
+              {/* Modal para editar postulante desde esta vista */}
+              <Modal
+                isOpen={isEditApplicantModalOpen}
+                title="Editar Postulante"
+                onClose={handleCloseEditApplicant}
+              >
+                {selectedApplicantForEdit && (
+                  <EditApplicantForm
+                    applicant={selectedApplicantForEdit}
+                    onSubmit={handleEditApplicantSubmit}
+                    onCancel={handleCloseEditApplicant}
+                  />
+                )}
+              </Modal>
             </section>
           )}
           
@@ -593,7 +647,7 @@ export const EmployeeDashboard = () => {
               </div>
               <ApplicantsTable 
                 applicants={acceptedApplicants}
-                onEdit={(_applicant: Applicant) => {}}
+                onEdit={handleEditApplicant}
                 onHire={(_applicant: Applicant) => {}}
                 onBlacklist={(_applicant: Applicant) => {}}
               />
