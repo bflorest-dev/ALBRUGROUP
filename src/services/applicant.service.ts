@@ -58,7 +58,20 @@ export class ApplicantService {
    */
   static async updateApplicant(id: string, applicantData: any): Promise<Applicant> {
     try {
-      const updatedApplicant = await ApplicantRepository.update(id, applicantData);
+      // Antes de enviar al backend debemos mapear los campos igual que en create
+      // para que utilice las mismas claves que el API espera (p.ej. puestoTrabajo, origen, compania, etc.)
+      // Validamos también los campos básicos para evitar peticiones inválidas.
+      try {
+        this.validateApplicantData(applicantData);
+      } catch (validationError) {
+        // no hacemos throw directo para poder loggear, pero sí propagamos
+        console.error('[ApplicantService.updateApplicant] Validation failed:', validationError);
+        throw validationError;
+      }
+
+      const transformedData = this.prepareApplicantData(applicantData);
+
+      const updatedApplicant = await ApplicantRepository.update(id, transformedData);
       return adaptPostulanteResponseToApplicant(updatedApplicant);
     } catch (error) {
       console.error('Error updating applicant:', error);
