@@ -36,10 +36,12 @@ const AppContent = () => {
         </select>
       </div>
 
-      {/* Dark mode toggle separated from dev-controls */}
-      <div className="dark-toggle-wrapper" style={{ position: 'fixed', top: 10, right: 10, zIndex: 1001 }}>
-        <DarkModeToggle />
-      </div>
+      {/* Dark mode toggle only on LOGIN role */}
+      {selectedRole === 'LOGIN' && (
+        <div className="dark-toggle-wrapper" style={{ position: 'fixed', top: 10, right: 10, zIndex: 1001 }}>
+          <DarkModeToggle />
+        </div>
+      )}
 
       <MainLayout />
     </>
