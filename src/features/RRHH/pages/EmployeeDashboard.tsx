@@ -394,9 +394,8 @@ export const EmployeeDashboard = () => {
     try {
       const updated = await ApplicantService.updateApplicant(selectedApplicantForEdit.id, formData);
 
-      // actualizar tanto candidatos como aceptados si aplica
+      // sólo cambios en tabla de postulantes nuevos (no tocar aceptados)
       setApplicants(prev => prev.map(a => a.id === updated.id ? updated : a));
-      setAcceptedApplicants(prev => prev.map(a => a.id === updated.id ? updated : a));
 
       setIsEditApplicantModalOpen(false);
       setSelectedApplicantForEdit(null);
