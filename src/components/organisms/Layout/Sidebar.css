@@ -1,5 +1,7 @@
 .sidebar {
   /* use the same variables defined by MainLayout */
+  --sidebar-accent: #2563EB;
+  --sidebar-accent-rgb: 37,99,235;
   width: var(--sidebar-width, 280px);
   height: 100vh;
   background: white;
@@ -111,10 +113,20 @@
 }
 
 .nav-item.active {
-  background: rgba(37, 99, 235, 0.1);
-  color: #2563EB;
-  font-weight: 600;
-  border-left: 3px solid #2563EB;
+  /* painted full row for expanded sidebar */n  background: linear-gradient(90deg, rgba(var(--sidebar-accent-rgb),0.12), rgba(var(--sidebar-accent-rgb),0.06));
+  color: var(--sidebar-accent);
+  font-weight: 700;
+  border-left: 4px solid var(--sidebar-accent);
+  border-radius: 10px;
+  box-shadow: inset 0 -1px 0 rgba(2,6,23,0.02);
+}
+
+/* also color the icon inside the active item (expanded view) */
+.nav-item.active .nav-icon {
+  background: rgba(255,255,255,0.06);
+  color: var(--sidebar-accent);
+  transform: translateY(-1px);
+  box-shadow: none;
 }
 
 .nav-icon {
@@ -168,9 +180,11 @@
 }
 
 .sidebar.collapsed .nav-item.active .nav-icon {
-  background: linear-gradient(180deg, rgba(37,99,235,0.12), rgba(37,99,235,0.06));
-  color: #2563EB;
-  box-shadow: 0 6px 18px rgba(2,6,23,0.06);
+  /* filled circular icon for collapsed state */
+  background: var(--sidebar-accent);
+  color: #FFFFFF; /* paint the icon white so the circle reads as selected */
+  box-shadow: 0 8px 28px rgba(var(--sidebar-accent-rgb),0.18);
+  transform: translateY(-1px) scale(1.03);
 }
 
 /* small dot indicator when collapsed */
