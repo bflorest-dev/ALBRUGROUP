@@ -128,7 +128,7 @@ const EmployeeContent = () => {
       ]);
 
       setIsModalOpen(false);
-      showSuccess(`Empleado ${newEmployee.fullName} registrado exitosamente`);
+      showSuccess(`Empleado ${newEmployee.fullName} registrado`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido al registrar empleado';
       handleError(error instanceof Error ? error : new Error(errorMessage), {
@@ -156,7 +156,7 @@ const EmployeeContent = () => {
 
       setDetailModalOpen(false);
       setSelectedEmployee(null);
-      showSuccess(`Cambios de ${updatedEmployee.fullName} guardados exitosamente`);
+      showSuccess(`Cambios de ${updatedEmployee.fullName} guardados`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error al actualizar empleado';
       handleError(error instanceof Error ? error : new Error(errorMessage), {
@@ -211,7 +211,7 @@ const EmployeeContent = () => {
 
       setCheckoutModalOpen(false);
       setSelectedEmployee(null);
-      showSuccess(`Empleado ${selectedEmployee.fullName} dado de baja exitosamente`);
+      showSuccess(`Empleado ${selectedEmployee.fullName} dado de baja`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error al dar de baja al empleado';
       handleError(error instanceof Error ? error : new Error(errorMessage), {
@@ -261,7 +261,7 @@ const EmployeeContent = () => {
 
       setActivateModalOpen(false);
       setSelectedEmployee(null);
-      showSuccess(`Empleado ${activatedEmployee.fullName} activado exitosamente`);
+      showSuccess(`Empleado ${activatedEmployee.fullName} activado`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error al activar empleado';
       handleError(error instanceof Error ? error : new Error(errorMessage), {
@@ -374,7 +374,7 @@ export const EmployeeDashboard = () => {
   const [applicantsLoading, setApplicantsLoading] = useState(true);
   const [newApplicantModalOpen, setNewApplicantModalOpen] = useState(false);
   const [selectedBreak, setSelectedBreak] = useState('');
-  const [breakList, setBreakList] = useState<any[]>([]);
+  const [startTime, setStartTime] = useState<string | null>(null);
   const { showError, showSuccess } = useNotification();
   const { handleError } = useErrorHandler();
 
@@ -387,40 +387,32 @@ export const EmployeeDashboard = () => {
 
   const handleBreakSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
-    if (value) {
-      const now = new Date();
-      const time = now.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-      const breakItem = {
-        id: Date.now(),
-        type: value,
-        timestamp: time
-      };
-      setBreakList([...breakList, breakItem]);
-      setSelectedBreak(value); // retain selection
+    if (!value) return;
+    const now = new Date();
+    const time = now.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+
+    if (value.includes('INICIO')) {
+      setStartTime(time);
+      showSuccess(`Inicio baño ${time}`);
+    } else if (value.includes('FIN')) {
+      if (startTime) {
+        const [h1, m1] = startTime.split(':').map(Number);
+        const [h2, m2] = time.split(':').map(Number);
+        const d1 = h1 * 60 + m1;
+        const d2 = h2 * 60 + m2;
+        const diff = d2 - d1;
+        const hours = Math.floor(diff / 60);
+        const mins = diff % 60;
+        showSuccess(`Duración ${hours}h ${mins}m`);
+      } else {
+        showSuccess(`Fin baño ${time}`);
+      }
+      setStartTime(null);
     }
-  };
 
-  const handleRemoveBreak = (id: number) => {
-    setBreakList(breakList.filter((item) => item.id !== id));
-  };
-
-  const handleConfirmBreak = () => {
-    if (breakList.length === 0) return;
-    const breakTypesStr = breakList.map(b => b.type).join(', ');
-    const mensaje = `${breakTypesStr} registrado${breakList.length > 1 ? 's' : ''}`;
-    showSuccess(mensaje);
-    setBreakList([]);
     setSelectedBreak('');
   };
 
-  const getButtonText = () => {
-    if (breakList.length === 0) return 'Confirmar';
-    const hasInicio = breakList.some(item => item.type.includes('INICIO'));
-    const hasFin = breakList.some(item => item.type.includes('FIN'));
-    if (hasInicio) return 'Iniciar';
-    if (hasFin) return 'Finalizar';
-    return 'Confirmar';
-  };
 
   useEffect(() => {
     const loadApplicants = async () => {
@@ -505,11 +497,6 @@ export const EmployeeDashboard = () => {
             ))}
           </select>
 
-          {breakList.length > 0 && (
-            <button className="confirm-btn" onClick={handleConfirmBreak}>
-              {getButtonText()}
-            </button>
-          )}
 
           <button className="icon-btn notification-btn" title="Notificaciones">
             <BiBell size={20} />
@@ -520,25 +507,6 @@ export const EmployeeDashboard = () => {
           </button>
         </header>
 
-        {breakList.length > 0 && (
-          <div className="break-list-container">
-            <ul className="break-list">
-              {breakList.map((item) => (
-                <li key={item.id} className="break-item">
-                  <span className="break-type">{item.type}</span>
-                  <span className="break-time">{item.timestamp}</span>
-                  <button
-                    className="remove-btn"
-                    onClick={() => handleRemoveBreak(item.id)}
-                    title="Eliminar"
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
         
         <main className="dashboard-content">
           {/* Contenido según pestaña */}

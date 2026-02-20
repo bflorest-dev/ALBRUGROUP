@@ -140,7 +140,7 @@ export const ApplicantsDashboard = () => {
       setApplicants(prev => [...prev, newApplicant]);
 
       setIsModalOpen(false);
-      showSuccess(`Postulante ${newApplicant.fullName} registrado exitosamente`);
+      showSuccess(`Postulante ${newApplicant.fullName} registrado`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error al crear postulante';
       handleError(error instanceof Error ? error : new Error(errorMessage), {
@@ -166,7 +166,7 @@ export const ApplicantsDashboard = () => {
 
       setIsEditModalOpen(false);
       setSelectedApplicant(null);
-      showSuccess(`Postulante ${updatedApplicant.fullName} actualizado exitosamente`);
+      showSuccess(`Postulante ${updatedApplicant.fullName} actualizado`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error al actualizar postulante';
       handleError(error instanceof Error ? error : new Error(errorMessage), {
@@ -231,7 +231,7 @@ export const ApplicantsDashboard = () => {
 
       setIsHireModalOpen(false);
       setSelectedApplicant(null);
-      showSuccess(`Postulante ${selectedApplicant.fullName} contratado exitosamente`);
+      showSuccess(`Postulante ${selectedApplicant.fullName} contratado`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error al contratar postulante';
       handleError(error instanceof Error ? error : new Error(errorMessage), {
@@ -243,7 +243,7 @@ export const ApplicantsDashboard = () => {
 
   const handleBlacklistApplicant = (applicant: Applicant) => {
     setApplicants(applicants.filter((app) => app.id !== applicant.id));
-    showSuccess(`${applicant.fullName} agregado a lista negra correctamente`);
+    showSuccess(`${applicant.fullName} agregado a lista negra`);
   };
 
   if (loading) {
