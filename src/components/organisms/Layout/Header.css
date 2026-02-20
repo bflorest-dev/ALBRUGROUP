@@ -135,7 +135,7 @@
 }
 
 .confirm-btn {
-  padding: 4px 8px;
+  padding: 3px 6px;
   background: #374151;
   color: white;
   border: none;
@@ -147,6 +147,9 @@
   text-transform: none;
   letter-spacing: 0.1px;
   white-space: nowrap;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .confirm-btn:hover {
