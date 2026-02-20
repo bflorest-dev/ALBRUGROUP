@@ -391,22 +391,18 @@ export const EmployeeDashboard = () => {
   const handleEditApplicantSubmit = async (formData: EditApplicantFormData) => {
     if (!selectedApplicantForEdit) return;
 
-    try {
-      const updated = await ApplicantService.updateApplicant(selectedApplicantForEdit.id, formData);
+    // sin llamadas a API: actualizamos el estado localmente
+    setApplicants(prev =>
+      prev.map(a =>
+        a.id === selectedApplicantForEdit.id
+          ? { ...a, ...formData, fullName: `${formData.nombres} ${formData.apellidos}` }
+          : a
+      )
+    );
 
-      // sólo cambios en tabla de postulantes nuevos (no tocar aceptados)
-      setApplicants(prev => prev.map(a => a.id === updated.id ? updated : a));
-
-      setIsEditApplicantModalOpen(false);
-      setSelectedApplicantForEdit(null);
-      showSuccess(`Postulante ${updated.fullName} actualizado`);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Error al actualizar postulante';
-      handleError(error instanceof Error ? error : new Error(errorMessage), {
-        componentStack: 'EmployeeDashboard.handleEditApplicantSubmit'
-      });
-      showError(`Error: ${errorMessage}`);
-    }
+    setIsEditApplicantModalOpen(false);
+    setSelectedApplicantForEdit(null);
+    showSuccess(`Postulante ${formData.nombres} ${formData.apellidos} actualizado`);
   };
 
   // break tracking state (separado de la edición)

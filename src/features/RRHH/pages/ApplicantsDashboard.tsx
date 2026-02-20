@@ -157,23 +157,18 @@ export const ApplicantsDashboard = () => {
   const handleEditSubmit = async (formData: EditApplicantFormData) => {
     if (!selectedApplicant) return;
 
-    try {
-      const updatedApplicant = await ApplicantService.updateApplicant(selectedApplicant.id, formData);
+    // Actualización local sin API
+    setApplicants(prev =>
+      prev.map(app =>
+        app.id === selectedApplicant.id
+          ? { ...app, ...formData, fullName: `${formData.nombres} ${formData.apellidos}` }
+          : app
+      )
+    );
 
-      setApplicants(prev => prev.map(app =>
-        app.id === selectedApplicant.id ? updatedApplicant : app
-      ));
-
-      setIsEditModalOpen(false);
-      setSelectedApplicant(null);
-      showSuccess(`Postulante ${updatedApplicant.fullName} actualizado`);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Error al actualizar postulante';
-      handleError(error instanceof Error ? error : new Error(errorMessage), {
-        componentStack: 'ApplicantsDashboard.handleEditSubmit'
-      });
-      showError(`Error: ${errorMessage}`);
-    }
+    setIsEditModalOpen(false);
+    setSelectedApplicant(null);
+    showSuccess(`Postulante ${formData.nombres} ${formData.apellidos} actualizado`);
   };
 
   const handleHireApplicant = (applicant: Applicant) => {
