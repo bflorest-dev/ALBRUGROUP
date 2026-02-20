@@ -298,7 +298,7 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlackli
               <td>{applicant.documentType}</td>
               <td>{applicant.documentNumber}</td>
               <td>{applicant.positionOfInterest}</td>
-              <td>{applicant.company}</td>
+              <td className={`company-cell ${applicant.company?.toLowerCase()}`}>{applicant.company}</td>
               <td>{applicant.campaign}</td>
               <td className="cell-actions">
                 <button
