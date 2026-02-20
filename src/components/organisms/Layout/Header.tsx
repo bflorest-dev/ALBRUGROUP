@@ -18,6 +18,8 @@ export const Header = ({ title, subtitle }: HeaderProps) => {
   const [selectedBreak, setSelectedBreak] = useState('');
   // only track last start timestamp
   const [startTime, setStartTime] = useState<Date | null>(null);
+  const [startedBanho, setStartedBanho] = useState(false);
+  const [startedBreak, setStartedBreak] = useState(false);
   const { showSuccess } = useNotification();
   const { collapsed, toggle } = useSidebar();
 
@@ -38,6 +40,11 @@ export const Header = ({ title, subtitle }: HeaderProps) => {
     if (value.includes('INICIO')) {
       setStartTime(nowDate);
       showSuccess(`Inicio baño ${time}`);
+      if (value.includes('BAÑO')) {
+        setStartedBanho(true);
+      } else if (value.includes('BREAK')) {
+        setStartedBreak(true);
+      }
     } else if (value.includes('FIN')) {
       if (startTime) {
         const diffMs = nowDate.getTime() - startTime.getTime();
@@ -49,6 +56,11 @@ export const Header = ({ title, subtitle }: HeaderProps) => {
         showSuccess(`Fin baño ${time}`);
       }
       setStartTime(null);
+      if (value.includes('BAÑO')) {
+        setStartedBanho(false);
+      } else if (value.includes('BREAK')) {
+        setStartedBreak(false);
+      }
     }
 
     setSelectedBreak('');
@@ -84,7 +96,14 @@ export const Header = ({ title, subtitle }: HeaderProps) => {
             >
               <option value="">Seleccionar tipo...</option>
               {breakTypes.map((type) => (
-                <option key={type} value={type}>
+                <option
+                  key={type}
+                  value={type}
+                  disabled={
+                    (type.includes('FIN DE BAÑO') && !startedBanho) ||
+                    (type.includes('FIN DE BREAK') && !startedBreak)
+                  }
+                >
                   {type}
                 </option>
               ))}
