@@ -496,7 +496,6 @@ export const EmployeeDashboard = () => {
             value={selectedBreak}
             onChange={handleBreakSelect}
             className="break-select"
-            disabled={breakList.length > 0}
           >
             <option value="">Seleccionar tipo...</option>
             {breakTypes.map((type) => (
