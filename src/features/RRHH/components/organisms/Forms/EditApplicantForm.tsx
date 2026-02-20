@@ -3,11 +3,8 @@
  */
 
 import { useState } from 'react';
-import { AVAILABLE_POSITIONS_GROUPED } from '../../../../../utils/mockData';
 import type { EditApplicantFormData, Applicant } from '../../../../../types';
-import { Input } from '@atoms/Input';
-import { Select } from '@atoms/Select';
-import { Button } from '@atoms/Button';
+import { ApplicantForm } from '@molecules/ApplicantForm';
 import './EditApplicantForm.css';
 
 interface EditApplicantFormProps {
@@ -59,128 +56,12 @@ export const EditApplicantForm = ({ applicant, onSubmit, onCancel }: EditApplica
   };
 
   return (
-    <form className="applicant-form" onSubmit={handleSubmit}>
-      <div className="form-row">
-        <div className="form-group">
-          <Input
-            id="nombres"
-            name="nombres"
-            label="NOMBRES"
-            required
-            placeholder="Nombres"
-            value={formData.nombres}
-            onChange={handleChange}
-          />
-        </div>
-
-        <div className="form-group">
-          <Input
-            id="apellidos"
-            name="apellidos"
-            label="APELLIDOS"
-            required
-            placeholder="Apellidos"
-            value={formData.apellidos}
-            onChange={handleChange}
-          />
-        </div>
-      </div>
-
-      <div className="form-row">
-        <div className="form-group">
-          <Input
-            id="phoneMobile"
-            name="phoneMobile"
-            label="CELULAR PERSONAL"
-            required
-            type="tel"
-            placeholder="Número de celular"
-            value={formData.phoneMobile}
-            onChange={handleChange}
-          />
-        </div>
-
-        <div className="form-group">
-          <Select
-            id="positionOfInterest"
-            name="positionOfInterest"
-            label="PUESTO DE INTERÉS"
-            required
-            options={
-              Object.entries(AVAILABLE_POSITIONS_GROUPED).flatMap(([_category, positions]) =>
-                positions.map((position) => ({ label: position, value: position }))
-              )
-            }
-            value={formData.positionOfInterest}
-            onChange={handleChange}
-          />
-        </div>
-      </div>
-
-      <div className="form-row">
-        <div className="form-group">
-          <Select
-            id="documentType"
-            name="documentType"
-            label="TIPO DE DOCUMENTO"
-            options={[{ label: 'DNI', value: 'DNI' }, { label: 'CE', value: 'CE' }]}
-            value={formData.documentType}
-            onChange={handleChange}
-          />
-        </div>
-
-        <div className="form-group">
-          <Input
-            id="documentNumber"
-            name="documentNumber"
-            label="Nº DOCUMENTO"
-            required
-            placeholder="Número de documento"
-            value={formData.documentNumber}
-            onChange={handleChange}
-          />
-        </div>
-      </div>
-
-      <div className="form-row">
-        <div className="form-group">
-          <Select
-            id="campaign"
-            name="campaign"
-            label="CAMPAÑA"
-            required
-            options={[
-              { label: 'COMPUTRABAJO', value: 'COMPUTRABAJO' },
-              { label: 'INDEED', value: 'INDEED' },
-              { label: 'REFERIDO', value: 'REFERIDO' },
-            ]}
-            value={formData.campaign}
-            onChange={handleChange}
-          />
-        </div>
-
-        <div className="form-group">
-          <Select
-            id="company"
-            name="company"
-            label="COMPAÑÍA"
-            required
-            options={[{ label: 'CLARO', value: 'CLARO' }, { label: 'WIN', value: 'WIN' }]}
-            value={formData.company}
-            onChange={handleChange}
-          />
-        </div>
-      </div>
-
-
-      <div className="form-actions">
-        <Button type="button" variant="ghost" onClick={onCancel}>
-          CANCELAR
-        </Button>
-        <Button type="submit" variant="primary">
-          GUARDAR CAMBIOS
-        </Button>
-      </div>
-    </form>
+    <ApplicantForm
+      formData={formData}
+      onChange={handleChange}
+      onSubmit={handleSubmit}
+      onCancel={onCancel}
+      submitLabel="GUARDAR CAMBIOS"
+    />
   );
 };

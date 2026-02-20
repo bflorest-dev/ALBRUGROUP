@@ -1,0 +1,3 @@
+.applicant-form .form-row { display: flex; gap: 16px; margin-bottom: 16px; }
+.applicant-form .form-group { flex: 1; }
+.applicant-form .form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
