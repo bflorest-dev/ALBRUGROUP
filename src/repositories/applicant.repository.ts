@@ -38,7 +38,8 @@ export class ApplicantRepository {
    * Actualizar un postulante específico
    */
   static async update(id: string, applicantData: any): Promise<PostulanteResponse> {
-    const response = await http.patch<ApplicantResponse>(`/postulantes/${id}`, applicantData);
+    // algunos backend esperan PUT para actualización completa
+    const response = await http.put<ApplicantResponse>(`/postulantes/${id}`, applicantData);
     return response.data;
   }
 
