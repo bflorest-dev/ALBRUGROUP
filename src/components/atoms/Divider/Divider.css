@@ -1,0 +1,11 @@
+.atom-divider {
+  flex-shrink: 0;
+}
+
+.atom-divider--horizontal {
+  width: 100%;
+}
+
+.atom-divider--vertical {
+  height: 100%;
+}

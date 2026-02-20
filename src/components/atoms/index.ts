@@ -6,3 +6,5 @@ export * from './Input';
 export * from './Select';
 export * from './Label';
 export * from './Button';
+export * from './Spinner';
+export * from './Divider';
