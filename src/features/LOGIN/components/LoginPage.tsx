@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { LoginForm, LoginFormData } from './LoginForm';
+import { LoginForm } from './LoginForm';
+import type { LoginFormData } from './LoginForm';
 import { login } from '../services';
 import './LoginForm.css';
 

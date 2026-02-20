@@ -54,6 +54,7 @@ export interface Applicant {
   positionOfInterest: string;
   modality: string;
   campaign: string;
+  company: string; // CLARO | WIN
   status?: string;
   trainingDayPayment?: number;
   startDate?: string;
@@ -193,6 +194,7 @@ export interface PostulanteResponse {
   celularPersonal: string;
   origen: string;
   puestoTrabajo: string;
+  compania?: string;
   estadoPostulacion: string;
   pagoDiaCapacitacion: number;
   fechaInicio: string;
@@ -270,6 +272,7 @@ export const adaptPostulanteResponseToApplicant = (backend: PostulanteResponse):
   positionOfInterest: backend.puestoTrabajo,
   modality: '', // No disponible en backend
   campaign: backend.origen,
+  company: backend.compania || 'CLARO',
   status: backend.estadoPostulacion,
   trainingDayPayment: backend.pagoDiaCapacitacion,
   startDate: backend.fechaInicio,

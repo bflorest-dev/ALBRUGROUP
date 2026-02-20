@@ -66,9 +66,6 @@ export const Header = ({ title, subtitle }: HeaderProps) => {
     setSelectedBreak('');
   };
 
-  const handleConfirm = () => {
-    setSelectedBreak('');
-  };
 
   return (
     <header className="header">
