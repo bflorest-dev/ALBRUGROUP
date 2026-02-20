@@ -39,8 +39,13 @@ export const Sidebar = ({ navItems, onNavClick, user }: SidebarProps) => {
               key={item.label}
               className={`nav-item ${item.active ? 'active' : ''}`}
               onClick={() => onNavClick?.(item.label)}
+              title={item.label}
+              aria-label={item.label}
+              aria-current={item.active ? 'page' : undefined}
             >
-              <span className="nav-icon"><IconComponent size={20} /></span>
+              <span className="nav-icon" aria-hidden>
+                <IconComponent size={20} />
+              </span>
               <span className="nav-label">{item.label}</span>
             </button>
           );
