@@ -8,7 +8,7 @@ import { StatCard } from '../../../components/molecules/StatCard';
 import { EmployeeTable } from '../components/organisms/Tables';
 import { Pagination } from '../../../components/molecules/Pagination';
 import { Modal } from '../../../components/molecules/Modal';
-import { NewEmployeeForm, EmployeeDetailForm, EmployeeCheckoutForm, ActivateEmployeeModal } from '../components/organisms/Forms';
+import { NewEmployeeForm, NewApplicantForm, EmployeeDetailForm, EmployeeCheckoutForm, ActivateEmployeeModal } from '../components/organisms/Forms';
 import { ApplicantsTable } from '../components/organisms/Tables';
 import { useNotification } from '../../../contexts/useNotification';
 import { usePagination } from '../../../hooks/usePagination';
@@ -369,6 +369,7 @@ export const EmployeeDashboard = () => {
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [acceptedApplicants, setAcceptedApplicants] = useState<Applicant[]>([]);
   const [applicantsLoading, setApplicantsLoading] = useState(true);
+  const [newApplicantModalOpen, setNewApplicantModalOpen] = useState(false);
   const [selectedBreak, setSelectedBreak] = useState('');
   const [breakList, setBreakList] = useState<any[]>([]);
   const { showError, showSuccess } = useNotification();
@@ -543,14 +544,43 @@ export const EmployeeDashboard = () => {
                   <button className="download-btn" title="Descargar">
                     <BiDownload size={18} />
                   </button>
+
+                  <button
+                    className="add-employee-btn add-applicant-btn"
+                    title="Nuevo postulante"
+                    onClick={() => setNewApplicantModalOpen(true)}
+                  >
+                    <BiUserPlus size={18} />
+                  </button>
                 </div>
               </div>
+
               <ApplicantsTable 
                 applicants={applicants}
                 onEdit={(_applicant: Applicant) => {}}
                 onHire={(_applicant: Applicant) => {}}
                 onBlacklist={(_applicant: Applicant) => {}}
               />
+
+              <Modal isOpen={newApplicantModalOpen} title="Registrar Nuevo Postulante" onClose={() => setNewApplicantModalOpen(false)}>
+                <NewApplicantForm
+                  onSubmit={async (formData) => {
+                    try {
+                      const newApplicant = await ApplicantService.createApplicant(formData);
+                      setApplicants(prev => [...prev, newApplicant]);
+                      setNewApplicantModalOpen(false);
+                      showSuccess(`Postulante ${newApplicant.fullName} registrado exitosamente`);
+                    } catch (error) {
+                      const errorMessage = error instanceof Error ? error.message : 'Error al crear postulante';
+                      handleError(error instanceof Error ? error : new Error(errorMessage), {
+                        componentStack: 'EmployeeDashboard.handleNewApplicantSubmit'
+                      });
+                      showError(`Error: ${errorMessage}`);
+                    }
+                  }}
+                  onCancel={() => setNewApplicantModalOpen(false)}
+                />
+              </Modal>
             </section>
           )}
           
