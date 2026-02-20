@@ -10,7 +10,7 @@ const AppContent = () => {
 
   return (
     <>
-      <div className="dev-controls" style={{ position: 'fixed', top: 10, right: 72, zIndex: 1000, padding: '10px', display: 'flex', gap: 12, alignItems: 'center', borderRadius: 8 }}>
+      <div className="dev-controls">
         <label htmlFor="role-select">Dev Role:</label>
         <select
           id="role-select"
