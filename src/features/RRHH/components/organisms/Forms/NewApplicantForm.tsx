@@ -180,8 +180,6 @@ export const NewApplicantForm = ({ onSubmit, onCancel }: NewApplicantFormProps) 
         </div>
       </div>
 
-      <div className="form-row">
-        </div>
 
       <div className="form-actions">
         <button type="button" className="btn-cancel" onClick={onCancel}>CANCELAR</button>
