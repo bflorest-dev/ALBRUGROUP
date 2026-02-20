@@ -26,7 +26,10 @@
       "@atoms/*": ["src/components/atoms/*"],
       "@pages/*": ["src/components/pages/*"],
       "@templates/*": ["src/components/templates/*"],
+      "@types": ["src/types"],
       "@types/*": ["src/types/*"],
+      "@services": ["src/services"],
+      "@services/*": ["src/services/*"],
       "@utils/*": ["src/utils/*"],
       "@hooks/*": ["src/hooks/*"],
       "@contexts/*": ["src/contexts/*"]

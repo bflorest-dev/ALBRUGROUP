@@ -3,9 +3,9 @@
  */
 
 import { useState } from 'react';
-import { Modal } from '../../../../../components/molecules/Modal';
-import { AVAILABLE_POSITIONS } from '../../../../../utils/mockData';
-import type { Employee } from '../../../../../types';
+import { Modal } from '@molecules/Modal';
+import { AVAILABLE_POSITIONS } from '@utils/mockData';
+import type { Employee } from '@types';
 import './ActivateEmployeeModal.css';
 
 interface ActivateEmployeeModalProps {

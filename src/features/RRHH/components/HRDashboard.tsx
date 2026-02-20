@@ -1,8 +1,8 @@
 import React from 'react';
 import type { HRDashboardData } from '../types';
 import { getHRDashboardData } from '../services';
-import { StatCard } from '../../../components/molecules/StatCard/StatCard';
-import { StatusBadge } from '../../../components/atoms/Badge/StatusBadge';
+import { StatCard } from '@molecules/StatCard';
+import { StatusBadge } from '@atoms/Badge/StatusBadge';
 import './HRDashboard.css';
 
 const HRDashboard: React.FC = () => {

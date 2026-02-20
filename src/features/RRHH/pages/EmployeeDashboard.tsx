@@ -4,21 +4,21 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { BiDownload, BiSearch, BiUserPlus, BiCheckCircle, BiUser, BiBell, BiLogOut, BiChevronLeft, BiChevronRight } from 'react-icons/bi';
-import { useSidebar } from '../../../contexts/SidebarContext';
-import { StatCard } from '../../../components/molecules/StatCard';
+import { useSidebar } from '@contexts/SidebarContext';
+import { StatCard } from '@molecules/StatCard';
 import { EmployeeTable } from '../components/organisms/Tables';
-import { Pagination } from '../../../components/molecules/Pagination';
-import { Modal } from '../../../components/molecules/Modal';
+import { Pagination } from '@molecules/Pagination';
+import { Modal } from '@molecules/Modal';
 import { NewEmployeeForm, NewApplicantForm, EditApplicantForm, EmployeeDetailForm, EmployeeCheckoutForm, ActivateEmployeeModal } from '../components/organisms/Forms';
-import { IconButton } from '../../../components/atoms/IconButton';
+import { IconButton } from '@atoms/IconButton';
 import { ApplicantsTable } from '../components/organisms/Tables';
-import { useNotification } from '../../../contexts/useNotification';
-import { usePagination } from '../../../hooks/usePagination';
-import { useErrorHandler } from '../../../hooks/useErrorHandler';
-import { EmployeeService } from '../../../services/employee.service';
-import { ApplicantService } from '../../../services/applicant.service';
-import { loadApplicantsFromStorage, saveApplicantsToStorage } from '../../../utils/localStorage';
-import type { Employee, Applicant, NewEmployeeFormData, EmployeeDetailFormData, Statistic, EditApplicantFormData } from '../../../types';
+import { useNotification } from '@contexts/useNotification';
+import { usePagination } from '@hooks/usePagination';
+import { useErrorHandler } from '@hooks/useErrorHandler';
+import { EmployeeService } from '@services/employee.service';
+import { ApplicantService } from '@services/applicant.service';
+import { loadApplicantsFromStorage, saveApplicantsToStorage } from '@utils/localStorage';
+import type { Employee, Applicant, NewEmployeeFormData, EmployeeDetailFormData, Statistic, EditApplicantFormData } from '@types';
 import './EmployeeDashboard.css';
 
 const ITEMS_PER_PAGE = 10;

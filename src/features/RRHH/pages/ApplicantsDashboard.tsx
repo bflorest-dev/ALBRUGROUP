@@ -5,17 +5,17 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { BiPlus, BiSearch, BiDownload } from 'react-icons/bi';
 import { ApplicantsTable } from '../components/organisms/Tables';
-import { Modal } from '../../../components/molecules/Modal';
+import { Modal } from '@molecules/Modal';
 import { NewApplicantForm, EditApplicantForm, HireApplicantForm } from '../components/organisms/Forms';
-import { StatCard } from '../../../components/molecules/StatCard';
-import { IconButton } from '../../../components/atoms/IconButton';
-import { Pagination } from '../../../components/molecules/Pagination';
-import { Header } from '../../../components/organisms/Layout/Header';
-import { useNotification } from '../../../contexts/useNotification';
-import { useErrorHandler } from '../../../hooks/useErrorHandler';
-import { ApplicantService } from '../../../services/applicant.service';
-import { loadApplicantsFromStorage, saveApplicantsToStorage } from '../../../utils/localStorage';
-import type { Applicant, NewApplicantFormData, EditApplicantFormData, HireApplicantFormData, Statistic } from '../../../types';
+import { StatCard } from '@molecules/StatCard';
+import { IconButton } from '@atoms/IconButton';
+import { Pagination } from '@molecules/Pagination';
+import { Header } from '@organisms/Layout/Header';
+import { useNotification } from '@contexts/useNotification';
+import { useErrorHandler } from '@hooks/useErrorHandler';
+import { ApplicantService } from '@services/applicant.service';
+import { loadApplicantsFromStorage, saveApplicantsToStorage } from '@utils/localStorage';
+import type { Applicant, NewApplicantFormData, EditApplicantFormData, HireApplicantFormData, Statistic } from '@types';
 import './ApplicantsDashboard.css';
 
 const ITEMS_PER_PAGE = 10;
@@ -146,8 +146,14 @@ export const ApplicantsDashboard = () => {
   const handleSubmitForm = async (formData: NewApplicantFormData) => {
     try {
       const newApplicant = await ApplicantService.createApplicant(formData);
+      // for local mode, ensure status property
+      newApplicant.status = newApplicant.status || 'POSTULANTE';
 
-      setApplicants(prev => [...prev, newApplicant]);
+      setApplicants(prev => {
+        const updated = [...prev, newApplicant];
+        saveApplicantsToStorage(updated);
+        return updated;
+      });
 
       setIsModalOpen(false);
       showSuccess(`Postulante ${newApplicant.fullName} registrado`);
