@@ -36,7 +36,7 @@ public class JwtUtil {
         return extractClaim(token, Claims::getExpiration);
     }
     public Long extractEmployeeId(String token) {
-        return extractClaim(token, claims -> claims.get("employeeId", Long.class));
+        return extractClaim(token, claims -> claims.get("empleadoId", Long.class));
     }
     public List<String> extractRoles(String token) {
         return extractClaim(token, claims -> claims.get("roles", List.class));

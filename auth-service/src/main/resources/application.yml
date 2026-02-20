@@ -1,6 +1,5 @@
 server:
   port: 8081
-
 spring:
   application:
     name: auth-service
@@ -24,6 +23,9 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
 #        format_sql: true
+
+jwt:
+  secret: 3bZ4bR0S5c7hFQ2nTzF8oQv9vKxM2yP7aLw8eJrHkU1cNdWqXyZp6tR9mVb4sL0Q8nF5gH2kJ3lP6rS9uVw==
 
 logging:
   level:
