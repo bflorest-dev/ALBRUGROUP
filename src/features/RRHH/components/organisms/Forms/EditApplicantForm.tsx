@@ -23,9 +23,7 @@ export const EditApplicantForm = ({ applicant, onSubmit, onCancel }: EditApplica
     positionOfInterest: applicant.positionOfInterest || '',
     company: (applicant as any).compania || 'CLARO',
     campaign: applicant.campaign || '',
-    trainingDayPayment: applicant.trainingDayPayment || undefined,
-    startDate: applicant.startDate || '',
-    endDate: applicant.endDate || '',
+    // legacy fields removed from UI
   });
 
 

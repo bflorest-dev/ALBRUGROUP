@@ -110,9 +110,6 @@ export interface NewApplicantFormData {
   positionOfInterest: string;
   company: string; // CLARO | WIN
   campaign: string;
-  trainingDayPayment?: number;
-  startDate?: string;
-  endDate?: string;
 }
 
 export interface EditApplicantFormData extends NewApplicantFormData {

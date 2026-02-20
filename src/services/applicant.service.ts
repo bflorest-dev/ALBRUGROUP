@@ -135,9 +135,7 @@ export class ApplicantService {
       compania: data.company?.trim().toUpperCase() || undefined,
       origen: data.campaign.trim().toUpperCase(),
       estadoPostulacion: 'POSTULANTE',
-      pagoDiaCapacitacion: data.trainingDayPayment ? parseFloat(String(data.trainingDayPayment)) : 0,
-      fechaInicio: data.startDate || '',
-      fechaFin: data.endDate || '',
+      // backend may handle missing dates/payments itself
     };
 
     console.log('[ApplicantService.prepareApplicantData] Transformed object:', JSON.stringify(transformedData, null, 2));
