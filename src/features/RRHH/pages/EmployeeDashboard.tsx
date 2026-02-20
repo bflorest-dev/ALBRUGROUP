@@ -17,6 +17,7 @@ import { usePagination } from '../../../hooks/usePagination';
 import { useErrorHandler } from '../../../hooks/useErrorHandler';
 import { EmployeeService } from '../../../services/employee.service';
 import { ApplicantService } from '../../../services/applicant.service';
+import { loadApplicantsFromStorage, saveApplicantsToStorage } from '../../../utils/localStorage';
 import type { Employee, Applicant, NewEmployeeFormData, EmployeeDetailFormData, Statistic, EditApplicantFormData } from '../../../types';
 import './EmployeeDashboard.css';
 
@@ -391,14 +392,18 @@ export const EmployeeDashboard = () => {
   const handleEditApplicantSubmit = async (formData: EditApplicantFormData) => {
     if (!selectedApplicantForEdit) return;
 
-    // sin llamadas a API: actualizamos el estado localmente
-    setApplicants(prev =>
-      prev.map(a =>
+    setApplicants(prev => {
+      const updated = prev.map(a =>
         a.id === selectedApplicantForEdit.id
           ? { ...a, ...formData, fullName: `${formData.nombres} ${formData.apellidos}` }
           : a
-      )
-    );
+      );
+      // persist merged list with accepted from storage
+      const stored = loadApplicantsFromStorage() || [];
+      const acceptedStored = stored.filter((x: any) => x.status === 'ACEPTADO');
+      saveApplicantsToStorage([...updated, ...acceptedStored]);
+      return updated;
+    });
 
     setIsEditApplicantModalOpen(false);
     setSelectedApplicantForEdit(null);
@@ -462,8 +467,20 @@ export const EmployeeDashboard = () => {
     const loadApplicants = async () => {
       try {
         setApplicantsLoading(true);
-        const data = await ApplicantService.getAllApplicants() as any;
+        let data = await ApplicantService.getAllApplicants() as any;
         const applicantsList = Array.isArray(data) ? data : data.applicants || [];
+
+        // override with local storage if present (only new applicants list)
+        const stored = loadApplicantsFromStorage();
+        if (stored && Array.isArray(stored)) {
+          // keep accepted separate by filtering
+          const storedNew = stored.filter((a: Applicant) => a.status !== 'ACEPTADO');
+          setApplicants(storedNew);
+          const storedAccepted = stored.filter((a: Applicant) => a.status === 'ACEPTADO');
+          setAcceptedApplicants(storedAccepted);
+          setApplicantsLoading(false);
+          return;
+        }
         
         // Separar postulantes por estado
         const allApplicants = applicantsList.filter((a: Applicant) => a.status !== 'ACEPTADO');
@@ -471,6 +488,8 @@ export const EmployeeDashboard = () => {
         
         setApplicants(allApplicants);
         setAcceptedApplicants(accepted);
+        // persist full list
+        saveApplicantsToStorage([...allApplicants, ...accepted]);
       } catch (error) {
         handleError(error instanceof Error ? error : new Error('Error loading applicants'), {
           componentStack: 'EmployeeDashboard.loadApplicants'

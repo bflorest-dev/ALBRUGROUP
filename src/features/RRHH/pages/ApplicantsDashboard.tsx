@@ -14,6 +14,7 @@ import { Header } from '../../../components/organisms/Layout/Header';
 import { useNotification } from '../../../contexts/useNotification';
 import { useErrorHandler } from '../../../hooks/useErrorHandler';
 import { ApplicantService } from '../../../services/applicant.service';
+import { loadApplicantsFromStorage, saveApplicantsToStorage } from '../../../utils/localStorage';
 import type { Applicant, NewApplicantFormData, EditApplicantFormData, HireApplicantFormData, Statistic } from '../../../types';
 import './ApplicantsDashboard.css';
 
@@ -42,7 +43,13 @@ export const ApplicantsDashboard = () => {
   const loadInitialData = useCallback(async () => {
     try {
       setLoading(true);
-      const applicantsData = await ApplicantService.getAllApplicants();
+      let applicantsData = await ApplicantService.getAllApplicants();
+
+      // override with localStorage if present
+      const stored = loadApplicantsFromStorage();
+      if (stored && Array.isArray(stored)) {
+        applicantsData = stored as any;
+      }
 
       // Calcular estadísticas locales por ahora
       const total = applicantsData.length;
@@ -57,6 +64,9 @@ export const ApplicantsDashboard = () => {
 
       setApplicants(applicantsData);
       _setStatistics(stats);
+
+      // persist initial data
+      saveApplicantsToStorage(applicantsData);
     } catch (error) {
       handleError(error instanceof Error ? error : new Error('Error cargando postulantes'), {
         componentStack: 'ApplicantsDashboard.loadInitialData'
@@ -157,14 +167,15 @@ export const ApplicantsDashboard = () => {
   const handleEditSubmit = async (formData: EditApplicantFormData) => {
     if (!selectedApplicant) return;
 
-    // Actualización local sin API
-    setApplicants(prev =>
-      prev.map(app =>
+    setApplicants(prev => {
+      const updated = prev.map(app =>
         app.id === selectedApplicant.id
           ? { ...app, ...formData, fullName: `${formData.nombres} ${formData.apellidos}` }
           : app
-      )
-    );
+      );
+      saveApplicantsToStorage(updated);
+      return updated;
+    });
 
     setIsEditModalOpen(false);
     setSelectedApplicant(null);
