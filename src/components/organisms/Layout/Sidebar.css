@@ -102,15 +102,11 @@
 .nav-item:focus-visible {
   box-shadow: 0 0 0 6px rgba(37,99,235,0.08);
 }
-.sidebar.collapsed .nav-item {
-  justify-content: center;
-  padding: 12px 0;
-}
 
 .nav-item:hover {
   background: rgba(37, 99, 235, 0.08);
   color: #2563EB;
-}
+} 
 
 .nav-item.active {
   /* painted full row for expanded sidebar */n  background: linear-gradient(90deg, rgba(var(--sidebar-accent-rgb),0.12), rgba(var(--sidebar-accent-rgb),0.06));
@@ -155,51 +151,45 @@
   display: none;
 }
 
-/* collapsed — center icons and add micro interaction */
+/* collapsed — buttons occupy full width and show full-width pill */
 .sidebar.collapsed .nav-item {
   justify-content: center;
-  padding: 10px 0;
+  padding: 6px 6px;
+  width: 100%;
 }
 
 .sidebar.collapsed .nav-item .nav-icon {
-  width: 40px;
+  /* pill that spans the available width inside the collapsed sidebar */
+  width: calc(100% - 12px);
   height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  transition: background .18s ease, transform .12s ease, color .18s ease;
+  transition: background .16s ease, transform .12s ease, color .16s ease;
   color: #6B7280;
   background: transparent;
 }
 
+/* keep svg small and centered inside pill */
+.sidebar.collapsed .nav-item .nav-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
 .sidebar.collapsed .nav-item:hover .nav-icon {
   background: rgba(37,99,235,0.06);
-  color: #2563EB;
-  transform: translateY(-2px);
+  color: var(--sidebar-accent);
+  transform: translateY(-1px);
 }
 
 .sidebar.collapsed .nav-item.active .nav-icon {
-  /* filled circular icon for collapsed state */
   background: var(--sidebar-accent);
-  color: #FFFFFF; /* paint the icon white so the circle reads as selected */
+  color: #FFFFFF;
   box-shadow: 0 8px 28px rgba(var(--sidebar-accent-rgb),0.18);
-  transform: translateY(-1px) scale(1.03);
+  transform: translateY(-1px) scale(1.02);
 }
 
-/* small dot indicator when collapsed */
-.sidebar.collapsed .nav-item.active::before {
-  content: '';
-  position: absolute;
-  left: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 6px;
-  height: 6px;
-  background: #2563EB;
-  border-radius: 50%;
-  box-shadow: 0 4px 10px rgba(37,99,235,0.12);
-}
 
 /* tooltip for collapsed labels */
 .sidebar.collapsed .nav-item[title]:hover::after {
