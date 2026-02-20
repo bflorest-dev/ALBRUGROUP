@@ -75,17 +75,3 @@
   .form-actions { flex-direction: column }
   .btn-submit, .btn-cancel { width: 100% }
 }
-/* company selector color schemes */
-.company-select.claro {
-  background: linear-gradient(90deg, #E11D48 50%, #FFFFFF 50%);
-  color: #000;
-}
-.company-select.win {
-  background: linear-gradient(90deg, #F97316 50%, #FFFFFF 50%);
-  color: #000;
-}
-.company-select.claro option,
-.company-select.win option {
-  background: white;
-  color: #000;
-}
