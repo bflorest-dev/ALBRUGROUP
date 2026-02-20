@@ -1,5 +1,5 @@
 // Atoms
-export * from './atoms/Badge';
+export * from './atoms';
 
 // Molecules
 export * from './molecules/Modal';

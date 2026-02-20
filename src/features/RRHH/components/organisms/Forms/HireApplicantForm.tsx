@@ -3,7 +3,6 @@
  */
 
 import { useState } from 'react';
-import { AVAILABLE_POSITIONS_GROUPED } from '../../../../../utils/mockData';
 import type { HireApplicantFormData, Applicant } from '../../../../../types';
 import './HireApplicantForm.css';
 
@@ -14,7 +13,7 @@ interface HireApplicantFormProps {
 }
 
 export const HireApplicantForm = ({ applicant, onSubmit, onCancel }: HireApplicantFormProps) => {
-  const [formData, setFormData] = useState<HireApplicantFormData>({
+  const [formData] = useState<HireApplicantFormData>({
     nombres: applicant?.nombres || '',
     apellidos: applicant?.apellidos || '',
     documentType: 'DNI',
@@ -41,11 +40,6 @@ export const HireApplicantForm = ({ applicant, onSubmit, onCancel }: HireApplica
     applicantId: applicant?.id || '',
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    // validation omitted for brevity
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

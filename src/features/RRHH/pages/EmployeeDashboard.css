@@ -201,21 +201,34 @@
   color: #2563EB;
 }
 
-.add-employee-btn {
+.add-employee-btn, .add-applicant-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 18px;
   background: #2563EB;
   border-color: #2563EB;
   color: white;
 }
 
-.add-employee-btn:hover {
+.add-employee-btn:hover, .add-applicant-btn:hover {
   background: #1D4ED8;
   border-color: #1D4ED8;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.18);
 }
 
 .filter-btn:active,
 .download-btn:active,
-.add-employee-btn:active {
-  opacity: 0.7;
+.add-employee-btn:active,
+.add-applicant-btn:active {
+  opacity: 0.85;
+  transform: scale(0.98);
 }
 
 /* Estilos del Modal de Filtros */

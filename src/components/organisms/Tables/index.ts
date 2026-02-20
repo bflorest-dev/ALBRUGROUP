@@ -1,2 +1,2 @@
-export { EmployeeTable } from './EmployeeTable';
-export { ApplicantsTable } from './ApplicantsTable';
+export { EmployeeTable } from '../../../features/RRHH/components/organisms/Tables/EmployeeTable';
+export { ApplicantsTable } from '../../../features/RRHH/components/organisms/Tables/ApplicantsTable';

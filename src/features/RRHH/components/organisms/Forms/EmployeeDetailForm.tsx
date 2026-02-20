@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react';
-import { AVAILABLE_POSITIONS_GROUPED } from '../../../../../utils/mockData';
+
 import type { Employee, EmployeeDetailFormData } from '../../../../../types';
 import './EmployeeDetailForm.css';
 
@@ -15,8 +15,8 @@ interface EmployeeDetailFormProps {
 }
 
 export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = false }: EmployeeDetailFormProps) => {
-  const [editMode, setEditMode] = useState(isEditMode);
-  const [formData, setFormData] = useState<EmployeeDetailFormData>({
+  const [, setEditMode] = useState(isEditMode);
+  const [formData] = useState<EmployeeDetailFormData>({
     nombres: employee.nombres || '',
     apellidos: employee.apellidos || '',
     documentType: employee.documentType || '',
@@ -44,11 +44,6 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
     department: employee.department || '',
     status: employee.status || 'ACTIVO',
   });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target as HTMLInputElement;
-    setFormData((prev) => ({ ...prev, [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value }));
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
