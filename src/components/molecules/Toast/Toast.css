@@ -42,9 +42,9 @@
 }
 
 .toast-success {
-  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%); /* professional blue gradient */
   color: white;
-  border-left: 4px solid #047857;
+  border-left: 4px solid #1E40AF;
 }
 
 .toast-error {
