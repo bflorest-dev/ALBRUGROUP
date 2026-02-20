@@ -8,6 +8,7 @@ import { ApplicantsTable } from '../components/organisms/Tables';
 import { Modal } from '../../../components/molecules/Modal';
 import { NewApplicantForm, EditApplicantForm, HireApplicantForm } from '../components/organisms/Forms';
 import { StatCard } from '../../../components/molecules/StatCard';
+import { IconButton } from '../../../components/atoms/IconButton';
 import { Pagination } from '../../../components/molecules/Pagination';
 import { Header } from '../../../components/organisms/Layout/Header';
 import { useNotification } from '../../../contexts/useNotification';
@@ -285,16 +286,13 @@ export const ApplicantsDashboard = () => {
                   className="search-input"
                 />
               </div>
-              <button className="download-btn" title="Descargar">
+              <IconButton aria-label="Descargar" title="Descargar" className="download-btn" size="md">
                 <BiDownload size={18} />
-              </button>
-              <button 
-                className="add-applicant-btn" 
-                title="Registrar nuevo postulante"
-                onClick={handleOpenModal}
-              >
+              </IconButton>
+
+              <IconButton aria-label="Registrar nuevo postulante" title="Registrar nuevo postulante" variant="primary" className="add-applicant-btn" size="md" onClick={handleOpenModal}>
                 <BiPlus size={18} />
-              </button>
+              </IconButton>
             </div>
           </div>
 

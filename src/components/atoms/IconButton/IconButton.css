@@ -1,0 +1,23 @@
+.atom-icon-button{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:6px;
+  border:none;
+  cursor:pointer;
+  transition:all .18s ease;
+  padding:6px;
+  background:transparent;
+  color:var(--text, #374151);
+}
+
+.atom-icon-button.md{ width:40px; height:40px; font-size:18px }
+.atom-icon-button.sm{ width:32px; height:32px; font-size:16px }
+
+.atom-icon-button.ghost{ background: #F3F4F6; color:#6B7280 }
+.atom-icon-button.ghost:hover{ background:#E5E7EB; color:#374151 }
+
+.atom-icon-button.primary{ background:#2563EB; color:white }
+.atom-icon-button.primary:hover{ background:#1D4ED8; box-shadow:0 6px 20px rgba(37,99,235,.18) }
+
+.atom-icon-button:disabled{ opacity:.5; cursor:not-allowed }

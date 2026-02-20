@@ -9,6 +9,7 @@ import { EmployeeTable } from '../components/organisms/Tables';
 import { Pagination } from '../../../components/molecules/Pagination';
 import { Modal } from '../../../components/molecules/Modal';
 import { NewEmployeeForm, NewApplicantForm, EmployeeDetailForm, EmployeeCheckoutForm, ActivateEmployeeModal } from '../components/organisms/Forms';
+import { IconButton } from '../../../components/atoms/IconButton';
 import { ApplicantsTable } from '../components/organisms/Tables';
 import { useNotification } from '../../../contexts/useNotification';
 import { usePagination } from '../../../hooks/usePagination';
@@ -541,17 +542,13 @@ export const EmployeeDashboard = () => {
               <div className="section-header">
                 <h2>POSTULANTES NUEVOS</h2>
                 <div className="section-controls">
-                  <button className="download-btn" title="Descargar">
+                  <IconButton aria-label="Descargar" title="Descargar" className="download-btn" size="md">
                     <BiDownload size={18} />
-                  </button>
+                  </IconButton>
 
-                  <button
-                    className="add-employee-btn add-applicant-btn"
-                    title="Nuevo postulante"
-                    onClick={() => setNewApplicantModalOpen(true)}
-                  >
+                  <IconButton aria-label="Nuevo postulante" title="Nuevo postulante" variant="primary" className="add-applicant-btn" size="md" onClick={() => setNewApplicantModalOpen(true)}>
                     <BiUserPlus size={18} />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
 
