@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react';
-import type { NewEmployeeFormData } from '../../../../../types';
+import type { NewEmployeeFormData } from '@types';
 import './NewEmployeeForm.css';
 
 interface NewEmployeeFormProps {

@@ -6,7 +6,7 @@
 
 import { EmployeeRepository } from '../repositories/employee.repository';
 import { adaptEmpleadoResponseToEmployee } from '../types';
-import type { Employee, NewEmployeeFormData } from '../types';
+import type { Employee, NewEmployeeFormData, EmployeeDetailFormData } from '../types';
 
 export class EmployeeService {
   /**
@@ -94,7 +94,7 @@ export class EmployeeService {
   /**
    * Dar de baja empleado
    */
-  static async updateEmployee(id: string, data: any): Promise<Employee> {
+  static async updateEmployee(id: string, data: Partial<EmployeeDetailFormData>): Promise<Employee> {
     try {
       const updatedEmployee = await EmployeeRepository.updatePersonalData(Number(id), data);
       return adaptEmpleadoResponseToEmployee(updatedEmployee);
@@ -107,7 +107,7 @@ export class EmployeeService {
   /**
    * Actualizar datos personales
    */
-  static async updateEmployeePersonalData(id: number, data: any): Promise<Employee> {
+  static async updateEmployeePersonalData(id: number, data: Partial<EmployeeDetailFormData>): Promise<Employee> {
     try {
       const updatedEmployee = await EmployeeRepository.updatePersonalData(id, data);
       return adaptEmpleadoResponseToEmployee(updatedEmployee);
@@ -120,7 +120,7 @@ export class EmployeeService {
   /**
    * Actualizar datos de contacto y ubicación
    */
-  static async updateEmployeeContactLocation(id: number, data: any): Promise<Employee> {
+  static async updateEmployeeContactLocation(id: number, data: Partial<EmployeeDetailFormData>): Promise<Employee> {
     try {
       const updatedEmployee = await EmployeeRepository.updateContactLocation(id, data);
       return adaptEmpleadoResponseToEmployee(updatedEmployee);
@@ -133,7 +133,7 @@ export class EmployeeService {
   /**
    * Actualizar datos financieros
    */
-  static async updateEmployeeFinancialData(id: number, data: any): Promise<Employee> {
+  static async updateEmployeeFinancialData(id: number, data: Partial<EmployeeDetailFormData>): Promise<Employee> {
     try {
       const updatedEmployee = await EmployeeRepository.updateFinancialData(id, data);
       return adaptEmpleadoResponseToEmployee(updatedEmployee);
@@ -146,7 +146,7 @@ export class EmployeeService {
   /**
    * Actualizar datos corporativos
    */
-  static async updateEmployeeCorporateData(id: number, data: any): Promise<Employee> {
+  static async updateEmployeeCorporateData(id: number, data: Partial<EmployeeDetailFormData>): Promise<Employee> {
     try {
       const updatedEmployee = await EmployeeRepository.updateCorporateData(id, data);
       return adaptEmpleadoResponseToEmployee(updatedEmployee);

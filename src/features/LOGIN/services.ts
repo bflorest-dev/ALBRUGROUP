@@ -15,7 +15,7 @@ export const login = async (payload: LoginRequest): Promise<LoginResponse> => {
         id: 'u-1',
         name: 'Demo User',
         email: payload.email,
-        role: 'ADMINISTRADOR' as any,
+        role: 'ADMINISTRADOR',
         permissions: ['DASHBOARD_VIEW'],
       },
     } as LoginResponse;

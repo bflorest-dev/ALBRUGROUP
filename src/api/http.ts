@@ -7,12 +7,12 @@ import axios from 'axios';
 import type { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { env } from '../config/env';
 
-// Tipos para respuestas de API (removido ApiResponse ya que backend devuelve directamente los datos)
+// Tipos para respuestas de API
 export interface ApiError {
   message: string;
   code?: string;
   status?: number;
-  details?: any[];
+  details?: unknown[]; // detalles de error arbitrarios
 }
 
 // Crear instancia de Axios configurada
@@ -34,12 +34,12 @@ http.interceptors.response.use(
     // Manejar errores de forma centralizada según formato del backend
     if (error.response) {
       // Error de respuesta del servidor
-      const data = error.response.data as any;
+      const data = error.response.data as unknown as Record<string, unknown>;
       const apiError: ApiError = {
-        message: data.message || 'Error del servidor',
-        code: data.error,
+        message: typeof data.message === 'string' ? data.message : 'Error del servidor',
+        code: typeof data.error === 'string' ? data.error : undefined,
         status: error.response.status,
-        details: data.details,
+        details: Array.isArray(data.details) ? data.details : undefined,
       };
 
       // Log detallado en desarrollo

@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react';
-import type { HireApplicantFormData, Applicant } from '../../../../../types';
+import type { HireApplicantFormData, Applicant } from '@types';
 import './HireApplicantForm.css';
 
 interface HireApplicantFormProps {

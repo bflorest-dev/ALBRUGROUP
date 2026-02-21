@@ -5,7 +5,7 @@
  */
 
 import { ApplicantRepository } from '../repositories/applicant.repository';
-import type { Applicant, NewApplicantFormData } from '../types';
+import type { Applicant, NewApplicantFormData, PostulanteRequest, ApplicantStatusChange } from '../types';
 import { adaptPostulanteResponseToApplicant } from '../types';
 
 export class ApplicantService {
@@ -56,7 +56,7 @@ export class ApplicantService {
   /**
    * Actualizar postulante
    */
-  static async updateApplicant(id: string, applicantData: any): Promise<Applicant> {
+  static async updateApplicant(id: string, applicantData: NewApplicantFormData): Promise<Applicant> {
     try {
       // Antes de enviar al backend debemos mapear los campos igual que en create
       // para que utilice las mismas claves que el API espera (p.ej. puestoTrabajo, origen, compania, etc.)
@@ -82,7 +82,7 @@ export class ApplicantService {
   /**
    * Actualizar estados de postulantes en bulk
    */
-  static async updateApplicantStatuses(changes: any): Promise<Applicant[]> {
+  static async updateApplicantStatuses(changes: ApplicantStatusChange[]): Promise<Applicant[]> {
     try {
       const applicants = await ApplicantRepository.updateStatuses(changes);
       return applicants.map(adaptPostulanteResponseToApplicant);
@@ -134,11 +134,11 @@ export class ApplicantService {
    * Ya vienen separados en nombres y apellidos desde el formulario
    * Solo necesita transformar el puesto de trabajo y origen
    */
-  private static prepareApplicantData(data: NewApplicantFormData): any {
+  private static prepareApplicantData(data: NewApplicantFormData): PostulanteRequest {
     // Convertir puestoTrabajo: reemplazar espacios con guiones bajos
     const puestoTrabajo = data.positionOfInterest.trim().replace(/\s+/g, '_').toUpperCase();
     
-    const transformedData: any = {
+    const transformedData: PostulanteRequest = {
       nombres: data.nombres.trim(),
       apellidos: data.apellidos.trim(),
       tipoDocumento: data.documentType,

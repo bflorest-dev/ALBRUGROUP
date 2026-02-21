@@ -65,35 +65,41 @@ const MainLayoutContent = () => {
         onTouchMove={handlePointerMove}
         onMouseLeave={handlePointerLeave}
       >
-        {/* Global waves background (full-screen) */}
-        <div className="global-waves" aria-hidden="true">
-          <svg className="waves-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="seaGradient" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="transparent" />
-                <stop offset="45%" stopColor="var(--wave-fill-3)" stopOpacity="0.06" />
-                <stop offset="75%" stopColor="var(--wave-fill-2)" stopOpacity="0.18" />
-                <stop offset="100%" stopColor="var(--wave-fill-1)" stopOpacity="0.42" />
-              </linearGradient>
+        {/* Global waves background only on login */}
+        {selectedRole === 'LOGIN' && (
+          <div className="global-waves" aria-hidden="true">
+            <svg className="waves-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="seaGradient" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="transparent" />
+                  <stop offset="45%" stopColor="var(--wave-fill-3)" stopOpacity="0.06" />
+                  <stop offset="75%" stopColor="var(--wave-fill-2)" stopOpacity="0.18" />
+                  <stop offset="100%" stopColor="var(--wave-fill-1)" stopOpacity="0.42" />
+                </linearGradient>
 
-              <path id="wave-path" d="M0,160 C150,320 350,40 600,160 C850,280 1050,80 1200,160 L1200,400 L0,400 Z" />
-            </defs>
+                <path id="wave-path" d="M0,160 C150,320 350,40 600,160 C850,280 1050,80 1200,160 L1200,400 L0,400 Z" />
+              </defs>
 
-            {/* full-area sea tint so bottom of screen is colored */}
-            <rect x="0" y="0" width="1200" height="400" fill="url(#seaGradient)" />
+              <rect x="0" y="0" width="1200" height="400" fill="url(#seaGradient)" />
 
-            <g className="parallax-waves">
-              <use href="#wave-path" x="0" y="0" className="wave-1" />
-              <use href="#wave-path" x="0" y="12" className="wave-2" />
-              <use href="#wave-path" x="0" y="24" className="wave-3" />
-              <use href="#wave-path" x="0" y="36" className="wave-4" />
-            </g>
-          </svg>
-        </div>
+              <g className="parallax-waves">
+                <use href="#wave-path" x="0" y="0" className="wave-1" />
+                <use href="#wave-path" x="0" y="12" className="wave-2" />
+                <use href="#wave-path" x="0" y="24" className="wave-3" />
+                <use href="#wave-path" x="0" y="36" className="wave-4" />
+              </g>
+            </svg>
+          </div>
+        )}
 
-        <div className={`layout-content ${selectedRole === 'RRHH' ? 'full-bleed' : ''}`}>
-          {renderPage()}
-        </div>
+        {/* if login show page directly; otherwise wrap in layout-content for margins */}
+        {selectedRole === 'LOGIN' ? (
+          renderPage()
+        ) : (
+          <div className={`layout-content ${selectedRole === 'RRHH' ? 'full-bleed' : ''}`}>
+            {renderPage()}
+          </div>
+        )}
       </div>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </>

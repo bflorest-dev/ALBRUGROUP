@@ -11,8 +11,8 @@ import { ApplicantsTableRow } from './ApplicantsTable/ApplicantsTableRow';
 interface ApplicantsTableProps {
   applicants: Applicant[];
   onEdit: (applicant: Applicant) => void;
-  onHire: (applicant: Applicant) => void;
-  onBlacklist: (applicant: Applicant) => void;
+  onHire?: (applicant: Applicant) => void;
+  onBlacklist?: (applicant: Applicant) => void;
 }
 
 export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlacklist }: ApplicantsTableProps) => {

@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react';
-import type { EditApplicantFormData, Applicant } from '../../../../../types';
+import type { EditApplicantFormData, Applicant } from '@types';
 import { ApplicantForm } from '@molecules/ApplicantForm';
 import './EditApplicantForm.css';
 
@@ -22,7 +22,7 @@ export const EditApplicantForm = ({ applicant, onSubmit, onCancel }: EditApplica
     documentType: (applicant.documentType as 'DNI' | 'CE') || 'DNI',
     documentNumber: applicant.documentNumber || '',
     positionOfInterest: applicant.positionOfInterest || '',
-    company: (applicant as any).compania || 'CLARO',
+    company: applicant.company || 'CLARO',
     campaign: applicant.campaign || '',
   });
 
@@ -32,17 +32,17 @@ export const EditApplicantForm = ({ applicant, onSubmit, onCancel }: EditApplica
     const { name, value } = e.target;
     if (name === 'nombres' || name === 'apellidos') {
       const alphabeticValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
-      setFormData((prev) => ({ ...prev, [name]: alphabeticValue }));
+      setFormData((prev: EditApplicantFormData) => ({ ...prev, [name]: alphabeticValue }));
     } else if (name === 'phoneMobile') {
       const numericValue = value.replace(/\D/g, '').slice(0, 9);
-      setFormData((prev) => ({ ...prev, [name]: numericValue }));
+      setFormData((prev: EditApplicantFormData) => ({ ...prev, [name]: numericValue }));
     } else if (name === 'documentNumber') {
       const numericValue = value.replace(/\D/g, '');
       const maxLength = formData.documentType === 'DNI' ? 8 : 9;
       const slicedValue = numericValue.slice(0, maxLength);
-      setFormData((prev) => ({ ...prev, [name]: slicedValue }));
+      setFormData((prev: EditApplicantFormData) => ({ ...prev, [name]: slicedValue }));
     } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+      setFormData((prev: EditApplicantFormData) => ({ ...prev, [name]: value }));
     }
   };
 

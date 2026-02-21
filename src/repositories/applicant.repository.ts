@@ -5,7 +5,7 @@
  */
 
 import { http } from '../api/http';
-import type { PostulanteResponse } from '../types';
+import type { PostulanteResponse, PostulanteRequest, ApplicantStatusChange } from '../types';
 
 // Tipos específicos para las respuestas de la API
 export type ApplicantsResponse = PostulanteResponse[];
@@ -29,7 +29,7 @@ export class ApplicantRepository {
   /**
    * Crear nuevo postulante
    */
-  static async create(applicantData: any): Promise<PostulanteResponse> {
+  static async create(applicantData: PostulanteRequest): Promise<PostulanteResponse> {
     const response = await http.post<CreateApplicantResponse>('/postulantes', applicantData);
     return response.data;
   }
@@ -37,7 +37,7 @@ export class ApplicantRepository {
   /**
    * Actualizar un postulante específico
    */
-  static async update(id: string, applicantData: any): Promise<PostulanteResponse> {
+  static async update(id: string, applicantData: PostulanteRequest): Promise<PostulanteResponse> {
     // algunos backend esperan PUT para actualización completa
     const response = await http.put<ApplicantResponse>(`/postulantes/${id}`, applicantData);
     return response.data;
@@ -46,7 +46,7 @@ export class ApplicantRepository {
   /**
    * Actualizar estados de postulantes en bulk
    */
-  static async updateStatuses(changes: any): Promise<PostulanteResponse[]> {
+  static async updateStatuses(changes: ApplicantStatusChange[]): Promise<PostulanteResponse[]> {
     const response = await http.patch<ApplicantsResponse>('/postulantes', changes);
     return response.data;
   }

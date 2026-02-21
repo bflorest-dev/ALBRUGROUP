@@ -5,7 +5,7 @@
  */
 
 import { http } from '../api/http';
-import type { EmpleadoResponse, PageResponse } from '../types';
+import type { EmpleadoResponse, PageResponse, NewEmployeeFormData, EmployeeDetailFormData } from '../types';
 
 // Tipos específicos para las respuestas de la API
 export type EmployeesPageResponse = PageResponse<EmpleadoResponse>;
@@ -55,7 +55,7 @@ export class EmployeeRepository {
   /**
    * Crear nuevo empleado
    */
-  static async create(employeeData: any): Promise<EmpleadoResponse> {
+  static async create(employeeData: NewEmployeeFormData): Promise<EmpleadoResponse> {
     const response = await http.post<CreateEmployeeResponse>('/empleados', employeeData);
     return response.data;
   }
@@ -63,7 +63,7 @@ export class EmployeeRepository {
   /**
    * Actualizar datos personales
    */
-  static async updatePersonalData(id: number, data: any): Promise<EmpleadoResponse> {
+  static async updatePersonalData(id: number, data: Partial<EmployeeDetailFormData>): Promise<EmpleadoResponse> {
     const response = await http.patch<UpdateEmployeeResponse>(`/empleados/${id}/datos-personales`, data);
     return response.data;
   }
@@ -71,7 +71,7 @@ export class EmployeeRepository {
   /**
    * Actualizar datos de contacto y ubicación
    */
-  static async updateContactLocation(id: number, data: any): Promise<EmpleadoResponse> {
+  static async updateContactLocation(id: number, data: Partial<EmployeeDetailFormData>): Promise<EmpleadoResponse> {
     const response = await http.patch<UpdateEmployeeResponse>(`/empleados/${id}/datos-contacto-ubicacion`, data);
     return response.data;
   }
@@ -79,7 +79,7 @@ export class EmployeeRepository {
   /**
    * Actualizar datos financieros
    */
-  static async updateFinancialData(id: number, data: any): Promise<EmpleadoResponse> {
+  static async updateFinancialData(id: number, data: Partial<EmployeeDetailFormData>): Promise<EmpleadoResponse> {
     const response = await http.patch<UpdateEmployeeResponse>(`/empleados/${id}/datos-financieros`, data);
     return response.data;
   }
@@ -87,7 +87,7 @@ export class EmployeeRepository {
   /**
    * Actualizar datos corporativos
    */
-  static async updateCorporateData(id: number, data: any): Promise<EmpleadoResponse> {
+  static async updateCorporateData(id: number, data: Partial<EmployeeDetailFormData>): Promise<EmpleadoResponse> {
     const response = await http.patch<UpdateEmployeeResponse>(`/empleados/${id}/datos-corporativos`, data);
     return response.data;
   }

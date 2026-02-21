@@ -136,8 +136,8 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  /* use a variable for sidebar width so we can animate collapse/expand */
-  margin-left: var(--sidebar-width, 80px);
+  /* content now full width, sidebar sits on top via absolute positioning */
+  /* margin-left removed to allow edge-to-edge layout */
   transition: margin-left 0.3s ease;
   position: relative;
   z-index: 1;
@@ -155,12 +155,12 @@
 }
 
 .main-layout.sidebar-collapsed .layout-content {
-  margin-left: var(--sidebar-collapsed-width);
+  /* no margin-left */
 }
 
 /* allow a slightly wider hover on expanded mode (optional) */
 .main-layout:not(.sidebar-collapsed):has(.sidebar:hover) .layout-content {
-  margin-left: 300px;
+  /* no shift */
 }
 
 

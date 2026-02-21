@@ -4,7 +4,7 @@ import { AdminDashboard } from './features/ADMINISTRADOR/components';
 import { DeveloperDashboard } from './features/DESARROLLADOR/components';
 import { LoginPage } from './features/LOGIN/components';
 import { EmployeeDashboard } from './features/RRHH/pages/EmployeeDashboard';
-import { ApplicantsDashboard } from './features/RRHH/pages/ApplicantsDashboard';
+import { KanbanDashboard } from './features/RECLUTAMIENTO/pages/KanbanDashboard';
 
 interface RouterByRoleProps {
   role: Role;
@@ -21,7 +21,7 @@ const RouterByRole: React.FC<RouterByRoleProps> = ({ role }) => {
     case 'RRHH':
       return <EmployeeDashboard />;
     case 'RECLUTAMIENTO':
-      return <ApplicantsDashboard />;
+      return <KanbanDashboard />;
     default:
       return <div>Dashboard for {role} - Coming Soon</div>;
   }

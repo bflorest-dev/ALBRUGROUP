@@ -5,8 +5,8 @@ import type { Applicant } from '../../../../../../types';
 interface ApplicantsTableRowProps {
   applicant: Applicant;
   onEdit: (applicant: Applicant) => void;
-  onHire: (applicant: Applicant) => void;
-  onBlacklist: (applicant: Applicant) => void;
+  onHire?: (applicant: Applicant) => void; // optional, hide button when undefined
+  onBlacklist?: (applicant: Applicant) => void;
 }
 
 export const ApplicantsTableRow: React.FC<ApplicantsTableRowProps> = ({
@@ -25,16 +25,20 @@ export const ApplicantsTableRow: React.FC<ApplicantsTableRowProps> = ({
       <td className={`company-cell ${applicant.company?.toLowerCase()}`}>{applicant.company}</td>
       <td>{applicant.status || 'POSTULANTE'}</td>
       <td>{applicant.campaign}</td>
-      <td>
-        <button onClick={() => onEdit(applicant)} title="Editar">
+      <td className="cell-actions">
+        <button className="action-btn edit-btn" onClick={() => onEdit(applicant)} title="Editar">
           <BiEdit />
         </button>
-        <button onClick={() => onHire(applicant)} title="Contratar">
+        {onHire && (
+        <button className="action-btn hire-btn" onClick={() => onHire(applicant)} title="Contratar">
           <BiUserPlus />
         </button>
-        <button onClick={() => onBlacklist(applicant)} title="Lista negra">
-          <BiBlock />
-        </button>
+      )}
+        {onBlacklist && (
+          <button className="action-btn blacklist-btn" onClick={() => onBlacklist(applicant)} title="Lista negra">
+            <BiBlock />
+          </button>
+        )}
       </td>
     </tr>
   );

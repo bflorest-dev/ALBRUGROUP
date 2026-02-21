@@ -230,6 +230,28 @@ export interface PageResponse<T> {
   empty: boolean;
 }
 
+
+// Request payloads para API
+export interface PostulanteRequest {
+  nombres: string;
+  apellidos: string;
+  tipoDocumento: string;
+  numeroDocumento: string;
+  celularPersonal: string;
+  puestoTrabajo: string;
+  compania?: string;
+  origen: string;
+  estadoPostulacion?: string;
+  pagoDiaCapacitacion?: number;
+  fechaInicio?: string;
+  fechaFin?: string;
+}
+
+export interface ApplicantStatusChange {
+  id: number | string;
+  estadoPostulacion: string;
+}
+
 // Adapters para convertir respuestas del backend a modelos internos
 export const adaptEmpleadoResponseToEmployee = (backend: EmpleadoResponse): Employee => ({
   id: backend.id.toString(),
@@ -261,22 +283,30 @@ export const adaptEmpleadoResponseToEmployee = (backend: EmpleadoResponse): Empl
   baseSalary: '', // No disponible
 });
 
-export const adaptPostulanteResponseToApplicant = (backend: PostulanteResponse): Applicant => ({
-  id: backend.id.toString(),
-  fullName: `${backend.nombres} ${backend.apellidos}`.trim(),
-  nombres: backend.nombres,
-  apellidos: backend.apellidos,
-  phoneMobile: backend.celularPersonal,
-  documentType: backend.tipoDocumento,
-  documentNumber: backend.numeroDocumento,
-  positionOfInterest: backend.puestoTrabajo,
-  modality: '', // No disponible en backend
-  campaign: backend.origen,
-  company: backend.compania || 'CLARO',
-  status: backend.estadoPostulacion,
-  trainingDayPayment: backend.pagoDiaCapacitacion,
-  startDate: backend.fechaInicio,
-  endDate: backend.fechaFin,
-  personalEmail: '',
-});
+export const adaptPostulanteResponseToApplicant = (backend: PostulanteResponse): Applicant => {
+  // normalizar algunos estados para la UI
+  let status = backend.estadoPostulacion;
+  if (status === 'EN_PROCESO') {
+    status = 'POSTULANTE';
+  }
+
+  return {
+    id: backend.id.toString(),
+    fullName: `${backend.nombres} ${backend.apellidos}`.trim(),
+    nombres: backend.nombres,
+    apellidos: backend.apellidos,
+    phoneMobile: backend.celularPersonal,
+    documentType: backend.tipoDocumento,
+    documentNumber: backend.numeroDocumento,
+    positionOfInterest: backend.puestoTrabajo,
+    modality: '', // No disponible en backend
+    campaign: backend.origen,
+    company: backend.compania || 'CLARO',
+    status: status,
+    trainingDayPayment: backend.pagoDiaCapacitacion,
+    startDate: backend.fechaInicio,
+    endDate: backend.fechaFin,
+    personalEmail: '',
+  };
+};
 

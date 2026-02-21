@@ -13,7 +13,6 @@ import { Pagination } from '@molecules/Pagination';
 import { Header } from '@organisms/Layout/Header';
 import { useNotification } from '@contexts/useNotification';
 import { useErrorHandler } from '@hooks/useErrorHandler';
-import { ApplicantService } from '@services/applicant.service';
 import { loadApplicantsFromStorage, saveApplicantsToStorage } from '@utils/localStorage';
 import type { Applicant, NewApplicantFormData, EditApplicantFormData, HireApplicantFormData, Statistic } from '@types';
 import './ApplicantsDashboard.css';
@@ -43,13 +42,9 @@ export const ApplicantsDashboard = () => {
   const loadInitialData = useCallback(async () => {
     try {
       setLoading(true);
-      let applicantsData = await ApplicantService.getAllApplicants();
-
-      // override with localStorage if present
+      // load candidates only from local storage; start empty if none
       const stored = loadApplicantsFromStorage();
-      if (stored && Array.isArray(stored)) {
-        applicantsData = stored as any;
-      }
+      const applicantsData: Applicant[] = stored && Array.isArray(stored) ? (stored as Applicant[]) : [];
 
       // Calcular estadísticas locales por ahora
       const total = applicantsData.length;
@@ -133,37 +128,37 @@ export const ApplicantsDashboard = () => {
     setSelectedApplicant(null);
   };
 
-  const handleOpenHireModal = (applicant: Applicant) => {
-    setSelectedApplicant(applicant);
-    setIsHireModalOpen(true);
-  };
 
   const handleCloseHireModal = () => {
     setIsHireModalOpen(false);
     setSelectedApplicant(null);
   };
 
-  const handleSubmitForm = async (formData: NewApplicantFormData) => {
-    try {
-      const newApplicant = await ApplicantService.createApplicant(formData);
-      // for local mode, ensure status property
-      newApplicant.status = newApplicant.status || 'POSTULANTE';
+  const handleSubmitForm = (formData: NewApplicantFormData) => {
+    // purely local creation: generate id and adapt fields
+    const newApplicant: Applicant = {
+      id: `${Date.now()}`,
+      fullName: `${formData.nombres} ${formData.apellidos}`,
+      nombres: formData.nombres,
+      apellidos: formData.apellidos,
+      phoneMobile: formData.phoneMobile,
+      documentType: formData.documentType,
+      documentNumber: formData.documentNumber,
+      positionOfInterest: formData.positionOfInterest,
+      modality: '',
+      campaign: formData.campaign,
+      company: formData.company,
+      status: 'POSTULANTE',
+    };
 
-      setApplicants(prev => {
-        const updated = [...prev, newApplicant];
-        saveApplicantsToStorage(updated);
-        return updated;
-      });
+    setApplicants(prev => {
+      const updated = [...prev, newApplicant];
+      saveApplicantsToStorage(updated);
+      return updated;
+    });
 
-      setIsModalOpen(false);
-      showSuccess(`Postulante ${newApplicant.fullName} registrado`);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Error al crear postulante';
-      handleError(error instanceof Error ? error : new Error(errorMessage), {
-        componentStack: 'ApplicantsDashboard.handleSubmitForm'
-      });
-      showError(`Error: ${errorMessage}`);
-    }
+    setIsModalOpen(false);
+    showSuccess(`Postulante ${newApplicant.fullName} registrado`);
   };
 
   const handleEditApplicant = (applicant: Applicant) => {
@@ -188,9 +183,6 @@ export const ApplicantsDashboard = () => {
     showSuccess(`Postulante ${formData.nombres} ${formData.apellidos} actualizado`);
   };
 
-  const handleHireApplicant = (applicant: Applicant) => {
-    handleOpenHireModal(applicant);
-  };
 
   const handleHireSubmit = async (_formData: HireApplicantFormData) => {
     if (!selectedApplicant) return;
@@ -228,7 +220,7 @@ export const ApplicantsDashboard = () => {
       // TODO: Implementar en backend cuando esté disponible
 
       // Actualizar estado local
-      setApplicants(prev => prev.filter(app => app.id !== selectedApplicant.id));
+      setApplicants((prev) => prev.filter((app) => app.id !== selectedApplicant.id));
 
       // Actualizar estadísticas
       const total = applicants.length - 1;
@@ -311,7 +303,6 @@ export const ApplicantsDashboard = () => {
           <ApplicantsTable
             applicants={paginatedApplicants}
             onEdit={handleEditApplicant}
-            onHire={handleHireApplicant}
             onBlacklist={handleBlacklistApplicant}
           />
 

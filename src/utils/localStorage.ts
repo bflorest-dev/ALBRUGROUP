@@ -1,6 +1,8 @@
 // simple helpers for localStorage persistence
 
-export const loadApplicantsFromStorage = (): any[] | null => {
+import type { Applicant } from '../types';
+
+export const loadApplicantsFromStorage = (): Applicant[] | null => {
   try {
     const json = localStorage.getItem('applicantsData');
     if (!json) return null;
@@ -11,7 +13,7 @@ export const loadApplicantsFromStorage = (): any[] | null => {
   }
 };
 
-export const saveApplicantsToStorage = (applicants: any[]) => {
+export const saveApplicantsToStorage = (applicants: Applicant[]) => {
   try {
     localStorage.setItem('applicantsData', JSON.stringify(applicants));
   } catch (e) {

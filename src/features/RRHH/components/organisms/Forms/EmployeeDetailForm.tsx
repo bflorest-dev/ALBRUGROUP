@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 
-import type { Employee, EmployeeDetailFormData } from '../../../../../types';
+import type { Employee, EmployeeDetailFormData } from '@types';
 import './EmployeeDetailForm.css';
 
 interface EmployeeDetailFormProps {

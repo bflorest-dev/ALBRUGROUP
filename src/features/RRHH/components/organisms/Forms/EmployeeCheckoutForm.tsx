@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react';
-import type { Employee } from '../../../../../types';
+import type { Employee } from '@types';
 import './EmployeeCheckoutForm.css';
 
 interface EmployeeCheckoutFormProps {

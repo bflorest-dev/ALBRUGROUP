@@ -15,7 +15,7 @@ const AppContent = () => {
         <select
           id="role-select"
           value={selectedRole}
-          onChange={(e) => setSelectedRole(e.target.value as any)}
+          onChange={(e) => setSelectedRole(e.target.value as 'ADMINISTRADOR' | 'DESARROLLADOR' | 'LOGIN' | 'RRHH' | 'RECLUTAMIENTO')}
         >
           <option value="ADMINISTRADOR">ADMINISTRADOR</option>
           <option value="DESARROLLADOR">DESARROLLADOR</option>

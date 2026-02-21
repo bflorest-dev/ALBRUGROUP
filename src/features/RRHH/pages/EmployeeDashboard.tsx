@@ -16,7 +16,6 @@ import { useNotification } from '@contexts/useNotification';
 import { usePagination } from '@hooks/usePagination';
 import { useErrorHandler } from '@hooks/useErrorHandler';
 import { EmployeeService } from '@services/employee.service';
-import { ApplicantService } from '@services/applicant.service';
 import { loadApplicantsFromStorage, saveApplicantsToStorage } from '@utils/localStorage';
 import type { Employee, Applicant, NewEmployeeFormData, EmployeeDetailFormData, Statistic, EditApplicantFormData } from '@types';
 import './EmployeeDashboard.css';
@@ -406,7 +405,7 @@ export const EmployeeDashboard = () => {
       );
       // persist merged list with accepted from storage
       const stored = loadApplicantsFromStorage() || [];
-      const acceptedStored = stored.filter((x: any) => x.status === 'ACEPTADO');
+      const acceptedStored = stored.filter((x: Applicant) => x.status === 'ACEPTADO');
       saveApplicantsToStorage([...updated, ...acceptedStored]);
       return updated;
     });
@@ -424,6 +423,19 @@ export const EmployeeDashboard = () => {
 
   const { showError, showSuccess } = useNotification();
   const { handleError } = useErrorHandler();
+
+  const handleBlacklistApplicant = (applicant: Applicant) => {
+    setApplicants(prev => {
+      const updated = prev.map(a =>
+        a.id === applicant.id ? { ...a, status: 'LISTA_NEGRA' } : a
+      );
+      // persist changes (keep accepted separated)
+      const acceptedStored = acceptedApplicants;
+      saveApplicantsToStorage([...updated, ...acceptedStored]);
+      return updated;
+    });
+    showSuccess(`Postulante ${applicant.fullName} añadido a lista negra`);
+  };
 
   const breakTypes = [
     'INICIO DE BAÑO',
@@ -473,29 +485,17 @@ export const EmployeeDashboard = () => {
     const loadApplicants = async () => {
       try {
         setApplicantsLoading(true);
-        let data = await ApplicantService.getAllApplicants() as any;
-        const applicantsList = Array.isArray(data) ? data : data.applicants || [];
-
-        // override with local storage if present (only new applicants list)
+        // load exclusively from local storage; if nothing stored, start empty
         const stored = loadApplicantsFromStorage();
         if (stored && Array.isArray(stored)) {
-          // keep accepted separate by filtering
           const storedNew = stored.filter((a: Applicant) => a.status !== 'ACEPTADO');
           setApplicants(storedNew);
           const storedAccepted = stored.filter((a: Applicant) => a.status === 'ACEPTADO');
           setAcceptedApplicants(storedAccepted);
-          setApplicantsLoading(false);
-          return;
+        } else {
+          setApplicants([]);
+          setAcceptedApplicants([]);
         }
-        
-        // Separar postulantes por estado
-        const allApplicants = applicantsList.filter((a: Applicant) => a.status !== 'ACEPTADO');
-        const accepted = applicantsList.filter((a: Applicant) => a.status === 'ACEPTADO');
-        
-        setApplicants(allApplicants);
-        setAcceptedApplicants(accepted);
-        // persist full list
-        saveApplicantsToStorage([...allApplicants, ...accepted]);
       } catch (error) {
         handleError(error instanceof Error ? error : new Error('Error loading applicants'), {
           componentStack: 'EmployeeDashboard.loadApplicants'
@@ -610,30 +610,34 @@ export const EmployeeDashboard = () => {
               <ApplicantsTable 
                 applicants={applicants}
                 onEdit={handleEditApplicant}
-                onHire={(_applicant: Applicant) => {}}
-                onBlacklist={(_applicant: Applicant) => {}}
+                onBlacklist={handleBlacklistApplicant}
               />
 
               <Modal isOpen={newApplicantModalOpen} title="Registrar Nuevo Postulante" onClose={() => setNewApplicantModalOpen(false)}>
                 <NewApplicantForm
-                  onSubmit={async (formData) => {
-                    try {
-                      const newApplicant = await ApplicantService.createApplicant(formData);
-                      newApplicant.status = newApplicant.status || 'POSTULANTE';
-                      setApplicants(prev => {
-                        const updated = [...prev, newApplicant];
-                        saveApplicantsToStorage(updated);
-                        return updated;
-                      });
-                      setNewApplicantModalOpen(false);
-                      showSuccess(`Postulante ${newApplicant.fullName} registrado exitosamente`);
-                    } catch (error) {
-                      const errorMessage = error instanceof Error ? error.message : 'Error al crear postulante';
-                      handleError(error instanceof Error ? error : new Error(errorMessage), {
-                        componentStack: 'EmployeeDashboard.handleNewApplicantSubmit'
-                      });
-                      showError(`Error: ${errorMessage}`);
-                    }
+                  onSubmit={(formData) => {
+                    // local creation
+                    const newApplicant: Applicant = {
+                      id: `${Date.now()}`,
+                      fullName: `${formData.nombres} ${formData.apellidos}`,
+                      nombres: formData.nombres,
+                      apellidos: formData.apellidos,
+                      phoneMobile: formData.phoneMobile,
+                      documentType: formData.documentType,
+                      documentNumber: formData.documentNumber,
+                      positionOfInterest: formData.positionOfInterest,
+                      modality: '',
+                      campaign: formData.campaign,
+                      company: formData.company,
+                      status: 'POSTULANTE',
+                    };
+                    setApplicants(prev => {
+                      const updated = [...prev, newApplicant];
+                      saveApplicantsToStorage(updated);
+                      return updated;
+                    });
+                    setNewApplicantModalOpen(false);
+                    showSuccess(`Postulante ${newApplicant.fullName} registrado exitosamente`);
                   }}
                   onCancel={() => setNewApplicantModalOpen(false)}
                 />
@@ -673,8 +677,7 @@ export const EmployeeDashboard = () => {
               <ApplicantsTable 
                 applicants={acceptedApplicants}
                 onEdit={handleEditApplicant}
-                onHire={(_applicant: Applicant) => {}}
-                onBlacklist={(_applicant: Applicant) => {}}
+                onBlacklist={handleBlacklistApplicant}
               />
             </section>
           )}

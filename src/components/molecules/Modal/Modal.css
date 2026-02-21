@@ -24,6 +24,16 @@
   overflow-y: auto;
 }
 
+/* larger size for tipify modal */
+.modal-container.tipify-modal {
+  min-width: 480px;
+  max-width: 700px;
+  min-height: 75vh; /* taller modal */
+  max-height: 90vh; /* allow tall modal without scrolling */
+  padding: 40px;
+  overflow-y: auto;
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
