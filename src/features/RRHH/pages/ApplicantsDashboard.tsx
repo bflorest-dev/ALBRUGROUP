@@ -75,6 +75,9 @@ export const ApplicantsDashboard = () => {
   // Cargar datos iniciales
   useEffect(() => {
     loadInitialData();
+    const listener = () => loadInitialData();
+    window.addEventListener('applicantsUpdated', listener);
+    return () => window.removeEventListener('applicantsUpdated', listener);
   }, [loadInitialData]);
 
   // Calcular estadísticas

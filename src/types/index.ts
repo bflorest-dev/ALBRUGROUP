@@ -60,6 +60,7 @@ export interface Applicant {
   startDate?: string;
   endDate?: string;
   personalEmail?: string;
+  rejectionReason?: string; // motivo de rechazo cuando status = 'RECHAZADO'
 }
 
 export interface PaginationInfo {

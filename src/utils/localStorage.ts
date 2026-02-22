@@ -16,6 +16,8 @@ export const loadApplicantsFromStorage = (): Applicant[] | null => {
 export const saveApplicantsToStorage = (applicants: Applicant[]) => {
   try {
     localStorage.setItem('applicantsData', JSON.stringify(applicants));
+    // notify any listeners that the applicants list changed
+    window.dispatchEvent(new Event('applicantsUpdated'));
   } catch (e) {
     console.error('saveApplicantsToStorage error', e);
   }

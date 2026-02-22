@@ -1,0 +1,141 @@
+.training-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.company-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 0;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.company-tabs button {
+  padding: 6px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.company-tabs button.active {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+.training-list {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.training-item {
+  /* let cards size to their content, but cap maximum width for readability */
+  width: auto;
+  max-width: 600px;
+}
+
+.training-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.training-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  color: #374151;
+  flex-shrink: 0;
+}
+
+.training-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.training-name {
+  font-size: 16px;
+  color: #111827;
+}
+
+.training-doc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.doc-badge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #f3f4f6;
+  font-size: 12px;
+  color: #374151;
+  text-transform: uppercase;
+}
+
+.doc-number {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.training-role {
+  flex-shrink: 0;
+}
+
+.training-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-approved,
+.btn-rejected {
+  padding: 4px 10px;
+  font-size: 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-approved {
+  background: #10b981;
+  color: white;
+}
+
+.btn-rejected {
+  background: #ef4444;
+  color: white;
+}
+
+.role-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: #4f46e5;
+  background: rgba(79,70,229,0.1);
+  border-radius: 9999px;
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.training-empty {
+  color: #6b7280;
+  font-style: italic;
+}
