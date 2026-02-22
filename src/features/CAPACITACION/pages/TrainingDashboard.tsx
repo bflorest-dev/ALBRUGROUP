@@ -131,7 +131,7 @@ export const TrainingDashboard: React.FC = () => {
                 }
                 setIsRejectModalOpen(false);
               }}
-            >Guardar</button>
+            >Confirmar</button>
           </div>
         </div>
       </Modal>

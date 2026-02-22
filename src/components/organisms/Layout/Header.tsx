@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react';
-import { BiBell, BiLogOut, BiChevronLeft, BiChevronRight } from 'react-icons/bi';
+import { BiBell, BiLogOut, BiChevronLeft, BiChevronRight, BiSearch } from 'react-icons/bi';
 import { useNotification } from '../../../contexts/useNotification';
 import { useSidebar } from '../../../contexts/SidebarContext';
 import './Header.css';
@@ -11,10 +11,12 @@ import './Header.css';
 interface HeaderProps {
   title: string;
   subtitle?: string;
+  searchTerm?: string;
+  onSearchChange?: (value: string) => void;
 }
 
 
-export const Header = ({ title, subtitle }: HeaderProps) => {
+export const Header = ({ title, subtitle, searchTerm, onSearchChange }: HeaderProps) => {
   const [selectedBreak, setSelectedBreak] = useState('');
   // only track last start timestamp
   const [startTime, setStartTime] = useState<Date | null>(null);
@@ -85,6 +87,18 @@ export const Header = ({ title, subtitle }: HeaderProps) => {
         </div>
 
         <div className="header-right">
+          {searchTerm !== undefined && onSearchChange && (
+            <div className="header-search">
+              <BiSearch size={16} className="search-icon" />
+              <input
+                type="text"
+                placeholder="Buscar..."
+                value={searchTerm}
+                onChange={e => onSearchChange!(e.target.value)}
+                className="search-input"
+              />
+            </div>
+          )}
           <div className="break-section">
             <select
               value={selectedBreak}

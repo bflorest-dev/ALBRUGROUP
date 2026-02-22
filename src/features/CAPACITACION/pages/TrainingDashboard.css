@@ -30,9 +30,11 @@
 
 .training-list {
   padding: 16px;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-auto-rows: auto;
   gap: 12px;
+  max-height: calc(6 * 72px + 5 * 12px); /* approximate 6 rows with gap, adjust if needed */
   overflow-y: auto;
 }
 
@@ -46,6 +48,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap; /* allow children to drop to next line */
 }
 
 .training-avatar {
@@ -66,11 +69,30 @@
   flex-direction: column;
   gap: 4px;
   flex: 1;
+  min-width: 0; /* allow children to shrink and wrap */
+}
+
+.role-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: #4f46e5;
+  background: rgba(79,70,229,0.1);
+  border-radius: 9999px;
+  /* force single-line and adjust width */
+  white-space: nowrap;
+  min-width: 140px; /* ensure space for long roles */
+  max-width: 100%;
 }
 
 .training-name {
   font-size: 16px;
   color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 140px;
+  max-width: 100%;
 }
 
 .training-doc {
@@ -101,6 +123,8 @@
   display: flex;
   gap: 6px;
   flex-shrink: 0;
+  flex-basis: 100%; /* occupy full row when wrapping */
+  justify-content: flex-end;
 }
 
 .btn-approved,

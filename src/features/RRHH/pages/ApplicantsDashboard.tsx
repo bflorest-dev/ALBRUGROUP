@@ -97,10 +97,11 @@ export const ApplicantsDashboard = () => {
   const filteredApplicants = useMemo(() => {
     let filtered = applicants;
     if (searchTerm) {
+      const term = searchTerm.toLowerCase();
       filtered = filtered.filter((app) =>
-        app.fullName.toLowerCase().startsWith(searchTerm.toLowerCase()) ||
-        app.documentNumber?.toLowerCase().startsWith(searchTerm.toLowerCase()) ||
-        app.phoneMobile?.toLowerCase().startsWith(searchTerm.toLowerCase())
+        app.fullName.toLowerCase().includes(term) ||
+        app.documentNumber?.toLowerCase().includes(term) ||
+        app.phoneMobile?.toLowerCase().includes(term)
       );
     }
     return filtered;
@@ -266,7 +267,7 @@ export const ApplicantsDashboard = () => {
 
   return (
     <div className="applicants-dashboard">
-      <Header title="Gestión de Postulantes" />
+      <Header title="Gestión de Postulantes" searchTerm={searchTerm} onSearchChange={setSearchTerm} />
 
       <main className="dashboard-content">
         {/* Sección de Estadísticas */}
@@ -307,6 +308,8 @@ export const ApplicantsDashboard = () => {
             applicants={paginatedApplicants}
             onEdit={handleEditApplicant}
             onBlacklist={handleBlacklistApplicant}
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
           />
 
           <Pagination

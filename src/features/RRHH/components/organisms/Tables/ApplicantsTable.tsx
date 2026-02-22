@@ -2,7 +2,7 @@
  * Componente ApplicantsTable (moved to features/RRHH)
  */
 
-import { BiFilter, BiSortAlt2 } from 'react-icons/bi';
+import { BiFilter, BiSortAlt2, BiSearch } from 'react-icons/bi';
 import type { Applicant } from '../../../../../types';
 import './ApplicantsTable.css';
 import { useApplicantsTable } from '../../../../../hooks/useApplicantsTable';
@@ -13,9 +13,12 @@ interface ApplicantsTableProps {
   onEdit: (applicant: Applicant) => void;
   onHire?: (applicant: Applicant) => void;
   onBlacklist?: (applicant: Applicant) => void;
+  // search control
+  searchTerm?: string;
+  onSearchChange?: (value: string) => void;
 }
 
-export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlacklist }: ApplicantsTableProps) => {
+export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlacklist, searchTerm, onSearchChange }: ApplicantsTableProps) => {
   const {
     filteredApplicants,
     sortOrder,
@@ -35,6 +38,18 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlackli
 
   return (
     <div className="applicants-table-container">
+      {searchTerm !== undefined && onSearchChange && (
+        <div className="table-search-container">
+          <BiSearch className="search-icon" size={16} />
+          <input
+            type="text"
+            placeholder="Buscar..."
+            value={searchTerm}
+            onChange={e => onSearchChange!(e.target.value)}
+            className="search-input"
+          />
+        </div>
+      )}
       {hasActiveFilters && (
         <div className="active-filters-bar">
           <div className="active-filters-info">

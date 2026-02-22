@@ -44,7 +44,28 @@
   gap: 8px;
   align-items: center;
 }
+.header-search {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0 8px;
+  margin-right: 16px;
+  height: 32px;
+}
 
+.header-search .search-icon {
+  color: #9ca3af;
+  margin-right: 6px;
+}
+
+.header-search .search-input {
+  border: none;
+  outline: none;
+  font-size: 14px;
+  width: 120px;
+}
 .icon-btn {
   width: 32px;
   height: 32px;
