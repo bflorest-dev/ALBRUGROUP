@@ -14,7 +14,7 @@ import java.time.LocalDate;
 @AllArgsConstructor @NoArgsConstructor
 public class RegistrarPostulanteRequest {
 
-    // EMPLEADO
+    // EMPLEADO PARCIAL
     @NotBlank private String nombres;
     @NotBlank private String apellidos;
     @NotNull private Documento tipoDocumento;

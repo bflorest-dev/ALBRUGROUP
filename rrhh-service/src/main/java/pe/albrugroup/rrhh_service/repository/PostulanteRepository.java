@@ -18,10 +18,10 @@ public interface PostulanteRepository extends JpaRepository<Postulante, Long> {
     @Query("""
     SELECT p FROM Postulante p
     WHERE (:estado IS NULL OR p.estadoPostulacion = :estado)
-    AND (:puesto IS NULL OR p.puestoTrabajo = :puesto)
+    AND (:puesto IS NULL OR p.puestoTrabajo = :puesto)7
     AND (:desde IS NULL OR p.fechaInicio >= :desde)
     AND (:hasta IS NULL OR p.fechaInicio <= :hasta)
-    ORDER BY p.fechaInicio DESC
+    ORDER BY p.fechaInicio DESC97
     """)
     List<Postulante> getPostulantes(
             @Param("estado") EstadoPostulacion estado,

@@ -6,10 +6,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import pe.albrugroup.rrhh_service.entity.enums.Origen;
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
-
-import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
+
 
 @Entity @Getter @Setter @Builder
 @AllArgsConstructor @NoArgsConstructor

@@ -39,65 +39,85 @@ public class PostulanteService implements IPostulante {
     private final PostulanteMapper postulanteMapper;
     private final EmpleadoMapper  empleadoMapper;
 
-    @Transactional(readOnly = true) @Override
-    public List<PostulanteResponse> getPostulantesFiltrados(
-            EstadoPostulacion estado,
-            PuestoTrabajo puesto,
-            LocalDate desde,
-            LocalDate hasta
-    ) {
-        return postulanteRepository.getPostulantes(estado, puesto, desde, hasta)
-                .stream()
-                .map(postulanteMapper::toResponse)
-                .toList();
+    @Override
+    public List<PostulanteResponse> getPostulantesFiltrados(EstadoPostulacion estado, PuestoTrabajo puesto, LocalDate desde, LocalDate hasta) {
+        return List.of();
     }
+
     @Override
     public PostulanteResponse registrarPostulante(RegistrarPostulanteRequest nuevoPostulante) {
-        Empleado empleado = empleadoRepository.findByNumeroDocumento(nuevoPostulante.getNumeroDocumento())
-                .orElseGet(() -> {
-                    Empleado e = empleadoMapper.toEntity(nuevoPostulante);
-                    e.setEstadoOperativo(EstadoOperativo.POSTULANTE);
-                    return empleadoRepository.save(e);
-                });
-        if(postulanteRepository.existsByEmpleadoIdAndEstadoPostulacion(empleado.getId(), EstadoPostulacion.EN_PROCESO)) {
-            throw new PostulanteEnProcesoException();
-        }
-
-        Postulante postulante = postulanteMapper.toEntity(nuevoPostulante);
-        postulante.setEstadoPostulacion(EstadoPostulacion.EN_PROCESO);
-        postulante.setEmpleado(empleado);
-
-        return postulanteMapper.toResponse(postulanteRepository.save(postulante));
+        return null;
     }
 
     @Override
     public PostulanteResponse actulizarPostulante(Long idPostulante, DatosPostulanteRequest infoPostulante) {
-        Postulante postulante = postulanteRepository.findById(idPostulante)
-                .orElseThrow(() -> new PostulanteNotFoundException(idPostulante));
-        postulanteMapper.updateDatosPostulacion(infoPostulante, postulante);
-        return postulanteMapper.toResponse(postulante);
+        return null;
     }
 
     @Override
     public List<PostulanteResponse> actualizarEstadosPostulacion(CambiosEstadoPostulacionRequest cambios) {
-        Map<Long, EstadoPostulacion> destino = cambios.getCambios().stream()
-                .collect(Collectors.toMap(
-                        CambioEstadoPostulacionItem::getId, CambioEstadoPostulacionItem::getEstado,
-                        (a, b) ->
-                        { throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "IDs duplicados"); }
-                ));
-        List<Postulante> postulantes = postulanteRepository
-                .findAllByIdInWithEmpleado(new ArrayList<>(destino.keySet()));
-        if (postulantes.size() != destino.size()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Uno o más postulantes no existen");
-        }
-        postulantes.forEach(p -> {
-            if(p.getEstadoPostulacion() != EstadoPostulacion.EN_PROCESO) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "ERROR: Postulante[" + p.getId() + "][" + p.getEstadoPostulacion() + "]");
-            }
-        });
-        postulantes.forEach(postulante -> postulante.setEstadoPostulacion(destino.get(postulante.getId())));
-        return postulantes.stream().map(postulanteMapper::toResponse).toList();
+        return List.of();
     }
+
+//    @Transactional(readOnly = true) @Override
+//    public List<PostulanteResponse> getPostulantesFiltrados(
+//            EstadoPostulacion estado,
+//            PuestoTrabajo puesto,
+//            LocalDate desde,
+//            LocalDate hasta
+//    ) {
+//        return postulanteRepository.getPostulantes(estado, puesto, desde, hasta)
+//                .stream()
+//                .map(postulanteMapper::toResponse)
+//                .toList();
+//    }
+//    @Override
+//    public PostulanteResponse registrarPostulante(RegistrarPostulanteRequest nuevoPostulante) {
+//        Empleado empleado = empleadoRepository.findByNumeroDocumento(nuevoPostulante.getNumeroDocumento())
+//                .orElseGet(() -> {
+//                    Empleado e = empleadoMapper.toEntity(nuevoPostulante);
+//                    e.setEstadoOperativo(EstadoOperativo.POSTULANTE);
+//                    return empleadoRepository.save(e);
+//                });
+//        if(postulanteRepository.existsByEmpleadoIdAndEstadoPostulacion(empleado.getId(), EstadoPostulacion.EN_PROCESO)) {
+//            throw new PostulanteEnProcesoException();
+//        }
+//
+//        Postulante postulante = postulanteMapper.toEntity(nuevoPostulante);
+//        postulante.setEstadoPostulacion(EstadoPostulacion.EN_PROCESO);
+//        postulante.setEmpleado(empleado);
+//
+//        return postulanteMapper.toResponse(postulanteRepository.save(postulante));
+//    }
+//
+//    @Override
+//    public PostulanteResponse actulizarPostulante(Long idPostulante, DatosPostulanteRequest infoPostulante) {
+//        Postulante postulante = postulanteRepository.findById(idPostulante)
+//                .orElseThrow(() -> new PostulanteNotFoundException(idPostulante));
+//        postulanteMapper.updateDatosPostulacion(infoPostulante, postulante);
+//        return postulanteMapper.toResponse(postulante);
+//    }
+//
+//    @Override
+//    public List<PostulanteResponse> actualizarEstadosPostulacion(CambiosEstadoPostulacionRequest cambios) {
+//        Map<Long, EstadoPostulacion> destino = cambios.getCambios().stream()
+//                .collect(Collectors.toMap(
+//                        CambioEstadoPostulacionItem::getId, CambioEstadoPostulacionItem::getEstado,
+//                        (a, b) ->
+//                        { throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "IDs duplicados"); }
+//                ));
+//        List<Postulante> postulantes = postulanteRepository
+//                .findAllByIdInWithEmpleado(new ArrayList<>(destino.keySet()));
+//        if (postulantes.size() != destino.size()) {
+//            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Uno o más postulantes no existen");
+//        }
+//        postulantes.forEach(p -> {
+//            if(p.getEstadoPostulacion() != EstadoPostulacion.EN_PROCESO) {
+//                throw new ResponseStatusException(HttpStatus.CONFLICT,
+//                        "ERROR: Postulante[" + p.getId() + "][" + p.getEstadoPostulacion() + "]");
+//            }
+//        });
+//        postulantes.forEach(postulante -> postulante.setEstadoPostulacion(destino.get(postulante.getId())));
+//        return postulantes.stream().map(postulanteMapper::toResponse).toList();
+//    }
 }
