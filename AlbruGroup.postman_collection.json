@@ -7,8 +7,267 @@
   },
   "item": [
     {
+      "name": "gateway-service",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "password",
+                  "value": "auth-secret",
+                  "type": "string"
+                },
+                {
+                  "key": "username",
+                  "value": "auth-client",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"username\": \"J75413802B@albru.recruiter.pe\",\r\n  \"password\": \"123456\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/auth/autorizacion/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "auth",
+                "autorizacion",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Usuario",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiJ9.eyJlbXBsZWFkb0lkIjoxLCJyb2xlcyI6WyJSUkhIIl0sInBlcm1pc29zIjpbIkNSRUFURV9QT1NUVUxBTlRFIiwiREVMRVRFX0VNUExFQURPUyIsIkJMQUNLTElTVF9QT1NUVUxBTlRFIiwiUkVBRF9QT1NUVUxBTlRFIiwiVVBEQVRFX1BPU1RVTEFOVEUiLCJSRUFEX0VNUExFQURPUyIsIlVQREFURV9FTVBMRUFET1MiLCJDUkVBVEVfRU1QTEVBRE9TIl0sInVzZXJuYW1lIjoiSjc1NDEzODAyQkBhbGJydS5yZWNydWl0ZXIucGUiLCJzdWIiOiJKNzU0MTM4MDJCQGFsYnJ1LnJlY3J1aXRlci5wZSIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODA4MSIsImlhdCI6MTc3MTgzODEwMiwiZXhwIjoxNzcxODQ1MzAyfQ.IILjBC-6FWgvRC4ACXJDtskC6OAbKEMgtslFwMks08o",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"username\": \"J75413802B@albru.recruiter.pe\",\r\n  \"password\": \"123456\"\r\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/auth/autorizacion/1/empleado",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "auth",
+                "autorizacion",
+                "1",
+                "empleado"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "auth-service",
-      "item": []
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "password",
+                  "value": "auth-secret",
+                  "type": "string"
+                },
+                {
+                  "key": "username",
+                  "value": "auth-client",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"username\": \"J75413802B@albru.recruiter.pe\",\r\n  \"password\": \"123456\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8081/auth/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"nombres\": \"Pablo Ernesto\",\r\n    \"apellidos\": \"Mamani Quispe\",\r\n    \"tipoDocumento\": \"CE\",\r\n    \"numeroDocumento\": \"25413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"CASADO\",\r\n    \"tieneHijos\": false,\r\n    \"celularPersonal\": \"923763302\",\r\n    \"celularCorporativo\": \"943763301\",\r\n    \"correo\": \"pablo@gmail.com\",\r\n    \"distrito\": \"SAN_MARTÍN_DE_PORRES\",\r\n    \"direccion\": \"Fermin Tanguis 079\",\r\n    \"banco\": \"BCP\",\r\n    \"cuentaBancaria\": \"12344677890\",\r\n    \"cuentaInterbancaria\": \"09876543234343\"\r\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8081/auth/register",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cambio de Rol",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"nombres\": \"Pablo Ernesto\",\r\n    \"apellidos\": \"Mamani Quispe\",\r\n    \"tipoDocumento\": \"CE\",\r\n    \"numeroDocumento\": \"25413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"CASADO\",\r\n    \"tieneHijos\": false,\r\n    \"celularPersonal\": \"923763302\",\r\n    \"celularCorporativo\": \"943763301\",\r\n    \"correo\": \"pablo@gmail.com\",\r\n    \"distrito\": \"SAN_MARTÍN_DE_PORRES\",\r\n    \"direccion\": \"Fermin Tanguis 079\",\r\n    \"banco\": \"BCP\",\r\n    \"cuentaBancaria\": \"12344677890\",\r\n    \"cuentaInterbancaria\": \"09876543234343\"\r\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8081/auth/1/roles",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "auth",
+                "1",
+                "roles"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Empleado ID",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"nombres\": \"Pablo Ernesto\",\r\n    \"apellidos\": \"Mamani Quispe\",\r\n    \"tipoDocumento\": \"CE\",\r\n    \"numeroDocumento\": \"25413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"CASADO\",\r\n    \"tieneHijos\": false,\r\n    \"celularPersonal\": \"923763302\",\r\n    \"celularCorporativo\": \"943763301\",\r\n    \"correo\": \"pablo@gmail.com\",\r\n    \"distrito\": \"SAN_MARTÍN_DE_PORRES\",\r\n    \"direccion\": \"Fermin Tanguis 079\",\r\n    \"banco\": \"BCP\",\r\n    \"cuentaBancaria\": \"12344677890\",\r\n    \"cuentaInterbancaria\": \"09876543234343\"\r\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8081/auth/1/empleado",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "auth",
+                "1",
+                "empleado"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Dar de Baja",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"nombres\": \"Pablo Ernesto\",\r\n    \"apellidos\": \"Mamani Quispe\",\r\n    \"tipoDocumento\": \"CE\",\r\n    \"numeroDocumento\": \"25413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"CASADO\",\r\n    \"tieneHijos\": false,\r\n    \"celularPersonal\": \"923763302\",\r\n    \"celularCorporativo\": \"943763301\",\r\n    \"correo\": \"pablo@gmail.com\",\r\n    \"distrito\": \"SAN_MARTÍN_DE_PORRES\",\r\n    \"direccion\": \"Fermin Tanguis 079\",\r\n    \"banco\": \"BCP\",\r\n    \"cuentaBancaria\": \"12344677890\",\r\n    \"cuentaInterbancaria\": \"09876543234343\"\r\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8081/auth/1/deshabilitar",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                "auth",
+                "1",
+                "deshabilitar"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "New Request",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/.well-known/oauth-authorization-server",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8081",
+              "path": [
+                ".well-known",
+                "oauth-authorization-server"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     },
     {
       "name": "rrhh-service",
@@ -213,6 +472,38 @@
                 }
               },
               "response": []
+            },
+            {
+              "name": "Lista Negra",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiJ9.eyJlbXBsZWFkb0lkIjoxLCJyb2xlcyI6WyJSUkhIIl0sInBlcm1pc29zIjpbIlJFQURfUE9TVFVMQU5URSIsIlJFQURfRU1QTEVBRE9TIiwiREVMRVRFX0VNUExFQURPUyIsIkJMQUNLTElTVF9QT1NUVUxBTlRFIiwiQ1JFQVRFX1BPU1RVTEFOVEUiLCJVUERBVEVfRU1QTEVBRE9TIiwiQ1JFQVRFX0VNUExFQURPUyIsIlVQREFURV9QT1NUVUxBTlRFIl0sInVzZXJuYW1lIjoiSjc1NDEzODAyQkBhbGJydS5yZWNydWl0ZXIucGUiLCJzdWIiOiJKNzU0MTM4MDJCQGFsYnJ1LnJlY3J1aXRlci5wZSIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODA4MSIsImlhdCI6MTc3MTg0MDk2OCwiZXhwIjoxNzcxODQ4MTY4fQ.R3FNhJwLbrXWZkbysr1K1LrYcFiVZ_UUNwzly6vVF3U",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/rrhh/empleados/1/lista-negra",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "rrhh",
+                    "empleados",
+                    "1",
+                    "lista-negra"
+                  ]
+                }
+              },
+              "response": []
             }
           ]
         },
@@ -397,11 +688,21 @@
             {
               "name": "Postulante",
               "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiJ9.eyJlbXBsZWFkb0lkIjoxLCJyb2xlcyI6WyJSUkhIIl0sInBlcm1pc29zIjpbIkNSRUFURV9QT1NUVUxBTlRFIiwiREVMRVRFX0VNUExFQURPUyIsIlJFQURfUE9TVFVMQU5URSIsIkJMQUNLTElTVF9QT1NUVUxBTlRFIiwiVVBEQVRFX1BPU1RVTEFOVEUiLCJDUkVBVEVfRU1QTEVBRE9TIiwiVVBEQVRFX0VNUExFQURPUyIsIlJFQURfRU1QTEVBRE9TIl0sInVzZXJuYW1lIjoiSjc1NDEzODAyQkBhbGJydS5yZWNydWl0ZXIucGUiLCJzdWIiOiJKNzU0MTM4MDJCQGFsYnJ1LnJlY3J1aXRlci5wZSIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODA4MSIsImlhdCI6MTc3MTgzOTA2MiwiZXhwIjoxNzcxODQ2MjYyfQ.jzCIX9yybAGNYW3xip3dRIQ2b3uUDITD-auWO1JwXR0",
+                      "type": "string"
+                    }
+                  ]
+                },
                 "method": "POST",
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\r\n  \"nombres\": \"Julio Edinson\",\r\n  \"apellidos\": \"Vitterio Bernuy\",\r\n  \"tipoDocumento\": \"DNI\",\r\n  \"numeroDocumento\": \"75413802\",\r\n  \"celularPersonal\": \"943763301\",\r\n  \"origen\": \"INDEED\",\r\n  \"puestoTrabajo\": \"ASESOR_VENTAS\",\r\n  \"pagoDiaCapacitacion\": 20.00,\r\n  \"fechaInicio\": \"2026-01-01\",\r\n  \"fechaFin\": \"2026-02-01\"\r\n}\r\n",
+                  "raw": "{\r\n  \"nombres\": \"Julio Edinson\",\r\n  \"apellidos\": \"Vitterio Bernuy\",\r\n  \"tipoDocumento\": \"DNI\",\r\n  \"numeroDocumento\": \"55413802\",\r\n  \"celularPersonal\": \"943763301\",\r\n  \"origen\": \"INDEED\",\r\n  \"puestoTrabajo\": \"ASESOR_VENTAS\"\r\n}\r\n",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -409,13 +710,14 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8080/postulantes",
+                  "raw": "http://localhost:8080/rrhh/postulantes",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
                   "port": "8080",
                   "path": [
+                    "rrhh",
                     "postulantes"
                   ]
                 }
