@@ -22,7 +22,7 @@ import pe.albrugroup.auth_service.usecase.IUsuario;
 
 @RestController @Validated
 @RequiredArgsConstructor @Slf4j
-@RequestMapping("/auth")
+@RequestMapping("/autorizacion")
 public class AuthController {
 
     private final IUsuario usuarioService;

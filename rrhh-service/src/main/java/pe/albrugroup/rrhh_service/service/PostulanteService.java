@@ -20,7 +20,7 @@ import pe.albrugroup.rrhh_service.usecase.IPostulante;
 @RequiredArgsConstructor
 public class PostulanteService implements IPostulante {
 
-    private final EventoService eventoService;
+    private final PostulanteEventoService eventoService;
     private final PostulanteRepository postulanteRepository;
     private final EmpleadoRepository empleadoRepository;
     private final PostulanteMapper postulanteMapper;
@@ -48,7 +48,7 @@ public class PostulanteService implements IPostulante {
                 responsableId,
                 RegistrarEventoPostulanteRequest.builder()
                         .etapaProceso(EtapaProceso.RECLUTAMIENTO)
-                        .evento(Evento.CREAR_POSTULACION)
+                        .evento(EventoPostulante.CREAR_POSTULACION)
                         .estado(ReclutamientoEstado.POR_RECLUTAR.name())
                         .subestado(null)
                         .build()

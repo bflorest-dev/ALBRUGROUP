@@ -12,6 +12,7 @@ import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.request.empleado.*;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 import pe.albrugroup.rrhh_service.exception.EmpleadoDocumentoNotFoundException;
+import pe.albrugroup.rrhh_service.exception.EmpleadoListaNegraException;
 import pe.albrugroup.rrhh_service.exception.EmpleadoNotFoundException;
 import pe.albrugroup.rrhh_service.service.mapper.EmpleadoMapper;
 import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
@@ -25,6 +26,17 @@ public class EmpleadoService implements IEmpleado {
 
     private final EmpleadoRepository repository;
     private final EmpleadoMapper mapper;
+    private final EmpleadoEventoService eventoService;
+
+    @Override
+    public EmpleadoResponse listaNegraEmpleado(Long idEmpleado, Long responsableId) {
+        Empleado empleado = repository.findById(idEmpleado)
+                .orElseThrow(() -> new EmpleadoNotFoundException(idEmpleado));
+        if(empleado.getListaNegra()) throw new EmpleadoListaNegraException(idEmpleado);
+        empleado.setListaNegra(true);
+        eventoService.registrarEventoListaNegra(empleado, responsableId);
+        return mapper.toResponse(empleado);
+    }
 
     @Override @Transactional(readOnly = true)
     public Page<EmpleadoResponse> getEmpleados(String q, String dni, String celular, Distrito distrito, Banco banco,

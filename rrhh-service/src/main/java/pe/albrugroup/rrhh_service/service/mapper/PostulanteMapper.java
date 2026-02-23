@@ -14,6 +14,7 @@ public interface PostulanteMapper {
     @Mapping(target = "tipoDocumento", source = "empleado.tipoDocumento")
     @Mapping(target = "numeroDocumento", source = "empleado.numeroDocumento")
     @Mapping(target = "celularPersonal", source = "empleado.celularPersonal")
+    @Mapping(target = "listaNegra", source = "empleado.listaNegra")
     PostulanteResponse toResponse(Postulante entity);
 
 //    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

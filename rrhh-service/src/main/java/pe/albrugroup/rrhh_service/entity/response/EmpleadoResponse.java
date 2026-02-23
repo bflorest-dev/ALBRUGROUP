@@ -34,4 +34,5 @@ public class EmpleadoResponse {
     private String cuentaInterbancaria;
     // ESTADO OPERATIVO
     private EstadoOperativo estadoOperativo;
+    private Boolean listaNegra;
 }

@@ -50,8 +50,8 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/auth/login",
-                                "/auth/registro",
+                                "/autorizacion/login",
+                                "/autorizacion/registro",
                                 "/h2-console/**"
                         ).permitAll()
                         .anyRequest().authenticated()

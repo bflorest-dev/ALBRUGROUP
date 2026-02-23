@@ -10,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.rrhh_service.entity.enums.Banco;
@@ -17,6 +19,7 @@ import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.request.empleado.*;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
+import pe.albrugroup.rrhh_service.security.UserSession;
 import pe.albrugroup.rrhh_service.usecase.IEmpleado;
 
 @RestController @Validated
@@ -115,5 +118,11 @@ public class EmpleadoController {
                                                                         @PathVariable @Positive Long id) {
         var empleado = empleadoService.actualizarContactoCorporativo(id, request);
         return ResponseEntity.ok(empleado);
+    }
+
+    @PatchMapping("/{id}/lista-negra") @PreAuthorize("hasAuthority('BLACKLIST_POSTULANTE')")
+    public ResponseEntity<EmpleadoResponse> marcarListaNegra(@PathVariable @Positive Long id, @AuthenticationPrincipal UserSession user) {
+        var emplado = empleadoService.listaNegraEmpleado(id, user.empleadoId());
+        return ResponseEntity.ok(emplado);
     }
 }

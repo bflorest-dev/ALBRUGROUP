@@ -1,7 +1,7 @@
 package pe.albrugroup.rrhh_service.entity.response;
 
 import lombok.*;
-import pe.albrugroup.rrhh_service.entity.enums.Evento;
+import pe.albrugroup.rrhh_service.entity.enums.EventoPostulante;
 import pe.albrugroup.rrhh_service.entity.enums.EtapaProceso;
 
 import java.math.BigDecimal;
@@ -13,13 +13,13 @@ import java.time.LocalDate;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class EventoResponse {
+public class PostulanteEventoResponse {
 
     private Long id;
     private Long postulanteId;
     private Long responsableId;
     private EtapaProceso etapaProceso;
-    private Evento evento;
+    private EventoPostulante evento;
     private String estado;
     private String subestado;
     private Instant fechaCreacion;

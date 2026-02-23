@@ -3,7 +3,7 @@ package pe.albrugroup.rrhh_service.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import pe.albrugroup.rrhh_service.entity.enums.Evento;
+import pe.albrugroup.rrhh_service.entity.enums.EventoPostulante;
 import pe.albrugroup.rrhh_service.entity.enums.EtapaProceso;
 
 import java.math.BigDecimal;
@@ -24,7 +24,7 @@ public class PostulanteEvento {
     @Column(name = "etapa_proceso")
     private EtapaProceso etapaProceso;
     @Enumerated(EnumType.STRING)
-    private Evento evento;
+    private EventoPostulante evento;
     private String estado;
     private String subestado;
     @CreationTimestamp

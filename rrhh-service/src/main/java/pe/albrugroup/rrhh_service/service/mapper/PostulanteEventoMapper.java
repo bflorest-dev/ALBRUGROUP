@@ -6,10 +6,10 @@ import org.mapstruct.Mapping;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import pe.albrugroup.rrhh_service.entity.PostulanteEvento;
 import pe.albrugroup.rrhh_service.entity.request.postulante.RegistrarEventoPostulanteRequest;
-import pe.albrugroup.rrhh_service.entity.response.EventoResponse;
+import pe.albrugroup.rrhh_service.entity.response.PostulanteEventoResponse;
 
 @Mapper(componentModel = "spring")
-public interface EventoMapper {
+public interface PostulanteEventoMapper {
 
     @BeanMapping(ignoreByDefault = true, nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "etapaProceso", source = "etapaProceso")
@@ -24,5 +24,5 @@ public interface EventoMapper {
 
     @Mapping(target = "postulanteId", source = "postulante.id")
     @Mapping(target = "responsableId", source = "responsable.id")
-    EventoResponse toResponse(PostulanteEvento entity);
+    PostulanteEventoResponse toResponse(PostulanteEvento entity);
 }

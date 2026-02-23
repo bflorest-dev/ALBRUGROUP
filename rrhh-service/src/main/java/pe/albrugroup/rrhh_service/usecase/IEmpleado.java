@@ -24,4 +24,5 @@ public interface IEmpleado {
     EmpleadoResponse actualizarContactoUbicacion(Long idEmpleado, DatosContactoUbicacionRequest datosContactoUbicacion);
     EmpleadoResponse actualizarDatosFinancieros(Long idEmpleado, DatosFinancierosRequest datosFinancieros);
     EmpleadoResponse actualizarContactoCorporativo(Long idEmpleado, DatosContactoCorporativoRequest datosCorporativos);
+    EmpleadoResponse listaNegraEmpleado(Long idEmpleado, Long responsableId);
 }
