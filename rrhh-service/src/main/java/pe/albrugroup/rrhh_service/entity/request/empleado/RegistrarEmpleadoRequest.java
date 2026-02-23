@@ -1,18 +1,16 @@
-package pe.albrugroup.rrhh_service.entity.request;
+package pe.albrugroup.rrhh_service.entity.request.empleado;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import lombok.*;
-import pe.albrugroup.rrhh_service.entity.enums.Documento;
-import pe.albrugroup.rrhh_service.entity.enums.EstadoCivil;
-import pe.albrugroup.rrhh_service.entity.enums.Nacionalidad;
-
+import pe.albrugroup.rrhh_service.entity.enums.*;
 import java.time.LocalDate;
 
-@Builder @Getter @Setter
+@Builder(toBuilder = true) @Getter @Setter
 @AllArgsConstructor @NoArgsConstructor
-public class DatosPersonalesRequest {
+public class RegistrarEmpleadoRequest {
 
     // DATOS PERSONALES
     @NotBlank private String nombres;
@@ -23,4 +21,14 @@ public class DatosPersonalesRequest {
     @NotNull @Past private LocalDate fechaNacimiento;
     @NotNull private EstadoCivil estadoCivil;
     @NotNull private Boolean tieneHijos;
+    // CONTACTO
+    @NotBlank private String celularPersonal;
+    @NotBlank @Email private String correoPersonal;
+    // UBICACION
+    @NotNull private Distrito distrito;
+    @NotBlank private String direccion;
+    // INFORMACION FINANCIERA
+    @NotNull private Banco banco;
+    @NotBlank private String cuentaBancaria;
+    @NotBlank private String cuentaInterbancaria;
 }

@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 import pe.albrugroup.rrhh_service.entity.enums.Banco;
 import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
-import pe.albrugroup.rrhh_service.entity.request.*;
+import pe.albrugroup.rrhh_service.entity.request.empleado.*;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 
 import java.util.List;

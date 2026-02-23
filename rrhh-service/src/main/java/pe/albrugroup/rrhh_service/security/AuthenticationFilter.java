@@ -39,9 +39,10 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
         try {
             String username = jwtUtil.extractUsername(token);
+            Long empleadoId = jwtUtil.extractEmpleadoId(token);
             List<String> roles = jwtUtil.extractRoles(token);
             List<String> permisos = jwtUtil.extractPermisos(token);
-            log.debug("JWT recibido - Usuario: {}, Roles: {}", username, roles);
+            log.debug("JWT recibido - Usuario: {}, EmpleadoId: {}, Roles: {}", username, empleadoId, roles);
 
             List<SimpleGrantedAuthority> authorities = Stream.concat(
                     roles.stream()
@@ -50,8 +51,9 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                             .map(SimpleGrantedAuthority::new)
             ).toList();
 
+            UserSession userSession = new UserSession(username, empleadoId);
             UsernamePasswordAuthenticationToken authToken =
-                    new UsernamePasswordAuthenticationToken(username, null, authorities);
+                    new UsernamePasswordAuthenticationToken(userSession, null, authorities);
             authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authToken);
         } catch (Exception e) {

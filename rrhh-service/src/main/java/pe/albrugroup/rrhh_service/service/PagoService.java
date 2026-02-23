@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.rrhh_service.entity.Contrato;
 import pe.albrugroup.rrhh_service.entity.Pago;
-import pe.albrugroup.rrhh_service.entity.request.RegistrarPagoRequest;
+import pe.albrugroup.rrhh_service.entity.request.pago.RegistrarPagoRequest;
 import pe.albrugroup.rrhh_service.entity.response.PagoResponse;
 import pe.albrugroup.rrhh_service.exception.ContratoConflictoException;
 import pe.albrugroup.rrhh_service.exception.ContratoNotFoundException;

@@ -5,7 +5,8 @@ import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import pe.albrugroup.rrhh_service.entity.Empleado;
-import pe.albrugroup.rrhh_service.entity.request.*;
+import pe.albrugroup.rrhh_service.entity.request.empleado.*;
+import pe.albrugroup.rrhh_service.entity.request.postulante.RegistrarPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 
 @Mapper(componentModel = "spring")

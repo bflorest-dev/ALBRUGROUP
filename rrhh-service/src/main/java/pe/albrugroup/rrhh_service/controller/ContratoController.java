@@ -9,8 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import pe.albrugroup.rrhh_service.entity.request.CerrarContratoRequest;
-import pe.albrugroup.rrhh_service.entity.request.RegistrarContratoRequest;
+import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
+import pe.albrugroup.rrhh_service.entity.request.contrato.RegistrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.response.ContratoResponse;
 import pe.albrugroup.rrhh_service.usecase.IContrato;
 

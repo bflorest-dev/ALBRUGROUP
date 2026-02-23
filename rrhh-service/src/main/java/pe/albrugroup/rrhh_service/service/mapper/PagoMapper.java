@@ -3,7 +3,7 @@ package pe.albrugroup.rrhh_service.service.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import pe.albrugroup.rrhh_service.entity.Pago;
-import pe.albrugroup.rrhh_service.entity.request.RegistrarPagoRequest;
+import pe.albrugroup.rrhh_service.entity.request.pago.RegistrarPagoRequest;
 import pe.albrugroup.rrhh_service.entity.response.PagoResponse;
 
 @Mapper(componentModel = "spring")

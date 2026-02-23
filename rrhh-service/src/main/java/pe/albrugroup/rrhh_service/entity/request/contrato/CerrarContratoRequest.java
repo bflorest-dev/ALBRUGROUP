@@ -1,4 +1,4 @@
-package pe.albrugroup.rrhh_service.entity.request;
+package pe.albrugroup.rrhh_service.entity.request.contrato;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.*;

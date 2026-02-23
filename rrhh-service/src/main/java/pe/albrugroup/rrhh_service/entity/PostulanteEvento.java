@@ -32,7 +32,6 @@ public class PostulanteEvento {
     private Instant fechaCreacion;
 
     // CAMPOS SITUACIONALES
-    @CreationTimestamp
     @Column(name = "fecha_evento")
     private Instant fechaEvento;
     // Acuerdos Previos

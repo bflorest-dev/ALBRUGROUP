@@ -1,4 +1,4 @@
-package pe.albrugroup.rrhh_service.entity.request;
+package pe.albrugroup.rrhh_service.entity.request.empleado;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

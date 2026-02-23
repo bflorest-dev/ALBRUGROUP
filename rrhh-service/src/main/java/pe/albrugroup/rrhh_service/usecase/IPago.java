@@ -1,7 +1,7 @@
 package pe.albrugroup.rrhh_service.usecase;
 
 import org.springframework.stereotype.Component;
-import pe.albrugroup.rrhh_service.entity.request.RegistrarPagoRequest;
+import pe.albrugroup.rrhh_service.entity.request.pago.RegistrarPagoRequest;
 import pe.albrugroup.rrhh_service.entity.response.PagoResponse;
 
 import java.time.LocalDate;

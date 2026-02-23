@@ -1,4 +1,4 @@
-package pe.albrugroup.rrhh_service.entity.request;
+package pe.albrugroup.rrhh_service.entity.request.postulante;
 
 
 import jakarta.validation.constraints.NotNull;

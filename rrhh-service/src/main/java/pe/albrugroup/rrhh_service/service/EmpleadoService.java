@@ -9,7 +9,7 @@ import pe.albrugroup.rrhh_service.entity.Empleado;
 import pe.albrugroup.rrhh_service.entity.enums.Banco;
 import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
-import pe.albrugroup.rrhh_service.entity.request.*;
+import pe.albrugroup.rrhh_service.entity.request.empleado.*;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 import pe.albrugroup.rrhh_service.exception.EmpleadoDocumentoNotFoundException;
 import pe.albrugroup.rrhh_service.exception.EmpleadoNotFoundException;
@@ -54,6 +54,7 @@ public class EmpleadoService implements IEmpleado {
     public EmpleadoResponse registrarEmpleado(RegistrarEmpleadoRequest nuevoEmpleado) {
         Empleado empleado = mapper.toEntity(nuevoEmpleado);
         empleado.setEstadoOperativo(EstadoOperativo.POSTULANTE);
+        empleado.setListaNegra(false);
         return mapper.toResponse(repository.save(empleado));
     }
 

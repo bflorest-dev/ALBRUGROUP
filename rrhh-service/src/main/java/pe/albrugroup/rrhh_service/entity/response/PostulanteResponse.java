@@ -2,12 +2,10 @@ package pe.albrugroup.rrhh_service.entity.response;
 
 import lombok.*;
 import pe.albrugroup.rrhh_service.entity.enums.Documento;
-import pe.albrugroup.rrhh_service.entity.enums.EstadoPostulacion;
 import pe.albrugroup.rrhh_service.entity.enums.Origen;
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.Instant;
 
 @Builder @Getter @Setter
 @AllArgsConstructor @NoArgsConstructor
@@ -20,11 +18,13 @@ public class PostulanteResponse {
     private Documento tipoDocumento;
     private String numeroDocumento;
     private String celularPersonal;
-    // POSTULANTE
+    // ESTADO
+    private String etapaProceso;
+    private String estadoProceso;
+    private String subestadoProceso;
+    // OBJETIVO
     private Origen origen;
     private PuestoTrabajo puestoTrabajo;
-    private EstadoPostulacion estadoPostulacion;
-    private BigDecimal pagoDiaCapacitacion;
-    private LocalDate fechaInicio;
-    private LocalDate fechaFin;
+    private Instant fechaActualizacion;
+    private Boolean listaNegra;
 }

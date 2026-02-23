@@ -1,8 +1,8 @@
 package pe.albrugroup.rrhh_service.usecase;
 
 import org.springframework.stereotype.Component;
-import pe.albrugroup.rrhh_service.entity.request.CerrarContratoRequest;
-import pe.albrugroup.rrhh_service.entity.request.RegistrarContratoRequest;
+import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
+import pe.albrugroup.rrhh_service.entity.request.contrato.RegistrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.response.ContratoResponse;
 
 import java.util.List;

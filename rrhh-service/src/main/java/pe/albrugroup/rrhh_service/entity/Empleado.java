@@ -66,4 +66,6 @@ public class Empleado {
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_operativo")
     private EstadoOperativo estadoOperativo;
+    @Column(name = "lista_negra")
+    private Boolean listaNegra;
 }

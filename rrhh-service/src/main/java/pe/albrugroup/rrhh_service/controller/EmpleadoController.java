@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.rrhh_service.entity.enums.Banco;
 import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
-import pe.albrugroup.rrhh_service.entity.request.*;
+import pe.albrugroup.rrhh_service.entity.request.empleado.*;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 import pe.albrugroup.rrhh_service.usecase.IEmpleado;
 
