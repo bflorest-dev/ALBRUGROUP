@@ -41,15 +41,15 @@ public class DataLoader {
         // POSTULANTES
         savePermiso("CREATE_POSTULANTE", "Puede registrar postulantes nuevos", "POSTULANTE", "CREATE");
         savePermiso("READ_POSTULANTE", "Puede listar y ver postulantes", "POSTULANTE", "READ");
+        savePermiso("READ_RECLUTADO", "Puede listar y ver postulantes reclutados", "POSTULANTE", "READ");
         savePermiso("UPDATE_POSTULANTE", "Puede editar postulantes", "POSTULANTE", "UPDATE");
-        savePermiso("BLACKLIST_POSTULANTE", "Puede marcar como lista negra a los postulantes", "POSTULANTE", "BLACKLIST");
         savePermiso("EVALUATE_POSTULANTE_RECLUTAMIENTO", "Puede evaluar a los postulantes", "POSTULANTE", "EVALUATE");
         savePermiso("EVALUATE_POSTULANTE_CAPACITACION", "Puede evaluar a los postulantes", "POSTULANTE", "EVALUATE");
         // EMPLEADOS
-        savePermiso("CREATE_EMPLEADOS", "Puede ver empleados", "EMPLEADO", "CREATE");
-        savePermiso("READ_EMPLEADOS", "Puede ver empleados", "EMPLEADO", "READ");
+        savePermiso("CREATE_EMPLEADO", "Puede registrar empleados directamente", "EMPLEADO", "CREATE");
+        savePermiso("READ_EMPLEADO", "Puede ver empleados", "EMPLEADO", "READ");
         savePermiso("UPDATE_EMPLEADOS", "Puede editar empleados", "EMPLEADO", "UPDATE");
-        savePermiso("DELETE_EMPLEADOS", "Puede dar de baja a empleados", "EMPLEADO", "DELETE");
+        savePermiso("BLACKLIST_EMPLEADO", "Puede marcar como lista negra a los postulantes", "POSTULANTE", "BLACKLIST");
 
         // TODO
         // CONTRATOS
@@ -73,14 +73,14 @@ public class DataLoader {
         // RRHH
         Set<Permiso> rrhhPermisos = Set.of(
                 getPermiso("CREATE_POSTULANTE"),
-                getPermiso("UPDATE_POSTULANTE"),
                 getPermiso("READ_POSTULANTE"),
-                getPermiso("BLACKLIST_POSTULANTE"),
+                getPermiso("READ_RECLUTADO"),
+                getPermiso("UPDATE_POSTULANTE"),
 
-                getPermiso("CREATE_EMPLEADOS"),
+                getPermiso("CREATE_EMPLEADO"),
                 getPermiso("UPDATE_EMPLEADOS"),
                 getPermiso("READ_EMPLEADOS"),
-                getPermiso("DELETE_EMPLEADOS")
+                getPermiso("BLACKLIST_EMPLEADO")
         );
         saveRol("RRHH", "Recursos Humanos - Gestion de personal", rrhhPermisos);
         // RECLUTADOR

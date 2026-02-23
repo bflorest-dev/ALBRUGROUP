@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import pe.albrugroup.rrhh_service.entity.enums.EtapaProceso;
 import pe.albrugroup.rrhh_service.entity.enums.Origen;
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 import java.time.Instant;
@@ -19,7 +20,7 @@ public class Postulante {
     private Empleado empleado;
     // ESTADO
     @Column(name = "etapa_proceso")
-    private String etapaProceso;
+    private EtapaProceso etapaProceso;
     @Column(name = "estado_proceso")
     private String estadoProceso;
     @Column(name = "subestado_proceso")

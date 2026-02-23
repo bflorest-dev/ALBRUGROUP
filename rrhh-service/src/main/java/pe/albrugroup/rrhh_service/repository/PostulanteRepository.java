@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.albrugroup.rrhh_service.entity.Postulante;
+import pe.albrugroup.rrhh_service.entity.enums.EtapaProceso;
 import pe.albrugroup.rrhh_service.entity.enums.Origen;
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 
@@ -26,21 +27,17 @@ public interface PostulanteRepository extends JpaRepository<Postulante, Long> {
       AND (:puestoTrabajo IS NULL OR p.puestoTrabajo = :puestoTrabajo)
       AND (:fechaCreacionDesde IS NULL OR p.fechaCreacion >= :fechaCreacionDesde)
       AND (:fechaCreacionHasta IS NULL OR p.fechaCreacion <= :fechaCreacionHasta)
-      AND (:fechaActualizacionDesde IS NULL OR p.fechaActualizacion >= :fechaActualizacionDesde)
-      AND (:fechaActualizacionHasta IS NULL OR p.fechaActualizacion <= :fechaActualizacionHasta)
       AND (:listaNegra IS NULL OR p.empleado.listaNegra = :listaNegra)
-    ORDER BY p.fechaActualizacion DESC, p.id DESC
+    ORDER BY p.fechaCreacion DESC, p.id DESC
     """)
     List<Postulante> getPostulantes(
-            @Param("etapaProceso") String etapaProceso,
+            @Param("etapaProceso") EtapaProceso etapaProceso,
             @Param("estadoProceso") String estadoProceso,
             @Param("subestadoProceso") String subestadoProceso,
             @Param("origen") Origen origen,
             @Param("puestoTrabajo") PuestoTrabajo puestoTrabajo,
             @Param("fechaCreacionDesde") Instant fechaCreacionDesde,
             @Param("fechaCreacionHasta") Instant fechaCreacionHasta,
-            @Param("fechaActualizacionDesde") Instant fechaActualizacionDesde,
-            @Param("fechaActualizacionHasta") Instant fechaActualizacionHasta,
             @Param("listaNegra") Boolean listaNegra
     );
 

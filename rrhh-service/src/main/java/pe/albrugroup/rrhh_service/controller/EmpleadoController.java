@@ -30,6 +30,14 @@ public class EmpleadoController {
 
     private final IEmpleado empleadoService;
 
+    @PatchMapping("/{id}/lista-negra") @PreAuthorize("hasAuthority('BLACKLIST_EMPLEADO')")
+    public ResponseEntity<EmpleadoResponse> marcarListaNegra(@PathVariable @Positive Long id, @AuthenticationPrincipal UserSession user) {
+        var emplado = empleadoService.listaNegraEmpleado(id, user.empleadoId());
+        return ResponseEntity.ok(emplado);
+    }
+
+
+    // POR ACTUALIZAR
     @Operation(summary = "Listado de Empleados",
             description = "Obtiene empleados con filtros opcionales por texto libre, documento, celular, distrito, banco, " +
                     "estado operativo y paginación.")
@@ -120,9 +128,4 @@ public class EmpleadoController {
         return ResponseEntity.ok(empleado);
     }
 
-    @PatchMapping("/{id}/lista-negra") @PreAuthorize("hasAuthority('BLACKLIST_POSTULANTE')")
-    public ResponseEntity<EmpleadoResponse> marcarListaNegra(@PathVariable @Positive Long id, @AuthenticationPrincipal UserSession user) {
-        var emplado = empleadoService.listaNegraEmpleado(id, user.empleadoId());
-        return ResponseEntity.ok(emplado);
-    }
 }

@@ -16,6 +16,12 @@ import pe.albrugroup.rrhh_service.service.mapper.EmpleadoMapper;
 import pe.albrugroup.rrhh_service.service.mapper.PostulanteMapper;
 import pe.albrugroup.rrhh_service.usecase.IPostulante;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.util.List;
+
 @Service @Transactional
 @RequiredArgsConstructor
 public class PostulanteService implements IPostulante {
@@ -25,6 +31,8 @@ public class PostulanteService implements IPostulante {
     private final EmpleadoRepository empleadoRepository;
     private final PostulanteMapper postulanteMapper;
     private final EmpleadoMapper  empleadoMapper;
+
+    private static final ZoneId ZONA_HORARIA_PERU =  ZoneId.of("America/Lima");
 
     @Override
     public PostulanteResponse registrarPostulante(RegistrarPostulanteRequest nuevoPostulante, Long responsableId) {
@@ -39,7 +47,7 @@ public class PostulanteService implements IPostulante {
 
         Postulante postulante = postulanteMapper.toEntity(nuevoPostulante);
         postulante.setEmpleado(empleado);
-        postulante.setEtapaProceso(EtapaProceso.RECLUTAMIENTO.name());
+        postulante.setEtapaProceso(EtapaProceso.RECLUTAMIENTO);
         postulante.setEstadoProceso(ReclutamientoEstado.POR_RECLUTAR.name());
         postulanteRepository.save(postulante);
 
@@ -57,38 +65,15 @@ public class PostulanteService implements IPostulante {
         return postulanteMapper.toResponse(postulante);
     }
 
-
-//    @Override
-//    public PostulanteResponse registrarPostulante(RegistrarPostulanteRequest nuevoPostulante) {
-//        Empleado empleado = empleadoRepository.findByNumeroDocumento(nuevoPostulante.getNumeroDocumento())
-//                .orElseGet(() -> {
-//                    Empleado e = empleadoMapper.toEntity(nuevoPostulante);
-//                    e.setEstadoOperativo(EstadoOperativo.POSTULANTE);
-//                    return empleadoRepository.save(e);
-//                });
-//        if(postulanteRepository.existsByEmpleadoIdAndEstadoPostulacion(empleado.getId(), EstadoPostulacion.EN_PROCESO)) {
-//            throw new PostulanteEnProcesoException();
-//        }
-//
-//        Postulante postulante = postulanteMapper.toEntity(nuevoPostulante);
-//        postulante.setEstadoPostulacion(EstadoPostulacion.EN_PROCESO);
-//        postulante.setEmpleado(empleado);
-//
-//        return postulanteMapper.toResponse(postulanteRepository.save(postulante));
-//    }
-
-//    @Transactional(readOnly = true) @Override
-//    public List<PostulanteResponse> getPostulantesFiltrados(
-//            EstadoPostulacion estado,
-//            PuestoTrabajo puesto,
-//            LocalDate desde,
-//            LocalDate hasta
-//    ) {
-//        return postulanteRepository.getPostulantes(estado, puesto, desde, hasta)
-//                .stream()
-//                .map(postulanteMapper::toResponse)
-//                .toList();
-//    }
+    @Override @Transactional(readOnly = true)
+    public List<PostulanteResponse> getPostulantesFiltrados(EtapaProceso etapa, String estado, String subestado,
+                            Origen origen, PuestoTrabajo puesto, LocalDate desde, LocalDate hasta, Boolean listaNegra) {
+        Instant inicio = desde != null ? desde.atStartOfDay(ZONA_HORARIA_PERU).toInstant() : null;
+        Instant fin = hasta != null ? hasta.atTime(LocalTime.MAX).atZone(ZONA_HORARIA_PERU).toInstant() : null;
+        return postulanteRepository.getPostulantes(etapa, estado, subestado, origen, puesto, inicio, fin, listaNegra)
+                .stream().map(postulanteMapper::toResponse)
+                .toList();
+    }
 
 //
 //    @Override
