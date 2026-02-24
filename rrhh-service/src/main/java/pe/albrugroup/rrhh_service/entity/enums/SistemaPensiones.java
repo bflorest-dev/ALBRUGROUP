@@ -3,7 +3,7 @@ package pe.albrugroup.rrhh_service.entity.enums;
 public enum SistemaPensiones {
     ONP,
     AFP_INTEGRA,
-    PROFUTURO_AFP,
-    AFP_HABITAD,
+    AFP_PROFUTURO,
+    AFP_HABITAT,
     PRIMA_AFP
 }
