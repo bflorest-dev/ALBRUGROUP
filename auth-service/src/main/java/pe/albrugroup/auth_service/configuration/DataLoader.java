@@ -39,21 +39,30 @@ public class DataLoader {
     private void crearPermisos() {
         log.info("🚀 Creando Permisos...");
         // POSTULANTES
-        savePermiso("CREATE_POSTULANTE", "Puede registrar postulantes nuevos", "POSTULANTE", "CREATE");
-        savePermiso("READ_POSTULANTE", "Puede listar y ver postulantes", "POSTULANTE", "READ");
-        savePermiso("READ_RECLUTADO", "Puede listar y ver postulantes reclutados", "POSTULANTE", "READ");
-        savePermiso("UPDATE_POSTULANTE", "Puede editar postulantes", "POSTULANTE", "UPDATE");
-        savePermiso("EVALUATE_POSTULANTE_RECLUTAMIENTO", "Puede evaluar a los postulantes", "POSTULANTE", "EVALUATE");
-        savePermiso("EVALUATE_POSTULANTE_CAPACITACION", "Puede evaluar a los postulantes", "POSTULANTE", "EVALUATE");
+        savePermiso("CREATE_POSTULANTES", "Puede registrar postulantes nuevos", "POSTULANTE", "CREATE");
+        savePermiso("READ_POSTULANTES", "Puede listar y ver postulantes", "POSTULANTE", "READ");
+        savePermiso("UPDATE_POSTULANTES", "Puede editar y actualizar postulantes", "POSTULANTE", "UPDATE");
+
+        savePermiso("READ_RECLUTADOS", "Puede listar y ver postulantes reclutados", "POSTULANTE", "READ");
+        savePermiso("UPDATE_RECLUTADOS", "Puede editar y tipificar postulantes reclutados", "POSTULANTE", "UPDATE");
+        savePermiso("EVALUATE_POSTULANTES_RECLUTAMIENTO", "Puede evaluar y tipificar a los postulantes reclutados", "POSTULANTE", "EVALUATE");
+
+        savePermiso("READ_CAPACITADOS", "Puede listar y ver postulantes capacitados", "POSTULANTE", "READ");
+        savePermiso("EVALUATE_POSTULANTES_CAPACITACION", "Puede evaluar y tipificar a los reclutados", "POSTULANTE", "EVALUATE");
         // EMPLEADOS
-        savePermiso("CREATE_EMPLEADO", "Puede registrar empleados directamente", "EMPLEADO", "CREATE");
-        savePermiso("READ_EMPLEADO", "Puede ver empleados", "EMPLEADO", "READ");
+        savePermiso("CREATE_EMPLEADOS", "Puede registrar empleados directamente", "EMPLEADO", "CREATE");
+        savePermiso("READ_EMPLEADOS", "Puede listar y ver empleados", "EMPLEADO", "READ");
         savePermiso("UPDATE_EMPLEADOS", "Puede editar empleados", "EMPLEADO", "UPDATE");
-        savePermiso("BLACKLIST_EMPLEADO", "Puede marcar como lista negra a los postulantes", "POSTULANTE", "BLACKLIST");
+        savePermiso("BLACKLIST_EMPLEADOS", "Puede marcar como lista negra a los empleados", "EMPLEADO", "BLACKLIST");
+        // CONTRATOS
+        savePermiso("CREATE_CONTRATOS", "Puede registrar contratos", "CONTRATO", "CREATE");
+        savePermiso("UPDATE_CONTRATOS", "Puede editar contratos", "CONTRATO", "UPDATE");
+        savePermiso("CANCEL_CONTRATOS", "Puede dar de baja contratos", "CONTRATO", "CANCEL");
+        // PAGOS
+        savePermiso("CREATE_PAGOS", "Puede registrar pagos a los empleados", "PAGO", "CREATE");
+        savePermiso("UPDATE_PAGOS", "Puede actualizar informacion de pagos", "PAGO", "UPDATE");
 
         // TODO
-        // CONTRATOS
-        // PAGOS
         // LEADS
 
         log.info("✅ Permisos Creados");
@@ -70,30 +79,39 @@ public class DataLoader {
 
     private void crearRoles() {
         log.info("🚀 Creando Roles...");
+
         // RRHH
         Set<Permiso> rrhhPermisos = Set.of(
-                getPermiso("CREATE_POSTULANTE"),
-                getPermiso("READ_POSTULANTE"),
-                getPermiso("READ_RECLUTADO"),
-                getPermiso("UPDATE_POSTULANTE"),
+                getPermiso("CREATE_POSTULANTES"),
+                getPermiso("READ_POSTULANTES"),
+                getPermiso("UPDATE_POSTULANTES"),
+                getPermiso("READ_RECLUTADOS"),
+                getPermiso("READ_CAPACITADOS"),
 
-                getPermiso("CREATE_EMPLEADO"),
-                getPermiso("UPDATE_EMPLEADOS"),
+                getPermiso("CREATE_EMPLEADOS"),
                 getPermiso("READ_EMPLEADOS"),
-                getPermiso("BLACKLIST_EMPLEADO")
+                getPermiso("UPDATE_EMPLEADOS"),
+                getPermiso("BLACKLIST_EMPLEADOS"),
+
+                getPermiso("CREATE_CONTRATOS"),
+                getPermiso("UPDATE_CONTRATOS"),
+                getPermiso("CANCEL_CONTRATOS")
         );
         saveRol("RRHH", "Recursos Humanos - Gestion de personal", rrhhPermisos);
+
         // RECLUTADOR
         Set<Permiso> reclutadorPermisos = Set.of(
-                getPermiso("READ_POSTULANTE"),
-                getPermiso("UPDATE_POSTULANTE"),
-                getPermiso("EVALUATE_POSTULANTE_RECLUTAMIENTO")
+                getPermiso("READ_RECLUTADOS"),
+                getPermiso("UPDATE_RECLUTADOS"),
+                getPermiso("EVALUATE_POSTULANTES_RECLUTAMIENTO")
+
         );
         saveRol("RECLUTADOR", "Recursos Humanos - Contacto con postulantes", reclutadorPermisos);
+
         // CAPACITADOR
         Set<Permiso> capacitadorPermisos = Set.of(
-                getPermiso("READ_POSTULANTE"),
-                getPermiso("EVALUATE_POSTULANTE_CAPACITACION")
+                getPermiso("READ_CAPACITADOS"),
+                getPermiso("EVALUATE_POSTULANTES_CAPACITACION")
         );
         saveRol("CAPACITADOR", "Capacitacion - Gestion de postulantes", capacitadorPermisos);
 
