@@ -3,9 +3,12 @@ package pe.albrugroup.rrhh_service.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.albrugroup.rrhh_service.configuration.CurrentUser;
 import pe.albrugroup.rrhh_service.entity.Empleado;
 import pe.albrugroup.rrhh_service.entity.Postulante;
 import pe.albrugroup.rrhh_service.entity.enums.*;
+import pe.albrugroup.rrhh_service.entity.request.postulante.EstadoCapacitacionRequest;
+import pe.albrugroup.rrhh_service.entity.request.postulante.EstadoReclutamientoRequest;
 import pe.albrugroup.rrhh_service.entity.request.postulante.RegistrarEventoPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.request.postulante.RegistrarPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.response.PostulanteResponse;
@@ -33,9 +36,10 @@ public class PostulanteService implements IPostulante {
     private final EmpleadoMapper  empleadoMapper;
 
     private static final ZoneId ZONA_HORARIA_PERU =  ZoneId.of("America/Lima");
+    private final CurrentUser currentUser;
 
     @Override
-    public PostulanteResponse registrarPostulante(RegistrarPostulanteRequest nuevoPostulante, Long responsableId) {
+    public PostulanteResponse registrarPostulante(RegistrarPostulanteRequest nuevoPostulante) {
         Empleado empleado = empleadoRepository.findByNumeroDocumento(nuevoPostulante.getNumeroDocumento())
                 .orElseGet(() -> {
                     Empleado e = empleadoMapper.toEntity(nuevoPostulante);
@@ -53,7 +57,7 @@ public class PostulanteService implements IPostulante {
 
         eventoService.registrarEventoCreacionPostulante(
                 postulante,
-                responsableId,
+                currentUser.empleadoID(),
                 RegistrarEventoPostulanteRequest.builder()
                         .etapaProceso(EtapaProceso.RECLUTAMIENTO)
                         .evento(EventoPostulante.CREAR_POSTULACION)
@@ -64,7 +68,6 @@ public class PostulanteService implements IPostulante {
 
         return postulanteMapper.toResponse(postulante);
     }
-
     @Override @Transactional(readOnly = true)
     public List<PostulanteResponse> getPostulantesFiltrados(EtapaProceso etapa, String estado, String subestado,
                             Origen origen, PuestoTrabajo puesto, LocalDate desde, LocalDate hasta, Boolean listaNegra) {
@@ -73,6 +76,17 @@ public class PostulanteService implements IPostulante {
         return postulanteRepository.getPostulantes(etapa, estado, subestado, origen, puesto, inicio, fin, listaNegra)
                 .stream().map(postulanteMapper::toResponse)
                 .toList();
+    }
+
+    @Override
+    public PostulanteResponse actualizarEstadoReclutamiento(EstadoReclutamientoRequest estado) {
+
+        return null;
+    }
+
+    @Override
+    public List<PostulanteResponse> actualizarEstadosCapacitacion(List<EstadoCapacitacionRequest> postulantesEstados) {
+        return List.of();
     }
 
 //

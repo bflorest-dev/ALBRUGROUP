@@ -1,5 +1,6 @@
 package pe.albrugroup.rrhh_service.controller;
 
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import pe.albrugroup.rrhh_service.entity.enums.EtapaProceso;
 import pe.albrugroup.rrhh_service.entity.enums.Origen;
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
+import pe.albrugroup.rrhh_service.entity.request.postulante.EstadoCapacitacionRequest;
+import pe.albrugroup.rrhh_service.entity.request.postulante.EstadoReclutamientoRequest;
 import pe.albrugroup.rrhh_service.entity.request.postulante.RegistrarPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.response.PostulanteResponse;
 import pe.albrugroup.rrhh_service.security.UserSession;
@@ -26,10 +29,9 @@ public class PostulanteController {
 
     private final IPostulante postulanteService;
 
-    @PostMapping @PreAuthorize("hasAuthority('CREATE_POSTULANTE')")
-    public ResponseEntity<PostulanteResponse> registrarPostulante(@RequestBody RegistrarPostulanteRequest request,
-                                                                  @AuthenticationPrincipal UserSession user) {
-        var postulante = postulanteService.registrarPostulante(request, user.empleadoId());
+    @PostMapping @PreAuthorize("hasAuthority('CREATE_POSTULANTES')")
+    public ResponseEntity<PostulanteResponse> registrarPostulante(@RequestBody RegistrarPostulanteRequest request) {
+        var postulante = postulanteService.registrarPostulante(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(postulante);
     }
     @GetMapping("/reclutamiento") @PreAuthorize("hasAuthority('READ_POSTULANTES')")
@@ -63,22 +65,20 @@ public class PostulanteController {
         );
         return ResponseEntity.ok(postulantes);
     }
+    @PatchMapping("/{id}/estado-reclutamiento") @PreAuthorize("hasAuthority('TYPIFY_POSTULANTES')")
+    public ResponseEntity<PostulanteResponse> actualizarEstadoReclutamiento(@RequestBody EstadoReclutamientoRequest request,
+                                                                            @PathVariable @Positive Long id) {
+        var postulante = postulanteService.actualizarEstadoReclutamiento(request);
+        return ResponseEntity.ok(postulante);
+    }
+    @PatchMapping("/estado-capacitacion") @PreAuthorize("hasAuthority('TYPIFY_RECLUTADOS')")
+    public ResponseEntity<List<PostulanteResponse>> actualizarEstadoCapacitacion(@RequestBody List<EstadoCapacitacionRequest> request) {
+        var postulantes = postulanteService.actualizarEstadosCapacitacion(request);
+        return ResponseEntity.ok(postulantes);
+    }
 
 
 // TODO
-//    @GetMapping
-//    public ResponseEntity<List<PostulanteResponse>> getPostulantesPorEstadoYFechas(
-//            @RequestParam(required = false) EstadoPostulacion estado, @RequestParam(required = false) PuestoTrabajo puesto,
-//            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
-//            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta)
-//    {
-//        return ResponseEntity.ok(postulanteService.getPostulantesFiltrados(estado, puesto, desde, hasta));
-//    }
-//    @PatchMapping
-//    public ResponseEntity<List<PostulanteResponse>> actualizarEstadoPostulacion(@RequestBody CambiosEstadoPostulacionRequest request) {
-//        var postulante = postulanteService.actualizarEstadosPostulacion(request);
-//        return ResponseEntity.ok(postulante);
-//    }
 //    @PatchMapping("/{id}")
 //    public ResponseEntity<PostulanteResponse> actualizarDatosPostulacion(@RequestBody DatosPostulanteRequest request,
 //                                                                         @PathVariable @Positive Long id) {

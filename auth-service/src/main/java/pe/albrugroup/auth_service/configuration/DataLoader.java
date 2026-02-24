@@ -40,11 +40,12 @@ public class DataLoader {
         log.info("🚀 Creando Permisos...");
         // POSTULANTES
         savePermiso("CREATE_POSTULANTES", "Puede registrar postulantes nuevos", "POSTULANTE", "CREATE");
-        savePermiso("READ_POSTULANTES", "Puede listar y ver postulantes", "POSTULANTE", "READ");
         savePermiso("UPDATE_POSTULANTES", "Puede editar y actualizar postulantes", "POSTULANTE", "UPDATE");
+        savePermiso("READ_POSTULANTES", "Puede listar y ver postulantes", "POSTULANTE", "READ");
+        savePermiso("TYPIFY_POSTULANTES", "Puede tipificar postulantes", "POSTULANTE", "TYPIFY");
 
         savePermiso("READ_RECLUTADOS", "Puede listar y ver postulantes reclutados", "POSTULANTE", "READ");
-        savePermiso("UPDATE_RECLUTADOS", "Puede editar y tipificar postulantes reclutados", "POSTULANTE", "UPDATE");
+        savePermiso("TYPIFY_RECLUTADOS", "Puede tipificar postulantes reclutados", "POSTULANTE", "TYPIFY");
         savePermiso("EVALUATE_POSTULANTES_RECLUTAMIENTO", "Puede evaluar y tipificar a los postulantes reclutados", "POSTULANTE", "EVALUATE");
 
         savePermiso("READ_CAPACITADOS", "Puede listar y ver postulantes capacitados", "POSTULANTE", "READ");
@@ -83,8 +84,8 @@ public class DataLoader {
         // RRHH
         Set<Permiso> rrhhPermisos = Set.of(
                 getPermiso("CREATE_POSTULANTES"),
-                getPermiso("READ_POSTULANTES"),
                 getPermiso("UPDATE_POSTULANTES"),
+                getPermiso("READ_POSTULANTES"),
                 getPermiso("READ_RECLUTADOS"),
                 getPermiso("READ_CAPACITADOS"),
 
@@ -101,17 +102,21 @@ public class DataLoader {
 
         // RECLUTADOR
         Set<Permiso> reclutadorPermisos = Set.of(
-                getPermiso("READ_RECLUTADOS"),
-                getPermiso("UPDATE_RECLUTADOS"),
-                getPermiso("EVALUATE_POSTULANTES_RECLUTAMIENTO")
+                getPermiso("READ_POSTULANTES"),
+                getPermiso("TYPIFY_POSTULANTES"),
+                getPermiso("EVALUATE_POSTULANTES_RECLUTAMIENTO"),
+                getPermiso("READ_RECLUTADOS")
+
 
         );
         saveRol("RECLUTADOR", "Recursos Humanos - Contacto con postulantes", reclutadorPermisos);
 
         // CAPACITADOR
         Set<Permiso> capacitadorPermisos = Set.of(
-                getPermiso("READ_CAPACITADOS"),
-                getPermiso("EVALUATE_POSTULANTES_CAPACITACION")
+                getPermiso("READ_RECLUTADOS"),
+                getPermiso("TYPIFY_RECLUTADOS"),
+                getPermiso("EVALUATE_POSTULANTES_CAPACITACION"),
+                getPermiso("READ_CAPACITADOS")
         );
         saveRol("CAPACITADOR", "Capacitacion - Gestion de postulantes", capacitadorPermisos);
 

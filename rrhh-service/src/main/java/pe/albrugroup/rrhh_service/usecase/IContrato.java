@@ -7,7 +7,6 @@ import pe.albrugroup.rrhh_service.entity.response.ContratoResponse;
 
 import java.util.List;
 
-@Component
 public interface IContrato {
 
     List<ContratoResponse> listarContratosEmpleado(Long idEmpleado);

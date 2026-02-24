@@ -7,7 +7,6 @@ import pe.albrugroup.rrhh_service.entity.response.PagoResponse;
 import java.time.LocalDate;
 import java.util.List;
 
-@Component
 public interface IPago {
 
     List<PagoResponse> getPagos(Long idContrato, Long idEmpleado, LocalDate desde, LocalDate hasta);

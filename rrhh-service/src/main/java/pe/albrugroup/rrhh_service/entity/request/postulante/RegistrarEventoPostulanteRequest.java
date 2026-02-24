@@ -10,11 +10,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
-@Builder
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
+@Builder @Getter @Setter
+@AllArgsConstructor @NoArgsConstructor
 public class RegistrarEventoPostulanteRequest {
 
     @NotNull private EtapaProceso etapaProceso;

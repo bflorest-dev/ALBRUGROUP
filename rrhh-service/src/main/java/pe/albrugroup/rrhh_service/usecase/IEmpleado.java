@@ -11,7 +11,6 @@ import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 
 import java.util.List;
 
-@Component
 public interface IEmpleado {
 
     Page<EmpleadoResponse> getEmpleados(String q, String dni, String celular, Distrito distrito, Banco banco,
