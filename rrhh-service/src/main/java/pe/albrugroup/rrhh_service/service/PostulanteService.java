@@ -1,6 +1,7 @@
 package pe.albrugroup.rrhh_service.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -111,7 +112,7 @@ public class PostulanteService implements IPostulante {
         for (EstadoCapacitacionRequest request : postulantesEstados) {
             if (requestsById.putIfAbsent(request.getId(), request) != null) {
                 throw new ResponseStatusException(
-                        org.springframework.http.HttpStatus.BAD_REQUEST,
+                        HttpStatus.BAD_REQUEST,
                         "IDs duplicados en la solicitud"
                 );
             }
@@ -155,35 +156,4 @@ public class PostulanteService implements IPostulante {
                 .build();
     }
 
-//
-//    @Override
-//    public PostulanteResponse actulizarPostulante(Long idPostulante, DatosPostulanteRequest infoPostulante) {
-//        Postulante postulante = postulanteRepository.findById(idPostulante)
-//                .orElseThrow(() -> new PostulanteNotFoundException(idPostulante));
-//        postulanteMapper.updateDatosPostulacion(infoPostulante, postulante);
-//        return postulanteMapper.toResponse(postulante);
-//    }
-//
-//    @Override
-//    public List<PostulanteResponse> actualizarEstadosPostulacion(CambiosEstadoPostulacionRequest cambios) {
-//        Map<Long, EstadoPostulacion> destino = cambios.getCambios().stream()
-//                .collect(Collectors.toMap(
-//                        CambioEstadoPostulacionItem::getId, CambioEstadoPostulacionItem::getEstado,
-//                        (a, b) ->
-//                        { throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "IDs duplicados"); }
-//                ));
-//        List<Postulante> postulantes = postulanteRepository
-//                .findAllByIdInWithEmpleado(new ArrayList<>(destino.keySet()));
-//        if (postulantes.size() != destino.size()) {
-//            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Uno o más postulantes no existen");
-//        }
-//        postulantes.forEach(p -> {
-//            if(p.getEstadoPostulacion() != EstadoPostulacion.EN_PROCESO) {
-//                throw new ResponseStatusException(HttpStatus.CONFLICT,
-//                        "ERROR: Postulante[" + p.getId() + "][" + p.getEstadoPostulacion() + "]");
-//            }
-//        });
-//        postulantes.forEach(postulante -> postulante.setEstadoPostulacion(destino.get(postulante.getId())));
-//        return postulantes.stream().map(postulanteMapper::toResponse).toList();
-//    }
 }
