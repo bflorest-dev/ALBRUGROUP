@@ -31,7 +31,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"username\": \"J75413802B@albru.recruiter.pe\",\r\n  \"password\": \"123456\"\r\n}",
+              "raw": "{\r\n  \"username\": \"admin@albru.admin.pe\",\r\n  \"password\": \"123456\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -120,7 +120,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"username\": \"J75413802B@albru.recruiter.pe\",\r\n  \"password\": \"123456\"\r\n}",
+              "raw": "{\r\n  \"username\": \"admin@albru.admin.pe\",\r\n  \"password\": \"123456\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -693,7 +693,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "eyJhbGciOiJIUzI1NiJ9.eyJlbXBsZWFkb0lkIjoxLCJyb2xlcyI6WyJSUkhIIl0sInBlcm1pc29zIjpbIkNSRUFURV9QT1NUVUxBTlRFIiwiREVMRVRFX0VNUExFQURPUyIsIlJFQURfUE9TVFVMQU5URSIsIkJMQUNLTElTVF9QT1NUVUxBTlRFIiwiVVBEQVRFX1BPU1RVTEFOVEUiLCJDUkVBVEVfRU1QTEVBRE9TIiwiVVBEQVRFX0VNUExFQURPUyIsIlJFQURfRU1QTEVBRE9TIl0sInVzZXJuYW1lIjoiSjc1NDEzODAyQkBhbGJydS5yZWNydWl0ZXIucGUiLCJzdWIiOiJKNzU0MTM4MDJCQGFsYnJ1LnJlY3J1aXRlci5wZSIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODA4MSIsImlhdCI6MTc3MTgzOTA2MiwiZXhwIjoxNzcxODQ2MjYyfQ.jzCIX9yybAGNYW3xip3dRIQ2b3uUDITD-auWO1JwXR0",
+                      "value": "eyJhbGciOiJIUzI1NiJ9.eyJlbXBsZWFkb0lkIjoxLCJyb2xlcyI6WyJBRE1JTklTVFJBRE9SIl0sInBlcm1pc29zIjpbIlJFQURfQ0FQQUNJVEFET1MiLCJUWVBJRllfUkVDTFVUQURPUyIsIlVQREFURV9QQUdPUyIsIlJFQURfUkVDTFVUQURPUyIsIlJFQURfRU1QTEVBRE9TIiwiUkVBRF9QT1NUVUxBTlRFUyIsIlJFQURfUEFHT1MiLCJCTEFDS0xJU1RfRU1QTEVBRE9TIiwiVFlQSUZZX1BPU1RVTEFOVEVTIiwiVVBEQVRFX1BPU1RVTEFOVEVTIiwiRVZBTFVBVEVfUE9TVFVMQU5URVNfQ0FQQUNJVEFDSU9OIiwiRVZBTFVBVEVfUE9TVFVMQU5URVNfUkVDTFVUQU1JRU5UTyIsIkNSRUFURV9QQUdPUyIsIkNBTkNFTF9DT05UUkFUT1MiLCJDUkVBVEVfUE9TVFVMQU5URVMiLCJDUkVBVEVfQ09OVFJBVE9TIiwiVVBEQVRFX0VNUExFQURPUyIsIkNSRUFURV9FTVBMRUFET1MiLCJVUERBVEVfQ09OVFJBVE9TIiwiUkVBRF9DT05UUkFUT1MiLCJSRUFEX0VWRU5UT1MiXSwidXNlcm5hbWUiOiJhZG1pbkBhbGJydS5hZG1pbi5wZSIsInN1YiI6ImFkbWluQGFsYnJ1LmFkbWluLnBlIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgxIiwiaWF0IjoxNzcyMDIyMjEwLCJleHAiOjE3NzIwMjk0MTB9.k8G1BarFC2Ef4r4NqLq1A4JcfF7lz3pEpu8vKkQ205w",
                       "type": "string"
                     }
                   ]
@@ -727,36 +727,83 @@
             {
               "name": "Postulantes",
               "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiJ9.eyJlbXBsZWFkb0lkIjoxLCJyb2xlcyI6WyJBRE1JTklTVFJBRE9SIl0sInBlcm1pc29zIjpbIlJFQURfQ0FQQUNJVEFET1MiLCJUWVBJRllfUkVDTFVUQURPUyIsIlVQREFURV9QQUdPUyIsIlJFQURfUkVDTFVUQURPUyIsIlJFQURfRU1QTEVBRE9TIiwiUkVBRF9QT1NUVUxBTlRFUyIsIlJFQURfUEFHT1MiLCJCTEFDS0xJU1RfRU1QTEVBRE9TIiwiVFlQSUZZX1BPU1RVTEFOVEVTIiwiVVBEQVRFX1BPU1RVTEFOVEVTIiwiRVZBTFVBVEVfUE9TVFVMQU5URVNfQ0FQQUNJVEFDSU9OIiwiRVZBTFVBVEVfUE9TVFVMQU5URVNfUkVDTFVUQU1JRU5UTyIsIkNSRUFURV9QQUdPUyIsIkNBTkNFTF9DT05UUkFUT1MiLCJDUkVBVEVfUE9TVFVMQU5URVMiLCJDUkVBVEVfQ09OVFJBVE9TIiwiVVBEQVRFX0VNUExFQURPUyIsIkNSRUFURV9FTVBMRUFET1MiLCJVUERBVEVfQ09OVFJBVE9TIiwiUkVBRF9DT05UUkFUT1MiLCJSRUFEX0VWRU5UT1MiXSwidXNlcm5hbWUiOiJhZG1pbkBhbGJydS5hZG1pbi5wZSIsInN1YiI6ImFkbWluQGFsYnJ1LmFkbWluLnBlIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgxIiwiaWF0IjoxNzcyMDIyMjEwLCJleHAiOjE3NzIwMjk0MTB9.k8G1BarFC2Ef4r4NqLq1A4JcfF7lz3pEpu8vKkQ205w",
+                      "type": "string"
+                    }
+                  ]
+                },
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:8080/postulantes?estado=EN_PROCESO",
+                  "raw": "http://localhost:8080/rrhh/postulantes/reclutamiento",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
                   "port": "8080",
                   "path": [
-                    "postulantes"
-                  ],
-                  "query": [
-                    {
-                      "key": "estado",
-                      "value": "EN_PROCESO"
-                    }
+                    "rrhh",
+                    "postulantes",
+                    "reclutamiento"
                   ]
                 }
               },
               "response": []
             },
             {
-              "name": "Estado Postulantes",
+              "name": "Reclutados",
               "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiJ9.eyJlbXBsZWFkb0lkIjoxLCJyb2xlcyI6WyJBRE1JTklTVFJBRE9SIl0sInBlcm1pc29zIjpbIkNSRUFURV9QQUdPUyIsIlJFQURfRU1QTEVBRE9TIiwiRVZBTFVBVEVfUE9TVFVMQU5URVNfQ0FQQUNJVEFDSU9OIiwiQkxBQ0tMSVNUX0VNUExFQURPUyIsIkNSRUFURV9QT1NUVUxBTlRFUyIsIlVQREFURV9DT05UUkFUT1MiLCJSRUFEX1BPU1RVTEFOVEVTIiwiQ1JFQVRFX0VNUExFQURPUyIsIlVQREFURV9FTVBMRUFET1MiLCJDUkVBVEVfQ09OVFJBVE9TIiwiRVZBTFVBVEVfUE9TVFVMQU5URVNfUkVDTFVUQU1JRU5UTyIsIlJFQURfQ09OVFJBVE9TIiwiQ0FOQ0VMX0NPTlRSQVRPUyIsIlVQREFURV9QT1NUVUxBTlRFUyIsIlRZUElGWV9SRUNMVVRBRE9TIiwiUkVBRF9FVkVOVE9TIiwiVVBEQVRFX1BBR09TIiwiUkVBRF9QQUdPUyIsIlJFQURfQ0FQQUNJVEFET1MiLCJSRUFEX1JFQ0xVVEFET1MiLCJUWVBJRllfUE9TVFVMQU5URVMiXSwidXNlcm5hbWUiOiJhZG1pbkBhbGJydS5hZG1pbi5wZSIsInN1YiI6ImFkbWluQGFsYnJ1LmFkbWluLnBlIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgxIiwiaWF0IjoxNzcyMDIyNTExLCJleHAiOjE3NzIwMjk3MTF9.QJ0S3tEYmaUNYI-YcrksMkUcWtON80PvAyMcuPJEl7U",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/rrhh/postulantes/capacitacion",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "rrhh",
+                    "postulantes",
+                    "capacitacion"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Reclutamiento",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiJ9.eyJlbXBsZWFkb0lkIjoxLCJyb2xlcyI6WyJBRE1JTklTVFJBRE9SIl0sInBlcm1pc29zIjpbIkNSRUFURV9QQUdPUyIsIlJFQURfRU1QTEVBRE9TIiwiRVZBTFVBVEVfUE9TVFVMQU5URVNfQ0FQQUNJVEFDSU9OIiwiQkxBQ0tMSVNUX0VNUExFQURPUyIsIkNSRUFURV9QT1NUVUxBTlRFUyIsIlVQREFURV9DT05UUkFUT1MiLCJSRUFEX1BPU1RVTEFOVEVTIiwiQ1JFQVRFX0VNUExFQURPUyIsIlVQREFURV9FTVBMRUFET1MiLCJDUkVBVEVfQ09OVFJBVE9TIiwiRVZBTFVBVEVfUE9TVFVMQU5URVNfUkVDTFVUQU1JRU5UTyIsIlJFQURfQ09OVFJBVE9TIiwiQ0FOQ0VMX0NPTlRSQVRPUyIsIlVQREFURV9QT1NUVUxBTlRFUyIsIlRZUElGWV9SRUNMVVRBRE9TIiwiUkVBRF9FVkVOVE9TIiwiVVBEQVRFX1BBR09TIiwiUkVBRF9QQUdPUyIsIlJFQURfQ0FQQUNJVEFET1MiLCJSRUFEX1JFQ0xVVEFET1MiLCJUWVBJRllfUE9TVFVMQU5URVMiXSwidXNlcm5hbWUiOiJhZG1pbkBhbGJydS5hZG1pbi5wZSIsInN1YiI6ImFkbWluQGFsYnJ1LmFkbWluLnBlIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgxIiwiaWF0IjoxNzcyMDIyNTExLCJleHAiOjE3NzIwMjk3MTF9.QJ0S3tEYmaUNYI-YcrksMkUcWtON80PvAyMcuPJEl7U",
+                      "type": "string"
+                    }
+                  ]
+                },
                 "method": "PATCH",
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\r\n  \"cambios\": [\r\n    {\r\n      \"id\": 1,\r\n      \"estado\": \"APROBADO\"\r\n    },\r\n    {\r\n      \"id\": 2,\r\n      \"estado\": \"RECHAZADO\"\r\n    },\r\n    {\r\n      \"id\": 3,\r\n      \"estado\": \"APROBADO\"\r\n    }\r\n  ]\r\n}\r\n\r\n",
+                  "raw": "{\r\n  \"evento\": \"EVALUACION_RECLUTAMIENTO\",\r\n  \"estado\": \"RECLUTADO\",\r\n  \"subestado\": \"\",\r\n  \"fechaEvento\": \"\",\r\n  \"inicioCapa\": \"2026-02-27\",\r\n  \"finCapa\": \"2026-02-28\",\r\n  \"pagoDiaCapa\": \"\"\r\n}\r\n",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -764,22 +811,35 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8080/postulantes",
+                  "raw": "http://localhost:8080/rrhh/postulantes/1/estado-reclutamiento",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
                   "port": "8080",
                   "path": [
-                    "postulantes"
+                    "rrhh",
+                    "postulantes",
+                    "1",
+                    "estado-reclutamiento"
                   ]
                 }
               },
               "response": []
             },
             {
-              "name": "Datos Postulacion",
+              "name": "Capacitacion",
               "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiJ9.eyJlbXBsZWFkb0lkIjoxLCJyb2xlcyI6WyJBRE1JTklTVFJBRE9SIl0sInBlcm1pc29zIjpbIlJFQURfQ0FQQUNJVEFET1MiLCJUWVBJRllfUE9TVFVMQU5URVMiLCJVUERBVEVfUEFHT1MiLCJUWVBJRllfUkVDTFVUQURPUyIsIlJFQURfUE9TVFVMQU5URVMiLCJDUkVBVEVfRU1QTEVBRE9TIiwiUkVBRF9FTVBMRUFET1MiLCJDUkVBVEVfUEFHT1MiLCJVUERBVEVfUE9TVFVMQU5URVMiLCJFVkFMVUFURV9QT1NUVUxBTlRFU19SRUNMVVRBTUlFTlRPIiwiQ1JFQVRFX0NPTlRSQVRPUyIsIlVQREFURV9FTVBMRUFET1MiLCJCTEFDS0xJU1RfRU1QTEVBRE9TIiwiQ1JFQVRFX1BPU1RVTEFOVEVTIiwiQ0FOQ0VMX0NPTlRSQVRPUyIsIlJFQURfUkVDTFVUQURPUyIsIkVWQUxVQVRFX1BPU1RVTEFOVEVTX0NBUEFDSVRBQ0lPTiIsIlVQREFURV9DT05UUkFUT1MiXSwidXNlcm5hbWUiOiJKNzU0MTM4MDJCQGFsYnJ1LnJlY3J1aXRlci5wZSIsInN1YiI6Iko3NTQxMzgwMkJAYWxicnUucmVjcnVpdGVyLnBlIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgxIiwiaWF0IjoxNzcxOTc4NzA5LCJleHAiOjE3NzE5ODU5MDl9.MTKpijRML4Dw3uuUZf1IKtDtbZ2cQv1p9RLaTYwbelg",
+                      "type": "string"
+                    }
+                  ]
+                },
                 "method": "PATCH",
                 "header": [],
                 "body": {
@@ -792,15 +852,53 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8080/postulantes/1",
+                  "raw": "http://localhost:8080/rrhh/postulantes/estado-capacitacion",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
                   "port": "8080",
                   "path": [
+                    "rrhh",
                     "postulantes",
-                    "1"
+                    "estado-capacitacion"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Eventos",
+          "item": [
+            {
+              "name": "Postulantes",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "eyJhbGciOiJIUzI1NiJ9.eyJlbXBsZWFkb0lkIjoxLCJyb2xlcyI6WyJBRE1JTklTVFJBRE9SIl0sInBlcm1pc29zIjpbIlJFQURfUE9TVFVMQU5URVMiLCJSRUFEX1JFQ0xVVEFET1MiLCJCTEFDS0xJU1RfRU1QTEVBRE9TIiwiQ1JFQVRFX1BBR09TIiwiQ0FOQ0VMX0NPTlRSQVRPUyIsIkVWQUxVQVRFX1BPU1RVTEFOVEVTX1JFQ0xVVEFNSUVOVE8iLCJVUERBVEVfRU1QTEVBRE9TIiwiUkVBRF9DT05UUkFUT1MiLCJSRUFEX0VNUExFQURPUyIsIlJFQURfQ0FQQUNJVEFET1MiLCJVUERBVEVfUEFHT1MiLCJVUERBVEVfQ09OVFJBVE9TIiwiRVZBTFVBVEVfUE9TVFVMQU5URVNfQ0FQQUNJVEFDSU9OIiwiVVBEQVRFX1BPU1RVTEFOVEVTIiwiQ1JFQVRFX1BPU1RVTEFOVEVTIiwiQ1JFQVRFX0VNUExFQURPUyIsIlRZUElGWV9SRUNMVVRBRE9TIiwiQ1JFQVRFX0NPTlRSQVRPUyIsIlRZUElGWV9QT1NUVUxBTlRFUyIsIlJFQURfRVZFTlRPUyIsIlJFQURfUEFHT1MiXSwidXNlcm5hbWUiOiJhZG1pbkBhbGJydS5hZG1pbi5wZSIsInN1YiI6ImFkbWluQGFsYnJ1LmFkbWluLnBlIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgxIiwiaWF0IjoxNzcyMDIxMjU0LCJleHAiOjE3NzIwMjg0NTR9.ps--PylpEbeUXkDIzuY-qZUquAWWC2vcrLAc-gQfogE",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/rrhh/eventos/1/postulantes",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "rrhh",
+                    "eventos",
+                    "1",
+                    "postulantes"
                   ]
                 }
               },
