@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import pe.albrugroup.rrhh_service.configuration.CurrentUser;
 import pe.albrugroup.rrhh_service.entity.Empleado;
@@ -181,9 +180,6 @@ public class PostulanteService implements IPostulante {
         String estado = evento.getEstado();
         String subestado = evento.getSubestado();
 
-        if (estado == null || estado.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Estado requerido");
-        }
         if ("POR_CONTRATAR".equals(estado)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Estado POR_CONTRATAR no es válido para registro de evento");
         }
@@ -205,7 +201,6 @@ public class PostulanteService implements IPostulante {
             if (subestado != null && !subestado.isBlank() && !isCapacitacionSubestado(subestado)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Subestado de capacitación inválido");
             }
-            return;
         }
     }
 

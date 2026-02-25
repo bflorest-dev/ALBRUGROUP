@@ -25,7 +25,7 @@ public class EventosController {
     private final PostulanteEventoService postulanteEventoService;
 
     @GetMapping("/postulantes")
-    @PreAuthorize("hasAuthority('READ_POSTULANTES')")
+    @PreAuthorize("hasAuthority('READ_EVENTOS')")
     public ResponseEntity<List<PostulanteEventoResponse>> listarEventosPostulante(
             @RequestParam @Positive Long idPostulante,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,

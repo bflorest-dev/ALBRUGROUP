@@ -64,6 +64,8 @@ public class DataLoader {
         savePermiso("CREATE_PAGOS", "Puede registrar pagos a los empleados", "PAGO", "CREATE");
         savePermiso("UPDATE_PAGOS", "Puede actualizar informacion de pagos", "PAGO", "UPDATE");
 
+        savePermiso("READ_EVENTOS", "Puede ver el historico de eventos", "ENTIDAD", "READ");
+
         // TODO
         // LEADS
 
