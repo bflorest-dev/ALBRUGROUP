@@ -161,7 +161,7 @@ public class DataLoader {
 
         log.info("══════════════════════════════════════════════════════");
         log.info("✓ Usuario ADMINISTRADOR creado:");
-        log.info("  Username: J75413802B@albru.recruiter.pe");
+        log.info("  Username: admin@albru.admin.pe");
         log.info("  Password: 123456");
         log.info("  Email: jevbxx@gmail.com");
         log.info("  EmpleadoId: 1");
