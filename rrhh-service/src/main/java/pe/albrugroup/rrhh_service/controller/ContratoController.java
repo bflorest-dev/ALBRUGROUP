@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
@@ -26,7 +27,7 @@ public class ContratoController {
 
     @Operation(summary = "Histórico de contratos por empleado",
             description = "Obtiene el listado completo de contratos registrados para un empleado.")
-    @GetMapping("/{id}/historico")
+    @GetMapping("/{id}/historico") @PreAuthorize("hasAuthority('READ_CONTRATOS')")
     public ResponseEntity<List<ContratoResponse>> listarContratosEmpleado(
     @Parameter(description = "ID del empleado", example = "10")
             @PathVariable @Positive Long id) {
@@ -34,7 +35,7 @@ public class ContratoController {
     }
     @Operation(summary = "Contrato vigente por empleado",
             description = "Devuelve el contrato vigente del empleado según la fecha actual.")
-    @GetMapping("/{id}/vigente")
+    @GetMapping("/{id}/vigente") @PreAuthorize("hasAuthority('READ_CONTRATOS')")
     public ResponseEntity<ContratoResponse> getContratoVigenteEmpleado(
             @Parameter(description = "ID del empleado", example = "10")
             @PathVariable @Positive Long id) {
@@ -43,7 +44,7 @@ public class ContratoController {
     @Operation(summary = "Registrar contrato",
             description = "Registra un nuevo contrato para el empleado. Si existe un contrato vigente, se ajusta su fecha fin " +
                     "para evitar solapamientos.")
-    @PostMapping("/{id}/registrar")
+    @PostMapping("/{id}/registrar") @PreAuthorize("hasAuthority('CREATE_CONTRATOS')")
     public ResponseEntity<ContratoResponse> registrarContrato(@RequestBody RegistrarContratoRequest request,
                                               @Parameter(description = "ID del empleado", example = "10")
                                                               @PathVariable @Positive Long id) {
@@ -52,7 +53,7 @@ public class ContratoController {
     }
     @Operation(summary = "Finalizar contrato",
             description = "Cierra el contrato vigente del empleado con la fecha de fin indicada.")
-    @PatchMapping("/{id}/cesar-contrato")
+    @PatchMapping("/{id}/cesar-contrato") @PreAuthorize("hasAuthority('CANCEL_CONTRATOS')")
     public ResponseEntity<ContratoResponse> finalizarContrato(@RequestBody CerrarContratoRequest request,
                                                            @Parameter(description = "ID del empleado", example = "10")
                                                            @PathVariable @Positive Long id) {

@@ -35,13 +35,11 @@ public class EmpleadoController {
         var emplado = empleadoService.listaNegraEmpleado(id, user.empleadoId());
         return ResponseEntity.ok(emplado);
     }
-
-
-    // POR ACTUALIZAR
+    
     @Operation(summary = "Listado de Empleados",
             description = "Obtiene empleados con filtros opcionales por texto libre, documento, celular, distrito, banco, " +
                     "estado operativo y paginación.")
-    @GetMapping
+    @GetMapping @PreAuthorize("hasAuthority('READ_EMPLEADOS')")
     public ResponseEntity<Page<EmpleadoResponse>> getEmpleados(
     @Parameter(description = "Texto libre para búsqueda en múltiples campos", example = "Perez")
             @RequestParam(required = false) String q,
@@ -64,7 +62,7 @@ public class EmpleadoController {
             summary = "Búsqueda universal de empleados",
             description = "Busca empleados por un dato único (documento, nombres, apellidos, celular o correo) con paginación."
     )
-    @GetMapping("/{dato}/universal")
+    @GetMapping("/{dato}/universal") @PreAuthorize("hasAuthority('READ_EMPLEADOS')")
     public ResponseEntity<Page<EmpleadoResponse>> obtenerEmpleadoFiltroUniversal(
     @Parameter(description = "Dato universal para búsqueda (documento, nombres, apellidos, celular o correo)", example = "Juan")
             @PathVariable String dato,
@@ -76,7 +74,7 @@ public class EmpleadoController {
             summary = "Obtener empleado por número de documento",
             description = "Devuelve la información del empleado asociado al número de documento."
     )
-    @GetMapping("/{documento}/numero-documento")
+    @GetMapping("/{documento}/numero-documento") @PreAuthorize("hasAuthority('READ_EMPLEADOS')")
     public ResponseEntity<EmpleadoResponse> getEmpleadoNumeroDocumento(
     @Parameter(description = "Número de documento del empleado", example = "12345678")
             @PathVariable @Positive String documento) {
@@ -85,7 +83,7 @@ public class EmpleadoController {
 
     @Operation(summary = "Registrar empleado",
             description = "Registra un nuevo empleado a partir de datos personales, de contacto, financieros y corporativos.")
-    @PostMapping
+    @PostMapping @PreAuthorize("hasAuthority('CREATE_EMPLEADOS')")
     public ResponseEntity<EmpleadoResponse> registrarEmpleado(@RequestBody RegistrarEmpleadoRequest request) {
         var empleado = empleadoService.registrarEmpleado(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(empleado);
@@ -93,7 +91,7 @@ public class EmpleadoController {
 
     @Operation(summary = "Actualizar datos personales",
             description = "Actualiza nombres, apellidos, documento, estado civil, fecha de nacimiento y datos personales del empleado.")
-    @PatchMapping("/{id}/datos-personales")
+    @PatchMapping("/{id}/datos-personales")  @PreAuthorize("hasAuthority('UPDATE_EMPLEADOS')")
     public ResponseEntity<EmpleadoResponse> actulizarDatosPersonales(@RequestBody DatosPersonalesRequest request,
                                                                      @Parameter(description = "ID del empleado", example = "10")
                                                                      @PathVariable @Positive Long id) {
@@ -102,7 +100,7 @@ public class EmpleadoController {
     }
     @Operation(summary = "Actualizar datos de contacto y ubicación",
             description = "Actualiza celular, correo, dirección y distrito del empleado.")
-    @PatchMapping("/{id}/datos-contacto-ubicacion")
+    @PatchMapping("/{id}/datos-contacto-ubicacion") @PreAuthorize("hasAuthority('UPDATE_EMPLEADOS')")
     public ResponseEntity<EmpleadoResponse> actulizarDatosContactoUbicacion(@RequestBody DatosContactoUbicacionRequest request,
                                                                             @Parameter(description = "ID del empleado", example = "10")
                                                                             @PathVariable @Positive Long id) {
@@ -111,7 +109,7 @@ public class EmpleadoController {
     }
     @Operation(summary = "Actualizar datos financieros",
             description = "Actualiza banco, cuenta bancaria, CCI y datos financieros del empleado.")
-    @PatchMapping("/{id}/datos-financieros")
+    @PatchMapping("/{id}/datos-financieros") @PreAuthorize("hasAuthority('UPDATE_EMPLEADOS')")
     public ResponseEntity<EmpleadoResponse> actualizarDatosFinancieros(@RequestBody DatosFinancierosRequest request,
                                                                        @Parameter(description = "ID del empleado", example = "10")
                                                                        @PathVariable @Positive Long id) {
@@ -120,7 +118,7 @@ public class EmpleadoController {
     }
     @Operation(summary = "Actualizar datos corporativos",
             description = "Actualiza el correo y celular corporativo, y demás datos de contacto corporativo del empleado.")
-    @PatchMapping("/{id}/datos-corporativos")
+    @PatchMapping("/{id}/datos-corporativos") @PreAuthorize("hasAuthority('UPDATE_EMPLEADOS')")
     public ResponseEntity<EmpleadoResponse> actualizarDatosCorporativos(@RequestBody DatosContactoCorporativoRequest request,
                                                                         @Parameter(description = "ID del empleado", example = "10")
                                                                         @PathVariable @Positive Long id) {

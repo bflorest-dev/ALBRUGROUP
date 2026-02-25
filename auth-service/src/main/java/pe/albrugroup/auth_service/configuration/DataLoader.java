@@ -59,11 +59,13 @@ public class DataLoader {
         // CONTRATOS
         savePermiso("CREATE_CONTRATOS", "Puede registrar contratos", "CONTRATO", "CREATE");
         savePermiso("UPDATE_CONTRATOS", "Puede editar contratos", "CONTRATO", "UPDATE");
+        savePermiso("READ_CONTRATOS", "Puede listar y ver contratos", "CONTRATO", "READ");
         savePermiso("CANCEL_CONTRATOS", "Puede dar de baja contratos", "CONTRATO", "CANCEL");
         // PAGOS
         savePermiso("CREATE_PAGOS", "Puede registrar pagos a los empleados", "PAGO", "CREATE");
         savePermiso("UPDATE_PAGOS", "Puede actualizar informacion de pagos", "PAGO", "UPDATE");
-
+        savePermiso("READ_PAGOS", "Puede listar y ver informacion de pagos", "PAGO", "READ");
+        // EVENTOS en RRHH-SERVICE
         savePermiso("READ_EVENTOS", "Puede ver el historico de eventos", "ENTIDAD", "READ");
 
         // TODO
@@ -103,6 +105,7 @@ public class DataLoader {
 
                 getPermiso("CREATE_CONTRATOS"),
                 getPermiso("UPDATE_CONTRATOS"),
+                getPermiso("READ_CONTRATOS"),
                 getPermiso("CANCEL_CONTRATOS")
         );
         saveRol("RRHH", "Recursos Humanos - Gestion de personal", rrhhPermisos);
@@ -113,8 +116,6 @@ public class DataLoader {
                 getPermiso("TYPIFY_POSTULANTES"),
                 getPermiso("EVALUATE_POSTULANTES_RECLUTAMIENTO"),
                 getPermiso("READ_RECLUTADOS")
-
-
         );
         saveRol("RECLUTADOR", "Recursos Humanos - Contacto con postulantes", reclutadorPermisos);
 
@@ -149,7 +150,7 @@ public class DataLoader {
         Rol adminRol = rolRepository.findByNombre("ADMINISTRADOR")
                         .orElseThrow(() -> new RuntimeException("Rol ADMINISTRADOR no encontrado"));
         Usuario adminUsuario = Usuario.builder()
-                .username("J75413802B@albru.recruiter.pe")
+                .username("admin@albru.admin.pe")
                 .password(passwordEncoder.encode("123456"))
                 .email("jevbxx@gmail.com")
                 .empleadoId(1L)

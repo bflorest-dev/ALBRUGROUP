@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.rrhh_service.entity.request.pago.RegistrarPagoRequest;
@@ -27,7 +28,7 @@ public class PagoController {
 
     @Operation(summary = "Listado de pagos",
         description = "Obtiene pagos filtrados por contrato, empleado y/o rango de fechas. Todos los parámetros son opcionales.")
-    @GetMapping
+    @GetMapping @PreAuthorize("hasAuthority('CREATE_PAGOS')")
     public ResponseEntity<List<PagoResponse>> getPagos(
     @Parameter(description = "ID del contrato", example = "100")
             @RequestParam(required = false) @Positive Long contrato,
@@ -43,7 +44,7 @@ public class PagoController {
 
     @Operation(summary = "Registrar pago",
             description = "Registra un pago asociado a un contrato. Si no se indican fechas, se toma el mes actual.")
-    @PostMapping("/{id}/pagar-contrato")
+    @PostMapping("/{id}/pagar-contrato") @PreAuthorize("hasAuthority('CREATE_PAGOS')")
     public ResponseEntity<PagoResponse> registrarPago(@RequestBody RegistrarPagoRequest request,
                                               @Parameter(description = "ID del contrato", example = "100")
                                                       @PathVariable @Positive Long id) {
