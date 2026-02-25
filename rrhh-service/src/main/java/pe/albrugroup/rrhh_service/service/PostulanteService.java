@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import pe.albrugroup.rrhh_service.configuration.CurrentUser;
 import pe.albrugroup.rrhh_service.entity.Empleado;
@@ -26,6 +27,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -91,12 +93,19 @@ public class PostulanteService implements IPostulante {
         Postulante postulante = postulanteRepository.findById(idPostulante)
                 .orElseThrow(() -> new PostulanteNotFoundException(idPostulante));
 
+        validarEvento(EtapaProceso.RECLUTAMIENTO, evento);
         RegistrarEventoPostulanteRequest eventoRequest = toRegistrarEvento(EtapaProceso.RECLUTAMIENTO, evento);
         eventoService.registrarEventoPostulante(postulante, currentUser.empleadoID(), eventoRequest);
 
-        postulante.setEtapaProceso(EtapaProceso.RECLUTAMIENTO);
-        postulante.setEstadoProceso(evento.getEstado());
-        postulante.setSubestadoProceso(evento.getSubestado());
+        if (ReclutamientoEstado.RECLUTADO.name().equals(evento.getEstado())) {
+            postulante.setEtapaProceso(EtapaProceso.CAPACITACION);
+            postulante.setEstadoProceso(CapacitacionEstado.POR_CAPACITAR.name());
+            postulante.setSubestadoProceso(null);
+        } else {
+            postulante.setEtapaProceso(EtapaProceso.RECLUTAMIENTO);
+            postulante.setEstadoProceso(evento.getEstado());
+            postulante.setSubestadoProceso(evento.getSubestado());
+        }
 
         postulanteRepository.save(postulante);
         return postulanteMapper.toResponse(postulante);
@@ -131,12 +140,19 @@ public class PostulanteService implements IPostulante {
         for (Postulante postulante : postulantes) {
             EstadoCapacitacionRequest request = requestsById.get(postulante.getId());
             EventoPostulanteRequest evento = request.getEvento();
+            validarEvento(EtapaProceso.CAPACITACION, evento);
             RegistrarEventoPostulanteRequest eventoRequest = toRegistrarEvento(EtapaProceso.CAPACITACION, evento);
             eventoService.registrarEventoPostulante(postulante, currentUser.empleadoID(), eventoRequest);
 
-            postulante.setEtapaProceso(EtapaProceso.CAPACITACION);
-            postulante.setEstadoProceso(evento.getEstado());
-            postulante.setSubestadoProceso(evento.getSubestado());
+            if (CapacitacionEstado.APROBADO.name().equals(evento.getEstado())) {
+                postulante.setEtapaProceso(EtapaProceso.GESTION);
+                postulante.setEstadoProceso("POR_CONTRATAR");
+                postulante.setSubestadoProceso(null);
+            } else {
+                postulante.setEtapaProceso(EtapaProceso.CAPACITACION);
+                postulante.setEstadoProceso(evento.getEstado());
+                postulante.setSubestadoProceso(evento.getSubestado());
+            }
         }
 
         postulanteRepository.saveAll(postulantes);
@@ -154,6 +170,95 @@ public class PostulanteService implements IPostulante {
                 .finCapa(evento.getFinCapa())
                 .pagoDiaCapa(evento.getPagoDiaCapa())
                 .build();
+    }
+
+    private void validarEvento(EtapaProceso etapa, EventoPostulanteRequest evento) {
+        if (evento == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Evento requerido");
+        }
+        validarFechaNoPasada(evento);
+
+        String estado = evento.getEstado();
+        String subestado = evento.getSubestado();
+
+        if (estado == null || estado.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Estado requerido");
+        }
+        if ("POR_CONTRATAR".equals(estado)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Estado POR_CONTRATAR no es válido para registro de evento");
+        }
+
+        if (etapa == EtapaProceso.RECLUTAMIENTO) {
+            if (!isReclutamientoEstado(estado)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Estado de reclutamiento inválido");
+            }
+            if (subestado != null && !subestado.isBlank() && !isReclutamientoSubestado(subestado)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Subestado de reclutamiento inválido");
+            }
+            return;
+        }
+
+        if (etapa == EtapaProceso.CAPACITACION) {
+            if (!isCapacitacionEstado(estado)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Estado de capacitación inválido");
+            }
+            if (subestado != null && !subestado.isBlank() && !isCapacitacionSubestado(subestado)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Subestado de capacitación inválido");
+            }
+            return;
+        }
+    }
+
+    private void validarFechaNoPasada(EventoPostulanteRequest evento) {
+        LocalDate hoy = LocalDate.now(ZONA_HORARIA_PERU);
+        if (evento.getFechaEvento() != null) {
+            ZonedDateTime fecha = evento.getFechaEvento().atZone(ZONA_HORARIA_PERU);
+            if (fecha.toLocalDate().isBefore(hoy)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "fechaEvento debe ser hoy o posterior");
+            }
+        }
+        if (evento.getInicioCapa() != null && evento.getInicioCapa().isBefore(hoy)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "inicioCapa debe ser hoy o posterior");
+        }
+        if (evento.getFinCapa() != null && evento.getFinCapa().isBefore(hoy)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "finCapa debe ser hoy o posterior");
+        }
+    }
+
+    private boolean isReclutamientoEstado(String estado) {
+        for (ReclutamientoEstado value : ReclutamientoEstado.values()) {
+            if (value.name().equals(estado)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isReclutamientoSubestado(String subestado) {
+        for (ReclutamientoSubEstado value : ReclutamientoSubEstado.values()) {
+            if (value.name().equals(subestado)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isCapacitacionEstado(String estado) {
+        for (CapacitacionEstado value : CapacitacionEstado.values()) {
+            if (value.name().equals(estado)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isCapacitacionSubestado(String subestado) {
+        for (CapacitacionSubEstado value : CapacitacionSubEstado.values()) {
+            if (value.name().equals(subestado)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

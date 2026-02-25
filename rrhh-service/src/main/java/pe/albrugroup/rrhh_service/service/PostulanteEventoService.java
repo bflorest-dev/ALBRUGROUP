@@ -13,6 +13,12 @@ import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
 import pe.albrugroup.rrhh_service.repository.PostulanteEventoRepository;
 import pe.albrugroup.rrhh_service.service.mapper.PostulanteEventoMapper;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class PostulanteEventoService {
@@ -20,6 +26,8 @@ public class PostulanteEventoService {
     private final PostulanteEventoRepository eventoRepository;
     private final EmpleadoRepository empleadoRepository;
     private final PostulanteEventoMapper eventoMapper;
+
+    private static final ZoneId ZONA_HORARIA_PERU = ZoneId.of("America/Lima");
 
     @Transactional
     public PostulanteEventoResponse registrarEventoCreacionPostulante(Postulante postulante, Long responsableId,
@@ -40,5 +48,16 @@ public class PostulanteEventoService {
         evento.setResponsable(responsable);
 
         return eventoMapper.toResponse(eventoRepository.save(evento));
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostulanteEventoResponse> buscarEventos(Long postulanteId, LocalDate desde, LocalDate hasta) {
+        Instant inicio = desde != null ? desde.atStartOfDay(ZONA_HORARIA_PERU).toInstant() : null;
+        Instant fin = hasta != null ? hasta.atTime(LocalTime.MAX).atZone(ZONA_HORARIA_PERU).toInstant() : null;
+
+        return eventoRepository.buscarEventos(postulanteId, inicio, fin)
+                .stream()
+                .map(eventoMapper::toResponse)
+                .toList();
     }
 }
