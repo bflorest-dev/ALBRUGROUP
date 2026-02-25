@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -13,10 +12,9 @@ import pe.albrugroup.rrhh_service.entity.enums.EtapaProceso;
 import pe.albrugroup.rrhh_service.entity.enums.Origen;
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.rrhh_service.entity.request.postulante.EstadoCapacitacionRequest;
-import pe.albrugroup.rrhh_service.entity.request.postulante.EstadoReclutamientoRequest;
+import pe.albrugroup.rrhh_service.entity.request.postulante.EventoPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.request.postulante.RegistrarPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.response.PostulanteResponse;
-import pe.albrugroup.rrhh_service.security.UserSession;
 import pe.albrugroup.rrhh_service.usecase.IPostulante;
 
 import java.time.LocalDate;
@@ -66,9 +64,9 @@ public class PostulanteController {
         return ResponseEntity.ok(postulantes);
     }
     @PatchMapping("/{id}/estado-reclutamiento") @PreAuthorize("hasAuthority('TYPIFY_POSTULANTES')")
-    public ResponseEntity<PostulanteResponse> actualizarEstadoReclutamiento(@RequestBody EstadoReclutamientoRequest request,
+    public ResponseEntity<PostulanteResponse> actualizarEstadoReclutamiento(@RequestBody EventoPostulanteRequest request,
                                                                             @PathVariable @Positive Long id) {
-        var postulante = postulanteService.actualizarEstadoReclutamiento(request);
+        var postulante = postulanteService.actualizarEstadoReclutamiento(id, request);
         return ResponseEntity.ok(postulante);
     }
     @PatchMapping("/estado-capacitacion") @PreAuthorize("hasAuthority('TYPIFY_RECLUTADOS')")

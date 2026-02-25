@@ -1,14 +1,15 @@
 package pe.albrugroup.rrhh_service.entity.request.postulante;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import pe.albrugroup.rrhh_service.entity.enums.CapacitacionEstado;
-import pe.albrugroup.rrhh_service.entity.enums.CapacitacionSubEstado;
+
 
 @Builder @Getter @Setter
 @AllArgsConstructor @NoArgsConstructor
 public class EstadoCapacitacionRequest {
 
+    @NotNull
     private Long id;
-    private CapacitacionEstado  estadoProceso;
-    private CapacitacionSubEstado subestadoProceso;
+    @NotNull
+    private EventoPostulanteRequest evento;
 }

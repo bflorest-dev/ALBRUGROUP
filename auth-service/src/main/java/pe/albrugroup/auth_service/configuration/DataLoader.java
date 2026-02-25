@@ -12,6 +12,7 @@ import pe.albrugroup.auth_service.repository.PermisoRepository;
 import pe.albrugroup.auth_service.repository.RolRepository;
 import pe.albrugroup.auth_service.repository.UsuarioRepository;
 
+import java.util.HashSet;
 import java.util.Set;
 
 @Component @Slf4j
@@ -81,6 +82,10 @@ public class DataLoader {
     private void crearRoles() {
         log.info("🚀 Creando Roles...");
 
+        // ADMINISTRADOR
+        Set<Permiso> adminPermisos = new HashSet<>(permisoRepository.findAll());
+        saveRol("ADMINISTRADOR", "Gestion completa de Administracion", adminPermisos);
+
         // RRHH
         Set<Permiso> rrhhPermisos = Set.of(
                 getPermiso("CREATE_POSTULANTES"),
@@ -138,26 +143,26 @@ public class DataLoader {
     private void crearUsuariosIniciales() {
         log.info("🚀 Creando Usuarios...");
 
-        log.info("Creando Usuario RRHH INICIAL");
-        Rol rrhhRol = rolRepository.findByNombre("RRHH")
-                        .orElseThrow(() -> new RuntimeException("Rol RRHH no encontrado"));
-        Usuario rrhhUsuario = Usuario.builder()
+        log.info("Creando Usuario ADMINISTRADOR INICIAL");
+        Rol adminRol = rolRepository.findByNombre("ADMINISTRADOR")
+                        .orElseThrow(() -> new RuntimeException("Rol ADMINISTRADOR no encontrado"));
+        Usuario adminUsuario = Usuario.builder()
                 .username("J75413802B@albru.recruiter.pe")
                 .password(passwordEncoder.encode("123456"))
                 .email("jevbxx@gmail.com")
                 .empleadoId(1L)
                 .activo(true)
-                .roles(Set.of(rrhhRol))
+                .roles(Set.of(adminRol))
                 .build();
-        usuarioRepository.save(rrhhUsuario);
+        usuarioRepository.save(adminUsuario);
 
         log.info("══════════════════════════════════════════════════════");
-        log.info("✓ Usuario RRHH creado:");
+        log.info("✓ Usuario ADMINISTRADOR creado:");
         log.info("  Username: J75413802B@albru.recruiter.pe");
         log.info("  Password: 123456");
         log.info("  Email: jevbxx@gmail.com");
         log.info("  EmpleadoId: 1");
-        log.info("  Roles: [RRHH]");
+        log.info("  Roles: [ADMINISTRADOR]");
         log.info("═══════════════════════════════════════════════════════");
 
         log.info("✅ Usuarios Creados");

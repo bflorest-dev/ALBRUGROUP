@@ -25,6 +25,13 @@ public class PostulanteEventoService {
     public PostulanteEventoResponse registrarEventoCreacionPostulante(Postulante postulante, Long responsableId,
                                                                       RegistrarEventoPostulanteRequest request)
     {
+        return registrarEventoPostulante(postulante, responsableId, request);
+    }
+
+    @Transactional
+    public PostulanteEventoResponse registrarEventoPostulante(Postulante postulante, Long responsableId,
+                                                              RegistrarEventoPostulanteRequest request)
+    {
         Empleado responsable = empleadoRepository.findById(responsableId)
                 .orElseThrow(() -> new EmpleadoNotFoundException(responsableId));
 

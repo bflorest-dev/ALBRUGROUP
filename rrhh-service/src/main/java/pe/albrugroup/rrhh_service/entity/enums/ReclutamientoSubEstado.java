@@ -2,6 +2,7 @@ package pe.albrugroup.rrhh_service.entity.enums;
 
 public enum ReclutamientoSubEstado {
     NO_DESEA_PUESTO,
+    NO_ASISTIO_MEET,
     POCA_FLUIDEZ_VERBAL,
     SIN_HABILIDADES_COMERCIALES,
     INEXPERIENCIA,

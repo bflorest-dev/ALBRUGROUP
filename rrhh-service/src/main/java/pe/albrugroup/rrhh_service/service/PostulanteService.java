@@ -3,16 +3,18 @@ package pe.albrugroup.rrhh_service.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import pe.albrugroup.rrhh_service.configuration.CurrentUser;
 import pe.albrugroup.rrhh_service.entity.Empleado;
 import pe.albrugroup.rrhh_service.entity.Postulante;
 import pe.albrugroup.rrhh_service.entity.enums.*;
 import pe.albrugroup.rrhh_service.entity.request.postulante.EstadoCapacitacionRequest;
-import pe.albrugroup.rrhh_service.entity.request.postulante.EstadoReclutamientoRequest;
+import pe.albrugroup.rrhh_service.entity.request.postulante.EventoPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.request.postulante.RegistrarEventoPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.request.postulante.RegistrarPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.response.PostulanteResponse;
 import pe.albrugroup.rrhh_service.exception.EmpleadoListaNegraException;
+import pe.albrugroup.rrhh_service.exception.PostulanteNotFoundException;
 import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
 import pe.albrugroup.rrhh_service.repository.PostulanteRepository;
 import pe.albrugroup.rrhh_service.service.mapper.EmpleadoMapper;
@@ -23,7 +25,12 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service @Transactional
 @RequiredArgsConstructor
@@ -79,14 +86,73 @@ public class PostulanteService implements IPostulante {
     }
 
     @Override
-    public PostulanteResponse actualizarEstadoReclutamiento(EstadoReclutamientoRequest estado) {
+    public PostulanteResponse actualizarEstadoReclutamiento(Long idPostulante, EventoPostulanteRequest evento) {
+        Postulante postulante = postulanteRepository.findById(idPostulante)
+                .orElseThrow(() -> new PostulanteNotFoundException(idPostulante));
 
-        return null;
+        RegistrarEventoPostulanteRequest eventoRequest = toRegistrarEvento(EtapaProceso.RECLUTAMIENTO, evento);
+        eventoService.registrarEventoPostulante(postulante, currentUser.empleadoID(), eventoRequest);
+
+        postulante.setEtapaProceso(EtapaProceso.RECLUTAMIENTO);
+        postulante.setEstadoProceso(evento.getEstado());
+        postulante.setSubestadoProceso(evento.getSubestado());
+
+        postulanteRepository.save(postulante);
+        return postulanteMapper.toResponse(postulante);
     }
 
     @Override
     public List<PostulanteResponse> actualizarEstadosCapacitacion(List<EstadoCapacitacionRequest> postulantesEstados) {
-        return List.of();
+        if (postulantesEstados == null || postulantesEstados.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, EstadoCapacitacionRequest> requestsById = new HashMap<>();
+        for (EstadoCapacitacionRequest request : postulantesEstados) {
+            if (requestsById.putIfAbsent(request.getId(), request) != null) {
+                throw new ResponseStatusException(
+                        org.springframework.http.HttpStatus.BAD_REQUEST,
+                        "IDs duplicados en la solicitud"
+                );
+            }
+        }
+
+        Set<Long> ids = requestsById.keySet();
+        List<Postulante> postulantes = postulanteRepository.findAllByIdInWithEmpleado(ids);
+        if (postulantes.size() != ids.size()) {
+            Set<Long> encontrados = postulantes.stream().map(Postulante::getId).collect(Collectors.toSet());
+            Set<Long> faltantes = new HashSet<>(ids);
+            faltantes.removeAll(encontrados);
+            Long primeroFaltante = faltantes.iterator().next();
+            throw new PostulanteNotFoundException(primeroFaltante);
+        }
+
+        for (Postulante postulante : postulantes) {
+            EstadoCapacitacionRequest request = requestsById.get(postulante.getId());
+            EventoPostulanteRequest evento = request.getEvento();
+            RegistrarEventoPostulanteRequest eventoRequest = toRegistrarEvento(EtapaProceso.CAPACITACION, evento);
+            eventoService.registrarEventoPostulante(postulante, currentUser.empleadoID(), eventoRequest);
+
+            postulante.setEtapaProceso(EtapaProceso.CAPACITACION);
+            postulante.setEstadoProceso(evento.getEstado());
+            postulante.setSubestadoProceso(evento.getSubestado());
+        }
+
+        postulanteRepository.saveAll(postulantes);
+        return postulantes.stream().map(postulanteMapper::toResponse).toList();
+    }
+
+    private RegistrarEventoPostulanteRequest toRegistrarEvento(EtapaProceso etapa, EventoPostulanteRequest evento) {
+        return RegistrarEventoPostulanteRequest.builder()
+                .etapaProceso(etapa)
+                .evento(evento.getEvento())
+                .estado(evento.getEstado())
+                .subestado(evento.getSubestado())
+                .fechaEvento(evento.getFechaEvento())
+                .inicioCapa(evento.getInicioCapa())
+                .finCapa(evento.getFinCapa())
+                .pagoDiaCapa(evento.getPagoDiaCapa())
+                .build();
     }
 
 //
