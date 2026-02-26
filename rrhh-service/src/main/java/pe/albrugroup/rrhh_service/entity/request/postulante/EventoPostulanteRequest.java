@@ -1,5 +1,6 @@
 package pe.albrugroup.rrhh_service.entity.request.postulante;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import pe.albrugroup.rrhh_service.entity.enums.EventoPostulante;
@@ -13,7 +14,7 @@ import java.time.LocalDate;
 public class EventoPostulanteRequest {
 
     @NotNull private EventoPostulante evento;
-    @NonNull private String estado;
+    @NotBlank private String estado;
     private String subestado;
     // OPCIONALES
     private Instant fechaEvento;
