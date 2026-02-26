@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -12,8 +13,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.auth_service.entity.Response.LoginResponse;
+import pe.albrugroup.auth_service.entity.Response.CredencialesResponse;
 import pe.albrugroup.auth_service.entity.Response.UsuarioResponse;
 import pe.albrugroup.auth_service.entity.enums.PuestoTrabajo;
+import pe.albrugroup.auth_service.entity.request.ActualizarCredencialesRequest;
 import pe.albrugroup.auth_service.entity.request.LoginRequest;
 import pe.albrugroup.auth_service.entity.request.RegistrarUsuarioRequest;
 import pe.albrugroup.auth_service.security.CustomUserDetails;
@@ -61,12 +64,19 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/registro")
+    @PostMapping("/registro") @PreAuthorize("hasAnyRole('ADMINISTRADOR','RRHH')")
     public ResponseEntity<UsuarioResponse> registrarUsuario(@RequestBody RegistrarUsuarioRequest request) {
         log.info("Solicitud de registro para usuario: {}", request.getDni());
         var usuario = usuarioService.registrarUsuario(request);
         log.info("Usuario registrado exitosamente: {}", usuario.getUsername());
         return ResponseEntity.status(HttpStatus.CREATED).body(usuario);
+    }
+    @PostMapping("/registro-credenciales") @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<CredencialesResponse> registrarUsuarioConCredenciales(@RequestBody RegistrarUsuarioRequest request) {
+        log.info("Solicitud de registro con credenciales para usuario: {}", request.getDni());
+        var credenciales = usuarioService.registrarUsuarioConCredenciales(request);
+        log.info("Usuario registrado con credenciales: {}", credenciales.getUsername());
+        return ResponseEntity.status(HttpStatus.CREATED).body(credenciales);
     }
     @PatchMapping("{empleadoId}/roles")
     public ResponseEntity<UsuarioResponse> actualizarRoles(@PathVariable @Positive Long empleadoId,
@@ -76,13 +86,28 @@ public class AuthController {
         log.info("Usuario actualizado exitosamente: {}", usuario.getUsername());
         return ResponseEntity.ok(usuario);
     }
-    @GetMapping("/{empleadoId}/empleado")
+    @PatchMapping("{empleadoId}/username-roles") @PreAuthorize("hasAnyRole('ADMINISTRADOR','RRHH')")
+    public ResponseEntity<UsuarioResponse> actualizarUsernameRoles(@PathVariable @Positive Long empleadoId,
+                                                                   @RequestBody ActualizarCredencialesRequest request) {
+        log.info("Actualizando username/roles para usuario: {}", empleadoId);
+        var usuario = usuarioService.actualizarUsernameRoles(empleadoId, request);
+        log.info("Usuario actualizado exitosamente: {}", usuario.getUsername());
+        return ResponseEntity.ok(usuario);
+    }
+    @PostMapping("{empleadoId}/reset-password") @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<CredencialesResponse> resetPassword(@PathVariable @Positive Long empleadoId) {
+        log.info("Reseteando password para usuario: {}", empleadoId);
+        var credenciales = usuarioService.resetPassword(empleadoId);
+        log.info("Password reseteado para usuario: {}", credenciales.getUsername());
+        return ResponseEntity.ok(credenciales);
+    }
+    @GetMapping("/{empleadoId}/empleado") @PreAuthorize("hasAnyRole('ADMINISTRADOR','RRHH')")
     public ResponseEntity<UsuarioResponse> getUsuarioPorEmpleadoID(@PathVariable @Positive Long empleadoId) {
         log.info("Buscando usuario por empleadoID: {}", empleadoId);
         var usuario = usuarioService.getUsuarioPorEmpleadoID(empleadoId);
         return ResponseEntity.ok(usuario);
     }
-    @DeleteMapping("{empleadoId}/deshabilitar")
+    @DeleteMapping("{empleadoId}/deshabilitar") @PreAuthorize("hasAnyRole('ADMINISTRADOR','RRHH')")
     public ResponseEntity<Void> deshabilitarUsuario(@PathVariable @Positive Long empleadoId) {
         log.info("Desactivando usuario ID: {}", empleadoId);
         usuarioService.deshabilitarUsuario(empleadoId);

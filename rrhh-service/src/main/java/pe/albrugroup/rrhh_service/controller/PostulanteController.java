@@ -63,6 +63,23 @@ public class PostulanteController {
         );
         return ResponseEntity.ok(postulantes);
     }
+
+    @GetMapping @PreAuthorize("hasAuthority('READ_POSTULANTES') or hasAuthority('READ_RECLUTADOS')")
+    public ResponseEntity<List<PostulanteResponse>> listarPostulantesPorEtapa(
+            @RequestParam EtapaProceso etapa,
+            @RequestParam(required = false) String estado,
+            @RequestParam(required = false) String subestado,
+            @RequestParam(required = false) Origen origen,
+            @RequestParam(required = false) PuestoTrabajo puesto,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            @RequestParam(required = false) Boolean listaNegra
+    ) {
+        var postulantes = postulanteService.getPostulantesFiltrados(
+                etapa, estado, subestado, origen, puesto, desde, hasta, listaNegra
+        );
+        return ResponseEntity.ok(postulantes);
+    }
     @PatchMapping("/{id}/estado-reclutamiento") @PreAuthorize("hasAuthority('TYPIFY_POSTULANTES')")
     public ResponseEntity<PostulanteResponse> actualizarEstadoReclutamiento(@RequestBody EventoPostulanteRequest request,
                                                                             @PathVariable @Positive Long id) {
@@ -74,13 +91,4 @@ public class PostulanteController {
         var postulantes = postulanteService.actualizarEstadosCapacitacion(request);
         return ResponseEntity.ok(postulantes);
     }
-
-
-// TODO
-//    @PatchMapping("/{id}")
-//    public ResponseEntity<PostulanteResponse> actualizarDatosPostulacion(@RequestBody DatosPostulanteRequest request,
-//                                                                         @PathVariable @Positive Long id) {
-//        var postulante = postulanteService.actulizarPostulante(id, request);
-//        return ResponseEntity.ok(postulante);
-//    }
 }

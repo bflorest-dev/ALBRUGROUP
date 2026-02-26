@@ -5,10 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.albrugroup.auth_service.entity.Response.CredencialesResponse;
 import pe.albrugroup.auth_service.entity.Response.UsuarioResponse;
 import pe.albrugroup.auth_service.entity.Rol;
 import pe.albrugroup.auth_service.entity.Usuario;
 import pe.albrugroup.auth_service.entity.enums.PuestoTrabajo;
+import pe.albrugroup.auth_service.entity.request.ActualizarCredencialesRequest;
 import pe.albrugroup.auth_service.entity.request.RegistrarUsuarioRequest;
 import pe.albrugroup.auth_service.mapper.Mapper;
 import pe.albrugroup.auth_service.repository.RolRepository;
@@ -30,28 +32,83 @@ public class UsuarioService implements IUsuario {
 
     @Override
     public UsuarioResponse registrarUsuario(RegistrarUsuarioRequest request) {
+        RegistroUsuarioResult result = registrarUsuarioInternal(request);
+        return Mapper.toResponse(result.usuario());
+    }
+
+    @Override
+    public CredencialesResponse registrarUsuarioConCredenciales(RegistrarUsuarioRequest request) {
+        RegistroUsuarioResult result = registrarUsuarioInternal(request);
+        return CredencialesResponse.builder()
+                .username(result.usuario().getUsername())
+                .password(result.plainPassword())
+                .build();
+    }
+
+    @Override
+    public UsuarioResponse actualizarUsernameRoles(Long empleadoId, ActualizarCredencialesRequest request) {
+        Usuario usuario = usuarioRepository.findByEmpleadoId(empleadoId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado por EmpleadoID: " + empleadoId));
+
+        PuestoTrabajo puestoTrabajo = request.getPuestoTrabajo();
+        Rol rol = rolRepository.findByNombre(puestoTrabajo.name())
+                .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + puestoTrabajo.name()));
+
+        String nuevoUsername = usernameGenerator(
+                request.getNombres(),
+                request.getApellidos(),
+                request.getDni(),
+                puestoTrabajo
+        );
+
+        if (usuarioRepository.existsByUsername(nuevoUsername)
+                && !nuevoUsername.equalsIgnoreCase(usuario.getUsername())) {
+            throw new RuntimeException("El username ya existe: " + nuevoUsername);
+        }
+
+        usuario.setUsername(nuevoUsername);
+        usuario.setRoles(Set.of(rol));
+        Usuario guardado = usuarioRepository.save(usuario);
+        return Mapper.toResponse(guardado);
+    }
+
+    @Override
+    public CredencialesResponse resetPassword(Long empleadoId) {
+        Usuario usuario = usuarioRepository.findByEmpleadoId(empleadoId)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado por EmpleadoID: " + empleadoId));
+        String plainPassword = passwordGenerator();
+        usuario.setPassword(passwordEncoder.encode(plainPassword));
+        Usuario guardado = usuarioRepository.save(usuario);
+        return CredencialesResponse.builder()
+                .username(guardado.getUsername())
+                .password(plainPassword)
+                .build();
+    }
+
+    private RegistroUsuarioResult registrarUsuarioInternal(RegistrarUsuarioRequest request) {
         log.info("Registrando nuevo usuario: DNI[{}]", request.getDni());
 
         if(usuarioRepository.existsByEmail(request.getEmail())) {
             log.error("El email ya existe: {}", request.getEmail());
-            throw new RuntimeException("❌ El email ya existe: " +  request.getEmail());
+            throw new RuntimeException("âŒ El email ya existe: " +  request.getEmail());
         }
 
         PuestoTrabajo puestoTrabajo = request.getPuestoTrabajo();
         Rol rol = rolRepository.findByNombre(puestoTrabajo.name())
                 .orElseThrow(() -> {
                     log.error("El rol no existe: {}", puestoTrabajo.name());
-                    return new RuntimeException("❌ El rol no existe: " + puestoTrabajo.name());
+                    return new RuntimeException("âŒ El rol no existe: " + puestoTrabajo.name());
                 });
         log.info("Rol asignado: {}", rol.getNombre());
 
+        String plainPassword = passwordGenerator();
         Usuario usuario = Usuario.builder()
                 .username(usernameGenerator(
                         request.getNombres(),
                         request.getApellidos(),
                         request.getDni(),
                         puestoTrabajo))
-                .password(passwordEncoder.encode(passwordGenerator()))
+                .password(passwordEncoder.encode(plainPassword))
                 .email(request.getEmail())
                 .empleadoId(request.getEmpleadoId())
                 .activo(true)
@@ -62,8 +119,9 @@ public class UsuarioService implements IUsuario {
         log.info("Usuario registrado: {} (ID: {})", guardado.getUsername(), guardado.getId());
         log.info("Rol asignado: {}", rol.getNombre());
 
-        return Mapper.toResponse(guardado);
+        return new RegistroUsuarioResult(guardado, plainPassword);
     }
+
     private String usernameGenerator(String nombres, String apellidos, String dni, PuestoTrabajo puesto) {
         String first = nombres.substring(0, 1).toUpperCase();
         String last = apellidos.substring(0, 1).toUpperCase();
@@ -114,4 +172,6 @@ public class UsuarioService implements IUsuario {
 
         log.info("Usuario deshabilitado: {}", usuario.getUsername());
     }
+
+    private record RegistroUsuarioResult(Usuario usuario, String plainPassword) {}
 }

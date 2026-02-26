@@ -1,6 +1,8 @@
 package pe.albrugroup.rrhh_service.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.rrhh_service.entity.Contrato;
@@ -8,8 +10,13 @@ import pe.albrugroup.rrhh_service.entity.Empleado;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.RegistrarContratoRequest;
+import pe.albrugroup.rrhh_service.entity.response.ContratoRegistroResponse;
 import pe.albrugroup.rrhh_service.entity.response.ContratoResponse;
+import pe.albrugroup.rrhh_service.entity.response.CredencialesResponse;
 import pe.albrugroup.rrhh_service.exception.*;
+import pe.albrugroup.rrhh_service.integration.auth.AuthServiceClient;
+import pe.albrugroup.rrhh_service.integration.auth.dto.ActualizarCredencialesRequest;
+import pe.albrugroup.rrhh_service.integration.auth.dto.RegistrarUsuarioRequest;
 import pe.albrugroup.rrhh_service.service.mapper.ContratoMapper;
 import pe.albrugroup.rrhh_service.repository.ContratoRepository;
 import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
@@ -28,6 +35,7 @@ public class ContratoService implements IContrato {
     private final ContratoRepository contratoRepository;
     private final EmpleadoRepository empleadoRepository;
     private final ContratoMapper mapper;
+    private final AuthServiceClient authServiceClient;
 
     @Transactional(readOnly = true) @Override
     public List<ContratoResponse> listarContratosEmpleado(Long idEmpleado) {
@@ -43,7 +51,7 @@ public class ContratoService implements IContrato {
         return mapper.toResponse(contrato);
     }
     @Override @Transactional
-    public ContratoResponse registrarContrato(Long idEmpleado, RegistrarContratoRequest nuevoContrato) {
+    public ContratoRegistroResponse registrarContrato(Long idEmpleado, RegistrarContratoRequest nuevoContrato, String authHeader) {
         Empleado empleado = empleadoRepository.findById(idEmpleado)
                 .orElseThrow(() -> new EmpleadoNotFoundException(idEmpleado));
         validarDatosCompletosEmpleado(empleado);
@@ -59,7 +67,14 @@ public class ContratoService implements IContrato {
         empleado.setEstadoOperativo(EstadoOperativo.ACTIVO);
         Contrato contrato = mapper.toEntity(nuevoContrato);
         contrato.setEmpleado(empleado);
-        return mapper.toResponse(contratoRepository.save(contrato));
+
+        ContratoResponse contratoResponse = mapper.toResponse(contratoRepository.save(contrato));
+        CredencialesResponse credenciales = registrarUsuarioAuth(empleado, nuevoContrato, authHeader);
+
+        return ContratoRegistroResponse.builder()
+                .contrato(contratoResponse)
+                .credenciales(credenciales)
+                .build();
     }
 
     private void validarNoHayConflictosDeContrato(Long idEmpleado, LocalDate fechaInicio, LocalDate fechaFin) {
@@ -107,7 +122,7 @@ public class ContratoService implements IContrato {
     }
 
     @Override
-    public ContratoResponse finalizarContrato(Long idEmpleado, CerrarContratoRequest contratoCerrado) {
+    public ContratoResponse finalizarContrato(Long idEmpleado, CerrarContratoRequest contratoCerrado, String authHeader) {
         LocalDate fechaFin = contratoCerrado.getFechaFin();
         Contrato contrato = contratoRepository.findContratoVigenteByEmpleadoId(idEmpleado, fechaFin)
                 .orElseThrow(() -> new ContratoActivoNotFoundException(idEmpleado));
@@ -115,16 +130,77 @@ public class ContratoService implements IContrato {
 
         Empleado empleado = contrato.getEmpleado();
         empleado.setEstadoOperativo(EstadoOperativo.INACTIVO);
+        if (authHeader == null || authHeader.isBlank()) {
+            throw new AuthServiceException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Falta Authorization para deshabilitar usuario",
+                    null
+            );
+        }
+        authServiceClient.deshabilitarUsuario(authHeader, empleado.getId());
         return mapper.toResponse(contrato);
     }
 
     @Override
     public void registrarContratos(List<Long> idEmpleados,
-                                   List<RegistrarContratoRequest> nuevosContratosVigentes) {
+                                   List<RegistrarContratoRequest> nuevosContratosVigentes,
+                                   String authHeader) {
         IntStream.range(0, idEmpleados.size())
                 .forEach(i -> registrarContrato(
                         idEmpleados.get(i),
-                        nuevosContratosVigentes.get(i)
+                        nuevosContratosVigentes.get(i),
+                        authHeader
                 ));
+    }
+
+    private CredencialesResponse registrarUsuarioAuth(Empleado empleado,
+                                                      RegistrarContratoRequest nuevoContrato,
+                                                      String authHeader) {
+        String email = (empleado.getCorreoCorporativo() != null && !empleado.getCorreoCorporativo().isBlank())
+                ? empleado.getCorreoCorporativo()
+                : empleado.getCorreoPersonal();
+
+        RegistrarUsuarioRequest request = RegistrarUsuarioRequest.builder()
+                .empleadoId(empleado.getId())
+                .nombres(empleado.getNombres())
+                .apellidos(empleado.getApellidos())
+                .dni(empleado.getNumeroDocumento())
+                .email(email)
+                .puestoTrabajo(nuevoContrato.getPuestoTrabajo())
+                .build();
+
+        if (authHeader == null || authHeader.isBlank()) {
+            throw new AuthServiceException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Falta Authorization para registrar usuario",
+                    null
+            );
+        }
+
+        boolean existeUsuario = authServiceClient.getUsuarioPorEmpleadoId(authHeader, empleado.getId()) != null;
+        if (existeUsuario) {
+            ActualizarCredencialesRequest updateRequest = ActualizarCredencialesRequest.builder()
+                    .nombres(empleado.getNombres())
+                    .apellidos(empleado.getApellidos())
+                    .dni(empleado.getNumeroDocumento())
+                    .puestoTrabajo(nuevoContrato.getPuestoTrabajo())
+                    .build();
+            authServiceClient.actualizarUsernameRoles(authHeader, empleado.getId(), updateRequest);
+            return null;
+        }
+
+        if (esAdministrador()) {
+            return authServiceClient.registrarUsuarioConCredenciales(authHeader, request);
+        }
+
+        authServiceClient.registrarUsuario(authHeader, request);
+        return null;
+    }
+
+    private boolean esAdministrador() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) return false;
+        return auth.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_ADMINISTRADOR".equals(a.getAuthority()));
     }
 }

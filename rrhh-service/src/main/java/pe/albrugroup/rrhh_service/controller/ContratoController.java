@@ -12,6 +12,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.RegistrarContratoRequest;
+import pe.albrugroup.rrhh_service.entity.response.ContratoRegistroResponse;
 import pe.albrugroup.rrhh_service.entity.response.ContratoResponse;
 import pe.albrugroup.rrhh_service.usecase.IContrato;
 
@@ -45,10 +46,11 @@ public class ContratoController {
             description = "Registra un nuevo contrato para el empleado. Si existe un contrato vigente, se ajusta su fecha fin " +
                     "para evitar solapamientos.")
     @PostMapping("/{id}/registrar") @PreAuthorize("hasAuthority('CREATE_CONTRATOS')")
-    public ResponseEntity<ContratoResponse> registrarContrato(@RequestBody RegistrarContratoRequest request,
+    public ResponseEntity<ContratoRegistroResponse> registrarContrato(@RequestBody RegistrarContratoRequest request,
                                               @Parameter(description = "ID del empleado", example = "10")
-                                                              @PathVariable @Positive Long id) {
-        var contrato = contratoService.registrarContrato(id, request);
+                                                              @PathVariable @Positive Long id,
+                                              @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        var contrato = contratoService.registrarContrato(id, request, authHeader);
         return ResponseEntity.status(HttpStatus.CREATED).body(contrato);
     }
     @Operation(summary = "Finalizar contrato",
@@ -56,8 +58,9 @@ public class ContratoController {
     @PatchMapping("/{id}/cesar-contrato") @PreAuthorize("hasAuthority('CANCEL_CONTRATOS')")
     public ResponseEntity<ContratoResponse> finalizarContrato(@RequestBody CerrarContratoRequest request,
                                                            @Parameter(description = "ID del empleado", example = "10")
-                                                           @PathVariable @Positive Long id) {
-        var contrato = contratoService.finalizarContrato(id, request);
+                                                           @PathVariable @Positive Long id,
+                                                           @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        var contrato = contratoService.finalizarContrato(id, request, authHeader);
         return ResponseEntity.ok(contrato);
     }
 }
