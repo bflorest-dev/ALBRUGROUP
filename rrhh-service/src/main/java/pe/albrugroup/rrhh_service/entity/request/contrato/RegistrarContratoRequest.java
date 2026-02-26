@@ -15,8 +15,8 @@ public class RegistrarContratoRequest {
     @NotNull private PuestoTrabajo puestoTrabajo;
     @NotNull private Regimen regimen;
     @NotNull private Modalidad modalidad;
-    @NotNull private SeguroSalud seguroSalud;
-    @NotNull private SistemaPensiones sistemaPensiones;
+    private SeguroSalud seguroSalud;
+    private SistemaPensiones sistemaPensiones;
     @NotNull @DecimalMin(value = "0.00", inclusive = false)
     @Digits(integer = 10, fraction = 2)
     private BigDecimal sueldoBase;
