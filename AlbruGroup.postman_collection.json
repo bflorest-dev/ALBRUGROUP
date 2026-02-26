@@ -12,21 +12,6 @@
         {
           "name": "Login",
           "request": {
-            "auth": {
-              "type": "basic",
-              "basic": [
-                {
-                  "key": "password",
-                  "value": "auth-secret",
-                  "type": "string"
-                },
-                {
-                  "key": "username",
-                  "value": "auth-client",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "POST",
             "header": [],
             "body": {
@@ -39,7 +24,7 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/auth/autorizacion/login",
+              "raw": "{{baseUrl}}/auth/autorizacion/login",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -52,7 +37,19 @@
               ]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set(\"token\", json.token);"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Usuario",
@@ -65,7 +62,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "eyJhbGciOiJIUzI1NiJ9.eyJlbXBsZWFkb0lkIjoxLCJyb2xlcyI6WyJSUkhIIl0sInBlcm1pc29zIjpbIkNSRUFURV9QT1NUVUxBTlRFIiwiREVMRVRFX0VNUExFQURPUyIsIkJMQUNLTElTVF9QT1NUVUxBTlRFIiwiUkVBRF9QT1NUVUxBTlRFIiwiVVBEQVRFX1BPU1RVTEFOVEUiLCJSRUFEX0VNUExFQURPUyIsIlVQREFURV9FTVBMRUFET1MiLCJDUkVBVEVfRU1QTEVBRE9TIl0sInVzZXJuYW1lIjoiSjc1NDEzODAyQkBhbGJydS5yZWNydWl0ZXIucGUiLCJzdWIiOiJKNzU0MTM4MDJCQGFsYnJ1LnJlY3J1aXRlci5wZSIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODA4MSIsImlhdCI6MTc3MTgzODEwMiwiZXhwIjoxNzcxODQ1MzAyfQ.IILjBC-6FWgvRC4ACXJDtskC6OAbKEMgtslFwMks08o",
+                  "value": "{{token}}",
                   "type": "string"
                 }
               ]
@@ -77,7 +74,7 @@
               "raw": "{\r\n  \"username\": \"J75413802B@albru.recruiter.pe\",\r\n  \"password\": \"123456\"\r\n}"
             },
             "url": {
-              "raw": "http://localhost:8080/auth/autorizacion/1/empleado",
+              "raw": "{{baseUrl}}/auth/autorizacion/1/empleado",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -104,7 +101,7 @@
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/auth/autorizacion/login",
+              "raw": "{{baseUrl}}/auth/autorizacion/login",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -126,7 +123,19 @@
               }
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set(\"token\", json.token);"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Registrar Usuario",
@@ -134,7 +143,7 @@
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/auth/autorizacion/registro",
+              "raw": "{{baseUrl}}/auth/autorizacion/registro",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -151,7 +160,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "PASTE_TOKEN",
+                  "value": "{{token}}",
                   "type": "string"
                 }
               ]
@@ -174,7 +183,7 @@
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/auth/autorizacion/registro-credenciales",
+              "raw": "{{baseUrl}}/auth/autorizacion/registro-credenciales",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -191,7 +200,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "PASTE_TOKEN",
+                  "value": "{{token}}",
                   "type": "string"
                 }
               ]
@@ -214,7 +223,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/auth/autorizacion/1/empleado",
+              "raw": "{{baseUrl}}/auth/autorizacion/1/empleado",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -232,7 +241,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "PASTE_TOKEN",
+                  "value": "{{token}}",
                   "type": "string"
                 }
               ]
@@ -246,7 +255,7 @@
             "method": "PATCH",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/auth/autorizacion/1/roles",
+              "raw": "{{baseUrl}}/auth/autorizacion/1/roles",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -264,7 +273,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "PASTE_TOKEN",
+                  "value": "{{token}}",
                   "type": "string"
                 }
               ]
@@ -287,7 +296,7 @@
             "method": "PATCH",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/auth/autorizacion/1/username-roles",
+              "raw": "{{baseUrl}}/auth/autorizacion/1/username-roles",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -305,7 +314,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "PASTE_TOKEN",
+                  "value": "{{token}}",
                   "type": "string"
                 }
               ]
@@ -328,7 +337,7 @@
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/auth/autorizacion/1/reset-password",
+              "raw": "{{baseUrl}}/auth/autorizacion/1/reset-password",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -346,7 +355,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "PASTE_TOKEN",
+                  "value": "{{token}}",
                   "type": "string"
                 }
               ]
@@ -360,7 +369,7 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/auth/autorizacion/1/deshabilitar",
+              "raw": "{{baseUrl}}/auth/autorizacion/1/deshabilitar",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -378,7 +387,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "PASTE_TOKEN",
+                  "value": "{{token}}",
                   "type": "string"
                 }
               ]
@@ -409,7 +418,7 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8080/empleados",
+                  "raw": "{{baseUrl}}/empleados",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -424,7 +433,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "PASTE_TOKEN",
+                      "value": "{{token}}",
                       "type": "string"
                     }
                   ]
@@ -438,7 +447,7 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:8080/empleados?estado=POSTULANTE&dni=75413802",
+                  "raw": "{{baseUrl}}/empleados?estado=POSTULANTE&dni=75413802",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -463,7 +472,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "PASTE_TOKEN",
+                      "value": "{{token}}",
                       "type": "string"
                     }
                   ]
@@ -477,7 +486,7 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:8080/empleados/75413802/numero-documento",
+                  "raw": "{{baseUrl}}/empleados/75413802/numero-documento",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -494,7 +503,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "PASTE_TOKEN",
+                      "value": "{{token}}",
                       "type": "string"
                     }
                   ]
@@ -517,7 +526,7 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8080/empleados/1/datos-personales",
+                  "raw": "{{baseUrl}}/empleados/1/datos-personales",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -534,7 +543,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "PASTE_TOKEN",
+                      "value": "{{token}}",
                       "type": "string"
                     }
                   ]
@@ -557,7 +566,7 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8080/empleados/1/datos-contacto-ubicacion",
+                  "raw": "{{baseUrl}}/empleados/1/datos-contacto-ubicacion",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -574,7 +583,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "PASTE_TOKEN",
+                      "value": "{{token}}",
                       "type": "string"
                     }
                   ]
@@ -597,7 +606,7 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8080/empleados/1/datos-financieros",
+                  "raw": "{{baseUrl}}/empleados/1/datos-financieros",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -614,7 +623,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "PASTE_TOKEN",
+                      "value": "{{token}}",
                       "type": "string"
                     }
                   ]
@@ -637,7 +646,7 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8080/empleados/1/datos-corporativos",
+                  "raw": "{{baseUrl}}/empleados/1/datos-corporativos",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -654,7 +663,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "PASTE_TOKEN",
+                      "value": "{{token}}",
                       "type": "string"
                     }
                   ]
@@ -670,7 +679,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "eyJhbGciOiJIUzI1NiJ9.eyJlbXBsZWFkb0lkIjoxLCJyb2xlcyI6WyJSUkhIIl0sInBlcm1pc29zIjpbIlJFQURfUE9TVFVMQU5URSIsIlJFQURfRU1QTEVBRE9TIiwiREVMRVRFX0VNUExFQURPUyIsIkJMQUNLTElTVF9QT1NUVUxBTlRFIiwiQ1JFQVRFX1BPU1RVTEFOVEUiLCJVUERBVEVfRU1QTEVBRE9TIiwiQ1JFQVRFX0VNUExFQURPUyIsIlVQREFURV9QT1NUVUxBTlRFIl0sInVzZXJuYW1lIjoiSjc1NDEzODAyQkBhbGJydS5yZWNydWl0ZXIucGUiLCJzdWIiOiJKNzU0MTM4MDJCQGFsYnJ1LnJlY3J1aXRlci5wZSIsImlzcyI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODA4MSIsImlhdCI6MTc3MTg0MDk2OCwiZXhwIjoxNzcxODQ4MTY4fQ.R3FNhJwLbrXWZkbysr1K1LrYcFiVZ_UUNwzly6vVF3U",
+                      "value": "{{token}}",
                       "type": "string"
                     }
                   ]
@@ -678,7 +687,7 @@
                 "method": "PATCH",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:8080/rrhh/empleados/1/lista-negra",
+                  "raw": "{{baseUrl}}/rrhh/empleados/1/lista-negra",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -714,7 +723,7 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8080/contratos/1/registrar",
+                  "raw": "{{baseUrl}}/contratos/1/registrar",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -731,7 +740,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "PASTE_TOKEN",
+                      "value": "{{token}}",
                       "type": "string"
                     }
                   ]
@@ -752,7 +761,7 @@
                   "raw": "{\r\n    \"nombres\": \"Pablo Ernesto\",\r\n    \"apellidos\": \"Mamani Quispe\",\r\n    \"tipoDocumento\": \"CE\",\r\n    \"numeroDocumento\": \"25413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"CASADO\",\r\n    \"tieneHijos\": false,\r\n    \"celularPersonal\": \"923763302\",\r\n    \"celularCorporativo\": \"943763301\",\r\n    \"correo\": \"pablo@gmail.com\",\r\n    \"distrito\": \"SAN_MARTÍN_DE_PORRES\",\r\n    \"direccion\": \"Fermin Tanguis 079\",\r\n    \"banco\": \"BCP\",\r\n    \"cuentaBancaria\": \"12344677890\",\r\n    \"cuentaInterbancaria\": \"09876543234343\"\r\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:8080/contratos/1/historico",
+                  "raw": "{{baseUrl}}/contratos/1/historico",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -769,7 +778,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "PASTE_TOKEN",
+                      "value": "{{token}}",
                       "type": "string"
                     }
                   ]
@@ -783,7 +792,7 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:8080/contratos/1/vigente",
+                  "raw": "{{baseUrl}}/contratos/1/vigente",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -800,7 +809,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "PASTE_TOKEN",
+                      "value": "{{token}}",
                       "type": "string"
                     }
                   ]
@@ -823,7 +832,7 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8080/contratos/1/cesar-contrato",
+                  "raw": "{{baseUrl}}/contratos/1/cesar-contrato",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -840,7 +849,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "PASTE_TOKEN",
+                      "value": "{{token}}",
                       "type": "string"
                     }
                   ]
@@ -866,7 +875,7 @@
                   "raw": "{\r\n    \"nombres\": \"Pablo Ernesto\",\r\n    \"apellidos\": \"Mamani Quispe\",\r\n    \"tipoDocumento\": \"CE\",\r\n    \"numeroDocumento\": \"25413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"CASADO\",\r\n    \"tieneHijos\": false,\r\n    \"celularPersonal\": \"923763302\",\r\n    \"celularCorporativo\": \"943763301\",\r\n    \"correo\": \"pablo@gmail.com\",\r\n    \"distrito\": \"SAN_MARTÍN_DE_PORRES\",\r\n    \"direccion\": \"Fermin Tanguis 079\",\r\n    \"banco\": \"BCP\",\r\n    \"cuentaBancaria\": \"12344677890\",\r\n    \"cuentaInterbancaria\": \"09876543234343\"\r\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:8080/pagos",
+                  "raw": "{{baseUrl}}/pagos",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -881,7 +890,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "PASTE_TOKEN",
+                      "value": "{{token}}",
                       "type": "string"
                     }
                   ]
@@ -904,7 +913,7 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8080/pagos/1/pagar-contrato",
+                  "raw": "{{baseUrl}}/pagos/1/pagar-contrato",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -921,7 +930,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "PASTE_TOKEN",
+                      "value": "{{token}}",
                       "type": "string"
                     }
                   ]
@@ -942,7 +951,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "eyJhbGciOiJIUzI1NiJ9.eyJlbXBsZWFkb0lkIjoxLCJyb2xlcyI6WyJBRE1JTklTVFJBRE9SIl0sInBlcm1pc29zIjpbIlJFQURfQ0FQQUNJVEFET1MiLCJUWVBJRllfUkVDTFVUQURPUyIsIlVQREFURV9QQUdPUyIsIlJFQURfUkVDTFVUQURPUyIsIlJFQURfRU1QTEVBRE9TIiwiUkVBRF9QT1NUVUxBTlRFUyIsIlJFQURfUEFHT1MiLCJCTEFDS0xJU1RfRU1QTEVBRE9TIiwiVFlQSUZZX1BPU1RVTEFOVEVTIiwiVVBEQVRFX1BPU1RVTEFOVEVTIiwiRVZBTFVBVEVfUE9TVFVMQU5URVNfQ0FQQUNJVEFDSU9OIiwiRVZBTFVBVEVfUE9TVFVMQU5URVNfUkVDTFVUQU1JRU5UTyIsIkNSRUFURV9QQUdPUyIsIkNBTkNFTF9DT05UUkFUT1MiLCJDUkVBVEVfUE9TVFVMQU5URVMiLCJDUkVBVEVfQ09OVFJBVE9TIiwiVVBEQVRFX0VNUExFQURPUyIsIkNSRUFURV9FTVBMRUFET1MiLCJVUERBVEVfQ09OVFJBVE9TIiwiUkVBRF9DT05UUkFUT1MiLCJSRUFEX0VWRU5UT1MiXSwidXNlcm5hbWUiOiJhZG1pbkBhbGJydS5hZG1pbi5wZSIsInN1YiI6ImFkbWluQGFsYnJ1LmFkbWluLnBlIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgxIiwiaWF0IjoxNzcyMDIyMjEwLCJleHAiOjE3NzIwMjk0MTB9.k8G1BarFC2Ef4r4NqLq1A4JcfF7lz3pEpu8vKkQ205w",
+                      "value": "{{token}}",
                       "type": "string"
                     }
                   ]
@@ -959,7 +968,7 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8080/rrhh/postulantes",
+                  "raw": "{{baseUrl}}/rrhh/postulantes",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -981,7 +990,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "eyJhbGciOiJIUzI1NiJ9.eyJlbXBsZWFkb0lkIjoxLCJyb2xlcyI6WyJBRE1JTklTVFJBRE9SIl0sInBlcm1pc29zIjpbIlJFQURfQ0FQQUNJVEFET1MiLCJUWVBJRllfUkVDTFVUQURPUyIsIlVQREFURV9QQUdPUyIsIlJFQURfUkVDTFVUQURPUyIsIlJFQURfRU1QTEVBRE9TIiwiUkVBRF9QT1NUVUxBTlRFUyIsIlJFQURfUEFHT1MiLCJCTEFDS0xJU1RfRU1QTEVBRE9TIiwiVFlQSUZZX1BPU1RVTEFOVEVTIiwiVVBEQVRFX1BPU1RVTEFOVEVTIiwiRVZBTFVBVEVfUE9TVFVMQU5URVNfQ0FQQUNJVEFDSU9OIiwiRVZBTFVBVEVfUE9TVFVMQU5URVNfUkVDTFVUQU1JRU5UTyIsIkNSRUFURV9QQUdPUyIsIkNBTkNFTF9DT05UUkFUT1MiLCJDUkVBVEVfUE9TVFVMQU5URVMiLCJDUkVBVEVfQ09OVFJBVE9TIiwiVVBEQVRFX0VNUExFQURPUyIsIkNSRUFURV9FTVBMRUFET1MiLCJVUERBVEVfQ09OVFJBVE9TIiwiUkVBRF9DT05UUkFUT1MiLCJSRUFEX0VWRU5UT1MiXSwidXNlcm5hbWUiOiJhZG1pbkBhbGJydS5hZG1pbi5wZSIsInN1YiI6ImFkbWluQGFsYnJ1LmFkbWluLnBlIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgxIiwiaWF0IjoxNzcyMDIyMjEwLCJleHAiOjE3NzIwMjk0MTB9.k8G1BarFC2Ef4r4NqLq1A4JcfF7lz3pEpu8vKkQ205w",
+                      "value": "{{token}}",
                       "type": "string"
                     }
                   ]
@@ -989,7 +998,7 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:8080/rrhh/postulantes/reclutamiento",
+                  "raw": "{{baseUrl}}/rrhh/postulantes/reclutamiento",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -1012,7 +1021,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "eyJhbGciOiJIUzI1NiJ9.eyJlbXBsZWFkb0lkIjoxLCJyb2xlcyI6WyJBRE1JTklTVFJBRE9SIl0sInBlcm1pc29zIjpbIkNSRUFURV9QQUdPUyIsIlJFQURfRU1QTEVBRE9TIiwiRVZBTFVBVEVfUE9TVFVMQU5URVNfQ0FQQUNJVEFDSU9OIiwiQkxBQ0tMSVNUX0VNUExFQURPUyIsIkNSRUFURV9QT1NUVUxBTlRFUyIsIlVQREFURV9DT05UUkFUT1MiLCJSRUFEX1BPU1RVTEFOVEVTIiwiQ1JFQVRFX0VNUExFQURPUyIsIlVQREFURV9FTVBMRUFET1MiLCJDUkVBVEVfQ09OVFJBVE9TIiwiRVZBTFVBVEVfUE9TVFVMQU5URVNfUkVDTFVUQU1JRU5UTyIsIlJFQURfQ09OVFJBVE9TIiwiQ0FOQ0VMX0NPTlRSQVRPUyIsIlVQREFURV9QT1NUVUxBTlRFUyIsIlRZUElGWV9SRUNMVVRBRE9TIiwiUkVBRF9FVkVOVE9TIiwiVVBEQVRFX1BBR09TIiwiUkVBRF9QQUdPUyIsIlJFQURfQ0FQQUNJVEFET1MiLCJSRUFEX1JFQ0xVVEFET1MiLCJUWVBJRllfUE9TVFVMQU5URVMiXSwidXNlcm5hbWUiOiJhZG1pbkBhbGJydS5hZG1pbi5wZSIsInN1YiI6ImFkbWluQGFsYnJ1LmFkbWluLnBlIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgxIiwiaWF0IjoxNzcyMDIyNTExLCJleHAiOjE3NzIwMjk3MTF9.QJ0S3tEYmaUNYI-YcrksMkUcWtON80PvAyMcuPJEl7U",
+                      "value": "{{token}}",
                       "type": "string"
                     }
                   ]
@@ -1020,7 +1029,7 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:8080/rrhh/postulantes/capacitacion",
+                  "raw": "{{baseUrl}}/rrhh/postulantes/capacitacion",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -1043,7 +1052,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "eyJhbGciOiJIUzI1NiJ9.eyJlbXBsZWFkb0lkIjoxLCJyb2xlcyI6WyJBRE1JTklTVFJBRE9SIl0sInBlcm1pc29zIjpbIkNSRUFURV9QQUdPUyIsIlJFQURfRU1QTEVBRE9TIiwiRVZBTFVBVEVfUE9TVFVMQU5URVNfQ0FQQUNJVEFDSU9OIiwiQkxBQ0tMSVNUX0VNUExFQURPUyIsIkNSRUFURV9QT1NUVUxBTlRFUyIsIlVQREFURV9DT05UUkFUT1MiLCJSRUFEX1BPU1RVTEFOVEVTIiwiQ1JFQVRFX0VNUExFQURPUyIsIlVQREFURV9FTVBMRUFET1MiLCJDUkVBVEVfQ09OVFJBVE9TIiwiRVZBTFVBVEVfUE9TVFVMQU5URVNfUkVDTFVUQU1JRU5UTyIsIlJFQURfQ09OVFJBVE9TIiwiQ0FOQ0VMX0NPTlRSQVRPUyIsIlVQREFURV9QT1NUVUxBTlRFUyIsIlRZUElGWV9SRUNMVVRBRE9TIiwiUkVBRF9FVkVOVE9TIiwiVVBEQVRFX1BBR09TIiwiUkVBRF9QQUdPUyIsIlJFQURfQ0FQQUNJVEFET1MiLCJSRUFEX1JFQ0xVVEFET1MiLCJUWVBJRllfUE9TVFVMQU5URVMiXSwidXNlcm5hbWUiOiJhZG1pbkBhbGJydS5hZG1pbi5wZSIsInN1YiI6ImFkbWluQGFsYnJ1LmFkbWluLnBlIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgxIiwiaWF0IjoxNzcyMDIyNTExLCJleHAiOjE3NzIwMjk3MTF9.QJ0S3tEYmaUNYI-YcrksMkUcWtON80PvAyMcuPJEl7U",
+                      "value": "{{token}}",
                       "type": "string"
                     }
                   ]
@@ -1060,7 +1069,7 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8080/rrhh/postulantes/1/estado-reclutamiento",
+                  "raw": "{{baseUrl}}/rrhh/postulantes/1/estado-reclutamiento",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -1084,7 +1093,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "eyJhbGciOiJIUzI1NiJ9.eyJlbXBsZWFkb0lkIjoxLCJyb2xlcyI6WyJBRE1JTklTVFJBRE9SIl0sInBlcm1pc29zIjpbIlJFQURfQ0FQQUNJVEFET1MiLCJUWVBJRllfUE9TVFVMQU5URVMiLCJVUERBVEVfUEFHT1MiLCJUWVBJRllfUkVDTFVUQURPUyIsIlJFQURfUE9TVFVMQU5URVMiLCJDUkVBVEVfRU1QTEVBRE9TIiwiUkVBRF9FTVBMRUFET1MiLCJDUkVBVEVfUEFHT1MiLCJVUERBVEVfUE9TVFVMQU5URVMiLCJFVkFMVUFURV9QT1NUVUxBTlRFU19SRUNMVVRBTUlFTlRPIiwiQ1JFQVRFX0NPTlRSQVRPUyIsIlVQREFURV9FTVBMRUFET1MiLCJCTEFDS0xJU1RfRU1QTEVBRE9TIiwiQ1JFQVRFX1BPU1RVTEFOVEVTIiwiQ0FOQ0VMX0NPTlRSQVRPUyIsIlJFQURfUkVDTFVUQURPUyIsIkVWQUxVQVRFX1BPU1RVTEFOVEVTX0NBUEFDSVRBQ0lPTiIsIlVQREFURV9DT05UUkFUT1MiXSwidXNlcm5hbWUiOiJKNzU0MTM4MDJCQGFsYnJ1LnJlY3J1aXRlci5wZSIsInN1YiI6Iko3NTQxMzgwMkJAYWxicnUucmVjcnVpdGVyLnBlIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgxIiwiaWF0IjoxNzcxOTc4NzA5LCJleHAiOjE3NzE5ODU5MDl9.MTKpijRML4Dw3uuUZf1IKtDtbZ2cQv1p9RLaTYwbelg",
+                      "value": "{{token}}",
                       "type": "string"
                     }
                   ]
@@ -1101,7 +1110,7 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8080/rrhh/postulantes/estado-capacitacion",
+                  "raw": "{{baseUrl}}/rrhh/postulantes/estado-capacitacion",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -1129,7 +1138,7 @@
                   "bearer": [
                     {
                       "key": "token",
-                      "value": "eyJhbGciOiJIUzI1NiJ9.eyJlbXBsZWFkb0lkIjoxLCJyb2xlcyI6WyJBRE1JTklTVFJBRE9SIl0sInBlcm1pc29zIjpbIlJFQURfUE9TVFVMQU5URVMiLCJSRUFEX1JFQ0xVVEFET1MiLCJCTEFDS0xJU1RfRU1QTEVBRE9TIiwiQ1JFQVRFX1BBR09TIiwiQ0FOQ0VMX0NPTlRSQVRPUyIsIkVWQUxVQVRFX1BPU1RVTEFOVEVTX1JFQ0xVVEFNSUVOVE8iLCJVUERBVEVfRU1QTEVBRE9TIiwiUkVBRF9DT05UUkFUT1MiLCJSRUFEX0VNUExFQURPUyIsIlJFQURfQ0FQQUNJVEFET1MiLCJVUERBVEVfUEFHT1MiLCJVUERBVEVfQ09OVFJBVE9TIiwiRVZBTFVBVEVfUE9TVFVMQU5URVNfQ0FQQUNJVEFDSU9OIiwiVVBEQVRFX1BPU1RVTEFOVEVTIiwiQ1JFQVRFX1BPU1RVTEFOVEVTIiwiQ1JFQVRFX0VNUExFQURPUyIsIlRZUElGWV9SRUNMVVRBRE9TIiwiQ1JFQVRFX0NPTlRSQVRPUyIsIlRZUElGWV9QT1NUVUxBTlRFUyIsIlJFQURfRVZFTlRPUyIsIlJFQURfUEFHT1MiXSwidXNlcm5hbWUiOiJhZG1pbkBhbGJydS5hZG1pbi5wZSIsInN1YiI6ImFkbWluQGFsYnJ1LmFkbWluLnBlIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4MDgxIiwiaWF0IjoxNzcyMDIxMjU0LCJleHAiOjE3NzIwMjg0NTR9.ps--PylpEbeUXkDIzuY-qZUquAWWC2vcrLAc-gQfogE",
+                      "value": "{{token}}",
                       "type": "string"
                     }
                   ]
@@ -1137,7 +1146,7 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:8080/rrhh/eventos/1/postulantes",
+                  "raw": "{{baseUrl}}/rrhh/eventos/1/postulantes",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -1160,6 +1169,16 @@
     {
       "name": "lead-service",
       "item": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "token",
+      "value": ""
     }
   ]
 }
