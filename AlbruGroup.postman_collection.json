@@ -418,7 +418,7 @@
                   }
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/empleados",
+                  "raw": "{{baseUrl}}/rrhh/empleados",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -447,7 +447,7 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/empleados?estado=POSTULANTE&dni=75413802",
+                  "raw": "{{baseUrl}}/rrhh/empleados?estado=POSTULANTE&dni=75413802",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -486,7 +486,7 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/empleados/75413802/numero-documento",
+                  "raw": "{{baseUrl}}/rrhh/empleados/75413802/numero-documento",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -526,7 +526,7 @@
                   }
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/empleados/1/datos-personales",
+                  "raw": "{{baseUrl}}/rrhh/empleados/1/datos-personales",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -566,7 +566,7 @@
                   }
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/empleados/1/datos-contacto-ubicacion",
+                  "raw": "{{baseUrl}}/rrhh/empleados/1/datos-contacto-ubicacion",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -606,7 +606,7 @@
                   }
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/empleados/1/datos-financieros",
+                  "raw": "{{baseUrl}}/rrhh/empleados/1/datos-financieros",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -646,7 +646,7 @@
                   }
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/empleados/1/datos-corporativos",
+                  "raw": "{{baseUrl}}/rrhh/empleados/1/datos-corporativos",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -723,7 +723,7 @@
                   }
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/contratos/1/registrar",
+                  "raw": "{{baseUrl}}/rrhh/contratos/1/registrar",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -761,7 +761,7 @@
                   "raw": "{\r\n    \"nombres\": \"Pablo Ernesto\",\r\n    \"apellidos\": \"Mamani Quispe\",\r\n    \"tipoDocumento\": \"CE\",\r\n    \"numeroDocumento\": \"25413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"CASADO\",\r\n    \"tieneHijos\": false,\r\n    \"celularPersonal\": \"923763302\",\r\n    \"celularCorporativo\": \"943763301\",\r\n    \"correo\": \"pablo@gmail.com\",\r\n    \"distrito\": \"SAN_MARTÍN_DE_PORRES\",\r\n    \"direccion\": \"Fermin Tanguis 079\",\r\n    \"banco\": \"BCP\",\r\n    \"cuentaBancaria\": \"12344677890\",\r\n    \"cuentaInterbancaria\": \"09876543234343\"\r\n}"
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/contratos/1/historico",
+                  "raw": "{{baseUrl}}/rrhh/contratos/1/historico",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -792,7 +792,7 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/contratos/1/vigente",
+                  "raw": "{{baseUrl}}/rrhh/contratos/1/vigente",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -832,7 +832,7 @@
                   }
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/contratos/1/cesar-contrato",
+                  "raw": "{{baseUrl}}/rrhh/contratos/1/cesar-contrato",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -875,7 +875,7 @@
                   "raw": "{\r\n    \"nombres\": \"Pablo Ernesto\",\r\n    \"apellidos\": \"Mamani Quispe\",\r\n    \"tipoDocumento\": \"CE\",\r\n    \"numeroDocumento\": \"25413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"CASADO\",\r\n    \"tieneHijos\": false,\r\n    \"celularPersonal\": \"923763302\",\r\n    \"celularCorporativo\": \"943763301\",\r\n    \"correo\": \"pablo@gmail.com\",\r\n    \"distrito\": \"SAN_MARTÍN_DE_PORRES\",\r\n    \"direccion\": \"Fermin Tanguis 079\",\r\n    \"banco\": \"BCP\",\r\n    \"cuentaBancaria\": \"12344677890\",\r\n    \"cuentaInterbancaria\": \"09876543234343\"\r\n}"
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/pagos",
+                  "raw": "{{baseUrl}}/rrhh/pagos",
                   "protocol": "http",
                   "host": [
                     "localhost"
@@ -913,7 +913,7 @@
                   }
                 },
                 "url": {
-                  "raw": "{{baseUrl}}/pagos/1/pagar-contrato",
+                  "raw": "{{baseUrl}}/rrhh/pagos/1/pagar-contrato",
                   "protocol": "http",
                   "host": [
                     "localhost"
