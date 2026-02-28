@@ -6,6 +6,10 @@ import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.rrhh_service.entity.Empleado;
 import pe.albrugroup.rrhh_service.entity.Postulante;
 import pe.albrugroup.rrhh_service.entity.PostulanteEvento;
+import pe.albrugroup.rrhh_service.entity.enums.CapacitacionEstado;
+import pe.albrugroup.rrhh_service.entity.enums.Compania;
+import pe.albrugroup.rrhh_service.entity.enums.EtapaProceso;
+import pe.albrugroup.rrhh_service.entity.enums.TurnoHorario;
 import pe.albrugroup.rrhh_service.entity.request.postulante.RegistrarEventoPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.response.PostulanteEventoResponse;
 import pe.albrugroup.rrhh_service.exception.EmpleadoNotFoundException;
@@ -74,5 +78,18 @@ public class PostulanteEventoService {
         return eventoRepository.buscarUltimosEventosPorPostulanteIds(postulanteIds)
                 .stream()
                 .collect(Collectors.toMap(evento -> evento.getPostulante().getId(), Function.identity()));
+    }
+
+    @Transactional(readOnly = true)
+    public long contarInscritosEnGrupoCapacitacion(Compania compania, LocalDate inicioCapa, TurnoHorario turnoHorario,
+                                                   Long postulanteIdExcluir) {
+        return eventoRepository.contarInscritosEnGrupoCapacitacion(
+                EtapaProceso.CAPACITACION,
+                CapacitacionEstado.POR_CAPACITAR.name(),
+                compania,
+                inicioCapa,
+                turnoHorario,
+                postulanteIdExcluir
+        );
     }
 }

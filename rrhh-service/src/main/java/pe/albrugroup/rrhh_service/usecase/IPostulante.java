@@ -21,6 +21,7 @@ public interface IPostulante {
 
     PostulanteResponse actualizarEstadoReclutamiento(Long idPostulante, EventoPostulanteRequest evento);
     List<PostulanteResponse> actualizarEstadosCapacitacion(List<EstadoCapacitacionRequest> postulantesEstados);
+    PostulanteResponse rechazarPorInasistenciaCapacitacion(Long idPostulante);
 
 //    PostulanteResponse actulizarPostulante(Long idPostulante, DatosPostulanteRequest infoPostulante);
 //    List<PostulanteResponse> actualizarEstadosPostulacion(CambiosEstadoPostulacionRequest cambios);

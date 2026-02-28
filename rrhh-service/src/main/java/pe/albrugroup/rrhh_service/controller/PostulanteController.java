@@ -91,4 +91,11 @@ public class PostulanteController {
         var postulantes = postulanteService.actualizarEstadosCapacitacion(request);
         return ResponseEntity.ok(postulantes);
     }
+
+    @PatchMapping("/{id}/rechazo-inasistencia-capacitacion")
+    @PreAuthorize("hasAuthority('REJECT_POSTULANTE_INASISTENCIA')")
+    public ResponseEntity<PostulanteResponse> rechazarPorInasistenciaCapacitacion(@PathVariable @Positive Long id) {
+        var postulante = postulanteService.rechazarPorInasistenciaCapacitacion(id);
+        return ResponseEntity.ok(postulante);
+    }
 }

@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 @Service @Transactional
 @RequiredArgsConstructor
 public class PostulanteService implements IPostulante {
+    private static final int LIMITE_POSTULANTES_POR_GRUPO_CAPACITACION = 15;
 
     private final PostulanteEventoService eventoService;
     private final PostulanteRepository postulanteRepository;
@@ -101,6 +102,7 @@ public class PostulanteService implements IPostulante {
                 .orElseThrow(() -> new PostulanteNotFoundException(idPostulante));
 
         validarEvento(EtapaProceso.RECLUTAMIENTO, evento);
+        validarCapacidadGrupoCapacitacion(postulante, evento);
         RegistrarEventoPostulanteRequest eventoRequest = toRegistrarEvento(EtapaProceso.RECLUTAMIENTO, evento);
         eventoService.registrarEventoPostulante(postulante, currentUser.empleadoID(), eventoRequest);
 
@@ -147,7 +149,9 @@ public class PostulanteService implements IPostulante {
         for (Postulante postulante : postulantes) {
             EstadoCapacitacionRequest request = requestsById.get(postulante.getId());
             EventoPostulanteRequest evento = request.getEvento();
+            validarSubestadoReservadoCapacitacion(evento);
             validarEvento(EtapaProceso.CAPACITACION, evento);
+            validarPostulanteEnCapacitacion(postulante);
             RegistrarEventoPostulanteRequest eventoRequest = toRegistrarEvento(EtapaProceso.CAPACITACION, evento);
             eventoService.registrarEventoPostulante(postulante, currentUser.empleadoID(), eventoRequest);
 
@@ -166,6 +170,30 @@ public class PostulanteService implements IPostulante {
         return postulantes.stream()
                 .map(postulante -> postulanteMapper.toResponse(postulante, requestsById.get(postulante.getId()).getEvento().getEvento()))
                 .toList();
+    }
+
+    @Override
+    public PostulanteResponse rechazarPorInasistenciaCapacitacion(Long idPostulante) {
+        Postulante postulante = postulanteRepository.findById(idPostulante)
+                .orElseThrow(() -> new PostulanteNotFoundException(idPostulante));
+
+        validarPostulanteEnCapacitacion(postulante);
+
+        EventoPostulanteRequest evento = EventoPostulanteRequest.builder()
+                .evento(EventoPostulante.EVALUACION_CAPACITACION)
+                .estado(CapacitacionEstado.RECHAZADO.name())
+                .subestado(CapacitacionSubEstado.INASISTENCIA_2_DIAS.name())
+                .build();
+
+        RegistrarEventoPostulanteRequest eventoRequest = toRegistrarEvento(EtapaProceso.CAPACITACION, evento);
+        eventoService.registrarEventoPostulante(postulante, currentUser.empleadoID(), eventoRequest);
+
+        postulante.setEtapaProceso(EtapaProceso.CAPACITACION);
+        postulante.setEstadoProceso(CapacitacionEstado.RECHAZADO.name());
+        postulante.setSubestadoProceso(CapacitacionSubEstado.INASISTENCIA_2_DIAS.name());
+        postulanteRepository.save(postulante);
+
+        return postulanteMapper.toResponse(postulante, EventoPostulante.EVALUACION_CAPACITACION);
     }
 
     private RegistrarEventoPostulanteRequest toRegistrarEvento(EtapaProceso etapa, EventoPostulanteRequest evento) {
@@ -253,6 +281,49 @@ public class PostulanteService implements IPostulante {
             if (evento.getInicioCapa() == null || evento.getFinCapa() == null || evento.getTurnoHorario() == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "RECLUTADO requiere inicioCapa, finCapa y turnoHorario");
             }
+        }
+    }
+
+    private void validarCapacidadGrupoCapacitacion(Postulante postulante, EventoPostulanteRequest evento) {
+        if (!ReclutamientoEstado.RECLUTADO.name().equals(evento.getEstado())) {
+            return;
+        }
+
+        long inscritos = eventoService.contarInscritosEnGrupoCapacitacion(
+                postulante.getEmpleado().getCompania(),
+                evento.getInicioCapa(),
+                evento.getTurnoHorario(),
+                postulante.getId()
+        );
+        if (inscritos >= LIMITE_POSTULANTES_POR_GRUPO_CAPACITACION) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "El grupo de capacitacion ya alcanzo el limite de 15 postulantes para la compania, fecha y turno seleccionados"
+            );
+        }
+    }
+
+    private void validarSubestadoReservadoCapacitacion(EventoPostulanteRequest evento) {
+        if (CapacitacionSubEstado.INASISTENCIA_2_DIAS.name().equals(evento.getSubestado())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "El subestado INASISTENCIA_2_DIAS solo puede registrarse desde el endpoint de rechazo por inasistencia"
+            );
+        }
+    }
+
+    private void validarPostulanteEnCapacitacion(Postulante postulante) {
+        if (postulante.getEtapaProceso() != EtapaProceso.CAPACITACION) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "El postulante no se encuentra en etapa de capacitacion"
+            );
+        }
+        if (!CapacitacionEstado.POR_CAPACITAR.name().equals(postulante.getEstadoProceso())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Solo se puede registrar la evaluacion para postulantes con estado POR_CAPACITAR"
+            );
         }
     }
 

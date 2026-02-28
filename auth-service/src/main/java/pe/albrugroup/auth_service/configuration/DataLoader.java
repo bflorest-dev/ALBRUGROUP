@@ -51,6 +51,7 @@ public class DataLoader {
 
         savePermiso("READ_CAPACITADOS", "Puede listar y ver postulantes capacitados", "POSTULANTE", "READ");
         savePermiso("EVALUATE_POSTULANTES_CAPACITACION", "Puede evaluar y tipificar a los reclutados", "POSTULANTE", "EVALUATE");
+        savePermiso("REJECT_POSTULANTE_INASISTENCIA", "Puede rechazar a un postulante por inasistencia",  "POSTULANTE", "REJECT");
         // EMPLEADOS
         savePermiso("CREATE_EMPLEADOS", "Puede registrar empleados directamente", "EMPLEADO", "CREATE");
         savePermiso("READ_EMPLEADOS", "Puede listar y ver empleados", "EMPLEADO", "READ");
@@ -115,6 +116,7 @@ public class DataLoader {
                 getPermiso("READ_POSTULANTES"),
                 getPermiso("TYPIFY_POSTULANTES"),
                 getPermiso("EVALUATE_POSTULANTES_RECLUTAMIENTO"),
+                getPermiso("REJECT_POSTULANTE_INASISTENCIA"),
                 getPermiso("READ_RECLUTADOS")
         );
         saveRol("RECLUTADOR", "Recursos Humanos - Contacto con postulantes", reclutadorPermisos);

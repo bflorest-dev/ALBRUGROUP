@@ -5,8 +5,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.albrugroup.rrhh_service.entity.PostulanteEvento;
+import pe.albrugroup.rrhh_service.entity.enums.CapacitacionEstado;
+import pe.albrugroup.rrhh_service.entity.enums.Compania;
+import pe.albrugroup.rrhh_service.entity.enums.EtapaProceso;
+import pe.albrugroup.rrhh_service.entity.enums.TurnoHorario;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 
@@ -40,4 +45,24 @@ public interface PostulanteEventoRepository extends JpaRepository<PostulanteEven
           )
         """)
     List<PostulanteEvento> buscarUltimosEventosPorPostulanteIds(@Param("postulanteIds") Collection<Long> postulanteIds);
+
+    @Query("""
+        SELECT COUNT(DISTINCT e.postulante.id)
+        FROM PostulanteEvento e
+        WHERE e.estado = 'RECLUTADO'
+          AND e.postulante.etapaProceso = :etapaProceso
+          AND e.postulante.estadoProceso = :estadoProceso
+          AND e.postulante.empleado.compania = :compania
+          AND e.inicioCapa = :inicioCapa
+          AND e.turnoHorario = :turnoHorario
+          AND (:postulanteIdExcluir IS NULL OR e.postulante.id <> :postulanteIdExcluir)
+        """)
+    long contarInscritosEnGrupoCapacitacion(
+            @Param("etapaProceso") EtapaProceso etapaProceso,
+            @Param("estadoProceso") String estadoProceso,
+            @Param("compania") Compania compania,
+            @Param("inicioCapa") LocalDate inicioCapa,
+            @Param("turnoHorario") TurnoHorario turnoHorario,
+            @Param("postulanteIdExcluir") Long postulanteIdExcluir
+    );
 }
