@@ -64,7 +64,7 @@ public class PostulanteController {
         return ResponseEntity.ok(postulantes);
     }
 
-    @GetMapping @PreAuthorize("hasAuthority('READ_POSTULANTES') or hasAuthority('READ_RECLUTADOS')")
+    @GetMapping
     public ResponseEntity<List<PostulanteResponse>> listarPostulantesPorEtapa(
             @RequestParam EtapaProceso etapa,
             @RequestParam(required = false) String estado,

@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import pe.albrugroup.rrhh_service.entity.enums.EventoPostulante;
 import pe.albrugroup.rrhh_service.entity.enums.EtapaProceso;
+import pe.albrugroup.rrhh_service.entity.enums.TurnoHorario;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -39,6 +40,9 @@ public class PostulanteEvento {
     private LocalDate inicioCapa;
     @Column(name = "fin_capa")
     private LocalDate finCapa;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "turno_horario")
+    private TurnoHorario turnoHorario;
     @Column(name = "pago_dia_capa")
     private BigDecimal pagoDiaCapa;
 }

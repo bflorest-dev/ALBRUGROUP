@@ -3,6 +3,7 @@ package pe.albrugroup.rrhh_service.entity.request.postulante;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import pe.albrugroup.rrhh_service.entity.enums.Compania;
 import pe.albrugroup.rrhh_service.entity.enums.Documento;
 import pe.albrugroup.rrhh_service.entity.enums.Origen;
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
@@ -17,6 +18,7 @@ public class RegistrarPostulanteRequest {
     @NotNull private Documento tipoDocumento;
     @NotBlank private String numeroDocumento;
     @NotBlank private String celularPersonal;
+    @NotNull private Compania compania;
     // POSTULANTE
     @NotNull private Origen origen;
     @NotNull private PuestoTrabajo puestoTrabajo;

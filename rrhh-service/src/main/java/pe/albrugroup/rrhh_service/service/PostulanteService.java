@@ -57,6 +57,8 @@ public class PostulanteService implements IPostulante {
                     return empleadoRepository.save(e);
                 });
         if(empleado.getListaNegra()) throw new EmpleadoListaNegraException(empleado.getId());
+        empleado.setCompania(nuevoPostulante.getCompania());
+        empleadoRepository.save(empleado);
 
         Postulante postulante = postulanteMapper.toEntity(nuevoPostulante);
         postulante.setEmpleado(empleado);
@@ -75,15 +77,21 @@ public class PostulanteService implements IPostulante {
                         .build()
         );
 
-        return postulanteMapper.toResponse(postulante);
+        return postulanteMapper.toResponse(postulante, EventoPostulante.CREAR_POSTULACION);
     }
     @Override @Transactional(readOnly = true)
     public List<PostulanteResponse> getPostulantesFiltrados(EtapaProceso etapa, String estado, String subestado,
                             Origen origen, PuestoTrabajo puesto, LocalDate desde, LocalDate hasta, Boolean listaNegra) {
         Instant inicio = desde != null ? desde.atStartOfDay(ZONA_HORARIA_PERU).toInstant() : null;
         Instant fin = hasta != null ? hasta.atTime(LocalTime.MAX).atZone(ZONA_HORARIA_PERU).toInstant() : null;
-        return postulanteRepository.getPostulantes(etapa, estado, subestado, origen, puesto, inicio, fin, listaNegra)
-                .stream().map(postulanteMapper::toResponse)
+        List<Postulante> postulantes = postulanteRepository.getPostulantes(etapa, estado, subestado, origen, puesto, inicio, fin, listaNegra);
+        Map<Long, EventoPostulante> ultimosEventos = eventoService.buscarUltimosEventosPorPostulanteIds(
+                        postulantes.stream().map(Postulante::getId).toList()
+                ).values().stream()
+                .collect(Collectors.toMap(evento -> evento.getPostulante().getId(), pe.albrugroup.rrhh_service.entity.PostulanteEvento::getEvento));
+
+        return postulantes.stream()
+                .map(postulante -> postulanteMapper.toResponse(postulante, ultimosEventos.get(postulante.getId())))
                 .toList();
     }
 
@@ -107,7 +115,7 @@ public class PostulanteService implements IPostulante {
         }
 
         postulanteRepository.save(postulante);
-        return postulanteMapper.toResponse(postulante);
+        return postulanteMapper.toResponse(postulante, evento.getEvento());
     }
 
     @Override
@@ -155,7 +163,9 @@ public class PostulanteService implements IPostulante {
         }
 
         postulanteRepository.saveAll(postulantes);
-        return postulantes.stream().map(postulanteMapper::toResponse).toList();
+        return postulantes.stream()
+                .map(postulante -> postulanteMapper.toResponse(postulante, requestsById.get(postulante.getId()).getEvento().getEvento()))
+                .toList();
     }
 
     private RegistrarEventoPostulanteRequest toRegistrarEvento(EtapaProceso etapa, EventoPostulanteRequest evento) {
@@ -167,6 +177,7 @@ public class PostulanteService implements IPostulante {
                 .fechaEvento(evento.getFechaEvento())
                 .inicioCapa(evento.getInicioCapa())
                 .finCapa(evento.getFinCapa())
+                .turnoHorario(evento.getTurnoHorario())
                 .pagoDiaCapa(evento.getPagoDiaCapa())
                 .build();
     }
@@ -217,6 +228,31 @@ public class PostulanteService implements IPostulante {
         }
         if (evento.getFinCapa() != null && evento.getFinCapa().isBefore(hoy)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "finCapa debe ser hoy o posterior");
+        }
+        if (evento.getInicioCapa() != null && evento.getFinCapa() != null
+                && evento.getFinCapa().isBefore(evento.getInicioCapa())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "finCapa debe ser mayor o igual a inicioCapa");
+        }
+
+        boolean tieneDatosCapa = evento.getInicioCapa() != null
+                || evento.getFinCapa() != null
+                || evento.getTurnoHorario() != null;
+        if (tieneDatosCapa) {
+            if (evento.getInicioCapa() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "inicioCapa es requerida");
+            }
+            if (evento.getFinCapa() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "finCapa es requerida");
+            }
+            if (evento.getTurnoHorario() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "turnoHorario es requerido");
+            }
+        }
+
+        if (ReclutamientoEstado.RECLUTADO.name().equals(evento.getEstado())) {
+            if (evento.getInicioCapa() == null || evento.getFinCapa() == null || evento.getTurnoHorario() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "RECLUTADO requiere inicioCapa, finCapa y turnoHorario");
+            }
         }
     }
 

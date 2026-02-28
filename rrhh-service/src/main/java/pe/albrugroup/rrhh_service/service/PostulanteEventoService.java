@@ -17,7 +17,11 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -59,5 +63,16 @@ public class PostulanteEventoService {
                 .stream()
                 .map(eventoMapper::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, PostulanteEvento> buscarUltimosEventosPorPostulanteIds(Collection<Long> postulanteIds) {
+        if (postulanteIds == null || postulanteIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return eventoRepository.buscarUltimosEventosPorPostulanteIds(postulanteIds)
+                .stream()
+                .collect(Collectors.toMap(evento -> evento.getPostulante().getId(), Function.identity()));
     }
 }

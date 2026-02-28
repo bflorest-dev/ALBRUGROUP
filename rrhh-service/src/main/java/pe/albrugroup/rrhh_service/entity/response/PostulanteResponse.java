@@ -1,9 +1,7 @@
 package pe.albrugroup.rrhh_service.entity.response;
 
 import lombok.*;
-import pe.albrugroup.rrhh_service.entity.enums.Documento;
-import pe.albrugroup.rrhh_service.entity.enums.Origen;
-import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
+import pe.albrugroup.rrhh_service.entity.enums.*;
 
 import java.time.Instant;
 
@@ -18,8 +16,10 @@ public class PostulanteResponse {
     private Documento tipoDocumento;
     private String numeroDocumento;
     private String celularPersonal;
+    private Compania compania;
     // ESTADO
     private String etapaProceso;
+    private EventoPostulante evento;
     private String estadoProceso;
     private String subestadoProceso;
     // OBJETIVO

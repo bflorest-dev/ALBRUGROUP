@@ -3,6 +3,7 @@ package pe.albrugroup.rrhh_service.entity.response;
 import lombok.*;
 import pe.albrugroup.rrhh_service.entity.enums.EventoPostulante;
 import pe.albrugroup.rrhh_service.entity.enums.EtapaProceso;
+import pe.albrugroup.rrhh_service.entity.enums.TurnoHorario;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -26,5 +27,6 @@ public class PostulanteEventoResponse {
     private Instant fechaEvento;
     private LocalDate inicioCapa;
     private LocalDate finCapa;
+    private TurnoHorario turnoHorario;
     private BigDecimal pagoDiaCapa;
 }

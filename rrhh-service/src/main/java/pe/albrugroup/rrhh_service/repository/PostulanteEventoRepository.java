@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import pe.albrugroup.rrhh_service.entity.PostulanteEvento;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -24,4 +25,19 @@ public interface PostulanteEventoRepository extends JpaRepository<PostulanteEven
             @Param("desde") Instant desde,
             @Param("hasta") Instant hasta
     );
+
+    @Query("""
+        SELECT e FROM PostulanteEvento e
+        WHERE e.postulante.id IN :postulanteIds
+          AND NOT EXISTS (
+              SELECT 1
+              FROM PostulanteEvento e2
+              WHERE e2.postulante.id = e.postulante.id
+                AND (
+                    e2.fechaCreacion > e.fechaCreacion
+                    OR (e2.fechaCreacion = e.fechaCreacion AND e2.id > e.id)
+                )
+          )
+        """)
+    List<PostulanteEvento> buscarUltimosEventosPorPostulanteIds(@Param("postulanteIds") Collection<Long> postulanteIds);
 }

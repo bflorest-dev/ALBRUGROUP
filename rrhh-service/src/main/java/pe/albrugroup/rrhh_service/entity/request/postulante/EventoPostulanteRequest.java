@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import pe.albrugroup.rrhh_service.entity.enums.EventoPostulante;
+import pe.albrugroup.rrhh_service.entity.enums.TurnoHorario;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -20,5 +21,6 @@ public class EventoPostulanteRequest {
     private Instant fechaEvento;
     private LocalDate inicioCapa;
     private LocalDate finCapa;
+    private TurnoHorario turnoHorario;
     private BigDecimal pagoDiaCapa;
 }

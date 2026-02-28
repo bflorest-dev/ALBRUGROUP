@@ -19,6 +19,7 @@ public interface PostulanteEventoMapper {
     @Mapping(target = "fechaEvento", source = "fechaEvento")
     @Mapping(target = "inicioCapa", source = "inicioCapa")
     @Mapping(target = "finCapa", source = "finCapa")
+    @Mapping(target = "turnoHorario", source = "turnoHorario")
     @Mapping(target = "pagoDiaCapa", source = "pagoDiaCapa")
     PostulanteEvento toEntity(RegistrarEventoPostulanteRequest request);
 
