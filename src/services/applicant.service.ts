@@ -7,6 +7,7 @@
 import { ApplicantRepository } from '../repositories/applicant.repository';
 import type { Applicant, NewApplicantFormData, PostulanteRequest, ApplicantStatusChange } from '../types';
 import { adaptPostulanteResponseToApplicant } from '../types';
+import { POSITIONS_WITH_COMPANY } from '../utils/constants';
 
 export class ApplicantService {
   /**
@@ -32,15 +33,10 @@ export class ApplicantService {
 
       // Transformar datos si es necesario
       const transformedData = this.prepareApplicantData(applicantData);
-
-      console.log('[ApplicantService.createApplicant] Sending data to POST /postulantes:', JSON.stringify(transformedData, null, 2));
       
       const newApplicant = await ApplicantRepository.create(transformedData);
       
-      console.log('[ApplicantService.createApplicant] Backend response:', newApplicant);
-      
       const adaptedApplicant = adaptPostulanteResponseToApplicant(newApplicant);
-      console.log('[ApplicantService.createApplicant] Adapted applicant:', adaptedApplicant);
       
       return adaptedApplicant;
     } catch (error) {
@@ -121,7 +117,9 @@ export class ApplicantService {
     if (!data.positionOfInterest?.trim()) {
       throw new Error('La posición de interés es requerida');
     }
-    if (!data.company?.trim()) {
+    // company is only required for certain positions
+    const needsCompany = POSITIONS_WITH_COMPANY.includes(data.positionOfInterest);
+    if (needsCompany && !data.company?.trim()) {
       throw new Error('La compañía es requerida');
     }
     if (!data.campaign?.trim()) {
@@ -151,7 +149,7 @@ export class ApplicantService {
       // backend may handle missing dates/payments itself
     };
 
-    console.log('[ApplicantService.prepareApplicantData] Transformed object:', JSON.stringify(transformedData, null, 2));
+
     
     return transformedData;
   }

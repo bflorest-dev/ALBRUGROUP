@@ -174,9 +174,6 @@ export class EmployeeService {
     if (!data.documentType) {
       throw new Error('El tipo de documento es requerido');
     }
-    if (!data.googleEmail?.trim()) {
-      throw new Error('El email corporativo es requerido');
-    }
   }
 
   /**
@@ -188,7 +185,6 @@ export class EmployeeService {
       nombres: data.nombres.trim(),
       apellidos: data.apellidos.trim(),
       documentNumber: data.documentNumber.trim(),
-      googleEmail: data.googleEmail.trim().toLowerCase(),
       personalEmail: data.personalEmail?.trim().toLowerCase(),
     };
   }

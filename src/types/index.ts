@@ -2,7 +2,6 @@
  * Tipos e interfaces globales de la aplicación
  */
 
-export type EmployeeStatus = 'ACTIVO' | 'INACTIVO';
 
 export interface Employee {
   id: string;
@@ -12,7 +11,7 @@ export interface Employee {
   apellidos?: string;
   position: string;
   department: string;
-  status: EmployeeStatus;
+  status: string; // previously EmployeeStatus, now generic
   documentType?: string;
   documentNumber?: string;
   nationality?: string;
@@ -34,6 +33,11 @@ export interface Employee {
   scheduleType?: string;
   googleEmail?: string;
   baseSalary?: string;
+  // contract details (added for new employee creation)
+  contractRegimen?: string;
+  contractModalidad?: string;
+  contractSeguro?: string;
+  contractPension?: string;
 }
 
 export interface Statistic {
@@ -51,16 +55,42 @@ export interface Applicant {
   phoneMobile: string;
   documentType: string;
   documentNumber: string;
+  nationality?: string;
+  birthDate?: string;
+  civilStatus?: string;
+  hasChildren?: boolean;
+  personalEmail?: string;
+  district?: string;
+  address?: string;
+  bank?: string;
+  accountNumber?: string;
+  interbankNumber?: string;
   positionOfInterest: string;
   modality: string;
   campaign: string;
-  company: string; // CLARO | WIN
+  company?: string; // CLARO | WIN
   status?: string;
   trainingDayPayment?: number;
   startDate?: string;
   endDate?: string;
-  personalEmail?: string;
   rejectionReason?: string; // motivo de rechazo cuando status = 'RECHAZADO'
+  meetingDate?: string; // fecha y hora del meet cuando status = 'INTERESADO'
+
+  // datos de contrato cuando se ha contratado
+  contractRegimen?: 'RECIBO POR HONORARIOS' | 'PLANILLA';
+  contractModalidad?: 'PART TIME' | 'SEMI FULL' | 'FULL TIME' | 'SUPER FULL';
+  contractSeguro?: 'SIS' | 'ESSALUD';
+  contractPension?:
+    | 'ONP'
+    | 'AFP INTEGRA'
+    | 'PROFUTURO AFP'
+    | 'AFP HABITAD'
+    | 'PRIMA AFP';
+  contractSalary?: number;
+  contractStartDate?: string;
+  contractPosition?: string;
+  contractCampaign?: string;
+  contractCompany?: string;
 }
 
 export interface PaginationInfo {
@@ -88,19 +118,21 @@ export interface NewEmployeeFormData {
   hasChildren: boolean;
   district: string;
   address: string;
-  phoneFixed: string;
   phoneMobile: string;
-  phoneWork: string;
   bank: string;
   accountNumber: string;
   interbankNumber: string;
   baseSalary: string;
   role: string;
+  company?: string;
   startDate: string;
   modality: string;
   scheduleType: string;
-  googleEmail: string;
   personalEmail?: string;
+  // contract-only fields
+  regimen?: string;
+  seguro?: string;
+  pension?: string;
 }
 
 export interface NewApplicantFormData {
@@ -110,7 +142,7 @@ export interface NewApplicantFormData {
   documentType: 'DNI' | 'CE';
   documentNumber: string;
   positionOfInterest: string;
-  company: string; // CLARO | WIN
+  company?: string; // CLARO | WIN (may be omitted when no company is needed)
   campaign: string;
 }
 
@@ -123,34 +155,10 @@ export interface HireApplicantFormData extends NewEmployeeFormData {
   personalEmail?: string;
 }
 
-export interface EmployeeDetailFormData {
-  nombres: string;
-  apellidos: string;
-  documentType: string;
-  documentNumber: string;
-  nationality: string;
-  birthDate: string;
-  civilStatus: string;
-  hasChildren: boolean; // true | false
-  district: string;
-  address: string;
-  phoneFixed: string;
-  phoneMobile: string;
-  phoneWork: string;
-  personalEmail: string;
-  bank: string;
-  accountNumber: string;
-  interbankNumber: string;
-  baseSalary: string;
-  startDate: string;
-  endDate: string;
-  modality: string;
-  scheduleType: string;
-  googleEmail: string;
-  position: string;
-  department: string;
-  status: string;
-}
+// form data used when viewing or editing an employee; allow any subset of the
+// full employee record so the detail view can operate on whatever fields are
+// present and we don't need to keep two almost‑identical interfaces in sync.
+export type EmployeeDetailFormData = Partial<Employee>;
 
 // Tipos para props de componentes de formulario
 export interface BaseFormProps<T = Record<string, unknown>> {
@@ -280,7 +288,6 @@ export const adaptEmpleadoResponseToEmployee = (backend: EmpleadoResponse): Empl
   endDate: '', // No disponible
   modality: '', // No disponible
   scheduleType: '', // No disponible
-  googleEmail: backend.correoCorporativo,
   baseSalary: '', // No disponible
 });
 
