@@ -13,8 +13,7 @@ export const LoginPage: React.FC = () => {
     setError(null);
     try {
       const res = await login(data);
-      // Por ahora hacemos console.log del resultado (reemplazar por manejo real de sesión)
-      console.log('Login exitoso:', res);
+      // TODO: reemplazar por manejo real de sesión
       alert(`Login OK - token: ${res.token}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Error al autenticar');

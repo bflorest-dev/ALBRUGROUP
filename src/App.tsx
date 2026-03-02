@@ -2,6 +2,7 @@ import './App.css'
 import { MainLayout } from './components/templates/DashboardTemplate'
 import { DataProvider } from './contexts/DataContext'
 import { DevRoleProvider, useDevRole } from './contexts/DevRoleContext'
+import { ApplicantsProvider } from './contexts/ApplicantsContext'
 import { ErrorBoundary } from './components/utilities/ErrorBoundary'
 import { DarkModeToggle } from './components/atoms/DarkModeToggle'
 
@@ -53,9 +54,11 @@ function App() {
     <ErrorBoundary>
       <div className="app">
         <DevRoleProvider>
-          <DataProvider>
-            <AppContent />
-          </DataProvider>
+          <ApplicantsProvider>
+            <DataProvider>
+              <AppContent />
+            </DataProvider>
+          </ApplicantsProvider>
         </DevRoleProvider>
       </div>
     </ErrorBoundary>
