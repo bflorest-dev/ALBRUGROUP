@@ -4,18 +4,7 @@
 
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { mockApplicants, mockEmployees } from '../utils/mockData';
-import type { Employee } from '../types';
-
-interface Applicant {
-  id: string;
-  fullName: string;
-  phoneMobile: string;
-  documentType: string;
-  documentNumber: string;
-  positionOfInterest: string;
-  modality: string;
-  campaign: string;
-}
+import type { Employee, Applicant } from '../types';
 
 interface DataContextType {
   applicants: Applicant[];

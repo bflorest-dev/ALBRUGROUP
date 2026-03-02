@@ -11,9 +11,6 @@ export interface ErrorHandler {
  */
 export const useErrorHandler = (): ErrorHandler => {
   const handleError = useCallback((error: Error, errorInfo?: { componentStack?: string }) => {
-    // Log del error
-    console.error('Error manejado por hook:', error, errorInfo);
-
     // Aquí podrías enviar el error a un servicio externo
     // reportError(error, errorInfo);
 
@@ -22,8 +19,7 @@ export const useErrorHandler = (): ErrorHandler => {
   }, []);
 
   const resetError = useCallback(() => {
-    // Lógica para resetear el estado de error
-    console.log('Reseteando estado de error');
+    // Resetear el estado de error
   }, []);
 
   return {
