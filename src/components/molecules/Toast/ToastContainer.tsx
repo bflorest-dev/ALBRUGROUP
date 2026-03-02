@@ -2,13 +2,8 @@
  * Componente ToastContainer - Contenedor de notificaciones
  */
 
-import { Toast, type ToastType } from './Toast';
-
-export interface ToastMessage {
-  id: string;
-  message: string;
-  type: ToastType;
-}
+import { Toast } from './Toast';
+import type { ToastMessage } from '../../../contexts/NotificationContext';
 
 interface ToastContainerProps {
   toasts: ToastMessage[];

@@ -2,12 +2,11 @@
  * Componente StatusBadge - Insignia de estado
  */
 
-import type { EmployeeStatus } from '../../../types';
 import { EMPLOYEE_STATUS_COLORS, EMPLOYEE_STATUS_BG_COLORS } from '../../../utils/constants';
 import './StatusBadge.css';
 
 interface StatusBadgeProps {
-  status: EmployeeStatus;
+  status: string;
   onClick?: () => void;
   clickable?: boolean;
 }

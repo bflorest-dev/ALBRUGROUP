@@ -4,9 +4,8 @@
 
 import { useEffect } from 'react';
 import { BiCheckCircle, BiXCircle, BiInfoCircle } from 'react-icons/bi';
+import type { ToastType } from '../../../contexts/NotificationContext';
 import './Toast.css';
-
-export type ToastType = 'success' | 'error' | 'info';
 
 export interface ToastProps {
   id: string;

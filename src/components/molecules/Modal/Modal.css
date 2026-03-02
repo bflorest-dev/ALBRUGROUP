@@ -6,7 +6,7 @@
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.3);
-  z-index: 999;
+  z-index: 10000; /* raised to topmost */
 }
 
 /* Modal container */
@@ -18,10 +18,18 @@
   background: white;
   border-radius: 8px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
+  z-index: 10001; /* ensure above overlay and other elements */
   max-width: 95vw;
   max-height: 95vh;
   overflow-y: auto;
+}
+
+/* wider modal variant for contract data */
+.modal-container.contract-modal {
+  width: 90vw;
+  max-width: 1200px;
+  /* content fits within 3-column layout, no scroll needed */
+  overflow-x: hidden;
 }
 
 /* larger size for tipify modal */
