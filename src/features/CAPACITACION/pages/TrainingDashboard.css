@@ -49,6 +49,7 @@
   align-items: center;
   gap: 16px;
   flex-wrap: wrap; /* allow children to drop to next line */
+  position: relative;
 }
 
 .training-avatar {
@@ -136,6 +137,41 @@
   cursor: pointer;
 }
 
+.btn-contract {
+  padding: 4px 10px;
+  font-size: 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: #3b82f6;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* modal form styles */
+.contract-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.contract-form label {
+  font-size: 14px;
+}
+.contract-form select,
+.contract-form input {
+  padding: 6px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  width: 100%;
+}
+.contract-form .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .btn-approved {
   background: #10b981;
   color: white;
@@ -154,9 +190,36 @@
   background: rgba(79,70,229,0.1);
   border-radius: 9999px;
   white-space: nowrap;
-  max-width: 120px;
+  max-width: 160px;
+  min-width: auto;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.training-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: #3b82f6;
+  color: white;
+  padding: 3px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  white-space: nowrap;
+  line-height: 1.1;
+}
+
+.badge-date {
+  font-size: 9px;
+}
+
+.badge-time {
+  font-size: 9px;
 }
 
 .training-empty {

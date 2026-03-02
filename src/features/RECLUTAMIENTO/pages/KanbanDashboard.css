@@ -71,11 +71,41 @@
   border-left: 4px solid transparent;
 }
 
+/* pagination controls inside each column */
+.kanban-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 0;
+  gap: 8px;
+}
+.kanban-pagination .page-btn {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+}
+.kanban-pagination .page-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.kanban-pagination .page-info {
+  font-size: 12px;
+  color: #374151;
+}
+
 .card-header {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 8px;
+  position: relative;
 }
 
 .avatar {
@@ -104,6 +134,32 @@
 .card-title em {
   font-size: 12px;
   color: #6b7280;
+}
+
+.meeting-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: #10b981;
+  color: white;
+  padding: 3px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  white-space: nowrap;
+  line-height: 1.1;
+}
+
+.badge-date {
+  font-size: 9px;
+}
+
+.badge-time {
+  font-size: 9px;
 }
 
 .card-body .info {
