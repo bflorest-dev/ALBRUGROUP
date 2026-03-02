@@ -6,7 +6,7 @@ export interface HRUser extends User {
   managedEmployees: string[];
 }
 
-export interface Employee extends BaseEntity {
+export interface HREmployeeCard extends BaseEntity {
   name: string;
   position: string;
   department: string;
@@ -16,7 +16,7 @@ export interface Employee extends BaseEntity {
 
 export interface HRDashboardData {
   totalEmployees: number;
-  newHires: Employee[];
+  newHires: HREmployeeCard[];
   pendingReviews: Review[];
 }
 

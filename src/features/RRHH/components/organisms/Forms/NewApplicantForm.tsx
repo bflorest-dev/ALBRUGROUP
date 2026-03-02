@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import type { NewApplicantFormData } from '@types';
 import { ApplicantForm } from '@molecules/ApplicantForm';
+import { POSITIONS_WITH_COMPANY } from '@utils/constants';
 import './NewApplicantForm.css';
 
 interface NewApplicantFormProps {
@@ -20,7 +21,7 @@ export const NewApplicantForm = ({ onSubmit, onCancel }: NewApplicantFormProps) 
     documentType: 'DNI',
     documentNumber: '',
     positionOfInterest: '',
-    company: 'CLARO',
+    company: '', // start empty so placeholder shows
     campaign: '',
   });
 
@@ -28,22 +29,34 @@ export const NewApplicantForm = ({ onSubmit, onCancel }: NewApplicantFormProps) 
     const { name, value } = e.target;
     if (name === 'nombres' || name === 'apellidos') {
       const alphabeticValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '');
-      setFormData((prev: NewApplicantFormData) => ({ ...prev, [name]: alphabeticValue }));
+      setFormData(prev => ({ ...prev, [name]: alphabeticValue }));
     } else if (name === 'phoneMobile') {
       const numericValue = value.replace(/\D/g, '').slice(0, 9);
-      setFormData((prev: NewApplicantFormData) => ({ ...prev, [name]: numericValue }));
+      setFormData(prev => ({ ...prev, [name]: numericValue }));
     } else if (name === 'documentNumber') {
       const numericValue = value.replace(/\D/g, '');
-      const maxLength = formData.documentType === 'DNI' ? 8 : 9;
-      const slicedValue = numericValue.slice(0, maxLength);
-      setFormData((prev: NewApplicantFormData) => ({ ...prev, [name]: slicedValue }));
+      setFormData(prev => {
+        const maxLength = prev.documentType === 'DNI' ? 8 : 9;
+        return { ...prev, [name]: numericValue.slice(0, maxLength) };
+      });
+    } else if (name === 'positionOfInterest') {
+      setFormData(prev => {
+        const next: NewApplicantFormData = { ...prev, positionOfInterest: value };
+        if (!POSITIONS_WITH_COMPANY.includes(value)) {
+          next.company = '';
+        }
+        // no default company when switching into a company-requiring role;
+        // user must select explicitly so placeholder remains.
+        return next;
+      });
     } else {
-      setFormData((prev: NewApplicantFormData) => ({ ...prev, [name]: value }));
+      setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const needsCompany = POSITIONS_WITH_COMPANY.includes(formData.positionOfInterest);
     if (
       formData.nombres.trim() &&
       formData.apellidos.trim() &&
@@ -51,7 +64,7 @@ export const NewApplicantForm = ({ onSubmit, onCancel }: NewApplicantFormProps) 
       formData.documentNumber.trim() &&
       formData.positionOfInterest.trim() &&
       formData.campaign.trim() &&
-      formData.company?.trim()
+      (!needsCompany || formData.company?.trim())
     ) {
       onSubmit(formData);
     }

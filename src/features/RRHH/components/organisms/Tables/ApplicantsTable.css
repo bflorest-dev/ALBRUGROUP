@@ -2,6 +2,8 @@
 .applicants-table-container {
   width: 100%;
   overflow-x: auto;
+  overflow-y: auto; /* allow vertical scrolling when table grows */
+  max-height: calc(100vh - 300px); /* space for header, stats and controls */
   background: white;
   border-radius: 6px;
 }
@@ -146,6 +148,10 @@
   box-shadow: inset 3px 0 0 transparent;
 }
 
+.action-btn.contract-btn {
+  color: #3b82f6;
+}
+
 .applicants-table tbody tr.even-row {
   background-color: #FFFFFF;
 }
@@ -176,6 +182,12 @@
   color: #FB923C; /* orange-400 */
   font-weight: 700;
 }
+
+.applicant-name {
+  color: #2563EB; /* blue-600 */
+  font-weight: 700;
+}
+
 .name-with-avatar {
   display: flex;
   align-items: center;

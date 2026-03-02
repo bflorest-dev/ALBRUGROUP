@@ -72,7 +72,7 @@ const HRDashboard: React.FC = () => {
               <li key={r.id} className="hr-list-item">
                 <div className="hr-item-name">{r.type}</div>
                 <div className="hr-item-meta">Empleado ID: {r.employeeId}</div>
-                <div className="hr-item-right"><StatusBadge status={r.type === 'SALARY' ? 'ACTIVO' : 'INACTIVO'} /></div>
+                <div className="hr-item-right"><StatusBadge status={r.type} /></div>
               </li>
             ))}
           </ul>

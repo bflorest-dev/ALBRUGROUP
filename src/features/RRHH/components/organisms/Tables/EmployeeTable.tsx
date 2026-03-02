@@ -39,12 +39,9 @@ export const EmployeeTable = ({ employees, onAction, onCheckout, onActivate }: E
     onAction?.(employee, 'edit');
   };
 
+  // status-based actions removed since ACTIVO/INACTIVO no longer used
   const handleStatusClick = (employee: Employee) => {
-    if (employee.status === 'ACTIVO') {
-      onCheckout?.(employee);
-    } else if (employee.status === 'INACTIVO') {
-      onActivate?.(employee);
-    }
+    // placeholder: could implement other logic if needed
   };
 
   const handleFilterChange = (filterKey: string, value: string) => {
@@ -320,7 +317,7 @@ export const EmployeeTable = ({ employees, onAction, onCheckout, onActivate }: E
                 <StatusBadge
                   status={employee.status}
                   onClick={() => handleStatusClick(employee)}
-                  clickable={employee.status === 'ACTIVO' || employee.status === 'INACTIVO'}
+                  clickable={false}
                 />
               </td>
               <td>

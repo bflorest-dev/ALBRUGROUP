@@ -24,9 +24,7 @@ export const HireApplicantForm = ({ applicant, onSubmit, onCancel }: HireApplica
     hasChildren: false,
     district: '',
     address: '',
-    phoneFixed: '',
     phoneMobile: applicant?.phoneMobile || '',
-    phoneWork: '',
     bank: '',
     accountNumber: '',
     interbankNumber: '',
@@ -35,7 +33,6 @@ export const HireApplicantForm = ({ applicant, onSubmit, onCancel }: HireApplica
     startDate: '',
     modality: applicant?.modality || '',
     scheduleType: '',
-    googleEmail: '',
     personalEmail: '',
     applicantId: applicant?.id || '',
   });

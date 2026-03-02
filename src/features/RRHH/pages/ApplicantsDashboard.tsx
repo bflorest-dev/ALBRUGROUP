@@ -2,7 +2,7 @@
  * ApplicantsDashboard (moved copy into features/RRHH/pages)
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { BiPlus, BiSearch, BiDownload } from 'react-icons/bi';
 import { ApplicantsTable } from '../components/organisms/Tables';
 import { Modal } from '@molecules/Modal';
@@ -13,16 +13,15 @@ import { Pagination } from '@molecules/Pagination';
 import { Header } from '@organisms/Layout/Header';
 import { useNotification } from '@contexts/useNotification';
 import { useErrorHandler } from '@hooks/useErrorHandler';
-import { loadApplicantsFromStorage, saveApplicantsToStorage } from '@utils/localStorage';
+import { useApplicants } from '@contexts/ApplicantsContext';
 import type { Applicant, NewApplicantFormData, EditApplicantFormData, HireApplicantFormData, Statistic } from '@types';
 import './ApplicantsDashboard.css';
 
 const ITEMS_PER_PAGE = 10;
 
 export const ApplicantsDashboard = () => {
-  // Estado para postulantes
-  const [applicants, setApplicants] = useState<Applicant[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Get applicants from context
+  const { applicants, addApplicant, updateApplicant, loading } = useApplicants();
   const [_statistics, _setStatistics] = useState<Statistic[]>([]);
 
   // Estados para modales
@@ -34,51 +33,12 @@ export const ApplicantsDashboard = () => {
 
   // Paginación
   const [currentPage, setCurrentPage] = useState(1);
+  // keep track of applicant that was just edited so we can stay on its page
+  const [lastModifiedId, setLastModifiedId] = useState<string | null>(null);
 
   // Hooks
   const { showSuccess, showError } = useNotification();
   const { handleError } = useErrorHandler();
-
-  const loadInitialData = useCallback(async () => {
-    try {
-      setLoading(true);
-      // load candidates only from local storage; start empty if none
-      const stored = loadApplicantsFromStorage();
-      const applicantsData: Applicant[] = stored && Array.isArray(stored) ? (stored as Applicant[]) : [];
-
-      // Calcular estadísticas locales por ahora
-      const total = applicantsData.length;
-      const processingCount = Math.ceil(total * 0.75);
-      const blacklistCount = total - processingCount;
-
-      const stats: Statistic[] = [
-        { label: 'TOTAL POSTULANTES', value: total },
-        { label: 'EN PROCESO', value: processingCount },
-        { label: 'LISTA NEGRA', value: blacklistCount },
-      ];
-
-      setApplicants(applicantsData);
-      _setStatistics(stats);
-
-      // persist initial data
-      saveApplicantsToStorage(applicantsData);
-    } catch (error) {
-      handleError(error instanceof Error ? error : new Error('Error cargando postulantes'), {
-        componentStack: 'ApplicantsDashboard.loadInitialData'
-      });
-      showError('Error al cargar los postulantes');
-    } finally {
-      setLoading(false);
-    }
-  }, [handleError, showError]);
-
-  // Cargar datos iniciales
-  useEffect(() => {
-    loadInitialData();
-    const listener = () => loadInitialData();
-    window.addEventListener('applicantsUpdated', listener);
-    return () => window.removeEventListener('applicantsUpdated', listener);
-  }, [loadInitialData]);
 
   // Calcular estadísticas
   const stats = useMemo(() => {
@@ -114,6 +74,38 @@ export const ApplicantsDashboard = () => {
     return filteredApplicants.slice(startIndex, endIndex);
   }, [filteredApplicants, currentPage]);
 
+  // adjust page when the number of filtered applicants changes
+  // keep edited item visible and otherwise behave as before
+  const prevCount = useRef(filteredApplicants.length);
+  useEffect(() => {
+    const totalPages = Math.ceil(filteredApplicants.length / ITEMS_PER_PAGE) || 1;
+
+    // if we know which id was modified, jump to its page
+    if (lastModifiedId) {
+      const idx = filteredApplicants.findIndex(app => app.id === lastModifiedId);
+      if (idx !== -1) {
+        const page = Math.floor(idx / ITEMS_PER_PAGE) + 1;
+        setCurrentPage(page);
+        setLastModifiedId(null);
+        prevCount.current = filteredApplicants.length;
+        return;
+      }
+    }
+
+    setCurrentPage((cur) => {
+      // added new item
+      if (filteredApplicants.length > prevCount.current) {
+        return totalPages;
+      }
+      // removed items and current page became too large
+      if (cur > totalPages) {
+        return totalPages;
+      }
+      return cur;
+    });
+    prevCount.current = filteredApplicants.length;
+  }, [filteredApplicants.length, lastModifiedId]);
+
   const handleOpenModal = () => {
     setIsModalOpen(true);
   };
@@ -122,9 +114,40 @@ export const ApplicantsDashboard = () => {
     setIsModalOpen(false);
   };
 
+  // prevent duplicates except allowed fields
+  const ALLOWED_DUPLICATES = new Set([
+    'nombres',
+    'apellidos',
+    'documentType',
+    'positionOfInterest',
+    'company',
+    'status',
+    'campaign',
+  ]);
+
+  const validateNoDuplicates = (candidate: Partial<Applicant>, list: Applicant[], ignoreId?: string) => {
+    for (const app of list) {
+      if (ignoreId && app.id === ignoreId) continue;
+      for (const key of Object.keys(candidate)) {
+        if (ALLOWED_DUPLICATES.has(key)) continue;
+        const val = (candidate as any)[key];
+        if (val === undefined || val === null || val === '') continue;
+        if ((app as any)[key] === val) {
+          throw new Error(`Ya existe otro registro con el mismo valor de ${key}`);
+        }
+      }
+    }
+  };
+
   const handleOpenEditModal = (applicant: Applicant) => {
     setSelectedApplicant(applicant);
-    setIsEditModalOpen(true);
+    // delay opening until after click event finishes to avoid overlay auto-close
+    setTimeout(() => setIsEditModalOpen(true), 0);
+  };
+
+  const handleOpenHireModal = (applicant: Applicant) => {
+    setSelectedApplicant(applicant);
+    setTimeout(() => setIsHireModalOpen(true), 0);
   };
 
   const handleCloseEditModal = () => {
@@ -132,6 +155,12 @@ export const ApplicantsDashboard = () => {
     setSelectedApplicant(null);
   };
 
+  // open modal when an applicant is selected
+  useEffect(() => {
+    if (selectedApplicant) {
+      setIsEditModalOpen(true);
+    }
+  }, [selectedApplicant]);
 
   const handleCloseHireModal = () => {
     setIsHireModalOpen(false);
@@ -151,16 +180,20 @@ export const ApplicantsDashboard = () => {
       positionOfInterest: formData.positionOfInterest,
       modality: '',
       campaign: formData.campaign,
-      company: formData.company,
+      company: formData.company || '',
       status: 'POSTULANTE',
     };
 
-    setApplicants(prev => {
-      const updated = [...prev, newApplicant];
-      saveApplicantsToStorage(updated);
-      return updated;
-    });
+    try {
+      validateNoDuplicates(newApplicant, applicants);
+    } catch (err) {
+      if (err instanceof Error) {
+        showError(err.message);
+        return;
+      }
+    }
 
+    addApplicant(newApplicant);
     setIsModalOpen(false);
     showSuccess(`Postulante ${newApplicant.fullName} registrado`);
   };
@@ -172,16 +205,23 @@ export const ApplicantsDashboard = () => {
   const handleEditSubmit = async (formData: EditApplicantFormData) => {
     if (!selectedApplicant) return;
 
-    setApplicants(prev => {
-      const updated = prev.map(app =>
-        app.id === selectedApplicant.id
-          ? { ...app, ...formData, fullName: `${formData.nombres} ${formData.apellidos}` }
-          : app
-      );
-      saveApplicantsToStorage(updated);
-      return updated;
-    });
+    const updatedApplicant: Applicant = {
+      ...selectedApplicant,
+      ...formData,
+      fullName: `${formData.nombres} ${formData.apellidos}`,
+    };
 
+    try {
+      validateNoDuplicates(updatedApplicant, applicants, selectedApplicant.id);
+    } catch (err) {
+      if (err instanceof Error) {
+        showError(err.message);
+        return;
+      }
+    }
+
+    updateApplicant(selectedApplicant.id, updatedApplicant);
+    setLastModifiedId(selectedApplicant.id);
     setIsEditModalOpen(false);
     setSelectedApplicant(null);
     showSuccess(`Postulante ${formData.nombres} ${formData.apellidos} actualizado`);
@@ -223,10 +263,12 @@ export const ApplicantsDashboard = () => {
       // Por ahora, solo removemos el postulante localmente
       // TODO: Implementar en backend cuando esté disponible
 
-      // Actualizar estado local
-      setApplicants((prev) => prev.filter((app) => app.id !== selectedApplicant.id));
+      // Actualizar estado local y marcar como aceptado
+      const acceptedApplicant: Applicant = { ...selectedApplicant, status: 'APROBADO' };
+      updateApplicant(selectedApplicant.id, acceptedApplicant);
+      setLastModifiedId(selectedApplicant.id);
 
-      // Actualizar estadísticas
+      // Actualizar estadísticas (postulantes restantes)
       const total = applicants.length - 1;
       const processingCount = Math.ceil(total * 0.75);
       const blacklistCount = total - processingCount;
@@ -250,7 +292,7 @@ export const ApplicantsDashboard = () => {
   };
 
   const handleBlacklistApplicant = (applicant: Applicant) => {
-    setApplicants(applicants.filter((app) => app.id !== applicant.id));
+    updateApplicant(applicant.id, { ...applicant, status: 'EN_LISTA_NEGRA' });
     showSuccess(`${applicant.fullName} agregado a lista negra`);
   };
 
@@ -307,6 +349,7 @@ export const ApplicantsDashboard = () => {
           <ApplicantsTable
             applicants={paginatedApplicants}
             onEdit={handleEditApplicant}
+            onHire={handleOpenHireModal}
             onBlacklist={handleBlacklistApplicant}
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
@@ -331,12 +374,14 @@ export const ApplicantsDashboard = () => {
         title="Editar Postulante" 
         onClose={handleCloseEditModal}
       >
-        {selectedApplicant && (
+        {selectedApplicant ? (
           <EditApplicantForm 
             applicant={selectedApplicant}
             onSubmit={handleEditSubmit}
             onCancel={handleCloseEditModal}
           />
+        ) : (
+          <div>Loading applicant...</div>
         )}
       </Modal>
 

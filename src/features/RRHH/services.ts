@@ -1,4 +1,4 @@
-import type { HRUser, HRDashboardData } from './types';
+import type { HRUser, HRDashboardData, HREmployeeCard } from './types';
 
 export const getHRUser = async (id: string): Promise<HRUser> => {
   // Mock implementation
@@ -27,7 +27,7 @@ export const getHRDashboardData = async (): Promise<HRDashboardData> => {
         status: 'ACTIVE',
         createdAt: new Date(),
         updatedAt: new Date(),
-      },
+      } as HREmployeeCard,
     ],
     pendingReviews: [
       {

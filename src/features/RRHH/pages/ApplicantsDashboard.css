@@ -7,11 +7,16 @@
 }
 
 .dashboard-content {
-  flex: 1;
+  flex: 1 1 auto;
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 24px;
+
+  /* make the area scrollable when there are many applicants */
+  overflow-y: auto;
+  margin-top: 60px; /* account for fixed header */
+  height: calc(100vh - 60px);
 }
 
 /* Sección de Estadísticas */
@@ -36,14 +41,9 @@
   padding: 24px;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-}
+  /* ensure the overall section can grow but not push beyond view */
+  max-height: calc(100vh - 200px);
+  overflow: hidden; /* table container handles actual scrolling */
 
 .section-header h2 {
   margin: 0;
@@ -97,6 +97,14 @@
   color: #1F2937;
   font-family: inherit;
   outline: none;
+}
+
+/* force the search box to expand on small screens */
+@media (max-width: 768px) {
+  .search-container {
+    max-width: none;
+    width: 100%;
+  }
 }
 
 .search-input::placeholder {
@@ -186,3 +194,12 @@
     height: 36px;
   }
 }
+
+@media (max-width: 480px) {
+  .section-header h2 {
+    font-size: 12px;
+  }
+  .section-controls {
+    gap: 8px;
+  }
+} 

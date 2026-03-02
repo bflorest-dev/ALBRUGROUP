@@ -5,36 +5,47 @@
 import { BiFilter, BiSortAlt2, BiSearch } from 'react-icons/bi';
 import type { Applicant } from '../../../../../types';
 import './ApplicantsTable.css';
-import { useApplicantsTable } from '../../../../../hooks/useApplicantsTable';
 import { ApplicantsTableRow } from './ApplicantsTable/ApplicantsTableRow';
 
 interface ApplicantsTableProps {
   applicants: Applicant[];
-  onEdit: (applicant: Applicant) => void;
+  onEdit?: (applicant: Applicant) => void;
   onHire?: (applicant: Applicant) => void;
   onBlacklist?: (applicant: Applicant) => void;
+  onContract?: (applicant: Applicant) => void;
+  // show status column? default true
+  showStatus?: boolean;
   // search control
   searchTerm?: string;
   onSearchChange?: (value: string) => void;
 }
 
-export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlacklist, searchTerm, onSearchChange }: ApplicantsTableProps) => {
-  const {
-    filteredApplicants,
-    sortOrder,
-    setSortOrder,
-    filters,
-    handleFilterChange,
-    handleClearFilters,
-    hasActiveFilters,
-    uniqueDocTypes,
-    uniquePositions,
-    uniqueCampaigns,
-    uniqueCompanies,
-    uniqueStatuses,
-    activeFilter,
-    setActiveFilter,
-  } = useApplicantsTable(applicants);
+export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlacklist, onContract: _onContract, showStatus = true, searchTerm, onSearchChange }: ApplicantsTableProps) => {
+  const displayStatus = showStatus;
+  
+  // Skip internal table filtering when data is already paginated from parent
+  // Just use the applicants prop directly without the hook's re-filtering
+  const hasActiveFilters = false;
+  const activeFilter = null;
+  const setActiveFilter = () => {};
+  const sortOrder = null;
+  const setSortOrder = () => {};
+  const handleClearFilters = () => {};
+  const handleFilterChange = () => {};
+  const filters = {
+    phone: '',
+    documentType: '',
+    documentNumber: '',
+    position: '',
+    company: '',
+    status: '',
+    campaign: '',
+  };
+  const uniqueDocTypes: string[] = [];
+  const uniquePositions: string[] = [];
+  const uniqueCampaigns: string[] = [];
+  const uniqueCompanies: string[] = [];
+  const uniqueStatuses: string[] = [];
 
   return (
     <div className="applicants-table-container">
@@ -53,7 +64,7 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlackli
       {hasActiveFilters && (
         <div className="active-filters-bar">
           <div className="active-filters-info">
-            <span className="filter-count">Mostrando {filteredApplicants.length} de {applicants.length} postulantes</span>
+            <span className="filter-count">Mostrando {applicants.length} postulantes</span>
             <button className="clear-all-filters-btn" onClick={handleClearFilters}>
               Limpiar filtros
             </button>
@@ -224,6 +235,7 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlackli
               </div>
             </th>
 
+            {displayStatus && (
             <th>
               <div className="th-content">
                 <span>STATUS</span>
@@ -253,6 +265,7 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlackli
                 </div>
               </div>
             </th>
+            )}
             <th>
               <div className="th-content">
                 <span>CAMPAÑA</span>
@@ -288,18 +301,28 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlackli
           </tr>
         </thead>
         <tbody>
-          {filteredApplicants.map((applicant) => (
-            <ApplicantsTableRow
-              key={applicant.id}
-              applicant={applicant}
-              onEdit={onEdit}
-              onHire={_onHire}
-              onBlacklist={onBlacklist}
-            />
-          ))}
+          {applicants.length === 0 ? (
+            <tr>
+              <td colSpan={displayStatus ? 9 : 8} className="empty-state">
+                No hay postulantes que mostrar
+              </td>
+            </tr>
+          ) : (
+            applicants.map((applicant) => (
+              <ApplicantsTableRow
+                key={applicant.id}
+                applicant={applicant}
+                onEdit={onEdit}
+                onHire={_onHire}
+                onBlacklist={onBlacklist}
+                onContract={_onContract}
+                showStatus={displayStatus}
+              />
+            ))
+          )}
         </tbody>
       </table>
-      {filteredApplicants.length === 0 && (
+      {applicants.length === 0 && (
         <div className="empty-state">
           <p>{hasActiveFilters ? 'No hay postulantes que coincidan con los filtros' : 'No hay postulantes registrados'}</p>
         </div>

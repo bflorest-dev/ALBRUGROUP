@@ -213,6 +213,34 @@
   flex-shrink: 0;
 }
 
+/* responsive tweaks for the employee table */
+@media (max-width: 1024px) {
+  .employee-table th,
+  .employee-table td {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  .action-btn {
+    font-size: 16px;
+    padding: 4px 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .employee-table th {
+    font-size: 10px;
+    padding: 8px;
+  }
+  .employee-table td {
+    font-size: 11px;
+    padding: 8px;
+  }
+  .action-buttons {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}
+
 .employee-name {
   font-weight: 500;
   color: #1F2937;

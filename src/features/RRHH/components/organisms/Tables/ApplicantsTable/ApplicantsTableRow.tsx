@@ -1,5 +1,5 @@
 import React from 'react';
-import { BiEdit, BiBlock, BiUserPlus } from 'react-icons/bi';
+import { BiEdit, BiBlock, BiUserPlus, BiFile } from 'react-icons/bi';
 import type { Applicant } from '../../../../../../types';
 
 interface ApplicantsTableRowProps {
@@ -7,6 +7,8 @@ interface ApplicantsTableRowProps {
   onEdit: (applicant: Applicant) => void;
   onHire?: (applicant: Applicant) => void; // optional, hide button when undefined
   onBlacklist?: (applicant: Applicant) => void;
+  onContract?: (applicant: Applicant) => void;
+  showStatus?: boolean;
 }
 
 export const ApplicantsTableRow: React.FC<ApplicantsTableRowProps> = ({
@@ -14,19 +16,21 @@ export const ApplicantsTableRow: React.FC<ApplicantsTableRowProps> = ({
   onEdit,
   onHire,
   onBlacklist,
+  onContract,
+  showStatus = true,
 }) => {
   return (
     <tr>
-      <td>{applicant.fullName}</td>
+      <td className="applicant-name">{applicant.fullName}</td>
       <td>{applicant.phoneMobile}</td>
       <td>{applicant.documentType}</td>
       <td>{applicant.documentNumber}</td>
       <td>{applicant.positionOfInterest}</td>
       <td className={`company-cell ${applicant.company?.toLowerCase()}`}>{applicant.company}</td>
-      <td>{applicant.status || 'POSTULANTE'}</td>
+      {showStatus && <td>{applicant.status || 'POSTULANTE'}</td>}
       <td>{applicant.campaign}</td>
       <td className="cell-actions">
-        <button className="action-btn edit-btn" onClick={() => onEdit(applicant)} title="Editar">
+        <button className="action-btn edit-btn" onClick={() => { onEdit(applicant); }} title="Editar">
           <BiEdit />
         </button>
         {onHire && (
@@ -34,7 +38,12 @@ export const ApplicantsTableRow: React.FC<ApplicantsTableRowProps> = ({
           <BiUserPlus />
         </button>
       )}
-        {onBlacklist && (
+        {onContract && (
+          <button className="action-btn contract-btn" onClick={() => onContract(applicant)} title="Contratar">
+            <BiFile />
+          </button>
+        )}
+        {onBlacklist && applicant.status !== 'LISTA_NEGRA' && (
           <button className="action-btn blacklist-btn" onClick={() => onBlacklist(applicant)} title="Lista negra">
             <BiBlock />
           </button>
