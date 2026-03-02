@@ -127,4 +127,18 @@ button:focus-visible {
 
 .dark .dark-toggle-wrapper { opacity: 1; }
 
+/* Global style for disabled inputs/selects/areas */
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: #f3f4f6 !important;
+  color: #6b7280 !important;
+}
+
+/* allow using .disabled on groups/rows to dim whole section */
+.form-group.disabled,
+.form-row.disabled {
+  opacity: 0.6;
+}
+
 
