@@ -299,7 +299,9 @@ const RECHAZADO_REASONS: string[] = [
         updateApplicant(selectedForTipify.id, updated);
       } else {
         // Caso normal: cambiar el status
-        const updated: any = { ...selectedForTipify, status: tipifyStatus };
+        // Cuando se tipifica como RECLUTADO, internamente se guarda como POR_CAPACITAR
+        const newStatus = tipifyStatus === 'RECLUTADO' ? 'POR_CAPACITAR' : tipifyStatus;
+        const updated: any = { ...selectedForTipify, status: newStatus };
         if (tipifyStatus === 'RECLUTADO' && startDate) {
           updated.startDate = startTime ? `${startDate} ${startTime}` : startDate;
         }
@@ -344,21 +346,17 @@ const RECHAZADO_REASONS: string[] = [
       <Modal className="tipify-modal" isOpen={isTipifyModalOpen} title={selectedForTipify?.status === 'NO_INTERESADO' ? 'Motivo de No Interés' : selectedForTipify?.status === 'RECHAZADO' ? 'Motivo de Rechazo' : 'Tipificar'} onClose={() => setIsTipifyModalOpen(false)}>
         {selectedForTipify && (
           <div className="tipify-form">
-        {selectedForTipify?.status !== 'NO_INTERESADO' && selectedForTipify?.status !== 'RECHAZADO' && (
-              <>
-                <label htmlFor="status-select">Seleccionar estado</label>
-                <select
-                  id="status-select"
-                  value={tipifyStatus}
-                  onChange={(e) => handleTipifyStatusChange(e.target.value)}
-                >
-                  <option value="">Tipifica</option>
-                  {getAvailableStatuses().map(s => (
-                    <option key={s} value={s}>{s.replace('_', ' ')}</option>
-                  ))}
-                </select>
-              </>
-            )}
+            <label htmlFor="status-select">Seleccionar estado</label>
+            <select
+              id="status-select"
+              value={tipifyStatus || selectedForTipify?.status || ''}
+              onChange={(e) => handleTipifyStatusChange(e.target.value)}
+            >
+              <option value="">Tipifica</option>
+              {getAvailableStatuses().map(s => (
+                <option key={s} value={s}>{s.replace('_', ' ')}</option>
+              ))}
+            </select>
             {tipifyStatus === 'RECLUTADO' && (
               <>
                 <label htmlFor="start-date">Fecha Inicio</label>
@@ -391,7 +389,7 @@ const RECHAZADO_REASONS: string[] = [
                 />
               </>
             )}
-            {tipifyStatus === 'NO_INTERESADO' && (
+            {(tipifyStatus === 'NO_INTERESADO' || (tipifyStatus === '' && selectedForTipify?.status === 'NO_INTERESADO')) && (
               <>
                 <label htmlFor="reason-select">Motivo de no interes</label>
                 <select
@@ -399,6 +397,7 @@ const RECHAZADO_REASONS: string[] = [
                   value={selectedReason}
                   onChange={e => setSelectedReason(e.target.value)}
                 >
+                  <option value="">Seleccione motivo...</option>
                   {reasonOptions.length ? (
                     reasonOptions.map(r => (
                       <option key={r} value={r}>{r.replace(/_/g, ' ')}</option>
@@ -409,7 +408,7 @@ const RECHAZADO_REASONS: string[] = [
                 </select>
               </>
             )}
-            {selectedForTipify?.status === 'NO_INTERESADO' && (
+            {selectedForTipify?.status === 'NO_INTERESADO' && !tipifyStatus && (
               <>
                 <label>Motivo de no interes</label>
                 <div className="read-only-field">
@@ -417,7 +416,7 @@ const RECHAZADO_REASONS: string[] = [
                 </div>
               </>
             )}
-            {tipifyStatus === 'RECHAZADO' && (
+            {(tipifyStatus === 'RECHAZADO' || (tipifyStatus === '' && selectedForTipify?.status === 'RECHAZADO')) && (
               <>
                 <label htmlFor="rejected-reason-select">Motivo de rechazo</label>
                 <select
@@ -425,6 +424,7 @@ const RECHAZADO_REASONS: string[] = [
                   value={selectedReason}
                   onChange={e => setSelectedReason(e.target.value)}
                 >
+                  <option value="">Seleccione motivo...</option>
                   {reasonOptions.length ? (
                     reasonOptions.map(r => <option key={r} value={r}>{r.replace(/_/g, ' ')}</option>)
                   ) : (
@@ -433,7 +433,7 @@ const RECHAZADO_REASONS: string[] = [
                 </select>
               </>
             )}
-            {selectedForTipify?.status === 'RECHAZADO' && (
+            {selectedForTipify?.status === 'RECHAZADO' && !tipifyStatus && (
               <>
                 <label>Motivo de rechazo</label>
                 <div className="read-only-field">
