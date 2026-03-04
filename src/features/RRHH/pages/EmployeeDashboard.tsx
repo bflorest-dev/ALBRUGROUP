@@ -508,6 +508,10 @@ export const EmployeeDashboard = () => {
     bank: '',
     accountNumber: '',
     interbankNumber: '',
+    ownAccount: '',
+    kinship: '',
+    cellularTransfer: '',
+    contractorCompany: '',
     regimen: '',
     modalidad: '',
     seguro: '',
@@ -527,7 +531,7 @@ export const EmployeeDashboard = () => {
   const districts = [
     'ANCÓN','ATE','BARRANCO','BREÑA','CARABAYLLO','CERCADO DE LIMA','CHACLACAYO','CHORRILLOS','CIENEGUILLA','COMAS','EL AGUSTINO','INDEPENDENCIA','JESÚS MARÍA','LA MOLINA','LA VICTORIA','LINCE','LOS OLIVOS','LURÍN','LURIGANCHO','MAGDALENA DEL MAR','MIRAFLORES','PACHACÁMAC','PUCUSANA','PUEBLO LIBRE','PUENTE PIEDRA','PUNTA HERMOSA','PUNTA NEGRA','RÍMAC','SAN BARTOLO','SAN BORJA','SAN ISIDRO','SAN JUAN DE LURIGANCHO','SAN JUAN DE MIRAFLORES','SAN LUIS','SAN MARTÍN DE PORRES','SAN MIGUEL','SANTA ANITA','SANTA MARÍA DEL MAR','SANTA ROSA','SANTIAGO DE SURCO','SURQUILLO','VILLA EL SALVADOR','VILLA MARÍA DEL TRIUNFO'
   ];
-  const banks = ['BCP','BBVA','INTERBANK','SCOTIABANK','BANCO DE LA NACION'];
+  const banks = ['BCP','BBVA','INTERBANK','SCOTIABANK'];
 
   // flujos de lista negra (mantener después de edicion state)
   const [isBlacklistModalOpen, setIsBlacklistModalOpen] = useState(false);
@@ -634,6 +638,40 @@ export const EmployeeDashboard = () => {
     });
   };
 
+  const handleCellularTransferChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    // Solo permitir números y máximo 9 dígitos
+    const filtered = value.replace(/\D/g, '').slice(0, 9);
+    setContractData(prev => ({ ...prev, cellularTransfer: filtered }));
+  };
+
+  const handleAccountNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    // Solo permitir números
+    let filtered = value.replace(/\D/g, '');
+    
+    // Determinar máximo de dígitos según el banco
+    const maxDigits = {
+      'BCP': 14,
+      'BBVA': 18,
+      'INTERBANK': 13,
+      'SCOTIABANK': 10
+    };
+    
+    const currentBank = contractData.bank as keyof typeof maxDigits;
+    const max = maxDigits[currentBank] || 20; // Default 20 si no hay banco seleccionado
+    
+    filtered = filtered.slice(0, max);
+    setContractData(prev => ({ ...prev, accountNumber: filtered }));
+  };
+
+  const handleInterbankNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    // Solo permitir números y máximo 20 dígitos
+    const filtered = value.replace(/\D/g, '').slice(0, 20);
+    setContractData(prev => ({ ...prev, interbankNumber: filtered }));
+  };
+
   const handleOpenContractModal = (applicant: Applicant) => {
     setCurrentContractId(applicant.id);
     setCurrentContractApplicant(applicant);
@@ -649,6 +687,10 @@ export const EmployeeDashboard = () => {
       bank: applicant.bank ?? '',
       accountNumber: applicant.accountNumber ?? '',
       interbankNumber: applicant.interbankNumber ?? '',
+      ownAccount: applicant.contractOwnAccount ?? '',
+      kinship: applicant.contractKinship ?? '',
+      cellularTransfer: applicant.contractCellularTransfer ?? '',
+      contractorCompany: applicant.contractorCompany ?? '',
       regimen: applicant.contractRegimen ?? '',
       modalidad: applicant.contractModalidad ?? '',
       seguro: applicant.contractSeguro ?? '',
@@ -687,6 +729,10 @@ export const EmployeeDashboard = () => {
               bank: contractData.bank,
               accountNumber: contractData.accountNumber,
               interbankNumber: contractData.interbankNumber,
+              contractOwnAccount: contractData.ownAccount,
+              contractKinship: contractData.kinship,
+              contractCellularTransfer: contractData.cellularTransfer,
+              contractorCompany: contractData.contractorCompany as any,
               contractRegimen: contractData.regimen as any,
               contractModalidad: contractData.modalidad as any,
               contractSeguro: contractData.seguro as any,
@@ -988,7 +1034,7 @@ export const EmployeeDashboard = () => {
                       modality: '',
                       campaign: formData.campaign,
                       company: formData.company,
-                      status: 'POSTULANTE',
+                      status: 'POR_RECLUTAR',
                     };
                     setApplicants(prev => {
                       const updated = [...prev, newApplicant];
@@ -1068,155 +1114,144 @@ export const EmployeeDashboard = () => {
           onClose={() => { setIsContractModalOpen(false); setCurrentContractApplicant(null); }}
         >
           <div className="contract-form">
+            {/* COLUMN 1: EMPLEADO */}
             <div className="section-group disabled">
-              {/* personal data column */}
-              <h3 className="section-title">DATOS DEL EMPLEADO</h3>
-              <label>NOMBRES</label>
+              <h3 className="section-title">EMPLEADO</h3>
+              <label>Nombres</label>
               <input type="text" value={currentContractApplicant?.nombres || ''} disabled />
-              <label>APELLIDOS</label>
+              <label>Apellidos</label>
               <input type="text" value={currentContractApplicant?.apellidos || ''} disabled />
-              <label>TIPO DE DOCUMENTO</label>
+              <label>Doc.</label>
               <select value={currentContractApplicant?.documentType || ''} disabled>
                 <option value="">Seleccione...</option>
                 {documentTypes.map(dt => <option key={dt} value={dt}>{dt}</option>)}
               </select>
-              <label>NÚMERO DE DOCUMENTO</label>
+              <label>N°Doc</label>
               <input type="text" value={currentContractApplicant?.documentNumber || ''} disabled />
-              <label>NACIONALIDAD</label>
+            </div>
+
+            {/* COLUMN 2: DATOS PERSONALES & CONTACTO */}
+            <div className="section-group">
+              <h3 className="section-title">DATOS PERSONALES & CONTACTO</h3>
+              <label>Fecha Nac.</label>
+              <input type="date" name="birthDate" value={contractData.birthDate} onChange={handleContractChange} />
+              <label>Nacionalidad</label>
               <select name="nationality" value={contractData.nationality} onChange={handleContractChange}>
                 <option value="">Seleccione...</option>
                 {nationalities.map(n => <option key={n} value={n}>{n}</option>)}
               </select>
-              <label>FECHA DE NACIMIENTO</label>
-              <input type="date" name="birthDate" value={contractData.birthDate} onChange={handleContractChange} />
-              <label>ESTADO CIVIL</label>
+              <label>Estado Civil</label>
               <select name="civilStatus" value={contractData.civilStatus} onChange={handleContractChange}>
                 <option value="">Seleccione...</option>
                 {civilStatuses.map(cs => <option key={cs} value={cs}>{cs}</option>)}
               </select>
-              <label>¿TIENE HIJOS?</label>
+              <label>¿Hijos?</label>
               <select name="hasChildren" value={contractData.hasChildren} onChange={handleContractChange}>
                 {yesNo.map(v => <option key={v} value={v}>{v}</option>)}
               </select>
-            </div>
-            <div className="section-group">
-              {/* contact + location + bank column */}
-              <h3 className="section-title">CONTACTO</h3>
-              <div className="form-group disabled">
-                <label>CELULAR PERSONAL</label>
-                <input type="text" value={currentContractApplicant?.phoneMobile || ''} disabled />
-              </div>
-              <div className="form-group">
-                <label>CORREO PERSONAL</label>
-                <input type="email" name="personalEmail" value={contractData.personalEmail} onChange={handleContractChange} />
-              </div>
-
-              <h3 className="section-title">UBICACIÓN</h3>
-              <label>DISTRITO</label>
+              <label>Celular</label>
+              <input type="text" value={currentContractApplicant?.phoneMobile || ''} disabled />
+              <label>Email</label>
+              <input type="email" name="personalEmail" value={contractData.personalEmail} onChange={handleContractChange} />
+              <label>Distrito</label>
               <select name="district" value={contractData.district} onChange={handleContractChange}>
                 <option value="">Seleccione...</option>
                 {districts.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
-              <label>DIRECCIÓN</label>
+              <label>Dirección</label>
               <input type="text" name="address" value={contractData.address} onChange={handleContractChange} />
+            </div>
 
-              <h3 className="section-title">BANCOS</h3>
-              <label>BANCO</label>
+            {/* COLUMN 3: INFORMACIÓN LABORAL */}
+            <div className="section-group">
+              <h3 className="section-title">INFORMACIÓN LABORAL</h3>
+              <label>Régimen</label>
+              <select name="regimen" value={contractData.regimen} onChange={handleContractChange}>
+                <option value="">Seleccione...</option>
+                <option value="RECIBO POR HONORARIOS">RxH</option>
+                <option value="PLANILLA">PLANILLA</option>
+              </select>
+              {contractData.regimen === 'PLANILLA' && (
+                <>
+                  <label>Seguro</label>
+                  <select name="seguro" value={contractData.seguro} onChange={handleContractChange}>
+                    <option value="">Seleccione...</option>
+                    <option value="SIS">SIS</option>
+                    <option value="ESSALUD">ESSALUD</option>
+                  </select>
+                  <label>Pensión</label>
+                  <select name="pension" value={contractData.pension} onChange={handleContractChange}>
+                    <option value="">Seleccione...</option>
+                    <option value="ONP">ONP</option>
+                    <option value="AFP INTEGRA">AFP INT.</option>
+                    <option value="AFP PROFUTURO">AFP PRO.</option>
+                    <option value="AFP HABITAT">AFP HAB.</option>
+                    <option value="AFP PRIMA">AFP PRIMA</option>
+                  </select>
+                </>
+              )}
+              <label>Modalidad</label>
+              <select name="modalidad" value={contractData.modalidad} onChange={handleContractChange}>
+                <option value="">Seleccione...</option>
+                <option value="PART TIME">P.TIME</option>
+                <option value="SEMI FULL">S.FULL</option>
+                <option value="FULL TIME">FULL</option>
+                <option value="SUPER FULL">S.FULL+</option>
+              </select>
+              <label>Puesto</label>
+              <input type="text" value={(currentContractApplicant?.positionOfInterest || '').replace(/_/g, ' ')} disabled />
+              <label>Campaña</label>
+              <input type="text" value={currentContractApplicant?.campaign || ''} disabled />
+              <label>Compañía</label>
+              <input type="text" value={currentContractApplicant?.company || ''} disabled />
+              <label>Inicio</label>
+              <input name="startDate" type="date" value={contractData.startDate} onChange={handleContractChange} />
+              <label>Sueldo</label>
+              <div className="salary-input-group">
+                <span className="salary-symbol">S/.</span>
+                <input name="salary" type="number" value={contractData.salary} onChange={handleContractChange} />
+              </div>
+            </div>
+
+            {/* COLUMN 4: INFORMACIÓN BANCARIA & TRANSFERENCIA */}
+            <div className="section-group">
+              <h3 className="section-title">INFORMACIÓN BANCARIA & TRANSFERENCIA</h3>
+              <label>Banco</label>
               <select name="bank" value={contractData.bank} onChange={handleContractChange}>
                 <option value="">Seleccione...</option>
                 {banks.map(b => <option key={b} value={b}>{b}</option>)}
               </select>
-              <label>CUENTA BANCARIA</label>
-              <input type="text" name="accountNumber" value={contractData.accountNumber} onChange={handleContractChange} />
-              <label>CUENTA INTERBANCARIA</label>
-              <input type="text" name="interbankNumber" value={contractData.interbankNumber} onChange={handleContractChange} />
+              <label>Cuenta</label>
+              <input type="text" name="accountNumber" value={contractData.accountNumber} onChange={handleAccountNumberChange} />
+              <label>Interbancaria</label>
+              <input type="text" name="interbankNumber" value={contractData.interbankNumber} onChange={handleInterbankNumberChange} />
+              <label>Cuenta propia?</label>
+              <select name="ownAccount" value={contractData.ownAccount} onChange={handleContractChange}>
+                <option value="">Seleccione...</option>
+                <option value="Sí">Sí</option>
+                <option value="No">No</option>
+              </select>
+              <label>Parentesco</label>
+              <select name="kinship" value={contractData.kinship} onChange={handleContractChange}>
+                <option value="">Seleccione...</option>
+                <option value="PADRE">PADRE</option>
+                <option value="MADRE">MADRE</option>
+                <option value="TÍO/A">TÍO/A</option>
+                <option value="ESPOSO/A">ESPOSO/A</option>
+                <option value="HERMANO/A">HERMANO/A</option>
+                <option value="ABUELO/A">ABUELO/A</option>
+                <option value="PAREJA">PAREJA</option>
+                <option value="OTRO">OTRO</option>
+              </select>
+              <label>Celular Transferencia</label>
+              <input type="text" name="cellularTransfer" value={contractData.cellularTransfer} onChange={handleCellularTransferChange} maxLength={9} />
+              <label>Empresa Contratista</label>
+              <select name="contractorCompany" value={contractData.contractorCompany} onChange={handleContractChange}>
+                <option value="">Seleccione...</option>
+                <option value="ALBRU">ALBRU</option>
+                <option value="RUNA">RUNA</option>
+              </select>
             </div>
-            <div className="section-group">
-              {/* contract settings column */}
-              <h3 className="section-title">CONTRATO</h3>
-              <label>REGIMEN</label>
-            <select name="regimen" value={contractData.regimen} onChange={handleContractChange}>
-              <option value="">Seleccione...</option>
-              <option value="RECIBO POR HONORARIOS">RECIBO POR HONORARIOS</option>
-              <option value="PLANILLA">PLANILLA</option>
-            </select>
-
-            <label>MODALIDAD</label>
-            <select name="modalidad" value={contractData.modalidad} onChange={handleContractChange}>
-              <option value="">Seleccione...</option>
-              <option value="PART TIME">PART TIME</option>
-              <option value="SEMI FULL">SEMI FULL</option>
-              <option value="FULL TIME">FULL TIME</option>
-              <option value="SUPER FULL">SUPER FULL</option>
-            </select>
-
-            {contractData.regimen === 'PLANILLA' && (
-              <>
-                <label>SEGURO DE SALUD</label>
-                <select name="seguro" value={contractData.seguro} onChange={handleContractChange}>
-                  <option value="">Seleccione...</option>
-                  <option value="SIS">SIS</option>
-                  <option value="ESSALUD">ESSALUD</option>
-                </select>
-
-                <label>SISTEMA PENSIONES</label>
-                <select name="pension" value={contractData.pension} onChange={handleContractChange}>
-                  <option value="">Seleccione...</option>
-                  <option value="ONP">ONP</option>
-                  <option value="AFP INTEGRA">AFP INTEGRA</option>
-                  <option value="AFP PROFUTURO">AFP PROFUTURO</option>
-                  <option value="AFP HABITAT">AFP HABITAT</option>
-                  <option value="AFP PRIMA">AFP PRIMA</option>
-                </select>
-              </>
-            )}
-
-            <label>SUELDO BASE</label>
-            <div className="salary-input-group">
-              <span className="salary-symbol">S/.</span>
-              <input
-                name="salary"
-                type="number"
-                value={contractData.salary}
-                onChange={handleContractChange}
-              />
-            </div>
-
-            <label>FECHA DE INICIO</label>
-            <input
-              name="startDate"
-              type="date"
-              value={contractData.startDate}
-              onChange={handleContractChange}
-            />
-
-            <div className="form-group disabled">
-              <label>PUESTO DE INTERÉS</label>
-              <input
-                type="text"
-                value={currentContractApplicant?.positionOfInterest || ''}
-                disabled
-              />
-            </div>
-
-            <div className="form-group disabled">
-              <label>CAMPAÑA</label>
-              <input
-                type="text"
-                value={currentContractApplicant?.campaign || ''}
-                disabled
-              />
-            </div>
-
-            <div className="form-group disabled">
-              <label>COMPAÑÍA</label>
-              <input
-                type="text"
-                value={currentContractApplicant?.company || ''}
-                disabled
-              />
-            </div>
-            </div> {/* end contract settings section-group */}
 
             <div className="modal-actions">
               <button onClick={() => setIsContractModalOpen(false)}>Cancelar</button>

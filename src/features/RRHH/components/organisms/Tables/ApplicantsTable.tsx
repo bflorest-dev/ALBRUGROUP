@@ -197,7 +197,7 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlackli
                       >
                         <option value="">Todos</option>
                         {uniquePositions.map((pos) => (
-                          <option key={pos} value={pos}>{pos}</option>
+                          <option key={pos} value={pos}>{pos.replace(/_/g, ' ')}</option>
                         ))}
                       </select>
                     </div>

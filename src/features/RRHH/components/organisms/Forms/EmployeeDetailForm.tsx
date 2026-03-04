@@ -13,7 +13,7 @@ const civilStatuses = ['SOLTERO', 'CASADO', 'VIUDO', 'DIVORCIADO'];
 const districts = [
   'ANCÓN','ATE','BARRANCO','BREÑA','CARABAYLLO','CERCADO DE LIMA','CHACLACAYO','CHORRILLOS','CIENEGUILLA','COMAS','EL AGUSTINO','INDEPENDENCIA','JESÚS MARÍA','LA MOLINA','LA VICTORIA','LINCE','LOS OLIVOS','LURÍN','LURIGANCHO','MAGDALENA DEL MAR','MIRAFLORES','PACHACÁMAC','PUCUSANA','PUEBLO LIBRE','PUENTE PIEDRA','PUNTA HERMOSA','PUNTA NEGRA','RÍMAC','SAN BARTOLO','SAN BORJA','SAN ISIDRO','SAN JUAN DE LURIGANCHO','SAN JUAN DE MIRAFLORES','SAN LUIS','SAN MARTÍN DE PORRES','SAN MIGUEL','SANTA ANITA','SANTA MARÍA DEL MAR','SANTA ROSA','SANTIAGO DE SURCO','SURQUILLO','VILLA EL SALVADOR','VILLA MARÍA DEL TRIUNFO'
 ];
-const banks = ['BCP','BBVA','INTERBANK','SCOTIABANK','BANCO DE LA NACION'];
+const banks = ['BCP','BBVA','INTERBANK','SCOTIABANK'];
 const regimens = ['RECIBO POR HONORARIOS', 'PLANILLA'];
 const modalities = ['PART TIME', 'SEMI FULL', 'FULL TIME', 'SUPER FULL'];
 const seguros = ['SIS', 'ESSALUD'];
@@ -22,6 +22,9 @@ const positions = [
   'ASESOR_VENTAS', 'ASESOR_POSTVENTA', 'ASESOR_GTR', 'ASESOR_BACKOFFICE', 'SUPERVISOR_VENTAS', 'SUPERVISOR_POSTVENTA', 'SUPERVISOR_GTR', 'SUPERVISOR_BACKOFFICE', 'CAPACITACION', 'RRHH', 'CONTABILIDAD', 'COMMUNITY', 'DESARROLLADOR', 'RECLUTAMIENTO'
 ];
 const statuses = ['ACTIVO', 'INACTIVO'];
+const kinships = ['PADRE', 'MADRE', 'TÍO/A', 'ESPOSO/A', 'HERMANO/A', 'ABUELO/A', 'PAREJA', 'OTRO'];
+const contractorCompanies = ['ALBRU', 'RUNA'];
+const yesNoOptions = ['Sí', 'No'];
 
 interface EmployeeDetailFormProps {
   employee: Employee;
@@ -40,7 +43,7 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
   console.log('EmployeeDetailForm - formData:', formData);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type, checked } = e.target as any;
+    const { name, value } = e.target as any;
     let newVal: any = value;
     if (name === 'hasChildren') {
       newVal = value === 'SI' || value === true;
@@ -64,48 +67,49 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
   return (
     <form className="employee-detail-form" onSubmit={handleSubmit}>
       <div className="form-sections-detail">
-        {/* personal info column */}
-        <div className="section-group">
-          <h3 className="section-title">DATOS PERSONALES</h3>
-          <label>NOMBRES</label>
+        {/* COLUMN 1: EMPLEADO */}
+        <div className="section-group disabled">
+          <h3 className="section-title">EMPLEADO</h3>
+          <label>Nombres</label>
           <input
             name="nombres"
             value={formData.nombres || ''}
             onChange={handleChange}
-            disabled={disabled}
+            disabled={true}
           />
-          <label>APELLIDOS</label>
+          <label>Apellidos</label>
           <input
             name="apellidos"
             value={formData.apellidos || ''}
             onChange={handleChange}
-            disabled={disabled}
+            disabled={true}
           />
-          <label>TIPO DE DOCUMENTO</label>
-          {disabled ? (
-            <input
-              value={formData.documentType || ''}
-              disabled
-            />
-          ) : (
-            <select
-              name="documentType"
-              value={formData.documentType || ''}
-              onChange={handleChange}
-            >
-              <option value="">Seleccione...</option>
-              <option value="DNI">DNI</option>
-              <option value="CE">CE</option>
-            </select>
-          )}
-          <label>NÚMERO DE DOCUMENTO</label>
+          <label>Doc.</label>
+          <input
+            value={formData.documentType || ''}
+            disabled={true}
+          />
+          <label>N°Doc</label>
           <input
             name="documentNumber"
             value={formData.documentNumber || ''}
             onChange={handleChange}
+            disabled={true}
+          />
+        </div>
+
+        {/* COLUMN 2: DATOS PERSONALES & CONTACTO */}
+        <div className="section-group">
+          <h3 className="section-title">DATOS PERSONALES & CONTACTO</h3>
+          <label>Fecha Nac.</label>
+          <input
+            type="date"
+            name="birthDate"
+            value={formData.birthDate || ''}
+            onChange={handleChange}
             disabled={disabled}
           />
-          <label>NACIONALIDAD</label>
+          <label>Nacionalidad</label>
           {disabled ? (
             <input
               value={formData.nationality || ''}
@@ -121,15 +125,7 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
               {nationalities.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
           )}
-          <label>FECHA DE NACIMIENTO</label>
-          <input
-            type="date"
-            name="birthDate"
-            value={formData.birthDate || ''}
-            onChange={handleChange}
-            disabled={disabled}
-          />
-          <label>ESTADO CIVIL</label>
+          <label>Estado Civil</label>
           {disabled ? (
             <input
               value={formData.civilStatus || ''}
@@ -145,7 +141,7 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
               {civilStatuses.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           )}
-          <label>¿TIENE HIJOS?</label>
+          <label>¿Hijos?</label>
           {disabled ? (
             <input
               value={formData.hasChildren ? 'SI' : 'NO'}
@@ -162,27 +158,21 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
               <option value="NO">NO</option>
             </select>
           )}
-        </div>
-
-        {/* contact & location */}
-        <div className="section-group">
-          <h3 className="section-title">CONTACTO</h3>
-          <label>CELULAR PERSONAL</label>
+          <label>Celular</label>
           <input
             name="phoneMobile"
             value={formData.phoneMobile || ''}
             onChange={handleChange}
             disabled={disabled}
           />
-          <label>CORREO PERSONAL</label>
+          <label>Email</label>
           <input
             name="personalEmail"
             value={formData.personalEmail || ''}
             onChange={handleChange}
             disabled={disabled}
           />
-          <h3 className="section-title">UBICACIÓN</h3>
-          <label>DISTRITO</label>
+          <label>Distrito</label>
           {disabled ? (
             <input
               value={formData.district || ''}
@@ -198,50 +188,19 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
               {districts.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
           )}
-          <label>DIRECCIÓN</label>
+          <label>Dirección</label>
           <input
             name="address"
             value={formData.address || ''}
             onChange={handleChange}
             disabled={disabled}
           />
-          <h3 className="section-title">BANCOS</h3>
-          <label>BANCO</label>
-          {disabled ? (
-            <input
-              value={formData.bank || ''}
-              disabled
-            />
-          ) : (
-            <select
-              name="bank"
-              value={formData.bank || ''}
-              onChange={handleChange}
-            >
-              <option value="">Seleccione...</option>
-              {banks.map(b => <option key={b} value={b}>{b}</option>)}
-            </select>
-          )}
-          <label>CUENTA BANCARIA</label>
-          <input
-            name="accountNumber"
-            value={formData.accountNumber || ''}
-            onChange={handleChange}
-            disabled={disabled}
-          />
-          <label>CUENTA INTERBANCARIA</label>
-          <input
-            name="interbankNumber"
-            value={formData.interbankNumber || ''}
-            onChange={handleChange}
-            disabled={disabled}
-          />
         </div>
 
-        {/* contract / job */}
+        {/* COLUMN 3: INFORMACIÓN LABORAL */}
         <div className="section-group">
-          <h3 className="section-title">CONTRATO</h3>
-          <label>REGIMEN</label>
+          <h3 className="section-title">INFORMACIÓN LABORAL</h3>
+          <label>Régimen</label>
           {disabled ? (
             <input
               value={(formData as any).contractRegimen || ''}
@@ -257,7 +216,7 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
               {regimens.map(r => <option key={r} value={r}>{r}</option>)}
             </select>
           )}
-          <label>MODALIDAD</label>
+          <label>Modalidad</label>
           {disabled ? (
             <input
               value={(formData as any).contractModalidad || ''}
@@ -273,9 +232,64 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
               {modalities.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
           )}
+          <label>Puesto</label>
+          {disabled ? (
+            <input
+              value={(formData.position || '').replace(/_/g, ' ')}
+              disabled
+            />
+          ) : (
+            <select
+              name="position"
+              value={formData.position || ''}
+              onChange={handleChange}
+            >
+              <option value="">Seleccione...</option>
+              {positions.map(p => <option key={p} value={p}>{p.replace(/_/g, ' ')}</option>)}
+            </select>
+          )}
+          <label>Estado</label>
+          {disabled ? (
+            <input
+              value={formData.status || ''}
+              disabled
+            />
+          ) : (
+            <select
+              name="status"
+              value={formData.status || ''}
+              onChange={handleChange}
+            >
+              <option value="">Seleccione...</option>
+              {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          )}
+          <label>Inicio</label>
+          <input
+            type="date"
+            name="startDate"
+            value={formData.startDate || ''}
+            onChange={handleChange}
+            disabled={disabled}
+          />
+          <label>Fin</label>
+          <input
+            type="date"
+            name="endDate"
+            value={formData.endDate || ''}
+            onChange={handleChange}
+            disabled={disabled}
+          />
+          <label>Sueldo</label>
+          <input
+            name="baseSalary"
+            value={formData.baseSalary || ''}
+            onChange={handleChange}
+            disabled={disabled}
+          />
           {((formData as any).contractRegimen || '').toUpperCase() === 'PLANILLA' && (
             <>
-              <label>SEGURO</label>
+              <label>Seguro</label>
               {disabled ? (
                 <input
                   value={(formData as any).contractSeguro || ''}
@@ -291,7 +305,7 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
                   {seguros.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               )}
-              <label>PENSION</label>
+              <label>Pensión</label>
               {disabled ? (
                 <input
                   value={(formData as any).contractPension || ''}
@@ -309,64 +323,94 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
               )}
             </>
           )}
-          <label>SUELDO BASE</label>
-          <input
-            name="baseSalary"
-            value={formData.baseSalary || ''}
-            onChange={handleChange}
-            disabled={disabled}
-          />
-          <label>FECHA INICIO</label>
-          <input
-            type="date"
-            name="startDate"
-            value={formData.startDate || ''}
-            onChange={handleChange}
-            disabled={disabled}
-          />
-          <label>FECHA FIN</label>
-          <input
-            type="date"
-            name="endDate"
-            value={formData.endDate || ''}
-            onChange={handleChange}
-            disabled={disabled}
-          />
         </div>
 
-        {/* extra details */}
+        {/* COLUMN 4: INFORMACIÓN BANCARIA & TRANSFERENCIA */}
         <div className="section-group">
-          <h3 className="section-title">DETALLES</h3>
-          <label>PUESTO</label>
+          <h3 className="section-title">INFORMACIÓN BANCARIA & TRANSFERENCIA</h3>
+          <label>Banco</label>
           {disabled ? (
             <input
-              value={formData.position || ''}
+              value={formData.bank || ''}
               disabled
             />
           ) : (
             <select
-              name="position"
-              value={formData.position || ''}
+              name="bank"
+              value={formData.bank || ''}
               onChange={handleChange}
             >
               <option value="">Seleccione...</option>
-              {positions.map(p => <option key={p} value={p}>{p}</option>)}
+              {banks.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
           )}
-          <label>ESTADO</label>
+          <label>Cuenta</label>
+          <input
+            name="accountNumber"
+            value={formData.accountNumber || ''}
+            onChange={handleChange}
+            disabled={disabled}
+          />
+          <label>Interbancaria</label>
+          <input
+            name="interbankNumber"
+            value={formData.interbankNumber || ''}
+            onChange={handleChange}
+            disabled={disabled}
+          />
+          <label>Cuenta propia?</label>
           {disabled ? (
             <input
-              value={formData.status || ''}
+              value={formData.contractOwnAccount || ''}
               disabled
             />
           ) : (
             <select
-              name="status"
-              value={formData.status || ''}
+              name="contractOwnAccount"
+              value={formData.contractOwnAccount || ''}
               onChange={handleChange}
             >
               <option value="">Seleccione...</option>
-              {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+              {yesNoOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            </select>
+          )}
+          <label>Parentesco</label>
+          {disabled ? (
+            <input
+              value={formData.contractKinship || ''}
+              disabled
+            />
+          ) : (
+            <select
+              name="contractKinship"
+              value={formData.contractKinship || ''}
+              onChange={handleChange}
+            >
+              <option value="">Seleccione...</option>
+              {kinships.map(k => <option key={k} value={k}>{k}</option>)}
+            </select>
+          )}
+          <label>Celular Transferencia</label>
+          <input
+            name="contractCellularTransfer"
+            value={formData.contractCellularTransfer || ''}
+            onChange={handleChange}
+            disabled={disabled}
+          />
+          <label>Empresa Contratista</label>
+          {disabled ? (
+            <input
+              value={formData.contractorCompany || ''}
+              disabled
+            />
+          ) : (
+            <select
+              name="contractorCompany"
+              value={formData.contractorCompany || ''}
+              onChange={handleChange}
+            >
+              <option value="">Seleccione...</option>
+              {contractorCompanies.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           )}
         </div>

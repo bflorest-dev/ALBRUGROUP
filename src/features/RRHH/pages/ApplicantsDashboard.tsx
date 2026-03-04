@@ -181,7 +181,7 @@ export const ApplicantsDashboard = () => {
       modality: '',
       campaign: formData.campaign,
       company: formData.company || '',
-      status: 'POSTULANTE',
+      status: 'POR_RECLUTAR',
     };
 
     try {

@@ -25,9 +25,9 @@ export const ApplicantsTableRow: React.FC<ApplicantsTableRowProps> = ({
       <td>{applicant.phoneMobile}</td>
       <td>{applicant.documentType}</td>
       <td>{applicant.documentNumber}</td>
-      <td>{applicant.positionOfInterest}</td>
+      <td>{applicant.positionOfInterest?.replace(/_/g, ' ')}</td>
       <td className={`company-cell ${applicant.company?.toLowerCase()}`}>{applicant.company}</td>
-      {showStatus && <td>{applicant.status || 'POSTULANTE'}</td>}
+      {showStatus && <td>{applicant.status || 'POR_RECLUTAR'}</td>}
       <td>{applicant.campaign}</td>
       <td className="cell-actions">
         <button className="action-btn edit-btn" onClick={() => { onEdit(applicant); }} title="Editar">
