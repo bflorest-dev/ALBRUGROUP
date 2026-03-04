@@ -50,6 +50,7 @@ export interface Statistic {
   value: number;
   percentage?: number;
   icon?: string;
+  color?: string;
 }
 
 export interface Applicant {
