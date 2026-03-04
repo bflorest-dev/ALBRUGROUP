@@ -77,8 +77,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ companyFilter, onSelectForTip
 
   // when the data set or company filter changes (new applicant added/updated),
   // jump each column to its last page so the new/modified card is visible.
-  React.useEffect(() => {
-    setPageByStatus((prev) => {
+  useEffect(() => {
+    setPageByStatus(() => {
       const updated: Record<StatusValue, number> = {} as any;
       STATUS_COLUMNS.forEach((status) => {
         const total = columns[status].length;
