@@ -42,6 +42,7 @@ export interface Employee {
   contractKinship?: string; // PADRE, MADRE, TÍO/A, ESPOSO/A, HERMANO/A, ABUELO/A, PAREJA, OTRO
   contractCellularTransfer?: string; // 9 dígitos
   contractorCompany?: 'ALBRU' | 'RUNA';
+  dismissalReason?: string; // motivo de baja cuando status = 'INACTIVO'
 }
 
 export interface Statistic {
@@ -99,6 +100,7 @@ export interface Applicant {
   contractKinship?: string; // PADRE, MADRE, TÍO/A, ESPOSO/A, HERMANO/A, ABUELO/A, PAREJA, OTRO
   contractCellularTransfer?: string; // 9 dígitos
   contractorCompany?: 'ALBRU' | 'RUNA';
+  dismissalReason?: string; // motivo de baja cuando status = 'INACTIVO'
 }
 
 export interface PaginationInfo {
