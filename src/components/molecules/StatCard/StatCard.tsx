@@ -11,7 +11,10 @@ interface StatCardProps {
 
 export const StatCard = ({ stat }: StatCardProps) => {
   return (
-    <div className="stat-card">
+    <div 
+      className="stat-card"
+      style={stat.color ? { borderLeftColor: stat.color, borderLeftWidth: '4px' } : {}}
+    >
       <div className="stat-content">
         <span className="stat-label">{stat.label}</span>
         <div className="stat-value-row">
