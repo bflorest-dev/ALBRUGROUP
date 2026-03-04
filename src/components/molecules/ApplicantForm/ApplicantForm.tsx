@@ -147,6 +147,9 @@ export const ApplicantForm: React.FC<ApplicantFormProps> = ({
               { label: 'COMPUTRABAJO', value: 'COMPUTRABAJO' },
               { label: 'INDEED', value: 'INDEED' },
               { label: 'REFERIDO', value: 'REFERIDO' },
+              { label: 'TIKTOK', value: 'TIKTOK' },
+              { label: 'FACEBOOK', value: 'FACEBOOK' },
+              { label: 'LINKEDIN', value: 'LINKEDIN' },
             ]}
             value={formData.campaign}
             onChange={onChange}

@@ -127,6 +127,9 @@ export const mockEmployees: Employee[] = [
     startDate: '2024-09-01',
     modality: 'FULL TIME',
     scheduleType: 'PRESENCIAL',
+  },
+  {
+    id: '6',
     initials: 'LP',
     fullName: 'Luis Pérez',
     position: 'Contador',

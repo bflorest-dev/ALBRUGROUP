@@ -38,6 +38,10 @@ export interface Employee {
   contractModalidad?: string;
   contractSeguro?: string;
   contractPension?: string;
+  contractOwnAccount?: string; // Sí o No
+  contractKinship?: string; // PADRE, MADRE, TÍO/A, ESPOSO/A, HERMANO/A, ABUELO/A, PAREJA, OTRO
+  contractCellularTransfer?: string; // 9 dígitos
+  contractorCompany?: 'ALBRU' | 'RUNA';
 }
 
 export interface Statistic {
@@ -91,6 +95,10 @@ export interface Applicant {
   contractPosition?: string;
   contractCampaign?: string;
   contractCompany?: string;
+  contractOwnAccount?: string; // Sí o No
+  contractKinship?: string; // PADRE, MADRE, TÍO/A, ESPOSO/A, HERMANO/A, ABUELO/A, PAREJA, OTRO
+  contractCellularTransfer?: string; // 9 dígitos
+  contractorCompany?: 'ALBRU' | 'RUNA';
 }
 
 export interface PaginationInfo {
@@ -126,13 +134,19 @@ export interface NewEmployeeFormData {
   role: string;
   company?: string;
   startDate: string;
+  endDate?: string;
   modality: string;
   scheduleType: string;
   personalEmail?: string;
+  campaign?: string;
   // contract-only fields
   regimen?: string;
   seguro?: string;
   pension?: string;
+  contractOwnAccount?: string;
+  contractKinship?: string;
+  contractCellularTransfer?: string;
+  contractorCompany?: string;
 }
 
 export interface NewApplicantFormData {
@@ -294,8 +308,8 @@ export const adaptEmpleadoResponseToEmployee = (backend: EmpleadoResponse): Empl
 export const adaptPostulanteResponseToApplicant = (backend: PostulanteResponse): Applicant => {
   // normalizar algunos estados para la UI
   let status = backend.estadoPostulacion;
-  if (status === 'EN_PROCESO') {
-    status = 'POSTULANTE';
+  if (status === 'EN_PROCESO' || status === 'POSTULANTE') {
+    status = 'POR_RECLUTAR';
   }
 
   return {
