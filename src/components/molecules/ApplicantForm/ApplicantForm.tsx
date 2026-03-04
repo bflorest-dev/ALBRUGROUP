@@ -96,7 +96,7 @@ export const ApplicantForm: React.FC<ApplicantFormProps> = ({
             options={
               Object.entries(AVAILABLE_POSITIONS_GROUPED)
                 .flatMap(([_cat, positions]) =>
-                  positions.map((position) => ({ label: position, value: position }))
+                  positions.map((position) => ({ label: position.replace(/_/g, ' '), value: position }))
                 )
                 .filter((opt) => opt.value !== 'ADMINISTRADOR')
             }
