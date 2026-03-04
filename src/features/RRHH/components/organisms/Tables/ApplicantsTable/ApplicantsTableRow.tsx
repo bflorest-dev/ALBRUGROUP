@@ -27,7 +27,18 @@ export const ApplicantsTableRow: React.FC<ApplicantsTableRowProps> = ({
       <td>{applicant.documentNumber}</td>
       <td>{applicant.positionOfInterest?.replace(/_/g, ' ')}</td>
       <td className={`company-cell ${applicant.company?.toLowerCase()}`}>{applicant.company}</td>
-      {showStatus && <td>{applicant.status || 'POR_RECLUTAR'}</td>}
+      {showStatus && (
+        <td 
+          className={`status-cell${(applicant.status === 'NO_INTERESADO' || applicant.status === 'RECHAZADO') && applicant.rejectionReason ? ' has-tooltip' : ''}`}
+          data-tooltip={(applicant.status === 'NO_INTERESADO' || applicant.status === 'RECHAZADO') && applicant.rejectionReason 
+            ? `${applicant.rejectionReason?.replace(/_/g, ' ')}` 
+            : ''
+          }
+          data-status={applicant.status}
+        >
+          {applicant.status || 'POR_RECLUTAR'}
+        </td>
+      )}
       <td>{applicant.campaign}</td>
       <td className="cell-actions">
         <button className="action-btn edit-btn" onClick={() => { onEdit(applicant); }} title="Editar">

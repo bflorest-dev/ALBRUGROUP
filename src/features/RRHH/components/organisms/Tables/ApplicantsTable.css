@@ -285,6 +285,55 @@
   }
 }
 
+/* Tooltip minimalista para motivos - se sobrepone al status */
+.status-cell {
+  position: relative;
+  padding: 14px 16px !important;
+  overflow: hidden;
+  min-width: 180px;
+  text-align: center;
+}
+
+.status-cell.has-tooltip {
+  cursor: help;
+}
+
+.status-cell.has-tooltip::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 14px 16px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  z-index: 10;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-cell[data-status="NO_INTERESADO"].has-tooltip::before {
+  background-color: #2563EB;
+}
+
+.status-cell[data-status="RECHAZADO"].has-tooltip::before {
+  background-color: #2563EB;
+}
+
+.status-cell.has-tooltip:hover::before {
+  opacity: 1;
+}
+
 @media (max-width: 768px) {
   .applicants-table-container {
     border: 1px solid #E5E7EB;

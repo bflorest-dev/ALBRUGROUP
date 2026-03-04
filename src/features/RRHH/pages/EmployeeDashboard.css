@@ -706,3 +706,111 @@
 .remove-btn:hover {
   color: #DC2626;
 }
+
+/* Dismissal Reason Modal Styles */
+.dismissal-reason-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+}
+
+.dismissal-reason-modal > p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.reason-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.reason-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.reason-option:hover {
+  background: #F9FAFB;
+  border-color: #D1D5DB;
+}
+
+.reason-option input[type="radio"] {
+  cursor: pointer;
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: #3B82F6;
+}
+
+.reason-option span {
+  font-size: 13px;
+  color: #374151;
+  user-select: none;
+}
+
+.reason-option input[type="radio"]:checked + span {
+  font-weight: 500;
+  color: #1F2937;
+}
+
+.reason-option:has(input[type="radio"]:checked) {
+  background: #EFF6FF;
+  border-color: #3B82F6;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 12px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.btn-cancel,
+.btn-confirm {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel {
+  background: #F3F4F6;
+  color: #374151;
+  border: 1px solid #D1D5DB;
+}
+
+.btn-cancel:hover {
+  background: #E5E7EB;
+}
+
+.btn-confirm {
+  background: #3B82F6;
+  color: white;
+}
+
+.btn-confirm:hover:not(:disabled) {
+  background: #2563EB;
+}
+
+.btn-confirm:disabled {
+  background: #D1D5DB;
+  cursor: not-allowed;
+  color: #9CA3AF;
+}

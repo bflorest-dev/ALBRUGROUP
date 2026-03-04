@@ -21,7 +21,257 @@ import './EmployeeDashboard.css';
 
 const ITEMS_PER_PAGE = 10;
 
-type RRHHTab = 'postulantes' | 'aprobados' | 'empleados';
+type RRHHTab = 'postulantes' | 'aprobados' | 'empleados' | 'inactivos';
+
+const InactiveEmployeeContent = () => {
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [detailMode, setDetailMode] = useState<'view' | 'edit'>('view');
+  const [lastModifiedEmployeeId, setLastModifiedEmployeeId] = useState<string | null>(null);
+
+  const { showSuccess, showError } = useNotification();
+  const { handleError } = useErrorHandler();
+
+  const loadInactiveEmployees = useCallback(async () => {
+    setLoading(true);
+    try {
+      const stored = loadEmployeesFromStorage();
+      let list: Employee[] = Array.isArray(stored)
+        ? (stored as Employee[]).map(emp => ({ ...emp, status: emp.status || 'ACTIVO' }))
+        : [];
+
+      const apps = loadApplicantsFromStorage();
+      if (apps && Array.isArray(apps)) {
+        const inactiveApplicants = apps
+          .filter(a => a.status?.toUpperCase() === 'INACTIVO')
+          .map(a => {
+            const initials =
+              (a.nombres?.[0] || '').toUpperCase() +
+              (a.apellidos?.[0] || '').toUpperCase();
+
+            return {
+              id: a.id,
+              initials,
+              fullName: a.fullName,
+              nombres: a.nombres || '',
+              apellidos: a.apellidos || '',
+              documentType: a.documentType || '',
+              documentNumber: a.documentNumber || '',
+              nationality: a.nationality || '',
+              birthDate: a.birthDate || '',
+              civilStatus: a.civilStatus || '',
+              hasChildren: a.hasChildren ? 'Sí' : 'No',
+              personalEmail: a.personalEmail || '',
+              phoneMobile: a.phoneMobile || '',
+              bank: a.bank || '',
+              accountNumber: a.accountNumber || '',
+              interbankNumber: a.interbankNumber || '',
+              startDate: a.contractStartDate || '',
+              position: a.positionOfInterest || '',
+              department: '',
+              status: 'INACTIVO',
+              district: a.district || '',
+              address: a.address || '',
+              contractRegimen: a.contractRegimen || '',
+              contractModalidad: a.contractModalidad || '',
+              contractSeguro: a.contractSeguro || '',
+              contractPension: a.contractPension || '',
+              baseSalary: a.contractSalary ? String(a.contractSalary) : '',
+              contractOwnAccount: a.contractOwnAccount || '',
+              contractKinship: a.contractKinship || '',
+              contractCellularTransfer: a.contractCellularTransfer || '',
+              contractorCompany: a.contractorCompany || '',
+            } as Employee;
+          });
+
+        const seen = new Set<string>();
+        list = [...list, ...inactiveApplicants].filter(emp => {
+          if (seen.has(emp.id)) return false;
+          seen.add(emp.id);
+          return true;
+        });
+      }
+
+      // Filter only inactive employees
+      const inactiveList = list.filter(emp => emp.status === 'INACTIVO');
+      setEmployees(inactiveList);
+    } catch (error) {
+      handleError(error instanceof Error ? error : new Error('Error cargando datos locales'), {
+        componentStack: 'InactiveEmployeeContent.loadInactiveEmployees'
+      });
+      showError('Error al cargar los empleados inactivos');
+    } finally {
+      setLoading(false);
+    }
+  }, [handleError, showError]);
+
+  const pagination = usePagination({
+    totalItems: employees.length,
+    itemsPerPage: ITEMS_PER_PAGE,
+  });
+
+  useEffect(() => {
+    loadInactiveEmployees();
+  }, [loadInactiveEmployees]);
+
+  // Escuchar cambios de estado de empleados
+  useEffect(() => {
+    const handleStatusChanged = (event: any) => {
+      const { employeeId, newStatus } = event.detail;
+      setEmployees(prev => {
+        return prev.map(emp => 
+          emp.id === employeeId ? { ...emp, status: newStatus } : emp
+        );
+      });
+    };
+    window.addEventListener('employeeStatusChanged', handleStatusChanged);
+    return () => window.removeEventListener('employeeStatusChanged', handleStatusChanged);
+  }, []);
+
+  const filteredEmployees = useMemo(() => {
+    if (!searchTerm) return employees;
+
+    const term = searchTerm.toLowerCase();
+    return employees.filter((emp) =>
+      emp.fullName.toLowerCase().includes(term) ||
+      emp.documentNumber?.toLowerCase().includes(term) ||
+      emp.phoneMobile?.toLowerCase().includes(term)
+    );
+  }, [searchTerm, employees]);
+
+  const paginatedEmployees = useMemo(() => {
+    const { startIndex, endIndex } = pagination;
+    return filteredEmployees.slice(startIndex, endIndex);
+  }, [filteredEmployees, pagination]);
+
+  useEffect(() => {
+    if (lastModifiedEmployeeId) {
+      const idx = filteredEmployees.findIndex(e => e.id === lastModifiedEmployeeId);
+      if (idx !== -1) {
+        const page = Math.floor(idx / pagination.itemsPerPage) + 1;
+        pagination.goToPage(page);
+      }
+      setLastModifiedEmployeeId(null);
+    }
+  }, [filteredEmployees, lastModifiedEmployeeId, pagination]);
+
+  const handleEmployeeAction = (employee: Employee, action: string) => {
+    setSelectedEmployee(employee);
+    setDetailMode(action === 'edit' ? 'edit' : 'view');
+    setDetailModalOpen(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setDetailModalOpen(false);
+    setSelectedEmployee(null);
+  };
+
+  const handleEditEmployeeSubmit = (formData: EmployeeDetailFormData) => {
+    if (!selectedEmployee) return;
+
+    const updatedEmployee: Employee = {
+      ...selectedEmployee,
+      ...formData,
+      fullName: `${formData.nombres || selectedEmployee.nombres} ${formData.apellidos || selectedEmployee.apellidos}`,
+    } as Employee;
+
+    setEmployees(prev => {
+      const updated = prev.map(emp =>
+        emp.id === selectedEmployee.id ? updatedEmployee : emp
+      );
+      saveEmployeesToStorage(updated);
+      return updated;
+    });
+    setLastModifiedEmployeeId(selectedEmployee.id);
+
+    setDetailModalOpen(false);
+    setSelectedEmployee(null);
+    showSuccess(`Cambios de ${updatedEmployee.fullName} guardados`);
+  };
+
+  const handleStatusChange = (employee: Employee, newStatus: string) => {
+    const updatedEmployee: Employee = {
+      ...employee,
+      status: newStatus,
+    };
+
+    setEmployees(prev => {
+      const updated = prev.map(emp =>
+        emp.id === employee.id ? updatedEmployee : emp
+      );
+      saveEmployeesToStorage(updated);
+      return updated;
+    });
+
+    const apps = loadApplicantsFromStorage();
+    if (apps && Array.isArray(apps)) {
+      const updatedApps = apps.map(a =>
+        a.id === employee.id ? { ...a, status: newStatus } : a
+      );
+      saveApplicantsToStorage(updatedApps);
+    }
+
+    showSuccess(`Estado de ${employee.fullName} cambiado a ${newStatus}`);
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('employeeStatusChanged', { detail: { employeeId: employee.id, newStatus } }));
+    }, 50);
+  };
+
+  return (
+    <section className="directory-section">
+      <div className="section-header">
+        <h2>EMPLEADOS INACTIVOS</h2>
+        <div className="section-controls">
+          <input
+            type="text"
+            placeholder="Buscar..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="loading">Cargando empleados inactivos...</div>
+      ) : (
+        <>
+          <EmployeeTable
+            employees={paginatedEmployees}
+            onAction={handleEmployeeAction}
+            onStatusChange={handleStatusChange}
+            isInactiveTable={true}
+          />
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={Math.ceil(filteredEmployees.length / ITEMS_PER_PAGE)}
+            totalItems={filteredEmployees.length}
+            itemsPerPage={ITEMS_PER_PAGE}
+            onPageChange={pagination.goToPage}
+          />
+        </>
+      )}
+
+      <Modal
+        isOpen={detailModalOpen}
+        title={detailMode === 'view' ? 'Detalles del Empleado' : 'Editar Empleado'}
+        onClose={handleCloseDetailModal}
+      >
+        {selectedEmployee && (
+          <EmployeeDetailForm
+            employee={selectedEmployee}
+            onCancel={handleCloseDetailModal}
+            onSubmit={handleEditEmployeeSubmit}
+            isEditMode={detailMode === 'edit'}
+          />
+        )}
+      </Modal>
+    </section>
+  );
+};
 
 const EmployeeContent = () => {
   // Estado para empleados y estadísticas
@@ -35,8 +285,11 @@ const EmployeeContent = () => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [activateModalOpen, setActivateModalOpen] = useState(false);
+  const [reasonModalOpen, setReasonModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [detailMode, setDetailMode] = useState<'view' | 'edit'>('view');
+  const [pendingStatusChangeEmployee, setPendingStatusChangeEmployee] = useState<Employee | null>(null);
+  const [selectedDismissalReason, setSelectedDismissalReason] = useState<string>('');
 
   // Hooks
   const { showSuccess, showError } = useNotification();
@@ -66,7 +319,7 @@ const EmployeeContent = () => {
           // doesn't lose records when status changes during the contact process
           .filter(a => {
             const st = a.status?.toUpperCase();
-            return st === 'APROBADO' || st === 'CONTRATADO';
+            return st === 'APROBADO' || st === 'ACTIVO';
           })
           .map(a => {
             // build a minimal Employee object from the applicant
@@ -74,7 +327,7 @@ const EmployeeContent = () => {
               (a.nombres?.[0] || '').toUpperCase() +
               (a.apellidos?.[0] || '').toUpperCase();
 
-            const derivedStatus = a.status?.toUpperCase() === 'CONTRATADO' ? 'ACTIVO' : 'APROBADO';
+            const derivedStatus = a.status?.toUpperCase() === 'ACTIVO' ? 'ACTIVO' : 'APROBADO';
 
             return {
               id: a.id,
@@ -104,6 +357,10 @@ const EmployeeContent = () => {
               contractSeguro: a.contractSeguro || '',
               contractPension: a.contractPension || '',
               baseSalary: a.contractSalary ? String(a.contractSalary) : '',
+              contractOwnAccount: a.contractOwnAccount || '',
+              contractKinship: a.contractKinship || '',
+              contractCellularTransfer: a.contractCellularTransfer || '',
+              contractorCompany: a.contractorCompany || '',
             } as Employee;
           });
 
@@ -141,6 +398,20 @@ const EmployeeContent = () => {
   useEffect(() => {
     loadInitialData();
   }, [loadInitialData]);
+
+  // Escuchar cambios de estado de empleados
+  useEffect(() => {
+    const handleStatusChanged = (event: any) => {
+      const { employeeId, newStatus } = event.detail;
+      setEmployees(prev => {
+        return prev.map(emp => 
+          emp.id === employeeId ? { ...emp, status: newStatus } : emp
+        );
+      });
+    };
+    window.addEventListener('employeeStatusChanged', handleStatusChanged);
+    return () => window.removeEventListener('employeeStatusChanged', handleStatusChanged);
+  }, []);
 
   // Calcular empleados filtrados por búsqueda
   const filteredEmployees = useMemo(() => {
@@ -262,6 +533,58 @@ const EmployeeContent = () => {
   const handleCheckoutEmployee = (employee: Employee) => {
     setSelectedEmployee(employee);
     setCheckoutModalOpen(true);
+  };
+
+  const handleStatusChange = (employee: Employee, newStatus: string) => {
+    // If changing from ACTIVO to INACTIVO, show reason modal first
+    if (employee.status === 'ACTIVO' && newStatus === 'INACTIVO') {
+      setPendingStatusChangeEmployee(employee);
+      setSelectedDismissalReason('');
+      setReasonModalOpen(true);
+      return;
+    }
+
+    // For other status changes, proceed directly
+    proceedWithStatusChange(employee, newStatus);
+  };
+
+  const proceedWithStatusChange = (employee: Employee, newStatus: string, dismissalReason?: string) => {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const updatedEmployee: Employee = {
+      ...employee,
+      status: newStatus,
+      ...(newStatus === 'INACTIVO' && { endDate: today }),
+      ...(dismissalReason && { dismissalReason }),
+    };
+
+    setEmployees(prev => {
+      const updated = prev.map(emp =>
+        emp.id === employee.id ? updatedEmployee : emp
+      );
+      saveEmployeesToStorage(updated);
+      return updated;
+    });
+
+    // Also update in applicants if this employee came from applicants
+    const apps = loadApplicantsFromStorage();
+    if (apps && Array.isArray(apps)) {
+      const updatedApps = apps.map(a =>
+        a.id === employee.id ? { ...a, status: newStatus, ...(newStatus === 'INACTIVO' && { endDate: today }), ...(dismissalReason && { dismissalReason }) } : a
+      );
+      saveApplicantsToStorage(updatedApps);
+    }
+
+    showSuccess(`Estado de ${employee.fullName} cambiado a ${newStatus}`);
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('employeeStatusChanged', { detail: { employeeId: employee.id, newStatus } }));
+    }, 50);
+  };
+
+  const handleConfirmDismissalReason = () => {
+    if (!pendingStatusChangeEmployee || !selectedDismissalReason) return;
+    setReasonModalOpen(false);
+    proceedWithStatusChange(pendingStatusChangeEmployee, 'INACTIVO', selectedDismissalReason);
+    setPendingStatusChangeEmployee(null);
   };
 
   const handleCloseCheckoutModal = () => {
@@ -397,6 +720,7 @@ const EmployeeContent = () => {
           onAction={handleEmployeeAction}
           onCheckout={handleCheckoutEmployee}
           onActivate={handleActivateEmployee}
+          onStatusChange={handleStatusChange}
         />
 
         <Pagination
@@ -453,6 +777,65 @@ const EmployeeContent = () => {
         onConfirm={handleActivateSubmit}
         onCancel={handleCloseActivateModal}
       />
+
+      <Modal
+        isOpen={reasonModalOpen}
+        title="Motivo de Baja"
+        className="dismissal-modal"
+        onClose={() => {
+          setReasonModalOpen(false);
+          setPendingStatusChangeEmployee(null);
+          setSelectedDismissalReason('');
+        }}
+      >
+        <div className="dismissal-reason-modal">
+          <p>Selecciona el motivo de baja del empleado:</p>
+          <div className="reason-options">
+            {[
+              'Bajo desempeño',
+              'Faltas disciplinarias',
+              'Incumplimiento de políticas internas',
+              'Reestructuración o motivos organizacionales',
+              'Conducta grave',
+              'Mejores oportunidades',
+              'Condiciones laborales',
+              'Clima laboral',
+              'Motivos personales',
+              'Desmotivación'
+            ].map((reason) => (
+              <label key={reason} className="reason-option">
+                <input
+                  type="radio"
+                  name="dismissal-reason"
+                  value={reason}
+                  checked={selectedDismissalReason === reason}
+                  onChange={(e) => setSelectedDismissalReason(e.target.value)}
+                />
+                <span>{reason}</span>
+              </label>
+            ))}
+          </div>
+          <div className="modal-actions">
+            <button 
+              className="btn-cancel"
+              onClick={() => {
+                setReasonModalOpen(false);
+                setPendingStatusChangeEmployee(null);
+                setSelectedDismissalReason('');
+              }}
+            >
+              Cancelar
+            </button>
+            <button 
+              className="btn-confirm"
+              onClick={handleConfirmDismissalReason}
+              disabled={!selectedDismissalReason}
+            >
+              Confirmar
+            </button>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 };
@@ -480,9 +863,11 @@ export const EmployeeDashboard = () => {
     ? 'POSTULANTES'
     : activeTab === 'aprobados'
     ? 'APROBADOS'
-    : 'EMPLEADOS';
+    : activeTab === 'empleados'
+    ? 'EMPLEADOS'
+    : 'INACTIVOS';
 
-  const ACCEPTED_STATUSES = ['APROBADO']; // unify acceptance status
+  const ACCEPTED_STATUSES = ['POR_CONTRATAR']; // unify acceptance status (internally POR_CONTRATAR from training approval)
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [acceptedApplicants, setAcceptedApplicants] = useState<Applicant[]>([]);
   const [applicantsLoading, setApplicantsLoading] = useState(true);
@@ -718,7 +1103,7 @@ export const EmployeeDashboard = () => {
         a.id === currentContractId
           ? {
               ...a,
-              status: 'CONTRATADO',
+              status: 'ACTIVO',
               nationality: contractData.nationality,
               birthDate: contractData.birthDate,
               civilStatus: contractData.civilStatus,
@@ -937,6 +1322,13 @@ export const EmployeeDashboard = () => {
             <BiUser size={20} />
             <span>EMPLEADOS</span>
           </button>
+          <button
+            className={`menu-item ${activeTab === 'inactivos' ? 'active' : ''}`}
+            onClick={() => setActiveTab('inactivos')}
+          >
+            <BiUser size={20} />
+            <span>INACTIVOS</span>
+          </button>
         </nav>
       </div>
 
@@ -987,6 +1379,8 @@ export const EmployeeDashboard = () => {
           {/* Contenido según pestaña */}
           {activeTab === 'empleados' && <EmployeeContent />}
           
+          {activeTab === 'inactivos' && <InactiveEmployeeContent />}
+          
           {activeTab === 'postulantes' && applicantsLoading && (
             <div className="loading">Cargando postulantes...</div>
           )}
@@ -1021,15 +1415,60 @@ export const EmployeeDashboard = () => {
               <Modal isOpen={newApplicantModalOpen} title="Registrar Nuevo Postulante" onClose={() => setNewApplicantModalOpen(false)}>
                 <NewApplicantForm
                   onSubmit={(formData) => {
+                    // Normalizar datos para validación (remover espacios extras y caracteres especiales)
+                    const nombres = formData.nombres?.trim() || '';
+                    const apellidos = formData.apellidos?.trim() || '';
+                    const fullName = `${nombres} ${apellidos}`.trim();
+                    const phoneMobileNormalized = formData.phoneMobile?.replace(/\s+/g, '').trim() || '';
+                    const docNumberNormalized = formData.documentNumber?.trim() || '';
+                    
+                    // Validación 1: Verificar duplicado de CELULAR (independientemente del nombre)
+                    if (phoneMobileNormalized !== '') {
+                      const duplicateByPhoneOnly = applicants.find(a => {
+                        const existingPhoneNormalized = a.phoneMobile?.replace(/\s+/g, '').trim() || '';
+                        return existingPhoneNormalized === phoneMobileNormalized;
+                      });
+                      
+                      if (duplicateByPhoneOnly) {
+                        showError(`El celular ${formData.phoneMobile} ya está registrado en el sistema.`);
+                        return;
+                      }
+                    }
+                    
+                    // Validación 2: Verificar duplicado de NOMBRE COMPLETO
+                    if (fullName !== '') {
+                      const duplicateByNameOnly = applicants.find(a => {
+                        const existingFullName = `${a.nombres?.trim() || ''} ${a.apellidos?.trim() || ''}`.trim();
+                        return existingFullName.toLowerCase() === fullName.toLowerCase();
+                      });
+                      
+                      if (duplicateByNameOnly) {
+                        showError(`El postulante "${fullName}" ya existe en el sistema.`);
+                        return;
+                      }
+                    }
+                    
+                    // Validación 3: Verificar duplicado de DOCUMENTO
+                    if (docNumberNormalized !== '') {
+                      const duplicateByDoc = applicants.find(a => 
+                        a.documentNumber?.trim() === docNumberNormalized
+                      );
+                      
+                      if (duplicateByDoc) {
+                        showError(`Un postulante con el documento nº ${formData.documentNumber} (${formData.documentType}) ya existe en el sistema.`);
+                        return;
+                      }
+                    }
+
                     // local creation
                     const newApplicant: Applicant = {
                       id: `${Date.now()}`,
-                      fullName: `${formData.nombres} ${formData.apellidos}`,
-                      nombres: formData.nombres,
-                      apellidos: formData.apellidos,
-                      phoneMobile: formData.phoneMobile,
+                      fullName: fullName,
+                      nombres: nombres,
+                      apellidos: apellidos,
+                      phoneMobile: phoneMobileNormalized,
                       documentType: formData.documentType,
-                      documentNumber: formData.documentNumber,
+                      documentNumber: docNumberNormalized,
                       positionOfInterest: formData.positionOfInterest,
                       modality: '',
                       campaign: formData.campaign,
@@ -1193,10 +1632,10 @@ export const EmployeeDashboard = () => {
               <label>Modalidad</label>
               <select name="modalidad" value={contractData.modalidad} onChange={handleContractChange}>
                 <option value="">Seleccione...</option>
-                <option value="PART TIME">P.TIME</option>
-                <option value="SEMI FULL">S.FULL</option>
-                <option value="FULL TIME">FULL</option>
-                <option value="SUPER FULL">S.FULL+</option>
+                <option value="PART TIME">PART TIME</option>
+                <option value="SEMI FULL">SEMI FULL</option>
+                <option value="FULL TIME">FULL TIME</option>
+                <option value="SUPER FULL">SUPER FULL</option>
               </select>
               <label>Puesto</label>
               <input type="text" value={(currentContractApplicant?.positionOfInterest || '').replace(/_/g, ' ')} disabled />
@@ -1216,6 +1655,28 @@ export const EmployeeDashboard = () => {
             {/* COLUMN 4: INFORMACIÓN BANCARIA & TRANSFERENCIA */}
             <div className="section-group">
               <h3 className="section-title">INFORMACIÓN BANCARIA & TRANSFERENCIA</h3>
+              <label>Cuenta propia?</label>
+              <select name="ownAccount" value={contractData.ownAccount} onChange={handleContractChange}>
+                <option value="">Seleccione...</option>
+                <option value="Sí">Sí</option>
+                <option value="No">No</option>
+              </select>
+              {contractData.ownAccount !== 'Sí' && (
+                <>
+                  <label>Parentesco</label>
+                  <select name="kinship" value={contractData.kinship} onChange={handleContractChange}>
+                    <option value="">Seleccione...</option>
+                    <option value="PADRE">PADRE</option>
+                    <option value="MADRE">MADRE</option>
+                    <option value="TÍO/A">TÍO/A</option>
+                    <option value="ESPOSO/A">ESPOSO/A</option>
+                    <option value="HERMANO/A">HERMANO/A</option>
+                    <option value="ABUELO/A">ABUELO/A</option>
+                    <option value="PAREJA">PAREJA</option>
+                    <option value="OTRO">OTRO</option>
+                  </select>
+                </>
+              )}
               <label>Banco</label>
               <select name="bank" value={contractData.bank} onChange={handleContractChange}>
                 <option value="">Seleccione...</option>
@@ -1225,24 +1686,6 @@ export const EmployeeDashboard = () => {
               <input type="text" name="accountNumber" value={contractData.accountNumber} onChange={handleAccountNumberChange} />
               <label>Interbancaria</label>
               <input type="text" name="interbankNumber" value={contractData.interbankNumber} onChange={handleInterbankNumberChange} />
-              <label>Cuenta propia?</label>
-              <select name="ownAccount" value={contractData.ownAccount} onChange={handleContractChange}>
-                <option value="">Seleccione...</option>
-                <option value="Sí">Sí</option>
-                <option value="No">No</option>
-              </select>
-              <label>Parentesco</label>
-              <select name="kinship" value={contractData.kinship} onChange={handleContractChange}>
-                <option value="">Seleccione...</option>
-                <option value="PADRE">PADRE</option>
-                <option value="MADRE">MADRE</option>
-                <option value="TÍO/A">TÍO/A</option>
-                <option value="ESPOSO/A">ESPOSO/A</option>
-                <option value="HERMANO/A">HERMANO/A</option>
-                <option value="ABUELO/A">ABUELO/A</option>
-                <option value="PAREJA">PAREJA</option>
-                <option value="OTRO">OTRO</option>
-              </select>
               <label>Celular Transferencia</label>
               <input type="text" name="cellularTransfer" value={contractData.cellularTransfer} onChange={handleCellularTransferChange} maxLength={9} />
               <label>Empresa Contratista</label>

@@ -13,9 +13,11 @@ interface EmployeeTableProps {
   onAction?: (employee: Employee, action: string) => void;
   onCheckout?: (employee: Employee) => void;
   onActivate?: (employee: Employee) => void;
+  onStatusChange?: (employee: Employee, newStatus: string) => void;
+  isInactiveTable?: boolean;
 }
 
-export const EmployeeTable = ({ employees, onAction, onCheckout, onActivate }: EmployeeTableProps) => {
+export const EmployeeTable = ({ employees, onAction, onCheckout, onActivate, onStatusChange, isInactiveTable = false }: EmployeeTableProps) => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
@@ -39,9 +41,9 @@ export const EmployeeTable = ({ employees, onAction, onCheckout, onActivate }: E
     onAction?.(employee, 'edit');
   };
 
-  // status-based actions removed since ACTIVO/INACTIVO no longer used
   const handleStatusClick = (employee: Employee) => {
-    // placeholder: could implement other logic if needed
+    const newStatus = employee.status === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
+    onStatusChange?.(employee, newStatus);
   };
 
   const handleFilterChange = (filterKey: string, value: string) => {
@@ -241,7 +243,7 @@ export const EmployeeTable = ({ employees, onAction, onCheckout, onActivate }: E
             </th>
             <th>
               <div className="th-content">
-                <span>FECHA INGRESO</span>
+                <span>{isInactiveTable ? 'FECHA FIN' : 'FECHA INGRESO'}</span>
                 <div className="filter-dropdown-container">
                   <button 
                     className={`filter-header-btn ${activeFilter === 'date' ? 'active' : ''}`}
@@ -293,6 +295,13 @@ export const EmployeeTable = ({ employees, onAction, onCheckout, onActivate }: E
                 </div>
               </div>
             </th>
+            {isInactiveTable && (
+              <th>
+                <div className="th-content">
+                  <span>MOTIVO DE BAJA</span>
+                </div>
+              </th>
+            )}
             <th>ACCIONES</th>
           </tr>
         </thead>
@@ -312,14 +321,17 @@ export const EmployeeTable = ({ employees, onAction, onCheckout, onActivate }: E
               <td>{employee.documentNumber || '-'}</td>
               <td>{employee.position}</td>
               <td>{employee.phoneMobile || '-'}</td>
-              <td>{employee.startDate}</td>
+              <td>{isInactiveTable ? employee.endDate || '-' : employee.startDate}</td>
               <td>
                 <StatusBadge
                   status={employee.status}
                   onClick={() => handleStatusClick(employee)}
-                  clickable={false}
+                  clickable={true}
                 />
               </td>
+              {isInactiveTable && (
+                <td>{employee.dismissalReason || '-'}</td>
+              )}
               <td>
                 <div className="action-buttons">
                   <button
