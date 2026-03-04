@@ -145,24 +145,24 @@ export const TrainingDashboard: React.FC = () => {
       {/* Modal de rechazo - managed by parent, NO se re-renderiza con cambios de datos */}
       <Modal isOpen={isRejectModalOpen} title="Motivo de rechazo" onClose={() => setIsRejectModalOpen(false)}>
         <div className="reject-form">
-          <label htmlFor="reason">Selecciona el motivo:</label>
+          <label htmlFor="reason" className="reject-label">Selecciona el motivo:</label>
           <select
             id="reason"
             value={rejectionReason}
             onChange={(e) => setRejectionReason(e.target.value)}
-            style={{ width: '100%', padding: 6 }}
+            className="reject-select"
           >
-            <option value="">-- elige --</option>
+            <option value="">¿Cuál es el motivo del rechazo?</option>
             {REJECTION_REASONS.map((r) => (
-              <option key={r} value={r}>{r}</option>
+              <option key={r} value={r}>{r.replace(/_/g, ' ')}</option>
             ))}
           </select>
           <div className="modal-actions">
-            <button onClick={() => setIsRejectModalOpen(false)} className="btn-rejected" style={{ background: '#6b7280' }}>
+            <button onClick={() => setIsRejectModalOpen(false)} className="btn-cancel">
               Cancelar
             </button>
-            <button onClick={submitRejection} className="btn-rejected" disabled={!rejectionReason}>
-              Confirmar rechazo
+            <button onClick={submitRejection} className="btn-reject-action" disabled={!rejectionReason}>
+              RECHAZAR
             </button>
           </div>
         </div>
