@@ -5,13 +5,13 @@ import lombok.*;
 
 @Entity @Getter @Setter @Builder
 @AllArgsConstructor @NoArgsConstructor
-public class Campana {
+public class Compania {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String nombre;
-    @Column(name = "numero_empresa")
-    private String numeroEmpresa;
-    private Boolean activo;
+    private String razonSocial;
+    @Column(length = 11)
+    private String ruc;
+    private String negocio;
 }
