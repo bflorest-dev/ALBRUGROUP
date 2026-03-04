@@ -9,7 +9,7 @@ import type { Applicant } from '@types';
 import './KanbanDashboard.css';
 
 const STATUS_COLUMNS = [
-  'POSTULANTE',
+  'POR_RECLUTAR',
   'SIN_CONTACTO',
   'NO_INTERESADO',
   'INTERESADO',
@@ -19,11 +19,20 @@ const STATUS_COLUMNS = [
 type StatusValue = (typeof STATUS_COLUMNS)[number];
 
 const statusColorMap: Record<StatusValue, string> = {
-  POSTULANTE: '#3B82F6',
+  POR_RECLUTAR: '#3B82F6',
   SIN_CONTACTO: '#A78BFA',
   INTERESADO: '#10B981',
   NO_INTERESADO: '#6B7280',
   RECHAZADO: '#EF4444',
+};
+
+// Display names para mostrar en la interfaz
+const displayStatusMap: Record<StatusValue, string> = {
+  POR_RECLUTAR: 'POSTULANTE',
+  SIN_CONTACTO: 'SIN CONTACTO',
+  NO_INTERESADO: 'NO INTERESADO',
+  INTERESADO: 'INTERESADO',
+  RECHAZADO: 'RECHAZADO',
 };
 
 // Sub-componente que solo se re-renderiza cuando hay cambios en postulantes
@@ -44,7 +53,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ companyFilter, onSelectForTip
   );
 
   filteredApplicants.forEach((a) => {
-    const key = (a.status || 'POSTULANTE') as StatusValue;
+    const key = (a.status || 'POR_RECLUTAR') as StatusValue;
     if (columns[key]) {
       columns[key].push(a);
     }
@@ -96,7 +105,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ companyFilter, onSelectForTip
             className="kanban-column-header"
             style={{ borderTopColor: statusColorMap[status] }}
           >
-            <span>{status.replace('_', ' ')}</span>
+            <span>{displayStatusMap[status]}</span>
             <span className="count">{allCards.length}</span>
           </div>
           <div className="kanban-column-cards">
@@ -135,12 +144,18 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ companyFilter, onSelectForTip
                   )}
                 </div>
                 <div className="card-footer">
-                  <button
-                    className="tipificar-btn"
-                    onClick={() => onSelectForTipify(app)}
-                  >
-                    Tipificar
-                  </button>
+                  {(status === 'NO_INTERESADO' || status === 'RECHAZADO') && app.rejectionReason ? (
+                    <div className={`rejection-badge ${status === 'RECHAZADO' ? 'rejection-badge--rejected' : ''}`}>
+                      <strong>Motivo:</strong> {app.rejectionReason.replace(/_/g, ' ')}
+                    </div>
+                  ) : (
+                    <button
+                      className="tipificar-btn"
+                      onClick={() => onSelectForTipify(app)}
+                    >
+                      Tipificar
+                    </button>
+                  )}
                 </div>
               </Card>
             ))}
@@ -188,13 +203,38 @@ export const KanbanDashboard: React.FC = () => {
   const [meetingDate, setMeetingDate] = useState<string>('');
   const [meetingTime, setMeetingTime] = useState<string>('');
 
-  const TIPIFY_STATUSES: string[] = [
+  const ALL_TIPIFY_STATUSES: string[] = [
     'SIN_CONTACTO',
     'NO_INTERESADO',
     'INTERESADO',
     'RECHAZADO',
     'RECLUTADO',
   ];
+
+  // Función para obtener los estados permitidos según el estado actual
+  const getAvailableStatuses = (): string[] => {
+    if (!selectedForTipify) return ALL_TIPIFY_STATUSES;
+    
+    const currentStatus = selectedForTipify.status;
+    
+    // Si es POR_RECLUTAR, solo permitir: SIN_CONTACTO, NO_INTERESADO, INTERESADO
+    if (currentStatus === 'POR_RECLUTAR') {
+      return ['SIN_CONTACTO', 'NO_INTERESADO', 'INTERESADO'];
+    }
+    
+    // Si es SIN_CONTACTO, solo permitir: NO_INTERESADO, INTERESADO
+    if (currentStatus === 'SIN_CONTACTO') {
+      return ['NO_INTERESADO', 'INTERESADO'];
+    }
+    
+    // Si es INTERESADO, solo permitir: RECHAZADO, RECLUTADO
+    if (currentStatus === 'INTERESADO') {
+      return ['RECHAZADO', 'RECLUTADO'];
+    }
+    
+    // Para otros estados, permitir todos excepto el estado actual
+    return ALL_TIPIFY_STATUSES.filter(s => s !== currentStatus);
+  };
 
 // razones predefinidas para el estado NO_INTERESADO
 const NO_INTERESADO_REASONS: string[] = [
@@ -224,6 +264,14 @@ const RECHAZADO_REASONS: string[] = [
     setStartTime('');
     setMeetingDate('');
     setMeetingTime('');
+    // Si el status actual es NO_INTERESADO o RECHAZADO, ya mostrar las opciones de razones
+    if (app.status === 'NO_INTERESADO') {
+      setReasonOptions(NO_INTERESADO_REASONS);
+      setSelectedReason(app.rejectionReason || '');
+    } else if (app.status === 'RECHAZADO') {
+      setReasonOptions(RECHAZADO_REASONS);
+      setSelectedReason(app.rejectionReason || '');
+    }
     setIsTipifyModalOpen(true);
   };
 
@@ -245,14 +293,27 @@ const RECHAZADO_REASONS: string[] = [
 
   const handleSaveTipify = () => {
     if (selectedForTipify) {
-      const updated: any = { ...selectedForTipify, status: tipifyStatus };
-      if (tipifyStatus === 'RECLUTADO' && startDate) {
-        updated.startDate = startTime ? `${startDate} ${startTime}` : startDate;
+      // Si el status actual es NO_INTERESADO o RECHAZADO, solo actualizar el rejectionReason
+      if (selectedForTipify.status === 'NO_INTERESADO' || selectedForTipify.status === 'RECHAZADO') {
+        const updated: any = { ...selectedForTipify, rejectionReason: selectedReason };
+        updateApplicant(selectedForTipify.id, updated);
+      } else {
+        // Caso normal: cambiar el status
+        const updated: any = { ...selectedForTipify, status: tipifyStatus };
+        if (tipifyStatus === 'RECLUTADO' && startDate) {
+          updated.startDate = startTime ? `${startDate} ${startTime}` : startDate;
+        }
+        if (tipifyStatus === 'INTERESADO' && meetingDate) {
+          updated.meetingDate = meetingTime ? `${meetingDate} ${meetingTime}` : meetingDate;
+        }
+        if (tipifyStatus === 'NO_INTERESADO' && selectedReason) {
+          updated.rejectionReason = selectedReason;
+        }
+        if (tipifyStatus === 'RECHAZADO' && selectedReason) {
+          updated.rejectionReason = selectedReason;
+        }
+        updateApplicant(selectedForTipify.id, updated);
       }
-      if (tipifyStatus === 'INTERESADO' && meetingDate) {
-        updated.meetingDate = meetingTime ? `${meetingDate} ${meetingTime}` : meetingDate;
-      }
-      updateApplicant(selectedForTipify.id, updated);
     }
     setIsTipifyModalOpen(false);
   };
@@ -280,20 +341,24 @@ const RECHAZADO_REASONS: string[] = [
       </div>
 
       {/* Modal de tipificación - managed by parent, NO se re-renderiza con cambios de datos */}
-      <Modal className="tipify-modal" isOpen={isTipifyModalOpen} title="Tipificar" onClose={() => setIsTipifyModalOpen(false)}>
+      <Modal className="tipify-modal" isOpen={isTipifyModalOpen} title={selectedForTipify?.status === 'NO_INTERESADO' ? 'Motivo de No Interés' : selectedForTipify?.status === 'RECHAZADO' ? 'Motivo de Rechazo' : 'Tipificar'} onClose={() => setIsTipifyModalOpen(false)}>
         {selectedForTipify && (
           <div className="tipify-form">
-            <label htmlFor="status-select">Seleccionar estado</label>
-            <select
-              id="status-select"
-              value={tipifyStatus}
-              onChange={(e) => handleTipifyStatusChange(e.target.value)}
-            >
-              <option value="">Tipifica</option>
-              {TIPIFY_STATUSES.map(s => (
-                <option key={s} value={s}>{s.replace('_', ' ')}</option>
-              ))}
-            </select>
+        {selectedForTipify?.status !== 'NO_INTERESADO' && selectedForTipify?.status !== 'RECHAZADO' && (
+              <>
+                <label htmlFor="status-select">Seleccionar estado</label>
+                <select
+                  id="status-select"
+                  value={tipifyStatus}
+                  onChange={(e) => handleTipifyStatusChange(e.target.value)}
+                >
+                  <option value="">Tipifica</option>
+                  {getAvailableStatuses().map(s => (
+                    <option key={s} value={s}>{s.replace('_', ' ')}</option>
+                  ))}
+                </select>
+              </>
+            )}
             {tipifyStatus === 'RECLUTADO' && (
               <>
                 <label htmlFor="start-date">Fecha Inicio</label>
@@ -344,6 +409,14 @@ const RECHAZADO_REASONS: string[] = [
                 </select>
               </>
             )}
+            {selectedForTipify?.status === 'NO_INTERESADO' && (
+              <>
+                <label>Motivo de no interes</label>
+                <div className="read-only-field">
+                  {selectedForTipify.rejectionReason ? selectedForTipify.rejectionReason.replace(/_/g, ' ') : '(Sin motivo registrado)'}
+                </div>
+              </>
+            )}
             {tipifyStatus === 'RECHAZADO' && (
               <>
                 <label htmlFor="rejected-reason-select">Motivo de rechazo</label>
@@ -353,11 +426,19 @@ const RECHAZADO_REASONS: string[] = [
                   onChange={e => setSelectedReason(e.target.value)}
                 >
                   {reasonOptions.length ? (
-                    reasonOptions.map(r => <option key={r} value={r}>{r}</option>)
+                    reasonOptions.map(r => <option key={r} value={r}>{r.replace(/_/g, ' ')}</option>)
                   ) : (
                     <option value="">(aún no se define la lista)</option>
                   )}
                 </select>
+              </>
+            )}
+            {selectedForTipify?.status === 'RECHAZADO' && (
+              <>
+                <label>Motivo de rechazo</label>
+                <div className="read-only-field">
+                  {selectedForTipify.rejectionReason ? selectedForTipify.rejectionReason.replace(/_/g, ' ') : '(Sin motivo registrado)'}
+                </div>
               </>
             )}
             <div className="modal-actions">
