@@ -31,7 +31,7 @@ const TrainingList: React.FC<TrainingListProps> = ({ companyFilter, onAccept, on
   const { applicants } = useApplicantsSync();
 
   const filtered = applicants.filter(
-    (a) => a.company === companyFilter && a.status === 'RECLUTADO'
+    (a) => a.company === companyFilter && a.status === 'POR_CAPACITAR'
   );
 
   return (
@@ -97,7 +97,8 @@ export const TrainingDashboard: React.FC = () => {
   const handleAccept = (id: string) => {
     const applicant = applicants.find(a => a.id === id);
     if (applicant) {
-      updateApplicant(id, { ...applicant, status: 'APROBADO' });
+      // Guardar internamente como POR_CONTRATAR pero mostrar APROBADO al usuario
+      updateApplicant(id, { ...applicant, status: 'POR_CONTRATAR' });
     }
   };
 
