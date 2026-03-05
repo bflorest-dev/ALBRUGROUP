@@ -19,28 +19,32 @@ public class CuentaPublicitariaController {
 
     private final CuentaPublicitariaService cuentaPublicitariaService;
 
-    @PostMapping @PreAuthorize("hasAuthority('CREATE_CUENTA_PUBLICITARIA')")
+    @PostMapping
+//    @PreAuthorize("hasAuthority('CREATE_CUENTA_PUBLICITARIA')")
     public ResponseEntity<CuentaPublicitariaResponse> registrarCuentaPublicitaria(@RequestBody CuentaPublicitariaRequest request)
     {
         var cuentaPublicitaria = cuentaPublicitariaService.registrarCuentaPublicitaria(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(cuentaPublicitaria);
     }
 
-    @GetMapping @PreAuthorize("hasAuthority('READ_CUENTAS_PUBLICITARIAS')")
+    @GetMapping
+//    @PreAuthorize("hasAuthority('READ_CUENTAS_PUBLICITARIAS')")
     public ResponseEntity<List<CuentaPublicitariaResponse>> listarCuentasPublicitarias(@RequestParam(required = false) Boolean activo)
     {
         var cuentasPublicitarias = cuentaPublicitariaService.listarCuentasPublicitarias(activo);
         return ResponseEntity.status(HttpStatus.OK).body(cuentasPublicitarias);
     }
 
-    @GetMapping("/activas") @PreAuthorize("hasAuthority('CREATE_CAMPANA')")
+    @GetMapping("/activas")
+//    @PreAuthorize("hasAuthority('CREATE_CAMPANA')")
     public ResponseEntity<List<CuentaPublicitariaResponse>> listarCuentasPublicitariasActivas()
     {
         var cuentasPublicitarias = cuentaPublicitariaService.listarCuentasPublicitarias(Boolean.TRUE);
         return ResponseEntity.status(HttpStatus.OK).body(cuentasPublicitarias);
     }
 
-    @DeleteMapping("/{idCuentaPublicitaria}") @PreAuthorize("hasAuthority('DELETE_CUENTA_PUBLICITARIA')")
+    @DeleteMapping("/{idCuentaPublicitaria}")
+//    @PreAuthorize("hasAuthority('DELETE_CUENTA_PUBLICITARIA')")
     public ResponseEntity<CuentaPublicitariaResponse> desactivarCuentaPublicitaria(@PathVariable Long idCuentaPublicitaria)
     {
         var cuentaPublicitaria = cuentaPublicitariaService.desactivarCuentaPublicitaria(idCuentaPublicitaria);
