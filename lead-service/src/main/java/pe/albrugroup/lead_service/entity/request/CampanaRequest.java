@@ -1,6 +1,7 @@
 package pe.albrugroup.lead_service.entity.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 @Builder @Getter @Setter
@@ -8,7 +9,6 @@ import lombok.*;
 public class CampanaRequest {
 
     @NotBlank private String nombre;
-    @NotBlank private String numeroEmpresa;
-    @NotBlank private String cuentaPublicitaria;
-    @NotBlank private String nombreCuentaPublicitaria;
+    @NotBlank private String numeroWhatsappEmpresa;
+    @NotNull private Long idCuentaPublicitaria;
 }

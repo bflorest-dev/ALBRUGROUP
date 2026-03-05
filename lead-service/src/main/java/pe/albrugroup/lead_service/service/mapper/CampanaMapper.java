@@ -1,9 +1,8 @@
 package pe.albrugroup.lead_service.service.mapper;
 
-import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
-import org.mapstruct.NullValuePropertyMappingStrategy;
 import pe.albrugroup.lead_service.entity.Campana;
 import pe.albrugroup.lead_service.entity.request.CampanaRequest;
 import pe.albrugroup.lead_service.entity.response.CampanaResponse;
@@ -11,9 +10,19 @@ import pe.albrugroup.lead_service.entity.response.CampanaResponse;
 @Mapper(componentModel = "spring")
 public interface CampanaMapper {
 
+    @Mapping(target = "numeroWhatsappEmpresa", source = "numeroWhatsappEmpresa")
+    @Mapping(target = "cuentaPublicitaria", ignore = true)
+    @Mapping(target = "activo", ignore = true)
     Campana toEntity(CampanaRequest request);
+
+    @Mapping(target = "idCuentaPublicitaria", source = "cuentaPublicitaria.id")
+    @Mapping(target = "numeroCuenta", source = "cuentaPublicitaria.numeroCuenta")
+    @Mapping(target = "nombreCuenta", source = "cuentaPublicitaria.nombreCuenta")
     CampanaResponse toResponse(Campana entity);
 
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "numeroWhatsappEmpresa", source = "numeroWhatsappEmpresa")
+    @Mapping(target = "cuentaPublicitaria", ignore = true)
+    @Mapping(target = "activo", ignore = true)
+    @Mapping(target = "id", ignore = true)
     void updateDatosCampana(CampanaRequest request, @MappingTarget Campana entity);
 }

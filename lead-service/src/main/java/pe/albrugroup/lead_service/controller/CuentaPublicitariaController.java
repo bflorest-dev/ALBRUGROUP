@@ -26,10 +26,17 @@ public class CuentaPublicitariaController {
         return ResponseEntity.status(HttpStatus.CREATED).body(cuentaPublicitaria);
     }
 
-    @GetMapping
+    @GetMapping @PreAuthorize("hasAuthority('READ_CUENTAS_PUBLICITARIAS')")
     public ResponseEntity<List<CuentaPublicitariaResponse>> listarCuentasPublicitarias(@RequestParam(required = false) Boolean activo)
     {
         var cuentasPublicitarias = cuentaPublicitariaService.listarCuentasPublicitarias(activo);
+        return ResponseEntity.status(HttpStatus.OK).body(cuentasPublicitarias);
+    }
+
+    @GetMapping("/activas") @PreAuthorize("hasAuthority('CREATE_CAMPANA')")
+    public ResponseEntity<List<CuentaPublicitariaResponse>> listarCuentasPublicitariasActivas()
+    {
+        var cuentasPublicitarias = cuentaPublicitariaService.listarCuentasPublicitarias(Boolean.TRUE);
         return ResponseEntity.status(HttpStatus.OK).body(cuentasPublicitarias);
     }
 

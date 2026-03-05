@@ -9,7 +9,9 @@ public class CampanaResponse {
 
     private Long id;
     private String nombre;
-    private String numeroEmpresa;
-    private String cuentaPublicitaria;
-    private String nombreCuentaPublicitaria;
+    private String numeroWhatsappEmpresa;
+    private Boolean activo;
+    private Long idCuentaPublicitaria;
+    private String numeroCuenta;
+    private String nombreCuenta;
 }

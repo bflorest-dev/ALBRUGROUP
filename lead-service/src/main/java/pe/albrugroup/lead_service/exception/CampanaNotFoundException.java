@@ -7,7 +7,7 @@ public class CampanaNotFoundException extends BusinessException {
     public CampanaNotFoundException(Long idCampana) {
         super(
                 HttpStatus.BAD_REQUEST,
-                "Campaña no encontrada",
+                "Campana no encontrada",
                 idCampana
         );
     }
