@@ -44,16 +44,46 @@ public class DataLoader {
         saveSubtipificacion(sinContacto, "BUZON_DE_VOZ", "Numero desvia llamadas al buzon de voz", 4);
 
         Tipificacion enSeguimiento = saveTipificacion(Etapa.VENTA, "SEGUIMIENTO", "En seguimiento", 2);
-        saveSubtipificacion(enSeguimiento, "SOLICITA_LLAMAR", "Solicita llamar luego", 1);
+        saveSubtipificacion(enSeguimiento, "SOLO_INFORMACION", "Solicita llamar luego", 1);
+        saveSubtipificacion(enSeguimiento, "SEGUIMIENTO", "Por Detallar", 2);
+        saveSubtipificacion(enSeguimiento, "GESTION_CHAT", "Por Detallar", 3);
+        saveSubtipificacion(enSeguimiento, "LLAMADA_INTERRUMPIDA", "Por Detallar", 4);
 
         Tipificacion agendado = saveTipificacion(Etapa.VENTA, "AGENDADO", "Se agenda una comunicacion", 3);
+        saveSubtipificacion(enSeguimiento, "FIN_DE_MES", "Por Detallar", 1);
+        saveSubtipificacion(enSeguimiento, "CONSULTARA_CON_FAMILIAR", "Por Detallar", 2);
+        saveSubtipificacion(enSeguimiento, "AGENDADO", "Por Detallar", 3);
 
-        Tipificacion rechazado = saveTipificacion(Etapa.VENTA, "AGENDADO", "Se agenda una comunicacion", 4);
-        Tipificacion reiterado = saveTipificacion(Etapa.VENTA, "AGENDADO", "Se agenda una comunicacion", 5);
-        Tipificacion sinFacilidades = saveTipificacion(Etapa.VENTA, "AGENDADO", "Se agenda una comunicacion", 6);
-        Tipificacion scorePreventa = saveTipificacion(Etapa.VENTA, "AGENDADO", "Se agenda una comunicacion", 7);
-        Tipificacion preventaCompleta = saveTipificacion(Etapa.VENTA, "AGENDADO", "Se agenda una comunicacion", 8);
-        Tipificacion listaNegra = saveTipificacion(Etapa.VENTA, "AGENDADO", "Se agenda una comunicacion", 9);
+
+        Tipificacion rechazado = saveTipificacion(Etapa.VENTA, "RECHAZADO", "Se agenda una comunicacion", 4);
+        saveSubtipificacion(enSeguimiento, "ZONA_FRAUDE", "Por Detallar", 1);
+        saveSubtipificacion(enSeguimiento, "VC_DESAPROBADA", "Por Detallar", 2);
+        saveSubtipificacion(enSeguimiento, "NO_DESEA", "Por Detallar", 3);
+        saveSubtipificacion(enSeguimiento, "NO_CALIFICA", "Por Detallar", 4);
+        saveSubtipificacion(enSeguimiento, "CON_PROGRAMACION", "Por Detallar", 5);
+
+
+        Tipificacion reiterado = saveTipificacion(Etapa.VENTA, "REITERADO", "Se agenda una comunicacion", 5);
+        saveSubtipificacion(enSeguimiento, "ND_PUBLICIDAD", "Por Detallar", 1);
+        saveSubtipificacion(enSeguimiento, "DOBLE_CLICK", "Por Detallar", 2);
+
+
+        Tipificacion sinFacilidades = saveTipificacion(Etapa.VENTA, "SIN_FACILIDADES", "Se agenda una comunicacion", 6);
+        saveSubtipificacion(enSeguimiento, "SIN_CTO", "Por Detallar", 1);
+        saveSubtipificacion(enSeguimiento, "SIN_COBERTURA", "Por Detallar", 2);
+        saveSubtipificacion(enSeguimiento, "SERVICIO_ACTIVO", "Por Detallar", 3);
+        saveSubtipificacion(enSeguimiento, "EDIFICIO_SIN_LIBERAR", "Por Detallar", 4);
+
+        Tipificacion scorePreventa = saveTipificacion(Etapa.VENTA, "SCORE_PREVENTA", "Se agenda una comunicacion", 7);
+        saveSubtipificacion(enSeguimiento, "PREVENTA", "Por Detallar", 1);
+        saveSubtipificacion(enSeguimiento, "PDTE_SCORE", "Por Detallar", 1);
+
+        Tipificacion preventaCompleta = saveTipificacion(Etapa.VENTA, "PREVENTA_COMPLETA", "Se agenda una comunicacion", 8);
+        saveSubtipificacion(enSeguimiento, "VENTA_CERRADA", "Por Detallar", 1);
+        saveSubtipificacion(enSeguimiento, "VC_SIGUIENTE_MES", "Por Detallar", 1);
+
+        Tipificacion listaNegra = saveTipificacion(Etapa.VENTA, "LISTA_NEGRA", "Se agenda una comunicacion", 9);
+        saveSubtipificacion(enSeguimiento, "BLACKLIST", "Por Detallar", 1);
     }
 
     private Tipificacion saveTipificacion(Etapa etapa, String codigo, String descripcion, Integer orden) {
