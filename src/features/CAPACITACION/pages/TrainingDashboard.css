@@ -56,12 +56,12 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: #e5e7eb;
+  background: #3B82F6;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  color: #374151;
+  color: white;
   flex-shrink: 0;
 }
 
