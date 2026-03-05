@@ -5,25 +5,21 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 @Entity @Getter @Setter
 @AllArgsConstructor @NoArgsConstructor
-public class Lead {
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"etapa", "codigo"}))
+public class Tipificacion {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Enumerated(EnumType.STRING)
     private Etapa etapa;
-    @Enumerated(EnumType.STRING)
-    private EstadoSeguimiento estado;
+    private String codigo;
+    private String descripcion;
+    private Integer orden;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tipificacion_id")
-    private Tipificacion tipificacion;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subtipificacion_id")
-    private Subtipificacion subtipificacion;
+    private Boolean activo;
 }

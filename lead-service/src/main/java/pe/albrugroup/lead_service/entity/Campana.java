@@ -2,6 +2,10 @@ package pe.albrugroup.lead_service.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.Instant;
 
 @Entity @Getter @Setter @Builder
 @AllArgsConstructor @NoArgsConstructor
@@ -12,8 +16,15 @@ public class Campana {
 
     private String nombre;
     private String numeroWhatsappEmpresa;
-    private Boolean activo;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_cuenta_publicitaria", nullable = false)
     private CuentaPublicitaria cuentaPublicitaria;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private Instant createdAt;
+    @UpdateTimestamp
+    private Instant updatedAt;
+
+    private Boolean activo;
 }

@@ -13,6 +13,7 @@ import pe.albrugroup.lead_service.repository.CampanaRepository;
 import pe.albrugroup.lead_service.repository.CuentaPublicitariaRepository;
 import pe.albrugroup.lead_service.service.mapper.CampanaMapper;
 
+import java.time.Instant;
 import java.util.List;
 
 @Service @Transactional
@@ -39,6 +40,7 @@ public class CampanaService {
                 .orElseThrow(() -> new CuentaPublicitariaNotFoundException(request.getIdCuentaPublicitaria()));
         mapper.updateDatosCampana(request, campana);
         campana.setCuentaPublicitaria(cuentaPublicitaria);
+        campana.setUpdatedAt(Instant.now());
         return mapper.toResponse(repository.save(campana));
     }
 
@@ -46,6 +48,7 @@ public class CampanaService {
         Campana campana = repository.findByIdAndActivoTrue(idCampana)
                 .orElseThrow(() -> new CampanaNotFoundException(idCampana));
         campana.setActivo(Boolean.FALSE);
+        campana.setUpdatedAt(Instant.now());
         return mapper.toResponse(repository.save(campana));
     }
 
