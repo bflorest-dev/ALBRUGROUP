@@ -12,5 +12,6 @@ import java.util.Optional;
 public interface SubtipificacionRepository extends JpaRepository<Subtipificacion, Long> {
 
     List<Subtipificacion> findByTipificacionInAndActivoTrueOrderByTipificacion_IdAscOrdenAsc(List<Tipificacion> tipificaciones);
+    List<Subtipificacion> findByTipificacionIdIn(List<Long> tipificacionIds);
     Optional<Subtipificacion> findByTipificacionIdAndCodigo(Long tipificacionId, String codigo);
 }
