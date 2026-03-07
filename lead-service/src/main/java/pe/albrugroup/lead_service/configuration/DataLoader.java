@@ -76,11 +76,11 @@ public class DataLoader {
 
         Tipificacion scorePreventa = saveTipificacion(Etapa.VENTA, "SCORE_PREVENTA", "Se agenda una comunicacion", 7);
         saveSubtipificacion(enSeguimiento, "PREVENTA", "Por Detallar", 1);
-        saveSubtipificacion(enSeguimiento, "PDTE_SCORE", "Por Detallar", 1);
+        saveSubtipificacion(enSeguimiento, "PDTE_SCORE", "Por Detallar", 2);
 
         Tipificacion preventaCompleta = saveTipificacion(Etapa.VENTA, "PREVENTA_COMPLETA", "Se agenda una comunicacion", 8);
         saveSubtipificacion(enSeguimiento, "VENTA_CERRADA", "Por Detallar", 1);
-        saveSubtipificacion(enSeguimiento, "VC_SIGUIENTE_MES", "Por Detallar", 1);
+        saveSubtipificacion(enSeguimiento, "VC_SIGUIENTE_MES", "Por Detallar", 2);
 
         Tipificacion listaNegra = saveTipificacion(Etapa.VENTA, "LISTA_NEGRA", "Se agenda una comunicacion", 9);
         saveSubtipificacion(enSeguimiento, "BLACKLIST", "Por Detallar", 1);

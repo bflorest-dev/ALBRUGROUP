@@ -6,7 +6,7 @@ public class CuentaPublicitariaNotFoundException extends BusinessException {
 
     public CuentaPublicitariaNotFoundException(Long idCuentaPublicitaria) {
         super(
-                HttpStatus.BAD_REQUEST,
+                HttpStatus.NOT_FOUND,
                 "Cuenta publicitaria no encontrada",
                 idCuentaPublicitaria
         );

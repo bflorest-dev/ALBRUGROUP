@@ -17,5 +17,5 @@ public abstract class BusinessException extends RuntimeException {
         this.details = details;
     }
     protected BusinessException(HttpStatus status, String message, Object id) { this(status, message, id, null); }
-    protected BusinessException(HttpStatus status, String message) { this(status, message, null, null); }
+    protected BusinessException(HttpStatus status, String message) { this(status, message, null); }
 }

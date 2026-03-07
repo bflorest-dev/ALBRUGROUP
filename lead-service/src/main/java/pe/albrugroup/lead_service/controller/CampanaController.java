@@ -19,14 +19,16 @@ public class CampanaController {
 
     private final CampanaService campanaService;
 
-    @PostMapping @PreAuthorize("hasAuthority('CREATE_CAMPANA')")
+    @PostMapping
+//    @PreAuthorize("hasAuthority('CREATE_CAMPANA')")
     public ResponseEntity<CampanaResponse> registrarCampana(@RequestBody CampanaRequest request)
     {
         var campana = campanaService.registrarCampana(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(campana);
     }
 
-    @PutMapping("/{idCampana}") @PreAuthorize("hasAuthority('UPDATE_CAMPANA')")
+    @PutMapping("/{idCampana}")
+//    @PreAuthorize("hasAuthority('UPDATE_CAMPANA')")
     public ResponseEntity<CampanaResponse> actualizarCampana(@PathVariable Long idCampana,
                                                              @RequestBody CampanaRequest request)
     {
@@ -34,7 +36,8 @@ public class CampanaController {
         return ResponseEntity.status(HttpStatus.OK).body(campana);
     }
 
-    @DeleteMapping("/{idCampana}") @PreAuthorize("hasAuthority('DELETE_CAMPANA')")
+    @DeleteMapping("/{idCampana}")
+//    @PreAuthorize("hasAuthority('DELETE_CAMPANA')")
     public ResponseEntity<CampanaResponse> desactivarCampana(@PathVariable Long idCampana)
     {
         var campana = campanaService.desactivarCampana(idCampana);

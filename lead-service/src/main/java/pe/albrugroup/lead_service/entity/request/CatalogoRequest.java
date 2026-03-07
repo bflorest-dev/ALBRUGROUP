@@ -1,0 +1,33 @@
+package pe.albrugroup.lead_service.entity.request;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import pe.albrugroup.lead_service.entity.enums.Etapa;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Builder
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class CatalogoRequest {
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    private Etapa etapa;
+
+    @NotEmpty
+    @Valid
+    @Builder.Default
+    private List<TipificacionCatalogoRequest> tipificaciones = new ArrayList<>();
+}
