@@ -7,8 +7,7 @@ import pe.albrugroup.lead_service.entity.Campana;
 import pe.albrugroup.lead_service.entity.CuentaPublicitaria;
 import pe.albrugroup.lead_service.entity.request.CampanaRequest;
 import pe.albrugroup.lead_service.entity.response.CampanaResponse;
-import pe.albrugroup.lead_service.exception.CampanaNotFoundException;
-import pe.albrugroup.lead_service.exception.CuentaPublicitariaNotFoundException;
+import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
 import pe.albrugroup.lead_service.repository.CuentaPublicitariaRepository;
 import pe.albrugroup.lead_service.service.mapper.CampanaMapper;
@@ -26,7 +25,7 @@ public class CampanaService {
 
     public CampanaResponse registrarCampana(CampanaRequest request) {
         CuentaPublicitaria cuentaPublicitaria = cuentaPublicitariaRepository.findByIdAndActivoTrue(request.getIdCuentaPublicitaria())
-                .orElseThrow(() -> new CuentaPublicitariaNotFoundException(request.getIdCuentaPublicitaria()));
+                .orElseThrow(() -> new NotFoundException(CuentaPublicitaria.class, request.getIdCuentaPublicitaria()));
         Campana campana = mapper.toEntity(request);
         campana.setCuentaPublicitaria(cuentaPublicitaria);
         campana.setActivo(Boolean.TRUE);
@@ -35,9 +34,9 @@ public class CampanaService {
 
     public CampanaResponse actualizarCampana(Long idCampana, CampanaRequest request) {
         Campana campana = repository.findByIdAndActivoTrue(idCampana)
-                .orElseThrow(() -> new CampanaNotFoundException(idCampana));
+                .orElseThrow(() -> new NotFoundException(Campana.class, idCampana));
         CuentaPublicitaria cuentaPublicitaria = cuentaPublicitariaRepository.findByIdAndActivoTrue(request.getIdCuentaPublicitaria())
-                .orElseThrow(() -> new CuentaPublicitariaNotFoundException(request.getIdCuentaPublicitaria()));
+                .orElseThrow(() -> new NotFoundException(CuentaPublicitaria.class, request.getIdCuentaPublicitaria()));
         mapper.updateDatosCampana(request, campana);
         campana.setCuentaPublicitaria(cuentaPublicitaria);
         campana.setUpdatedAt(Instant.now());
@@ -46,7 +45,7 @@ public class CampanaService {
 
     public CampanaResponse desactivarCampana(Long idCampana) {
         Campana campana = repository.findByIdAndActivoTrue(idCampana)
-                .orElseThrow(() -> new CampanaNotFoundException(idCampana));
+                .orElseThrow(() -> new NotFoundException(Campana.class, idCampana));
         campana.setActivo(Boolean.FALSE);
         campana.setUpdatedAt(Instant.now());
         return mapper.toResponse(repository.save(campana));

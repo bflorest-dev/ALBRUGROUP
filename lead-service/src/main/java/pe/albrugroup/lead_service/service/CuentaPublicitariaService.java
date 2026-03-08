@@ -6,7 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.entity.CuentaPublicitaria;
 import pe.albrugroup.lead_service.entity.request.CuentaPublicitariaRequest;
 import pe.albrugroup.lead_service.entity.response.CuentaPublicitariaResponse;
-import pe.albrugroup.lead_service.exception.CuentaPublicitariaNotFoundException;
+import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.CuentaPublicitariaRepository;
 import pe.albrugroup.lead_service.service.mapper.CuentaPublicitariaMapper;
 
@@ -27,7 +27,7 @@ public class CuentaPublicitariaService {
 
     public CuentaPublicitariaResponse desactivarCuentaPublicitaria(Long idCuentaPublicitaria) {
         CuentaPublicitaria cuentaPublicitaria = repository.findByIdAndActivoTrue(idCuentaPublicitaria)
-                .orElseThrow(() -> new CuentaPublicitariaNotFoundException(idCuentaPublicitaria));
+                .orElseThrow(() -> new NotFoundException(CuentaPublicitaria.class, idCuentaPublicitaria));
         cuentaPublicitaria.setActivo(Boolean.FALSE);
         return mapper.toResponse(repository.save(cuentaPublicitaria));
     }

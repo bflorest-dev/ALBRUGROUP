@@ -14,10 +14,9 @@ import pe.albrugroup.lead_service.entity.response.CatalogoResponse;
 import pe.albrugroup.lead_service.entity.response.SubtipificacionResponse;
 import pe.albrugroup.lead_service.entity.response.TipificacionResponse;
 import pe.albrugroup.lead_service.exception.CatalogoEstadoInvalidoException;
+import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.exception.SubtipificacionNoPerteneceATipificacionException;
-import pe.albrugroup.lead_service.exception.SubtipificacionNotFoundException;
 import pe.albrugroup.lead_service.exception.SubtipificacionPadreInactivoException;
-import pe.albrugroup.lead_service.exception.TipificacionNotFoundException;
 import pe.albrugroup.lead_service.repository.SubtipificacionRepository;
 import pe.albrugroup.lead_service.repository.TipificacionRepository;
 import pe.albrugroup.lead_service.service.mapper.TipificacionMapper;
@@ -133,7 +132,7 @@ public class TipificacionService {
         }
 
         Tipificacion tipificacion = tipificacionRepository.findById(request.getId())
-                .orElseThrow(() -> new TipificacionNotFoundException(request.getId()));
+                .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getId()));
 
         mapper.updateDatosTipificacion(request, tipificacion);
         tipificacion.setEtapa(etapa);
@@ -151,7 +150,7 @@ public class TipificacionService {
         }
 
         Subtipificacion subtipificacion = subtipificacionRepository.findById(request.getId())
-                .orElseThrow(() -> new SubtipificacionNotFoundException(request.getId()));
+                .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getId()));
 
         if (!subtipificacion.getTipificacion().getId().equals(tipificacion.getId())) {
             throw new SubtipificacionNoPerteneceATipificacionException(
@@ -212,7 +211,7 @@ public class TipificacionService {
         for (Long id : ids) {
             Tipificacion tipificacion = resultado.get(id);
             if (tipificacion == null) {
-                throw new TipificacionNotFoundException(id);
+                throw new NotFoundException(Tipificacion.class, id);
             }
             if (tipificacion.getEtapa() != etapa) {
                 throw new CatalogoEstadoInvalidoException(
@@ -237,7 +236,7 @@ public class TipificacionService {
         for (Long id : ids) {
             Subtipificacion subtipificacion = resultado.get(id);
             if (subtipificacion == null) {
-                throw new SubtipificacionNotFoundException(id);
+                throw new NotFoundException(Subtipificacion.class, id);
             }
             if (subtipificacion.getTipificacion().getEtapa() != etapa) {
                 throw new CatalogoEstadoInvalidoException(

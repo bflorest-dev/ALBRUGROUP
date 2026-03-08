@@ -16,15 +16,17 @@ public class Campana {
 
     private String nombre;
     private String numeroWhatsappEmpresa;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_cuenta_publicitaria", nullable = false)
     private CuentaPublicitaria cuentaPublicitaria;
 
-    @CreationTimestamp
-    @Column(updatable = false)
+
+
+    private Boolean activo;
+
+    @CreationTimestamp @Column(updatable = false)
     private Instant createdAt;
     @UpdateTimestamp
     private Instant updatedAt;
-
-    private Boolean activo;
 }
