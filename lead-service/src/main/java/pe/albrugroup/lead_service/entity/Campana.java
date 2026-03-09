@@ -21,7 +21,9 @@ public class Campana {
     @JoinColumn(name = "id_cuenta_publicitaria", nullable = false)
     private CuentaPublicitaria cuentaPublicitaria;
 
-
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_proveedor", nullable = false)
+    private Proveedor proveedor;
 
     private Boolean activo;
 

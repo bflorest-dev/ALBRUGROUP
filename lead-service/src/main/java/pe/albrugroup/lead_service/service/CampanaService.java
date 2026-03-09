@@ -5,11 +5,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.entity.Campana;
 import pe.albrugroup.lead_service.entity.CuentaPublicitaria;
+import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.request.CampanaRequest;
 import pe.albrugroup.lead_service.entity.response.CampanaResponse;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
 import pe.albrugroup.lead_service.repository.CuentaPublicitariaRepository;
+import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.service.mapper.CampanaMapper;
 
 import java.time.Instant;
@@ -22,12 +24,16 @@ public class CampanaService {
     private final CampanaMapper mapper;
     private final CampanaRepository repository;
     private final CuentaPublicitariaRepository cuentaPublicitariaRepository;
+    private final ProveedorRepository proveedorRepository;
 
     public CampanaResponse registrarCampana(CampanaRequest request) {
         CuentaPublicitaria cuentaPublicitaria = cuentaPublicitariaRepository.findByIdAndActivoTrue(request.getIdCuentaPublicitaria())
                 .orElseThrow(() -> new NotFoundException(CuentaPublicitaria.class, request.getIdCuentaPublicitaria()));
+        Proveedor proveedor = proveedorRepository.findByIdAndActivoTrue(request.getIdProveedor())
+                .orElseThrow(() -> new NotFoundException(Proveedor.class, request.getIdProveedor()));
         Campana campana = mapper.toEntity(request);
         campana.setCuentaPublicitaria(cuentaPublicitaria);
+        campana.setProveedor(proveedor);
         campana.setActivo(Boolean.TRUE);
         return mapper.toResponse(repository.save(campana));
     }
@@ -37,8 +43,11 @@ public class CampanaService {
                 .orElseThrow(() -> new NotFoundException(Campana.class, idCampana));
         CuentaPublicitaria cuentaPublicitaria = cuentaPublicitariaRepository.findByIdAndActivoTrue(request.getIdCuentaPublicitaria())
                 .orElseThrow(() -> new NotFoundException(CuentaPublicitaria.class, request.getIdCuentaPublicitaria()));
+        Proveedor proveedor = proveedorRepository.findByIdAndActivoTrue(request.getIdProveedor())
+                .orElseThrow(() -> new NotFoundException(Proveedor.class, request.getIdProveedor()));
         mapper.updateDatosCampana(request, campana);
         campana.setCuentaPublicitaria(cuentaPublicitaria);
+        campana.setProveedor(proveedor);
         campana.setUpdatedAt(Instant.now());
         return mapper.toResponse(repository.save(campana));
     }

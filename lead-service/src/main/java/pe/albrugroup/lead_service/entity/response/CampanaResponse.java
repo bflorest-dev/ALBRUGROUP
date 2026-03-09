@@ -15,5 +15,7 @@ public class CampanaResponse {
     private Long idCuentaPublicitaria;
     private String numeroCuenta;
     private String nombreCuenta;
+    private Long idProveedor;
+    private String nombreProveedor;
     private Instant updatedAt;
 }

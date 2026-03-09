@@ -12,16 +12,20 @@ public interface CampanaMapper {
 
     @Mapping(target = "numeroWhatsappEmpresa", source = "numeroWhatsappEmpresa")
     @Mapping(target = "cuentaPublicitaria", ignore = true)
+    @Mapping(target = "proveedor", ignore = true)
     @Mapping(target = "activo", ignore = true)
     Campana toEntity(CampanaRequest request);
 
     @Mapping(target = "idCuentaPublicitaria", source = "cuentaPublicitaria.id")
     @Mapping(target = "numeroCuenta", source = "cuentaPublicitaria.numeroCuenta")
     @Mapping(target = "nombreCuenta", source = "cuentaPublicitaria.nombreCuenta")
+    @Mapping(target = "idProveedor", source = "proveedor.id")
+    @Mapping(target = "nombreProveedor", source = "proveedor.nombre")
     CampanaResponse toResponse(Campana entity);
 
     @Mapping(target = "numeroWhatsappEmpresa", source = "numeroWhatsappEmpresa")
     @Mapping(target = "cuentaPublicitaria", ignore = true)
+    @Mapping(target = "proveedor", ignore = true)
     @Mapping(target = "activo", ignore = true)
     @Mapping(target = "id", ignore = true)
     void updateDatosCampana(CampanaRequest request, @MappingTarget Campana entity);
