@@ -7,6 +7,7 @@ import pe.albrugroup.lead_service.entity.Campana;
 import pe.albrugroup.lead_service.entity.CuentaPublicitaria;
 import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.request.CampanaRequest;
+import pe.albrugroup.lead_service.entity.request.CampanaWhatsappRequest;
 import pe.albrugroup.lead_service.entity.response.CampanaResponse;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
@@ -38,16 +39,10 @@ public class CampanaService {
         return mapper.toResponse(repository.save(campana));
     }
 
-    public CampanaResponse actualizarCampana(Long idCampana, CampanaRequest request) {
+    public CampanaResponse actualizarNumeroWhatsappCampana(Long idCampana, CampanaWhatsappRequest request) {
         Campana campana = repository.findByIdAndActivoTrue(idCampana)
                 .orElseThrow(() -> new NotFoundException(Campana.class, idCampana));
-        CuentaPublicitaria cuentaPublicitaria = cuentaPublicitariaRepository.findByIdAndActivoTrue(request.getIdCuentaPublicitaria())
-                .orElseThrow(() -> new NotFoundException(CuentaPublicitaria.class, request.getIdCuentaPublicitaria()));
-        Proveedor proveedor = proveedorRepository.findByIdAndActivoTrue(request.getIdProveedor())
-                .orElseThrow(() -> new NotFoundException(Proveedor.class, request.getIdProveedor()));
-        mapper.updateDatosCampana(request, campana);
-        campana.setCuentaPublicitaria(cuentaPublicitaria);
-        campana.setProveedor(proveedor);
+        mapper.updateNumeroWhatsappCampana(request, campana);
         campana.setUpdatedAt(Instant.now());
         return mapper.toResponse(repository.save(campana));
     }

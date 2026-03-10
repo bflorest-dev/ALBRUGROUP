@@ -20,10 +20,13 @@ public class Lead {
     @Enumerated(EnumType.STRING)
     private EstadoSeguimiento estado;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tipificacion_id")
-    private Tipificacion tipificacion;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subtipificacion_id")
-    private Subtipificacion subtipificacion;
+    private Long idTipificacion;
+    private String codigoTipificacion;
+
+    private Long idSubtipificacion;
+    private String codigoSubtipificacion;
+
+    @Column(length = 6)
+    private String ubigeo;
 }
+

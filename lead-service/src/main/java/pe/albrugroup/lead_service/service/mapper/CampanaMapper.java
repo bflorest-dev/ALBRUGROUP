@@ -5,6 +5,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import pe.albrugroup.lead_service.entity.Campana;
 import pe.albrugroup.lead_service.entity.request.CampanaRequest;
+import pe.albrugroup.lead_service.entity.request.CampanaWhatsappRequest;
 import pe.albrugroup.lead_service.entity.response.CampanaResponse;
 
 @Mapper(componentModel = "spring")
@@ -24,9 +25,5 @@ public interface CampanaMapper {
     CampanaResponse toResponse(Campana entity);
 
     @Mapping(target = "numeroWhatsappEmpresa", source = "numeroWhatsappEmpresa")
-    @Mapping(target = "cuentaPublicitaria", ignore = true)
-    @Mapping(target = "proveedor", ignore = true)
-    @Mapping(target = "activo", ignore = true)
-    @Mapping(target = "id", ignore = true)
-    void updateDatosCampana(CampanaRequest request, @MappingTarget Campana entity);
+    void updateNumeroWhatsappCampana(CampanaWhatsappRequest request, @MappingTarget Campana entity);
 }
