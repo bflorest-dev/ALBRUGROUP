@@ -18,6 +18,7 @@ export default defineConfig({
       { find: '@services', replacement: path.resolve(__dirname, 'src/services') },
       { find: '@types', replacement: path.resolve(__dirname, 'src/types') },
       { find: '@components', replacement: path.resolve(__dirname, 'src/components') },
+      { find: '@shared', replacement: path.resolve(__dirname, 'src/shared') },
     ],
   },
 })

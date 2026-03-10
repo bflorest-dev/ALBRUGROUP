@@ -5,3 +5,7 @@ export { ApplicantForm } from './ApplicantForm/ApplicantForm';
 export { Card } from './Card';
 export { Alert } from './Alert';
 export { DatePicker } from './DatePicker/DatePicker';
+export { MetricsPanel } from './MetricsPanel';
+export { LeadsWidget } from './LeadsWidget';
+export { DataTable } from './DataTable/DataTable';
+export { HeaderActions } from './HeaderActions/HeaderActions';

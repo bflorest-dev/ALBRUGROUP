@@ -4,12 +4,13 @@
  * Transforma respuestas de la API y maneja lógica específica del dominio
  */
 
+import { BaseService } from './base.service';
 import { ApplicantRepository } from '../repositories/applicant.repository';
 import type { Applicant, NewApplicantFormData, PostulanteRequest, ApplicantStatusChange } from '../types';
 import { adaptPostulanteResponseToApplicant } from '../types';
-import { POSITIONS_WITH_COMPANY } from '../utils/constants';
+import { validateDataOrThrow, NewApplicantFormDataSchema } from '../validation/schemas';
 
-export class ApplicantService {
+export class ApplicantService extends BaseService<Applicant> {
   /**
    * Obtener todos los postulantes con filtros
    */
@@ -27,52 +28,34 @@ export class ApplicantService {
    * Crear nuevo postulante
    */
   static async createApplicant(applicantData: NewApplicantFormData): Promise<Applicant> {
-    try {
-      // Validar datos antes de enviar
-      this.validateApplicantData(applicantData);
+    // Validar datos con Zod
+    const validatedData = validateDataOrThrow(NewApplicantFormDataSchema, applicantData);
 
-      // Transformar datos si es necesario
-      const transformedData = this.prepareApplicantData(applicantData);
-      
-      const newApplicant = await ApplicantRepository.create(transformedData);
-      
-      const adaptedApplicant = adaptPostulanteResponseToApplicant(newApplicant);
-      
-      return adaptedApplicant;
-    } catch (error) {
-      console.error('[ApplicantService.createApplicant] Full error object:', error);
-      if (error instanceof Error) {
-        console.error('[ApplicantService.createApplicant] Error message:', error.message);
-        console.error('[ApplicantService.createApplicant] Error stack:', error.stack);
-      }
-      throw new Error('No se pudo crear el postulante');
-    }
+    // Transformar datos para el backend
+    const transformedData = this.prepareApplicantData(validatedData);
+    
+    return this.executeOperation(
+      () => ApplicantRepository.create(transformedData),
+      'No se pudo crear el postulante',
+      adaptPostulanteResponseToApplicant
+    );
   }
 
   /**
    * Actualizar postulante
    */
   static async updateApplicant(id: string, applicantData: NewApplicantFormData): Promise<Applicant> {
-    try {
-      // Antes de enviar al backend debemos mapear los campos igual que en create
-      // para que utilice las mismas claves que el API espera (p.ej. puestoTrabajo, origen, compania, etc.)
-      // Validamos también los campos básicos para evitar peticiones inválidas.
-      try {
-        this.validateApplicantData(applicantData);
-      } catch (validationError) {
-        // no hacemos throw directo para poder loggear, pero sí propagamos
-        console.error('[ApplicantService.updateApplicant] Validation failed:', validationError);
-        throw validationError;
-      }
+    // Validar datos con Zod
+    const validatedData = validateDataOrThrow(NewApplicantFormDataSchema, applicantData);
 
-      const transformedData = this.prepareApplicantData(applicantData);
+    // Transformar datos para el backend
+    const transformedData = this.prepareApplicantData(validatedData);
 
-      const updatedApplicant = await ApplicantRepository.update(id, transformedData);
-      return adaptPostulanteResponseToApplicant(updatedApplicant);
-    } catch (error) {
-      console.error('Error updating applicant:', error);
-      throw new Error('No se pudo actualizar el postulante');
-    }
+    return this.executeOperation(
+      () => ApplicantRepository.update(id, transformedData),
+      'No se pudo actualizar el postulante',
+      adaptPostulanteResponseToApplicant
+    );
   }
 
   /**
@@ -93,44 +76,13 @@ export class ApplicantService {
    * Las estadísticas se calculan localmente en el componente usando useMemo
    */
 
-  // Métodos privados para validación
-
-  /**
-   * Validar datos del postulante
-   */
-  private static validateApplicantData(data: NewApplicantFormData): void {
-    if (!data.nombres?.trim()) {
-      throw new Error('Los nombres son requeridos');
-    }
-    if (!data.apellidos?.trim()) {
-      throw new Error('Los apellidos son requeridos');
-    }
-    if (!data.phoneMobile?.trim()) {
-      throw new Error('El número de celular es requerido');
-    }
-    if (!data.documentNumber?.trim()) {
-      throw new Error('El número de documento es requerido');
-    }
-    if (!data.documentType) {
-      throw new Error('El tipo de documento es requerido');
-    }
-    if (!data.positionOfInterest?.trim()) {
-      throw new Error('La posición de interés es requerida');
-    }
-    // company is only required for certain positions
-    const needsCompany = POSITIONS_WITH_COMPANY.includes(data.positionOfInterest);
-    if (needsCompany && !data.company?.trim()) {
-      throw new Error('La compañía es requerida');
-    }
-    if (!data.campaign?.trim()) {
-      throw new Error('La campaña/origen es requerida');
-    }
-  }
+  // ============================================================================
+  // Método privado para transformación de datos
+  // ============================================================================
 
   /**
    * Preparar datos del postulante para envío al backend
-   * Ya vienen separados en nombres y apellidos desde el formulario
-   * Solo necesita transformar el puesto de trabajo y origen
+   * Transforma el puesto de trabajo y origen según formato esperado por la API
    */
   private static prepareApplicantData(data: NewApplicantFormData): PostulanteRequest {
     // Convertir puestoTrabajo: reemplazar espacios con guiones bajos

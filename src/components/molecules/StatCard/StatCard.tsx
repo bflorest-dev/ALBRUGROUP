@@ -13,7 +13,7 @@ export const StatCard = ({ stat }: StatCardProps) => {
   return (
     <div 
       className="stat-card"
-      style={stat.color ? { borderLeftColor: stat.color, borderLeftWidth: '4px' } : {}}
+      style={stat.color ? { '--stat-color': stat.color } as React.CSSProperties : {}}
     >
       <div className="stat-content">
         <span className="stat-label">{stat.label}</span>

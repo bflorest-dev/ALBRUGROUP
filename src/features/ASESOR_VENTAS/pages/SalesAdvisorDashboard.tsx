@@ -241,7 +241,7 @@ export const SalesAdvisorDashboard = () => {
         <div className="guide-grid">
           {TIPIFICATION_CATEGORIES.map(category => (
             <div key={category.id} className="guide-card">
-              <div className="guide-header" style={{ backgroundColor: category.color }}>
+              <div className="guide-header" style={{ '--category-color': category.color } as React.CSSProperties }>
                 <h3>{category.name}</h3>
                 {category.count && <span className="category-count">{category.count}</span>}
               </div>
@@ -290,10 +290,10 @@ export const SalesAdvisorDashboard = () => {
                     <button
                       key={category.id}
                       className="category-btn"
-                      style={{ borderLeft: `4px solid ${category.color}` }}
+                      style={{ '--category-color': category.color } as React.CSSProperties }
                       onClick={() => handleCategorySelect(category.id)}
                     >
-                      <span className="category-number" style={{ backgroundColor: category.color }}>
+                      <span className="category-number">
                         {category.id}
                       </span>
                       <span className="category-name">{category.name}</span>

@@ -1,0 +1,80 @@
+/* shared utility classes used across the application */
+
+/* form controls ----------------------------------------------------------- */
+.form-control {
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+  width: 100%;
+}
+.form-control:focus {
+  border-color: #3B82F6;
+  outline: none;
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.form-grid { display: grid; gap: 12px; }
+.grid-1-2 { grid-template-columns: 1fr 2.5fr; }
+.grid-1-1 { grid-template-columns: 1fr 1fr; }
+
+/* modal helpers ----------------------------------------------------------- */
+.modal-content { display: flex; flex-direction: column; gap: 16px; }
+.modal-actions { display: flex; gap: 12px; margin-top: 24px; }
+.validation-msg { display: block; font-size: 11px; color: #6B7280; margin-top: 4px; }
+
+/* generic layout ---------------------------------------------------------- */
+.clickable { cursor: pointer; }
+.card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; }
+
+/* table utilities --------------------------------------------------------- */
+.table-wrapper { overflow-x: auto; }
+/* allow table to size itself to content; wrapper handles scrolling */
+.table-custom { width: auto; table-layout: auto; border-collapse: collapse; font-size: 13px; }
+.table-header-row { background-color: #f3f4f6; border-bottom: 1px solid #e5e7eb; }
+.table-header-cell {
+  padding: 8px;
+  text-align: left;
+  color: #6b7280;
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.table-cell { padding: 12px; white-space: nowrap; }
+.table-cell.center { text-align: center; }
+.table-cell.emphasis { font-weight: 500; color: #1F2937; }
+.table-cell.highlight { background-color: #D1FAE5; color: #065F46; font-weight: 600; }
+.highlight-header { color: #065F46; background-color: #D1FAE5; }
+
+/* grid macros for campaign/card layouts */
+.campaigns-container { margin-top: 0; width: 100%; }
+.campaigns-title { margin-bottom: 20px; font-size: 18px; font-weight: 600; }
+
+/* header actions wrapper */
+.header-actions { display: flex; align-items: center; gap: 16px; }
+
+/* misc utilities ---------------------------------------------------------- */
+.icon-button { display: flex; align-items: center; gap: 8px; }
+.flex-1 { flex: 1; }
+.clickable-row {
+  border-bottom: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.clickable-row:hover { background-color: #f9fafb; }
+
+.subrow { background-color: #f9fafb; }
+.subrow-info { padding-left: 16px; font-size: 12px; color: #6b7280; }

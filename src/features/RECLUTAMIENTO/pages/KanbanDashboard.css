@@ -53,7 +53,7 @@
   padding: 8px 12px;
   font-weight: 600;
   font-size: 14px;
-  border-top: 4px solid transparent;
+  border-top: 4px solid var(--status-color, transparent);
   background: rgba(255,255,255,0.8); /* semi-transparent header */
   border-bottom: 1px solid #e5e7eb;
 }
@@ -68,7 +68,7 @@
 }
 
 .kanban-card {
-  border-left: 4px solid transparent;
+  border-left: 4px solid var(--status-color, transparent);
 }
 
 /* pagination controls inside each column */

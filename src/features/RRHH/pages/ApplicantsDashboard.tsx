@@ -300,7 +300,7 @@ export const ApplicantsDashboard = () => {
     return (
       <div className="applicants-dashboard">
         <Header title="Cargando..." />
-        <main className="dashboard-content">
+        <main className="applicants-dashboard-content">
           <div className="loading">Cargando postulantes...</div>
         </main>
       </div>
@@ -311,7 +311,7 @@ export const ApplicantsDashboard = () => {
     <div className="applicants-dashboard">
       <Header title="Gestión de Postulantes" searchTerm={searchTerm} onSearchChange={setSearchTerm} />
 
-      <main className="dashboard-content">
+      <main className="applicants-dashboard-content">
         {/* Sección de Estadísticas */}
         <section className="statistics-section">
           <div className="stats-grid">
@@ -323,7 +323,7 @@ export const ApplicantsDashboard = () => {
 
         {/* Sección de Directorio */}
         <section className="directory-section">
-          <div className="section-header">
+          <div className="applicants-section-header">
             <h2>POSTULANTES</h2>
             <div className="section-controls">
               <div className="search-container">

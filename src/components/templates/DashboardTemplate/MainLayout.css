@@ -146,7 +146,7 @@
 /* default sidebar sizes, can be overridden by JS/context class */
 .main-layout {
   --sidebar-width: 280px; /* expanded size */
-  --sidebar-collapsed-width: 80px; /* collapsed size */
+  --sidebar-collapsed-width: 70px; /* collapsed size */
 }
 
 /* when collapsed apply the smaller value */
@@ -154,21 +154,14 @@
   --sidebar-width: var(--sidebar-collapsed-width);
 }
 
-.main-layout.sidebar-collapsed .layout-content {
-  /* no margin-left */
-}
-
 /* allow a slightly wider hover on expanded mode (optional) */
-.main-layout:not(.sidebar-collapsed):has(.sidebar:hover) .layout-content {
-  /* no shift */
-}
 
 
 /* When role is RRHH we want full-bleed content and NO sidebar-shift animation */
 .layout-content.full-bleed {
-  margin-left: 0 !important;
+  margin-left: 0px;
   transition: none !important;
-  padding-left: 0; /* removed extra left padding so content aligns with sidebar */
+  padding-left: 0;
 }
 
 /* ensure hover on sidebar does not push RRHH content */

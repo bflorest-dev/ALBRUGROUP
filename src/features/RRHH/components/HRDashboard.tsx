@@ -49,7 +49,7 @@ const HRDashboard: React.FC = () => {
 
       <div className="hr-sections">
         <section className="hr-section">
-          <div className="section-header">
+          <div className="hr-section-header">
             <h3>Nuevas Altas</h3>
           </div>
           <ul className="hr-list">
@@ -64,7 +64,7 @@ const HRDashboard: React.FC = () => {
         </section>
 
         <section className="hr-section">
-          <div className="section-header">
+          <div className="hr-section-header">
             <h3>Revisiones pendientes</h3>
           </div>
           <ul className="hr-list">

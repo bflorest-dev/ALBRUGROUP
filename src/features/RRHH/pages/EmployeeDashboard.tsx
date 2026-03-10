@@ -63,7 +63,7 @@ const InactiveEmployeeContent = () => {
               nationality: a.nationality || '',
               birthDate: a.birthDate || '',
               civilStatus: a.civilStatus || '',
-              hasChildren: a.hasChildren ? 'Sí' : 'No',
+              hasChildren: a.hasChildren || false,
               personalEmail: a.personalEmail || '',
               phoneMobile: a.phoneMobile || '',
               bank: a.bank || '',
@@ -222,7 +222,7 @@ const InactiveEmployeeContent = () => {
 
   return (
     <section className="directory-section">
-      <div className="section-header">
+      <div className="employee-section-header">
         <h2>EMPLEADOS INACTIVOS</h2>
         <div className="section-controls">
           <input
@@ -340,7 +340,7 @@ const EmployeeContent = () => {
               nationality: a.nationality || '',
               birthDate: a.birthDate || '',
               civilStatus: a.civilStatus || '',
-              hasChildren: a.hasChildren ? 'Sí' : 'No',
+              hasChildren: a.hasChildren || false,
               personalEmail: a.personalEmail || '',
               phoneMobile: a.phoneMobile || '',
               bank: a.bank || '',
@@ -686,7 +686,7 @@ const EmployeeContent = () => {
 
       {/* Sección de Directorio */}
       <section className="directory-section">
-        <div className="section-header">
+        <div className="employee-section-header">
           <h2>DIRECTORIO DE PERSONAL</h2>
           <div className="section-controls">
             <div className="search-container">
@@ -1342,7 +1342,7 @@ export const EmployeeDashboard = () => {
             {sidebarCollapsed ? <BiChevronRight size={20} /> : <BiChevronLeft size={20} />}
           </button>
 
-          <h2>{headerTitle}</h2>
+          <h2 className="header-title">{headerTitle}</h2>
           
           <select
             value={selectedBreak}
@@ -1375,7 +1375,7 @@ export const EmployeeDashboard = () => {
         </header>
 
         
-        <main className="dashboard-content">
+        <main className="employee-dashboard-content">
           {/* Contenido según pestaña */}
           {activeTab === 'empleados' && <EmployeeContent />}
           
@@ -1387,7 +1387,7 @@ export const EmployeeDashboard = () => {
           
           {activeTab === 'postulantes' && !applicantsLoading && (
             <section className="directory-section">
-              <div className="section-header">
+              <div className="employee-section-header">
                 <h2>POSTULANTES NUEVOS</h2>
                 <div className="section-controls">
                   <IconButton aria-label="Descargar" title="Descargar" className="download-btn" size="md">
@@ -1497,7 +1497,7 @@ export const EmployeeDashboard = () => {
           
           {activeTab === 'aprobados' && !applicantsLoading && (
             <section className="directory-section">
-              <div className="section-header">
+              <div className="employee-section-header">
                 <h2>POSTULANTES APROBADOS</h2>
                 <div className="section-controls">
                   <button className="download-btn" title="Descargar">

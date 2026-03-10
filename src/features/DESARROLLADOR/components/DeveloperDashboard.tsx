@@ -1,6 +1,7 @@
 import React from 'react';
 import type { DeveloperDashboardData } from '../types';
 import { getDeveloperDashboardData } from '../services';
+import './DeveloperDashboard.css';
 
 const DeveloperDashboard: React.FC = () => {
   const [data, setData] = React.useState<DeveloperDashboardData | null>(null);
@@ -12,7 +13,7 @@ const DeveloperDashboard: React.FC = () => {
   if (!data) return <div>Loading...</div>;
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div className="developer-dashboard-wrapper">
       <h1>Developer Dashboard</h1>
       <h2>Repositories</h2>
       <ul>

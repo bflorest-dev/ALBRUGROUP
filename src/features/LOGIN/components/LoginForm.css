@@ -182,4 +182,14 @@
   box-shadow: none;
 }
 
+/* additional login page helpers */
+.login-page-wrapper .login-box {
+  width: 360px;
+}
+
+.login-error {
+  color: var(--danger, #d9534f);
+  margin-top: 12px;
+}
+
 

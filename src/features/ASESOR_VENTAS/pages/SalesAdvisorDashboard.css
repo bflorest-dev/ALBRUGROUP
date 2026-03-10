@@ -310,6 +310,35 @@
   justify-content: space-between;
   font-weight: 600;
   font-size: 14px;
+  background-color: var(--category-color, #6B7280);
+}
+
+.category-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-left-width: 4px;
+  border-left-color: var(--category-color, #000);
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.category-btn .category-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: var(--category-color, #000);
+  color: white;
+  font-weight: 700;
 }
 
 .guide-header h3 {

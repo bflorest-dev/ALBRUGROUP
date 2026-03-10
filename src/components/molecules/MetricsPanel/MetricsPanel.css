@@ -1,0 +1,61 @@
+/* Metrics Panel Styles */
+.metrics-panel {
+  background: white;
+  border: 1px solid #E5E7EB;
+  border-top: 3px solid var(--panel-color, #3B82F6);
+  border-radius: 8px;
+  padding: 24px;
+  transition: all 0.2s ease;
+}
+
+.metrics-panel:hover {
+  border-color: #D1D5DB;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.metrics-panel h3 {
+  margin: 0 0 20px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--panel-color, #1F2937);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metrics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.metric-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #F3F4F6;
+}
+
+.metric-item:last-child {
+  border-bottom: none;
+}
+
+.metric-label {
+  font-size: 13px;
+  color: #6B7280;
+  font-weight: 500;
+}
+
+.metric-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1F2937;
+  text-align: right;
+}
+
+.metric-unit {
+  font-size: 12px;
+  color: #9CA3AF;
+  margin-left: 4px;
+  font-weight: 500;
+}

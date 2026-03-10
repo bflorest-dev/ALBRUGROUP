@@ -32,7 +32,9 @@
       "@services/*": ["src/services/*"],
       "@utils/*": ["src/utils/*"],
       "@hooks/*": ["src/hooks/*"],
-      "@contexts/*": ["src/contexts/*"]
+      "@contexts/*": ["src/contexts/*"],
+      "@shared": ["src/shared"],
+      "@shared/*": ["src/shared/*"]
     },
 
     /* Linting */

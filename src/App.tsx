@@ -39,7 +39,7 @@ const AppContent = () => {
 
       {/* Dark mode toggle only on LOGIN role */}
       {selectedRole === 'LOGIN' && (
-        <div className="dark-toggle-wrapper" style={{ position: 'fixed', top: 10, right: 10, zIndex: 1001 }}>
+        <div className="dark-toggle-wrapper">
           <DarkModeToggle />
         </div>
       )}

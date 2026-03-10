@@ -3,11 +3,11 @@
   --sidebar-accent: #2563EB;
   --sidebar-accent-rgb: 37,99,235;
   --sidebar-accent-light: rgba(var(--sidebar-accent-rgb), 0.14);
-  width: var(--sidebar-width, 280px);
+  width: var(--sidebar-width, 260px);
   height: 100vh;
   background: white;
   border-right: 1px solid #E5E7EB;
-  padding: 16px 20px;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -16,12 +16,13 @@
   overflow-y: auto;
   transition: width 0.3s ease, padding 0.3s ease;
   align-items: flex-start;
+  z-index: 1000;
 }
 
 /* collapsed modifier */
 .sidebar.collapsed {
-  width: var(--sidebar-collapsed-width, 80px);
-  padding: 16px 8px;
+  width: var(--sidebar-collapsed-width, 70px);
+  padding: 12px 6px;
   align-items: center;
 }
 

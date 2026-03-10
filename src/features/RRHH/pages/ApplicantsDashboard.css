@@ -6,17 +6,15 @@
   background: #F8F9FA;
 }
 
-.dashboard-content {
-  flex: 1 1 auto;
-  padding: 24px;
+.applicants-dashboard-content {
+  flex: 1;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-
-  /* make the area scrollable when there are many applicants */
+  gap: 12px;
   overflow-y: auto;
-  margin-top: 60px; /* account for fixed header */
-  height: calc(100vh - 60px);
+  height: auto;
+  width: 100%;
 }
 
 /* Sección de Estadísticas */
@@ -38,27 +36,40 @@
   flex-direction: column;
   gap: 16px;
   background: white;
-  padding: 24px;
+  padding: 16px;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  /* ensure the overall section can grow but not push beyond view */
-  max-height: calc(100vh - 200px);
-  overflow: hidden; /* table container handles actual scrolling */
+  flex: 1;
+  min-height: 0;
+}
 
-.section-header h2 {
+.applicants-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.applicants-section-header h2 {
   margin: 0;
   font-size: 14px;
   font-weight: 700;
   color: #374151;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  white-space: nowrap;  flex-shrink: 0;}
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 
 .section-controls {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  flex: 1;
 }
 
 .search-container {
@@ -67,13 +78,13 @@
   align-items: center;
   background: white;
   border: 1px solid #D1D5DB;
-  border-radius: 6px;
-  padding: 0 12px;
+  border-radius: 4px;
+  padding: 0 8px;
   transition: all 0.2s ease;
-  height: 36px;
-  max-width: 340px;
-  width: auto;
-  flex: 1;
+  height: 32px;
+  max-width: 280px;
+  width: 200px;
+  flex-shrink: 1;
 }
 
 .search-container:focus-within {
@@ -202,4 +213,4 @@
   .section-controls {
     gap: 8px;
   }
-} 
+}

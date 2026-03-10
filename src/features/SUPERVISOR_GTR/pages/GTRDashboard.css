@@ -1,41 +1,42 @@
 .gtr-dashboard {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
   background: #F9FAFB;
-  padding: 24px;
+  padding: 16px;
   min-height: 100vh;
 }
 
 /* Statistics Grid */
 .statistics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
 }
 
 .stat-card {
   background: white;
   border: 1px solid #E5E7EB;
   border-radius: 6px;
-  padding: 20px;
+  padding: 16px;
   flex: 1;
-  min-width: 200px;
+  min-width: 150px;
   transition: all 0.2s ease;
 }
 
 .stat-card:hover {
   border-color: #D1D5DB;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .stat-content {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .stat-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   color: #9CA3AF;
   text-transform: uppercase;
@@ -160,6 +161,7 @@
   font-weight: 500;
   color: #374151;
   white-space: nowrap;
+  background-color: var(--status-bg, transparent);
 }
 
 .advisor-stats {
@@ -198,24 +200,39 @@
 .leads-section {
   background: white;
   padding: 24px;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .leads-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
   flex-wrap: wrap;
   gap: 16px;
 }
 
+.leads-header .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.icon-button { display: flex; align-items: center; gap: 8px; width: 150px}
+
+.flex-1 { flex: 1; }
+
+.progress-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+  background-color: var(--fill-color, #10B981);
+}
+
 .leads-header h2 {
-  margin: 0;
+  margin-right: 1000px;
   font-size: 16px;
   font-weight: 600;
   color: #1F2937;
+  width: 600px;
 }
 
 .leads-controls {
@@ -262,15 +279,66 @@
   gap: 8px;
 }
 
-.filter-selects select {
-  padding: 8px 12px;
-  background: #F3F4F6;
+/* shared form control used in modals and filters */
+.form-control {
+  padding: 10px 12px;
+  background: #fff;
   border: 1px solid #D1D5DB;
   border-radius: 6px;
   font-size: 13px;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+  width: 100%;
+}
+
+.form-control:focus {
+  border-color: #3B82F6;
+  outline: none;
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
   color: #374151;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.form-grid { display: grid; gap: 12px; }
+.grid-1-2 { grid-template-columns: 1fr 2.5fr; }
+.grid-1-1 { grid-template-columns: 1fr 1fr; }
+
+.validation-msg {
+  display: block;
+  font-size: 11px;
+  color: #6B7280;
+  margin-top: 4px;
+}
+
+.modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.filter-selects select {
   min-width: 160px;
   appearance: none;
+}
+
+/* override base styles for selects inside filters */
+.filter-selects .form-control {
+  padding: 8px 12px;
+  background: #F3F4F6;
 }
 
 /* removed old channel button styles */
@@ -286,42 +354,6 @@
   border-color: #3B82F6;
 }
 
-/* Leads Table */
-.table-container {
-  overflow-x: auto;
-}
-
-.leads-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.leads-table th {
-  background: #F9FAFB;
-  padding: 12px;
-  text-align: left;
-  font-weight: 600;
-  color: #374151;
-  border-bottom: 1px solid #E5E7EB;
-  text-transform: uppercase;
-  font-size: 11px;
-  letter-spacing: 0.5px;
-}
-
-.leads-table td {
-  padding: 12px;
-  border-bottom: 1px solid #E5E7EB;
-  vertical-align: middle;
-}
-
-.leads-table tbody tr {
-  transition: background 0.2s ease;
-}
-
-.leads-table tbody tr:hover {
-  background: #F9FAFB;
-}
 
 .campaign-cell {
   display: flex;
@@ -344,6 +376,17 @@
   border-radius: 4px;
   font-size: 12px;
   font-weight: 500;
+  background-color: var(--channel-bg);
+  color: var(--channel-color);
+}
+
+.tipification-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tip-color);
 }
 
 .date-cell {
@@ -490,15 +533,7 @@
     grid-template-columns: 1fr;
   }
 
-  .leads-table {
-    font-size: 11px;
-  }
-
-  .leads-table th,
-  .leads-table td {
-    padding: 8px;
-  }
-
+  
   .action-btn {
     padding: 4px 8px;
     font-size: 11px;

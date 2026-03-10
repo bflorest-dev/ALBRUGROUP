@@ -24,9 +24,9 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="login-page-wrapper">
-      <div style={{ width: 360 }}>
+      <div className="login-box">
         <LoginForm onSubmit={handleSubmit} loading={loading} />
-        {error && <div style={{ color: 'var(--danger, #d9534f)', marginTop: 12 }}>{error}</div>}
+        {error && <div className="login-error">{error}</div>}
       </div>
     </div>
   );

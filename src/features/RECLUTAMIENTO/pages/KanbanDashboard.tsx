@@ -100,10 +100,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ companyFilter, onSelectForTip
         const paginatedCards = allCards.slice(start, start + ITEMS_PER_COLUMN);
         const totalPages = Math.max(1, Math.ceil(allCards.length / ITEMS_PER_COLUMN));
         return (
-        <div className="kanban-column" key={status}>
+        <div className="kanban-column" key={status} style={{ '--status-color': statusColorMap[status] } as React.CSSProperties}>
           <div
             className="kanban-column-header"
-            style={{ borderTopColor: statusColorMap[status] }}
           >
             <span>{displayStatusMap[status]}</span>
             <span className="count">{allCards.length}</span>
@@ -113,7 +112,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ companyFilter, onSelectForTip
               <Card
                 key={app.id}
                 className="kanban-card"
-                style={{ borderLeftColor: statusColorMap[status] }}
+                style={{ '--status-color': statusColorMap[status] } as React.CSSProperties}
               >
                 <div className="card-header">
                   <div className="avatar">

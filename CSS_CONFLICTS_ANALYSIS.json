@@ -1,0 +1,503 @@
+{
+  "fecha_analisis": "2026-03-10",
+  "resumen_ejecutivo": "Análisis exhaustivo de conflictos CSS en todos los features de la aplicación. Se encontraron 5 clases reutilizadas con definiciones conflictivas en múltiples archivos CSS. Los conflictos afectan principalmente a: dashboard-content (usado en RRHH y COMMUNITY con estilos diferentes), stats-grid (RRHH con gap diferente), y section-header (usado en 4+ features con definiciones muy diferentes). El mayor riesgo está en clases genéricas que se repiten sin namespace feature-specific. Recomendación: Refactorizar con BEM naming o CSS modules para evitar colisiones globales.",
+  "features_analizados": [
+    "ADMINISTRADOR",
+    "ASESOR_BACKOFFICE",
+    "ASESOR_GTR",
+    "ASESOR_POSTVENTA",
+    "ASESOR_VENTAS",
+    "CAPACITACION",
+    "COMMUNITY",
+    "CONTABILIDAD",
+    "DESARROLLADOR",
+    "LOGIN",
+    "RECLUTAMIENTO",
+    "RRHH",
+    "SUPERVISOR_BACKOFFICE",
+    "SUPERVISOR_GTR",
+    "SUPERVISOR_POSTVENTA",
+    "SUPERVISOR_VENTAS"
+  ],
+  "archivos_css_encontrados": {
+    "pages": [
+      "src/features/SUPERVISOR_GTR/pages/GTRDashboard.css",
+      "src/features/RRHH/pages/ApplicantsDashboard.css",
+      "src/features/RRHH/pages/EmployeeDashboard.css",
+      "src/features/RRHH/pages/ComingSoonPage.css",
+      "src/features/COMMUNITY/pages/CommunityDashboard.css",
+      "src/features/CAPACITACION/pages/TrainingDashboard.css",
+      "src/features/RECLUTAMIENTO/pages/KanbanDashboard.css",
+      "src/features/ASESOR_VENTAS/pages/SalesAdvisorDashboard.css"
+    ],
+    "components": [
+      "src/features/RRHH/components/HRDashboard.css",
+      "src/features/DESARROLLADOR/components/DeveloperDashboard.css",
+      "src/features/ADMINISTRADOR/components/AdminDashboard.css",
+      "src/features/LOGIN/components/LoginForm.css"
+    ]
+  },
+  "archivos_tsx_encontrados": {
+    "pages": [
+      "src/features/SUPERVISOR_GTR/pages/GTRDashboard.tsx",
+      "src/features/RRHH/pages/ApplicantsDashboard.tsx",
+      "src/features/RRHH/pages/EmployeeDashboard.tsx",
+      "src/features/RRHH/pages/ComingSoonPage.tsx",
+      "src/features/COMMUNITY/pages/CommunityDashboard.tsx",
+      "src/features/CAPACITACION/pages/TrainingDashboard.tsx",
+      "src/features/RECLUTAMIENTO/pages/KanbanDashboard.tsx",
+      "src/features/ASESOR_VENTAS/pages/SalesAdvisorDashboard.tsx"
+    ],
+    "components": [
+      "src/features/RRHH/components/HRDashboard.tsx",
+      "src/features/DESARROLLADOR/components/DeveloperDashboard.tsx",
+      "src/features/ADMINISTRADOR/components/AdminDashboard.tsx",
+      "src/features/LOGIN/components/LoginPage.tsx",
+      "src/features/LOGIN/components/LoginForm.tsx",
+      "src/features/SUPERVISOR_GTR/components/AdvisorsSection.tsx",
+      "src/features/SUPERVISOR_GTR/components/LeadsSection.tsx",
+      "src/features/SUPERVISOR_GTR/components/NewLeadModal.tsx"
+    ]
+  },
+  "conflicts": [
+    {
+      "id": 1,
+      "className": ".dashboard-content",
+      "tipo": "Multiple definitions with different properties",
+      "peligro": "ALTO",
+      "descripcion": "Clase global reutilizada en múltiples features con definiciones CSS conflictivas. El último CSS cargado sobrescribirá todos los demás, causando que algunos dashboards se vean incorrectamente.",
+      "usado_en": [
+        {
+          "archivo": "src/features/RRHH/pages/ApplicantsDashboard.tsx",
+          "lineas": [303, 314],
+          "elemento": "<main className=\"dashboard-content\">"
+        },
+        {
+          "archivo": "src/features/RRHH/pages/EmployeeDashboard.tsx",
+          "lineas": [1378],
+          "elemento": "<main className=\"dashboard-content\">"
+        },
+        {
+          "archivo": "src/features/COMMUNITY/pages/CommunityDashboard.tsx",
+          "lineas": [359, 371],
+          "elemento": "Media query overrides en CSS (pero no usado en HTML)"
+        }
+      ],
+      "estilos_en": [
+        {
+          "archivo": "src/features/RRHH/pages/ApplicantsDashboard.css",
+          "linea": 9,
+          "propiedades": {
+            "flex": "1",
+            "padding": "12px",
+            "display": "flex",
+            "flex-direction": "column",
+            "gap": "12px",
+            "overflow-y": "auto",
+            "height": "auto",
+            "width": "100%"
+          }
+        },
+        {
+          "archivo": "src/features/RRHH/pages/EmployeeDashboard.css",
+          "linea": 81,
+          "propiedades": {
+            "flex": "1 1 auto",
+            "width": "100%",
+            "box-sizing": "border-box",
+            "padding": "24px 30px",
+            "display": "flex",
+            "flex-direction": "column",
+            "gap": "24px",
+            "overflow-y": "auto",
+            "margin-top": "60px",
+            "height": "calc(100vh - 60px)",
+            "align-self": "stretch"
+          }
+        },
+        {
+          "archivo": "src/features/COMMUNITY/pages/CommunityDashboard.css",
+          "linea": 359,
+          "contexto": "@media (max-width: 768px)",
+          "propiedades": {
+            "padding": "16px"
+          }
+        }
+      ],
+      "diferencias_clave": [
+        "Padding: 12px vs 24px 30px - GRAN DIFERENCIA",
+        "Height: auto vs calc(100vh - 60px) - IMPACTO EN LAYOUT",
+        "Margin-top: NO definido vs 60px - AFECTA POSICIONAMIENTO",
+        "Flex basis: '1' vs '1 1 auto' - FLEXIBILIDAD DIFERENTE"
+      ],
+      "impacto_visual": "ApplicantsDashboard usa padding compacto (12px), mientras que EmployeeDashboard usa padding grande (24px 30px). Si cargan en orden incorrecto, uno de los dashboards se verá comprimido o con espaciado incorrecto.",
+      "recomendacion": "Renombrar a .applicants-dashboard-content y .employee-dashboard-content con prefijos feature-specific. O usar CSS modules para cada feature."
+    },
+    {
+      "id": 2,
+      "className": ".stats-grid",
+      "tipo": "Different gap property",
+      "peligro": "MEDIO",
+      "descripcion": "Clase reutilizada en dos features (RRHH) con definiciones de gap diferentes.",
+      "usado_en": [
+        {
+          "archivo": "src/features/RRHH/pages/ApplicantsDashboard.tsx",
+          "linea": 317,
+          "elemento": "<div className=\"stats-grid\">"
+        },
+        {
+          "archivo": "src/features/RRHH/pages/EmployeeDashboard.tsx",
+          "linea": 680,
+          "elemento": "<div className=\"stats-grid\">"
+        }
+      ],
+      "estilos_en": [
+        {
+          "archivo": "src/features/RRHH/pages/ApplicantsDashboard.css",
+          "linea": 27,
+          "propiedades": {
+            "display": "grid",
+            "grid-template-columns": "repeat(auto-fit, minmax(250px, 1fr))",
+            "gap": "16px"
+          }
+        },
+        {
+          "archivo": "src/features/RRHH/pages/EmployeeDashboard.css",
+          "linea": 101,
+          "propiedades": {
+            "display": "grid",
+            "grid-template-columns": "repeat(auto-fit, minmax(250px, 1fr))",
+            "gap": "20px"
+          }
+        }
+      ],
+      "diferencias_clave": [
+        "Gap: 16px vs 20px - INCONSISTENCIA EN ESPACIADO"
+      ],
+      "impacto_visual": "El espaciado entre tarjetas de estadísticas será diferente en ApplicantsDashboard (16px) vs EmployeeDashboard (20px). Causa inconsistencia visual.",
+      "recomendacion": "Unificar gap a 16px o 20px globalmente. Considerar usar CSS variables con --stats-grid-gap."
+    },
+    {
+      "id": 3,
+      "className": ".section-header",
+      "tipo": "Multiple different definitions",
+      "peligro": "ALTO",
+      "descripcion": "Clase global más problemática. Definida en 3 archivos CSS diferentes con propiedades muy diferentes. Usada en 5+ lugares en la aplicación.",
+      "usado_en": [
+        {
+          "archivo": "src/features/RRHH/pages/EmployeeDashboard.tsx",
+          "lineas": [225, 689, 1390, 1500],
+          "elemento": "<div className=\"section-header\">"
+        },
+        {
+          "archivo": "src/features/RRHH/pages/ApplicantsDashboard.tsx",
+          "linea": 326,
+          "elemento": "<div className=\"section-header\">"
+        },
+        {
+          "archivo": "src/features/RRHH/components/HRDashboard.tsx",
+          "lineas": [52, 67],
+          "elemento": "<div className=\"section-header\">"
+        },
+        {
+          "archivo": "src/features/SUPERVISOR_GTR/components/AdvisorsSection.tsx",
+          "linea": 186,
+          "elemento": "<div className=\"section-header\">"
+        }
+      ],
+      "estilos_en": [
+        {
+          "archivo": "src/features/RRHH/pages/ApplicantsDashboard.css",
+          "linea": 46,
+          "propiedades": {
+            "display": "flex",
+            "justify-content": "space-between",
+            "align-items": "center",
+            "gap": "16px",
+            "margin-bottom": "16px",
+            "flex-wrap": "wrap"
+          },
+          "nota": "Compacto, flexible"
+        },
+        {
+          "archivo": "src/features/RRHH/pages/EmployeeDashboard.css",
+          "linea": 227,
+          "propiedades": {
+            "display": "flex",
+            "justify-content": "space-between",
+            "align-items": "center",
+            "padding": "20px",
+            "border-bottom": "1px solid #E5E7EB",
+            "flex-wrap": "nowrap",
+            "gap": "16px"
+          },
+          "nota": "Con padding y border-bottom"
+        },
+        {
+          "archivo": "src/features/SUPERVISOR_GTR/pages/GTRDashboard.css",
+          "linea": 81,
+          "propiedades": {
+            "display": "flex",
+            "align-items": "center",
+            "gap": "12px",
+            "margin-bottom": "20px"
+          },
+          "nota": "Sin justify-content, gap más pequeño"
+        }
+      ],
+      "diferencias_clave": [
+        "Padding: NO en ApplicantsDashboard | 20px en EmployeeDashboard | NO en GTRDashboard",
+        "Border-bottom: NO | SÍ | NO",
+        "Flex-wrap: wrap vs nowrap vs (no especificado)",
+        "Gap: 16px vs 16px vs 12px",
+        "Margin-bottom: 16px vs NO | 20px"
+      ],
+      "impacto_visual": "Crítico. Algunos section-headers tendrán padding y bordes, otros no. Causa inconsistencia grave en la UI. El aspecto de los headers será completamente diferente dependiendo de cuál CSS tenga prioridad.",
+      "recomendacion": "URGENTE. Refactorizar a: .applicants-section-header, .employee-section-header, .gtr-section-header con prefijos feature-specific. O crear una clase base .section-header con variantes (variants pattern)."
+    },
+    {
+      "id": 4,
+      "className": ".dashboard-header",
+      "tipo": "Single definition with potential namespace collision",
+      "peligro": "MEDIO",
+      "descripcion": "Clase definida en EmployeeDashboard.css pero similar a .community-dashboard-header. Bajo riesgo actual porque .dashboard-header solo se usa en EmployeeDashboard, pero es una clase genérica que podría ser conflictiva en el futuro.",
+      "usado_en": [
+        {
+          "archivo": "src/features/RRHH/pages/EmployeeDashboard.tsx",
+          "linea": 1335,
+          "elemento": "<header className=\"dashboard-header\">"
+        }
+      ],
+      "estilos_en": [
+        {
+          "archivo": "src/features/RRHH/pages/EmployeeDashboard.css",
+          "linea": 484,
+          "propiedades": {
+            "display": "flex",
+            "align-items": "center",
+            "gap": "16px",
+            "padding": "12px 24px",
+            "background": "white",
+            "border-bottom": "1px solid #E5E7EB",
+            "position": "relative",
+            "height": "60px"
+          }
+        }
+      ],
+      "conflicto_potencial": "En CommunityDashboard hay .community-dashboard-header (diferente clase). Pero el nombre .dashboard-header es genérico y podría colisionar si otro feature lo usa.",
+      "recomendacion": "Renombrar a .employee-dashboard-header en EmployeeDashboard.css para evitar colisiones futuras."
+    },
+    {
+      "id": 5,
+      "className": ".header-title",
+      "tipo": "Generic name, potential collision",
+      "peligro": "BAJO",
+      "descripcion": "Clase genérica definida en EmployeeDashboard.css. También usada en LeadsSection (SUPERVISOR_GTR) pero probablemente sin estilos dedicados.",
+      "usado_en": [
+        {
+          "archivo": "src/features/RRHH/pages/EmployeeDashboard.tsx",
+          "linea": 1345,
+          "elemento": "<h2 className=\"header-title\">"
+        },
+        {
+          "archivo": "src/features/SUPERVISOR_GTR/components/LeadsSection.tsx",
+          "linea": 43,
+          "elemento": "<div className=\"header-title\">"
+        }
+      ],
+      "estilos_en": [
+        {
+          "archivo": "src/features/RRHH/pages/EmployeeDashboard.css",
+          "linea": 498,
+          "propiedades": {
+            "margin": "0",
+            "font-size": "16px",
+            "font-weight": "700",
+            "color": "#1F2937",
+            "white-space": "nowrap"
+          }
+        },
+        {
+          "archivo": "src/features/COMMUNITY/pages/CommunityDashboard.css",
+          "linea": 21,
+          "clase_real": ".community-header-title h1",
+          "nota": "DIFERENTE: .community-header-title en lugar de .header-title"
+        }
+      ],
+      "diferencias_clave": [
+        ".header-title solo definido en EmployeeDashboard.css",
+        "LeadsSection usa .header-title sin estilos propios en GTRDashboard.css"
+      ],
+      "impacto_visual": "Bajo actualmente. LeadsSection puede heredar estilos de EmployeeDashboard.css dependiendo del orden de carga.",
+      "recomendacion": "Renombrar a .employee-header-title o crear estilos dedicados en GTRDashboard.css para .leads-header-title."
+    }
+  ],
+  "conflictos_media_queries": [
+    {
+      "className": ".dashboard-content",
+      "archivo": "src/features/COMMUNITY/pages/CommunityDashboard.css",
+      "lineas": [359, 371],
+      "breakpoints": ["@media (max-width: 768px)"],
+      "problema": "Media queries overridden por definiciones en otros archivos"
+    },
+    {
+      "className": ".section-header",
+      "archivo": "src/features/RRHH/pages/EmployeeDashboard.css",
+      "lineas": [446, 478],
+      "breakpoints": ["@media (max-width: 768px)"],
+      "problema": "Media queries pueden ser sobrescritas"
+    },
+    {
+      "className": ".stats-grid",
+      "archivo": "src/features/RRHH/pages/EmployeeDashboard.css",
+      "linea": 442,
+      "breakpoints": ["@media (max-width: 768px)"],
+      "problema": "Media queries pueden ser sobrescritas"
+    }
+  ],
+  "patrones_problematicos_encontrados": [
+    {
+      "patron": "Clases CSS genéricas sin namespace feature",
+      "ejemplos": [".dashboard-content", ".section-header", ".header-title"],
+      "problema": "Reutilización sin prefijo feature causa colisiones de CSS",
+      "ocurrencias": 5
+    },
+    {
+      "patron": "Múltiples definiciones de misma clase en diferentes archivos",
+      "ejemplos": [".dashboard-content en ApplicantsDashboard.css y EmployeeDashboard.css"],
+      "problema": "El CSS cargado último gana, otros features ven estilos incorrectos",
+      "ocurrencias": 3
+    },
+    {
+      "patron": "Propiedades diferentes en definiciones redundantes",
+      "ejemplos": [".stats-grid con gap 16px vs 20px", ".section-header con/sin padding y border"],
+      "problema": "Inconsistencia visual entre features que deberían verse similares",
+      "ocurrencias": 4
+    },
+    {
+      "patron": "Clases CSS sin correspondencia clara entre TSX y CSS",
+      "ejemplos": [".community-header-title vs .header-title"],
+      "problema": "Difícil de mantener, fácil de confundir qué CSS aplica a qué",
+      "ocurrencias": 2
+    }
+  ],
+  "orden_carga_css_impacto": {
+    "problema": "No está claro en qué orden se cargan los CSS de cada feature",
+    "impacto_potencial": "El último CSS cargado sobrescribe todos los anteriores para las clases duplicadas",
+    "afectadas": [".dashboard-content", ".stats-grid", ".section-header"]
+  },
+  "recomendaciones_solucion": {
+    "inmediatas": [
+      {
+        "prioridad": 1,
+        "accion": "Renombrar .section-header en cada feature",
+        "archivos_afectados": [
+          "ApplicantsDashboard.tsx/css → .applicants-section-header",
+          "EmployeeDashboard.tsx/css → .employee-section-header", 
+          "GTRDashboard.css → .gtr-section-header",
+          "HRDashboard.tsx/css → .hr-section-header",
+          "AdvisorsSection.tsx → .advisors-section-header"
+        ],
+        "esfuerzo": "Bajo (simple rename+replace)"
+      },
+      {
+        "prioridad": 2,
+        "accion": "Renombrar .dashboard-content con prefijo feature",
+        "archivos_afectados": [
+          "ApplicantsDashboard.tsx/css → .applicants-dashboard-content",
+          "EmployeeDashboard.tsx/css → .employee-dashboard-content"
+        ],
+        "esfuerzo": "Bajo (simple rename+replace)"
+      },
+      {
+        "prioridad": 3,
+        "accion": "Unificar .stats-grid gap a 16px o 20px",
+        "archivos_afectados": [
+          "ApplicantsDashboard.css",
+          "EmployeeDashboard.css"
+        ],
+        "esfuerzo": "Bajo (cambiar un número)"
+      }
+    ],
+    "a_largo_plazo": [
+      {
+        "solucion": "Implementar CSS Modules en Vite",
+        "beneficio": "Automático namespacing, elimina colisiones",
+        "esfuerzo": "Medio-Alto",
+        "pasos": [
+          "Renombrar .css a .module.css",
+          "Cambiar imports a: import styles from './file.module.css'",
+          "Usar: className={styles.nombre-clase}",
+          "Actualizar tsconfig.json si es necesario"
+        ]
+      },
+      {
+        "solucion": "Adoptar BEM naming convention",
+        "beneficio": "Names descriptivos, menos colisiones",
+        "esfuerzo": "Bajo (convención)",
+        "ejemplo": ".component__element--modifier instead of .header-title"
+      },
+      {
+        "solucion": "Crear archivo CSS global compartido",
+        "beneficio": "Reutilizar estilos comunes sin colisiones",
+        "esfuerzo": "Medio",
+        "contenido": "Variables CSS, componentes base, utilidades"
+      },
+      {
+        "solucion": "Script de validación de CSS duplicados",
+        "beneficio": "Detectar automáticamente conflictos en CI/CD",
+        "esfuerzo": "Bajo",
+        "herramientas": "postcss, stylelint con custom rules"
+      }
+    ]
+  },
+  "estadisticas": {
+    "total_archivos_analizados": 22,
+    "total_clases_conflictivas": 5,
+    "total_conflictos_alto_riesgo": 2,
+    "total_conflictos_medio_riesgo": 2,
+    "total_conflictos_bajo_riesgo": 1,
+    "features_con_conflictos": 4,
+    "archivos_css_sin_prefijo_feature": "Todos los archivos en pages/"
+  },
+  "referencias_linea": {
+    "ApplicantsDashboard.tsx": {
+      "303": "dashboard-content (línea 303)",
+      "314": "dashboard-content (línea 314)",
+      "317": "stats-grid (línea 317)",
+      "326": "section-header (línea 326)"
+    },
+    "EmployeeDashboard.tsx": {
+      "225": "section-header (línea 225)",
+      "680": "stats-grid (línea 680)",
+      "689": "section-header (línea 689)",
+      "1335": "dashboard-header (línea 1335)",
+      "1345": "header-title (línea 1345)",
+      "1378": "dashboard-content (línea 1378)",
+      "1390": "section-header (línea 1390)",
+      "1500": "section-header (línea 1500)"
+    },
+    "CommunityDashboard.tsx": {
+      "348": "community-dashboard-header (línea 348)",
+      "349": "community-header-title (línea 349)",
+      "362": "community-dashboard-content (línea 362)"
+    },
+    "AdvisorsSection.tsx": {
+      "186": "section-header (línea 186)"
+    },
+    "LeadsSection.tsx": {
+      "43": "header-title (línea 43)"
+    },
+    "HRDashboard.tsx": {
+      "52": "section-header (línea 52)",
+      "67": "section-header (línea 67)"
+    }
+  },
+  "notas_adicionales": {
+    "nota_1": "El archivo GTRDashboard.tsx se encuentra pero GTRDashboard.tsx fue recientemente eliminado según el historial de cambios (Last Command mostró su eliminación)",
+    "nota_2": "Los estilos en CommunityDashboard.css en media queries (líneas 359, 371) definen .dashboard-content pero esta clase no se usa en HTML, solo aparece en media queries",
+    "nota_3": "HRDashboard.css define .hr-section .section-header h3 que es más específica, pero aún puede haber conflictos con .section-header genérica",
+    "nota_4": "No se encontraron conflictos en features: CAPACITACION, RECLUTAMIENTO, ASESOR_VENTAS, ADMINISTRADOR, DESARROLLADOR (estos features aparentemente no usan las clases conflictivas)",
+    "nota_5": "El riesgo ALTO está justificado porque afecta múltiples features principales (RRHH, COMMUNITY, SUPERVISOR_GTR) y puede causar quebrantamiento visual durante carga de CSS"
+  }
+}

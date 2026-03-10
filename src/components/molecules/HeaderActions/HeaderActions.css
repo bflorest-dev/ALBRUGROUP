@@ -1,0 +1,9 @@
+/* Currently utilises global .header-actions class from atoms.css */
+
+.header-actions-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1F2937;
+}
+

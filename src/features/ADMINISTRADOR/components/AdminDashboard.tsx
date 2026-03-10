@@ -2,6 +2,7 @@ import React from 'react';
 import type { AdminDashboardData } from '../types';
 import { getAdminDashboardData } from '../services';
 import RoleBadge from '../../../components/atoms/RoleBadge';
+import './AdminDashboard.css';
 
 const AdminDashboard: React.FC = () => {
   const [data, setData] = React.useState<AdminDashboardData | null>(null);
@@ -13,7 +14,7 @@ const AdminDashboard: React.FC = () => {
   if (!data) return <div>Loading...</div>;
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div className="admin-dashboard-wrapper">
       <h1>Admin Dashboard <RoleBadge role="ADMINISTRADOR" /></h1>
       <p>Total Users: {data.totalUsers}</p>
       <p>System Health: {data.systemHealth}</p>

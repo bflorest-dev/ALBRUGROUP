@@ -32,6 +32,22 @@
   overflow-x: hidden;
 }
 
+/* generic size helpers */
+.modal-container.large {
+  width: 900px;
+  max-width: 90vw;
+}
+
+.modal-container.medium {
+  width: 700px;
+  max-width: 90vw;
+}
+
+.modal-container.small {
+  width: 300px;
+  max-width: 90vw;
+}
+
 /* larger size for tipify modal */
 .modal-container.tipify-modal {
   min-width: 480px;

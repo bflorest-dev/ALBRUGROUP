@@ -1,76 +1,129 @@
-import { useState, useMemo } from 'react';
-import { BiSearch } from 'react-icons/bi';
+/**
+ * GTRDashboard Page Component
+ * 
+ * Dashboard principal para SUPERVISOR_GTR (Gestión de Tráficos de Reconexión)
+ * 
+ * Responsabilidades principales:
+ * 1. Orquestar toda la lógica de leads y asesores
+ * 2. Gestionar estados de carga, error y éxito
+ * 3. Coordinar múltiples hooks para filtrado, validación y envío
+ * 4. Componer la interfaz mediante componentes reutilizables
+ * 
+ * Estructura:
+ * - Tarjetas de estadísticas (total, nuevos, asignados, en gestión, gestionados)
+ * - Sección de asesores: muestra carga de trabajo de cada asesor
+ * - Sección de leads: tabla filtrable con búsqueda multicriterio
+ * - Modal de creación: formulario para registrar nuevo lead
+ * 
+ * Hooks integrados:
+ * - useLeadsData: Gestiona carga de leads y estados async
+ * - useLeadsFiltering: Filtra leads por canal, asesor, campaña, búsqueda
+ * - useStatistics: Calcula estadísticas para tarjetas
+ * - useLeadColors: Proporciona colores consistentes
+ * - useNewLeadForm: Gestiona estado y validación del formulario
+ * - useLeadSubmit: Maneja envío con loading/error
+ * 
+ * Datos mock:
+ * - mockAdvisors: 4 asesores con diferentes estados de carga
+ * - mockLeadsInitial: 10 leads de ejemplo (simulan API)
+ * - Canales: Facebook, Instagram, WhatsApp
+ * - Asesores: María, Juan, Ana, Carlos
+ * - Campañas: 6 campañas de ejemplo
+ * 
+ * Flow de usuario:
+ * 1. Se cargan leads con delay simulado (useLeadsData)
+ * 2. Usuario ve spinner mientras carga
+ * 3. Una vez cargados, puede filtrar, buscar, crear lead
+ * 4. Para crear lead, abre modal, completa formulario, valida y envía
+ * 5. Modal muestra spinner durante envío, error si falla
+ * 
+ * @component
+ * @returns {JSX.Element} Dashboard completo con todas las secciones
+ * 
+ * @example
+ * // Uso en router
+ * import { GTRDashboard } from '.../GTRDashboard';
+ * <Route path="/supervisor-gtr" element={<GTRDashboard />} />
+ * 
+ * @note
+ * - useLeadsData simula API con delay de 1s
+ * - useLeadSubmit simula envío con delay de 1.5s
+ * - Ambos deben reemplazarse con llamadas a API real (LeadService)
+ */
+import { useState, useMemo, useCallback } from 'react';
 import { StatCard } from '@molecules/StatCard';
+import type { DataTableColumn } from '@molecules/DataTable';
+import type { LeadDTO } from '@shared/types/lead.types';
+import type { AdvisorDTO } from '@shared/types/advisor.types';
+import { useLeadsFiltering, useStatistics, useLeadColors } from '../hooks/useLeadsManagement';
+import { useNewLeadForm } from '../hooks/useNewLeadForm';
+import { useLeadsData } from '../hooks/useLeadsData';
+import { useLeadSubmit } from '../hooks/useLeadSubmit';
+import { AdvisorsSection } from '../components/AdvisorsSection';
+import { LeadsSection } from '../components/LeadsSection';
+import { NewLeadModal } from '../components/NewLeadModal';
 import './GTRDashboard.css';
 
-interface Advisor {
-  initials: string;
-  firstName: string;
-  lastName: string;
-  status: 'Disponible' | 'Ocupado' | 'Saturado';
-  assigned: number;
-  managed: number;
-  totalCapacity: number;
-}
-
-interface Lead {
-  id: string;
-  campaign: string;
-  businessUnit: string;
-  channel: 'Facebook' | 'Instagram' | 'WhatsApp';
-  registrationDate: string;
-  registrationTime: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  tipification: string;
-  advisor: string;
-  advisorArea: string;
-  followUp: string;
-  reasigned: number;
-  alias: string;
-}
+// Type alias para compatibilidad
+type Lead = LeadDTO;
+type Advisor = AdvisorDTO;
 
 const mockAdvisors: Advisor[] = [
   {
+    id: '1',
     initials: 'MA',
     firstName: 'María',
     lastName: 'Antúnez',
+    area: 'Norte',
     status: 'Disponible',
-    assigned: 8,
-    managed: 3,
-    totalCapacity: 15
+    assignedLeads: 8,
+    managedLeads: 3,
+    totalCapacity: 15,
+    utilizationRate: 53,
+    isActive: true,
   },
   {
+    id: '2',
     initials: 'JU',
     firstName: 'Juan',
     lastName: 'Urrutia',
+    area: 'Sur',
     status: 'Ocupado',
-    assigned: 12,
-    managed: 1,
-    totalCapacity: 15
+    assignedLeads: 12,
+    managedLeads: 1,
+    totalCapacity: 15,
+    utilizationRate: 80,
+    isActive: true,
   },
   {
+    id: '3',
     initials: 'AN',
     firstName: 'Ana',
     lastName: 'Navarro',
+    area: 'Centro',
     status: 'Disponible',
-    assigned: 5,
-    managed: 1,
-    totalCapacity: 15
+    assignedLeads: 5,
+    managedLeads: 1,
+    totalCapacity: 15,
+    utilizationRate: 33,
+    isActive: true,
   },
   {
+    id: '4',
     initials: 'CA',
     firstName: 'Carlos',
     lastName: 'Rodríguez',
+    area: 'Este',
     status: 'Saturado',
-    assigned: 15,
-    managed: 1,
-    totalCapacity: 15
+    assignedLeads: 15,
+    managedLeads: 1,
+    totalCapacity: 15,
+    utilizationRate: 100,
+    isActive: true,
   }
 ];
 
-const mockLeads: Lead[] = [
+const mockLeadsInitial: Lead[] = [
   {
     id: '1',
     campaign: 'Promo Fibra Marzo',
@@ -85,8 +138,8 @@ const mockLeads: Lead[] = [
     advisor: 'María',
     advisorArea: 'Norte',
     followUp: 'Nuevo',
-    reasigned: 0,
-    alias: ''
+    reassignmentCount: 0,
+    aliasName: ''
   },
   {
     id: '2',
@@ -102,8 +155,8 @@ const mockLeads: Lead[] = [
     advisor: 'Juan',
     advisorArea: 'Sur',
     followUp: 'Nuevo',
-    reasigned: 0,
-    alias: ''
+    reassignmentCount: 0,
+    aliasName: ''
   },
   {
     id: '3',
@@ -119,8 +172,8 @@ const mockLeads: Lead[] = [
     advisor: 'María',
     advisorArea: 'Norte',
     followUp: 'En gestión',
-    reasigned: 0,
-    alias: 'MARI.G'
+    reassignmentCount: 0,
+    aliasName: 'MARI.G'
   },
   {
     id: '4',
@@ -136,8 +189,8 @@ const mockLeads: Lead[] = [
     advisor: 'Juan',
     advisorArea: 'Sur',
     followUp: 'En gestión',
-    reasigned: 1,
-    alias: 'JUAN.P'
+    reassignmentCount: 1,
+    aliasName: 'JUAN.P'
   },
   {
     id: '5',
@@ -153,8 +206,8 @@ const mockLeads: Lead[] = [
     advisor: 'Ana',
     advisorArea: 'Centro',
     followUp: 'Gestionado',
-    reasigned: 0,
-    alias: 'ANA.M'
+    reassignmentCount: 0,
+    aliasName: 'ANA.M'
   },
   {
     id: '6',
@@ -170,8 +223,8 @@ const mockLeads: Lead[] = [
     advisor: 'Carlos',
     advisorArea: 'Este',
     followUp: 'Nuevo',
-    reasigned: 0,
-    alias: ''
+    reassignmentCount: 0,
+    aliasName: ''
   },
   {
     id: '7',
@@ -187,8 +240,8 @@ const mockLeads: Lead[] = [
     advisor: 'Carlos',
     advisorArea: 'Este',
     followUp: 'Asignado',
-    reasigned: 2,
-    alias: 'CARL.R'
+    reassignmentCount: 2,
+    aliasName: 'CARL.R'
   },
   {
     id: '8',
@@ -204,8 +257,8 @@ const mockLeads: Lead[] = [
     advisor: 'María',
     advisorArea: 'Norte',
     followUp: 'En gestión',
-    reasigned: 0,
-    alias: 'MARI.G'
+    reassignmentCount: 0,
+    aliasName: 'MARI.G'
   },
   {
     id: '9',
@@ -221,8 +274,8 @@ const mockLeads: Lead[] = [
     advisor: 'Juan',
     advisorArea: 'Sur',
     followUp: 'Nuevo',
-    reasigned: 0,
-    alias: ''
+    reassignmentCount: 0,
+    aliasName: ''
   },
   {
     id: '10',
@@ -238,233 +291,342 @@ const mockLeads: Lead[] = [
     advisor: 'Carlos',
     advisorArea: 'Este',
     followUp: 'Gestionado',
-    reasigned: 0,
-    alias: 'MARI.G'
+    reassignmentCount: 0,
+    aliasName: 'MARI.G'
   }
 ];
 
-const CHANNEL_COLORS: Record<string, string> = {
-  'Facebook': '#3B82F6',
-  'Instagram': '#EC4899',
-  'WhatsApp': '#10B981'
-};
+const channels = ['Todos', 'Facebook', 'Instagram', 'WhatsApp'];
+const advisors = ['Todos', 'María', 'Juan', 'Ana', 'Carlos'];
+const campaigns = [
+  'Todas las campañas',
+  'Promo Fibra Marzo',
+  'Fibra Empresarial Q1',
+  'Combo TV + Internet',
+  'Plan Familia Marzo',
+  'Retargeting Fibra'
+];
 
 export const GTRDashboard = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedChannel, setSelectedChannel] = useState('Todos');
-  const [selectedAdvisor, setSelectedAdvisor] = useState('Todos');
-  const [selectedCampaign, setSelectedCampaign] = useState('Todas las campañas');
+  const [isNewLeadModalOpen, setIsNewLeadModalOpen] = useState(false);
 
-  const channels = ['Todos', 'Facebook', 'Instagram', 'WhatsApp'];
-  const advisors = ['Todos', 'María', 'Juan', 'Ana', 'Carlos'];
-  const campaigns = ['Todas las campañas', 'Promo Fibra Marzo', 'Fibra Empresarial Q1', 'Combo TV + Internet', 'Plan Familia Marzo', 'Retargeting Fibra'];
+  /**
+   * ============================================================================
+   * HOOKS DE DATOS Y ESTADO
+   * ============================================================================
+   * Estos hooks manejan la lógica de negocio separada de la presentación
+   */
 
-  const statistics = useMemo(() => [
-    { label: 'Total Leads', value: 10, unit: '', color: '#6B7280' },
-    { label: 'Nuevos', value: 4, unit: '', color: '#3B82F6' },
-    { label: 'Asignados', value: 1, unit: '', color: '#8B5CF6' },
-    { label: 'En Gestión', value: 3, unit: '', color: '#F59E0B' },
-    { label: 'Gestionados', value: 2, unit: '', color: '#10B981' }
-  ], []);
+  // useLeadsData: Carga leads con simulación de API (delay 1s)
+  // Proporciona: leads, isLoading, error, refetch(), clearError()
+  const { leads: mockLeads, isLoading: leadsIsLoading, error: leadsError, refetch: refetchLeads } = useLeadsData(mockLeadsInitial);
 
-  const filteredLeads = useMemo(() => {
-    return mockLeads.filter(lead => {
-      const matchesChannel = selectedChannel === 'Todos' || lead.channel === selectedChannel;
-      const matchesAdvisor = selectedAdvisor === 'Todos' || lead.advisor === selectedAdvisor;
-      const matchesCampaign = selectedCampaign === 'Todas las campañas' || lead.campaign === selectedCampaign;
-      const matchesSearch = lead.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           lead.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           lead.phone.includes(searchTerm);
-      return matchesChannel && matchesAdvisor && matchesCampaign && matchesSearch;
-    });
-  }, [searchTerm, selectedChannel, selectedAdvisor, selectedCampaign]);
+  // useLeadsFiltering: Filtra leads por múltiples criterios (canal, asesor, campaña, búsqueda)
+  // Usa useMemo para optimizar: solo recalcula cuando leads cambian
+  const { filteredLeads, setSearchTerm, setSelectedChannel, setSelectedAdvisor, setSelectedCampaign } = useLeadsFiltering(mockLeads);
 
-  const getStatusBadgeStyle = (status: string) => {
-    const styles: Record<string, string> = {
-      'Disponible': '#D1FAE5',
-      'Ocupado': '#FEF3C7',
-      'Saturado': '#FEE2E2'
-    };
-    return styles[status] || '#F3F4F6';
-  };
+  // useLeadColors: Centraliza paleta de colores según canal, estado y tipificación
+  // Proporciona: CHANNEL_COLORS, getStatusBadgeStyle(), getTipificationColor(), getProgressFillColor()
+  const { CHANNEL_COLORS, getStatusBadgeStyle, getTipificationColor, getProgressFillColor } = useLeadColors();
 
-  const getTipificationColor = (tipification: string): string => {
-    if (tipification.startsWith('Sin tipificar')) return '#FFA500';
-    if (tipification.includes('SEGUIMIENTO')) return '#3B82F6';
-    if (tipification.includes('AGENDADOS')) return '#F59E0B';
-    if (tipification.includes('PREVENTA')) return '#10B981';
-    if (tipification.includes('RECHAZADO')) return '#EF4444';
-    if (tipification.includes('PDTE SCORE')) return '#EC4899';
-    if (tipification.includes('SIN CONTACTO')) return '#6B7280';
-    return '#9CA3AF';
-  };
+  // useNewLeadForm: Gestiona estado y validación del formulario
+  // Validación: campos requeridos + formato de teléfono según país
+  const { formData, errors, handleChange, handleSubmit, reset } = useNewLeadForm();
+
+  // useLeadSubmit: Maneja envío con loading/error (simula: delay 1.5s, error 20%)
+  // Estados: isSubmitting, submitError, submit(data), resetSubmitState()
+  const { isSubmitting, submitError, submit: submitNewLead, resetSubmitState } = useLeadSubmit();
+
+  // useStatistics: Calcula estadísticas de leads (total, nuevos, asignados, en gestión, gestionados)
+  // Usa useMemo: recalcula solo cuando filteredLeads cambian
+  const statistics = useStatistics(filteredLeads);
+
+  /**
+   * ============================================================================
+   * CONFIGURACIÓN DE TABLA
+   * ============================================================================
+   * Define las columnas y su renderizado para la tabla de leads
+   * 
+   * OPTIMIZACIÓN Punto #4: Memoizar definiciones de columnas
+   * 
+   * PROBLEMA: Sin memoización, cada render del dashboard recrea leadsTableColumns
+   * - Nuevas referencias [] para cada columna object
+   * - DataTable prop comparison detecta cambio (no son ===)
+   * - DataTable re-renderiza completamente, incluso si datos no cambiaron
+   * - Con 100+ rows, esto causa lag visible en la interfaz
+   * 
+   * SOLUCIÓN: Envolver en useMemo con dependencias correctas
+   * - Columnas memorizadas mientras CHANNEL_COLORS y getTipificationColor sean estables
+   * - useLeadColors ya devuelve referencias memorizadas (ver useLeadsManagement.ts)
+   * - Resultado: DataTable solo re-renderiza cuando filteredLeads realmente cambia
+   */
+  const leadsTableColumns: DataTableColumn<Lead>[] = useMemo(() => [
+    {
+      header: 'FECHA REG.',
+      accessor: (l: Lead) => (
+        <div className="date-cell">
+          <span>{l.registrationDate}</span>
+          <small>{l.registrationTime}</small>
+        </div>
+      ),
+    },
+    {
+      header: 'CAMPAÑA',
+      accessor: (l: Lead) => (
+        <div className="campaign-cell">
+          <strong>{l.campaign}</strong>
+          <small>{l.businessUnit}</small>
+        </div>
+      ),
+    },
+    {
+      header: 'CANAL',
+      accessor: (l: Lead) => (
+        <span
+          className="channel-badge"
+          style={{
+            '--channel-bg': CHANNEL_COLORS[l.channel] + '20',
+            '--channel-color': CHANNEL_COLORS[l.channel],
+          } as React.CSSProperties}
+        >
+          {l.channel}
+        </span>
+      ),
+    },
+    {
+      header: 'LEAD',
+      accessor: (l: Lead) => (
+        <div className="lead-cell">
+          <strong>{l.firstName}</strong>
+          <strong>{l.lastName}</strong>
+          <small>{l.phone}</small>
+        </div>
+      ),
+    },
+    {
+      header: 'TIPIF.',
+      accessor: (l: Lead) => (
+        <span
+          className="tipification-badge"
+          style={{
+            '--tip-color': getTipificationColor(l.tipification),
+          } as React.CSSProperties}
+        >
+          {l.tipification}
+        </span>
+      ),
+    },
+    {
+      header: 'ASESOR',
+      accessor: (l: Lead) => (
+        <div className="advisor-cell">
+          <strong>{l.advisor}</strong>
+          <small>{l.advisorArea}</small>
+        </div>
+      ),
+    },
+    {
+      header: 'SEGUIM.',
+      accessor: (l: Lead) => <span className="followup-badge">{l.followUp}</span>,
+    },
+    { header: 'REASIG.', accessor: (l: Lead) => l.reassignmentCount },
+    { header: 'ALIAS', accessor: (l: Lead) => l.aliasName },
+    {
+      header: 'ACCIONES',
+      accessor: () => (
+        <div className="actions-cell">
+          <button className="action-btn view-btn">Ver</button>
+          <button className="action-btn assign-btn">Asignar</button>
+        </div>
+      ),
+    },
+  ], [CHANNEL_COLORS, getTipificationColor]);
+
+  /**
+   * ============================================================================
+   * HANDLERS (Funciones de usuario)
+   * ============================================================================
+   * Orquestan la lógica cuando el usuario interactúa con la interfaz
+   * 
+   * OPTIMIZACIÓN Punto #4: Memoizar handlers con useCallback
+   * 
+   * PROBLEMA: Sin memoización, cada render del dashboard crea nuevas funciones
+   * - handleCreateNewLead: Nueva referencia [] cada render
+   * - handleCloseModal: Nueva referencia [] cada render
+   * - Componentes child (LeadsSection, NewLeadModal) reciben nuevas props
+   * - React cree que props cambiaron, re-renderiza aunque datos son iguales
+   * - Con 100+ componentes, efecto cascada de re-renders innecesarios
+   * 
+   * SOLUCIÓN: Envolver en useCallback con dependencias correctas
+   * - handleCreateNewLead: Depende de handleSubmit, submitNewLead, reset, etc
+   * - handleCloseModal: Depende de setIsNewLeadModalOpen, reset, resetSubmitState
+   * - Referencias estables para componentes child
+   * - Solo recrean si sus dependencias cambian (muy raramente)
+   */
+
+  /**
+   * Handler: Crear nuevo lead
+   * 
+   * Flujo:
+   * 1. Valida formulario (campos requeridos + formato)
+   * 2. Si válido, envía datos con useLeadSubmit (simula API con delay 1.5s)
+   * 3. Si envío exitoso:
+   *    - Cierra modal
+   *    - Limpia formulario y estados
+   *    - Refrescar lista de leads (con delay 500ms)
+   * 4. Si falla, muestra error en modal y permite reintentar
+   * 
+   * Nota: El botón está deshabilitado durante isSubmitting para prevenir double-click
+   */
+  const handleCreateNewLead = useCallback(async () => {
+    const result = handleSubmit();
+    if (result.valid && result.data) {
+      const success = await submitNewLead(result.data);
+      if (success) {
+        console.log('Nuevo lead creado:', result.data);
+        setIsNewLeadModalOpen(false);
+        reset();
+        resetSubmitState();
+        setTimeout(() => {
+          refetchLeads();
+        }, 500);
+      }
+    }
+  }, [handleSubmit, submitNewLead, reset, resetSubmitState, refetchLeads]);
+
+  /**
+   * Handler: Cerrar modal
+   * 
+   * Acciones:
+   * - Cierra el modal
+   * - Limpia el formulario (todos los fields)
+   * - Limpia estados de envío (error, success, isSubmitting)
+   * 
+   * Permite descartar cambios sin afectar los datos (no actualiza leads)
+   */
+  const handleCloseModal = useCallback(() => {
+    setIsNewLeadModalOpen(false);
+    reset();
+    resetSubmitState();
+  }, [reset, resetSubmitState]);
+
+  /**
+   * ============================================================================
+   * RENDER
+   * ============================================================================
+   * Estructura visual del dashboard organizda en secciones
+   */
 
   return (
     <div className="gtr-dashboard">
-      {/* Statistics */}
+      {/* ========================================================================
+          SECCIÓN 1: ESTADÍSTICAS
+          Muestra tarjetas con métricas de leads (total, nuevos, asignados, etc)
+          Datos calculados por useStatistics basado en leads filtrados
+          ======================================================================== */}
       <div className="statistics-grid">
         {statistics.map((stat, index) => (
           <StatCard key={index} stat={stat} />
         ))}
       </div>
 
-      {/* Carga de Trabajo por Asesor */}
-      <div className="advisors-section">
-        <div className="section-header">
-          <span className="section-icon">👥</span>
-          <h2>Carga de Trabajo por Asesor</h2>
-        </div>
-        <div className="advisors-grid">
-          {mockAdvisors.map((advisor) => (
-            <div key={advisor.initials} className="advisor-card">
-              <div className="advisor-header">
-                <div className="advisor-avatar">{advisor.initials}</div>
-                <div className="advisor-info">
-                  <h3>{advisor.firstName}</h3>
-                  <p>{advisor.lastName}</p>
-                </div>
-                <div
-                  className="advisor-status-badge"
-                  style={{ backgroundColor: getStatusBadgeStyle(advisor.status) }}
-                >
-                  {advisor.status}
-                </div>
-              </div>
-              <div className="advisor-stats">
-                <div className="stat-row">
-                  <span className="stat-label">{advisor.assigned} asignados</span>
-                  <span className="stat-label">{advisor.managed} gestionados</span>
-                </div>
-              </div>
-              <div className="progress-container">
-                <div className="progress-bar">
-                  <div
-                    className="progress-fill"
-                    style={{
-                      width: `${(advisor.assigned / advisor.totalCapacity) * 100}%`,
-                      backgroundColor: advisor.status === 'Disponible' ? '#10B981' : 
-                                       advisor.status === 'Ocupado' ? '#F59E0B' : '#EF4444'
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* ========================================================================
+          SECCIÓN 2: ASESORES
+          Muestra carga de trabajo de cada asesor con:
+          - Avatar + nombre + estado (Disponible/Ocupado/Saturado)
+          - Estadísticas: leads asignados y gestionados
+          - Barra de progreso de capacidad utilizada
+          
+          Manejo de estado:
+          - Loading: Spinner durante 1s
+          - Error: Alert rojo (si falla al cargar leads)
+          - Success: Grilla de tarjetas de asesores
+          ======================================================================== */}
+      <AdvisorsSection
+        advisors={mockAdvisors}
+        statusBgStyle={getStatusBadgeStyle}
+        progressFillColor={getProgressFillColor}
+        isLoading={leadsIsLoading}
+        error={leadsError}
+      />
 
-      {/* Leads Table */}
-      <div className="leads-section">
-        <div className="leads-header">
-          <h2>Tabla de Leads ({filteredLeads.length})</h2>
-          <div className="leads-controls">
-            <div className="search-box">
-              <BiSearch size={18} />
-              <input
-                type="text"
-                placeholder="Buscar nombre o teléfono"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="filter-selects">
-              <select
-                value={selectedChannel}
-                onChange={(e) => setSelectedChannel(e.target.value)}
-              >
-                {channels.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-              <select
-                value={selectedAdvisor}
-                onChange={(e) => setSelectedAdvisor(e.target.value)}
-              >
-                {advisors.map(a => <option key={a} value={a}>{a}</option>)}
-              </select>
-              <select
-                value={selectedCampaign}
-                onChange={(e) => setSelectedCampaign(e.target.value)}
-              >
-                {campaigns.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-          </div>
-        </div>
+      {/* ========================================================================
+          SECCIÓN 3: LEADS CON FILTROS
+          Tabla de leads con múltiples opciones de búsqueda y filtrado:
+          - Búsqueda de texto: busca en nombre y teléfono (case-insensitive)
+          - Filtro por Canal: Facebook, Instagram, WhatsApp
+          - Filtro por Asesor: asignado a cada miembro del equipo
+          - Filtro por Campaña: agrupa por nombre de campaña
+          
+          La tabla muestra campos: fecha, campaña, canal, lead, tipificación,
+          asesor, seguimiento, reasignaciones, alias y acciones
+          
+          Manejo de estado:
+          - Loading: Spinner con "Cargando leads..." durante 1s
+          - Error: Alert rojo + botón "Reintentar" (dispara refetchLeads)
+          - Success: Muestra filtros y tabla con leads aplicando filtros
+          ======================================================================== */}
+      <LeadsSection
+        leads={mockLeads}
+        filteredLeads={filteredLeads}
+        columns={leadsTableColumns}
+        filters={{
+          searchTerm: '',
+          selectedChannel: '',
+          selectedAdvisor: '',
+          selectedCampaign: ''
+        }}
+        onFilterChange={{
+          onSearchChange: setSearchTerm,
+          onChannelChange: setSelectedChannel,
+          onAdvisorChange: setSelectedAdvisor,
+          onCampaignChange: setSelectedCampaign,
+        }}
+        channels={channels}
+        advisors={advisors}
+        campaigns={campaigns}
+        isLoading={leadsIsLoading}
+        error={leadsError}
+        onRetry={refetchLeads}
+        onRegisterClick={() => setIsNewLeadModalOpen(true)}
+      />
 
-        <div className="table-container">
-          <table className="leads-table">
-            <thead>
-              <tr>
-                <th>CAMPAÑA</th>
-                <th>CANAL</th>
-                <th>FECHA REGISTRO</th>
-                <th>LEAD</th>
-                <th>TIPIFICACIÓN</th>
-                <th>ASESOR</th>
-                <th>SEGUIMIENTO</th>
-                <th>REASIG.</th>
-                <th>ALIAS</th>
-                <th>ACCIONES</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredLeads.map((lead) => (
-                <tr key={lead.id}>
-                  <td>
-                    <div className="campaign-cell">
-                      <strong>{lead.campaign}</strong>
-                      <small>{lead.businessUnit}</small>
-                    </div>
-                  </td>
-                  <td>
-                    <span
-                      className="channel-badge"
-                      style={{ backgroundColor: CHANNEL_COLORS[lead.channel] + '20', color: CHANNEL_COLORS[lead.channel] }}
-                    >
-                      {lead.channel}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="date-cell">
-                      <span>{lead.registrationDate}</span>
-                      <small>{lead.registrationTime}</small>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="lead-cell">
-                      <strong>{lead.firstName}</strong>
-                      <strong>{lead.lastName}</strong>
-                      <small>{lead.phone}</small>
-                    </div>
-                  </td>
-                  <td>
-                    <span
-                      className="tipification-badge"
-                      style={{ color: getTipificationColor(lead.tipification) }}
-                    >
-                      {lead.tipification}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="advisor-cell">
-                      <strong>{lead.advisor}</strong>
-                      <small>{lead.advisorArea}</small>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="followup-badge">{lead.followUp}</span>
-                  </td>
-                  <td className="reasigned-cell">{lead.reasigned}</td>
-                  <td>{lead.alias}</td>
-                  <td className="actions-cell">
-                    <button className="action-btn view-btn">Ver</button>
-                    <button className="action-btn assign-btn">Asignar</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* ========================================================================
+          SECCIÓN 4: MODAL PARA CREAR NUEVO LEAD
+          Modal flotante para registrar un nuevo lead con formulario de 5 campos:
+          - País (POIS): Determina el formato de validación del teléfono
+          - Teléfono (LEAD): Solo números, validado según país seleccionado
+          - Campaña: Selección de lista de campañas disponibles
+          - Canal: Selección entre Facebook, Instagram, WhatsApp
+          - Base: Selección de lista
+          
+          Validación:
+          - Al inicio: todos los campos están vacíos, botón deshabilitado
+          - Al escribir: se marcan campos con errores en rojo
+          - Antes de enviar: valida todo, muestra errores si falta algo
+          
+          Envío:
+          - Se simula con delay de 1.5s usando useLeadSubmit
+          - Durante envío: botón deshabilitado con spinner + "Creando..."
+          - Si falla: muestra alert rojo con error del servidor
+          - Si éxito: cierra modal, refrescar tabla, limpia formulario
+          
+          Control:
+          - isOpen: booleano para mostrar/ocultar modal
+          - onClose: cierra y limpia sin guardar
+          - onSubmit: valida, envía y cierra si todo ok
+          ======================================================================== */}
+      <NewLeadModal
+        isOpen={isNewLeadModalOpen}
+        formData={formData}
+        errors={errors}
+        campaigns={campaigns}
+        isSubmitting={isSubmitting}
+        submitError={submitError}
+        onFormChange={handleChange}
+        onSubmit={handleCreateNewLead}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 };

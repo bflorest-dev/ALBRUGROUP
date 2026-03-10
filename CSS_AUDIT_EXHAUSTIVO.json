@@ -1,0 +1,856 @@
+{
+  "problemas_criticos": [
+    {
+      "tipo": "Selectores genéricos sin namespace en estilos globales",
+      "severidad": "CRÍTICA",
+      "descripcion": "Selectores genéricos definidos en src/index.css que afectan a múltiples features sin prefijo",
+      "archivos_afectados": [
+        "src/index.css - Líneas 285-295 (media queries)",
+        "src/styles/atoms.css - Múltiples utilidades sin namespace"
+      ],
+      "ejemplos": [
+        {
+          "selector": ".dashboard-content",
+          "ubicacion": "src/index.css línea ~285",
+          "problema": "Usado en media queries globales pero no es prefijado por feature. Entra en conflicto con aplicaciones feature-specifics",
+          "impacto": "Todos los dashboards que usan este selector pueden ser overridden por media queries globales"
+        },
+        {
+          "selector": ".stats-grid",
+          "ubicacion": "src/index.css línea ~289 y ApplicantsDashboard.css",
+          "problema": "Definido en index.css con grid-template-columns: 1fr en mobile, pero cada feature lo redefine",
+          "impacto": "Media query global afecta a todos los stats-grid sin importar feature"
+        },
+        {
+          "selector": ".section-controls",
+          "ubicacion": "src/index.css línea ~293 y ApplicantsDashboard.css línea ~54",
+          "problema": "Definido globalmente en index.css con flex-direction: column en mobile, pero ApplicantsDashboard tiene su propia definición",
+          "impacto": "Conflicto de especificidad entre global y feature"
+        },
+        {
+          "selector": ".search-container",
+          "ubicacion": "src/index.css media query y ApplicantsDashboard.css y EmployeeDashboard.css",
+          "problema": "Hay 3 definiciones diferentes con tamaños distintos (32px vs 36px vs 340px max-width)",
+          "impacto": "Inconsistencia de UI entre dashboards de RRHH"
+        }
+      ],
+      "recomendacion": "Renombrar todos los selectores genéricos con prefijo de feature o componente. Ejemplo: .applicants-search-container, .employee-search-container"
+    },
+    {
+      "tipo": "Conflicto de especificidad en selectores de inputs y selects",
+      "severidad": "CRÍTICA",
+      "descripcion": "Estilos globales en src/index.css para input, textarea, select que pueden ser anulados inconsistentemente",
+      "archivos_afectados": [
+        "src/index.css líneas 70-78",
+        "src/styles/atoms.css líneas 1-20",
+        "Todos los archivos que usan form-control"
+      ],
+      "ejemplos": [
+        {
+          "regla": "input, textarea, select { font-family: inherit; font-size: inherit; }",
+          "ubicacion": "src/index.css línea 74-76",
+          "problema": "Aplica globalmente a TODOS los inputs sin considerar contextos específicos",
+          "impacto": "Difícil de override sin !important, causa especificidad wars"
+        },
+        {
+          "regla": "input:disabled, select:disabled, textarea:disabled",
+          "ubicacion": "src/index.css línea 138-140",
+          "problema": "Aplica background #f3f4f6 !important que es muy genérico",
+          "impacto": "Todos los inputs deshabilitados tienen el mismo estilo sin flexibilidad"
+        }
+      ],
+      "recomendacion": "Crear clases específicas para inputs como .form-input, .search-input, .filter-input con sus propios estilos en lugar de selectores globales"
+    },
+    {
+      "tipo": "Duplicación de utilidades CSS sin documentación",
+      "severidad": "CRÍTICA",
+      "descripcion": "Muchas clases duplicadas con diferentes implementaciones en diferentes archivos",
+      "archivos_afectados": [
+        "src/styles/atoms.css",
+        "src/features/COMMUNITY/pages/CommunityDashboard.css",
+        "Múltiples tablas y componentes"
+      ],
+      "ejemplos": [
+        {
+          "clase": ".clickable",
+          "ubicaciones": [
+            "src/styles/atoms.css línea ~48",
+            "src/features/COMMUNITY/pages/CommunityDashboard.css línea ~82"
+          ],
+          "problema": "Duplicada sin razón aparente"
+        },
+        {
+          "clase": ".card",
+          "ubicaciones": [
+            "src/styles/atoms.css línea ~50",
+            "src/features/COMMUNITY/pages/CommunityDashboard.css línea ~83"
+          ],
+          "problema": "Estilos duplicados idénticos"
+        },
+        {
+          "clase": ".table-cell",
+          "ubicaciones": [
+            "src/styles/atoms.css línea ~67-68",
+            "src/features/COMMUNITY/pages/CommunityDashboard.css línea ~95"
+          ],
+          "problema": "Definiciones casi idénticas en dos archivos"
+        },
+        {
+          "clase": ".clickable-row",
+          "ubicaciones": [
+            "src/styles/atoms.css línea ~60-63",
+            "src/features/COMMUNITY/pages/CommunityDashboard.css línea ~100"
+          ],
+          "problema": "Código duplicado sin namespace"
+        }
+      ],
+      "impacto": "Mantenimiento difícil, cambios deben hacerse en múltiples lugares",
+      "recomendacion": "Consolidar todas las utilidades en src/styles/atoms.css y removeR duplicados. Si necesita variantes, usar clases como .card-community, .card-default"
+    },
+    {
+      "tipo": "Variables CSS no documentadas y sin inicialización en algunos contextos",
+      "severidad": "CRÍTICA",
+      "descripcion": "Variables CSS personalizadas usadas sin documentación o sin garantizar inicialización",
+      "archivos_afectados": [
+        "src/components/templates/DashboardTemplate/MainLayout.css",
+        "src/components/organisms/Layout/Sidebar.css",
+        "src/features/RECLUTAMIENTO/pages/KanbanDashboard.css"
+      ],
+      "ejemplos": [
+        {
+          "variable": "--sidebar-width",
+          "ubicacion": "MainLayout.css línea ~139, usada en Sidebar.css",
+          "problema": "Definida como 280px por defecto pero no documentada qué features pueden cambiarla",
+          "impacto": "Difícil saber si una feature oculta está cambiando el sidebar width"
+        },
+        {
+          "variable": "--status-color",
+          "ubicacion": "KanbanDashboard.css línea ~36 (usado como var(--status-color, transparent))",
+          "problema": "Nunca se inicializa en ningún contexto, siempre usa el fallback",
+          "impacto": "Los kanban columns no tienen colores de status"
+        },
+        {
+          "variable": "--nx, --ny",
+          "ubicacion": "MainLayout.css línea ~22-23 (parallax)",
+          "problema": "Se definen como 0 por defecto pero la descripción dice que se setean via JS sin documentación de cómo",
+          "impacto": "Efecto parallax de waves puede romperse si JS falla"
+        },
+        {
+          "variable": "--sidebar-accent, --sidebar-accent-rgb, --sidebar-accent-light",
+          "ubicacion": "Sidebar.css línea ~13-15",
+          "problema": "Definidas en .sidebar pero usadas en .nav-item y otros selectores hijos sin garantía de herencia",
+          "impacto": "Si se mueve .sidebar, estas variables pueden no estar disponibles"
+        },
+        {
+          "variable": "--wave-fill-1, --wave-fill-2, --wave-fill-3, --wave-fill-4",
+          "ubicacion": "MainLayout.css línea ~26-29",
+          "problema": "Documentación dice que son 'wave color tokens' pero no explica qué cada una hace",
+          "impacto": "Difícil de personalizar tema sin entender qué cada color controla"
+        },
+        {
+          "variable": "--stat-color",
+          "ubicacion": "src/components/molecules/StatCard/StatCard.css línea ~5",
+          "problema": "Usada para border-left-color pero nunca inicializada en contexto padre",
+          "impacto": "Todos los stat-cards han de pasar esta variable inline o tendrán border transparente"
+        }
+      ],
+      "recomendacion": "Crear archivo CSS de documentación con todas las variables, sus valores por defecto, y en qué contextos pueden ser modificadas. Usar comentarios en el código"
+    },
+    {
+      "tipo": "Conflictos de especificidad graves en media queries globales",
+      "severidad": "CRÍTICA",
+      "descripcion": "Media queries en src/index.css usando selectores genéricos que pueden anular estilos de features",
+      "archivos_afectados": [
+        "src/index.css líneas 280-310"
+      ],
+      "ejemplos": [
+        {
+          "media_query": "@media (max-width: 1024px) - .dashboard-content",
+          "ubicacion": "src/index.css línea ~285",
+          "problema": "Aplica padding: 12px !important a TODOS los elementos con clase dashboard-content",
+          "impacto": "Feature-specific styling para dashboard-content en media queries es anulado"
+        },
+        {
+          "media_query": "@media (max-width: 768px) - .stats-grid",
+          "ubicacion": "src/index.css línea ~293",
+          "problema": "Usa grid-template-columns: 1fr !important que es muy restrictivo",
+          "impacto": "Un dashboard que quiera 2 columnas en tablet no puede porque tiene !important"
+        },
+        {
+          "media_query": "@media (max-width: 768px) - .section-controls",
+          "ubicacion": "src/index.css línea ~296",
+          "problema": "flex-direction: column es global y puede no ser deseado en todos los contextos",
+          "impacto": "Difficult to override para features que quieren mantener row en mobile"
+        }
+      ],
+      "recomendacion": "Remover media queries genéricas de index.css. Cada feature debe tener sus propias media queries namespaced"
+    }
+  ],
+  "problemas_medios": [
+    {
+      "tipo": "Inconsistencias en selectores de tablas",
+      "severidad": "MEDIA",
+      "descripcion": "Diferentes selectores y estilos para elementos de tabla en diferentes componentes",
+      "archivos_afectados": [
+        "src/styles/atoms.css",
+        "src/features/RRHH/components/organisms/Tables/ApplicantsTable.css",
+        "src/features/RRHH/components/organisms/Tables/EmployeeTable.css",
+        "src/features/COMMUNITY/pages/CommunityDashboard.css"
+      ],
+      "ejemplos": [
+        {
+          "selector": ".table-header-row",
+          "problema": "Definido en atoms.css pero cada tabla lo redefinido ligeramente diferente",
+          "archivos": [
+            "atoms.css: background-color: #f3f4f6; border-bottom: 1px solid #e5e7eb",
+            "CommunityDashboard.css: mismo estilo pero con propiedades adicionales"
+          ]
+        },
+        {
+          "selector": ".table-header-cell",
+          "problema": "Padding 8px en atoms.css vs 10px 12px en ApplicantsTable.css vs 14px 16px en EmployeeTable.css",
+          "causa": "No hay consistencia en tamaños de padding"
+        },
+        {
+          "selector": ".table-cell",
+          "problema": "Tres definiciones diferentes con padding de 8px, 12px, y 14px 16px",
+          "impacto": "Tablas en diferentes features tienen tamaños inconsistentes"
+        }
+      ],
+      "recomendacion": "Crear solo UN set de clases .table-* en atoms.css con tamaños consistentes. Si necesita variantes, usar .table-cell-sm, .table-cell-md, .table-cell-lg"
+    },
+    {
+      "tipo": "Inconsistencias en transiciones y animaciones",
+      "severidad": "MEDIA",
+      "descripcion": "Múltiples duraciones y timing functions diferentes sin consistencia",
+      "archivos_afectados": [
+        "Prácticamente todos los archivos CSS"
+      ],
+      "ejemplos": [
+        {
+          "locations": [
+            "transition: all 0.2s ease - usado 50+ veces",
+            "transition: all 0.3s ease - usado 20+ veces",
+            "transition: all 0.15s ease - usado 10+ veces",
+            "transition: background 0.2s ease - usado 15+ veces",
+            "transition: box-shadow .12s ease - usado 8+ veces",
+            "transition: border-color 0.2s ease - usado 5+ veces"
+          ],
+          "problema": "Sin un estándar claro. Parece haber 6+ valores diferentes"
+        },
+        {
+          "animation": "@keyframes slideIn, slideOut",
+          "ubicacion": "src/components/molecules/Toast/Toast.css",
+          "problema": "0.3s para slideIn pero 0.3s para slideOut - debería ser idéntica"
+        },
+        {
+          "animation": "@keyframes realWave",
+          "ubicacion": "src/components/templates/DashboardTemplate/MainLayout.css",
+          "problema": "Compleja con múltiples propiedades que cambian - difícil de mantener"
+        }
+      ],
+      "recomendacion": "Definir variables de transición estándar: --transition-fast: 0.15s ease, --transition-normal: 0.3s ease, --transition-slow: 0.5s ease"
+    },
+    {
+      "tipo": "Inconsistencias en escalas de colores",
+      "severidad": "MEDIA",
+      "descripcion": "Colores escritos en diferentes formatos (mayúsculas, minúsculas) sin estándar Tailwind",
+      "archivos_afectados": [
+        "Todos los archivos CSS"
+      ],
+      "ejemplos": [
+        {
+          "color_rojo": [
+            "#EF4444 - usado 20+ veces",
+            "#ef4444 - usado 5+ veces",
+            "#DC2626 - usado 10+ veces",
+            "#991b1b - usado 3+ veces",
+            "#7f1d1d - usado 2+ veces"
+          ],
+          "problema": "Cuatro tonos diferentes de rojo sin documentación de cuál usar dónde"
+        },
+        {
+          "color_azul": [
+            "#2563EB - usado 100+ veces",
+            "#2563eb - usado 30+ veces",
+            "#3B82F6 - usado 40+ veces",
+            "#3b82f6 - usado 10+ veces",
+            "#03a1f4 - usado 5+ veces",
+            "#0b84c7 - usado 8+ veces"
+          ],
+          "problema": "Diferentes azules sin sistema claro. Parece mezcla de Tailwind y custom"
+        },
+        {
+          "color_gris": [
+            "#F3F4F6",
+            "#f3f4f6",
+            "#E5E7EB",
+            "#e5e7eb",
+            "#D1D5DB",
+            "#d1d5db"
+          ],
+          "problema": "Inconsistencia en mayúsculas/minúsculas"
+        }
+      ],
+      "impacto": "Cambiar tema requiere buscar y reemplazar múltiples variantes del mismo color",
+      "recomendacion": "Crear variables CSS para cada color. Usar siempre minúsculas. Adoptar estándar Tailwind o custom pero consistente"
+    },
+    {
+      "tipo": "Media queries inconsistentes entre archivos",
+      "severidad": "MEDIA",
+      "descripcion": "Diferentes breakpoints usados en diferentes features",
+      "archivos_afectados": [
+        "src/index.css - 1024px, 768px, 480px",
+        "src/features/RRHH/pages/ApplicantsDashboard.css - 1024px, 768px, 480px",
+        "src/features/CAPACITACION/pages/TrainingDashboard.css - solo media en input[type]",
+        "src/components/molecules/Toast/Toast.css - 768px"
+      ],
+      "ejemplos": [
+        {
+          "breakpoint": "768px",
+          "usados_en": "index.css, ApplicantsDashboard.css, Toast.css",
+          "problema": "Algunos archivos quizás cambien layout a 768px, otros a 800px"
+        },
+        {
+          "breakpoint": "1024px",
+          "usados_en": "index.css, ApplicantsDashboard.css, EmployeeDashboard.css",
+          "problema": "No está claro si todos los features responden igual a 1024px"
+        },
+        {
+          "falta": "640px (Tailwind standard no es usado)",
+          "problema": "Algunos Tailwind breakpoints no están implementados en CSS custom"
+        }
+      ],
+      "recomendacion": "Definir variables CSS para breakpoints: --breakpoint-sm: 480px, --breakpoint-md: 768px, --breakpoint-lg: 1024px, --breakpoint-xl: 1280px. Usarlas en todas partes"
+    },
+    {
+      "tipo": "Box-shadow inconsistentes",
+      "severidad": "MEDIA",
+      "descripcion": "Muchas variaciones de box-shadow sin sistema claro",
+      "archivos_afectados": [
+        "Prácticamente todos los archivos CSS"
+      ],
+      "ejemplos": [
+        {
+          "sombras": [
+            "0 1px 3px rgba(0, 0, 0, 0.1) - standard",
+            "0 1px 3px rgba(0, 0, 0, 0.05) - ligero",
+            "0 4px 6px rgba(0, 0, 0, 0.1) - medium",
+            "0 4px 12px rgba(0, 0, 0, 0.1) - medium+",
+            "0 6px 18px rgba(2,6,23,0.04) - muy ligero custom",
+            "0 6px 18px rgba(2,6,23,0.1) - medium custom",
+            "0 10px 25px rgba(0, 0, 0, 0.1) - grande",
+            "0 10px 30px rgba(2,6,23,0.06) - grande custom",
+            "inset 0 1px 0 rgba(255,255,255,0.04) - inset light"
+          ],
+          "problema": "Sin sistema de nombres o escalas"
+        }
+      ],
+      "recomendacion": "Crear 4-5 sombras estándar: shadow-sm, shadow-md, shadow-lg, shadow-xl, shadow-inset y usarlas en variables CSS"
+    },
+    {
+      "tipo": "Estilos para elementos deshabilitados sin consistencia",
+      "severidad": "MEDIA",
+      "descripcion": "Múltiples estilos inconsistentes para elementos :disabled",
+      "archivos_afectados": [
+        "src/index.css",
+        "src/components/atoms/Button/Button.css",
+        "src/features/RRHH/components/organisms/Forms/NewApplicantForm.css",
+        "src/features/RECLUTAMIENTO/pages/KanbanDashboard.css"
+      ],
+      "ejemplos": [
+        {
+          "selector": "input:disabled",
+          "estilos": [
+            "background: #f3f4f6 !important - index.css línea 142",
+            "background: #f3f4f6 - NewApplicantForm.css (sin !important)",
+            "background: #0f172a - index.css dark mode (muy diferente)"
+          ],
+          "problema": "Use de !important inconsistente, colores muy diferentes para dark mode"
+        },
+        {
+          "selector": ".atom-button:disabled",
+          "ubicacion": "src/components/atoms/Button/Button.css",
+          "estilo": "opacity: 0.6; cursor: not-allowed",
+          "problema": "Es muy diferente al approach global que usa background color"
+        }
+      ],
+      "recomendacion": "Crear clase .disabled-state reutilizable en lugar de aplicar estilos a :disabled directamente"
+    },
+    {
+      "tipo": "Z-index sin documentación clara",
+      "severidad": "MEDIA",
+      "descripcion": "Z-index values esparcidos sin documentación de jerarquía",
+      "archivos_afectados": [
+        "Múltiples archivos"
+      ],
+      "ejemplos": [
+        {
+          "elemento": "Header",
+          "z_index": "100",
+          "ubicacion": "Header.css línea 8"
+        },
+        {
+          "elemento": "Sidebar",
+          "z_index": "1000",
+          "ubicacion": "Sidebar.css línea 31"
+        },
+        {
+          "elemento": "Tooltip in collapsed sidebar",
+          "z_index": "60",
+          "ubicacion": "Sidebar.css línea 156"
+        },
+        {
+          "elemento": "Modal overlay",
+          "z_index": "10000",
+          "ubicacion": "Modal.css línea 8"
+        },
+        {
+          "elemento": "Modal container",
+          "z_index": "10001",
+          "ubicacion": "Modal.css línea 15"
+        },
+        {
+          "elemento": "Toast container",
+          "z_index": "9999",
+          "ubicacion": "Toast.css línea 59"
+        },
+        {
+          "elemento": "Filter dropdown",
+          "z_index": "100 o 1000",
+          "ubicacion": "ApplicantsTable.css línea 88 (100) vs EmployeeTable.css línea 85 (1000)"
+        }
+      ],
+      "problema": "z-index 100 para Header pero 1000 para Sidebar es confuso. ¿Por qué sidebar > header? Toast 9999 vs Modal 10000 está bien pero no documentado"
+    },
+    {
+      "tipo": "Estilos inline en atributos style (no encontrado, pero código compilado podría tener)",
+      "severidad": "MEDIA",
+      "descripcion": "Aunque el CSS está limpio, hay peligro de estilos inline en JSX"
+    },
+    {
+      "tipo": "Problemas de responsive en componentes específicos",
+      "severidad": "MEDIA",
+      "descripcion": "Algunos componentes no tienen media queries o son insuficientes",
+      "archivos_afectados": [
+        "src/features/CAPACITACION/pages/TrainingDashboard.css",
+        "src/features/RECLUTAMIENTO/pages/KanbanDashboard.css",
+        "src/components/organisms/Layout/Header.css"
+      ],
+      "ejemplos": [
+        {
+          "componente": "TrainingDashboard",
+          "problema": "No tiene media queries para mobile - el grid de 5 columnas no es responsive",
+          "impacto": "En mobile, entrenamiento va a ser ilegible"
+        },
+        {
+          "componente": "KanbanDashboard",
+          "problema": "Solo input[type] tiene media queries, pero el kanban board horizontal no es responsive",
+          "impacto": "En mobile, board va a requerir scroll horizontal"
+        },
+        {
+          "componente": "Header",
+          "problema": "No tiene media queries, así que los 'break' controls y búsqueda van a ocupar todo el espacio en mobile",
+          "impacto": "Header va a ser inutilizable en mobile"
+        }
+      ]
+    },
+    {
+      "tipo": "Falta de normalización de estilos global",
+      "severidad": "MEDIA",
+      "descripcion": "No hay clases base consistentes para elementos comunes",
+      "ejemplos": [
+        {
+          "elemento": "Botones",
+          "problema": "Algunos botones son `.atom-button`, otros son inline `.primary-btn`, otros son específicos como `.add-applicant-btn`",
+          "impacto": "Difícil mantener consistencia de UI"
+        },
+        {
+          "elemento": "Inputs",
+          "problema": "Algunos `.atom-input`, otros `.form-control`, otros `.form-input`, otros `.search-input`",
+          "impacto": "Cada feature puede tener estilo diferente para inputs"
+        },
+        {
+          "elemento": "Dividers/Separators",
+          "problema": "No hay clase `.divider` - todos usan border-bottom o border-top inline",
+          "impacto": "Inconsistencia visual"
+        }
+      ]
+    }
+  ],
+  "problemas_menores": [
+    {
+      "tipo": "Comentarios obsoletos o poco informativos",
+      "severidad": "MENOR",
+      "descripcion": "Comentarios que no añaden valor o son genéricos",
+      "ejemplos": [
+        {
+          "archivo": "src/index.css",
+          "linea": "4",
+          "comentario": "/* Reset y estilos globales */",
+          "problema": "Demasiado genérico"
+        },
+        {
+          "archivo": "src/features/ASESOR_VENTAS/pages/SalesAdvisorDashboard.css",
+          "linea": "1",
+          "comentario": "/* Sales Advisor Dashboard Styles */",
+          "problema": "Obviously - el nombre del archivo ya lo dice"
+        },
+        {
+          "archivo": "src/components/templates/DashboardTemplate/MainLayout.css",
+          "linea": "6",
+          "comentario": "/* cursor-normalized variables for parallax */",
+          "problema": "No explica qué es cursor-normalized"
+        }
+      ]
+    },
+    {
+      "tipo": "Paddings y margins inconsistentes en escala",
+      "severidad": "MENOR",
+      "descripcion": "Múltiples valores de padding/margin sin relación clara",
+      "ejemplos": [
+        {
+          "valores_padding": [
+            "padding: 8px - usado 20+ veces",
+            "padding: 10px - usado 15+ veces",
+            "padding: 12px - usado 25+ veces",
+            "padding: 14px - usado 10+ veces",
+            "padding: 16px - usado 30+ veces",
+            "padding: 20px - usado 15+ veces",
+            "padding: 24px - usado 20+ veces",
+            "padding: 36px - usado 3+ veces"
+          ],
+          "problema": "Sin escala consistente de tipografía"
+        }
+      ],
+      "recomendacion": "Usar escala: 4px (xs), 8px (sm), 12px (md), 16px (lg), 24px (xl), 32px (2xl)"
+    },
+    {
+      "tipo": "Pseudo-elementos inconsistentes",
+      "severidad": "MENOR",
+      "descripcion": "No todos los elementos interactivos tienen :hover, :focus, :active",
+      "ejemplos": [
+        {
+          "elemento": ".stats-grid cards",
+          "problema": "Solo algunos tienen :hover",
+          "archivos": "SalesAdvisorDashboard.css vs otros"
+        },
+        {
+          "elemento": ".table-row",
+          "problema": "Tiene :hover pero no :focus para keyboard navigation",
+          "impacto": "Accessibility issue - keyboard users pueden no saber qué row está selected"
+        }
+      ]
+    },
+    {
+      "tipo": "Overflow y truncamiento sin documentación",
+      "severidad": "MENOR",
+      "descripcion": "Text-overflow: ellipsis usado pero no siempre con white-space: nowrap",
+      "ejemplos": [
+        {
+          "selector": ".training-name",
+          "ubicacion": "TrainingDashboard.css línea 68",
+          "problema": "Tiene white-space: nowrap + text-overflow: ellipsis pero también max-width sin documentación"
+        },
+        {
+          "selector": ".user-name",
+          "ubicacion": "UserProfile.css línea 28",
+          "problema": "Mismo patrón sin documentación"
+        }
+      ]
+    },
+    {
+      "tipo": "Uso inconsistente de !important",
+      "severidad": "MENOR",
+      "descripcion": "!important usado a veces sin razón clara",
+      "ejemplos": [
+        {
+          "selector": "input:disabled",
+          "ubicacion": "src/index.css línea 142",
+          "uso_important": "background: #f3f4f6 !important",
+          "problema": "¿Por qué aquí y no en otros disabled?"
+        },
+        {
+          "selector": ".stats-grid grid-template-columns",
+          "ubicacion": "src/index.css línea 293",
+          "uso_important": "grid-template-columns: 1fr !important",
+          "problema": "!important en media query hace difícil override"
+        },
+        {
+          "selector": ".parallax-waves .wave-1 a .wave-4",
+          "ubicacion": "MainLayout.css línea 71",
+          "uso_important": "fill: var(--wave-fill-1) !important",
+          "problema": "SVG fill probablemente no debería tener !important"
+        }
+      ]
+    },
+    {
+      "tipo": "Reglas vacías o casi vacías",
+      "severidad": "MENOR",
+      "descripcion": "Clases que tienen solo una propiedad o ninguna",
+      "ejemplos": [
+        {
+          "archivo": "src/features/DESARROLLADOR/components/DeveloperDashboard.css",
+          "contenido": ".developer-dashboard-wrapper { padding: 20px; }",
+          "problema": "¿Por qué un archivo CSS solo para una clase con una propiedad?"
+        },
+        {
+          "archivo": "src/features/ADMINISTRADOR/components/AdminDashboard.css",
+          "contenido": ".admin-dashboard-wrapper { padding: 20px; }",
+          "problema": "Mismo caso"
+        },
+        {
+          "archivo": "src/features/LOGIN/components/LoginForm.css",
+          "contenido": "El archivo tiene 200+ líneas pero la mayoría son para una sola clase .login-form"
+        }
+      ]
+    },
+    {
+      "tipo": "Tamaños de fuente sin escala documentada",
+      "severidad": "MENOR",
+      "descripcion": "Múltiples tamaños de fuente sin sistema de escala",
+      "valores": [
+        "font-size: 9px - usado en badges",
+        "font-size: 10px - usado en table headers",
+        "font-size: 11px - usado en labels y small text",
+        "font-size: 12px - usado en muchos lugares",
+        "font-size: 13px - usado frecuentemente",
+        "font-size: 14px - usado para body text",
+        "font-size: 15px - usado a veces",
+        "font-size: 16px - usado para headers pequeños",
+        "font-size: 18px - usado para headers medianos",
+        "font-size: 28px - usado para valores grandes",
+        "font-size: 36px - usado para títulos grandes",
+        "font-size: 80px - usado para coming soon icon"
+      ],
+      "recomendacion": "Estandarizar a escala: 12px (xs), 14px (sm), 16px (md), 18px (lg), 20px (xl), 24px (2xl), 28px (3xl)"
+    },
+    {
+      "tipo": "Herencia CSS inconsistente",
+      "severidad": "MENOR",
+      "descripcion": "Algunos estilos no heredan cuando deberían o viceversa",
+      "ejemplos": [
+        {
+          "problema": ".dark body { background-color ... } pero no todos los elementos dentro respetan el dark mode",
+          "ubicacion": "src/index.css línea ~32",
+          "impacto": "Dark mode visual roto en algunos componentes"
+        }
+      ]
+    }
+  ],
+  "archivos_auditados": [
+    {
+      "archivo": "src/index.css",
+      "lineas": 319,
+      "problemas": 8,
+      "prioridad": "ALTA"
+    },
+    {
+      "archivo": "src/App.css",
+      "lineas": 4,
+      "problemas": 0,
+      "prioridad": "BAJA"
+    },
+    {
+      "archivo": "src/styles/atoms.css",
+      "lineas": 80,
+      "problemas": 5,
+      "prioridad": "ALTA"
+    },
+    {
+      "archivo": "src/dev/DevRoleSwitcher.css",
+      "lineas": 9,
+      "problemas": 0,
+      "prioridad": "BAJA"
+    },
+    {
+      "archivo": "src/features/RRHH/pages/ApplicantsDashboard.css",
+      "lineas": 180,
+      "problemas": 4,
+      "prioridad": "ALTA"
+    },
+    {
+      "archivo": "src/features/RRHH/pages/EmployeeDashboard.css",
+      "lineas": 829,
+      "problemas": 6,
+      "prioridad": "ALTA"
+    },
+    {
+      "archivo": "src/features/RRHH/pages/ComingSoonPage.css",
+      "lineas": 40,
+      "problemas": 0,
+      "prioridad": "BAJA"
+    },
+    {
+      "archivo": "src/features/COMMUNITY/pages/CommunityDashboard.css",
+      "lineas": 558,
+      "problemas": 7,
+      "prioridad": "MEDIA"
+    },
+    {
+      "archivo": "src/features/RECLUTAMIENTO/pages/KanbanDashboard.css",
+      "lineas": 360,
+      "problemas": 5,
+      "prioridad": "MEDIA"
+    },
+    {
+      "archivo": "src/features/CAPACITACION/pages/TrainingDashboard.css",
+      "lineas": 322,
+      "problemas": 4,
+      "prioridad": "MEDIA"
+    },
+    {
+      "archivo": "src/features/ASESOR_VENTAS/pages/SalesAdvisorDashboard.css",
+      "lineas": 625,
+      "problemas": 3,
+      "prioridad": "MEDIA"
+    },
+    {
+      "archivo": "src/features/RRHH/components/HRDashboard.css",
+      "lineas": 60,
+      "problemas": 1,
+      "prioridad": "BAJA"
+    },
+    {
+      "archivo": "src/features/DESARROLLADOR/components/DeveloperDashboard.css",
+      "lineas": 3,
+      "problemas": 1,
+      "prioridad": "BAJA"
+    },
+    {
+      "archivo": "src/features/ADMINISTRADOR/components/AdminDashboard.css",
+      "lineas": 3,
+      "problemas": 1,
+      "prioridad": "BAJA"
+    },
+    {
+      "archivo": "src/features/LOGIN/components/LoginForm.css",
+      "lineas": 200,
+      "problemas": 2,
+      "prioridad": "BAJA"
+    },
+    {
+      "archivo": "src/features/RRHH/components/organisms/Forms/NewApplicantForm.css",
+      "lineas": 60,
+      "problemas": 2,
+      "prioridad": "MEDIA"
+    },
+    {
+      "archivo": "src/features/RRHH/components/organisms/Tables/ApplicantsTable.css",
+      "lineas": 358,
+      "problemas": 5,
+      "prioridad": "ALTA"
+    },
+    {
+      "archivo": "src/features/RRHH/components/organisms/Tables/EmployeeTable.css",
+      "lineas": 280,
+      "problemas": 4,
+      "prioridad": "ALTA"
+    },
+    {
+      "archivo": "src/components/organisms/Layout/Header.css",
+      "lineas": 180,
+      "problemas": 3,
+      "prioridad": "MEDIA"
+    },
+    {
+      "archivo": "src/components/organisms/Layout/Sidebar.css",
+      "lineas": 180,
+      "problemas": 3,
+      "prioridad": "MEDIA"
+    },
+    {
+      "archivo": "src/components/organisms/Layout/UserProfile.css",
+      "lineas": 40,
+      "problemas": 1,
+      "prioridad": "BAJA"
+    },
+    {
+      "archivo": "src/components/molecules/Modal/Modal.css",
+      "lineas": 80,
+      "problemas": 2,
+      "prioridad": "MEDIA"
+    },
+    {
+      "archivo": "src/components/atoms/Button/Button.css",
+      "lineas": 20,
+      "problemas": 1,
+      "prioridad": "BAJA"
+    },
+    {
+      "archivo": "src/components/atoms/Input/Input.css",
+      "lineas": 20,
+      "problemas": 1,
+      "prioridad": "BAJA"
+    },
+    {
+      "archivo": "src/components/atoms/Select/Select.css",
+      "lineas": 20,
+      "problemas": 1,
+      "prioridad": "BAJA"
+    },
+    {
+      "archivo": "src/components/molecules/Toast/Toast.css",
+      "lineas": 100,
+      "problemas": 2,
+      "prioridad": "BAJA"
+    },
+    {
+      "archivo": "src/components/molecules/StatCard/StatCard.css",
+      "lineas": 35,
+      "problemas": 2,
+      "prioridad": "BAJA"
+    },
+    {
+      "archivo": "src/components/molecules/Pagination/Pagination.css",
+      "lineas": 45,
+      "problemas": 1,
+      "prioridad": "BAJA"
+    },
+    {
+      "archivo": "src/components/templates/DashboardTemplate/MainLayout.css",
+      "lineas": 238,
+      "problemas": 4,
+      "prioridad": "MEDIA"
+    }
+  ],
+  "recomendaciones_estrategicas": {
+    "corto_plazo": [
+      "1. ELIMINAR media queries genéricas de src/index.css (líneas 280-310) - son las más problemáticas",
+      "2. RENOMBRAR .dashboard-content → .generic-dashboard-content en index.css y revisar cada uso",
+      "3. CONSOLIDAR utilidades duplicadas en src/styles/atoms.css - remover duplicados de CommunityDashboard.css",
+      "4. CREAR un archivo CSS_VARIABLES.css documentando todas las custom properties",
+      "5. STANDARIZAR z-index con variables CSS en un archivo dedicado"
+    ],
+    "mediano_plazo": [
+      "6. CREAR escala de transiciones estándar: --transition-fast, --transition-normal, --transition-slow",
+      "7. CREAR escala de colores consistente con variables CSS (colores-light.css, colores-dark.css)",
+      "8. CREAR escala de tamaños: spacing (4px, 8px, 12px, 16px, 24px, 32px) y typography (xs, sm, md, lg, xl)",
+      "9. ESTANDARIZAR box-shadow con variables: shadow-sm, shadow-md, shadow-lg, shadow-xl",
+      "10. ESTANDARIZAR media queries con variables: --breakpoint-sm: 480px, etc.",
+      "11. CREAR componentes base reutilizables: .button, .input, .card, .table con variantes"
+    ],
+    "largo_plazo": [
+      "12. CONSIDERAR migrar a CSS Modules o BEM para eliminar selectores genéricos",
+      "13. CREAR design system documentation con Storybook o similar",
+      "14. IMPLEMENTAR linting CSS con stylelint para prevenir problemas futuros",
+      "15. CONSIDERAR design tokens en archivo JSON para uso en CSS y JS",
+      "16. ESTANDARIZAR responsiveness: mobile-first approach con breakpoints consistentes"
+    ]
+  },
+  "resumen_ejecutivo": {
+    "total_problemas": 65,
+    "criticos": 5,
+    "medios": 10,
+    "menores": 25,
+    "archivos_problematicos": [
+      "src/index.css - 319 líneas, 8 problemas CRÍTICOS/MEDIOS",
+      "src/features/RRHH/pages/EmployeeDashboard.css - 829 líneas, 6 problemas",
+      "src/features/COMMUNITY/pages/CommunityDashboard.css - 558 líneas, 7 problemas",
+      "src/styles/atoms.css - 80 líneas, 5 problemas"
+    ],
+    "riesgo_general": "ALTO - Hay ciertos problemas críticos pero el código es mantenible. Riesgo de inconsistencia UI es ALTO",
+    "tiempo_refactor_estimado": "40-60 horas para refactor completo",
+    "impacto_usuario": "MEDIO - Usuarios finales no verán problemas graves ahora, pero cambios futuros serán difíciles y propensos a bugs"
+  }
+}

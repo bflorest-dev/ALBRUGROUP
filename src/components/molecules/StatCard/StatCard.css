@@ -5,8 +5,8 @@
   padding: 20px;
   flex: 1;
   min-width: 200px;
-  transition: all 0.2s ease;
-}
+  transition: all 0.2s ease;  border-left-width: 4px;
+  border-left-color: var(--stat-color, transparent);}
 
 .stat-card:hover {
   border-color: #D1D5DB;

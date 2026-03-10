@@ -26,7 +26,7 @@ const roles: Role[] = [
 
 const DevRoleSwitcher: React.FC<DevRoleSwitcherProps> = ({ selectedRole, onRoleChange }) => {
   return (
-    <div style={{ position: 'fixed', top: 10, right: 10, zIndex: 1000, background: 'white', padding: '10px', border: '1px solid black' }}>
+    <div className="dev-role-switcher">
       <label htmlFor="role-select">Dev Role Switcher:</label>
       <select
         id="role-select"
