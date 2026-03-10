@@ -10,4 +10,6 @@ import java.util.List;
 public interface ZonaReglaRepository extends JpaRepository<ZonaRegla, Long> {
 
     List<ZonaRegla> findByZonaId(Long zonaId);
+    List<ZonaRegla> findByZonaIdIn(List<Long> zonaIds);
+    void deleteByZonaId(Long zonaId);
 }
