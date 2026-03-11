@@ -1,0 +1,132 @@
+/**
+ * BackofficeAdvisorDashboard.css
+ * Estilos para la página principal de ASESOR_BACKOFFICE
+ */
+
+.backoffice-dashboard {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #ffffff;
+}
+
+/* Header */
+.dashboard-header {
+  flex-shrink: 0;
+  padding: 24px 32px;
+  background: linear-gradient(to right, #f9fafb, #ffffff);
+  border-bottom: 2px solid #e5e7eb;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.header-content {
+  margin-bottom: 20px;
+}
+
+.dashboard-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  color: #1f2937;
+  letter-spacing: -0.5px;
+}
+
+.dashboard-subtitle {
+  margin: 8px 0 0 0;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* Stats */
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  background-color: #f3f4f6;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.stat-card.progress {
+  grid-column: span 2;
+  gap: 8px;
+}
+
+.stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background-color: #e5e7eb;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(to right, #3b82f6, #10b981);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Main Content */
+.dashboard-content {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .dashboard-content {
+    grid-template-columns: 280px 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-header {
+    padding: 16px;
+  }
+
+  .dashboard-title {
+    font-size: 18px;
+  }
+
+  .dashboard-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat-card.progress {
+    grid-column: span 2;
+  }
+
+  .dashboard-content {
+    grid-template-columns: 1fr;
+  }
+
+  /* En mobile, mostrar solo uno a la vez */
+  .dashboard-content {
+    position: relative;
+  }
+}
