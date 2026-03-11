@@ -1,0 +1,122 @@
+/**
+ * TipificationBlockPanel.css
+ * Estilos para el panel de bloque de tipificación
+ */
+
+.tipification-block-panel {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  cursor: pointer;
+  background: linear-gradient(to right, #f9fafb, #ffffff);
+  border-bottom: 1px solid #e5e7eb;
+  transition: background-color 0.2s ease;
+}
+
+.block-header:hover {
+  background-color: #f3f4f6;
+}
+
+.block-title-section {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.block-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.block-titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.block-label {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.block-description {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.3;
+}
+
+.block-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+.btn-filter,
+.btn-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 8px;
+  font-size: 14px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  color: #6b7280;
+}
+
+.btn-filter:hover {
+  background-color: #f0f0f0;
+  color: #374151;
+}
+
+.btn-toggle:hover {
+  background-color: #f0f0f0;
+  color: #1f2937;
+}
+
+.btn-toggle.open,
+.btn-toggle.closed {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+}
+
+.block-content {
+  padding: 16px;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}

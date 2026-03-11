@@ -9,3 +9,5 @@ export { MetricsPanel } from './MetricsPanel';
 export { LeadsWidget } from './LeadsWidget';
 export { DataTable } from './DataTable/DataTable';
 export { HeaderActions } from './HeaderActions/HeaderActions';
+export { TipificationBlockPanel } from './TipificationBlockPanel';
+export { LeadDetailCard } from './LeadDetailCard';

@@ -1,0 +1,167 @@
+/**
+ * LeadDetailCard.css
+ * Estilos para la tarjeta de detalles del lead
+ */
+
+.lead-detail-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Header */
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.client-header {
+  flex: 1;
+  min-width: 0;
+}
+
+.client-full-name {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1.2;
+}
+
+.client-phone {
+  margin: 8px 0 0 0;
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.header-badges {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: 16px;
+}
+
+.channel-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  background-color: #f3f4f6;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  background-color: #fef3c7;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #d97706;
+  white-space: nowrap;
+}
+
+/* Secciones */
+.detail-section {
+  margin-bottom: 20px;
+}
+
+.detail-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-title {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1f2937;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.section-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border-left: 4px solid #e5e7eb;
+}
+
+/* Filas de estadísticas */
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  flex-shrink: 0;
+  min-width: 120px;
+}
+
+.stat-value {
+  font-size: 12px;
+  color: #1f2937;
+  font-weight: 500;
+  text-align: right;
+  flex: 1;
+}
+
+/* Lista de servicios */
+.services-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.service-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background-color: #dbeafe;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #0369a1;
+}
+
+/* Scroll */
+.lead-detail-card::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lead-detail-card::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.lead-detail-card::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.lead-detail-card::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
