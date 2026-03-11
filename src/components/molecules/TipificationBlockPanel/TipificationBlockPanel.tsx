@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { BiChevronDown, BiChevronRight, BiSearch, BiCheckCircle, BiTimeFive, BiX, BiPhone } from 'react-icons/bi';
+import { BiChevronDown, BiChevronRight, BiSearch, BiCheckCircle, BiTimeFive, BiX, BiPhone, BiHourglass, BiRefresh, BiCalendarAlt, BiErrorCircle, BiXCircle } from 'react-icons/bi';
 import type { TipificationBlock, TipificationOptionId } from '@shared/types';
 import { TipificationOption } from '@atoms/TipificationOption';
 import './TipificationBlockPanel.css';
@@ -17,6 +17,7 @@ import './TipificationBlockPanel.css';
 const getIconComponent = (iconId: string) => {
   switch (iconId) {
     case 'check':
+    case 'check-circle':
       return <BiCheckCircle size={18} style={{display: 'inline', marginRight: '6px'}} />;
     case 'clock':
       return <BiTimeFive size={18} style={{display: 'inline', marginRight: '6px'}} />;
@@ -24,6 +25,18 @@ const getIconComponent = (iconId: string) => {
       return <BiX size={18} style={{display: 'inline', marginRight: '6px'}} />;
     case 'phone':
       return <BiPhone size={18} style={{display: 'inline', marginRight: '6px'}} />;
+    case 'hourglass':
+      return <BiHourglass size={18} style={{display: 'inline', marginRight: '6px'}} />;
+    case 'sync':
+      return <BiRefresh size={18} style={{display: 'inline', marginRight: '6px'}} />;
+    case 'search':
+      return <BiSearch size={18} style={{display: 'inline', marginRight: '6px'}} />;
+    case 'calendar':
+      return <BiCalendarAlt size={18} style={{display: 'inline', marginRight: '6px'}} />;
+    case 'alert-circle':
+      return <BiErrorCircle size={18} style={{display: 'inline', marginRight: '6px'}} />;
+    case 'ban':
+      return <BiXCircle size={18} style={{display: 'inline', marginRight: '6px'}} />;
     default:
       return null;
   }

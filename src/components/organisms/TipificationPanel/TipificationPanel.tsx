@@ -7,7 +7,7 @@
  * - Botones de acción (Guardar, Siguiente)
  */
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { BiMicrophone } from 'react-icons/bi';
 import { MdError } from 'react-icons/md';
 import type { LeadDTO } from '@shared/types';
@@ -49,12 +49,6 @@ export const TipificationPanel: React.FC<TipificationPanelProps> = ({
   onSaveAndNext,
   onCancel
 }) => {
-  // Obtener el bloque actual seleccionado
-  const currentBlock = useMemo(
-    () => selectedBlockId ? TIPIFICATION_BLOCKS.find((b) => b.id === selectedBlockId) : null,
-    [selectedBlockId]
-  );
-
   if (!selectedLead) {
     return (
       <div className="tipification-panel empty">
@@ -104,21 +98,8 @@ export const TipificationPanel: React.FC<TipificationPanelProps> = ({
             ))}
           </div>
 
-          {/* Información de selección actual */}
-          {selectedBlockId && selectedOptionId && (
-            <div className="selection-info">
-              <p className="info-label">Seleccionada:</p>
-              <div className="selection-badge">
-                <span className="tipification-block-icon">{currentBlock?.icon}</span>
-                <span className="selection-text">{selectedOptionId}</span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Barra de acciones - Fondo */}
-      <div className="tipification-action-buttons">
+          {/* Barra de acciones - Fondo */}
+          <div className="tipification-action-buttons">
         <Button
           variant="secondary"
           onClick={onCancel}
@@ -140,6 +121,8 @@ export const TipificationPanel: React.FC<TipificationPanelProps> = ({
             'GUARDAR Y SIGUIENTE →'
           )}
         </Button>
+      </div>
+        </div>
       </div>
     </div>
   );

@@ -33,6 +33,7 @@ import './BackofficeAdvisorDashboard.css';
  */
 interface BackofficeLead extends LeadDTO {
   email?: string;
+  dni?: string;
   address?: string;
   province?: string;
   district?: string;
@@ -62,6 +63,7 @@ const MOCK_LEADS: BackofficeLead[] = [
     firstName: 'Pedro',
     lastName: 'López',
     phone: '+51 987 123 456',
+    dni: '45678901',
     tipification: 'Sin tipificar',
     followUp: 'Nuevo',
     advisor: 'María',
@@ -91,6 +93,7 @@ const MOCK_LEADS: BackofficeLead[] = [
     firstName: 'María',
     lastName: 'García',
     phone: '+51 912 345 678',
+    dni: '23456789',
     tipification: 'Sin tipificar',
     followUp: 'Nuevo',
     advisor: 'Juan',
@@ -120,6 +123,7 @@ const MOCK_LEADS: BackofficeLead[] = [
     firstName: 'Carlos',
     lastName: 'Ruiz',
     phone: '+51 945 678 901',
+    dni: '67890123',
     tipification: 'Sin tipificar',
     followUp: 'Nuevo',
     advisor: 'Ana',

@@ -11,7 +11,7 @@ import type { LeadDTO } from '@shared/types';
 import './LeadListItem.css';
 
 interface LeadListItemProps {
-  lead: LeadDTO;
+  lead: LeadDTO & {dni?: string};
   isSelected: boolean;
   tipificationStatus?: 'pending' | 'tipified';
   tipificationLabel?: string;
@@ -55,16 +55,10 @@ export const LeadListItem: React.FC<LeadListItemProps> = ({
           <p className="client-phone">{lead.phone}</p>
         </div>
         <div className="lead-meta">
-          <span className="lead-channel-badge">{lead.channel}</span>
+          <span className="lead-channel-badge">{(lead as any).dni || lead.channel}</span>
           {getStatusBadge()}
         </div>
       </div>
-      
-      {tipificationLabel && (
-        <div className="tipification-info">
-          <small>{tipificationLabel}</small>
-        </div>
-      )}
     </div>
   );
 };

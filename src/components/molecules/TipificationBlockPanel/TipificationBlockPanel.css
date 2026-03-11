@@ -25,12 +25,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 10px;
+  padding: 14px 10px;
   cursor: pointer;
   background: linear-gradient(to right, #f9fafb, #ffffff);
   border-bottom: 1px solid #e5e7eb;
   transition: background-color 0.2s ease;
   flex-shrink: 0;
+  min-height: 50px;
 }
 
 .block-header:hover {
@@ -39,8 +40,8 @@
 
 .block-title-section {
   display: flex;
-  align-items: flex-start;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
   flex: 1;
   min-width: 0;
 }

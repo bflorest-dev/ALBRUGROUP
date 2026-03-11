@@ -26,7 +26,7 @@
 /* Contenedor principal split */
 .panel-content {
   display: grid;
-  grid-template-columns: 38% 62%;
+  grid-template-columns: 1fr 464px;
   gap: 0;
   overflow: hidden;
   border-right: 1px solid #e5e7eb;
@@ -37,6 +37,7 @@
   overflow-y: auto;
   border-right: 1px solid #e5e7eb;
   padding: 0;
+  flex: 1;
 }
 
 /* Sección derecha - Tipificación */
@@ -48,6 +49,7 @@
   display: grid;
   grid-template-rows: auto 1fr auto auto;
   height: 100%;
+  width: 464px;
 }
 
 .section-heading {
