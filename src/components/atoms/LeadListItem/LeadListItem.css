@@ -1,0 +1,101 @@
+/**
+ * LeadListItem.css
+ * Estilos para el atom de item de lead
+ */
+
+.lead-list-item {
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-left: 4px solid transparent;
+  background-color: #ffffff;
+}
+
+.lead-list-item:hover {
+  background-color: #f9fafb;
+}
+
+.lead-list-item.selected {
+  background-color: #eff6ff;
+  border-left-color: #3b82f6;
+  box-shadow: inset 0 0 0 1px #dbeafe;
+}
+
+.lead-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.client-info {
+  flex: 1;
+  min-width: 0; /* Permite wrapping correcto */
+}
+
+.client-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.client-phone {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.3;
+}
+
+.lead-meta {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.channel-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-badge.pending {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+
+.status-badge.tipified {
+  background-color: #d1fae5;
+  color: #059669;
+}
+
+.tipification-info {
+  padding-left: 4px;
+  border-left: 2px solid #e5e7eb;
+}
+
+.tipification-info small {
+  color: #6b7280;
+  font-size: 11px;
+  display: block;
+}

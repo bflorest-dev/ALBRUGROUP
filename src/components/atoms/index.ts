@@ -8,3 +8,5 @@ export * from './Label';
 export * from './Button';
 export * from './Spinner';
 export * from './Divider';
+export * from './LeadListItem';
+export * from './TipificationOption';

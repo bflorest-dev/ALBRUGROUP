@@ -1,0 +1,101 @@
+/**
+ * TipificationOption.css
+ * Estilos para opciones de tipificación
+ */
+
+.tipification-option {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px;
+  margin: 8px 0;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #ffffff;
+}
+
+.tipification-option:hover:not(.disabled) {
+  border-color: #d1d5db;
+  background-color: #f9fafb;
+}
+
+.tipification-option.selected {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.tipification-option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #f3f4f6;
+}
+
+.option-radio {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #d1d5db;
+  border-radius: 50%;
+  cursor: pointer;
+  margin: 2px 12px 0 0;
+  flex-shrink: 0;
+  background-color: white;
+  transition: all 0.2s ease;
+}
+
+.tipification-option.selected .option-radio {
+  border-color: #3b82f6;
+  background: radial-gradient(circle at 30% 30%, #60a5fa, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.tipification-option.selected .option-radio::after {
+  content: '✓';
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.option-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+}
+
+.option-icon {
+  font-size: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.option-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.option-description {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.tipification-option.disabled .option-label,
+.tipification-option.disabled .option-description {
+  color: #9ca3af;
+}
