@@ -282,7 +282,7 @@ export const LeadsSection: React.FC<LeadsSectionProps> = ({
   onRegisterClick,
 }) => {
   return (
-    <div className="leads-section">
+    <div className="gtr-leads-section">
       <LeadsHeader count={filteredLeads.length} onRegisterClick={onRegisterClick} />
       
       {/* Mostrar spinner mientras carga */}

@@ -7,6 +7,7 @@
 
 import React from 'react';
 import type { LeadDTO } from '@shared/types';
+import { BiListUl, BiLocationPlus, BiDollarCircle, BiGift, BiBarChart } from 'react-icons/bi';
 import './LeadDetailCard.css';
 
 interface LeadDetailCardProps {
@@ -36,9 +37,9 @@ export const LeadDetailCard: React.FC<LeadDetailCardProps> = ({ lead }) => {
   const preventaLead = lead as PreventaLead;
 
   const StatRow = ({ label, value }: { label: string; value?: string }) => (
-    <div className="stat-row">
-      <span className="stat-label">{label}</span>
-      <span className="stat-value">{value || '-'}</span>
+    <div className="lead-stat-row">
+      <span className="lead-stat-label">{label}</span>
+      <span className="lead-stat-value">{value || '-'}</span>
     </div>
   );
 
@@ -53,14 +54,14 @@ export const LeadDetailCard: React.FC<LeadDetailCardProps> = ({ lead }) => {
           <p className="client-phone">{preventaLead.phone}</p>
         </div>
         <div className="header-badges">
-          <span className="channel-badge">{preventaLead.channel}</span>
+          <span className="lead-channel-badge">{preventaLead.channel}</span>
           <span className="status-badge">Pendiente</span>
         </div>
       </div>
 
       {/* Sección: Datos Personales */}
       <section className="detail-section">
-        <h3 className="section-title">📋 DATOS PERSONALES</h3>
+        <h3 className="lead-section-title"><BiListUl style={{display: 'inline', marginRight: '6px'}} /> DATOS PERSONALES</h3>
         <div className="section-content">
           <StatRow label="Email" value={preventaLead.email} />
           <StatRow label="Teléfono" value={preventaLead.phone} />
@@ -72,7 +73,7 @@ export const LeadDetailCard: React.FC<LeadDetailCardProps> = ({ lead }) => {
       {/* Sección: Dirección */}
       {(preventaLead.address || preventaLead.province) && (
         <section className="detail-section">
-          <h3 className="section-title">📍 DIRECCIÓN</h3>
+          <h3 className="lead-section-title"><BiLocationPlus style={{display: 'inline', marginRight: '6px'}} /> DIRECCIÓN</h3>
           <div className="section-content">
             <StatRow label="Dirección" value={preventaLead.address} />
             <StatRow label="Tipo Domicilio" value={preventaLead.domicileType} />
@@ -86,13 +87,13 @@ export const LeadDetailCard: React.FC<LeadDetailCardProps> = ({ lead }) => {
       {/* Sección: Plan Interesado */}
       {preventaLead.planName && (
         <section className="detail-section">
-          <h3 className="section-title">💰 PLAN INTERESADO</h3>
+          <h3 className="lead-section-title"><BiDollarCircle style={{display: 'inline', marginRight: '6px'}} /> PLAN INTERESADO</h3>
           <div className="section-content">
             <StatRow label="Plan" value={preventaLead.planName} />
             <StatRow label="Precio" value={preventaLead.planPrice} />
             {preventaLead.planServices && (
-              <div className="stat-row">
-                <span className="stat-label">Servicios</span>
+              <div className="lead-stat-row">
+                <span className="lead-stat-label">Servicios</span>
                 <div className="services-list">
                   {preventaLead.planServices.map((service, idx) => (
                     <span key={idx} className="service-badge">
@@ -109,7 +110,7 @@ export const LeadDetailCard: React.FC<LeadDetailCardProps> = ({ lead }) => {
       {/* Sección: Promoción */}
       {preventaLead.promotionName && (
         <section className="detail-section">
-          <h3 className="section-title">🎁 PROMOCIÓN</h3>
+          <h3 className="lead-section-title"><BiGift style={{display: 'inline', marginRight: '6px'}} /> PROMOCIÓN</h3>
           <div className="section-content">
             <StatRow label="Nombre" value={preventaLead.promotionName} />
             <StatRow label="Descuento" value={preventaLead.promotionDiscount} />
@@ -120,7 +121,7 @@ export const LeadDetailCard: React.FC<LeadDetailCardProps> = ({ lead }) => {
 
       {/* Sección: Información de Campaña */}
       <section className="detail-section">
-        <h3 className="section-title">📊 CAMPAÑA Y ORIGEN</h3>
+        <h3 className="lead-section-title"><BiBarChart style={{display: 'inline', marginRight: '6px'}} /> CAMPAÑA Y ORIGEN</h3>
         <div className="section-content">
           <StatRow label="Campaña" value={preventaLead.campaign} />
           <StatRow label="Unidad de Negocio" value={preventaLead.businessUnit} />

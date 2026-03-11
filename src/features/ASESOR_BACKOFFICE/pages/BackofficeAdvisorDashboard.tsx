@@ -219,7 +219,7 @@ export const BackofficeAdvisorDashboard: React.FC = () => {
       {/* Header */}
       <header className="dashboard-header">
         <div className="header-content">
-          <h1 className="dashboard-title">ASESOR BACKOFFICE - PREVENTAS COMPLETAS</h1>
+          <h1 className="dashboard-title">ASESOR BACKOFFICE</h1>
           <p className="dashboard-subtitle">
             Tipifica las preventas y gestiona el seguimiento de llamadas
           </p>
@@ -227,23 +227,23 @@ export const BackofficeAdvisorDashboard: React.FC = () => {
 
         {/* Stats Card */}
         <div className="dashboard-stats">
-          <div className="stat-card">
-            <span className="stat-label">Total</span>
-            <span className="stat-value">{generalStats.total}</span>
+          <div className="backoffice-stat-card">
+            <span className="backoffice-stat-label">Total</span>
+            <span className="backoffice-stat-value">{generalStats.total}</span>
           </div>
-          <div className="stat-card">
-            <span className="stat-label">Pendientes</span>
-            <span className="stat-value">{generalStats.pending}</span>
+          <div className="backoffice-stat-card">
+            <span className="backoffice-stat-label">Pendientes</span>
+            <span className="backoffice-stat-value">{generalStats.pending}</span>
           </div>
-          <div className="stat-card">
-            <span className="stat-label">Tipificadas</span>
-            <span className="stat-value">{generalStats.completed}</span>
+          <div className="backoffice-stat-card">
+            <span className="backoffice-stat-label">Tipificadas</span>
+            <span className="backoffice-stat-value">{generalStats.completed}</span>
           </div>
-          <div className="stat-card progress">
-            <span className="stat-label">Progreso</span>
-            <div className="progress-bar">
+          <div className="backoffice-stat-card">
+            <span className="backoffice-stat-label">Progreso</span>
+            <div className="backoffice-progress-bar">
               <div
-                className="progress-fill"
+                className="backoffice-progress-fill"
                 style={{ width: `${generalStats.completionPercent}%` }}
               />
             </div>

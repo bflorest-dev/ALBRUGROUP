@@ -140,7 +140,7 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
       <div className="form-sections-contract">
         {/* COLUMN 1: EMPLEADO */}
         <div className="section-group">
-          <h3 className="section-title">EMPLEADO</h3>
+          <h3 className="new-employee-section-title">EMPLEADO</h3>
           <label>Nombres</label>
           <input name="nombres" value={formData.nombres} onChange={handleChange} />
           <label>Apellidos</label>
@@ -163,7 +163,7 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
 
         {/* COLUMN 2: DATOS PERSONALES & CONTACTO */}
         <div className="section-group">
-          <h3 className="section-title">DATOS PERSONALES & CONTACTO</h3>
+          <h3 className="new-employee-section-title">DATOS PERSONALES & CONTACTO</h3>
           <label>Nacionalidad</label>
           <select name="nationality" value={formData.nationality} onChange={handleChange}>
             <option value="">Seleccione...</option>
@@ -210,7 +210,7 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
 
         {/* COLUMN 3: INFORMACIÓN LABORAL */}
         <div className="section-group">
-          <h3 className="section-title">INFORMACIÓN LABORAL</h3>
+          <h3 className="new-employee-section-title">INFORMACIÓN LABORAL</h3>
           <label>Régimen</label>
           <select
             name="regimen"
@@ -308,7 +308,7 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
 
         {/* COLUMN 4: INFORMACIÓN BANCARIA & TRANSFERENCIA */}
         <div className="section-group">
-          <h3 className="section-title">INFORMACIÓN BANCARIA & TRANSFERENCIA</h3>
+          <h3 className="new-employee-section-title">INFORMACIÓN BANCARIA & TRANSFERENCIA</h3>
           <label>Banco</label>
           <select name="bank" value={formData.bank} onChange={handleChange}>
             <option value="">Seleccione...</option>

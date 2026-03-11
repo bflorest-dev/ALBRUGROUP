@@ -14,7 +14,7 @@ import type { TipificationBlock } from '@shared/types';
 export const TIPIFICATION_BLOCKS: TipificationBlock[] = [
   {
     id: 'conversion',
-    icon: '✅',
+    icon: 'check',
     label: 'CONVERSIÓN EXITOSA',
     description: 'Cliente está interesado y compró o compraría próximamente',
     color: '#10B981',
@@ -34,7 +34,7 @@ export const TIPIFICATION_BLOCKS: TipificationBlock[] = [
   },
   {
     id: 'follow_up',
-    icon: '⏸️',
+    icon: 'clock',
     label: 'REQUIERE SEGUIMIENTO',
     description: 'Necesita gestión adicional para convertir o agendar',
     color: '#F59E0B',
@@ -65,7 +65,7 @@ export const TIPIFICATION_BLOCKS: TipificationBlock[] = [
   },
   {
     id: 'rejection',
-    icon: '❌',
+    icon: 'x',
     label: 'RECHAZO',
     description: 'Cliente rechazó la oferta de forma definitiva',
     color: '#EF4444',
@@ -95,7 +95,7 @@ export const TIPIFICATION_BLOCKS: TipificationBlock[] = [
   },
   {
     id: 'no_contact',
-    icon: '📲',
+    icon: 'phone',
     label: 'SIN CONTACTO',
     description: 'No se logró establecer contacto con el cliente',
     color: '#6B7280',
@@ -143,22 +143,22 @@ export const TIPIFICATION_STATISTICS = {
   conversion: {
     label: 'Conversiones',
     color: '#10B981',
-    icon: '✅'
+    icon: 'check'
   },
   follow_up: {
     label: 'Seguimientos',
     color: '#F59E0B',
-    icon: '⏸️'
+    icon: 'clock'
   },
   rejection: {
     label: 'Rechazos',
     color: '#EF4444',
-    icon: '❌'
+    icon: 'x'
   },
   no_contact: {
     label: 'Sin Contacto',
     color: '#6B7280',
-    icon: '📲'
+    icon: 'phone'
   }
 };
 

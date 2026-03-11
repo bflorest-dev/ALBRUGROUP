@@ -67,15 +67,15 @@ export const AdvisorCard: React.FC<AdvisorCardProps> = ({
         </div>
       </div>
       <div className="advisor-stats">
-        <div className="stat-row">
-          <span className="stat-label">{advisor.assignedLeads} asignados</span>
-          <span className="stat-label">{advisor.managedLeads} gestionados</span>
+        <div className="gtr-stat-row">
+          <span className="gtr-stat-label">{advisor.assignedLeads} asignados</span>
+          <span className="gtr-stat-label">{advisor.managedLeads} gestionados</span>
         </div>
       </div>
       <div className="progress-container">
-        <div className="progress-bar">
+        <div className="gtr-progress-bar">
           <div
-            className="progress-fill"
+            className="gtr-progress-fill"
             style={{
               width: `${progressPercentage}%`,
               '--fill-color': progressFillColor(advisor.status),
@@ -183,7 +183,7 @@ export const AdvisorsSection: React.FC<AdvisorsSectionProps> = ({
 }) => {
   return (
     <div className="advisors-section">
-      <div className="section-header">
+      <div className="gtr-section-header">
         <span className="section-icon">👥</span>
         <h2>Carga de Trabajo por Asesor</h2>
       </div>

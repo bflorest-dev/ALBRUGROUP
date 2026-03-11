@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import { BiCheck, BiTime } from 'react-icons/bi';
 import type { LeadDTO } from '@shared/types';
 import './LeadListItem.css';
 
@@ -27,10 +28,10 @@ export const LeadListItem: React.FC<LeadListItemProps> = ({
   const getStatusBadge = () => {
     switch (tipificationStatus) {
       case 'tipified':
-        return <span className="status-badge tipified">✓</span>;
+        return <span className="status-badge tipified"><BiCheck size={14} /></span>;
       case 'pending':
       default:
-        return <span className="status-badge pending">⏳</span>;
+        return <span className="status-badge pending"><BiTime size={14} /></span>;
     }
   };
 
@@ -54,7 +55,7 @@ export const LeadListItem: React.FC<LeadListItemProps> = ({
           <p className="client-phone">{lead.phone}</p>
         </div>
         <div className="lead-meta">
-          <span className="channel-badge">{lead.channel}</span>
+          <span className="lead-channel-badge">{lead.channel}</span>
           {getStatusBadge()}
         </div>
       </div>

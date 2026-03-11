@@ -13,67 +13,83 @@
 /* Header */
 .dashboard-header {
   flex-shrink: 0;
-  padding: 24px 32px;
+  padding: 8px 12px;
   background: linear-gradient(to right, #f9fafb, #ffffff);
-  border-bottom: 2px solid #e5e7eb;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: auto;
 }
 
 .header-content {
-  margin-bottom: 20px;
+  margin-bottom: 0;
+  flex: 0 0 auto;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .dashboard-title {
   margin: 0;
-  font-size: 24px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 700;
   color: #1f2937;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.3px;
+  line-height: 1.2;
 }
 
 .dashboard-subtitle {
-  margin: 8px 0 0 0;
-  font-size: 14px;
+  margin: 0;
+  font-size: 10px;
   color: #6b7280;
+  line-height: 1.2;
 }
 
 /* Stats */
 .dashboard-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
 }
 
-.stat-card {
+.backoffice-stat-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 12px;
+  gap: 2px;
+  padding: 4px 6px;
   background-color: #f3f4f6;
-  border-radius: 8px;
+  border-radius: 4px;
   border: 1px solid #e5e7eb;
+  font-size: 10px;
 }
 
-.stat-card.progress {
-  grid-column: span 2;
-  gap: 8px;
+.backoffice-stat-card.progress {
+  grid-column: span 1;
+  gap: 4px;
 }
 
-.stat-label {
-  font-size: 11px;
+.backoffice-stat-label {
+  font-size: 8px;
   font-weight: 600;
   color: #6b7280;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.1px;
 }
 
-.stat-value {
-  font-size: 20px;
+.backoffice-stat-value {
+  font-size: 13px;
   font-weight: 700;
   color: #1f2937;
 }
 
-.progress-bar {
+.backoffice-progress-bar {
   width: 100%;
   height: 4px;
   background-color: #e5e7eb;
@@ -81,7 +97,7 @@
   overflow: hidden;
 }
 
-.progress-fill {
+.backoffice-backoffice-progress-fill {
   height: 100%;
   background: linear-gradient(to right, #3b82f6, #10b981);
   border-radius: 2px;
@@ -91,10 +107,34 @@
 /* Main Content */
 .dashboard-content {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 270px 1fr;
   gap: 0;
   flex: 1;
   overflow: hidden;
+}
+
+/* Estilos específicos para LeadListItem en ASESOR_BACKOFFICE */
+.backoffice-dashboard .lead-list-item .client-name {
+  font-size: 10px;
+}
+
+.backoffice-dashboard .lead-list-item .client-phone {
+  font-size: 8px;
+}
+
+.backoffice-dashboard .lead-list-item .lead-channel-badge {
+  font-size: 8px;
+}
+
+.backoffice-dashboard .lead-list-item .status-badge {
+  font-size: 8px;
+  width: 18px;
+  height: 18px;
+}
+
+/* Ocultar stats-bar en ASESOR_BACKOFFICE */
+.backoffice-dashboard .stats-bar {
+  display: none;
 }
 
 /* Responsive */
@@ -106,19 +146,15 @@
 
 @media (max-width: 768px) {
   .dashboard-header {
-    padding: 16px;
+    padding: 10px;
   }
 
   .dashboard-title {
-    font-size: 18px;
+    font-size: 14px;
   }
 
   .dashboard-stats {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .stat-card.progress {
-    grid-column: span 2;
   }
 
   .dashboard-content {

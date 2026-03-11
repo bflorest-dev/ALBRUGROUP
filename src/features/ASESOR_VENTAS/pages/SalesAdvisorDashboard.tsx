@@ -180,7 +180,7 @@ export const SalesAdvisorDashboard = () => {
       </div>
 
       {/* Tabla de Leads */}
-      <div className="leads-section">
+      <div className="sales-leads-section">
         <h2>Mis Leads Asignados ({leads.length})</h2>
         <div className="table-container">
           <table className="leads-table">
@@ -210,7 +210,7 @@ export const SalesAdvisorDashboard = () => {
                   </td>
                   <td>{lead.phone}</td>
                   <td>
-                    <div className="action-buttons">
+                    <div className="sales-action-buttons">
                       <button className="action-btn call-btn" title="Llamar">
                         <BiPhone size={16} />
                         Llamar
@@ -285,7 +285,7 @@ export const SalesAdvisorDashboard = () => {
 
               {!selectedCategory ? (
                 <div className="categories-list">
-                  <p className="section-title">Selecciona la categoría principal:</p>
+                  <p className="sales-section-title">Selecciona la categoría principal:</p>
                   {TIPIFICATION_CATEGORIES.map(category => (
                     <button
                       key={category.id}
@@ -306,7 +306,7 @@ export const SalesAdvisorDashboard = () => {
                   <button className="back-btn" onClick={() => setSelectedCategory(null)}>
                     ‹ Atrás
                   </button>
-                  <p className="section-title">
+                  <p className="sales-section-title">
                     Selecciona la subcategoría:
                   </p>
                   {TIPIFICATION_CATEGORIES.find(c => c.id === selectedCategory)?.subcategories.map((sub, index) => (

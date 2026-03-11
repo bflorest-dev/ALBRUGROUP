@@ -17,7 +17,7 @@ export const StatusBadge = ({ status, onClick, clickable }: StatusBadgeProps) =>
 
   return (
     <span
-      className={`status-badge ${clickable ? 'clickable' : ''}`}
+      className={`employee-status-badge ${clickable ? 'clickable' : ''}`}
       style={{
         backgroundColor: bgColor,
         color: color,

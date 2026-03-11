@@ -8,6 +8,7 @@
  */
 
 import React, { useMemo } from 'react';
+import { BiCheckCircle, BiTime, BiSearch } from 'react-icons/bi';
 import { Input } from '@atoms/Input';
 import { LeadListItem } from '@atoms/LeadListItem';
 import type { LeadDTO } from '@shared/types';
@@ -25,6 +26,20 @@ interface LeadsListPanelProps {
   onSearchChange: (term: string) => void;
   onLeadSelect: (leadId: string) => void;
 }
+
+/**
+ * Mapea identificadores de iconos de secciones a componentes
+ */
+const getLeadSectionIcon = (iconId: string) => {
+  switch (iconId) {
+    case 'pending':
+      return <BiTime size={18} style={{display: 'inline', marginRight: '6px'}} />;
+    case 'completed':
+      return <BiCheckCircle size={18} style={{display: 'inline', marginRight: '6px'}} />;
+    default:
+      return null;
+  }
+};
 
 export const LeadsListPanel: React.FC<LeadsListPanelProps> = ({
   leads,
@@ -67,8 +82,8 @@ export const LeadsListPanel: React.FC<LeadsListPanelProps> = ({
     className: string;
   }) => (
     <div className={`leads-section ${className}`}>
-      <h3 className="section-header">
-        <span className="section-icon">{icon}</span>
+      <h3 className="leads-section-header">
+        <span className="section-icon">{getLeadSectionIcon(icon)}</span>
         <span className="section-title">
           {title} <span className="section-count">({count})</span>
         </span>
@@ -102,24 +117,26 @@ export const LeadsListPanel: React.FC<LeadsListPanelProps> = ({
 
       {/* Buscador */}
       <div className="search-container">
+        <BiSearch size={18} style={{position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B7280'}} />
         <Input
           type="text"
-          placeholder="🔍 Buscar por nombre, teléfono..."
+          placeholder="Buscar por nombre, teléfono..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
           className="search-input"
+          style={{paddingLeft: '32px'}}
         />
       </div>
 
       {/* Estadísticas rápidas */}
       <div className="stats-bar">
         <div className="stat-item">
-          <span className="stat-icon">⏳</span>
-          <span className="stat-value">{stats.pending}</span>
+          <span className="stat-icon"><BiTime size={16} /></span>
+          <span className="leads-stat-value">{stats.pending}</span>
         </div>
         <div className="stat-item">
-          <span className="stat-icon">✓</span>
-          <span className="stat-value">{stats.completed}</span>
+          <span className="stat-icon"><BiCheckCircle size={16} /></span>
+          <span className="leads-stat-value">{stats.completed}</span>
         </div>
       </div>
 
@@ -127,7 +144,7 @@ export const LeadsListPanel: React.FC<LeadsListPanelProps> = ({
       <div className="leads-container">
         <LeadSection
           title="PENDIENTES"
-          icon="✅"
+          icon="pending"
           count={stats.pending}
           leads={pendingLeads}
           className="pending"
@@ -135,7 +152,7 @@ export const LeadsListPanel: React.FC<LeadsListPanelProps> = ({
 
         <LeadSection
           title="COMPLETADAS"
-          icon="✅"
+          icon="completed"
           count={stats.completed}
           leads={completedLeads}
           className="completed"

@@ -383,7 +383,7 @@ export const GTRDashboard = () => {
       header: 'CANAL',
       accessor: (l: Lead) => (
         <span
-          className="channel-badge"
+          className="gtr-channel-badge"
           style={{
             '--channel-bg': CHANNEL_COLORS[l.channel] + '20',
             '--channel-color': CHANNEL_COLORS[l.channel],

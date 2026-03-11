@@ -143,37 +143,37 @@
 }
 
 /* Utility helpers */
-.clickable { cursor: pointer; }
-.card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; }
-.table-wrapper { overflow-y: auto; max-height: 400px; }
-.table-custom { width: 100%; border-collapse: collapse; font-size: 13px; }
-.table-header-row { background-color: #f3f4f6; border-bottom: 1px solid #e5e7eb; }
-.table-header-cell { padding: 8px; text-align: left; color: #6b7280; font-weight: 600; font-size: 12px; }
-.table-cell { padding: 8px; }
-.table-cell.center { text-align: center; }
-.table-row { border-bottom: 1px solid #e5e7eb; cursor: pointer; transition: background-color 0.2s; }
-.table-row.expanded { background-color: #f0fdf4; }
+.community-dashboard .clickable { cursor: pointer; }
+.community-dashboard .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; }
+.community-dashboard .table-wrapper { overflow-y: auto; max-height: 400px; }
+.community-dashboard .table-custom { width: 100%; border-collapse: collapse; font-size: 13px; }
+.community-dashboard .table-header-row { background-color: #f3f4f6; border-bottom: 1px solid #e5e7eb; }
+.community-dashboard .table-header-cell { padding: 8px; text-align: left; color: #6b7280; font-weight: 600; font-size: 12px; }
+.community-dashboard .table-cell { padding: 8px; }
+.community-dashboard .table-cell.center { text-align: center; }
+.community-dashboard .table-row { border-bottom: 1px solid #e5e7eb; cursor: pointer; transition: background-color 0.2s; }
+.community-dashboard .table-row.expanded { background-color: #f0fdf4; }
 
-.clickable-row {
+.community-dashboard .clickable-row {
   border-bottom: 1px solid #e5e7eb;
   cursor: pointer;
   transition: background-color 0.2s;
 }
-.clickable-row:hover {
+.community-dashboard .clickable-row:hover {
   background-color: #f9fafb;
 }
-.table-row .converted { color: #10B981; font-weight: 600; text-align: center; }
+.community-dashboard .table-row .converted { color: #10B981; font-weight: 600; text-align: center; }
 
-.table-cell { padding: 12px; font-size: 13px; }
-.table-cell.center { text-align: center; }
-.table-cell.emphasis { font-weight: 500; color: #1F2937; }
-.table-cell.highlight { background-color: #D1FAE5; color: #065F46; font-weight: 600; }
+.community-dashboard .table-cell { padding: 12px; font-size: 13px; }
+.community-dashboard .table-cell.center { text-align: center; }
+.community-dashboard .table-cell.emphasis { font-weight: 500; color: #1F2937; }
+.community-dashboard .table-cell.highlight { background-color: #D1FAE5; color: #065F46; font-weight: 600; }
 
-.highlight-header { color: #065F46; background-color: #D1FAE5; }
+.community-dashboard .highlight-header { color: #065F46; background-color: #D1FAE5; }
 
-.card-heading { margin: 0; font-size: 16px; font-weight: 700; color: #1F2937; text-transform: uppercase; letter-spacing: 0.5px; }
-.subrow-info { padding-left: 16px; font-size: 12px; color: #6b7280; }
-.subrow { background-color: #f9fafb; }
+.community-dashboard .card-heading { margin: 0; font-size: 16px; font-weight: 700; color: #1F2937; text-transform: uppercase; letter-spacing: 0.5px; }
+.community-dashboard .subrow-info { padding-left: 16px; font-size: 12px; color: #6b7280; }
+.community-dashboard .subrow { background-color: #f9fafb; }
 
 /* Filters Section */
 .filters-section {
@@ -226,12 +226,12 @@
 }
 
 /* Campaigns Section */
-.campaigns-container {
+.community-dashboard .campaigns-container {
   margin-top: 0;
   width: 100%;
 }
 
-.campaigns-title {
+.community-dashboard .campaigns-title {
   margin-bottom: 20px;
   font-size: 18px;
   font-weight: 600;
@@ -292,7 +292,7 @@
   color: #1F2937;
 }
 
-.channel-badge {
+.community-channel-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -339,7 +339,7 @@
   color: #F59E0B;
 }
 
-.status-badge {
+.community-dashboard .status-badge {
   display: inline-block;
   padding: 4px 8px;
   border-radius: 4px;
@@ -349,7 +349,7 @@
   color: #10B981;
 }
 
-.status-badge.pausada {
+.community-dashboard .status-badge.pausada {
   background: #FEF3C7;
   color: #F59E0B;
 }

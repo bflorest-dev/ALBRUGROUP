@@ -8,6 +8,8 @@
  */
 
 import React, { useMemo } from 'react';
+import { BiMicrophone } from 'react-icons/bi';
+import { MdError } from 'react-icons/md';
 import type { LeadDTO } from '@shared/types';
 import type { TipificationOptionId } from '@shared/types/tipification.types';
 import { TIPIFICATION_BLOCKS } from '@utils/tipificationConstants';
@@ -65,74 +67,79 @@ export const TipificationPanel: React.FC<TipificationPanelProps> = ({
 
   return (
     <div className="tipification-panel">
-      {/* Detalle del lead */}
-      <LeadDetailCard lead={selectedLead} />
-
-      {/* Sección de tipificación */}
-      <div className="tipification-section">
-        <h2 className="section-heading">🎙️ RESULTADO DE LLAMADA</h2>
-        
-        {error && (
-          <div className="error-alert">
-            <span className="error-icon">⚠️</span>
-            <span className="error-text">{error}</span>
-          </div>
-        )}
-
-        {/* Bloques de tipificación */}
-        <div className="blocks-container">
-          {TIPIFICATION_BLOCKS.map((block) => (
-            <TipificationBlockPanel
-              key={block.id}
-              block={block}
-              selectedOptionId={selectedBlockId === block.id && selectedOptionId ? selectedOptionId : undefined}
-              onSelectOption={(optionId) => {
-                if (onSelectBlock) onSelectBlock(block.id);
-                if (onSelectOption) onSelectOption(optionId);
-              }}
-              onFilterByBlock={() => {
-                if (onFilterByBlock) onFilterByBlock(block.id);
-              }}
-              showFilter={true}
-            />
-          ))}
+      {/* Contenedor principal split */}
+      <div className="panel-content">
+        {/* Sección izquierda - Detalles del lead */}
+        <div className="lead-section">
+          <LeadDetailCard lead={selectedLead} />
         </div>
 
-        {/* Información de selección actual */}
-        {selectedBlockId && selectedOptionId && (
-          <div className="selection-info">
-            <p className="info-label">Seleccionada:</p>
-            <div className="selection-badge">
-              <span className="block-icon">{currentBlock?.icon}</span>
-              <span className="selection-text">{selectedOptionId}</span>
+        {/* Sección derecha - Tipificación */}
+        <div className="tipification-section">
+          <h2 className="section-heading"><BiMicrophone size={20} style={{display: 'inline', marginRight: '8px'}} />TIPIFICACIÓN</h2>
+          
+          {error && (
+            <div className="error-alert">
+              <MdError size={18} style={{display: 'inline', marginRight: '6px'}} />
+              <span className="error-text">{error}</span>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Acciones */}
-        <div className="action-buttons">
-          <Button
-            variant="secondary"
-            onClick={onCancel}
-            disabled={isSubmitting}
-          >
-            CANCELAR
-          </Button>
-          <Button
-            variant="primary"
-            onClick={onSaveAndNext}
-            disabled={isSubmitting || !selectedOptionId}
-          >
-            {isSubmitting ? (
-              <>
-                <Spinner size={16} />
-                GUARDANDO...
-              </>
-            ) : (
-              'GUARDAR Y SIGUIENTE →'
-            )}
-          </Button>
+          {/* Bloques de tipificación */}
+          <div className="blocks-container">
+            {TIPIFICATION_BLOCKS.map((block) => (
+              <TipificationBlockPanel
+                key={block.id}
+                block={block}
+                selectedOptionId={selectedBlockId === block.id && selectedOptionId ? selectedOptionId : undefined}
+                onSelectOption={(optionId) => {
+                  if (onSelectBlock) onSelectBlock(block.id);
+                  if (onSelectOption) onSelectOption(optionId);
+                }}
+                onFilterByBlock={() => {
+                  if (onFilterByBlock) onFilterByBlock(block.id);
+                }}
+                showFilter={true}
+              />
+            ))}
+          </div>
+
+          {/* Información de selección actual */}
+          {selectedBlockId && selectedOptionId && (
+            <div className="selection-info">
+              <p className="info-label">Seleccionada:</p>
+              <div className="selection-badge">
+                <span className="tipification-block-icon">{currentBlock?.icon}</span>
+                <span className="selection-text">{selectedOptionId}</span>
+              </div>
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* Barra de acciones - Fondo */}
+      <div className="tipification-action-buttons">
+        <Button
+          variant="secondary"
+          onClick={onCancel}
+          disabled={isSubmitting}
+        >
+          CANCELAR
+        </Button>
+        <Button
+          variant="primary"
+          onClick={onSaveAndNext}
+          disabled={isSubmitting || !selectedOptionId}
+        >
+          {isSubmitting ? (
+            <>
+              <Spinner size={16} />
+              GUARDANDO...
+            </>
+          ) : (
+            'GUARDAR Y SIGUIENTE →'
+          )}
+        </Button>
       </div>
     </div>
   );

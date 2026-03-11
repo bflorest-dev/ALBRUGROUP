@@ -333,7 +333,7 @@ export const EmployeeTable = ({ employees, onAction, onCheckout, onActivate, onS
                 <td>{employee.dismissalReason || '-'}</td>
               )}
               <td>
-                <div className="action-buttons">
+                <div className="employee-action-buttons">
                   <button
                     className="action-btn view-btn"
                     onClick={() => handleViewAction(employee)}

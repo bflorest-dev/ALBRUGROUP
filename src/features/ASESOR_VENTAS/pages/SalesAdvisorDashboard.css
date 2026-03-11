@@ -178,7 +178,7 @@
   margin-top: 2px;
 }
 
-.channel-badge {
+.sales-channel-badge {
   display: inline-block;
   padding: 4px 10px;
   background: #DBEAFE;
@@ -203,7 +203,7 @@
   font-size: 12px;
 }
 
-.status-badge {
+.sales-advisor-dashboard .status-badge {
   display: inline-block;
   padding: 6px 12px;
   border-radius: 12px;
@@ -211,17 +211,17 @@
   font-weight: 600;
 }
 
-.status-badge.pending {
+.sales-advisor-dashboard .status-badge.pending {
   background: #FEF3C7;
   color: #92400E;
 }
 
-.status-badge.completed {
+.sales-advisor-dashboard .status-badge.completed {
   background: #D1FAE5;
   color: #065F46;
 }
 
-.action-buttons {
+.sales-action-buttons {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
@@ -494,7 +494,7 @@
   color: #D1D5DB;
 }
 
-.section-title {
+.sales-section-title {
   margin: 0 0 12px 0;
   font-size: 13px;
   font-weight: 500;

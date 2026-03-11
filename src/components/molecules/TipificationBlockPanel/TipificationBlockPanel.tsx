@@ -5,10 +5,29 @@
  * Permite seleccionar una opción y filtrar por ese bloque
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { BiChevronDown, BiChevronRight, BiSearch, BiCheckCircle, BiTimeFive, BiX, BiPhone } from 'react-icons/bi';
 import type { TipificationBlock, TipificationOptionId } from '@shared/types';
 import { TipificationOption } from '@atoms/TipificationOption';
 import './TipificationBlockPanel.css';
+
+/**
+ * Mapea identificadores de iconos a componentes de react-icons
+ */
+const getIconComponent = (iconId: string) => {
+  switch (iconId) {
+    case 'check':
+      return <BiCheckCircle size={18} style={{display: 'inline', marginRight: '6px'}} />;
+    case 'clock':
+      return <BiTimeFive size={18} style={{display: 'inline', marginRight: '6px'}} />;
+    case 'x':
+      return <BiX size={18} style={{display: 'inline', marginRight: '6px'}} />;
+    case 'phone':
+      return <BiPhone size={18} style={{display: 'inline', marginRight: '6px'}} />;
+    default:
+      return null;
+  }
+};
 
 interface TipificationBlockPanelProps {
   block: TipificationBlock;
@@ -22,22 +41,29 @@ interface TipificationBlockPanelProps {
 export const TipificationBlockPanel: React.FC<TipificationBlockPanelProps> = ({
   block,
   selectedOptionId,
-  isExpanded = true,
+  isExpanded = false,
   onSelectOption,
   onFilterByBlock,
   showFilter = true
 }) => {
-  const [isOpen, setIsOpen] = useState(isExpanded);
+  const [isOpen, setIsOpen] = useState(isExpanded || !!selectedOptionId);
 
   const handleToggle = () => {
     setIsOpen(!isOpen);
   };
 
+  // Auto-abrir cuando se selecciona una opción
+  useEffect(() => {
+    if (selectedOptionId) {
+      setIsOpen(true);
+    }
+  }, [selectedOptionId]);
+
   return (
     <div className="tipification-block-panel">
       <div className="block-header" onClick={handleToggle}>
         <div className="block-title-section">
-          <span className="block-icon">{block.icon}</span>
+          <span className="block-panel-icon">{getIconComponent(block.icon)}</span>
           <div className="block-titles">
             <h3 className="block-label">{block.label}</h3>
             {block.description && (
@@ -56,14 +82,14 @@ export const TipificationBlockPanel: React.FC<TipificationBlockPanelProps> = ({
               }}
               title={`Filtrar por ${block.label}`}
             >
-              🔍
+              <BiSearch size={16} />
             </button>
           )}
           <button
             className={`btn-toggle ${isOpen ? 'open' : 'closed'}`}
             aria-expanded={isOpen}
           >
-            {isOpen ? '▼' : '▶'}
+            {isOpen ? <BiChevronDown size={16} /> : <BiChevronRight size={16} />}
           </button>
         </div>
       </div>
