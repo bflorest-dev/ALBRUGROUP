@@ -9,6 +9,7 @@ import { TrainingDashboard } from './features/CAPACITACION/pages/TrainingDashboa
 import { SalesAdvisorDashboard } from './features/ASESOR_VENTAS/pages';
 import { CommunityDashboard } from './features/COMMUNITY/pages/CommunityDashboard';
 import { GTRDashboard } from './features/SUPERVISOR_GTR/pages/GTRDashboard';
+import { BackofficeAdvisorDashboard } from './features/ASESOR_BACKOFFICE/pages/BackofficeAdvisorDashboard';
 
 interface RouterByRoleProps {
   role: Role;
@@ -35,6 +36,8 @@ const RouterByRole: React.FC<RouterByRoleProps> = ({ role }) => {
     case 'SUPERVISOR_GTR':
     case 'ASESOR_GTR':
       return <GTRDashboard />;
+    case 'ASESOR_BACKOFFICE':
+      return <BackofficeAdvisorDashboard />;
     default:
       return <div>Dashboard for {role} - Coming Soon</div>;
   }
