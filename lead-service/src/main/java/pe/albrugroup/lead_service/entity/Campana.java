@@ -18,11 +18,11 @@ public class Campana {
     private String numeroWhatsappEmpresa;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_cuenta_publicitaria", nullable = false)
+    @JoinColumn(name = "id_cuenta_publicitaria")
     private CuentaPublicitaria cuentaPublicitaria;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_proveedor", nullable = false)
+    @JoinColumn(name = "id_proveedor")
     private Proveedor proveedor;
 
     private Boolean activo;

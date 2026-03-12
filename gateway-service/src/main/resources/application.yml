@@ -57,3 +57,5 @@ springdoc:
         url: /auth/v3/api-docs
       - name: rrhh-service
         url: /rrhh/v3/api-docs
+      - name: lead-service
+        url: /leads/v3/api-docs

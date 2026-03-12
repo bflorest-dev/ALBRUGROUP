@@ -15,8 +15,8 @@ import io.swagger.v3.oas.annotations.servers.Server;
                 )
         ),
         servers = {
-                @Server(url = "http://localhost:8083/lead", description = "Gateway local"),
-                @Server(url = "https://api.albrugroup.com/lead", description = "Gateway produccion")
+                @Server(url = "http://localhost:8080/leads", description = "Gateway local"),
+                @Server(url = "https://api.albrugroup.com/leads", description = "Gateway produccion")
         }
 )
 public class OpenAPIConfig { }

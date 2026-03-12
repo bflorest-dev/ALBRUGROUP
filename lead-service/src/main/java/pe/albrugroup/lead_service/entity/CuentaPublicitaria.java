@@ -14,6 +14,7 @@ public class CuentaPublicitaria {
     private Long id;
     private String numeroCuenta;
     private String nombreCuenta;
+
     private Boolean activo;
 
     @CreationTimestamp

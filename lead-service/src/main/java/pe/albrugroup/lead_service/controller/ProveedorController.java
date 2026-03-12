@@ -15,8 +15,7 @@ import pe.albrugroup.lead_service.entity.request.ProveedorRequest;
 import pe.albrugroup.lead_service.entity.response.ProveedorResponse;
 import pe.albrugroup.lead_service.service.ProveedorService;
 
-@RestController
-@Validated
+@RestController @Validated
 @RequiredArgsConstructor
 @RequestMapping("/proveedores")
 public class ProveedorController {
