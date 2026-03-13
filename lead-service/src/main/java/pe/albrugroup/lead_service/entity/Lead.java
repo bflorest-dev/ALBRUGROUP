@@ -46,10 +46,10 @@ public class Lead {
 
     // ASESOR VENTAS
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "id_datos_preventa")
     private DatosPreventa datosPreventa;
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "id_direccion")
     private Direccion direccion;
 

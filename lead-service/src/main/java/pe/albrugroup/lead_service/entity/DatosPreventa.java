@@ -14,13 +14,13 @@ public class DatosPreventa {
 
     @Enumerated(EnumType.STRING)
     private TipoDocumento tipoDocumento;
-    private String dniTitularServicio;
+    private String numeroDocumentoTitularServicio;
     private String nombreTitularServicio;
 
     private String celularRegistro;
     private String celularReferencia;
     private String correo;
 
-    private String dniTitularCelularRegistro;
+    private String numeroDocumentoTitularCelularRegistro;
     private String nombreTitularCelularRegistro;
 }

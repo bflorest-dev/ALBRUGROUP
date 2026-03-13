@@ -5,6 +5,8 @@ import lombok.*;
 import pe.albrugroup.lead_service.entity.enums.TipoDomicilio;
 import pe.albrugroup.lead_service.entity.enums.TipoVia;
 
+import java.math.BigDecimal;
+
 @Entity @Getter @Setter @Builder
 @AllArgsConstructor @NoArgsConstructor
 public class Direccion {
@@ -23,8 +25,8 @@ public class Direccion {
 
     private String direccion;
     private String referencia;
-    private String latitud;
-    private String longitud;
+    private BigDecimal latitud;
+    private BigDecimal longitud;
 
     // SITUACIONALES
     private String urbanizacion;
