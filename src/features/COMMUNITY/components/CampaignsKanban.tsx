@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BiPlus } from 'react-icons/bi';
+import { BiPlus, BiChevronLeft, BiChevronRight } from 'react-icons/bi';
 import { Modal } from '@molecules/index';
 import { CampaignCard, type Campaign } from './CampaignCard';
 import './CampaignsKanban.css';
@@ -79,6 +79,7 @@ export const CampaignsKanban: React.FC<CampaignsKanbanProps> = ({
     accountNumber: '',
     company: ''
   });
+  const [currentPage, setCurrentPage] = useState<{ [key: string]: number }>({});
 
   // Filter active companies
   const activeCompanies = companies.filter(c => c.status === 'ACTIVO');
@@ -179,6 +180,15 @@ export const CampaignsKanban: React.FC<CampaignsKanbanProps> = ({
     setEditingId(null);
   };
 
+  const CAMPAIGNS_PER_PAGE = 3;
+
+  const handlePageChange = (companyId: string, newPage: number) => {
+    setCurrentPage(prev => ({
+      ...prev,
+      [companyId]: newPage
+    }));
+  };
+
   return (
     <div className="campaigns-kanban-section">
       {/* Header */}
@@ -191,53 +201,88 @@ export const CampaignsKanban: React.FC<CampaignsKanbanProps> = ({
 
       {/* Kanban Board */}
       <div className="kanban-board">
-        {campaignsByCompany.map(({ company, campaigns: companyCampaigns }) => (
-          <div key={company.id} className="kanban-column">
-            <div className="column-header">
-              <h3 className="column-title">{company.name}</h3>
-              <span className="column-badge">{companyCampaigns.length}</span>
-            </div>
+        {campaignsByCompany.map(({ company, campaigns: companyCampaigns }) => {
+          const currentPageNum = currentPage[company.id] || 1;
+          const totalPages = Math.ceil(companyCampaigns.length / CAMPAIGNS_PER_PAGE);
+          const startIndex = (currentPageNum - 1) * CAMPAIGNS_PER_PAGE;
+          const endIndex = startIndex + CAMPAIGNS_PER_PAGE;
+          const paginatedCampaigns = companyCampaigns.slice(startIndex, endIndex);
 
-            <div className="column-content">
-              {companyCampaigns.length > 0 ? (
-                companyCampaigns.map(campaign => (
-                  <CampaignCard
-                    key={campaign.id}
-                    campaign={campaign}
-                    onEdit={handleOpenEdit}
-                    onDelete={handleDelete}
-                  />
-                ))
-              ) : (
-                <div className="column-empty">
-                  <p>Sin campañas</p>
-                  <button
-                    className="btn-add-campaign"
-                    onClick={() => {
-                      setFormData(prev => ({ ...prev, company: company.name }));
-                      setIsModalOpen(true);
-                    }}
-                  >
-                    <BiPlus size={14} />
-                    Agregar
-                  </button>
-                </div>
-              )}
-            </div>
+          return (
+            <div key={company.id} className="kanban-column">
+              <div className="column-header">
+                <h3 className="column-title">{company.name}</h3>
+                <span className="column-badge">{companyCampaigns.length}</span>
+              </div>
 
-            <div className="column-footer">
-              <button
-                className="btn-column-add"
-                onClick={() => {
-                  setFormData(prev => ({ ...prev, company: company.name }));
-                  setIsModalOpen(true);
-                }}
-              >
-                <BiPlus size={16} />
-              </button>
+              <div className="column-content">
+                {companyCampaigns.length > 0 ? (
+                  <>
+                    {paginatedCampaigns.map(campaign => (
+                      <CampaignCard
+                        key={campaign.id}
+                        campaign={campaign}
+                        onEdit={handleOpenEdit}
+                        onDelete={handleDelete}
+                      />
+                    ))}
+                    
+                    {/* Paginación */}
+                    {totalPages > 1 && (
+                      <div className="column-pagination">
+                        <button
+                          className="pagination-btn"
+                          onClick={() => handlePageChange(company.id, currentPageNum - 1)}
+                          disabled={currentPageNum === 1}
+                          title="Página anterior"
+                        >
+                          <BiChevronLeft size={20} />
+                        </button>
+                        <span className="pagination-info">
+                          {currentPageNum} / {totalPages}
+                        </span>
+                        <button
+                          className="pagination-btn"
+                          onClick={() => handlePageChange(company.id, currentPageNum + 1)}
+                          disabled={currentPageNum === totalPages}
+                          title="Página siguiente"
+                        >
+                          <BiChevronRight size={20} />
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="column-empty">
+                    <p>Sin campañas</p>
+                    <button
+                      className="btn-add-campaign"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, company: company.name }));
+                        setIsModalOpen(true);
+                      }}
+                    >
+                      <BiPlus size={14} />
+                      Agregar
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="column-footer">
+                <button
+                  className="btn-column-add"
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, company: company.name }));
+                    setIsModalOpen(true);
+                  }}
+                >
+                  <BiPlus size={16} />
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Modal para crear/editar */}
