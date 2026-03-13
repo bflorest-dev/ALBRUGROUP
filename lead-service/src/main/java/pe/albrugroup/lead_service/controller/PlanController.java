@@ -23,7 +23,7 @@ import java.util.List;
 public class PlanController {
 
     private final PlanService service;
-
+    
     @PostMapping("/adicionales")
     public ResponseEntity<AdicionalResponse> registrarAdicional(@Valid @RequestBody AdicionalRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.registrarAdicional(request));
@@ -40,6 +40,11 @@ public class PlanController {
             @RequestParam(defaultValue = "false") boolean soloVigentes
     ) {
         return ResponseEntity.ok(service.listarPlanes(idProveedor, soloVigentes));
+    }
+
+    @GetMapping("/adicionales")
+    public ResponseEntity<List<AdicionalResponse>> listarAdicionales(@RequestParam Long idProveedor) {
+        return ResponseEntity.ok(service.listarAdicionales(idProveedor));
     }
 
     @GetMapping("/servicios")

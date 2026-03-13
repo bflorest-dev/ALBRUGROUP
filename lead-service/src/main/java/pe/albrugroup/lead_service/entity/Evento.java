@@ -18,12 +18,10 @@ public class Evento {
     private Long idLead;
 
     private Long idActor;
-//    private String nombreActor;
+    private String nombreActor;
     private String rolActor;
-
-    private Long idReceptor;
-//    @Enumerated(EnumType.STRING)
-//    private Accion accion;
+    @Enumerated(EnumType.STRING)
+    private Accion accion;
     @Enumerated(EnumType.STRING)
     private Etapa etapa;
     private String tipificacion;

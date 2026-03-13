@@ -61,22 +61,25 @@ public class Lead {
 
     private String nombrePlanSnapshot;
     private String nombreProveedorSnapshot;
+    private BigDecimal precioPlanSnapshot;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_promocion_interna")
     private PromocionComercial promocionInterna;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_promocion_proveedor")
     private PromocionComercial promocionProveedor;
 
-    @OneToMany(mappedBy = "lead", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<LeadAdicional> adicionales = new HashSet<>();
-
     private String nombrePromocionInternaSnapshot;
     private String nombrePromocionProveedorSnapshot;
 
-    private BigDecimal precioPlanSnapshot;
+    @OneToMany(mappedBy = "lead", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<LeadAdicional> adicionales = new HashSet<>();
+
     private BigDecimal precioAdicionalesSnapshot;
+
     private BigDecimal precioFinal;
+
+
+
 }

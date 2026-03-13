@@ -55,10 +55,12 @@ public class PlanService {
 
     public PlanResponse registrarPlan(PlanRequest request) {
         Proveedor proveedor = buscarProveedorActivo(request.getIdProveedor());
+        LocalDate fechaActual = LocalDate.now();
 
         Plan plan = mapper.toEntity(request);
         plan.setProveedor(proveedor);
         plan.setActivo(Boolean.TRUE);
+        normalizarVigencias(plan, fechaActual);
         plan.setInternet(resolverInternet(request, proveedor));
         plan.setTelevision(resolverTelevision(request, proveedor));
         plan.setTelefono(resolverTelefono(request, proveedor));
@@ -99,11 +101,20 @@ public class PlanService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<AdicionalResponse> listarAdicionales(Long idProveedor) {
+        buscarProveedorActivo(idProveedor);
+        return adicionalRepository.findByProveedorIdAndActivoTrueOrderByNombreAsc(idProveedor).stream()
+                .map(mapper::toResponse)
+                .toList();
+    }
+
     public PlanResponse actualizarPlan(Long idPlan, PlanUpdateRequest request) {
         Plan plan = planRepository.findById(idPlan)
                 .orElseThrow(() -> new NotFoundException(Plan.class, idPlan));
 
         mapper.updatePlan(request, plan);
+        normalizarVigencias(plan, LocalDate.now());
         return toPlanResponse(planRepository.save(plan));
     }
 
@@ -118,6 +129,21 @@ public class PlanService {
     private Proveedor buscarProveedorActivo(Long idProveedor) {
         return proveedorRepository.findByIdAndActivoTrue(idProveedor)
                 .orElseThrow(() -> new NotFoundException(Proveedor.class, idProveedor));
+    }
+
+    private void normalizarVigencias(Plan plan, LocalDate fechaActual) {
+        if (plan.getVigenciaDesde() == null) {
+            plan.setVigenciaDesde(fechaActual);
+        }
+        if (plan.getVigenciaHasta() != null && plan.getVigenciaHasta().isBefore(plan.getVigenciaDesde())) {
+            throw new DuplicateResourceException(
+                    "La vigenciaHasta no puede ser menor que la vigenciaDesde",
+                    Map.of(
+                            "vigenciaDesde", plan.getVigenciaDesde(),
+                            "vigenciaHasta", plan.getVigenciaHasta()
+                    )
+            );
+        }
     }
 
     private Internet resolverInternet(PlanRequest request, Proveedor proveedor) {
