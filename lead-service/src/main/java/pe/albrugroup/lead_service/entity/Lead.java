@@ -36,7 +36,7 @@ public class Lead {
     @JoinColumn(name = "id_campana")
     private Campana campana;
 
-    // ASESOR VENTAS
+    //
 
     private Long idTipificacion;
     private String codigoTipificacion;
@@ -44,14 +44,16 @@ public class Lead {
     private Long idSubtipificacion;
     private String codigoSubtipificacion;
 
-    //
+    // ASESOR VENTAS
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "id_datos_preventa")
-//    private DatosPreventa datosPreventa;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_datos_preventa")
+    private DatosPreventa datosPreventa;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_direccion")
     private Direccion direccion;
+
+    // Solo en caso de Preventa Valida
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_plan")
@@ -77,7 +79,4 @@ public class Lead {
     private BigDecimal precioPlanSnapshot;
     private BigDecimal precioAdicionalesSnapshot;
     private BigDecimal precioFinal;
-
-//    @Column(length = 6)
-//    private String ubigeo;
 }
