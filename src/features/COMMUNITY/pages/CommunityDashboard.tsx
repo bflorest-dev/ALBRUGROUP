@@ -4,6 +4,10 @@ import { MetricsPanel, Modal } from '@molecules/index';
 import { HeaderActions } from '@molecules/HeaderActions';
 import { DataTable } from '@molecules/DataTable';
 import type { DataTableColumn } from '@molecules/DataTable';
+import { CommunityMenubar } from '../components/CommunityMenubar';
+import { AdvertiserAccountsSection } from '../components/AdvertiserAccountsSection';
+import { CompaniesSection } from '../components/CompaniesSection';
+import { CampaignsKanban } from '../components/CampaignsKanban';
 import './CommunityDashboard.css';
 
 interface Campaign {
@@ -45,6 +49,31 @@ interface Lead {
   canal: string;
   fecha: string;
 }
+
+interface Company {
+  id: string;
+  name: string;
+  status: 'ACTIVO' | 'INACTIVO';
+  color?: string;
+}
+
+interface AdvertiserAccount {
+  id: string;
+  name: string;
+  accountNumber: string;
+}
+
+const mockCompanies: Company[] = [
+  { id: '1', name: 'Albrugroup Solutions', status: 'ACTIVO', color: '#10B981' },
+  { id: '2', name: 'Digital Marketing Pro', status: 'ACTIVO', color: '#3B82F6' },
+  { id: '3', name: 'Legacy Systems Inc', status: 'INACTIVO', color: '#F59E0B' }
+];
+
+const mockAdvertiserAccounts: AdvertiserAccount[] = [
+  { id: '1', name: 'Meta Ads - Fibra Hogar', accountNumber: '123456789' },
+  { id: '2', name: 'Google Ads - Empresas', accountNumber: '987654321' },
+  { id: '3', name: 'TikTok Ads - Móviles', accountNumber: '555444333' }
+];
 
 const mockCampaigns: Campaign[] = [
   {
@@ -162,6 +191,9 @@ const mockLeads: Lead[] = [
 ];
 
 export const CommunityDashboard = () => {
+  const [activeSection, setActiveSection] = useState<string>('dashboard');
+  const [companies, setCompanies] = useState<Company[]>(mockCompanies);
+  const [advertiserAccounts, setAdvertiserAccounts] = useState<AdvertiserAccount[]>(mockAdvertiserAccounts);
   const [campaigns, setCampaigns] = useState<Campaign[]>(mockCampaigns);
   const [leads] = useState<Lead[]>(mockLeads);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -343,92 +375,132 @@ export const CommunityDashboard = () => {
   }, [campaigns, leads]);
 
   return (
-    <div className="community-dashboard">
-      {/* Header */}
-      <div className="community-dashboard-header">
-        <div className="community-header-title">
-          <h1>Gestión de Community Manager</h1>
-          <p>Meta Ads + Seguimiento de Leads</p>
-        </div>
-        <HeaderActions>
-          <button className="btn-new-campaign" onClick={() => setIsModalOpen(true)}>
-            <BiPlus size={18} />
-            Nueva Campaña
-          </button>
-        </HeaderActions>
-      </div>
+    <div className="community-dashboard-wrapper">
+      {/* Menubar Vertical */}
+      <CommunityMenubar activeSection={activeSection} onSectionChange={setActiveSection} />
 
-      {/* Main Content - Two Columns */}
-      <div className="community-dashboard-content">
-        {/* Left Panel - Panels de Gestión */}
-        <div className="community-left-panel">
-          <div className="clickable" onClick={() => handleOpenEditMetrics('META ADS')}>
-            <MetricsPanel 
-              title="META ADS" 
-              metrics={metaAdsMetrics}
-              color="#3B82F6"
+      {/* Main Content */}
+      <div className="community-dashboard">
+        {/* SECCIÓN: CUENTAS PUBLICITARIAS */}
+        {activeSection === 'accounts' && (
+          <div className="community-section-content">
+            <AdvertiserAccountsSection 
+              accounts={advertiserAccounts}
+              onAccountsChange={setAdvertiserAccounts}
             />
           </div>
-          <div className="clickable" onClick={() => handleOpenEditMetrics('DRIVE')}>
-            <MetricsPanel 
-              title="DRIVE" 
-              metrics={driveMetrics}
-              color="#F59E0B"
+        )}
+
+        {/* SECCIÓN: EMPRESAS */}
+        {activeSection === 'companies' && (
+          <div className="community-section-content">
+            <CompaniesSection 
+              companies={companies}
+              onCompaniesChange={setCompanies}
             />
           </div>
-        </div>
+        )}
 
-        {/* Right Panel - Leads por Campaña */}
-        <div className="community-right-panel">
-          <div className="card">
-            <h3 className="card-heading">GESTIÓN DE LEADS</h3>
-            <div className="table-wrapper">
-              <table className="table-custom">
-                <thead>
-                  <tr className="table-header-row">
-                    <th className="table-header-cell">CAMPAÑA</th>
-                    <th className="table-header-cell center">LEADS</th>
-                    <th className="table-header-cell center">CONV.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {campaignLeadsBreakdown.map(({ campaign, totalLeads, convertedLeads, leadsByDate }) => (
-                    <React.Fragment key={campaign.id}>
-                      <tr 
-                        onClick={() => setExpandedCampaignId(expandedCampaignId === campaign.id ? null : campaign.id)}
-                        className={`table-row ${expandedCampaignId === campaign.id ? 'expanded' : ''}`}
-                      >
-                        <td className="table-cell emphasis">{campaign.campaignName}</td>
-                        <td className="table-cell center">{totalLeads}</td>
-                        <td className="table-cell center converted">{convertedLeads}</td>
-                      </tr>
-                      {expandedCampaignId === campaign.id && Object.entries(leadsByDate).map(([date, dateLeads]) => (
-                        <tr key={`${campaign.id}-${date}`} className="table-row subrow">
-                          <td colSpan={3} className="table-cell">
-                            <div className="subrow-info">
-                              <strong>{date}</strong>: {dateLeads.length} leads {dateLeads.filter(l => l.status === 'convertido').length > 0 && `(${dateLeads.filter(l => l.status === 'convertido').length} convertidos)`}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </React.Fragment>
-                  ))}
-                </tbody>
-              </table>
+        {/* SECCIÓN: CAMPAÑAS KANBAN */}
+        {activeSection === 'campaigns' && (
+          <div className="community-section-content">
+            <CampaignsKanban 
+              companies={companies}
+              advertiserAccounts={advertiserAccounts}
+            />
+          </div>
+        )}
+
+        {/* SECCIÓN: DASHBOARD & CAMPAÑAS */}
+        {activeSection !== 'accounts' && activeSection !== 'companies' && activeSection !== 'campaigns' && (
+          <>
+            {/* Header */}
+            <div className="community-dashboard-header">
+              <div className="community-header-title">
+                <h1>Gestión de Community Manager</h1>
+                <p>Meta Ads + Seguimiento de Leads</p>
+              </div>
+              <HeaderActions>
+                <button className="btn-new-campaign" onClick={() => setIsModalOpen(true)}>
+                  <BiPlus size={18} />
+                  Nueva Campaña
+                </button>
+              </HeaderActions>
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Sección de Campañas */}
-      <div className="campaigns-container">
-        <h2 className="campaigns-title">CAMPAÑAS META ADS</h2>
-        <DataTable
-          columns={campaignTableColumns}
-          data={campaigns}
-          rowClassName="clickable-row"
-        />
-      </div>
+            {/* Main Content - Two Columns */}
+            <div className="community-dashboard-content">
+              {/* Left Panel - Panels de Gestión */}
+              <div className="community-left-panel">
+                <div className="clickable" onClick={() => handleOpenEditMetrics('META ADS')}>
+                  <MetricsPanel 
+                    title="META ADS" 
+                    metrics={metaAdsMetrics}
+                    color="#3B82F6"
+                  />
+                </div>
+                <div className="clickable" onClick={() => handleOpenEditMetrics('DRIVE')}>
+                  <MetricsPanel 
+                    title="DRIVE" 
+                    metrics={driveMetrics}
+                    color="#F59E0B"
+                  />
+                </div>
+              </div>
+
+              {/* Right Panel - Leads por Campaña */}
+              <div className="community-right-panel">
+                <div className="card">
+                  <h3 className="card-heading">GESTIÓN DE LEADS</h3>
+                  <div className="table-wrapper">
+                    <table className="table-custom">
+                      <thead>
+                        <tr className="table-header-row">
+                          <th className="table-header-cell">CAMPAÑA</th>
+                          <th className="table-header-cell center">LEADS</th>
+                          <th className="table-header-cell center">CONV.</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {campaignLeadsBreakdown.map(({ campaign, totalLeads, convertedLeads, leadsByDate }) => (
+                          <React.Fragment key={campaign.id}>
+                            <tr 
+                              onClick={() => setExpandedCampaignId(expandedCampaignId === campaign.id ? null : campaign.id)}
+                              className={`table-row ${expandedCampaignId === campaign.id ? 'expanded' : ''}`}
+                            >
+                              <td className="table-cell emphasis">{campaign.campaignName}</td>
+                              <td className="table-cell center">{totalLeads}</td>
+                              <td className="table-cell center converted">{convertedLeads}</td>
+                            </tr>
+                            {expandedCampaignId === campaign.id && Object.entries(leadsByDate).map(([date, dateLeads]) => (
+                              <tr key={`${campaign.id}-${date}`} className="table-row subrow">
+                                <td colSpan={3} className="table-cell">
+                                  <div className="subrow-info">
+                                    <strong>{date}</strong>: {dateLeads.length} leads {dateLeads.filter(l => l.status === 'convertido').length > 0 && `(${dateLeads.filter(l => l.status === 'convertido').length} convertidos)`}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </React.Fragment>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sección de Campañas */}
+            <div className="campaigns-container">
+              <h2 className="campaigns-title">CAMPAÑAS META ADS</h2>
+              <DataTable
+                columns={campaignTableColumns}
+                data={campaigns}
+                rowClassName="clickable-row"
+              />
+            </div>
+          </>
+        )}
 
       {/* Modal para editar metricas de campaña */}
       <Modal
@@ -655,6 +727,7 @@ export const CommunityDashboard = () => {
           </div>
         </div>
       </Modal>
+      </div>
     </div>
   );
 };

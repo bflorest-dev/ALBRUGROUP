@@ -1,11 +1,28 @@
+/* Dashboard Wrapper - Contenedor con Menubar y Contenido */
+.community-dashboard-wrapper {
+  display: flex;
+  flex-direction: row;
+  min-height: 100vh;
+  background: #FFFFFF;
+  font-family: 'Segoe UI', 'Blinkmacsystemfont', 'Roboto', 'Helvetica Neue', sans-serif;
+}
+
 .community-dashboard {
   display: flex;
   flex-direction: column;
   gap: 8px;
   background: #FFFFFF;
   padding: 0px 32px 32px 32px;
+  flex: 1;
   min-height: 100vh;
+  overflow-y: auto;
   font-family: 'Segoe UI', 'Blinkmacsystemfont', 'Roboto', 'Helvetica Neue', sans-serif;
+}
+
+.community-section-content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
 }
 
 /* Header */
@@ -356,9 +373,24 @@
 
 /* Responsive */
 @media (max-width: 1400px) {
-  .dashboard-content {
+  .community-dashboard-content {
     grid-template-columns: 350px 1fr;
     gap: 24px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .community-dashboard {
+    padding: 0px 24px 24px 24px;
+  }
+
+  .community-dashboard-content {
+    grid-template-columns: 320px 1fr;
+    gap: 20px;
+  }
+
+  .btn-new-campaign {
+    width: 140px;
   }
 }
 
@@ -368,7 +400,7 @@
     gap: 20px;
   }
 
-  .dashboard-content {
+  .community-dashboard-content {
     grid-template-columns: 1fr;
   }
 
@@ -382,146 +414,11 @@
   }
 }
 
-/* Campaign Form Modal */
-.campaign-form {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  max-height: 70vh;
-  overflow-y: auto;
-}
-
-.form-section {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  padding: 16px;
-  background: #F9FAFB;
-  border-radius: 8px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.form-section h3 {
-  margin: 0 0 8px 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1F2937;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.form-section label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #374151;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  margin-top: 8px;
-}
-
-.form-input {
-  padding: 10px 12px;
-  border: 1px solid #D1D5DB;
-  border-radius: 6px;
-  font-size: 14px;
-  font-family: inherit;
-  transition: all 0.2s ease;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #3B82F6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.form-input.disabled {
-  background: #E5E7EB;
-  color: #6B7280;
-  cursor: not-allowed;
-}
-
-.form-input-green {
-  padding: 10px 12px;
-  border: 1px solid #6EE7B7;
-  border-radius: 6px;
-  font-size: 14px;
-  font-family: inherit;
-  background: #F0FDF4;
-  color: #065F46;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-
-.form-input-green:focus {
-  outline: none;
-  border-color: #10B981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-  background: #ECFDF5;
-}
-
-.form-section label[for*="ventas"],
-.form-section label[for*="contacto"] {
-  color: #065F46;
-  font-weight: 600;
-}
-
-.read-only-section {
-  background: #F3F4F6;
-  border: 1px dashed #D1D5DB;
-}
-
-.form-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  padding-top: 16px;
-  border-top: 1px solid #E5E7EB;
-}
-
-.btn-cancel {
-  padding: 10px 20px;
-  background: #F3F4F6;
-  color: #374151;
-  border: 1px solid #D1D5DB;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-cancel:hover {
-  background: #E5E7EB;
-  border-color: #9CA3AF;
-}
-
-.btn-confirm {
-  padding: 10px 20px;
-  background: #3B82F6;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-confirm:hover {
-  background: #2563EB;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
-}
-
-.btn-confirm:active {
-  transform: scale(0.98);
-}
-
 @media (max-width: 768px) {
+  .community-dashboard-wrapper {
+    flex-direction: column;
+  }
+
   .community-dashboard {
     padding: 16px;
     gap: 16px;
