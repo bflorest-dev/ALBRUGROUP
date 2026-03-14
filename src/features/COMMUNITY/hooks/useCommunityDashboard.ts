@@ -19,7 +19,12 @@ const storageUtils = {
   loadCompanies: (): Company[] => {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.COMPANIES);
-      return stored ? JSON.parse(stored) : mockCompanies;
+      if (stored) {
+        return JSON.parse(stored);
+      }
+      // First load: initialize with mockups
+      localStorage.setItem(STORAGE_KEYS.COMPANIES, JSON.stringify(mockCompanies));
+      return mockCompanies;
     } catch {
       return mockCompanies;
     }
@@ -31,7 +36,12 @@ const storageUtils = {
   loadAdvertiserAccounts: (): AdvertiserAccount[] => {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.ADVERTISER_ACCOUNTS);
-      return stored ? JSON.parse(stored) : mockAdvertiserAccounts;
+      if (stored) {
+        return JSON.parse(stored);
+      }
+      // First load: initialize with mockups
+      localStorage.setItem(STORAGE_KEYS.ADVERTISER_ACCOUNTS, JSON.stringify(mockAdvertiserAccounts));
+      return mockAdvertiserAccounts;
     } catch {
       return mockAdvertiserAccounts;
     }
@@ -43,7 +53,12 @@ const storageUtils = {
   loadCampaigns: (): Campaign[] => {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.CAMPAIGNS);
-      return stored ? JSON.parse(stored) : mockCampaigns;
+      if (stored) {
+        return JSON.parse(stored);
+      }
+      // First load: initialize with mockups
+      localStorage.setItem(STORAGE_KEYS.CAMPAIGNS, JSON.stringify(mockCampaigns));
+      return mockCampaigns;
     } catch {
       return mockCampaigns;
     }
