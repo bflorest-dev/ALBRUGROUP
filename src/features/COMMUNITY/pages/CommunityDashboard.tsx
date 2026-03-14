@@ -5,7 +5,8 @@ import { AdvertiserAccountsSection } from '../components/AdvertiserAccountsSecti
 import { CompaniesSection } from '../components/CompaniesSection';
 import { CampaignsKanban } from '../components/CampaignsKanban';
 import { useCommunityDashboard } from '../hooks/useCommunityDashboard';
-import { DashboardSectionLazy, ModalsSectionLazy, LoadingFallback } from '../utils/lazyLoadSections';
+import { DashboardSection } from '../sections/DashboardSection';
+import { ModalsSectionLazy } from '../utils/lazyLoadSections';
 import { FeatureErrorBoundary } from '@components/utilities';
 import { ErrorLogger } from '@services';
 import './CommunityDashboard.css';
@@ -75,9 +76,7 @@ const CommunityDashboardContent = () => {
 
         {/* SECTION: Main Dashboard */}
         {state.activeSection === 'dashboard' && (
-          <Suspense fallback={<LoadingFallback />}>
-            <DashboardSectionLazy state={state} />
-          </Suspense>
+          <DashboardSection state={state} />
         )}
       </div>
 

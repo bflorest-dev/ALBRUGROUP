@@ -11,7 +11,6 @@ import { lazy, Suspense, type ComponentType } from 'react';
  * - MetricsSection → chunks/metrics-section.[hash].js
  * - LeadsManagementSection → chunks/leads-section.[hash].js
  * - ModalsSection → chunks/modals-section.[hash].js
- * - DashboardSection → chunks/dashboard-section.[hash].js
  */
 
 // Define lazy-loaded components
@@ -36,12 +35,6 @@ export const LeadsManagementSectionLazy = lazy(() =>
 export const ModalsSectionLazy = lazy(() =>
   import('../sections/ModalsSection').then(mod => ({
     default: mod.ModalsSection
-  }))
-);
-
-export const DashboardSectionLazy = lazy(() =>
-  import('../sections/DashboardSection').then(mod => ({
-    default: mod.DashboardSection
   }))
 );
 
