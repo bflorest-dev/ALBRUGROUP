@@ -3,35 +3,11 @@ import { lazy, Suspense, type ComponentType } from 'react';
 /**
  * Problema #8: Lazy Loading & Code Splitting for Community Dashboard
  * 
- * Dynamically imports section components to reduce initial bundle size
- * Each section is loaded on-demand when needed
- * 
- * Sections are bundled separately:
- * - CampaignsSection → chunks/campaigns-section.[hash].js
- * - MetricsSection → chunks/metrics-section.[hash].js
- * - LeadsManagementSection → chunks/leads-section.[hash].js
- * - ModalsSection → chunks/modals-section.[hash].js
+ * Dynamically imports ModalsSection to reduce initial bundle size
+ * Modal is loaded on-demand when needed
  */
 
 // Define lazy-loaded components
-export const CampaignsSectionLazy = lazy(() =>
-  import('../sections/CampaignsSection').then(mod => ({
-    default: mod.CampaignsSection
-  }))
-);
-
-export const MetricsSectionLazy = lazy(() =>
-  import('../sections/MetricsSection').then(mod => ({
-    default: mod.MetricsSection
-  }))
-);
-
-export const LeadsManagementSectionLazy = lazy(() =>
-  import('../sections/LeadsManagementSection').then(mod => ({
-    default: mod.LeadsManagementSection
-  }))
-);
-
 export const ModalsSectionLazy = lazy(() =>
   import('../sections/ModalsSection').then(mod => ({
     default: mod.ModalsSection
@@ -42,7 +18,7 @@ export const ModalsSectionLazy = lazy(() =>
  * Generic Loading Fallback Component
  * Shown while lazy component is being loaded
  */
-export const LoadingFallback: ComponentType = () => (
+const LoadingFallback = () => (
   <div style={styles.loadingContainer}>
     <div style={styles.spinner} />
     <p style={styles.loadingText}>Cargando...</p>

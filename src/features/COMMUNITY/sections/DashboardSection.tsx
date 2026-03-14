@@ -1,7 +1,9 @@
-import React, { Suspense } from 'react';
+import React from 'react';
 import { BiPlus } from 'react-icons/bi';
 import { HeaderActions } from '@molecules/HeaderActions';
-import { MetricsSectionLazy, LeadsManagementSectionLazy, CampaignsSectionLazy, LoadingFallback } from '../utils/lazyLoadSections';
+import { MetricsSection } from './MetricsSection';
+import { LeadsManagementSection } from './LeadsManagementSection';
+import { CampaignsSection } from './CampaignsSection';
 import type { CommunityDashboardState } from '../hooks/useCommunityDashboard';
 
 /**
@@ -47,18 +49,12 @@ const DashboardSectionComponent: React.FC<DashboardSectionProps> = ({ state }) =
 
       {/* Two-Column Layout: Metrics (Left) + Leads (Right) */}
       <div className="community-dashboard-content">
-        <Suspense fallback={<LoadingFallback />}>
-          <MetricsSectionLazy state={state} />
-        </Suspense>
-        <Suspense fallback={<LoadingFallback />}>
-          <LeadsManagementSectionLazy state={state} />
-        </Suspense>
+        <MetricsSection state={state} />
+        <LeadsManagementSection state={state} />
       </div>
 
       {/* Campaigns Table (Full Width) */}
-      <Suspense fallback={<LoadingFallback />}>
-        <CampaignsSectionLazy state={state} />
-      </Suspense>
+      <CampaignsSection state={state} />
     </>
   );
 };
