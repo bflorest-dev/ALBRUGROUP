@@ -1,6 +1,62 @@
 import { useState, useMemo, useCallback } from 'react';
 
 /**
+ * localStorage Storage Keys
+ */
+const STORAGE_KEYS = {
+  COMPANIES: 'community_companies',
+  ADVERTISER_ACCOUNTS: 'community_advertiser_accounts',
+  CAMPAIGNS: 'community_campaigns',
+};
+
+/**
+ * LocalStorage Utility Functions
+ */
+const storageUtils = {
+  saveCompanies: (companies: Company[]) => {
+    localStorage.setItem(STORAGE_KEYS.COMPANIES, JSON.stringify(companies));
+  },
+  loadCompanies: (): Company[] => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.COMPANIES);
+      return stored ? JSON.parse(stored) : mockCompanies;
+    } catch {
+      return mockCompanies;
+    }
+  },
+  
+  saveAdvertiserAccounts: (accounts: AdvertiserAccount[]) => {
+    localStorage.setItem(STORAGE_KEYS.ADVERTISER_ACCOUNTS, JSON.stringify(accounts));
+  },
+  loadAdvertiserAccounts: (): AdvertiserAccount[] => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.ADVERTISER_ACCOUNTS);
+      return stored ? JSON.parse(stored) : mockAdvertiserAccounts;
+    } catch {
+      return mockAdvertiserAccounts;
+    }
+  },
+  
+  saveCampaigns: (campaigns: Campaign[]) => {
+    localStorage.setItem(STORAGE_KEYS.CAMPAIGNS, JSON.stringify(campaigns));
+  },
+  loadCampaigns: (): Campaign[] => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.CAMPAIGNS);
+      return stored ? JSON.parse(stored) : mockCampaigns;
+    } catch {
+      return mockCampaigns;
+    }
+  },
+  
+  clearAll: () => {
+    localStorage.removeItem(STORAGE_KEYS.COMPANIES);
+    localStorage.removeItem(STORAGE_KEYS.ADVERTISER_ACCOUNTS);
+    localStorage.removeItem(STORAGE_KEYS.CAMPAIGNS);
+  }
+};
+
+/**
  * Types (Extraídas de CommunityDashboard.tsx)
  */
 export interface Campaign {
@@ -210,11 +266,38 @@ export const useCommunityDashboard = () => {
   // Sección activa en el menú
   const [activeSection, setActiveSection] = useState<string>('dashboard');
   
-  // Data principal
-  const [companies, setCompanies] = useState<Company[]>(mockCompanies);
-  const [advertiserAccounts, setAdvertiserAccounts] = useState<AdvertiserAccount[]>(mockAdvertiserAccounts);
-  const [campaigns, setCampaigns] = useState<Campaign[]>(mockCampaigns);
+  // Data principal - Cargar del localStorage
+  const [companies, setCompaniesState] = useState<Company[]>(storageUtils.loadCompanies);
+  const [advertiserAccounts, setAdvertiserAccountsState] = useState<AdvertiserAccount[]>(storageUtils.loadAdvertiserAccounts);
+  const [campaigns, setCampaignsState] = useState<Campaign[]>(storageUtils.loadCampaigns);
   const [leads] = useState<Lead[]>(mockLeads);
+  
+  // Wrapper para setCompanies que también guarda en localStorage
+  const setCompanies = useCallback((updater: Company[] | ((prev: Company[]) => Company[])) => {
+    setCompaniesState(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      storageUtils.saveCompanies(next);
+      return next;
+    });
+  }, []);
+  
+  // Wrapper para setAdvertiserAccounts que también guarda en localStorage
+  const setAdvertiserAccounts = useCallback((updater: AdvertiserAccount[] | ((prev: AdvertiserAccount[]) => AdvertiserAccount[])) => {
+    setAdvertiserAccountsState(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      storageUtils.saveAdvertiserAccounts(next);
+      return next;
+    });
+  }, []);
+  
+  // Wrapper para setCampaigns que también guarda en localStorage
+  const setCampaigns = useCallback((updater: Campaign[] | ((prev: Campaign[]) => Campaign[])) => {
+    setCampaignsState(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      storageUtils.saveCampaigns(next);
+      return next;
+    });
+  }, []);
   
   // Modal: Crear Campaña
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -757,6 +840,14 @@ export const useCommunityDashboard = () => {
     handleToggleExpandCampaign,
     handleToggleEditMetricsOpen,
     handleToggleEditCampaignMetricsOpen,
+    
+    // Storage Management
+    clearAllData: storageUtils.clearAll,
+    resetToMockData: () => {
+      setCompanies(mockCompanies);
+      setAdvertiserAccounts(mockAdvertiserAccounts);
+      setCampaigns(mockCampaigns);
+    },
   };
 };
 
