@@ -15,11 +15,14 @@ import { useNotification } from '@contexts/useNotification';
 import { useErrorHandler } from '@hooks/useErrorHandler';
 import { useApplicants } from '@contexts/ApplicantsContext';
 import type { Applicant, NewApplicantFormData, EditApplicantFormData, HireApplicantFormData, Statistic } from '@types';
+import { FeatureErrorBoundary } from '@components/utilities';
+import { ErrorLogger } from '@services';
+import type { ErrorInfo } from 'react';
 import './ApplicantsDashboard.css';
 
 const ITEMS_PER_PAGE = 10;
 
-export const ApplicantsDashboard = () => {
+const ApplicantsDashboardContent = () => {
   // Get applicants from context
   const { applicants, addApplicant, updateApplicant, loading } = useApplicants();
   const [_statistics, _setStatistics] = useState<Statistic[]>([]);
@@ -399,5 +402,20 @@ export const ApplicantsDashboard = () => {
         )}
       </Modal>
     </div>
+  );
+};
+
+export const ApplicantsDashboard = () => {
+  const handleError = (error: Error, errorInfo: ErrorInfo) => {
+    ErrorLogger.logError('ApplicantsDashboard', error, {
+      componentStack: errorInfo.componentStack,
+      feature: 'RRHH'
+    });
+  };
+
+  return (
+    <FeatureErrorBoundary featureName="RRHH" onError={handleError}>
+      <ApplicantsDashboardContent />
+    </FeatureErrorBoundary>
   );
 };

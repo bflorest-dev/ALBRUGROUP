@@ -62,6 +62,9 @@ import { useLeadSubmit } from '../hooks/useLeadSubmit';
 import { AdvisorsSection } from '../components/AdvisorsSection';
 import { LeadsSection } from '../components/LeadsSection';
 import { NewLeadModal } from '../components/NewLeadModal';
+import { FeatureErrorBoundary } from '@components/utilities';
+import { ErrorLogger } from '@services';
+import type { ErrorInfo } from 'react';
 import './GTRDashboard.css';
 
 // Type alias para compatibilidad
@@ -307,7 +310,7 @@ const campaigns = [
   'Retargeting Fibra'
 ];
 
-export const GTRDashboard = () => {
+const GTRDashboardContent = () => {
   const [isNewLeadModalOpen, setIsNewLeadModalOpen] = useState(false);
 
   /**
@@ -628,5 +631,20 @@ export const GTRDashboard = () => {
         onClose={handleCloseModal}
       />
     </div>
+  );
+};
+
+export const GTRDashboard = () => {
+  const handleError = (error: Error, errorInfo: ErrorInfo) => {
+    ErrorLogger.logError('GTRDashboard', error, {
+      componentStack: errorInfo.componentStack,
+      feature: 'SUPERVISOR_GTR'
+    });
+  };
+
+  return (
+    <FeatureErrorBoundary featureName="SUPERVISOR_GTR" onError={handleError}>
+      <GTRDashboardContent />
+    </FeatureErrorBoundary>
   );
 };

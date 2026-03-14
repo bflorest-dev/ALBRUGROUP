@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react';
 import { BiPhone, BiLogoWhatsapp } from 'react-icons/bi';
 import { StatCard } from '@molecules/StatCard';
+import { FeatureErrorBoundary } from '@components/utilities';
+import { ErrorLogger } from '@services';
+import type { ErrorInfo } from 'react';
 import './SalesAdvisorDashboard.css';
 
 interface Lead {
@@ -123,7 +126,7 @@ const mockLeads: Lead[] = [
   }
 ];
 
-export const SalesAdvisorDashboard = () => {
+const SalesAdvisorDashboardContent = () => {
   const [leads] = useState<Lead[]>(mockLeads);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -321,5 +324,20 @@ export const SalesAdvisorDashboard = () => {
         </div>
       )}
     </div>
+  );
+};
+
+export const SalesAdvisorDashboard = () => {
+  const handleError = (error: Error, errorInfo: ErrorInfo) => {
+    ErrorLogger.logError('SalesAdvisorDashboard', error, {
+      componentStack: errorInfo.componentStack,
+      feature: 'ASESOR_VENTAS'
+    });
+  };
+
+  return (
+    <FeatureErrorBoundary featureName="ASESOR_VENTAS" onError={handleError}>
+      <SalesAdvisorDashboardContent />
+    </FeatureErrorBoundary>
   );
 };

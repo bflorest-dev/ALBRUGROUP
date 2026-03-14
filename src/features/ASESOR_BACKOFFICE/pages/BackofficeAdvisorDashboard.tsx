@@ -26,6 +26,9 @@ import { useBackofficeLeads, useTipification } from '../../../hooks';
 import { LeadsListPanel } from '../../../components/organisms/LeadsListPanel';
 import { TipificationPanel } from '../../../components/organisms/TipificationPanel';
 import type { LeadDTO } from '../../../shared/types';
+import { FeatureErrorBoundary } from '@components/utilities';
+import { ErrorLogger } from '@services';
+import type { ErrorInfo } from 'react';
 import './BackofficeAdvisorDashboard.css';
 
 /**
@@ -145,7 +148,7 @@ const MOCK_LEADS: BackofficeLead[] = [
   }
 ];
 
-export const BackofficeAdvisorDashboard: React.FC = () => {
+const BackofficeAdvisorDashboardContent: React.FC = () => {
   const leadsManager = useBackofficeLeads(MOCK_LEADS);
   const tipificationManager = useTipification();
 
@@ -280,6 +283,21 @@ export const BackofficeAdvisorDashboard: React.FC = () => {
         />
       </div>
     </div>
+  );
+};
+
+export const BackofficeAdvisorDashboard: React.FC = () => {
+  const handleError = (error: Error, errorInfo: ErrorInfo) => {
+    ErrorLogger.logError('BackofficeAdvisorDashboard', error, {
+      componentStack: errorInfo.componentStack,
+      feature: 'ASESOR_BACKOFFICE'
+    });
+  };
+
+  return (
+    <FeatureErrorBoundary featureName="ASESOR_BACKOFFICE" onError={handleError}>
+      <BackofficeAdvisorDashboardContent />
+    </FeatureErrorBoundary>
   );
 };
 
