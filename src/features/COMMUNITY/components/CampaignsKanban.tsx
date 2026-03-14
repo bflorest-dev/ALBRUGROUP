@@ -68,7 +68,20 @@ export const CampaignsKanban: React.FC<CampaignsKanbanProps> = ({
   companies,
   advertiserAccounts
 }) => {
-  const [campaigns, setCampaigns] = useState<Campaign[]>(mockCampaigns);
+  // Load campaigns from localStorage or use mockCampaigns
+  const [campaigns, setCampaigns] = useState<Campaign[]>(() => {
+    try {
+      const stored = localStorage.getItem('kanban_campaigns');
+      if (stored) {
+        return JSON.parse(stored);
+      }
+      // First load: save mockups to localStorage
+      localStorage.setItem('kanban_campaigns', JSON.stringify(mockCampaigns));
+      return mockCampaigns;
+    } catch {
+      return mockCampaigns;
+    }
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -149,18 +162,26 @@ export const CampaignsKanban: React.FC<CampaignsKanbanProps> = ({
 
     if (isEditing && editingId) {
       // Actualizar campaña
-      setCampaigns(prev => prev.map(c =>
-        c.id === editingId
-          ? { ...c, ...formData }
-          : c
-      ));
+      setCampaigns(prev => {
+        const updated = prev.map(c =>
+          c.id === editingId
+            ? { ...c, ...formData }
+            : c
+        );
+        localStorage.setItem('kanban_campaigns', JSON.stringify(updated));
+        return updated;
+      });
     } else {
       // Crear nueva campaña
       const newCampaign: Campaign = {
         id: `${Date.now()}`,
         ...formData
       };
-      setCampaigns(prev => [newCampaign, ...prev]);
+      setCampaigns(prev => {
+        const updated = [newCampaign, ...prev];
+        localStorage.setItem('kanban_campaigns', JSON.stringify(updated));
+        return updated;
+      });
     }
 
     setIsModalOpen(false);
@@ -169,7 +190,11 @@ export const CampaignsKanban: React.FC<CampaignsKanbanProps> = ({
 
   const handleDelete = (id: string) => {
     if (confirm('¿Estás seguro de que deseas eliminar esta campaña?')) {
-      setCampaigns(prev => prev.filter(c => c.id !== id));
+      setCampaigns(prev => {
+        const updated = prev.filter(c => c.id !== id);
+        localStorage.setItem('kanban_campaigns', JSON.stringify(updated));
+        return updated;
+      });
     }
   };
 
