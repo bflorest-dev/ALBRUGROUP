@@ -282,9 +282,9 @@ export const useCommunityDashboard = () => {
   const [activeSection, setActiveSection] = useState<string>('dashboard');
   
   // Data principal - Cargar del localStorage
-  const [companies, setCompaniesState] = useState<Company[]>(storageUtils.loadCompanies);
-  const [advertiserAccounts, setAdvertiserAccountsState] = useState<AdvertiserAccount[]>(storageUtils.loadAdvertiserAccounts);
-  const [campaigns, setCampaignsState] = useState<Campaign[]>(storageUtils.loadCampaigns);
+  const [companies, setCompaniesState] = useState<Company[]>(() => storageUtils.loadCompanies());
+  const [advertiserAccounts, setAdvertiserAccountsState] = useState<AdvertiserAccount[]>(() => storageUtils.loadAdvertiserAccounts());
+  const [campaigns, setCampaignsState] = useState<Campaign[]>(() => storageUtils.loadCampaigns());
   const [leads] = useState<Lead[]>(mockLeads);
   
   // Wrapper para setCompanies que también guarda en localStorage
