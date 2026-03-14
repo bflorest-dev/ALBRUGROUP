@@ -3,6 +3,9 @@ import { useApplicants } from '@contexts/ApplicantsContext';
 import { useApplicantsSync } from '@hooks/useApplicantsSync';
 import { Card } from '@molecules/Card';
 import { Modal } from '@molecules/Modal';
+import { FeatureErrorBoundary } from '@components/utilities';
+import { ErrorLogger } from '@services';
+import type { ErrorInfo } from 'react';
 import './TrainingDashboard.css';
 
 const REJECTION_REASONS = [
@@ -83,8 +86,7 @@ const TrainingList: React.FC<TrainingListProps> = ({ companyFilter, onAccept, on
   );
 };
 
-// Componente padre que maneja modales y filtros (NO se re-renderiza con cambios de datos)
-export const TrainingDashboard: React.FC = () => {
+const TrainingDashboardContent: React.FC = () => {
   const { applicants, updateApplicant } = useApplicants();
   const [companyFilter, setCompanyFilter] = useState<'WIN' | 'CLARO'>('WIN');
 
@@ -170,4 +172,19 @@ export const TrainingDashboard: React.FC = () => {
   );
 };
 
-export default TrainingDashboard;
+const TrainingDashboard: React.FC = () => {
+  const handleError = (error: Error, errorInfo: ErrorInfo) => {
+    ErrorLogger.logError('TrainingDashboard', error, {
+      componentStack: errorInfo.componentStack,
+      feature: 'CAPACITACION'
+    });
+  };
+
+  return (
+    <FeatureErrorBoundary featureName="CAPACITACION" onError={handleError}>
+      <TrainingDashboardContent />
+    </FeatureErrorBoundary>
+  );
+};
+
+export { TrainingDashboard };

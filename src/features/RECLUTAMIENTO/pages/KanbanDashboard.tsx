@@ -6,6 +6,9 @@ import { useApplicantsSync } from '@hooks/useApplicantsSync';
 import { Modal } from '@molecules/Modal';
 import { DatePicker } from '@molecules/DatePicker/DatePicker';
 import type { Applicant } from '@types';
+import { FeatureErrorBoundary } from '@components/utilities';
+import { ErrorLogger } from '@services';
+import type { ErrorInfo } from 'react';
 import './KanbanDashboard.css';
 
 const STATUS_COLUMNS = [
@@ -188,7 +191,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ companyFilter, onSelectForTip
 };
 
 // Componente padre que maneja modales y filtros (NO se re-renderiza con cambios de datos)
-export const KanbanDashboard: React.FC = () => {
+const KanbanDashboardContent: React.FC = () => {
   const { updateApplicant } = useApplicants();
   const [companyFilter, setCompanyFilter] = useState<'WIN' | 'CLARO'>('WIN');
 
@@ -448,5 +451,20 @@ const RECHAZADO_REASONS: string[] = [
         )}
       </Modal>
     </>
+  );
+};
+
+export const KanbanDashboard: React.FC = () => {
+  const handleError = (error: Error, errorInfo: ErrorInfo) => {
+    ErrorLogger.logError('KanbanDashboard', error, {
+      componentStack: errorInfo.componentStack,
+      feature: 'RECLUTAMIENTO'
+    });
+  };
+
+  return (
+    <FeatureErrorBoundary featureName="RECLUTAMIENTO" onError={handleError}>
+      <KanbanDashboardContent />
+    </FeatureErrorBoundary>
   );
 };

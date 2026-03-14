@@ -1,10 +1,13 @@
 import React from 'react';
+import type { ErrorInfo } from 'react';
 import type { AdminDashboardData } from '../types';
 import { getAdminDashboardData } from '../services';
 import RoleBadge from '../../../components/atoms/RoleBadge';
+import { FeatureErrorBoundary } from '@components/utilities';
+import { ErrorLogger } from '@services';
 import './AdminDashboard.css';
 
-const AdminDashboard: React.FC = () => {
+const AdminDashboardContent: React.FC = () => {
   const [data, setData] = React.useState<AdminDashboardData | null>(null);
 
   React.useEffect(() => {
@@ -24,6 +27,24 @@ const AdminDashboard: React.FC = () => {
         ))}
       </ul>
     </div>
+  );
+};
+
+const AdminDashboard: React.FC = () => {
+  const handleError = (error: Error, errorInfo: ErrorInfo) => {
+    ErrorLogger.logError('AdminDashboard', error, {
+      componentStack: errorInfo.componentStack,
+      feature: 'ADMINISTRADOR'
+    });
+  };
+
+  return (
+    <FeatureErrorBoundary 
+      featureName="ADMINISTRADOR"
+      onError={handleError}
+    >
+      <AdminDashboardContent />
+    </FeatureErrorBoundary>
   );
 };
 

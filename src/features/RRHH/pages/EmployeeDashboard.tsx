@@ -17,6 +17,9 @@ import { usePagination } from '@hooks/usePagination';
 import { useErrorHandler } from '@hooks/useErrorHandler';
 import { loadApplicantsFromStorage, saveApplicantsToStorage, loadEmployeesFromStorage, saveEmployeesToStorage } from '@utils/localStorage';
 import type { Employee, Applicant, NewEmployeeFormData, EmployeeDetailFormData, Statistic, EditApplicantFormData, EmployeeStatus } from '@types';
+import { FeatureErrorBoundary } from '@components/utilities';
+import { ErrorLogger } from '@services';
+import type { ErrorInfo } from 'react';
 import './EmployeeDashboard.css';
 
 const ITEMS_PER_PAGE = 10;
@@ -840,7 +843,7 @@ const EmployeeContent = () => {
   );
 };
 
-export const EmployeeDashboard = () => {
+const EmployeeDashboardContent = () => {
   const [activeTab, setActiveTab] = useState<RRHHTab>('postulantes');
   const { collapsed: sidebarCollapsed, toggle: toggleSidebar, setCollapsed: setSidebarCollapsed } = useSidebar();
 
@@ -1716,5 +1719,20 @@ export const EmployeeDashboard = () => {
           </div>
         </Modal>
     </div>
+  );
+};
+
+export const EmployeeDashboard: React.FC = () => {
+  const handleError = (error: Error, errorInfo: ErrorInfo) => {
+    ErrorLogger.logError('EmployeeDashboard', error, {
+      componentStack: errorInfo.componentStack,
+      feature: 'RRHH'
+    });
+  };
+
+  return (
+    <FeatureErrorBoundary featureName="RRHH" onError={handleError}>
+      <EmployeeDashboardContent />
+    </FeatureErrorBoundary>
   );
 };
