@@ -1,80 +1,122 @@
 /* shared utility classes used across the application */
+/* NOTE: Uses design tokens from tokens.css - variables available globally */
 
 /* form controls ----------------------------------------------------------- */
 .form-control {
-  padding: 10px 12px;
-  background: #fff;
-  border: 1px solid #D1D5DB;
-  border-radius: 6px;
-  font-size: 13px;
+  padding: var(--spacing-2) var(--spacing-3);
+  background: var(--form-control-bg);
+  border: 1px solid var(--form-control-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
   font-family: inherit;
   box-sizing: border-box;
-  transition: border-color 0.2s ease;
+  transition: border-color var(--transition-base);
   width: 100%;
 }
 .form-control:focus {
-  border-color: #3B82F6;
+  border-color: var(--form-control-border-focus);
   outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 .form-label {
   display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 6px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--form-label-font-weight);
+  color: var(--form-label-color);
+  margin-bottom: var(--spacing-1);
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
 
-.form-grid { display: grid; gap: 12px; }
+.form-grid { display: grid; gap: var(--spacing-3); }
 .grid-1-2 { grid-template-columns: 1fr 2.5fr; }
 .grid-1-1 { grid-template-columns: 1fr 1fr; }
 
 /* modal helpers ----------------------------------------------------------- */
-.modal-content { display: flex; flex-direction: column; gap: 16px; }
-.modal-actions { display: flex; gap: 12px; margin-top: 24px; }
-.validation-msg { display: block; font-size: 11px; color: #6B7280; margin-top: 4px; }
+.modal-content { display: flex; flex-direction: column; gap: var(--spacing-4); }
+.modal-actions { display: flex; gap: var(--spacing-3); margin-top: var(--spacing-6); }
+.validation-msg { 
+  display: block; 
+  font-size: var(--font-size-xs); 
+  color: var(--color-text-tertiary); 
+  margin-top: var(--spacing-1); 
+}
 
 /* generic layout ---------------------------------------------------------- */
 .clickable { cursor: pointer; }
-.card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; }
+.card { 
+  background: var(--card-bg); 
+  border: 1px solid var(--card-border); 
+  border-radius: var(--card-border-radius); 
+  padding: var(--card-padding);
+  box-shadow: var(--card-shadow);
+}
 
 /* table utilities --------------------------------------------------------- */
 .table-wrapper { overflow-x: auto; }
 /* allow table to size itself to content; wrapper handles scrolling */
-.table-custom { width: auto; table-layout: auto; border-collapse: collapse; font-size: 13px; }
-.table-header-row { background-color: #f3f4f6; border-bottom: 1px solid #e5e7eb; }
+.table-custom { 
+  width: auto; 
+  table-layout: auto; 
+  border-collapse: collapse; 
+  font-size: var(--font-size-xs); 
+}
+.table-header-row { 
+  background-color: var(--table-header-bg); 
+  border-bottom: 1px solid var(--table-header-border); 
+}
 .table-header-cell {
-  padding: 8px;
+  padding: var(--spacing-2);
   text-align: left;
-  color: #6b7280;
-  font-weight: 600;
-  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-xs);
   white-space: nowrap;
 }
-.table-cell { padding: 12px; white-space: nowrap; }
+.table-cell { 
+  padding: var(--spacing-3); 
+  white-space: nowrap; 
+}
 .table-cell.center { text-align: center; }
-.table-cell.emphasis { font-weight: 500; color: #1F2937; }
-.table-cell.highlight { background-color: #D1FAE5; color: #065F46; font-weight: 600; }
-.highlight-header { color: #065F46; background-color: #D1FAE5; }
+.table-cell.emphasis { 
+  font-weight: var(--font-weight-medium); 
+  color: var(--color-text-primary); 
+}
+.table-cell.highlight { 
+  background-color: var(--color-success-light); 
+  color: var(--color-success-dark); 
+  font-weight: var(--font-weight-semibold); 
+}
+.highlight-header { 
+  color: var(--color-success-dark); 
+  background-color: var(--color-success-light); 
+}
 
 /* grid macros for campaign/card layouts */
 .campaigns-container { margin-top: 0; width: 100%; }
-.campaigns-title { margin-bottom: 20px; font-size: 18px; font-weight: 600; }
+.campaigns-title { 
+  margin-bottom: var(--spacing-5); 
+  font-size: var(--font-size-lg); 
+  font-weight: var(--font-weight-semibold); 
+}
 
 /* header actions wrapper */
-.header-actions { display: flex; align-items: center; gap: 16px; }
+.header-actions { display: flex; align-items: center; gap: var(--spacing-4); }
 
 /* misc utilities ---------------------------------------------------------- */
-.icon-button { display: flex; align-items: center; gap: 8px; }
+.icon-button { display: flex; align-items: center; gap: var(--spacing-2); }
 .flex-1 { flex: 1; }
 .clickable-row {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--table-row-border);
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color var(--transition-base);
 }
-.clickable-row:hover { background-color: #f9fafb; }
+.clickable-row:hover { background-color: var(--table-row-hover-bg); }
 
-.subrow { background-color: #f9fafb; }
-.subrow-info { padding-left: 16px; font-size: 12px; color: #6b7280; }
+.subrow { background-color: var(--color-gray-50); }
+.subrow-info { 
+  padding-left: var(--spacing-4); 
+  font-size: var(--font-size-xs); 
+  color: var(--color-text-secondary); 
+}

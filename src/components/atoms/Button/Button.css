@@ -3,26 +3,54 @@
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--button-border-radius);
   cursor: pointer;
-  font-weight: 500;
-  transition: background 0.2s, color 0.2s;
-  padding: 8px 16px;
-  font-size: 14px;
+  font-weight: var(--button-font-weight);
+  transition: background var(--transition-fast), color var(--transition-fast);
+  padding: var(--button-padding-y) var(--button-padding-x);
+  font-size: var(--font-size-sm);
 }
 
-.atom-button.primary { background-color: #2563eb; color: white; }
-.atom-button.primary:hover { background-color: #1d4ed8; }
+.atom-button.primary { 
+  background-color: var(--button-bg-primary); 
+  color: var(--button-text-color); 
+}
+.atom-button.primary:hover { background-color: var(--button-bg-primary-hover); }
+.atom-button.primary:active { background-color: var(--button-bg-primary-active); }
 
-.atom-button.secondary { background-color: #e5e7eb; color: #374151; }
-.atom-button.secondary:hover { background-color: #d1d5db; }
+.atom-button.secondary { 
+  background-color: var(--button-bg-secondary); 
+  color: var(--button-bg-secondary-text); 
+}
+.atom-button.secondary:hover { background-color: var(--color-gray-300); }
+.atom-button.secondary:active { background-color: var(--color-gray-400); }
 
-.atom-button.ghost { background: transparent; color: #374151; }
-.atom-button.ghost:hover { background: #f3f4f6; }
+.atom-button.ghost { 
+  background: transparent; 
+  color: var(--color-text-primary); 
+}
+.atom-button.ghost:hover { background: var(--color-gray-100); }
+.atom-button.ghost:active { background: var(--color-gray-200); }
 
 /* sizes */
-.atom-button.sm { padding: 6px 12px; font-size: 13px; }
-.atom-button.md { padding: 8px 16px; font-size: 14px; }
-.atom-button.lg { padding: 10px 20px; font-size: 15px; }
+.atom-button.sm { 
+  padding: var(--spacing-1) var(--spacing-3); 
+  font-size: var(--font-size-xs); 
+}
+.atom-button.md { 
+  padding: var(--spacing-2) var(--spacing-4); 
+  font-size: var(--font-size-sm); 
+}
+.atom-button.lg { 
+  padding: var(--spacing-2) var(--spacing-5); 
+  font-size: var(--font-size-base); 
+}
 
-.atom-button:disabled { opacity: 0.6; cursor: not-allowed; }
+.atom-button:disabled { 
+  opacity: 0.5; 
+  cursor: not-allowed; 
+}
+.atom-button:focus {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
