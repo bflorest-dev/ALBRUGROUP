@@ -4,7 +4,7 @@ import type { Applicant } from '../../../../../../types';
 
 interface ApplicantsTableRowProps {
   applicant: Applicant;
-  onEdit: (applicant: Applicant) => void;
+  onEdit?: (applicant: Applicant) => void;
   onHire?: (applicant: Applicant) => void; // optional, hide button when undefined
   onBlacklist?: (applicant: Applicant) => void;
   onContract?: (applicant: Applicant) => void;
@@ -41,9 +41,11 @@ export const ApplicantsTableRow: React.FC<ApplicantsTableRowProps> = ({
       )}
       <td>{applicant.campaign}</td>
       <td className="cell-actions">
+        {onEdit && (
         <button className="action-btn edit-btn" onClick={() => { onEdit(applicant); }} title="Editar">
           <BiEdit />
         </button>
+        )}
         {onHire && (
         <button className="action-btn hire-btn" onClick={() => onHire(applicant)} title="Contratar">
           <BiUserPlus />

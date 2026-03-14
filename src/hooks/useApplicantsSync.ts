@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useApplicants } from '../contexts/ApplicantsContext';
-import type { Applicant } from '../types';
 
 /**
  * Custom hook que sincroniza los postulantes del Context

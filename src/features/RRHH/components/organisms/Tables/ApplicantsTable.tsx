@@ -27,11 +27,11 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlackli
   // Just use the applicants prop directly without the hook's re-filtering
   const hasActiveFilters = false;
   const activeFilter = null;
-  const setActiveFilter = () => {};
+  const setActiveFilter = (_filter: string | null) => {};
   const sortOrder = null;
-  const setSortOrder = () => {};
+  const setSortOrder = (_order: 'asc' | 'desc' | null) => {};
   const handleClearFilters = () => {};
-  const handleFilterChange = () => {};
+  const handleFilterChange = (_field: string, _value: string) => {};
   const filters = {
     phone: '',
     documentType: '',

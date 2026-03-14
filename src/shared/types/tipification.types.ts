@@ -21,22 +21,85 @@ export type TipificationStatus = 'success' | 'pending' | 'rejected' | 'no-contac
 /**
  * IDs de opciones - CONVERSIÓN EXITOSA
  */
-export type ConversionOptionId = 'venta_cerrada' | 'venta_mes_siguiente';
+export type ConversionOptionId = 'venta_cerrada' | 'venta_mes_siguiente' | 'instalada';
 
 /**
  * IDs de opciones - REQUIERE SEGUIMIENTO
  */
-export type FollowUpOptionId = 'agendado' | 'consultar_familia' | 'llamada_interrumpida' | 'gestion_chat';
+export type FollowUpOptionId = 
+  | 'agendado' 
+  | 'consultar_familia' 
+  | 'llamada_interrumpida' 
+  | 'gestion_chat'
+  | 'chancada_sin_ingresar'
+  | 'edificio_exclusividad'
+  | 'grabado'
+  | 'mal_registrado'
+  | 'no_contesta'
+  | 'no_desea_dar_dni'
+  | 'no_desea_grabar'
+  | 'pdte_habilitar_condominio'
+  | 'pdte_pago_adelantado'
+  | 'pdte_score'
+  | 'sin_cobertura'
+  | 'sin_cto'
+  | 'sin_subir'
+  | 'en_progreso'
+  | 'manchada'
+  | 'revisado'
+  | 'subida';
 
 /**
  * IDs de opciones - RECHAZO
  */
-export type RejectionOptionId = 'zona_f' | 'vc_desaprobada' | 'no_desea' | 'no_califica';
+export type RejectionOptionId = 
+  | 'zona_f' 
+  | 'vc_desaprobada' 
+  | 'no_desea' 
+  | 'no_califica'
+  | 'desaprobado'
+  | 'rescate'
+  | 'baja_mala_info_venta'
+  | 'baja_mult_deudas'
+  | 'baja_no_desea'
+  | 'fac_tec_cto_excede_metraje'
+  | 'fac_tec_cto_saturado'
+  | 'fac_tec_ductos_obstruidos'
+  | 'fac_tec_naps_robadas'
+  | 'fac_tec_naps_saturadas'
+  | 'fac_tec_sin_cobertura'
+  | 'fac_tec_sin_cto'
+  | 'fac_tec_sin_permiso_vecinos'
+  | 'fac_tec_sin_poste_apoyo'
+  | 'fac_tec_sin_potencia'
+  | 'fac_tec_torre_no_habilitada'
+  | 'fac_tec_zona_elevada'
+  | 'zona_peligrosa'
+  | 'chancada_ingresada'
+  | 'flipping'
+  | 'posible_fraude'
+  | 'sin_instalar'
+  | 'anulado'
+  | 'duplicado'
+  | 'blacklist';
 
 /**
  * IDs de opciones - SIN CONTACTO
  */
 export type NoContactOptionId = 'no_contesta' | 'numero_equivocado' | 'buzon' | 'fuera_servicio';
+
+/**
+ * IDs de opciones - PROGRAMADOS
+ */
+export type ProgrammedOptionId = 
+  | 'programada'
+  | 'reprogramada'
+  | 'prog_agendada'
+  | 'prog_tec_en_camino'
+  | 'prog_iniciada'
+  | 'prog_tec_en_casa'
+  | 'prog_cancelada'
+  | 'prog_sin_cd';
 
 /**
  * Union de todos los IDs de opciones
@@ -45,7 +108,8 @@ export type TipificationOptionId =
   | ConversionOptionId 
   | FollowUpOptionId 
   | RejectionOptionId 
-  | NoContactOptionId;
+  | NoContactOptionId
+  | ProgrammedOptionId;
 
 /**
  * Opción dentro de un bloque de tipificación
@@ -74,7 +138,7 @@ export interface TipificationBlock {
 /**
  * Tipificación seleccionada por el asesor para un lead
  */
-export interface LeadTipification {
+export interface LeadTipificationRecord {
   blockId: string;
   optionId: TipificationOptionId;
   selectedLabel: string;
@@ -114,6 +178,6 @@ export interface UpdateTipificationRequest {
  */
 export interface UpdateTipificationResponse {
   success: boolean;
-  tipification: LeadTipification;
+  tipification: LeadTipificationRecord;
   message?: string;
 }

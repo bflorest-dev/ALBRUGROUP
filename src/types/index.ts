@@ -2,6 +2,8 @@
  * Tipos e interfaces globales de la aplicación
  */
 
+// Employee Status Types
+export type EmployeeStatus = 'ACTIVO' | 'INACTIVO' | 'SUSPENDIDO';
 
 export interface Employee {
   id: string;
@@ -11,7 +13,7 @@ export interface Employee {
   apellidos?: string;
   position: string;
   department: string;
-  status: string; // previously EmployeeStatus, now generic
+  status: EmployeeStatus;
   documentType?: string;
   documentNumber?: string;
   nationality?: string;

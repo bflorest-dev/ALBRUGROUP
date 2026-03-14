@@ -10,9 +10,9 @@ export interface ErrorHandler {
  * Útil cuando necesitas manejar errores de forma programática
  */
 export const useErrorHandler = (): ErrorHandler => {
-  const handleError = useCallback((error: Error, errorInfo?: { componentStack?: string }) => {
+  const handleError = useCallback((_error: Error, _errorInfo?: { componentStack?: string }) => {
     // Aquí podrías enviar el error a un servicio externo
-    // reportError(error, errorInfo);
+    // reportError(_error, _errorInfo);
 
     // Para componentes funcionales, puedes usar este hook junto con
     // un estado local o un contexto para mostrar UI de error

@@ -17,7 +17,7 @@ interface EmployeeTableProps {
   isInactiveTable?: boolean;
 }
 
-export const EmployeeTable = ({ employees, onAction, onCheckout, onActivate, onStatusChange, isInactiveTable = false }: EmployeeTableProps) => {
+export const EmployeeTable = ({ employees, onAction, onStatusChange, isInactiveTable = false }: EmployeeTableProps) => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);

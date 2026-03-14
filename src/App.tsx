@@ -1,10 +1,10 @@
 import './App.css'
 import { MainLayout } from './components/templates/DashboardTemplate'
-import { DataProvider } from './contexts/DataContext'
 import { DevRoleProvider, useDevRole } from './contexts/DevRoleContext'
 import { ApplicantsProvider } from './contexts/ApplicantsContext'
-import { ErrorBoundary } from './components/utilities/ErrorBoundary'
+import { ErrorBoundary } from './components/organisms/ErrorBoundary'
 import { DarkModeToggle } from './components/atoms/DarkModeToggle'
+import type { ErrorInfo } from 'react';
 
 const AppContent = () => {
   const { selectedRole, setSelectedRole } = useDevRole();
@@ -50,14 +50,21 @@ const AppContent = () => {
 };
 
 function App() {
+  const handleErrorBoundaryError = (error: Error, errorInfo: ErrorInfo) => {
+    // Log error to console in development
+    if (import.meta.env.MODE === 'development') {
+      console.error('AppError:', error, errorInfo);
+    }
+    // In production, you could send this to an error tracking service
+    // sendToSentry(error, errorInfo);
+  };
+
   return (
-    <ErrorBoundary>
+    <ErrorBoundary onError={handleErrorBoundaryError}>
       <div className="app">
         <DevRoleProvider>
           <ApplicantsProvider>
-            <DataProvider>
-              <AppContent />
-            </DataProvider>
+            <AppContent />
           </ApplicantsProvider>
         </DevRoleProvider>
       </div>

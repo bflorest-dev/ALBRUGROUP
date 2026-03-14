@@ -22,7 +22,6 @@ export const LeadListItem: React.FC<LeadListItemProps> = ({
   lead,
   isSelected,
   tipificationStatus = 'pending',
-  tipificationLabel,
   onClick
 }) => {
   const getStatusBadge = () => {

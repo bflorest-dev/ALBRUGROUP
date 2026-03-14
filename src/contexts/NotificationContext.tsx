@@ -2,7 +2,7 @@
  * Context para Notificaciones Global
  */
 
-import { createContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useState, useCallback, useMemo, type ReactNode } from 'react';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -19,6 +19,8 @@ interface NotificationContextType {
   showInfo: (message: string) => void;
   removeToast: (id: string) => void;
 }
+
+export type { NotificationContextType };
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -63,16 +65,24 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     addToast(message, 'info');
   }, [addToast]);
 
-  const value: NotificationContextType = {
-    toasts,
-    showSuccess,
-    showError,
-    showInfo,
-    removeToast,
-  };
+  /**
+   * Problema #5: Memoize context value
+   * Ensures stable reference across renders
+   * Prevents unnecessary re-renders in consuming components
+   */
+  const contextValue = useMemo(
+    (): NotificationContextType => ({
+      toasts,
+      showSuccess,
+      showError,
+      showInfo,
+      removeToast,
+    }),
+    [toasts, showSuccess, showError, showInfo, removeToast]
+  );
 
   return (
-    <NotificationContext.Provider value={value}>
+    <NotificationContext.Provider value={contextValue}>
       {children}
     </NotificationContext.Provider>
   );

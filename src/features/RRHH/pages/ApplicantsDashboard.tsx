@@ -2,7 +2,7 @@
  * ApplicantsDashboard (moved copy into features/RRHH/pages)
  */
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { BiPlus, BiSearch, BiDownload } from 'react-icons/bi';
 import { ApplicantsTable } from '../components/organisms/Tables';
 import { Modal } from '@molecules/Modal';

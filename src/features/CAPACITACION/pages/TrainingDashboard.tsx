@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { BiCalendar } from 'react-icons/bi';
 import { useApplicants } from '@contexts/ApplicantsContext';
 import { useApplicantsSync } from '@hooks/useApplicantsSync';
-import type { Applicant } from '@types';
 import { Card } from '@molecules/Card';
 import { Modal } from '@molecules/Modal';
 import './TrainingDashboard.css';

@@ -16,7 +16,7 @@ import { useNotification } from '@contexts/useNotification';
 import { usePagination } from '@hooks/usePagination';
 import { useErrorHandler } from '@hooks/useErrorHandler';
 import { loadApplicantsFromStorage, saveApplicantsToStorage, loadEmployeesFromStorage, saveEmployeesToStorage } from '@utils/localStorage';
-import type { Employee, Applicant, NewEmployeeFormData, EmployeeDetailFormData, Statistic, EditApplicantFormData } from '@types';
+import type { Employee, Applicant, NewEmployeeFormData, EmployeeDetailFormData, Statistic, EditApplicantFormData, EmployeeStatus } from '@types';
 import './EmployeeDashboard.css';
 
 const ITEMS_PER_PAGE = 10;
@@ -195,7 +195,7 @@ const InactiveEmployeeContent = () => {
   const handleStatusChange = (employee: Employee, newStatus: string) => {
     const updatedEmployee: Employee = {
       ...employee,
-      status: newStatus,
+      status: newStatus as EmployeeStatus,
     };
 
     setEmployees(prev => {
@@ -552,7 +552,7 @@ const EmployeeContent = () => {
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
     const updatedEmployee: Employee = {
       ...employee,
-      status: newStatus,
+      status: newStatus as EmployeeStatus,
       ...(newStatus === 'INACTIVO' && { endDate: today }),
       ...(dismissalReason && { dismissalReason }),
     };

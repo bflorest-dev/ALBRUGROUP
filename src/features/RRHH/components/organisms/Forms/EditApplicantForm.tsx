@@ -82,7 +82,7 @@ export const EditApplicantForm = ({ applicant, onSubmit, onCancel, disabledField
       onSubmit={handleSubmit}
       onCancel={onCancel}
       submitLabel="GUARDAR CAMBIOS"
-      disabledFields={disabledFields}
+      disabledFields={disabledFields?.filter((field) => field !== 'id') as Array<keyof Omit<EditApplicantFormData, 'id'>>}
     />
   );
 };
