@@ -1,10 +1,13 @@
 import { Suspense } from 'react';
+import type { ErrorInfo } from 'react';
 import { CommunityMenubar } from '../components/CommunityMenubar';
 import { AdvertiserAccountsSection } from '../components/AdvertiserAccountsSection';
 import { CompaniesSection } from '../components/CompaniesSection';
 import { CampaignsKanban } from '../components/CampaignsKanban';
 import { useCommunityDashboard } from '../hooks/useCommunityDashboard';
 import { DashboardSectionLazy, ModalsSectionLazy, LoadingFallback } from '../utils/lazyLoadSections';
+import { FeatureErrorBoundary } from '@components/utilities';
+import { ErrorLogger } from '@services';
 import './CommunityDashboard.css';
 
 
@@ -22,10 +25,12 @@ import './CommunityDashboard.css';
  * All logic moved to useCommunityDashboard() hook
  * All rendering delegated to section components
  * 
+ * P11: Wrapped in FeatureErrorBoundary for granular error handling
+ * 
  * BEFORE: 800 lines (monolithic)
- * AFTER: 50 lines (composition pattern)
+ * AFTER: 50 lines (composition pattern) + error boundary
  */
-export const CommunityDashboard = () => {
+const CommunityDashboardContent = () => {
   const state = useCommunityDashboard();
 
   return (
@@ -81,5 +86,23 @@ export const CommunityDashboard = () => {
         <ModalsSectionLazy state={state} />
       </Suspense>
     </div>
+  );
+};
+
+export const CommunityDashboard = () => {
+  const handleError = (error: Error, errorInfo: ErrorInfo) => {
+    ErrorLogger.logError('CommunityDashboard', error, {
+      componentStack: errorInfo.componentStack,
+      feature: 'COMMUNITY'
+    });
+  };
+
+  return (
+    <FeatureErrorBoundary 
+      featureName="COMMUNITY"
+      onError={handleError}
+    >
+      <CommunityDashboardContent />
+    </FeatureErrorBoundary>
   );
 };

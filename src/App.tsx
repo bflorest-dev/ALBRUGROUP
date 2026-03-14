@@ -4,6 +4,7 @@ import { DevRoleProvider, useDevRole } from './contexts/DevRoleContext'
 import { ApplicantsProvider } from './contexts/ApplicantsContext'
 import { ErrorBoundary } from './components/organisms/ErrorBoundary'
 import { DarkModeToggle } from './components/atoms/DarkModeToggle'
+import { ErrorLogger } from './services'
 import type { ErrorInfo } from 'react';
 
 const AppContent = () => {
@@ -51,12 +52,14 @@ const AppContent = () => {
 
 function App() {
   const handleErrorBoundaryError = (error: Error, errorInfo: ErrorInfo) => {
-    // Log error to console in development
-    if (import.meta.env.MODE === 'development') {
-      console.error('AppError:', error, errorInfo);
-    }
+    // Log to centralized error logger
+    ErrorLogger.logError('App.tsx', error, {
+      componentStack: errorInfo.componentStack,
+      context: 'Global ErrorBoundary'
+    });
+
     // In production, you could send this to an error tracking service
-    // sendToSentry(error, errorInfo);
+    // Sentry.captureException(error, { contexts: { react: errorInfo } });
   };
 
   return (
