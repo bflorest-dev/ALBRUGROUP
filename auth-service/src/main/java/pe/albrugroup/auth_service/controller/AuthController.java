@@ -51,6 +51,7 @@ public class AuthController {
                     .type("Bearer")
                     .username(userDetails.getUsername())
                     .empleadoId(userDetails.getEmpleadoId())
+                    .nombreCompleto(userDetails.getNombreCompleto())
                     .roles(userDetails.getAuthorities().stream()
                             .filter(auth -> auth.getAuthority().startsWith("ROLE_"))
                             .map(auth -> auth.getAuthority().replace("ROLE_", ""))

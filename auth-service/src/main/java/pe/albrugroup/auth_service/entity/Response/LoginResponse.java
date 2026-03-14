@@ -12,5 +12,6 @@ public class LoginResponse {
     private String type;
     private String username;
     private Long empleadoId;
+    private String nombreCompleto;
     private List<String> roles;
 }

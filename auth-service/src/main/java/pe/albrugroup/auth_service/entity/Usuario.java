@@ -22,6 +22,8 @@ public class Usuario {
 
     @Column(name = "empleado_id", unique = true)
     private Long empleadoId;
+    @Column(name = "nombre_completo")
+    private String nombreCompleto;
     @Column(nullable = false)
     @Builder.Default
     private Boolean activo = true;

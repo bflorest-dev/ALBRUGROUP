@@ -156,6 +156,7 @@ public class DataLoader {
                 .password(passwordEncoder.encode("123456"))
                 .email("jevbxx@gmail.com")
                 .empleadoId(1L)
+                .nombreCompleto("Edinson Vitterio")
                 .activo(true)
                 .roles(Set.of(adminRol))
                 .build();
@@ -167,6 +168,7 @@ public class DataLoader {
         log.info("  Password: 123456");
         log.info("  Email: jevbxx@gmail.com");
         log.info("  EmpleadoId: 1");
+        log.info("  NombreCompleto: Edinson Vitterio");
         log.info("  Roles: [ADMINISTRADOR]");
         log.info("═══════════════════════════════════════════════════════");
 

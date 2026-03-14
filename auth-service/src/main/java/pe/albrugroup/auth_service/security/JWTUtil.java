@@ -30,6 +30,7 @@ public class JWTUtil {
     public String generateToken(CustomUserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("empleadoId", userDetails.getEmpleadoId());
+        claims.put("nombreCompleto", userDetails.getNombreCompleto());
 
         var roles = userDetails.getAuthorities().stream()
                 .filter(auth -> auth.getAuthority().startsWith("ROLE_"))
@@ -42,7 +43,6 @@ public class JWTUtil {
                 .filter(authority -> !authority.startsWith("ROLE_"))
                 .toList();
         claims.put("permisos", permisos);
-        claims.put("username", userDetails.getUsername());
 
         return createToken(claims, userDetails.getUsername());
     }

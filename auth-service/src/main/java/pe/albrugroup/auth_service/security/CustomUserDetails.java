@@ -23,6 +23,10 @@ public class CustomUserDetails implements UserDetails {
         this.empleadoId = usuario.getEmpleadoId();
     }
 
+    public String getNombreCompleto() {
+        return usuario.getNombreCompleto();
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         List<GrantedAuthority> authorities = new ArrayList<>();

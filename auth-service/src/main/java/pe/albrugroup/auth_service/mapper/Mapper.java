@@ -16,6 +16,7 @@ public class Mapper {
                 .username(usuario.getUsername())
                 .email(usuario.getEmail())
                 .empleadoId(usuario.getEmpleadoId())
+                .nombreCompleto(usuario.getNombreCompleto())
                 .activo(usuario.getActivo())
                 .roles
                 (

@@ -67,6 +67,7 @@ public class UsuarioService implements IUsuario {
         }
 
         usuario.setUsername(nuevoUsername);
+        usuario.setNombreCompleto(construirNombreCompleto(request.getNombres(), request.getApellidos()));
         usuario.setRoles(Set.of(rol));
         Usuario guardado = usuarioRepository.save(usuario);
         return Mapper.toResponse(guardado);
@@ -111,6 +112,7 @@ public class UsuarioService implements IUsuario {
                 .password(passwordEncoder.encode(plainPassword))
                 .email(request.getEmail())
                 .empleadoId(request.getEmpleadoId())
+                .nombreCompleto(construirNombreCompleto(request.getNombres(), request.getApellidos()))
                 .activo(true)
                 .roles(Set.of(rol))
                 .build();
@@ -139,6 +141,13 @@ public class UsuarioService implements IUsuario {
         }
         return pass.toString();
     }
+
+    private String construirNombreCompleto(String nombres, String apellidos) {
+        String nombresLimpios = nombres == null ? "" : nombres.trim();
+        String apellidosLimpios = apellidos == null ? "" : apellidos.trim();
+        return (nombresLimpios + " " + apellidosLimpios).trim();
+    }
+
     @Override
     public UsuarioResponse actualizarRolesUsuario(Long empleadoId, PuestoTrabajo puesto) {
         log.info("Actualizando roles del usuario ID: {}", empleadoId);

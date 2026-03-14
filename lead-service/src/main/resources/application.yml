@@ -4,6 +4,11 @@ server:
 spring:
   application:
     name: lead-service
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
 
   datasource:
     url: jdbc:h2:mem:authdb
@@ -38,3 +43,6 @@ logging:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+presence:
+  ttl: 2m
