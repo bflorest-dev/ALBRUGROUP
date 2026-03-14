@@ -19,14 +19,9 @@ const storageUtils = {
   loadCompanies: (): Company[] => {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.COMPANIES);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-      // First load: initialize with mockups
-      localStorage.setItem(STORAGE_KEYS.COMPANIES, JSON.stringify(mockCompanies));
-      return mockCompanies;
+      return stored ? JSON.parse(stored) : [];
     } catch {
-      return mockCompanies;
+      return [];
     }
   },
   
@@ -36,14 +31,9 @@ const storageUtils = {
   loadAdvertiserAccounts: (): AdvertiserAccount[] => {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.ADVERTISER_ACCOUNTS);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-      // First load: initialize with mockups
-      localStorage.setItem(STORAGE_KEYS.ADVERTISER_ACCOUNTS, JSON.stringify(mockAdvertiserAccounts));
-      return mockAdvertiserAccounts;
+      return stored ? JSON.parse(stored) : [];
     } catch {
-      return mockAdvertiserAccounts;
+      return [];
     }
   },
   
@@ -53,14 +43,9 @@ const storageUtils = {
   loadCampaigns: (): Campaign[] => {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.CAMPAIGNS);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-      // First load: initialize with mockups
-      localStorage.setItem(STORAGE_KEYS.CAMPAIGNS, JSON.stringify(mockCampaigns));
-      return mockCampaigns;
+      return stored ? JSON.parse(stored) : [];
     } catch {
-      return mockCampaigns;
+      return [];
     }
   },
   
@@ -140,132 +125,7 @@ export interface CampaignCalculatedMetrics {
 /**
  * Mock Data (Extraída de CommunityDashboard.tsx)
  */
-const mockCompanies: Company[] = [
-  { id: '1', name: 'Albrugroup Solutions', status: 'ACTIVO', color: '#10B981' },
-  { id: '2', name: 'Digital Marketing Pro', status: 'ACTIVO', color: '#3B82F6' },
-  { id: '3', name: 'Legacy Systems Inc', status: 'INACTIVO', color: '#F59E0B' }
-];
-
-const mockAdvertiserAccounts: AdvertiserAccount[] = [
-  { id: '1', name: 'Meta Ads - Fibra Hogar', accountNumber: '123456789' },
-  { id: '2', name: 'Google Ads - Empresas', accountNumber: '987654321' },
-  { id: '3', name: 'TikTok Ads - Móviles', accountNumber: '555444333' }
-];
-
-const mockCampaigns: Campaign[] = [
-  {
-    id: '1',
-    date: '01/03/2026',
-    time: '08:00',
-    businessUnit: 'Telefonoía Hogar',
-    campaignName: 'Promo Fibra Marzo',
-    channel: 'Facebook',
-    totalSpent: 12500,
-    preventas: 18,
-    conversionRate: 14.4,
-    status: 'Activa',
-    impressions: 45230,
-    clicks: 1240,
-    reach: 38900,
-    frequency: 1.16,
-    metaAdsLeads: 4,
-    metaAdsLeadsDelta: 0,
-    metaAdsQxR: 29.36,
-    driveLeads: 5,
-    driveLeadsDelta: 0,
-    driveQxR: 23.49,
-    clicsTotal: 105,
-    ventasCerradas: 1,
-    contacto: 3
-  },
-  {
-    id: '2',
-    date: '01/03/2026',
-    time: '10:30',
-    businessUnit: 'Internet Empresas',
-    campaignName: 'Fibra Empresarial Q1',
-    channel: 'Instagram',
-    totalSpent: 8200,
-    preventas: 11,
-    conversionRate: 10.2,
-    status: 'Activa',
-    impressions: 32100,
-    clicks: 890,
-    reach: 28500,
-    frequency: 1.13,
-    clicsTotal: 238,
-    ventasCerradas: 1,
-    contacto: 28
-  },
-  {
-    id: '3',
-    date: '02/03/2026',
-    time: '09:00',
-    businessUnit: 'Telefonaía Hogar',
-    campaignName: 'Combo TV + Internet',
-    channel: 'Facebook',
-    totalSpent: 6800,
-    preventas: 9,
-    conversionRate: 8.8,
-    status: 'Activa',
-    impressions: 28400,
-    clicks: 650,
-    reach: 25200,
-    frequency: 1.13,
-    clicsTotal: 435,
-    ventasCerradas: 0,
-    contacto: 12
-  },
-  {
-    id: '4',
-    date: '03/03/2026',
-    time: '14:00',
-    businessUnit: 'Móviles',
-    campaignName: 'Plan Familia Marzo',
-    channel: 'Instagram',
-    totalSpent: 4500,
-    preventas: 6,
-    conversionRate: 11.3,
-    status: 'Pausada',
-    impressions: 15600,
-    clicks: 380,
-    reach: 14200,
-    frequency: 1.10,
-    clicsTotal: 99,
-    ventasCerradas: 1,
-    contacto: 8
-  },
-  {
-    id: '5',
-    date: '04/03/2026',
-    time: '08:30',
-    businessUnit: 'Telefonaía Hogar',
-    campaignName: 'Retargeting Fibra',
-    channel: 'Facebook',
-    totalSpent: 3200,
-    preventas: 4,
-    conversionRate: 9.5,
-    status: 'Activa',
-    impressions: 12300,
-    clicks: 280,
-    reach: 11100,
-    frequency: 1.11,
-    clicsTotal: 142,
-    ventasCerradas: 0,
-    contacto: 15
-  }
-];
-
-const mockLeads: Lead[] = [
-  { id: '1', name: 'Juan García', status: 'interesado', canal: 'Facebook', fecha: '2026-03-09' },
-  { id: '2', name: 'María López', status: 'derivado', canal: 'Instagram', fecha: '2026-03-08' },
-  { id: '3', name: 'Carlos Rodríguez', status: 'no-contesta', canal: 'Facebook', fecha: '2026-03-07' },
-  { id: '4', name: 'Ana Martínez', status: 'convertido', canal: 'Instagram', fecha: '2026-03-06' },
-  { id: '5', name: 'Pedro Gómez', status: 'solo-info', canal: 'Facebook', fecha: '2026-03-05' },
-  { id: '6', name: 'Sofia Sanchez', status: 'interesado', canal: 'Instagram', fecha: '2026-03-04' },
-  { id: '7', name: 'Diego Torres', status: 'derivado', canal: 'Facebook', fecha: '2026-03-03' },
-  { id: '8', name: 'Laura Perez', status: 'convertido', canal: 'Instagram', fecha: '2026-03-02' },
-];
+const mockLeads: Lead[] = [];
 
 /**
  * Custom Hook - useCommunityDashboard
@@ -858,11 +718,6 @@ export const useCommunityDashboard = () => {
     
     // Storage Management
     clearAllData: storageUtils.clearAll,
-    resetToMockData: () => {
-      setCompanies(mockCompanies);
-      setAdvertiserAccounts(mockAdvertiserAccounts);
-      setCampaigns(mockCampaigns);
-    },
   };
 };
 

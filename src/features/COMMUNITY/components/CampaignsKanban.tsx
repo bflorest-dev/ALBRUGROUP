@@ -21,41 +21,6 @@ interface CampaignsKanbanProps {
   advertiserAccounts: AdvertiserAccount[];
 }
 
-const mockCampaigns: Campaign[] = [
-  {
-    id: '1',
-    name: 'Promo Fibra Marzo',
-    whatsapp: '987654321',
-    advertiserAccount: 'Meta Ads - Fibra Hogar',
-    accountNumber: '1234567890123456',
-    company: 'Albrugroup Solutions'
-  },
-  {
-    id: '2',
-    name: 'Combo TV + Internet',
-    whatsapp: '998765432',
-    advertiserAccount: 'Meta Ads - Fibra Hogar',
-    accountNumber: '1234567890123456',
-    company: 'Albrugroup Solutions'
-  },
-  {
-    id: '3',
-    name: 'Fibra Empresarial Q1',
-    whatsapp: '912345678',
-    advertiserAccount: 'Google Ads - Empresas',
-    accountNumber: '9876543210987654',
-    company: 'Digital Marketing Pro'
-  },
-  {
-    id: '4',
-    name: 'Plan Familia Marzo',
-    whatsapp: '956231458',
-    advertiserAccount: 'TikTok Ads - Móviles',
-    accountNumber: '5555666677778888',
-    company: 'Legacy Systems Inc'
-  }
-];
-
 interface CampaignFormData {
   name: string;
   whatsapp: string;
@@ -68,18 +33,13 @@ export const CampaignsKanban: React.FC<CampaignsKanbanProps> = ({
   companies,
   advertiserAccounts
 }) => {
-  // Load campaigns from localStorage or use mockCampaigns
+  // Load campaigns from localStorage or use empty array
   const [campaigns, setCampaigns] = useState<Campaign[]>(() => {
     try {
       const stored = localStorage.getItem('kanban_campaigns');
-      if (stored) {
-        return JSON.parse(stored);
-      }
-      // First load: save mockups to localStorage
-      localStorage.setItem('kanban_campaigns', JSON.stringify(mockCampaigns));
-      return mockCampaigns;
+      return stored ? JSON.parse(stored) : [];
     } catch {
-      return mockCampaigns;
+      return [];
     }
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
