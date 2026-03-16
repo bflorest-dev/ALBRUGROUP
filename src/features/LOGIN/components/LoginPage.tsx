@@ -1,22 +1,72 @@
 import React, { useState } from 'react';
+import { useDevRole } from '../../../contexts/DevRoleContext';
+import type { Role } from '../../../shared/types';
 import { LoginForm } from './LoginForm';
 import type { LoginFormData } from './LoginForm';
 import { login } from '../services';
 import './LoginForm.css';
 
+// Validar si un string es una Role válida
+const isValidRole = (value: string): value is Role => {
+  const validRoles: Role[] = [
+    'ADMINISTRADOR',
+    'DESARROLLADOR',
+    'LOGIN',
+    'RRHH',
+    'RECLUTAMIENTO',
+    'CAPACITACION',
+    'CONTABILIDAD',
+    'COMMUNITY',
+    'SUPERVISOR_VENTAS',
+    'ASESOR_VENTAS',
+    'SUPERVISOR_BACKOFFICE',
+    'ASESOR_BACKOFFICE',
+    'SUPERVISOR_GTR',
+    'ASESOR_GTR',
+    'SUPERVISOR_POSTVENTA',
+    'ASESOR_POSTVENTA',
+  ];
+  return validRoles.includes(value as Role);
+};
+
 export const LoginPage: React.FC = () => {
+  const { setSelectedRole } = useDevRole();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (data: LoginFormData) => {
     setLoading(true);
     setError(null);
+    
+    console.log('[LoginPage] 🔐 Iniciando login...');
+    console.log('[LoginPage]   - Username:', data.username);
+    console.log('[LoginPage]   - Password: ***');
+    
     try {
-      const res = await login(data);
-      // TODO: reemplazar por manejo real de sesión
-      alert(`Login OK - token: ${res.token}`);
+      const response = await login(data);
+      
+      console.log('[LoginPage] ✅ LOGIN EXITOSO');
+      console.log('[LoginPage]   - Username:', response.username);
+      console.log('[LoginPage]   - Nombre:', response.nombreCompleto);
+      console.log('[LoginPage]   - Roles:', response.roles);
+      console.log('[LoginPage]   - EmpleadoId:', response.empleadoId);
+
+      // Obtener el primer rol válido del usuario o usar 'RRHH' por defecto
+      const userRole = response.roles?.find(isValidRole) || 'RRHH';
+      
+      console.log('[LoginPage] 🎯 Asignando rol:', userRole);
+      
+      // setTimeout pequeño para permitir que AuthService termine de guardar en localStorage
+      setTimeout(() => {
+        setSelectedRole(userRole);
+      }, 100);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error al autenticar');
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al autenticar';
+      setError(errorMessage);
+      
+      console.error('[LoginPage] ❌ ERROR en login');
+      console.error('[LoginPage]   - Mensaje:', errorMessage);
+      console.error('[LoginPage]   - Error completo:', err);
     } finally {
       setLoading(false);
     }
@@ -26,7 +76,17 @@ export const LoginPage: React.FC = () => {
     <div className="login-page-wrapper">
       <div className="login-box">
         <LoginForm onSubmit={handleSubmit} loading={loading} />
-        {error && <div className="login-error">{error}</div>}
+        {error && (
+          <div className="login-error" role="alert">
+            {error}
+          </div>
+        )}
+        {import.meta.env.DEV && (
+          <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#666', textAlign: 'center' }}>
+            <p>🔧 Modo desarrollo activo</p>
+            <p>Usa credenciales: usuario y contraseña proporcionadas por el backend</p>
+          </div>
+        )}
       </div>
     </div>
   );

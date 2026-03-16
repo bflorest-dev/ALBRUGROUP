@@ -1,29 +1,33 @@
 import type { LoginRequest, LoginResponse } from './types';
+import { AuthService } from '../../services/auth.service';
 
-// Usamos implementación mock para desarrollo; descomentar http.post cuando exista el endpoint real
-// import { http } from '../../api/http';
-
+/**
+ * Realiza el login usando el servicio de autenticación
+ * Valida credenciales contra el backend
+ * 
+ * @param payload - {username, password}
+ * @returns LoginResponse con token y datos del usuario
+ * @throws Error si las credenciales son inválidas o hay error de conexión
+ */
 export const login = async (payload: LoginRequest): Promise<LoginResponse> => {
-  // mock delay
-  await new Promise((r) => setTimeout(r, 600));
-
-  // validación simple mock
-  if (payload.email === 'demo@albru.com' && payload.password === 'demo') {
-    return {
-      token: 'mock-jwt-token-123',
-      user: {
-        id: 'u-1',
-        name: 'Demo User',
-        email: payload.email,
-        role: 'ADMINISTRADOR',
-        permissions: ['DASHBOARD_VIEW'],
-      },
-    } as LoginResponse;
+  try {
+    return await AuthService.login(payload);
+  } catch (error: unknown) {
+    // Convertir error de AuthService a mensaje legible
+    if (error instanceof Error) {
+      throw new Error(
+        error.message.includes('401') || error.message.includes('403')
+          ? 'Usuario o contraseña incorrectos'
+          : error.message
+      );
+    }
+    throw new Error('Error de autenticación');
   }
+};
 
-  // Si quisieras usar la API real:
-  // const resp = await http.post('/auth/login', payload);
-  // return resp.data as LoginResponse;
-
-  throw { message: 'Correo o contraseña inválidos' };
+/**
+ * Realiza logout limpiando tokens y sesión
+ */
+export const logout = (): void => {
+  AuthService.logout();
 };

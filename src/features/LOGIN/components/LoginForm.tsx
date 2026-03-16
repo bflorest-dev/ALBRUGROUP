@@ -3,7 +3,7 @@ import { BiPhoneCall } from 'react-icons/bi';
 import './LoginForm.css';
 
 export interface LoginFormData {
-  email: string;
+  username: string;
   password: string;
 }
 
@@ -14,12 +14,15 @@ interface LoginFormProps {
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ initial = {}, onSubmit, loading = false }) => {
-  const [email, setEmail] = useState(initial.email || '');
+  const [username, setUsername] = useState(initial.username || '');
   const [password, setPassword] = useState(initial.password || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ email, password });
+    if (!username.trim() || !password.trim()) {
+      return;
+    }
+    onSubmit({ username, password });
   };
 
   return (
@@ -29,13 +32,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({ initial = {}, onSubmit, lo
       </div>
 
       <div className="form-group">
-        <label className="form-label" htmlFor="email">Correo electrónico</label>
+        <label className="form-label" htmlFor="username">Usuario</label>
         <input
-          id="email"
+          id="username"
           className="form-input"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          type="text"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="nombre de usuario"
+          disabled={loading}
           required
         />
       </div>
@@ -48,12 +53,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ initial = {}, onSubmit, lo
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          placeholder="tu contraseña"
+          disabled={loading}
           required
         />
       </div>
 
       <div className="form-actions">
-        <button className="primary-btn" type="submit" disabled={loading} aria-disabled={loading}>
+        <button 
+          className="primary-btn" 
+          type="submit" 
+          disabled={loading || !username.trim() || !password.trim()} 
+          aria-disabled={loading}
+        >
           <span className="call-icon" aria-hidden="true"><BiPhoneCall /></span>
           <span className="btn-text">{loading ? 'Conectando…' : 'Ingresar'}</span>
         </button>
