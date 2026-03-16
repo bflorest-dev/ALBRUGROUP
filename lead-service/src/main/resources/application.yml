@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: lead-service
+  cache:
+    type: redis
   data:
     redis:
       host: localhost
@@ -44,5 +46,7 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
-presence:
-  ttl: 2m
+app:
+  cache:
+    ttl:
+      catalogos: 30m

@@ -1,4 +1,4 @@
-package pe.albrugroup.lead_service.entity.response;
+package pe.albrugroup.gateway_service.entity.response;
 
 import lombok.Builder;
 import lombok.Getter;

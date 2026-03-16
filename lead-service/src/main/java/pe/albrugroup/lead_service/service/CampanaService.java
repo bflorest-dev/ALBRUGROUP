@@ -1,8 +1,11 @@
 package pe.albrugroup.lead_service.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.albrugroup.lead_service.configuration.CacheNames;
 import pe.albrugroup.lead_service.entity.Campana;
 import pe.albrugroup.lead_service.entity.CuentaPublicitaria;
 import pe.albrugroup.lead_service.entity.Proveedor;
@@ -27,6 +30,7 @@ public class CampanaService {
     private final CuentaPublicitariaRepository cuentaPublicitariaRepository;
     private final ProveedorRepository proveedorRepository;
 
+    @CacheEvict(value = CacheNames.CAMPANAS, allEntries = true)
     public CampanaResponse registrarCampana(CampanaRequest request) {
         CuentaPublicitaria cuentaPublicitaria = cuentaPublicitariaRepository.findByIdAndActivoTrue(request.getIdCuentaPublicitaria())
                 .orElseThrow(() -> new NotFoundException(CuentaPublicitaria.class, request.getIdCuentaPublicitaria()));
@@ -39,6 +43,7 @@ public class CampanaService {
         return mapper.toResponse(repository.save(campana));
     }
 
+    @CacheEvict(value = CacheNames.CAMPANAS, allEntries = true)
     public CampanaResponse actualizarNumeroWhatsappCampana(Long idCampana, CampanaWhatsappRequest request) {
         Campana campana = repository.findByIdAndActivoTrue(idCampana)
                 .orElseThrow(() -> new NotFoundException(Campana.class, idCampana));
@@ -47,6 +52,7 @@ public class CampanaService {
         return mapper.toResponse(repository.save(campana));
     }
 
+    @CacheEvict(value = CacheNames.CAMPANAS, allEntries = true)
     public CampanaResponse desactivarCampana(Long idCampana) {
         Campana campana = repository.findByIdAndActivoTrue(idCampana)
                 .orElseThrow(() -> new NotFoundException(Campana.class, idCampana));
@@ -56,6 +62,7 @@ public class CampanaService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = CacheNames.CAMPANAS, key = "#activo == null ? 'all' : #activo")
     public List<CampanaResponse> listarCampanas(Boolean activo) {
         return repository.listarPorActivo(activo).stream()
                 .map(mapper::toResponse)

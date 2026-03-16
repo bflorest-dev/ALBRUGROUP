@@ -1,4 +1,4 @@
-package pe.albrugroup.lead_service.entity.enums;
+package pe.albrugroup.gateway_service.entity.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

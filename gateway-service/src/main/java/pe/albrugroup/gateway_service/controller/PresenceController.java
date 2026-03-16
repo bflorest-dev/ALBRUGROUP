@@ -1,16 +1,25 @@
 package pe.albrugroup.gateway_service.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import pe.albrugroup.gateway_service.entity.enums.PuestoTrabajo;
+import pe.albrugroup.gateway_service.entity.response.ConnectedStatusResponse;
+import pe.albrugroup.gateway_service.entity.response.ConnectedUserResponse;
 import pe.albrugroup.gateway_service.presence.PresenceService;
 import pe.albrugroup.gateway_service.security.AuthenticatedUser;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -39,5 +48,22 @@ public class PresenceController {
     public Mono<ResponseEntity<Void>> desconectarEmpleadoOffline(@AuthenticationPrincipal AuthenticatedUser user) {
         return presenceService.desconectarEmpleadoOffline(user)
                 .thenReturn(ResponseEntity.noContent().build());
+    }
+
+    @GetMapping("/connected-users")
+    @Operation(summary = "Listar usuarios conectados", description = "Lista los empleados conectados. Se puede filtrar por rol.")
+    public Mono<ResponseEntity<List<ConnectedUserResponse>>> listarUsuariosConectados(
+            @Parameter(description = "Rol opcional para filtrar conectados", example = "ASESOR_VENTAS")
+            @RequestParam(value = "role", required = false) PuestoTrabajo role
+    ) {
+        return presenceService.listarUsuariosConectados(role)
+                .map(ResponseEntity::ok);
+    }
+
+    @GetMapping("/connected-users/{empleadoId}")
+    @Operation(summary = "Validar si un empleado esta conectado", description = "Retorna si el empleado indicado mantiene una clave de presencia activa en Redis.")
+    public Mono<ResponseEntity<ConnectedStatusResponse>> estaConectado(@PathVariable Long empleadoId) {
+        return presenceService.estaConectado(empleadoId)
+                .map(ResponseEntity::ok);
     }
 }
