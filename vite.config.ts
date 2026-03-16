@@ -21,4 +21,17 @@ export default defineConfig({
       { find: '@shared', replacement: path.resolve(__dirname, 'src/shared') },
     ],
   },
+  server: {
+    proxy: {
+      '/auth': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/auth/, ''), // /auth/autorizacion/login → /autorizacion/login
+      }
+    },
+    port: 5177,
+    strictPort: false,
+  },
 })
+
