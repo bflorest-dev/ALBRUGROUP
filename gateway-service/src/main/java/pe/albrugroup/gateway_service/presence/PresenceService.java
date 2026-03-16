@@ -10,6 +10,9 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Service
 public class PresenceService {
@@ -29,6 +32,7 @@ public class PresenceService {
     }
 
     public Mono<Void> registrarEmpleadoOnline(AuthenticatedUser user) {
+        String employeeId = String.valueOf(user.empleadoId());
         EmployeePresence presence = EmployeePresence.builder()
                 .empleadoId(user.empleadoId())
                 .username(user.username())
@@ -38,33 +42,59 @@ public class PresenceService {
                 .lastSeen(Instant.now())
                 .build();
 
-        Mono<Boolean> employeeWrite = presenceRedisTemplate.opsForValue()
-                .set(PresenceKeys.employeeKey(user.empleadoId()), presence, ttl);
+        return presenceRedisTemplate.opsForValue()
+                .get(PresenceKeys.employeeKey(user.empleadoId()))
+                .defaultIfEmpty(EmployeePresence.builder().roles(List.of()).build())
+                .flatMap(existingPresence -> {
+                    Set<String> previousRoles = new HashSet<>(safeRoles(existingPresence.getRoles()));
+                    Set<String> currentRoles = new HashSet<>(safeRoles(user.roles()));
 
-        Mono<Long> clearOldRoleKeys = stringRedisTemplate.keys(PresenceKeys.rolePatternForEmployee(user.empleadoId()))
-                .collectList()
-                .flatMap(keys -> keys.isEmpty()
-                        ? Mono.just(0L)
-                        : stringRedisTemplate.delete(Flux.fromIterable(keys)));
+                    Mono<Boolean> employeeWrite = presenceRedisTemplate.opsForValue()
+                            .set(PresenceKeys.employeeKey(user.empleadoId()), presence, ttl);
 
-        Mono<Void> roleWrites = Flux.fromIterable(user.roles())
-                .flatMap(role -> stringRedisTemplate.opsForValue()
-                        .set(PresenceKeys.roleKey(role, user.empleadoId()), "1", ttl))
-                .then();
+                    Mono<Long> registerEmployee = stringRedisTemplate.opsForSet()
+                            .add(PresenceKeys.employeeIndexKey(), employeeId);
 
-        return employeeWrite
-                .then(clearOldRoleKeys)
-                .then(roleWrites);
+                    Mono<Void> removeOldRoles = Flux.fromIterable(previousRoles)
+                            .filter(role -> !currentRoles.contains(role))
+                            .flatMap(role -> stringRedisTemplate.opsForSet()
+                                    .remove(PresenceKeys.roleIndexKey(role), employeeId))
+                            .then();
+
+                    Mono<Void> addCurrentRoles = Flux.fromIterable(currentRoles)
+                            .flatMap(role -> stringRedisTemplate.opsForSet()
+                                    .add(PresenceKeys.roleIndexKey(role), employeeId))
+                            .then();
+
+                    return employeeWrite
+                            .then(registerEmployee)
+                            .then(removeOldRoles)
+                            .then(addCurrentRoles);
+                });
     }
 
     public Mono<Void> desconectarEmpleadoOffline(AuthenticatedUser user) {
-        Mono<Long> deleteEmployee = presenceRedisTemplate.delete(PresenceKeys.employeeKey(user.empleadoId()));
-        Mono<Long> deleteRoleKeys = stringRedisTemplate.keys(PresenceKeys.rolePatternForEmployee(user.empleadoId()))
-                .collectList()
-                .flatMap(keys -> keys.isEmpty()
-                        ? Mono.just(0L)
-                        : stringRedisTemplate.delete(Flux.fromIterable(keys)));
+        String employeeId = String.valueOf(user.empleadoId());
 
-        return deleteEmployee.then(deleteRoleKeys).then();
+        return presenceRedisTemplate.opsForValue()
+                .get(PresenceKeys.employeeKey(user.empleadoId()))
+                .defaultIfEmpty(EmployeePresence.builder().roles(user.roles()).build())
+                .flatMap(existingPresence -> {
+                    Mono<Long> deleteEmployee = presenceRedisTemplate.delete(PresenceKeys.employeeKey(user.empleadoId()));
+                    Mono<Long> removeEmployee = stringRedisTemplate.opsForSet()
+                            .remove(PresenceKeys.employeeIndexKey(), employeeId);
+                    Mono<Void> removeRoles = Flux.fromIterable(safeRoles(existingPresence.getRoles()))
+                            .flatMap(role -> stringRedisTemplate.opsForSet()
+                                    .remove(PresenceKeys.roleIndexKey(role), employeeId))
+                            .then();
+
+                    return deleteEmployee
+                            .then(removeEmployee)
+                            .then(removeRoles);
+                });
+    }
+
+    private List<String> safeRoles(List<String> roles) {
+        return roles == null ? List.of() : roles;
     }
 }

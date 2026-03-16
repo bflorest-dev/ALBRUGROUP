@@ -9,15 +9,11 @@ public final class PresenceKeys {
         return "presence:employee:" + empleadoId;
     }
 
-    public static String roleKey(String role, Long empleadoId) {
-        return "presence:role:" + role + ":" + empleadoId;
+    public static String employeeIndexKey() {
+        return "presence:employees";
     }
 
-    public static String rolePattern(String role) {
-        return "presence:role:" + role + ":*";
-    }
-
-    public static String rolePatternForEmployee(Long empleadoId) {
-        return "presence:role:*:" + empleadoId;
+    public static String roleIndexKey(String role) {
+        return "presence:role:" + role + ":employees";
     }
 }

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import pe.albrugroup.lead_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.lead_service.entity.response.ConnectedStatusResponse;
 import pe.albrugroup.lead_service.entity.response.ConnectedUserResponse;
 import pe.albrugroup.lead_service.service.PresenceQueryService;
@@ -27,8 +28,8 @@ public class PresenceController {
     @GetMapping("/connected-users")
     @Operation(summary = "Listar usuarios conectados", description = "Lista los empleados conectados. Se puede filtrar por rol.")
     public ResponseEntity<List<ConnectedUserResponse>> listarUsuariosConectados(
-            @Parameter(description = "Rol opcional para filtrar conectados", example = "ASESOR")
-            @RequestParam(value = "role", required = false) String role
+            @Parameter(description = "Rol opcional para filtrar conectados", example = "ASESOR_VENTAS")
+            @RequestParam(value = "role", required = false) PuestoTrabajo role
     ) {
         return ResponseEntity.ok(presenceQueryService.listarUsuariosConectados(role));
     }

@@ -3,6 +3,7 @@ package pe.albrugroup.lead_service.service;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import pe.albrugroup.lead_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.lead_service.entity.response.ConnectedStatusResponse;
 import pe.albrugroup.lead_service.entity.response.ConnectedUserResponse;
 import pe.albrugroup.lead_service.presence.EmployeePresence;
@@ -12,6 +13,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,14 +30,36 @@ public class PresenceQueryService {
         this.stringRedisTemplate = stringRedisTemplate;
     }
 
-    public List<ConnectedUserResponse> listarUsuariosConectados(String role) {
-        Set<String> employeeKeys = obtenerClavesActivas(role);
-        if (employeeKeys == null || employeeKeys.isEmpty()) {
+    public List<ConnectedUserResponse> listarUsuariosConectados(PuestoTrabajo role) {
+        Set<String> employeeIds = obtenerEmpleadoIdsActivos(role);
+        if (employeeIds == null || employeeIds.isEmpty()) {
             return List.of();
         }
 
-        return employeeKeys.stream()
-                .map(key -> presenceRedisTemplate.opsForValue().get(key))
+        List<String> employeeKeys = employeeIds.stream()
+                .map(Long::valueOf)
+                .map(PresenceKeys::employeeKey)
+                .toList();
+
+        List<EmployeePresence> presences = presenceRedisTemplate.opsForValue().multiGet(employeeKeys);
+        if (presences == null || presences.isEmpty()) {
+            limpiarIndicesHuerfanos(role, employeeIds);
+            return List.of();
+        }
+
+        Set<String> activeIds = presences.stream()
+                .filter(Objects::nonNull)
+                .map(EmployeePresence::getEmpleadoId)
+                .map(String::valueOf)
+                .collect(Collectors.toSet());
+
+        Set<String> staleIds = employeeIds.stream()
+                .filter(employeeId -> !activeIds.contains(employeeId))
+                .collect(Collectors.toSet());
+
+        limpiarIndicesHuerfanos(role, staleIds);
+
+        return presences.stream()
                 .filter(Objects::nonNull)
                 .map(this::toResponse)
                 .sorted(Comparator.comparing(ConnectedUserResponse::getNombreCompleto, String.CASE_INSENSITIVE_ORDER))
@@ -50,25 +74,29 @@ public class PresenceQueryService {
                 .build();
     }
 
-    private Set<String> obtenerClavesActivas(String role) {
-        if (role == null || role.isBlank()) {
-            return stringRedisTemplate.keys(PresenceKeys.employeePattern());
-        }
-
-        Set<String> roleKeys = stringRedisTemplate.keys(PresenceKeys.rolePattern(role));
-        if (roleKeys == null || roleKeys.isEmpty()) {
-            return Set.of();
-        }
-
-        return roleKeys.stream()
-                .map(this::employeeKeyFromRoleKey)
-                .collect(Collectors.toSet());
+    private Set<String> obtenerEmpleadoIdsActivos(PuestoTrabajo role) {
+        Set<String> employeeIds = role == null
+                ? stringRedisTemplate.opsForSet().members(PresenceKeys.employeeIndexKey())
+                : stringRedisTemplate.opsForSet().members(PresenceKeys.roleIndexKey(role.name()));
+        return employeeIds == null ? Set.of() : employeeIds;
     }
 
-    private String employeeKeyFromRoleKey(String roleKey) {
-        int lastSeparator = roleKey.lastIndexOf(':');
-        String employeeId = roleKey.substring(lastSeparator + 1);
-        return PresenceKeys.employeeKey(Long.valueOf(employeeId));
+    private void limpiarIndicesHuerfanos(PuestoTrabajo role, Set<String> staleIds) {
+        if (staleIds == null || staleIds.isEmpty()) {
+            return;
+        }
+
+        stringRedisTemplate.opsForSet().remove(
+                PresenceKeys.employeeIndexKey(),
+                staleIds.toArray(new String[0])
+        );
+
+        if (role != null) {
+            stringRedisTemplate.opsForSet().remove(
+                    PresenceKeys.roleIndexKey(role.name()),
+                    staleIds.toArray(new String[0])
+            );
+        }
     }
 
     private ConnectedUserResponse toResponse(EmployeePresence presence) {
