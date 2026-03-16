@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import type { Applicant, Employee } from '../types';
+import { EVENT_NAMES, dispatchAppEvent } from '../types/events';
 import { loadApplicantsFromStorage, saveApplicantsToStorage, loadEmployeesFromStorage, saveEmployeesToStorage } from '../utils/localStorage';
 
 interface ApplicantsContextType {
@@ -18,10 +19,15 @@ interface ApplicantsContextType {
   // Legacy methods for compatibility
   removeApplicant: (id: string) => void;
   hireApplicant: (applicant: Applicant, employee: Employee) => void;
-  
-  // Loading state
-  loading: boolean;
 }
+
+/**
+ * Global sync version tracking
+ * Persiste incluso cuando los componentes se desmontan
+ * Para que listeners tarde registrados vean que hubo cambios
+ */
+globalThis.__applicantsGlobalSyncVersion = globalThis.__applicantsGlobalSyncVersion ?? 0;
+globalThis.__employeesGlobalSyncVersion = globalThis.__employeesGlobalSyncVersion ?? 0;
 
 const ApplicantsContext = createContext<ApplicantsContextType | undefined>(undefined);
 
@@ -41,114 +47,79 @@ interface ApplicantsProviderProps {
 }
 
 export const ApplicantsProvider: React.FC<ApplicantsProviderProps> = ({ children }) => {
-  const [applicants, setApplicants] = useState<Applicant[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Load initial data from localStorage (both applicants and employees)
-  const loadInitialData = useCallback(() => {
+  const [applicants, setApplicants] = useState<Applicant[]>(() => {
     try {
-      setLoading(true);
-      
-      const storedApplicants = loadApplicantsFromStorage();
-      const applicantsData: Applicant[] = storedApplicants && Array.isArray(storedApplicants) ? storedApplicants : [];
-      setApplicants(applicantsData);
-      
-      const storedEmployees = loadEmployeesFromStorage();
-      const employeesData: Employee[] = (storedEmployees && Array.isArray(storedEmployees) ? storedEmployees : []) as Employee[];
-      setEmployees(employeesData);
+      const stored = loadApplicantsFromStorage();
+      return (stored && Array.isArray(stored)) ? stored : [];
     } catch (error) {
-      console.error('Error loading data from storage:', error);
-      setApplicants([]);
-      setEmployees([]);
-    } finally {
-      setLoading(false);
+      console.error('Error loading applicants from storage:', error);
+      return [];
     }
-  }, []);
+  });
 
-  // Load initial data on mount and listen for storage updates
-  useEffect(() => {
-    loadInitialData();
-    
-    // Listen for changes in localStorage from OTHER TABS
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'applicantsData' || event.key === 'employeesData') {
-        loadInitialData();
-      }
-    };
-    
-    // Listen for local changes
-    const handleApplicantsUpdated = () => loadInitialData();
-    
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('applicantsUpdated', handleApplicantsUpdated);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('applicantsUpdated', handleApplicantsUpdated);
-    };
-  }, [loadInitialData]);
+  const [employees, setEmployees] = useState<Employee[]>(() => {
+    try {
+      const stored = loadEmployeesFromStorage();
+      return (stored && Array.isArray(stored)) ? stored : [];
+    } catch (error) {
+      console.error('Error loading employees from storage:', error);
+      return [];
+    }
+  });
 
-  // Dispatch event when applicants change (for synchronization)
+  // Loading state is prepared but can be used for async operations if needed in future
+  // For now, localStorage operations are synchronous at initialization and on change
+
+  // Save to localStorage and dispatch event whenever applicants change
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent('applicantsContextUpdated'));
-    window.dispatchEvent(new Event('applicantsUpdated'));
+    saveApplicantsToStorage(applicants);
+    // Incrementar versión global para que listeners que se monten después sepan que hubo un cambio
+    globalThis.__applicantsGlobalSyncVersion = (globalThis.__applicantsGlobalSyncVersion ?? 0) + 1;
+    // Notificar a componentes que escuchen cambios en applicants
+    dispatchAppEvent(EVENT_NAMES.APPLICANTS_UPDATED, { applicants });
   }, [applicants]);
 
-  // Dispatch event when employees change
+  // Save to localStorage and dispatch event whenever employees change
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent('employeesContextUpdated'));
-    window.dispatchEvent(new Event('employeesUpdated'));
+    saveEmployeesToStorage(employees);
+    // Incrementar versión global para que listeners que se monten después sepan que hubo un cambio
+    globalThis.__employeesGlobalSyncVersion = (globalThis.__employeesGlobalSyncVersion ?? 0) + 1;
+    // Notificar a componentes que escuchen cambios en employees
+    dispatchAppEvent(EVENT_NAMES.EMPLOYEES_UPDATED, { employees });
   }, [employees]);
 
   // APPLICANTS METHODS
   const addApplicant = useCallback((applicant: Applicant) => {
-    setApplicants(prev => {
-      const updated = [...prev, applicant];
-      saveApplicantsToStorage(updated);
-      return updated;
-    });
+    setApplicants(prev => [...prev, applicant]);
   }, []);
 
   const updateApplicant = useCallback((id: string, applicant: Applicant) => {
-    setApplicants(prev => {
-      const updated = prev.map(app => (app.id === id ? applicant : app));
-      saveApplicantsToStorage(updated);
-      return updated;
-    });
+    setApplicants(prev => 
+      prev.map(app => (app.id === id ? applicant : app))
+    );
   }, []);
 
   const deleteApplicant = useCallback((id: string) => {
-    setApplicants(prev => {
-      const updated = prev.filter(app => app.id !== id);
-      saveApplicantsToStorage(updated);
-      return updated;
-    });
+    setApplicants(prev => 
+      prev.filter(app => app.id !== id)
+    );
   }, []);
 
   // EMPLOYEES METHODS
   const addEmployee = useCallback((employee: Employee) => {
-    setEmployees(prev => {
-      const updated = [...prev, employee];
-      saveEmployeesToStorage(updated);
-      return updated;
-    });
+    setEmployees(prev => [...prev, employee]);
   }, []);
 
   const updateEmployee = useCallback((id: string, employee: Applicant) => {
-    setEmployees(prev => {
-      const updated = prev.map(emp => (emp.id === id ? employee as unknown as Employee : emp));
-      saveEmployeesToStorage(updated);
-      return updated;
-    });
+    setEmployees(prev =>
+      prev.map(emp => (emp.id === id ? employee as unknown as Employee : emp))
+    );
   }, []);
 
   const deleteEmployee = useCallback((id: string) => {
-    setEmployees(prev => {
-      const updated = prev.filter(emp => emp.id !== id);
-      saveEmployeesToStorage(updated);
-      return updated;
-    });
+    setEmployees(prev =>
+      prev.filter(emp => emp.id !== id)
+    );
   }, []);
 
   // LEGACY COMPATIBILITY METHODS (from old DataContext)
@@ -178,9 +149,8 @@ export const ApplicantsProvider: React.FC<ApplicantsProviderProps> = ({ children
       deleteEmployee,
       removeApplicant,
       hireApplicant,
-      loading
     }),
-    [applicants, addApplicant, updateApplicant, deleteApplicant, employees, addEmployee, updateEmployee, deleteEmployee, removeApplicant, hireApplicant, loading]
+    [applicants, addApplicant, updateApplicant, deleteApplicant, employees, addEmployee, updateEmployee, deleteEmployee, removeApplicant, hireApplicant]
   );
 
   return (

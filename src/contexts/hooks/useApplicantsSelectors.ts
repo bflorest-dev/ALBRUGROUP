@@ -38,16 +38,6 @@ export const useEmployeesList = () => {
 };
 
 /**
- * Get only the loading state
- * Memoized to prevent re-renders when other context values change
- * Dependencies: loading boolean
- */
-export const useApplicantsLoading = () => {
-  const context = useApplicants();
-  return useMemo(() => context.loading, [context.loading]);
-};
-
-/**
  * Get only the applicants mutation methods
  * Memoized: Functions are stable, so component only re-renders if functions themselves change
  * This is rare since callbacks are memoized in the Provider

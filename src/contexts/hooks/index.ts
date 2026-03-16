@@ -8,7 +8,6 @@
 export {
   useApplicantsList,
   useEmployeesList,
-  useApplicantsLoading,
   useApplicantMutations,
   useEmployeeMutations,
   useApplicantsData,

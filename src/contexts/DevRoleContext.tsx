@@ -11,10 +11,19 @@ const DevRoleContext = createContext<DevRoleContextType | undefined>(undefined);
 // Get the stored role from localStorage or use default
 const getInitialRole = (): Role => {
   try {
+    // Si no hay token de autenticación, mostrar LOGIN
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      console.log('[DevRoleContext] No token found, showing LOGIN');
+      return 'LOGIN';
+    }
+    
+    // Si hay token, usar el rol guardado o ADMINISTRADOR por defecto
     const stored = localStorage.getItem('selectedRole') as Role;
-    return stored || 'RRHH';
+    console.log('[DevRoleContext] Token found, using role:', stored || 'ADMINISTRADOR');
+    return stored || 'ADMINISTRADOR';
   } catch {
-    return 'RRHH';
+    return 'LOGIN';
   }
 };
 
