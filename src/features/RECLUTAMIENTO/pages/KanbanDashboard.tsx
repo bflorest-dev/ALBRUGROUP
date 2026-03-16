@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { BiPhone, BiBadge, BiCalendar } from 'react-icons/bi';
 import { Card } from '@molecules/Card';
 import { useApplicants } from '@contexts/ApplicantsContext';
@@ -46,21 +46,30 @@ interface KanbanBoardProps {
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({ companyFilter, onSelectForTipify }) => {
   // Este hook sincroniza con cambios en aplicantes y fuerza re-render solo en este componente
-  const { applicants } = useApplicantsSync();
+  const { applicants, syncVersion } = useApplicantsSync();
 
-  const filteredApplicants = applicants.filter(a => a.company === companyFilter);
-
-  const columns: Record<StatusValue, Applicant[]> = STATUS_COLUMNS.reduce(
-    (acc, status) => ({ ...acc, [status]: [] }),
-    {} as Record<StatusValue, Applicant[]>
+  // Memoizar filteredApplicants para evitar recalculos innecesarios
+  const filteredApplicants = useMemo(
+    () => applicants.filter(a => a.company === companyFilter),
+    [applicants, companyFilter]
   );
 
-  filteredApplicants.forEach((a) => {
-    const key = (a.status || 'POR_RECLUTAR') as StatusValue;
-    if (columns[key]) {
-      columns[key].push(a);
-    }
-  });
+  // Memoizar columns para que sea estable y evitar recálculos innecesarios
+  const columns: Record<StatusValue, Applicant[]> = useMemo(() => {
+    const columnsMap: Record<StatusValue, Applicant[]> = STATUS_COLUMNS.reduce(
+      (acc, status) => ({ ...acc, [status]: [] }),
+      {} as Record<StatusValue, Applicant[]>
+    );
+
+    filteredApplicants.forEach((a) => {
+      const key = (a.status || 'POR_RECLUTAR') as StatusValue;
+      if (columnsMap[key]) {
+        columnsMap[key].push(a);
+      }
+    });
+
+    return columnsMap;
+  }, [filteredApplicants]);
 
   // pagination state per column
   const [pageByStatus, setPageByStatus] = useState<Record<StatusValue, number>>( 
@@ -78,6 +87,10 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ companyFilter, onSelectForTip
     });
   };
 
+  // Calcular total de applicants para usar como dependencia del useEffect
+  // (evita problemas de referencia con objetos que se recrean)
+  const totalApplicants = filteredApplicants.length;
+
   // when the data set or company filter changes (new applicant added/updated),
   // jump each column to its last page so the new/modified card is visible.
   useEffect(() => {
@@ -92,10 +105,10 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ companyFilter, onSelectForTip
       });
       return updated;
     });
-  }, [companyFilter, applicants.length]);
+  }, [totalApplicants, companyFilter]);
 
   return (
-    <div className="kanban-board">
+    <div className="kanban-board" data-sync-version={syncVersion}>
       {STATUS_COLUMNS.map((status) => {
         const allCards = columns[status];
         const currentPage = pageByStatus[status] || 1;
@@ -110,7 +123,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ companyFilter, onSelectForTip
             <span>{displayStatusMap[status]}</span>
             <span className="count">{allCards.length}</span>
           </div>
-          <div className="kanban-column-cards">
+          <div className="kanban-column-cards" key={`${status}-${syncVersion}`}>
             {paginatedCards.map((app) => (
               <Card
                 key={app.id}

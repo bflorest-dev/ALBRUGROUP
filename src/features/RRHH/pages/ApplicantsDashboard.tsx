@@ -14,6 +14,7 @@ import { Header } from '@organisms/Layout/Header';
 import { useNotification } from '@contexts/useNotification';
 import { useErrorHandler } from '@hooks/useErrorHandler';
 import { useApplicants } from '@contexts/ApplicantsContext';
+import { useApplicantsSync } from '@hooks/useApplicantsSync';
 import type { Applicant, NewApplicantFormData, EditApplicantFormData, HireApplicantFormData, Statistic } from '@types';
 import { FeatureErrorBoundary } from '@components/utilities';
 import { ErrorLogger } from '@services';
@@ -23,8 +24,9 @@ import './ApplicantsDashboard.css';
 const ITEMS_PER_PAGE = 10;
 
 const ApplicantsDashboardContent = () => {
-  // Get applicants from context
-  const { applicants, addApplicant, updateApplicant, loading } = useApplicants();
+  // Get applicants from context with sync support for real-time updates
+  const { addApplicant, updateApplicant } = useApplicants();
+  const { applicants } = useApplicantsSync();
   const [_statistics, _setStatistics] = useState<Statistic[]>([]);
 
   // Estados para modales
@@ -183,7 +185,8 @@ const ApplicantsDashboardContent = () => {
       positionOfInterest: formData.positionOfInterest,
       modality: '',
       campaign: formData.campaign,
-      company: formData.company || '',
+      // Assign company: default to 'WIN' if not provided to ensure visibility in Kanban
+      company: formData.company || 'WIN',
       status: 'POR_RECLUTAR',
     };
 
@@ -298,17 +301,6 @@ const ApplicantsDashboardContent = () => {
     updateApplicant(applicant.id, { ...applicant, status: 'EN_LISTA_NEGRA' });
     showSuccess(`${applicant.fullName} agregado a lista negra`);
   };
-
-  if (loading) {
-    return (
-      <div className="applicants-dashboard">
-        <Header title="Cargando..." />
-        <main className="applicants-dashboard-content">
-          <div className="loading">Cargando postulantes...</div>
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div className="applicants-dashboard">
