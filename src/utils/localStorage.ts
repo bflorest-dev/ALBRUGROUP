@@ -1,6 +1,6 @@
 // simple helpers for localStorage persistence
 
-import type { Applicant } from '../types';
+import type { Applicant, Employee } from '../types';
 
 export const loadApplicantsFromStorage = (): Applicant[] | null => {
   try {
@@ -38,16 +38,11 @@ export const saveApplicantsToStorage = (applicants: Applicant[]) => {
 };
 
 // employee helpers (local-only storage during development)
-export interface StoredEmployee {
-  id: string;
-  [key: string]: any;
-}
-
-export const loadEmployeesFromStorage = (): StoredEmployee[] | null => {
+export const loadEmployeesFromStorage = (): Employee[] | null => {
   try {
     const json = localStorage.getItem('employeesData');
     if (!json) return null;
-    const employees = JSON.parse(json) as StoredEmployee[];
+    const employees = JSON.parse(json) as Employee[];
     const seen = new Set<string>();
     return employees.filter(emp => {
       if (seen.has(emp.id)) return false;
@@ -60,7 +55,7 @@ export const loadEmployeesFromStorage = (): StoredEmployee[] | null => {
   }
 };
 
-export const saveEmployeesToStorage = (employees: StoredEmployee[]) => {
+export const saveEmployeesToStorage = (employees: Employee[]) => {
   try {
     const seen = new Set<string>();
     const deduped = employees.filter(emp => {

@@ -5,10 +5,17 @@ import { ApplicantsProvider } from './contexts/ApplicantsContext'
 import { ErrorBoundary } from './components/organisms/ErrorBoundary'
 import { DarkModeToggle } from './components/atoms/DarkModeToggle'
 import { ErrorLogger } from './services'
+import { AuthService } from './services/auth.service'
 import type { ErrorInfo } from 'react';
+import { useEffect } from 'react';
 
 const AppContent = () => {
   const { selectedRole, setSelectedRole } = useDevRole();
+
+  // Restaurar token del localStorage al montar la app
+  useEffect(() => {
+    AuthService.initialize();
+  }, []);
 
   return (
     <>
