@@ -19,6 +19,7 @@ import java.util.Optional;
 public interface LeadRepository extends JpaRepository<Lead, Long> {
 
     Optional<Lead> findByLead(String lead);
+    Optional<Lead> findByIdAndIdAsesorAsignadoAndEtapa(Long id, Long idAsesorAsignado, Etapa etapa);
 
     @Query("""
             SELECT new pe.albrugroup.lead_service.entity.response.LeadGtrResponse(

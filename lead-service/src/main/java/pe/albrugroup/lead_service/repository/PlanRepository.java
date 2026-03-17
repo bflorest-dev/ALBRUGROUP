@@ -7,8 +7,11 @@ import pe.albrugroup.lead_service.entity.Plan;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface PlanRepository extends JpaRepository<Plan, Long> {
+
+    Optional<Plan> findByIdAndActivoTrue(Long id);
 
     @Query("""
             select p

@@ -15,7 +15,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.request.LeadAsignacionRequest;
+import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
+import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
+import pe.albrugroup.lead_service.entity.request.LeadOfertaComercialRequest;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorVentasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
@@ -56,6 +59,33 @@ public class LeadController {
     public ResponseEntity<LeadAsesorDetalleResponse> obtenerDetalleAsesor(@PathVariable Long idLead) {
         var lead = leadService.obtenerDetalleAsesor(idLead);
         return ResponseEntity.status(HttpStatus.OK).body(lead);
+    }
+
+    @PatchMapping("/{idLead}/datos-preventa")
+    public ResponseEntity<Void> actualizarDatosPreventa(
+            @PathVariable Long idLead,
+            @Valid @RequestBody LeadDatosPreventaRequest request
+    ) {
+        leadService.actualizarDatosPreventa(idLead, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{idLead}/direccion")
+    public ResponseEntity<Void> actualizarDireccion(
+            @PathVariable Long idLead,
+            @Valid @RequestBody LeadDireccionRequest request
+    ) {
+        leadService.actualizarDireccion(idLead, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{idLead}/oferta-comercial")
+    public ResponseEntity<Void> actualizarOfertaComercial(
+            @PathVariable Long idLead,
+            @Valid @RequestBody LeadOfertaComercialRequest request
+    ) {
+        leadService.actualizarOfertaComercial(idLead, request);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/gtr")

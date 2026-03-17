@@ -9,16 +9,24 @@ import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.LeadAsignacionRequest;
+import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
+import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
+import pe.albrugroup.lead_service.entity.request.LeadOfertaAdicionalRequest;
+import pe.albrugroup.lead_service.entity.request.LeadOfertaComercialRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorVentasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 import pe.albrugroup.lead_service.exception.NotFoundException;
+import pe.albrugroup.lead_service.repository.AdicionalRepository;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
 import pe.albrugroup.lead_service.repository.EventoRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
+import pe.albrugroup.lead_service.repository.PlanRepository;
+import pe.albrugroup.lead_service.repository.PromocionComercialRepository;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -36,6 +44,9 @@ public class LeadService {
     private final EventoRepository eventoRepository;
     private final EventoService eventoService;
     private final CurrentUser currentUser;
+    private final PlanRepository planRepository;
+    private final PromocionComercialRepository promocionComercialRepository;
+    private final AdicionalRepository adicionalRepository;
 
     public List<LeadGtrResponse> listarBandejaGtr(LocalDate fecha) {
         LocalDate fechaTrabajo = fecha == null ? LocalDate.now(ZoneId.systemDefault()) : fecha;
@@ -74,6 +85,77 @@ public class LeadService {
                 .orElse(null);
 
         return toAsesorDetalleResponse(lead, fechaAsignacion);
+    }
+
+    @Transactional
+    public void actualizarDatosPreventa(Long idLead, LeadDatosPreventaRequest request) {
+        Lead lead = obtenerLeadPreventaDelAsesor(idLead);
+        DatosPreventa datosPreventa = lead.getDatosPreventa() == null ? new DatosPreventa() : lead.getDatosPreventa();
+
+        datosPreventa.setTipoDocumento(request.getTipoDocumento());
+        datosPreventa.setNumeroDocumentoTitularServicio(trimToNull(request.getNumeroDocumentoTitularServicio()));
+        datosPreventa.setNombreTitularServicio(trimToNull(request.getNombreTitularServicio()));
+        datosPreventa.setCelularRegistro(trimToNull(request.getCelularRegistro()));
+        datosPreventa.setCelularReferencia(trimToNull(request.getCelularReferencia()));
+        datosPreventa.setCorreo(trimToNull(request.getCorreo()));
+        datosPreventa.setNumeroDocumentoTitularCelularRegistro(trimToNull(request.getNumeroDocumentoTitularCelularRegistro()));
+        datosPreventa.setNombreTitularCelularRegistro(trimToNull(request.getNombreTitularCelularRegistro()));
+
+        lead.setDatosPreventa(datosPreventa);
+        moverAEnGestionSiAplica(lead);
+        leadRepository.save(lead);
+    }
+
+    @Transactional
+    public void actualizarDireccion(Long idLead, LeadDireccionRequest request) {
+        Lead lead = obtenerLeadPreventaDelAsesor(idLead);
+        Direccion direccion = lead.getDireccion() == null ? new Direccion() : lead.getDireccion();
+
+        direccion.setUbigeo(trimToNull(request.getUbigeo()));
+        direccion.setTipoDomicilio(request.getTipoDomicilio());
+        direccion.setTipoVia(request.getTipoVia());
+        direccion.setVia(trimToNull(request.getVia()));
+        direccion.setDireccion(trimToNull(request.getDireccion()));
+        direccion.setReferencia(trimToNull(request.getReferencia()));
+        direccion.setLatitud(request.getLatitud());
+        direccion.setLongitud(request.getLongitud());
+        direccion.setUrbanizacion(trimToNull(request.getUrbanizacion()));
+        direccion.setNumero(trimToNull(request.getNumero()));
+        direccion.setManzana(trimToNull(request.getManzana()));
+        direccion.setLote(trimToNull(request.getLote()));
+        direccion.setNombreEdificio(trimToNull(request.getNombreEdificio()));
+        direccion.setNombreCondominio(trimToNull(request.getNombreCondominio()));
+        direccion.setPiso(trimToNull(request.getPiso()));
+        direccion.setInterior(trimToNull(request.getInterior()));
+
+        lead.setDireccion(direccion);
+        moverAEnGestionSiAplica(lead);
+        leadRepository.save(lead);
+    }
+
+    @Transactional
+    public void actualizarOfertaComercial(Long idLead, LeadOfertaComercialRequest request) {
+        Lead lead = obtenerLeadPreventaDelAsesor(idLead);
+
+        Plan plan = request.getIdPlan() == null ? null : obtenerPlanVigente(request.getIdPlan());
+        PromocionComercial promocionInterna = request.getIdPromocionInterna() == null ? null
+                : obtenerPromocionVigente(request.getIdPromocionInterna());
+        PromocionComercial promocionProveedor = request.getIdPromocionProveedor() == null ? null
+                : obtenerPromocionVigente(request.getIdPromocionProveedor());
+
+        lead.setPlan(plan);
+        lead.setNombrePlanSnapshot(plan == null ? null : plan.getNombre());
+        lead.setNombreProveedorSnapshot(plan == null || plan.getProveedor() == null ? null : plan.getProveedor().getNombre());
+        lead.setPrecioPlanSnapshot(plan == null ? null : plan.getPrecio());
+
+        lead.setPromocionInterna(promocionInterna);
+        lead.setPromocionProveedor(promocionProveedor);
+        lead.setNombrePromocionInternaSnapshot(promocionInterna == null ? null : promocionInterna.getNombre());
+        lead.setNombrePromocionProveedorSnapshot(promocionProveedor == null ? null : promocionProveedor.getNombre());
+
+        reemplazarAdicionales(lead, request.getAdicionales());
+        moverAEnGestionSiAplica(lead);
+        leadRepository.save(lead);
     }
 
     @Transactional
@@ -256,5 +338,81 @@ public class LeadService {
     }
 
     private record SplitLead(String prefijo, String numero) {
+    }
+
+    private Lead obtenerLeadPreventaDelAsesor(Long idLead) {
+        return leadRepository.findByIdAndIdAsesorAsignadoAndEtapa(idLead, currentUser.empleadoID(), Etapa.PREVENTA)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+    }
+
+    private void reemplazarAdicionales(Lead lead, List<LeadOfertaAdicionalRequest> adicionalesRequest) {
+        lead.getAdicionales().clear();
+
+        BigDecimal totalAdicionales = BigDecimal.ZERO;
+        if (adicionalesRequest != null) {
+            for (LeadOfertaAdicionalRequest adicionalRequest : adicionalesRequest) {
+                Adicional adicional = adicionalRepository.findByIdAndActivoTrue(adicionalRequest.getIdAdicional())
+                        .orElseThrow(() -> new NotFoundException(Adicional.class, adicionalRequest.getIdAdicional()));
+                BigDecimal precioUnitario = adicional.getPrecioUnitario() == null ? BigDecimal.ZERO : adicional.getPrecioUnitario();
+                BigDecimal subtotal = precioUnitario.multiply(BigDecimal.valueOf(adicionalRequest.getCantidad()));
+
+                LeadAdicional leadAdicional = LeadAdicional.builder()
+                        .lead(lead)
+                        .adicional(adicional)
+                        .cantidad(adicionalRequest.getCantidad())
+                        .precioUnitario(precioUnitario)
+                        .subtotal(subtotal)
+                        .build();
+
+                lead.getAdicionales().add(leadAdicional);
+                totalAdicionales = totalAdicionales.add(subtotal);
+            }
+        }
+
+        lead.setPrecioAdicionalesSnapshot(totalAdicionales);
+        BigDecimal precioPlan = lead.getPrecioPlanSnapshot() == null ? BigDecimal.ZERO : lead.getPrecioPlanSnapshot();
+        lead.setPrecioFinal(precioPlan.add(totalAdicionales));
+    }
+
+    private void moverAEnGestionSiAplica(Lead lead) {
+        if (lead.getEstado() == EstadoSeguimiento.ASIGNADO) {
+            lead.setEstado(EstadoSeguimiento.EN_GESTION);
+        }
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private Plan obtenerPlanVigente(Long idPlan) {
+        Plan plan = planRepository.findByIdAndActivoTrue(idPlan)
+                .orElseThrow(() -> new NotFoundException(Plan.class, idPlan));
+
+        LocalDate fechaActual = LocalDate.now(ZoneId.systemDefault());
+        boolean vigente = (plan.getVigenciaDesde() == null || !plan.getVigenciaDesde().isAfter(fechaActual))
+                && (plan.getVigenciaHasta() == null || !plan.getVigenciaHasta().isBefore(fechaActual));
+
+        if (!vigente) {
+            throw new NotFoundException(Plan.class, idPlan);
+        }
+        return plan;
+    }
+
+    private PromocionComercial obtenerPromocionVigente(Long idPromocion) {
+        PromocionComercial promocion = promocionComercialRepository.findByIdAndActivoTrue(idPromocion)
+                .orElseThrow(() -> new NotFoundException(PromocionComercial.class, idPromocion));
+
+        LocalDate fechaActual = LocalDate.now(ZoneId.systemDefault());
+        boolean vigente = (promocion.getVigenciaDesde() == null || !promocion.getVigenciaDesde().isAfter(fechaActual))
+                && (promocion.getVigenciaHasta() == null || !promocion.getVigenciaHasta().isBefore(fechaActual));
+
+        if (!vigente) {
+            throw new NotFoundException(PromocionComercial.class, idPromocion);
+        }
+        return promocion;
     }
 }
