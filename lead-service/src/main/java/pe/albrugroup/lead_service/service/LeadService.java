@@ -1,6 +1,7 @@
 package pe.albrugroup.lead_service.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -29,6 +30,7 @@ import pe.albrugroup.lead_service.repository.PlanRepository;
 import pe.albrugroup.lead_service.repository.PromocionComercialRepository;
 import pe.albrugroup.lead_service.repository.SubtipificacionRepository;
 import pe.albrugroup.lead_service.repository.TipificacionRepository;
+import pe.albrugroup.lead_service.service.mapper.LeadMapper;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -53,6 +55,7 @@ public class LeadService {
     private final AdicionalRepository adicionalRepository;
     private final TipificacionRepository tipificacionRepository;
     private final SubtipificacionRepository subtipificacionRepository;
+    private final LeadMapper leadMapper;
 
     private static final String TIPIFICACION_PREVENTA_COMPLETA = "PREVENTA_COMPLETA";
 
@@ -99,15 +102,7 @@ public class LeadService {
     public void actualizarDatosPreventa(Long idLead, LeadDatosPreventaRequest request) {
         Lead lead = obtenerLeadPreventaDelAsesor(idLead);
         DatosPreventa datosPreventa = lead.getDatosPreventa() == null ? new DatosPreventa() : lead.getDatosPreventa();
-
-        datosPreventa.setTipoDocumento(request.getTipoDocumento());
-        datosPreventa.setNumeroDocumentoTitularServicio(trimToNull(request.getNumeroDocumentoTitularServicio()));
-        datosPreventa.setNombreTitularServicio(trimToNull(request.getNombreTitularServicio()));
-        datosPreventa.setCelularRegistro(trimToNull(request.getCelularRegistro()));
-        datosPreventa.setCelularReferencia(trimToNull(request.getCelularReferencia()));
-        datosPreventa.setCorreo(trimToNull(request.getCorreo()));
-        datosPreventa.setNumeroDocumentoTitularCelularRegistro(trimToNull(request.getNumeroDocumentoTitularCelularRegistro()));
-        datosPreventa.setNombreTitularCelularRegistro(trimToNull(request.getNombreTitularCelularRegistro()));
+        leadMapper.updateDatosPreventa(request, datosPreventa);
 
         lead.setDatosPreventa(datosPreventa);
         moverAEnGestionSiAplica(lead);
@@ -118,23 +113,7 @@ public class LeadService {
     public void actualizarDireccion(Long idLead, LeadDireccionRequest request) {
         Lead lead = obtenerLeadPreventaDelAsesor(idLead);
         Direccion direccion = lead.getDireccion() == null ? new Direccion() : lead.getDireccion();
-
-        direccion.setUbigeo(trimToNull(request.getUbigeo()));
-        direccion.setTipoDomicilio(request.getTipoDomicilio());
-        direccion.setTipoVia(request.getTipoVia());
-        direccion.setVia(trimToNull(request.getVia()));
-        direccion.setDireccion(trimToNull(request.getDireccion()));
-        direccion.setReferencia(trimToNull(request.getReferencia()));
-        direccion.setLatitud(request.getLatitud());
-        direccion.setLongitud(request.getLongitud());
-        direccion.setUrbanizacion(trimToNull(request.getUrbanizacion()));
-        direccion.setNumero(trimToNull(request.getNumero()));
-        direccion.setManzana(trimToNull(request.getManzana()));
-        direccion.setLote(trimToNull(request.getLote()));
-        direccion.setNombreEdificio(trimToNull(request.getNombreEdificio()));
-        direccion.setNombreCondominio(trimToNull(request.getNombreCondominio()));
-        direccion.setPiso(trimToNull(request.getPiso()));
-        direccion.setInterior(trimToNull(request.getInterior()));
+        leadMapper.updateDireccion(request, direccion);
 
         lead.setDireccion(direccion);
         moverAEnGestionSiAplica(lead);
@@ -233,14 +212,7 @@ public class LeadService {
     }
 
     private void registrarLeadNuevo(String leadCompleto, LeadIntakeRequest request, Campana campana) {
-        Lead lead = Lead.builder()
-                .lead(leadCompleto)
-                .campana(campana)
-                .base(request.getBase())
-                .etapa(Etapa.PREVENTA)
-                .estado(EstadoSeguimiento.NUEVO)
-                .lastEntryAt(Instant.now())
-                .build();
+        Lead lead = leadMapper.toNuevoLead(leadCompleto, request.getBase(), campana, Instant.now());
 
         Lead savedLead = leadRepository.save(lead);
         registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa());
@@ -447,14 +419,6 @@ public class LeadService {
         }
     }
 
-    private String trimToNull(String value) {
-        if (value == null) {
-            return null;
-        }
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
-
     private Plan obtenerPlanVigente(Long idPlan) {
         Plan plan = planRepository.findByIdAndActivoTrue(idPlan)
                 .orElseThrow(() -> new NotFoundException(Plan.class, idPlan));
@@ -488,20 +452,20 @@ public class LeadService {
         Direccion direccion = lead.getDireccion();
 
         if (datosPreventa == null) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Faltan datos de preventa");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Faltan datos de preventa");
         }
         if (direccion == null) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Faltan datos de direccion");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Faltan datos de direccion");
         }
         if (lead.getPlan() == null) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Falta seleccionar un plan");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Falta seleccionar un plan");
         }
         if (lead.getPromocionInterna() == null && lead.getPromocionProveedor() == null) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Falta seleccionar al menos una promocion");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Falta seleccionar al menos una promocion");
         }
 
         if (datosPreventa.getTipoDocumento() == null) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Falta tipoDocumento");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Falta tipoDocumento");
         }
         validarTextoObligatorio(datosPreventa.getNumeroDocumentoTitularServicio(), "Falta numeroDocumentoTitularServicio");
         validarTextoObligatorio(datosPreventa.getNombreTitularServicio(), "Falta nombreTitularServicio");
@@ -512,10 +476,10 @@ public class LeadService {
 
         validarTextoObligatorio(direccion.getUbigeo(), "Falta ubigeo");
         if (direccion.getTipoDomicilio() == null) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Falta tipoDomicilio");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Falta tipoDomicilio");
         }
         if (direccion.getTipoVia() == null) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Falta tipoVia");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Falta tipoVia");
         }
         validarTextoObligatorio(direccion.getVia(), "Falta via");
         validarTextoObligatorio(direccion.getDireccion(), "Falta direccion");
@@ -524,7 +488,7 @@ public class LeadService {
 
     private void validarTextoObligatorio(String value, String message) {
         if (value == null || value.isBlank()) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, message);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
         }
     }
 }
