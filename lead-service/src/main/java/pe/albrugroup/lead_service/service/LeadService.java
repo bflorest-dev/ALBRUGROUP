@@ -4,10 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
-import pe.albrugroup.lead_service.entity.Campana;
-import pe.albrugroup.lead_service.entity.DatosPreventa;
-import pe.albrugroup.lead_service.entity.Direccion;
-import pe.albrugroup.lead_service.entity.Lead;
+import pe.albrugroup.lead_service.entity.*;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
@@ -53,9 +50,13 @@ public class LeadService {
         );
     }
 
-    public List<LeadAsesorVentasResponse> listarBandejaAsesorVentas(EstadoSeguimiento estado) {
+    public List<LeadAsesorVentasResponse> listarBandejaAsesorVentas() {
         Long idAsesor = currentUser.empleadoID();
-        List<Lead> leads = leadRepository.listarPendientesAsesorVentas(idAsesor, Etapa.PREVENTA, estado);
+        List<Lead> leads = leadRepository.listarPendientesAsesorVentas(
+                idAsesor,
+                Etapa.PREVENTA,
+                List.of(EstadoSeguimiento.ASIGNADO, EstadoSeguimiento.EN_GESTION)
+        );
         Map<Long, Instant> fechasAsignacion = obtenerFechasAsignacion(leads);
 
         return leads.stream()
@@ -69,7 +70,7 @@ public class LeadService {
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
 
         Instant fechaAsignacion = eventoRepository.findTopByIdLeadAndAccionOrderByCreatedAtDesc(idLead, Accion.ASIGNACION)
-                .map(evento -> evento.getCreatedAt())
+                .map(Evento::getCreatedAt)
                 .orElse(null);
 
         return toAsesorDetalleResponse(lead, fechaAsignacion);

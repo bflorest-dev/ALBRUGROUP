@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.request.LeadAsignacionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorDetalleResponse;
@@ -48,10 +47,8 @@ public class LeadController {
     }
 
     @GetMapping("/asesor-ventas")
-    public ResponseEntity<List<LeadAsesorVentasResponse>> listarBandejaAsesorVentas(
-            @RequestParam(required = false) EstadoSeguimiento estado
-    ) {
-        var leads = leadService.listarBandejaAsesorVentas(estado);
+    public ResponseEntity<List<LeadAsesorVentasResponse>> listarBandejaAsesorVentas() {
+        var leads = leadService.listarBandejaAsesorVentas();
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
 

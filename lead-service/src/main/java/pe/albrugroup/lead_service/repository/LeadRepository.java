@@ -8,10 +8,10 @@ import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
-import pe.albrugroup.lead_service.entity.response.LeadAsesorVentasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -64,13 +64,13 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.idAsesorAsignado = :idAsesor
               AND l.etapa = :etapa
               AND l.codigoTipificacion IS NULL
-              AND (:estado IS NULL OR l.estado = :estado)
+              AND l.estado IN :estados
             ORDER BY l.lastEntryAt DESC
             """)
     List<Lead> listarPendientesAsesorVentas(
             @Param("idAsesor") Long idAsesor,
             @Param("etapa") Etapa etapa,
-            @Param("estado") EstadoSeguimiento estado
+            @Param("estados") Collection<EstadoSeguimiento> estados
     );
 
     @Query("""
