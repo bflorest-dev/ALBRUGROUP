@@ -51,7 +51,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
                     permisos.stream().map(SimpleGrantedAuthority::new)
             ).toList();
 
-            UserSession userSession = new UserSession(username, empleadoId, nombreCompleto);
+            UserSession userSession = new UserSession(username, empleadoId, nombreCompleto, roles);
             UsernamePasswordAuthenticationToken authToken =
                     new UsernamePasswordAuthenticationToken(userSession, null, authorities);
             authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

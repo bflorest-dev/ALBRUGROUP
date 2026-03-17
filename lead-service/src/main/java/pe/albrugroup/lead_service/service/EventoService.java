@@ -3,12 +3,15 @@ package pe.albrugroup.lead_service.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.entity.Evento;
 import pe.albrugroup.lead_service.entity.Lead;
+import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.EventoRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
+import pe.albrugroup.lead_service.service.mapper.EventoMapper;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -22,6 +25,28 @@ public class EventoService {
 
     private final EventoRepository eventoRepository;
     private final LeadRepository leadRepository;
+    private final CurrentUser currentUser;
+    private final EventoMapper eventoMapper;
+
+    @Transactional
+    public EventoResponse registrarEvento(RegistrarEventoRequest request) {
+        if (!leadRepository.existsById(request.getIdLead())) {
+            throw new NotFoundException(Lead.class, request.getIdLead());
+        }
+
+        Evento evento = Evento.builder()
+                .idLead(request.getIdLead())
+                .idActor(currentUser.empleadoID())
+                .nombreActor(currentUser.nombreCompleto())
+                .rolActor(currentUser.rolPrincipal())
+                .accion(request.getAccion())
+                .etapa(request.getEtapa())
+                .tipificacion(request.getTipificacion())
+                .subtipificacion(request.getSubtipificacion())
+                .build();
+
+        return eventoMapper.toResponse(eventoRepository.save(evento));
+    }
 
     public List<EventoResponse> listarPorLead(Long idLead) {
         if (!leadRepository.existsById(idLead)) {
@@ -29,7 +54,7 @@ public class EventoService {
         }
 
         return eventoRepository.findByIdLeadOrderByCreatedAtDesc(idLead).stream()
-                .map(this::toResponse)
+                .map(eventoMapper::toResponse)
                 .toList();
     }
 
@@ -42,22 +67,7 @@ public class EventoService {
                 : fechaHasta.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
 
         return eventoRepository.listarPorActorYFechas(idEmpleado, fechaDesdeInstant, fechaHastaInstant).stream()
-                .map(this::toResponse)
+                .map(eventoMapper::toResponse)
                 .toList();
-    }
-
-    private EventoResponse toResponse(Evento evento) {
-        return EventoResponse.builder()
-                .id(evento.getId())
-                .idLead(evento.getIdLead())
-                .idActor(evento.getIdActor())
-                .nombreActor(evento.getNombreActor())
-                .rolActor(evento.getRolActor())
-                .accion(evento.getAccion())
-                .etapa(evento.getEtapa())
-                .tipificacion(evento.getTipificacion())
-                .subtipificacion(evento.getSubtipificacion())
-                .createdAt(evento.getCreatedAt())
-                .build();
     }
 }

@@ -6,6 +6,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 import pe.albrugroup.lead_service.security.UserSession;
 
+import java.util.List;
+
 @Component
 public class CurrentUser {
 
@@ -22,5 +24,13 @@ public class CurrentUser {
     }
     public String nombreCompleto() {
         return get().nombreCompleto();
+    }
+    public List<String> roles() {
+        return get().roles();
+    }
+    public String rolPrincipal() {
+        return roles().stream()
+                .findFirst()
+                .orElse("SIN_ROL");
     }
 }

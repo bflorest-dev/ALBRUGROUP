@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
@@ -21,7 +22,6 @@ public class Lead {
     private Long id;
 
     // GTR
-
     private String lead; // +51 987654321
 
     @Enumerated(EnumType.STRING)
@@ -36,8 +36,9 @@ public class Lead {
     @JoinColumn(name = "id_campana")
     private Campana campana;
 
-    //
-
+    @Enumerated(EnumType.STRING)
+    private Base  base;
+    // GENERAL
     private Long idTipificacion;
     private String codigoTipificacion;
 
@@ -79,7 +80,5 @@ public class Lead {
     private BigDecimal precioAdicionalesSnapshot;
 
     private BigDecimal precioFinal;
-
-
 
 }
