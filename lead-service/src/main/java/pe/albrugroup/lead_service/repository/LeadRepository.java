@@ -6,7 +6,9 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.enums.Accion;
+import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.response.LeadAsesorVentasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 
 import java.time.Instant;
@@ -53,5 +55,36 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("accionAsignacion") Accion accionAsignacion,
             @Param("inicioDia") Instant inicioDia,
             @Param("finDia") Instant finDia
+    );
+
+    @Query("""
+            SELECT l
+            FROM Lead l
+            LEFT JOIN FETCH l.datosPreventa
+            WHERE l.idAsesorAsignado = :idAsesor
+              AND l.etapa = :etapa
+              AND l.codigoTipificacion IS NULL
+              AND (:estado IS NULL OR l.estado = :estado)
+            ORDER BY l.lastEntryAt DESC
+            """)
+    List<Lead> listarPendientesAsesorVentas(
+            @Param("idAsesor") Long idAsesor,
+            @Param("etapa") Etapa etapa,
+            @Param("estado") EstadoSeguimiento estado
+    );
+
+    @Query("""
+            SELECT l
+            FROM Lead l
+            LEFT JOIN FETCH l.campana c
+            LEFT JOIN FETCH c.proveedor
+            LEFT JOIN FETCH l.datosPreventa
+            LEFT JOIN FETCH l.direccion
+            WHERE l.id = :idLead
+              AND l.idAsesorAsignado = :idAsesor
+            """)
+    Optional<Lead> buscarDetalleAsesor(
+            @Param("idLead") Long idLead,
+            @Param("idAsesor") Long idAsesor
     );
 }
