@@ -36,6 +36,7 @@ public class EventoService {
 
         Evento evento = Evento.builder()
                 .idLead(request.getIdLead())
+                .idCampana(request.getIdCampana())
                 .idActor(currentUser.empleadoID())
                 .nombreActor(currentUser.nombreCompleto())
                 .rolActor(currentUser.rolPrincipal())

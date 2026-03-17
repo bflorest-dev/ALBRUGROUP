@@ -5,16 +5,24 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity @Getter @Setter
+@Table(indexes = {
+        @Index(name = "idx_lead_etapa_last_entry_at", columnList = "etapa, lastEntryAt"),
+        @Index(name = "idx_lead_lead", columnList = "lead"),
+        @Index(name = "idx_lead_estado", columnList = "estado")
+})
 @AllArgsConstructor @NoArgsConstructor
 public class Lead {
 
@@ -37,7 +45,7 @@ public class Lead {
     private Campana campana;
 
     @Enumerated(EnumType.STRING)
-    private Base  base;
+    private Base base;
     // GENERAL
     private Long idTipificacion;
     private String codigoTipificacion;
@@ -78,7 +86,11 @@ public class Lead {
     private Set<LeadAdicional> adicionales = new HashSet<>();
 
     private BigDecimal precioAdicionalesSnapshot;
-
     private BigDecimal precioFinal;
 
+    @CreationTimestamp @Column(updatable = false)
+    private Instant createdAt;
+    private Instant lastEntryAt;
+    @UpdateTimestamp
+    private Instant updatedAt;
 }

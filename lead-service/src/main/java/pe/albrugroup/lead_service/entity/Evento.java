@@ -9,6 +9,11 @@ import pe.albrugroup.lead_service.entity.enums.Etapa;
 import java.time.Instant;
 
 @Entity @Getter @Setter @Builder
+@Table(indexes = {
+        @Index(name = "idx_evento_id_lead_created_at", columnList = "idLead, createdAt"),
+        @Index(name = "idx_evento_id_actor_created_at", columnList = "idActor, createdAt"),
+        @Index(name = "idx_evento_id_lead_accion_created_at", columnList = "idLead, accion, createdAt")
+})
 @AllArgsConstructor @NoArgsConstructor
 public class Evento {
 
@@ -16,6 +21,7 @@ public class Evento {
     private Long id;
 
     private Long idLead;
+    private Long idCampana;
 
     private Long idActor;
     private String nombreActor;

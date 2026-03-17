@@ -10,6 +10,7 @@ import pe.albrugroup.lead_service.entity.enums.Etapa;
 public class RegistrarEventoRequest {
 
     private Long idLead;
+    private Long idCampana;
     private Accion accion;
     private Etapa etapa;
     private String tipificacion;

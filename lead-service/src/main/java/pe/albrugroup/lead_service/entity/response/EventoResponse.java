@@ -13,6 +13,7 @@ public class EventoResponse {
 
     private Long id;
     private Long idLead;
+    private Long idCampana;
     private Long idActor;
     private String nombreActor;
     private String rolActor;
