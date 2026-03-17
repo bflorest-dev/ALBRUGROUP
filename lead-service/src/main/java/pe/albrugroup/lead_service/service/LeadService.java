@@ -3,6 +3,7 @@ package pe.albrugroup.lead_service.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.entity.*;
 import pe.albrugroup.lead_service.entity.enums.Accion;
@@ -14,6 +15,7 @@ import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaAdicionalRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaComercialRequest;
+import pe.albrugroup.lead_service.entity.request.LeadTipificacionRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorVentasResponse;
@@ -25,6 +27,8 @@ import pe.albrugroup.lead_service.repository.EventoRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
 import pe.albrugroup.lead_service.repository.PlanRepository;
 import pe.albrugroup.lead_service.repository.PromocionComercialRepository;
+import pe.albrugroup.lead_service.repository.SubtipificacionRepository;
+import pe.albrugroup.lead_service.repository.TipificacionRepository;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -47,6 +51,10 @@ public class LeadService {
     private final PlanRepository planRepository;
     private final PromocionComercialRepository promocionComercialRepository;
     private final AdicionalRepository adicionalRepository;
+    private final TipificacionRepository tipificacionRepository;
+    private final SubtipificacionRepository subtipificacionRepository;
+
+    private static final String TIPIFICACION_PREVENTA_COMPLETA = "PREVENTA_COMPLETA";
 
     public List<LeadGtrResponse> listarBandejaGtr(LocalDate fecha) {
         LocalDate fechaTrabajo = fecha == null ? LocalDate.now(ZoneId.systemDefault()) : fecha;
@@ -159,6 +167,46 @@ public class LeadService {
     }
 
     @Transactional
+    public void tipificarLead(Long idLead, LeadTipificacionRequest request) {
+        Lead lead = obtenerLeadPreventaDelAsesor(idLead);
+        Etapa etapaActual = lead.getEtapa();
+
+        Tipificacion tipificacion = tipificacionRepository.findByEtapaAndCodigoAndActivoTrue(
+                        etapaActual,
+                        request.getCodigoTipificacion().trim()
+                )
+                .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getCodigoTipificacion()));
+        Subtipificacion subtipificacion = subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
+                        tipificacion.getId(),
+                        request.getCodigoSubtipificacion().trim()
+                )
+                .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getCodigoSubtipificacion()));
+
+        if (TIPIFICACION_PREVENTA_COMPLETA.equals(tipificacion.getCodigo())) {
+            validarPreventaCompleta(lead);
+            lead.setEtapa(Etapa.VENTA);
+        }
+
+        lead.setIdTipificacion(tipificacion.getId());
+        lead.setCodigoTipificacion(tipificacion.getCodigo());
+        lead.setIdSubtipificacion(subtipificacion.getId());
+        lead.setCodigoSubtipificacion(subtipificacion.getCodigo());
+        lead.setEstado(EstadoSeguimiento.GESTIONADO);
+        lead.setIdAsesorAsignado(null);
+        lead.setNombreAsesorAsignado(null);
+
+        Lead savedLead = leadRepository.save(lead);
+        Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
+        registrarEventoTipificacion(
+                savedLead.getId(),
+                idCampana,
+                etapaActual,
+                tipificacion.getCodigo(),
+                subtipificacion.getCodigo()
+        );
+    }
+
+    @Transactional
     public void registrarIngresoLead(LeadIntakeRequest request) {
         String leadCompleto = construirLeadCompleto(request);
         Campana campana = obtenerCampanaActiva(request.getIdCampana());
@@ -235,6 +283,25 @@ public class LeadService {
                         .idCampana(idCampana)
                         .accion(Accion.ASIGNACION)
                         .etapa(etapa)
+                        .build()
+        );
+    }
+
+    private void registrarEventoTipificacion(
+            Long idLead,
+            Long idCampana,
+            Etapa etapa,
+            String tipificacion,
+            String subtipificacion
+    ) {
+        eventoService.registrarEvento(
+                RegistrarEventoRequest.builder()
+                        .idLead(idLead)
+                        .idCampana(idCampana)
+                        .accion(Accion.TIPIFICACION)
+                        .etapa(etapa)
+                        .tipificacion(tipificacion)
+                        .subtipificacion(subtipificacion)
                         .build()
         );
     }
@@ -414,5 +481,50 @@ public class LeadService {
             throw new NotFoundException(PromocionComercial.class, idPromocion);
         }
         return promocion;
+    }
+
+    private void validarPreventaCompleta(Lead lead) {
+        DatosPreventa datosPreventa = lead.getDatosPreventa();
+        Direccion direccion = lead.getDireccion();
+
+        if (datosPreventa == null) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Faltan datos de preventa");
+        }
+        if (direccion == null) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Faltan datos de direccion");
+        }
+        if (lead.getPlan() == null) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Falta seleccionar un plan");
+        }
+        if (lead.getPromocionInterna() == null && lead.getPromocionProveedor() == null) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Falta seleccionar al menos una promocion");
+        }
+
+        if (datosPreventa.getTipoDocumento() == null) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Falta tipoDocumento");
+        }
+        validarTextoObligatorio(datosPreventa.getNumeroDocumentoTitularServicio(), "Falta numeroDocumentoTitularServicio");
+        validarTextoObligatorio(datosPreventa.getNombreTitularServicio(), "Falta nombreTitularServicio");
+        validarTextoObligatorio(datosPreventa.getCelularRegistro(), "Falta celularRegistro");
+        validarTextoObligatorio(datosPreventa.getCorreo(), "Falta correo");
+        validarTextoObligatorio(datosPreventa.getNumeroDocumentoTitularCelularRegistro(), "Falta numeroDocumentoTitularCelularRegistro");
+        validarTextoObligatorio(datosPreventa.getNombreTitularCelularRegistro(), "Falta nombreTitularCelularRegistro");
+
+        validarTextoObligatorio(direccion.getUbigeo(), "Falta ubigeo");
+        if (direccion.getTipoDomicilio() == null) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Falta tipoDomicilio");
+        }
+        if (direccion.getTipoVia() == null) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Falta tipoVia");
+        }
+        validarTextoObligatorio(direccion.getVia(), "Falta via");
+        validarTextoObligatorio(direccion.getDireccion(), "Falta direccion");
+        validarTextoObligatorio(direccion.getReferencia(), "Falta referencia");
+    }
+
+    private void validarTextoObligatorio(String value, String message) {
+        if (value == null || value.isBlank()) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, message);
+        }
     }
 }

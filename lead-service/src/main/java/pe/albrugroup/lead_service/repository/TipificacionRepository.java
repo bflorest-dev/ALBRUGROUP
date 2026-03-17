@@ -13,4 +13,5 @@ public interface TipificacionRepository extends JpaRepository<Tipificacion, Long
 
     List<Tipificacion> findByEtapaAndActivoTrueOrderByOrdenAsc(Etapa etapa);
     Optional<Tipificacion> findByEtapaAndCodigo(Etapa etapa, String codigo);
+    Optional<Tipificacion> findByEtapaAndCodigoAndActivoTrue(Etapa etapa, String codigo);
 }

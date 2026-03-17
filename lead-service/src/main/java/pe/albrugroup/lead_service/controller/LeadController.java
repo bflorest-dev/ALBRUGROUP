@@ -19,6 +19,7 @@ import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaComercialRequest;
+import pe.albrugroup.lead_service.entity.request.LeadTipificacionRequest;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorVentasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
@@ -85,6 +86,15 @@ public class LeadController {
             @Valid @RequestBody LeadOfertaComercialRequest request
     ) {
         leadService.actualizarOfertaComercial(idLead, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{idLead}/tipificacion")
+    public ResponseEntity<Void> tipificarLead(
+            @PathVariable Long idLead,
+            @Valid @RequestBody LeadTipificacionRequest request
+    ) {
+        leadService.tipificarLead(idLead, request);
         return ResponseEntity.noContent().build();
     }
 
