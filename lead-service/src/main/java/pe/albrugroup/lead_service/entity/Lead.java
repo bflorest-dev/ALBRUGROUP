@@ -2,6 +2,7 @@ package pe.albrugroup.lead_service.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -17,7 +18,7 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
-@Entity @Getter @Setter
+@Entity @Getter @Setter @Builder
 @Table(indexes = {
         @Index(name = "idx_lead_etapa_last_entry_at", columnList = "etapa, lastEntryAt"),
         @Index(name = "idx_lead_lead", columnList = "lead"),

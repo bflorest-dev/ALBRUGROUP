@@ -55,17 +55,17 @@ public class LeadService {
     }
 
     private void registrarLeadNuevo(String leadCompleto, LeadIntakeRequest request, Campana campana) {
-        Lead lead = new Lead();
-        lead.setLead(leadCompleto);
-        lead.setCampana(campana);
-        lead.setBase(request.getBase());
-        lead.setEtapa(Etapa.PREVENTA);
-        lead.setEstado(EstadoSeguimiento.NUEVO);
-        lead.setLastEntryAt(Instant.now());
+        Lead lead = Lead.builder()
+                .lead(leadCompleto)
+                .campana(campana)
+                .base(request.getBase())
+                .etapa(Etapa.PREVENTA)
+                .estado(EstadoSeguimiento.NUEVO)
+                .lastEntryAt(Instant.now())
+                .build();
 
         Lead savedLead = leadRepository.save(lead);
-        registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa(),
-                savedLead.getCodigoTipificacion(), savedLead.getCodigoSubtipificacion());
+        registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa());
     }
 
     private void registrarIngresoLeadExistente(Lead lead, LeadIntakeRequest request, Campana campana) {
@@ -74,19 +74,16 @@ public class LeadService {
         lead.setLastEntryAt(Instant.now());
 
         Lead savedLead = leadRepository.save(lead);
-        registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa(),
-                savedLead.getCodigoTipificacion(), savedLead.getCodigoSubtipificacion());
+        registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa());
     }
 
-    private void registrarEventoRegistro(Long idLead, Long idCampana, Etapa etapa, String tipificacion, String subtipificacion) {
+    private void registrarEventoRegistro(Long idLead, Long idCampana, Etapa etapa) {
         eventoService.registrarEvento(
                 RegistrarEventoRequest.builder()
                         .idLead(idLead)
                         .idCampana(idCampana)
                         .accion(Accion.REGISTRO)
                         .etapa(etapa)
-                        .tipificacion(tipificacion)
-                        .subtipificacion(subtipificacion)
                         .build()
         );
     }
