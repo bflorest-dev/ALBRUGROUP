@@ -58,6 +58,7 @@ public class LeadService {
     private final LeadMapper leadMapper;
 
     private static final String TIPIFICACION_PREVENTA_COMPLETA = "PREVENTA_COMPLETA";
+    private static final String TIPIFICACION_AGENDADO = "AGENDADO";
 
     public List<LeadGtrResponse> listarBandejaGtr(LocalDate fecha) {
         LocalDate fechaTrabajo = fecha == null ? LocalDate.now(ZoneId.systemDefault()) : fecha;
@@ -77,6 +78,7 @@ public class LeadService {
         List<Lead> leads = leadRepository.listarPendientesAsesorVentas(
                 idAsesor,
                 Etapa.PREVENTA,
+                TIPIFICACION_AGENDADO,
                 List.of(EstadoSeguimiento.ASIGNADO, EstadoSeguimiento.EN_GESTION)
         );
         Map<Long, Instant> fechasAsignacion = obtenerFechasAsignacion(leads);
@@ -164,15 +166,22 @@ public class LeadService {
         if (TIPIFICACION_PREVENTA_COMPLETA.equals(tipificacion.getCodigo())) {
             validarPreventaCompleta(lead);
             lead.setEtapa(Etapa.VENTA);
+            lead.setEstado(EstadoSeguimiento.GESTIONADO);
+            lead.setIdAsesorAsignado(null);
+            lead.setNombreAsesorAsignado(null);
+        } else if (TIPIFICACION_AGENDADO.equals(tipificacion.getCodigo())) {
+            lead.setEstado(EstadoSeguimiento.ASIGNADO);
         }
-
         lead.setIdTipificacion(tipificacion.getId());
         lead.setCodigoTipificacion(tipificacion.getCodigo());
         lead.setIdSubtipificacion(subtipificacion.getId());
         lead.setCodigoSubtipificacion(subtipificacion.getCodigo());
-        lead.setEstado(EstadoSeguimiento.GESTIONADO);
-        lead.setIdAsesorAsignado(null);
-        lead.setNombreAsesorAsignado(null);
+        if (!TIPIFICACION_PREVENTA_COMPLETA.equals(tipificacion.getCodigo())
+                && !TIPIFICACION_AGENDADO.equals(tipificacion.getCodigo())) {
+            lead.setEstado(EstadoSeguimiento.GESTIONADO);
+            lead.setIdAsesorAsignado(null);
+            lead.setNombreAsesorAsignado(null);
+        }
 
         Lead savedLead = leadRepository.save(lead);
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();

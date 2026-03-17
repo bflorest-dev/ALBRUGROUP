@@ -64,13 +64,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN FETCH l.datosPreventa
             WHERE l.idAsesorAsignado = :idAsesor
               AND l.etapa = :etapa
-              AND l.codigoTipificacion IS NULL
+              AND (l.codigoTipificacion IS NULL OR l.codigoTipificacion = :codigoAgendado)
               AND l.estado IN :estados
             ORDER BY l.lastEntryAt DESC
             """)
     List<Lead> listarPendientesAsesorVentas(
             @Param("idAsesor") Long idAsesor,
             @Param("etapa") Etapa etapa,
+            @Param("codigoAgendado") String codigoAgendado,
             @Param("estados") Collection<EstadoSeguimiento> estados
     );
 
