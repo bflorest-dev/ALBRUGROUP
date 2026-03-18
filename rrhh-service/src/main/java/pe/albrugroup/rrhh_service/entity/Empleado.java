@@ -62,6 +62,13 @@ public class Empleado {
     private String cuentaBancaria;
     @Column(name = "cuenta_interbancaria")
     private String cuentaInterbancaria;
+    // AGREGAR
+//    private Boolean cuentaPropia;
+//    @Enumerated(EnumType.STRING)
+//    private Parentesco parentesco;
+//    private String celularTransferencia;
+//    private EmpresaContratista empresaContratista;
+    // AGREGAR
     // ESTADO OPERATIVO
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_operativo")
