@@ -1,9 +1,12 @@
 package pe.albrugroup.gateway_service.presence;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import pe.albrugroup.gateway_service.entity.enums.Disponibilidad;
 import pe.albrugroup.gateway_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.gateway_service.entity.response.ConnectedStatusResponse;
 import pe.albrugroup.gateway_service.entity.response.ConnectedUserResponse;
@@ -45,6 +48,7 @@ public class PresenceService {
                 .nombreCompleto(user.nombreCompleto())
                 .roles(user.roles())
                 .status("ONLINE")
+                .disponibilidad(Disponibilidad.DISPONIBLE)
                 .lastSeen(Instant.now())
                 .build();
 
@@ -144,6 +148,29 @@ public class PresenceService {
                         .build());
     }
 
+    public Mono<Void> actualizarDisponibilidad(AuthenticatedUser user, Disponibilidad disponibilidad) {
+        String key = PresenceKeys.employeeKey(user.empleadoId());
+
+        return presenceRedisTemplate.opsForValue()
+                .get(key)
+                .switchIfEmpty(Mono.error(new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "El empleado no tiene presencia activa en Redis"
+                )))
+                .flatMap(existingPresence -> {
+                    EmployeePresence updatedPresence = EmployeePresence.builder()
+                            .empleadoId(existingPresence.getEmpleadoId())
+                            .username(existingPresence.getUsername())
+                            .nombreCompleto(existingPresence.getNombreCompleto())
+                            .roles(existingPresence.getRoles())
+                            .status(existingPresence.getStatus())
+                            .disponibilidad(disponibilidad)
+                            .lastSeen(Instant.now())
+                            .build();
+                    return presenceRedisTemplate.opsForValue().set(key, updatedPresence, ttl).then();
+                });
+    }
+
     private List<String> safeRoles(List<String> roles) {
         return roles == null ? List.of() : roles;
     }
@@ -177,6 +204,7 @@ public class PresenceService {
                 .nombreCompleto(presence.getNombreCompleto())
                 .roles(presence.getRoles())
                 .status(presence.getStatus())
+                .disponibilidad(presence.getDisponibilidad())
                 .lastSeen(presence.getLastSeen())
                 .build();
     }

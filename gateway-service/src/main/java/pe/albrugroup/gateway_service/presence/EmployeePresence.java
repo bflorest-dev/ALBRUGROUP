@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import pe.albrugroup.gateway_service.entity.enums.Disponibilidad;
 
 import java.time.Instant;
 import java.util.List;
@@ -18,5 +19,6 @@ public class EmployeePresence {
     private String nombreCompleto;
     private List<String> roles;
     private String status;
+    private Disponibilidad disponibilidad;
     private Instant lastSeen;
 }

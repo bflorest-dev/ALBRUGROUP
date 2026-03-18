@@ -98,6 +98,12 @@ public class LeadController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{idLead}/contacto")
+    public ResponseEntity<Void> registrarContactoLead(@PathVariable Long idLead) {
+        leadService.registrarContacto(idLead);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/gtr")
     public ResponseEntity<List<LeadGtrResponse>> listarBandejaGtr(
             @RequestParam(required = false)

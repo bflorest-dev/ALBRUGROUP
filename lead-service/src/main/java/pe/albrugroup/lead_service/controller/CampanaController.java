@@ -47,6 +47,7 @@ public class CampanaController {
     }
 
     @GetMapping
+//    @PreAuthorize("hasAuthority('READ_CAMPANA')")
     public ResponseEntity<List<CampanaResponse>> listarCampanas(@RequestParam(required = false) Boolean activo)
     {
         var campanas = campanaService.listarCampanas(activo);

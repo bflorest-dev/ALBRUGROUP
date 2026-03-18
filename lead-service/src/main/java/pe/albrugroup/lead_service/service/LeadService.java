@@ -220,6 +220,17 @@ public class LeadService {
         registrarEventoAsignacion(savedLead.getId(), idCampana, savedLead.getEtapa());
     }
 
+    @Transactional
+    public void registrarContacto(Long idLead) {
+        Lead lead = obtenerLeadPreventaDelAsesor(idLead);
+        validarEstadoParaContacto(lead);
+        moverAEnGestionSiAplica(lead);
+
+        Lead savedLead = leadRepository.save(lead);
+        Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
+        registrarEventoContacto(savedLead.getId(), idCampana, savedLead.getEtapa());
+    }
+
     private void registrarLeadNuevo(String leadCompleto, LeadIntakeRequest request, Campana campana) {
         Lead lead = leadMapper.toNuevoLead(leadCompleto, request.getBase(), campana, Instant.now());
 
@@ -263,6 +274,17 @@ public class LeadService {
                         .idLead(idLead)
                         .idCampana(idCampana)
                         .accion(Accion.ASIGNACION)
+                        .etapa(etapa)
+                        .build()
+        );
+    }
+
+    private void registrarEventoContacto(Long idLead, Long idCampana, Etapa etapa) {
+        eventoService.registrarEvento(
+                RegistrarEventoRequest.builder()
+                        .idLead(idLead)
+                        .idCampana(idCampana)
+                        .accion(Accion.CONTACTO)
                         .etapa(etapa)
                         .build()
         );
@@ -426,6 +448,16 @@ public class LeadService {
     private void moverAEnGestionSiAplica(Lead lead) {
         if (lead.getEstado() == EstadoSeguimiento.ASIGNADO) {
             lead.setEstado(EstadoSeguimiento.EN_GESTION);
+        }
+    }
+
+    private void validarEstadoParaContacto(Lead lead) {
+        if (lead.getEstado() != EstadoSeguimiento.ASIGNADO
+                && lead.getEstado() != EstadoSeguimiento.EN_GESTION) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Solo se puede registrar contacto para leads ASIGNADO o EN_GESTION"
+            );
         }
     }
 
