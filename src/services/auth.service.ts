@@ -56,7 +56,7 @@ export class AuthService {
       console.log('[AuthService.login] 🔐 Iniciando login...');
       console.log('[AuthService.login]   - Username:', credentials.username);
       console.log('[AuthService.login]   - Endpoint: POST /autorizacion/login');
-      console.log('[AuthService.login]   - Target: Vite proxy /auth → http://localhost:8081');
+      console.log('[AuthService.login]   - Target: Vite proxy /auth → http://localhost:8080');
 
       // Axios ya tiene baseURL: '/auth' (vía Vite proxy)
       // Solo enviar el endpoint relativo

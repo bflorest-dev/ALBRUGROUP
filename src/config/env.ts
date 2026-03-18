@@ -2,14 +2,13 @@
  * Configuración de entorno
  * 
  * ARQUITECTURA:
- * - Puerto 8080: API Gateway (reenvía a otros servicios)
- * - Puerto 8081: Servicio de Autenticación (donde realmente está el login)
+ * - Puerto 8080: API Gateway (único medio de entrada)
  * 
  * DESARROLLO:
  * - Frontend corre en:     http://localhost:5173+
- * - Vite Proxy: /auth → http://localhost:8081
+ * - Vite Proxy: /auth → http://localhost:8080
  * - Axios baseURL debe ser /auth (usa el proxy)
- * - Requests: POST /auth/autorizacion/login → Vite proxy → :8081
+ * - Requests: POST /auth/autorizacion/login → Vite proxy → :8080
  * 
  * PRODUCCIÓN:
  * - Frontend apunta al gateway:  http://localhost:8080 (o dominio real)
@@ -18,14 +17,14 @@
 const isDev = import.meta.env.DEV;
 
 export const env = {
-  // En desarrollo: usar /auth (que el proxy Vite reescribe a :8081)
+  // En desarrollo: usar /auth (que el proxy Vite reescribe a :8080)
   // En producción: usar el gateway 8080
   API_URL: isDev ? '/auth' : (import.meta.env.VITE_API_URL || 'http://localhost:8080'),
   
   // Gateway URL (para referencias)
   BACKEND_URL: 'http://localhost:8080',
-  // Auth service URL (donde está el servicio real de autenticación)
-  AUTH_SERVICE_URL: 'http://localhost:8081',
+  // Auth service URL (única entrada a través del gateway 8080)
+  AUTH_SERVICE_URL: 'http://localhost:8080',
   
   // Modo desarrollo
   DEV: isDev,
