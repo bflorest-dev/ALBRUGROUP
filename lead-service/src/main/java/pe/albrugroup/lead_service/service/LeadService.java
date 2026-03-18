@@ -349,7 +349,8 @@ public class LeadService {
                 datosPreventa == null ? null : datosPreventa.getCorreo(),
                 datosPreventa == null ? null : datosPreventa.getNumeroDocumentoTitularCelularRegistro(),
                 datosPreventa == null ? null : datosPreventa.getNombreTitularCelularRegistro(),
-                direccion == null ? null : direccion.getUbigeo(),
+                datosPreventa == null ? null : datosPreventa.getUbigeoNacimiento(),
+                direccion == null ? null : direccion.getUbigeoDomicilio(),
                 direccion == null ? null : direccion.getTipoDomicilio(),
                 direccion == null ? null : direccion.getTipoVia(),
                 direccion == null ? null : direccion.getVia(),
@@ -483,7 +484,7 @@ public class LeadService {
         validarTextoObligatorio(datosPreventa.getNumeroDocumentoTitularCelularRegistro(), "Falta numeroDocumentoTitularCelularRegistro");
         validarTextoObligatorio(datosPreventa.getNombreTitularCelularRegistro(), "Falta nombreTitularCelularRegistro");
 
-        validarTextoObligatorio(direccion.getUbigeo(), "Falta ubigeo");
+        validarTextoObligatorio(direccion.getUbigeoDomicilio(), "Falta ubigeoDomicilio");
         if (direccion.getTipoDomicilio() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Falta tipoDomicilio");
         }

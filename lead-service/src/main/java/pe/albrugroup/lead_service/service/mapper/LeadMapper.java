@@ -45,6 +45,7 @@ public interface LeadMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "tipoDocumento", source = "tipoDocumento")
     @Mapping(target = "numeroDocumentoTitularServicio", expression = "java(trimToNull(request.getNumeroDocumentoTitularServicio()))")
+    @Mapping(target = "ubigeoNacimiento", expression = "java(trimToNull(request.getUbigeoNacimiento()))")
     @Mapping(target = "nombreTitularServicio", expression = "java(trimToNull(request.getNombreTitularServicio()))")
     @Mapping(target = "celularRegistro", expression = "java(trimToNull(request.getCelularRegistro()))")
     @Mapping(target = "celularReferencia", expression = "java(trimToNull(request.getCelularReferencia()))")
@@ -54,7 +55,7 @@ public interface LeadMapper {
     void updateDatosPreventa(LeadDatosPreventaRequest request, @MappingTarget DatosPreventa entity);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "ubigeo", expression = "java(trimToNull(request.getUbigeo()))")
+    @Mapping(target = "ubigeoDomicilio", expression = "java(trimToNull(request.getUbigeoDomicilio()))")
     @Mapping(target = "tipoDomicilio", source = "tipoDomicilio")
     @Mapping(target = "tipoVia", source = "tipoVia")
     @Mapping(target = "via", expression = "java(trimToNull(request.getVia()))")

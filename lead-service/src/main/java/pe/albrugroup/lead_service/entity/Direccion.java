@@ -16,7 +16,7 @@ public class Direccion {
     private Long id;
 
     @Column(length = 6)
-    private String ubigeo;
+    private String ubigeoDomicilio; // UPDATE
     @Enumerated(EnumType.STRING)
     private TipoDomicilio tipoDomicilio;
     @Enumerated(EnumType.STRING)

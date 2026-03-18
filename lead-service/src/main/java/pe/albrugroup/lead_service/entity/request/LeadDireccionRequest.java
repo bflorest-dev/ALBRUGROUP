@@ -1,5 +1,7 @@
 package pe.albrugroup.lead_service.entity.request;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.TipoDomicilio;
@@ -11,13 +13,20 @@ import java.math.BigDecimal;
 @Setter
 public class LeadDireccionRequest {
 
-    private String ubigeo;
+    @NotBlank(message = "ubigeoDomicilio es obligatorio")
+    private String ubigeoDomicilio;
     private TipoDomicilio tipoDomicilio;
     private TipoVia tipoVia;
     private String via;
+
+    @NotBlank(message = "direccion es obligatoria")
     private String direccion;
     private String referencia;
+
+    @NotNull(message = "latitud es obligatoria")
     private BigDecimal latitud;
+
+    @NotNull(message = "longitud es obligatoria")
     private BigDecimal longitud;
     private String urbanizacion;
     private String numero;

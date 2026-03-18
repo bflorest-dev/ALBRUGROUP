@@ -15,6 +15,8 @@ public class DatosPreventa {
     @Enumerated(EnumType.STRING)
     private TipoDocumento tipoDocumento;
     private String numeroDocumentoTitularServicio;
+    @Column(length = 6)
+    private String ubigeoNacimiento; // UPDATE
     private String nombreTitularServicio;
 
     private String celularRegistro;
