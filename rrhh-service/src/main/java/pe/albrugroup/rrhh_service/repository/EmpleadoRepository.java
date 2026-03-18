@@ -23,6 +23,7 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
             WHERE (:estadoOperativo IS NULL OR e.estadoOperativo = :estadoOperativo)
               AND (:distrito IS NULL OR e.distrito = :distrito)
               AND (:banco IS NULL OR e.banco = :banco)
+              AND (:idEmpresaContratista IS NULL OR e.empresaContratista.id = :idEmpresaContratista)
               AND (:dni IS NULL OR e.numeroDocumento = :dni)
               AND (:celular IS NULL OR e.celularPersonal = :celular)
               AND (:q IS NULL OR :q = '' OR
@@ -31,8 +32,9 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
                   )
     """)
     Page<Empleado> getEmpleados(@Param("q") String q, @Param("dni") String dni, @Param("celular") String celular,
-                                @Param("distrito") Distrito distrito, @Param("banco") Banco banco,
-                                @Param("estadoOperativo") EstadoOperativo estadoOperativo, Pageable pageable);
+                                 @Param("distrito") Distrito distrito, @Param("banco") Banco banco,
+                                 @Param("idEmpresaContratista") Long idEmpresaContratista,
+                                 @Param("estadoOperativo") EstadoOperativo estadoOperativo, Pageable pageable);
     Optional<Empleado> findByNumeroDocumento(String numeroDocumento);
 
     @Query("SELECT DISTINCT e FROM Empleado e WHERE " +

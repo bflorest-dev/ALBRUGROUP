@@ -32,6 +32,10 @@ public class EmpleadoResponse {
     private Banco banco;
     private String cuentaBancaria;
     private String cuentaInterbancaria;
+    private Boolean cuentaPropia;
+    private Parentesco parentesco;
+    private String celularTransferencia;
+    private EmpresaContratistaResponse empresaContratista;
     // ESTADO OPERATIVO
     private EstadoOperativo estadoOperativo;
     private Compania compania;

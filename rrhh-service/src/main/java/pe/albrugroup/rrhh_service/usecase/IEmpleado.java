@@ -14,7 +14,7 @@ import java.util.List;
 public interface IEmpleado {
 
     Page<EmpleadoResponse> getEmpleados(String q, String dni, String celular, Distrito distrito, Banco banco,
-                                       EstadoOperativo estado, Pageable pageable);
+                                       Long idEmpresaContratista, EstadoOperativo estado, Pageable pageable);
     Page<EmpleadoResponse> getEmpleadoUniversal(String dato, Pageable pageable);
     EmpleadoResponse getEmpleadoDocumento(String documento);
     EmpleadoResponse registrarEmpleado(RegistrarEmpleadoRequest nuevoEmpleado);

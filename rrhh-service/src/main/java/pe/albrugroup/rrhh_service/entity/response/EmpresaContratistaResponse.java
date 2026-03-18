@@ -8,11 +8,8 @@ import lombok.Setter;
 
 import java.time.Instant;
 
-@Builder
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
+@Builder @Getter @Setter
+@AllArgsConstructor @NoArgsConstructor
 public class EmpresaContratistaResponse {
 
     private Long id;

@@ -17,12 +17,17 @@ import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.rrhh_service.entity.enums.Banco;
 import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
-import pe.albrugroup.rrhh_service.entity.request.empleado.*;
+import pe.albrugroup.rrhh_service.entity.request.empleado.DatosContactoCorporativoRequest;
+import pe.albrugroup.rrhh_service.entity.request.empleado.DatosContactoUbicacionRequest;
+import pe.albrugroup.rrhh_service.entity.request.empleado.DatosFinancierosRequest;
+import pe.albrugroup.rrhh_service.entity.request.empleado.DatosPersonalesRequest;
+import pe.albrugroup.rrhh_service.entity.request.empleado.RegistrarEmpleadoRequest;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 import pe.albrugroup.rrhh_service.security.UserSession;
 import pe.albrugroup.rrhh_service.usecase.IEmpleado;
 
-@RestController @Validated
+@RestController
+@Validated
 @RequiredArgsConstructor
 @Tag(name = "Empleados", description = "Gestion y registro de Postulantes/Empleados")
 @RequestMapping("/empleados")
@@ -30,60 +35,72 @@ public class EmpleadoController {
 
     private final IEmpleado empleadoService;
 
-    @PatchMapping("/{id}/lista-negra") @PreAuthorize("hasAuthority('BLACKLIST_EMPLEADO')")
-    public ResponseEntity<EmpleadoResponse> marcarListaNegra(@PathVariable @Positive Long id, @AuthenticationPrincipal UserSession user) {
+    @PatchMapping("/{id}/lista-negra")
+    @PreAuthorize("hasAuthority('BLACKLIST_EMPLEADO')")
+    public ResponseEntity<EmpleadoResponse> marcarListaNegra(@PathVariable @Positive Long id,
+                                                             @AuthenticationPrincipal UserSession user) {
         var emplado = empleadoService.listaNegraEmpleado(id, user.empleadoId());
         return ResponseEntity.ok(emplado);
     }
-    
+
     @Operation(summary = "Listado de Empleados",
-            description = "Obtiene empleados con filtros opcionales por texto libre, documento, celular, distrito, banco, " +
-                    "estado operativo y paginación.")
-    @GetMapping @PreAuthorize("hasAuthority('READ_EMPLEADOS')")
+            description = "Obtiene empleados con filtros opcionales por texto libre, documento, celular, distrito, banco, empresa contratista, " +
+                    "estado operativo y paginacion.")
+    @GetMapping
+    @PreAuthorize("hasAuthority('READ_EMPLEADOS')")
     public ResponseEntity<Page<EmpleadoResponse>> getEmpleados(
-    @Parameter(description = "Texto libre para búsqueda en múltiples campos", example = "Perez")
+            @Parameter(description = "Texto libre para busqueda en multiples campos", example = "Perez")
             @RequestParam(required = false) String q,
-    @Parameter(description = "Número de documento (DNI u otro)", example = "12345678")
+            @Parameter(description = "Numero de documento (DNI u otro)", example = "12345678")
             @RequestParam(required = false) String dni,
-    @Parameter(description = "Celular personal", example = "999888777")
+            @Parameter(description = "Celular personal", example = "999888777")
             @RequestParam(required = false) String celular,
-    @Parameter(description = "Distrito del empleado", schema = @Schema(implementation = Distrito.class))
+            @Parameter(description = "Distrito del empleado", schema = @Schema(implementation = Distrito.class))
             @RequestParam(required = false) Distrito distrito,
-    @Parameter(description = "Banco para el pago", schema = @Schema(implementation = Banco.class))
+            @Parameter(description = "Banco para el pago", schema = @Schema(implementation = Banco.class))
             @RequestParam(required = false) Banco banco,
-    @Parameter(description = "Estado operativo del empleado", schema = @Schema(implementation = EstadoOperativo.class))
+            @Parameter(description = "ID de la empresa contratista", example = "1")
+            @RequestParam(required = false) @Positive Long idEmpresaContratista,
+            @Parameter(description = "Estado operativo del empleado", schema = @Schema(implementation = EstadoOperativo.class))
             @RequestParam(required = false) EstadoOperativo estado,
-    @Parameter(description = "Parámetros de paginación: `page`, `size`, `sort` (ejemplo: sort=apellidos,asc)")
+            @Parameter(description = "Parametros de paginacion: `page`, `size`, `sort` (ejemplo: sort=apellidos,asc)")
             Pageable pageable
     ) {
-        return ResponseEntity.ok(empleadoService.getEmpleados(q, dni, celular, distrito, banco, estado, pageable));
+        return ResponseEntity.ok(
+                empleadoService.getEmpleados(q, dni, celular, distrito, banco, idEmpresaContratista, estado, pageable)
+        );
     }
+
     @Operation(
-            summary = "Búsqueda universal de empleados",
-            description = "Busca empleados por un dato único (documento, nombres, apellidos, celular o correo) con paginación."
+            summary = "Busqueda universal de empleados",
+            description = "Busca empleados por un dato unico (documento, nombres, apellidos, celular o correo) con paginacion."
     )
-    @GetMapping("/{dato}/universal") @PreAuthorize("hasAuthority('READ_EMPLEADOS')")
+    @GetMapping("/{dato}/universal")
+    @PreAuthorize("hasAuthority('READ_EMPLEADOS')")
     public ResponseEntity<Page<EmpleadoResponse>> obtenerEmpleadoFiltroUniversal(
-    @Parameter(description = "Dato universal para búsqueda (documento, nombres, apellidos, celular o correo)", example = "Juan")
+            @Parameter(description = "Dato universal para busqueda (documento, nombres, apellidos, celular o correo)", example = "Juan")
             @PathVariable String dato,
-    @Parameter(description = "Parámetros de paginación: `page`, `size`, `sort` (ejemplo: sort=nombres,asc)")
+            @Parameter(description = "Parametros de paginacion: `page`, `size`, `sort` (ejemplo: sort=nombres,asc)")
             Pageable pageable) {
         return ResponseEntity.ok(empleadoService.getEmpleadoUniversal(dato, pageable));
     }
+
     @Operation(
-            summary = "Obtener empleado por número de documento",
-            description = "Devuelve la información del empleado asociado al número de documento."
+            summary = "Obtener empleado por numero de documento",
+            description = "Devuelve la informacion del empleado asociado al numero de documento."
     )
-    @GetMapping("/{documento}/numero-documento") @PreAuthorize("hasAuthority('READ_EMPLEADOS')")
+    @GetMapping("/{documento}/numero-documento")
+    @PreAuthorize("hasAuthority('READ_EMPLEADOS')")
     public ResponseEntity<EmpleadoResponse> getEmpleadoNumeroDocumento(
-    @Parameter(description = "Número de documento del empleado", example = "12345678")
+            @Parameter(description = "Numero de documento del empleado", example = "12345678")
             @PathVariable @Positive String documento) {
         return ResponseEntity.ok(empleadoService.getEmpleadoDocumento(documento));
     }
 
     @Operation(summary = "Registrar empleado",
             description = "Registra un nuevo empleado a partir de datos personales, de contacto, financieros y corporativos.")
-    @PostMapping @PreAuthorize("hasAuthority('CREATE_EMPLEADOS')")
+    @PostMapping
+    @PreAuthorize("hasAuthority('CREATE_EMPLEADOS')")
     public ResponseEntity<EmpleadoResponse> registrarEmpleado(@RequestBody RegistrarEmpleadoRequest request) {
         var empleado = empleadoService.registrarEmpleado(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(empleado);
@@ -91,39 +108,45 @@ public class EmpleadoController {
 
     @Operation(summary = "Actualizar datos personales",
             description = "Actualiza nombres, apellidos, documento, estado civil, fecha de nacimiento y datos personales del empleado.")
-    @PatchMapping("/{id}/datos-personales")  @PreAuthorize("hasAuthority('UPDATE_EMPLEADOS')")
+    @PatchMapping("/{id}/datos-personales")
+    @PreAuthorize("hasAuthority('UPDATE_EMPLEADOS')")
     public ResponseEntity<EmpleadoResponse> actulizarDatosPersonales(@RequestBody DatosPersonalesRequest request,
                                                                      @Parameter(description = "ID del empleado", example = "10")
                                                                      @PathVariable @Positive Long id) {
         var empleado = empleadoService.actualizarDatosPersonales(id, request);
         return ResponseEntity.ok(empleado);
     }
-    @Operation(summary = "Actualizar datos de contacto y ubicación",
-            description = "Actualiza celular, correo, dirección y distrito del empleado.")
-    @PatchMapping("/{id}/datos-contacto-ubicacion") @PreAuthorize("hasAuthority('UPDATE_EMPLEADOS')")
+
+    @Operation(summary = "Actualizar datos de contacto y ubicacion",
+            description = "Actualiza celular, correo, direccion y distrito del empleado.")
+    @PatchMapping("/{id}/datos-contacto-ubicacion")
+    @PreAuthorize("hasAuthority('UPDATE_EMPLEADOS')")
     public ResponseEntity<EmpleadoResponse> actulizarDatosContactoUbicacion(@RequestBody DatosContactoUbicacionRequest request,
                                                                             @Parameter(description = "ID del empleado", example = "10")
                                                                             @PathVariable @Positive Long id) {
         var empleado = empleadoService.actualizarContactoUbicacion(id, request);
         return ResponseEntity.ok(empleado);
     }
+
     @Operation(summary = "Actualizar datos financieros",
             description = "Actualiza banco, cuenta bancaria, CCI y datos financieros del empleado.")
-    @PatchMapping("/{id}/datos-financieros") @PreAuthorize("hasAuthority('UPDATE_EMPLEADOS')")
+    @PatchMapping("/{id}/datos-financieros")
+    @PreAuthorize("hasAuthority('UPDATE_EMPLEADOS')")
     public ResponseEntity<EmpleadoResponse> actualizarDatosFinancieros(@RequestBody DatosFinancierosRequest request,
                                                                        @Parameter(description = "ID del empleado", example = "10")
                                                                        @PathVariable @Positive Long id) {
         var empleado = empleadoService.actualizarDatosFinancieros(id, request);
         return ResponseEntity.ok(empleado);
     }
+
     @Operation(summary = "Actualizar datos corporativos",
-            description = "Actualiza el correo y celular corporativo, y demás datos de contacto corporativo del empleado.")
-    @PatchMapping("/{id}/datos-corporativos") @PreAuthorize("hasAuthority('UPDATE_EMPLEADOS')")
+            description = "Actualiza el correo y celular corporativo, y demas datos de contacto corporativo del empleado.")
+    @PatchMapping("/{id}/datos-corporativos")
+    @PreAuthorize("hasAuthority('UPDATE_EMPLEADOS')")
     public ResponseEntity<EmpleadoResponse> actualizarDatosCorporativos(@RequestBody DatosContactoCorporativoRequest request,
                                                                         @Parameter(description = "ID del empleado", example = "10")
                                                                         @PathVariable @Positive Long id) {
         var empleado = empleadoService.actualizarContactoCorporativo(id, request);
         return ResponseEntity.ok(empleado);
     }
-
 }

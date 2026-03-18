@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.rrhh_service.entity.Empleado;
+import pe.albrugroup.rrhh_service.entity.EmpresaContratista;
 import pe.albrugroup.rrhh_service.entity.enums.Banco;
 import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
@@ -14,6 +15,8 @@ import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 import pe.albrugroup.rrhh_service.exception.EmpleadoDocumentoNotFoundException;
 import pe.albrugroup.rrhh_service.exception.EmpleadoListaNegraException;
 import pe.albrugroup.rrhh_service.exception.EmpleadoNotFoundException;
+import pe.albrugroup.rrhh_service.exception.EmpresaContratistaNotFoundException;
+import pe.albrugroup.rrhh_service.repository.EmpresaContratistaRepository;
 import pe.albrugroup.rrhh_service.service.mapper.EmpleadoMapper;
 import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
 import pe.albrugroup.rrhh_service.usecase.IEmpleado;
@@ -25,6 +28,7 @@ import java.util.List;
 public class EmpleadoService implements IEmpleado {
 
     private final EmpleadoRepository repository;
+    private final EmpresaContratistaRepository empresaContratistaRepository;
     private final EmpleadoMapper mapper;
     private final EmpleadoEventoService eventoService;
 
@@ -40,10 +44,10 @@ public class EmpleadoService implements IEmpleado {
 
     @Override @Transactional(readOnly = true)
     public Page<EmpleadoResponse> getEmpleados(String q, String dni, String celular, Distrito distrito, Banco banco,
-                                              EstadoOperativo estado, Pageable pageable)
+                                               Long idEmpresaContratista, EstadoOperativo estado, Pageable pageable)
     {
         EstadoOperativo estadoOperativo = estado != null ? estado : EstadoOperativo.ACTIVO;
-        return repository.getEmpleados(q, dni, celular, distrito, banco, estadoOperativo, pageable)
+        return repository.getEmpleados(q, dni, celular, distrito, banco, idEmpresaContratista, estadoOperativo, pageable)
                 .map(mapper::toResponse);
     }
     @Override @Transactional(readOnly = true)
@@ -65,6 +69,7 @@ public class EmpleadoService implements IEmpleado {
     @Override
     public EmpleadoResponse registrarEmpleado(RegistrarEmpleadoRequest nuevoEmpleado) {
         Empleado empleado = mapper.toEntity(nuevoEmpleado);
+        empleado.setEmpresaContratista(obtenerEmpresaContratista(nuevoEmpleado.getIdEmpresaContratista()));
         empleado.setEstadoOperativo(EstadoOperativo.POSTULANTE);
         empleado.setListaNegra(false);
         return mapper.toResponse(repository.save(empleado));
@@ -92,6 +97,7 @@ public class EmpleadoService implements IEmpleado {
         Empleado empleado = repository.findById(idEmpleado)
                 .orElseThrow(() -> new EmpleadoNotFoundException(idEmpleado));
         mapper.updateDatosFinancieros(datosFinancieros, empleado);
+        empleado.setEmpresaContratista(obtenerEmpresaContratista(datosFinancieros.getIdEmpresaContratista()));
         return mapper.toResponse(empleado);
     }
     @Override
@@ -100,5 +106,13 @@ public class EmpleadoService implements IEmpleado {
                 .orElseThrow(() -> new EmpleadoNotFoundException(idEmpleado));
         mapper.updateDatosContactoCorporativo(datosCorporativos, empleado);
         return mapper.toResponse(empleado);
+    }
+
+    private EmpresaContratista obtenerEmpresaContratista(Long idEmpresaContratista) {
+        if (idEmpresaContratista == null) {
+            return null;
+        }
+        return empresaContratistaRepository.findById(idEmpresaContratista)
+                .orElseThrow(() -> new EmpresaContratistaNotFoundException(idEmpresaContratista));
     }
 }

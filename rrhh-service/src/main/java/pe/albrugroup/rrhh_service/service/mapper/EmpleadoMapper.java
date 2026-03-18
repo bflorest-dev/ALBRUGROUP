@@ -9,7 +9,7 @@ import pe.albrugroup.rrhh_service.entity.request.empleado.*;
 import pe.albrugroup.rrhh_service.entity.request.postulante.RegistrarPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = EmpresaContratistaMapper.class)
 public interface EmpleadoMapper {
 
     Empleado toEntity(RegistrarEmpleadoRequest request);

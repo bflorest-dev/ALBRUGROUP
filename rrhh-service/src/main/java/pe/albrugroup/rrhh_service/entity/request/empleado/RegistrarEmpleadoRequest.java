@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.Positive;
 import lombok.*;
 import pe.albrugroup.rrhh_service.entity.enums.*;
 import java.time.LocalDate;
@@ -31,4 +32,8 @@ public class RegistrarEmpleadoRequest {
     @NotNull private Banco banco;
     @NotBlank private String cuentaBancaria;
     @NotBlank private String cuentaInterbancaria;
+    @NotNull private Boolean cuentaPropia;
+    private Parentesco parentesco;
+    private String celularTransferencia;
+    @Positive private Long idEmpresaContratista;
 }

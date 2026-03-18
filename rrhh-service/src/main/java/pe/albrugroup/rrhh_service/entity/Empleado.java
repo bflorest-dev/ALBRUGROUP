@@ -62,13 +62,15 @@ public class Empleado {
     private String cuentaBancaria;
     @Column(name = "cuenta_interbancaria")
     private String cuentaInterbancaria;
-    // AGREGAR
-//    private Boolean cuentaPropia;
-//    @Enumerated(EnumType.STRING)
-//    private Parentesco parentesco;
-//    private String celularTransferencia;
-//    private EmpresaContratista empresaContratista;
-    // AGREGAR
+    @Column(name = "cuenta_propia")
+    private Boolean cuentaPropia;
+    @Enumerated(EnumType.STRING)
+    private Parentesco parentesco;
+    @Column(name = "celular_transferencia")
+    private String celularTransferencia;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "empresa_contratista_id")
+    private EmpresaContratista empresaContratista;
     // ESTADO OPERATIVO
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_operativo")
