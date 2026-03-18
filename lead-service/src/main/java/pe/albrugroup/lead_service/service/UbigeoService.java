@@ -1,8 +1,10 @@
 package pe.albrugroup.lead_service.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.albrugroup.lead_service.configuration.CacheNames;
 import pe.albrugroup.lead_service.entity.Departamento;
 import pe.albrugroup.lead_service.entity.Provincia;
 import pe.albrugroup.lead_service.entity.response.DepartamentoResponse;
@@ -26,10 +28,12 @@ public class UbigeoService {
     private final DistritoRepository distritoRepository;
     private final UbigeoMapper mapper;
 
+    @Cacheable(value = CacheNames.UBIGEO, key = "'departamentos'")
     public List<DepartamentoResponse> listarDepartamentos() {
         return mapper.toDepartamentoResponse(departamentoRepository.findAllByOrderByNombreAsc());
     }
 
+    @Cacheable(value = CacheNames.UBIGEO, key = "'provincias:' + #idDepartamento")
     public List<ProvinciaResponse> listarProvincias(Long idDepartamento) {
         Departamento departamento = departamentoRepository.findById(idDepartamento)
                 .orElseThrow(() -> new NotFoundException(Departamento.class, idDepartamento));
@@ -38,6 +42,7 @@ public class UbigeoService {
         return mapper.toProvinciaResponse(provincias);
     }
 
+    @Cacheable(value = CacheNames.UBIGEO, key = "'distritos:' + #idProvincia")
     public List<DistritoResponse> listarDistritos(Long idProvincia) {
         Provincia provincia = provinciaRepository.findById(idProvincia)
                 .orElseThrow(() -> new NotFoundException(Provincia.class, idProvincia));

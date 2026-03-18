@@ -1,8 +1,11 @@
 package pe.albrugroup.lead_service.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.albrugroup.lead_service.configuration.CacheNames;
 import pe.albrugroup.lead_service.entity.CuentaPublicitaria;
 import pe.albrugroup.lead_service.entity.request.CuentaPublicitariaRequest;
 import pe.albrugroup.lead_service.entity.response.CuentaPublicitariaResponse;
@@ -19,12 +22,14 @@ public class CuentaPublicitariaService {
     private final CuentaPublicitariaMapper mapper;
     private final CuentaPublicitariaRepository repository;
 
+    @CacheEvict(value = CacheNames.CUENTAS_PUBLICITARIAS, allEntries = true)
     public CuentaPublicitariaResponse registrarCuentaPublicitaria(CuentaPublicitariaRequest request) {
         CuentaPublicitaria cuentaPublicitaria = mapper.toEntity(request);
         cuentaPublicitaria.setActivo(Boolean.TRUE);
         return mapper.toResponse(repository.save(cuentaPublicitaria));
     }
 
+    @CacheEvict(value = CacheNames.CUENTAS_PUBLICITARIAS, allEntries = true)
     public CuentaPublicitariaResponse desactivarCuentaPublicitaria(Long idCuentaPublicitaria) {
         CuentaPublicitaria cuentaPublicitaria = repository.findByIdAndActivoTrue(idCuentaPublicitaria)
                 .orElseThrow(() -> new NotFoundException(CuentaPublicitaria.class, idCuentaPublicitaria));
@@ -33,6 +38,7 @@ public class CuentaPublicitariaService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = CacheNames.CUENTAS_PUBLICITARIAS, key = "#activo == null ? 'all' : #activo")
     public List<CuentaPublicitariaResponse> listarCuentasPublicitarias(Boolean activo) {
         return repository.listarPorActivo(activo).stream()
                 .map(mapper::toResponse)

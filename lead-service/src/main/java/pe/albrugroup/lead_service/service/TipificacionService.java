@@ -1,8 +1,11 @@
 package pe.albrugroup.lead_service.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
+import pe.albrugroup.lead_service.configuration.CacheNames;
 import pe.albrugroup.lead_service.entity.Subtipificacion;
 import pe.albrugroup.lead_service.entity.Tipificacion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
@@ -41,6 +44,7 @@ public class TipificacionService {
     private final SubtipificacionRepository subtipificacionRepository;
     private final TipificacionMapper mapper;
 
+    @Cacheable(value = CacheNames.TIPIFICACIONES, key = "#etapa")
     public CatalogoResponse getCatalogoPorEtapa(Etapa etapa) {
         List<Tipificacion> tipificaciones = tipificacionRepository.findByEtapaAndActivoTrueOrderByOrdenAsc(etapa);
         if (tipificaciones.isEmpty()) {
@@ -69,6 +73,7 @@ public class TipificacionService {
     }
 
     @Transactional
+    @CacheEvict(value = CacheNames.TIPIFICACIONES, allEntries = true)
     public CatalogoResponse upsertCatalogo(CatalogoRequest request) {
         List<TipificacionCatalogoRequest> tipificacionesRequest = Objects.requireNonNullElse(
                 request.getTipificaciones(),
@@ -90,6 +95,7 @@ public class TipificacionService {
     }
 
     @Transactional
+    @CacheEvict(value = CacheNames.TIPIFICACIONES, allEntries = true)
     public CatalogoResponse actualizarEstadoCatalogo(CatalogoEstadoRequest request) {
         List<Long> tipificacionesActivar = normalizarIds(request.getTipificacionesActivar());
         List<Long> tipificacionesDesactivar = normalizarIds(request.getTipificacionesDesactivar());

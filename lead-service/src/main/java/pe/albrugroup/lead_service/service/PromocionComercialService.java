@@ -1,8 +1,11 @@
 package pe.albrugroup.lead_service.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.albrugroup.lead_service.configuration.CacheNames;
 import pe.albrugroup.lead_service.entity.PromocionComercial;
 import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.Zona;
@@ -29,6 +32,7 @@ public class PromocionComercialService {
     private final ZonaRepository zonaRepository;
     private final PromocionComercialMapper mapper;
 
+    @CacheEvict(value = CacheNames.PROMOCIONES_COMERCIALES, allEntries = true)
     public PromocionComercialResponse registrarPromocion(PromocionComercialRequest request) {
         Proveedor proveedor = null;
         if (request.getIdProveedor() != null) {
@@ -54,6 +58,7 @@ public class PromocionComercialService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = CacheNames.PROMOCIONES_COMERCIALES, key = "(#idProveedor == null ? 'all' : #idProveedor) + ':' + (#interno == null ? 'all' : #interno) + ':' + (#idZona == null ? 'all' : #idZona)")
     public List<PromocionComercialResponse> listarPromociones(Long idProveedor, Boolean interno, Long idZona) {
         LocalDate fechaActual = LocalDate.now();
         return repository.listarActivas(idProveedor, interno, idZona).stream()
@@ -62,6 +67,7 @@ public class PromocionComercialService {
                 .toList();
     }
 
+    @CacheEvict(value = CacheNames.PROMOCIONES_COMERCIALES, allEntries = true)
     public PromocionComercialResponse desactivarPromocion(Long idPromocion) {
         PromocionComercial promocion = repository.findById(idPromocion)
                 .orElseThrow(() -> new NotFoundException(PromocionComercial.class, idPromocion));

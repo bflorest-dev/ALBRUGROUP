@@ -1,8 +1,11 @@
 package pe.albrugroup.lead_service.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.albrugroup.lead_service.configuration.CacheNames;
 import pe.albrugroup.lead_service.entity.*;
 import pe.albrugroup.lead_service.entity.request.AdicionalRequest;
 import pe.albrugroup.lead_service.entity.request.PlanAdicionalRequest;
@@ -35,6 +38,7 @@ public class PlanService {
     private final TelevisionRepository televisionRepository;
     private final TelefonoRepository telefonoRepository;
 
+    @CacheEvict(value = CacheNames.ADICIONALES, allEntries = true)
     public AdicionalResponse registrarAdicional(AdicionalRequest request) {
         Proveedor proveedor = buscarProveedorActivo(request.getIdProveedor());
         if (adicionalRepository.existsByProveedorIdAndNombreIgnoreCaseAndActivoTrue(
@@ -53,6 +57,7 @@ public class PlanService {
         return mapper.toResponse(adicionalRepository.save(adicional));
     }
 
+    @CacheEvict(value = CacheNames.PLANES, allEntries = true)
     public PlanResponse registrarPlan(PlanRequest request) {
         Proveedor proveedor = buscarProveedorActivo(request.getIdProveedor());
         LocalDate fechaActual = LocalDate.now();
@@ -77,6 +82,7 @@ public class PlanService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = CacheNames.PLANES, key = "'servicios:' + #idProveedor")
     public ServiciosProveedorResponse listarServicios(Long idProveedor) {
         Proveedor proveedor = buscarProveedorActivo(idProveedor);
         return new ServiciosProveedorResponse(
@@ -95,6 +101,7 @@ public class PlanService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = CacheNames.PLANES, key = "(#idProveedor == null ? 'all' : #idProveedor) + ':' + #soloVigentes")
     public List<PlanResponse> listarPlanes(Long idProveedor, boolean soloVigentes) {
         return planRepository.listarActivos(idProveedor, soloVigentes, LocalDate.now()).stream()
                 .map(this::toPlanResponse)
@@ -102,6 +109,7 @@ public class PlanService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = CacheNames.ADICIONALES, key = "#idProveedor")
     public List<AdicionalResponse> listarAdicionales(Long idProveedor) {
         buscarProveedorActivo(idProveedor);
         return adicionalRepository.findByProveedorIdAndActivoTrueOrderByNombreAsc(idProveedor).stream()
@@ -109,6 +117,7 @@ public class PlanService {
                 .toList();
     }
 
+    @CacheEvict(value = CacheNames.PLANES, allEntries = true)
     public PlanResponse actualizarPlan(Long idPlan, PlanUpdateRequest request) {
         Plan plan = planRepository.findById(idPlan)
                 .orElseThrow(() -> new NotFoundException(Plan.class, idPlan));
@@ -118,6 +127,7 @@ public class PlanService {
         return toPlanResponse(planRepository.save(plan));
     }
 
+    @CacheEvict(value = CacheNames.PLANES, allEntries = true)
     public PlanResponse desactivarPlan(Long idPlan) {
         Plan plan = planRepository.findById(idPlan)
                 .orElseThrow(() -> new NotFoundException(Plan.class, idPlan));

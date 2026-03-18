@@ -41,7 +41,9 @@ public class CacheConfig {
                 CacheNames.PROMOCIONES_COMERCIALES, defaultConfig,
                 CacheNames.ADICIONALES, defaultConfig,
                 CacheNames.PROVEEDORES, defaultConfig,
-                CacheNames.CUENTAS_PUBLICITARIAS, defaultConfig
+                CacheNames.CUENTAS_PUBLICITARIAS, defaultConfig,
+                CacheNames.ZONAS, defaultConfig,
+                CacheNames.UBIGEO, defaultConfig
         );
 
         return RedisCacheManager.builder(connectionFactory)

@@ -1,8 +1,11 @@
 package pe.albrugroup.lead_service.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.albrugroup.lead_service.configuration.CacheNames;
 import pe.albrugroup.lead_service.entity.Departamento;
 import pe.albrugroup.lead_service.entity.Distrito;
 import pe.albrugroup.lead_service.entity.Provincia;
@@ -40,6 +43,7 @@ public class ZonaService {
     private final DistritoRepository distritoRepository;
     private final ZonaMapper mapper;
 
+    @CacheEvict(value = CacheNames.ZONAS, allEntries = true)
     public ZonaResponse registrarZona(ZonaRequest request) {
         validarReglas(request.getReglas());
 
@@ -56,6 +60,7 @@ public class ZonaService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = CacheNames.ZONAS, key = "#activo == null ? 'all' : #activo")
     public List<ZonaResponse> listarZonas(Boolean activo) {
         List<Zona> zonas = zonaRepository.listarPorActivo(activo);
         if (zonas.isEmpty()) {
@@ -71,6 +76,7 @@ public class ZonaService {
                 .toList();
     }
 
+    @CacheEvict(value = CacheNames.ZONAS, allEntries = true)
     public ZonaResponse alternarEstadoZona(Long idZona) {
         Zona zona = zonaRepository.findById(idZona)
                 .orElseThrow(() -> new NotFoundException(Zona.class, idZona));
@@ -81,6 +87,7 @@ public class ZonaService {
         return construirRespuesta(zonaActualizada, reglas);
     }
 
+    @CacheEvict(value = CacheNames.ZONAS, allEntries = true)
     public ZonaResponse actualizarZona(Long idZona, ZonaRequest request) {
         validarReglas(request.getReglas());
 
