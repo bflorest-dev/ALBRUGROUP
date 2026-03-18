@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,13 +25,13 @@ public class EventoController {
 
     private final EventoService eventoService;
 
-    @GetMapping("/lead/{idLead}")
+    @GetMapping("/lead/{idLead}") @PreAuthorize("hasAuthority('READ_EVENTOS_LEADS')")
     public ResponseEntity<List<EventoResponse>> listarEventosPorLead(@PathVariable Long idLead) {
         var eventos = eventoService.listarPorLead(idLead);
         return ResponseEntity.status(HttpStatus.OK).body(eventos);
     }
 
-    @GetMapping("/empleado/{idEmpleado}")
+    @GetMapping("/empleado/{idEmpleado}") @PreAuthorize("hasAuthority('READ_EVENTOS_LEADS')")
     public ResponseEntity<List<EventoResponse>> listarEventosPorEmpleado(
             @PathVariable Long idEmpleado,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,

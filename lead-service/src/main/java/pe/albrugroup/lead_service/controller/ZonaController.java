@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -28,22 +29,22 @@ public class ZonaController {
 
     private final ZonaService zonaService;
 
-    @PostMapping
+    @PostMapping @PreAuthorize("hasAuthority('CREATE_ZONAS')")
     public ResponseEntity<ZonaResponse> registrarZona(@Valid @RequestBody ZonaRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(zonaService.registrarZona(request));
     }
 
-    @GetMapping
+    @GetMapping @PreAuthorize("hasAuthority('READ_ZONAS')")
     public ResponseEntity<List<ZonaResponse>> listarZonas(@RequestParam(required = false) Boolean activo) {
         return ResponseEntity.ok(zonaService.listarZonas(activo));
     }
 
-    @PatchMapping("/{idZona}/estado")
+    @PatchMapping("/{idZona}/estado") @PreAuthorize("hasAuthority('UPDATE_ZONAS')")
     public ResponseEntity<ZonaResponse> alternarEstadoZona(@PathVariable Long idZona) {
         return ResponseEntity.ok(zonaService.alternarEstadoZona(idZona));
     }
 
-    @PutMapping("/{idZona}")
+    @PutMapping("/{idZona}") @PreAuthorize("hasAuthority('UPDATE_ZONAS')")
     public ResponseEntity<ZonaResponse> actualizarZona(@PathVariable Long idZona,
                                                        @Valid @RequestBody ZonaRequest request) {
         return ResponseEntity.ok(zonaService.actualizarZona(idZona, request));

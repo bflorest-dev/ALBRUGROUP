@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,13 +36,13 @@ public class LeadController {
 
     private final LeadService leadService;
 
-    @PostMapping("/intake")
+    @PostMapping("/intake") @PreAuthorize("hasAuthority('CREATE_LEADS')")
     public ResponseEntity<Void> registrarIngresoLead(@Valid @RequestBody LeadIntakeRequest request) {
         leadService.registrarIngresoLead(request);
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{idLead}/asignacion")
+    @PatchMapping("/{idLead}/asignacion") @PreAuthorize("hasAuthority('ASSIGN_LEADS')")
     public ResponseEntity<Void> asignarLead(
             @PathVariable Long idLead,
             @Valid @RequestBody LeadAsignacionRequest request
@@ -50,19 +51,19 @@ public class LeadController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/asesor-ventas")
+    @GetMapping("/asesor-ventas") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
     public ResponseEntity<List<LeadAsesorVentasResponse>> listarBandejaAsesorVentas() {
         var leads = leadService.listarBandejaAsesorVentas();
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
 
-    @GetMapping("/{idLead}/detalle-asesor")
+    @GetMapping("/{idLead}/detalle-asesor") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
     public ResponseEntity<LeadAsesorDetalleResponse> obtenerDetalleAsesor(@PathVariable Long idLead) {
         var lead = leadService.obtenerDetalleAsesor(idLead);
         return ResponseEntity.status(HttpStatus.OK).body(lead);
     }
 
-    @PatchMapping("/{idLead}/datos-preventa")
+    @PatchMapping("/{idLead}/datos-preventa") @PreAuthorize("hasAuthority('UPDATE_LEADS_ASESOR')")
     public ResponseEntity<Void> actualizarDatosPreventa(
             @PathVariable Long idLead,
             @Valid @RequestBody LeadDatosPreventaRequest request
@@ -71,7 +72,7 @@ public class LeadController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{idLead}/direccion")
+    @PatchMapping("/{idLead}/direccion") @PreAuthorize("hasAuthority('UPDATE_LEADS_ASESOR')")
     public ResponseEntity<Void> actualizarDireccion(
             @PathVariable Long idLead,
             @Valid @RequestBody LeadDireccionRequest request
@@ -80,7 +81,7 @@ public class LeadController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{idLead}/oferta-comercial")
+    @PatchMapping("/{idLead}/oferta-comercial") @PreAuthorize("hasAuthority('UPDATE_LEADS_ASESOR')")
     public ResponseEntity<Void> actualizarOfertaComercial(
             @PathVariable Long idLead,
             @Valid @RequestBody LeadOfertaComercialRequest request
@@ -89,7 +90,7 @@ public class LeadController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{idLead}/tipificacion")
+    @PostMapping("/{idLead}/tipificacion") @PreAuthorize("hasAuthority('TYPIFY_LEADS')")
     public ResponseEntity<Void> tipificarLead(
             @PathVariable Long idLead,
             @Valid @RequestBody LeadTipificacionRequest request
@@ -98,13 +99,13 @@ public class LeadController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{idLead}/contacto")
+    @PostMapping("/{idLead}/contacto") @PreAuthorize("hasAuthority('CONTACT_LEADS')")
     public ResponseEntity<Void> registrarContactoLead(@PathVariable Long idLead) {
         leadService.registrarContacto(idLead);
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/gtr")
+    @GetMapping("/gtr") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
     public ResponseEntity<List<LeadGtrResponse>> listarBandejaGtr(
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha

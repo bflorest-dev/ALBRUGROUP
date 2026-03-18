@@ -22,7 +22,7 @@ public class CampanaController {
     private final CampanaService campanaService;
 
     @PostMapping
-//    @PreAuthorize("hasAuthority('CREATE_CAMPANA')")
+    @PreAuthorize("hasAuthority('CREATE_CAMPANA')")
     public ResponseEntity<CampanaResponse> registrarCampana(@Valid @RequestBody CampanaRequest request)
     {
         var campana = campanaService.registrarCampana(request);
@@ -30,7 +30,7 @@ public class CampanaController {
     }
 
     @PutMapping("/{idCampana}")
-//    @PreAuthorize("hasAuthority('UPDATE_CAMPANA')")
+    @PreAuthorize("hasAuthority('UPDATE_CAMPANA')")
     public ResponseEntity<CampanaResponse> actualizarCampana(@PathVariable Long idCampana,
                                                              @Valid @RequestBody CampanaWhatsappRequest request)
     {
@@ -39,7 +39,7 @@ public class CampanaController {
     }
 
     @DeleteMapping("/{idCampana}")
-//    @PreAuthorize("hasAuthority('DELETE_CAMPANA')")
+    @PreAuthorize("hasAuthority('DELETE_CAMPANA')")
     public ResponseEntity<CampanaResponse> desactivarCampana(@PathVariable Long idCampana)
     {
         var campana = campanaService.desactivarCampana(idCampana);
@@ -47,7 +47,7 @@ public class CampanaController {
     }
 
     @GetMapping
-//    @PreAuthorize("hasAuthority('READ_CAMPANA')")
+    @PreAuthorize("hasAuthority('READ_CAMPANA')")
     public ResponseEntity<List<CampanaResponse>> listarCampanas(@RequestParam(required = false) Boolean activo)
     {
         var campanas = campanaService.listarCampanas(activo);

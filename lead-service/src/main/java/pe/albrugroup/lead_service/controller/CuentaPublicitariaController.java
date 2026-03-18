@@ -20,7 +20,7 @@ public class CuentaPublicitariaController {
     private final CuentaPublicitariaService cuentaPublicitariaService;
 
     @PostMapping
-//    @PreAuthorize("hasAuthority('CREATE_CUENTA_PUBLICITARIA')")
+    @PreAuthorize("hasAuthority('CREATE_CUENTA_PUBLICITARIA')")
     public ResponseEntity<CuentaPublicitariaResponse> registrarCuentaPublicitaria(@RequestBody CuentaPublicitariaRequest request)
     {
         var cuentaPublicitaria = cuentaPublicitariaService.registrarCuentaPublicitaria(request);
@@ -28,7 +28,7 @@ public class CuentaPublicitariaController {
     }
 
     @GetMapping
-//    @PreAuthorize("hasAuthority('READ_CUENTAS_PUBLICITARIAS')")
+    @PreAuthorize("hasAuthority('READ_CUENTAS_PUBLICITARIAS')")
     public ResponseEntity<List<CuentaPublicitariaResponse>> listarCuentasPublicitarias(@RequestParam(required = false) Boolean activo)
     {
         var cuentasPublicitarias = cuentaPublicitariaService.listarCuentasPublicitarias(activo);
@@ -36,7 +36,7 @@ public class CuentaPublicitariaController {
     }
 
     @GetMapping("/activas")
-//    @PreAuthorize("hasAuthority('CREATE_CAMPANA')")
+    @PreAuthorize("hasAuthority('READ_CUENTAS_PUBLICITARIAS')")
     public ResponseEntity<List<CuentaPublicitariaResponse>> listarCuentasPublicitariasActivas()
     {
         var cuentasPublicitarias = cuentaPublicitariaService.listarCuentasPublicitarias(Boolean.TRUE);
@@ -44,7 +44,7 @@ public class CuentaPublicitariaController {
     }
 
     @DeleteMapping("/{idCuentaPublicitaria}")
-//    @PreAuthorize("hasAuthority('DELETE_CUENTA_PUBLICITARIA')")
+    @PreAuthorize("hasAuthority('DELETE_CUENTA_PUBLICITARIA')")
     public ResponseEntity<CuentaPublicitariaResponse> desactivarCuentaPublicitaria(@PathVariable Long idCuentaPublicitaria)
     {
         var cuentaPublicitaria = cuentaPublicitariaService.desactivarCuentaPublicitaria(idCuentaPublicitaria);

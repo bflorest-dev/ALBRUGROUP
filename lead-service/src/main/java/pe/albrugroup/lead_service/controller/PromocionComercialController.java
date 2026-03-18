@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.lead_service.entity.request.PromocionComercialRequest;
@@ -20,14 +21,14 @@ public class PromocionComercialController {
 
     private final PromocionComercialService service;
 
-    @PostMapping
+    @PostMapping @PreAuthorize("hasAuthority('CREATE_PROMOCIONES')")
     public ResponseEntity<PromocionComercialResponse> registrarPromocion(
             @Valid @RequestBody PromocionComercialRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.registrarPromocion(request));
     }
 
-    @GetMapping
+    @GetMapping @PreAuthorize("hasAuthority('READ_PROMOCIONES')")
     public ResponseEntity<List<PromocionComercialResponse>> listarPromociones(
             @RequestParam(required = false) Long idProveedor,
             @RequestParam(required = false) Boolean interno,
@@ -36,7 +37,7 @@ public class PromocionComercialController {
         return ResponseEntity.ok(service.listarPromociones(idProveedor, interno, idZona));
     }
 
-    @DeleteMapping("/{idPromocion}")
+    @DeleteMapping("/{idPromocion}") @PreAuthorize("hasAuthority('DELETE_PROMOCIONES')")
     public ResponseEntity<PromocionComercialResponse> desactivarPromocion(@PathVariable Long idPromocion) {
         return ResponseEntity.ok(service.desactivarPromocion(idPromocion));
     }
