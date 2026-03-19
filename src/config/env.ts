@@ -7,8 +7,8 @@
  * - RRHH: http://localhost:8080/rrhh/postulantes, /rrhh/empleados, etc.
  *
  * DESARROLLO (proxy Vite):
- * - Login:   /api/auth/autorizacion/login → :8080/autorizacion/login
- * - RRHH:    /api/rrhh/postulantes       → :8080/rrhh/postulantes
+ * - Login:   /api/auth/autorizacion/login → :8080/auth/autorizacion/login
+ * - RRHH:    /api/rrhh/postulantes        → :8080/rrhh/postulantes
  *
  * PRODUCCIÓN:
  * - VITE_API_URL = https://api.albrugroup.com
@@ -27,7 +27,7 @@ export const env = {
   DEV: isDev,
 } as const;
 
-export const validateEnv = () => {  
+export const validateEnv = () => {
   if (import.meta.env.DEV) {
     console.log('[Env] DEV — Auth proxy: /api/auth → :8080');
     console.log('[Env] DEV — RRHH proxy: /api/rrhh → :8080/rrhh');
