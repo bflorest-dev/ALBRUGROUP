@@ -7,7 +7,7 @@ import pe.albrugroup.rrhh_service.entity.EmpresaContratista;
 import pe.albrugroup.rrhh_service.entity.request.empresaContratista.RegistrarEmpresaContratistaRequest;
 import pe.albrugroup.rrhh_service.entity.response.EmpresaContratistaResponse;
 import pe.albrugroup.rrhh_service.exception.EmpresaContratistaConflictException;
-import pe.albrugroup.rrhh_service.exception.EmpresaContratistaNotFoundException;
+import pe.albrugroup.rrhh_service.exception.NotFoundException;
 import pe.albrugroup.rrhh_service.repository.EmpresaContratistaRepository;
 import pe.albrugroup.rrhh_service.service.mapper.EmpresaContratistaMapper;
 import pe.albrugroup.rrhh_service.usecase.IEmpresaContratista;
@@ -48,9 +48,10 @@ public class EmpresaContratistaService implements IEmpresaContratista {
     @Override
     public EmpresaContratistaResponse desactivarEmpresaContratista(Long idEmpresaContratista) {
         EmpresaContratista empresaContratista = repository.findById(idEmpresaContratista)
-                .orElseThrow(() -> new EmpresaContratistaNotFoundException(idEmpresaContratista));
+                .orElseThrow(() -> new NotFoundException(EmpresaContratista.class, idEmpresaContratista));
 
         empresaContratista.setActivo(false);
         return mapper.toResponse(empresaContratista);
     }
 }
+

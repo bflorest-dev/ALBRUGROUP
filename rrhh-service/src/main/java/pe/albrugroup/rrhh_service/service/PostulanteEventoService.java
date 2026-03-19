@@ -12,7 +12,7 @@ import pe.albrugroup.rrhh_service.entity.enums.EtapaProceso;
 import pe.albrugroup.rrhh_service.entity.enums.TurnoHorario;
 import pe.albrugroup.rrhh_service.entity.request.postulante.RegistrarEventoPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.response.PostulanteEventoResponse;
-import pe.albrugroup.rrhh_service.exception.EmpleadoNotFoundException;
+import pe.albrugroup.rrhh_service.exception.NotFoundException;
 import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
 import pe.albrugroup.rrhh_service.repository.PostulanteEventoRepository;
 import pe.albrugroup.rrhh_service.service.mapper.PostulanteEventoMapper;
@@ -49,7 +49,7 @@ public class PostulanteEventoService {
                                                               RegistrarEventoPostulanteRequest request)
     {
         Empleado responsable = empleadoRepository.findById(responsableId)
-                .orElseThrow(() -> new EmpleadoNotFoundException(responsableId));
+                .orElseThrow(() -> new NotFoundException(Empleado.class, responsableId));
 
         PostulanteEvento evento = eventoMapper.toEntity(request);
         evento.setPostulante(postulante);
@@ -93,3 +93,4 @@ public class PostulanteEventoService {
         );
     }
 }
+

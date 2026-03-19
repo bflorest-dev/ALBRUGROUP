@@ -8,7 +8,7 @@ import pe.albrugroup.rrhh_service.entity.Pago;
 import pe.albrugroup.rrhh_service.entity.request.pago.RegistrarPagoRequest;
 import pe.albrugroup.rrhh_service.entity.response.PagoResponse;
 import pe.albrugroup.rrhh_service.exception.ContratoConflictoException;
-import pe.albrugroup.rrhh_service.exception.ContratoNotFoundException;
+import pe.albrugroup.rrhh_service.exception.NotFoundException;
 import pe.albrugroup.rrhh_service.service.mapper.PagoMapper;
 import pe.albrugroup.rrhh_service.repository.ContratoRepository;
 import pe.albrugroup.rrhh_service.repository.PagoRepository;
@@ -42,7 +42,7 @@ public class PagoService implements IPago {
     @Override
     public PagoResponse registrarPago(Long idContrato, RegistrarPagoRequest nuevoPago) {
         Contrato contrato = contratoRepository.findById(idContrato)
-                .orElseThrow(() -> new ContratoNotFoundException(idContrato));
+                .orElseThrow(() -> new NotFoundException(Contrato.class, idContrato));
         Pago pago = mapper.toEntity(nuevoPago);
         validarPeriodoAPagar(nuevoPago, pago);
         validarPagoDentroDelContrato(contrato, pago.getFechaInicio(), pago.getFechaFin());
@@ -110,3 +110,4 @@ public class PagoService implements IPago {
                 ));
     }
 }
+

@@ -47,13 +47,13 @@ public class ContratoService implements IContrato {
     public ContratoResponse getContratoVigente(Long idEmpleado) {
         Contrato contrato = contratoRepository
                 .findContratoVigenteByEmpleadoId(idEmpleado, LocalDate.now())
-                .orElseThrow(() -> new ContratoNotFoundException(idEmpleado));
+                .orElseThrow(() -> new NotFoundException(Contrato.class, idEmpleado));
         return mapper.toResponse(contrato);
     }
     @Override @Transactional
     public ContratoRegistroResponse registrarContrato(Long idEmpleado, RegistrarContratoRequest nuevoContrato, String authHeader) {
         Empleado empleado = empleadoRepository.findById(idEmpleado)
-                .orElseThrow(() -> new EmpleadoNotFoundException(idEmpleado));
+                .orElseThrow(() -> new NotFoundException(Empleado.class, idEmpleado));
         validarDatosCompletosEmpleado(empleado);
 
         LocalDate fechaInicioNuevo = nuevoContrato.getFechaInicio();
@@ -125,7 +125,7 @@ public class ContratoService implements IContrato {
     public ContratoResponse finalizarContrato(Long idEmpleado, CerrarContratoRequest contratoCerrado, String authHeader) {
         LocalDate fechaFin = contratoCerrado.getFechaFin();
         Contrato contrato = contratoRepository.findContratoVigenteByEmpleadoId(idEmpleado, fechaFin)
-                .orElseThrow(() -> new ContratoActivoNotFoundException(idEmpleado));
+                .orElseThrow(() -> new NotFoundException(Contrato.class, idEmpleado));
         mapper.updateFechaFinContrato(contratoCerrado, contrato);
 
         Empleado empleado = contrato.getEmpleado();
@@ -204,3 +204,4 @@ public class ContratoService implements IContrato {
                 .anyMatch(a -> "ROLE_ADMINISTRADOR".equals(a.getAuthority()));
     }
 }
+

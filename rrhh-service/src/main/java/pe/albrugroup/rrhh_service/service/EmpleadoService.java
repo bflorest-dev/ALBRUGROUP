@@ -13,10 +13,8 @@ import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.enums.Origen;
 import pe.albrugroup.rrhh_service.entity.request.empleado.*;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
-import pe.albrugroup.rrhh_service.exception.EmpleadoDocumentoNotFoundException;
 import pe.albrugroup.rrhh_service.exception.EmpleadoListaNegraException;
-import pe.albrugroup.rrhh_service.exception.EmpleadoNotFoundException;
-import pe.albrugroup.rrhh_service.exception.EmpresaContratistaNotFoundException;
+import pe.albrugroup.rrhh_service.exception.NotFoundException;
 import pe.albrugroup.rrhh_service.repository.EmpresaContratistaRepository;
 import pe.albrugroup.rrhh_service.service.mapper.EmpleadoMapper;
 import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
@@ -36,7 +34,7 @@ public class EmpleadoService implements IEmpleado {
     @Override
     public EmpleadoResponse listaNegraEmpleado(Long idEmpleado, Long responsableId) {
         Empleado empleado = repository.findById(idEmpleado)
-                .orElseThrow(() -> new EmpleadoNotFoundException(idEmpleado));
+                .orElseThrow(() -> new NotFoundException(Empleado.class, idEmpleado));
         if(empleado.getListaNegra()) throw new EmpleadoListaNegraException(idEmpleado);
         empleado.setListaNegra(true);
         eventoService.registrarEventoListaNegra(empleado, responsableId);
@@ -54,7 +52,7 @@ public class EmpleadoService implements IEmpleado {
     @Override @Transactional(readOnly = true)
     public EmpleadoResponse getEmpleadoDocumento(String documento) {
         Empleado empleado = repository.findByNumeroDocumento(documento)
-                .orElseThrow(() -> new EmpleadoDocumentoNotFoundException(documento));
+                .orElseThrow(() -> new NotFoundException(Empleado.class, documento));
         return mapper.toResponse(empleado);
     }
     @Override @Transactional(readOnly = true)
@@ -80,7 +78,7 @@ public class EmpleadoService implements IEmpleado {
     public EmpleadoResponse actualizarDatosPersonales(Long idEmpleado,
                                                       DatosPersonalesRequest datosPersonales) {
         Empleado empleado = repository.findById(idEmpleado)
-                .orElseThrow(() -> new EmpleadoNotFoundException(idEmpleado));
+                .orElseThrow(() -> new NotFoundException(Empleado.class, idEmpleado));
         mapper.updateDatosPersonales(datosPersonales, empleado);
         return mapper.toResponse(empleado);
     }
@@ -88,7 +86,7 @@ public class EmpleadoService implements IEmpleado {
     public EmpleadoResponse actualizarContactoUbicacion(Long idEmpleado,
                                                         DatosContactoUbicacionRequest datosContactoUbicacion) {
         Empleado empleado = repository.findById(idEmpleado)
-                .orElseThrow(() -> new EmpleadoNotFoundException(idEmpleado));
+                .orElseThrow(() -> new NotFoundException(Empleado.class, idEmpleado));
         mapper.updateDatosContactoUbicacion(datosContactoUbicacion, empleado);
         return mapper.toResponse(empleado);
     }
@@ -96,7 +94,7 @@ public class EmpleadoService implements IEmpleado {
     public EmpleadoResponse actualizarDatosFinancieros(Long idEmpleado,
                                                        DatosFinancierosRequest datosFinancieros) {
         Empleado empleado = repository.findById(idEmpleado)
-                .orElseThrow(() -> new EmpleadoNotFoundException(idEmpleado));
+                .orElseThrow(() -> new NotFoundException(Empleado.class, idEmpleado));
         mapper.updateDatosFinancieros(datosFinancieros, empleado);
         empleado.setEmpresaContratista(obtenerEmpresaContratista(datosFinancieros.getIdEmpresaContratista()));
         return mapper.toResponse(empleado);
@@ -104,7 +102,7 @@ public class EmpleadoService implements IEmpleado {
     @Override
     public EmpleadoResponse actualizarContactoCorporativo(Long idEmpleado, DatosContactoCorporativoRequest datosCorporativos) {
         Empleado empleado = repository.findById(idEmpleado)
-                .orElseThrow(() -> new EmpleadoNotFoundException(idEmpleado));
+                .orElseThrow(() -> new NotFoundException(Empleado.class, idEmpleado));
         mapper.updateDatosContactoCorporativo(datosCorporativos, empleado);
         return mapper.toResponse(empleado);
     }
@@ -114,6 +112,7 @@ public class EmpleadoService implements IEmpleado {
             return null;
         }
         return empresaContratistaRepository.findById(idEmpresaContratista)
-                .orElseThrow(() -> new EmpresaContratistaNotFoundException(idEmpresaContratista));
+                .orElseThrow(() -> new NotFoundException(EmpresaContratista.class, idEmpresaContratista));
     }
 }
+

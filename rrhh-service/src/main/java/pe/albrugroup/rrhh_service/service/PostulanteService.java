@@ -15,7 +15,7 @@ import pe.albrugroup.rrhh_service.entity.request.postulante.RegistrarEventoPostu
 import pe.albrugroup.rrhh_service.entity.request.postulante.RegistrarPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.response.PostulanteResponse;
 import pe.albrugroup.rrhh_service.exception.EmpleadoListaNegraException;
-import pe.albrugroup.rrhh_service.exception.PostulanteNotFoundException;
+import pe.albrugroup.rrhh_service.exception.NotFoundException;
 import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
 import pe.albrugroup.rrhh_service.repository.PostulanteRepository;
 import pe.albrugroup.rrhh_service.service.mapper.EmpleadoMapper;
@@ -99,7 +99,7 @@ public class PostulanteService implements IPostulante {
     @Override
     public PostulanteResponse actualizarEstadoReclutamiento(Long idPostulante, EventoPostulanteRequest evento) {
         Postulante postulante = postulanteRepository.findById(idPostulante)
-                .orElseThrow(() -> new PostulanteNotFoundException(idPostulante));
+                .orElseThrow(() -> new NotFoundException(Postulante.class, idPostulante));
 
         validarEvento(EtapaProceso.RECLUTAMIENTO, evento);
         validarCapacidadGrupoCapacitacion(postulante, evento);
@@ -143,7 +143,7 @@ public class PostulanteService implements IPostulante {
             Set<Long> faltantes = new HashSet<>(ids);
             faltantes.removeAll(encontrados);
             Long primeroFaltante = faltantes.iterator().next();
-            throw new PostulanteNotFoundException(primeroFaltante);
+            throw new NotFoundException(Postulante.class, primeroFaltante);
         }
 
         for (Postulante postulante : postulantes) {
@@ -175,7 +175,7 @@ public class PostulanteService implements IPostulante {
     @Override
     public PostulanteResponse rechazarPorInasistenciaCapacitacion(Long idPostulante) {
         Postulante postulante = postulanteRepository.findById(idPostulante)
-                .orElseThrow(() -> new PostulanteNotFoundException(idPostulante));
+                .orElseThrow(() -> new NotFoundException(Postulante.class, idPostulante));
 
         validarPostulanteEnCapacitacion(postulante);
 
@@ -364,3 +364,4 @@ public class PostulanteService implements IPostulante {
     }
 
 }
+

@@ -7,7 +7,7 @@ import pe.albrugroup.rrhh_service.entity.Empleado;
 import pe.albrugroup.rrhh_service.entity.EmpleadoEvento;
 import pe.albrugroup.rrhh_service.entity.enums.EventoEmpleado;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoEventoResponse;
-import pe.albrugroup.rrhh_service.exception.EmpleadoNotFoundException;
+import pe.albrugroup.rrhh_service.exception.NotFoundException;
 import pe.albrugroup.rrhh_service.repository.EmpleadoEventoRepository;
 import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
 import pe.albrugroup.rrhh_service.service.mapper.EmpleadoEventoMapper;
@@ -32,7 +32,7 @@ public class EmpleadoEventoService {
                                                            Instant fechaEvento)
     {
         Empleado responsable = empleadoRepository.findById(responsableId)
-                .orElseThrow(() -> new EmpleadoNotFoundException(responsableId));
+                .orElseThrow(() -> new NotFoundException(Empleado.class, responsableId));
 
         EmpleadoEvento nuevoEvento = EmpleadoEvento.builder()
                 .empleado(empleado)
@@ -46,3 +46,4 @@ public class EmpleadoEventoService {
         return eventoMapper.toResponse(eventoRepository.save(nuevoEvento));
     }
 }
+
