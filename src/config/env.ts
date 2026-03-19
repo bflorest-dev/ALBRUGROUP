@@ -27,7 +27,14 @@ export const env = {
   DEV: isDev,
 } as const;
 
-export const validateEnv = () => {  
+/**
+ * Validación de configuración requerida
+ */
+export const validateEnv = () => {
+  if (!env.API_URL) {
+    throw new Error('API_URL is required but not defined');
+  }
+  
   if (import.meta.env.DEV) {
     console.log('[Env] DEV — Auth proxy: /api/auth → :8080');
     console.log('[Env] DEV — RRHH proxy: /api/rrhh → :8080/rrhh');
