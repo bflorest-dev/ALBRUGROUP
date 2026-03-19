@@ -54,7 +54,7 @@ jwt:
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG
-    org.springframework.security: DEBUG
+    org.springframework.security: INFO
 
 springdoc:
   swagger-ui:
