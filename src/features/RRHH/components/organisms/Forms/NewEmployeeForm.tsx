@@ -1,5 +1,6 @@
 /**
  * Componente NewEmployeeForm (moved to features/RRHH)
+ * Formulario de múltiples pasos para registro de empleados
  */
 
 import { useState } from 'react';
@@ -12,6 +13,7 @@ interface NewEmployeeFormProps {
 }
 
 export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) => {
+  const [currentStep, setCurrentStep] = useState(1);
   // list of districts for select
   const districts = [
     'ANCÓN','ATE','BARRANCO','BREÑA','CARABAYLLO','CERCADO DE LIMA','CHACLACAYO','CHORRILLOS','CIENEGUILLA','COMAS','EL AGUSTINO','INDEPENDENCIA','JESÚS MARÍA','LA MOLINA','LA VICTORIA','LINCE','LOS OLIVOS','LURÍN','LURIGANCHO','MAGDALENA DEL MAR','MIRAFLORES','PACHACÁMAC','PUCUSANA','PUEBLO LIBRE','PUENTE PIEDRA','PUNTA HERMOSA','PUNTA NEGRA','RÍMAC','SAN BARTOLO','SAN BORJA','SAN ISIDRO','SAN JUAN DE LURIGANCHO','SAN JUAN DE MIRAFLORES','SAN LUIS','SAN MARTÍN DE PORRES','SAN MIGUEL','SANTA ANITA','SANTA MARÍA DEL MAR','SANTA ROSA','SANTIAGO DE SURCO','SURQUILLO','VILLA EL SALVADOR','VILLA MARÍA DEL TRIUNFO'
@@ -135,232 +137,310 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
     onSubmit(formData);
   };
 
+  // Validar que Paso 1 (EMPLEADO) esté completo
+  const isStep1Complete = () => {
+    return formData.nombres && formData.apellidos && formData.documentType && formData.documentNumber;
+  };
+
+  // Validar que Paso 2 (DATOS PERSONALES & CONTACTO) esté completo
+  const isStep2Complete = () => {
+    return formData.nationality && formData.birthDate && formData.civilStatus !== undefined &&
+           formData.phoneMobile && formData.personalEmail && formData.district && formData.address;
+  };
+
+  // Validar que Paso 3 (INFORMACIÓN BANCARIA & TRANSFERENCIA) esté completo
+  const isStep3Complete = () => {
+    return formData.bank && formData.accountNumber && formData.interbankNumber;
+  };
+
+  // Verificar si puede avanzar a Paso 4
+  const canAdvanceToStep4 = () => {
+    return isStep1Complete() && isStep2Complete() && isStep3Complete();
+  };
+
+  const handleNextStep = () => {
+    if (currentStep === 1 && !isStep1Complete()) {
+      alert('Por favor completa todos los campos de EMPLEADO');
+      return;
+    }
+    if (currentStep === 2 && !isStep2Complete()) {
+      alert('Por favor completa todos los campos de DATOS PERSONALES & CONTACTO');
+      return;
+    }
+    if (currentStep === 3 && !isStep3Complete()) {
+      alert('Por favor completa todos los campos de INFORMACIÓN BANCARIA & TRANSFERENCIA');
+      return;
+    }
+    setCurrentStep(currentStep + 1);
+  };
+
+  const handlePreviousStep = () => {
+    setCurrentStep(currentStep - 1);
+  };
+
   return (
     <form className="employee-form contract-form" onSubmit={handleSubmit}>
-      <div className="form-sections-contract">
-        {/* COLUMN 1: EMPLEADO */}
-        <div className="section-group">
-          <h3 className="new-employee-section-title">EMPLEADO</h3>
-          <label>Nombres</label>
-          <input name="nombres" value={formData.nombres} onChange={handleChange} />
-          <label>Apellidos</label>
-          <input name="apellidos" value={formData.apellidos} onChange={handleChange} />
-          <label>Doc.</label>
-          <select name="documentType" value={formData.documentType} onChange={handleChange}>
-            <option value="DNI">DNI</option>
-            <option value="CE">CE</option>
-          </select>
-          <label>N°Doc</label>
-          <input
-            name="documentNumber"
-            value={formData.documentNumber}
-            onChange={handleChange}
-            maxLength={formData.documentType === 'CE' ? 9 : 8}
-            pattern="\d*"
-            inputMode="numeric"
-          />
-        </div>
-
-        {/* COLUMN 2: DATOS PERSONALES & CONTACTO */}
-        <div className="section-group">
-          <h3 className="new-employee-section-title">DATOS PERSONALES & CONTACTO</h3>
-          <label>Nacionalidad</label>
-          <select name="nationality" value={formData.nationality} onChange={handleChange}>
-            <option value="">Seleccione...</option>
-            <option value="PERUANO">PERUANO</option>
-            <option value="EXTRANJERO">EXTRANJERO</option>
-          </select>
-          <label>Fecha Nac.</label>
-          <input type="date" name="birthDate" value={formData.birthDate} onChange={handleChange} />
-          <label>Estado Civil</label>
-          <select name="civilStatus" value={formData.civilStatus} onChange={handleChange}>
-            <option value="">Seleccione...</option>
-            <option value="SOLTERO">SOLTERO</option>
-            <option value="CASADO">CASADO</option>
-            <option value="VIUDO">VIUDO</option>
-            <option value="DIVORCIADO">DIVORCIADO</option>
-          </select>
-          <label>¿Hijos?</label>
-          <select name="hasChildren" value={formData.hasChildren ? 'SI' : 'NO'} onChange={handleChange}>
-            <option value="">Seleccione...</option>
-            <option value="SI">SI</option>
-            <option value="NO">NO</option>
-          </select>
-          <label>Celular</label>
-          <input
-            name="phoneMobile"
-            value={formData.phoneMobile}
-            onChange={handleChange}
-            pattern="\d*"
-            inputMode="numeric"
-            maxLength={9}
-          />
-          <label>Email</label>
-          <input name="personalEmail" value={formData.personalEmail} onChange={handleChange} />
-          <label>Distrito</label>
-          <select name="district" value={formData.district} onChange={handleChange}>
-            <option value="">Seleccione...</option>
-            {districts.map(d => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
-          <label>Dirección</label>
-          <input name="address" value={formData.address} onChange={handleChange} />
-        </div>
-
-        {/* COLUMN 3: INFORMACIÓN LABORAL */}
-        <div className="section-group">
-          <h3 className="new-employee-section-title">INFORMACIÓN LABORAL</h3>
-          <label>Régimen</label>
-          <select
-            name="regimen"
-            value={formData.regimen || ''}
-            onChange={handleChange}
-          >
-            <option value="">Seleccione...</option>
-            <option value="RECIBO POR HONORARIOS">RECIBO POR HONORARIOS</option>
-            <option value="PLANILLA">PLANILLA</option>
-          </select>
-          {formData.regimen === 'PLANILLA' && (
-            <>
-              <label>Seguro</label>
-              <select
-                name="seguro"
-                value={formData.seguro || ''}
-                onChange={handleChange}
-              >
-                <option value="">Seleccione...</option>
-                <option value="SIS">SIS</option>
-                <option value="ESSALUD">ESSALUD</option>
-              </select>
-              <label>Pensión</label>
-              <select
-                name="pension"
-                value={formData.pension || ''}
-                onChange={handleChange}
-              >
-                <option value="">Seleccione...</option>
-                <option value="ONP">ONP</option>
-                <option value="AFP INTEGRA">AFP INTEGRA</option>
-                <option value="PROFUTURO AFP">PROFUTURO AFP</option>
-                <option value="AFP HABITAD">AFP HABITAD</option>
-                <option value="PRIMA AFP">PRIMA AFP</option>
-              </select>
-            </>
-          )}
-          <label>Modalidad</label>
-          <select
-            name="modality"
-            value={formData.modality || ''}
-            onChange={handleChange}
-          >
-            <option value="">Seleccione...</option>
-            <option value="PART TIME">PART TIME</option>
-            <option value="SEMI FULL">SEMI FULL</option>
-            <option value="FULL TIME">FULL TIME</option>
-            <option value="SUPER FULL">SUPER FULL</option>
-          </select>
-          <label>Puesto</label>
-          <select name="role" value={formData.role} onChange={handleChange}>
-            <option value="">Seleccione...</option>
-            {roles.map(r => <option key={r} value={r}>{r}</option>)}
-          </select>
-          {formData.role && formData.role !== 'DESARROLLADOR' && formData.role !== 'CONTABILIDAD' ? (
-            <>
-              <label>Compañía</label>
-              <select name="company" value={formData.company || ''} onChange={handleChange}>
-                <option value="">Seleccione...</option>
-                {companies.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </>
-          ) : (
-            formData.role === 'DESARROLLADOR' || formData.role === 'CONTABILIDAD' ? (
-              <input type="hidden" name="company" value="ALBRU" />
-            ) : null
-          )}
-          <label>Campaña</label>
-          <select name="campaign" value={formData.campaign || ''} onChange={handleChange}>
-            <option value="">Seleccionar campaña</option>
-            {campaigns.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <label>Sueldo</label>
-          <input
-            type="number"
-            name="baseSalary"
-            value={formData.baseSalary || ''}
-            onChange={handleChange}
-          />
-          <label>Inicio</label>
-          <input
-            type="date"
-            name="startDate"
-            value={formData.startDate || ''}
-            onChange={handleChange}
-          />
-          <label>Fin</label>
-          <input
-            type="date"
-            name="endDate"
-            value={formData.endDate || ''}
-            onChange={handleChange}
-          />
-        </div>
-
-        {/* COLUMN 4: INFORMACIÓN BANCARIA & TRANSFERENCIA */}
-        <div className="section-group">
-          <h3 className="new-employee-section-title">INFORMACIÓN BANCARIA & TRANSFERENCIA</h3>
-          <label>Banco</label>
-          <select name="bank" value={formData.bank} onChange={handleChange}>
-            <option value="">Seleccione...</option>
-            <option value="BCP">BCP</option>
-            <option value="BBVA">BBVA</option>
-            <option value="INTERBANK">INTERBANK</option>
-            <option value="SCOTIABANK">SCOTIABANK</option>
-          </select>
-          <label>Cuenta</label>
-          <input
-            name="accountNumber"
-            value={formData.accountNumber}
-            onChange={handleChange}
-            pattern="\d*"
-            inputMode="numeric"
-          />
-          <label>Interbancaria</label>
-          <input
-            name="interbankNumber"
-            value={formData.interbankNumber}
-            onChange={handleChange}
-            pattern="\d*"
-            inputMode="numeric"
-          />
-          <label>Cuenta propia?</label>
-          <select name="contractOwnAccount" value={formData.contractOwnAccount || ''} onChange={handleChange}>
-            <option value="">Seleccione...</option>
-            {yesNoOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-          </select>
-          <label>Parentesco</label>
-          <select name="contractKinship" value={formData.contractKinship || ''} onChange={handleChange}>
-            <option value="">Seleccione...</option>
-            {kinships.map(k => <option key={k} value={k}>{k}</option>)}
-          </select>
-          <label>Celular Transferencia</label>
-          <input
-            name="contractCellularTransfer"
-            value={formData.contractCellularTransfer}
-            onChange={handleChange}
-            pattern="\d*"
-            inputMode="numeric"
-          />
-          <label>Empresa Contratista</label>
-          <select name="contractorCompany" value={formData.contractorCompany || ''} onChange={handleChange}>
-            <option value="">Seleccione...</option>
-            {contractorCompanies.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
+      {/* Indicador de pasos */}
+      <div className="form-steps-indicator">
+        <div className={`step ${currentStep >= 1 ? 'active' : ''} ${isStep1Complete() ? 'complete' : ''}`}>1</div>
+        <div className={`step-line ${currentStep > 1 ? 'active' : ''}`}></div>
+        <div className={`step ${currentStep >= 2 ? 'active' : ''} ${isStep2Complete() ? 'complete' : ''}`}>2</div>
+        <div className={`step-line ${currentStep > 2 ? 'active' : ''}`}></div>
+        <div className={`step ${currentStep >= 3 ? 'active' : ''} ${isStep3Complete() ? 'complete' : ''}`}>3</div>
+        <div className={`step-line ${currentStep > 3 ? 'active' : ''}`}></div>
+        <div className={`step ${currentStep >= 4 ? 'active' : ''} ${canAdvanceToStep4() ? '' : 'disabled'}`}>4</div>
       </div>
+
+      <div className="form-sections-contract">
+        {/* PASO 1: EMPLEADO */}
+        {currentStep === 1 && (
+          <div className="section-group">
+            <h3 className="new-employee-section-title">EMPLEADO</h3>
+            <label>Nombres</label>
+            <input name="nombres" value={formData.nombres} onChange={handleChange} />
+            <label>Apellidos</label>
+            <input name="apellidos" value={formData.apellidos} onChange={handleChange} />
+            <label>Doc.</label>
+            <select name="documentType" value={formData.documentType} onChange={handleChange}>
+              <option value="DNI">DNI</option>
+              <option value="CE">CE</option>
+            </select>
+            <label>N°Doc</label>
+            <input
+              name="documentNumber"
+              value={formData.documentNumber}
+              onChange={handleChange}
+              maxLength={formData.documentType === 'CE' ? 9 : 8}
+              pattern="\d*"
+              inputMode="numeric"
+            />
+          </div>
+        )}
+
+        {/* PASO 2: DATOS PERSONALES & CONTACTO */}
+        {currentStep === 2 && (
+          <div className="section-group">
+            <h3 className="new-employee-section-title">DATOS PERSONALES & CONTACTO</h3>
+            <label>Nacionalidad</label>
+            <select name="nationality" value={formData.nationality} onChange={handleChange}>
+              <option value="">Seleccione...</option>
+              <option value="PERUANO">PERUANO</option>
+              <option value="EXTRANJERO">EXTRANJERO</option>
+            </select>
+            <label>Fecha Nac.</label>
+            <input type="date" name="birthDate" value={formData.birthDate} onChange={handleChange} />
+            <label>Estado Civil</label>
+            <select name="civilStatus" value={formData.civilStatus} onChange={handleChange}>
+              <option value="">Seleccione...</option>
+              <option value="SOLTERO">SOLTERO</option>
+              <option value="CASADO">CASADO</option>
+              <option value="VIUDO">VIUDO</option>
+              <option value="DIVORCIADO">DIVORCIADO</option>
+            </select>
+            <label>¿Hijos?</label>
+            <select name="hasChildren" value={formData.hasChildren ? 'SI' : 'NO'} onChange={handleChange}>
+              <option value="">Seleccione...</option>
+              <option value="SI">SI</option>
+              <option value="NO">NO</option>
+            </select>
+            <label>Celular</label>
+            <input
+              name="phoneMobile"
+              value={formData.phoneMobile}
+              onChange={handleChange}
+              pattern="\d*"
+              inputMode="numeric"
+              maxLength={9}
+            />
+            <label>Email</label>
+            <input name="personalEmail" value={formData.personalEmail} onChange={handleChange} />
+            <label>Distrito</label>
+            <select name="district" value={formData.district} onChange={handleChange}>
+              <option value="">Seleccione...</option>
+              {districts.map(d => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+            <label>Dirección</label>
+            <input name="address" value={formData.address} onChange={handleChange} />
+            <label>Campaña</label>
+            <select name="campaign" value={formData.campaign || ''} onChange={handleChange}>
+              <option value="">Seleccionar campaña</option>
+              {campaigns.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        )}
+
+        {/* PASO 3: INFORMACIÓN BANCARIA & TRANSFERENCIA */}
+        {currentStep === 3 && (
+          <div className="section-group">
+            <h3 className="new-employee-section-title">INFORMACIÓN BANCARIA & TRANSFERENCIA</h3>
+            <label>Banco</label>
+            <select name="bank" value={formData.bank} onChange={handleChange}>
+              <option value="">Seleccione...</option>
+              <option value="BCP">BCP</option>
+              <option value="BBVA">BBVA</option>
+              <option value="INTERBANK">INTERBANK</option>
+              <option value="SCOTIABANK">SCOTIABANK</option>
+            </select>
+            <label>Cuenta</label>
+            <input
+              name="accountNumber"
+              value={formData.accountNumber}
+              onChange={handleChange}
+              pattern="\d*"
+              inputMode="numeric"
+            />
+            <label>Interbancaria</label>
+            <input
+              name="interbankNumber"
+              value={formData.interbankNumber}
+              onChange={handleChange}
+              pattern="\d*"
+              inputMode="numeric"
+            />
+            <label>Cuenta propia?</label>
+            <select name="contractOwnAccount" value={formData.contractOwnAccount || ''} onChange={handleChange}>
+              <option value="">Seleccione...</option>
+              {yesNoOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            </select>
+            <label>Parentesco</label>
+            <select name="contractKinship" value={formData.contractKinship || ''} onChange={handleChange}>
+              <option value="">Seleccione...</option>
+              {kinships.map(k => <option key={k} value={k}>{k}</option>)}
+            </select>
+            <label>Celular Transferencia</label>
+            <input
+              name="contractCellularTransfer"
+              value={formData.contractCellularTransfer}
+              onChange={handleChange}
+              pattern="\d*"
+              inputMode="numeric"
+            />
+            <label>Empresa Contratista</label>
+            <select name="contractorCompany" value={formData.contractorCompany || ''} onChange={handleChange}>
+              <option value="">Seleccione...</option>
+              {contractorCompanies.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        )}
+
+        {/* PASO 4: INFORMACIÓN LABORAL (disponible solo después de completar los primeros 3 pasos) */}
+        {currentStep === 4 && (
+          <div className="section-group">
+            <h3 className="new-employee-section-title">INFORMACIÓN LABORAL</h3>
+            <label>Régimen</label>
+            <select
+              name="regimen"
+              value={formData.regimen || ''}
+              onChange={handleChange}
+            >
+              <option value="">Seleccione...</option>
+              <option value="RECIBO POR HONORARIOS">RECIBO POR HONORARIOS</option>
+              <option value="PLANILLA">PLANILLA</option>
+            </select>
+            {formData.regimen === 'PLANILLA' && (
+              <>
+                <label>Seguro</label>
+                <select
+                  name="seguro"
+                  value={formData.seguro || ''}
+                  onChange={handleChange}
+                >
+                  <option value="">Seleccione...</option>
+                  <option value="SIS">SIS</option>
+                  <option value="ESSALUD">ESSALUD</option>
+                </select>
+                <label>Pensión</label>
+                <select
+                  name="pension"
+                  value={formData.pension || ''}
+                  onChange={handleChange}
+                >
+                  <option value="">Seleccione...</option>
+                  <option value="ONP">ONP</option>
+                  <option value="AFP INTEGRA">AFP INTEGRA</option>
+                  <option value="PROFUTURO AFP">PROFUTURO AFP</option>
+                  <option value="AFP HABITAD">AFP HABITAD</option>
+                  <option value="PRIMA AFP">PRIMA AFP</option>
+                </select>
+              </>
+            )}
+            <label>Modalidad</label>
+            <select
+              name="modality"
+              value={formData.modality || ''}
+              onChange={handleChange}
+            >
+              <option value="">Seleccione...</option>
+              <option value="PART TIME">PART TIME</option>
+              <option value="SEMI FULL">SEMI FULL</option>
+              <option value="FULL TIME">FULL TIME</option>
+              <option value="SUPER FULL">SUPER FULL</option>
+            </select>
+            <label>Puesto</label>
+            <select name="role" value={formData.role} onChange={handleChange}>
+              <option value="">Seleccione...</option>
+              {roles.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+            {formData.role && formData.role !== 'DESARROLLADOR' && formData.role !== 'CONTABILIDAD' ? (
+              <>
+                <label>Compañía</label>
+                <select name="company" value={formData.company || ''} onChange={handleChange}>
+                  <option value="">Seleccione...</option>
+                  {companies.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </>
+            ) : (
+              formData.role === 'DESARROLLADOR' || formData.role === 'CONTABILIDAD' ? (
+                <input type="hidden" name="company" value="ALBRU" />
+              ) : null
+            )}
+            <label>Sueldo</label>
+            <input
+              type="number"
+              name="baseSalary"
+              value={formData.baseSalary || ''}
+              onChange={handleChange}
+            />
+            <label>Inicio</label>
+            <input
+              type="date"
+              name="startDate"
+              value={formData.startDate || ''}
+              onChange={handleChange}
+            />
+            <label>Fin</label>
+            <input
+              type="date"
+              name="endDate"
+              value={formData.endDate || ''}
+              onChange={handleChange}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Botones de navegación */}
       <div className="modal-actions">
         <button type="button" className="btn-cancel" onClick={onCancel}>CANCELAR</button>
-        <button type="submit" className="btn-submit">GUARDAR</button>
+        
+        {/* Botones de paso */}
+        {currentStep > 1 && (
+          <button type="button" className="btn-previous" onClick={handlePreviousStep}>
+            ← ANTERIOR
+          </button>
+        )}
+        
+        {currentStep < 4 && (
+          <button type="button" className="btn-next" onClick={handleNextStep}>
+            SIGUIENTE →
+          </button>
+        )}
+        
+        {currentStep === 4 && (
+          <button type="submit" className="btn-submit">GUARDAR</button>
+        )}
       </div>
     </form>
   );
