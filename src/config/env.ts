@@ -1,49 +1,39 @@
 /**
  * Configuración de entorno
- * 
- * ARQUITECTURA:
- * - Puerto 8080: API Gateway (único medio de entrada)
- * 
- * DESARROLLO:
- * - Frontend corre en:     http://localhost:5173+
- * - Vite Proxy: /auth → http://localhost:8080
- * - Axios baseURL debe ser /auth (usa el proxy)
- * - Requests: POST /auth/autorizacion/login → Vite proxy → :8080
- * 
+ *
+ * ARQUITECTURA DEL BACKEND:
+ * - Puerto 8080: API Gateway (única entrada)
+ * - Auth: POST http://localhost:8080/autorizacion/login
+ * - RRHH: http://localhost:8080/rrhh/postulantes, /rrhh/empleados, etc.
+ *
+ * DESARROLLO (proxy Vite):
+ * - Login:   /api/auth/autorizacion/login → :8080/autorizacion/login
+ * - RRHH:    /api/rrhh/postulantes       → :8080/rrhh/postulantes
+ *
  * PRODUCCIÓN:
- * - Frontend apunta al gateway:  http://localhost:8080 (o dominio real)
+ * - VITE_API_URL = https://api.albrugroup.com
  */
 
 const isDev = import.meta.env.DEV;
+const prodBase = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export const env = {
-  // En desarrollo: usar /auth (que el proxy Vite reescribe a :8080)
-  // En producción: usar el gateway 8080
-  API_URL: isDev ? '/auth' : (import.meta.env.VITE_API_URL || 'http://localhost:8080'),
-  
-  // Gateway URL (para referencias)
-  BACKEND_URL: 'http://localhost:8080',
-  // Auth service URL (única entrada a través del gateway 8080)
-  AUTH_SERVICE_URL: 'http://localhost:8080',
-  
-  // Modo desarrollo
+  // Base para llamadas de autenticación
+  AUTH_BASE_URL: isDev ? '/api/auth' : prodBase,
+
+  // Base para el servicio RRHH (postulantes, empleados, contratos, pagos)
+  RRHH_BASE_URL: isDev ? '/api/rrhh' : `${prodBase}/rrhh`,
+
   DEV: isDev,
 } as const;
 
-/**
- * Validación de configuración requerida
- */
 export const validateEnv = () => {
-  if (!env.API_URL) {
-    throw new Error('API_URL is required but not defined');
-  }
-  
   if (import.meta.env.DEV) {
-    console.log('[Env Config] Development mode - using proxy: /api → http://localhost:8080');
+    console.log('[Env] DEV — Auth proxy: /api/auth → :8080');
+    console.log('[Env] DEV — RRHH proxy: /api/rrhh → :8080/rrhh');
   } else {
-    console.log('[Env Config] Production mode - API_URL:', env.API_URL);
+    console.log('[Env] PROD — Base URL:', prodBase);
   }
 };
 
-// Ejecutar validación al importar
 validateEnv();
