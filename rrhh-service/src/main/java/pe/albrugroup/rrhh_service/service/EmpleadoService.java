@@ -10,6 +10,7 @@ import pe.albrugroup.rrhh_service.entity.EmpresaContratista;
 import pe.albrugroup.rrhh_service.entity.enums.Banco;
 import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
+import pe.albrugroup.rrhh_service.entity.enums.Origen;
 import pe.albrugroup.rrhh_service.entity.request.empleado.*;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 import pe.albrugroup.rrhh_service.exception.EmpleadoDocumentoNotFoundException;
@@ -44,10 +45,10 @@ public class EmpleadoService implements IEmpleado {
 
     @Override @Transactional(readOnly = true)
     public Page<EmpleadoResponse> getEmpleados(String q, String dni, String celular, Distrito distrito, Banco banco,
-                                               Long idEmpresaContratista, EstadoOperativo estado, Pageable pageable)
+                                               Long idEmpresaContratista, Origen origen, EstadoOperativo estado, Pageable pageable)
     {
         EstadoOperativo estadoOperativo = estado != null ? estado : EstadoOperativo.ACTIVO;
-        return repository.getEmpleados(q, dni, celular, distrito, banco, idEmpresaContratista, estadoOperativo, pageable)
+        return repository.getEmpleados(q, dni, celular, distrito, banco, idEmpresaContratista, origen, estadoOperativo, pageable)
                 .map(mapper::toResponse);
     }
     @Override @Transactional(readOnly = true)

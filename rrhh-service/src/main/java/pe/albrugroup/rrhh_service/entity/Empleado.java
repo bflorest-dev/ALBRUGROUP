@@ -53,6 +53,8 @@ public class Empleado {
     private String correoCorporativo;
     // UBICACION
     @Enumerated(EnumType.STRING)
+    private Origen origen;
+    @Enumerated(EnumType.STRING)
     private Distrito distrito;
     private String direccion;
     // INFORMACION FINANCIERA

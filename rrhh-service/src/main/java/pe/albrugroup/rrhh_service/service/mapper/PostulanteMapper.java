@@ -30,7 +30,7 @@ public interface PostulanteMapper {
     @Mapping(target = "evento", source = "evento")
     @Mapping(target = "estadoProceso", source = "entity.estadoProceso")
     @Mapping(target = "subestadoProceso", source = "entity.subestadoProceso")
-    @Mapping(target = "origen", source = "entity.origen")
+    @Mapping(target = "origen", source = "entity.empleado.origen")
     @Mapping(target = "puestoTrabajo", source = "entity.puestoTrabajo")
     @Mapping(target = "fechaActualizacion", source = "entity.fechaActualizacion")
     @Mapping(target = "listaNegra", source = "entity.empleado.listaNegra")

@@ -11,6 +11,7 @@ import pe.albrugroup.rrhh_service.entity.Empleado;
 import pe.albrugroup.rrhh_service.entity.enums.Banco;
 import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
+import pe.albrugroup.rrhh_service.entity.enums.Origen;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +25,7 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
               AND (:distrito IS NULL OR e.distrito = :distrito)
               AND (:banco IS NULL OR e.banco = :banco)
               AND (:idEmpresaContratista IS NULL OR e.empresaContratista.id = :idEmpresaContratista)
+              AND (:origen IS NULL OR e.origen = :origen)
               AND (:dni IS NULL OR e.numeroDocumento = :dni)
               AND (:celular IS NULL OR e.celularPersonal = :celular)
               AND (:q IS NULL OR :q = '' OR
@@ -34,6 +36,7 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
     Page<Empleado> getEmpleados(@Param("q") String q, @Param("dni") String dni, @Param("celular") String celular,
                                  @Param("distrito") Distrito distrito, @Param("banco") Banco banco,
                                  @Param("idEmpresaContratista") Long idEmpresaContratista,
+                                 @Param("origen") Origen origen,
                                  @Param("estadoOperativo") EstadoOperativo estadoOperativo, Pageable pageable);
     Optional<Empleado> findByNumeroDocumento(String numeroDocumento);
 

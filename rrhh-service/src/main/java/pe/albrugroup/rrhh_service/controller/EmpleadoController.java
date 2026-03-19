@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.rrhh_service.entity.enums.Banco;
 import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
+import pe.albrugroup.rrhh_service.entity.enums.Origen;
 import pe.albrugroup.rrhh_service.entity.request.empleado.DatosContactoCorporativoRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.DatosContactoUbicacionRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.DatosFinancierosRequest;
@@ -61,13 +62,15 @@ public class EmpleadoController {
             @RequestParam(required = false) Banco banco,
             @Parameter(description = "ID de la empresa contratista", example = "1")
             @RequestParam(required = false) @Positive Long idEmpresaContratista,
+            @Parameter(description = "Origen del empleado", schema = @Schema(implementation = Origen.class))
+            @RequestParam(required = false) Origen origen,
             @Parameter(description = "Estado operativo del empleado", schema = @Schema(implementation = EstadoOperativo.class))
             @RequestParam(required = false) EstadoOperativo estado,
             @Parameter(description = "Parametros de paginacion: `page`, `size`, `sort` (ejemplo: sort=apellidos,asc)")
             Pageable pageable
     ) {
         return ResponseEntity.ok(
-                empleadoService.getEmpleados(q, dni, celular, distrito, banco, idEmpresaContratista, estado, pageable)
+                empleadoService.getEmpleados(q, dni, celular, distrito, banco, idEmpresaContratista, origen, estado, pageable)
         );
     }
 

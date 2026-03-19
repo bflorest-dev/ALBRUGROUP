@@ -26,6 +26,7 @@ public class EmpleadoResponse {
     private String celularCorporativo;
     private String correoCorporativo;
     // UBICACION
+    private Origen origen;
     private Distrito distrito;
     private String direccion;
     // INFORMACION FINANCIERA

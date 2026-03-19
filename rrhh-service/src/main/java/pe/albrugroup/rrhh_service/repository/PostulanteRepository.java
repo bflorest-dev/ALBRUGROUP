@@ -23,7 +23,7 @@ public interface PostulanteRepository extends JpaRepository<Postulante, Long> {
     WHERE (:etapaProceso IS NULL OR p.etapaProceso = :etapaProceso)
       AND (:estadoProceso IS NULL OR p.estadoProceso = :estadoProceso)
       AND (:subestadoProceso IS NULL OR p.subestadoProceso = :subestadoProceso)
-      AND (:origen IS NULL OR p.origen = :origen)
+      AND (:origen IS NULL OR p.empleado.origen = :origen)
       AND (:puestoTrabajo IS NULL OR p.puestoTrabajo = :puestoTrabajo)
       AND (:fechaCreacionDesde IS NULL OR p.fechaCreacion >= :fechaCreacionDesde)
       AND (:fechaCreacionHasta IS NULL OR p.fechaCreacion <= :fechaCreacionHasta)

@@ -5,7 +5,6 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import pe.albrugroup.rrhh_service.entity.enums.EtapaProceso;
-import pe.albrugroup.rrhh_service.entity.enums.Origen;
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 import java.time.Instant;
 
@@ -26,8 +25,6 @@ public class Postulante {
     @Column(name = "subestado_proceso")
     private String subestadoProceso;
     // OBJETIVO
-    @Enumerated(EnumType.STRING)
-    private Origen origen;
     @Enumerated(EnumType.STRING) @Column(name = "puesto_objetivo")
     private PuestoTrabajo puestoTrabajo;
     // TRAZABILIDAD

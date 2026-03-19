@@ -26,6 +26,7 @@ public class RegistrarEmpleadoRequest {
     @NotBlank private String celularPersonal;
     @NotBlank @Email private String correoPersonal;
     // UBICACION
+    @NotNull private Origen origen;
     @NotNull private Distrito distrito;
     @NotBlank private String direccion;
     // INFORMACION FINANCIERA

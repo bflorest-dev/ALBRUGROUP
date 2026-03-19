@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import pe.albrugroup.rrhh_service.entity.enums.Banco;
 import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
+import pe.albrugroup.rrhh_service.entity.enums.Origen;
 import pe.albrugroup.rrhh_service.entity.request.empleado.*;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 
@@ -14,7 +15,7 @@ import java.util.List;
 public interface IEmpleado {
 
     Page<EmpleadoResponse> getEmpleados(String q, String dni, String celular, Distrito distrito, Banco banco,
-                                       Long idEmpresaContratista, EstadoOperativo estado, Pageable pageable);
+                                       Long idEmpresaContratista, Origen origen, EstadoOperativo estado, Pageable pageable);
     Page<EmpleadoResponse> getEmpleadoUniversal(String dato, Pageable pageable);
     EmpleadoResponse getEmpleadoDocumento(String documento);
     EmpleadoResponse registrarEmpleado(RegistrarEmpleadoRequest nuevoEmpleado);
