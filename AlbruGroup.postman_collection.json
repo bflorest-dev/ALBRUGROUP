@@ -1,1184 +1,1402 @@
 {
-  "info": {
-    "_postman_id": "2fa5e937-3dc2-4fa9-82b0-14a9a5e452ec",
-    "name": "AlbruGroup",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "32906795"
-  },
-  "item": [
-    {
-      "name": "gateway-service",
-      "item": [
-        {
-          "name": "Login",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"username\": \"admin@albru.admin.pe\",\r\n  \"password\": \"123456\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/auth/autorizacion/login",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "auth",
-                "autorizacion",
-                "login"
-              ]
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const json = pm.response.json();",
-                  "pm.collectionVariables.set(\"token\", json.token);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Usuario",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"username\": \"J75413802B@albru.recruiter.pe\",\r\n  \"password\": \"123456\"\r\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/auth/autorizacion/1/empleado",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "auth",
-                "autorizacion",
-                "1",
-                "empleado"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "auth-service",
-      "item": [
-        {
-          "name": "Login",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/auth/autorizacion/login",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "auth",
-                "autorizacion",
-                "login"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"admin@albru.admin.pe\",\n  \"password\": \"123456\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const json = pm.response.json();",
-                  "pm.collectionVariables.set(\"token\", json.token);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Registrar Usuario",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/auth/autorizacion/registro",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "auth",
-                "autorizacion",
-                "registro"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"empleadoId\": 1,\n  \"nombres\": \"Julio Edinson\",\n  \"apellidos\": \"Vitterio Bernuy\",\n  \"dni\": \"75413802\",\n  \"email\": \"julio@albru.com\",\n  \"puestoTrabajo\": \"RRHH\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Registrar Usuario + Credenciales (ADMIN)",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/auth/autorizacion/registro-credenciales",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "auth",
-                "autorizacion",
-                "registro-credenciales"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"empleadoId\": 1,\n  \"nombres\": \"Julio Edinson\",\n  \"apellidos\": \"Vitterio Bernuy\",\n  \"dni\": \"75413802\",\n  \"email\": \"julio@albru.com\",\n  \"puestoTrabajo\": \"RRHH\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Usuario Por Empleado",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/auth/autorizacion/1/empleado",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "auth",
-                "autorizacion",
-                "1",
-                "empleado"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Actualizar Roles",
-          "request": {
-            "method": "PATCH",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/auth/autorizacion/1/roles",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "auth",
-                "autorizacion",
-                "1",
-                "roles"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "\"RRHH\"",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Actualizar Username/Roles",
-          "request": {
-            "method": "PATCH",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/auth/autorizacion/1/username-roles",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "auth",
-                "autorizacion",
-                "1",
-                "username-roles"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"nombres\": \"Julio Edinson\",\n  \"apellidos\": \"Vitterio Bernuy\",\n  \"dni\": \"75413802\",\n  \"puestoTrabajo\": \"SUPERVISOR_VENTAS\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Reset Password (ADMIN)",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/auth/autorizacion/1/reset-password",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "auth",
-                "autorizacion",
-                "1",
-                "reset-password"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Deshabilitar Usuario",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/auth/autorizacion/1/deshabilitar",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "auth",
-                "autorizacion",
-                "1",
-                "deshabilitar"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "rrhh-service",
-      "item": [
-        {
-          "name": "Empleados",
-          "item": [
-            {
-              "name": "Empleado",
-              "request": {
-                "method": "POST",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\r\n    \"nombres\": \"Pablo Ernesto\",\r\n    \"apellidos\": \"Mamani Quispe\",\r\n    \"tipoDocumento\": \"CE\",\r\n    \"numeroDocumento\": \"25413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"CASADO\",\r\n    \"tieneHijos\": false,\r\n    \"celularPersonal\": \"923763302\",\r\n    \"correoPersonal\": \"pablo@gmail.com\",\r\n    \"celularCorporativo\": \"943763301\",\r\n    \"correo\": \"pablo@gmail.com\",\r\n    \"distrito\": \"SAN_MARTÍN_DE_PORRES\",\r\n    \"direccion\": \"Fermin Tanguis 079\",\r\n    \"banco\": \"BCP\",\r\n    \"cuentaBancaria\": \"12344677890\",\r\n    \"cuentaInterbancaria\": \"09876543234343\"\r\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/rrhh/empleados",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "empleados"
-                  ]
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Empleados",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/rrhh/empleados?estado=POSTULANTE&dni=75413802",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "empleados"
-                  ],
-                  "query": [
-                    {
-                      "key": "estado",
-                      "value": "POSTULANTE"
-                    },
-                    {
-                      "key": "dni",
-                      "value": "75413802"
-                    }
-                  ]
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Empleado dni",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/rrhh/empleados/75413802/numero-documento",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "empleados",
-                    "75413802",
-                    "numero-documento"
-                  ]
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Datos Personales",
-              "request": {
-                "method": "PATCH",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\r\n    \"nombres\": \"Julio Edinson\",\r\n    \"apellidos\": \"Vitterio Bernuy\",\r\n    \"tipoDocumento\": \"DNI\",\r\n    \"numeroDocumento\": \"75413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"SOLTERO\",\r\n    \"tieneHijos\": false\r\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/rrhh/empleados/1/datos-personales",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "empleados",
-                    "1",
-                    "datos-personales"
-                  ]
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Datos Contacto Ubicacion",
-              "request": {
-                "method": "PATCH",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\r\n    \"celularPersonal\": \"943763301\",\r\n    \"correoPersonal\": \"jevbxx@gmail.com\",\r\n    \"distrito\": \"CERCADO_DE_LIMA\",\r\n    \"direccion\": \"Prolongacion 07046\"\r\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/rrhh/empleados/1/datos-contacto-ubicacion",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "empleados",
-                    "1",
-                    "datos-contacto-ubicacion"
-                  ]
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Datos Financieros",
-              "request": {
-                "method": "PATCH",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\r\n    \"banco\": \"BCP\",\r\n    \"cuentaBancaria\": \"222344677890\",\r\n    \"cuentaInterbancaria\": \"0000543234343\"\r\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/rrhh/empleados/1/datos-financieros",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "empleados",
-                    "1",
-                    "datos-financieros"
-                  ]
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Datos Contacto Corporativo",
-              "request": {
-                "method": "PATCH",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\r\n    \"celularCorporativo\": \"987654321\",\r\n    \"correoCorporativo\": \"usuario@gmail.com\"\r\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/rrhh/empleados/1/datos-corporativos",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "empleados",
-                    "1",
-                    "datos-corporativos"
-                  ]
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Lista Negra",
-              "request": {
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "method": "PATCH",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/rrhh/empleados/1/lista-negra",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "rrhh",
-                    "empleados",
-                    "1",
-                    "lista-negra"
-                  ]
-                }
-              },
-              "response": []
-            }
-          ]
-        },
-        {
-          "name": "Contratos",
-          "item": [
-            {
-              "name": "Contrato",
-              "request": {
-                "method": "POST",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\r\n    \"puestoTrabajo\": \"SUPERVISOR_VENTAS\",\r\n    \"regimen\": \"RECIBO_POR_HONORARIOS\",\r\n    \"modalidad\": \"SUPER_FULL\",\r\n    \"seguroSalud\": \"CIS\",\r\n    \"sistemaPensiones\": \"AFP_HABITAD\",\r\n    \"sueldoBase\": 2000.00,\r\n    \"fechaInicio\": \"2026-03-06\",\r\n    \"fechaFin\": null\r\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/rrhh/contratos/1/registrar",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "contratos",
-                    "1",
-                    "registrar"
-                  ]
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Contratos Por Empleado",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
-              "request": {
-                "method": "GET",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\r\n    \"nombres\": \"Pablo Ernesto\",\r\n    \"apellidos\": \"Mamani Quispe\",\r\n    \"tipoDocumento\": \"CE\",\r\n    \"numeroDocumento\": \"25413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"CASADO\",\r\n    \"tieneHijos\": false,\r\n    \"celularPersonal\": \"923763302\",\r\n    \"celularCorporativo\": \"943763301\",\r\n    \"correo\": \"pablo@gmail.com\",\r\n    \"distrito\": \"SAN_MARTÍN_DE_PORRES\",\r\n    \"direccion\": \"Fermin Tanguis 079\",\r\n    \"banco\": \"BCP\",\r\n    \"cuentaBancaria\": \"12344677890\",\r\n    \"cuentaInterbancaria\": \"09876543234343\"\r\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/rrhh/contratos/1/historico",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "contratos",
-                    "1",
-                    "historico"
-                  ]
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Contrato Vigente",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/rrhh/contratos/1/vigente",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "contratos",
-                    "1",
-                    "vigente"
-                  ]
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Cesar Contrato",
-              "request": {
-                "method": "PATCH",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\r\n    \"fechaFin\": \"2026-03-31\"\r\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/rrhh/contratos/1/cesar-contrato",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "contratos",
-                    "1",
-                    "cesar-contrato"
-                  ]
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "response": []
-            }
-          ]
-        },
-        {
-          "name": "Pagos",
-          "item": [
-            {
-              "name": "Pagos",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
-              "request": {
-                "method": "GET",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\r\n    \"nombres\": \"Pablo Ernesto\",\r\n    \"apellidos\": \"Mamani Quispe\",\r\n    \"tipoDocumento\": \"CE\",\r\n    \"numeroDocumento\": \"25413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"CASADO\",\r\n    \"tieneHijos\": false,\r\n    \"celularPersonal\": \"923763302\",\r\n    \"celularCorporativo\": \"943763301\",\r\n    \"correo\": \"pablo@gmail.com\",\r\n    \"distrito\": \"SAN_MARTÍN_DE_PORRES\",\r\n    \"direccion\": \"Fermin Tanguis 079\",\r\n    \"banco\": \"BCP\",\r\n    \"cuentaBancaria\": \"12344677890\",\r\n    \"cuentaInterbancaria\": \"09876543234343\"\r\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/rrhh/pagos",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "pagos"
-                  ]
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Pago",
-              "request": {
-                "method": "POST",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "    {\r\n        \"fechaInicio\": \"2026-02-01\",\r\n        \"fechaFin\": null,\r\n        \"sueldoBase\": 1030.00,\r\n        \"asignacionFamiliar\": 80.00,\r\n        \"bonoPuntualidad\": 20.00,\r\n        \"comisionSemanal\": null,\r\n        \"comisionMensual\": null,\r\n        \"bonoExtra\": 50.00\r\n    }",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/rrhh/pagos/1/pagar-contrato",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "pagos",
-                    "1",
-                    "pagar-contrato"
-                  ]
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                }
-              },
-              "response": []
-            }
-          ]
-        },
-        {
-          "name": "Postulantes",
-          "item": [
-            {
-              "name": "Postulante",
-              "request": {
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "method": "POST",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\r\n  \"nombres\": \"Julio Edinson\",\r\n  \"apellidos\": \"Vitterio Bernuy\",\r\n  \"tipoDocumento\": \"DNI\",\r\n  \"numeroDocumento\": \"55413802\",\r\n  \"celularPersonal\": \"943763301\",\r\n  \"origen\": \"INDEED\",\r\n  \"puestoTrabajo\": \"ASESOR_VENTAS\"\r\n}\r\n",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/rrhh/postulantes",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "rrhh",
-                    "postulantes"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Postulantes",
-              "request": {
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/rrhh/postulantes/reclutamiento",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "rrhh",
-                    "postulantes",
-                    "reclutamiento"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Reclutados",
-              "request": {
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/rrhh/postulantes/capacitacion",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "rrhh",
-                    "postulantes",
-                    "capacitacion"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Reclutamiento",
-              "request": {
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "method": "PATCH",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\r\n  \"evento\": \"EVALUACION_RECLUTAMIENTO\",\r\n  \"estado\": \"RECLUTADO\",\r\n  \"subestado\": \"\",\r\n  \"fechaEvento\": \"\",\r\n  \"inicioCapa\": \"2026-02-27\",\r\n  \"finCapa\": \"2026-02-28\",\r\n  \"pagoDiaCapa\": \"\"\r\n}\r\n",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/rrhh/postulantes/1/estado-reclutamiento",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "rrhh",
-                    "postulantes",
-                    "1",
-                    "estado-reclutamiento"
-                  ]
-                }
-              },
-              "response": []
-            },
-            {
-              "name": "Capacitacion",
-              "request": {
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "method": "PATCH",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\r\n  \"origen\": \"INDEED\",\r\n  \"puestoTrabajo\": \"ASESOR_VENTAS\",\r\n  \"pagoDiaCapacitacion\": 20.00,\r\n  \"fechaInicio\": \"2026-01-01\",\r\n  \"fechaFin\": \"2026-02-01\"\r\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/rrhh/postulantes/estado-capacitacion",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "rrhh",
-                    "postulantes",
-                    "estado-capacitacion"
-                  ]
-                }
-              },
-              "response": []
-            }
-          ]
-        },
-        {
-          "name": "Eventos",
-          "item": [
-            {
-              "name": "Postulantes",
-              "request": {
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/rrhh/eventos/1/postulantes",
-                  "protocol": "http",
-                  "host": [
-                    "localhost"
-                  ],
-                  "port": "8080",
-                  "path": [
-                    "rrhh",
-                    "eventos",
-                    "1",
-                    "postulantes"
-                  ]
-                }
-              },
-              "response": []
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "lead-service",
-      "item": []
-    }
-  ],
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:8080"
-    },
-    {
-      "key": "token",
-      "value": ""
-    }
-  ]
+    "info":  {
+                 "_postman_id":  "2fa5e937-3dc2-4fa9-82b0-14a9a5e452ec",
+                 "name":  "AlbruGroup",
+                 "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+                 "_exporter_id":  "32906795"
+             },
+    "item":  [
+                 {
+                     "name":  "gateway-service",
+                     "item":  [
+                                  {
+                                      "name":  "Login",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\r\n  \"username\": \"admin@albru.admin.pe\",\r\n  \"password\": \"123456\"\r\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/auth/autorizacion/login",
+                                                                  "protocol":  "http",
+                                                                  "host":  [
+                                                                               "localhost"
+                                                                           ],
+                                                                  "port":  "8080",
+                                                                  "path":  [
+                                                                               "auth",
+                                                                               "autorizacion",
+                                                                               "login"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ],
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.collectionVariables.set(\"token\", json.token);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Usuario",
+                                      "protocolProfileBehavior":  {
+                                                                      "disableBodyPruning":  true
+                                                                  },
+                                      "request":  {
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{token}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\r\n  \"username\": \"J75413802B@albru.recruiter.pe\",\r\n  \"password\": \"123456\"\r\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/auth/autorizacion/1/empleado",
+                                                                  "protocol":  "http",
+                                                                  "host":  [
+                                                                               "localhost"
+                                                                           ],
+                                                                  "port":  "8080",
+                                                                  "path":  [
+                                                                               "auth",
+                                                                               "autorizacion",
+                                                                               "1",
+                                                                               "empleado"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "auth-service",
+                     "item":  [
+                                  {
+                                      "name":  "Login",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/auth/autorizacion/login",
+                                                                  "protocol":  "http",
+                                                                  "host":  [
+                                                                               "localhost"
+                                                                           ],
+                                                                  "port":  "8080",
+                                                                  "path":  [
+                                                                               "auth",
+                                                                               "autorizacion",
+                                                                               "login"
+                                                                           ]
+                                                              },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"username\": \"admin@albru.admin.pe\",\n  \"password\": \"123456\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "response":  [
+
+                                                   ],
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "const json = pm.response.json();",
+                                                                                    "pm.collectionVariables.set(\"token\", json.token);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ]
+                                  },
+                                  {
+                                      "name":  "Registrar Usuario",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/auth/autorizacion/registro",
+                                                                  "protocol":  "http",
+                                                                  "host":  [
+                                                                               "localhost"
+                                                                           ],
+                                                                  "port":  "8080",
+                                                                  "path":  [
+                                                                               "auth",
+                                                                               "autorizacion",
+                                                                               "registro"
+                                                                           ]
+                                                              },
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{token}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"empleadoId\": 1,\n  \"nombres\": \"Julio Edinson\",\n  \"apellidos\": \"Vitterio Bernuy\",\n  \"dni\": \"75413802\",\n  \"email\": \"julio@albru.com\",\n  \"puestoTrabajo\": \"RRHH\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Registrar Usuario + Credenciales (ADMIN)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/auth/autorizacion/registro-credenciales",
+                                                                  "protocol":  "http",
+                                                                  "host":  [
+                                                                               "localhost"
+                                                                           ],
+                                                                  "port":  "8080",
+                                                                  "path":  [
+                                                                               "auth",
+                                                                               "autorizacion",
+                                                                               "registro-credenciales"
+                                                                           ]
+                                                              },
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{token}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"empleadoId\": 1,\n  \"nombres\": \"Julio Edinson\",\n  \"apellidos\": \"Vitterio Bernuy\",\n  \"dni\": \"75413802\",\n  \"email\": \"julio@albru.com\",\n  \"puestoTrabajo\": \"RRHH\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Usuario Por Empleado",
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/auth/autorizacion/1/empleado",
+                                                                  "protocol":  "http",
+                                                                  "host":  [
+                                                                               "localhost"
+                                                                           ],
+                                                                  "port":  "8080",
+                                                                  "path":  [
+                                                                               "auth",
+                                                                               "autorizacion",
+                                                                               "1",
+                                                                               "empleado"
+                                                                           ]
+                                                              },
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{token}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Actualizar Roles",
+                                      "request":  {
+                                                      "method":  "PATCH",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/auth/autorizacion/1/roles",
+                                                                  "protocol":  "http",
+                                                                  "host":  [
+                                                                               "localhost"
+                                                                           ],
+                                                                  "port":  "8080",
+                                                                  "path":  [
+                                                                               "auth",
+                                                                               "autorizacion",
+                                                                               "1",
+                                                                               "roles"
+                                                                           ]
+                                                              },
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{token}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "\"RRHH\"",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Actualizar Username/Roles",
+                                      "request":  {
+                                                      "method":  "PATCH",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/auth/autorizacion/1/username-roles",
+                                                                  "protocol":  "http",
+                                                                  "host":  [
+                                                                               "localhost"
+                                                                           ],
+                                                                  "port":  "8080",
+                                                                  "path":  [
+                                                                               "auth",
+                                                                               "autorizacion",
+                                                                               "1",
+                                                                               "username-roles"
+                                                                           ]
+                                                              },
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{token}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               },
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"nombres\": \"Julio Edinson\",\n  \"apellidos\": \"Vitterio Bernuy\",\n  \"dni\": \"75413802\",\n  \"puestoTrabajo\": \"SUPERVISOR_VENTAS\"\n}",
+                                                                   "options":  {
+                                                                                   "raw":  {
+                                                                                               "language":  "json"
+                                                                                           }
+                                                                               }
+                                                               }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Reset Password (ADMIN)",
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/auth/autorizacion/1/reset-password",
+                                                                  "protocol":  "http",
+                                                                  "host":  [
+                                                                               "localhost"
+                                                                           ],
+                                                                  "port":  "8080",
+                                                                  "path":  [
+                                                                               "auth",
+                                                                               "autorizacion",
+                                                                               "1",
+                                                                               "reset-password"
+                                                                           ]
+                                                              },
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{token}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  },
+                                  {
+                                      "name":  "Deshabilitar Usuario",
+                                      "request":  {
+                                                      "method":  "DELETE",
+                                                      "header":  [
+
+                                                                 ],
+                                                      "url":  {
+                                                                  "raw":  "{{baseUrl}}/auth/autorizacion/1/deshabilitar",
+                                                                  "protocol":  "http",
+                                                                  "host":  [
+                                                                               "localhost"
+                                                                           ],
+                                                                  "port":  "8080",
+                                                                  "path":  [
+                                                                               "auth",
+                                                                               "autorizacion",
+                                                                               "1",
+                                                                               "deshabilitar"
+                                                                           ]
+                                                              },
+                                                      "auth":  {
+                                                                   "type":  "bearer",
+                                                                   "bearer":  [
+                                                                                  {
+                                                                                      "key":  "token",
+                                                                                      "value":  "{{token}}",
+                                                                                      "type":  "string"
+                                                                                  }
+                                                                              ]
+                                                               }
+                                                  },
+                                      "response":  [
+
+                                                   ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "rrhh-service",
+                     "item":  [
+                                  {
+                                      "name":  "Empresas Contratistas",
+                                      "item":  [
+                                                   {
+                                                       "name":  "Registrar Empresa Contratista",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\r\n    \"nombre\": \"SERVICIOS GENERALES ALFA SAC\"\r\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/empresas-contratistas",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "rrhh",
+                                                                                                "empresas-contratistas"
+                                                                                            ]
+                                                                               },
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Listar Empresas Contratistas",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/empresas-contratistas?activo=true",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "rrhh",
+                                                                                                "empresas-contratistas"
+                                                                                            ],
+                                                                                   "query":  [
+                                                                                                 {
+                                                                                                     "key":  "activo",
+                                                                                                     "value":  "true"
+                                                                                                 }
+                                                                                             ]
+                                                                               },
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   }
+                                               ]
+                                  },
+                                  {
+                                      "name":  "Empleados",
+                                      "item":  [
+                                                   {
+                                                       "name":  "Empleado",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n    \"nombres\": \"Pablo Ernesto\",\n    \"apellidos\": \"Mamani Quispe\",\n    \"tipoDocumento\": \"CE\",\n    \"numeroDocumento\": \"25413802\",\n    \"nacionalidad\": \"PERUANO\",\n    \"fechaNacimiento\": \"1999-03-06\",\n    \"estadoCivil\": \"CASADO\",\n    \"tieneHijos\": false,\n    \"celularPersonal\": \"923763302\",\n    \"correoPersonal\": \"pablo@gmail.com\",\n    \"origen\": \"REFERIDO\",\n    \"distrito\": \"SAN_MARTIN_DE_PORRES\",\n    \"direccion\": \"Fermin Tanguis 079\",\n    \"banco\": \"BCP\",\n    \"cuentaBancaria\": \"12344677890\",\n    \"cuentaInterbancaria\": \"09876543234343\",\n    \"cuentaPropia\": false,\n    \"parentesco\": \"HERMANO\",\n    \"celularTransferencia\": \"987654321\",\n    \"idEmpresaContratista\": 1\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/empleados",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "empleados"
+                                                                                            ]
+                                                                               },
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Empleados",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/empleados?estado=POSTULANTE\u0026dni=75413802\u0026origen=REFERIDO\u0026idEmpresaContratista=1",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "empleados"
+                                                                                            ],
+                                                                                   "query":  [
+                                                                                                 {
+                                                                                                     "key":  "estado",
+                                                                                                     "value":  "POSTULANTE"
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "key":  "dni",
+                                                                                                     "value":  "75413802"
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "key":  "origen",
+                                                                                                     "value":  "REFERIDO"
+                                                                                                 },
+                                                                                                 {
+                                                                                                     "key":  "idEmpresaContratista",
+                                                                                                     "value":  "1"
+                                                                                                 }
+                                                                                             ]
+                                                                               },
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Empleado dni",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/empleados/75413802/numero-documento",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "empleados",
+                                                                                                "75413802",
+                                                                                                "numero-documento"
+                                                                                            ]
+                                                                               },
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Datos Personales",
+                                                       "request":  {
+                                                                       "method":  "PATCH",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\r\n    \"nombres\": \"Julio Edinson\",\r\n    \"apellidos\": \"Vitterio Bernuy\",\r\n    \"tipoDocumento\": \"DNI\",\r\n    \"numeroDocumento\": \"75413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"SOLTERO\",\r\n    \"tieneHijos\": false\r\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/empleados/1/datos-personales",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "empleados",
+                                                                                                "1",
+                                                                                                "datos-personales"
+                                                                                            ]
+                                                                               },
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Datos Contacto Ubicacion",
+                                                       "request":  {
+                                                                       "method":  "PATCH",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\r\n    \"celularPersonal\": \"943763301\",\r\n    \"correoPersonal\": \"jevbxx@gmail.com\",\r\n    \"distrito\": \"CERCADO_DE_LIMA\",\r\n    \"direccion\": \"Prolongacion 07046\"\r\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/empleados/1/datos-contacto-ubicacion",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "empleados",
+                                                                                                "1",
+                                                                                                "datos-contacto-ubicacion"
+                                                                                            ]
+                                                                               },
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Datos Financieros",
+                                                       "request":  {
+                                                                       "method":  "PATCH",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n    \"banco\": \"BCP\",\n    \"cuentaBancaria\": \"222344677890\",\n    \"cuentaInterbancaria\": \"0000543234343\",\n    \"cuentaPropia\": false,\n    \"parentesco\": \"HERMANO\",\n    \"celularTransferencia\": \"987654321\",\n    \"idEmpresaContratista\": 1\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/empleados/1/datos-financieros",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "empleados",
+                                                                                                "1",
+                                                                                                "datos-financieros"
+                                                                                            ]
+                                                                               },
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Datos Contacto Corporativo",
+                                                       "request":  {
+                                                                       "method":  "PATCH",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\r\n    \"celularCorporativo\": \"987654321\",\r\n    \"correoCorporativo\": \"usuario@gmail.com\"\r\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/empleados/1/datos-corporativos",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "empleados",
+                                                                                                "1",
+                                                                                                "datos-corporativos"
+                                                                                            ]
+                                                                               },
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Lista Negra",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                },
+                                                                       "method":  "PATCH",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/empleados/1/lista-negra",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "rrhh",
+                                                                                                "empleados",
+                                                                                                "1",
+                                                                                                "lista-negra"
+                                                                                            ]
+                                                                               }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   }
+                                               ]
+                                  },
+                                  {
+                                      "name":  "Contratos",
+                                      "item":  [
+                                                   {
+                                                       "name":  "Contrato",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\r\n    \"puestoTrabajo\": \"SUPERVISOR_VENTAS\",\r\n    \"regimen\": \"RECIBO_POR_HONORARIOS\",\r\n    \"modalidad\": \"SUPER_FULL\",\r\n    \"seguroSalud\": \"CIS\",\r\n    \"sistemaPensiones\": \"AFP_HABITAD\",\r\n    \"sueldoBase\": 2000.00,\r\n    \"fechaInicio\": \"2026-03-06\",\r\n    \"fechaFin\": null\r\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/contratos/1/registrar",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "contratos",
+                                                                                                "1",
+                                                                                                "registrar"
+                                                                                            ]
+                                                                               },
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Contratos Por Empleado",
+                                                       "protocolProfileBehavior":  {
+                                                                                       "disableBodyPruning":  true
+                                                                                   },
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\r\n    \"nombres\": \"Pablo Ernesto\",\r\n    \"apellidos\": \"Mamani Quispe\",\r\n    \"tipoDocumento\": \"CE\",\r\n    \"numeroDocumento\": \"25413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"CASADO\",\r\n    \"tieneHijos\": false,\r\n    \"celularPersonal\": \"923763302\",\r\n    \"celularCorporativo\": \"943763301\",\r\n    \"correo\": \"pablo@gmail.com\",\r\n    \"distrito\": \"SAN_MARTÍN_DE_PORRES\",\r\n    \"direccion\": \"Fermin Tanguis 079\",\r\n    \"banco\": \"BCP\",\r\n    \"cuentaBancaria\": \"12344677890\",\r\n    \"cuentaInterbancaria\": \"09876543234343\"\r\n}"
+                                                                                },
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/contratos/1/historico",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "contratos",
+                                                                                                "1",
+                                                                                                "historico"
+                                                                                            ]
+                                                                               },
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Contrato Vigente",
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/contratos/1/vigente",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "contratos",
+                                                                                                "1",
+                                                                                                "vigente"
+                                                                                            ]
+                                                                               },
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Cesar Contrato",
+                                                       "request":  {
+                                                                       "method":  "PATCH",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\r\n    \"fechaFin\": \"2026-03-31\"\r\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/contratos/1/cesar-contrato",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "contratos",
+                                                                                                "1",
+                                                                                                "cesar-contrato"
+                                                                                            ]
+                                                                               },
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   }
+                                               ]
+                                  },
+                                  {
+                                      "name":  "Pagos",
+                                      "item":  [
+                                                   {
+                                                       "name":  "Pagos",
+                                                       "protocolProfileBehavior":  {
+                                                                                       "disableBodyPruning":  true
+                                                                                   },
+                                                       "request":  {
+                                                                       "method":  "GET",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\r\n    \"nombres\": \"Pablo Ernesto\",\r\n    \"apellidos\": \"Mamani Quispe\",\r\n    \"tipoDocumento\": \"CE\",\r\n    \"numeroDocumento\": \"25413802\",\r\n    \"nacionalidad\": \"PERUANO\",\r\n    \"fechaNacimiento\": \"1999-03-06\",\r\n    \"estadoCivil\": \"CASADO\",\r\n    \"tieneHijos\": false,\r\n    \"celularPersonal\": \"923763302\",\r\n    \"celularCorporativo\": \"943763301\",\r\n    \"correo\": \"pablo@gmail.com\",\r\n    \"distrito\": \"SAN_MARTÍN_DE_PORRES\",\r\n    \"direccion\": \"Fermin Tanguis 079\",\r\n    \"banco\": \"BCP\",\r\n    \"cuentaBancaria\": \"12344677890\",\r\n    \"cuentaInterbancaria\": \"09876543234343\"\r\n}"
+                                                                                },
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/pagos",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "pagos"
+                                                                                            ]
+                                                                               },
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Pago",
+                                                       "request":  {
+                                                                       "method":  "POST",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "    {\r\n        \"fechaInicio\": \"2026-02-01\",\r\n        \"fechaFin\": null,\r\n        \"sueldoBase\": 1030.00,\r\n        \"asignacionFamiliar\": 80.00,\r\n        \"bonoPuntualidad\": 20.00,\r\n        \"comisionSemanal\": null,\r\n        \"comisionMensual\": null,\r\n        \"bonoExtra\": 50.00\r\n    }",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/pagos/1/pagar-contrato",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "pagos",
+                                                                                                "1",
+                                                                                                "pagar-contrato"
+                                                                                            ]
+                                                                               },
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   }
+                                               ]
+                                  },
+                                  {
+                                      "name":  "Postulantes",
+                                      "item":  [
+                                                   {
+                                                       "name":  "Postulante",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                },
+                                                                       "method":  "POST",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\r\n  \"nombres\": \"Julio Edinson\",\r\n  \"apellidos\": \"Vitterio Bernuy\",\r\n  \"tipoDocumento\": \"DNI\",\r\n  \"numeroDocumento\": \"55413802\",\r\n  \"celularPersonal\": \"943763301\",\r\n  \"origen\": \"INDEED\",\r\n  \"puestoTrabajo\": \"ASESOR_VENTAS\"\r\n}\r\n",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/postulantes",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "rrhh",
+                                                                                                "postulantes"
+                                                                                            ]
+                                                                               }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Postulantes",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                },
+                                                                       "method":  "GET",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/postulantes/reclutamiento",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "rrhh",
+                                                                                                "postulantes",
+                                                                                                "reclutamiento"
+                                                                                            ]
+                                                                               }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Reclutados",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                },
+                                                                       "method":  "GET",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/postulantes/capacitacion",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "rrhh",
+                                                                                                "postulantes",
+                                                                                                "capacitacion"
+                                                                                            ]
+                                                                               }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Reclutamiento",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                },
+                                                                       "method":  "PATCH",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\r\n  \"evento\": \"EVALUACION_RECLUTAMIENTO\",\r\n  \"estado\": \"RECLUTADO\",\r\n  \"subestado\": \"\",\r\n  \"fechaEvento\": \"\",\r\n  \"inicioCapa\": \"2026-02-27\",\r\n  \"finCapa\": \"2026-02-28\",\r\n  \"pagoDiaCapa\": \"\"\r\n}\r\n",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/postulantes/1/estado-reclutamiento",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "rrhh",
+                                                                                                "postulantes",
+                                                                                                "1",
+                                                                                                "estado-reclutamiento"
+                                                                                            ]
+                                                                               }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Capacitacion",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                },
+                                                                       "method":  "PATCH",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\r\n  \"origen\": \"INDEED\",\r\n  \"puestoTrabajo\": \"ASESOR_VENTAS\",\r\n  \"pagoDiaCapacitacion\": 20.00,\r\n  \"fechaInicio\": \"2026-01-01\",\r\n  \"fechaFin\": \"2026-02-01\"\r\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/postulantes/estado-capacitacion",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "rrhh",
+                                                                                                "postulantes",
+                                                                                                "estado-capacitacion"
+                                                                                            ]
+                                                                               }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   }
+                                               ]
+                                  },
+                                  {
+                                      "name":  "Eventos",
+                                      "item":  [
+                                                   {
+                                                       "name":  "Postulantes",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "bearer",
+                                                                                    "bearer":  [
+                                                                                                   {
+                                                                                                       "key":  "token",
+                                                                                                       "value":  "{{token}}",
+                                                                                                       "type":  "string"
+                                                                                                   }
+                                                                                               ]
+                                                                                },
+                                                                       "method":  "GET",
+                                                                       "header":  [
+
+                                                                                  ],
+                                                                       "url":  {
+                                                                                   "raw":  "{{baseUrl}}/rrhh/eventos/1/postulantes",
+                                                                                   "protocol":  "http",
+                                                                                   "host":  [
+                                                                                                "localhost"
+                                                                                            ],
+                                                                                   "port":  "8080",
+                                                                                   "path":  [
+                                                                                                "rrhh",
+                                                                                                "eventos",
+                                                                                                "1",
+                                                                                                "postulantes"
+                                                                                            ]
+                                                                               }
+                                                                   },
+                                                       "response":  [
+
+                                                                    ]
+                                                   }
+                                               ]
+                                  }
+                              ]
+                 },
+                 {
+                     "name":  "lead-service",
+                     "item":  [
+
+                              ]
+                 }
+             ],
+    "variable":  [
+                     {
+                         "key":  "baseUrl",
+                         "value":  "http://localhost:8080"
+                     },
+                     {
+                         "key":  "token",
+                         "value":  ""
+                     }
+                 ]
 }

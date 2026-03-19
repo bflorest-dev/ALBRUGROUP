@@ -57,6 +57,9 @@ public class DataLoader {
         savePermiso("READ_EMPLEADOS", "Puede listar y ver empleados", "EMPLEADO", "READ");
         savePermiso("UPDATE_EMPLEADOS", "Puede editar empleados", "EMPLEADO", "UPDATE");
         savePermiso("BLACKLIST_EMPLEADOS", "Puede marcar como lista negra a los empleados", "EMPLEADO", "BLACKLIST");
+        savePermiso("CREATE_CONTRATISTA", "Puede registrar empresas contratistas", "EMPRESA_CONTRATISTA", "CREATE");
+        savePermiso("READ_CONTRATISTAS", "Puede listar y ver empresas contratistas", "EMPRESA_CONTRATISTA", "READ");
+        savePermiso("DELETE_CONTRATISTA", "Puede desactivar empresas contratistas", "EMPRESA_CONTRATISTA", "DELETE");
         // CONTRATOS
         savePermiso("CREATE_CONTRATOS", "Puede registrar contratos", "CONTRATO", "CREATE");
         savePermiso("UPDATE_CONTRATOS", "Puede editar contratos", "CONTRATO", "UPDATE");
