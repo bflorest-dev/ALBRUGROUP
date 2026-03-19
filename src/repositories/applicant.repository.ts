@@ -1,53 +1,121 @@
 /**
- * Applicant Repository
- * Capa de acceso a datos para postulantes
- * Solo contiene llamadas HTTP puras sin lógica de negocio
+ * ApplicantRepository — llamadas HTTP puras a /rrhh/postulantes
+ *
+ * Refleja exactamente los endpoints del Swagger:
+ *
+ *  GET  /postulantes                          → listarPostulantesPorEtapa  (etapa requerida)
+ *  GET  /postulantes/reclutamiento            → listarPostulantesReclutamiento
+ *  GET  /postulantes/capacitacion             → listarPostulantesCapacitacion
+ *  POST /postulantes                          → registrarPostulante
+ *  PATCH /postulantes/{id}/estado-reclutamiento
+ *  PATCH /postulantes/estado-capacitacion
+ *  PATCH /postulantes/{id}/rechazo-inasistencia-capacitacion
  */
 
-import { http } from '../api/http';
-import type { PostulanteResponse, PostulanteRequest, ApplicantStatusChange } from '../types';
+import { rrhhHttp } from '../api/http';
+import type {
+  PostulanteResponse,
+  RegistrarPostulanteRequest,
+  EventoPostulanteRequest,
+  EstadoCapacitacionRequest,
+} from '../types';
 
-// Tipos específicos para las respuestas de la API
-export type ApplicantsResponse = PostulanteResponse[];
-export type ApplicantResponse = PostulanteResponse;
-export type CreateApplicantResponse = PostulanteResponse;
+// Etapas válidas según el backend
+export type EtapaProceso = 'RECLUTAMIENTO' | 'CAPACITACION' | 'GESTION' | 'CONTRATADO';
+
+export interface FiltrosPostulante {
+  estado?: string;
+  subestado?: string;
+  origen?: 'COMPUTRABAJO' | 'INDEED' | 'REFERIDO';
+  puesto?: string;
+  desde?: string;   // YYYY-MM-DD
+  hasta?: string;   // YYYY-MM-DD
+  listaNegra?: boolean;
+}
 
 export class ApplicantRepository {
   /**
-   * Obtener todos los postulantes con filtros
+   * Listar postulantes por etapa (parámetro requerido por el backend)
+   * GET /postulantes?etapa=RECLUTAMIENTO&...
    */
-  static async getAll(params?: {
-    estado?: string;
-    puesto?: string;
-    desde?: string;
-    hasta?: string;
-  }): Promise<PostulanteResponse[]> {
-    const response = await http.get<ApplicantsResponse>('/postulantes', { params });
+  static async getByEtapa(
+    etapa: EtapaProceso,
+    filtros?: FiltrosPostulante
+  ): Promise<PostulanteResponse[]> {
+    const response = await rrhhHttp.get<PostulanteResponse[]>('/postulantes', {
+      params: { etapa, ...filtros },
+    });
     return response.data;
   }
 
   /**
-   * Crear nuevo postulante
+   * Listar postulantes en etapa RECLUTAMIENTO (endpoint dedicado)
+   * GET /postulantes/reclutamiento
    */
-  static async create(applicantData: PostulanteRequest): Promise<PostulanteResponse> {
-    const response = await http.post<CreateApplicantResponse>('/postulantes', applicantData);
+  static async getReclutamiento(filtros?: FiltrosPostulante): Promise<PostulanteResponse[]> {
+    const response = await rrhhHttp.get<PostulanteResponse[]>('/postulantes/reclutamiento', {
+      params: filtros,
+    });
     return response.data;
   }
 
   /**
-   * Actualizar un postulante específico
+   * Listar postulantes en etapa CAPACITACION (endpoint dedicado)
+   * GET /postulantes/capacitacion
    */
-  static async update(id: string, applicantData: PostulanteRequest): Promise<PostulanteResponse> {
-    // algunos backend esperan PUT para actualización completa
-    const response = await http.put<ApplicantResponse>(`/postulantes/${id}`, applicantData);
+  static async getCapacitacion(filtros?: FiltrosPostulante): Promise<PostulanteResponse[]> {
+    const response = await rrhhHttp.get<PostulanteResponse[]>('/postulantes/capacitacion', {
+      params: filtros,
+    });
     return response.data;
   }
 
   /**
-   * Actualizar estados de postulantes en bulk
+   * Registrar nuevo postulante
+   * POST /postulantes
    */
-  static async updateStatuses(changes: ApplicantStatusChange[]): Promise<PostulanteResponse[]> {
-    const response = await http.patch<ApplicantsResponse>('/postulantes', changes);
+  static async create(data: RegistrarPostulanteRequest): Promise<PostulanteResponse> {
+    const response = await rrhhHttp.post<PostulanteResponse>('/postulantes', data);
+    return response.data;
+  }
+
+  /**
+   * Actualizar estado en etapa de reclutamiento
+   * PATCH /postulantes/{id}/estado-reclutamiento
+   */
+  static async updateEstadoReclutamiento(
+    id: number,
+    evento: EventoPostulanteRequest
+  ): Promise<PostulanteResponse> {
+    const response = await rrhhHttp.patch<PostulanteResponse>(
+      `/postulantes/${id}/estado-reclutamiento`,
+      evento
+    );
+    return response.data;
+  }
+
+  /**
+   * Actualizar estado de capacitación en bulk
+   * PATCH /postulantes/estado-capacitacion
+   */
+  static async updateEstadoCapacitacion(
+    cambios: EstadoCapacitacionRequest[]
+  ): Promise<PostulanteResponse[]> {
+    const response = await rrhhHttp.patch<PostulanteResponse[]>(
+      '/postulantes/estado-capacitacion',
+      cambios
+    );
+    return response.data;
+  }
+
+  /**
+   * Rechazar postulante por inasistencia a capacitación
+   * PATCH /postulantes/{id}/rechazo-inasistencia-capacitacion
+   */
+  static async rechazarPorInasistencia(id: number): Promise<PostulanteResponse> {
+    const response = await rrhhHttp.patch<PostulanteResponse>(
+      `/postulantes/${id}/rechazo-inasistencia-capacitacion`
+    );
     return response.data;
   }
 }

@@ -259,7 +259,30 @@ export interface PageResponse<T> {
 }
 
 
-// Request payloads para API
+// Request payloads para API - Postulantes
+export interface RegistrarPostulanteRequest {
+  nombres: string;
+  apellidos: string;
+  tipoDocumento: 'DNI' | 'CE';
+  numeroDocumento: string;
+  celularPersonal: string;
+  puestoTrabajo: string;
+  compania: 'ALBRU' | 'WIN' | 'CLARO';
+  origen: 'COMPUTRABAJO' | 'INDEED' | 'REFERIDO' | 'TIKTOK' | 'FACEBOOK' | 'LINKEDIN';
+}
+
+export interface EventoPostulanteRequest {
+  evento: string; // ej: 'APROBAR', 'RECHAZAR', 'CONTRATAR'
+  nota?: string;
+  fechaEvento?: string;
+}
+
+export interface EstadoCapacitacionRequest {
+  postulante_id: number;
+  nuevo_estado: string;
+  evento?: string;
+}
+
 export interface PostulanteRequest {
   nombres: string;
   apellidos: string;
@@ -273,6 +296,61 @@ export interface PostulanteRequest {
   pagoDiaCapacitacion?: number;
   fechaInicio?: string;
   fechaFin?: string;
+}
+
+// Request payloads para API - Empleados y Contratos
+export interface RegistrarEmpleadoRequest {
+  nombres: string;
+  apellidos: string;
+  tipoDocumento: 'DNI' | 'CE';
+  numeroDocumento: string;
+  nacionalidad: string;
+  fechaNacimiento: string;
+  estadoCivil: string;
+  tieneHijos: boolean;
+  distrito: string;
+  direccion: string;
+  celularPersonal: string;
+  correoPersonal: string;
+  banco: string;
+  cuentaBancaria: string;
+  cuentaInterbancaria: string;
+  sueldo: number;
+  puestoTrabajo: string;
+  fechaInicio: string;
+  fechaFin?: string;
+  modalidad: string;
+  regimen: 'RECIBO POR HONORARIOS' | 'PLANILLA';
+  compania?: 'CLARO' | 'WIN' | 'ALBRU';
+  campana?: string;
+  // contract fields
+  seguro?: 'SIS' | 'ESSALUD';
+  pension?: 'ONP' | 'AFP INTEGRA' | 'PROFUTURO AFP' | 'AFP HABITAD' | 'PRIMA AFP';
+  cuentaPropia?: boolean;
+  parentesco?: string;
+  celularTransferencia?: string;
+  empresaContratista?: 'ALBRU' | 'RUNA';
+}
+
+export interface RegistrarContratoRequest {
+  regimen: 'RECIBO POR HONORARIOS' | 'PLANILLA';
+  modalidad: 'PART TIME' | 'SEMI FULL' | 'FULL TIME' | 'SUPER FULL';
+  seguro?: 'SIS' | 'ESSALUD';
+  pension?: 'ONP' | 'AFP INTEGRA' | 'PROFUTURO AFP' | 'AFP HABITAD' | 'PRIMA AFP';
+  sueldo: number;
+  fechaInicio: string;
+  puestoTrabajo: string;
+  compania?: string;
+  // Beneficiario
+  cuentaPropia: boolean;
+  parentesco: string;
+  celularTransferencia: string;
+  empresaContratista?: 'ALBRU' | 'RUNA';
+}
+
+export interface CerrarContratoRequest {
+  motivoBaja: string;
+  fechaCierre?: string;
 }
 
 export interface ApplicantStatusChange {

@@ -1,23 +1,67 @@
-import { useState, useEffect } from 'react';
-import { useApplicants } from '../contexts/ApplicantsContext';
+/**
+ * useApplicantsSync
+ *
+ * ANTES: leía de ApplicantsContext → localStorage
+ * AHORA: llama al backend real vía ApplicantRepository
+ *
+ * Mantiene la misma interfaz que antes ({ applicants, syncVersion })
+ * para que ApplicantsDashboard no necesite cambios adicionales.
+ */
+
+import { useState, useEffect, useCallback } from 'react';
+import { ApplicantRepository } from '../repositories/applicant.repository';
+import { adaptPostulanteResponseToApplicant } from '../types';
+import type { Applicant } from '../types';
+import type { ApiError } from '../api/http';
+
+interface UseApplicantsSyncReturn {
+  applicants: Applicant[];
+  loading: boolean;
+  error: string | null;
+  syncVersion: number;
+  recargar: () => void;
+}
 
 /**
- * Custom hook que sincroniza los postulantes del Context
- * y fuerza re-render solo cuando hay cambios en applicants
+ * @param etapa - La etapa del proceso a cargar (default: 'RECLUTAMIENTO')
  */
-export const useApplicantsSync = () => {
-  const { applicants } = useApplicants();
+export const useApplicantsSync = (
+  etapa: 'RECLUTAMIENTO' | 'CAPACITACION' | 'GESTION' | 'CONTRATADO' = 'RECLUTAMIENTO'
+): UseApplicantsSyncReturn => {
+  const [applicants, setApplicants] = useState<Applicant[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [syncVersion, setSyncVersion] = useState(0);
 
-  useEffect(() => {
-    const handleContextUpdate = () => {
+  const cargar = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      let raw;
+      if (etapa === 'RECLUTAMIENTO') {
+        // Usa el endpoint dedicado GET /postulantes/reclutamiento
+        raw = await ApplicantRepository.getReclutamiento();
+      } else if (etapa === 'CAPACITACION') {
+        // Usa el endpoint dedicado GET /postulantes/capacitacion
+        raw = await ApplicantRepository.getCapacitacion();
+      } else {
+        // Usa el endpoint genérico GET /postulantes?etapa=...
+        raw = await ApplicantRepository.getByEtapa(etapa);
+      }
+      setApplicants(raw.map(adaptPostulanteResponseToApplicant));
       setSyncVersion(v => v + 1);
-    };
+    } catch (err) {
+      const apiErr = err as ApiError;
+      setError(apiErr.message || 'Error al cargar postulantes');
+    } finally {
+      setLoading(false);
+    }
+  }, [etapa]);
 
-    // Escucha el evento que dispara el Context (más rápido que localStorage)
-    window.addEventListener('applicantsContextUpdated', handleContextUpdate);
-    return () => window.removeEventListener('applicantsContextUpdated', handleContextUpdate);
-  }, []);
+  // Cargar al montar
+  useEffect(() => {
+    cargar();
+  }, [cargar]);
 
-  return { applicants, syncVersion };
+  return { applicants, loading, error, syncVersion, recargar: cargar };
 };

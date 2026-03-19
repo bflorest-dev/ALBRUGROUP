@@ -6,6 +6,22 @@ import type { LoginFormData } from './LoginForm';
 import { login } from '../services';
 import './LoginForm.css';
 
+/**
+ * DEV_FORCE_ROLE
+ *
+ * Solo en desarrollo: fuerza una vista específica después del login
+ * independientemente del rol que devuelva el backend.
+ *
+ * Útil cuando el backend solo tiene usuario ADMINISTRADOR pero necesitas
+ * desarrollar y probar otra vista (ej: RRHH).
+ *
+ * Cambia este valor para probar distintas vistas:
+ *   'RRHH' | 'RECLUTAMIENTO' | 'CAPACITACION' | 'ADMINISTRADOR' | null
+ *
+ * Ponlo en null cuando ya tengas usuarios con roles correctos en el backend.
+ */
+const DEV_FORCE_ROLE: Role | null = import.meta.env.DEV ? 'RRHH' : null;
+
 // Validar si un string es una Role válida
 const isValidRole = (value: string): value is Role => {
   const validRoles: Role[] = [
@@ -51,10 +67,11 @@ export const LoginPage: React.FC = () => {
       console.log('[LoginPage]   - Roles:', response.roles);
       console.log('[LoginPage]   - EmpleadoId:', response.empleadoId);
 
-      // Obtener el primer rol válido del usuario o usar 'RRHH' por defecto
-      const userRole = response.roles?.find(isValidRole) || 'RRHH';
+      // En dev: DEV_FORCE_ROLE sobreescribe el rol del backend.
+      const backendRole = response.roles?.find(isValidRole) || 'RRHH';
+      const userRole: Role = DEV_FORCE_ROLE ?? backendRole;
       
-      console.log('[LoginPage] 🎯 Asignando rol:', userRole);
+      console.log('[LoginPage] Rol backend:', backendRole, '-> Rol asignado:', userRole);
       
       // setTimeout pequeño para permitir que AuthService termine de guardar en localStorage
       setTimeout(() => {

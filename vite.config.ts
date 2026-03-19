@@ -23,15 +23,22 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/auth': {
+      // Login: POST /api/auth/autorizacion/login → http://localhost:8080/autorizacion/login
+      '/api/auth': {
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/auth/, ''), // /auth/autorizacion/login → /autorizacion/login
-      }
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+      // RRHH service: GET /api/rrhh/postulantes → http://localhost:8080/rrhh/postulantes
+      '/api/rrhh': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
     },
-    port: 5177,
+    port: 5173,
     strictPort: false,
   },
 })
-

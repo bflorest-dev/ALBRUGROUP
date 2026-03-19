@@ -1,9 +1,13 @@
 /**
- * Authentication Service
- * Maneja login, logout y gestión de tokens JWT
+ * AuthService — Login y gestión de sesión JWT
+ *
+ * Usa authHttp (baseURL = /api/auth en dev) que el proxy Vite
+ * reescribe a :8080 (sin prefijo /rrhh, es el gateway directo).
+ *
+ * Endpoint: POST /autorizacion/login
  */
 
-import { http } from '../api/http';
+import { authHttp, rrhhHttp } from '../api/http';
 
 export interface LoginRequest {
   username: string;
@@ -27,127 +31,63 @@ export interface CurrentUser {
 }
 
 const TOKEN_KEY = 'auth_token';
-const USER_KEY = 'auth_user';
-const CSRF_TOKEN_KEY = '_csrf';
+const USER_KEY  = 'auth_user';
 
 export class AuthService {
-  /**
-   * Obtener CSRF token del servidor
-   * Algunos servidores Spring Security requieren esto antes de login
-   */
-  private static async getCsrfToken(): Promise<string | null> {
-    try {
-      // Hacer un GET simple para que Spring Security establezca el CSRF token
-      await http.get('/');
-      // El token se almacena en cookie automáticamente
-      return null; // Axios maneja cookies automáticamente
-    } catch {
-      // Si falla, continuamos sin CSRF token
-      // Los endpoints públicos como /auth/login pueden no requerirlo
-      return null;
-    }
-  }
 
-  /**
-   * Login - Obtener token JWT
-   */
   static async login(credentials: LoginRequest): Promise<LoginResponse> {
-    try {
-      console.log('[AuthService.login] 🔐 Iniciando login...');
-      console.log('[AuthService.login]   - Username:', credentials.username);
-      console.log('[AuthService.login]   - Endpoint: POST /autorizacion/login');
-      console.log('[AuthService.login]   - Target: Vite proxy /auth → http://localhost:8080');
+    // POST /autorizacion/login  (va por /api/auth → proxy → :8080)
+    const response = await authHttp.post<LoginResponse>('/autorizacion/login', credentials);
+    const { token, type, username, empleadoId, nombreCompleto, roles } = response.data;
 
-      // Axios ya tiene baseURL: '/auth' (vía Vite proxy)
-      // Solo enviar el endpoint relativo
-      const response = await http.post<LoginResponse>('/autorizacion/login', credentials);
-      const { token, type, username, empleadoId, nombreCompleto, roles } = response.data;
+    // Persistir sesión
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(USER_KEY, JSON.stringify({ username, empleadoId, nombreCompleto, roles }));
 
-      console.log('[AuthService.login] ✅ LOGIN EXITOSO');
-      console.log('[AuthService.login]   - Username:', username);
-      console.log('[AuthService.login]   - Nombre:', nombreCompleto);
-      console.log('[AuthService.login]   - Roles:', roles);
-      console.log('[AuthService.login]   - Token:', token.substring(0, 20) + '...');
+    // Inyectar el token en rrhhHttp para que todas las llamadas
+    // posteriores a /api/rrhh/* ya lleven el header Authorization
+    rrhhHttp.defaults.headers.common['Authorization'] = `${type} ${token}`;
 
-      // Guardar token en localStorage
-      localStorage.setItem(TOKEN_KEY, token);
-      localStorage.setItem(USER_KEY, JSON.stringify({
-        username,
-        empleadoId,
-        nombreCompleto,
-        roles,
-      }));
-
-      // Actualizar header de Axios con el nuevo token
-      http.defaults.headers.common['Authorization'] = `${type} ${token}`;
-
-      return response.data;
-    } catch (error) {
-      console.error('[AuthService.login] ❌ ERROR en login');
-      console.error('[AuthService.login]   - Status:', (error as any)?.response?.status);
-      console.error('[AuthService.login]   - Data:', (error as any)?.response?.data);
-      console.error('[AuthService.login]   - Message:', (error as any)?.message);
-      console.error('[AuthService.login]   - Error completo:', error);
-      throw error;
-    }
+    return response.data;
   }
 
-  /**
-   * Logout - Limpiar token y datos de usuario
-   */
   static logout(): void {
-    console.log('[AuthService.logout] 🚪 Logging out...');
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
-    localStorage.removeItem('selectedRole'); // Forzar volver a LOGIN
-    delete http.defaults.headers.common['Authorization'];
-    console.log('[AuthService.logout] ✅ Logout complete');
+    localStorage.removeItem('selectedRole');
+    delete rrhhHttp.defaults.headers.common['Authorization'];
   }
 
-  /**
-   * Obtener token almacenado
-   */
   static getToken(): string | null {
     return localStorage.getItem(TOKEN_KEY);
   }
 
-  /**
-   * Obtener usuario actual
-   */
   static getCurrentUser(): CurrentUser | null {
-    const userJson = localStorage.getItem(USER_KEY);
-    if (!userJson) return null;
-
+    const json = localStorage.getItem(USER_KEY);
+    if (!json) return null;
     try {
-      return JSON.parse(userJson) as CurrentUser;
+      return JSON.parse(json) as CurrentUser;
     } catch {
       return null;
     }
   }
 
-  /**
-   * Verificar si el usuario está autenticado
-   */
   static isAuthenticated(): boolean {
     return !!this.getToken();
   }
 
-  /**
-   * Verificar si el usuario tiene un rol específico
-   */
   static hasRole(role: string): boolean {
-    const user = this.getCurrentUser();
-    return user ? user.roles.includes(role) : false;
+    return this.getCurrentUser()?.roles.includes(role) ?? false;
   }
 
   /**
-   * Inicializar - Restaurar token desde localStorage al montar la app
+   * Llamar al arrancar la app (en main.tsx o App.tsx)
+   * Restaura el header Authorization si el usuario ya tenía sesión.
    */
   static initialize(): void {
     const token = this.getToken();
     if (token) {
-      // Restaurar header de autorización
-      http.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      rrhhHttp.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     }
   }
 }
