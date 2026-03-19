@@ -2,6 +2,7 @@ package pe.albrugroup.rrhh_service.service.mapper;
 
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 import pe.albrugroup.rrhh_service.entity.Empleado;
@@ -9,11 +10,13 @@ import pe.albrugroup.rrhh_service.entity.request.empleado.*;
 import pe.albrugroup.rrhh_service.entity.request.postulante.RegistrarPostulanteRequest;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 
-@Mapper(componentModel = "spring", uses = EmpresaContratistaMapper.class)
+@Mapper(componentModel = "spring")
 public interface EmpleadoMapper {
 
     Empleado toEntity(RegistrarEmpleadoRequest request);
     Empleado toEntity(RegistrarPostulanteRequest request);
+
+    @Mapping(target = "empresaContratista", source = "empresaContratista.nombre")
     EmpleadoResponse toResponse(Empleado entity);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

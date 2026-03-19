@@ -36,7 +36,7 @@ public class EmpleadoResponse {
     private Boolean cuentaPropia;
     private Parentesco parentesco;
     private String celularTransferencia;
-    private EmpresaContratistaResponse empresaContratista;
+    private String empresaContratista;
     // ESTADO OPERATIVO
     private EstadoOperativo estadoOperativo;
     private Compania compania;
