@@ -1,4 +1,6 @@
 // Entity: Tipificación - UI
-// Tipification UI components
-// DEPRECATED: TipificationBlockPanel (component eliminado)
-// export { TipificationBlockPanel } from '../../../components/molecules/TipificationBlockPanel/TipificationBlockPanel';
+// Tipificación UI components organized by Atomic Design principles
+// Exports: Atoms, Molecules
+
+export * from './moleculas';
+// export * from './atomos'; // when atoms are added

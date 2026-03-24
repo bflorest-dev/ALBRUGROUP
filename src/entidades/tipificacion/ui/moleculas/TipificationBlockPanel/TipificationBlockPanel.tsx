@@ -7,36 +7,44 @@
 
 import React, { useState, useEffect } from 'react';
 import { BiChevronDown, BiChevronRight, BiSearch, BiCheckCircle, BiTimeFive, BiX, BiPhone, BiHourglass, BiRefresh, BiCalendarAlt, BiErrorCircle, BiXCircle } from 'react-icons/bi';
-import type { TipificationBlock, TipificationOptionId } from '@compartido/tipos';
-import { TipificationOption } from '@compartido/ui/base';
+import type { TipificationBlock, TipificationOptionId } from '@entidades/tipificacion/modelo';
+import { TipificationOption } from '@entidades/tipificacion/ui';
 import './TipificationBlockPanel.css';
+
+/**
+ * Tipos válidos de iconos para bloques de tipificación
+ */
+type IconId = 'check' | 'check-circle' | 'clock' | 'x' | 'phone' | 'hourglass' | 'sync' | 'search' | 'calendar' | 'alert-circle' | 'ban';
 
 /**
  * Mapea identificadores de iconos a componentes de react-icons
  */
-const getIconComponent = (iconId: string) => {
-  switch (iconId) {
+const getIconComponent = (iconId: string): React.ReactNode => {
+  const id = iconId as IconId;
+  const iconProps = { size: 18, style: { display: 'inline' as const, marginRight: '6px' } };
+  
+  switch (id) {
     case 'check':
     case 'check-circle':
-      return <BiCheckCircle size={18} style={{display: 'inline', marginRight: '6px'}} />;
+      return <BiCheckCircle {...iconProps} />;
     case 'clock':
-      return <BiTimeFive size={18} style={{display: 'inline', marginRight: '6px'}} />;
+      return <BiTimeFive {...iconProps} />;
     case 'x':
-      return <BiX size={18} style={{display: 'inline', marginRight: '6px'}} />;
+      return <BiX {...iconProps} />;
     case 'phone':
-      return <BiPhone size={18} style={{display: 'inline', marginRight: '6px'}} />;
+      return <BiPhone {...iconProps} />;
     case 'hourglass':
-      return <BiHourglass size={18} style={{display: 'inline', marginRight: '6px'}} />;
+      return <BiHourglass {...iconProps} />;
     case 'sync':
-      return <BiRefresh size={18} style={{display: 'inline', marginRight: '6px'}} />;
+      return <BiRefresh {...iconProps} />;
     case 'search':
-      return <BiSearch size={18} style={{display: 'inline', marginRight: '6px'}} />;
+      return <BiSearch {...iconProps} />;
     case 'calendar':
-      return <BiCalendarAlt size={18} style={{display: 'inline', marginRight: '6px'}} />;
+      return <BiCalendarAlt {...iconProps} />;
     case 'alert-circle':
-      return <BiErrorCircle size={18} style={{display: 'inline', marginRight: '6px'}} />;
+      return <BiErrorCircle {...iconProps} />;
     case 'ban':
-      return <BiXCircle size={18} style={{display: 'inline', marginRight: '6px'}} />;
+      return <BiXCircle {...iconProps} />;
     default:
       return null;
   }
@@ -66,8 +74,9 @@ export const TipificationBlockPanel: React.FC<TipificationBlockPanelProps> = ({
   };
 
   // Auto-abrir cuando se selecciona una opción
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (selectedOptionId) {
+    if (selectedOptionId && !isOpen) {
       setIsOpen(true);
     }
   }, [selectedOptionId]);
@@ -115,10 +124,9 @@ export const TipificationBlockPanel: React.FC<TipificationBlockPanelProps> = ({
                 key={option.id}
                 id={option.id}
                 label={option.label}
-                value={option.id}
                 description={option.description}
                 isSelected={selectedOptionId === option.id}
-                onClick={() => onSelectOption(option.id)}
+                onSelect={() => onSelectOption(option.id)}
               />
             ))}
           </div>

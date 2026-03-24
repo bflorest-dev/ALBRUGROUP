@@ -1,2 +1,4 @@
 // Entity: Asesor - Model/Domain
-// Placeholder for Asesor domain models and types
+// Types and entities related to Asesor domain
+
+export * from './advisor.types';

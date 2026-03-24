@@ -7,10 +7,10 @@
 
 import React from 'react';
 import { BiCheck, BiTime } from 'react-icons/bi';
-import type { LeadDTO } from '@compartido/tipos';
+import type { LeadDTO } from '@entidades/lead/modelo';
 import './LeadListItem.css';
 
-interface LeadListItemProps {
+export interface LeadListItemProps {
   lead: LeadDTO & {dni?: string};
   isSelected: boolean;
   tipificationStatus?: 'pending' | 'tipified';

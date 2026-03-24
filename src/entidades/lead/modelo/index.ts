@@ -1,2 +1,4 @@
 // Entity: Lead - Model/Domain
-// Placeholder for Lead domain models and types
+// Types and entities related to Lead domain
+
+export * from './lead.types';

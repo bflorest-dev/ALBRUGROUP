@@ -6,11 +6,11 @@
  */
 
 import React from 'react';
-import type { LeadDTO } from '@compartido/tipos';
+import type { LeadDTO } from '@entidades/lead/modelo';
 import { BiListUl, BiLocationPlus, BiDollarCircle, BiGift, BiBarChart } from 'react-icons/bi';
 import './LeadDetailCard.css';
 
-interface LeadDetailCardProps {
+export interface LeadDetailCardProps {
   lead: LeadDTO;
 }
 
@@ -33,15 +33,24 @@ interface PreventaLead extends LeadDTO {
   promotionDuration?: string;
 }
 
+/**
+ * Componente separado para una fila de estadística
+ * Debe estar fuera del render para evitar re-creación innecesaria
+ */
+interface StatRowProps {
+  label: string;
+  value?: string;
+}
+
+const StatRow: React.FC<StatRowProps> = ({ label, value }) => (
+  <div className="lead-stat-row">
+    <span className="lead-stat-label">{label}</span>
+    <span className="lead-stat-value">{value || '-'}</span>
+  </div>
+);
+
 export const LeadDetailCard: React.FC<LeadDetailCardProps> = ({ lead }) => {
   const preventaLead = lead as PreventaLead;
-
-  const StatRow = ({ label, value }: { label: string; value?: string }) => (
-    <div className="lead-stat-row">
-      <span className="lead-stat-label">{label}</span>
-      <span className="lead-stat-value">{value || '-'}</span>
-    </div>
-  );
 
   return (
     <div className="lead-detail-card">

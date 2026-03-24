@@ -1,5 +1,6 @@
 // Entity: Lead - UI
-// Lead UI components
-// DEPRECATED: LeadListItem, LeadDetailCard (components eliminados)
-// export { LeadListItem } from '../../../components/atoms/LeadListItem/LeadListItem';
-// export { LeadDetailCard } from '../../../components/molecules/LeadDetailCard/LeadDetailCard';
+// Lead UI components organized by Atomic Design principles
+// Exports: Atoms, Molecules
+
+export * from './atomos';
+export * from './moleculas';

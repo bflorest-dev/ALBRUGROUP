@@ -1,2 +1,6 @@
 // Entity: Candidato - UI
-// Placeholder for Candidato UI components
+// Candidato UI components organized by Atomic Design principles
+// Exports: Atoms, Molecules
+
+export * from './moleculas';
+// export * from './atomos'; // when atoms are added

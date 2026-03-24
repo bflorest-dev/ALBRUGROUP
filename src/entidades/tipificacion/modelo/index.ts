@@ -1,2 +1,4 @@
 // Entity: Tipificación - Model/Domain
-// Placeholder for Tipificación domain models and types
+// Types and entities related to Tipificación domain
+
+export * from './tipification.types';
