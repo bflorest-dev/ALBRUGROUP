@@ -2,7 +2,8 @@ import React from 'react';
 import type { NewLeadFormData } from '../modelo/useNewLeadForm';
 import { Modal } from '@compartido/ui/moleculas';
 import { Button } from '@compartido/ui/atomos';
-import { Spinner } from '@compartido/ui/atomos';
+// DEPRECATED: Spinner fue eliminado en migración FSD (Bloque 5)
+// import { Spinner } from '@compartido/ui/atomos';
 
 /**
  * Mensajes de validación de teléfono por país

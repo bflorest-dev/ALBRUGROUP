@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
-import { DataTable } from '@molecules/DataTable';
-import type { DataTableColumn } from '@molecules/DataTable';
+// DEPRECATED: DataTable fue eliminado en migración FSD (Bloque 5)
+// import { DataTable } from '@molecules/DataTable';
+// import type { DataTableColumn } from '@molecules/DataTable';
 import type { Campaign, CommunityDashboardState } from '../hooks/useCommunityDashboard';
 
 /**
