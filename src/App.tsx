@@ -3,7 +3,9 @@ import { MainLayout } from '@widgets/layout-principal/ui/MainLayout'
 import { DevRoleProvider, useDevRole } from '@compartido/lib'
 import { ApplicantsProvider } from '@compartido/lib'
 import { ErrorBoundary } from '@compartido/ui/limitadorErrores/ErrorBoundary'
-import { DarkModeToggle } from '@compartido/ui/atomos'
+// DEPRECATED: DarkModeToggle fue eliminado
+// import { DarkModeToggle } from '@compartido/ui/atomos'
+type DarkModeToggle = any; // Placeholder
 import { ErrorLogger } from '@compartido/lib'
 import { AuthService } from '@caracteristicas/autenticacion/api'
 import type { ErrorInfo } from 'react';

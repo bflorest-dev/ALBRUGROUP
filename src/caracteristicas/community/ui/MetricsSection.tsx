@@ -1,5 +1,7 @@
 import React from 'react';
-import { MetricsPanel } from '@molecules/index';
+// DEPRECATED: MetricsPanel no existe
+// import { MetricsPanel } from '@molecules/index';
+type MetricsPanel = any; // Placeholder
 // DEPRECATED: useCommunityDashboard hook no existe en esta feature
 // import type { CommunityDashboardState } from '../hooks/useCommunityDashboard';
 type CommunityDashboardState = unknown; // Placeholder

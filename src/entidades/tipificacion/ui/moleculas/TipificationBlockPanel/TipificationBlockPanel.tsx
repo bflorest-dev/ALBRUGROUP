@@ -8,7 +8,9 @@
 import React, { useState, useEffect } from 'react';
 import { BiChevronDown, BiChevronRight, BiSearch, BiCheckCircle, BiTimeFive, BiX, BiPhone, BiHourglass, BiRefresh, BiCalendarAlt, BiErrorCircle, BiXCircle } from 'react-icons/bi';
 import type { TipificationBlock, TipificationOptionId } from '@compartido/tipos';
-import { TipificationOption } from '@compartido/ui/atomos';
+// DEPRECATED: TipificationOption fue eliminado
+// import { TipificationOption } from '@compartido/ui/atomos';
+type TipificationOption = any; // Placeholder
 import './TipificationBlockPanel.css';
 
 /**

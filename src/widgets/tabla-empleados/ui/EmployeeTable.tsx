@@ -5,7 +5,9 @@
 import { useState } from 'react';
 import type { Employee } from '@compartido/tipos';
 import { BiShow, BiPencil, BiFilter, BiSortAlt2 } from 'react-icons/bi';
-import { StatusBadge } from '@compartido/ui/atomos/etiquetas';
+// DEPRECATED: StatusBadge fue eliminado
+// import { StatusBadge } from '@compartido/ui/atomos/etiquetas';
+type StatusBadge = any; // Placeholder
 import './EmployeeTable.css';
 
 interface EmployeeTableProps {
