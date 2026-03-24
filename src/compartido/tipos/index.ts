@@ -12,6 +12,3 @@ export { EVENT_NAMES, dispatchAppEvent } from '../../types/events';
 export * from '../../shared/types/lead.types';
 export * from '../../shared/types/tipification.types';
 export * from '../../shared/types/advisor.types';
-
-// Tipos específicos
-export type { TipificationOption, TipificationOptionId } from '../../utils/tipificationConstants';

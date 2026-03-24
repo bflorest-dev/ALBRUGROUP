@@ -7,7 +7,7 @@ interface Applicant extends NewApplicantFormData {
   id: string;
 }
 
-interface EditApplicantFormProps {
+export interface EditApplicantFormProps {
   applicant?: Applicant;
 }
 

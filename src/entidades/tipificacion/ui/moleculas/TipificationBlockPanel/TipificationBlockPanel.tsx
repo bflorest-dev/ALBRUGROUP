@@ -115,6 +115,7 @@ export const TipificationBlockPanel: React.FC<TipificationBlockPanelProps> = ({
                 key={option.id}
                 id={option.id}
                 label={option.label}
+                value={option.id}
                 description={option.description}
                 isSelected={selectedOptionId === option.id}
                 onClick={() => onSelectOption(option.id)}
