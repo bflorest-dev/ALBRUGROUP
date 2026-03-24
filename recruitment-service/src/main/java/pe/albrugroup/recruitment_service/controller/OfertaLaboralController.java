@@ -50,4 +50,6 @@ public class OfertaLaboralController {
     ) {
         return ResponseEntity.ok(ofertaLaboralService.listarOfertasLaborales(estado));
     }
+
+    // Falta metodo para cambiar de estado a las Ofertas Laborales
 }

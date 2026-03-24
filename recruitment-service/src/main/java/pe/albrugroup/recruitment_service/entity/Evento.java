@@ -20,8 +20,8 @@ public class Evento {
     private Etapa etapa;
     private Accion accion;
 
-    private Tipificacion tipificacion;
-    private  Subtipificacion subtipificacion;
+    private String tipificacion;
+    private  String subtipificacion;
 
     @CreationTimestamp @Column(updatable = false)
     private Instant createdAt;
