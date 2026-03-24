@@ -1,0 +1,1 @@
+export { EmployeeService } from './servicioEmpleado';

@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import type { EditApplicantFormData, Applicant } from '@types';
 import { ApplicantForm } from '@molecules/ApplicantForm';
-import { POSITIONS_WITH_COMPANY } from '@utils/constants';
+import { POSITIONS_WITH_COMPANY } from '@compartido/lib';
 import './EditApplicantForm.css';
 
 interface EditApplicantFormProps {

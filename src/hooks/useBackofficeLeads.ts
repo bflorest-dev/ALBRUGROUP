@@ -9,8 +9,8 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import type { LeadDTO } from '@shared/types';
-import type { TipificationFilter } from '@shared/types/tipification.types';
+import type { LeadDTO } from '@compartido/tipos';
+import type { TipificationFilter } from '@compartido/tipos';
 
 /**
  * Lead extendido con información de estado

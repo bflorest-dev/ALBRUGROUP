@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { BiPhone, BiBadge, BiCalendar } from 'react-icons/bi';
-import { Card } from '@molecules/Card';
-import { useApplicants } from '@contexts/ApplicantsContext';
-import { useApplicantsSync } from '@hooks/useApplicantsSync';
-import { Modal } from '@molecules/Modal';
-import { DatePicker } from '@molecules/DatePicker/DatePicker';
-import type { Applicant } from '@types';
-import { FeatureErrorBoundary } from '@components/utilities';
-import { ErrorLogger } from '@services';
+import { Card } from '@compartido/ui/moleculas';
+import { useApplicants } from '@compartido/lib';
+import { useApplicantsSync } from '@caracteristicas/registrar-postulante/modelo/ganchos';
+import { Modal } from '@compartido/ui/moleculas';
+import { DatePicker } from '@compartido/ui/moleculas';
+import type { Applicant } from '@compartido/tipos';
+import { FeatureErrorBoundary } from '@compartido/ui/organismos';
+import { ErrorLogger } from '@compartido/lib';
 import type { ErrorInfo } from 'react';
 import './KanbanDashboard.css';
 

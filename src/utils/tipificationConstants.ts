@@ -5,7 +5,7 @@
  * para ASESOR_BACKOFFICE y módulos relacionados.
  */
 
-import type { TipificationBlock } from '@shared/types';
+import type { TipificationBlock } from '@compartido/tipos';
 
 /**
  * Bloques de tipificación con todas sus opciones

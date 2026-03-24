@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { Modal } from '@molecules/Modal';
-import { AVAILABLE_POSITIONS } from '@utils/mockData';
+import { AVAILABLE_POSITIONS } from '@compartido/lib';
 import type { Employee } from '@types';
 import './ActivateEmployeeModal.css';
 

@@ -10,13 +10,13 @@
 import React from 'react';
 import { BiMicrophone } from 'react-icons/bi';
 import { MdError } from 'react-icons/md';
-import type { LeadDTO } from '@shared/types';
-import type { TipificationOptionId } from '@shared/types/tipification.types';
-import { TIPIFICATION_BLOCKS } from '@utils/tipificationConstants';
-import { LeadDetailCard } from '@molecules/LeadDetailCard';
-import { TipificationBlockPanel } from '@molecules/TipificationBlockPanel';
-import { Button } from '@atoms/Button';
-import { Spinner } from '@atoms/Spinner';
+import type { LeadDTO } from '@compartido/tipos';
+import type { TipificationOptionId } from '@compartido/tipos';
+import { TIPIFICATION_BLOCKS } from '@compartido/lib';
+import { LeadDetailCard } from '@compartido/ui/moleculas';
+import { TipificationBlockPanel } from '@compartido/ui/moleculas';
+import { Button } from '@compartido/ui/atomos';
+import { Spinner } from '@compartido/ui/atomos';
 import './TipificationPanel.css';
 
 interface BackofficeLead extends LeadDTO {

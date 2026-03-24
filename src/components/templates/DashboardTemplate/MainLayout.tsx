@@ -3,11 +3,11 @@
  */
 
 import React, { useRef } from 'react';
-import RouterByRole from '../../../RouterByRole';
-import { NotificationProvider } from '../../../contexts/NotificationContext';
-import { useNotification } from '../../../contexts/useNotification';
-import { useDevRole } from '../../../contexts/DevRoleContext';
-import { SidebarProvider, useSidebar } from '../../../contexts/SidebarContext';
+import RouterByRole from '@app/RouterByRole';
+import { NotificationProvider } from '@compartido/lib';
+import { useNotification } from '@compartido/lib';
+import { useDevRole } from '@compartido/lib';
+import { SidebarProvider, useSidebar } from '@compartido/lib';
 import { ToastContainer } from '../../molecules/Toast';
 import './MainLayout.css';
 

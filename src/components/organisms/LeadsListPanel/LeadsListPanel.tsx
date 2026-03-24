@@ -9,9 +9,9 @@
 
 import React, { useMemo } from 'react';
 import { BiCheckCircle, BiTime, BiSearch } from 'react-icons/bi';
-import { Input } from '@atoms/Input';
-import { LeadListItem } from '@atoms/LeadListItem';
-import type { LeadDTO } from '@shared/types';
+import { Input } from '@compartido/ui/atomos';
+import { LeadListItem } from '@compartido/ui/atomos';
+import type { LeadDTO } from '@compartido/tipos';
 import './LeadsListPanel.css';
 
 interface BackofficeLead extends LeadDTO {

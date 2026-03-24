@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { BiPhone, BiLogoWhatsapp } from 'react-icons/bi';
-import { StatCard } from '@molecules/StatCard';
-import { FeatureErrorBoundary } from '@components/utilities';
-import { ErrorLogger } from '@services';
+import { StatCard } from '@compartido/ui/moleculas/StatCard';
+import { FeatureErrorBoundary } from '@compartido/lib';
+import { ErrorLogger } from '@compartido/lib';
 import type { ErrorInfo } from 'react';
 import './SalesAdvisorDashboard.css';
 

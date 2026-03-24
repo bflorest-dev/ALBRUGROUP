@@ -1,8 +1,8 @@
 import React from 'react';
 import type { NewLeadFormData } from '../hooks/useNewLeadForm';
-import { Modal } from '@molecules/Modal';
-import { Button } from '@atoms/Button';
-import { Spinner } from '@atoms/Spinner';
+import { Modal } from '@compartido/ui/moleculas/Modal';
+import { Button } from '@compartido/ui/atomos/Button';
+import { Spinner } from '@compartido/ui/atomos/Spinner';
 
 /**
  * Mensajes de validación de teléfono por país

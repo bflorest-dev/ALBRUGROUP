@@ -3,9 +3,9 @@
  */
 
 import { useState } from 'react';
-import type { Employee } from '../../../../../types';
+import type { Employee } from '@compartido/tipos';
 import { BiShow, BiPencil, BiFilter, BiSortAlt2 } from 'react-icons/bi';
-import { StatusBadge } from '../../../../../components/atoms/Badge';
+import { StatusBadge } from '@compartido/ui/atomos/Badge';
 import './EmployeeTable.css';
 
 interface EmployeeTableProps {

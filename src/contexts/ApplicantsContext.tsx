@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import type { Applicant, Employee } from '../types';
-import { EVENT_NAMES, dispatchAppEvent } from '../types/events';
-import { loadApplicantsFromStorage, saveApplicantsToStorage, loadEmployeesFromStorage, saveEmployeesToStorage } from '../utils/localStorage';
+import type { Applicant, Employee } from '@compartido/tipos';
+import { EVENT_NAMES, dispatchAppEvent } from '@compartido/tipos';
+import { loadApplicantsFromStorage, saveApplicantsToStorage, loadEmployeesFromStorage, saveEmployeesToStorage } from '@compartido/lib';
 
 interface ApplicantsContextType {
   // Applicants

@@ -1,5 +1,5 @@
 import type { LoginRequest, LoginResponse } from './types';
-import { AuthService } from '../../services/auth.service';
+import { AuthService } from '@caracteristicas/autenticacion/api';
 
 /**
  * Realiza el login usando el servicio de autenticación

@@ -1,6 +1,6 @@
 import React from 'react';
 import { BiEdit, BiBlock, BiUserPlus, BiFile } from 'react-icons/bi';
-import type { Applicant } from '../../../../../../types';
+import type { Applicant } from '@compartido/tipos';
 
 interface ApplicantsTableRowProps {
   applicant: Applicant;

@@ -4,7 +4,7 @@
 
 import { useEffect } from 'react';
 import { BiCheckCircle, BiXCircle, BiInfoCircle } from 'react-icons/bi';
-import type { ToastType } from '../../../contexts/NotificationContext';
+import type { ToastType } from '@compartido/lib';
 import './Toast.css';
 
 export interface ToastProps {

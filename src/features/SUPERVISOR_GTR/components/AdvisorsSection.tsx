@@ -4,8 +4,8 @@
  */
 
 import React from 'react';
-import { Spinner } from '@atoms/Spinner';
-import type { AdvisorDTO } from '@shared/types/advisor.types';
+import { Spinner } from '@compartido/ui/atomos/Spinner';
+import type { AdvisorDTO } from '@compartido/tipos/advisor.types';
 
 // Tipo alias para compatibilidad con el código existente
 export type Advisor = AdvisorDTO;

@@ -3,7 +3,7 @@
  */
 
 import { BiFilter, BiSortAlt2, BiSearch } from 'react-icons/bi';
-import type { Applicant } from '../../../../../types';
+import type { Applicant } from '@compartido/tipos';
 import './ApplicantsTable.css';
 import { ApplicantsTableRow } from './ApplicantsTable/ApplicantsTableRow';
 

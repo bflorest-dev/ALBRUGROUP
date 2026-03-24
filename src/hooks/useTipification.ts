@@ -8,7 +8,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import type { TipificationOptionId } from '@shared/types/tipification.types';
+import type { TipificationOptionId } from '@compartido/tipos/tipification.types';
 
 /**
  * Estado del hook

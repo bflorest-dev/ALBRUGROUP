@@ -1,6 +1,6 @@
 import React from 'react';
 import { BiPlus } from 'react-icons/bi';
-import { HeaderActions } from '@molecules/HeaderActions';
+import { HeaderActions } from '@compartido/ui/moleculas/HeaderActions';
 import { MetricsSection } from './MetricsSection';
 import { LeadsManagementSection } from './LeadsManagementSection';
 import { CampaignsSection } from './CampaignsSection';

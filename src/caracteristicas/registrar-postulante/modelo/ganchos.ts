@@ -1,0 +1,1 @@
+export { useApplicantsSync } from './useSincPostulantes';

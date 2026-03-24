@@ -3,9 +3,9 @@
  */
 
 import type { ComponentType } from 'react';
-import type { UserProfile } from '../../../types';
+import type { UserProfile } from '@compartido/tipos';
 import { UserProfileComponent } from './UserProfile';
-import { useSidebar } from '../../../contexts/SidebarContext';
+import { useSidebar } from '@compartido/lib';
 import './Sidebar.css';
 
 interface NavItem {

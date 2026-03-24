@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useDevRole } from '../../../contexts/DevRoleContext';
-import type { Role } from '../../../shared/types';
+import { useDevRole } from '@compartido/lib';
+import type { Role } from '@compartido/tipos';
 import { LoginForm } from './LoginForm';
 import type { LoginFormData } from './LoginForm';
 import { login } from '../services';

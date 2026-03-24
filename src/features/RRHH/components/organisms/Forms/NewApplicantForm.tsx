@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import type { NewApplicantFormData } from '@types';
 import { ApplicantForm } from '@molecules/ApplicantForm';
-import { POSITIONS_WITH_COMPANY } from '@utils/constants';
+import { POSITIONS_WITH_COMPANY } from '@compartido/lib';
 import './NewApplicantForm.css';
 
 interface NewApplicantFormProps {

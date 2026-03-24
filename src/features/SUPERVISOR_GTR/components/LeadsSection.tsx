@@ -5,11 +5,11 @@
 
 import React from 'react';
 import { BiSearch, BiPlus } from 'react-icons/bi';
-import { Button } from '@atoms/Button';
-import { Spinner } from '@atoms/Spinner';
-import { DataTable } from '@molecules/DataTable';
-import type { DataTableColumn } from '@molecules/DataTable';
-import type { LeadDTO } from '@shared/types/lead.types';
+import { Button } from '@compartido/ui/atomos/Button';
+import { Spinner } from '@compartido/ui/atomos/Spinner';
+import { DataTable } from '@compartido/ui/moleculas/DataTable';
+import type { DataTableColumn } from '@compartido/ui/moleculas/DataTable';
+import type { LeadDTO } from '@compartido/tipos/lead.types';
 
 // Tipo alias para compatibilidad con el código existente
 type Lead = LeadDTO;

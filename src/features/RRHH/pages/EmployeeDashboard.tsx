@@ -4,21 +4,20 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { BiDownload, BiSearch, BiUserPlus, BiCheckCircle, BiUser, BiBell, BiLogOut, BiChevronLeft, BiChevronRight } from 'react-icons/bi';
-import { useSidebar } from '@contexts/SidebarContext';
-import { StatCard } from '@molecules/StatCard';
+import { useSidebar } from '@compartido/lib';
+import { StatCard } from '@compartido/ui/moleculas/StatCard';
 import { EmployeeTable } from '../components/organisms/Tables';
-import { Pagination } from '@molecules/Pagination';
-import { Modal } from '@molecules/Modal';
+import { Pagination } from '@compartido/ui/moleculas/Pagination';
+import { Modal } from '@compartido/ui/moleculas/Modal';
 import { NewEmployeeForm, NewApplicantForm, EditApplicantForm, EmployeeDetailForm, EmployeeCheckoutForm, ActivateEmployeeModal } from '../components/organisms/Forms';
-import { IconButton } from '@atoms/IconButton';
+import { IconButton } from '@compartido/ui/atomos/IconButton';
 import { ApplicantsTable } from '../components/organisms/Tables';
-import { useNotification } from '@contexts/useNotification';
-import { usePagination } from '@hooks/usePagination';
-import { useErrorHandler } from '@hooks/useErrorHandler';
-import { loadApplicantsFromStorage, saveApplicantsToStorage, loadEmployeesFromStorage, saveEmployeesToStorage } from '@utils/localStorage';
-import type { Employee, Applicant, NewEmployeeFormData, EmployeeDetailFormData, Statistic, EditApplicantFormData, EmployeeStatus } from '@types';
-import { FeatureErrorBoundary } from '@components/utilities';
-import { ErrorLogger } from '@services';
+import { useNotification } from '@compartido/lib';
+import { usePaginacion, usePagination, useManejadorError, useErrorHandler } from '@compartido/ganchos';
+import { loadApplicantsFromStorage, saveApplicantsToStorage, loadEmployeesFromStorage, saveEmployeesToStorage } from '@compartido/lib';
+import type { Employee, Applicant, NewEmployeeFormData, EmployeeDetailFormData, Statistic, EditApplicantFormData, EmployeeStatus } from '@compartido/tipos';
+import { FeatureErrorBoundary } from '@compartido/lib';
+import { ErrorLogger } from '@compartido/lib';
 import type { ErrorInfo } from 'react';
 import './EmployeeDashboard.css';
 

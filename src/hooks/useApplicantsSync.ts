@@ -9,10 +9,10 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { ApplicantRepository } from '../repositories/applicant.repository';
-import { adaptPostulanteResponseToApplicant } from '../types';
-import type { Applicant } from '../types';
-import type { ApiError } from '../api/http';
+import { ApplicantRepository } from '@compartido/api';
+import { adaptPostulanteResponseToApplicant } from '@compartido/tipos';
+import type { Applicant } from '@compartido/tipos';
+import type { ApiError } from '@compartido/api';
 
 interface UseApplicantsSyncReturn {
   applicants: Applicant[];

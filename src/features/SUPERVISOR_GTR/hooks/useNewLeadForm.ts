@@ -9,8 +9,8 @@
  */
 
 import { useState, useCallback } from 'react';
-import { filterPhoneInput } from '@utils/phoneValidation';
-import { sanitizeInput, sanitizeFormField } from '@utils/sanitization';
+import { filterPhoneInput } from '@compartido/lib';
+import { sanitizeInput, sanitizeFormField } from '@compartido/lib';
 
 export interface NewLeadFormData {
   pois: string;

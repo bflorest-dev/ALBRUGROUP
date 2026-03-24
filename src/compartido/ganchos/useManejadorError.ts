@@ -1,0 +1,76 @@
+import { useCallback } from 'react';
+
+export interface ErrorHandler {
+  handleError: (error: Error, errorInfo?: { componentStack?: string }) => void;
+  resetError: () => void;
+}
+
+/**
+ * Hook personalizado para manejar errores en componentes funcionales
+ * Útil cuando necesitas manejar errores de forma programática
+ */
+export const useManejadorError = (): ErrorHandler => {
+  const handleError = useCallback((_error: Error, _errorInfo?: { componentStack?: string }) => {
+    // Aquí podrías enviar el error a un servicio externo
+    // reportError(_error, _errorInfo);
+
+    // Para componentes funcionales, puedes usar este hook junto con
+    // un estado local o un contexto para mostrar UI de error
+  }, []);
+
+  const resetError = useCallback(() => {
+    // Resetear el estado de error
+  }, []);
+
+  return {
+    handleError,
+    resetError
+  };
+};
+
+// Alias para compatibilidad con importaciones en inglés
+export const useErrorHandler = useManejadorError;
+
+// Funciones stub para reportError
+export const createError = (message: string) => new Error(message);
+export const reportError = (_error: Error, _errorInfo?: { componentStack?: string }) => {
+  console.error('Error reported:', _error, _errorInfo);
+};
+
+/**
+ * Función utilitaria para crear errores con contexto adicional
+ */
+export const createError = (message: string, context?: Record<string, unknown>): Error => {
+  const error = new Error(message);
+
+  if (context) {
+    // Agregar contexto adicional al error
+    (error as Error & { context: Record<string, unknown> }).context = context;
+  }
+
+  return error;
+};
+
+/**
+ * Función utilitaria para reportar errores a servicios externos
+ * Esta es una implementación básica - en producción usarías Sentry, LogRocket, etc.
+ */
+export const reportError = (error: Error, errorInfo?: { componentStack?: string }) => {
+  // Implementación básica de logging
+  console.error('Error reportado:', {
+    message: error.message,
+    stack: error.stack,
+    componentStack: errorInfo?.componentStack,
+    timestamp: new Date().toISOString(),
+    userAgent: navigator.userAgent,
+    url: window.location.href
+  });
+
+  // En producción, aquí enviarías a un servicio como:
+  // - Sentry: Sentry.captureException(error)
+  // - LogRocket: LogRocket.captureException(error)
+  // - Bugsnag: Bugsnag.notify(error)
+};
+
+// Backward compatibility alias
+export const useErrorHandler = useManejadorError;

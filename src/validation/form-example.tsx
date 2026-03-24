@@ -7,7 +7,7 @@
 
 import { useState } from 'react';
 import { validateData, NewApplicantFormDataSchema, type NewApplicantFormDataType } from '../validation/schemas';
-import { ApplicantService } from '../services/applicant.service';
+import { ApplicantService } from '@caracteristicas/registrar-postulante/api';
 
 interface FormErrors {
   [key: string]: string;

@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Role } from '../shared/types';
+import type { Role } from '@compartido/tipos';
 
 interface DevRoleSwitcherProps {
   selectedRole: Role;

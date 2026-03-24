@@ -51,10 +51,10 @@
  * - Ambos deben reemplazarse con llamadas a API real (LeadService)
  */
 import { useState, useMemo, useCallback } from 'react';
-import { StatCard } from '@molecules/StatCard';
-import type { DataTableColumn } from '@molecules/DataTable';
-import type { LeadDTO } from '@shared/types/lead.types';
-import type { AdvisorDTO } from '@shared/types/advisor.types';
+import { StatCard } from '@compartido/ui/moleculas/StatCard';
+import type { DataTableColumn } from '@compartido/ui/moleculas/DataTable';
+import type { LeadDTO } from '@compartido/tipos/lead.types';
+import type { AdvisorDTO } from '@compartido/tipos/advisor.types';
 import { useLeadsFiltering, useStatistics, useLeadColors } from '../hooks/useLeadsManagement';
 import { useNewLeadForm } from '../hooks/useNewLeadForm';
 import { useLeadsData } from '../hooks/useLeadsData';
@@ -62,8 +62,8 @@ import { useLeadSubmit } from '../hooks/useLeadSubmit';
 import { AdvisorsSection } from '../components/AdvisorsSection';
 import { LeadsSection } from '../components/LeadsSection';
 import { NewLeadModal } from '../components/NewLeadModal';
-import { FeatureErrorBoundary } from '@components/utilities';
-import { ErrorLogger } from '@services';
+import { FeatureErrorBoundary } from '@compartido/lib';
+import { ErrorLogger } from '@compartido/lib';
 import type { ErrorInfo } from 'react';
 import './GTRDashboard.css';
 

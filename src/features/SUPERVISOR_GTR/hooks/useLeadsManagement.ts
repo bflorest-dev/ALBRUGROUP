@@ -9,7 +9,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import type { LeadDTO } from '@shared/types/lead.types';
+import type { LeadDTO } from '@compartido/tipos/lead.types';
 
 export type Lead = LeadDTO;  // Alias para compatibilidad
 

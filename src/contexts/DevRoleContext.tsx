@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { Role } from '../shared/types';
+import type { Role } from '@compartido/tipos';
 
 interface DevRoleContextType {
   selectedRole: Role;

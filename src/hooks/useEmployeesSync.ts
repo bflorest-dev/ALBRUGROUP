@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { EmployeeService } from '../services/employee.service';
-import type { Employee } from '../types';
-import { EVENT_NAMES } from '../types/events';
+import { EmployeeService } from '@caracteristicas/registrar-empleado/api';
+import type { Employee } from '@compartido/tipos';
+import { EVENT_NAMES } from '@compartido/tipos';
 
 /**
  * Acceso a la ref global de sincronización para empleados

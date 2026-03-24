@@ -8,7 +8,7 @@ import { useCommunityDashboard } from '../hooks/useCommunityDashboard';
 import { DashboardSection } from '../sections/DashboardSection';
 import { ModalsSectionLazy } from '../utils/lazyLoadSections';
 import { FeatureErrorBoundary } from '@components/utilities';
-import { ErrorLogger } from '@services';
+import { ErrorLogger } from '@compartido/lib';
 import './CommunityDashboard.css';
 
 

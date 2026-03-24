@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useApplicants } from '@contexts/ApplicantsContext';
-import { useApplicantsSync } from '@hooks/useApplicantsSync';
-import { Card } from '@molecules/Card';
-import { Modal } from '@molecules/Modal';
-import { FeatureErrorBoundary } from '@components/utilities';
-import { ErrorLogger } from '@services';
+import { useApplicants } from '@compartido/lib';
+import { useApplicantsSync } from '@caracteristicas/registrar-postulante/modelo/ganchos';
+import { Card } from '@compartido/ui/moleculas';
+import { Modal } from '@compartido/ui/moleculas';
+import { FeatureErrorBoundary } from '@compartido/ui/organismos';
+import { ErrorLogger } from '@compartido/lib';
 import type { ErrorInfo } from 'react';
 import './TrainingDashboard.css';
 

@@ -1,11 +1,11 @@
 import './App.css'
-import { MainLayout } from './components/templates/DashboardTemplate'
-import { DevRoleProvider, useDevRole } from './contexts/DevRoleContext'
-import { ApplicantsProvider } from './contexts/ApplicantsContext'
-import { ErrorBoundary } from './components/organisms/ErrorBoundary'
-import { DarkModeToggle } from './components/atoms/DarkModeToggle'
-import { ErrorLogger } from './services'
-import { AuthService } from './services/auth.service'
+import { MainLayout } from '@compartido/ui/moleculas'
+import { DevRoleProvider, useDevRole } from '@compartido/lib'
+import { ApplicantsProvider } from '@compartido/lib'
+import { ErrorBoundary } from '@compartido/ui/organismos'
+import { DarkModeToggle } from '@compartido/ui/atomos'
+import { ErrorLogger } from '@compartido/lib'
+import { AuthService } from '@caracteristicas/autenticacion/api'
 import type { ErrorInfo } from 'react';
 import { useEffect } from 'react';
 

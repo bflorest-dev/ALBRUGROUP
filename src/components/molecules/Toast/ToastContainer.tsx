@@ -3,7 +3,7 @@
  */
 
 import { Toast } from './Toast';
-import type { ToastMessage } from '../../../contexts/NotificationContext';
+import type { ToastMessage } from '@compartido/lib';
 
 interface ToastContainerProps {
   toasts: ToastMessage[];

@@ -2,7 +2,7 @@
  * Componente StatCard - Tarjeta de estadística
  */
 
-import type { Statistic } from '../../../types';
+import type { Statistic } from '@compartido/tipos';
 import './StatCard.css';
 
 interface StatCardProps {

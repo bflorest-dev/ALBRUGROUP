@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react';
-import { AVAILABLE_POSITIONS_GROUPED } from '../../../utils/mockData';
-import type { NewApplicantFormData, EditApplicantFormData } from '../../../types';
-import { Input } from '@atoms/Input';
-import { Select } from '@atoms/Select';
-import { Button } from '@atoms/Button';
-import { POSITIONS_WITH_COMPANY } from '../../../utils/constants';
-import { newApplicantFormDataSchema } from '../../../validation/applicant.schemas';
-import { useFormValidation } from '@hooks/useFormValidation';
+import { AVAILABLE_POSITIONS_GROUPED } from '@compartido/lib';
+import type { NewApplicantFormData, EditApplicantFormData } from '@compartido/tipos';
+import { Input } from '@compartido/ui/atomos';
+import { Select } from '@compartido/ui/atomos';
+import { Button } from '@compartido/ui/atomos';
+import { POSITIONS_WITH_COMPANY } from '@compartido/lib';
+import { newApplicantFormDataSchema } from '@compartido/validacion';
+import { useValidacionFormulario } from '@compartido/ganchos';
 import './ApplicantForm.css';
 
 export type ApplicantFormData = NewApplicantFormData | EditApplicantFormData;

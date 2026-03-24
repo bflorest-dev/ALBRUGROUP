@@ -22,12 +22,12 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { useBackofficeLeads, useTipification } from '../../../hooks';
-import { LeadsListPanel } from '../../../components/organisms/LeadsListPanel';
-import { TipificationPanel } from '../../../components/organisms/TipificationPanel';
-import type { LeadDTO } from '../../../shared/types';
-import { FeatureErrorBoundary } from '@components/utilities';
-import { ErrorLogger } from '@services';
+import { useBackofficeLeads, useTipification } from '@compartido/ganchos';
+import { LeadsListPanel } from '@compartido/ui/organismos/LeadsListPanel';
+import { TipificationPanel } from '@compartido/ui/organismos/TipificationPanel';
+import type { LeadDTO } from '@compartido/tipos';
+import { FeatureErrorBoundary } from '@compartido/lib';
+import { ErrorLogger } from '@compartido/lib';
 import type { ErrorInfo } from 'react';
 import './BackofficeAdvisorDashboard.css';
 

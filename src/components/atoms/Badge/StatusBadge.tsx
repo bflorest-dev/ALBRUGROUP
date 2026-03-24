@@ -2,7 +2,7 @@
  * Componente StatusBadge - Insignia de estado
  */
 
-import { EMPLOYEE_STATUS_COLORS, EMPLOYEE_STATUS_BG_COLORS } from '../../../utils/constants';
+import { EMPLOYEE_STATUS_COLORS, EMPLOYEE_STATUS_BG_COLORS } from '@compartido/lib';
 import './StatusBadge.css';
 
 interface StatusBadgeProps {

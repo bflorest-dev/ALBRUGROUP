@@ -4,8 +4,8 @@
 
 import { useState } from 'react';
 import { BiBell, BiLogOut, BiChevronLeft, BiChevronRight, BiSearch } from 'react-icons/bi';
-import { useNotification } from '../../../contexts/useNotification';
-import { useSidebar } from '../../../contexts/SidebarContext';
+import { useNotification } from '@compartido/lib';
+import { useSidebar } from '@compartido/lib';
 import './Header.css';
 
 interface HeaderProps {
