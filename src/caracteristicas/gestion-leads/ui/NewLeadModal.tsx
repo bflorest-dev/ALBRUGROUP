@@ -1,8 +1,6 @@
 import React from 'react';
 import type { NewLeadFormData } from '../modelo/useNewLeadForm';
-import { Modal, Button } from '@compartido/ui/base';
-// DEPRECATED: Spinner fue eliminado en migración FSD (Bloque 5)
-// import { Spinner } from '@compartido/ui/atomos';
+import { Modal, Button, Girador } from '@compartido/ui/base';
 
 /**
  * Mensajes de validación de teléfono por país
@@ -231,7 +229,7 @@ export const NewLeadModal: React.FC<NewLeadModalProps> = ({
         <Button variant="primary" className="flex-1" onClick={onSubmit} disabled={isSubmitting}>
           {isSubmitting ? (
             <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-              <Spinner />
+              <Girador size="small" />
               Creando...
             </span>
           ) : (

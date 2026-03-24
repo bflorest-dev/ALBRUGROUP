@@ -140,4 +140,10 @@ export const LeadsFilters: React.FC<LeadsFiltersProps> = ({
   );
 };
 
+/**
+ * LeadsSection - Componente contenedor que agrupa Header y Filters
+ * Alias para compatibilidad con imports existentes
+ */
+export const LeadsSection = LeadsFilters;
+
 export default LeadsSection;

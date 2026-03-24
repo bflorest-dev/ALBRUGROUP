@@ -117,4 +117,7 @@ export const AdvisorsGrid: React.FC<AdvisorsGridProps> = ({
   );
 };
 
+// Alias para compatibilidad
+export const AdvisorsSection = AdvisorsGrid;
+
 export default AdvisorsSection;
