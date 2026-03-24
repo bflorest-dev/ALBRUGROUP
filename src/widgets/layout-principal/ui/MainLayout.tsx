@@ -10,7 +10,8 @@ import { useDevRole } from '@compartido/lib';
 import { SidebarProvider, useSidebar } from '@compartido/lib';
 // DEPRECATED: ToastContainer no existe en nueva estructura
 // import { ToastContainer } from '../../molecules/Toast';
-import './MainLayout.css';
+// DEPRECATED: MainLayout.css was removed in refactoring
+// import './MainLayout.css';
 
 const MainLayoutContent = () => {
   const { selectedRole } = useDevRole();
