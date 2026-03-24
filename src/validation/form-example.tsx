@@ -65,9 +65,11 @@ export function CreateApplicantFormExample() {
 
     if (!validationResult.success) {
       // Type-safe access to errors (discriminated union narrowing)
+      // Cast as failure branch to satisfy TS type checker
+      const failureResult = validationResult as { success: false; errors: Record<string, string>; };
       setErrors(prevErrors => ({
         ...prevErrors,
-        [name]: validationResult.errors?.[name] || '',
+        [name]: failureResult.errors[name] || '',
       }));
     } else {
       // Si el campo ahora es válido, remover su error
@@ -94,8 +96,10 @@ export function CreateApplicantFormExample() {
 
     if (!validationResult.success) {
       // Type-safe access to errors (discriminated union narrowing)
-      setErrors(validationResult.errors);
-      console.error('Validation errors:', validationResult.errors);
+      // Cast as failure branch to satisfy TS type checker
+      const failureResult = validationResult as { success: false; errors: Record<string, string>; };
+      setErrors(failureResult.errors);
+      console.error('Validation errors:', failureResult.errors);
       return;
     }
 
