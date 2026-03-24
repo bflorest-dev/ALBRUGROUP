@@ -9,7 +9,7 @@ import { lazy, Suspense, type ComponentType } from 'react';
 
 // Define lazy-loaded components
 export const ModalsSectionLazy = lazy(() =>
-  import('../sections/ModalsSection').then(mod => ({
+  import('@caracteristicas/community/ui/ModalsSection').then(mod => ({
     default: mod.ModalsSection
   }))
 );

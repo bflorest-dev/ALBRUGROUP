@@ -10,7 +10,7 @@ export { AVAILABLE_POSITIONS_GROUPED, AVAILABLE_POSITIONS } from '../../utils/mo
 export { TIPIFICATION_BLOCKS } from '../../utils/tipificationConstants';
 
 // Feature Error Boundary
-export { FeatureErrorBoundary, type FeatureErrorBoundaryProps, type FeatureErrorBoundaryState } from '../../components/utilities/FeatureErrorBoundary';
+export { FeatureErrorBoundary, type FeatureErrorBoundaryProps, type FeatureErrorBoundaryState } from '../ui/limitadorErrores/FeatureErrorBoundary';
 
 // Error handling utilities
 export { createError } from '../../hooks/useErrorHandler';

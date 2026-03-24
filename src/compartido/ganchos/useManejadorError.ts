@@ -31,12 +31,6 @@ export const useManejadorError = (): ErrorHandler => {
 // Alias para compatibilidad con importaciones en inglés
 export const useErrorHandler = useManejadorError;
 
-// Funciones stub para reportError
-export const createError = (message: string) => new Error(message);
-export const reportError = (_error: Error, _errorInfo?: { componentStack?: string }) => {
-  console.error('Error reported:', _error, _errorInfo);
-};
-
 /**
  * Función utilitaria para crear errores con contexto adicional
  */
@@ -71,6 +65,3 @@ export const reportError = (error: Error, errorInfo?: { componentStack?: string 
   // - LogRocket: LogRocket.captureException(error)
   // - Bugsnag: Bugsnag.notify(error)
 };
-
-// Backward compatibility alias
-export const useErrorHandler = useManejadorError;
