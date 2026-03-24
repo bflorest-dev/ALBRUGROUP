@@ -1,1 +1,2 @@
-export { EmployeeService } from './servicioEmpleado';
+export { EmployeeService } from './employee.service';
+export { ContractService } from './contract.service';

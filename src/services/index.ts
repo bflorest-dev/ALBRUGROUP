@@ -8,4 +8,6 @@
 
 export { EmployeeService } from '@caracteristicas/registrar-empleado/api';
 export { ApplicantService } from '@caracteristicas/registrar-postulante/api';
+export { ContractService } from '@caracteristicas/registrar-empleado/api';
+export { AuthService } from '@caracteristicas/autenticacion/api';
 export { ErrorLogger, useErrorLogger, type ErrorLogEntry, type ErrorMetrics } from './errorLogger';

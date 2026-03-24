@@ -1,1 +1,1 @@
-export { AuthService, type LoginRequest, type LoginResponse, type CurrentUser } from './servicioAutenticacion';
+export { AuthService, type LoginRequest, type LoginResponse, type CurrentUser } from './auth.service';

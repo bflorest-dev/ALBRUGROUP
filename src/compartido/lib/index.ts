@@ -25,3 +25,6 @@ export { useNotification } from '../../contexts/useNotification';
 
 // Servicios/ErrorLogger
 export * from '../../services/index';
+
+// Base Service (shared infrastructure)
+export { BaseService } from './base.service';

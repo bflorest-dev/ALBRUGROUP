@@ -1,1 +1,1 @@
-export { ApplicantService, type EtapaProceso, type FiltrosPostulante } from './servicioPostulante';
+export { ApplicantService, type EtapaProceso, type FiltrosPostulante } from './applicant.service';
