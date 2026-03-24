@@ -1,6 +1,6 @@
 // simple helpers for localStorage persistence
 
-import type { Applicant, Employee } from '../types';
+import type { Applicant, Employee } from '@compartido/tipos';
 
 export const loadApplicantsFromStorage = (): Applicant[] | null => {
   try {

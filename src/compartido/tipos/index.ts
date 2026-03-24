@@ -3,12 +3,7 @@ export * from './comun';
 export * from './enums';
 export * from './eventos';
 export * from './community';
-
-// Re-exportar tipos desde la carpeta raiz src/types
-export * from '../../types/index';
-export { EVENT_NAMES, dispatchAppEvent } from '../../types/events';
-
-// Re-exportar tipos de shared (migración en progreso)
-export * from '../../shared/types/lead.types';
-export * from '../../shared/types/tipification.types';
-export * from '../../shared/types/advisor.types';
+export * from './lead.types';
+export * from './tipification.types';
+export * from './advisor.types';
+export * from './generic-entities';

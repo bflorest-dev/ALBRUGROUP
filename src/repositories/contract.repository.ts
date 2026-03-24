@@ -5,7 +5,7 @@
  */
 
 import { rrhhHttp } from '../api/http';
-import type { EmpleadoResponse, RegistrarContratoRequest, CerrarContratoRequest } from '../types';
+import type { EmpleadoResponse, RegistrarContratoRequest, CerrarContratoRequest } from '@compartido/tipos';
 
 export interface ContratoDetalles {
   id: number;

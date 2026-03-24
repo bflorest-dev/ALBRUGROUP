@@ -13,8 +13,8 @@
 
 import { BaseService } from './base.service';
 import { ApplicantRepository } from '../repositories/applicant.repository';
-import type { Applicant, NewApplicantFormData, RegistrarPostulanteRequest } from '../types';
-import { adaptPostulanteResponseToApplicant } from '../types';
+import type { Applicant, NewApplicantFormData, RegistrarPostulanteRequest } from '@compartido/tipos';
+import { adaptPostulanteResponseToApplicant } from '@compartido/tipos';
 import { validateDataOrThrow, NewApplicantFormDataSchema } from '../validation/schemas';
 
 // Etapas válidas del proceso (del Swagger)

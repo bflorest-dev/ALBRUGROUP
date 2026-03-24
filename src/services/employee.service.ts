@@ -6,8 +6,8 @@
 
 import { BaseService } from './base.service';
 import { EmployeeRepository } from '../repositories/employee.repository';
-import { adaptEmpleadoResponseToEmployee } from '../types';
-import type { Employee, NewEmployeeFormData, EmployeeDetailFormData } from '../types';
+import { adaptEmpleadoResponseToEmployee } from '@compartido/tipos';
+import type { Employee, NewEmployeeFormData, EmployeeDetailFormData } from '@compartido/tipos';
 import { validateDataOrThrow, NewEmployeeFormDataSchema } from '../validation/schemas';
 
 type UpdateDataType = 'personal' | 'contact' | 'financial' | 'corporate';

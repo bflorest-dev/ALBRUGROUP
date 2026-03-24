@@ -6,8 +6,8 @@
 
 import { BaseService } from './base.service';
 import { ContractRepository, type ContratoDetalles } from '../repositories/contract.repository';
-import { adaptEmpleadoResponseToEmployee } from '../types';
-import type { Employee, RegistrarContratoRequest, CerrarContratoRequest } from '../types';
+import { adaptEmpleadoResponseToEmployee } from '@compartido/tipos';
+import type { Employee, RegistrarContratoRequest, CerrarContratoRequest } from '@compartido/tipos';
 
 export class ContractService extends BaseService<Employee> {
   /**

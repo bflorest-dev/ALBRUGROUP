@@ -18,7 +18,7 @@ import type {
   RegistrarPostulanteRequest,
   EventoPostulanteRequest,
   EstadoCapacitacionRequest,
-} from '../types';
+} from '@compartido/tipos';
 
 // Etapas válidas según el backend
 export type EtapaProceso = 'RECLUTAMIENTO' | 'CAPACITACION' | 'GESTION' | 'CONTRATADO';

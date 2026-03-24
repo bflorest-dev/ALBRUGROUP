@@ -196,20 +196,3 @@ export interface AdvisorCardProps {
   showPerformance?: boolean;
   onClick?: (advisorId: string) => void;
 }
-
-/**
- * Interface para estadísticas agregadas de equipo de asesores
- */
-export interface AdvisorsTeamStatistics {
-  totalAdvisors: number;
-  activeAdvisors: number;
-  totalCapacity: number;
-  totalAssignedLeads: number;
-  totalManagedLeads: number;
-  teamUtilizationRate: number;
-  advisorStatusDistribution: {
-    disponibles: number;
-    ocupados: number;
-    saturados: number;
-  };
-}

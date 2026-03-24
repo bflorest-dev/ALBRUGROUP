@@ -2,7 +2,7 @@
  * Datos simulados para la aplicación
  */
 
-import type { Employee, Statistic, UserProfile } from '../types';
+import type { Employee, Statistic, UserProfile } from '@compartido/tipos';
 
 export const mockEmployees: Employee[] = [
   {

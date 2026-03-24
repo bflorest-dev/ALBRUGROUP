@@ -5,7 +5,7 @@
  */
 
 import { http } from '../api/http';
-import type { EmpleadoResponse, PageResponse, NewEmployeeFormData, EmployeeDetailFormData } from '../types';
+import type { EmpleadoResponse, PageResponse, NewEmployeeFormData, EmployeeDetailFormData } from '@compartido/tipos';
 
 // Tipos específicos para las respuestas de la API
 export type EmployeesPageResponse = PageResponse<EmpleadoResponse>;

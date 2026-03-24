@@ -43,9 +43,9 @@
       "@components/*": ["src/compartido/ui/*"],
       "@components/utilities": ["src/components/utilities"],
       "@components/utilities/*": ["src/components/utilities/*"],
-      "@compartido/tipos/lead.types": ["src/shared/types/lead.types"],
-      "@compartido/tipos/advisor.types": ["src/shared/types/advisor.types"],
-      "@compartido/tipos/tipification.types": ["src/shared/types/tipification.types"]
+      "@compartido/tipos/lead.types": ["src/compartido/tipos/lead.types"],
+      "@compartido/tipos/advisor.types": ["src/compartido/tipos/advisor.types"],
+      "@compartido/tipos/tipification.types": ["src/compartido/tipos/tipification.types"]
     },
 
     /* Linting */
