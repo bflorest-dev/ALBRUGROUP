@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { BiPlus, BiTrash, BiPencil } from 'react-icons/bi';
-import { Modal } from '@compartido/ui/moleculas';
+// DEPRECATED: Modal fue eliminado
+// import { Modal } from '@compartido/ui/moleculas';
+type Modal = any; // Placeholder
 import type { Plan, InternetConfig, TeleviConfig, TelefonConfig } from '../types';
 import type { AdminDashboardState } from '../hooks/useAdminDashboard';
 import './PlansSection.css';
