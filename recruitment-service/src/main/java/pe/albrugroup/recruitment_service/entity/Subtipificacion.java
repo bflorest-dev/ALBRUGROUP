@@ -1,17 +1,25 @@
 package pe.albrugroup.recruitment_service.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
+import pe.albrugroup.recruitment_service.entity.enums.AlcanceSubtipificacion;
 
 @Entity @Getter @Setter @Builder
 @AllArgsConstructor @NoArgsConstructor
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"tipificacion_id", "codigo"}))
 public class Subtipificacion {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "tipificacion_id")
+    private Tipificacion tipificacion;
+    private String codigo;
+    private String descripcion;
+    private Integer orden;
 
+    @Enumerated(EnumType.STRING)
+    private AlcanceSubtipificacion alcance;
+    private Boolean activo;
 }
