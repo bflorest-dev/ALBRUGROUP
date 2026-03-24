@@ -1,7 +1,7 @@
 // Utilidades
 export { isValidPhoneForCountry, filterPhoneInput, getPhoneValidationMessage, PHONE_LENGTH_BY_COUNTRY } from './validacionTelefono';
 export { sanitizeInput, sanitizeEmail, sanitizePhone, sanitizeName, escapeHtml, sanitizeUrl } from './sanitizacion';
-export { sanitizeInput as sanitizeFormField } from './sanitizacion';
+export { sanitizeFormField } from '../../utils/sanitization';
 export { loadApplicantsFromStorage, saveApplicantsToStorage, loadEmployeesFromStorage, saveEmployeesToStorage, clearAllStorage } from './almacenamientoLocal';
 
 // Constantes de estado y posiciones (desde utils)
