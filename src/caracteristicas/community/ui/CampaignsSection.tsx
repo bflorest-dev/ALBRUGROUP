@@ -35,100 +35,37 @@ const CampaignsSectionComponent: React.FC<CampaignsSectionProps> = ({ state }) =
     return map;
   }, [state.campaignMetrics]);
 
-  // Define table columns with calculated metrics
+  // DEPRECATED: DataTable fue eliminado en migración FSD (Bloque 5)
+  // La lógica de tabla de campañas necesita ser reescrita usando una librería moderna
+  // (tanstack-table, recharts, o componente custom)
+  /*
   const campaignTableColumns: DataTableColumn<Campaign>[] = [
     { 
       header: 'CAMPAÑA', 
       accessor: (c) => <span className="table-cell emphasis">{c.campaignName}</span> 
     },
-    { 
-      header: 'RESULTADOS', 
-      accessor: (c) => c.metaAdsLeads ?? 0, 
-      headerClassName: 'table-header-cell center', 
-      cellClassName: 'table-cell center' 
-    },
-    { 
-      header: 'ALCANCE', 
-      accessor: (c) => (c.reach ?? 0).toLocaleString(), 
-      headerClassName: 'table-header-cell center', 
-      cellClassName: 'table-cell center' 
-    },
-    { 
-      header: 'FRECUENCIA', 
-      accessor: (c) => (c.frequency ?? 0).toFixed(2), 
-      headerClassName: 'table-header-cell center', 
-      cellClassName: 'table-cell center' 
-    },
-    { 
-      header: 'COSTO/RESULTADO', 
-      accessor: (c) => metricsMap.get(c.id)?.costPerResult ?? 'S/ 0.00', 
-      headerClassName: 'table-header-cell center', 
-      cellClassName: 'table-cell center' 
-    },
-    { 
-      header: 'IM.GASTADO', 
-      accessor: (c) => `S/ ${(c.totalSpent || 0).toLocaleString()}`, 
-      headerClassName: 'table-header-cell center', 
-      cellClassName: 'table-cell center' 
-    },
-    { 
-      header: 'IMPRESIONES', 
-      accessor: (c) => (c.impressions ?? 0).toLocaleString(), 
-      headerClassName: 'table-header-cell center', 
-      cellClassName: 'table-cell center' 
-    },
-    { 
-      header: 'CPM', 
-      accessor: (c) => metricsMap.get(c.id)?.cpm ?? 'S/ 0.00', 
-      headerClassName: 'table-header-cell center', 
-      cellClassName: 'table-cell center' 
-    },
-    { 
-      header: 'CLICS ENLACE', 
-      accessor: (c) => (c.clicks ?? 0).toLocaleString(), 
-      headerClassName: 'table-header-cell center', 
-      cellClassName: 'table-cell center' 
-    },
-    { 
-      header: 'CPC', 
-      accessor: (c) => metricsMap.get(c.id)?.cpc ?? 'S/ 0.00', 
-      headerClassName: 'table-header-cell center', 
-      cellClassName: 'table-cell center' 
-    },
-    { 
-      header: 'CTR', 
-      accessor: (c) => metricsMap.get(c.id)?.ctr ?? '0.00%', 
-      headerClassName: 'table-header-cell center', 
-      cellClassName: 'table-cell center' 
-    },
-    { 
-      header: 'CLICS [TODOS]', 
-      accessor: (c) => (c.clicsTotal ?? 0).toLocaleString(), 
-      headerClassName: 'table-header-cell center', 
-      cellClassName: 'table-cell center' 
-    },
-    { 
-      header: 'VENTAS C.', 
-      accessor: (c) => c.ventasCerradas ?? 0, 
-      headerClassName: 'table-header-cell center highlight-header', 
-      cellClassName: 'table-cell center highlight' 
-    },
-    { 
-      header: 'CONTACTO', 
-      accessor: (c) => c.contacto ?? 0, 
-      headerClassName: 'table-header-cell center highlight-header', 
-      cellClassName: 'table-cell center highlight' 
-    },
+    // ... más columnas (comentadas)
   ];
+  */
 
   return (
     <div className="campaigns-container">
       <h2 className="campaigns-title">CAMPAÑAS META ADS</h2>
+      <div style={{ padding: '20px', background: '#f5f5f5', borderRadius: '4px', marginTop: '10px' }}>
+        <p style={{ color: '#666', margin: 0 }}>
+          ⚠️ Tabla de Campañas en mantenimiento - DataTable fue eliminado en migración FSD (Bloque 5)
+        </p>
+        <p style={{ color: '#999', fontSize: '12px', margin: '5px 0 0 0' }}>
+          {state.campaigns?.length ?? 0} campañas disponibles
+        </p>
+      </div>
+      {/* DEPRECATED DataTable component
       <DataTable
         columns={campaignTableColumns}
         data={state.campaigns}
         rowClassName="clickable-row"
       />
+      */}
     </div>
   );
 };
