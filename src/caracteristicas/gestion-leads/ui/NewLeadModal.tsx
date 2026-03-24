@@ -1,5 +1,5 @@
 import React from 'react';
-import type { NewLeadFormData } from '../hooks/useNewLeadForm';
+import type { NewLeadFormData } from '../modelo/useNewLeadForm';
 import { Modal } from '@compartido/ui/moleculas';
 import { Button } from '@compartido/ui/atomos';
 import { Spinner } from '@compartido/ui/atomos';
