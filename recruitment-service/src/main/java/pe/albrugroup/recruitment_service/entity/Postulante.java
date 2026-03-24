@@ -23,6 +23,7 @@ public class Postulante {
     private String celular;
     private LocalDate fechaNacimiento;
 
+    private Boolean listaNegra;
     @CreationTimestamp @Column(updatable = false)
     private Instant createdAt;
     @UpdateTimestamp

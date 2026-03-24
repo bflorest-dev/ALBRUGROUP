@@ -1,6 +1,8 @@
 package pe.albrugroup.recruitment_service.entity.request;
 
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -9,6 +11,6 @@ import java.time.LocalDate;
 @AllArgsConstructor @NoArgsConstructor
 public class OfertaAmpliacionRequest {
 
-    @NotNull private Integer cantidad;
-    @NotNull private LocalDate plazo;
+    @NotNull @Positive private Integer cantidad;
+    @NotNull @FutureOrPresent private LocalDate plazo;
 }

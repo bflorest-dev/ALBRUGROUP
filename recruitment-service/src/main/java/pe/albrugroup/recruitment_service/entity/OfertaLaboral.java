@@ -15,6 +15,7 @@ import java.util.List;
 
 @Entity @Getter @Setter @Builder
 @AllArgsConstructor @NoArgsConstructor
+@Table(uniqueConstraints = { @UniqueConstraint(name = "uk_oferta_laboral_codigo", columnNames = "codigo") })
 public class OfertaLaboral {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
