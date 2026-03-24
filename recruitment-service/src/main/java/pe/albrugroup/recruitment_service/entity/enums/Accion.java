@@ -1,6 +1,10 @@
 package pe.albrugroup.recruitment_service.entity.enums;
 
 public enum Accion {
-    LLAMADA_TELEFONICA,
-    REUNION_MEET
+    REGISTRO_POSTULACION,
+    ACTUALIZACION_POSTULACION,
+    CONTACTO,
+    TIPIFICACION,
+    APROBACION_CAPACITACION,
+    DESAPROBACION_CAPACITACION
 }

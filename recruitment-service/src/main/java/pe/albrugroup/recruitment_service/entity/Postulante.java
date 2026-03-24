@@ -10,6 +10,7 @@ import java.time.LocalDate;
 
 @Entity @Getter @Setter @Builder
 @AllArgsConstructor @NoArgsConstructor
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"tipoDocumento", "documento"}))
 public class Postulante {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,7 +24,7 @@ public class Postulante {
     private String celular;
     private LocalDate fechaNacimiento;
 
-    private Boolean listaNegra;
+    private Boolean listaNegra; // Inicia en False
     @CreationTimestamp @Column(updatable = false)
     private Instant createdAt;
     @UpdateTimestamp
