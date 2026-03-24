@@ -4,10 +4,14 @@
 
 import React from 'react';
 
-export const UserProfile: React.FC = () => {
+interface UserProfileProps {
+  user?: any;
+}
+
+export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
   return (
     <div className="user-profile">
-      <span>User</span>
+      <span>{user?.name || 'User'}</span>
     </div>
   );
 };

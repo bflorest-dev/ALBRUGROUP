@@ -3,7 +3,7 @@ import React from 'react';
 export interface ButtonProps {
   children?: React.ReactNode;
   onClick?: () => void;
-  variant?: 'primary' | 'secondary' | 'danger';
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   disabled?: boolean;
   className?: string;
   type?: 'button' | 'submit' | 'reset';

@@ -50,19 +50,17 @@ const AppContent = () => {
 };
 
 function App() {
-  const handleErrorBoundaryError = (error: Error, errorInfo: ErrorInfo) => {
-    // Log to centralized error logger
-    ErrorLogger.logError('App.tsx', error, {
-      componentStack: errorInfo.componentStack,
-      context: 'Global ErrorBoundary'
-    });
-
-    // In production, you could send this to an error tracking service
-    // Sentry.captureException(error, { contexts: { react: errorInfo } });
-  };
+  // Note: ErrorBoundary now handles errors internally via componentDidCatch
+  // handleErrorBoundaryError kept commented for reference
+  // const handleErrorBoundaryError = (error: Error, errorInfo: ErrorInfo) => {
+  //   ErrorLogger.logError('App.tsx', error, {
+  //     componentStack: errorInfo.componentStack,
+  //     context: 'Global ErrorBoundary'
+  //   });
+  // };
 
   return (
-    <ErrorBoundary onError={handleErrorBoundaryError}>
+    <ErrorBoundary>
       <div className="app">
         <DevRoleProvider>
           <ApplicantsProvider>

@@ -187,7 +187,7 @@ const ModalsSectionComponent: React.FC<ModalsSectionProps> = ({ state }) => {
                 type="text" 
                 name="campaignName" 
                 value={state.formData.campaignName}
-                onChange={state.handleFormChange}
+                onChange={(e) => state.handleFormChange(e.target.name, e.target.value)}
                 placeholder="Nombre de la campaña"
                 className="form-input"
               />
@@ -197,7 +197,7 @@ const ModalsSectionComponent: React.FC<ModalsSectionProps> = ({ state }) => {
                 type="text" 
                 name="nomEmpresa" 
                 value={state.formData.nomEmpresa}
-                onChange={state.handleFormChange}
+                onChange={(e) => state.handleFormChange(e.target.name, e.target.value)}
                 placeholder="Célula empresa"
                 className="form-input"
               />
@@ -209,7 +209,7 @@ const ModalsSectionComponent: React.FC<ModalsSectionProps> = ({ state }) => {
                 type="text" 
                 name="ctaPublicitaria" 
                 value={state.formData.ctaPublicitaria}
-                onChange={state.handleFormChange}
+                onChange={(e) => state.handleFormChange(e.target.name, e.target.value)}
                 placeholder="Cuenta publicitaria"
                 className="form-input"
               />
@@ -219,7 +219,7 @@ const ModalsSectionComponent: React.FC<ModalsSectionProps> = ({ state }) => {
                 type="text" 
                 name="nomCtaPublicitaria" 
                 value={state.formData.nomCtaPublicitaria}
-                onChange={state.handleFormChange}
+                onChange={(e) => state.handleFormChange(e.target.name, e.target.value)}
                 placeholder="Nombre cuenta publicitaria"
                 className="form-input"
               />

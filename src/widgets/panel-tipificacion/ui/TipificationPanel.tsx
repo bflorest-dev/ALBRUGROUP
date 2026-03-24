@@ -111,7 +111,7 @@ export const TipificationPanel: React.FC<TipificationPanelProps> = ({
         >
           {isSubmitting ? (
             <>
-              <Girador size={16} />
+              <Girador size="small" />
               GUARDANDO...
             </>
           ) : (
