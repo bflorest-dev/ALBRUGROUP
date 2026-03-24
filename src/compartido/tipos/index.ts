@@ -2,6 +2,7 @@
 export * from './comun';
 export * from './enums';
 export * from './eventos';
+export * from './community';
 
 // Re-exportar tipos desde la carpeta raiz src/types
 export * from '../../types/index';

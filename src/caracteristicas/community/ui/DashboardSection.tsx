@@ -1,13 +1,9 @@
 import React from 'react';
 import { BiPlus } from 'react-icons/bi';
 import { HeaderActions } from '@widgets/encabezado/ui/HeaderActions';
-// DEPRECATED: MetricsSection fue eliminado (depende de hook no existente)
-// import { MetricsSection } from './MetricsSection';
 import { LeadsManagementSection } from './LeadsManagementSection';
 import { CampaignsSection } from './CampaignsSection';
-// DEPRECATED: useCommunityDashboard hook no existe en esta feature
-// import type { CommunityDashboardState } from '../hooks/useCommunityDashboard';
-type CommunityDashboardState = unknown; // Placeholder
+import type { CommunityDashboardState } from '@compartido/tipos/community';
 
 /**
  * DashboardSection Component
