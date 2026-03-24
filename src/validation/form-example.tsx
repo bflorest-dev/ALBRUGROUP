@@ -64,10 +64,10 @@ export function CreateApplicantFormExample() {
     );
 
     if (!validationResult.success) {
-      // Mostrar error solo para el campo que cambió (para mejor UX)
+      // Type-safe access to errors (discriminated union narrowing)
       setErrors(prevErrors => ({
         ...prevErrors,
-        [name]: validationResult.errors[name] || '',
+        [name]: validationResult.errors?.[name] || '',
       }));
     } else {
       // Si el campo ahora es válido, remover su error
@@ -93,7 +93,7 @@ export function CreateApplicantFormExample() {
     );
 
     if (!validationResult.success) {
-      // Mostrar todos los errores
+      // Type-safe access to errors (discriminated union narrowing)
       setErrors(validationResult.errors);
       console.error('Validation errors:', validationResult.errors);
       return;
