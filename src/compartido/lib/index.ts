@@ -14,16 +14,7 @@ export { FeatureErrorBoundary, type FeatureErrorBoundaryProps, type FeatureError
 
 // Error handling utilities
 export { createError } from '../../hooks/useErrorHandler';
-export const getSafeErrorMessage = (error: unknown): string => {
-  if (error instanceof Error) return error.message;
-  if (typeof error === 'string') return error;
-  return 'Occurred an unexpected error';
-};
-export const SafeErrorMessages = {
-  UNKNOWN: 'An unexpected error occurred',
-  NETWORK: 'Network error. Please check your connection',
-  VALIDATION: 'Validation error. Please check your data',
-};
+export { getSafeErrorMessage, SafeErrorMessages } from '../../utils/secureErrorHandling';
 
 // Contextos
 export * from '../../contexts/ApplicantsContext';
