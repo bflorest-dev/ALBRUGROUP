@@ -5,8 +5,8 @@ import { AdvertiserAccountsSection } from '../components/AdvertiserAccountsSecti
 import { CompaniesSection } from '../components/CompaniesSection';
 import { CampaignsKanban } from '../components/CampaignsKanban';
 import { useCommunityDashboard } from '../hooks/useCommunityDashboard';
-import { DashboardSection } from '../sections/DashboardSection';
-import { ModalsSectionLazy } from '../utils/lazyLoadSections';
+import { DashboardSection } from '@caracteristicas/community/ui/DashboardSection';
+import { ModalsSectionLazy } from '@compartido/lib/lazyLoad';
 import { FeatureErrorBoundary } from '@components/utilities';
 import { ErrorLogger } from '@compartido/lib';
 import './CommunityDashboard.css';
