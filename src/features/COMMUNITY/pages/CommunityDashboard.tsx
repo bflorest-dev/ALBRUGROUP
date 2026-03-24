@@ -7,7 +7,7 @@ import { CampaignsKanban } from '../components/CampaignsKanban';
 import { useCommunityDashboard } from '../hooks/useCommunityDashboard';
 import { DashboardSection } from '@caracteristicas/community/ui/DashboardSection';
 import { ModalsSectionLazy } from '@compartido/lib/lazyLoad';
-import { FeatureErrorBoundary } from '@components/utilities';
+import { FeatureErrorBoundary } from '@compartido/ui/limitadorErrores/FeatureErrorBoundary';
 import { ErrorLogger } from '@compartido/lib';
 import './CommunityDashboard.css';
 

@@ -4,7 +4,7 @@ import { Card } from '@compartido/ui/moleculas';
 import { useApplicants } from '@compartido/lib';
 import { useApplicantsSync } from '@caracteristicas/registrar-postulante/modelo/ganchos';
 import { Modal } from '@compartido/ui/moleculas';
-import { DatePicker } from '@compartido/ui/moleculas';
+import { DatePicker } from '@compartido/ui/selectorFecha/SelectorFecha';
 import type { Applicant } from '@compartido/tipos';
 import { FeatureErrorBoundary } from '@compartido/ui/organismos';
 import { ErrorLogger } from '@compartido/lib';
