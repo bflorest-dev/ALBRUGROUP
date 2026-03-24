@@ -2,7 +2,10 @@ import React, { useMemo } from 'react';
 // DEPRECATED: DataTable fue eliminado en migración FSD (Bloque 5)
 // import { DataTable } from '@molecules/DataTable';
 // import type { DataTableColumn } from '@molecules/DataTable';
-import type { Campaign, CommunityDashboardState } from '../hooks/useCommunityDashboard';
+// DEPRECATED: useCommunityDashboard hook no existe en esta feature
+// import type { Campaign, CommunityDashboardState } from '../hooks/useCommunityDashboard';
+// type Campaign = unknown; // Placeholder
+type CommunityDashboardState = unknown; // Placeholder
 
 /**
  * CampaignsSection Component

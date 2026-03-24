@@ -5,11 +5,6 @@ export * from './contenedores';
 export * from './modales';
 export * from './navegadores';
 
-// Re-exportar desde src/components/organisms
+// Re-exportar desde compartido
 export { ErrorBoundary } from '../limitadorErrores/ErrorBoundary';
 export { FeatureErrorBoundary, type FeatureErrorBoundaryProps, type FeatureErrorBoundaryState } from '../limitadorErrores/FeatureErrorBoundary';
-export { LeadsListPanel } from '../../../components/organisms/LeadsListPanel/LeadsListPanel';
-export { TipificationPanel } from '../../../components/organisms/TipificationPanel/TipificationPanel';
-export { Header } from '../../../components/organisms/Layout/Header';
-export { Sidebar } from '../../../components/organisms/Layout/Sidebar';
-export { MainLayout } from '../../layout-principal/ui/MainLayout';

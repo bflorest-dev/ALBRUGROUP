@@ -1,4 +1,4 @@
-import type { Role } from '../../../shared/types';
+import type { Role } from '@compartido/tipos';
 
 export interface RoleBadgeProps {
   role: Role;

@@ -1,6 +1,8 @@
 import React from 'react';
 import { Modal } from '@molecules/index';
-import type { CommunityDashboardState } from '../hooks/useCommunityDashboard';
+// DEPRECATED: useCommunityDashboard hook no existe en esta feature
+// import type { CommunityDashboardState } from '../hooks/useCommunityDashboard';
+type CommunityDashboardState = unknown; // Placeholder
 
 /**
  * ModalsSection Component

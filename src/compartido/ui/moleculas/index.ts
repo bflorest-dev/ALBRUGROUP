@@ -15,6 +15,6 @@ export * from './tarjetas';
 // export { StatCard as MetricsPanel } from '../../../components/molecules/StatCard/StatCard';
 // export { Pagination } from '../../../components/molecules/Pagination/Pagination';
 // export { Card } from '../../../components/molecules/Card/Card';
-export { MainLayout } from '../../layout-principal/ui/MainLayout';
-export { HeaderActions } from '../../encabezado/ui/HeaderActions';
+export { MainLayout } from '@widgets/layout-principal/ui/MainLayout';
+export { HeaderActions } from '@widgets/encabezado/ui/HeaderActions';
 export { DatePicker } from '../selectorFecha/SelectorFecha';

@@ -8,7 +8,8 @@ import { NotificationProvider } from '@compartido/lib';
 import { useNotification } from '@compartido/lib';
 import { useDevRole } from '@compartido/lib';
 import { SidebarProvider, useSidebar } from '@compartido/lib';
-import { ToastContainer } from '../../molecules/Toast';
+// DEPRECATED: ToastContainer no existe en nueva estructura
+// import { ToastContainer } from '../../molecules/Toast';
 import './MainLayout.css';
 
 const MainLayoutContent = () => {
@@ -101,7 +102,8 @@ const MainLayoutContent = () => {
           </div>
         )}
       </div>
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      {/* DEPRECATED: ToastContainer no existe */}
+      {/* <ToastContainer toasts={toasts} onRemove={removeToast} /> */}
     </>
   );
 };

@@ -4,7 +4,9 @@ import { HeaderActions } from '@widgets/encabezado/ui/HeaderActions';
 import { MetricsSection } from './MetricsSection';
 import { LeadsManagementSection } from './LeadsManagementSection';
 import { CampaignsSection } from './CampaignsSection';
-import type { CommunityDashboardState } from '../hooks/useCommunityDashboard';
+// DEPRECATED: useCommunityDashboard hook no existe en esta feature
+// import type { CommunityDashboardState } from '../hooks/useCommunityDashboard';
+type CommunityDashboardState = unknown; // Placeholder
 
 /**
  * DashboardSection Component

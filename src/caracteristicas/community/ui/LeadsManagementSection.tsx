@@ -1,5 +1,7 @@
 import React from 'react';
-import type { CommunityDashboardState } from '../hooks/useCommunityDashboard';
+// DEPRECATED: useCommunityDashboard hook no existe en esta feature
+// import type { CommunityDashboardState } from '../hooks/useCommunityDashboard';
+type CommunityDashboardState = unknown; // Placeholder
 
 /**
  * LeadsManagementSection Component

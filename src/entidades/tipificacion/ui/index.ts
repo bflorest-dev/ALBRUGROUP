@@ -1,3 +1,4 @@
 // Entity: Tipificación - UI
 // Tipification UI components
-export { TipificationBlockPanel } from '../../../components/molecules/TipificationBlockPanel/TipificationBlockPanel';
+// DEPRECATED: TipificationBlockPanel (component eliminado)
+// export { TipificationBlockPanel } from '../../../components/molecules/TipificationBlockPanel/TipificationBlockPanel';
