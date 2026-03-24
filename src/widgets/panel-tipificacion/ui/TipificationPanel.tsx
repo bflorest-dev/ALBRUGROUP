@@ -13,15 +13,7 @@ import { MdError } from 'react-icons/md';
 import type { LeadDTO } from '@compartido/tipos';
 import type { TipificationOptionId } from '@compartido/tipos';
 import { TIPIFICATION_BLOCKS } from '@compartido/lib';
-// DEPRECATED: LeadDetailCard, TipificationBlockPanel, Boton, Girador fueron eliminados
-// import { LeadDetailCard } from '@entidades/lead/ui';
-// import { TipificationBlockPanel } from '@entidades/tipificacion/ui';
-// import { Boton } from '@compartido/ui/atomos/botones';
-// import { Girador } from '@compartido/ui/atomos/indicadores';
-type LeadDetailCard = any; // Placeholder
-type TipificationBlockPanel = any; // Placeholder
-type Boton = any; // Placeholder
-type Girador = any; // Placeholder
+import { LeadDetailCard, TipificationBlockPanel, Boton, Girador } from '@compartido/ui/base';
 import './TipificationPanel.css';
 
 interface BackofficeLead extends LeadDTO {

@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { BiPlus, BiChevronLeft, BiChevronRight } from 'react-icons/bi';
-// DEPRECATED: Modal fue eliminado
-// import { Modal } from '@compartido/ui/moleculas';
-type Modal = any; // Placeholder
+import { Modal } from '@compartido/ui/base';
 import { CampaignCard, type Campaign } from './CampaignCard';
 import './CampaignsKanban.css';
 

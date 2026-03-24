@@ -3,9 +3,7 @@
  */
 
 import { useState } from 'react';
-// DEPRECATED: Modal fue eliminado
-// import { Modal } from '@compartido/ui/moleculas';
-type Modal = any; // Placeholder
+import { Modal } from '@compartido/ui/base';
 import { AVAILABLE_POSITIONS } from '@compartido/lib';
 import type { Employee } from '@compartido/tipos';
 import './ActivateEmployeeModal.css';

@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-// DEPRECATED: ApplicantForm fue eliminado
-// import { ApplicantForm } from '@compartido/ui/moleculas';
-type ApplicantForm = any; // Placeholder
+import { ApplicantForm } from '@compartido/ui/base';
 import { POSITIONS_WITH_COMPANY } from '@compartido/lib';
 import type { NewApplicantFormData } from '@compartido/tipos';
 

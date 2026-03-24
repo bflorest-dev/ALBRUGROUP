@@ -1,10 +1,6 @@
 import React from 'react';
 import type { NewLeadFormData } from '../modelo/useNewLeadForm';
-// DEPRECATED: Modal, Button fueron eliminados
-// import { Modal } from '@compartido/ui/moleculas';
-// import { Button } from '@compartido/ui/atomos';
-type Modal = any; // Placeholder
-type Button = any; // Placeholder
+import { Modal, Button } from '@compartido/ui/base';
 // DEPRECATED: Spinner fue eliminado en migración FSD (Bloque 5)
 // import { Spinner } from '@compartido/ui/atomos';
 

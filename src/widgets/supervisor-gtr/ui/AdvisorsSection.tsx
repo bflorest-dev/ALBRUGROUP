@@ -4,9 +4,7 @@
  */
 
 import React from 'react';
-// DEPRECATED: Girador fue eliminado
-// import { Girador } from '@compartido/ui/atomos/indicadores';
-type Girador = any; // Placeholder
+import { Girador } from '@compartido/ui/base';
 import type { AdvisorDTO } from '@compartido/tipos';
 
 // Tipo alias para compatibilidad con el código existente

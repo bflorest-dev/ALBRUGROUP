@@ -5,15 +5,7 @@
 
 import React from 'react';
 import { BiSearch, BiPlus } from 'react-icons/bi';
-// DEPRECATED: Boton, Girador, TablaGtr fueron eliminados
-// import { Boton } from '@compartido/ui/atomos/botones';
-// import { Girador } from '@compartido/ui/atomos/indicadores';
-// import { TablaGtr } from '@compartido/ui/moleculas/tablas';
-// import type { TablaGtrColumn } from '@compartido/ui/moleculas/tablas';
-type Boton = any; // Placeholder
-type Girador = any; // Placeholder
-type TablaGtr = any; // Placeholder
-type TablaGtrColumn = any; // Placeholder
+import { Boton, Girador } from '@compartido/ui/base';
 import type { LeadDTO } from '@compartido/tipos';
 
 // Tipo alias para compatibilidad con el código existente

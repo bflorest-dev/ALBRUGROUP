@@ -9,11 +9,7 @@
 
 import React, { useMemo } from 'react';
 import { BiCheckCircle, BiTime, BiSearch } from 'react-icons/bi';
-// DEPRECATED: Entrada (Input) y LeadListItem fueron eliminados
-// import { Entrada } from '@compartido/ui/atomos/campos';
-// import { LeadListItem } from '@entidades/lead/ui';
-type Entrada = any; // Placeholder
-type LeadListItem = any; // Placeholder
+import { Entrada, LeadListItem } from '@compartido/ui/base';
 import type { LeadDTO } from '@compartido/tipos';
 import './LeadsListPanel.css';
 

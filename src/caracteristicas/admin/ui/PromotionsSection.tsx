@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { BiPlus, BiTrash, BiPencil } from 'react-icons/bi';
-// DEPRECATED: Modal fue eliminado
-// import { Modal } from '@compartido/ui/moleculas';
-type Modal = any; // Placeholder
+import { Modal } from '@compartido/ui/base';
 import type { Promocion } from '../types';
 import type { AdminDashboardState } from '../hooks/useAdminDashboard';
 import './PromotionsSection.css';

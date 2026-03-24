@@ -1,7 +1,5 @@
 import React from 'react';
-// DEPRECATED: Modal fue eliminado
-// import { Modal } from '@molecules/index';
-type Modal = any; // Placeholder
+import { Modal } from '@compartido/ui/base';
 // DEPRECATED: useCommunityDashboard hook no existe en esta feature
 // import type { CommunityDashboardState } from '../hooks/useCommunityDashboard';
 type CommunityDashboardState = unknown; // Placeholder
