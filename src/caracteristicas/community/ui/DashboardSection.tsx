@@ -1,7 +1,8 @@
 import React from 'react';
 import { BiPlus } from 'react-icons/bi';
 import { HeaderActions } from '@widgets/encabezado/ui/HeaderActions';
-import { MetricsSection } from './MetricsSection';
+// DEPRECATED: MetricsSection fue eliminado (depende de hook no existente)
+// import { MetricsSection } from './MetricsSection';
 import { LeadsManagementSection } from './LeadsManagementSection';
 import { CampaignsSection } from './CampaignsSection';
 // DEPRECATED: useCommunityDashboard hook no existe en esta feature
@@ -51,7 +52,8 @@ const DashboardSectionComponent: React.FC<DashboardSectionProps> = ({ state }) =
 
       {/* Two-Column Layout: Metrics (Left) + Leads (Right) */}
       <div className="community-dashboard-content">
-        <MetricsSection state={state} />
+        {/* DEPRECATED: MetricsSection fue eliminado */}
+        {/* <MetricsSection state={state} /> */}
         <LeadsManagementSection state={state} />
       </div>
 

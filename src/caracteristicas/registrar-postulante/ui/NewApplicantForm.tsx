@@ -9,20 +9,20 @@ const NewApplicantForm: React.FC = () => {
   const [formData, setFormData] = useState<NewApplicantFormData>({
     nombres: '',
     apellidos: '',
-    phone: '',
-    doc: '',
-    docType: 'DNI',
-    posicion: '',
-    empresa: '',
+    phoneMobile: '',
+    documentNumber: '',
+    documentType: 'DNI',
+    positionOfInterest: '',
+    company: '',
     campaign: '',
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
 
-    // Sanitizar números en phone y doc
+    // Sanitizar números en phoneMobile y documentNumber
     let sanitizedValue = value;
-    if (name === 'phone' || name === 'doc') {
+    if (name === 'phoneMobile' || name === 'documentNumber') {
       sanitizedValue = value.replace(/\D/g, '');
     }
 
@@ -32,12 +32,9 @@ const NewApplicantForm: React.FC = () => {
         [name]: sanitizedValue,
       };
 
-      // Auto-assign empresa based on posicion
-      if (name === 'posicion') {
-        const selectedPosition = POSITIONS_WITH_COMPANY.find(p => p.value === sanitizedValue);
-        if (selectedPosition) {
-          updatedData.empresa = selectedPosition.company;
-        }
+      // Auto-set company if position requires it
+      if (name === 'positionOfInterest' && POSITIONS_WITH_COMPANY.includes(sanitizedValue)) {
+        updatedData.company = '';
       }
 
       return updatedData;

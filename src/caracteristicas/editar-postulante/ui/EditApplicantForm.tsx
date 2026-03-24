@@ -18,17 +18,17 @@ const EditApplicantForm: React.FC<EditApplicantFormProps> = ({ applicant }) => {
     applicant || {
       nombres: '',
       apellidos: '',
-      phone: '',
-      doc: '',
-      docType: 'DNI',
-      posicion: '',
-      empresa: '',
+      phoneMobile: '',
+      documentNumber: '',
+      documentType: 'DNI',
+      positionOfInterest: '',
+      company: '',
       campaign: '',
     }
   );
 
   const [disabledFields, setDisabledFields] = useState<Set<string>>(
-    new Set(applicant ? ['doc', 'docType'] : [])
+    new Set(applicant ? ['documentNumber', 'documentType'] : [])
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -38,9 +38,9 @@ const EditApplicantForm: React.FC<EditApplicantFormProps> = ({ applicant }) => {
       return;
     }
 
-    // Sanitizar números en phone y doc
+    // Sanitizar números en phoneMobile y documentNumber
     let sanitizedValue = value;
-    if (name === 'phone' || name === 'doc') {
+    if (name === 'phoneMobile' || name === 'documentNumber') {
       sanitizedValue = value.replace(/\D/g, '');
     }
 
@@ -50,12 +50,9 @@ const EditApplicantForm: React.FC<EditApplicantFormProps> = ({ applicant }) => {
         [name]: sanitizedValue,
       };
 
-      // Auto-assign empresa based on posicion
-      if (name === 'posicion') {
-        const selectedPosition = POSITIONS_WITH_COMPANY.find(p => p.value === sanitizedValue);
-        if (selectedPosition) {
-          updatedData.empresa = selectedPosition.company;
-        }
+      // Auto-set company if position requires it
+      if (name === 'positionOfInterest' && POSITIONS_WITH_COMPANY.includes(sanitizedValue)) {
+        updatedData.company = '';
       }
 
       return updatedData;

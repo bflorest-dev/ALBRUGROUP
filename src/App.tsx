@@ -3,9 +3,6 @@ import { MainLayout } from '@widgets/layout-principal/ui/MainLayout'
 import { DevRoleProvider, useDevRole } from '@compartido/lib'
 import { ApplicantsProvider } from '@compartido/lib'
 import { ErrorBoundary } from '@compartido/ui/limitadorErrores/ErrorBoundary'
-// DEPRECATED: DarkModeToggle fue eliminado
-// import { DarkModeToggle } from '@compartido/ui/atomos'
-type DarkModeToggle = any; // Placeholder
 import { ErrorLogger } from '@compartido/lib'
 import { AuthService } from '@caracteristicas/autenticacion/api'
 import type { ErrorInfo } from 'react';
@@ -46,13 +43,6 @@ const AppContent = () => {
           <option value="ASESOR_POSTVENTA">ASESOR_POSTVENTA</option>
         </select>
       </div>
-
-      {/* Dark mode toggle only on LOGIN role */}
-      {selectedRole === 'LOGIN' && (
-        <div className="dark-toggle-wrapper">
-          <DarkModeToggle />
-        </div>
-      )}
 
       <MainLayout />
     </>
