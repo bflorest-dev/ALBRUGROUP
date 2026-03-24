@@ -255,14 +255,3 @@ export interface CommunityDashboardState {
   /** Expande/contrae filas de leads por fecha en la tabla */
   handleToggleExpandCampaign: (campaignId: string) => void;
 }
-
-// Export types for individual components if needed
-export type {
-  CampaignMetric,
-  Campaign,
-  CampaignLeadsBreakdown,
-  EditMetricsData,
-  CampaignEditData,
-  CreateCampaignFormData,
-  SelectedCampaignForEdit,
-};
