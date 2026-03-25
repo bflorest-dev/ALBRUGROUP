@@ -9,6 +9,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pe.albrugroup.recruitment_service.entity.enums.AlcanceSubtipificacion;
+import pe.albrugroup.recruitment_service.entity.enums.EstadoBandejaPostulacion;
+import pe.albrugroup.recruitment_service.entity.enums.EstadoPostulacion;
+import pe.albrugroup.recruitment_service.entity.enums.Etapa;
 
 @Builder
 @Getter
@@ -21,4 +24,7 @@ public class SubtipificacionRequest {
     @NotBlank private String descripcion;
     @NotNull @Positive private Integer orden;
     @NotNull private AlcanceSubtipificacion alcance;
+    private Etapa etapaDestino;
+    private EstadoPostulacion estadoDestino;
+    private EstadoBandejaPostulacion estadoBandejaDestino;
 }

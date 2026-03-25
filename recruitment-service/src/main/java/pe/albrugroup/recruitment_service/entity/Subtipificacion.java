@@ -3,6 +3,9 @@ package pe.albrugroup.recruitment_service.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import pe.albrugroup.recruitment_service.entity.enums.AlcanceSubtipificacion;
+import pe.albrugroup.recruitment_service.entity.enums.EstadoBandejaPostulacion;
+import pe.albrugroup.recruitment_service.entity.enums.EstadoPostulacion;
+import pe.albrugroup.recruitment_service.entity.enums.Etapa;
 
 @Entity @Getter @Setter @Builder
 @AllArgsConstructor @NoArgsConstructor
@@ -21,5 +24,11 @@ public class Subtipificacion {
 
     @Enumerated(EnumType.STRING)
     private AlcanceSubtipificacion alcance;
+    @Enumerated(EnumType.STRING)
+    private Etapa etapaDestino;
+    @Enumerated(EnumType.STRING)
+    private EstadoPostulacion estadoDestino;
+    @Enumerated(EnumType.STRING)
+    private EstadoBandejaPostulacion estadoBandejaDestino;
     private Boolean activo;
 }

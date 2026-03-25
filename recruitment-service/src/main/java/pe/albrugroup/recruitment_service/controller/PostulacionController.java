@@ -18,6 +18,7 @@ import pe.albrugroup.recruitment_service.entity.enums.EstadoBandejaPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.Etapa;
 import pe.albrugroup.recruitment_service.entity.request.PostulacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.TipificarPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
 import pe.albrugroup.recruitment_service.service.PostulacionService;
 
@@ -42,6 +43,14 @@ public class PostulacionController {
             @Valid @RequestBody PostulacionRequest request
     ) {
         return ResponseEntity.ok(postulacionService.editarPostulacion(idPostulacion, request));
+    }
+
+    @PostMapping("/{idPostulacion}/tipificacion")
+    public ResponseEntity<PostulacionResponse> tipificarPostulacion(
+            @PathVariable @Positive Long idPostulacion,
+            @Valid @RequestBody TipificarPostulacionRequest request
+    ) {
+        return ResponseEntity.ok(postulacionService.tipificarPostulacion(idPostulacion, request));
     }
 
     @GetMapping("/{idPostulacion}")

@@ -5,6 +5,7 @@ import pe.albrugroup.recruitment_service.entity.Subtipificacion;
 import pe.albrugroup.recruitment_service.entity.Tipificacion;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface SubtipificacionRepository extends JpaRepository<Subtipificacion, Long> {
 
@@ -13,4 +14,6 @@ public interface SubtipificacionRepository extends JpaRepository<Subtipificacion
     List<Subtipificacion> findByTipificacionIdIn(List<Long> tipificacionIds);
 
     boolean existsByTipificacionIdAndCodigoIgnoreCase(Long tipificacionId, String codigo);
+
+    Optional<Subtipificacion> findByTipificacionIdAndCodigo(Long tipificacionId, String codigo);
 }

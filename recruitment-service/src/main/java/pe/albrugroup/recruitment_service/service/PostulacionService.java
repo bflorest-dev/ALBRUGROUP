@@ -9,16 +9,23 @@ import org.springframework.web.server.ResponseStatusException;
 import pe.albrugroup.recruitment_service.entity.OfertaLaboral;
 import pe.albrugroup.recruitment_service.entity.Postulacion;
 import pe.albrugroup.recruitment_service.entity.Postulante;
+import pe.albrugroup.recruitment_service.entity.Subtipificacion;
+import pe.albrugroup.recruitment_service.entity.Tipificacion;
 import pe.albrugroup.recruitment_service.entity.enums.Accion;
+import pe.albrugroup.recruitment_service.entity.enums.AlcanceSubtipificacion;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoBandejaPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoOferta;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.Etapa;
+import pe.albrugroup.recruitment_service.entity.enums.PuestoObjetivo;
 import pe.albrugroup.recruitment_service.entity.request.PostulacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.TipificarPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
 import pe.albrugroup.recruitment_service.exception.NotFoundException;
 import pe.albrugroup.recruitment_service.repository.OfertaLaboralRepository;
 import pe.albrugroup.recruitment_service.repository.PostulacionRepository;
+import pe.albrugroup.recruitment_service.repository.SubtipificacionRepository;
+import pe.albrugroup.recruitment_service.repository.TipificacionRepository;
 import pe.albrugroup.recruitment_service.service.mapper.PostulacionMapper;
 
 import java.util.List;
@@ -33,6 +40,8 @@ public class PostulacionService {
     private final PostulanteService postulanteService;
     private final EventoService eventoService;
     private final PostulacionMapper postulacionMapper;
+    private final TipificacionRepository tipificacionRepository;
+    private final SubtipificacionRepository subtipificacionRepository;
 
     public PostulacionResponse registrarPostulacion(PostulacionRequest request) {
         OfertaLaboral ofertaLaboral = obtenerOfertaActiva(request.getIdOfertaLaboral());
@@ -58,6 +67,39 @@ public class PostulacionService {
                 null,
                 null,
                 null
+        );
+
+        return postulacionMapper.toResponse(postulacionGuardada);
+    }
+
+    public PostulacionResponse tipificarPostulacion(Long idPostulacion, TipificarPostulacionRequest request) {
+        Postulacion postulacion = postulacionRepository.findById(idPostulacion)
+                .orElseThrow(() -> new NotFoundException(Postulacion.class, idPostulacion));
+
+        Tipificacion tipificacion = tipificacionRepository.findById(request.getIdTipificacion())
+                .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getIdTipificacion()));
+
+        Subtipificacion subtipificacion = subtipificacionRepository.findById(request.getIdSubtipificacion())
+                .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getIdSubtipificacion()));
+
+        validarTipificacionActiva(tipificacion);
+        validarSubtipificacionActiva(subtipificacion);
+        validarTipificacionPorEtapa(postulacion, tipificacion);
+        validarSubtipificacionPerteneceATipificacion(tipificacion, subtipificacion);
+        validarAlcanceSubtipificacion(postulacion, subtipificacion);
+
+        aplicarCambiosDeSubtipificacion(postulacion, subtipificacion);
+
+        Postulacion postulacionGuardada = postulacionRepository.save(postulacion);
+        eventoService.registrarEvento(
+                postulacionGuardada,
+                Accion.TIPIFICACION,
+                null,
+                tipificacion.getId(),
+                subtipificacion.getId(),
+                tipificacion.getCodigo(),
+                subtipificacion.getCodigo(),
+                request.getObservacion()
         );
 
         return postulacionMapper.toResponse(postulacionGuardada);
@@ -131,6 +173,65 @@ public class PostulacionService {
         }
 
         return ofertaLaboral;
+    }
+
+    private void validarTipificacionActiva(Tipificacion tipificacion) {
+        if (!Boolean.TRUE.equals(tipificacion.getActivo())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La tipificacion enviada esta inactiva");
+        }
+    }
+
+    private void validarSubtipificacionActiva(Subtipificacion subtipificacion) {
+        if (!Boolean.TRUE.equals(subtipificacion.getActivo())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La subtipificacion enviada esta inactiva");
+        }
+    }
+
+    private void validarTipificacionPorEtapa(Postulacion postulacion, Tipificacion tipificacion) {
+        if (tipificacion.getEtapa() != postulacion.getEtapa()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "La tipificacion no pertenece a la etapa actual de la postulacion"
+            );
+        }
+    }
+
+    private void validarSubtipificacionPerteneceATipificacion(Tipificacion tipificacion, Subtipificacion subtipificacion) {
+        if (!subtipificacion.getTipificacion().getId().equals(tipificacion.getId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "La subtipificacion no pertenece a la tipificacion enviada"
+            );
+        }
+    }
+
+    private void validarAlcanceSubtipificacion(Postulacion postulacion, Subtipificacion subtipificacion) {
+        if (subtipificacion.getAlcance() == AlcanceSubtipificacion.GENERAL) {
+            return;
+        }
+
+        PuestoObjetivo puestoObjetivo = postulacion.getOfertaLaboral().getPuestoObjetivo();
+        if (puestoObjetivo != PuestoObjetivo.ASESOR_VENTAS
+                || subtipificacion.getAlcance() != AlcanceSubtipificacion.ASESOR_VENTAS) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "La subtipificacion no aplica al puesto objetivo de la postulacion"
+            );
+        }
+    }
+
+    private void aplicarCambiosDeSubtipificacion(Postulacion postulacion, Subtipificacion subtipificacion) {
+        if (subtipificacion.getEtapaDestino() != null) {
+            postulacion.setEtapa(subtipificacion.getEtapaDestino());
+        }
+
+        if (subtipificacion.getEstadoDestino() != null) {
+            postulacion.setEstado(subtipificacion.getEstadoDestino());
+        }
+
+        if (subtipificacion.getEstadoBandejaDestino() != null) {
+            postulacion.setEstadoBandeja(subtipificacion.getEstadoBandejaDestino());
+        }
     }
 
     private Specification<Postulacion> conEtapa(Etapa etapa) {
