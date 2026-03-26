@@ -73,4 +73,11 @@ public class PostulacionController {
     ) {
         return ResponseEntity.ok(postulacionService.listarBandejaReclutamiento(estadoBandeja));
     }
+
+    @GetMapping("/bandeja/capacitacion")
+    public ResponseEntity<List<PostulacionResponse>> listarBandejaCapacitacion(
+            @RequestParam(required = false) Boolean sinGrupo
+    ) {
+        return ResponseEntity.ok(postulacionService.listarBandejaCapacitacion(sinGrupo));
+    }
 }

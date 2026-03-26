@@ -171,6 +171,23 @@ public class PostulacionService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<PostulacionResponse> listarBandejaCapacitacion(Boolean sinGrupo) {
+        Specification<Postulacion> spec = Specification.where(conEtapa(Etapa.CAPACITACION))
+                .and(conPuestoObjetivo(PuestoObjetivo.ASESOR_VENTAS));
+
+        List<Postulacion> postulaciones = postulacionRepository.findAll(spec, ordenarPorActualizacionDesc());
+        if (Boolean.TRUE.equals(sinGrupo)) {
+            postulaciones = postulaciones.stream()
+                    .filter(postulacion -> !postulacionRepository.existsDetalleCapacitacionByIdPostulacion(postulacion.getId()))
+                    .toList();
+        }
+
+        return postulaciones.stream()
+                .map(postulacionMapper::toResponse)
+                .toList();
+    }
+
     private OfertaLaboral obtenerOfertaActiva(Long idOfertaLaboral) {
         OfertaLaboral ofertaLaboral = ofertaLaboralRepository.findById(idOfertaLaboral)
                 .orElseThrow(() -> new NotFoundException(OfertaLaboral.class, idOfertaLaboral));
@@ -254,6 +271,12 @@ public class PostulacionService {
 
     private Specification<Postulacion> conEstadoBandeja(EstadoBandejaPostulacion estadoBandeja) {
         return (root, query, builder) -> estadoBandeja == null ? null : builder.equal(root.get("estadoBandeja"), estadoBandeja);
+    }
+
+    private Specification<Postulacion> conPuestoObjetivo(PuestoObjetivo puestoObjetivo) {
+        return (root, query, builder) -> puestoObjetivo == null
+                ? null
+                : builder.equal(root.get("ofertaLaboral").get("puestoObjetivo"), puestoObjetivo);
     }
 
     private Specification<Postulacion> enProcesoOReciente(Instant limiteReciente) {
