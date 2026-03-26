@@ -67,11 +67,10 @@ public class PostulacionController {
         return ResponseEntity.ok(postulacionService.listarPostulaciones(etapa, estado, estadoBandeja));
     }
 
-    @GetMapping("/activas")
-    public ResponseEntity<List<PostulacionResponse>> listarPostulacionesActivas(
-            @RequestParam(required = false) Etapa etapa,
+    @GetMapping("/bandeja/reclutamiento")
+    public ResponseEntity<List<PostulacionResponse>> listarBandejaReclutamiento(
             @RequestParam(required = false) EstadoBandejaPostulacion estadoBandeja
     ) {
-        return ResponseEntity.ok(postulacionService.listarPostulacionesActivas(etapa, estadoBandeja));
+        return ResponseEntity.ok(postulacionService.listarBandejaReclutamiento(estadoBandeja));
     }
 }

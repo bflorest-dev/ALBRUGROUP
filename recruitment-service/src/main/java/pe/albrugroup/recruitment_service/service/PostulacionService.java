@@ -1,6 +1,7 @@
 package pe.albrugroup.recruitment_service.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,8 @@ import pe.albrugroup.recruitment_service.repository.SubtipificacionRepository;
 import pe.albrugroup.recruitment_service.repository.TipificacionRepository;
 import pe.albrugroup.recruitment_service.service.mapper.PostulacionMapper;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
@@ -94,7 +97,7 @@ public class PostulacionService {
         eventoService.registrarEvento(
                 postulacionGuardada,
                 Accion.TIPIFICACION,
-                null,
+                request.getModalidadContacto(),
                 tipificacion.getId(),
                 subtipificacion.getId(),
                 tipificacion.getCodigo(),
@@ -157,8 +160,15 @@ public class PostulacionService {
     }
 
     @Transactional(readOnly = true)
-    public List<PostulacionResponse> listarPostulacionesActivas(Etapa etapa, EstadoBandejaPostulacion estadoBandeja) {
-        return listarPostulaciones(etapa, EstadoPostulacion.EN_PROCESO, estadoBandeja);
+    public List<PostulacionResponse> listarBandejaReclutamiento(EstadoBandejaPostulacion estadoBandeja) {
+        Instant limiteReciente = Instant.now().minus(1, ChronoUnit.DAYS);
+        Specification<Postulacion> spec = Specification.where(conEtapa(Etapa.RECLUTAMIENTO))
+                .and(conEstadoBandeja(estadoBandeja))
+                .and(enProcesoOReciente(limiteReciente));
+
+        return postulacionRepository.findAll(spec, ordenarPorActualizacionDesc()).stream()
+                .map(postulacionMapper::toResponse)
+                .toList();
     }
 
     private OfertaLaboral obtenerOfertaActiva(Long idOfertaLaboral) {
@@ -244,5 +254,19 @@ public class PostulacionService {
 
     private Specification<Postulacion> conEstadoBandeja(EstadoBandejaPostulacion estadoBandeja) {
         return (root, query, builder) -> estadoBandeja == null ? null : builder.equal(root.get("estadoBandeja"), estadoBandeja);
+    }
+
+    private Specification<Postulacion> enProcesoOReciente(Instant limiteReciente) {
+        return (root, query, builder) -> builder.or(
+                builder.equal(root.get("estado"), EstadoPostulacion.EN_PROCESO),
+                builder.greaterThanOrEqualTo(root.get("updatedAt"), limiteReciente)
+        );
+    }
+
+    private Sort ordenarPorActualizacionDesc() {
+        return Sort.by(
+                Sort.Direction.DESC,
+                "updatedAt"
+        );
     }
 }

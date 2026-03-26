@@ -7,21 +7,14 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import pe.albrugroup.recruitment_service.entity.enums.ModalidadContacto;
 
-@Builder
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
+@Builder @Getter @Setter
+@AllArgsConstructor @NoArgsConstructor
 public class TipificarPostulacionRequest {
 
-    @NotNull
-    @Positive
-    private Long idTipificacion;
-
-    @NotNull
-    @Positive
-    private Long idSubtipificacion;
-
+    @NotNull @Positive private Long idTipificacion;
+    @NotNull @Positive private Long idSubtipificacion;
+    private ModalidadContacto modalidadContacto;
     private String observacion;
 }

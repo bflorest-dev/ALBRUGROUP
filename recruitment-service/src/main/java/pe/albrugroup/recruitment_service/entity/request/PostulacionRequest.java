@@ -17,14 +17,7 @@ import pe.albrugroup.recruitment_service.entity.enums.Origen;
 @NoArgsConstructor
 public class PostulacionRequest {
 
-    @NotNull
-    @Positive
-    private Long idOfertaLaboral;
-
-    @NotNull
-    private Origen origen;
-
-    @NotNull
-    @Valid
-    private PostulanteRequest postulante;
+    @NotNull @Positive private Long idOfertaLaboral;
+    @NotNull private Origen origen;
+    @NotNull @Valid private PostulanteRequest postulante;
 }
