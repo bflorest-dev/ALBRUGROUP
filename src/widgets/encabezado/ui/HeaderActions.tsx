@@ -1,18 +1,17 @@
 import React from 'react';
-import '../../../styles/atoms.css';
-import './HeaderActions.css';
 
 interface HeaderActionsProps {
-  children: React.ReactNode;
-  className?: string;
-  title?: string;
+  onPrimaryClick?: () => void;
 }
 
-export const HeaderActions: React.FC<HeaderActionsProps> = ({ children, className = '', title }) => (
-  <div className={`header-actions ${className}`}>{/* optional title */}
-    {title && <h2 className="header-actions-title">{title}</h2>}
-    {children}
-  </div>
-);
+const HeaderActions: React.FC<HeaderActionsProps> = ({ onPrimaryClick }) => {
+  return (
+    <div className="flex items-center gap-2">
+      <button type="button" onClick={onPrimaryClick} className="px-3 py-2 rounded bg-blue-600 text-white">
+        Acción
+      </button>
+    </div>
+  );
+};
 
 export default HeaderActions;

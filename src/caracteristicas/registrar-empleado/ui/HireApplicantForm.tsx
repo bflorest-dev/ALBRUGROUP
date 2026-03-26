@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Componente HireApplicantForm (moved to features/RRHH)
  */
 
 import { useState } from 'react';
-import type { HireApplicantFormData, Applicant } from '@compartido/tipos';
+import type { HireApplicantFormData, Applicant } from '@shared/types';
 import './HireApplicantForm.css';
 
 interface HireApplicantFormProps {
@@ -30,11 +30,12 @@ export const HireApplicantForm = ({ applicant, onSubmit, onCancel }: HireApplica
     interbankNumber: '',
     baseSalary: '',
     role: applicant?.positionOfInterest || '',
+    puesto: applicant?.positionOfInterest || '',
     startDate: '',
     modality: applicant?.modality || '',
     scheduleType: '',
     personalEmail: '',
-    applicantId: applicant?.id || '',
+    applicantId: applicant?.id?.toString() || '',
   });
 
 
@@ -53,3 +54,4 @@ export const HireApplicantForm = ({ applicant, onSubmit, onCancel }: HireApplica
     </form>
   );
 };
+

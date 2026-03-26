@@ -1,6 +1,6 @@
-import React from 'react';
-import { Modal } from '@compartido/ui/base';
-import type { CommunityDashboardState } from '@compartido/tipos/community';
+﻿import React from 'react';
+import { Modal } from '@shared/ui/base';
+import type { CommunityDashboardState } from '@shared/types/community';
 
 /**
  * ModalsSection Component
@@ -40,7 +40,7 @@ const ModalsSectionComponent: React.FC<ModalsSectionProps> = ({ state }) => {
               className="form-input"
             />
 
-            <label>Δ LEADS</label>
+            <label>Î” LEADS</label>
             <input 
               type="number" 
               value={state.editMetricsData.deltaLeads}
@@ -66,10 +66,10 @@ const ModalsSectionComponent: React.FC<ModalsSectionProps> = ({ state }) => {
         </div>
       </Modal>
 
-      {/* MODAL 2: Editar Metricas de Campaña */}
+      {/* MODAL 2: Editar Metricas de CampaÃ±a */}
       <Modal
         isOpen={state.isEditingCampaignMetrics}
-        title={`Editar ${state.selectedCampaignForEdit?.campaignName || 'Campaña'}`}
+        title={`Editar ${state.selectedCampaignForEdit?.campaignName || 'CampaÃ±a'}`}
         onClose={() => state.setIsEditingCampaignMetrics(false)}
         className="large"
       >
@@ -172,23 +172,23 @@ const ModalsSectionComponent: React.FC<ModalsSectionProps> = ({ state }) => {
         </div>
       </Modal>
 
-      {/* MODAL 3: Crear Nueva Campaña */}
+      {/* MODAL 3: Crear Nueva CampaÃ±a */}
       <Modal
         isOpen={state.isModalOpen}
-        title="Nueva Campaña"
+        title="Nueva CampaÃ±a"
         onClose={state.handleCloseCreateModal}
         className="medium"
       >
         <div className="campaign-form">
           <div className="form-section">
             <div className="form-group">
-              <label>CAMPAÑA</label>
+              <label>CAMPAÃ‘A</label>
               <input 
                 type="text" 
                 name="campaignName" 
                 value={state.formData.campaignName}
                 onChange={(e) => state.handleFormChange(e.target.name, e.target.value)}
-                placeholder="Nombre de la campaña"
+                placeholder="Nombre de la campaÃ±a"
                 className="form-input"
               />
 
@@ -198,7 +198,7 @@ const ModalsSectionComponent: React.FC<ModalsSectionProps> = ({ state }) => {
                 name="nomEmpresa" 
                 value={state.formData.nomEmpresa}
                 onChange={(e) => state.handleFormChange(e.target.name, e.target.value)}
-                placeholder="Célula empresa"
+                placeholder="CÃ©lula empresa"
                 className="form-input"
               />
             </div>
@@ -237,7 +237,7 @@ const ModalsSectionComponent: React.FC<ModalsSectionProps> = ({ state }) => {
               className="btn-confirm"
               onClick={state.handleCreateCampaign}
             >
-              Crear Campaña
+              Crear CampaÃ±a
             </button>
           </div>
         </div>
@@ -248,3 +248,4 @@ const ModalsSectionComponent: React.FC<ModalsSectionProps> = ({ state }) => {
 
 
 export const ModalsSection = React.memo(ModalsSectionComponent);
+

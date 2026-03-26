@@ -1,5 +1,5 @@
-import React from 'react';
-import type { CommunityDashboardState } from '@compartido/tipos/community';
+﻿import React from 'react';
+import type { CommunityDashboardState } from '@shared/types/community';
 
 /**
  * LeadsManagementSection Component
@@ -23,12 +23,12 @@ const LeadsManagementSectionComponent: React.FC<LeadsManagementSectionProps> = (
   return (
     <div className="community-right-panel">
       <div className="card">
-        <h3 className="card-heading">GESTIÓN DE LEADS</h3>
+        <h3 className="card-heading">GESTIÃ“N DE LEADS</h3>
         <div className="table-wrapper">
           <table className="table-custom">
             <thead>
               <tr className="table-header-row">
-                <th className="table-header-cell">CAMPAÑA</th>
+                <th className="table-header-cell">CAMPAÃ‘A</th>
                 <th className="table-header-cell center">LEADS</th>
                 <th className="table-header-cell center">CONV.</th>
               </tr>
@@ -70,3 +70,4 @@ const LeadsManagementSectionComponent: React.FC<LeadsManagementSectionProps> = (
 
 
 export const LeadsManagementSection = React.memo(LeadsManagementSectionComponent);
+

@@ -1,20 +1,20 @@
-/**
+﻿/**
  * Servicio de Empleados
- * Lógica de negocio para empleados
- * Transforma respuestas de la API y maneja lógica específica del dominio
+ * LÃ³gica de negocio para empleados
+ * Transforma respuestas de la API y maneja lÃ³gica especÃ­fica del dominio
  */
 
-import { BaseService } from '@compartido/api/servicioBase';
-import { EmployeeRepository } from '@compartido/api';
-import { adaptEmpleadoResponseToEmployee } from '@compartido/tipos';
-import type { Employee, NewEmployeeFormData, EmployeeDetailFormData } from '@compartido/tipos';
-import { validateDataOrThrow, NewEmployeeFormDataSchema } from '@compartido/validacion';
+import { BaseService } from '@shared/api/servicioBase';
+import { EmployeeRepository } from '@shared/api';
+import { adaptEmpleadoResponseToEmployee } from '@shared/types';
+import type { Employee, EmployeeDetailFormData } from '@shared/types';
+import type { RegistrarEmpleadoRequest } from '@entidades/empleado/modelo/tipos';
 
 type UpdateDataType = 'personal' | 'contact' | 'financial' | 'corporate';
 
 export class EmployeeService extends BaseService<Employee> {
   /**
-   * Obtener todos los empleados con filtros y paginación
+   * Obtener todos los empleados con filtros y paginaciÃ³n
    */
   static async getAllEmployees(params?: {
     q?: string;
@@ -35,7 +35,7 @@ export class EmployeeService extends BaseService<Employee> {
   }
 
   /**
-   * Obtener empleado por número de documento
+   * Obtener empleado por nÃºmero de documento
    */
   static async getEmployeeByDocument(documento: string): Promise<Employee> {
     return this.executeOperation(
@@ -46,7 +46,7 @@ export class EmployeeService extends BaseService<Employee> {
   }
 
   /**
-   * Búsqueda universal de empleados
+   * BÃºsqueda universal de empleados
    */
   static async searchEmployeesUniversal(dato: string, params?: {
     page?: number;
@@ -55,20 +55,19 @@ export class EmployeeService extends BaseService<Employee> {
   }): Promise<{ items: Employee[]; total: number; totalPages: number }> {
     return this.executePagedOperation(
       () => EmployeeRepository.searchUniversal(dato, params),
-      'Error en la búsqueda de empleados',
+      'Error en la bÃºsqueda de empleados',
       adaptEmpleadoResponseToEmployee
     ).then(result => ({ items: result.items, total: result.total, totalPages: result.totalPages }));
   }
 
   /**
    * Crear nuevo empleado
+   * 
+   * @param employeeData - DTO mapeado (RegistrarEmpleadoRequest), no FormData
    */
-  static async createEmployee(employeeData: NewEmployeeFormData): Promise<Employee> {
-    // Validar y normalizar datos con Zod
-    const validatedData = validateDataOrThrow(NewEmployeeFormDataSchema, employeeData);
-
+  static async createEmployee(employeeData: RegistrarEmpleadoRequest): Promise<Employee> {
     return this.executeOperation(
-      () => EmployeeRepository.create(validatedData),
+      () => EmployeeRepository.create(employeeData),
       'No se pudo crear el empleado',
       adaptEmpleadoResponseToEmployee
     );
@@ -77,7 +76,7 @@ export class EmployeeService extends BaseService<Employee> {
   /**
    * Actualizar datos del empleado por tipo
    * Consolida updateEmployeePersonalData, updateEmployeeContactLocation,
-   * updateEmployeeFinancialData, updateEmployeeCorporateData en un solo método
+   * updateEmployeeFinancialData, updateEmployeeCorporateData en un solo mÃ©todo
    */
   static async updateEmployee(
     id: number,
@@ -99,7 +98,7 @@ export class EmployeeService extends BaseService<Employee> {
   }
 
   /**
-   * Métodos legacycompat: deprecated, usar updateEmployee() con tipo
+   * MÃ©todos legacycompat: deprecated, usar updateEmployee() con tipo
    * Se mantienen por compatibilidad temporal
    * @deprecated use updateEmployee(id, data, 'personal')
    */
@@ -128,3 +127,4 @@ export class EmployeeService extends BaseService<Employee> {
     return this.updateEmployee(id, data, 'corporate');
   }
 }
+

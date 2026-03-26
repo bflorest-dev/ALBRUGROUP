@@ -1,10 +1,10 @@
-/**
+﻿/**
  * Hook: useLeadsData
  * Gestiona la carga de datos de leads con manejo de loading y errores
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { LeadDTO } from '@compartido/tipos/lead.types';
+import type { LeadDTO } from '@shared/types/lead.types';
 
 export type Lead = LeadDTO;  // Alias para compatibilidad
 
@@ -20,29 +20,29 @@ export interface UseLeadsDataActions {
 }
 
 /**
- * Hook para cargar y gestionar datos de leads con manejo de estado asincrónico
+ * Hook para cargar y gestionar datos de leads con manejo de estado asincrÃ³nico
  * 
  * Funcionalidad:
  * - Carga inicial de leads desde una lista inicial (simulando API)
- * - Manejo automático de estados: loading, error, success
+ * - Manejo automÃ¡tico de estados: loading, error, success
  * - Refetch manual para actualizar datos
  * - Limpieza de errores
  * 
  * Comportamiento:
  * - Se ejecuta una vez al montar el componente
  * - Simula un delay de 1 segundo antes de cargar
- * - Los leads iniciales se pueden proporcionar como parámetro
+ * - Los leads iniciales se pueden proporcionar como parÃ¡metro
  * - El refetch dispara nuevamente el loading
  * 
- * TODO: Reemplazar simulación con llamada a API real (LeadService.getAll())
+ * TODO: Reemplazar simulaciÃ³n con llamada a API real (LeadService.getAll())
  * 
  * @param initialLeads - Array inicial de leads (default: [])
  * @returns UseLeadsDataState & UseLeadsDataActions:
  *   - leads: Array de leads cargado
  *   - isLoading: true mientras se cargan los datos
- *   - error: Mensaje de error si algo falló, null si todo ok
- *   - refetch: Función async para recargar los datos
- *   - clearError: Función para limpiar el estado de error
+ *   - error: Mensaje de error si algo fallÃ³, null si todo ok
+ *   - refetch: FunciÃ³n async para recargar los datos
+ *   - clearError: FunciÃ³n para limpiar el estado de error
  * 
  * @example
  * const { leads, isLoading, error, refetch } = useLeadsData(mockLeads);
@@ -74,10 +74,10 @@ export const useLeadsData = (initialLeads: Lead[] = []): UseLeadsDataState & Use
       // const response = await LeadService.getLeads();
       // setLeads(response.data);
       
-      // Simulación: esperar 1 segundo
+      // SimulaciÃ³n: esperar 1 segundo
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // En producción, esto vendría del servidor
+      // En producciÃ³n, esto vendrÃ­a del servidor
       setLeads(initialLeads);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error al cargar leads';
@@ -117,3 +117,4 @@ export const useLeadsData = (initialLeads: Lead[] = []): UseLeadsDataState & Use
     clearError,
   };
 };
+

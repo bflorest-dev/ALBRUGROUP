@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BiPlus, BiTrash, BiPencil } from 'react-icons/bi';
-import { Modal } from '@compartido/ui/base';
+import { Modal } from '@shared/ui/base';
 import type { Promocion } from '../types';
 import type { AdminDashboardState } from '../hooks/useAdminDashboard';
 import './PromotionsSection.css';
@@ -65,17 +65,17 @@ const PromotionsSectionComponent: React.FC<PromotionsSectionProps> = ({ state })
 
   const handleOpenEdit = (promocion: Promocion) => {
     setIsEditing(true);
-    setEditingId(promocion.id);
+    setEditingId(promocion.id ?? null);
     setFormData({
-      nombre: promocion.nombre,
-      tipo: promocion.tipo,
-      zona: promocion.zona,
-      tipoVenta: promocion.tipoVenta,
-      descuento: promocion.descuento,
-      porcentajeDescuento: promocion.porcentajeDescuento?.toString() || '',
-      cantidadMeses: promocion.cantidadMeses.toString(),
-      fechaInicio: promocion.fechaInicio,
-      fechaFin: promocion.fechaFin,
+      nombre: promocion.nombre ?? '',
+      tipo: promocion.tipo ?? 'INTERNO',
+      zona: promocion.zona ?? '',
+      tipoVenta: promocion.tipoVenta ?? 'NATURAL',
+      descuento: promocion.descuento ?? false,
+      porcentajeDescuento: promocion.porcentajeDescuento?.toString() ?? '',
+      cantidadMeses: promocion.cantidadMeses?.toString() ?? '',
+      fechaInicio: promocion.fechaInicio ?? '',
+      fechaFin: promocion.fechaFin ?? '',
     });
     setIsModalOpen(true);
   };
@@ -140,8 +140,10 @@ const PromotionsSectionComponent: React.FC<PromotionsSectionProps> = ({ state })
   };
 
   // Helper function to format date for display
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'fecha desconocida';
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return 'fecha inválida';
     return date.toLocaleDateString('es-PE', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
@@ -160,23 +162,23 @@ const PromotionsSectionComponent: React.FC<PromotionsSectionProps> = ({ state })
       </div>
 
       {/* Promotions Table/Grid */}
-      {state.promotions.length > 0 ? (
+      {(state.promotions?.length ?? 0) > 0 ? (
         <div className="promotions-container">
           <div className="promotions-list">
-            {state.promotions.map((promo) => (
-              <div key={promo.id} className="promotion-row">
+            {(state.promotions ?? []).map((promo) => (
+              <div key={promo.id ?? 'promo-default'} className="promotion-row">
                 <div className="promo-main-info">
-                  <h3 className="promo-name">{promo.nombre}</h3>
+                  <h3 className="promo-name">{promo.nombre ?? 'Sin nombre'}</h3>
                   <div className="promo-badges">
-                    <span className={`badge tipo ${promo.tipo.toLowerCase()}`}>
-                      {promo.tipo}
+                    <span className={`badge tipo ${(promo.tipo ?? 'INTERNO').toLowerCase()}`}>
+                      {promo.tipo ?? 'INTERNO'}
                     </span>
-                    <span className={`badge tipoVenta ${promo.tipoVenta.toLowerCase()}`}>
-                      {promo.tipoVenta}
+                    <span className={`badge tipoVenta ${(promo.tipoVenta ?? 'NATURAL').toLowerCase()}`}>
+                      {promo.tipoVenta ?? 'NATURAL'}
                     </span>
                     {promo.descuento && (
                       <span className="badge descuento">
-                        -{promo.porcentajeDescuento}%
+                        -{promo.porcentajeDescuento ?? 0}%
                       </span>
                     )}
                   </div>
@@ -209,7 +211,7 @@ const PromotionsSectionComponent: React.FC<PromotionsSectionProps> = ({ state })
                   </button>
                   <button
                     className="btn-action delete"
-                    onClick={() => handleDelete(promo.id)}
+                    onClick={() => promo.id && handleDelete(promo.id)}
                     title="Eliminar"
                   >
                     <BiTrash size={16} />

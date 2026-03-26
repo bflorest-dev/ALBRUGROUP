@@ -1,13 +1,11 @@
-/**
- * Types para la característica ADMIN
- * Estructura transitoria - será migrada a @entidades
- */
-
 export interface Adicional {
   id?: string;
+  nombre?: string;
   name?: string;
   description?: string;
+  precioUnitario?: number;
   price?: number;
+  activo?: boolean;
   [key: string]: any;
 }
 
@@ -41,9 +39,16 @@ export interface TelefonConfig {
 
 export interface Plan {
   id?: string;
+  nombre?: string;
   name?: string;
   description?: string;
+  precio?: number;
   price?: number;
+  vigenciaDesde?: string;
+  vigenciaHasta?: string;
+  internetConfig?: InternetConfig;
+  televiConfig?: TeleviConfig;
+  telefonConfig?: TelefonConfig;
   internet?: InternetConfig;
   television?: TeleviConfig;
   telephone?: TelefonConfig;
@@ -53,7 +58,16 @@ export interface Plan {
 
 export interface Promocion {
   id?: string;
+  nombre?: string;
   title?: string;
+  tipo?: 'INTERNO' | 'EXTERNO';
+  zona?: string;
+  tipoVenta?: 'NATURAL' | 'JURIDICA';
+  descuento?: boolean;
+  porcentajeDescuento?: number;
+  cantidadMeses?: number;
+  fechaInicio?: string;
+  fechaFin?: string;
   description?: string;
   discount?: number;
   startDate?: string;

@@ -1,12 +1,12 @@
-/**
+﻿/**
  * Componente EmployeeTable
  */
 
 import { useState } from 'react';
-import type { Employee } from '@compartido/tipos';
+import type { Employee } from '@shared/types';
 import { BiShow, BiPencil, BiFilter, BiSortAlt2 } from 'react-icons/bi';
 // DEPRECATED: StatusBadge fue eliminado
-// import { StatusBadge } from '@compartido/ui/atomos/etiquetas';
+// import { StatusBadge } from '@shared/ui/atomos/etiquetas';
 type StatusBadge = any; // Placeholder
 import './EmployeeTable.css';
 
@@ -34,12 +34,12 @@ export const EmployeeTable = ({ employees, onAction, onStatusChange, isInactiveT
   });
 
   const handleViewAction = (employee: Employee) => {
-    setSelectedEmployeeId(employee.id);
+    setSelectedEmployeeId(String(employee.id));
     onAction?.(employee, 'view');
   };
 
   const handleEditAction = (employee: Employee) => {
-    setSelectedEmployeeId(employee.id);
+    setSelectedEmployeeId(String(employee.id));
     onAction?.(employee, 'edit');
   };
 
@@ -69,7 +69,7 @@ export const EmployeeTable = ({ employees, onAction, onStatusChange, isInactiveT
   };
 
   let filteredEmployees = employees.filter(emp => {
-    if (filters.name && !emp.fullName.toLowerCase().includes(filters.name.toLowerCase())) return false;
+    if (filters.name && !(emp.fullName ?? '').toLowerCase().includes(filters.name.toLowerCase())) return false;
     if (filters.docType && emp.documentType !== filters.docType) return false;
     if (filters.docNum && !emp.documentNumber?.includes(filters.docNum)) return false;
     if (filters.role && emp.position !== filters.role) return false;
@@ -81,8 +81,8 @@ export const EmployeeTable = ({ employees, onAction, onStatusChange, isInactiveT
 
   if (sortOrder) {
     filteredEmployees = [...filteredEmployees].sort((a, b) => {
-      const nameA = a.fullName.toLowerCase();
-      const nameB = b.fullName.toLowerCase();
+      const nameA = (a.fullName ?? '').toLowerCase();
+      const nameB = (b.fullName ?? '').toLowerCase();
       if (sortOrder === 'asc') {
         return nameA.localeCompare(nameB);
       } else {
@@ -176,3 +176,4 @@ export const EmployeeTable = ({ employees, onAction, onStatusChange, isInactiveT
     </div>
   );
 };
+

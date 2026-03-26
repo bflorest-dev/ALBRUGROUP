@@ -5,7 +5,7 @@
 
 import { useState, useCallback } from 'react';
 import type { NewLeadFormData } from './useNewLeadForm';
-import { getSafeErrorMessage, SafeErrorMessages } from '@compartido/lib';
+import { getSafeErrorMessage, SafeErrorMessages } from '@shared/lib';
 
 export interface UseLeadSubmitState {
   isSubmitting: boolean;

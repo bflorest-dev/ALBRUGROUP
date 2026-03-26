@@ -1,5 +1,2 @@
-// Feature: Community
-// Community management and communication
-
-export * from './hooks';
-export * from './ui';
+// Community feature
+export { default as PaginaCommunity } from './pages/PaginaCommunity';

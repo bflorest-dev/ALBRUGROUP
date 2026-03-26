@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import type { CommunityDashboardState } from '@compartido/tipos/community';
+﻿import React, { useMemo } from 'react';
+import type { CommunityDashboardState } from '@shared/types/community';
 
 /**
  * CampaignsSection Component
@@ -32,28 +32,28 @@ const CampaignsSectionComponent: React.FC<CampaignsSectionProps> = ({ state }) =
     return map;
   }, [state.campaignMetrics]);
 
-  // DEPRECATED: DataTable fue eliminado en migración FSD (Bloque 5)
-  // La lógica de tabla de campañas necesita ser reescrita usando una librería moderna
+  // DEPRECATED: DataTable fue eliminado en migraciÃ³n FSD (Bloque 5)
+  // La lÃ³gica de tabla de campaÃ±as necesita ser reescrita usando una librerÃ­a moderna
   // (tanstack-table, recharts, o componente custom)
   /*
   const campaignTableColumns: DataTableColumn<Campaign>[] = [
     { 
-      header: 'CAMPAÑA', 
+      header: 'CAMPAÃ‘A', 
       accessor: (c) => <span className="table-cell emphasis">{c.campaignName}</span> 
     },
-    // ... más columnas (comentadas)
+    // ... mÃ¡s columnas (comentadas)
   ];
   */
 
   return (
     <div className="campaigns-container">
-      <h2 className="campaigns-title">CAMPAÑAS META ADS</h2>
+      <h2 className="campaigns-title">CAMPAÃ‘AS META ADS</h2>
       <div style={{ padding: '20px', background: '#f5f5f5', borderRadius: '4px', marginTop: '10px' }}>
         <p style={{ color: '#666', margin: 0 }}>
-          ⚠️ Tabla de Campañas en mantenimiento - DataTable fue eliminado en migración FSD (Bloque 5)
+          âš ï¸ Tabla de CampaÃ±as en mantenimiento - DataTable fue eliminado en migraciÃ³n FSD (Bloque 5)
         </p>
         <p style={{ color: '#999', fontSize: '12px', margin: '5px 0 0 0' }}>
-          {state.campaigns?.length ?? 0} campañas disponibles
+          {state.campaigns?.length ?? 0} campaÃ±as disponibles
         </p>
       </div>
       {/* DEPRECATED DataTable component
@@ -74,3 +74,4 @@ const CampaignsSectionComponent: React.FC<CampaignsSectionProps> = ({ state }) =
  * when parent components update but campaigns/metrics aren't affected
  */
 export const CampaignsSection = React.memo(CampaignsSectionComponent);
+

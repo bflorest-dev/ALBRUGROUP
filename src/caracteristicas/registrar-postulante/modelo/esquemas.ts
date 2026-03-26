@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { POSITIONS_WITH_COMPANY, AVAILABLE_POSITIONS_GROUPED } from '@compartido/lib';
+import { POSITIONS_WITH_COMPANY, AVAILABLE_POSITIONS_GROUPED } from '@shared/lib';
 
 /**
  * Extrae todas las posiciones disponibles del objeto agrupado

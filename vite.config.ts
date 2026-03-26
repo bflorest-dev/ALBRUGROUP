@@ -7,11 +7,13 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: [
-      { find: '@paginas', replacement: path.resolve(__dirname, 'src/paginas') },
+      { find: '@pages', replacement: path.resolve(__dirname, 'src/pages') },
       { find: '@widgets', replacement: path.resolve(__dirname, 'src/widgets') },
       { find: '@caracteristicas', replacement: path.resolve(__dirname, 'src/caracteristicas') },
+      { find: '@features', replacement: path.resolve(__dirname, 'src/features') },
       { find: '@entidades', replacement: path.resolve(__dirname, 'src/entidades') },
-      { find: '@compartido', replacement: path.resolve(__dirname, 'src/compartido') },
+      { find: '@shared', replacement: path.resolve(__dirname, 'src/shared') },
+      { find: '@shared/validacion', replacement: path.resolve(__dirname, 'src/shared/validation') },
       { find: '@app', replacement: path.resolve(__dirname, 'src/app') },
     ],
   },
@@ -26,6 +28,18 @@ export default defineConfig({
       },
       // RRHH service: GET /api/rrhh/postulantes → http://localhost:8080/rrhh/postulantes
       '/api/rrhh': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+      '/api/leads': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+      '/api/presence': {
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,

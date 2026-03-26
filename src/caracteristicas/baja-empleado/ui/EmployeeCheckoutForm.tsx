@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Componente EmployeeCheckoutForm (moved to features/RRHH)
  */
 
 import { useState } from 'react';
-import type { Employee } from '@compartido/tipos';
+import type { Employee } from '@shared/types';
 import './EmployeeCheckoutForm.css';
 
 interface EmployeeCheckoutFormProps {
@@ -61,3 +61,4 @@ export const EmployeeCheckoutForm = ({ employee, onCancel, onSubmit }: EmployeeC
     </div>
   );
 };
+

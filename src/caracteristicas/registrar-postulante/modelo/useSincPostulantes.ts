@@ -1,18 +1,18 @@
-/**
+﻿/**
  * useApplicantsSync
  *
- * ANTES: leía de ApplicantsContext → localStorage
- * AHORA: llama al backend real vía ApplicantRepository
+ * ANTES: leÃ­a de ApplicantsContext â†’ localStorage
+ * AHORA: llama al backend real vÃ­a ApplicantRepository
  *
  * Mantiene la misma interfaz que antes ({ applicants, syncVersion })
  * para que ApplicantsDashboard no necesite cambios adicionales.
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { ApplicantRepository } from '@compartido/api';
-import { adaptPostulanteResponseToApplicant } from '@compartido/tipos';
-import type { Applicant } from '@compartido/tipos';
-import type { ApiError } from '@compartido/api/clienteHttp';
+import { ApplicantRepository } from '@shared/api';
+import { adaptPostulanteResponseToApplicant } from '@shared/types';
+import type { Applicant } from '@shared/types';
+import type { ApiError } from '@shared/api/clienteHttp';
 
 interface UseApplicantsSyncReturn {
   applicants: Applicant[];
@@ -45,7 +45,7 @@ export const useApplicantsSync = (
         // Usa el endpoint dedicado GET /postulantes/capacitacion
         raw = await ApplicantRepository.getCapacitacion();
       } else {
-        // Usa el endpoint genérico GET /postulantes?etapa=...
+        // Usa el endpoint genÃ©rico GET /postulantes?etapa=...
         raw = await ApplicantRepository.getByEtapa(etapa);
       }
       setApplicants(raw.map(adaptPostulanteResponseToApplicant));
@@ -65,3 +65,4 @@ export const useApplicantsSync = (
 
   return { applicants, loading, error, syncVersion, recargar: cargar };
 };
+

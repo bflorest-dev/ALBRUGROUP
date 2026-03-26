@@ -1,11 +1,11 @@
-/**
- * Componente Sidebar - Barra lateral de navegación
+﻿/**
+ * Componente Sidebar - Barra lateral de navegaciÃ³n
  */
 
 import type { ComponentType } from 'react';
-import type { UserProfile } from '@compartido/tipos';
+import type { UserProfile } from '@shared/types';
 import { UserProfileComponent } from './UserProfile';
-import { useSidebar } from '@compartido/ganchos';
+import { useSidebar } from '@shared/hooks';
 import './Sidebar.css';
 
 interface NavItem {
@@ -60,3 +60,4 @@ export const Sidebar = ({ navItems, onNavClick, user }: SidebarProps) => {
     </aside>
   );
 };
+

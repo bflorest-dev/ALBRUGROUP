@@ -1,22 +1,18 @@
-/**
- * Componente UserProfile - Widget Header
- */
-
 import React from 'react';
+import type { UserProfile } from '@shared/types';
 
 interface UserProfileProps {
-  user?: any;
+  user: UserProfile;
 }
 
-export const UserProfile: React.FC<UserProfileProps> = ({ user }) => {
+export const UserProfileComponent: React.FC<UserProfileProps> = ({ user }) => {
   return (
-    <div className="user-profile">
-      <span>{user?.name || 'User'}</span>
+    <div className="user-profile-component">
+      <div className="avatar">{user.avatar || user.name?.[0] || '?'}</div>
+      <div>
+        <div className="name">{user.name}</div>
+        <div className="role">{user.role}</div>
+      </div>
     </div>
   );
 };
-
-// Alias para compatibilidad
-export const UserProfileComponent = UserProfile;
-
-export default UserProfile;

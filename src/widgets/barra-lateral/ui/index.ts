@@ -1,2 +1,3 @@
-export { Sidebar } from './Sidebar';
-export type { UserProfile } from '@compartido/tipos';
+﻿export { Sidebar } from './Sidebar';
+export type { UserProfile } from '@shared/types';
+

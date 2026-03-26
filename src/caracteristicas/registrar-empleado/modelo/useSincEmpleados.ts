@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { EmployeeService } from '../api';
-import type { Employee } from '@compartido/tipos';
-import { EVENT_NAMES } from '@compartido/tipos/eventos';
+﻿import { useState, useEffect, useRef, useCallback } from 'react';
+import { EmployeeService } from '@entidades/empleado/model';
+import type { Employee } from '@shared/types';
+import { EVENT_NAMES } from '@shared/types/eventos';
 
 /**
- * Acceso a la ref global de sincronización para empleados
+ * Acceso a la ref global de sincronizaciÃ³n para empleados
  */
 declare global {
   var __employeesGlobalSyncVersion: number;
@@ -34,7 +34,7 @@ export const useEmployeesSync = () => {
     }
   }, []);
 
-  // Recargar datos cuando hay un evento de actualización
+  // Recargar datos cuando hay un evento de actualizaciÃ³n
   useEffect(() => {
     const handleEmployeesUpdate = () => {
       globalThis.__employeesGlobalSyncVersion = (globalThis.__employeesGlobalSyncVersion ?? 0) + 1;
@@ -54,7 +54,7 @@ export const useEmployeesSync = () => {
     loadEmployees();
   }, [loadEmployees]);
 
-  // Verificar si GlobalSync cambió desde la última vez que nos montamos
+  // Verificar si GlobalSync cambiÃ³ desde la Ãºltima vez que nos montamos
   useEffect(() => {
     const currentGlobalVersion = globalThis.__employeesGlobalSyncVersion ?? 0;
     if (currentGlobalVersion > lastGlobalVersionRef.current) {
@@ -65,3 +65,4 @@ export const useEmployeesSync = () => {
 
   return { employees, syncVersion, loading, refetch: loadEmployees };
 };
+

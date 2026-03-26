@@ -1,9 +1,8 @@
-import React from 'react';
+﻿import React from 'react';
 import { BiPlus } from 'react-icons/bi';
-import { HeaderActions } from '@widgets/encabezado/ui/HeaderActions';
 import { LeadsManagementSection } from './LeadsManagementSection';
 import { CampaignsSection } from './CampaignsSection';
-import type { CommunityDashboardState } from '@compartido/tipos/community';
+import type { CommunityDashboardState } from '@shared/types/community';
 
 /**
  * DashboardSection Component
@@ -32,18 +31,18 @@ const DashboardSectionComponent: React.FC<DashboardSectionProps> = ({ state }) =
       {/* Header */}
       <div className="community-dashboard-header">
         <div className="community-header-title">
-          <h1>Gestión de Community Manager</h1>
+          <h1>GestiÃ³n de Community Manager</h1>
           <p>Meta Ads + Seguimiento de Leads</p>
         </div>
-        <HeaderActions>
+        <div className="header-actions">
           <button 
             className="btn-new-campaign" 
             onClick={state.handleToggleModalOpen}
           >
             <BiPlus size={18} />
-            Nueva Campaña
+            Nueva CampaÃ±a
           </button>
-        </HeaderActions>
+        </div>
       </div>
 
       {/* Two-Column Layout: Metrics (Left) + Leads (Right) */}
@@ -61,3 +60,4 @@ const DashboardSectionComponent: React.FC<DashboardSectionProps> = ({ state }) =
 
 
 export const DashboardSection = React.memo(DashboardSectionComponent);
+

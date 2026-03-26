@@ -1,10 +1,10 @@
-// Entities layer - Re-exports domain models and entities
-// Organized by business domain (Asesor, Candidato, Empleado, etc.)
+// Entidades - Models and Services
 
-export * from './asesor';
-export * from './candidato';
-export * from './empleado';
-export * from './lead';
-export * from './postulante';
-export * from './tipificacion';
-export * from './usuario';
+export type { Cliente } from './cliente';
+export { ClienteService } from './cliente';
+export type { Tarea } from './tarea';
+export { TareaService } from './tarea';
+export type { Trato } from './trato';
+export { TratoService } from './trato';
+export type { Usuario } from './usuario';
+export { UsuarioService } from './usuario';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BiPlus, BiChevronLeft, BiChevronRight } from 'react-icons/bi';
-import { Modal } from '@compartido/ui/base';
+import { Modal } from '@shared/ui/base';
 import { CampaignCard, type Campaign } from './CampaignCard';
 import './CampaignsKanban.css';
 
@@ -156,7 +156,7 @@ export const CampaignsKanban: React.FC<CampaignsKanbanProps> = ({
           }}
           title={isEditing ? 'Editar Campaña' : 'Nueva Campaña'}
         >
-          {/* Modal content */}
+          <div>Modal content placeholder</div>
         </Modal>
       )}
     </div>

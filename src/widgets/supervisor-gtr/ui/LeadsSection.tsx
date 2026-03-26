@@ -1,14 +1,14 @@
-/**
- * Componentes para la sección de Leads
+﻿/**
+ * Componentes para la secciÃ³n de Leads
  * Separados y reutilizables
  */
 
 import React from 'react';
 import { BiSearch, BiPlus } from 'react-icons/bi';
-import { Boton, Girador } from '@compartido/ui/base';
-import type { LeadDTO } from '@compartido/tipos';
+import { Boton, Girador } from '@shared/ui/base';
+import type { LeadDTO } from '@shared/types';
 
-// Tipo alias para compatibilidad con el código existente
+// Tipo alias para compatibilidad con el cÃ³digo existente
 type Lead = LeadDTO;
 
 interface LeadsHeaderProps {
@@ -19,17 +19,17 @@ interface LeadsHeaderProps {
 /**
  * LeadsHeader Component
  * 
- * Componente presentacional simple que muestra el encabezado de la sección
- * Incluye título con contador de leads y botón para crear nuevo lead
+ * Componente presentacional simple que muestra el encabezado de la secciÃ³n
+ * Incluye tÃ­tulo con contador de leads y botÃ³n para crear nuevo lead
  * 
  * Responsabilidades:
- * - Mostrar contador dinámico de leads (filtra los mostrados)
- * - Disparar evento al hacer clic en botón "Registrar Lead"
+ * - Mostrar contador dinÃ¡mico de leads (filtra los mostrados)
+ * - Disparar evento al hacer clic en botÃ³n "Registrar Lead"
  * 
  * @component
- * @param {number} count - Cantidad de leads a mostrar en el título
- * @param {() => void} onRegisterClick - Callback al hacer clic en botón registrar
- * @returns {JSX.Element} Header con título y botón
+ * @param {number} count - Cantidad de leads a mostrar en el tÃ­tulo
+ * @param {() => void} onRegisterClick - Callback al hacer clic en botÃ³n registrar
+ * @returns {JSX.Element} Header con tÃ­tulo y botÃ³n
  * 
  * @example
  * <LeadsHeader count={15} onRegisterClick={() => setModalOpen(true)} />
@@ -65,30 +65,30 @@ interface LeadsFiltersProps {
 /**
  * LeadsFilters Component
  * 
- * Componente para búsqueda y filtrado de leads
- * Incluye input de búsqueda y 3 dropdowns de filtros
+ * Componente para bÃºsqueda y filtrado de leads
+ * Incluye input de bÃºsqueda y 3 dropdowns de filtros
  * 
  * Funcionalidad:
- * - Búsqueda de texto: filtra en tiempo real mientras escribes
- * - Filtros independientes: Canal, Asesor, Campaña
+ * - BÃºsqueda de texto: filtra en tiempo real mientras escribes
+ * - Filtros independientes: Canal, Asesor, CampaÃ±a
  * - onChange callbacks para cada filtro
  * 
  * Nota: Los valores reales se calculan en useLeadsFiltering del componente padre
  * Este componente solo renderiza y dispara eventos
  * 
  * @component
- * @param {string} searchTerm - Valor actual de búsqueda
- * @param {(term: string) => void} onSearchChange - Callback al cambiar búsqueda
+ * @param {string} searchTerm - Valor actual de bÃºsqueda
+ * @param {(term: string) => void} onSearchChange - Callback al cambiar bÃºsqueda
  * @param {string} selectedChannel - Canal seleccionado
  * @param {(channel: string) => void} onChannelChange - Callback al cambiar canal
  * @param {string} selectedAdvisor - Asesor seleccionado
  * @param {(advisor: string) => void} onAdvisorChange - Callback al cambiar asesor
- * @param {string} selectedCampaign - Campaña seleccionada
- * @param {(campaign: string) => void} onCampaignChange - Callback al cambiar campaña
+ * @param {string} selectedCampaign - CampaÃ±a seleccionada
+ * @param {(campaign: string) => void} onCampaignChange - Callback al cambiar campaÃ±a
  * @param {string[]} channels - Lista de canales disponibles
  * @param {string[]} advisors - Lista de asesores disponibles
- * @param {string[]} campaigns - Lista de campañas disponibles
- * @returns {JSX.Element} Controles de búsqueda y filtros
+ * @param {string[]} campaigns - Lista de campaÃ±as disponibles
+ * @returns {JSX.Element} Controles de bÃºsqueda y filtros
  * 
  * @example
  * <LeadsFilters
@@ -133,7 +133,7 @@ export const LeadsFilters: React.FC<LeadsFiltersProps> = ({
       </select>
 
       <select value={selectedCampaign} onChange={(e) => onCampaignChange(e.target.value)} className="filter-select">
-        <option value="">Todas las campañas</option>
+        <option value="">Todas las campaÃ±as</option>
         {campaigns.map(camp => <option key={camp} value={camp}>{camp}</option>)}
       </select>
     </div>
@@ -147,3 +147,4 @@ export const LeadsFilters: React.FC<LeadsFiltersProps> = ({
 export const LeadsSection = LeadsFilters;
 
 export default LeadsSection;
+

@@ -1,5 +1,2 @@
-// Entity: Empleado
-// Employee domain model and related UI
-
-export * from './modelo';
-export * from './ui';
+export { EmployeeService } from './model';
+export { EmployeeRepository } from './api';

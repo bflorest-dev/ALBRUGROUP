@@ -1,23 +1,23 @@
-/**
- * Servicio de Postulantes — Lógica de negocio para postulantes
+﻿/**
+ * Servicio de Postulantes â€” LÃ³gica de negocio para postulantes
  *
  * Transforma datos del formulario UI al formato que espera el backend
  * y delega las llamadas HTTP al ApplicantRepository.
  *
- * CAMBIOS RESPECTO A LA VERSIÓN ANTERIOR:
- * - getAll() usaba parámetros incorrectos (estado, puesto).
+ * CAMBIOS RESPECTO A LA VERSIÃ“N ANTERIOR:
+ * - getAll() usaba parÃ¡metros incorrectos (estado, puesto).
  *   El backend exige `etapa` como campo REQUERIDO.
- * - PostulanteRequest tenía `estadoPostulacion` que no existe en el backend.
+ * - PostulanteRequest tenÃ­a `estadoPostulacion` que no existe en el backend.
  * - El campo `compania` es REQUERIDO por el backend (no opcional).
  */
 
-import { BaseService } from '@compartido/api/servicioBase';
-import { ApplicantRepository } from '@compartido/api';
-import type { Applicant, NewApplicantFormData, RegistrarPostulanteRequest } from '@compartido/tipos';
-import { adaptPostulanteResponseToApplicant } from '@compartido/tipos';
-import { validateDataOrThrow, NewApplicantFormDataSchema } from '@compartido/validacion';
+import { BaseService } from '@shared/api/servicioBase';
+import { ApplicantRepository } from '@shared/api';
+import type { Applicant, NewApplicantFormData, RegistrarPostulanteRequest } from '@shared/types';
+import { adaptPostulanteResponseToApplicant } from '@shared/types';
+import { validateDataOrThrow, NewApplicantFormDataSchema } from '@shared/validation';
 
-// Etapas válidas del proceso (del Swagger)
+// Etapas vÃ¡lidas del proceso (del Swagger)
 export type EtapaProceso = 'RECLUTAMIENTO' | 'CAPACITACION' | 'GESTION' | 'CONTRATADO';
 
 export interface FiltrosPostulante {
@@ -54,15 +54,15 @@ export class ApplicantService extends BaseService<Applicant> {
       const raw = await ApplicantRepository.getCapacitacion(filtros);
       return raw.map(adaptPostulanteResponseToApplicant);
     } catch (error) {
-      throw this.formatError(error, 'No se pudieron cargar los postulantes de capacitación');
+      throw this.formatError(error, 'No se pudieron cargar los postulantes de capacitaciÃ³n');
     }
   }
 
   /**
-   * Listar postulantes por etapa genérica
+   * Listar postulantes por etapa genÃ©rica
    * GET /postulantes?etapa=...
    *
-   * NOTA: `etapa` es REQUERIDO por el backend. Sin él, la llamada falla.
+   * NOTA: `etapa` es REQUERIDO por el backend. Sin Ã©l, la llamada falla.
    */
   static async getByEtapa(etapa: EtapaProceso, filtros?: FiltrosPostulante): Promise<Applicant[]> {
     try {
@@ -77,7 +77,7 @@ export class ApplicantService extends BaseService<Applicant> {
    * Crear nuevo postulante
    * POST /postulantes
    *
-   * Transforma NewApplicantFormData (estructura UI) →
+   * Transforma NewApplicantFormData (estructura UI) â†’
    * RegistrarPostulanteRequest (estructura backend).
    */
   static async createApplicant(formData: NewApplicantFormData): Promise<Applicant> {
@@ -95,15 +95,15 @@ export class ApplicantService extends BaseService<Applicant> {
     );
   }
 
-  // ─── Método privado de transformación ──────────────────────────────────────
+  // â”€â”€â”€ MÃ©todo privado de transformaciÃ³n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   /**
    * Convierte el formulario de la UI al request del backend.
    *
-   * Reglas de transformación:
-   * - puestoTrabajo: espacios → guiones bajos, mayúsculas  ("Asesor Ventas" → "ASESOR_VENTAS")
-   * - origen: mayúsculas                                    ("computrabajo" → "COMPUTRABAJO")
-   * - compania: mayúsculas                                  ("albru" → "ALBRU")
+   * Reglas de transformaciÃ³n:
+   * - puestoTrabajo: espacios â†’ guiones bajos, mayÃºsculas  ("Asesor Ventas" â†’ "ASESOR_VENTAS")
+   * - origen: mayÃºsculas                                    ("computrabajo" â†’ "COMPUTRABAJO")
+   * - compania: mayÃºsculas                                  ("albru" â†’ "ALBRU")
    *
    * Campos que NO existen en el backend y se eliminan:
    * - estadoPostulacion (el backend lo asigna internamente)
@@ -120,10 +120,12 @@ export class ApplicantService extends BaseService<Applicant> {
       apellidos: data.apellidos.trim(),
       tipoDocumento: data.documentType as 'DNI' | 'CE',
       numeroDocumento: data.documentNumber.trim(),
-      celularPersonal: data.phoneMobile.trim(),
+      phoneMobile: data.phoneMobile.trim(),
+      email: data.email?.trim(),
+      puestoTrabajo,
       compania,
       origen,
-      puestoTrabajo,
     };
   }
 }
+

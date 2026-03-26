@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BiPlus, BiTrash, BiPencil } from 'react-icons/bi';
-import { Modal } from '@compartido/ui/base';
+import { Modal } from '@shared/ui/base';
 import type { Plan, InternetConfig, TeleviConfig, TelefonConfig } from '../types';
 import type { AdminDashboardState } from '../hooks/useAdminDashboard';
 import './PlansSection.css';
@@ -73,19 +73,19 @@ const PlansSectionComponent: React.FC<PlansSectionProps> = ({ state }) => {
 
   const handleOpenEdit = (plan: Plan) => {
     setIsEditing(true);
-    setEditingId(plan.id);
+    setEditingId(plan.id ?? null);
     setFormData({
-      nombre: plan.nombre,
-      precio: plan.precio.toString(),
-      vigenciaDesde: plan.vigenciaDesde,
-      vigenciaHasta: plan.vigenciaHasta,
-      velocidad: plan.internet.velocidad.toString(),
-      unidad: plan.internet.unidad,
-      tecnologia: plan.internet.tecnologia,
-      tvNombre: plan.television.nombre,
-      cantidadCanales: plan.television.cantidadCanales.toString(),
-      minutos: plan.telefono.minutos.toString(),
-      descripcion: plan.telefono.descripcion,
+      nombre: plan.nombre ?? '',
+      precio: plan.precio?.toString() ?? '',
+      vigenciaDesde: plan.vigenciaDesde ?? '',
+      vigenciaHasta: plan.vigenciaHasta ?? '',
+      velocidad: plan.internet?.velocidad?.toString() ?? '',
+      unidad: plan.internet?.unidad ?? 'Mbps',
+      tecnologia: plan.internet?.tecnologia ?? 'HFC',
+      tvNombre: plan.television?.nombre ?? '',
+      cantidadCanales: plan.television?.cantidadCanales?.toString() ?? '',
+      minutos: plan.telefono?.minutos?.toString() ?? '',
+      descripcion: plan.telefono?.descripcion ?? '',
     });
     setIsModalOpen(true);
   };
@@ -169,14 +169,14 @@ const PlansSectionComponent: React.FC<PlansSectionProps> = ({ state }) => {
       </div>
 
       {/* Plans Grid */}
-      {state.plans.length > 0 ? (
+      {(state.plans?.length ?? 0) > 0 ? (
         <div className="plans-grid">
-          {state.plans.map((plan) => (
-            <div key={plan.id} className="plan-card">
+          {(state.plans ?? []).map((plan) => (
+            <div key={plan.id ?? 'plan-default'} className="plan-card">
               <div className="plan-header">
                 <div>
-                  <h3 className="plan-name">{plan.nombre}</h3>
-                  <p className="plan-price">S/ {plan.precio.toFixed(2)}</p>
+                  <h3 className="plan-name">{plan.nombre ?? 'Sin nombre'}</h3>
+                  <p className="plan-price">S/ {plan.precio != null ? plan.precio.toFixed(2) : '0.00'}</p>
                 </div>
                 <div className="card-actions">
                   <button
@@ -188,7 +188,7 @@ const PlansSectionComponent: React.FC<PlansSectionProps> = ({ state }) => {
                   </button>
                   <button
                     className="btn-action delete"
-                    onClick={() => handleDelete(plan.id)}
+                    onClick={() => plan.id && handleDelete(plan.id)}
                     title="Eliminar"
                   >
                     <BiTrash size={16} />
@@ -201,7 +201,7 @@ const PlansSectionComponent: React.FC<PlansSectionProps> = ({ state }) => {
                 <div className="detail-group">
                   <span className="detail-label">📶 Internet</span>
                   <p className="detail-content">
-                    {plan.internet.velocidad} {plan.internet.unidad} • {plan.internet.tecnologia}
+                    {(plan.internet?.velocidad ?? 'N/A')} {(plan.internet?.unidad ?? '')} • {(plan.internet?.tecnologia ?? '')}
                   </p>
                 </div>
 
@@ -209,7 +209,7 @@ const PlansSectionComponent: React.FC<PlansSectionProps> = ({ state }) => {
                 <div className="detail-group">
                   <span className="detail-label">📺 Televisión</span>
                   <p className="detail-content">
-                    {plan.television.nombre} - {plan.television.cantidadCanales} canales
+                    {(plan.television?.nombre ?? 'N/A')} - {(plan.television?.cantidadCanales ?? 0)} canales
                   </p>
                 </div>
 
@@ -217,7 +217,7 @@ const PlansSectionComponent: React.FC<PlansSectionProps> = ({ state }) => {
                 <div className="detail-group">
                   <span className="detail-label">☎️ Teléfono</span>
                   <p className="detail-content">
-                    {plan.telefono.minutos} minutos • {plan.telefono.descripcion}
+                    {(plan.telefono?.minutos ?? 0)} minutos • {(plan.telefono?.descripcion ?? 'Sin descripción')}
                   </p>
                 </div>
 

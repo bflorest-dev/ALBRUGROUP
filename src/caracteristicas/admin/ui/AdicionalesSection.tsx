@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BiPlus, BiTrash, BiPencil } from 'react-icons/bi';
-import { Modal } from '@compartido/ui/base';
+import { Modal } from '@shared/ui/base';
 import type { Adicional } from '../types';
 import type { AdminDashboardState } from '../hooks/useAdminDashboard';
 import './AdicionalesSection.css';
@@ -40,10 +40,10 @@ const AdicionalesSectionComponent: React.FC<AdicionalesSectionProps> = ({ state 
 
   const handleOpenEdit = (adicional: Adicional) => {
     setIsEditing(true);
-    setEditingId(adicional.id);
+    setEditingId(adicional.id ?? null);
     setFormData({
-      nombre: adicional.nombre,
-      precioUnitario: adicional.precioUnitario.toString()
+      nombre: adicional.nombre ?? '',
+      precioUnitario: adicional.precioUnitario?.toString() ?? '0'
     });
     setIsModalOpen(true);
   };
@@ -106,10 +106,10 @@ const AdicionalesSectionComponent: React.FC<AdicionalesSectionProps> = ({ state 
       </div>
 
       {/* Cards Grid */}
-      {state.adicionales.length > 0 ? (
+      {(state.adicionales?.length ?? 0) > 0 ? (
         <div className="adicionales-grid">
-          {state.adicionales.map((adicional) => (
-            <div key={adicional.id} className="adicional-card">
+          {(state.adicionales ?? []).map((adicional) => (
+            <div key={adicional.id ?? 'adicional-default'} className="adicional-card">
               <div className="card-header">
                 <h3 className="card-title">{adicional.nombre}</h3>
                 <div className="card-actions">
@@ -122,7 +122,7 @@ const AdicionalesSectionComponent: React.FC<AdicionalesSectionProps> = ({ state 
                   </button>
                   <button
                     className="btn-action delete"
-                    onClick={() => handleDelete(adicional.id)}
+                    onClick={() => adicional.id && handleDelete(adicional.id)}
                     title="Eliminar"
                   >
                     <BiTrash size={16} />
@@ -131,7 +131,7 @@ const AdicionalesSectionComponent: React.FC<AdicionalesSectionProps> = ({ state 
               </div>
               <div className="card-price">
                 <span className="price-label">Precio Unitario</span>
-                <span className="price-value">S/ {adicional.precioUnitario.toFixed(2)}</span>
+                <span className="price-value">S/ {(adicional.precioUnitario ?? 0).toFixed(2)}</span>
               </div>
               <div className="card-status">
                 <span className={`status-badge ${adicional.activo ? 'active' : 'inactive'}`}>

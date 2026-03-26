@@ -1,29 +1,43 @@
-/**
+﻿/**
  * Componente EmployeeDetailForm (moved to features/RRHH)
  */
 
 import { useState } from 'react';
 
-import type { Employee, EmployeeDetailFormData } from '@compartido/tipos';
+import type { Employee, EmployeeDetailFormData } from '@shared/types';
+import {
+  NacionalidadEnum,
+  EstadoCivilEnum,
+  DistritoEnum,
+  BancoEnum,
+  RegimenEnum,
+  ModalidadEnum,
+  SeguroSaludEnum,
+  SistemaPensionesEnum,
+  PuestoTrabajoEnum,
+  ParentescoEnum,
+  EmpresaContratistaEnum,
+} from '@shared/types';
+import { enumToOptions, formatEnumLabel } from '@shared/utils/enumToOptions';
 import './EmployeeDetailForm.css';
 
-// Constants for select options
+// Generate options from enums using the helper
+const nacionalidadOptions = enumToOptions(NacionalidadEnum);
+const civilStatusOptions = enumToOptions(EstadoCivilEnum);
+const distritoOptions = enumToOptions(DistritoEnum);
+const bancoOptions = enumToOptions(BancoEnum);
+const regimenOptions = enumToOptions(RegimenEnum);
+const modalidadOptions = enumToOptions(ModalidadEnum);
+const seguroOptions = enumToOptions(SeguroSaludEnum);
+const pensionOptions = enumToOptions(SistemaPensionesEnum);
+const puestoOptions = enumToOptions(PuestoTrabajoEnum);
+const parentescoOptions = enumToOptions(ParentescoEnum);
+const empresaContratistaOptions = enumToOptions(EmpresaContratistaEnum);
+const yesNoOptions = [
+  { value: 'SI', label: 'Sí' },
+  { value: 'NO', label: 'No' },
+];
 const nationalities = ['PERUANO', 'EXTRANJERO'];
-const civilStatuses = ['SOLTERO', 'CASADO', 'VIUDO', 'DIVORCIADO'];
-const districts = [
-  'ANCÓN','ATE','BARRANCO','BREÑA','CARABAYLLO','CERCADO DE LIMA','CHACLACAYO','CHORRILLOS','CIENEGUILLA','COMAS','EL AGUSTINO','INDEPENDENCIA','JESÚS MARÍA','LA MOLINA','LA VICTORIA','LINCE','LOS OLIVOS','LURÍN','LURIGANCHO','MAGDALENA DEL MAR','MIRAFLORES','PACHACÁMAC','PUCUSANA','PUEBLO LIBRE','PUENTE PIEDRA','PUNTA HERMOSA','PUNTA NEGRA','RÍMAC','SAN BARTOLO','SAN BORJA','SAN ISIDRO','SAN JUAN DE LURIGANCHO','SAN JUAN DE MIRAFLORES','SAN LUIS','SAN MARTÍN DE PORRES','SAN MIGUEL','SANTA ANITA','SANTA MARÍA DEL MAR','SANTA ROSA','SANTIAGO DE SURCO','SURQUILLO','VILLA EL SALVADOR','VILLA MARÍA DEL TRIUNFO'
-];
-const banks = ['BCP','BBVA','INTERBANK','SCOTIABANK'];
-const regimens = ['RECIBO POR HONORARIOS', 'PLANILLA'];
-const modalities = ['PART TIME', 'SEMI FULL', 'FULL TIME', 'SUPER FULL'];
-const seguros = ['SIS', 'ESSALUD'];
-const pensions = ['ONP', 'AFP INTEGRA', 'PROFUTURO AFP', 'AFP HABITAD', 'PRIMA AFP'];
-const positions = [
-  'ASESOR_VENTAS', 'ASESOR_POSTVENTA', 'ASESOR_GTR', 'ASESOR_BACKOFFICE', 'SUPERVISOR_VENTAS', 'SUPERVISOR_POSTVENTA', 'SUPERVISOR_GTR', 'SUPERVISOR_BACKOFFICE', 'CAPACITACION', 'RRHH', 'CONTABILIDAD', 'COMMUNITY', 'DESARROLLADOR', 'RECLUTAMIENTO'
-];
-const kinships = ['PADRE', 'MADRE', 'TÍO/A', 'ESPOSO/A', 'HERMANO/A', 'ABUELO/A', 'PAREJA', 'OTRO'];
-const contractorCompanies = ['ALBRU', 'RUNA'];
-const yesNoOptions = ['Sí', 'No'];
 
 interface EmployeeDetailFormProps {
   employee: Employee;
@@ -88,7 +102,7 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
             value={formData.documentType || ''}
             disabled={true}
           />
-          <label>N°Doc</label>
+          <label>NÂ°Doc</label>
           <input
             name="documentNumber"
             value={formData.documentNumber || ''}
@@ -137,10 +151,10 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
               onChange={handleChange}
             >
               <option value="">Seleccione...</option>
-              {civilStatuses.map(s => <option key={s} value={s}>{s}</option>)}
+              {civilStatusOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
           )}
-          <label>¿Hijos?</label>
+          <label>Â¿Hijos?</label>
           {disabled ? (
             <input
               value={formData.hasChildren ? 'SI' : 'NO'}
@@ -153,8 +167,7 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
               onChange={handleChange}
             >
               <option value="">Seleccione...</option>
-              <option value="SI">SI</option>
-              <option value="NO">NO</option>
+              {yesNoOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
           )}
           <label>Celular</label>
@@ -184,10 +197,10 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
               onChange={handleChange}
             >
               <option value="">Seleccione...</option>
-              {districts.map(d => <option key={d} value={d}>{d}</option>)}
+              {distritoOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
           )}
-          <label>Dirección</label>
+          <label>DirecciÃ³n</label>
           <input
             name="address"
             value={formData.address || ''}
@@ -196,10 +209,10 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
           />
         </div>
 
-        {/* COLUMN 3: INFORMACIÓN LABORAL */}
+        {/* COLUMN 3: INFORMACIÃ“N LABORAL */}
         <div className="section-group">
-          <h3 className="section-title">INFORMACIÓN LABORAL</h3>
-          <label>Régimen</label>
+          <h3 className="section-title">INFORMACIÃ“N LABORAL</h3>
+          <label>RÃ©gimen</label>
           {disabled ? (
             <input
               value={(formData as any).contractRegimen || ''}
@@ -212,7 +225,7 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
               onChange={handleChange}
             >
               <option value="">Seleccione...</option>
-              {regimens.map(r => <option key={r} value={r}>{r}</option>)}
+              {regimenOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
           )}
           <label>Modalidad</label>
@@ -228,7 +241,7 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
               onChange={handleChange}
             >
               <option value="">Seleccione...</option>
-              {modalities.map(m => <option key={m} value={m}>{m}</option>)}
+              {modalidadOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
           )}
           <label>Puesto</label>
@@ -244,7 +257,7 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
               onChange={handleChange}
             >
               <option value="">Seleccione...</option>
-              {positions.map(p => <option key={p} value={p}>{p.replace(/_/g, ' ')}</option>)}
+              {puestoOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
           )}
           <label>Sueldo</label>
@@ -285,10 +298,10 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
                   onChange={handleChange}
                 >
                   <option value="">Seleccione...</option>
-                  {seguros.map(s => <option key={s} value={s}>{s}</option>)}
+                  {seguroOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               )}
-              <label>Pensión</label>
+              <label>PensiÃ³n</label>
               {disabled ? (
                 <input
                   value={(formData as any).contractPension || ''}
@@ -301,16 +314,16 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
                   onChange={handleChange}
                 >
                   <option value="">Seleccione...</option>
-                  {pensions.map(p => <option key={p} value={p}>{p}</option>)}
+                  {pensionOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               )}
             </>
           )}
         </div>
 
-        {/* COLUMN 4: INFORMACIÓN BANCARIA & TRANSFERENCIA */}
+        {/* COLUMN 4: INFORMACIÃ“N BANCARIA & TRANSFERENCIA */}
         <div className="section-group">
-          <h3 className="section-title">INFORMACIÓN BANCARIA & TRANSFERENCIA</h3>
+          <h3 className="section-title">INFORMACIÃ“N BANCARIA & TRANSFERENCIA</h3>
           <label>Banco</label>
           {disabled ? (
             <input
@@ -324,7 +337,7 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
               onChange={handleChange}
             >
               <option value="">Seleccione...</option>
-              {banks.map(b => <option key={b} value={b}>{b}</option>)}
+              {bancoOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
           )}
           <label>Cuenta</label>
@@ -354,10 +367,10 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
               onChange={handleChange}
             >
               <option value="">Seleccione...</option>
-              {yesNoOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              {yesNoOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
           )}
-          {(formData.contractOwnAccount || '').toLowerCase() !== 'sí' && (
+          {(formData.contractOwnAccount || '').toLowerCase() !== 'sÃ­' && (
             <>
               <label>Parentesco</label>
               {disabled ? (
@@ -372,7 +385,7 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
                   onChange={handleChange}
                 >
                   <option value="">Seleccione...</option>
-                  {kinships.map(k => <option key={k} value={k}>{k}</option>)}
+                  {parentescoOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                 </select>
               )}
             </>
@@ -397,7 +410,7 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
               onChange={handleChange}
             >
               <option value="">Seleccione...</option>
-              {contractorCompanies.map(c => <option key={c} value={c}>{c}</option>)}
+              {empresaContratistaOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
           )}
         </div>
@@ -415,3 +428,4 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
     </form>
   );
 };
+

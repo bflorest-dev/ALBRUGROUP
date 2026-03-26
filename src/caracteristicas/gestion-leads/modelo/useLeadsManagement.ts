@@ -1,15 +1,15 @@
-/**
+﻿/**
  * Hook: useLeadsFiltering
- * Maneja toda la lógica de filtrado y búsqueda de leads
+ * Maneja toda la lÃ³gica de filtrado y bÃºsqueda de leads
  * 
  * Responsabilidades:
  * - Mantener estado de filtros
- * - Filtrar leads basado en search, canal, asesor, campaña
- * - Calcular estadísticas
+ * - Filtrar leads basado en search, canal, asesor, campaÃ±a
+ * - Calcular estadÃ­sticas
  */
 
 import { useState, useMemo } from 'react';
-import type { LeadDTO } from '@compartido/tipos/lead.types';
+import type { LeadDTO } from '@shared/types/lead.types';
 
 export type Lead = LeadDTO;  // Alias para compatibilidad
 
@@ -34,57 +34,57 @@ const INITIAL_FILTERS: FilterState = {
   searchTerm: '',
   selectedChannel: 'Todos',
   selectedAdvisor: 'Todos',
-  selectedCampaign: 'Todas las campañas'
+  selectedCampaign: 'Todas las campaÃ±as'
 };
 
 /**
- * Hook para manejar filtrado y búsqueda de leads
+ * Hook para manejar filtrado y bÃºsqueda de leads
  * 
- * Proporciona un sistema de filtrado multi-criterio con búsqueda en tiempo real.
- * Los filtros son independientes y se aplican con lógica AND (todos deben coincidir).
+ * Proporciona un sistema de filtrado multi-criterio con bÃºsqueda en tiempo real.
+ * Los filtros son independientes y se aplican con lÃ³gica AND (todos deben coincidir).
  * 
  * Criterios de filtrado:
  * - Canal: Filtra por Canal (Facebook, Instagram, WhatsApp)
  * - Asesor: Filtra por nombre del asesor asignado
- * - Campaña: Filtra por nombre de campaña
- * - Búsqueda: Busca en firstName, lastName, phone (case-insensitive)
+ * - CampaÃ±a: Filtra por nombre de campaÃ±a
+ * - BÃºsqueda: Busca en firstName, lastName, phone (case-insensitive)
  * 
- * Optimización: Usa useMemo para evitar recálculos innecesarios cuando leads no cambian
+ * OptimizaciÃ³n: Usa useMemo para evitar recÃ¡lculos innecesarios cuando leads no cambian
  * 
  * @param leads - Array de leads a filtrar
  * @returns Objeto LeadsFilteringResult con:
  *   - filteredLeads: Array de leads que cumplen con todos los filtros
  *   - filters: Estado actual de filtros
- *   - setSearchTerm: Setter para búsqueda de texto
+ *   - setSearchTerm: Setter para bÃºsqueda de texto
  *   - setSelectedChannel: Setter para canal
  *   - setSelectedAdvisor: Setter para asesor
- *   - setSelectedCampaign: Setter para campaña
+ *   - setSelectedCampaign: Setter para campaÃ±a
  *   - resetFilters: Limpia todos los filtros al estado inicial
  * 
  * @example
  * const { filteredLeads, setSearchTerm, setSelectedChannel } = useLeadsFiltering(mockLeads);
  * 
- * // Búsqueda de texto
+ * // BÃºsqueda de texto
  * setSearchTerm('Roberto');
  * 
- * // Filtrar por canal específico
+ * // Filtrar por canal especÃ­fico
  * setSelectedChannel('Facebook');
  * 
- * // Los resultados se actualizan automáticamente
+ * // Los resultados se actualizan automÃ¡ticamente
  * console.log(filteredLeads.length); // solo leads de Facebook con "Roberto" en nombre
  */
 export function useLeadsFiltering(leads: Lead[]): LeadsFilteringResult {
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
 
-  // Lógica de filtrado usando useMemo para evitar recálculos innecesarios
+  // LÃ³gica de filtrado usando useMemo para evitar recÃ¡lculos innecesarios
   // Solo recalcula cuando 'leads' o 'filters' cambian
   /**
-   * ANÁLISIS DE COMPLEJIDAD - Punto #4:
+   * ANÃLISIS DE COMPLEJIDAD - Punto #4:
    * 
-   * COMPLEJIDAD: O(n * 4) = O(n) donde n = número de leads
+   * COMPLEJIDAD: O(n * 4) = O(n) donde n = nÃºmero de leads
    * - Itera cada lead UNA SOLA VEZ
    * - Por cada lead: 4 comparaciones (channel, advisor, campaign, search)
-   * - Cada comparación es O(1): string equality o includes()
+   * - Cada comparaciÃ³n es O(1): string equality o includes()
    * 
    * RENDIMIENTO ESPERADO:
    * - 100 leads: ~0.5ms
@@ -92,14 +92,14 @@ export function useLeadsFiltering(leads: Lead[]): LeadsFilteringResult {
    * - 10000 leads: ~50ms
    * 
    * OPTIMIZACIONES APLICADAS:
-   * ✓ useMemo: Evita recálculos si leads/filters no cambian
-   * ✓ Early returns: Cada filter devuelve boolean (sin array intermedios)
-   * ✓ Lazy evaluation: instanceof checks evitan conversiones innecesarias
+   * âœ“ useMemo: Evita recÃ¡lculos si leads/filters no cambian
+   * âœ“ Early returns: Cada filter devuelve boolean (sin array intermedios)
+   * âœ“ Lazy evaluation: instanceof checks evitan conversiones innecesarias
    * 
    * POSIBLES MEJORAS FUTURAS:
-   * - Indexing: HashMap de advisors/channels para búsqueda O(1)
+   * - Indexing: HashMap de advisors/channels para bÃºsqueda O(1)
    * - Workers: Procesar filtrado en background thread si n > 50000
-   * - Fuzzy search: Librería especializada para búsqueda de texto si es slow
+   * - Fuzzy search: LibrerÃ­a especializada para bÃºsqueda de texto si es slow
    */
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
@@ -112,19 +112,19 @@ export function useLeadsFiltering(leads: Lead[]): LeadsFilteringResult {
       // Mismo comportamiento que canal: 'Todos' = acepta todos
       const matchesAdvisor = filters.selectedAdvisor === 'Todos' || lead.advisor === filters.selectedAdvisor;
 
-      // FILTRO 3: Campaña
-      // Mismo comportamiento: 'Todas las campañas' = acepta todas
-      const matchesCampaign = filters.selectedCampaign === 'Todas las campañas' || lead.campaign === filters.selectedCampaign;
+      // FILTRO 3: CampaÃ±a
+      // Mismo comportamiento: 'Todas las campaÃ±as' = acepta todas
+      const matchesCampaign = filters.selectedCampaign === 'Todas las campaÃ±as' || lead.campaign === filters.selectedCampaign;
 
-      // FILTRO 4: Búsqueda de texto (case-insensitive)
+      // FILTRO 4: BÃºsqueda de texto (case-insensitive)
       // Busca matchTerm en: firstName, lastName, phone
-      // Si searchTerm está vacío, cumple siempre
+      // Si searchTerm estÃ¡ vacÃ­o, cumple siempre
       const matchesSearch =
-        lead.firstName.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        lead.lastName.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
-        lead.phone.includes(filters.searchTerm);
+        (lead.firstName ?? '').toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+        (lead.lastName ?? '').toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
+        (lead.phone ?? '').includes(filters.searchTerm);
 
-      // COMBINACIÓN: Todos los filtros deben ser TRUE (lógica AND)
+      // COMBINACIÃ“N: Todos los filtros deben ser TRUE (lÃ³gica AND)
       // Si cualquiera es false, el lead no aparece en los resultados
       return matchesChannel && matchesAdvisor && matchesCampaign && matchesSearch;
     });
@@ -146,19 +146,19 @@ export function useLeadsFiltering(leads: Lead[]): LeadsFilteringResult {
 }
 
 /**
- * Hook para calcular estadísticas de leads para mostrar en tarjetas (StatCards)
+ * Hook para calcular estadÃ­sticas de leads para mostrar en tarjetas (StatCards)
  * 
  * Calcula conteos de leads por estado de seguimiento:
  * - Total Leads: Cantidad total de leads
  * - Nuevos: Leads con followUp === 'Nuevo'
  * - Asignados: Leads asignados (valor hardcodeado, conectar a API)
- * - En Gestión: Leads con followUp === 'En gestión'
+ * - En GestiÃ³n: Leads con followUp === 'En gestiÃ³n'
  * - Gestionados: Leads con followUp === 'Gestionado'
  * 
- * Optimización: Usa useMemo para cachear resultados cuando leads no cambian
+ * OptimizaciÃ³n: Usa useMemo para cachear resultados cuando leads no cambian
  * 
  * @param leads - Array de leads a analizar
- * @returns Array de objetos de estadística con { label, value, unit, color }
+ * @returns Array de objetos de estadÃ­stica con { label, value, unit, color }
  * 
  * @example
  * const stats = useStatistics(filteredLeads);
@@ -168,18 +168,18 @@ export function useLeadsFiltering(leads: Lead[]): LeadsFilteringResult {
  */
 export function useStatistics(leads: Lead[]) {
   /**
-   * OPTIMIZACIÓN Punto #4: Complejidad de Algoritmos
+   * OPTIMIZACIÃ“N Punto #4: Complejidad de Algoritmos
    * 
-   * PROBLEMA ANTERIOR: O(n) con múltiples pasadas
+   * PROBLEMA ANTERIOR: O(n) con mÃºltiples pasadas
    * - leads.length: O(1)
    * - filter() para Nuevos: O(n)
    * - filter() para Gestionados: O(n)
    * - Total: 3 iteraciones del array
    * 
-   * SOLUCIÓN: Single pass con reduce() = O(n) con 1 iteración
+   * SOLUCIÃ“N: Single pass con reduce() = O(n) con 1 iteraciÃ³n
    * - Calcula todos los conteos en UN SOLO recorrido del array
    * - Reduce complejidad espacial: sin arrays intermedios
-   * - Mejora rendimiento: ~3x más rápido que 3 filter() separados
+   * - Mejora rendimiento: ~3x mÃ¡s rÃ¡pido que 3 filter() separados
    * - Beneficio visual: con 1000+ leads, diferencia significativa en responsividad
    */
   return useMemo(() => {
@@ -197,14 +197,14 @@ export function useStatistics(leads: Lead[]) {
       { label: 'Total Leads', value: stats.total, unit: '', color: '#6B7280' },
       { label: 'Nuevos', value: stats.nuevos, unit: '', color: '#3B82F6' },
       { label: 'Asignados', value: 1, unit: '', color: '#8B5CF6' },
-      { label: 'En Gestión', value: 3, unit: '', color: '#F59E0B' },
+      { label: 'En GestiÃ³n', value: 3, unit: '', color: '#F59E0B' },
       { label: 'Gestionados', value: stats.gestionados, unit: '', color: '#10B981' },
     ];
   }, [leads]);
 }
 
 /**
- * Hook para obtener colores según estado, canal y tipificación de leads
+ * Hook para obtener colores segÃºn estado, canal y tipificaciÃ³n de leads
  * 
  * Proporciona un conjunto de funciones para obtener colores consistentes
  * en toda la interfaz basados en diferentes criterios:
@@ -212,12 +212,12 @@ export function useStatistics(leads: Lead[]) {
  * - CHANNEL_COLORS: Colores por canal (Facebook #3B82F6, Instagram #EC4899, WhatsApp #10B981)
  * - getStatusBadgeStyle: Color de fondo para badges de estado (Disponible, Ocupado, Saturado)
  * - getTipificationColor: Color para tipificaciones (sin tipificar, seguimiento, agendado, etc)
- * - getProgressFillColor: Color de la barra de progreso según capacidad del asesor
+ * - getProgressFillColor: Color de la barra de progreso segÃºn capacidad del asesor
  * 
  * Ventajas:
  * - Centraliza la paleta de colores (single source of truth)
  * - Facilita cambios de tema globalmente
- * - Asegura consistencia visual en toda la aplicación
+ * - Asegura consistencia visual en toda la aplicaciÃ³n
  * 
  * @returns Objeto con CHANNEL_COLORS y 3 funciones de mapeo color:
  *   - CHANNEL_COLORS: Record<string, string>
@@ -231,25 +231,25 @@ export function useStatistics(leads: Lead[]) {
  * // Usar color de canal
  * const fbColor = CHANNEL_COLORS['Facebook']; // #3B82F6
  * 
- * // Mapear tipificación a color
+ * // Mapear tipificaciÃ³n a color
  * const tipColor = getTipificationColor('1 - SEGUIMIENTO'); // #3B82F6
  */
 export function useLeadColors() {
   /**
-   * OPTIMIZACIÓN Punto #4: Memoización de colores
+   * OPTIMIZACIÃ“N Punto #4: MemoizaciÃ³n de colores
    * 
    * PROBLEMA ANTERIOR: O(n) renders
    * - CHANNEL_COLORS: Objeto recreado en cada render (object equality fallida)
-   * - getStatusBadgeStyle: Función recreada en cada render
-   * - getTipificationColor: Función recreada en cada render
-   * - getProgressFillColor: Función recreada en cada render
+   * - getStatusBadgeStyle: FunciÃ³n recreada en cada render
+   * - getTipificationColor: FunciÃ³n recreada en cada render
+   * - getProgressFillColor: FunciÃ³n recreada en cada render
    * - Todo esto causa re-renders innecesarios en componentes que usan el hook
    * 
-   * SOLUCIÓN: Memoizar con useMemo (sin dependencias = nunca cambia)
+   * SOLUCIÃ“N: Memoizar con useMemo (sin dependencias = nunca cambia)
    * - Solo se crean objetos/funciones UNA VEZ en montaje
    * - Todas las referencias permanecen estables
    * - Componentes dependientes no se re-renderizan innecesariamente
-   * - Mejora: Evita ~5-10 re-renders por actualización de leads
+   * - Mejora: Evita ~5-10 re-renders por actualizaciÃ³n de leads
    */
   const colors = useMemo(() => {
     const CHANNEL_COLORS: Record<string, string> = {
@@ -301,3 +301,4 @@ export function useLeadColors() {
 
   return colors;
 }
+

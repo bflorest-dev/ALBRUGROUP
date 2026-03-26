@@ -1,59 +1,25 @@
-/**
- * Componente CampaignCard - Widget Community
- */
-
 import React from 'react';
 
 export interface Campaign {
-  id?: string;
-  title?: string;
-  description?: string;
-  name?: string;
-  campaignName?: string;
-  company?: string;
-  whatsapp?: string;
-  advertiserAccount?: string;
-  accountNumber?: string;
+  id: string;
+  name: string;
+  whatsapp: string;
+  advertiserAccount: string;
+  accountNumber: string;
+  company: string;
 }
 
 interface CampaignCardProps {
-  id?: string;
-  title?: string;
-  name?: string;
-  description?: string;
-  campaign?: Campaign;
-  onClick?: () => void;
+  campaign: Campaign;
   onEdit?: () => void;
 }
 
-export const CampaignCard: React.FC<CampaignCardProps> = ({ 
-  title, 
-  name,
-  description, 
-  campaign,
-  onClick, 
-  onEdit 
-}) => {
-  const displayTitle = title || name || campaign?.name || campaign?.title;
-  const displayDescription = description || campaign?.description;
-  
-  return (
-    <div className="campaign-card" onClick={onClick}>
-      <h3>{displayTitle}</h3>
-      <p>{displayDescription}</p>
-      {onEdit && (
-        <button 
-          className="edit-btn" 
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit();
-          }}
-        >
-          Edit
-        </button>
-      )}
-    </div>
-  );
-};
-
-export default CampaignCard;
+export const CampaignCard: React.FC<CampaignCardProps> = ({ campaign, onEdit }) => (
+  <div className="campaign-card">
+    <h4>{campaign.name}</h4>
+    <p>WhatsApp: {campaign.whatsapp}</p>
+    <p>Cuenta: {campaign.advertiserAccount}</p>
+    <p>Empresa: {campaign.company}</p>
+    <button onClick={onEdit}>Editar</button>
+  </div>
+);

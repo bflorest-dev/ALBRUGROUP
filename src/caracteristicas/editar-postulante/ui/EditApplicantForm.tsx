@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { ApplicantForm } from '@compartido/ui/base';
-import { POSITIONS_WITH_COMPANY } from '@compartido/lib';
-import type { NewApplicantFormData } from '@compartido/tipos';
+﻿import React, { useState } from 'react';
+import { ApplicantForm } from '@shared/ui/base';
+import { POSITIONS_WITH_COMPANY } from '@shared/lib';
+import type { NewApplicantFormData } from '@shared/types';
 
 interface Applicant extends NewApplicantFormData {
   id: string;
@@ -36,7 +36,7 @@ const EditApplicantForm: React.FC<EditApplicantFormProps> = ({ applicant }) => {
       return;
     }
 
-    // Sanitizar números en phoneMobile y documentNumber
+    // Sanitizar nÃºmeros en phoneMobile y documentNumber
     let sanitizedValue = value;
     if (name === 'phoneMobile' || name === 'documentNumber') {
       sanitizedValue = value.replace(/\D/g, '');
@@ -75,3 +75,4 @@ const EditApplicantForm: React.FC<EditApplicantFormProps> = ({ applicant }) => {
 };
 
 export default EditApplicantForm;
+

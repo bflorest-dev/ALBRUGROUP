@@ -1,1 +1,0 @@
-export { TipificationPanel } from './TipificationPanel';

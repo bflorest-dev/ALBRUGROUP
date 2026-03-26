@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
 import { BiPhoneCall } from 'react-icons/bi';
-
-export interface LoginFormData {
-  username: string;
-  password: string;
-}
+import type { LoginFormData } from '../modelo';
 
 interface LoginFormProps {
   onSubmit?: (data: LoginFormData) => void;

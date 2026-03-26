@@ -1,19 +1,19 @@
-/**
+﻿/**
  * TipificationPanel - Widget
  * 
  * Panel derecho que muestra:
  * - Detalles del lead seleccionado
- * - Bloques de tipificación con sus opciones
- * - Botones de acción (Guardar, Siguiente)
+ * - Bloques de tipificaciÃ³n con sus opciones
+ * - Botones de acciÃ³n (Guardar, Siguiente)
  */
 
 import React from 'react';
 import { BiMicrophone } from 'react-icons/bi';
 import { MdError } from 'react-icons/md';
-import type { LeadDTO } from '@compartido/tipos';
-import type { TipificationOptionId } from '@compartido/tipos';
-import { TIPIFICATION_BLOCKS } from '@compartido/lib';
-import { LeadDetailCard, TipificationBlockPanel, Boton, Girador } from '@compartido/ui/base';
+import type { LeadDTO } from '@shared/types';
+import type { TipificationOptionId } from '@shared/types';
+import { TIPIFICATION_BLOCKS } from '@shared/lib';
+import { LeadDetailCard, TipificationBlockPanel, Boton, Girador } from '@shared/ui/base';
 import './TipificationPanel.css';
 
 interface BackofficeLead extends LeadDTO {
@@ -60,14 +60,14 @@ export const TipificationPanel: React.FC<TipificationPanelProps> = ({
     <div className="tipification-panel">
       {/* Contenedor principal split */}
       <div className="panel-content">
-        {/* Sección izquierda - Detalles del lead */}
+        {/* SecciÃ³n izquierda - Detalles del lead */}
         <div className="lead-section">
           <LeadDetailCard lead={selectedLead} />
         </div>
 
-        {/* Sección derecha - Tipificación */}
+        {/* SecciÃ³n derecha - TipificaciÃ³n */}
         <div className="tipification-section">
-          <h2 className="section-heading"><BiMicrophone size={20} style={{display: 'inline', marginRight: '8px'}} />TIPIFICACIÓN</h2>
+          <h2 className="section-heading"><BiMicrophone size={20} style={{display: 'inline', marginRight: '8px'}} />TIPIFICACIÃ“N</h2>
           
           {error && (
             <div className="error-alert">
@@ -76,7 +76,7 @@ export const TipificationPanel: React.FC<TipificationPanelProps> = ({
             </div>
           )}
 
-          {/* Bloques de tipificación */}
+          {/* Bloques de tipificaciÃ³n */}
           <div className="blocks-container">
             {TIPIFICATION_BLOCKS.map((block) => (
               <TipificationBlockPanel
@@ -115,7 +115,7 @@ export const TipificationPanel: React.FC<TipificationPanelProps> = ({
               GUARDANDO...
             </>
           ) : (
-            'GUARDAR Y SIGUIENTE →'
+            'GUARDAR Y SIGUIENTE â†’'
           )}
         </Boton>
       </div>
@@ -126,3 +126,4 @@ export const TipificationPanel: React.FC<TipificationPanelProps> = ({
 };
 
 export default TipificationPanel;
+

@@ -4,10 +4,10 @@
 
 import React, { useRef } from 'react';
 import RouterByRole from '@app/RouterByRole';
-import { NotificationProvider } from '@compartido/lib';
-import { useNotification } from '@compartido/lib';
-import { useDevRole } from '@compartido/lib';
-import { SidebarProvider, useSidebar } from '@compartido/lib';
+import { NotificationProvider } from '@shared/lib';
+import { useNotification } from '@shared/lib';
+import { useDevRole } from '@shared/lib';
+import { SidebarProvider, useSidebar } from '@shared/lib';
 // DEPRECATED: ToastContainer no existe en nueva estructura
 // import { ToastContainer } from '../../molecules/Toast';
 // DEPRECATED: MainLayout.css was removed in refactoring

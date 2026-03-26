@@ -1,16 +1,16 @@
-/**
+﻿/**
  * LeadsListPanel - Widget
  * 
  * Panel izquierdo que muestra la lista de leads organizados por estado
- * - Filtros de búsqueda
- * - Leads pendientes, en gestión, completadas
- * - Selección de lead
+ * - Filtros de bÃºsqueda
+ * - Leads pendientes, en gestiÃ³n, completadas
+ * - SelecciÃ³n de lead
  */
 
 import React, { useMemo } from 'react';
 import { BiCheckCircle, BiTime, BiSearch } from 'react-icons/bi';
-import { Entrada, LeadListItem } from '@compartido/ui/base';
-import type { LeadDTO } from '@compartido/tipos';
+import { Entrada, LeadListItem } from '@shared/ui/base';
+import type { LeadDTO } from '@shared/types';
 import './LeadsListPanel.css';
 
 interface BackofficeLead extends LeadDTO {
@@ -88,17 +88,15 @@ export const LeadsListPanel: React.FC<LeadsListPanelProps> = ({
         </span>
       </h3>
       {sectionLeads.length === 0 ? (
-        <p className="empty-state">No hay leads en esta sección</p>
+        <p className="empty-state">No hay leads en esta secciÃ³n</p>
       ) : (
         <div className="leads-list">
           {sectionLeads.map((lead) => (
             <LeadListItem
               key={lead.id}
               lead={lead}
-              isSelected={selectedLeadId === lead.id}
-              tipificationStatus={lead.tipificationStatus}
-              tipificationLabel={lead.tipificationLabel}
-              onClick={() => onLeadSelect(lead.id)}
+              selected={selectedLeadId !== null && selectedLeadId.toString() === lead.id.toString()}
+              onSelect={() => onLeadSelect(lead.id.toString())}
             />
           ))}
         </div>
@@ -108,7 +106,7 @@ export const LeadsListPanel: React.FC<LeadsListPanelProps> = ({
 
   return (
     <div className="leads-list-panel">
-      {/* Encabezado con búsqueda */}
+      {/* Encabezado con bÃºsqueda */}
       <div className="panel-header">
         <h2 className="panel-title">PREVENTAS COMPLETAS</h2>
         <p className="panel-subtitle">Total: {leads.length} leads</p>
@@ -119,7 +117,7 @@ export const LeadsListPanel: React.FC<LeadsListPanelProps> = ({
         <BiSearch size={18} style={{position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#6B7280'}} />
         <Entrada
           type="text"
-          placeholder="Buscar por nombre, teléfono..."
+          placeholder="Buscar por nombre, telÃ©fono..."
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
           className="search-input"
@@ -127,7 +125,7 @@ export const LeadsListPanel: React.FC<LeadsListPanelProps> = ({
         />
       </div>
 
-      {/* Estadísticas rápidas */}
+      {/* EstadÃ­sticas rÃ¡pidas */}
       <div className="stats-bar">
         <div className="stat-item">
           <span className="stat-icon"><BiTime size={16} /></span>
@@ -159,3 +157,4 @@ export const LeadsListPanel: React.FC<LeadsListPanelProps> = ({
     </div>
   );
 };
+

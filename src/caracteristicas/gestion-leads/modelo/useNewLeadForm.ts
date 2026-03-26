@@ -9,8 +9,8 @@
  */
 
 import { useState, useCallback } from 'react';
-import { filterPhoneInput } from '@compartido/lib';
-import { sanitizeInput, sanitizeFormField } from '@compartido/lib';
+import { filterPhoneInput } from '@shared/lib';
+import { sanitizeInput, sanitizeFormField } from '@shared/lib';
 
 export interface NewLeadFormData {
   pois: string;
@@ -170,9 +170,9 @@ export function useNewLeadForm(): NewLeadFormState & NewLeadFormActions {
 
       // SEGURIDAD: Sanitizar según tipo de campo
       if (name === 'name') {
-        // Teléfono: filtrar según país y sanitizar
-        const filteredValue = filterPhoneInput(value, formData.pois);
-        sanitizedValue = sanitizeFormField('phone', filteredValue);
+        // Teléfono: filtrar por dígitos y sanitizar
+        const filteredValue = filterPhoneInput(value);
+        sanitizedValue = sanitizeFormField(filteredValue);
       } else if (name === 'pois') {
         // País/POIS: solo caracteres alfanuméricos
         sanitizedValue = sanitizeInput(value).toUpperCase();
@@ -233,7 +233,7 @@ export function useNewLeadForm(): NewLeadFormState & NewLeadFormActions {
     // SEGURIDAD: Re-sanitizar datos finales antes de enviar
     const sanitizedData: NewLeadFormData = {
       pois: sanitizeInput(formData.pois),
-      name: sanitizeFormField('phone', formData.name),
+      name: sanitizeFormField(formData.name),
       campaign: sanitizeInput(formData.campaign),
       channel: sanitizeInput(formData.channel),
       base: sanitizeInput(formData.base),

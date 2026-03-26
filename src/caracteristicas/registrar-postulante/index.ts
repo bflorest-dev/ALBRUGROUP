@@ -1,6 +1,5 @@
 // Feature: Registrar Postulante
 // Applicant registration and application workflows
 
-export * from './api';
-export * from './modelo';
-export * from './ui';
+export * from './modelo';  // Model types first
+export * from './ui';       // UI components

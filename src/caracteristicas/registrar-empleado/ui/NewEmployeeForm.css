@@ -1,0 +1,32 @@
+.employee-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.employee-form label {
+  font-weight: 600;
+}
+
+.employee-form input,
+.employee-form select {
+  padding: 0.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.375rem;
+}
+
+.employee-form button {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.employee-form .form-steps-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}

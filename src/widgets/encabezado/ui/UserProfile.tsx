@@ -1,8 +1,8 @@
-/**
+﻿/**
  * Componente UserProfile - Perfil de usuario
  */
 
-import type { UserProfile } from '@compartido/tipos';
+import type { UserProfile } from '@shared/types';
 import './UserProfile.css';
 
 interface UserProfileProps {
@@ -20,3 +20,4 @@ export const UserProfileComponent = ({ user }: UserProfileProps) => {
     </div>
   );
 };
+

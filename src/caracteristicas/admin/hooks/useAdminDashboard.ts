@@ -1,27 +1,28 @@
+import type { Adicional, Plan, Promocion } from '../types';
 /**
  * Hook para gestionar el estado del dashboard de ADMIN
  */
 
 export interface AdminDashboardState {
-  adicionales: any[];
+  adicionales: Adicional[];
   planes: any[];
-  promotions?: any[];
+  promotions: Promocion[];
   promociones: any[];
-  plans?: any[];
-  loading?: boolean;
-  error?: string | null;
+  plans: Plan[];
+  loading: boolean;
+  error: string | null;
   // Handlers for adicionales
-  handleUpdateAdicional?: (id: string, data: any) => void;
-  handleCreateAdicional?: (data: any) => void;
-  handleDeleteAdicional?: (id: string) => void;
+  handleUpdateAdicional: (id: string, data: Partial<Adicional>) => void;
+  handleCreateAdicional: (data: Omit<Adicional, 'id'>) => void;
+  handleDeleteAdicional: (id: string) => void;
   // Handlers for plans
-  handleUpdatePlan?: (id: string, data: any) => void;
-  handleCreatePlan?: (data: any) => void;
-  handleDeletePlan?: (id: string) => void;
+  handleUpdatePlan: (id: string, data: Partial<Plan>) => void;
+  handleCreatePlan: (data: Omit<Plan, 'id'>) => void;
+  handleDeletePlan: (id: string) => void;
   // Handlers for promotions
-  handleUpdatePromotion?: (id: string, data: any) => void;
-  handleCreatePromotion?: (data: any) => void;
-  handleDeletePromotion?: (id: string) => void;
+  handleUpdatePromotion: (id: string, data: Partial<Promocion>) => void;
+  handleCreatePromotion: (data: Omit<Promocion, 'id'>) => void;
+  handleDeletePromotion: (id: string) => void;
 }
 
 export const useAdminDashboard = () => {

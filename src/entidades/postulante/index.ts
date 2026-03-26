@@ -1,5 +1,3 @@
-// Entity: Postulante
-// Applicant/Postulante domain model and related UI
-
-export * from './modelo';
-export * from './ui';
+export { ApplicantService } from './model';
+export { ApplicantRepository } from './api';
+export * from './model';

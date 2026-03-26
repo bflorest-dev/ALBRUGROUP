@@ -1,6 +1,6 @@
-import React from 'react';
+﻿import React from 'react';
 import { BiEdit, BiBlock, BiUserPlus, BiFile } from 'react-icons/bi';
-import type { Applicant } from '@compartido/tipos';
+import type { Applicant } from '@shared/types';
 
 export interface ApplicantsTableRowProps {
   applicant: Applicant;
@@ -65,3 +65,4 @@ export const ApplicantsTableRow: React.FC<ApplicantsTableRowProps> = ({
     </tr>
   );
 };
+

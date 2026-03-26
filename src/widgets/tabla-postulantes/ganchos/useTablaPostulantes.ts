@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback } from 'react';
-import type { Applicant } from '@compartido/tipos';
+﻿import { useState, useMemo, useCallback } from 'react';
+import type { Applicant } from '@shared/types';
 
 export const useApplicantsTable = (applicants: Applicant[]) => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
@@ -37,11 +37,11 @@ export const useApplicantsTable = (applicants: Applicant[]) => {
 
   const filteredApplicants = useMemo(() => {
     let result = applicants.filter(app => {
-      if (filters.name && !app.fullName.toLowerCase().includes(filters.name.toLowerCase())) return false;
+      if (filters.name && !(app.fullName ?? '').toLowerCase().includes(filters.name.toLowerCase())) return false;
       if (filters.documentType && app.documentType !== filters.documentType) return false;
-      if (filters.documentNumber && !app.documentNumber.includes(filters.documentNumber)) return false;
+      if (filters.documentNumber && !(app.documentNumber ?? '').includes(filters.documentNumber)) return false;
       if (filters.position && app.positionOfInterest !== filters.position) return false;
-      if (filters.phone && !app.phoneMobile.includes(filters.phone)) return false;
+      if (filters.phone && !(app.phoneMobile ?? '').includes(filters.phone)) return false;
       if (filters.campaign && app.campaign !== filters.campaign) return false;
       if (filters.company && app.company !== filters.company) return false;
       if (filters.status && app.status !== filters.status) return false;
@@ -102,3 +102,4 @@ export const useApplicantsTable = (applicants: Applicant[]) => {
     uniqueStatuses,
   };
 };
+

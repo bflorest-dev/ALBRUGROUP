@@ -1,6 +1,6 @@
 import React from 'react';
 import type { NewLeadFormData } from '../modelo/useNewLeadForm';
-import { Modal, Button, Girador } from '@compartido/ui/base';
+import { Modal, Button, Girador } from '@shared/ui/base';
 
 /**
  * Mensajes de validación de teléfono por país

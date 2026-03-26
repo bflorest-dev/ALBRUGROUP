@@ -1,11 +1,11 @@
-/**
+﻿/**
  * Componente ActivateEmployeeModal (moved to features/RRHH)
  */
 
 import { useState } from 'react';
-import { Modal } from '@compartido/ui/base';
-import { AVAILABLE_POSITIONS } from '@compartido/lib';
-import type { Employee } from '@compartido/tipos';
+import { Modal } from '@shared/ui/base';
+import { AVAILABLE_POSITIONS } from '@shared/lib';
+import type { Employee } from '@shared/types';
 import './ActivateEmployeeModal.css';
 
 interface ActivateEmployeeModalProps {
@@ -56,7 +56,7 @@ export const ActivateEmployeeModal = ({ isOpen, employee, onConfirm, onCancel }:
           {errors.startDate && <span className="error-message">{errors.startDate}</span>}
         </div>
         <div className="form-group">
-          <label className="form-label">Rol/Posición</label>
+          <label className="form-label">Rol/PosiciÃ³n</label>
           <select className={`form-input ${errors.position ? 'error' : ''}`} value={position} onChange={(e) => setPosition(e.target.value)}>
             <option value="">Seleccionar rol</option>
             {AVAILABLE_POSITIONS.map((pos) => (<option key={pos} value={pos}>{pos}</option>))}
@@ -71,3 +71,4 @@ export const ActivateEmployeeModal = ({ isOpen, employee, onConfirm, onCancel }:
     </Modal>
   );
 };
+

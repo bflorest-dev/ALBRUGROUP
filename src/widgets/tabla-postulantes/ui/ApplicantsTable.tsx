@@ -1,9 +1,9 @@
-/**
+﻿/**
  * Componente ApplicantsTable
  */
 
 import { BiFilter, BiSortAlt2, BiSearch } from 'react-icons/bi';
-import type { Applicant } from '@compartido/tipos';
+import type { Applicant } from '@shared/types';
 import './ApplicantsTable.css';
 import { ApplicantsTableRow } from './ApplicantsTableRow';
 
@@ -167,3 +167,4 @@ export const ApplicantsTable = ({ applicants, onEdit, onHire: _onHire, onBlackli
     </div>
   );
 };
+

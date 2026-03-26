@@ -1,13 +1,13 @@
-/**
- * Componentes para la sección de Asesores
+﻿/**
+ * Componentes para la secciÃ³n de Asesores
  * Separados y reutilizables
  */
 
 import React from 'react';
-import { Girador } from '@compartido/ui/base';
-import type { AdvisorDTO } from '@compartido/tipos';
+import { Girador } from '@shared/ui/base';
+import type { AdvisorDTO } from '@shared/types';
 
-// Tipo alias para compatibilidad con el código existente
+// Tipo alias para compatibilidad con el cÃ³digo existente
 export type Advisor = AdvisorDTO;
 
 interface AdvisorCardProps {
@@ -19,23 +19,23 @@ interface AdvisorCardProps {
 /**
  * AdvisorCard Component
  * 
- * Componente presentacional que muestra una tarjeta de asesor con información de carga
+ * Componente presentacional que muestra una tarjeta de asesor con informaciÃ³n de carga
  * 
  * Responsabilidades:
  * - Mostrar avatar con iniciales del asesor
  * - Mostrar nombre completo y estado (Disponible, Ocupado, Saturado)
- * - Mostrar estadísticas: leads asignados y gestionados
+ * - Mostrar estadÃ­sticas: leads asignados y gestionados
  * - Mostrar barra de progreso de capacidad utilizada
  * 
- * Cálculo de progreso:
+ * CÃ¡lculo de progreso:
  * - Se calcula como: (assigned / totalCapacity) * 100
- * - El color de la barra cambia según el estado del asesor
+ * - El color de la barra cambia segÃºn el estado del asesor
  * 
  * @component
  * @param {Advisor} advisor - Datos del asesor
- * @param {Function} statusBgStyle - Función que retorna color de fondo para el badge de estado
- * @param {Function} progressFillColor - Función que retorna color de la barra de progreso
- * @returns {JSX.Element} Tarjeta de asesor con información visual
+ * @param {Function} statusBgStyle - FunciÃ³n que retorna color de fondo para el badge de estado
+ * @param {Function} progressFillColor - FunciÃ³n que retorna color de la barra de progreso
+ * @returns {JSX.Element} Tarjeta de asesor con informaciÃ³n visual
  * 
  * @example
  * <AdvisorCard
@@ -121,3 +121,4 @@ export const AdvisorsGrid: React.FC<AdvisorsGridProps> = ({
 export const AdvisorsSection = AdvisorsGrid;
 
 export default AdvisorsSection;
+
