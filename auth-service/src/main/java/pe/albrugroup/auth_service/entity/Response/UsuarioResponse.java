@@ -8,11 +8,11 @@ import java.util.Set;
 @AllArgsConstructor @NoArgsConstructor
 public class UsuarioResponse {
 
-    private Long id;
-    private String username;
-    private String email;
     private Long empleadoId;
+    private String dni;
     private String nombreCompleto;
+    private String username;
     private Boolean activo;
+    private String email;
     private Set<String> roles;
 }

@@ -17,6 +17,7 @@ import pe.albrugroup.auth_service.entity.Response.CredencialesResponse;
 import pe.albrugroup.auth_service.entity.Response.UsuarioResponse;
 import pe.albrugroup.auth_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.auth_service.entity.request.ActualizarCredencialesRequest;
+import pe.albrugroup.auth_service.entity.request.ForgotPasswordRequest;
 import pe.albrugroup.auth_service.entity.request.LoginRequest;
 import pe.albrugroup.auth_service.entity.request.RegistrarUsuarioRequest;
 import pe.albrugroup.auth_service.security.CustomUserDetails;
@@ -65,19 +66,12 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/registro") @PreAuthorize("hasAnyRole('ADMINISTRADOR','RRHH')")
-    public ResponseEntity<UsuarioResponse> registrarUsuario(@RequestBody RegistrarUsuarioRequest request) {
-        log.info("Solicitud de registro para usuario: {}", request.getDni());
-        var usuario = usuarioService.registrarUsuario(request);
-        log.info("Usuario registrado exitosamente: {}", usuario.getUsername());
-        return ResponseEntity.status(HttpStatus.CREATED).body(usuario);
-    }
-    @PostMapping("/registro-credenciales") @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<CredencialesResponse> registrarUsuarioConCredenciales(@RequestBody RegistrarUsuarioRequest request) {
-        log.info("Solicitud de registro con credenciales para usuario: {}", request.getDni());
-        var credenciales = usuarioService.registrarUsuarioConCredenciales(request);
-        log.info("Usuario registrado con credenciales: {}", credenciales.getUsername());
-        return ResponseEntity.status(HttpStatus.CREATED).body(credenciales);
+    @PostMapping("/upsert-usuario") @PreAuthorize("hasAnyRole('ADMINISTRADOR','RRHH')")
+    public ResponseEntity<Void> upsertUsuario(@RequestBody RegistrarUsuarioRequest request) {
+        log.info("Solicitud de alta/sincronizacion para usuario: {}", request.getDni());
+        usuarioService.upsertUsuario(request);
+        log.info("Usuario sincronizado correctamente para empleado: {}", request.getEmpleadoId());
+        return ResponseEntity.ok().build();
     }
     @PatchMapping("{empleadoId}/roles")
     public ResponseEntity<UsuarioResponse> actualizarRoles(@PathVariable @Positive Long empleadoId,
@@ -100,6 +94,13 @@ public class AuthController {
         log.info("Reseteando password para usuario: {}", empleadoId);
         var credenciales = usuarioService.resetPassword(empleadoId);
         log.info("Password reseteado para usuario: {}", credenciales.getUsername());
+        return ResponseEntity.ok(credenciales);
+    }
+    @PostMapping("/forgot-password")
+    public ResponseEntity<CredencialesResponse> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        log.info("Recuperando password para username: {}", request.getUsername());
+        var credenciales = usuarioService.forgotPassword(request);
+        log.info("Password regenerado correctamente para username: {}", credenciales.getUsername());
         return ResponseEntity.ok(credenciales);
     }
     @GetMapping("/{empleadoId}/empleado") @PreAuthorize("hasAnyRole('ADMINISTRADOR','RRHH')")

@@ -12,12 +12,12 @@ public class Mapper {
         if (usuario == null) return null;
 
         return UsuarioResponse.builder()
-                .id(usuario.getId())
-                .username(usuario.getUsername())
-                .email(usuario.getEmail())
                 .empleadoId(usuario.getEmpleadoId())
+                .dni(usuario.getDni())
                 .nombreCompleto(usuario.getNombreCompleto())
+                .username(usuario.getUsername())
                 .activo(usuario.getActivo())
+                .email(usuario.getEmail())
                 .roles
                 (
                         usuario.getRoles().stream()

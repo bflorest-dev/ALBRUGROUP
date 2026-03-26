@@ -11,6 +11,7 @@ import pe.albrugroup.auth_service.entity.Rol;
 import pe.albrugroup.auth_service.entity.Usuario;
 import pe.albrugroup.auth_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.auth_service.entity.request.ActualizarCredencialesRequest;
+import pe.albrugroup.auth_service.entity.request.ForgotPasswordRequest;
 import pe.albrugroup.auth_service.entity.request.RegistrarUsuarioRequest;
 import pe.albrugroup.auth_service.mapper.Mapper;
 import pe.albrugroup.auth_service.repository.RolRepository;
@@ -18,6 +19,7 @@ import pe.albrugroup.auth_service.repository.UsuarioRepository;
 import pe.albrugroup.auth_service.usecase.IUsuario;
 
 import java.security.SecureRandom;
+import java.util.HashSet;
 import java.util.Set;
 
 @Service @Slf4j
@@ -31,18 +33,12 @@ public class UsuarioService implements IUsuario {
     private static final int PASSWORD_LENGTH = 10;
 
     @Override
-    public UsuarioResponse registrarUsuario(RegistrarUsuarioRequest request) {
-        RegistroUsuarioResult result = registrarUsuarioInternal(request);
-        return Mapper.toResponse(result.usuario());
-    }
-
-    @Override
-    public CredencialesResponse registrarUsuarioConCredenciales(RegistrarUsuarioRequest request) {
-        RegistroUsuarioResult result = registrarUsuarioInternal(request);
-        return CredencialesResponse.builder()
-                .username(result.usuario().getUsername())
-                .password(result.plainPassword())
-                .build();
+    public void upsertUsuario(RegistrarUsuarioRequest request) {
+        usuarioRepository.findByEmpleadoId(request.getEmpleadoId())
+                .ifPresentOrElse(
+                        usuario -> actualizarUsuarioExistente(usuario, request),
+                        () -> registrarUsuarioInternal(request)
+                );
     }
 
     @Override
@@ -67,8 +63,9 @@ public class UsuarioService implements IUsuario {
         }
 
         usuario.setUsername(nuevoUsername);
+        usuario.setDni(request.getDni().trim());
         usuario.setNombreCompleto(construirNombreCompleto(request.getNombres(), request.getApellidos()));
-        usuario.setRoles(Set.of(rol));
+        usuario.setRoles(new HashSet<>(Set.of(rol)));
         Usuario guardado = usuarioRepository.save(usuario);
         return Mapper.toResponse(guardado);
     }
@@ -77,6 +74,28 @@ public class UsuarioService implements IUsuario {
     public CredencialesResponse resetPassword(Long empleadoId) {
         Usuario usuario = usuarioRepository.findByEmpleadoId(empleadoId)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado por EmpleadoID: " + empleadoId));
+        String plainPassword = passwordGenerator();
+        usuario.setPassword(passwordEncoder.encode(plainPassword));
+        Usuario guardado = usuarioRepository.save(usuario);
+        return CredencialesResponse.builder()
+                .username(guardado.getUsername())
+                .password(plainPassword)
+                .build();
+    }
+
+    @Override
+    public CredencialesResponse forgotPassword(ForgotPasswordRequest request) {
+        Usuario usuario = usuarioRepository.findByUsernameAndEmailAndDni(
+                        request.getUsername().trim(),
+                        request.getEmail().trim(),
+                        request.getDni().trim()
+                )
+                .orElseThrow(() -> new RuntimeException("No se encontraron datos coincidentes para recuperar acceso"));
+
+        if (!usuario.getActivo()) {
+            throw new RuntimeException("El usuario se encuentra inactivo");
+        }
+
         String plainPassword = passwordGenerator();
         usuario.setPassword(passwordEncoder.encode(plainPassword));
         Usuario guardado = usuarioRepository.save(usuario);
@@ -112,9 +131,10 @@ public class UsuarioService implements IUsuario {
                 .password(passwordEncoder.encode(plainPassword))
                 .email(request.getEmail())
                 .empleadoId(request.getEmpleadoId())
+                .dni(request.getDni().trim())
                 .nombreCompleto(construirNombreCompleto(request.getNombres(), request.getApellidos()))
                 .activo(true)
-                .roles(Set.of(rol))
+                .roles(new HashSet<>(Set.of(rol)))
                 .build();
 
         Usuario guardado = usuarioRepository.save(usuario);
@@ -122,6 +142,37 @@ public class UsuarioService implements IUsuario {
         log.info("Rol asignado: {}", rol.getNombre());
 
         return new RegistroUsuarioResult(guardado, plainPassword);
+    }
+
+    private void actualizarUsuarioExistente(Usuario usuario, RegistrarUsuarioRequest request) {
+        PuestoTrabajo puestoTrabajo = request.getPuestoTrabajo();
+        Rol rol = rolRepository.findByNombre(puestoTrabajo.name())
+                .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + puestoTrabajo.name()));
+
+        String nuevoUsername = usernameGenerator(
+                request.getNombres(),
+                request.getApellidos(),
+                request.getDni(),
+                puestoTrabajo
+        );
+
+        if (usuarioRepository.existsByUsername(nuevoUsername)
+                && !nuevoUsername.equalsIgnoreCase(usuario.getUsername())) {
+            throw new RuntimeException("El username ya existe: " + nuevoUsername);
+        }
+
+        if (usuarioRepository.existsByEmail(request.getEmail())
+                && !request.getEmail().equalsIgnoreCase(usuario.getEmail())) {
+            throw new RuntimeException("El email ya existe: " + request.getEmail());
+        }
+
+        usuario.setUsername(nuevoUsername);
+        usuario.setEmail(request.getEmail().trim());
+        usuario.setDni(request.getDni().trim());
+        usuario.setNombreCompleto(construirNombreCompleto(request.getNombres(), request.getApellidos()));
+        usuario.setActivo(true);
+        usuario.setRoles(new HashSet<>(Set.of(rol)));
+        usuarioRepository.save(usuario);
     }
 
     private String usernameGenerator(String nombres, String apellidos, String dni, PuestoTrabajo puesto) {
@@ -156,7 +207,7 @@ public class UsuarioService implements IUsuario {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         Rol rol = rolRepository.findByNombre(puesto.name())
                 .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + puesto.name()));
-        usuario.setRoles(Set.of(rol));
+        usuario.setRoles(new HashSet<>(Set.of(rol)));
 
         log.info("Rol actualizado para el usuario: {}|{}", usuario.getUsername(), rol.getNombre());
         return Mapper.toResponse(usuario);

@@ -8,7 +8,6 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
-import pe.albrugroup.rrhh_service.entity.response.CredencialesResponse;
 import pe.albrugroup.rrhh_service.exception.AuthServiceException;
 import pe.albrugroup.rrhh_service.integration.auth.dto.ActualizarCredencialesRequest;
 import pe.albrugroup.rrhh_service.integration.auth.dto.RegistrarUsuarioRequest;
@@ -21,23 +20,10 @@ public class AuthServiceClient {
     @Qualifier("authRestTemplate")
     private final RestTemplate authRestTemplate;
 
-    public void registrarUsuario(String authHeader, RegistrarUsuarioRequest request) {
+    public void upsertUsuario(String authHeader, RegistrarUsuarioRequest request) {
         HttpEntity<RegistrarUsuarioRequest> entity = new HttpEntity<>(request, buildHeaders(authHeader));
         try {
-            authRestTemplate.postForEntity("/autorizacion/registro", entity, Void.class);
-        } catch (RestClientResponseException e) {
-            throw AuthServiceException.from(e);
-        }
-    }
-
-    public CredencialesResponse registrarUsuarioConCredenciales(String authHeader, RegistrarUsuarioRequest request) {
-        HttpEntity<RegistrarUsuarioRequest> entity = new HttpEntity<>(request, buildHeaders(authHeader));
-        try {
-            return authRestTemplate.postForObject(
-                    "/autorizacion/registro-credenciales",
-                    entity,
-                    CredencialesResponse.class
-            );
+            authRestTemplate.postForEntity("/autorizacion/upsert-usuario", entity, Void.class);
         } catch (RestClientResponseException e) {
             throw AuthServiceException.from(e);
         }

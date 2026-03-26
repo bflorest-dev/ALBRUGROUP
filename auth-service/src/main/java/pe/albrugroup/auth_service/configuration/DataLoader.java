@@ -206,6 +206,7 @@ public class DataLoader {
         );
         saveRol("ASESOR_VENTAS", "Ventas - Gestion de leads asignados", asesorVentasPermisos);
 
+        // SUPERVISOR_VENTAS
         Set<Permiso> supervisorVentasPermisos = Set.of(
                 getPermiso("READ_LEADS_ASESOR"),
                 getPermiso("UPDATE_LEADS_ASESOR"),
@@ -245,10 +246,11 @@ public class DataLoader {
                 .username("admin@albru.admin.pe")
                 .password(passwordEncoder.encode("123456"))
                 .email("jevbxx@gmail.com")
-                .empleadoId(1L)
+                .empleadoId(0L)
+                .dni("00000000")
                 .nombreCompleto("Edinson Vitterio")
                 .activo(true)
-                .roles(Set.of(adminRol))
+                .roles(new HashSet<>(Set.of(adminRol)))
                 .build();
         usuarioRepository.save(adminUsuario);
 
@@ -257,7 +259,8 @@ public class DataLoader {
         log.info("  Username: admin@albru.admin.pe");
         log.info("  Password: 123456");
         log.info("  Email: jevbxx@gmail.com");
-        log.info("  EmpleadoId: 1");
+        log.info("  EmpleadoId: 0");
+        log.info("  Dni: 00000000");
         log.info("  NombreCompleto: Edinson Vitterio");
         log.info("  Roles: [ADMINISTRADOR]");
         log.info("═══════════════════════════════════════════════════════");

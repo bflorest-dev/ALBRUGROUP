@@ -2,7 +2,6 @@ package pe.albrugroup.rrhh_service.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.rrhh_service.entity.Contrato;
@@ -10,12 +9,9 @@ import pe.albrugroup.rrhh_service.entity.Empleado;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.RegistrarContratoRequest;
-import pe.albrugroup.rrhh_service.entity.response.ContratoRegistroResponse;
 import pe.albrugroup.rrhh_service.entity.response.ContratoResponse;
-import pe.albrugroup.rrhh_service.entity.response.CredencialesResponse;
 import pe.albrugroup.rrhh_service.exception.*;
 import pe.albrugroup.rrhh_service.integration.auth.AuthServiceClient;
-import pe.albrugroup.rrhh_service.integration.auth.dto.ActualizarCredencialesRequest;
 import pe.albrugroup.rrhh_service.integration.auth.dto.RegistrarUsuarioRequest;
 import pe.albrugroup.rrhh_service.service.mapper.ContratoMapper;
 import pe.albrugroup.rrhh_service.repository.ContratoRepository;
@@ -51,7 +47,7 @@ public class ContratoService implements IContrato {
         return mapper.toResponse(contrato);
     }
     @Override @Transactional
-    public ContratoRegistroResponse registrarContrato(Long idEmpleado, RegistrarContratoRequest nuevoContrato, String authHeader) {
+    public ContratoResponse registrarContrato(Long idEmpleado, RegistrarContratoRequest nuevoContrato, String authHeader) {
         Empleado empleado = empleadoRepository.findById(idEmpleado)
                 .orElseThrow(() -> new NotFoundException(Empleado.class, idEmpleado));
         validarDatosCompletosEmpleado(empleado);
@@ -69,12 +65,8 @@ public class ContratoService implements IContrato {
         contrato.setEmpleado(empleado);
 
         ContratoResponse contratoResponse = mapper.toResponse(contratoRepository.save(contrato));
-        CredencialesResponse credenciales = registrarUsuarioAuth(empleado, nuevoContrato, authHeader);
-
-        return ContratoRegistroResponse.builder()
-                .contrato(contratoResponse)
-                .credenciales(credenciales)
-                .build();
+        registrarUsuarioAuth(empleado, nuevoContrato, authHeader);
+        return contratoResponse;
     }
 
     private void validarNoHayConflictosDeContrato(Long idEmpleado, LocalDate fechaInicio, LocalDate fechaFin) {
@@ -153,9 +145,9 @@ public class ContratoService implements IContrato {
                 ));
     }
 
-    private CredencialesResponse registrarUsuarioAuth(Empleado empleado,
-                                                      RegistrarContratoRequest nuevoContrato,
-                                                      String authHeader) {
+    private void registrarUsuarioAuth(Empleado empleado,
+                                      RegistrarContratoRequest nuevoContrato,
+                                      String authHeader) {
         String email = (empleado.getCorreoCorporativo() != null && !empleado.getCorreoCorporativo().isBlank())
                 ? empleado.getCorreoCorporativo()
                 : empleado.getCorreoPersonal();
@@ -177,31 +169,7 @@ public class ContratoService implements IContrato {
             );
         }
 
-        boolean existeUsuario = authServiceClient.getUsuarioPorEmpleadoId(authHeader, empleado.getId()) != null;
-        if (existeUsuario) {
-            ActualizarCredencialesRequest updateRequest = ActualizarCredencialesRequest.builder()
-                    .nombres(empleado.getNombres())
-                    .apellidos(empleado.getApellidos())
-                    .dni(empleado.getNumeroDocumento())
-                    .puestoTrabajo(nuevoContrato.getPuestoTrabajo())
-                    .build();
-            authServiceClient.actualizarUsernameRoles(authHeader, empleado.getId(), updateRequest);
-            return null;
-        }
-
-        if (esAdministrador()) {
-            return authServiceClient.registrarUsuarioConCredenciales(authHeader, request);
-        }
-
-        authServiceClient.registrarUsuario(authHeader, request);
-        return null;
-    }
-
-    private boolean esAdministrador() {
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null) return false;
-        return auth.getAuthorities().stream()
-                .anyMatch(a -> "ROLE_ADMINISTRADOR".equals(a.getAuthority()));
+        authServiceClient.upsertUsuario(authHeader, request);
     }
 }
 
