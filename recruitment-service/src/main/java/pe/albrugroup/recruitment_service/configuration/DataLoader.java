@@ -292,6 +292,144 @@ public class DataLoader {
                 EstadoPostulacion.EN_PROCESO,
                 EstadoBandejaPostulacion.EN_GESTION
         );
+
+        Tipificacion capacitacionEnCurso = saveTipificacion(
+                Etapa.CAPACITACION,
+                "EN_CURSO",
+                "El postulante continua activo dentro del proceso de capacitacion",
+                1
+        );
+        saveSubtipificacion(
+                capacitacionEnCurso,
+                "ASISTENCIA_CONFIRMADA",
+                "El postulante confirma asistencia y continua en capacitacion",
+                1,
+                AlcanceSubtipificacion.ASESOR_VENTAS,
+                null,
+                EstadoPostulacion.EN_PROCESO,
+                EstadoBandejaPostulacion.EN_GESTION
+        );
+        saveSubtipificacion(
+                capacitacionEnCurso,
+                "SEGUIMIENTO_CAPACITACION",
+                "El postulante continua en seguimiento durante capacitacion",
+                2,
+                AlcanceSubtipificacion.ASESOR_VENTAS,
+                null,
+                EstadoPostulacion.EN_PROCESO,
+                EstadoBandejaPostulacion.EN_GESTION
+        );
+
+        Tipificacion aprobado = saveTipificacion(
+                Etapa.CAPACITACION,
+                "APROBADO",
+                "El postulante aprueba capacitacion y queda listo para contratacion",
+                2
+        );
+        saveSubtipificacion(
+                aprobado,
+                "APTO_PARA_CONTRATACION",
+                "El postulante cumple los criterios y pasa a contratacion",
+                1,
+                AlcanceSubtipificacion.ASESOR_VENTAS,
+                Etapa.CONTRATACION,
+                EstadoPostulacion.EN_PROCESO,
+                EstadoBandejaPostulacion.EN_GESTION
+        );
+
+        Tipificacion desaprobado = saveTipificacion(
+                Etapa.CAPACITACION,
+                "DESAPROBADO",
+                "El postulante no alcanza el resultado esperado en capacitacion",
+                3
+        );
+        saveSubtipificacion(
+                desaprobado,
+                "NO_PASO_ROLEPLAY",
+                "No alcanza el desempeno esperado en roleplay",
+                1,
+                AlcanceSubtipificacion.ASESOR_VENTAS,
+                null,
+                EstadoPostulacion.CERRADA,
+                EstadoBandejaPostulacion.RECHAZADO
+        );
+        saveSubtipificacion(
+                desaprobado,
+                "NO_CUMPLE_OBJETIVO",
+                "No cumple con los objetivos definidos en capacitacion",
+                2,
+                AlcanceSubtipificacion.ASESOR_VENTAS,
+                null,
+                EstadoPostulacion.CERRADA,
+                EstadoBandejaPostulacion.RECHAZADO
+        );
+        saveSubtipificacion(
+                desaprobado,
+                "NO_DESARROLLA_HABILIDADES",
+                "No desarrolla las habilidades comerciales requeridas",
+                3,
+                AlcanceSubtipificacion.ASESOR_VENTAS,
+                null,
+                EstadoPostulacion.CERRADA,
+                EstadoBandejaPostulacion.RECHAZADO
+        );
+        saveSubtipificacion(
+                desaprobado,
+                "FALTA_ACTITUD_COMERCIAL",
+                "No evidencia la actitud comercial esperada para el puesto",
+                4,
+                AlcanceSubtipificacion.ASESOR_VENTAS,
+                null,
+                EstadoPostulacion.CERRADA,
+                EstadoBandejaPostulacion.RECHAZADO
+        );
+        saveSubtipificacion(
+                desaprobado,
+                "PROBLEMAS_TRABAJO_EN_EQUIPO",
+                "Presenta dificultades relevantes para trabajar en equipo",
+                5,
+                AlcanceSubtipificacion.ASESOR_VENTAS,
+                null,
+                EstadoPostulacion.CERRADA,
+                EstadoBandejaPostulacion.RECHAZADO
+        );
+        saveSubtipificacion(
+                desaprobado,
+                "RESULTADOS_INSUFICIENTES_EVALUACIONES",
+                "Obtiene resultados insuficientes en las evaluaciones de capacitacion",
+                6,
+                AlcanceSubtipificacion.ASESOR_VENTAS,
+                null,
+                EstadoPostulacion.CERRADA,
+                EstadoBandejaPostulacion.RECHAZADO
+        );
+
+        Tipificacion retirado = saveTipificacion(
+                Etapa.CAPACITACION,
+                "RETIRADO",
+                "El postulante abandona o es retirado del proceso de capacitacion",
+                4
+        );
+        saveSubtipificacion(
+                retirado,
+                "RETIRO_VOLUNTARIO",
+                "El postulante decide no continuar con la capacitacion",
+                1,
+                AlcanceSubtipificacion.ASESOR_VENTAS,
+                null,
+                EstadoPostulacion.CERRADA,
+                EstadoBandejaPostulacion.NO_INTERESADO
+        );
+        saveSubtipificacion(
+                retirado,
+                "INASISTENCIA_REITERADA",
+                "El postulante acumula inasistencias y se retira del proceso",
+                2,
+                AlcanceSubtipificacion.ASESOR_VENTAS,
+                null,
+                EstadoPostulacion.CERRADA,
+                EstadoBandejaPostulacion.RECHAZADO
+        );
     }
 
     private Tipificacion saveTipificacion(Etapa etapa, String codigo, String descripcion, Integer orden) {

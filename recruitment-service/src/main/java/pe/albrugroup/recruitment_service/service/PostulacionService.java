@@ -14,15 +14,18 @@ import pe.albrugroup.recruitment_service.entity.Subtipificacion;
 import pe.albrugroup.recruitment_service.entity.Tipificacion;
 import pe.albrugroup.recruitment_service.entity.enums.Accion;
 import pe.albrugroup.recruitment_service.entity.enums.AlcanceSubtipificacion;
+import pe.albrugroup.recruitment_service.entity.enums.EstadoCapacitacionPostulante;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoBandejaPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoOferta;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.Etapa;
 import pe.albrugroup.recruitment_service.entity.enums.PuestoObjetivo;
+import pe.albrugroup.recruitment_service.entity.request.ConfirmarContratacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.PostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.TipificarPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
 import pe.albrugroup.recruitment_service.exception.NotFoundException;
+import pe.albrugroup.recruitment_service.repository.GrupoCapacitacionDetalleRepository;
 import pe.albrugroup.recruitment_service.repository.OfertaLaboralRepository;
 import pe.albrugroup.recruitment_service.repository.PostulacionRepository;
 import pe.albrugroup.recruitment_service.repository.SubtipificacionRepository;
@@ -45,6 +48,7 @@ public class PostulacionService {
     private final PostulacionMapper postulacionMapper;
     private final TipificacionRepository tipificacionRepository;
     private final SubtipificacionRepository subtipificacionRepository;
+    private final GrupoCapacitacionDetalleRepository grupoCapacitacionDetalleRepository;
 
     public PostulacionResponse registrarPostulacion(PostulacionRequest request) {
         OfertaLaboral ofertaLaboral = obtenerOfertaActiva(request.getIdOfertaLaboral());
@@ -90,8 +94,10 @@ public class PostulacionService {
         validarTipificacionPorEtapa(postulacion, tipificacion);
         validarSubtipificacionPerteneceATipificacion(tipificacion, subtipificacion);
         validarAlcanceSubtipificacion(postulacion, subtipificacion);
+        validarPostulacionNoContratada(postulacion);
 
         aplicarCambiosDeSubtipificacion(postulacion, subtipificacion);
+        sincronizarDetalleGrupoCapacitacion(postulacion, tipificacion);
 
         Postulacion postulacionGuardada = postulacionRepository.save(postulacion);
         eventoService.registrarEvento(
@@ -138,7 +144,7 @@ public class PostulacionService {
     public PostulacionResponse obtenerPostulacion(Long idPostulacion) {
         Postulacion postulacion = postulacionRepository.findById(idPostulacion)
                 .orElseThrow(() -> new NotFoundException(Postulacion.class, idPostulacion));
-        return postulacionMapper.toResponse(postulacion);
+        return mapearPostulacionResponse(postulacion);
     }
 
     @Transactional(readOnly = true)
@@ -155,7 +161,7 @@ public class PostulacionService {
                         org.springframework.data.domain.Sort.Direction.DESC,
                         "createdAt"
                 )).stream()
-                .map(postulacionMapper::toResponse)
+                .map(this::mapearPostulacionResponse)
                 .toList();
     }
 
@@ -167,14 +173,13 @@ public class PostulacionService {
                 .and(enProcesoOReciente(limiteReciente));
 
         return postulacionRepository.findAll(spec, ordenarPorActualizacionDesc()).stream()
-                .map(postulacionMapper::toResponse)
+                .map(this::mapearPostulacionResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<PostulacionResponse> listarBandejaCapacitacion(Boolean sinGrupo) {
-        Specification<Postulacion> spec = Specification.where(conEtapa(Etapa.CAPACITACION))
-                .and(conPuestoObjetivo(PuestoObjetivo.ASESOR_VENTAS));
+        Specification<Postulacion> spec = Specification.where(conEtapa(Etapa.CAPACITACION));
 
         List<Postulacion> postulaciones = postulacionRepository.findAll(spec, ordenarPorActualizacionDesc());
         if (Boolean.TRUE.equals(sinGrupo)) {
@@ -184,8 +189,51 @@ public class PostulacionService {
         }
 
         return postulaciones.stream()
-                .map(postulacionMapper::toResponse)
+                .map(this::mapearPostulacionResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostulacionResponse> listarBandejaContratacion() {
+        return grupoCapacitacionDetalleRepository.findListosParaContratar(EstadoCapacitacionPostulante.APROBADO).stream()
+                .map(detalle -> mapearPostulacionResponse(detalle.getPostulacion()))
+                .toList();
+    }
+
+    public PostulacionResponse confirmarContratacion(Long idPostulacion, ConfirmarContratacionRequest request) {
+        Postulacion postulacion = postulacionRepository.findById(idPostulacion)
+                .orElseThrow(() -> new NotFoundException(Postulacion.class, idPostulacion));
+
+        var detalle = grupoCapacitacionDetalleRepository.findByPostulacionId(idPostulacion)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "La postulacion no tiene un detalle de grupo de capacitacion asociado"
+                ));
+
+        validarPostulacionListaParaContratar(postulacion, detalle.getEstadoCapacitacion());
+
+        if (detalle.getIdEmpleadoContratado() != null) {
+            return manejarConfirmacionIdempotente(postulacion, detalle, request);
+        }
+
+        detalle.setIdEmpleadoContratado(request.getIdEmpleadoContratado());
+        detalle.setFechaContratacion(request.getFechaContratacion());
+        postulacion.setEstado(EstadoPostulacion.FINALIZADA);
+        grupoCapacitacionDetalleRepository.save(detalle);
+        Postulacion postulacionGuardada = postulacionRepository.save(postulacion);
+
+        eventoService.registrarEvento(
+                postulacionGuardada,
+                Accion.CONFIRMACION_CONTRATACION,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "Contratacion confirmada con idEmpleado " + request.getIdEmpleadoContratado()
+        );
+
+        return mapearPostulacionResponse(postulacionGuardada);
     }
 
     private OfertaLaboral obtenerOfertaActiva(Long idOfertaLaboral) {
@@ -206,6 +254,18 @@ public class PostulacionService {
         if (!Boolean.TRUE.equals(tipificacion.getActivo())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La tipificacion enviada esta inactiva");
         }
+    }
+
+    private void validarPostulacionNoContratada(Postulacion postulacion) {
+        grupoCapacitacionDetalleRepository.findByPostulacionId(postulacion.getId())
+                .ifPresent(detalle -> {
+                    if (detalle.getIdEmpleadoContratado() != null) {
+                        throw new ResponseStatusException(
+                                HttpStatus.BAD_REQUEST,
+                                "La postulacion ya tiene una contratacion confirmada y no admite nuevas tipificaciones"
+                        );
+                    }
+                });
     }
 
     private void validarSubtipificacionActiva(Subtipificacion subtipificacion) {
@@ -261,6 +321,59 @@ public class PostulacionService {
         }
     }
 
+    private void sincronizarDetalleGrupoCapacitacion(Postulacion postulacion, Tipificacion tipificacion) {
+        grupoCapacitacionDetalleRepository.findByPostulacionId(postulacion.getId())
+                .ifPresent(detalle -> {
+                    EstadoCapacitacionPostulante nuevoEstado = resolverEstadoCapacitacionSegunTipificacion(tipificacion);
+                    if (nuevoEstado == null) {
+                        return;
+                    }
+
+                    validarTransicionDetalleCapacitacion(detalle.getEstadoCapacitacion(), nuevoEstado);
+                    detalle.setEstadoCapacitacion(nuevoEstado);
+
+                    if (nuevoEstado == EstadoCapacitacionPostulante.APROBADO
+                            || nuevoEstado == EstadoCapacitacionPostulante.DESAPROBADO
+                            || nuevoEstado == EstadoCapacitacionPostulante.RETIRADO) {
+                        detalle.setFechaResultado(java.time.LocalDate.now());
+                    }
+
+                    grupoCapacitacionDetalleRepository.save(detalle);
+                });
+    }
+
+    private EstadoCapacitacionPostulante resolverEstadoCapacitacionSegunTipificacion(Tipificacion tipificacion) {
+        if (tipificacion.getEtapa() != Etapa.CAPACITACION) {
+            return null;
+        }
+
+        return switch (tipificacion.getCodigo()) {
+            case "EN_CURSO" -> EstadoCapacitacionPostulante.EN_CAPACITACION;
+            case "APROBADO" -> EstadoCapacitacionPostulante.APROBADO;
+            case "DESAPROBADO" -> EstadoCapacitacionPostulante.DESAPROBADO;
+            case "RETIRADO" -> EstadoCapacitacionPostulante.RETIRADO;
+            default -> null;
+        };
+    }
+
+    private void validarTransicionDetalleCapacitacion(
+            EstadoCapacitacionPostulante estadoActual,
+            EstadoCapacitacionPostulante nuevoEstado
+    ) {
+        if (estadoActual == null || estadoActual == nuevoEstado) {
+            return;
+        }
+
+        if (estadoActual == EstadoCapacitacionPostulante.APROBADO
+                || estadoActual == EstadoCapacitacionPostulante.DESAPROBADO
+                || estadoActual == EstadoCapacitacionPostulante.RETIRADO) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "El detalle del grupo ya se encuentra en un estado final y no admite nuevas tipificaciones de capacitacion"
+            );
+        }
+    }
+
     private Specification<Postulacion> conEtapa(Etapa etapa) {
         return (root, query, builder) -> etapa == null ? null : builder.equal(root.get("etapa"), etapa);
     }
@@ -284,6 +397,46 @@ public class PostulacionService {
                 builder.equal(root.get("estado"), EstadoPostulacion.EN_PROCESO),
                 builder.greaterThanOrEqualTo(root.get("updatedAt"), limiteReciente)
         );
+    }
+
+    private void validarPostulacionListaParaContratar(Postulacion postulacion, EstadoCapacitacionPostulante estadoCapacitacion) {
+        if (postulacion.getEtapa() != Etapa.CONTRATACION) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Solo se puede confirmar la contratacion de postulaciones en etapa CONTRATACION"
+            );
+        }
+
+        if (estadoCapacitacion != EstadoCapacitacionPostulante.APROBADO) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Solo se puede confirmar la contratacion de postulaciones aprobadas en capacitacion"
+            );
+        }
+    }
+
+    private PostulacionResponse manejarConfirmacionIdempotente(
+            Postulacion postulacion,
+            pe.albrugroup.recruitment_service.entity.GrupoCapacitacionDetalle detalle,
+            ConfirmarContratacionRequest request
+    ) {
+        boolean mismoEmpleado = detalle.getIdEmpleadoContratado().equals(request.getIdEmpleadoContratado());
+        boolean mismaFecha = detalle.getFechaContratacion().equals(request.getFechaContratacion());
+        if (mismoEmpleado && mismaFecha && postulacion.getEstado() == EstadoPostulacion.FINALIZADA) {
+            return postulacionMapper.toResponse(postulacion);
+        }
+
+        throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "La postulacion ya tiene una contratacion confirmada con datos diferentes"
+        );
+    }
+
+    private PostulacionResponse mapearPostulacionResponse(Postulacion postulacion) {
+        PostulacionResponse response = postulacionMapper.toResponse(postulacion);
+        grupoCapacitacionDetalleRepository.findByPostulacionId(postulacion.getId())
+                .ifPresent(detalle -> response.setIdGrupoCapacitacion(detalle.getGrupoCapacitacion().getId()));
+        return response;
     }
 
     private Sort ordenarPorActualizacionDesc() {

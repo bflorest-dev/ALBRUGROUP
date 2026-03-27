@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoBandejaPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.Etapa;
+import pe.albrugroup.recruitment_service.entity.request.ConfirmarContratacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.PostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.TipificarPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
@@ -79,5 +80,18 @@ public class PostulacionController {
             @RequestParam(required = false) Boolean sinGrupo
     ) {
         return ResponseEntity.ok(postulacionService.listarBandejaCapacitacion(sinGrupo));
+    }
+
+    @GetMapping("/bandeja/contratacion")
+    public ResponseEntity<List<PostulacionResponse>> listarBandejaContratacion() {
+        return ResponseEntity.ok(postulacionService.listarBandejaContratacion());
+    }
+
+    @PostMapping("/{idPostulacion}/confirmar-contratacion")
+    public ResponseEntity<PostulacionResponse> confirmarContratacion(
+            @PathVariable @Positive Long idPostulacion,
+            @Valid @RequestBody ConfirmarContratacionRequest request
+    ) {
+        return ResponseEntity.ok(postulacionService.confirmarContratacion(idPostulacion, request));
     }
 }

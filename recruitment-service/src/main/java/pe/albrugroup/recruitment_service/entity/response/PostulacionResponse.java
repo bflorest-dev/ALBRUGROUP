@@ -20,6 +20,7 @@ import java.time.Instant;
 public class PostulacionResponse {
 
     private Long id;
+    private Long idGrupoCapacitacion;
     private Long idEmpleadoRegistrador;
     private Origen origen;
     private Etapa etapa;

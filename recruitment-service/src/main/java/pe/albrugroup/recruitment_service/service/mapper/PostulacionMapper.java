@@ -19,6 +19,7 @@ public interface PostulacionMapper {
 
     PostulanteResponse toResponse(Postulante postulante);
 
+    @Mapping(target = "idGrupoCapacitacion", ignore = true)
     @Mapping(target = "ofertaLaboral", source = "ofertaLaboral")
     PostulacionResponse toResponse(Postulacion postulacion);
 }
