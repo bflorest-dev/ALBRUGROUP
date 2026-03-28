@@ -25,7 +25,7 @@ public class TipificacionController {
 
     private final TipificacionService service;
 
-    @GetMapping("/{etapa}/catalogo") @PreAuthorize("hasAuthority('READ_TIPIFICACIONES')")
+    @GetMapping("/{etapa}/catalogo") @PreAuthorize("@tipificacionPermissionEvaluator.canRead(authentication, #etapa)")
     public ResponseEntity<CatalogoResponse> getCatalogo(@PathVariable Etapa etapa) {
         var catalogo = service.getCatalogoPorEtapa(etapa);
         return ResponseEntity.ok(catalogo);

@@ -39,6 +39,34 @@ public class DataLoader {
 
     private void crearPermisos() {
         log.info("🚀 Creando Permisos...");
+
+        // RECRUITMENT-SERVICE - POSTULACIONES
+        savePermiso("CREATE_POSTULACIONES", "Puede registrar postulaciones nuevas", "POSTULACION", "CREATE");
+        savePermiso("UPDATE_POSTULACIONES", "Puede editar y actualizar postulaciones", "POSTULACION", "UPDATE");
+        savePermiso("TYPIFY_POSTULACIONES", "Puede tipificar postulaciones", "POSTULACION", "TYPIFY");
+        savePermiso("READ_POSTULACION", "Puede ver el detalle de una postulacion", "POSTULACION", "READ");
+        savePermiso("READ_POSTULACIONES", "Puede listar postulaciones", "POSTULACION", "READ");
+        savePermiso("READ_POSTULACIONES_RECLUTAMIENTO", "Puede ver la bandeja de postulaciones en reclutamiento", "POSTULACION", "READ");
+        savePermiso("READ_POSTULACIONES_CAPACITACION", "Puede ver la bandeja de postulaciones en capacitacion", "POSTULACION", "READ");
+        savePermiso("CONFIRM_CONTRATACION_POSTULACIONES", "Puede confirmar la contratacion de postulaciones", "POSTULACION", "CONFIRM");
+
+        // RECRUITMENT-SERVICE - OFERTAS LABORALES
+        savePermiso("CREATE_OFERTAS_LABORALES", "Puede registrar ofertas laborales", "OFERTA_LABORAL", "CREATE");
+        savePermiso("UPDATE_OFERTAS_LABORALES", "Puede registrar ampliaciones de ofertas laborales", "OFERTA_LABORAL", "UPDATE");
+        savePermiso("READ_OFERTAS_LABORALES_ACTIVAS", "Puede listar ofertas laborales activas", "OFERTA_LABORAL", "READ");
+        savePermiso("READ_OFERTAS_LABORALES", "Puede listar y ver ofertas laborales", "OFERTA_LABORAL", "READ");
+        savePermiso("UPDATE_ESTADO_OFERTAS_LABORALES", "Puede cambiar el estado de las ofertas laborales", "OFERTA_LABORAL", "UPDATE_ESTADO");
+
+        // RECRUITMENT-SERVICE - GRUPOS DE CAPACITACION
+        savePermiso("CREATE_GRUPOS_CAPACITACION", "Puede crear grupos de capacitacion", "GRUPO_CAPACITACION", "CREATE");
+        savePermiso("READ_GRUPOS_CAPACITACION", "Puede listar y ver grupos de capacitacion", "GRUPO_CAPACITACION", "READ");
+        savePermiso("ASSIGN_GRUPOS_CAPACITACION", "Puede asignar postulaciones a grupos de capacitacion", "GRUPO_CAPACITACION", "ASSIGN");
+        savePermiso("UPDATE_GRUPOS_CAPACITACION", "Puede actualizar detalles de grupos de capacitacion", "GRUPO_CAPACITACION", "UPDATE");
+
+        // RECRUITMENT-SERVICE - EVENTOS
+        savePermiso("READ_EVENTOS_RECRUITMENT", "Puede ver el historico de eventos de recruitment", "EVENTO_RECRUITMENT", "READ");
+
+
         // POSTULANTES
         savePermiso("CREATE_POSTULANTES", "Puede registrar postulantes nuevos", "POSTULANTE", "CREATE");
         savePermiso("UPDATE_POSTULANTES", "Puede editar y actualizar postulantes", "POSTULANTE", "UPDATE");
@@ -103,7 +131,11 @@ public class DataLoader {
         savePermiso("READ_PROMOCIONES", "Puede listar y ver promociones", "PROMOCION", "READ");
         savePermiso("DELETE_PROMOCIONES", "Puede desactivar promociones", "PROMOCION", "DELETE");
 
-        savePermiso("READ_TIPIFICACIONES", "Puede consultar catalogos de tipificacion", "TIPIFICACION", "READ");
+        savePermiso("READ_TIPIFICACIONES_RECLUTAMIENTO", "Puede consultar catalogos de tipificacion de reclutamiento", "TIPIFICACION_RECLUTAMIENTO", "READ");
+        savePermiso("READ_TIPIFICACIONES_CAPACITACION", "Puede consultar catalogos de tipificacion de capacitacion", "TIPIFICACION_CAPACITACION", "READ");
+        savePermiso("READ_TIPIFICACIONES_PREVENTA", "Puede consultar catalogos de tipificacion de preventa", "TIPIFICACION_PREVENTA", "READ");
+        savePermiso("READ_TIPIFICACIONES_VENTA", "Puede consultar catalogos de tipificacion de venta", "TIPIFICACION_VENTA", "READ");
+        savePermiso("READ_TIPIFICACIONES_POSTVENTA", "Puede consultar catalogos de tipificacion de postventa", "TIPIFICACION_POSTVENTA", "READ");
         savePermiso("UPDATE_TIPIFICACIONES", "Puede actualizar catalogos de tipificacion", "TIPIFICACION", "UPDATE");
 
         savePermiso("CREATE_LEADS", "Puede registrar ingresos de leads", "LEAD", "CREATE");
@@ -118,7 +150,11 @@ public class DataLoader {
 
         log.info("✅ Permisos Creados");
     }
+
     private void savePermiso(String nombre, String descripcion, String recurso, String accion) {
+        if (permisoRepository.existsByNombre(nombre)) {
+            return;
+        }
         Permiso permiso = Permiso.builder()
                 .nombre(nombre)
                 .descripcion(descripcion)
@@ -198,7 +234,6 @@ public class DataLoader {
                 getPermiso("TYPIFY_LEADS"),
                 getPermiso("CONTACT_LEADS"),
                 getPermiso("READ_EVENTOS_LEADS"),
-                getPermiso("READ_TIPIFICACIONES"),
                 getPermiso("READ_PLANES"),
                 getPermiso("READ_ADICIONALES"),
                 getPermiso("READ_PROMOCIONES"),
@@ -213,7 +248,6 @@ public class DataLoader {
                 getPermiso("TYPIFY_LEADS"),
                 getPermiso("CONTACT_LEADS"),
                 getPermiso("READ_EVENTOS_LEADS"),
-                getPermiso("READ_TIPIFICACIONES"),
                 getPermiso("READ_PLANES"),
                 getPermiso("READ_ADICIONALES"),
                 getPermiso("READ_PROMOCIONES"),
@@ -221,13 +255,90 @@ public class DataLoader {
         );
         saveRol("SUPERVISOR_VENTAS", "Ventas - Supervision de leads asignados", supervisorVentasPermisos);
 
+        // COMMUNITY
+        Set<Permiso> communityPermisos = Set.of(
+                getPermiso("CREATE_LEADS"),
+                getPermiso("READ_CAMPANA"),
+                getPermiso("READ_PLANES"),
+                getPermiso("READ_ADICIONALES"),
+                getPermiso("READ_PROMOCIONES"),
+                getPermiso("READ_UBIGEO")
+        );
+        saveRol("COMMUNITY", "Marketing - Generacion y apoyo comercial", communityPermisos);
+
+        // MONITOR
+        Set<Permiso> monitorPermisos = Set.of(
+                getPermiso("READ_EVENTOS"),
+                getPermiso("READ_EVENTOS_LEADS"),
+                getPermiso("READ_EVENTOS_RECRUITMENT"),
+                getPermiso("READ_EMPLEADOS"),
+                getPermiso("READ_CONTRATOS"),
+                getPermiso("READ_POSTULACIONES"),
+                getPermiso("READ_POSTULACIONES_RECLUTAMIENTO"),
+                getPermiso("READ_POSTULACIONES_CAPACITACION"),
+                getPermiso("READ_OFERTAS_LABORALES"),
+                getPermiso("READ_GRUPOS_CAPACITACION"),
+                getPermiso("READ_POSTULANTES"),
+                getPermiso("READ_RECLUTADOS"),
+                getPermiso("READ_CAPACITADOS")
+        );
+        saveRol("MONITOR", "Monitoreo - Consulta transversal de la operacion", monitorPermisos);
+
+        Set<Permiso> backofficePermisos = Set.of(
+                getPermiso("READ_LEADS_ASESOR"),
+                getPermiso("UPDATE_LEADS_ASESOR"),
+                getPermiso("TYPIFY_LEADS"),
+                getPermiso("CONTACT_LEADS"),
+                getPermiso("READ_EVENTOS_LEADS"),
+                getPermiso("READ_PLANES"),
+                getPermiso("READ_ADICIONALES"),
+                getPermiso("READ_PROMOCIONES"),
+                getPermiso("READ_UBIGEO")
+        );
+        saveRol("ASESOR_BACKOFFICE", "Backoffice - Gestion operativa comercial", backofficePermisos);
+        saveRol("SUPERVISOR_BACKOFFICE", "Backoffice - Supervision operativa comercial", backofficePermisos);
+
+        Set<Permiso> postventaPermisos = Set.of(
+                getPermiso("READ_LEADS_ASESOR"),
+                getPermiso("UPDATE_LEADS_ASESOR"),
+                getPermiso("TYPIFY_LEADS"),
+                getPermiso("CONTACT_LEADS"),
+                getPermiso("READ_EVENTOS_LEADS"),
+                getPermiso("READ_PLANES"),
+                getPermiso("READ_ADICIONALES"),
+                getPermiso("READ_PROMOCIONES"),
+                getPermiso("READ_UBIGEO")
+        );
+        saveRol("ASESOR_POSTVENTA", "Postventa - Gestion de cartera y seguimiento", postventaPermisos);
+        saveRol("SUPERVISOR_POSTVENTA", "Postventa - Supervision de cartera y seguimiento", postventaPermisos);
+
+        Set<Permiso> desarrolladorPermisos = Set.of(
+                getPermiso("READ_EVENTOS"),
+                getPermiso("READ_EVENTOS_LEADS"),
+                getPermiso("READ_EVENTOS_RECRUITMENT"),
+                getPermiso("READ_UBIGEO")
+        );
+        saveRol("DESARROLLADOR", "Tecnologia - Soporte y mantenimiento", desarrolladorPermisos);
+
+        Set<Permiso> contadorPermisos = Set.of(
+                getPermiso("READ_EMPLEADOS"),
+                getPermiso("READ_CONTRATOS"),
+                getPermiso("READ_PAGOS"),
+                getPermiso("CREATE_PAGOS")
+        );
+        saveRol("CONTADOR", "Contabilidad - Gestion de pagos y consulta laboral", contadorPermisos);
+
         log.info("✅ Roles Creados");
     }
+
     private Permiso getPermiso(String nombre) {
         return permisoRepository.findByNombre(nombre)
                 .orElseThrow(() -> new RuntimeException("Permiso no encontrado " + nombre));
     }
     private void saveRol(String nombre, String descripcion, Set<Permiso> permisos) {
+        if (rolRepository.existsByNombre(nombre)) {
+            return;
+        }
         Rol rol = Rol.builder()
                 .nombre(nombre)
                 .descripcion(descripcion)
@@ -245,6 +356,7 @@ public class DataLoader {
         Usuario adminUsuario = Usuario.builder()
                 .username("admin@albru.admin.pe")
                 .password(passwordEncoder.encode("123456"))
+                .passwordInicializada(true)
                 .email("jevbxx@gmail.com")
                 .empleadoId(0L)
                 .dni("00000000")

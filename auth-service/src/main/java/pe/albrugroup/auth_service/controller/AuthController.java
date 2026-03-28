@@ -67,7 +67,7 @@ public class AuthController {
         }
     }
 
-    @PostMapping("/upsert-usuario") @PreAuthorize("hasAnyRole('ADMINISTRADOR','RRHH')")
+    @PostMapping("/upsert-usuario") @PreAuthorize("hasAuthority('CREATE_CONTRATOS')")
     public ResponseEntity<Void> upsertUsuario(@RequestBody RegistrarUsuarioRequest request) {
         log.info("Solicitud de alta/sincronizacion para usuario: {}", request.getDni());
         usuarioService.upsertUsuario(request);
@@ -82,7 +82,7 @@ public class AuthController {
         log.info("Usuario actualizado exitosamente: {}", usuario.getUsername());
         return ResponseEntity.ok(usuario);
     }
-    @PatchMapping("{empleadoId}/username-roles") @PreAuthorize("hasAnyRole('ADMINISTRADOR','RRHH')")
+    @PatchMapping("{empleadoId}/username-roles") @PreAuthorize("hasAuthority('UPDATE_EMPLEADOS')")
     public ResponseEntity<UsuarioResponse> actualizarUsernameRoles(@PathVariable @Positive Long empleadoId,
                                                                    @RequestBody ActualizarCredencialesRequest request) {
         log.info("Actualizando username/roles para usuario: {}", empleadoId);
@@ -109,13 +109,13 @@ public class AuthController {
         log.info("Consultando estado de acceso para username: {}", username);
         return ResponseEntity.ok(usuarioService.getEstadoAcceso(username));
     }
-    @GetMapping("/{empleadoId}/empleado") @PreAuthorize("hasAnyRole('ADMINISTRADOR','RRHH')")
+    @GetMapping("/{empleadoId}/empleado") @PreAuthorize("hasAuthority('READ_EMPLEADOS')")
     public ResponseEntity<UsuarioResponse> getUsuarioPorEmpleadoID(@PathVariable @Positive Long empleadoId) {
         log.info("Buscando usuario por empleadoID: {}", empleadoId);
         var usuario = usuarioService.getUsuarioPorEmpleadoID(empleadoId);
         return ResponseEntity.ok(usuario);
     }
-    @DeleteMapping("{empleadoId}/deshabilitar") @PreAuthorize("hasAnyRole('ADMINISTRADOR','RRHH')")
+    @DeleteMapping("{empleadoId}/deshabilitar") @PreAuthorize("hasAuthority('CANCEL_CONTRATOS')")
     public ResponseEntity<Void> deshabilitarUsuario(@PathVariable @Positive Long empleadoId) {
         log.info("Desactivando usuario ID: {}", empleadoId);
         usuarioService.deshabilitarUsuario(empleadoId);

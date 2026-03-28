@@ -55,14 +55,7 @@
           "name": "Forget Password",
           "request": {
             "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "type": "noauth"
             },
             "method": "POST",
             "header": [],
@@ -86,6 +79,31 @@
                 "auth",
                 "autorizacion",
                 "forgot-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Estado Acceso (Primer Inicio)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/auth/autorizacion/estado-acceso/P25413802M@albru.supsales.pe",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "auth",
+                "autorizacion",
+                "estado-acceso",
+                "P25413802M@albru.supsales.pe"
               ]
             }
           },
@@ -178,7 +196,7 @@
           "response": []
         },
         {
-          "name": "Registrar Usuario",
+          "name": "Upsert Usuario",
           "request": {
             "auth": {
               "type": "bearer",
@@ -202,7 +220,7 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/auth/autorizacion/registro",
+              "raw": "http://localhost:8080/auth/autorizacion/upsert-usuario",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -211,38 +229,22 @@
               "path": [
                 "auth",
                 "autorizacion",
-                "registro"
+                "upsert-usuario"
               ]
             }
           },
           "response": []
         },
         {
-          "name": "Registrar Usuario + Credenciales (ADMIN)",
+          "name": "Estado Acceso (Primer Inicio)",
           "request": {
             "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "type": "noauth"
             },
-            "method": "POST",
+            "method": "GET",
             "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"empleadoId\": 1,\n  \"nombres\": \"Julio Edinson\",\n  \"apellidos\": \"Vitterio Bernuy\",\n  \"dni\": \"75413802\",\n  \"email\": \"julio@albru.com\",\n  \"puestoTrabajo\": \"RRHH\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
-              "raw": "http://localhost:8080/auth/autorizacion/registro-credenciales",
+              "raw": "http://localhost:8080/auth/autorizacion/estado-acceso/P25413802M@albru.supsales.pe",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -251,7 +253,8 @@
               "path": [
                 "auth",
                 "autorizacion",
-                "registro-credenciales"
+                "estado-acceso",
+                "P25413802M@albru.supsales.pe"
               ]
             }
           },
@@ -439,14 +442,7 @@
           "name": "Forget Password",
           "request": {
             "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
+              "type": "noauth"
             },
             "method": "POST",
             "header": [],
@@ -1352,7 +1348,14 @@
               "name": "Registrar",
               "request": {
                 "auth": {
-                  "type": "noauth"
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "POST",
                 "header": [],
@@ -1366,13 +1369,14 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8084/ofertas-laborales",
+                  "raw": "http://localhost:8080/recruitment/ofertas-laborales",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "ofertas-laborales"
                   ]
                 }
@@ -1383,7 +1387,14 @@
               "name": "Registrar Ampliacion",
               "request": {
                 "auth": {
-                  "type": "noauth"
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "POST",
                 "header": [],
@@ -1397,13 +1408,14 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8084/ofertas-laborales/1/ampliacion",
+                  "raw": "http://localhost:8080/recruitment/ofertas-laborales/1/ampliacion",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "ofertas-laborales",
                     "1",
                     "ampliacion"
@@ -1419,27 +1431,26 @@
               },
               "request": {
                 "auth": {
-                  "type": "noauth"
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "GET",
                 "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"cantidad\": 7,\n    \"plazo\": \"2026-04-10\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
                 "url": {
-                  "raw": "http://localhost:8084/ofertas-laborales/activas",
+                  "raw": "http://localhost:8080/recruitment/ofertas-laborales/activas",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "ofertas-laborales",
                     "activas"
                   ]
@@ -1454,27 +1465,26 @@
               },
               "request": {
                 "auth": {
-                  "type": "noauth"
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "GET",
                 "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"cantidad\": 7,\n    \"plazo\": \"2026-04-10\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
                 "url": {
-                  "raw": "http://localhost:8084/ofertas-laborales?estado=ACTIVO",
+                  "raw": "http://localhost:8080/recruitment/ofertas-laborales?estado=ACTIVO",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "ofertas-laborales"
                   ],
                   "query": [
@@ -1495,6 +1505,16 @@
             {
               "name": "Registrar",
               "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
                 "method": "POST",
                 "header": [],
                 "body": {
@@ -1507,13 +1527,14 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8084/postulaciones",
+                  "raw": "http://localhost:8080/recruitment/postulaciones",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "postulaciones"
                   ]
                 }
@@ -1523,6 +1544,16 @@
             {
               "name": "Editar",
               "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
                 "method": "PUT",
                 "header": [],
                 "body": {
@@ -1535,13 +1566,14 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8084/postulaciones/1",
+                  "raw": "http://localhost:8080/recruitment/postulaciones/1",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "postulaciones",
                     "1"
                   ]
@@ -1552,16 +1584,27 @@
             {
               "name": "Obtener Por Id",
               "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:8084/postulaciones/1",
+                  "raw": "http://localhost:8080/recruitment/postulaciones/1",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "postulaciones",
                     "1"
                   ]
@@ -1572,16 +1615,27 @@
             {
               "name": "Listar Con Filtros",
               "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:8084/postulaciones?etapa=RECLUTAMIENTO&estado=ACTIVO&estadoBandeja=POR_CONTACTAR",
+                  "raw": "http://localhost:8080/recruitment/postulaciones?etapa=RECLUTAMIENTO&estado=ACTIVO&estadoBandeja=POR_CONTACTAR",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "postulaciones"
                   ],
                   "query": [
@@ -1605,16 +1659,27 @@
             {
               "name": "Postulaciones Activas",
               "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:8084/postulaciones/bandeja/reclutamiento",
+                  "raw": "http://localhost:8080/recruitment/postulaciones/bandeja/reclutamiento",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "postulaciones",
                     "bandeja",
                     "reclutamiento"
@@ -1626,16 +1691,27 @@
             {
               "name": "Postulaciones Reclutamiento Por Estado",
               "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:8084/postulaciones/bandeja/reclutamiento?estadoBandeja=POR_CONTACTAR",
+                  "raw": "http://localhost:8080/recruitment/postulaciones/bandeja/reclutamiento?estadoBandeja=POR_CONTACTAR",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "postulaciones",
                     "bandeja",
                     "reclutamiento"
@@ -1653,16 +1729,27 @@
             {
               "name": "Postulaciones Capacitacion",
               "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:8084/postulaciones/bandeja/capacitacion?sinGrupo=true",
+                  "raw": "http://localhost:8080/recruitment/postulaciones/bandeja/capacitacion?sinGrupo=true",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "postulaciones",
                     "bandeja",
                     "capacitacion"
@@ -1680,6 +1767,16 @@
             {
               "name": "Tipificar",
               "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
                 "method": "POST",
                 "header": [],
                 "body": {
@@ -1692,13 +1789,14 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8084/postulaciones/1/tipificacion",
+                  "raw": "http://localhost:8080/recruitment/postulaciones/1/tipificacion",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "postulaciones",
                     "1",
                     "tipificacion"
@@ -1715,16 +1813,27 @@
             {
               "name": "Eventos Postulacion",
               "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:8084/postulaciones/1/eventos",
+                  "raw": "http://localhost:8080/recruitment/postulaciones/1/eventos",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "postulaciones",
                     "1",
                     "eventos"
@@ -1745,27 +1854,26 @@
               },
               "request": {
                 "auth": {
-                  "type": "noauth"
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "GET",
                 "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"cantidad\": 7,\n    \"plazo\": \"2026-04-10\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
                 "url": {
-                  "raw": "http://localhost:8084/tipificaciones/RECLUTAMIENTO/catalogo",
+                  "raw": "http://localhost:8080/recruitment/tipificaciones/RECLUTAMIENTO/catalogo",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "tipificaciones",
                     "RECLUTAMIENTO",
                     "catalogo"
@@ -1778,18 +1886,26 @@
               "name": "Catalogo Por Puesto",
               "request": {
                 "auth": {
-                  "type": "noauth"
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:8084/tipificaciones/RECLUTAMIENTO/catalogo?puestoObjetivo=ASESOR_VENTAS",
+                  "raw": "http://localhost:8080/recruitment/tipificaciones/RECLUTAMIENTO/catalogo?puestoObjetivo=ASESOR_VENTAS",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "tipificaciones",
                     "RECLUTAMIENTO",
                     "catalogo"
@@ -1808,7 +1924,14 @@
               "name": "Crear Catalogo",
               "request": {
                 "auth": {
-                  "type": "noauth"
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "POST",
                 "header": [],
@@ -1822,13 +1945,14 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8084/tipificaciones/catalogo",
+                  "raw": "http://localhost:8080/recruitment/tipificaciones/catalogo",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "tipificaciones",
                     "catalogo"
                   ]
@@ -1840,7 +1964,14 @@
               "name": "Actualizar Estado Catalogo",
               "request": {
                 "auth": {
-                  "type": "noauth"
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "PATCH",
                 "header": [],
@@ -1854,13 +1985,14 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8084/tipificaciones/estado",
+                  "raw": "http://localhost:8080/recruitment/tipificaciones/estado",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "tipificaciones",
                     "estado"
                   ]
@@ -1872,7 +2004,14 @@
               "name": "Crear Subtipificacion",
               "request": {
                 "auth": {
-                  "type": "noauth"
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
                 },
                 "method": "POST",
                 "header": [],
@@ -1886,13 +2025,14 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8084/tipificaciones/1/subtipificaciones",
+                  "raw": "http://localhost:8080/recruitment/tipificaciones/1/subtipificaciones",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "tipificaciones",
                     "1",
                     "subtipificaciones"
@@ -1909,6 +2049,16 @@
             {
               "name": "Crear Grupo",
               "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
                 "method": "POST",
                 "header": [],
                 "body": {
@@ -1921,13 +2071,14 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8084/grupos-capacitacion",
+                  "raw": "http://localhost:8080/recruitment/grupos-capacitacion",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "grupos-capacitacion"
                   ]
                 }
@@ -1937,16 +2088,27 @@
             {
               "name": "Listar Grupos",
               "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:8084/grupos-capacitacion?estado=PLANIFICADO",
+                  "raw": "http://localhost:8080/recruitment/grupos-capacitacion?estado=PLANIFICADO",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "grupos-capacitacion"
                   ],
                   "query": [
@@ -1962,16 +2124,27 @@
             {
               "name": "Obtener Grupo",
               "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:8084/grupos-capacitacion/1",
+                  "raw": "http://localhost:8080/recruitment/grupos-capacitacion/1",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "grupos-capacitacion",
                     "1"
                   ]
@@ -1982,6 +2155,16 @@
             {
               "name": "Agregar Postulacion",
               "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
                 "method": "POST",
                 "header": [],
                 "body": {
@@ -1994,13 +2177,14 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8084/grupos-capacitacion/1/postulaciones",
+                  "raw": "http://localhost:8080/recruitment/grupos-capacitacion/1/postulaciones",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "grupos-capacitacion",
                     "1",
                     "postulaciones"
@@ -2012,6 +2196,16 @@
             {
               "name": "Actualizar Detalle Postulacion",
               "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
                 "method": "PATCH",
                 "header": [],
                 "body": {
@@ -2024,13 +2218,14 @@
                   }
                 },
                 "url": {
-                  "raw": "http://localhost:8084/grupos-capacitacion/1/postulaciones/1",
+                  "raw": "http://localhost:8080/recruitment/grupos-capacitacion/1/postulaciones/1",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
-                  "port": "8084",
+                  "port": "8080",
                   "path": [
+                    "recruitment",
                     "grupos-capacitacion",
                     "1",
                     "postulaciones",
