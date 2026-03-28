@@ -68,18 +68,18 @@ public class DataLoader {
 
 
         // POSTULANTES
-        savePermiso("CREATE_POSTULANTES", "Puede registrar postulantes nuevos", "POSTULANTE", "CREATE");
-        savePermiso("UPDATE_POSTULANTES", "Puede editar y actualizar postulantes", "POSTULANTE", "UPDATE");
-        savePermiso("READ_POSTULANTES", "Puede listar y ver postulantes", "POSTULANTE", "READ");
-        savePermiso("TYPIFY_POSTULANTES", "Puede tipificar postulantes", "POSTULANTE", "TYPIFY");
-
-        savePermiso("READ_RECLUTADOS", "Puede listar y ver postulantes reclutados", "POSTULANTE", "READ");
-        savePermiso("TYPIFY_RECLUTADOS", "Puede tipificar postulantes reclutados", "POSTULANTE", "TYPIFY");
-        savePermiso("EVALUATE_POSTULANTES_RECLUTAMIENTO", "Puede evaluar y tipificar a los postulantes reclutados", "POSTULANTE", "EVALUATE");
-
-        savePermiso("READ_CAPACITADOS", "Puede listar y ver postulantes capacitados", "POSTULANTE", "READ");
-        savePermiso("EVALUATE_POSTULANTES_CAPACITACION", "Puede evaluar y tipificar a los reclutados", "POSTULANTE", "EVALUATE");
-        savePermiso("REJECT_POSTULANTE_INASISTENCIA", "Puede rechazar a un postulante por inasistencia",  "POSTULANTE", "REJECT");
+//        savePermiso("CREATE_POSTULANTES", "Puede registrar postulantes nuevos", "POSTULANTE", "CREATE");
+//        savePermiso("UPDATE_POSTULANTES", "Puede editar y actualizar postulantes", "POSTULANTE", "UPDATE");
+//        savePermiso("READ_POSTULANTES", "Puede listar y ver postulantes", "POSTULANTE", "READ");
+//        savePermiso("TYPIFY_POSTULANTES", "Puede tipificar postulantes", "POSTULANTE", "TYPIFY");
+//
+//        savePermiso("READ_RECLUTADOS", "Puede listar y ver postulantes reclutados", "POSTULANTE", "READ");
+//        savePermiso("TYPIFY_RECLUTADOS", "Puede tipificar postulantes reclutados", "POSTULANTE", "TYPIFY");
+//        savePermiso("EVALUATE_POSTULANTES_RECLUTAMIENTO", "Puede evaluar y tipificar a los postulantes reclutados", "POSTULANTE", "EVALUATE");
+//
+//        savePermiso("READ_CAPACITADOS", "Puede listar y ver postulantes capacitados", "POSTULANTE", "READ");
+//        savePermiso("EVALUATE_POSTULANTES_CAPACITACION", "Puede evaluar y tipificar a los reclutados", "POSTULANTE", "EVALUATE");
+//        savePermiso("REJECT_POSTULANTE_INASISTENCIA", "Puede rechazar a un postulante por inasistencia",  "POSTULANTE", "REJECT");
         // EMPLEADOS
         savePermiso("CREATE_EMPLEADOS", "Puede registrar empleados directamente", "EMPLEADO", "CREATE");
         savePermiso("READ_EMPLEADOS", "Puede listar y ver empleados", "EMPLEADO", "READ");
@@ -257,12 +257,33 @@ public class DataLoader {
 
         // COMMUNITY
         Set<Permiso> communityPermisos = Set.of(
-                getPermiso("CREATE_LEADS"),
+                getPermiso("CREATE_CUENTA_PUBLICITARIA"),
+                getPermiso("READ_CUENTAS_PUBLICITARIAS"),
+                getPermiso("DELETE_CUENTA_PUBLICITARIA"),
+
+                getPermiso("CREATE_CAMPANA"),
                 getPermiso("READ_CAMPANA"),
+                getPermiso("UPDATE_CAMPANA"),
+                getPermiso("DELETE_CAMPANA"),
+
+                getPermiso("CREATE_PROVEEDORES"),
+                getPermiso("UPDATE_PROVEEDORES"),
+
+                getPermiso("READ_ZONAS"),
+
+                getPermiso("READ_UBIGEO"),
+
+                getPermiso("CREATE_PLANES"),
                 getPermiso("READ_PLANES"),
+                getPermiso("UPDATE_PLANES"),
+                getPermiso("DELETE_PLANES"),
+
+                getPermiso("CREATE_ADICIONALES"),
                 getPermiso("READ_ADICIONALES"),
+
+                getPermiso("CREATE_PROMOCIONES"),
                 getPermiso("READ_PROMOCIONES"),
-                getPermiso("READ_UBIGEO")
+                getPermiso("DELETE_PROMOCIONES")
         );
         saveRol("COMMUNITY", "Marketing - Generacion y apoyo comercial", communityPermisos);
 
