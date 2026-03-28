@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import pe.albrugroup.recruitment_service.configuration.CurrentUser;
 import pe.albrugroup.recruitment_service.entity.OfertaLaboral;
 import pe.albrugroup.recruitment_service.entity.Postulacion;
 import pe.albrugroup.recruitment_service.entity.Postulante;
@@ -49,6 +50,7 @@ public class PostulacionService {
     private final TipificacionRepository tipificacionRepository;
     private final SubtipificacionRepository subtipificacionRepository;
     private final GrupoCapacitacionDetalleRepository grupoCapacitacionDetalleRepository;
+    private final CurrentUser currentUser;
 
     public PostulacionResponse registrarPostulacion(PostulacionRequest request) {
         OfertaLaboral ofertaLaboral = obtenerOfertaActiva(request.getIdOfertaLaboral());
@@ -57,7 +59,7 @@ public class PostulacionService {
         Postulacion postulacion = Postulacion.builder()
                 .postulante(postulante)
                 .ofertaLaboral(ofertaLaboral)
-                .idEmpleadoRegistrador(null)
+                .idEmpleadoRegistrador(currentUser.empleadoID())
                 .origen(request.getOrigen())
                 .etapa(Etapa.RECLUTAMIENTO)
                 .estado(EstadoPostulacion.EN_PROCESO)

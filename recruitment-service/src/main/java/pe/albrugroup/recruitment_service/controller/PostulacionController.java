@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,11 +35,13 @@ public class PostulacionController {
     private final PostulacionService postulacionService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('CREATE_POSTULACIONES')")
     public ResponseEntity<PostulacionResponse> registrarPostulacion(@Valid @RequestBody PostulacionRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(postulacionService.registrarPostulacion(request));
     }
 
     @PutMapping("/{idPostulacion}")
+    @PreAuthorize("hasAuthority('UPDATE_POSTULACIONES')")
     public ResponseEntity<PostulacionResponse> editarPostulacion(
             @PathVariable @Positive Long idPostulacion,
             @Valid @RequestBody PostulacionRequest request
@@ -47,6 +50,7 @@ public class PostulacionController {
     }
 
     @PostMapping("/{idPostulacion}/tipificacion")
+    @PreAuthorize("hasAuthority('TYPIFY_POSTULACIONES')")
     public ResponseEntity<PostulacionResponse> tipificarPostulacion(
             @PathVariable @Positive Long idPostulacion,
             @Valid @RequestBody TipificarPostulacionRequest request
@@ -55,11 +59,13 @@ public class PostulacionController {
     }
 
     @GetMapping("/{idPostulacion}")
+    @PreAuthorize("hasAuthority('READ_POSTULACION')")
     public ResponseEntity<PostulacionResponse> obtenerPostulacion(@PathVariable @Positive Long idPostulacion) {
         return ResponseEntity.ok(postulacionService.obtenerPostulacion(idPostulacion));
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('READ_POSTULACIONES')")
     public ResponseEntity<List<PostulacionResponse>> listarPostulaciones(
             @RequestParam(required = false) Etapa etapa,
             @RequestParam(required = false) EstadoPostulacion estado,
@@ -69,6 +75,7 @@ public class PostulacionController {
     }
 
     @GetMapping("/bandeja/reclutamiento")
+    @PreAuthorize("hasAuthority('READ_POSTULACIONES_RECLUTAMIENTO')")
     public ResponseEntity<List<PostulacionResponse>> listarBandejaReclutamiento(
             @RequestParam(required = false) EstadoBandejaPostulacion estadoBandeja
     ) {
@@ -76,6 +83,7 @@ public class PostulacionController {
     }
 
     @GetMapping("/bandeja/capacitacion")
+    @PreAuthorize("hasAuthority('READ_POSTULACIONES_CAPACITACION')")
     public ResponseEntity<List<PostulacionResponse>> listarBandejaCapacitacion(
             @RequestParam(required = false) Boolean sinGrupo
     ) {
@@ -83,11 +91,13 @@ public class PostulacionController {
     }
 
     @GetMapping("/bandeja/contratacion")
+    @PreAuthorize("hasAuthority('READ_POSTULACIONES')")
     public ResponseEntity<List<PostulacionResponse>> listarBandejaContratacion() {
         return ResponseEntity.ok(postulacionService.listarBandejaContratacion());
     }
 
     @PostMapping("/{idPostulacion}/confirmar-contratacion")
+    @PreAuthorize("hasAuthority('CONFIRM_CONTRATACION_POSTULACIONES')")
     public ResponseEntity<PostulacionResponse> confirmarContratacion(
             @PathVariable @Positive Long idPostulacion,
             @Valid @RequestBody ConfirmarContratacionRequest request

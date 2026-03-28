@@ -3,6 +3,7 @@ package pe.albrugroup.recruitment_service.controller;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,6 +23,7 @@ public class EventoController {
     private final EventoService eventoService;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('READ_EVENTOS_RECRUITMENT')")
     public ResponseEntity<List<EventoResponse>> listarEventosPorPostulacion(
             @PathVariable @Positive Long idPostulacion
     ) {

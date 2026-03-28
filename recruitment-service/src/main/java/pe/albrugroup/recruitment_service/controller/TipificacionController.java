@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -32,6 +33,7 @@ public class TipificacionController {
     private final TipificacionService tipificacionService;
 
     @GetMapping("/{etapa}/catalogo")
+    @PreAuthorize("hasAuthority('READ_TIPIFICACIONES')")
     public ResponseEntity<CatalogoTipificacionResponse> getCatalogo(
             @PathVariable Etapa etapa,
             @RequestParam(required = false) PuestoObjetivo puestoObjetivo
@@ -40,6 +42,7 @@ public class TipificacionController {
     }
 
     @PostMapping("/catalogo")
+    @PreAuthorize("hasAuthority('UPDATE_TIPIFICACIONES')")
     public ResponseEntity<CatalogoTipificacionResponse> crearCatalogo(
             @Valid @RequestBody CatalogoTipificacionRequest request
     ) {
@@ -47,6 +50,7 @@ public class TipificacionController {
     }
 
     @PatchMapping("/estado")
+    @PreAuthorize("hasAuthority('UPDATE_TIPIFICACIONES')")
     public ResponseEntity<CatalogoTipificacionResponse> actualizarEstadoCatalogo(
             @Valid @RequestBody CatalogoEstadoRequest request
     ) {
@@ -54,6 +58,7 @@ public class TipificacionController {
     }
 
     @PostMapping("/{idTipificacion}/subtipificaciones")
+    @PreAuthorize("hasAuthority('UPDATE_TIPIFICACIONES')")
     public ResponseEntity<SubtipificacionResponse> crearSubtipificacion(
             @PathVariable @Positive Long idTipificacion,
             @Valid @RequestBody SubtipificacionRequest request

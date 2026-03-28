@@ -8,6 +8,7 @@ import org.springframework.web.server.ResponseStatusException;
 import pe.albrugroup.recruitment_service.entity.OfertaAmpliacion;
 import pe.albrugroup.recruitment_service.entity.OfertaLaboral;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoOferta;
+import pe.albrugroup.recruitment_service.entity.request.ActualizarEstadoOfertaLaboralRequest;
 import pe.albrugroup.recruitment_service.entity.request.OfertaAmpliacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.OfertaLaboralRequest;
 import pe.albrugroup.recruitment_service.entity.response.OfertaAmpliacionResponse;
@@ -55,6 +56,18 @@ public class OfertaLaboralService {
         OfertaAmpliacion ampliacion = ofertaMapper.toEntity(request);
         ampliacion.setOfertaLaboral(oferta);
         return ofertaMapper.toResponse(ampliacionRepository.save(ampliacion));
+    }
+
+    public OfertaLaboralResponse actualizarEstadoOfertaLaboral(
+            Long idOfertaLaboral,
+            ActualizarEstadoOfertaLaboralRequest request
+    ) {
+        OfertaLaboral oferta = ofertaRepository.findById(idOfertaLaboral)
+                .orElseThrow(() -> new NotFoundException(OfertaLaboral.class, idOfertaLaboral));
+
+        validarCambioEstado(oferta, request.getEstado());
+        oferta.setEstado(request.getEstado());
+        return ofertaMapper.toResponse(ofertaRepository.save(oferta));
     }
 
     private void validarCodigoUnico(String codigo) {
@@ -107,5 +120,38 @@ public class OfertaLaboralService {
                         );
                     }
                 });
+    }
+
+    private void validarCambioEstado(OfertaLaboral oferta, EstadoOferta nuevoEstado) {
+        if (oferta.getEstado() == nuevoEstado) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "La oferta laboral ya se encuentra en el estado indicado"
+            );
+        }
+
+        switch (oferta.getEstado()) {
+            case ACTIVO -> {
+                return;
+            }
+            case CERRADO -> {
+                if (nuevoEstado == EstadoOferta.ACTIVO
+                        || nuevoEstado == EstadoOferta.CANCELADO
+                        || nuevoEstado == EstadoOferta.COMPLETADO) {
+                    return;
+                }
+            }
+            case CANCELADO, COMPLETADO -> {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "No se puede cambiar el estado de una oferta laboral cancelada o completada"
+                );
+            }
+        }
+
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "La transicion de estado indicada no esta permitida para la oferta laboral"
+        );
     }
 }

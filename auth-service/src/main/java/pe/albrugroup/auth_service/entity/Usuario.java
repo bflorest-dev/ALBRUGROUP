@@ -31,6 +31,9 @@ public class Usuario {
     @Column(nullable = false)
     @Builder.Default
     private Boolean activo = true;
+    @Column(name = "password_inicializada", nullable = false)
+    @Builder.Default
+    private Boolean passwordInicializada = false;
 
     @CreationTimestamp @Column(updatable = false)
     private Instant createdAt;

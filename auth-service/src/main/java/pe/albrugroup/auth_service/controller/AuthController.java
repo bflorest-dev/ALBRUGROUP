@@ -14,6 +14,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.auth_service.entity.Response.LoginResponse;
 import pe.albrugroup.auth_service.entity.Response.CredencialesResponse;
+import pe.albrugroup.auth_service.entity.Response.EstadoAccesoResponse;
 import pe.albrugroup.auth_service.entity.Response.UsuarioResponse;
 import pe.albrugroup.auth_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.auth_service.entity.request.ActualizarCredencialesRequest;
@@ -102,6 +103,11 @@ public class AuthController {
         var credenciales = usuarioService.forgotPassword(request);
         log.info("Password regenerado correctamente para username: {}", credenciales.getUsername());
         return ResponseEntity.ok(credenciales);
+    }
+    @GetMapping("/estado-acceso/{username}")
+    public ResponseEntity<EstadoAccesoResponse> getEstadoAcceso(@PathVariable String username) {
+        log.info("Consultando estado de acceso para username: {}", username);
+        return ResponseEntity.ok(usuarioService.getEstadoAcceso(username));
     }
     @GetMapping("/{empleadoId}/empleado") @PreAuthorize("hasAnyRole('ADMINISTRADOR','RRHH')")
     public ResponseEntity<UsuarioResponse> getUsuarioPorEmpleadoID(@PathVariable @Positive Long empleadoId) {

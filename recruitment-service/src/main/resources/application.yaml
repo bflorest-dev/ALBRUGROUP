@@ -21,9 +21,9 @@ spring:
       ddl-auto: create-drop
     show-sql: true
 
-#jwt:
-#  secret: 3bZ4bR0S5c7hFQ2nTzF8oQv9vKxM2yP7aLw8eJrHkU1cNdWqXyZp6tR9mVb4sL0Q8nF5gH2kJ3lP6rS9uVw==
-#
+jwt:
+  secret: 3bZ4bR0S5c7hFQ2nTzF8oQv9vKxM2yP7aLw8eJrHkU1cNdWqXyZp6tR9mVb4sL0Q8nF5gH2kJ3lP6rS9uVw==
+
 #services:
 #  auth:
 #    base-url: http://localhost:8081

@@ -52,6 +52,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/autorizacion/login",
                                 "/autorizacion/forgot-password",
+                                "/autorizacion/estado-acceso/**",
                                 "/h2-console/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",

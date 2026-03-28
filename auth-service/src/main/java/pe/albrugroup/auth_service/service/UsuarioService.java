@@ -6,6 +6,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.auth_service.entity.Response.CredencialesResponse;
+import pe.albrugroup.auth_service.entity.Response.EstadoAccesoResponse;
 import pe.albrugroup.auth_service.entity.Response.UsuarioResponse;
 import pe.albrugroup.auth_service.entity.Rol;
 import pe.albrugroup.auth_service.entity.Usuario;
@@ -76,6 +77,7 @@ public class UsuarioService implements IUsuario {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado por EmpleadoID: " + empleadoId));
         String plainPassword = passwordGenerator();
         usuario.setPassword(passwordEncoder.encode(plainPassword));
+        usuario.setPasswordInicializada(true);
         Usuario guardado = usuarioRepository.save(usuario);
         return CredencialesResponse.builder()
                 .username(guardado.getUsername())
@@ -98,10 +100,22 @@ public class UsuarioService implements IUsuario {
 
         String plainPassword = passwordGenerator();
         usuario.setPassword(passwordEncoder.encode(plainPassword));
+        usuario.setPasswordInicializada(true);
         Usuario guardado = usuarioRepository.save(usuario);
         return CredencialesResponse.builder()
                 .username(guardado.getUsername())
                 .password(plainPassword)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public EstadoAccesoResponse getEstadoAcceso(String username) {
+        Usuario usuario = usuarioRepository.findByUsername(username.trim())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        return EstadoAccesoResponse.builder()
+                .activo(usuario.getActivo())
+                .passwordInicializada(usuario.getPasswordInicializada())
                 .build();
     }
 
@@ -134,6 +148,7 @@ public class UsuarioService implements IUsuario {
                 .dni(request.getDni().trim())
                 .nombreCompleto(construirNombreCompleto(request.getNombres(), request.getApellidos()))
                 .activo(true)
+                .passwordInicializada(false)
                 .roles(new HashSet<>(Set.of(rol)))
                 .build();
 

@@ -3,6 +3,7 @@ package pe.albrugroup.recruitment_service.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.albrugroup.recruitment_service.configuration.CurrentUser;
 import pe.albrugroup.recruitment_service.entity.Evento;
 import pe.albrugroup.recruitment_service.entity.Postulacion;
 import pe.albrugroup.recruitment_service.entity.enums.Accion;
@@ -22,6 +23,7 @@ public class EventoService {
     private final EventoRepository eventoRepository;
     private final PostulacionRepository postulacionRepository;
     private final EventoMapper eventoMapper;
+    private final CurrentUser currentUser;
 
     @Transactional
     public void registrarEvento(
@@ -36,7 +38,7 @@ public class EventoService {
     ) {
         Evento evento = Evento.builder()
                 .postulacion(postulacion)
-                .idEmpleadoResponsable(null)
+                .idEmpleadoResponsable(currentUser.empleadoID())
                 .etapa(postulacion.getEtapa())
                 .accion(accion)
                 .modalidadContacto(modalidadContacto)

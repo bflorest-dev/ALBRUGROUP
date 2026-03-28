@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoGrupoCapacitacion;
@@ -26,11 +27,13 @@ public class GrupoCapacitacionController {
     private final GrupoCapacitacionService grupoCapacitacionService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('CREATE_GRUPOS_CAPACITACION')")
     public ResponseEntity<GrupoCapacitacionResponse> crearGrupo(@Valid @RequestBody GrupoCapacitacionRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(grupoCapacitacionService.crearGrupo(request));
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('READ_GRUPOS_CAPACITACION')")
     public ResponseEntity<List<GrupoCapacitacionResponse>> listarGrupos(
             @RequestParam(required = false) EstadoGrupoCapacitacion estado
     ) {
@@ -38,6 +41,7 @@ public class GrupoCapacitacionController {
     }
 
     @GetMapping("/{idGrupoCapacitacion}")
+    @PreAuthorize("hasAuthority('READ_GRUPOS_CAPACITACION')")
     public ResponseEntity<GrupoCapacitacionResponse> obtenerGrupo(
             @PathVariable @Positive Long idGrupoCapacitacion
     ) {
@@ -45,6 +49,7 @@ public class GrupoCapacitacionController {
     }
 
     @PostMapping("/{idGrupoCapacitacion}/postulaciones")
+    @PreAuthorize("hasAuthority('ASSIGN_GRUPOS_CAPACITACION')")
     public ResponseEntity<GrupoCapacitacionDetalleResponse> agregarPostulacion(
             @PathVariable @Positive Long idGrupoCapacitacion,
             @Valid @RequestBody AgregarPostulacionGrupoCapacitacionRequest request
@@ -54,6 +59,7 @@ public class GrupoCapacitacionController {
     }
 
     @PatchMapping("/{idGrupoCapacitacion}/postulaciones/{idPostulacion}")
+    @PreAuthorize("hasAuthority('UPDATE_GRUPOS_CAPACITACION')")
     public ResponseEntity<GrupoCapacitacionDetalleResponse> actualizarDetalle(
             @PathVariable @Positive Long idGrupoCapacitacion,
             @PathVariable @Positive Long idPostulacion,

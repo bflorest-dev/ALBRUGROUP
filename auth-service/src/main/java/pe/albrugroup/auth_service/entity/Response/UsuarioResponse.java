@@ -13,6 +13,7 @@ public class UsuarioResponse {
     private String nombreCompleto;
     private String username;
     private Boolean activo;
+    private Boolean passwordInicializada;
     private String email;
     private Set<String> roles;
 }
