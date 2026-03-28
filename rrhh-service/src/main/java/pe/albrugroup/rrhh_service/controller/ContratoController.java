@@ -43,7 +43,7 @@ public class ContratoController {
     }
     @Operation(summary = "Registrar contrato",
             description = "Registra un nuevo contrato para el empleado. Si existe un contrato vigente, se ajusta su fecha fin " +
-                    "para evitar solapamientos.")
+                    "para evitar solapamientos y se confirma la contratacion de la postulacion asociada.")
     @PostMapping("/{id}/registrar") @PreAuthorize("hasAuthority('CREATE_CONTRATOS')")
     public ResponseEntity<ContratoResponse> registrarContrato(@RequestBody RegistrarContratoRequest request,
                                                @Parameter(description = "ID del empleado", example = "10")

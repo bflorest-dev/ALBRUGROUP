@@ -2,15 +2,13 @@ package pe.albrugroup.rrhh_service.controller;
 
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import pe.albrugroup.rrhh_service.entity.response.PostulanteEventoResponse;
-import pe.albrugroup.rrhh_service.service.PostulanteEventoService;
+import pe.albrugroup.rrhh_service.entity.response.EmpleadoEventoResponse;
+import pe.albrugroup.rrhh_service.service.EmpleadoEventoService;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -19,16 +17,13 @@ import java.util.List;
 @RequestMapping("/eventos")
 public class EventosController {
 
-    private final PostulanteEventoService postulanteEventoService;
+    private final EmpleadoEventoService empleadoEventoService;
 
-    @GetMapping("/{idPostulante}/postulantes")
+    @GetMapping("/{idEmpleado}/empleados")
     @PreAuthorize("hasAuthority('READ_EVENTOS')")
-    public ResponseEntity<List<PostulanteEventoResponse>> listarEventosPostulante(
-            @PathVariable @Positive Long idPostulante,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
+    public ResponseEntity<List<EmpleadoEventoResponse>> listarEventosEmpleado(
+            @PathVariable @Positive Long idEmpleado
     ) {
-        var eventos = postulanteEventoService.buscarEventos(idPostulante, desde, hasta);
-        return ResponseEntity.ok(eventos);
+        return ResponseEntity.ok(empleadoEventoService.listarEventosEmpleado(idEmpleado));
     }
 }

@@ -18,4 +18,13 @@ public class RestTemplateConfig {
     ) {
         return builder.rootUri(baseUrl).build();
     }
+
+    @Bean
+    @Qualifier("recruitmentRestTemplate")
+    public RestTemplate recruitmentRestTemplate(
+            RestTemplateBuilder builder,
+            @Value("${services.recruitment.base-url}") String baseUrl
+    ) {
+        return builder.rootUri(baseUrl).build();
+    }
 }

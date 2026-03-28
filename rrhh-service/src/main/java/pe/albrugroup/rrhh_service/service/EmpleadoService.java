@@ -69,7 +69,7 @@ public class EmpleadoService implements IEmpleado {
     public EmpleadoResponse registrarEmpleado(RegistrarEmpleadoRequest nuevoEmpleado) {
         Empleado empleado = mapper.toEntity(nuevoEmpleado);
         empleado.setEmpresaContratista(obtenerEmpresaContratista(nuevoEmpleado.getIdEmpresaContratista()));
-        empleado.setEstadoOperativo(EstadoOperativo.POSTULANTE);
+        empleado.setEstadoOperativo(EstadoOperativo.INACTIVO);
         empleado.setListaNegra(false);
         return mapper.toResponse(repository.save(empleado));
     }

@@ -25,7 +25,7 @@ public class Empleado {
     @OneToMany(mappedBy = "empleado", fetch = FetchType.LAZY)
     @Builder.Default
     private List<Contrato> contratos = new ArrayList<>();
-    // DATOS POSTULANTE
+    // DATOS PERSONALES
     private String nombres;
     private String apellidos;
     @Enumerated(EnumType.STRING)

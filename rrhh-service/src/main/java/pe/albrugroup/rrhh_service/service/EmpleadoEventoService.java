@@ -13,6 +13,7 @@ import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
 import pe.albrugroup.rrhh_service.service.mapper.EmpleadoEventoMapper;
 
 import java.time.Instant;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +26,16 @@ public class EmpleadoEventoService {
     @Transactional
     public EmpleadoEventoResponse registrarEventoListaNegra(Empleado empleado, Long responsableId) {
         return registrarEventoEmpleado(empleado, responsableId, EventoEmpleado.LISTA_NEGRA, "LISTA_NEGRA", null, Instant.now());
+    }
+
+    @Transactional(readOnly = true)
+    public List<EmpleadoEventoResponse> listarEventosEmpleado(Long idEmpleado) {
+        if (!empleadoRepository.existsById(idEmpleado)) {
+            throw new NotFoundException(Empleado.class, idEmpleado);
+        }
+        return eventoRepository.findByEmpleadoIdOrderByFechaCreacionDescIdDesc(idEmpleado).stream()
+                .map(eventoMapper::toResponse)
+                .toList();
     }
 
     private EmpleadoEventoResponse registrarEventoEmpleado(Empleado empleado, Long responsableId,

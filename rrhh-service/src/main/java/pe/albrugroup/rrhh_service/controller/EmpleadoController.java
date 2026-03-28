@@ -30,7 +30,7 @@ import pe.albrugroup.rrhh_service.usecase.IEmpleado;
 @RestController
 @Validated
 @RequiredArgsConstructor
-@Tag(name = "Empleados", description = "Gestion y registro de Postulantes/Empleados")
+@Tag(name = "Empleados", description = "Gestion y registro de empleados")
 @RequestMapping("/empleados")
 public class EmpleadoController {
 

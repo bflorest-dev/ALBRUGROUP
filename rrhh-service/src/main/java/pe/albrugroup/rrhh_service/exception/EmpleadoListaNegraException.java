@@ -6,7 +6,7 @@ public class EmpleadoListaNegraException  extends BusinessException {
     public EmpleadoListaNegraException(Long idEmpleado) {
         super(
                 HttpStatus.NOT_ACCEPTABLE,
-                "Postulante se encuentra en la Lista Negra",
+                "Se encuentra en la Lista Negra",
                 idEmpleado
         );
     }

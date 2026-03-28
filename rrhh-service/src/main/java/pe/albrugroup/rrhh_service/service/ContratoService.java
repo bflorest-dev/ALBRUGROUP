@@ -13,6 +13,8 @@ import pe.albrugroup.rrhh_service.entity.response.ContratoResponse;
 import pe.albrugroup.rrhh_service.exception.*;
 import pe.albrugroup.rrhh_service.integration.auth.AuthServiceClient;
 import pe.albrugroup.rrhh_service.integration.auth.dto.RegistrarUsuarioRequest;
+import pe.albrugroup.rrhh_service.integration.recruitment.RecruitmentServiceClient;
+import pe.albrugroup.rrhh_service.integration.recruitment.dto.ConfirmarContratacionRequest;
 import pe.albrugroup.rrhh_service.service.mapper.ContratoMapper;
 import pe.albrugroup.rrhh_service.repository.ContratoRepository;
 import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
@@ -32,6 +34,7 @@ public class ContratoService implements IContrato {
     private final EmpleadoRepository empleadoRepository;
     private final ContratoMapper mapper;
     private final AuthServiceClient authServiceClient;
+    private final RecruitmentServiceClient recruitmentServiceClient;
 
     @Transactional(readOnly = true) @Override
     public List<ContratoResponse> listarContratosEmpleado(Long idEmpleado) {
@@ -66,6 +69,7 @@ public class ContratoService implements IContrato {
 
         ContratoResponse contratoResponse = mapper.toResponse(contratoRepository.save(contrato));
         registrarUsuarioAuth(empleado, nuevoContrato, authHeader);
+        confirmarContratacionRecruitment(empleado, nuevoContrato, authHeader);
         return contratoResponse;
     }
 
@@ -170,6 +174,29 @@ public class ContratoService implements IContrato {
         }
 
         authServiceClient.upsertUsuario(authHeader, request);
+    }
+
+    private void confirmarContratacionRecruitment(Empleado empleado,
+                                                  RegistrarContratoRequest nuevoContrato,
+                                                  String authHeader) {
+        if (authHeader == null || authHeader.isBlank()) {
+            throw new AuthServiceException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Falta Authorization para confirmar contratacion en recruitment",
+                    null
+            );
+        }
+
+        ConfirmarContratacionRequest request = ConfirmarContratacionRequest.builder()
+                .idEmpleadoContratado(empleado.getId())
+                .fechaContratacion(nuevoContrato.getFechaInicio())
+                .build();
+
+        recruitmentServiceClient.confirmarContratacion(
+                authHeader,
+                nuevoContrato.getIdPostulacion(),
+                request
+        );
     }
 }
 

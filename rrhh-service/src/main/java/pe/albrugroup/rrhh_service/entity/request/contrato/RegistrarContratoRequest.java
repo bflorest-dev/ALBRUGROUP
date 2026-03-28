@@ -11,6 +11,7 @@ import java.time.LocalDate;
 @AllArgsConstructor @NoArgsConstructor
 public class RegistrarContratoRequest {
 
+    @NotNull @Positive private Long idPostulacion;
     // PUESTO DE TRABAJO
     @NotNull private PuestoTrabajo puestoTrabajo;
     @NotNull private Regimen regimen;
