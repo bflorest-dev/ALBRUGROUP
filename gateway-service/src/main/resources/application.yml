@@ -31,6 +31,12 @@ spring:
                 - Path=/leads/**
               filters:
                 - StripPrefix=1
+            - id: recruitment-service
+              uri: http://localhost:8084
+              predicates:
+                - Path=/recruitment/**
+              filters:
+                - StripPrefix=1
           default-filters:
             - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
           globalcors:
@@ -66,6 +72,8 @@ springdoc:
         url: /rrhh/v3/api-docs
       - name: lead-service
         url: /leads/v3/api-docs
+      - name: recruitment-service
+        url: /recruitment/v3/api-docs
 
 presence:
   ttl: 2m
