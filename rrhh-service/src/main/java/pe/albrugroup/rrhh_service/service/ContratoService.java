@@ -3,6 +3,8 @@ package pe.albrugroup.rrhh_service.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.rrhh_service.entity.Contrato;
 import pe.albrugroup.rrhh_service.entity.Empleado;
@@ -51,6 +53,7 @@ public class ContratoService implements IContrato {
     }
     @Override @Transactional
     public ContratoResponse registrarContrato(Long idEmpleado, RegistrarContratoRequest nuevoContrato, String authHeader) {
+        validarAuthorizationRequerida(authHeader);
         Empleado empleado = empleadoRepository.findById(idEmpleado)
                 .orElseThrow(() -> new NotFoundException(Empleado.class, idEmpleado));
         validarDatosCompletosEmpleado(empleado);
@@ -68,8 +71,7 @@ public class ContratoService implements IContrato {
         contrato.setEmpleado(empleado);
 
         ContratoResponse contratoResponse = mapper.toResponse(contratoRepository.save(contrato));
-        registrarUsuarioAuth(empleado, nuevoContrato, authHeader);
-        confirmarContratacionRecruitment(empleado, nuevoContrato, authHeader);
+        programarSincronizacionExternaPostCommit(empleado, nuevoContrato, authHeader);
         return contratoResponse;
     }
 
@@ -119,6 +121,7 @@ public class ContratoService implements IContrato {
 
     @Override
     public ContratoResponse finalizarContrato(Long idEmpleado, CerrarContratoRequest contratoCerrado, String authHeader) {
+        validarAuthorizationRequerida(authHeader);
         LocalDate fechaFin = contratoCerrado.getFechaFin();
         Contrato contrato = contratoRepository.findContratoVigenteByEmpleadoId(idEmpleado, fechaFin)
                 .orElseThrow(() -> new NotFoundException(Contrato.class, idEmpleado));
@@ -126,14 +129,7 @@ public class ContratoService implements IContrato {
 
         Empleado empleado = contrato.getEmpleado();
         empleado.setEstadoOperativo(EstadoOperativo.INACTIVO);
-        if (authHeader == null || authHeader.isBlank()) {
-            throw new AuthServiceException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Falta Authorization para deshabilitar usuario",
-                    null
-            );
-        }
-        authServiceClient.deshabilitarUsuario(authHeader, empleado.getId());
+        programarDeshabilitacionUsuarioPostCommit(authHeader, empleado.getId());
         return mapper.toResponse(contrato);
     }
 
@@ -165,26 +161,14 @@ public class ContratoService implements IContrato {
                 .puestoTrabajo(nuevoContrato.getPuestoTrabajo())
                 .build();
 
-        if (authHeader == null || authHeader.isBlank()) {
-            throw new AuthServiceException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Falta Authorization para registrar usuario",
-                    null
-            );
-        }
-
         authServiceClient.upsertUsuario(authHeader, request);
     }
 
     private void confirmarContratacionRecruitment(Empleado empleado,
                                                   RegistrarContratoRequest nuevoContrato,
                                                   String authHeader) {
-        if (authHeader == null || authHeader.isBlank()) {
-            throw new AuthServiceException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Falta Authorization para confirmar contratacion en recruitment",
-                    null
-            );
+        if (nuevoContrato.getIdPostulacion() == null) {
+            return;
         }
 
         ConfirmarContratacionRequest request = ConfirmarContratacionRequest.builder()
@@ -197,6 +181,37 @@ public class ContratoService implements IContrato {
                 nuevoContrato.getIdPostulacion(),
                 request
         );
+    }
+
+    private void validarAuthorizationRequerida(String authHeader) {
+        if (authHeader == null || authHeader.isBlank()) {
+            throw new AuthServiceException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Falta Authorization para completar la operacion",
+                    null
+            );
+        }
+    }
+
+    private void programarSincronizacionExternaPostCommit(Empleado empleado,
+                                                          RegistrarContratoRequest nuevoContrato,
+                                                          String authHeader) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                registrarUsuarioAuth(empleado, nuevoContrato, authHeader);
+                confirmarContratacionRecruitment(empleado, nuevoContrato, authHeader);
+            }
+        });
+    }
+
+    private void programarDeshabilitacionUsuarioPostCommit(String authHeader, Long idEmpleado) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                authServiceClient.deshabilitarUsuario(authHeader, idEmpleado);
+            }
+        });
     }
 }
 
