@@ -66,20 +66,9 @@ public class DataLoader {
         // RECRUITMENT-SERVICE - EVENTOS
         savePermiso("READ_EVENTOS_RECRUITMENT", "Puede ver el historico de eventos de recruitment", "EVENTO_RECRUITMENT", "READ");
 
-
         // POSTULANTES
-//        savePermiso("CREATE_POSTULANTES", "Puede registrar postulantes nuevos", "POSTULANTE", "CREATE");
-//        savePermiso("UPDATE_POSTULANTES", "Puede editar y actualizar postulantes", "POSTULANTE", "UPDATE");
-//        savePermiso("READ_POSTULANTES", "Puede listar y ver postulantes", "POSTULANTE", "READ");
-//        savePermiso("TYPIFY_POSTULANTES", "Puede tipificar postulantes", "POSTULANTE", "TYPIFY");
-//
-//        savePermiso("READ_RECLUTADOS", "Puede listar y ver postulantes reclutados", "POSTULANTE", "READ");
-//        savePermiso("TYPIFY_RECLUTADOS", "Puede tipificar postulantes reclutados", "POSTULANTE", "TYPIFY");
-//        savePermiso("EVALUATE_POSTULANTES_RECLUTAMIENTO", "Puede evaluar y tipificar a los postulantes reclutados", "POSTULANTE", "EVALUATE");
-//
-//        savePermiso("READ_CAPACITADOS", "Puede listar y ver postulantes capacitados", "POSTULANTE", "READ");
-//        savePermiso("EVALUATE_POSTULANTES_CAPACITACION", "Puede evaluar y tipificar a los reclutados", "POSTULANTE", "EVALUATE");
 //        savePermiso("REJECT_POSTULANTE_INASISTENCIA", "Puede rechazar a un postulante por inasistencia",  "POSTULANTE", "REJECT");
+
         // EMPLEADOS
         savePermiso("CREATE_EMPLEADOS", "Puede registrar empleados directamente", "EMPLEADO", "CREATE");
         savePermiso("READ_EMPLEADOS", "Puede listar y ver empleados", "EMPLEADO", "READ");
@@ -173,11 +162,6 @@ public class DataLoader {
 
         // RRHH
         Set<Permiso> rrhhPermisos = Set.of(
-                getPermiso("CREATE_POSTULANTES"),
-                getPermiso("UPDATE_POSTULANTES"),
-                getPermiso("READ_POSTULANTES"),
-                getPermiso("READ_RECLUTADOS"),
-                getPermiso("READ_CAPACITADOS"),
 
                 getPermiso("CREATE_EMPLEADOS"),
                 getPermiso("READ_EMPLEADOS"),
@@ -193,20 +177,17 @@ public class DataLoader {
 
         // RECLUTADOR
         Set<Permiso> reclutadorPermisos = Set.of(
-                getPermiso("READ_POSTULANTES"),
-                getPermiso("TYPIFY_POSTULANTES"),
-                getPermiso("EVALUATE_POSTULANTES_RECLUTAMIENTO"),
-                getPermiso("REJECT_POSTULANTE_INASISTENCIA"),
-                getPermiso("READ_RECLUTADOS")
+
+
+
         );
         saveRol("RECLUTADOR", "Recursos Humanos - Contacto con postulantes", reclutadorPermisos);
 
         // CAPACITADOR
         Set<Permiso> capacitadorPermisos = Set.of(
-                getPermiso("READ_RECLUTADOS"),
-                getPermiso("TYPIFY_RECLUTADOS"),
-                getPermiso("EVALUATE_POSTULANTES_CAPACITACION"),
-                getPermiso("READ_CAPACITADOS")
+
+
+
         );
         saveRol("CAPACITADOR", "Capacitacion - Gestion de postulantes", capacitadorPermisos);
 
@@ -298,10 +279,9 @@ public class DataLoader {
                 getPermiso("READ_POSTULACIONES_RECLUTAMIENTO"),
                 getPermiso("READ_POSTULACIONES_CAPACITACION"),
                 getPermiso("READ_OFERTAS_LABORALES"),
-                getPermiso("READ_GRUPOS_CAPACITACION"),
-                getPermiso("READ_POSTULANTES"),
-                getPermiso("READ_RECLUTADOS"),
-                getPermiso("READ_CAPACITADOS")
+                getPermiso("READ_GRUPOS_CAPACITACION")
+
+
         );
         saveRol("MONITOR", "Monitoreo - Consulta transversal de la operacion", monitorPermisos);
 
