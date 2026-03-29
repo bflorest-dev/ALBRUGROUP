@@ -202,7 +202,7 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
         <FormSelect
           label="Campaña"
           name="idCampana"
-          value={formData.idCampana}
+          value={formData.idCampana ? String(formData.idCampana) : ''}
           onChange={handleCampaignChange}
           options={campaignOptions}
           placeholder="Selecciona una campaña"
