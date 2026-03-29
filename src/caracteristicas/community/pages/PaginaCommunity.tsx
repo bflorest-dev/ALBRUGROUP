@@ -47,7 +47,8 @@ const PaginaCommunity: React.FC = () => {
     fetchPlanes();
     fetchPromociones();
     fetchZonas();
-  }, [fetchCampanas, fetchCuentas, fetchPlanes, fetchPromociones, fetchZonas]);
+    fetchProveedores();
+  }, [fetchCampanas, fetchCuentas, fetchPlanes, fetchPromociones, fetchZonas, fetchProveedores]);
 
   const normalizeLeadsPath = (path: string) => path.replace(/^\/api\/leads/, '');
 
