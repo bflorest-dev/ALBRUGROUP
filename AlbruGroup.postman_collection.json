@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "e64a2814-0679-4e1a-92af-a4e457c425c6",
+    "_postman_id": "0ff8a34f-7d61-43e8-9818-03be08bed665",
     "name": "AlbruGroup",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "32906795"
@@ -61,7 +61,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"username\": \"P25413802M@albru.supsales.pe\",\r\n  \"email\": \"pablo@gmail.com\",\r\n  \"dni\": \"25413802\"\r\n}",
+              "raw": "{\r\n  \"username\": \"M25413802M@albru.rrhh.pe\",\r\n  \"email\": \"pablo@gmail.com\",\r\n  \"dni\": \"25413802\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -93,7 +93,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/auth/autorizacion/estado-acceso/P25413802M@albru.supsales.pe",
+              "raw": "http://localhost:8080/auth/autorizacion/estado-acceso/M25413802M@albru.rrhh.pe",
               "protocol": "http",
               "host": [
                 "localhost"
@@ -103,7 +103,7 @@
                 "auth",
                 "autorizacion",
                 "estado-acceso",
-                "P25413802M@albru.supsales.pe"
+                "M25413802M@albru.rrhh.pe"
               ]
             }
           },
@@ -576,7 +576,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"nombres\": \"Pablo Ernesto\",\n    \"apellidos\": \"Mamani Quispe\",\n    \"tipoDocumento\": \"CE\",\n    \"numeroDocumento\": \"25413802\",\n    \"nacionalidad\": \"PERUANO\",\n    \"fechaNacimiento\": \"1999-03-06\",\n    \"estadoCivil\": \"CASADO\",\n    \"tieneHijos\": false,\n    \"celularPersonal\": \"923763302\",\n    \"correoPersonal\": \"pablo@gmail.com\",\n    \"origen\": \"REFERIDO\",\n    \"distrito\": \"SAN_MARTIN_DE_PORRES\",\n    \"direccion\": \"Fermin Tanguis 079\",\n    \"banco\": \"BCP\",\n    \"cuentaBancaria\": \"12344677890\",\n    \"cuentaInterbancaria\": \"09876543234343\",\n    \"cuentaPropia\": false,\n    \"parentesco\": \"HERMANO\",\n    \"celularTransferencia\": \"987654321\",\n    \"idEmpresaContratista\": 1\n}",
+                  "raw": "// {\n//     \"nombres\": \"Pablo Picapiedra\",\n//     \"apellidos\": \"Mamani Quispe\",\n//     \"tipoDocumento\": \"CE\",\n//     \"numeroDocumento\": \"25413802\",\n//     \"nacionalidad\": \"PERUANO\",\n//     \"fechaNacimiento\": \"1999-03-06\",\n//     \"estadoCivil\": \"CASADO\",\n//     \"tieneHijos\": false,\n//     \"celularPersonal\": \"923763302\",\n//     \"correoPersonal\": \"pablo@gmail.com\",\n//     \"origen\": \"REFERIDO\",\n//     \"distrito\": \"SAN_MARTIN_DE_PORRES\",\n//     \"direccion\": \"Fermin Tanguis 079\",\n//     \"banco\": \"BCP\",\n//     \"cuentaBancaria\": \"12344677890\",\n//     \"cuentaInterbancaria\": \"09876543234343\",\n//     \"cuentaPropia\": false,\n//     \"parentesco\": \"HERMANO\",\n//     \"celularTransferencia\": \"987654321\",\n//     \"idEmpresaContratista\": 1\n// }\n\n{\n    \"nombres\": \"Ernesto Mario\",\n    \"apellidos\": \"Mamani Quispe\",\n    \"tipoDocumento\": \"DNI\",\n    \"numeroDocumento\": \"75413802\",\n    \"nacionalidad\": \"PERUANO\",\n    \"fechaNacimiento\": \"1999-03-06\",\n    \"estadoCivil\": \"CASADO\",\n    \"tieneHijos\": false,\n    \"celularPersonal\": \"991005851\",\n    \"correoPersonal\": \"ernesto@gmail.com\",\n    \"origen\": \"REFERIDO\",\n    \"distrito\": \"SAN_MARTIN_DE_PORRES\",\n    \"direccion\": \"Fermin Tanguis 079\",\n    \"banco\": \"BCP\",\n    \"cuentaBancaria\": \"02344677890\",\n    \"cuentaInterbancaria\": \"08876543234343\",\n    \"cuentaPropia\": true,\n    \"parentesco\": \"HERMANO\",\n    \"celularTransferencia\": \"988877766\",\n    \"idEmpresaContratista\": 2\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -892,7 +892,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\r\n    \"puestoTrabajo\": \"SUPERVISOR_VENTAS\",\r\n    \"regimen\": \"RECIBO_POR_HONORARIOS\",\r\n    \"modalidad\": \"SUPER_FULL\",\r\n    \"seguroSalud\": \"SIS\",\r\n    \"sistemaPensiones\": \"AFP_HABITAT\",\r\n    \"sueldoBase\": 2000.00,\r\n    \"fechaInicio\": \"2026-03-06\",\r\n    \"fechaFin\": null\r\n}",
+                  "raw": "{\r\n    \"puestoTrabajo\": \"COMMUNITY\",\r\n    \"idPostulacion\": null,\r\n    \"regimen\": \"RECIBO_POR_HONORARIOS\",\r\n    \"modalidad\": \"SUPER_FULL\",\r\n    \"seguroSalud\": \"SIS\",\r\n    \"sistemaPensiones\": \"AFP_HABITAT\",\r\n    \"sueldoBase\": 2000.00,\r\n    \"fechaInicio\": \"2026-03-06\",\r\n    \"fechaFin\": null\r\n}\r\n\r\n// {\r\n//     \"puestoTrabajo\": \"ASESOR_VENTAS\",\r\n//     \"regimen\": \"RECIBO_POR_HONORARIOS\",\r\n//     \"modalidad\": \"SUPER_FULL\",\r\n//     \"seguroSalud\": \"SIS\",\r\n//     \"sistemaPensiones\": \"AFP_HABITAT\",\r\n//     \"sueldoBase\": 1800.00,\r\n//     \"fechaInicio\": \"2026-03-28\",\r\n//     \"fechaFin\": null\r\n// }",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -970,13 +970,14 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:8080/contratos/1/vigente",
+                  "raw": "http://localhost:8080/rrhh/contratos/1/vigente",
                   "protocol": "http",
                   "host": [
                     "localhost"
                   ],
                   "port": "8080",
                   "path": [
+                    "rrhh",
                     "contratos",
                     "1",
                     "vigente"
@@ -1336,7 +1337,1598 @@
     },
     {
       "name": "lead-service",
-      "item": []
+      "item": [
+        {
+          "name": "Campanas",
+          "item": [
+            {
+              "name": "Registrar Campana",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Campana Fibra Lima Norte\",\n  \"numeroWhatsappEmpresa\": \"51987654321\",\n  \"idCuentaPublicitaria\": 1,\n  \"idProveedor\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/leads/campanas",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "campanas"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Actualizar WhatsApp Campana",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroWhatsappEmpresa\": \"51912345678\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/leads/campanas/1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "campanas",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Desactivar Campana",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/campanas/1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "campanas",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Campanas",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/campanas?activo=true",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "campanas"
+                  ],
+                  "query": [
+                    {
+                      "key": "activo",
+                      "value": "true"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Cuentas Publicitarias",
+          "item": [
+            {
+              "name": "Registrar Cuenta Publicitaria",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroCuenta\": \"act_1234567890\",\n  \"nombreCuenta\": \"Meta Ads Albru\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/leads/cuentas-publicitarias",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "cuentas-publicitarias"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Cuentas Publicitarias",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/cuentas-publicitarias?activo=true",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "cuentas-publicitarias"
+                  ],
+                  "query": [
+                    {
+                      "key": "activo",
+                      "value": "true"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Cuentas Activas",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/cuentas-publicitarias/activas",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "cuentas-publicitarias",
+                    "activas"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Desactivar Cuenta Publicitaria",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/cuentas-publicitarias/1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "cuentas-publicitarias",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Eventos",
+          "item": [
+            {
+              "name": "Eventos Por Lead",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/eventos/lead/1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "eventos",
+                    "lead",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Eventos Por Empleado",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/eventos/empleado/12?fechaDesde=2026-03-01&fechaHasta=2026-03-31",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "eventos",
+                    "empleado",
+                    "12"
+                  ],
+                  "query": [
+                    {
+                      "key": "fechaDesde",
+                      "value": "2026-03-01"
+                    },
+                    {
+                      "key": "fechaHasta",
+                      "value": "2026-03-31"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Leads",
+          "item": [
+            {
+              "name": "Registrar Intake",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"prefijo\": \"+51\",\n  \"lead\": \"987654321\",\n  \"idCampana\": 1,\n  \"base\": \"WHATSAPP\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/leads/leads/intake",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "leads",
+                    "intake"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Asignar Lead",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAsesorAsignado\": 15,\n  \"nombreAsesorAsignado\": \"Luis Mendoza\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/leads/leads/1/asignacion",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "leads",
+                    "1",
+                    "asignacion"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Bandeja Asesor Ventas",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/leads/asesor-ventas",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "leads",
+                    "asesor-ventas"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Detalle Asesor",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/leads/1/detalle-asesor",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "leads",
+                    "1",
+                    "detalle-asesor"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Actualizar Datos Preventa",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"tipoDocumento\": \"DNI\",\n  \"numeroDocumentoTitularServicio\": \"75413802\",\n  \"ubigeoNacimiento\": \"150101\",\n  \"nombreTitularServicio\": \"Juan Perez Torres\",\n  \"celularRegistro\": \"987654321\",\n  \"celularReferencia\": \"912345678\",\n  \"correo\": \"juan.perez@gmail.com\",\n  \"numeroDocumentoTitularCelularRegistro\": \"75413802\",\n  \"nombreTitularCelularRegistro\": \"Juan Perez Torres\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/leads/leads/1/datos-preventa",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "leads",
+                    "1",
+                    "datos-preventa"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Actualizar Direccion",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"ubigeoDomicilio\": \"150132\",\n  \"tipoDomicilio\": \"MULTIFAMILIAR\",\n  \"tipoVia\": \"CALLE\",\n  \"via\": \"Los Olivos\",\n  \"direccion\": \"Mz A Lt 12\",\n  \"referencia\": \"Frente al parque central\",\n  \"latitud\": -11.98345,\n  \"longitud\": -77.07452,\n  \"urbanizacion\": \"Las Palmeras\",\n  \"numero\": \"120\",\n  \"manzana\": \"A\",\n  \"lote\": \"12\",\n  \"nombreEdificio\": \"Residencial Sol\",\n  \"nombreCondominio\": \"Condominio Sol\",\n  \"piso\": \"3\",\n  \"interior\": \"302\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/leads/leads/1/direccion",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "leads",
+                    "1",
+                    "direccion"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Actualizar Oferta Comercial",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idPlan\": 1,\n  \"idPromocionInterna\": 1,\n  \"idPromocionProveedor\": 2,\n  \"adicionales\": [\n    {\n      \"idAdicional\": 1,\n      \"cantidad\": 2\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/leads/leads/1/oferta-comercial",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "leads",
+                    "1",
+                    "oferta-comercial"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Tipificar Lead",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"codigoTipificacion\": \"CONTACTADO\",\n  \"codigoSubtipificacion\": \"INTERESADO\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/leads/leads/1/tipificacion",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "leads",
+                    "1",
+                    "tipificacion"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Registrar Contacto Lead",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/leads/1/contacto",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "leads",
+                    "1",
+                    "contacto"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Bandeja GTR",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/leads/gtr?fecha=2026-03-28",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "leads",
+                    "gtr"
+                  ],
+                  "query": [
+                    {
+                      "key": "fecha",
+                      "value": "2026-03-28"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Planes",
+          "item": [
+            {
+              "name": "Registrar Adicional",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idProveedor\": 1,\n  \"nombre\": \"Decodificador HD\",\n  \"precioUnitario\": 25.00\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/leads/planes/adicionales",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "planes",
+                    "adicionales"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Registrar Plan",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idProveedor\": 1,\n  \"nombre\": \"Fibra 200 Mbps\",\n  \"precio\": 89.90,\n  \"vigenciaDesde\": \"2026-04-01\",\n  \"vigenciaHasta\": \"2026-12-31\",\n  \"internet\": {\n    \"velocidad\": 200,\n    \"unidad\": \"MBPS\",\n    \"tecnologia\": \"FTTH\"\n  },\n  \"television\": {\n    \"nombre\": \"TV Familiar\",\n    \"cantidadCanales\": 85\n  },\n  \"telefono\": {\n    \"minutos\": 300,\n    \"descripcion\": \"Llamadas ilimitadas a fijos locales\"\n  },\n  \"adicionales\": [\n    {\n      \"idAdicional\": 1,\n      \"cantidadIncluida\": 1,\n      \"permiteCompraAdicional\": true,\n      \"cantidadMaximaAdicional\": 3,\n      \"precioUnitarioAdicional\": 20.00\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/leads/planes",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "planes"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Planes",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/planes?idProveedor=1&soloVigentes=true",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "planes"
+                  ],
+                  "query": [
+                    {
+                      "key": "idProveedor",
+                      "value": "1"
+                    },
+                    {
+                      "key": "soloVigentes",
+                      "value": "true"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Adicionales",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/planes/adicionales?idProveedor=1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "planes",
+                    "adicionales"
+                  ],
+                  "query": [
+                    {
+                      "key": "idProveedor",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Servicios Proveedor",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/planes/servicios?idProveedor=1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "planes",
+                    "servicios"
+                  ],
+                  "query": [
+                    {
+                      "key": "idProveedor",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Actualizar Plan",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Fibra 300 Mbps\",\n  \"precio\": 99.90,\n  \"vigenciaDesde\": \"2026-04-01\",\n  \"vigenciaHasta\": \"2026-12-31\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/leads/planes/1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "planes",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Desactivar Plan",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/planes/1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "planes",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Promociones",
+          "item": [
+            {
+              "name": "Registrar Promocion",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Instalacion Gratis Abril\",\n  \"interno\": false,\n  \"idProveedor\": 1,\n  \"idZona\": 1,\n  \"descuento\": true,\n  \"cantidadMeses\": 2,\n  \"vigenciaDesde\": \"2026-04-01\",\n  \"vigenciaHasta\": \"2026-06-30\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/leads/promociones",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "promociones"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Promociones",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/promociones?idProveedor=1&interno=false&idZona=1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "promociones"
+                  ],
+                  "query": [
+                    {
+                      "key": "idProveedor",
+                      "value": "1"
+                    },
+                    {
+                      "key": "interno",
+                      "value": "false"
+                    },
+                    {
+                      "key": "idZona",
+                      "value": "1"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Desactivar Promocion",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/promociones/1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "promociones",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Proveedores",
+          "item": [
+            {
+              "name": "Registrar Proveedor",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"WOW\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/leads/proveedores",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "proveedores"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Alternar Estado Proveedor",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/proveedores/1/estado",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "proveedores",
+                    "1",
+                    "estado"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Tipificaciones",
+          "item": [
+            {
+              "name": "Catalogo Por Etapa",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/tipificaciones/PREVENTA/catalogo",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "tipificaciones",
+                    "PREVENTA",
+                    "catalogo"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Upsert Catalogo",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"etapa\": \"PREVENTA\",\n  \"tipificaciones\": [\n    {\n      \"codigo\": \"CONTACTADO\",\n      \"descripcion\": \"Lead contactado\",\n      \"orden\": 1,\n      \"subtipificaciones\": [\n        {\n          \"codigo\": \"INTERESADO\",\n          \"descripcion\": \"Cliente interesado\",\n          \"orden\": 1\n        },\n        {\n          \"codigo\": \"NO_RESPONDE\",\n          \"descripcion\": \"No responde\",\n          \"orden\": 2\n        }\n      ]\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/leads/tipificaciones/catalogo",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "tipificaciones",
+                    "catalogo"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Actualizar Estado Catalogo",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"etapa\": \"PREVENTA\",\n  \"tipificacionesActivar\": [1],\n  \"tipificacionesDesactivar\": [2],\n  \"subtipificacionesActivar\": [3],\n  \"subtipificacionesDesactivar\": [4]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/leads/tipificaciones/catalogo/estado",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "tipificaciones",
+                    "catalogo",
+                    "estado"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Ubigeo",
+          "item": [
+            {
+              "name": "Listar Departamentos",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/ubigeo/departamentos",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "ubigeo",
+                    "departamentos"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Provincias",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/ubigeo/departamentos/15/provincias",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "ubigeo",
+                    "departamentos",
+                    "15",
+                    "provincias"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Distritos",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/ubigeo/provincias/1501/distritos",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "ubigeo",
+                    "provincias",
+                    "1501",
+                    "distritos"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Zonas",
+          "item": [
+            {
+              "name": "Registrar Zona",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Lima Norte\",\n  \"reglas\": [\n    {\n      \"nivelGeografico\": \"DISTRITO\",\n      \"geoId\": 150132,\n      \"criterio\": \"INCLUIR\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/leads/zonas",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "zonas"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Zonas",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/zonas?activo=true",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "zonas"
+                  ],
+                  "query": [
+                    {
+                      "key": "activo",
+                      "value": "true"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Alternar Estado Zona",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/leads/zonas/1/estado",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "zonas",
+                    "1",
+                    "estado"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Actualizar Zona",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Lima Norte Expandida\",\n  \"reglas\": [\n    {\n      \"nivelGeografico\": \"DISTRITO\",\n      \"geoId\": 150132,\n      \"criterio\": \"INCLUIR\"\n    },\n    {\n      \"nivelGeografico\": \"DISTRITO\",\n      \"geoId\": 150133,\n      \"criterio\": \"INCLUIR\"\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "http://localhost:8080/leads/zonas/1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "leads",
+                    "zonas",
+                    "1"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
     },
     {
       "name": "recruitment-service",
@@ -1426,9 +3018,6 @@
             },
             {
               "name": "Ofertas Activas",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
               "request": {
                 "auth": {
                   "type": "bearer",
@@ -1460,9 +3049,6 @@
             },
             {
               "name": "Ofertas <Estado>",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
               "request": {
                 "auth": {
                   "type": "bearer",
@@ -1849,9 +3435,6 @@
           "item": [
             {
               "name": "Catalogo",
-              "protocolProfileBehavior": {
-                "disableBodyPruning": true
-              },
               "request": {
                 "auth": {
                   "type": "bearer",

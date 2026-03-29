@@ -67,13 +67,13 @@ public class DataLoader {
         savePermiso("READ_EVENTOS_RECRUITMENT", "Puede ver el historico de eventos de recruitment", "EVENTO_RECRUITMENT", "READ");
 
         // POSTULANTES
-//        savePermiso("REJECT_POSTULANTE_INASISTENCIA", "Puede rechazar a un postulante por inasistencia",  "POSTULANTE", "REJECT");
+//        savePermiso("REJECT_POSTULANTE_INASISTENCIA", "Puede rechazar a un postulante por inasistencia", "POSTULANTE", "REJECT");
 
         // EMPLEADOS
         savePermiso("CREATE_EMPLEADOS", "Puede registrar empleados directamente", "EMPLEADO", "CREATE");
         savePermiso("READ_EMPLEADOS", "Puede listar y ver empleados", "EMPLEADO", "READ");
         savePermiso("UPDATE_EMPLEADOS", "Puede editar empleados", "EMPLEADO", "UPDATE");
-        savePermiso("BLACKLIST_EMPLEADOS", "Puede marcar como lista negra a los empleados", "EMPLEADO", "BLACKLIST");
+        savePermiso("BLACKLIST_EMPLEADO", "Puede marcar como lista negra a los empleados", "EMPLEADO", "BLACKLIST");
         savePermiso("CREATE_CONTRATISTA", "Puede registrar empresas contratistas", "EMPRESA_CONTRATISTA", "CREATE");
         savePermiso("READ_CONTRATISTAS", "Puede listar y ver empresas contratistas", "EMPRESA_CONTRATISTA", "READ");
         savePermiso("DELETE_CONTRATISTA", "Puede desactivar empresas contratistas", "EMPRESA_CONTRATISTA", "DELETE");
@@ -166,7 +166,7 @@ public class DataLoader {
                 getPermiso("CREATE_EMPLEADOS"),
                 getPermiso("READ_EMPLEADOS"),
                 getPermiso("UPDATE_EMPLEADOS"),
-                getPermiso("BLACKLIST_EMPLEADOS"),
+                getPermiso("BLACKLIST_EMPLEADO"),
 
                 getPermiso("CREATE_CONTRATOS"),
                 getPermiso("UPDATE_CONTRATOS"),
