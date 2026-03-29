@@ -155,7 +155,7 @@ export const AsignacionLead: React.FC<AsignacionLeadProps> = ({
           label="Asesor a Asignar"
           name="asesor"
           value={idAsesorAsignado}
-          onChange={setIdAsesorAsignado}
+          onChange={(value) => setIdAsesorAsignado(String(value))}
           options={asesorOptions}
           placeholder="Selecciona un asesor disponible"
           required

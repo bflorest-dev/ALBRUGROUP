@@ -61,7 +61,7 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
       newErrors.lead = 'Solo se permiten números';
     }
 
-    if (!formData.idCampana) {
+    if (!formData.idCampana || Number(formData.idCampana) <= 0) {
       newErrors.idCampana = 'Campaña requerida';
     }
 
@@ -74,10 +74,10 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
   };
 
   // ========== HANDLERS ==========
-  const handleInputChange = (field: keyof LeadIntakeRequest, value: string) => {
+  const handleInputChange = (field: keyof LeadIntakeRequest, value: string | number) => {
     setFormData((prev) => ({
       ...prev,
-      [field]: field === 'idCampana' ? Number(value) : value,
+      [field]: field === 'idCampana' ? Number(value) : String(value),
     }));
     if (errors[field]) {
       setErrors((prev) => {
@@ -88,11 +88,19 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
     }
   };
 
-  const handleCampaignChange = (idCampana: string) => {
+  const handleCampaignChange = (idCampana: string | number) => {
     const id = Number(idCampana);
     const campaign = campaigns.find((c) => c.id === id);
     setSelectedCampaign(campaign ? { id: campaign.id, nombre: campaign.nombre } : null);
-    handleInputChange('idCampana', idCampana);
+    setFormData((prev) => ({ ...prev, idCampana: id }));
+
+    if (errors.idCampana) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors.idCampana;
+        return newErrors;
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
