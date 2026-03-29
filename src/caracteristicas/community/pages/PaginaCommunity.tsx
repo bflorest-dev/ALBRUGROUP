@@ -199,7 +199,15 @@ const PaginaCommunity: React.FC = () => {
         </section>
       )}
 
-      {activeSection === 'campanas' && <CampaignSection sectionStyle={sectionStyle} />}
+      {activeSection === 'campanas' && (
+        <CampaignSection
+          sectionStyle={sectionStyle}
+          campanas={campanas}
+          loading={loading}
+          error={!!error}
+          onRefresh={fetchCampanas}
+        />
+      )}
 
       {activeSection === 'cuentas' && (
         <section style={sectionStyle}>
