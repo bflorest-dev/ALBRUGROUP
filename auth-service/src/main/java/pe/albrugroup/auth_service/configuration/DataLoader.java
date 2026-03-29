@@ -100,6 +100,7 @@ public class DataLoader {
         savePermiso("DELETE_CAMPANA", "Puede desactivar campanas", "CAMPANA", "DELETE");
 
         savePermiso("CREATE_PROVEEDORES", "Puede registrar proveedores", "PROVEEDOR", "CREATE");
+        savePermiso("READ_PROVEEDORES", "Puede listar y ver proveedores", "PROVEEDOR", "READ");
         savePermiso("UPDATE_PROVEEDORES", "Puede actualizar el estado de proveedores", "PROVEEDOR", "UPDATE");
 
         savePermiso("CREATE_ZONAS", "Puede registrar zonas", "ZONA", "CREATE");
@@ -248,6 +249,7 @@ public class DataLoader {
                 getPermiso("DELETE_CAMPANA"),
 
                 getPermiso("CREATE_PROVEEDORES"),
+                getPermiso("READ_PROVEEDORES"),
                 getPermiso("UPDATE_PROVEEDORES"),
 
                 getPermiso("READ_ZONAS"),
