@@ -143,10 +143,10 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
   }));
 
   const baseOptions = [
-    { value: 'WHATSAPP', label: 'WhatsApp' },
-    { value: 'TELEFONO', label: 'Teléfono' },
-    { value: 'EMAIL', label: 'Email' },
-    { value: 'SMS', label: 'SMS' },
+    { value: 'WHATSAPP', label: 'WHATSAPP' },
+    { value: 'MESSENGER', label: 'MESSENGER' },
+    { value: 'REFERIDO', label: 'REFERIDO' },
+    { value: 'MASIVO', label: 'MASIVO' },
   ];
 
   return (

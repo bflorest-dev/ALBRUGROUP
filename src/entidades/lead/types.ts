@@ -164,7 +164,7 @@ export type EstadoLead =
   | 'CERRADA'
   | 'PERDIDA';
 
-export type BaseLead = 'WHATSAPP' | 'TELEFONO' | 'EMAIL' | 'SMS';
+export type BaseLead = 'WHATSAPP' | 'MESSENGER' | 'REFERIDO' | 'MASIVO';
 
 // ========== ENUMS ==========
 
@@ -180,9 +180,9 @@ export enum EstadoSeguimiento {
 
 export enum BaseLead_Enum {
   WHATSAPP = 'WHATSAPP',
-  TELEFONO = 'TELEFONO',
-  EMAIL = 'EMAIL',
-  SMS = 'SMS',
+  MESSENGER = 'MESSENGER',
+  REFERIDO = 'REFERIDO',
+  MASIVO = 'MASIVO',
 }
 
 // ========== PERMISOS (GTR Rol) ==========
