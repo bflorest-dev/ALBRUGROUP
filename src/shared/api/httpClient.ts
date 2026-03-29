@@ -1,0 +1,253 @@
+/**
+ * HTTP Client Consolidado
+ * 
+ * Centraliza TODOS los clientes HTTP con:
+ * - JWT Token Management (interceptor)
+ * - Error Handling y Logging
+ * - Retry automático en timeouts
+ * - Validación de responses
+ * 
+ * Backends disponibles:
+ *  - authHttp   → :8080/autorizacion (sin JWT)
+ *  - rrhhHttp   → :8080/rrhh (con JWT)
+ *  - leadsHttp  → :8080/leads (con JWT)
+ * 
+ * FSD: shared/api - Capa de transporte HTTP
+ */
+
+import axios from 'axios';
+import type { AxiosInstance, AxiosResponse, AxiosError, AxiosRequestConfig } from 'axios';
+import { env } from '@app/config/env';
+
+/**
+ * Tipo de error API normalizado
+ */
+export interface ApiError {
+  message: string;
+  code?: string;
+  status?: number;
+  details?: unknown;
+}
+
+/**
+ * Wrapper optional para responses con metadata
+ */
+export interface ApiResult<T = unknown> {
+  error: boolean;
+  status: number;
+  data: T | null;
+}
+
+/**
+ * ─── INTERCEPTORES ──────────────────────────────────────────────────────────
+ */
+
+/**
+ * Adjunta JWT Bearer token desde localStorage a todas las requests
+ * Usado por rrhhHttp y leadsHttp
+ * NO usado por authHttp (login no requiere token)
+ */
+function addAuthInterceptor(instance: AxiosInstance, instanceName: string): void {
+  instance.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+        console.debug(`[${instanceName}] JWT attached`, {
+          endpoint: config.url,
+          hasToken: !!token,
+        });
+      }
+      return config;
+    },
+    (error) => {
+      console.error(`[${instanceName}] Request interceptor error`, error);
+      return Promise.reject(error);
+    }
+  );
+}
+
+/**
+ * Manejo centralizado de errores HTTP:
+ * - 401 → limpiar sesión
+ * - Timeout → reintentar (máx 1x)
+ * - Network → error normalizado
+ */
+function addErrorInterceptor(instance: AxiosInstance, instanceName: string): void {
+  instance.interceptors.response.use(
+    (response: AxiosResponse) => {
+      console.debug(`[${instanceName}] Success`, {
+        status: response.status,
+        url: response.config.url,
+        dataKeys: typeof response.data === 'object' ? Object.keys(response.data).length : 'N/A',
+      });
+      return response;
+    },
+    async (error: AxiosError | any) => {
+      // Log de error inicial
+      const method = error.config?.method?.toUpperCase() || 'UNKNOWN';
+      const url = error.config?.url || 'UNKNOWN';
+      const status = error.response?.status || 'NO_STATUS';
+
+      console.error(`[${instanceName}] HTTP Error`, {
+        method,
+        url,
+        status,
+        message: error.message,
+      });
+
+      // Retry automático en TIMEOUT (ECONNABORTED)
+      if (
+        error.code === 'ECONNABORTED' &&
+        error.config &&
+        !error.config._retryCount
+      ) {
+        error.config._retryCount = 1;
+        console.warn(`[${instanceName}] TIMEOUT - Retrying request (attempt 1)`, { url, method });
+        return instance.request(error.config);
+      }
+
+      // 401 → limpiar sesión inmediatamente
+      if (error.response?.status === 401) {
+        console.warn(`[${instanceName}] 401 Unauthorized - Clearing session`);
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
+        localStorage.removeItem('user');
+      }
+
+      // Normalizar error
+      const apiError: ApiError = {
+        message: 'Error desconocido',
+        status: error.response?.status || 0,
+        code: error.code || 'UNKNOWN',
+        details: error.response?.data,
+      };
+
+      if (error.response) {
+        // HTTP Error
+        const data = error.response.data as Record<string, unknown>;
+        apiError.message = typeof data?.message === 'string'
+          ? data.message
+          : error.response.statusText || 'Error del servidor';
+        apiError.code = typeof data?.error === 'string' ? data.error : String(error.response.status);
+      } else if (error.request) {
+        // Network Error
+        apiError.message = 'Sin conexión con el servidor. Verifica que el backend esté corriendo.';
+        apiError.code = 'NETWORK_ERROR';
+      } else {
+        apiError.message = error.message || 'Error desconocido';
+        apiError.code = 'UNKNOWN_ERROR';
+      }
+
+      console.error(`[${instanceName}] Normalized error`, apiError);
+      return Promise.reject(apiError);
+    }
+  );
+}
+
+/**
+ * ─── HTTP CLIENTS ───────────────────────────────────────────────────────────
+ */
+
+/**
+ * Cliente para AUTENTICACIÓN
+ * - SIN JWT requerido (login no tiene token aún)
+ * - Usado por: AuthRepository
+ */
+export const authHttp: AxiosInstance = axios.create({
+  baseURL: env.AUTH_BASE_URL,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+addErrorInterceptor(authHttp, 'authHttp');
+
+/**
+ * Cliente para RRHH (Recursos Humanos)
+ * - CON JWT requerido (Bearer token)
+ * - Usado por: EmployeeRepository, ContractRepository, ApplicantRepository
+ */
+export const rrhhHttp: AxiosInstance = axios.create({
+  baseURL: env.RRHH_BASE_URL,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+addAuthInterceptor(rrhhHttp, 'rrhhHttp');
+addErrorInterceptor(rrhhHttp, 'rrhhHttp');
+
+/**
+ * Cliente para LEADS (Planes, Promociones, Eventos)
+ * - CON JWT requerido (Bearer token)
+ * - Usado por: LeadsRepository
+ */
+export const leadsHttp: AxiosInstance = axios.create({
+  baseURL: env.LEADS_BASE_URL,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+addAuthInterceptor(leadsHttp, 'leadsHttp');
+addErrorInterceptor(leadsHttp, 'leadsHttp');
+
+/**
+ * Alias para backward compatibility
+ * Algunos repos importan `http` en lugar de `rrhhHttp`
+ */
+export const http = rrhhHttp;
+
+/**
+ * Default export = rrhhHttp (más usado)
+ */
+export default rrhhHttp;
+
+/**
+ * ─── UTILITIES ───────────────────────────────────────────────────────────────
+ */
+
+/**
+ * Factory opcional para crear clientes HTTP adicionales si se necesita
+ * (No usado actualmente pero disponible para extensión)
+ */
+export function createHttpClient(
+  baseURL: string,
+  withAuth: boolean = false,
+  instanceName: string = 'httpClient'
+): AxiosInstance {
+  const client = axios.create({
+    baseURL,
+    timeout: 30000,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (withAuth) {
+    addAuthInterceptor(client, instanceName);
+  }
+  addErrorInterceptor(client, instanceName);
+
+  return client;
+}
+
+/**
+ * Validar que el token JWT esté en localStorage
+ * Útil para debugging y testing
+ */
+export function getStoredToken(): string | null {
+  return localStorage.getItem('auth_token');
+}
+
+/**
+ * Forzar limpieza de sesión (logout)
+ * Llamado por error handling en 401
+ */
+export function clearSession(): void {
+  localStorage.removeItem('auth_token');
+  localStorage.removeItem('auth_user');
+  localStorage.removeItem('user');
+  console.log('[httpClient] Session cleared');
+}

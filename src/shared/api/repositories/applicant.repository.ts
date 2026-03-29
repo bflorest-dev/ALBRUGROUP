@@ -12,7 +12,7 @@
  *  PATCH /postulantes/{id}/rechazo-inasistencia-capacitacion
  */
 
-import { rrhhHttp } from '@shared/api/clienteHttp';
+import { rrhhHttp } from '@shared/api/httpClient';
 import type {
   PostulanteResponse,
   RegistrarPostulanteRequest,

@@ -99,6 +99,23 @@ export interface ProveedorResponse {
   createdAt: string;
 }
 
+export interface UsuarioResponse {
+  id: number;
+  username: string;
+  email: string;
+  empleadoId: number;
+  nombreCompleto: string;
+  activo: boolean;
+  roles: string[];
+}
+
+export interface ActualizarCredencialesRequest {
+  username: string;
+  password?: string;
+  puestoTrabajo: string;
+  roles?: string[];
+}
+
 export interface PromocionComercialResponse {
   id: number;
   nombre: string;
@@ -113,4 +130,37 @@ export interface PromocionComercialResponse {
   vigenciaHasta: string;
   activo: boolean;
   createdAt: string;
+}
+
+/**
+ * AUTENTICACIÓN CON VALIDACIÓN PREVIA
+ * 
+ * Flujo: Validar usuario → Mostrar login o reset según passwordInicializada
+ */
+
+export interface EstadoAccesoResponse {
+  passwordInicializada: boolean;
+}
+
+export interface ForgotPasswordRequest {
+  username: string;
+  email: string;
+  dni: string;
+  newPassword?: string;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+  success: boolean;
+  username?: string;
+  password?: string;
+}
+
+export interface AuthLoginResponse {
+  token: string;
+  type: string;
+  username: string;
+  empleadoId: number;
+  nombreCompleto: string;
+  roles: string[];
 }

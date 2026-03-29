@@ -3,6 +3,13 @@
  * Central hub for all reusable UI components
  */
 
+// Form Components
+export { FormInput } from './form-input/FormInput';
+export { FormSelect } from './form-select/FormSelect';
+
+// Utility Components (excluding Button to avoid conflicts)
+export { Alert, Spinner, Badge, ErrorMessage, TextArea } from './utilities/Utilities';
+
 // Re-export component groups
 export * from './boton';
 export * from './entrada';

@@ -12,7 +12,7 @@
  */
 
 import { BaseService } from '@shared/lib/base.service';
-import { ApplicantRepository } from '../api/applicant.repository';
+import { ApplicantRepository } from '@shared/api/repositories/applicant.repository';
 import type { Applicant, NewApplicantFormData, RegistrarPostulanteRequest } from '@shared/types';
 import { adaptPostulanteResponseToApplicant } from '@shared/types';
 import { validateDataOrThrow, NewApplicantFormDataSchema } from '@shared/validation';

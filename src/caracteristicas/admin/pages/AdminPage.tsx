@@ -8,6 +8,8 @@ import { ApplicantService } from '@entidades/postulante/model';
 import { useRegistrarEmpleadoConContrato } from '@caracteristicas/registrar-empleado/model/useRegistrarEmpleadoConContrato';
 import { mapFormToRegistrarEmpleadoRequest } from '@caracteristicas/registrar-empleado/model/mappers/newEmployeeFormDataMapper';
 import { useAuth } from '@shared/auth/useAuth';
+import { AuthService } from '@shared/services/auth.service';
+import { PuestoTrabajoEnum } from '@shared/types';
 import { BiUserPlus, BiIdCard } from 'react-icons/bi';
 import type { NewApplicantFormData, NewEmployeeFormData, UserProfile, RegistrarContratoRequest } from '@shared/types';
 import './AdminPage.css';
@@ -28,6 +30,17 @@ const AdminPage: React.FC = () => {
     message?: string;
     createdAt: string;
   }[]>([]);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [updatePayload, setUpdatePayload] = useState<{
+    empleadoId: number;
+    username: string;
+    puestoTrabajo: string;
+  }>({
+    empleadoId: 0,
+    username: '',
+    puestoTrabajo: PuestoTrabajoEnum.ASESOR_VENTAS,
+  });
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   
@@ -75,6 +88,7 @@ const AdminPage: React.FC = () => {
       // PASO 2: Construir contratoData
       const contratoData: RegistrarContratoRequest = {
         puesto: formData.puesto,
+        puestoTrabajo: formData.puesto, // aseguro campo esperable por auth-service
         salario: formData.baseSalary ? parseFloat(formData.baseSalary as any) : undefined,
         fechaInicio: formData.startDate,
         tipoContrato: formData.regimen || 'PLANILLA',
@@ -99,6 +113,12 @@ const AdminPage: React.FC = () => {
         ...prev,
       ]);
 
+      // AUTO-LLENAR: el empleadoId del nuevo empleado registrado en el formulario de actualización
+      setUpdatePayload(prev => ({
+        ...prev,
+        empleadoId: resultado.empleadoId,
+      }));
+
       let message = `Empleado registrado correctamente con ID: ${resultado.empleadoId}`;
 
       if (resultado.partial) {
@@ -115,6 +135,31 @@ const AdminPage: React.FC = () => {
       alert(`Error: ${errorMsg}`);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleActualizarUsernameRoles = async () => {
+    setUpdateLoading(true);
+    setUpdateError(null);
+
+    try {
+      if (!updatePayload.empleadoId || !updatePayload.username?.trim() || !updatePayload.puestoTrabajo?.trim()) {
+        throw new Error('Debe elegir empleado, username y puesto de trabajo.');
+      }
+
+      await AuthService.actualizarUsernameRoles(updatePayload.empleadoId, {
+        username: updatePayload.username.trim(),
+        puestoTrabajo: updatePayload.puestoTrabajo.trim(),
+      });
+
+      alert('Actualización de username/roles exitosa, puestoTrabajo incluido.');
+      setUpdatePayload(prev => ({ ...prev, username: '' }));
+    } catch (error) {
+      console.error(error);
+      setUpdateError(error instanceof Error ? error.message : 'Error al actualizar credenciales y roles');
+      alert(`Error al actualizar username/roles: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    } finally {
+      setUpdateLoading(false);
     }
   };
 
@@ -164,30 +209,78 @@ const AdminPage: React.FC = () => {
               {generatedCredentials.length === 0 ? (
                 <p>No hay credenciales generadas todavía.</p>
               ) : (
-                <table className="credentials-table">
-                  <thead>
-                    <tr>
-                      <th>ID Empleado</th>
-                      <th>Puesto</th>
-                      <th>Usuario</th>
-                      <th>Contraseña</th>
-                      <th>Estado</th>
-                      <th>Fecha</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {generatedCredentials.map((item, index) => (
-                      <tr key={`${item.empleadoId}-${index}`}>
-                        <td>{item.empleadoId}</td>
-                        <td>{item.puesto}</td>
-                        <td>{item.username ?? 'N/A'}</td>
-                        <td>{item.password ?? 'N/A'}</td>
-                        <td>{item.partial ? `Parcial: ${item.message ?? 'error auth-service'}` : 'OK'}</td>
-                        <td>{new Date(item.createdAt).toLocaleString()}</td>
+                <>
+                  <table className="credentials-table">
+                    <thead>
+                      <tr>
+                        <th>ID Empleado</th>
+                        <th>Puesto</th>
+                        <th>Usuario</th>
+                        <th>Contraseña</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {generatedCredentials.map((item, index) => (
+                        <tr key={`${item.empleadoId}-${index}`}>
+                          <td>{item.empleadoId}</td>
+                          <td>{item.puesto}</td>
+                          <td>{item.username ?? 'N/A'}</td>
+                          <td>{item.password ?? 'N/A'}</td>
+                          <td>{item.partial ? `Parcial: ${item.message ?? 'error auth-service'}` : 'OK'}</td>
+                          <td>{new Date(item.createdAt).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  <div className="credentials-update-section">
+                    <h3>Actualizar username y roles (incluye puestoTrabajo obligatorio)</h3>
+                    <div className="form-group">
+                      <label>ID Empleado (registrados en esta sesión)</label>
+                      <select
+                        value={updatePayload.empleadoId}
+                        onChange={(e) => setUpdatePayload((prev) => ({ ...prev, empleadoId: Number(e.target.value) }))}
+                      >
+                        <option value={0}>-- Seleccionar empleado --</option>
+                        {generatedCredentials.map((cred) => (
+                          <option key={cred.empleadoId} value={cred.empleadoId}>
+                            ID: {cred.empleadoId} - {cred.puesto} (Usuario: {cred.username || 'sin generar'})
+                          </option>
+                        ))}
+                      </select>
+                      <small style={{ color: '#666', marginTop: '5px', display: 'block' }}>
+                        ⚠️ Nota: Solo se muestran empleados registrados en esta sesión. El empleadoId debe existir en BD.
+                      </small>
+                    </div>
+                    <div className="form-group">
+                      <label>Usuario</label>
+                      <input
+                        type="text"
+                        value={updatePayload.username}
+                        onChange={(e) => setUpdatePayload((prev) => ({ ...prev, username: e.target.value }))}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Puesto de Trabajo</label>
+                      <select
+                        value={updatePayload.puestoTrabajo}
+                        onChange={(e) => setUpdatePayload((prev) => ({ ...prev, puestoTrabajo: e.target.value }))}
+                      >
+                        {Object.values(PuestoTrabajoEnum).map((puesto) => (
+                          <option key={puesto} value={puesto}>
+                            {puesto.replace(/_/g, ' ')}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {updateError && <div className="error-message">{updateError}</div>}
+                    <button className="btn-primary" onClick={handleActualizarUsernameRoles} disabled={updateLoading}>
+                      {updateLoading ? 'Actualizando...' : 'Actualizar Username/Roles'}
+                    </button>
+                  </div>
+                </>
               )}
             </section>
           )}

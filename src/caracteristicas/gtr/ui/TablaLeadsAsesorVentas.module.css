@@ -1,0 +1,240 @@
+/* TablaLeadsAsesorVentas.module.css - Estilos para tabla de asesor */
+
+.container {
+  padding: 1.5rem;
+  background-color: white;
+  border-radius: 8px;
+}
+
+.container h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: #333;
+}
+
+.filterBar {
+  display: grid;
+  grid-template-columns: 2fr 1fr auto;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  align-items: end;
+}
+
+.searchInput,
+.filterSelect {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.searchInput:focus,
+.filterSelect:focus {
+  outline: none;
+  border-color: #0066cc;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.clearButton {
+  padding: 0.75rem 1rem;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 200ms ease;
+}
+
+.clearButton:hover {
+  background-color: #e0e0e0;
+}
+
+.stats {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.total {
+  font-weight: 600;
+  color: #333;
+}
+
+.info {
+  color: #0066cc;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.table thead {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #ddd;
+}
+
+.table th {
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 200ms ease;
+}
+
+.table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.table td {
+  padding: 0.75rem;
+}
+
+.colId {
+  width: 60px;
+}
+
+.colFecha {
+  width: 120px;
+}
+
+.colTelefono {
+  min-width: 130px;
+}
+
+.colTitular {
+  min-width: 150px;
+}
+
+.colEmail {
+  min-width: 150px;
+}
+
+.colEstado {
+  width: 130px;
+}
+
+.colAcciones {
+  width: 100px;
+  text-align: center;
+}
+
+.phone {
+  font-weight: 600;
+  color: #0066cc;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+}
+
+.titular {
+  font-weight: 600;
+  color: #333;
+}
+
+.email {
+  color: #0066cc;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.email:hover {
+  text-decoration: underline;
+}
+
+.noData {
+  text-align: center;
+  color: #999;
+  padding: 2rem !important;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.actionBtn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  transition: opacity 200ms ease;
+}
+
+.actionBtn:hover {
+  opacity: 0.7;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.paginationBtn {
+  padding: 0.5rem 1rem;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 200ms ease;
+}
+
+.paginationBtn:hover:not(:disabled) {
+  background-color: #0066cc;
+  color: white;
+  border-color: #0066cc;
+}
+
+.paginationBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pageInfo {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .filterBar {
+    grid-template-columns: 1fr;
+  }
+
+  .table {
+    font-size: 0.85rem;
+  }
+
+  .table th,
+  .table td {
+    padding: 0.5rem;
+  }
+
+  .colFecha {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .colTelefono,
+  .colEmail {
+    display: none;
+  }
+}

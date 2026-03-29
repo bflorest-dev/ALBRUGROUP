@@ -4,11 +4,11 @@
  * Transforma respuestas de la API y maneja lÃ³gica especÃ­fica del dominio
  */
 
-import { BaseService } from './base.service';
+import { BaseService } from '@shared/lib/base.service';
 import { EmployeeRepository } from '@shared/api/repositories/employee.repository';
 import { adaptEmpleadoResponseToEmployee } from '@shared/types';
 import type { Employee, NewEmployeeFormData, EmployeeDetailFormData } from '@shared/types';
-import type { RegistrarEmpleadoRequest } from '@entidades/empleado/modelo/tipos';
+import type { RegistrarEmpleadoRequest } from '@entidades/empleado/model/tipos';
 import { validateDataOrThrow, NewEmployeeFormDataSchema } from '../validation/schemas';
 
 type UpdateDataType = 'personal' | 'contact' | 'financial' | 'corporate';
@@ -32,7 +32,7 @@ export class EmployeeService extends BaseService<Employee> {
       () => EmployeeRepository.getAll(params),
       'No se pudieron cargar los empleados',
       adaptEmpleadoResponseToEmployee
-    ).then(result => ({ items: result.items, total: result.total, totalPages: result.totalPages }));
+    ).then((result: any) => ({ items: result.items, total: result.total, totalPages: result.totalPages }));
   }
 
   /**
@@ -58,7 +58,7 @@ export class EmployeeService extends BaseService<Employee> {
       () => EmployeeRepository.searchUniversal(dato, params),
       'Error en la bÃºsqueda de empleados',
       adaptEmpleadoResponseToEmployee
-    ).then(result => ({ items: result.items, total: result.total, totalPages: result.totalPages }));
+    ).then((result: any) => ({ items: result.items, total: result.total, totalPages: result.totalPages }));
   }
 
   /**

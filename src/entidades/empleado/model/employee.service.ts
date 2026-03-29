@@ -7,7 +7,7 @@
  */
 
 import { BaseService } from '@shared/lib/base.service';
-import { EmployeeRepository } from '../api/employee.repository';
+import { EmployeeRepository } from '@shared/api/repositories/employee.repository';
 import { adaptEmpleadoResponseToEmployee } from '@shared/types';
 import type { Employee, NewEmployeeFormData, EmployeeDetailFormData } from '@shared/types';
 import type { RegistrarEmpleadoRequest } from './index';

@@ -1,3 +1,4 @@
 export { ApplicantService } from './model';
-export { ApplicantRepository } from './api';
+// ApplicantRepository moved to @shared/api/repositories - export for backward compatibility  
+export { ApplicantRepository } from '@shared/api/repositories/applicant.repository';
 export * from './model';

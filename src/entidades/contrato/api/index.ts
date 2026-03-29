@@ -1,2 +1,3 @@
-export { ContractRepository } from './contract.repository';
-export type { ContratoDetalles } from './contract.repository';
+// Repositories moved to @shared/api/repositories - re-export for backward compatibility
+export { ContractRepository } from '@shared/api/repositories/contract.repository';
+export type { ContratoDetalles } from '@shared/api/repositories/contract.repository';

@@ -223,7 +223,7 @@ export const NewLeadModal: React.FC<NewLeadModalProps> = ({
       </div>
 
       <div className="modal-actions">
-        <Button variant="ghost" className="flex-1" onClick={onClose} disabled={isSubmitting}>
+        <Button variant="secondary" className="flex-1" onClick={onClose} disabled={isSubmitting}>
           Cancelar
         </Button>
         <Button variant="primary" className="flex-1" onClick={onSubmit} disabled={isSubmitting}>

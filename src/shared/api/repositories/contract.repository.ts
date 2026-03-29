@@ -4,7 +4,7 @@
  * Solo contiene llamadas HTTP puras sin lÃ³gica de negocio
  */
 
-import { rrhhHttp } from '@shared/api/clienteHttp';
+import { rrhhHttp } from '@shared/api/httpClient';
 import type { EmpleadoResponse, RegistrarContratoRequest, CerrarContratoRequest, ContratoRegistroResponse } from '@shared/types';
 
 export interface ContratoDetalles {

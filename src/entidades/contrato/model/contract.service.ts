@@ -7,7 +7,7 @@
  */
 
 import { BaseService } from '@shared/lib/base.service';
-import { ContractRepository, type ContratoDetalles } from '../api/contract.repository';
+import { ContractRepository, type ContratoDetalles } from '@shared/api/repositories/contract.repository';
 import { adaptEmpleadoResponseToEmployee } from '@shared/types';
 import type { Employee, RegistrarContratoRequest, CerrarContratoRequest, ContratoRegistroResponse } from '@shared/types';
 

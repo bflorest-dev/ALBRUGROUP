@@ -4,7 +4,7 @@
  * Transforma datos del formulario UI al formato que espera el backend
  */
 
-import { BaseService } from './base.service';
+import { BaseService } from '@shared/lib/base.service';
 import { ContractRepository, type ContratoDetalles } from '@shared/api/repositories/contract.repository';
 import { adaptEmpleadoResponseToEmployee } from '@shared/types';
 import type { Employee, RegistrarContratoRequest, CerrarContratoRequest, ContratoRegistroResponse } from '@shared/types';

@@ -4,7 +4,7 @@
  * Solo contiene llamadas HTTP puras sin lÃ³gica de negocio
  */
 
-import { http } from '@shared/api/clienteHttp';
+import { http } from '@shared/api/httpClient';
 import type { EmpleadoResponse, PageResponse, NewEmployeeFormData, EmployeeDetailFormData } from '@shared/types';
 import type { RegistrarEmpleadoRequest } from '@entidades/empleado/model';
 

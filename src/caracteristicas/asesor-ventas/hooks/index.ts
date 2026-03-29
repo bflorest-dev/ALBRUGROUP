@@ -1,0 +1,1 @@
+export { useLeadAsesorVentas } from './useLeadAsesorVentas';

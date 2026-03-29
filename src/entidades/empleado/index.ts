@@ -1,2 +1,3 @@
 export { EmployeeService } from './model';
-export { EmployeeRepository } from './api';
+// EmployeeRepository moved to @shared/api/repositories - export for backward compatibility
+export { EmployeeRepository } from '@shared/api/repositories/employee.repository';

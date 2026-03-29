@@ -11,7 +11,7 @@
  * - El campo `compania` es REQUERIDO por el backend (no opcional).
  */
 
-import { BaseService } from './base.service';
+import { BaseService } from '@shared/lib/base.service';
 import { ApplicantRepository } from '@shared/api/repositories/applicant.repository';
 import type { Applicant, NewApplicantFormData, RegistrarPostulanteRequest } from '@shared/types';
 import { adaptPostulanteResponseToApplicant } from '@shared/types';

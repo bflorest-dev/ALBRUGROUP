@@ -6,7 +6,7 @@
  */
 
 import { rrhhHttp, leadsHttp } from '@shared/api/clienteHttp';
-import { AuthRepository, type LoginRequest, type LoginResponse } from '../api/auth.repository';
+import { AuthRepository, type LoginRequest, type LoginResponse } from '@shared/api/repositories/auth.repository';
 
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'auth_user';
@@ -19,6 +19,31 @@ export interface CurrentUser {
 }
 
 export class AuthService {
+  /**
+   * Decodificar JWT y obtener payload
+   */
+  static getPayloadFromToken(token: string): any | null {
+    try {
+      const payload = token.split('.')[1];
+      if (!payload) return null;
+      const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+      return JSON.parse(decodeURIComponent(escape(decoded)));
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Obtener rol del payload JWT
+   */
+  static getRoleFromToken(token: string): string | null {
+    const payload = AuthService.getPayloadFromToken(token);
+    if (!payload) return null;
+
+    const role = payload.rol || payload.role || payload.roles?.[0] || payload.auth?.[0];
+    return role ?? null;
+  }
+
   /**
    * Inicializar sesión desde localStorage (si existe token válido)
    */
@@ -38,10 +63,16 @@ export class AuthService {
     const response = await AuthRepository.login(credentials);
     const { token, type, username, empleadoId, nombreCompleto, roles } = response;
 
+    // Obtener rol del payload o la respuesta
+    const responseRole = (response as any).usuario?.rol;
+    const tokenRole = AuthService.getRoleFromToken(token);
+    const role = responseRole || (roles && roles[0]) || tokenRole || undefined;
+    const normalizedRoles = role ? [role.toUpperCase()] : roles ?? [];
+
     // Persistir sesión
     localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(USER_KEY, JSON.stringify({ username, empleadoId, nombreCompleto, roles }));
-    localStorage.setItem('user', JSON.stringify({ id: String(empleadoId), name: nombreCompleto, roles }));
+    localStorage.setItem(USER_KEY, JSON.stringify({ username, empleadoId, nombreCompleto, roles: normalizedRoles }));
+    localStorage.setItem('user', JSON.stringify({ id: String(empleadoId), name: nombreCompleto, roles: normalizedRoles }));
 
     // Inyectar token en headers
     const authHeader = `${type} ${token}`;

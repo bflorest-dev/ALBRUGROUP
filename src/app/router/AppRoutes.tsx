@@ -1,10 +1,15 @@
 import React, { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { RequireAuth } from './RequireAuth';
 import { RequireRole } from './RequireRole';
 
 // Lazy load pages
 const PaginaLogin = lazy(() => import('@caracteristicas/auth/pages/PaginaLogin'));
+const PaginaAutenticacionAvanzada = lazy(() =>
+  import('@caracteristicas/autenticacion/pages/PaginaAutenticacionAvanzada').then(
+    (m) => ({ default: m.PaginaAutenticacionAvanzada })
+  )
+);
 const PaginaPanel = lazy(() => import('@pages/PaginaPanel'));
 const PaginaRRHH = lazy(() => import('@caracteristicas/rrhh/pages/PaginaRRHH'));
 const PaginaReclutamiento = lazy(() => import('@caracteristicas/reclutamiento/pages/PaginaReclutamiento'));
@@ -12,6 +17,8 @@ const PaginaCapacitacion = lazy(() => import('@caracteristicas/capacitacion/page
 const PaginaCommunity = lazy(() => import('@caracteristicas/community/pages/PaginaCommunity'));
 const PaginaGTR = lazy(() => import('@caracteristicas/gtr/pages/PaginaGTR'));
 const PaginaAsesores = lazy(() => import('@caracteristicas/asesor-ventas/pages/PaginaAsesores'));
+const PaginaAsesorVentasDetail = lazy(() => import('@caracteristicas/asesor-ventas/pages/PaginaAsesorVentasDetail'));
+const PaginaAsesorBackoffice = lazy(() => import('@caracteristicas/asesor-backoffice/pages/PaginaAsesorBackoffice'));
 const PaginaAdmin = lazy(() => import('@caracteristicas/admin/pages/AdminPage'));
 const PaginaNoAutorizado = lazy(() => import('@pages/PaginaNoAutorizado'));
 
@@ -22,7 +29,14 @@ export const AppRoutes: React.FC = () => {
     <BrowserRouter>
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
-          <Route path="/login" element={<PaginaLogin />} />
+          {/* Flujo de autenticación (nuevo: con validación previa) */}
+          <Route path="/autenticacion" element={<PaginaAutenticacionAvanzada />} />
+          
+          {/* Route legacy /login -> Nuevo flujo avanzado */}
+          <Route path="/login" element={<PaginaAutenticacionAvanzada />} />
+          
+          {/* PaginaLogin se conserva como backup interno local */}
+          <Route path="/login-old" element={<PaginaLogin />} />
           
           <Route
             path="/panel"
@@ -88,12 +102,32 @@ export const AppRoutes: React.FC = () => {
               </RequireAuth>
             }
           />
+          <Route
+            path="/community/dashboard"
+            element={
+              <RequireAuth>
+                <RequireRole allowedRoles={['COMMUNITY']}>
+                  <PaginaCommunity />
+                </RequireRole>
+              </RequireAuth>
+            }
+          />
           
           <Route
             path="/gtr"
             element={
               <RequireAuth>
                 <RequireRole allowedRoles={['ADMINISTRADOR', 'GTR']}>
+                  <PaginaGTR />
+                </RequireRole>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/gtr/dashboard"
+            element={
+              <RequireAuth>
+                <RequireRole allowedRoles={['ASESOR_GTR', 'GTR']}>
                   <PaginaGTR />
                 </RequireRole>
               </RequireAuth>
@@ -106,6 +140,48 @@ export const AppRoutes: React.FC = () => {
               <RequireAuth>
                 <RequireRole allowedRoles={['ADMINISTRADOR', 'ASESOR_DE_VENTAS']}>
                   <PaginaAsesores />
+                </RequireRole>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/ventas/dashboard"
+            element={
+              <RequireAuth>
+                <RequireRole allowedRoles={[ 'ASESOR_VENTAS', 'ASESOR_DE_VENTAS', 'SUPERVISOR_VENTAS']}>
+                  <PaginaAsesores />
+                </RequireRole>
+              </RequireAuth>
+            }
+          />
+          
+          <Route
+            path="/asesor-ventas"
+            element={
+              <RequireAuth>
+                <RequireRole allowedRoles={['ADMINISTRADOR', 'ASESOR_DE_VENTAS']}>
+                  <PaginaAsesorVentasDetail />
+                </RequireRole>
+              </RequireAuth>
+            }
+          />
+          
+          <Route
+            path="/asesor-backoffice"
+            element={
+              <RequireAuth>
+                <RequireRole allowedRoles={['ADMINISTRADOR', 'ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE']}>
+                  <PaginaAsesorBackoffice />
+                </RequireRole>
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/backoffice/dashboard"
+            element={
+              <RequireAuth>
+                <RequireRole allowedRoles={['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE']}>
+                  <PaginaAsesorBackoffice />
                 </RequireRole>
               </RequireAuth>
             }
@@ -126,5 +202,3 @@ export const AppRoutes: React.FC = () => {
     </BrowserRouter>
   );
 };
-
-import { Navigate } from 'react-router-dom';

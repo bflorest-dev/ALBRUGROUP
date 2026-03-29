@@ -3,9 +3,11 @@ export type { ApiResponse, PaginatedResponse } from './api';
 
 export * from './community';
 export * from './lead.types';
+export * from './lead.responses';
 export * from './backend';
 export * from './eventos';
 export * from './enums';
+export * from './backendEnums';
 export * from './tipification.types';
 
 // legacy / shared cross feature types
@@ -201,6 +203,7 @@ export interface ContratoResponse {
 
 export interface RegistrarContratoRequest {
   puesto?: string;
+  puestoTrabajo?: string; // para backend auth-service (consistencia con enum)
   salario?: number;
   fechaInicio?: string;
   tipoContrato?: string;

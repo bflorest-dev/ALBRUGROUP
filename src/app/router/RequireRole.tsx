@@ -4,6 +4,19 @@ import { useAuth } from '@shared/auth/useAuth';
 import { canUserAccess } from './RoleHierarchy';
 import type { Role } from '@shared/auth/types';
 
+const roleRoutes: Partial<Record<Role, string>> = {
+  COMMUNITY: '/community/dashboard',
+  ASESOR_GTR: '/gtr/dashboard',
+  ASESOR_VENTAS: '/ventas/dashboard',
+  ASESOR_BACKOFFICE: '/backoffice/dashboard',
+};
+
+const getRoleDashboard = (roles: Role[] | undefined): string => {
+  if (!roles || roles.length === 0) return '/login';
+  const role = roles[0]!;
+  return roleRoutes[role] ?? '/no-autorizado';
+};
+
 interface RequireRoleProps {
   children: React.ReactElement;
   allowedRoles: Role[];
@@ -20,5 +33,6 @@ export const RequireRole: React.FC<RequireRoleProps> = ({ children, allowedRoles
     return children;
   }
 
-  return <Navigate to="/no-autorizado" replace />;
+  const redirectRoute = getRoleDashboard(currentUser.roles);
+  return <Navigate to={redirectRoute} replace />;
 };
