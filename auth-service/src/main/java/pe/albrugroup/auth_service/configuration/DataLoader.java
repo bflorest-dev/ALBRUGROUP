@@ -66,6 +66,15 @@ public class DataLoader {
         // RECRUITMENT-SERVICE - EVENTOS
         savePermiso("READ_EVENTOS_RECRUITMENT", "Puede ver el historico de eventos de recruitment", "EVENTO_RECRUITMENT", "READ");
 
+        // BANDEJAS DE TIPIFICACION
+        savePermiso("READ_TIPIFICACIONES_RECLUTAMIENTO", "Puede consultar catalogos de tipificacion de reclutamiento", "TIPIFICACION_RECLUTAMIENTO", "READ");
+        savePermiso("READ_TIPIFICACIONES_CAPACITACION", "Puede consultar catalogos de tipificacion de capacitacion", "TIPIFICACION_CAPACITACION", "READ");
+        savePermiso("READ_TIPIFICACIONES_PREVENTA", "Puede consultar catalogos de tipificacion de preventa", "TIPIFICACION_PREVENTA", "READ");
+        savePermiso("READ_TIPIFICACIONES_VENTA", "Puede consultar catalogos de tipificacion de venta", "TIPIFICACION_VENTA", "READ");
+        savePermiso("READ_TIPIFICACIONES_POSTVENTA", "Puede consultar catalogos de tipificacion de postventa", "TIPIFICACION_POSTVENTA", "READ");
+        savePermiso("UPDATE_TIPIFICACIONES", "Puede actualizar catalogos de tipificacion", "TIPIFICACION", "UPDATE");
+
+
         // POSTULANTES
 //        savePermiso("REJECT_POSTULANTE_INASISTENCIA", "Puede rechazar a un postulante por inasistencia", "POSTULANTE", "REJECT");
 
@@ -74,6 +83,7 @@ public class DataLoader {
         savePermiso("READ_EMPLEADOS", "Puede listar y ver empleados", "EMPLEADO", "READ");
         savePermiso("UPDATE_EMPLEADOS", "Puede editar empleados", "EMPLEADO", "UPDATE");
         savePermiso("BLACKLIST_EMPLEADO", "Puede marcar como lista negra a los empleados", "EMPLEADO", "BLACKLIST");
+
         savePermiso("CREATE_CONTRATISTA", "Puede registrar empresas contratistas", "EMPRESA_CONTRATISTA", "CREATE");
         savePermiso("READ_CONTRATISTAS", "Puede listar y ver empresas contratistas", "EMPRESA_CONTRATISTA", "READ");
         savePermiso("DELETE_CONTRATISTA", "Puede desactivar empresas contratistas", "EMPRESA_CONTRATISTA", "DELETE");
@@ -121,12 +131,6 @@ public class DataLoader {
         savePermiso("READ_PROMOCIONES", "Puede listar y ver promociones", "PROMOCION", "READ");
         savePermiso("DELETE_PROMOCIONES", "Puede desactivar promociones", "PROMOCION", "DELETE");
 
-        savePermiso("READ_TIPIFICACIONES_RECLUTAMIENTO", "Puede consultar catalogos de tipificacion de reclutamiento", "TIPIFICACION_RECLUTAMIENTO", "READ");
-        savePermiso("READ_TIPIFICACIONES_CAPACITACION", "Puede consultar catalogos de tipificacion de capacitacion", "TIPIFICACION_CAPACITACION", "READ");
-        savePermiso("READ_TIPIFICACIONES_PREVENTA", "Puede consultar catalogos de tipificacion de preventa", "TIPIFICACION_PREVENTA", "READ");
-        savePermiso("READ_TIPIFICACIONES_VENTA", "Puede consultar catalogos de tipificacion de venta", "TIPIFICACION_VENTA", "READ");
-        savePermiso("READ_TIPIFICACIONES_POSTVENTA", "Puede consultar catalogos de tipificacion de postventa", "TIPIFICACION_POSTVENTA", "READ");
-        savePermiso("UPDATE_TIPIFICACIONES", "Puede actualizar catalogos de tipificacion", "TIPIFICACION", "UPDATE");
 
         savePermiso("CREATE_LEADS", "Puede registrar ingresos de leads", "LEAD", "CREATE");
         savePermiso("ASSIGN_LEADS", "Puede asignar leads", "LEAD", "ASSIGN");
@@ -164,78 +168,58 @@ public class DataLoader {
         // RRHH
         Set<Permiso> rrhhPermisos = Set.of(
 
+                getPermiso("CREATE_POSTULACIONES"),
+                getPermiso("UPDATE_POSTULACIONES"),
+                getPermiso("READ_POSTULACION"),
+                getPermiso("READ_POSTULACIONES"),
+                getPermiso("CONFIRM_CONTRATACION_POSTULACIONES"),
+
+                getPermiso("READ_OFERTAS_LABORALES_ACTIVAS"),
+                getPermiso("READ_EVENTOS_RECRUITMENT"),
+
                 getPermiso("CREATE_EMPLEADOS"),
                 getPermiso("READ_EMPLEADOS"),
                 getPermiso("UPDATE_EMPLEADOS"),
                 getPermiso("BLACKLIST_EMPLEADO"),
 
+                getPermiso("READ_CONTRATISTAS"),
+
                 getPermiso("CREATE_CONTRATOS"),
                 getPermiso("UPDATE_CONTRATOS"),
                 getPermiso("READ_CONTRATOS"),
-                getPermiso("CANCEL_CONTRATOS")
+                getPermiso("CANCEL_CONTRATOS"),
+
+                getPermiso("READ_EVENTOS")
+
         );
         saveRol("RRHH", "Recursos Humanos - Gestion de personal", rrhhPermisos);
+
 
         // RECLUTADOR
         Set<Permiso> reclutadorPermisos = Set.of(
 
+                getPermiso("TYPIFY_POSTULACIONES"),
+                getPermiso("READ_TIPIFICACIONES_RECLUTAMIENTO"),
 
+                getPermiso("CREATE_GRUPOS_CAPACITACION"),
+                getPermiso("READ_GRUPOS_CAPACITACION"),
+                getPermiso("ASSIGN_GRUPOS_CAPACITACION"),
+                getPermiso("UPDATE_GRUPOS_CAPACITACION"),
 
+                getPermiso("READ_EVENTOS_RECRUITMENT")
         );
         saveRol("RECLUTADOR", "Recursos Humanos - Contacto con postulantes", reclutadorPermisos);
 
         // CAPACITADOR
         Set<Permiso> capacitadorPermisos = Set.of(
 
+                getPermiso("READ_GRUPOS_CAPACITACION"),
+                getPermiso("READ_EVENTOS_RECRUITMENT"),
+                getPermiso("TYPIFY_POSTULACIONES"),
 
-
+                getPermiso("READ_TIPIFICACIONES_CAPACITACION")
         );
         saveRol("CAPACITADOR", "Capacitacion - Gestion de postulantes", capacitadorPermisos);
-
-        // GTR
-        Set<Permiso> asesorGtrPermisos = Set.of(
-                getPermiso("READ_LEADS_GTR"),
-                getPermiso("ASSIGN_LEADS"),
-                getPermiso("READ_EVENTOS_LEADS"),
-                getPermiso("READ_CAMPANA")
-        );
-        saveRol("ASESOR_GTR", "GTR - Asignacion y seguimiento de leads", asesorGtrPermisos);
-
-        Set<Permiso> supervisorGtrPermisos = Set.of(
-                getPermiso("READ_LEADS_GTR"),
-                getPermiso("ASSIGN_LEADS"),
-                getPermiso("READ_EVENTOS_LEADS"),
-                getPermiso("READ_CAMPANA")
-        );
-        saveRol("SUPERVISOR_GTR", "GTR - Supervision de asignacion de leads", supervisorGtrPermisos);
-
-        // ASESOR_VENTAS
-        Set<Permiso> asesorVentasPermisos = Set.of(
-                getPermiso("READ_LEADS_ASESOR"),
-                getPermiso("UPDATE_LEADS_ASESOR"),
-                getPermiso("TYPIFY_LEADS"),
-                getPermiso("CONTACT_LEADS"),
-                getPermiso("READ_EVENTOS_LEADS"),
-                getPermiso("READ_PLANES"),
-                getPermiso("READ_ADICIONALES"),
-                getPermiso("READ_PROMOCIONES"),
-                getPermiso("READ_UBIGEO")
-        );
-        saveRol("ASESOR_VENTAS", "Ventas - Gestion de leads asignados", asesorVentasPermisos);
-
-        // SUPERVISOR_VENTAS
-        Set<Permiso> supervisorVentasPermisos = Set.of(
-                getPermiso("READ_LEADS_ASESOR"),
-                getPermiso("UPDATE_LEADS_ASESOR"),
-                getPermiso("TYPIFY_LEADS"),
-                getPermiso("CONTACT_LEADS"),
-                getPermiso("READ_EVENTOS_LEADS"),
-                getPermiso("READ_PLANES"),
-                getPermiso("READ_ADICIONALES"),
-                getPermiso("READ_PROMOCIONES"),
-                getPermiso("READ_UBIGEO")
-        );
-        saveRol("SUPERVISOR_VENTAS", "Ventas - Supervision de leads asignados", supervisorVentasPermisos);
 
         // COMMUNITY
         Set<Permiso> communityPermisos = Set.of(
@@ -270,6 +254,77 @@ public class DataLoader {
         );
         saveRol("COMMUNITY", "Marketing - Generacion y apoyo comercial", communityPermisos);
 
+        // GTR
+        Set<Permiso> asesorGtrPermisos = Set.of(
+                getPermiso("READ_CAMPANA"),
+                getPermiso("READ_ZONAS"),
+                getPermiso("READ_UBIGEO"),
+                getPermiso("READ_PLANES"),
+                getPermiso("READ_ADICIONALES"),
+                getPermiso("READ_PROMOCIONES"),
+                getPermiso("READ_TIPIFICACIONES_PREVENTA"),
+
+                getPermiso("CREATE_LEADS"),
+                getPermiso("ASSIGN_LEADS"),
+                getPermiso("READ_LEADS_ASESOR"),
+                getPermiso("UPDATE_LEADS_ASESOR"),
+                getPermiso("TYPIFY_LEADS"),
+                getPermiso("CONTACT_LEADS"),
+
+                getPermiso("READ_LEADS_GTR"),
+                getPermiso("READ_EVENTOS_LEADS")
+        );
+        saveRol("ASESOR_GTR", "GTR - Asignacion y seguimiento de leads", asesorGtrPermisos);
+
+        Set<Permiso> supervisorGtrPermisos = Set.of(
+                getPermiso("READ_LEADS_GTR"),
+                getPermiso("ASSIGN_LEADS"),
+                getPermiso("READ_EVENTOS_LEADS"),
+                getPermiso("READ_CAMPANA")
+        );
+        saveRol("SUPERVISOR_GTR", "GTR - Supervision de asignacion de leads", supervisorGtrPermisos);
+
+        // ASESOR_VENTAS
+        Set<Permiso> asesorVentasPermisos = Set.of(
+
+                getPermiso("READ_CAMPANA"),
+                getPermiso("READ_ZONAS"),
+                getPermiso("READ_UBIGEO"),
+                getPermiso("READ_PLANES"),
+                getPermiso("READ_ADICIONALES"),
+                getPermiso("READ_PROMOCIONES"),
+                getPermiso("READ_TIPIFICACIONES_PREVENTA"),
+
+                getPermiso("READ_LEADS_ASESOR"),
+                getPermiso("UPDATE_LEADS_ASESOR"),
+                getPermiso("TYPIFY_LEADS"),
+                getPermiso("CONTACT_LEADS")
+
+        );
+        saveRol("ASESOR_VENTAS", "Ventas - Gestion de leads asignados", asesorVentasPermisos);
+
+        // SUPERVISOR_VENTAS
+        Set<Permiso> supervisorVentasPermisos = Set.of(
+                getPermiso("READ_CAMPANA"),
+                getPermiso("READ_ZONAS"),
+                getPermiso("READ_UBIGEO"),
+                getPermiso("READ_PLANES"),
+                getPermiso("READ_ADICIONALES"),
+                getPermiso("READ_PROMOCIONES"),
+                getPermiso("READ_TIPIFICACIONES_PREVENTA"),
+
+                getPermiso("READ_LEADS_ASESOR"),
+                getPermiso("UPDATE_LEADS_ASESOR"),
+                getPermiso("TYPIFY_LEADS"),
+                getPermiso("CONTACT_LEADS"),
+
+                getPermiso("READ_LEADS_GTR"),
+                getPermiso("READ_EVENTOS_LEADS")
+        );
+        saveRol("SUPERVISOR_VENTAS", "Ventas - Supervision de leads asignados", supervisorVentasPermisos);
+
+        // TODO
+
         // MONITOR
         Set<Permiso> monitorPermisos = Set.of(
                 getPermiso("READ_EVENTOS"),
@@ -287,6 +342,7 @@ public class DataLoader {
         );
         saveRol("MONITOR", "Monitoreo - Consulta transversal de la operacion", monitorPermisos);
 
+        // BACKOFFICE
         Set<Permiso> backofficePermisos = Set.of(
                 getPermiso("READ_LEADS_ASESOR"),
                 getPermiso("UPDATE_LEADS_ASESOR"),
@@ -301,6 +357,7 @@ public class DataLoader {
         saveRol("ASESOR_BACKOFFICE", "Backoffice - Gestion operativa comercial", backofficePermisos);
         saveRol("SUPERVISOR_BACKOFFICE", "Backoffice - Supervision operativa comercial", backofficePermisos);
 
+        // ASESOR POSTVENTA
         Set<Permiso> postventaPermisos = Set.of(
                 getPermiso("READ_LEADS_ASESOR"),
                 getPermiso("UPDATE_LEADS_ASESOR"),
@@ -315,6 +372,7 @@ public class DataLoader {
         saveRol("ASESOR_POSTVENTA", "Postventa - Gestion de cartera y seguimiento", postventaPermisos);
         saveRol("SUPERVISOR_POSTVENTA", "Postventa - Supervision de cartera y seguimiento", postventaPermisos);
 
+        // DESARROLLADOR
         Set<Permiso> desarrolladorPermisos = Set.of(
                 getPermiso("READ_EVENTOS"),
                 getPermiso("READ_EVENTOS_LEADS"),
@@ -323,6 +381,7 @@ public class DataLoader {
         );
         saveRol("DESARROLLADOR", "Tecnologia - Soporte y mantenimiento", desarrolladorPermisos);
 
+        // CONTADOR
         Set<Permiso> contadorPermisos = Set.of(
                 getPermiso("READ_EMPLEADOS"),
                 getPermiso("READ_CONTRATOS"),
