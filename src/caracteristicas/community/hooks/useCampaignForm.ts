@@ -10,16 +10,16 @@ import type { CreateCampaignPayload, CuentaPublicitaria, Proveedor } from '@enti
 
 export interface CampaignFormState {
   nombre: string;
-  numeroWhatsapp: string;
-  cuentasIds: string[];
-  proveedoresIds: string[];
+  numeroWhatsappEmpresa: string;
+  idCuentaPublicitaria: number | null;
+  idProveedor: number | null;
 }
 
 export interface CampaignFormErrors {
   nombre?: string;
-  numeroWhatsapp?: string;
-  cuentasIds?: string;
-  proveedoresIds?: string;
+  numeroWhatsappEmpresa?: string;
+  idCuentaPublicitaria?: string;
+  idProveedor?: string;
 }
 
 export interface UseCampaignFormReturn {
@@ -32,18 +32,18 @@ export interface UseCampaignFormReturn {
   errors: CampaignFormErrors;
   globalMessage: string;
   loadData: () => Promise<void>;
-  handleInputChange: (field: keyof Omit<CampaignFormState, 'cuentasIds' | 'proveedoresIds'>, value: string) => void;
-  handleCuentasChange: (ids: string[]) => void;
-  handleProveedoresChange: (ids: string[]) => void;
+  handleInputChange: (field: keyof Omit<CampaignFormState, 'idCuentaPublicitaria' | 'idProveedor'>, value: string) => void;
+  handleCuentasChange: (id: number | null) => void;
+  handleProveedoresChange: (id: number | null) => void;
   handleSubmit: () => Promise<void>;
   resetForm: () => void;
 }
 
 const initialFormState: CampaignFormState = {
   nombre: '',
-  numeroWhatsapp: '',
-  cuentasIds: [],
-  proveedoresIds: [],
+  numeroWhatsappEmpresa: '',
+  idCuentaPublicitaria: null,
+  idProveedor: null,
 };
 
 export const useCampaignForm = (): UseCampaignFormReturn => {
@@ -99,24 +99,37 @@ export const useCampaignForm = (): UseCampaignFormReturn => {
     loadData();
   }, [loadData]);
 
-  // Validar formulario
+  // Validar formulario con reglas estrictas backend
   const validateForm = useCallback((): boolean => {
     const newErrors: CampaignFormErrors = {};
 
-    if (!formState.nombre.trim()) {
+    // Nombre: requerido y no vacío
+    if (!formState.nombre || !formState.nombre.trim()) {
       newErrors.nombre = 'El nombre es requerido';
     }
 
-    if (!formState.numeroWhatsapp.trim()) {
-      newErrors.numeroWhatsapp = 'El número de WhatsApp es requerido';
+    // Número WhatsApp: requerido, no vacío, validar que tenga formato de teléfono
+    const whatsappTrimmed = formState.numeroWhatsappEmpresa?.trim() || '';
+    if (!whatsappTrimmed) {
+      newErrors.numeroWhatsappEmpresa = 'El número de WhatsApp es requerido (no debe estar vacío)';
+    } else if (whatsappTrimmed.length < 7) {
+      newErrors.numeroWhatsappEmpresa = 'El número de WhatsApp debe tener al menos 7 dígitos';
+    } else if (!/[0-9+\-\s()]/g.test(whatsappTrimmed)) {
+      newErrors.numeroWhatsappEmpresa = 'El número debe contener solo dígitos, espacios, +, -, o ()';
     }
 
-    if (formState.cuentasIds.length === 0) {
-      newErrors.cuentasIds = 'Debes seleccionar al menos una cuenta';
+    // Cuenta Publicitaria: DEBE existir y ser número válido
+    if (formState.idCuentaPublicitaria === null || formState.idCuentaPublicitaria === undefined) {
+      newErrors.idCuentaPublicitaria = 'Debes seleccionar una cuenta publicitaria (no puede ser nulo)';
+    } else if (!Number.isInteger(formState.idCuentaPublicitaria) || formState.idCuentaPublicitaria <= 0) {
+      newErrors.idCuentaPublicitaria = 'La cuenta seleccionada no es válida';
     }
 
-    if (formState.proveedoresIds.length === 0) {
-      newErrors.proveedoresIds = 'Debes seleccionar al menos un proveedor';
+    // Proveedor: DEBE existir y ser número válido
+    if (formState.idProveedor === null || formState.idProveedor === undefined) {
+      newErrors.idProveedor = 'Debes seleccionar un proveedor (no puede ser nulo)';
+    } else if (!Number.isInteger(formState.idProveedor) || formState.idProveedor <= 0) {
+      newErrors.idProveedor = 'El proveedor seleccionado no es válido';
     }
 
     setErrors(newErrors);
@@ -124,26 +137,27 @@ export const useCampaignForm = (): UseCampaignFormReturn => {
   }, [formState]);
 
   // Handlers
-  const handleInputChange = useCallback((field: keyof Omit<CampaignFormState, 'cuentasIds' | 'proveedoresIds'>, value: string) => {
+  const handleInputChange = useCallback((field: keyof Omit<CampaignFormState, 'idCuentaPublicitaria' | 'idProveedor'>, value: string) => {
     setFormState((prev) => ({ ...prev, [field]: value }));
     // Limpiar error del campo al escribir
     setErrors((prev) => ({ ...prev, [field]: undefined }));
   }, []);
 
-  const handleCuentasChange = useCallback((ids: string[]) => {
-    setFormState((prev) => ({ ...prev, cuentasIds: ids }));
-    setErrors((prev) => ({ ...prev, cuentasIds: undefined }));
+  const handleCuentasChange = useCallback((id: number | null) => {
+    setFormState((prev) => ({ ...prev, idCuentaPublicitaria: id }));
+    setErrors((prev) => ({ ...prev, idCuentaPublicitaria: undefined }));
   }, []);
 
-  const handleProveedoresChange = useCallback((ids: string[]) => {
-    setFormState((prev) => ({ ...prev, proveedoresIds: ids }));
-    setErrors((prev) => ({ ...prev, proveedoresIds: undefined }));
+  const handleProveedoresChange = useCallback((id: number | null) => {
+    setFormState((prev) => ({ ...prev, idProveedor: id }));
+    setErrors((prev) => ({ ...prev, idProveedor: undefined }));
   }, []);
 
-  // Submit
+  // Submit con validaciones estrictas y debugging
   const handleSubmit = useCallback(async () => {
     if (!validateForm()) {
       setGlobalMessage('⚠️ Por favor completa todos los campos requeridos');
+      console.warn('[useCampaignForm] Validation failed:', errors);
       return;
     }
 
@@ -155,26 +169,58 @@ export const useCampaignForm = (): UseCampaignFormReturn => {
 
     setSubmitting(true);
     try {
+      // Validar tipos antes de enviar
+      const idCuenta = Number(formState.idCuentaPublicitaria);
+      const idProveedor = Number(formState.idProveedor);
+      const numeroWhatsapp = formState.numeroWhatsappEmpresa?.trim() || '';
+      const nombre = formState.nombre?.trim() || '';
+
+      // Verificaciones adicionales (triple-check antes del POST)
+      if (!Number.isInteger(idCuenta) || idCuenta <= 0) {
+        throw new Error('ERROR: idCuentaPublicitaria no es un número válido. No se enviará request.');
+      }
+      if (!Number.isInteger(idProveedor) || idProveedor <= 0) {
+        throw new Error('ERROR: idProveedor no es un número válido. No se enviará request.');
+      }
+      if (!numeroWhatsapp || numeroWhatsapp.length === 0) {
+        throw new Error('ERROR: numeroWhatsappEmpresa está vacío. No se enviará request.');
+      }
+      if (!nombre || nombre.length === 0) {
+        throw new Error('ERROR: nombre está vacío. No se enviará request.');
+      }
+
       const payload: CreateCampaignPayload = {
-        nombre: formState.nombre.trim(),
-        numeroWhatsapp: formState.numeroWhatsapp.trim(),
-        cuentas: formState.cuentasIds,
-        proveedores: formState.proveedoresIds,
+        nombre,
+        numeroWhatsappEmpresa: numeroWhatsapp,
+        idCuentaPublicitaria: idCuenta,
+        idProveedor,
       };
 
-      console.debug('[useCampaignForm] Submitting:', payload);
+      // 🔍 DEBUG: Imprimir payload completo antes de enviar
+      console.log('═══════════════════════════════════════════════════');
+      console.log('[useCampaignForm] 🚀 ENVIANDO PAYLOAD A BACKEND:');
+      console.log('═══════════════════════════════════════════════════');
+      console.log('Payload:', JSON.stringify(payload, null, 2));
+      console.log('Tipos:', {
+        nombre_type: typeof payload.nombre,
+        numeroWhatsappEmpresa_type: typeof payload.numeroWhatsappEmpresa,
+        idCuentaPublicitaria_type: typeof payload.idCuentaPublicitaria,
+        idProveedor_type: typeof payload.idProveedor,
+      });
+      console.log('═══════════════════════════════════════════════════');
+
       await createCampaign(payload);
 
       setGlobalMessage('✅ Campaña creada exitosamente');
       resetForm();
     } catch (err: any) {
       const errorMsg = err.message || 'Error desconocido';
-      console.error('[useCampaignForm] Error submitting:', errorMsg);
+      console.error('[useCampaignForm] ❌ Error submitting:', errorMsg);
       setGlobalMessage(`❌ ${errorMsg}`);
     } finally {
       setSubmitting(false);
     }
-  }, [formState, submitting, validateForm]);
+  }, [formState, submitting, validateForm, errors]);
 
   // Reset
   const resetForm = useCallback(() => {

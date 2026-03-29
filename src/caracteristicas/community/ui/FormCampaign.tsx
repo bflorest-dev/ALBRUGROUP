@@ -1,19 +1,19 @@
 /**
  * @file FormCampaign.tsx
  * @description Componente de formulario para crear Campaign
+ * Contrato backend: campos idProveedor e idCuentaPublicitaria son singulares, no arrays
  * @layer features/community
  */
 
 import React from 'react';
-import { MultiSelect } from '@shared/ui/multiselect';
 import type { CuentaPublicitaria, Proveedor } from '@entidades/campana';
 import type { CampaignFormState, CampaignFormErrors } from '../hooks/useCampaignForm';
 
 interface FormCampaignProps {
   formState: CampaignFormState;
-  onInputChange: (field: 'nombre' | 'numeroWhatsapp', value: string) => void;
-  onCuentasChange: (ids: string[]) => void;
-  onProveedoresChange: (ids: string[]) => void;
+  onInputChange: (field: 'nombre' | 'numeroWhatsappEmpresa', value: string) => void;
+  onCuentasChange: (id: number | null) => void;
+  onProveedoresChange: (id: number | null) => void;
   onSubmit: () => Promise<void>;
   cuentas: CuentaPublicitaria[];
   proveedores: Proveedor[];
@@ -87,45 +87,61 @@ export const FormCampaign: React.FC<FormCampaignProps> = ({
           {errors.nombre && <p style={{ color: '#dc3545', fontSize: '0.875rem', marginTop: 4 }}>{errors.nombre}</p>}
         </div>
 
-        {/* Número WhatsApp */}
+        {/* Número WhatsApp - Nombre correcto: numeroWhatsappEmpresa */}
         <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>Número WhatsApp *</label>
+          <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>Número WhatsApp Empresa *</label>
           <input
-            style={errors.numeroWhatsapp ? errorInputStyle : inputStyle}
+            style={errors.numeroWhatsappEmpresa ? errorInputStyle : inputStyle}
             type="tel"
-            value={formState.numeroWhatsapp}
+            value={formState.numeroWhatsappEmpresa}
             placeholder="+57 3001234567"
-            onChange={(e) => onInputChange('numeroWhatsapp', e.target.value)}
+            onChange={(e) => onInputChange('numeroWhatsappEmpresa', e.target.value)}
             disabled={submitting}
             required
           />
-          {errors.numeroWhatsapp && <p style={{ color: '#dc3545', fontSize: '0.875rem', marginTop: 4 }}>{errors.numeroWhatsapp}</p>}
+          {errors.numeroWhatsappEmpresa && <p style={{ color: '#dc3545', fontSize: '0.875rem', marginTop: 4 }}>{errors.numeroWhatsappEmpresa}</p>}
         </div>
 
-        {/* Cuentas Publicitarias */}
+        {/* Cuentas Publicitarias - SELECT SIMPLE (no multi) */}
         <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>Cuentas Publicitarias *</label>
-          <MultiSelect
-            options={Array.isArray(cuentas) ? cuentas.map((c) => ({ id: String(c.id), label: `${c.numeroCuenta} - ${c.nombreCuenta}` })) : []}
-            selectedIds={formState.cuentasIds}
-            onChange={onCuentasChange}
-            loading={loading}
-            error={errors.cuentasIds}
+          <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>Cuenta Publicitaria *</label>
+          <select
+            style={errors.idCuentaPublicitaria ? errorInputStyle : inputStyle}
+            value={formState.idCuentaPublicitaria ?? ''}
+            onChange={(e) => onCuentasChange(e.target.value ? Number(e.target.value) : null)}
+            disabled={submitting || loading}
             required
-          />
+          >
+            <option value="">-- Selecciona una cuenta --</option>
+            {Array.isArray(cuentas) &&
+              cuentas.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.numeroCuenta} - {c.nombreCuenta}
+                </option>
+              ))}
+          </select>
+          {errors.idCuentaPublicitaria && <p style={{ color: '#dc3545', fontSize: '0.875rem', marginTop: 4 }}>{errors.idCuentaPublicitaria}</p>}
         </div>
 
-        {/* Proveedores */}
+        {/* Proveedores - SELECT SIMPLE (no multi) */}
         <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>Proveedores *</label>
-          <MultiSelect
-            options={Array.isArray(proveedores) ? proveedores.map((p) => ({ id: String(p.id), label: p.nombre })) : []}
-            selectedIds={formState.proveedoresIds}
-            onChange={onProveedoresChange}
-            loading={loading}
-            error={errors.proveedoresIds}
+          <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>Proveedor *</label>
+          <select
+            style={errors.idProveedor ? errorInputStyle : inputStyle}
+            value={formState.idProveedor ?? ''}
+            onChange={(e) => onProveedoresChange(e.target.value ? Number(e.target.value) : null)}
+            disabled={submitting || loading}
             required
-          />
+          >
+            <option value="">-- Selecciona un proveedor --</option>
+            {Array.isArray(proveedores) &&
+              proveedores.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre}
+                </option>
+              ))}
+          </select>
+          {errors.idProveedor && <p style={{ color: '#dc3545', fontSize: '0.875rem', marginTop: 4 }}>{errors.idProveedor}</p>}
         </div>
 
         {/* Botones */}

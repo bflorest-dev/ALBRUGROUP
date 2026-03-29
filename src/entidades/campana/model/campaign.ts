@@ -5,29 +5,37 @@
  */
 
 export interface Campaign {
-  id?: string;
+  id?: number;
   nombre: string;
-  numeroWhatsapp: string;
-  cuentas: string[]; // IDs de cuentas publicitarias
-  proveedores: string[]; // IDs de proveedores
+  numeroWhatsappEmpresa: string;
+  idCuentaPublicitaria: number;
+  idProveedor: number;
   createdAt?: string;
   updatedAt?: string;
+  activo?: boolean;
 }
 
 export interface CuentaPublicitaria {
   id: number;
   numeroCuenta: string;
   nombreCuenta: string;
+  activo?: boolean;
 }
 
 export interface Proveedor {
   id: number;
   nombre: string;
+  activo?: boolean;
 }
 
+/**
+ * Payload para crear campaña
+ * NOTA: Backend espera idCuentaPublicitaria e idProveedor SINGULARES (no arrays)
+ * numeroWhatsappEmpresa NO debe estar vacío
+ */
 export interface CreateCampaignPayload {
   nombre: string;
-  numeroWhatsapp: string;
-  cuentas: string[];
-  proveedores: string[];
+  numeroWhatsappEmpresa: string; // Campo correcto del backend
+  idCuentaPublicitaria: number; // NO NULL, NO ARRAY
+  idProveedor: number; // NO NULL, NO ARRAY
 }
