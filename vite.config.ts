@@ -19,12 +19,23 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      // Login: POST /api/auth/autorizacion/login → http://localhost:8080/autorizacion/login
+      // Auth service: GET/POST /api/auth/* → http://localhost:8080/auth/*
       '/api/auth': {
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, ''),
+        ws: false,
+        configure: (proxy) => {
+          // Log para verificar requests
+          proxy.on('proxyReq', (proxyReq, req) => {
+            console.log(`[Proxy] ${req.method} ${req.url}`);
+            proxyReq.setHeader('X-Forwarded-For', req.socket.remoteAddress || 'unknown');
+          });
+          proxy.on('error', (err, req) => {
+            console.error(`[Proxy Error] ${req.method} ${req.url}: ${err.message}`);
+          });
+        },
       },
       // RRHH service: GET /api/rrhh/postulantes → http://localhost:8080/rrhh/postulantes
       '/api/rrhh': {
