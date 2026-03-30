@@ -1,21 +1,32 @@
 package pe.albrugroup.lead_service.entity.response;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-public record PlanResponse(
-        Long id,
-        String nombre,
-        BigDecimal precio,
-        LocalDate vigenciaDesde,
-        LocalDate vigenciaHasta,
-        Long idProveedor,
-        String nombreProveedor,
-        InternetResponse internet,
-        TelevisionResponse television,
-        TelefonoResponse telefono,
-        List<PlanAdicionalResponse> adicionales,
-        Boolean activo
-) {
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PlanResponse {
+
+    private Long id;
+    private String nombre;
+    private BigDecimal precio;
+    private LocalDate vigenciaDesde;
+    private LocalDate vigenciaHasta;
+    private Long idProveedor;
+    private String nombreProveedor;
+    private InternetResponse internet;
+    private TelevisionResponse television;
+    private TelefonoResponse telefono;
+    private List<PlanAdicionalResponse> adicionales;
+    private Boolean activo;
 }

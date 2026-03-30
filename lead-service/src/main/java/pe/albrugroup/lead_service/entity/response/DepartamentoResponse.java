@@ -1,7 +1,19 @@
 package pe.albrugroup.lead_service.entity.response;
 
-public record DepartamentoResponse(
-        Long id,
-        String codigo,
-        String nombre) {
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class DepartamentoResponse {
+
+    private Long id;
+    private String codigo;
+    private String nombre;
 }

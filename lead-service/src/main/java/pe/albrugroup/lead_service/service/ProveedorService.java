@@ -15,8 +15,7 @@ import pe.albrugroup.lead_service.service.mapper.ProveedorMapper;
 
 import java.util.List;
 
-@Service
-@Transactional
+@Service @Transactional
 @RequiredArgsConstructor
 public class ProveedorService {
 

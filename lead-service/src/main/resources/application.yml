@@ -49,4 +49,4 @@ springdoc:
 app:
   cache:
     ttl:
-      catalogos: 30m
+      catalogos: 12h

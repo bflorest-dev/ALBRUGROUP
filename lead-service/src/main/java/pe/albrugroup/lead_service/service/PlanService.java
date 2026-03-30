@@ -275,7 +275,7 @@ public class PlanService {
                 mapper.toResponse(plan.getTelefono()),
                 plan.getAdicionales().stream()
                         .map(mapper::toResponse)
-                        .sorted(Comparator.comparing(PlanAdicionalResponse::nombreAdicional, String.CASE_INSENSITIVE_ORDER))
+                        .sorted(Comparator.comparing(PlanAdicionalResponse::getNombreAdicional, String.CASE_INSENSITIVE_ORDER))
                         .toList(),
                 plan.getActivo()
         );

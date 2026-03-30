@@ -70,7 +70,9 @@ public class LeadService {
                 Accion.ASIGNACION,
                 inicioDia,
                 finDia
-        );
+        ).stream()
+                .map(this::normalizarLeadGtr)
+                .toList();
     }
 
     public List<LeadAsesorVentasResponse> listarBandejaAsesorVentas() {
@@ -389,6 +391,13 @@ public class LeadService {
                 direccion == null ? null : direccion.getPiso(),
                 direccion == null ? null : direccion.getInterior()
         );
+    }
+
+    private LeadGtrResponse normalizarLeadGtr(LeadGtrResponse response) {
+        SplitLead splitLead = splitLead(response.getLead());
+        response.setPrefijo(splitLead.prefijo());
+        response.setLead(splitLead.numero());
+        return response;
     }
 
     private SplitLead splitLead(String leadCompleto) {

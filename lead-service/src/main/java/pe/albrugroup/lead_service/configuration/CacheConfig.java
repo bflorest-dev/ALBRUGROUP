@@ -1,9 +1,14 @@
 package pe.albrugroup.lead_service.configuration;
 
-import com.fasterxml.jackson.databind.MapperFeature;
+
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.interceptor.CacheErrorHandler;
@@ -17,45 +22,33 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
-import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-
 import java.time.Duration;
 import java.util.Map;
 
-@Configuration @EnableCaching @Slf4j
+@Configuration
+@EnableCaching @Slf4j
 public class CacheConfig {
 
     @Bean
-    public RedisCacheManager cacheManager(
-            RedisConnectionFactory connectionFactory,
-            @Value("${app.cache.ttl.catalogos:30m}") Duration catalogTtl
-    ) {
-        PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
-                .allowIfBaseType(Object.class)
-                .build();
+    public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+
+        Duration catalogTtl = Duration.ofHours(12);
 
         ObjectMapper redisMapper = new ObjectMapper();
         redisMapper.registerModule(new JavaTimeModule());
         redisMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 //        redisMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        redisMapper.configure(MapperFeature.CAN_OVERRIDE_ACCESS_MODIFIERS, true);
 
+//        PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
+//                .allowIfSubType(Object.class)
+//                .build();
+//        redisMapper.activateDefaultTyping(
+//                typeValidator, ObjectMapper.DefaultTyping.NON_FINAL,
+//                JsonTypeInfo.As.PROPERTY
+////                JsonTypeInfo.As.WRAPPER_ARRAY
+//        );
 
-        redisMapper.activateDefaultTyping(
-                typeValidator,
-                ObjectMapper.DefaultTyping.EVERYTHING,
-                JsonTypeInfo.As.PROPERTY
-        );
-
-
-        GenericJackson2JsonRedisSerializer valueSerializer =
-                new GenericJackson2JsonRedisSerializer(redisMapper);
-
+        GenericJackson2JsonRedisSerializer valueSerializer = new GenericJackson2JsonRedisSerializer(redisMapper);
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .disableCachingNullValues()
                 .serializeKeysWith(RedisSerializationContext.SerializationPair
@@ -74,6 +67,7 @@ public class CacheConfig {
                 CacheNames.CUENTAS_PUBLICITARIAS, defaultConfig,
                 CacheNames.ZONAS, defaultConfig,
                 CacheNames.UBIGEO, defaultConfig
+
         );
 
         return RedisCacheManager.builder(connectionFactory)
@@ -87,24 +81,20 @@ public class CacheConfig {
         return new SimpleCacheErrorHandler() {
             @Override
             public void handleCacheGetError(RuntimeException exception, Cache cache, Object key) {
-                log.warn("Cache GET omitido por error en '{}' con key '{}': {}", cacheName(cache), key, exception.getMessage());
+                log.warn("Cache GET omitido en '{}' key '{}': {}", cacheName(cache), key, exception.getMessage());
             }
-
             @Override
             public void handleCachePutError(RuntimeException exception, Cache cache, Object key, Object value) {
-                log.warn("Cache PUT omitido por error en '{}' con key '{}': {}", cacheName(cache), key, exception.getMessage());
+                log.warn("Cache PUT omitido en '{}' key '{}': {}", cacheName(cache), key, exception.getMessage());
             }
-
             @Override
             public void handleCacheEvictError(RuntimeException exception, Cache cache, Object key) {
-                log.warn("Cache EVICT omitido por error en '{}' con key '{}': {}", cacheName(cache), key, exception.getMessage());
+                log.warn("Cache EVICT omitido en '{}' key '{}': {}", cacheName(cache), key, exception.getMessage());
             }
-
             @Override
             public void handleCacheClearError(RuntimeException exception, Cache cache) {
-                log.warn("Cache CLEAR omitido por error en '{}': {}", cacheName(cache), exception.getMessage());
+                log.warn("Cache CLEAR omitido en '{}': {}", cacheName(cache), exception.getMessage());
             }
-
             private String cacheName(Cache cache) {
                 return cache != null ? cache.getName() : "desconocida";
             }

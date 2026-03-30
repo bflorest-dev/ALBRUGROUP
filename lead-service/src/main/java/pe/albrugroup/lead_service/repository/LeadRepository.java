@@ -25,6 +25,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             SELECT new pe.albrugroup.lead_service.entity.response.LeadGtrResponse(
                 l.id,
                 l.createdAt,
+                null,
+                l.lead,
                 c.nombre,
                 p.nombre,
                 l.base,
