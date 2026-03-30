@@ -37,7 +37,7 @@ public class CacheConfig {
         ObjectMapper redisMapper = new ObjectMapper();
         redisMapper.registerModule(new JavaTimeModule());
         redisMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-//        redisMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        redisMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
 //        PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
 //                .allowIfSubType(Object.class)

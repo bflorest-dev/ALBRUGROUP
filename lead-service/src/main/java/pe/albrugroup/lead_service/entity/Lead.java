@@ -27,6 +27,7 @@ import java.util.Set;
 @AllArgsConstructor @NoArgsConstructor
 public class Lead {
 
+
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
