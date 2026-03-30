@@ -1,6 +1,6 @@
 /**
  * Componente TablaLeadsGTR - Tablero de leads para supervisores GTR
- * Endpoint: GET /leads/leads/gtr
+ * Endpoint: GET /leads/gtr
  * FSD: caracteristicas/gtr/ui
  */
 

@@ -22,7 +22,7 @@ class GtrRepo {
   private readonly baseUrl = '/leads';
 
   /**
-   * POST /leads/leads/intake
+   * POST /leads/intake
    * Alta de nuevo lead
    */
   async createLead(data: LeadIntakeRequest): Promise<void> {
@@ -119,7 +119,7 @@ class GtrRepo {
   }
 
   /**
-   * GET /leads/leads/gtr
+   * GET /leads/gtr
    * Obtener todos los leads para vista GTR
    * (con opción de filtro por fecha)
    */
