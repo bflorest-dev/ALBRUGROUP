@@ -9,10 +9,12 @@ import { ProveedoresList } from './ProveedoresList';
 
 interface ProveedoresSectionProps {
   sectionStyle?: React.CSSProperties;
+  onProveedorCreado?: () => Promise<void>;
 }
 
 export const ProveedoresSection: React.FC<ProveedoresSectionProps> = ({
   sectionStyle = {},
+  onProveedorCreado,
 }) => {
   const {
     proveedores,
@@ -24,7 +26,7 @@ export const ProveedoresSection: React.FC<ProveedoresSectionProps> = ({
     error,
     handleInputChange,
     handleSubmit,
-  } = useProveedoresForm();
+  } = useProveedoresForm({ onProveedorCreado });
 
   const defaultStyle: React.CSSProperties = {
     border: '1px solid #ccc',

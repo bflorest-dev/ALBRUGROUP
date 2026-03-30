@@ -241,7 +241,12 @@ const PaginaCommunity: React.FC = () => {
         />
       )}
 
-      {activeSection === 'proveedores' && <ProveedoresSection sectionStyle={sectionStyle} />}
+      {activeSection === 'proveedores' && (
+        <ProveedoresSection
+          sectionStyle={sectionStyle}
+          onProveedorCreado={fetchProveedores}
+        />
+      )}
     </div>
   );
 };

@@ -23,7 +23,14 @@ interface UseProveedoresFormReturn {
   refetch: () => Promise<void>;
 }
 
-export const useProveedoresForm = (): UseProveedoresFormReturn => {
+interface UseProveedoresFormOptions {
+  onProveedorCreado?: () => Promise<void>;
+}
+
+export const useProveedoresForm = (
+  options: UseProveedoresFormOptions = {}
+): UseProveedoresFormReturn => {
+  const { onProveedorCreado } = options;
   console.log('[useProveedoresForm] HOOK INITIALIZED');
 
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
@@ -148,6 +155,11 @@ export const useProveedoresForm = (): UseProveedoresFormReturn => {
 
       console.log('[useProveedoresForm] refetching from backend...');
       await refetch();
+
+      if (onProveedorCreado) {
+        console.log('[useProveedoresForm] calling onProveedorCreado callback');
+        await onProveedorCreado();
+      }
 
       setGlobalMessage('✅ Proveedor creado correctamente');
       console.log('[useProveedoresForm] SUCCESS');
