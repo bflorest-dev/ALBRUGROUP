@@ -14,3 +14,11 @@ export type {
   PhoneValidationState,
   PhoneValidationResult,
 } from './types';
+
+export {
+  COUNTRIES,
+  getCountryByCode,
+  getCountryByPrefix,
+  getCountryOptions,
+} from './countries';
+export type { CountryPrefix } from './countries';
