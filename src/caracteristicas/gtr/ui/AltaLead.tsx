@@ -8,6 +8,7 @@ import React, { useState } from 'react';
 import { FormInput } from '@shared/ui/form-input/FormInput';
 import { FormSelect } from '@shared/ui/form-select/FormSelect';
 import { Button, Alert, Spinner } from '@shared/ui/utilities/Utilities';
+import { PrefixSelector } from '@caracteristicas/phone-validation';
 import { useLeadsCampaignsQuery } from '@shared/api/queries';
 import { useCreateLeadMutation } from '../hooks/useGtrQueries';
 import type { LeadIntakeRequest, PermisosGTR, BaseLead } from '@entidades/lead/types';
@@ -163,17 +164,13 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
       )}
 
       <form onSubmit={handleSubmit} className={styles.form}>
-        {/* Prefijo */}
-        <FormInput
-          label="Prefijo"
-          name="prefijo"
+        {/* Prefijo con detección de país */}
+        <PrefixSelector
           value={formData.prefijo}
-          onChange={(value) => handleInputChange('prefijo', value)}
-          placeholder="Ej: +51, 0051"
-          required
+          onChange={(prefix) => handleInputChange('prefijo', prefix)}
+          label="Prefijo Telefónico"
+          placeholder="Ej: +34 o 628123456"
           error={errors.prefijo}
-          maxLength={10}
-          helpText="País o área telefónica"
         />
 
         {/* Lead (número) */}
