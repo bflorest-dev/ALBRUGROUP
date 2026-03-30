@@ -79,7 +79,6 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
       };
       console.debug('[PromocionesSection] POST /promociones', payload);
       await onCreatePromocion(payload);
-      await onRefresh();
       setMessage('✅ Promoción creada correctamente');
       reset();
     } catch (err: any) {
