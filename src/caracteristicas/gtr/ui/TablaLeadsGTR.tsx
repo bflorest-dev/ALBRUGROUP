@@ -63,17 +63,24 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
 
   // ========== FUNCIONES DE FILTRADO ==========
   const filteredLeads = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
     return leads.filter((lead) => {
-      // Búsqueda por nombre o ID
-      const matchesSearch =
-        !searchTerm ||
-        lead.id.toString().includes(searchTerm) ||
-        lead.nombreTitular.toLowerCase().includes(searchTerm.toLowerCase());
+      const leadText = (lead.nombreTitular ?? lead.lead ?? '').toString().toLowerCase();
+      const partially = (lead.prefijo ?? '').toString().toLowerCase();
+      const campana = (lead.nombreCampana ?? '').toString().toLowerCase();
+      const asesor = (lead.nombreAsesorAsignado ?? '').toString().toLowerCase();
+      const estado = (lead.estadoSeguimiento ?? '').toString().toLowerCase();
 
-      // Filtros específicos
-      const matchesCampaign = !filterCampaign || lead.nombreCampana === filterCampaign;
-      const matchesAsesor = !filterAsesor || lead.nombreAsesorAsignado === filterAsesor;
-      const matchesEstado = !filterEstado || lead.estadoSeguimiento === filterEstado;
+      const matchesSearch =
+        !term ||
+        lead.id.toString().includes(term) ||
+        leadText.includes(term) ||
+        partially.includes(term) ||
+        campana.includes(term);
+
+      const matchesCampaign = !filterCampaign || campana === filterCampaign.toLowerCase();
+      const matchesAsesor = !filterAsesor || asesor === filterAsesor.toLowerCase();
+      const matchesEstado = !filterEstado || estado === filterEstado.toLowerCase();
 
       return matchesSearch && matchesCampaign && matchesAsesor && matchesEstado;
     });
