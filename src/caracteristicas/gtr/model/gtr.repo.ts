@@ -19,7 +19,7 @@ import type {
 } from '@entidades/lead/types';
 
 class GtrRepo {
-  private readonly baseUrl = '/leads/leads';
+  private readonly baseUrl = '/leads';
 
   /**
    * POST /leads/leads/intake
