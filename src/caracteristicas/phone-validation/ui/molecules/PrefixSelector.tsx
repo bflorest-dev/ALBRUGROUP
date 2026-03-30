@@ -5,13 +5,13 @@
  * Ubicación: src/caracteristicas/phone-validation/ui/molecules/PrefixSelector.tsx
  * 
  * FSD: Feature-Sliced Design
- * - Select con lista de países
+ * - Select con lista de países (con banderas 🇪🇸 🇺🇸 🇲🇽 etc.)
  * - Devuelve `country_prefix` (ej: +34) y `country_code` (ej: ES)
  */
 
 import React from 'react';
 import { FormSelect } from '@shared/ui/form-select/FormSelect';
-import { getCountryOptions, getCountryByPrefix } from '../../model/countries';
+import { getCountryOptions } from '../../model/countries';
 
 export interface PrefixSelectorProps {
   value?: string;
@@ -23,7 +23,7 @@ export interface PrefixSelectorProps {
 }
 
 /**
- * Selector de prefijo telefónico con lista de países
+ * Selector de prefijo telefónico con lista de países (con banderas)
  * Devuelve el prefijo (ej: +34) al seleccionar
  */
 export const PrefixSelector = React.forwardRef<
