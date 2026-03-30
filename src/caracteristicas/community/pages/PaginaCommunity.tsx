@@ -3,6 +3,7 @@ import { useCommunityData } from '../hooks';
 import { CampaignSection } from '../ui/CampaignSection';
 import { ProveedoresSection } from '../ui/ProveedoresSection';
 import { PlanForm } from '../ui/PlanForm';
+import { PromocionesSection } from '../ui/PromocionesSection';
 import { ZonaForm } from '../ui/ZonaForm';
 import { leadsHttp } from '@shared/api/clienteHttp';
 
@@ -27,22 +28,12 @@ const PaginaCommunity: React.FC = () => {
     fetchProveedores,
     createPlan,
     createZona,
+    createPromocion,
   } = useCommunityData();
 
   const [planForm, setPlanForm] = useState({ nombre: '', precio: '', nombreProveedor: '', activo: true });
   const [zonaForm, setZonaForm] = useState({ nombre: '', activo: true });
   const [cuentaForm, setCuentaForm] = useState({ numeroCuenta: '', nombreCuenta: '' });
-  const [promoForm, setPromoForm] = useState({
-    nombre: '',
-    interno: false,
-    idProveedor: '',
-    idZona: '',
-    descuento: false,
-    cantidadMeses: 1,
-    vigenciaDesde: '',
-    vigenciaHasta: '',
-    activo: true,
-  });
 
   const [planState, setPlanState] = useState(initialState);
   const [zonaState, setZonaState] = useState(initialState);
@@ -239,108 +230,15 @@ const PaginaCommunity: React.FC = () => {
       )}
 
       {activeSection === 'promociones' && (
-        <section style={sectionStyle}>
-          <h2>Promociones</h2>
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            
-            // Validación básica
-            if (!promoForm.nombre.trim()) {
-              setGlobalMessage('❌ Nombre es requerido');
-              return;
-            }
-            if (!promoForm.idProveedor) {
-              setGlobalMessage('❌ Proveedor es requerido');
-              return;
-            }
-            if (!promoForm.idZona) {
-              setGlobalMessage('❌ Zona es requerida');
-              return;
-            }
-            if (!promoForm.vigenciaDesde || !promoForm.vigenciaHasta) {
-              setGlobalMessage('❌ Fechas de vigencia son requeridas');
-              return;
-            }
-            
-            const payload = {
-              nombre: promoForm.nombre.trim(),
-              interno: promoForm.interno,
-              idProveedor: Number(promoForm.idProveedor),
-              idZona: Number(promoForm.idZona),
-              descuento: promoForm.descuento,
-              cantidadMeses: Number(promoForm.cantidadMeses),
-              vigenciaDesde: promoForm.vigenciaDesde,
-              vigenciaHasta: promoForm.vigenciaHasta,
-              activo: promoForm.activo,
-            };
-            
-            console.log('[Community] Promoción payload:', payload);
-            await createOne('/api/leads/promociones', payload, fetchPromociones, setPromoState);
-          }}
-        >
-          <div style={{ marginBottom: 12 }}>
-            <label>Nombre*</label>
-            <input style={inputStyle} value={promoForm.nombre} placeholder="Nombre de la promoción" onChange={(e) => setPromoForm((s) => ({ ...s, nombre: e.target.value }))} />
-          </div>
-          
-          <div style={{ marginBottom: 12 }}>
-            <label>Proveedor*</label>
-            <select style={inputStyle} value={promoForm.idProveedor} onChange={(e) => setPromoForm((s) => ({ ...s, idProveedor: e.target.value }))}>
-              <option value="">Selecciona proveedor</option>
-              {proveedores.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div style={{ marginBottom: 12 }}>
-            <label>Zona*</label>
-            <select style={inputStyle} value={promoForm.idZona} onChange={(e) => setPromoForm((s) => ({ ...s, idZona: e.target.value }))}>
-              <option value="">Selecciona zona</option>
-              {zonas.map((z) => (
-                <option key={z.id} value={z.id}>
-                  {z.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-            <div>
-              <label>Vigencia Desde*</label>
-              <input style={inputStyle} type="date" value={promoForm.vigenciaDesde} onChange={(e) => setPromoForm((s) => ({ ...s, vigenciaDesde: e.target.value }))} />
-            </div>
-            <div>
-              <label>Vigencia Hasta*</label>
-              <input style={inputStyle} type="date" value={promoForm.vigenciaHasta} onChange={(e) => setPromoForm((s) => ({ ...s, vigenciaHasta: e.target.value }))} />
-            </div>
-          </div>
-          
-          <div style={{ marginBottom: 12 }}>
-            <label>Cantidad de Meses</label>
-            <input style={inputStyle} type="number" min="1" value={promoForm.cantidadMeses} onChange={(e) => setPromoForm((s) => ({ ...s, cantidadMeses: Number(e.target.value) }))} />
-          </div>
-          
-          <div style={{ marginBottom: 12, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <input type="checkbox" checked={promoForm.interno} onChange={(e) => setPromoForm((s) => ({ ...s, interno: e.target.checked }))} /> Interno
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <input type="checkbox" checked={promoForm.descuento} onChange={(e) => setPromoForm((s) => ({ ...s, descuento: e.target.checked }))} /> Descuento
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <input type="checkbox" checked={promoForm.activo} onChange={(e) => setPromoForm((s) => ({ ...s, activo: e.target.checked }))} /> Activo
-            </label>
-          </div>
-          
-          <button style={inputStyle} type="submit">Crear Promoción</button>
-          <button style={inputStyle} type="button" onClick={() => fetchPromociones()}>Cargar datos</button>
-        </form>
-        {promoState.error ? <div className="text-danger">Error al cargar datos (status: {promoState.status})</div> : renderTable(promociones || [])}
-      </section>
+        <PromocionesSection
+          promociones={promociones}
+          proveedores={proveedores}
+          zonas={zonas}
+          onCreatePromocion={createPromocion}
+          onRefresh={fetchPromociones}
+          error={promoState.error}
+          status={promoState.status}
+        />
       )}
 
       {activeSection === 'proveedores' && <ProveedoresSection sectionStyle={sectionStyle} />}
