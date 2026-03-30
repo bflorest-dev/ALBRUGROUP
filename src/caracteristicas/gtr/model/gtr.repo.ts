@@ -129,8 +129,24 @@ class GtrRepo {
 
     const query = params.toString();
     const url = query ? `${this.baseUrl}/gtr?${query}` : `${this.baseUrl}/gtr`;
-    const response = await leadsHttp.get<LeadGtrResponse[]>(url);
-    return response.data;
+    
+    try {
+      const response = await leadsHttp.get<LeadGtrResponse[]>(url);
+      
+      // Debug: Log de respuesta
+      console.log(`[GtrRepository] GET ${url}`, {
+        status: response.status,
+        dataType: typeof response.data,
+        isArray: Array.isArray(response.data),
+        length: Array.isArray(response.data) ? response.data.length : 'N/A',
+        firstItem: Array.isArray(response.data) ? response.data[0] : response.data,
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error(`[GtrRepository] Error en GET ${url}:`, error);
+      throw error;
+    }
   }
 }
 

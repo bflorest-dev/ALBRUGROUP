@@ -47,6 +47,17 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
   const leadsQuery = useLeadsGTR();
   const leads = leadsQuery.data ?? [];
 
+  // Debug: Log para verificar si hay datos
+  React.useEffect(() => {
+    console.log('TablaLeadsGTR - Datos recibidos:', {
+      isLoading: leadsQuery.isPending,
+      isError: leadsQuery.isError,
+      error: leadsQuery.error,
+      leadCount: leads.length,
+      leads: leads.slice(0, 3), // Primeros 3 para debug
+    });
+  }, [leads, leadsQuery]);
+
   // ========== MUTACIONES ==========
   const contactMutation = useContactLeadMutation();
 
@@ -270,7 +281,13 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
             {paginatedLeads.length === 0 ? (
               <tr>
                 <td colSpan={13} className={styles.noData}>
-                  No hay leads para mostrar
+                  {leadsQuery.isPending ? (
+                    'Cargando leads...'
+                  ) : leadsQuery.isError ? (
+                    `Error al cargar leads: ${leadsQuery.error?.message || 'Desconocido'}`
+                  ) : (
+                    'No hay leads para mostrar'
+                  )}
                 </td>
               </tr>
             ) : (
