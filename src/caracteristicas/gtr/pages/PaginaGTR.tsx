@@ -33,7 +33,7 @@ const PaginaGTR: React.FC = () => {
     UPDATE_LEADS_ASESOR: true,
     TYPIFY_LEADS: true,
     CONTACT_LEADS: isGtrSupervisor,
-    READ_LEADS_GTR: isGtrSupervisor,
+    READ_LEADS_GTR: isGtrSupervisor || isAsesorGTR,
     READ_EVENTOS_LEADS: true,
   };
 
@@ -113,7 +113,7 @@ const PaginaGTR: React.FC = () => {
                   <AltaLead
                     permisos={permisos}
                     onSuccess={() => {
-                      setActiveTab('bandeja');
+                      setActiveTab(isAsesorGTR ? 'registros' : 'bandeja');
                       // Toast notification would go here
                       alert('Lead creado exitosamente');
                     }}
@@ -143,13 +143,17 @@ const PaginaGTR: React.FC = () => {
         {activeTab === 'registros' && isAsesorGTR && (
           <section className={styles.section}>
             <h2>Leads Registrados</h2>
-            <TablaLeadsAsesorVentas
-              permisos={permisos}
-              idAsesor={currentUser?.id ? parseInt(currentUser.id) : undefined}
-              onLeadClick={(lead) => {
-                console.log('Lead registrado clicked:', lead);
-              }}
-            />
+            {permisos.READ_LEADS_GTR ? (
+              <TablaLeadsGTR
+                permisos={permisos}
+                onReasignarClick={(lead) => setSelectedLead(lead)}
+              />
+            ) : (
+              <div className={styles.alert} style={{ backgroundColor: '#fff3cd', borderColor: '#ffc107' }}>
+                <strong>⚠️ Acceso Limitado</strong>
+                <p>No tienes permisos para ver los leads de GTR.</p>
+              </div>
+            )}
           </section>
         )}
       </main>
