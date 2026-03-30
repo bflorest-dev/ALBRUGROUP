@@ -10,13 +10,14 @@ import styles from './PaginaGTR.module.css';
  */
 const PaginaGTR: React.FC = () => {
   const { currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'bandeja' | 'intakeLead' | 'misBandejas'>('bandeja');
+  const [activeTab, setActiveTab] = useState<'bandeja' | 'intakeLead' | 'misBandejas' | 'registros'>('bandeja');
   const [selectedLead, setSelectedLead] = useState<LeadGtrResponse | null>(null);
 
   // Derive permisos from user role
   const userRoles = currentUser?.roles ?? [];
   const isGtrSupervisor = userRoles.includes('GTR') || userRoles.includes('ADMINISTRADOR');
   const isAsesorVentas = userRoles.includes('ASESOR_DE_VENTAS');
+  const isAsesorGTR = userRoles.includes('ASESOR_GTR');
 
   const permisos: PermisosGTR = {
     READ_CAMPANA: true,
@@ -64,6 +65,14 @@ const PaginaGTR: React.FC = () => {
             onClick={() => setActiveTab('misBandejas')}
           >
             📋 Mis Leads
+          </button>
+        )}
+        {isAsesorGTR && (
+          <button
+            className={`${styles.tab} ${activeTab === 'registros' ? styles.active : ''}`}
+            onClick={() => setActiveTab('registros')}
+          >
+            📝 Leads Registrados
           </button>
         )}
       </nav>
@@ -125,6 +134,20 @@ const PaginaGTR: React.FC = () => {
               onLeadClick={(lead) => {
                 // Could open detail modal here
                 console.log('Lead clicked:', lead);
+              }}
+            />
+          </section>
+        )}
+
+        {/* Leads Registrados para ASESOR_GTR */}
+        {activeTab === 'registros' && isAsesorGTR && (
+          <section className={styles.section}>
+            <h2>Leads Registrados</h2>
+            <TablaLeadsAsesorVentas
+              permisos={permisos}
+              idAsesor={currentUser?.id ? parseInt(currentUser.id) : undefined}
+              onLeadClick={(lead) => {
+                console.log('Lead registrado clicked:', lead);
               }}
             />
           </section>
