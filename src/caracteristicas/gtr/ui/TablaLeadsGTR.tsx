@@ -264,6 +264,8 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
                 />
               </th>
               <th className={styles.colId}>ID</th>
+              <th className={styles.colPrefijo}>Prefijo</th>
+              <th className={styles.colLead}>Lead</th>
               <th className={styles.colFecha}>Fecha</th>
               <th className={styles.colCampana}>Campaña</th>
               <th className={styles.colProveedor}>Proveedor</th>
@@ -301,8 +303,13 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
                     />
                   </td>
                   <td className={styles.colId}><strong>#{lead.id}</strong></td>
+                  <td className={styles.colPrefijo}>{lead.prefijo || '-'}</td>
+                  <td className={styles.colLead}>{lead.lead || '-'}</td>
                   <td className={styles.colFecha}>
-                    {new Date(lead.createdAt).toLocaleDateString()}
+                    {new Date(lead.createdAt).toLocaleDateString('es-ES', {
+                      year: 'numeric', month: '2-digit', day: '2-digit',
+                      hour: '2-digit', minute: '2-digit', second: '2-digit',
+                    })}
                   </td>
                   <td className={styles.colCampana}>{lead.nombreCampana}</td>
                   <td className={styles.colProveedor}>{lead.nombreProveedorCampana}</td>

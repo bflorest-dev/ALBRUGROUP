@@ -114,14 +114,16 @@ export interface LeadAsesorDetalleResponse {
 export interface LeadGtrResponse {
   id: number;
   createdAt: string; // ISO datetime
+  prefijo: string;
+  lead: string;
   nombreCampana: string;
   nombreProveedorCampana: string;
-  base: string;
+  base: 'WHATSAPP' | 'INSTAGRAM' | 'FIREBASE' | string;
   nombreTitular: string;
   codigoTipificacion: string;
   codigoSubtipificacion: string;
   nombreAsesorAsignado: string;
-  estadoSeguimiento: string;
+  estadoSeguimiento: 'NUEVO' | 'EN_SEGUIMIENTO' | 'CONTACTADO' | 'TIPIFICADO' | 'CERRADO' | string;
   reasignaciones: number; // Contador de reasignaciones
 }
 

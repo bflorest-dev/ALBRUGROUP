@@ -112,6 +112,14 @@
   width: 60px;
 }
 
+.colPrefijo {
+  width: 80px;
+}
+
+.colLead {
+  min-width: 90px;
+}
+
 .colFecha {
   width: 100px;
 }
