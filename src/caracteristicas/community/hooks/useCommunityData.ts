@@ -232,9 +232,15 @@ export const useCommunityData = () => {
     setError(null);
     try {
       const data = await LeadsRepository.getPromociones();
+      console.debug('[useCommunityData] fetchPromociones', { count: data?.length, data });
+      if (!Array.isArray(data)) {
+        throw new Error('La respuesta de promociones no es un array');
+      }
       setPromociones(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar promociones');
+    } catch (err: any) {
+      const message = err instanceof Error ? err.message : 'Error al cargar promociones';
+      console.error('[useCommunityData] fetchPromociones ERROR', { message, error: err });
+      setError(message);
     } finally {
       setLoading(false);
     }

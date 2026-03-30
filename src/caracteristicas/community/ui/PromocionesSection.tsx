@@ -121,10 +121,13 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
             </tr>
           </thead>
           <tbody>
-            {promociones.map((promo) => (
-              <tr key={promo.id} style={{ background: promo.id % 2 === 0 ? '#fff' : '#f9f9f9' }}>
+            {promociones.map((promo, index) => (
+              <tr
+                key={`promo-${promo.id ?? 'x'}-${index}`}
+                style={{ background: index % 2 === 0 ? '#fff' : '#f9f9f9' }}
+              >
                 {columns.map((col) => (
-                  <td key={`${promo.id}-${col}`} style={{ border: '1px solid #ddd', padding: 8 }}>
+                  <td key={`promo-${promo.id ?? 'x'}-${col}-${index}`} style={{ border: '1px solid #ddd', padding: 8 }}>
                     {typeof (promo as any)[col] === 'object'
                       ? JSON.stringify((promo as any)[col])
                       : (promo as any)[col]}
