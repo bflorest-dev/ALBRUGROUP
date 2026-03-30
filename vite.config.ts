@@ -18,46 +18,41 @@ export default defineConfig({
     ],
   },
   server: {
+    middlewareMode: false,
     proxy: {
-      // Auth service: GET/POST /api/auth/* → http://localhost:8080/auth/*
-      '/api/auth': {
+      // Universal proxy: catch /api/* and forward to backend
+      '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-        ws: false,
+        rewrite: (path) => {
+          // /api/auth/autorizacion/forgot-password → /autorizacion/forgot-password
+          // /api/rrhh/... → /rrhh/...
+          // /api/leads/... → /leads/...
+          const rewritten = path.replace(/^\/api/, '');
+          console.log(`[ViteProxy] ${path} → ${rewritten}`);
+          return rewritten;
+        },
         configure: (proxy) => {
-          // Log para verificar requests
-          proxy.on('proxyReq', (proxyReq, req) => {
-            console.log(`[Proxy] ${req.method} ${req.url}`);
-            proxyReq.setHeader('X-Forwarded-For', req.socket.remoteAddress || 'unknown');
+          proxy.on('proxyReq', (_proxyReq, req) => {
+            console.log(`[ViteProxy] Forwarding ${req.method} ${req.url} to localhost:8080`);
           });
-          proxy.on('error', (err, req) => {
-            console.error(`[Proxy Error] ${req.method} ${req.url}: ${err.message}`);
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log(`[ViteProxy] Response ${proxyRes.statusCode} for ${req.url}`);
+          });
+          proxy.on('error', (err, _req) => {
+            console.error(`[ViteProxy] Error: ${err.message}`);
           });
         },
-      },
-      // RRHH service: GET /api/rrhh/postulantes → http://localhost:8080/rrhh/postulantes
-      '/api/rrhh': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-      },
-      '/api/leads': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-      },
-      '/api/presence': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
     port: 5173,
     strictPort: false,
+    cors: {
+      origin: '*',
+      methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      credentials: true,
+    },
   },
 })
