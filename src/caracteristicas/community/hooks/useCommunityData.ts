@@ -280,10 +280,28 @@ export const useCommunityData = () => {
     setLoading(true);
     setError(null);
     try {
+      const token = localStorage.getItem('auth_token');
+      console.log('[useCommunityData] 📦 Fetching proveedores...', {
+        hasToken: !!token,
+        tokenLength: token ? token.length : 0,
+      });
+      
       const data = await LeadsRepository.getProveedores();
+      
+      console.log('[useCommunityData] ✅ Proveedores loaded:', {
+        count: data?.length || 0,
+        data: data,
+      });
+      
       setProveedores(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar proveedores');
+    } catch (err: any) {
+      const errorMsg = err instanceof Error ? err.message : 'Error al cargar proveedores';
+      console.error('[useCommunityData] ❌ Error fetching proveedores:', {
+        error: errorMsg,
+        details: err,
+        status: err?.status,
+      });
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }

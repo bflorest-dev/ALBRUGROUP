@@ -53,9 +53,15 @@ function addAuthInterceptor(instance: AxiosInstance, instanceName: string): void
       const token = localStorage.getItem('auth_token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
-        console.debug(`[${instanceName}] JWT attached`, {
+        console.debug(`[${instanceName}] ✅ JWT attached`, {
           endpoint: config.url,
-          hasToken: !!token,
+          tokenLength: token.length,
+          tokenPreview: token.substring(0, 20) + '...',
+        });
+      } else {
+        console.warn(`[${instanceName}] ⚠️ NO TOKEN FOUND in localStorage`, {
+          endpoint: config.url,
+          localStorageKeys: Object.keys(localStorage),
         });
       }
       return config;

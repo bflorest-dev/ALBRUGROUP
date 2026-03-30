@@ -61,7 +61,7 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
       newErrors.lead = 'Solo se permiten números';
     }
 
-    if (!formData.idCampana || Number(formData.idCampana) <= 0) {
+    if (!formData.idCampana) {
       newErrors.idCampana = 'Campaña requerida';
     }
 
@@ -74,10 +74,10 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
   };
 
   // ========== HANDLERS ==========
-  const handleInputChange = (field: keyof LeadIntakeRequest, value: string | number) => {
+  const handleInputChange = (field: keyof LeadIntakeRequest, value: string) => {
     setFormData((prev) => ({
       ...prev,
-      [field]: field === 'idCampana' ? Number(value) : String(value),
+      [field]: field === 'idCampana' ? Number(value) : value,
     }));
     if (errors[field]) {
       setErrors((prev) => {
@@ -88,19 +88,11 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
     }
   };
 
-  const handleCampaignChange = (idCampana: string | number) => {
+  const handleCampaignChange = (idCampana: string) => {
     const id = Number(idCampana);
     const campaign = campaigns.find((c) => c.id === id);
     setSelectedCampaign(campaign ? { id: campaign.id, nombre: campaign.nombre } : null);
-    setFormData((prev) => ({ ...prev, idCampana: id }));
-
-    if (errors.idCampana) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors.idCampana;
-        return newErrors;
-      });
-    }
+    handleInputChange('idCampana', idCampana);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -202,7 +194,7 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
         <FormSelect
           label="Campaña"
           name="idCampana"
-          value={formData.idCampana ? String(formData.idCampana) : ''}
+          value={formData.idCampana}
           onChange={handleCampaignChange}
           options={campaignOptions}
           placeholder="Selecciona una campaña"
