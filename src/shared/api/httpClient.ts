@@ -167,25 +167,6 @@ export const authHttp: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
   },
 });
-
-// Agregar interceptor de request para debug
-authHttp.interceptors.request.use(
-  (config) => {
-    const fullUrl = `${config.baseURL}${config.url}`;
-    console.log(`[authHttp] 🌐 Request: ${config.method?.toUpperCase() || 'GET'} ${fullUrl}`, {
-      baseURL: config.baseURL,
-      endpoint: config.url,
-      fullURL: fullUrl,
-      data: config.data,
-    });
-    return config;
-  },
-  (error) => {
-    console.error('[authHttp] Request error:', error);
-    return Promise.reject(error);
-  }
-);
-
 addErrorInterceptor(authHttp, 'authHttp');
 
 /**

@@ -76,22 +76,14 @@ export class AuthRepository {
   /**
    * Paso 3: Resetear contraseña olvidada
    * POST /autorizacion/forgot-password
-   * Full URL: POST /api/auth/autorizacion/forgot-password
    */
   static async olvidoContraseña(
     payload: ForgotPasswordRequest
   ): Promise<ForgotPasswordResponse> {
-    const endpoint = '/autorizacion/forgot-password';
-    console.log(`[AuthRepository] POST ${endpoint}`, { payload });
-    
     return authHttp
-      .post<ForgotPasswordResponse>(endpoint, payload)
-      .then((res) => {
-        console.log(`[AuthRepository] POST ${endpoint} SUCCESS`, res.data);
-        return res.data;
-      })
+      .post<ForgotPasswordResponse>('/autorizacion/forgot-password', payload)
+      .then((res) => res.data)
       .catch((error) => {
-        console.error(`[AuthRepository] POST ${endpoint} ERROR:`, error);
         throw new Error(
           error.response?.data?.message || 'Información no válida'
         );
