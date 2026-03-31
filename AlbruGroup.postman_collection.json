@@ -147,6 +147,236 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Presence",
+          "item": [
+            {
+              "name": "Registrar Online",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/presence/online",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "presence",
+                    "online"
+                  ]
+                },
+                "description": "Registra al empleado autenticado como conectado en Redis y crea sus indices iniciales."
+              },
+              "response": []
+            },
+            {
+              "name": "Heartbeat",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/presence/heartbeat",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "presence",
+                    "heartbeat"
+                  ]
+                },
+                "description": "Renueva el TTL de la presencia del usuario autenticado. Este endpoint debe invocarse periodicamente desde frontend."
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Conectados",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/presence/connected-users",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "presence",
+                    "connected-users"
+                  ]
+                },
+                "description": "Lista todos los empleados conectados actualmente segun las claves activas de Redis."
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Conectados Por Rol",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/presence/connected-users?role=ASESOR_VENTAS",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "presence",
+                    "connected-users"
+                  ],
+                  "query": [
+                    {
+                      "key": "role",
+                      "value": "ASESOR_VENTAS"
+                    }
+                  ]
+                },
+                "description": "Lista los empleados conectados filtrando por rol registrado en Redis."
+              },
+              "response": []
+            },
+            {
+              "name": "Esta Conectado",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/presence/connected-users/1",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "presence",
+                    "connected-users",
+                    "1"
+                  ]
+                },
+                "description": "Valida si el empleado indicado sigue teniendo presencia activa en Redis."
+              },
+              "response": []
+            },
+            {
+              "name": "Actualizar Disponibilidad",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/presence/disponibilidad/OCUPADO",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "presence",
+                    "disponibilidad",
+                    "OCUPADO"
+                  ]
+                },
+                "description": "Actualiza el estado operativo del empleado autenticado manteniendolo online."
+              },
+              "response": []
+            },
+            {
+              "name": "Desconectar Offline",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:8080/presence/offline",
+                  "protocol": "http",
+                  "host": [
+                    "localhost"
+                  ],
+                  "port": "8080",
+                  "path": [
+                    "presence",
+                    "offline"
+                  ]
+                },
+                "description": "Elimina manualmente la presencia del empleado autenticado e invalida sus indices en Redis."
+              },
+              "response": []
+            }
+          ]
         }
       ]
     },
