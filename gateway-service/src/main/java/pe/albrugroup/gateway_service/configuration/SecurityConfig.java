@@ -37,7 +37,10 @@ public class SecurityConfig {
                                 "/rrhh/v3/api-docs/**",
                                 "/leads/swagger-ui.html",
                                 "/leads/swagger-ui/**",
-                                "/leads/v3/api-docs/**"
+                                "/leads/v3/api-docs/**",
+                                "/recruitment/swagger-ui.html",
+                                "/recruitment/swagger-ui/**",
+                                "/recruitment/v3/api-docs/**"
                         ).permitAll()
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyExchange().authenticated()
