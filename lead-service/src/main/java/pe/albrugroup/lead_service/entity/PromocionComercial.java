@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import pe.albrugroup.lead_service.entity.enums.TipoVenta;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
@@ -30,6 +31,8 @@ public class PromocionComercial {
 //    private TipoVenta tipoVenta;
 
     private Boolean descuento;
+    private BigDecimal descuentoPorcentual;
+    private BigDecimal descuentoMonto;
     private Integer cantidadMeses;
 
     private LocalDate vigenciaDesde;

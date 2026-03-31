@@ -18,6 +18,7 @@ import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.repository.ZonaRepository;
 import pe.albrugroup.lead_service.service.mapper.PromocionComercialMapper;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -87,6 +88,42 @@ public class PromocionComercialService {
             throw new DuplicateResourceException(
                     "Una promocion no interna debe indicar un proveedor",
                     null
+            );
+        }
+
+        validarDescuento(request);
+    }
+
+    private void validarDescuento(PromocionComercialRequest request) {
+        BigDecimal descuentoPorcentual = request.getDescuentoPorcentual();
+        BigDecimal descuentoMonto = request.getDescuentoMonto();
+
+        if (Boolean.TRUE.equals(request.getDescuento())) {
+            if (descuentoPorcentual == null && descuentoMonto == null) {
+                throw new DuplicateResourceException(
+                        "La promocion con descuento debe indicar descuentoPorcentual o descuentoMonto",
+                        null
+                );
+            }
+            if (descuentoPorcentual != null && descuentoMonto != null) {
+                throw new DuplicateResourceException(
+                        "La promocion no puede tener descuentoPorcentual y descuentoMonto al mismo tiempo",
+                        Map.of(
+                                "descuentoPorcentual", descuentoPorcentual,
+                                "descuentoMonto", descuentoMonto
+                        )
+                );
+            }
+            return;
+        }
+
+        if (descuentoPorcentual != null || descuentoMonto != null) {
+            throw new DuplicateResourceException(
+                    "La promocion sin descuento no debe enviar descuentoPorcentual ni descuentoMonto",
+                    Map.of(
+                            "descuentoPorcentual", descuentoPorcentual,
+                            "descuentoMonto", descuentoMonto
+                    )
             );
         }
     }
