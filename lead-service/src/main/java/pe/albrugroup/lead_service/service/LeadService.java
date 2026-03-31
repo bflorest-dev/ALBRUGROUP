@@ -198,13 +198,14 @@ public class LeadService {
 
     @Transactional
     public void registrarIngresoLead(LeadIntakeRequest request) {
-        String leadCompleto = construirLeadCompleto(request);
+        String prefijo = normalizarPrefijo(request.getPrefijo());
+        String numeroLead = normalizarLead(request.getLead());
         Campana campana = obtenerCampanaActiva(request.getIdCampana());
 
-        leadRepository.findByLead(leadCompleto)
+        leadRepository.findByPrefijoAndLead(prefijo, numeroLead)
                 .ifPresentOrElse(
                         lead -> registrarIngresoLeadExistente(lead, request, campana),
-                        () -> registrarLeadNuevo(leadCompleto, request, campana)
+                        () -> registrarLeadNuevo(prefijo, numeroLead, request, campana)
                 );
     }
 
@@ -233,14 +234,16 @@ public class LeadService {
         registrarEventoContacto(savedLead.getId(), idCampana, savedLead.getEtapa());
     }
 
-    private void registrarLeadNuevo(String leadCompleto, LeadIntakeRequest request, Campana campana) {
-        Lead lead = leadMapper.toNuevoLead(leadCompleto, request.getBase(), campana, Instant.now());
+    private void registrarLeadNuevo(String prefijo, String numeroLead, LeadIntakeRequest request, Campana campana) {
+        Lead lead = leadMapper.toNuevoLead(prefijo, numeroLead, request.getBase(), campana, Instant.now());
 
         Lead savedLead = leadRepository.save(lead);
         registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa());
     }
 
     private void registrarIngresoLeadExistente(Lead lead, LeadIntakeRequest request, Campana campana) {
+        lead.setPrefijo(normalizarPrefijo(request.getPrefijo()));
+        lead.setLead(normalizarLead(request.getLead()));
         lead.setCampana(campana);
         lead.setBase(request.getBase());
         lead.setLastEntryAt(Instant.now());
@@ -316,8 +319,12 @@ public class LeadService {
                 .orElseThrow(() -> new NotFoundException(Campana.class, idCampana));
     }
 
-    private String construirLeadCompleto(LeadIntakeRequest request) {
-        return request.getPrefijo().trim() + request.getLead().trim();
+    private String normalizarPrefijo(String prefijo) {
+        return prefijo == null ? null : prefijo.trim();
+    }
+
+    private String normalizarLead(String lead) {
+        return lead == null ? null : lead.trim();
     }
 
     private Map<Long, Instant> obtenerFechasAsignacion(List<Lead> leads) {
@@ -334,14 +341,13 @@ public class LeadService {
     }
 
     private LeadAsesorVentasResponse toAsesorResponse(Lead lead, Instant fechaAsignacion) {
-        SplitLead splitLead = splitLead(lead.getLead());
         DatosPreventa datosPreventa = lead.getDatosPreventa();
 
         return new LeadAsesorVentasResponse(
                 lead.getId(),
                 fechaAsignacion,
-                splitLead.prefijo(),
-                splitLead.numero(),
+                lead.getPrefijo(),
+                lead.getLead(),
                 datosPreventa == null ? null : datosPreventa.getNombreTitularServicio(),
                 datosPreventa == null ? null : datosPreventa.getCorreo(),
                 lead.getEstado()
@@ -349,7 +355,6 @@ public class LeadService {
     }
 
     private LeadAsesorDetalleResponse toAsesorDetalleResponse(Lead lead, Instant fechaAsignacion) {
-        SplitLead splitLead = splitLead(lead.getLead());
         DatosPreventa datosPreventa = lead.getDatosPreventa();
         Direccion direccion = lead.getDireccion();
 
@@ -357,8 +362,8 @@ public class LeadService {
                 lead.getId(),
                 fechaAsignacion,
                 lead.getLastEntryAt(),
-                splitLead.prefijo(),
-                splitLead.numero(),
+                lead.getPrefijo(),
+                lead.getLead(),
                 lead.getCampana() == null ? null : lead.getCampana().getNombre(),
                 lead.getCampana() == null || lead.getCampana().getProveedor() == null ? null : lead.getCampana().getProveedor().getNombre(),
                 lead.getBase(),
@@ -394,30 +399,7 @@ public class LeadService {
     }
 
     private LeadGtrResponse normalizarLeadGtr(LeadGtrResponse response) {
-        SplitLead splitLead = splitLead(response.getLead());
-        response.setPrefijo(splitLead.prefijo());
-        response.setLead(splitLead.numero());
         return response;
-    }
-
-    private SplitLead splitLead(String leadCompleto) {
-        if (leadCompleto == null || leadCompleto.isBlank()) {
-            return new SplitLead("", "");
-        }
-
-        String valor = leadCompleto.trim();
-        if (!valor.startsWith("+")) {
-            return new SplitLead("", valor);
-        }
-
-        int i = 1;
-        while (i < valor.length() && Character.isDigit(valor.charAt(i)) && i <= 3) {
-            i++;
-        }
-        return new SplitLead(valor.substring(0, i), valor.substring(i));
-    }
-
-    private record SplitLead(String prefijo, String numero) {
     }
 
     private Lead obtenerLeadPreventaDelAsesor(Long idLead) {

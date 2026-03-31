@@ -40,7 +40,7 @@ public interface LeadMapper {
     @Mapping(target = "precioFinal", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    Lead toNuevoLead(String lead, Base base, Campana campana, Instant lastEntryAt);
+    Lead toNuevoLead(String prefijo, String lead, Base base, Campana campana, Instant lastEntryAt);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "tipoDocumento", source = "tipoDocumento")

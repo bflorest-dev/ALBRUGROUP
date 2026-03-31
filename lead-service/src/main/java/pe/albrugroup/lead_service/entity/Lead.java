@@ -21,7 +21,7 @@ import java.util.Set;
 @Entity @Getter @Setter @Builder
 @Table(indexes = {
         @Index(name = "idx_lead_etapa_last_entry_at", columnList = "etapa, lastEntryAt"),
-        @Index(name = "idx_lead_lead", columnList = "lead"),
+        @Index(name = "idx_lead_prefijo_lead", columnList = "prefijo, lead"),
         @Index(name = "idx_lead_estado", columnList = "estado")
 })
 @AllArgsConstructor @NoArgsConstructor
@@ -32,7 +32,8 @@ public class Lead {
     private Long id;
 
     // GTR
-    private String lead; // +51 987654321
+    private String prefijo; // +51
+    private String lead; // 987654321
 
     @Enumerated(EnumType.STRING)
     private Etapa etapa;
