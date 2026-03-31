@@ -1,12 +1,8 @@
 package pe.albrugroup.lead_service.configuration;
 
-
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
-import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
@@ -18,9 +14,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import pe.albrugroup.lead_service.entity.response.CatalogoResponse;
 
 import java.time.Duration;
 import java.util.Map;
@@ -39,15 +37,6 @@ public class CacheConfig {
         redisMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         redisMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-//        PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
-//                .allowIfSubType(Object.class)
-//                .build();
-//        redisMapper.activateDefaultTyping(
-//                typeValidator, ObjectMapper.DefaultTyping.NON_FINAL,
-//                JsonTypeInfo.As.PROPERTY
-////                JsonTypeInfo.As.WRAPPER_ARRAY
-//        );
-
         GenericJackson2JsonRedisSerializer valueSerializer = new GenericJackson2JsonRedisSerializer(redisMapper);
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .disableCachingNullValues()
@@ -57,10 +46,16 @@ public class CacheConfig {
                         .fromSerializer(valueSerializer))
                 .entryTtl(catalogTtl);
 
+        Jackson2JsonRedisSerializer<CatalogoResponse> tipificacionesSerializer =
+                new Jackson2JsonRedisSerializer<>(redisMapper, CatalogoResponse.class);
+        RedisCacheConfiguration tipificacionesConfig = defaultConfig.serializeValuesWith(
+                RedisSerializationContext.SerializationPair.fromSerializer(tipificacionesSerializer)
+        );
+
         Map<String, RedisCacheConfiguration> cacheConfigurations = Map.of(
                 CacheNames.CAMPANAS, defaultConfig,
                 CacheNames.PLANES, defaultConfig,
-                CacheNames.TIPIFICACIONES, defaultConfig,
+                CacheNames.TIPIFICACIONES, tipificacionesConfig,
                 CacheNames.PROMOCIONES_COMERCIALES, defaultConfig,
                 CacheNames.ADICIONALES, defaultConfig,
                 CacheNames.PROVEEDORES, defaultConfig,
