@@ -1,6 +1,7 @@
 package pe.albrugroup.lead_service.configuration;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -18,9 +19,21 @@ import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import pe.albrugroup.lead_service.entity.response.AdicionalResponse;
+import pe.albrugroup.lead_service.entity.response.CampanaResponse;
 import pe.albrugroup.lead_service.entity.response.CatalogoResponse;
+import pe.albrugroup.lead_service.entity.response.CuentaPublicitariaResponse;
+import pe.albrugroup.lead_service.entity.response.DepartamentoResponse;
+import pe.albrugroup.lead_service.entity.response.DistritoResponse;
+import pe.albrugroup.lead_service.entity.response.PlanResponse;
+import pe.albrugroup.lead_service.entity.response.PromocionComercialResponse;
+import pe.albrugroup.lead_service.entity.response.ProveedorResponse;
+import pe.albrugroup.lead_service.entity.response.ProvinciaResponse;
+import pe.albrugroup.lead_service.entity.response.ServiciosProveedorResponse;
+import pe.albrugroup.lead_service.entity.response.ZonaResponse;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 @Configuration
@@ -52,17 +65,75 @@ public class CacheConfig {
                 RedisSerializationContext.SerializationPair.fromSerializer(tipificacionesSerializer)
         );
 
-        Map<String, RedisCacheConfiguration> cacheConfigurations = Map.of(
-                CacheNames.CAMPANAS, defaultConfig,
-                CacheNames.PLANES, defaultConfig,
-                CacheNames.TIPIFICACIONES, tipificacionesConfig,
-                CacheNames.PROMOCIONES_COMERCIALES, defaultConfig,
-                CacheNames.ADICIONALES, defaultConfig,
-                CacheNames.PROVEEDORES, defaultConfig,
-                CacheNames.CUENTAS_PUBLICITARIAS, defaultConfig,
-                CacheNames.ZONAS, defaultConfig,
-                CacheNames.UBIGEO, defaultConfig
+        RedisCacheConfiguration serviciosProveedorConfig = defaultConfig.serializeValuesWith(
+                RedisSerializationContext.SerializationPair.fromSerializer(
+                        new Jackson2JsonRedisSerializer<>(redisMapper, ServiciosProveedorResponse.class)
+                )
+        );
+        RedisCacheConfiguration planesConfig = defaultConfig.serializeValuesWith(
+                RedisSerializationContext.SerializationPair.fromSerializer(
+                        listSerializer(redisMapper, PlanResponse.class)
+                )
+        );
+        RedisCacheConfiguration adicionalesConfig = defaultConfig.serializeValuesWith(
+                RedisSerializationContext.SerializationPair.fromSerializer(
+                        listSerializer(redisMapper, AdicionalResponse.class)
+                )
+        );
+        RedisCacheConfiguration promocionesConfig = defaultConfig.serializeValuesWith(
+                RedisSerializationContext.SerializationPair.fromSerializer(
+                        listSerializer(redisMapper, PromocionComercialResponse.class)
+                )
+        );
+        RedisCacheConfiguration campanasConfig = defaultConfig.serializeValuesWith(
+                RedisSerializationContext.SerializationPair.fromSerializer(
+                        listSerializer(redisMapper, CampanaResponse.class)
+                )
+        );
+        RedisCacheConfiguration proveedoresConfig = defaultConfig.serializeValuesWith(
+                RedisSerializationContext.SerializationPair.fromSerializer(
+                        listSerializer(redisMapper, ProveedorResponse.class)
+                )
+        );
+        RedisCacheConfiguration cuentasPublicitariasConfig = defaultConfig.serializeValuesWith(
+                RedisSerializationContext.SerializationPair.fromSerializer(
+                        listSerializer(redisMapper, CuentaPublicitariaResponse.class)
+                )
+        );
+        RedisCacheConfiguration zonasConfig = defaultConfig.serializeValuesWith(
+                RedisSerializationContext.SerializationPair.fromSerializer(
+                        listSerializer(redisMapper, ZonaResponse.class)
+                )
+        );
+        RedisCacheConfiguration departamentosConfig = defaultConfig.serializeValuesWith(
+                RedisSerializationContext.SerializationPair.fromSerializer(
+                        listSerializer(redisMapper, DepartamentoResponse.class)
+                )
+        );
+        RedisCacheConfiguration provinciasConfig = defaultConfig.serializeValuesWith(
+                RedisSerializationContext.SerializationPair.fromSerializer(
+                        listSerializer(redisMapper, ProvinciaResponse.class)
+                )
+        );
+        RedisCacheConfiguration distritosConfig = defaultConfig.serializeValuesWith(
+                RedisSerializationContext.SerializationPair.fromSerializer(
+                        listSerializer(redisMapper, DistritoResponse.class)
+                )
+        );
 
+        Map<String, RedisCacheConfiguration> cacheConfigurations = Map.ofEntries(
+                Map.entry(CacheNames.CAMPANAS, campanasConfig),
+                Map.entry(CacheNames.PLANES, planesConfig),
+                Map.entry(CacheNames.SERVICIOS_PROVEEDOR, serviciosProveedorConfig),
+                Map.entry(CacheNames.TIPIFICACIONES, tipificacionesConfig),
+                Map.entry(CacheNames.PROMOCIONES_COMERCIALES, promocionesConfig),
+                Map.entry(CacheNames.ADICIONALES, adicionalesConfig),
+                Map.entry(CacheNames.PROVEEDORES, proveedoresConfig),
+                Map.entry(CacheNames.CUENTAS_PUBLICITARIAS, cuentasPublicitariasConfig),
+                Map.entry(CacheNames.ZONAS, zonasConfig),
+                Map.entry(CacheNames.UBIGEO_DEPARTAMENTOS, departamentosConfig),
+                Map.entry(CacheNames.UBIGEO_PROVINCIAS, provinciasConfig),
+                Map.entry(CacheNames.UBIGEO_DISTRITOS, distritosConfig)
         );
 
         return RedisCacheManager.builder(connectionFactory)
@@ -93,6 +164,11 @@ public class CacheConfig {
             private String cacheName(Cache cache) {
                 return cache != null ? cache.getName() : "desconocida";
             }
-        };
+                };
+    }
+
+    private <T> Jackson2JsonRedisSerializer<List<T>> listSerializer(ObjectMapper redisMapper, Class<T> elementType) {
+        JavaType listType = redisMapper.getTypeFactory().constructCollectionType(List.class, elementType);
+        return new Jackson2JsonRedisSerializer<>(redisMapper, listType);
     }
 }

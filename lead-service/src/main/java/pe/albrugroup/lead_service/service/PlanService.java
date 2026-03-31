@@ -82,7 +82,7 @@ public class PlanService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = CacheNames.PLANES, key = "'servicios:' + #idProveedor")
+    @Cacheable(value = CacheNames.SERVICIOS_PROVEEDOR, key = "#idProveedor")
     public ServiciosProveedorResponse listarServicios(Long idProveedor) {
         Proveedor proveedor = buscarProveedorActivo(idProveedor);
         return new ServiciosProveedorResponse(

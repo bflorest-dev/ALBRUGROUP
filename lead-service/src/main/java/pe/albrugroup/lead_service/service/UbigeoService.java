@@ -28,12 +28,12 @@ public class UbigeoService {
     private final DistritoRepository distritoRepository;
     private final UbigeoMapper mapper;
 
-    @Cacheable(value = CacheNames.UBIGEO, key = "'departamentos'")
+    @Cacheable(value = CacheNames.UBIGEO_DEPARTAMENTOS, key = "'all'")
     public List<DepartamentoResponse> listarDepartamentos() {
         return mapper.toDepartamentoResponse(departamentoRepository.findAllByOrderByNombreAsc());
     }
 
-    @Cacheable(value = CacheNames.UBIGEO, key = "'provincias:' + #idDepartamento")
+    @Cacheable(value = CacheNames.UBIGEO_PROVINCIAS, key = "#idDepartamento")
     public List<ProvinciaResponse> listarProvincias(Long idDepartamento) {
         Departamento departamento = departamentoRepository.findById(idDepartamento)
                 .orElseThrow(() -> new NotFoundException(Departamento.class, idDepartamento));
@@ -42,7 +42,7 @@ public class UbigeoService {
         return mapper.toProvinciaResponse(provincias);
     }
 
-    @Cacheable(value = CacheNames.UBIGEO, key = "'distritos:' + #idProvincia")
+    @Cacheable(value = CacheNames.UBIGEO_DISTRITOS, key = "#idProvincia")
     public List<DistritoResponse> listarDistritos(Long idProvincia) {
         Provincia provincia = provinciaRepository.findById(idProvincia)
                 .orElseThrow(() -> new NotFoundException(Provincia.class, idProvincia));
