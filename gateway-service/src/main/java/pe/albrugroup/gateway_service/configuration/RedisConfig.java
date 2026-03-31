@@ -1,6 +1,9 @@
 package pe.albrugroup.gateway_service.configuration;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
@@ -21,12 +24,16 @@ public class RedisConfig {
 
     @Bean
     public ReactiveRedisTemplate<String, EmployeePresence> presenceRedisTemplate(
-            ReactiveRedisConnectionFactory connectionFactory,
-            ObjectMapper objectMapper
+            ReactiveRedisConnectionFactory connectionFactory
     ) {
+        ObjectMapper redisMapper = new ObjectMapper();
+        redisMapper.registerModule(new JavaTimeModule());
+        redisMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        redisMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
         StringRedisSerializer keySerializer = new StringRedisSerializer();
         Jackson2JsonRedisSerializer<EmployeePresence> valueSerializer =
-                new Jackson2JsonRedisSerializer<>(objectMapper, EmployeePresence.class);
+                new Jackson2JsonRedisSerializer<>(redisMapper, EmployeePresence.class);
 
         RedisSerializationContext<String, EmployeePresence> context = RedisSerializationContext
                 .<String, EmployeePresence>newSerializationContext(keySerializer)
