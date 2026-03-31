@@ -29,6 +29,6 @@ jwt:
 #    base-url: http://localhost:8081
 
 # OpenAPI-Swagger
-#springdoc:
-#  swagger-ui:
-#    path: /swagger-ui.html
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
