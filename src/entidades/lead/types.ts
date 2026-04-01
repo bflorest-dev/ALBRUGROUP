@@ -21,7 +21,8 @@ export interface LeadAsignacionRequest {
 export interface LeadDatosPreventaRequest {
   tipoDocumento?: string;
   numeroDocumentoTitularServicio?: string;
-  nombreTitular?: string;
+  ubigeoNacimiento?: string;
+  nombreTitularServicio?: string;
   celularRegistro?: string;
   celularReferencia?: string;
   correo?: string;

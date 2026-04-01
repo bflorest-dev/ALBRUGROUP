@@ -46,7 +46,7 @@ const isPreventaCompleta = (datos: LeadDatosPreventaRequest): boolean => {
   return (
     isNonEmpty(datos.tipoDocumento) &&
     isNonEmpty(datos.numeroDocumentoTitularServicio) &&
-    isNonEmpty((datos as any).nombreTitularServicio || datos.nombreTitular) &&
+    isNonEmpty(datos.nombreTitularServicio) &&
     isNonEmpty(datos.celularRegistro) &&
     isNonEmpty(datos.correo)
   );
@@ -104,7 +104,7 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
     tipoDocumento: '',
     numeroDocumentoTitularServicio: '',
     ubigeoNacimiento: '',
-    nombreTitular: '', // nombreTitularServicio
+    nombreTitularServicio: '',
     celularRegistro: '',
     celularReferencia: '',
     correo: '',
@@ -377,8 +377,8 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
                   Nombre Titular*:
                   <input
                     className="w-full border rounded px-2 py-1"
-                    value={datosPreventa.nombreTitular ?? ''}
-                    onChange={(e) => setDatosPreventa((v) => ({ ...v, nombreTitular: e.target.value }))}
+                    value={datosPreventa.nombreTitularServicio ?? ''}
+                    onChange={(e) => setDatosPreventa((v) => ({ ...v, nombreTitularServicio: e.target.value }))}
                   />
                 </label>
                 <label>
