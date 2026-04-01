@@ -9,6 +9,8 @@ import type {
   LeadOfertaComercialRequest,
   LeadTipificacionRequest,
 } from '@entidades/lead/types';
+import { DocumentoEnum, TipoViaEnum, TipoDomicilioEnum } from '@shared/types/backendEnums';
+import { enumToOptions } from '@shared/utils/enumToOptions';
 
 interface PreventaLeadModalProps {
   idLead: number;
@@ -285,11 +287,18 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
             <div className="space-y-3">
               <label>
                 Tipo Documento*:
-                <input
+                <select
                   className="w-full border rounded px-2 py-1"
                   value={datosPreventa.tipoDocumento ?? ''}
                   onChange={(e) => setDatosPreventa((v) => ({ ...v, tipoDocumento: e.target.value }))}
-                />
+                >
+                  <option value="">Seleccione un tipo de documento</option>
+                  {enumToOptions(DocumentoEnum).map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label>
                 Número Documento*:
@@ -332,19 +341,33 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
             <div className="space-y-3">
               <label>
                 Tipo Domicilio*:
-                <input
+                <select
                   className="w-full border rounded px-2 py-1"
                   value={direccion.tipoDomicilio ?? ''}
                   onChange={(e) => setDireccion((v) => ({ ...v, tipoDomicilio: e.target.value }))}
-                />
+                >
+                  <option value="">Seleccione un tipo de domicilio</option>
+                  {enumToOptions(TipoDomicilioEnum).map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label>
                 Tipo Vía*:
-                <input
+                <select
                   className="w-full border rounded px-2 py-1"
                   value={direccion.tipoVia ?? ''}
                   onChange={(e) => setDireccion((v) => ({ ...v, tipoVia: e.target.value }))}
-                />
+                >
+                  <option value="">Seleccione un tipo de vía</option>
+                  {enumToOptions(TipoViaEnum).map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label>
                 Vía*:

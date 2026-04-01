@@ -21,6 +21,11 @@ export function enumToOptions(enumObj: Record<string, string>) {
  * @returns Label formateado (ej: "Los Olivos")
  */
 export function formatEnumLabel(value: string): string {
+  // Si no tiene guiones bajos y es todo mayúsculas (siglas), devuelve como está
+  if (!value.includes('_') && value === value.toUpperCase()) {
+    return value;
+  }
+  
   return value
     .split('_')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
