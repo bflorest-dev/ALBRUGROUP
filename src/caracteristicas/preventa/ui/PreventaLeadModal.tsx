@@ -40,12 +40,13 @@ const buildErrorMessage = (error: unknown): string => {
 
 /**
  * Verifica si los datos de preventa están completos (campos requeridos)
+ * Requeridos: tipoDocumento, numeroDocumentoTitularServicio, nombreTitularServicio, celularRegistro, correo
  */
 const isPreventaCompleta = (datos: LeadDatosPreventaRequest): boolean => {
   return (
     isNonEmpty(datos.tipoDocumento) &&
     isNonEmpty(datos.numeroDocumentoTitularServicio) &&
-    isNonEmpty(datos.nombreTitular) &&
+    isNonEmpty((datos as any).nombreTitularServicio || datos.nombreTitular) &&
     isNonEmpty(datos.celularRegistro) &&
     isNonEmpty(datos.correo)
   );
@@ -102,9 +103,13 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
   const [datosPreventa, setDatosPreventa] = useState<LeadDatosPreventaRequest>({
     tipoDocumento: '',
     numeroDocumentoTitularServicio: '',
-    nombreTitular: '',
+    ubigeoNacimiento: '',
+    nombreTitular: '', // nombreTitularServicio
     celularRegistro: '',
+    celularReferencia: '',
     correo: '',
+    numeroDocumentoTitularCelularRegistro: '',
+    nombreTitularCelularRegistro: '',
   });
 
   const [direccion, setDireccion] = useState<LeadDireccionRequest>({
@@ -329,48 +334,82 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
           </div>
 
           {step === 1 && (
-            <div className="space-y-3">
-              <label>
-                Tipo Documento*:
-                <select
-                  className="w-full border rounded px-2 py-1"
-                  value={datosPreventa.tipoDocumento ?? ''}
-                  onChange={(e) => setDatosPreventa((v) => ({ ...v, tipoDocumento: e.target.value }))}
-                >
-                  <option value="">Seleccione un tipo de documento</option>
-                  {enumToOptions(DocumentoEnum).map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Número Documento*:
-                <input
-                  className="w-full border rounded px-2 py-1"
-                  value={datosPreventa.numeroDocumentoTitularServicio ?? ''}
-                  onChange={(e) =>
-                    setDatosPreventa((v) => ({ ...v, numeroDocumentoTitularServicio: e.target.value }))
-                  }
-                />
-              </label>
-              <label>
-                Nombre Titular*:
-                <input
-                  className="w-full border rounded px-2 py-1"
-                  value={datosPreventa.nombreTitular ?? ''}
-                  onChange={(e) => setDatosPreventa((v) => ({ ...v, nombreTitular: e.target.value }))}
-                />
-              </label>
-              <label>
-                Celular*:
-                <input
-                  className="w-full border rounded px-2 py-1"
-                  value={datosPreventa.celularRegistro ?? ''}
-                  onChange={(e) => setDatosPreventa((v) => ({ ...v, celularRegistro: e.target.value }))}
-                />
-              </label>
+            <div className="space-y-4">
+              {/* Fila 1: Tipo y Número de Documento */}
+              <div className="grid grid-cols-2 gap-4">
+                <label>
+                  Tipo Documento*:
+                  <select
+                    className="w-full border rounded px-2 py-1"
+                    value={datosPreventa.tipoDocumento ?? ''}
+                    onChange={(e) => setDatosPreventa((v) => ({ ...v, tipoDocumento: e.target.value }))}
+                  >
+                    <option value="">Seleccione un tipo de documento</option>
+                    {enumToOptions(DocumentoEnum).map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Número Documento*:
+                  <input
+                    className="w-full border rounded px-2 py-1"
+                    value={datosPreventa.numeroDocumentoTitularServicio ?? ''}
+                    onChange={(e) =>
+                      setDatosPreventa((v) => ({ ...v, numeroDocumentoTitularServicio: e.target.value }))
+                    }
+                  />
+                </label>
+              </div>
+
+              {/* Fila 2: Nombre Titular y Ubigeo Nacimiento */}
+              <div className="grid grid-cols-2 gap-4">
+                <label>
+                  Nombre Titular*:
+                  <input
+                    className="w-full border rounded px-2 py-1"
+                    value={datosPreventa.nombreTitular ?? ''}
+                    onChange={(e) => setDatosPreventa((v) => ({ ...v, nombreTitular: e.target.value }))}
+                  />
+                </label>
+                <label>
+                  Ubigeo Nacimiento (opcional):
+                  <input
+                    className="w-full border rounded px-2 py-1"
+                    value={datosPreventa.ubigeoNacimiento ?? ''}
+                    onChange={(e) =>
+                      setDatosPreventa((v) => ({ ...v, ubigeoNacimiento: e.target.value }))
+                    }
+                    placeholder="Código de ubigeo"
+                  />
+                </label>
+              </div>
+
+              {/* Fila 3: Celular Registro y Celular Referencia */}
+              <div className="grid grid-cols-2 gap-4">
+                <label>
+                  Celular Registro*:
+                  <input
+                    className="w-full border rounded px-2 py-1"
+                    value={datosPreventa.celularRegistro ?? ''}
+                    onChange={(e) => setDatosPreventa((v) => ({ ...v, celularRegistro: e.target.value }))}
+                  />
+                </label>
+                <label>
+                  Celular Referencia (opcional):
+                  <input
+                    className="w-full border rounded px-2 py-1"
+                    value={datosPreventa.celularReferencia ?? ''}
+                    onChange={(e) =>
+                      setDatosPreventa((v) => ({ ...v, celularReferencia: e.target.value }))
+                    }
+                  />
+                </label>
+              </div>
+
+              {/* Fila 4: Correo */}
               <label>
                 Correo*:
                 <input
@@ -379,6 +418,41 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
                   onChange={(e) => setDatosPreventa((v) => ({ ...v, correo: e.target.value }))}
                 />
               </label>
+
+              {/* Sección adicional: Datos del Titular del Celular de Registro */}
+              <div className="border-t pt-4 mt-4">
+                <h4 className="font-semibold text-sm mb-3">Datos del Titular Celular Registro (opcional)</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <label>
+                    Número Documento:
+                    <input
+                      className="w-full border rounded px-2 py-1"
+                      value={datosPreventa.numeroDocumentoTitularCelularRegistro ?? ''}
+                      onChange={(e) =>
+                        setDatosPreventa((v) => ({
+                          ...v,
+                          numeroDocumentoTitularCelularRegistro: e.target.value,
+                        }))
+                      }
+                      placeholder="Ej: 1234567890"
+                    />
+                  </label>
+                  <label>
+                    Nombre Titular:
+                    <input
+                      className="w-full border rounded px-2 py-1"
+                      value={datosPreventa.nombreTitularCelularRegistro ?? ''}
+                      onChange={(e) =>
+                        setDatosPreventa((v) => ({
+                          ...v,
+                          nombreTitularCelularRegistro: e.target.value,
+                        }))
+                      }
+                      placeholder="Nombre del titular"
+                    />
+                  </label>
+                </div>
+              </div>
             </div>
           )}
 
