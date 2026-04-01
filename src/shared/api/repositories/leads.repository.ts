@@ -136,8 +136,23 @@ export class LeadsRepository {
    * GET /leads/leads/asesor-ventas
    */
   static async getBandejaAsesorVentas(): Promise<LeadAsesorVentasResponse[]> {
-    const response = await leadsHttp.get<LeadAsesorVentasResponse[]>('/leads/asesor-ventas');
-    return response.data;
+    const response = await leadsHttp.get<unknown>('/leads/asesor-ventas');
+    const data = response.data;
+
+    // Support both contract shapes: array or object { leads: [...] }
+    if (Array.isArray(data)) {
+      return data as LeadAsesorVentasResponse[];
+    }
+
+    if (data && typeof data === 'object' && 'leads' in (data as Record<string, unknown>)) {
+      const leads = (data as Record<string, unknown>)['leads'];
+      if (Array.isArray(leads)) {
+        return leads as LeadAsesorVentasResponse[];
+      }
+    }
+
+    console.warn('[LeadsRepository] Formato inesperado en /leads/asesor-ventas', data);
+    return [];
   }
 
   /**
@@ -287,10 +302,28 @@ export class LeadsRepository {
   // ========================================================================
 
   static async getPromociones(
-    params?: Record<string, unknown>,
+    filtros?: {
+      proveedorId?: number | null;
+      zonaId?: number | null;
+      interno?: boolean | null;
+    },
   ): Promise<PromocionComercialResponse[]> {
+    const params: Record<string, unknown> = {};
+
+    if (typeof filtros?.proveedorId === 'number' && filtros.proveedorId > 0) {
+      params.proveedorId = filtros.proveedorId;
+    }
+    if (typeof filtros?.zonaId === 'number' && filtros.zonaId > 0) {
+      params.zonaId = filtros.zonaId;
+    }
+    if (typeof filtros?.interno === 'boolean') {
+      params.interno = filtros.interno;
+    }
+
+    console.debug('[LeadsRepository] GET /promociones params:', Object.keys(params).length > 0 ? params : 'none');
+
     const response = await leadsHttp.get<PromocionComercialResponse[]>('/promociones', {
-      params,
+      params: Object.keys(params).length > 0 ? params : undefined,
     });
     return response.data;
   }

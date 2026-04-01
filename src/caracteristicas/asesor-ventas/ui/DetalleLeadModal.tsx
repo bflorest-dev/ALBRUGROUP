@@ -5,6 +5,7 @@ import { FormularioTipificacion } from './FormularioTipificacion';
 import { FormularioOferta } from './FormularioOferta';
 import { FormularioDireccion } from './FormularioDireccion';
 import { FormularioDatosPreventa } from './FormularioDatosPreventa';
+import { PreventaLeadModal } from '@caracteristicas/preventa/ui/PreventaLeadModal';
 
 interface DetalleLeadModalProps {
   lead: LeadAsesorVentasResponse;
@@ -20,6 +21,7 @@ type TabType = 'resumen' | 'contacto' | 'tipificacion' | 'oferta' | 'direccion' 
  */
 export const DetalleLeadModal: React.FC<DetalleLeadModalProps> = ({ lead, isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<TabType>('resumen');
+  const [showPreventaAdvanced, setShowPreventaAdvanced] = useState(false);
 
   if (!isOpen) return null;
 
@@ -29,8 +31,8 @@ export const DetalleLeadModal: React.FC<DetalleLeadModalProps> = ({ lead, isOpen
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold">{lead.nombreCliente}</h2>
-            <p className="text-sm text-blue-100">Lead #{lead.numeroLead}</p>
+            <h2 className="text-xl font-bold">{lead.nombreTitular}</h2>
+            <p className="text-sm text-blue-100">Lead #{lead.lead}</p>
           </div>
           <button
             onClick={onClose}
@@ -70,25 +72,25 @@ export const DetalleLeadModal: React.FC<DetalleLeadModalProps> = ({ lead, isOpen
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-semibold text-gray-700">Teléfono</label>
-                  <p className="text-gray-900">{lead.telefonoContacto}</p>
+                  <label className="text-sm font-semibold text-gray-700">Prefijo</label>
+                  <p className="text-gray-900">{lead.prefijo}</p>
                 </div>
                 <div>
                   <label className="text-sm font-semibold text-gray-700">Correo</label>
-                  <p className="text-gray-900">{lead.correoContacto}</p>
+                  <p className="text-gray-900">{lead.correo}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700">Producto</label>
-                  <p className="text-gray-900">{lead.producto}</p>
+                  <label className="text-sm font-semibold text-gray-700">Lead</label>
+                  <p className="text-gray-900">{lead.lead}</p>
                 </div>
                 <div>
                   <label className="text-sm font-semibold text-gray-700">Estado</label>
-                  <p className="text-gray-900">{lead.estado}</p>
+                  <p className="text-gray-900">{lead.estadoSeguimiento}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-semibold text-gray-700">Fecha Registro</label>
+                  <label className="text-sm font-semibold text-gray-700">Fecha Asignación</label>
                   <p className="text-gray-900">
-                    {new Date(lead.fechaRegistro).toLocaleDateString('es-ES')}
+                    {new Date(lead.fechaAsignacion).toLocaleDateString('es-ES')}
                   </p>
                 </div>
               </div>
@@ -116,9 +118,21 @@ export const DetalleLeadModal: React.FC<DetalleLeadModalProps> = ({ lead, isOpen
           )}
 
           {activeTab === 'preventa' && (
-            <FormularioDatosPreventa idLead={lead.id} onSuccess={onClose} />
+            <div className="space-y-4">
+              <FormularioDatosPreventa idLead={lead.id} onSuccess={onClose} />
+              <button
+                onClick={() => setShowPreventaAdvanced(true)}
+                className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+              >
+                Abrir flujo PREVENTA avanzado (3 pasos + tipificación)
+              </button>
+            </div>
           )}
         </div>
+
+        {showPreventaAdvanced && (
+          <PreventaLeadModal idLead={lead.id} isOpen={showPreventaAdvanced} onClose={() => setShowPreventaAdvanced(false)} />
+        )}
       </div>
     </div>
   );

@@ -134,9 +134,6 @@ export const ZonaForm: React.FC<ZonaFormProps> = ({ onCreateZona, onCreated }) =
         if (!regla.departamentoId) {
           newErrors[`${prefix}.departamentoId`] = 'Departamento requerido';
         }
-        if (!regla.provinciaId) {
-          newErrors[`${prefix}.provinciaId`] = 'Provincia requerida';
-        }
         if (!regla.geoId) {
           newErrors[`${prefix}.geoId`] = 'Provincia requerida';
         }
@@ -169,6 +166,9 @@ export const ZonaForm: React.FC<ZonaFormProps> = ({ onCreateZona, onCreated }) =
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+
+    console.log('submit triggered');
+    console.log('formValues', { nombre, reglas });
 
     if (!validate()) return;
 

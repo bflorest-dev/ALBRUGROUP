@@ -227,17 +227,22 @@ export const useCommunityData = () => {
   // Promociones
   // ========================================================================
 
-  const fetchPromociones = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await LeadsRepository.getPromociones();
-      console.debug('[useCommunityData] fetchPromociones', { count: data?.length, data });
-      if (!Array.isArray(data)) {
-        throw new Error('La respuesta de promociones no es un array');
-      }
-      setPromociones(data);
-    } catch (err: any) {
+  const fetchPromociones = useCallback(
+    async (filtros?: { proveedorId?: number; zonaId?: number; interno?: boolean }) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await LeadsRepository.getPromociones(filtros);
+        console.debug('[useCommunityData] fetchPromociones', {
+          filtros,
+          count: data?.length,
+          data,
+        });
+        if (!Array.isArray(data)) {
+          throw new Error('La respuesta de promociones no es un array');
+        }
+        setPromociones(data);
+      } catch (err: any) {
       const message = err instanceof Error ? err.message : 'Error al cargar promociones';
       console.error('[useCommunityData] fetchPromociones ERROR', { message, error: err });
       setError(message);

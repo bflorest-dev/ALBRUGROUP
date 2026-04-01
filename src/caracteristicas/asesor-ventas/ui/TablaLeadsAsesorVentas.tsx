@@ -5,6 +5,7 @@ interface TablaLeadsAsesorVentasProps {
   leads: LeadAsesorVentasResponse[];
   isLoading: boolean;
   onSelectLead: (lead: LeadAsesorVentasResponse) => void;
+  onPreventa: (lead: LeadAsesorVentasResponse) => void;
 }
 
 /**
@@ -15,6 +16,7 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
   leads,
   isLoading,
   onSelectLead,
+  onPreventa,
 }) => {
   if (isLoading) {
     return <div className="p-4 text-center">Cargando leads...</div>;
@@ -26,49 +28,38 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse border border-gray-300">
+      <table className="w-full border-collapse border border-gray-300 text-sm min-w-max">          
         <thead className="bg-gray-100">
           <tr>
-            <th className="border border-gray-300 p-3 text-left">Lead #</th>
-            <th className="border border-gray-300 p-3 text-left">Cliente</th>
-            <th className="border border-gray-300 p-3 text-left">Teléfono</th>
-            <th className="border border-gray-300 p-3 text-left">Correo</th>
-            <th className="border border-gray-300 p-3 text-left">Producto</th>
-            <th className="border border-gray-300 p-3 text-left">Estado</th>
-            <th className="border border-gray-300 p-3 text-left">Acción</th>
+            <th className="border border-gray-300 px-5 py-4 text-left">Lead #</th>
+            <th className="border border-gray-300 px-5 py-4 text-left min-w-[180px]">Fecha Asignación</th>
+            <th className="border border-gray-300 px-5 py-4 text-left min-w-[140px]">Prefijo</th>
+            <th className="border border-gray-300 px-5 py-4 text-left">Lead</th>
+            <th className="border border-gray-300 px-4 py-3 text-left">Titular</th>
+            <th className="border border-gray-300 px-4 py-3 text-left">Email</th>
+            <th className="border border-gray-300 px-4 py-3 text-left">Estado</th>
+            <th className="border border-gray-300 px-4 py-3 text-left">Acción</th>
           </tr>
         </thead>
         <tbody>
           {leads.map((lead) => (
             <tr key={lead.id} className="hover:bg-gray-50">
-              <td className="border border-gray-300 p-3 font-mono text-sm">{lead.numeroLead}</td>
-              <td className="border border-gray-300 p-3">{lead.nombreCliente}</td>
-              <td className="border border-gray-300 p-3">{lead.telefonoContacto}</td>
-              <td className="border border-gray-300 p-3">{lead.correoContacto}</td>
-              <td className="border border-gray-300 p-3">{lead.producto}</td>
-              <td className="border border-gray-300 p-3">
-                <span
-                  className={`inline-block px-2 py-1 rounded text-xs font-semibold ${
-                    lead.estado === 'NUEVO'
-                      ? 'bg-blue-100 text-blue-800'
-                      : lead.estado === 'EN_CONTACTO'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : lead.estado === 'TIPIFICADO'
-                          ? 'bg-purple-100 text-purple-800'
-                          : lead.estado === 'CONVERTIDO'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                  }`}
-                >
-                  {lead.estado}
+              <td className="border border-gray-300 px-4 py-3 font-mono text-left">{lead.id}</td>
+              <td className="border border-gray-300 px-5 py-4 min-w-[180px] whitespace-nowrap text-left">{lead.fechaAsignacion}</td>
+              <td className="border border-gray-300 px-5 py-4 min-w-[140px] whitespace-nowrap text-left">{lead.prefijo}</td>
+              <td className="border border-gray-300 px-4 py-3 text-left">{lead.lead}</td>
+              <td className="border border-gray-300 px-4 py-3 text-left">{lead.nombreTitular}</td>
+              <td className="border border-gray-300 px-4 py-3 text-left">{lead.correo}</td>
+              <td className="border border-gray-300 px-4 py-3 text-left">                <span className="inline-block px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-800">
+                  {lead.estadoSeguimiento}
                 </span>
               </td>
-              <td className="border border-gray-300 p-3">
+              <td className="border border-gray-300 p-3 text-left">
                 <button
-                  onClick={() => onSelectLead(lead)}
-                  className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+                  onClick={() => onPreventa(lead)}
+                  className="px-3 py-1 bg-emerald-500 text-white rounded hover:bg-emerald-600 text-sm"
                 >
-                  Detalles
+                  Tipificar
                 </button>
               </td>
             </tr>
