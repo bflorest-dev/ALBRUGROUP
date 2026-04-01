@@ -142,8 +142,12 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
 
   const tipificaciones = catalogo.tipificaciones || [];
 
+  // Códigos de tipificaciones permitidas para mostrar inicialmente
+  const TIPIFICACIONES_PERMITIDAS = ['SIN_CONTACTO', 'SEGUIMIENTO', 'AGENDADO', 'REITERADO', 'LISTA_NEGRA'];
+
   const sortedTipificaciones = useMemo(() => {
     const sorted = [...tipificaciones]
+      .filter((t) => TIPIFICACIONES_PERMITIDAS.includes(t.codigo))
       .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
       .map((t) => ({
         ...t,
