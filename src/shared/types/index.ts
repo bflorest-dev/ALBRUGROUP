@@ -144,12 +144,6 @@ export interface EventoPostulanteRequest {
   details?: string;
 }
 
-export interface EstadoCapacitacionRequest {
-  postulanteId: number;
-  etapa: 'RECLUTAMIENTO' | 'CAPACITACION' | 'GESTION' | 'CONTRATADO';
-  estado: string;
-}
-
 
 export interface HireApplicantFormData {
   aplicanteId?: string | number;
@@ -217,18 +211,6 @@ export interface CerrarContratoRequest {
 export interface ContratoRegistroResponse {
   contrato: ContratoResponse;
   credenciales: CredencialesResponse;
-}
-
-export interface ContratoDetalles {
-  id: number;
-  empleadoId: number;
-  puesto: string;
-  salario: number;
-  fechaInicio: string;
-  fechaCierre?: string;
-  tipoContrato: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 // ============================================================================

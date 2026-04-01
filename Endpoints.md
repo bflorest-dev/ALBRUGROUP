@@ -390,6 +390,308 @@ export interface PagoResponse {
   bonoExtra: number;
   sueldoTotal: number;
 }
+
+```ts
+// Request DTO schemas
+export interface ActualizarCredencialesRequest {
+  nombres: string;
+  apellidos: string;
+  dni: string;
+  puestoTrabajo: PuestoTrabajo;
+}
+
+export interface ActualizarDetalleGrupoCapacitacionRequest {
+  estadoCapacitacion: EstadoCapacitacionPostulante;
+  fechaResultado: string;
+  fechaContratacion: string;
+  cumplioTresMeses: boolean;
+  fechaCumplioTresMeses: string;
+}
+
+export interface ActualizarEstadoOfertaLaboralRequest {
+  // sin campos
+}
+
+export interface AdicionalRequest {
+  idProveedor: number;
+  nombre: string;
+  precioUnitario: number;
+}
+
+export interface AgregarPostulacionGrupoCapacitacionRequest {
+  fechaAsignacion: string;
+}
+
+export interface CampanaRequest {
+  // sin campos
+}
+
+export interface CampanaWhatsappRequest {
+  numeroWhatsappEmpresa: string;
+}
+
+export interface CatalogoEstadoRequest {
+  etapa: Etapa;
+}
+
+export interface CatalogoRequest {
+  etapa: Etapa;
+}
+
+export interface CatalogoTipificacionRequest {
+  etapa: Etapa;
+}
+
+export interface CerrarContratoRequest {
+  // sin campos
+}
+
+export interface ConfirmarContratacionRequest {
+  idEmpleadoContratado: number;
+  fechaContratacion: string;
+}
+
+export interface CuentaPublicitariaRequest {
+  // sin campos
+}
+
+export interface DatosContactoCorporativoRequest {
+  // sin campos
+}
+
+export interface DatosContactoUbicacionRequest {
+  // sin campos
+}
+
+export interface DatosFinancierosRequest {
+  parentesco: Parentesco;
+  celularTransferencia: string;
+}
+
+export interface DatosPersonalesRequest {
+  // sin campos
+}
+
+export interface ForgotPasswordRequest {
+  username: string;
+  email: string;
+  dni: string;
+}
+
+export interface GrupoCapacitacionRequest {
+  // sin campos
+}
+
+export interface InternetRequest {
+  velocidad: number;
+  unidad: Unidad;
+  tecnologia: Tecnologia;
+}
+
+export interface LeadAsignacionRequest {
+  idAsesorAsignado: number;
+  nombreAsesorAsignado: string;
+}
+
+export interface LeadDatosPreventaRequest {
+  tipoDocumento: TipoDocumento;
+  numeroDocumentoTitularServicio: string;
+  ubigeoNacimiento: string;
+  nombreTitularServicio: string;
+  celularRegistro: string;
+  celularReferencia: string;
+  correo: string;
+  numeroDocumentoTitularCelularRegistro: string;
+  nombreTitularCelularRegistro: string;
+}
+
+export interface LeadDireccionRequest {
+  ubigeoDomicilio: string;
+  tipoDomicilio: TipoDomicilio;
+  tipoVia: TipoVia;
+  via: string;
+  direccion: string;
+  referencia: string;
+  latitud: number;
+  longitud: number;
+  urbanizacion: string;
+  numero: string;
+  manzana: string;
+  lote: string;
+  nombreEdificio: string;
+  nombreCondominio: string;
+  piso: string;
+  interior: string;
+}
+
+export interface LeadIntakeRequest {
+  prefijo: string;
+  lead: string;
+  idCampana: number;
+  base: Base;
+}
+
+export interface LeadOfertaAdicionalRequest {
+  idAdicional: number;
+  cantidad: number;
+}
+
+export interface LeadOfertaComercialRequest {
+  idPlan: number;
+  idPromocionInterna: number;
+  idPromocionProveedor: number;
+  adicionales: LeadOfertaAdicionalRequest[];
+}
+
+export interface LeadTipificacionRequest {
+  codigoTipificacion: string;
+  codigoSubtipificacion: string;
+}
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface OfertaAmpliacionRequest {
+  // sin campos
+}
+
+export interface OfertaLaboralRequest {
+  // sin campos
+}
+
+export interface PlanAdicionalRequest {
+  idAdicional: number;
+  cantidadIncluida: number;
+  permiteCompraAdicional: boolean;
+  cantidadMaximaAdicional: number;
+  precioUnitarioAdicional: number;
+}
+
+export interface PlanRequest {
+  vigenciaDesde: string;
+  vigenciaHasta: string;
+}
+
+export interface PlanUpdateRequest {
+  nombre: string;
+  precio: number;
+  vigenciaDesde: string;
+  vigenciaHasta: string;
+}
+
+export interface PostulacionRequest {
+  // sin campos
+}
+
+export interface PostulanteRequest {
+  // sin campos
+}
+
+export interface PromocionComercialRequest {
+  idProveedor: number;
+  idZona: number;
+  vigenciaDesde: string;
+  vigenciaHasta: string;
+}
+
+export interface ProveedorRequest {
+  nombre: string;
+}
+
+export interface RegistrarContratoRequest {
+  seguroSalud: SeguroSalud;
+  sistemaPensiones: SistemaPensiones;
+  sueldoBase: number;
+  fechaFin: string;
+}
+
+export interface RegistrarEmpleadoRequest {
+  parentesco: Parentesco;
+  celularTransferencia: string;
+}
+
+export interface RegistrarEmpresaContratistaRequest {
+  nombre: string;
+}
+
+export interface RegistrarEventoRequest {
+  idLead: number;
+  idCampana: number;
+  accion: Accion;
+  etapa: Etapa;
+  tipificacion: string;
+  subtipificacion: string;
+}
+
+export interface RegistrarPagoRequest {
+  fechaInicio: string;
+  fechaFin: string;
+  asignacionFamiliar: number;
+  bonoPuntualidad: number;
+  comisionSemanal: number;
+  comisionMensual: number;
+  bonoExtra: number;
+}
+
+export interface RegistrarUsuarioRequest {
+  empleadoId: number;
+  nombres: string;
+  apellidos: string;
+  dni: string;
+  email: string;
+  puestoTrabajo: PuestoTrabajo;
+}
+
+export interface SubtipificacionCatalogoRequest {
+  id: number;
+  codigo: string;
+  descripcion: string;
+  orden: number;
+}
+
+export interface SubtipificacionRequest {
+  etapaDestino: Etapa;
+  estadoDestino: EstadoPostulacion;
+  estadoBandejaDestino: EstadoBandejaPostulacion;
+}
+
+export interface TelefonoRequest {
+  minutos: number;
+  descripcion: string;
+}
+
+export interface TelevisionRequest {
+  nombre: string;
+  cantidadCanales: number;
+}
+
+export interface TipificacionCatalogoRequest {
+  id: number;
+  codigo: string;
+  descripcion: string;
+  orden: number;
+}
+
+export interface TipificacionRequest {
+  // sin campos
+}
+
+export interface TipificarPostulacionRequest {
+  modalidadContacto: ModalidadContacto;
+  observacion: string;
+}
+
+export interface ZonaReglaRequest {
+  nivelGeografico: NivelGeografico;
+  geoId: number;
+  criterio: CriterioZona;
+}
+
+export interface ZonaRequest {
+  nombre: string;
+}
 ```
 
 ### Ejemplos JSON representativos
@@ -634,9 +936,70 @@ export interface PagoResponse {
 - `DELETE /leads/promociones/{idPromocion}` | path `idPromocion` | headers `Authorization` | resp `PromocionComercialResponse` | feature `features/promociones/gestion` | `200,401,403,404`
 
 #### Tipificaciones (`/leads/tipificaciones`)
-- `GET /leads/tipificaciones/{etapa}/catalogo` | path `etapa` (enum) | headers `Authorization` | resp `CatalogoResponse` | feature `features/tipificaciones/catalogo` | `200,400,401,403`
+- `GET /leads/tipificaciones/{etapa}/catalogo` | path `etapa` (enum: PREVENTA, VENTA, POSTVENTA) | headers `Authorization` | resp `CatalogoResponse` | feature `features/tipificaciones/catalogo` | `200,400,401,403`
 - `PUT /leads/tipificaciones/catalogo` | body `CatalogoRequest` | headers `Authorization` | resp `CatalogoResponse` | feature `features/tipificaciones/catalogo` | `200,400,401,403`
 - `PATCH /leads/tipificaciones/catalogo/estado` | body `CatalogoEstadoRequest` | headers `Authorization` | resp `CatalogoResponse` | feature `features/tipificaciones/catalogo` | `200,400,401,403`
+
+**Estructura de Tipificaciones por Etapa:**
+
+**PREVENTA**: Categorías iniciales de seguimiento al lead (datos personales, dirección, oferta comercial)
+- Típicamente agrupa a subtipificaciones de clasificación temprana por respuesta/interés
+
+**VENTA**: Etapa de cierre comercial
+- Agrupa subtipificaciones relacionadas a efectividad de venta, objeciones, cerradas gang, etc.
+
+**POSTVENTA**: Seguimiento post-contratación
+- Agrupa subtipificaciones de satisfacción, renovación, soporte, incidencias, etc.
+
+Cada tipificación contiene:
+- `id` (number): Identificador único
+- `codigo` (string): Código corto para auditoría (ej: "PREVTA_INT", "VENTA_OK")
+- `descripción` (string): Descripción legible (ej: "Interés mostrado", "Venta ejecutada")
+- `orden` (number): Posición en listado (default 0)
+- `subtipificaciones` (SubtipificacionResponse[]): Detalles específicos de categorización
+
+**Ejemplo de respuesta GET /leads/tipificaciones/PREVENTA/catalogo:**
+```json
+{
+  "etapa": "PREVENTA",
+  "tipificaciones": [
+    {
+      "id": 1,
+      "codigo": "PREVTA_INT",
+      "descripcion": "Interés mostrado",
+      "orden": 1,
+      "subtipificaciones": [
+        {
+          "id": 10,
+          "codigo": "INT_ALTO",
+          "descripcion": "Interés alto",
+          "orden": 1
+        },
+        {
+          "id": 11,
+          "codigo": "INT_MEDIO",
+          "descripcion": "Interés medio",
+          "orden": 2
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "codigo": "PREVTA_NORESPONDE",
+      "descripcion": "No responde",
+      "orden": 2,
+      "subtipificaciones": [
+        {
+          "id": 20,
+          "codigo": "NR_CELULAR",
+          "descripcion": "Celular no contacta",
+          "orden": 1
+        }
+      ]
+    }
+  ]
+}
+```
 
 #### Ubigeo (`/leads/ubigeo`)
 - `GET /leads/ubigeo/departamentos` | headers `Authorization` | resp `DepartamentoResponse[]` | feature `features/ubigeo/catalogo` | `200,401,403`
@@ -649,41 +1012,41 @@ export interface PagoResponse {
 - `PATCH /leads/zonas/{idZona}/estado` | path `idZona` | headers `Authorization` | resp `ZonaResponse` | feature `features/zonas/gestion` | `200,401,403,404`
 - `PUT /leads/zonas/{idZona}` | path `idZona`, body `ZonaRequest` | headers `Authorization` | resp `ZonaResponse` | feature `features/zonas/gestion` | `200,400,401,403,404`
 
-### 3.3.1 Recruitment (`/postulaciones`, `/ofertas-laborales`, `/grupos-capacitacion`)
+### 3.3.1 Recruitment (`/recruitment/postulaciones`, `/recruitment/ofertas-laborales`, `/recruitment/grupos-capacitacion`)
 
-#### Grupo de capacitación (`/grupos-capacitacion`)
-- `POST /grupos-capacitacion` | body `GrupoCapacitacionRequest` | headers `Authorization` | resp `GrupoCapacitacionResponse` | feature `features/recruitment/grupos-capacitacion` | `201,400,401,403`
-- `GET /grupos-capacitacion` | query opcional `estado` | headers `Authorization` | resp `GrupoCapacitacionResponse[]` | feature `features/recruitment/grupos-capacitacion` | `200,401,403`
-- `GET /grupos-capacitacion/{idGrupoCapacitacion}` | path `idGrupoCapacitacion` | headers `Authorization` | resp `GrupoCapacitacionResponse` | feature `features/recruitment/grupos-capacitacion` | `200,401,403,404`
-- `POST /grupos-capacitacion/{idGrupoCapacitacion}/postulaciones` | path `idGrupoCapacitacion`, body `AgregarPostulacionGrupoCapacitacionRequest` | headers `Authorization` | resp `GrupoCapacitacionDetalleResponse` | feature `features/recruitment/grupos-capacitacion` | `201,400,401,403,404`
-- `PATCH /grupos-capacitacion/{idGrupoCapacitacion}/postulaciones/{idPostulacion}` | path `idGrupoCapacitacion,idPostulacion`, body `ActualizarDetalleGrupoCapacitacionRequest` | headers `Authorization` | resp `GrupoCapacitacionDetalleResponse` | feature `features/recruitment/grupos-capacitacion` | `200,400,401,403,404`
+#### Grupo de capacitación (`/recruitment/grupos-capacitacion`)
+- `POST /recruitment/grupos-capacitacion` | body `GrupoCapacitacionRequest` | headers `Authorization` | resp `GrupoCapacitacionResponse` | feature `features/recruitment/grupos-capacitacion` | `201,400,401,403`
+- `GET /recruitment/grupos-capacitacion` | query opcional `estado` | headers `Authorization` | resp `GrupoCapacitacionResponse[]` | feature `features/recruitment/grupos-capacitacion` | `200,401,403`
+- `GET /recruitment/grupos-capacitacion/{idGrupoCapacitacion}` | path `idGrupoCapacitacion` | headers `Authorization` | resp `GrupoCapacitacionResponse` | feature `features/recruitment/grupos-capacitacion` | `200,401,403,404`
+- `POST /recruitment/grupos-capacitacion/{idGrupoCapacitacion}/postulaciones` | path `idGrupoCapacitacion`, body `AgregarPostulacionGrupoCapacitacionRequest` | headers `Authorization` | resp `GrupoCapacitacionDetalleResponse` | feature `features/recruitment/grupos-capacitacion` | `201,400,401,403,404`
+- `PATCH /recruitment/grupos-capacitacion/{idGrupoCapacitacion}/postulaciones/{idPostulacion}` | path `idGrupoCapacitacion,idPostulacion`, body `ActualizarDetalleGrupoCapacitacionRequest` | headers `Authorization` | resp `GrupoCapacitacionDetalleResponse` | feature `features/recruitment/grupos-capacitacion` | `200,400,401,403,404`
 
-#### Ofertas laborales (`/ofertas-laborales`)
-- `POST /ofertas-laborales` | body `OfertaLaboralRequest` | headers `Authorization` | resp `OfertaLaboralResponse` | feature `features/recruitment/ofertas-laborales` | `201,400,401,403`
-- `POST /ofertas-laborales/{idOfertaLaboral}/ampliacion` | path `idOfertaLaboral`, body `OfertaAmpliacionRequest` | headers `Authorization` | resp `OfertaAmpliacionResponse` | feature `features/recruitment/ofertas-laborales` | `201,400,401,403`
-- `GET /ofertas-laborales/activas` | headers `Authorization` | resp `OfertaLaboralResponse[]` | feature `features/recruitment/ofertas-laborales` | `200,401,403`
-- `GET /ofertas-laborales` | query opcional `estado` | headers `Authorization` | resp `OfertaLaboralResponse[]` | feature `features/recruitment/ofertas-laborales` | `200,401,403`
-- `PATCH /ofertas-laborales/{idOfertaLaboral}/estado` | path `idOfertaLaboral`, body `ActualizarEstadoOfertaLaboralRequest` | headers `Authorization` | resp `OfertaLaboralResponse` | feature `features/recruitment/ofertas-laborales` | `200,400,401,403,404`
+#### Ofertas laborales (`/recruitment/ofertas-laborales`)
+- `POST /recruitment/ofertas-laborales` | body `OfertaLaboralRequest` | headers `Authorization` | resp `OfertaLaboralResponse` | feature `features/recruitment/ofertas-laborales` | `201,400,401,403`
+- `POST /recruitment/ofertas-laborales/{idOfertaLaboral}/ampliacion` | path `idOfertaLaboral`, body `OfertaAmpliacionRequest` | headers `Authorization` | resp `OfertaAmpliacionResponse` | feature `features/recruitment/ofertas-laborales` | `201,400,401,403`
+- `GET /recruitment/ofertas-laborales/activas` | headers `Authorization` | resp `OfertaLaboralResponse[]` | feature `features/recruitment/ofertas-laborales` | `200,401,403`
+- `GET /recruitment/ofertas-laborales` | query opcional `estado` | headers `Authorization` | resp `OfertaLaboralResponse[]` | feature `features/recruitment/ofertas-laborales` | `200,401,403`
+- `PATCH /recruitment/ofertas-laborales/{idOfertaLaboral}/estado` | path `idOfertaLaboral`, body `ActualizarEstadoOfertaLaboralRequest` | headers `Authorization` | resp `OfertaLaboralResponse` | feature `features/recruitment/ofertas-laborales` | `200,400,401,403,404`
 
-#### Postulaciones (`/postulaciones`)
-- `POST /postulaciones` | body `PostulacionRequest` | headers `Authorization` | resp `PostulacionResponse` | feature `features/recruitment/postulaciones` | `201,400,401,403`
-- `PUT /postulaciones/{idPostulacion}` | path `idPostulacion`, body `PostulacionRequest` | headers `Authorization` | resp `PostulacionResponse` | feature `features/recruitment/postulaciones` | `200,400,401,403,404`
-- `POST /postulaciones/{idPostulacion}/tipificacion` | path `idPostulacion`, body `TipificarPostulacionRequest` | headers `Authorization` | resp `PostulacionResponse` | feature `features/recruitment/postulaciones` | `200,400,401,403,404`
-- `GET /postulaciones/{idPostulacion}` | path `idPostulacion` | headers `Authorization` | resp `PostulacionResponse` | feature `features/recruitment/postulaciones` | `200,401,403,404`
-- `GET /postulaciones` | query opcional `etapa,estado,estadoBandeja` | headers `Authorization` | resp `PostulacionResponse[]` | feature `features/recruitment/postulaciones` | `200,401,403`
-- `GET /postulaciones/bandeja/reclutamiento` | query opcional `estadoBandeja` | headers `Authorization` | resp `PostulacionResponse[]` | feature `features/recruitment/postulaciones` | `200,401,403`
-- `GET /postulaciones/bandeja/capacitacion` | query opcional `sinGrupo` | headers `Authorization` | resp `PostulacionResponse[]` | feature `features/recruitment/postulaciones` | `200,401,403`
-- `GET /postulaciones/bandeja/contratacion` | headers `Authorization` | resp `PostulacionResponse[]` | feature `features/recruitment/postulaciones` | `200,401,403`
-- `POST /postulaciones/{idPostulacion}/confirmar-contratacion` | path `idPostulacion`, body `ConfirmarContratacionRequest` | headers `Authorization` | resp `PostulacionResponse` | feature `features/recruitment/postulaciones` | `200,400,401,403,404`
+#### Postulaciones (`/recruitment/postulaciones`)
+- `POST /recruitment/postulaciones` | body `PostulacionRequest` | headers `Authorization` | resp `PostulacionResponse` | feature `features/recruitment/postulaciones` | `201,400,401,403`
+- `PUT /recruitment/postulaciones/{idPostulacion}` | path `idPostulacion`, body `PostulacionRequest` | headers `Authorization` | resp `PostulacionResponse` | feature `features/recruitment/postulaciones` | `200,400,401,403,404`
+- `POST /recruitment/postulaciones/{idPostulacion}/tipificacion` | path `idPostulacion`, body `TipificarPostulacionRequest` | headers `Authorization` | resp `PostulacionResponse` | feature `features/recruitment/postulaciones` | `200,400,401,403,404`
+- `GET /recruitment/postulaciones/{idPostulacion}` | path `idPostulacion` | headers `Authorization` | resp `PostulacionResponse` | feature `features/recruitment/postulaciones` | `200,401,403,404`
+- `GET /recruitment/postulaciones` | query opcional `etapa,estado,estadoBandeja` | headers `Authorization` | resp `PostulacionResponse[]` | feature `features/recruitment/postulaciones` | `200,401,403`
+- `GET /recruitment/postulaciones/bandeja/reclutamiento` | query opcional `estadoBandeja` | headers `Authorization` | resp `PostulacionResponse[]` | feature `features/recruitment/postulaciones` | `200,401,403`
+- `GET /recruitment/postulaciones/bandeja/capacitacion` | query opcional `sinGrupo` | headers `Authorization` | resp `PostulacionResponse[]` | feature `features/recruitment/postulaciones` | `200,401,403`
+- `GET /recruitment/postulaciones/bandeja/contratacion` | headers `Authorization` | resp `PostulacionResponse[]` | feature `features/recruitment/postulaciones` | `200,401,403`
+- `POST /recruitment/postulaciones/{idPostulacion}/confirmar-contratacion` | path `idPostulacion`, body `ConfirmarContratacionRequest` | headers `Authorization` | resp `PostulacionResponse` | feature `features/recruitment/postulaciones` | `200,400,401,403,404`
 
-#### Eventos de postulaciones (`/postulaciones/{idPostulacion}/eventos`)
-- `GET /postulaciones/{idPostulacion}/eventos` | path `idPostulacion` | headers `Authorization` | resp `EventoResponse[]` | feature `features/recruitment/eventos` | `200,401,403`
+#### Eventos de postulaciones (`/recruitment/postulaciones/{idPostulacion}/eventos`)
+- `GET /recruitment/postulaciones/{idPostulacion}/eventos` | path `idPostulacion` | headers `Authorization` | resp `EventoResponse[]` | feature `features/recruitment/eventos` | `200,401,403`
 
-#### Tipificaciones recruitment (`/tipificaciones`)
-- `GET /tipificaciones/{etapa}/catalogo` | path `etapa` | headers `Authorization` | resp `CatalogoTipificacionResponse` | feature `features/recruitment/tipificaciones` | `200,400,401,403`
-- `POST /tipificaciones/catalogo` | body `CatalogoTipificacionRequest` | headers `Authorization` | resp `CatalogoTipificacionResponse` | feature `features/recruitment/tipificaciones` | `201,400,401,403`
-- `PATCH /tipificaciones/estado` | body `CatalogoEstadoRequest` | headers `Authorization` | resp `CatalogoTipificacionResponse` | feature `features/recruitment/tipificaciones` | `200,400,401,403`
-- `POST /tipificaciones/{idTipificacion}/subtipificaciones` | path `idTipificacion`, body `SubtipificacionRequest` | headers `Authorization` | resp `SubtipificacionResponse` | feature `features/recruitment/tipificaciones` | `201,400,401,403,404`
+#### Tipificaciones recruitment (`/recruitment/tipificaciones`)
+- `GET /recruitment/tipificaciones/{etapa}/catalogo` | path `etapa` | headers `Authorization` | resp `CatalogoTipificacionResponse` | feature `features/recruitment/tipificaciones` | `200,400,401,403`
+- `POST /recruitment/tipificaciones/catalogo` | body `CatalogoTipificacionRequest` | headers `Authorization` | resp `CatalogoTipificacionResponse` | feature `features/recruitment/tipificaciones` | `201,400,401,403`
+- `PATCH /recruitment/tipificaciones/estado` | body `CatalogoEstadoRequest` | headers `Authorization` | resp `CatalogoTipificacionResponse` | feature `features/recruitment/tipificaciones` | `200,400,401,403`
+- `POST /recruitment/tipificaciones/{idTipificacion}/subtipificaciones` | path `idTipificacion`, body `SubtipificacionRequest` | headers `Authorization` | resp `SubtipificacionResponse` | feature `features/recruitment/tipificaciones` | `201,400,401,403,404`
 
 ### 3.4 RRHH (`/rrhh`)
 
@@ -722,8 +1085,8 @@ export interface PagoResponse {
 - `GET /rrhh/empresas-contratistas` | query opcional `activo` | headers `Authorization` | resp `EmpresaContratistaResponse[]` | feature `features/rrhh/contratistas` | `200,401,403`
 - `PATCH /rrhh/empresas-contratistas/{id}/desactivar` | path `id` | headers `Authorization` | resp `EmpresaContratistaResponse` | feature `features/rrhh/contratistas` | `200,401,403,404`
 
-#### Eventos postulante (`/rrhh/eventos`)
-- `GET /rrhh/eventos/{idPostulante}/postulantes` | path `idPostulante`, query opcional `desde,hasta` | headers `Authorization` | resp `PostulanteEventoResponse[]` | feature `features/rrhh/postulantes-eventos` | `200,400,401,403`
+#### Eventos (`/rrhh/eventos`)
+- `GET /rrhh/eventos/{idEmpleado}/empleados` | path `idEmpleado` | headers `Authorization` | resp `EmpleadoEventoResponse[]` | feature `features/rrhh/eventos` | `200,401,403`
 
 ## 4) Errores y códigos (resumen)
 

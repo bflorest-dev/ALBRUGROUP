@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@shared/auth/useAuth';
 import { useAsesoresVentasConectados } from '@shared/hooks/useAsesoresConectados';
-import { AltaLead, AsignacionLead, TablaLeadsGTR, TablaLeadsAsesorVentas } from '../ui';
+import { AltaLead, AsignacionLead, TablaLeadsGTR, TablaLeadsAsesorVentas, DetallesLeadModal } from '../ui';
 import type { PermisosGTR, LeadGtrResponse } from '@entidades/lead/types';
 import styles from './PaginaGTR.module.css';
 
@@ -13,9 +13,9 @@ const PaginaGTR: React.FC = () => {
   const { currentUser } = useAuth();
   const { data: asesoresDisponibles = [], isLoading: loadingAsesores } = useAsesoresVentasConectados();
   const [activeTab, setActiveTab] = useState<'bandeja' | 'intakeLead' | 'misBandejas' | 'registros'>('bandeja');
-  const [selectedLead, setSelectedLead] = useState<LeadGtrResponse | null>(null);
+  const [selectedLeadForReasignacion, setSelectedLeadForReasignacion] = useState<LeadGtrResponse | null>(null);
+  const [selectedLeadForDetalles, setSelectedLeadForDetalles] = useState<LeadGtrResponse | null>(null);
 
-  // Derive permisos from user role
   const userRoles = currentUser?.roles ?? [];
   const isGtrSupervisor = userRoles.includes('GTR') || userRoles.includes('ADMINISTRADOR');
   const isAsesorVentas = userRoles.includes('ASESOR_DE_VENTAS');
@@ -93,8 +93,8 @@ const PaginaGTR: React.FC = () => {
                 <h2>Tablero de Supervisión</h2>
                 <TablaLeadsGTR
                   permisos={permisos}
-                  onReasignarClick={(lead) => setSelectedLead(lead)}
-                  onViewLead={(lead) => setSelectedLead(lead)}
+                  onReasignarClick={(lead) => setSelectedLeadForReasignacion(lead)}
+                  onViewLead={(lead) => setSelectedLeadForDetalles(lead)}
                 />
               </>
             )}
@@ -149,7 +149,8 @@ const PaginaGTR: React.FC = () => {
             {permisos.READ_LEADS_GTR ? (
               <TablaLeadsGTR
                 permisos={permisos}
-                onReasignarClick={(lead) => setSelectedLead(lead)}
+                onReasignarClick={(lead) => setSelectedLeadForReasignacion(lead)}
+                onViewLead={(lead) => setSelectedLeadForDetalles(lead)}
               />
             ) : (
               <div className={styles.alert} style={{ backgroundColor: '#fff3cd', borderColor: '#ffc107' }}>
@@ -161,26 +162,34 @@ const PaginaGTR: React.FC = () => {
         )}
       </main>
 
-      {/* Asignación Lead Modal */}
-      {selectedLead && (
-        <div className={styles.overlay} onClick={() => setSelectedLead(null)}>
+      {/* Detalles Lead Modal - Ver más */}
+      {selectedLeadForDetalles && (
+        <DetallesLeadModal
+          lead={selectedLeadForDetalles}
+          onClose={() => setSelectedLeadForDetalles(null)}
+        />
+      )}
+
+      {/* Asignación Lead Modal - Reasignar */}
+      {selectedLeadForReasignacion && (
+        <div className={styles.overlay} onClick={() => setSelectedLeadForReasignacion(null)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <button className={styles.closeBtn} onClick={() => setSelectedLead(null)}>
+            <button className={styles.closeBtn} onClick={() => setSelectedLeadForReasignacion(null)}>
               ✕
             </button>
-            <h3>Reasignar Lead #{selectedLead.id}</h3>
+            <h3>Reasignar Lead #{selectedLeadForReasignacion.id}</h3>
             {loadingAsesores && <p style={{ textAlign: 'center', color: '#666' }}>Cargando asesores disponibles...</p>}
             <AsignacionLead
-              idLead={selectedLead.id}
-              nombreLeadActual={selectedLead.nombreTitular}
-              asesorActual={selectedLead.nombreAsesorAsignado ? { id: 0, nombre: selectedLead.nombreAsesorAsignado } : undefined}
+              idLead={selectedLeadForReasignacion.id}
+              nombreLeadActual={selectedLeadForReasignacion.nombreTitular}
+              asesorActual={selectedLeadForReasignacion.nombreAsesorAsignado ? { id: 0, nombre: selectedLeadForReasignacion.nombreAsesorAsignado } : undefined}
               asesoresDisponibles={asesoresDisponibles}
               permisos={permisos}
               onSuccess={(asesorNombre) => {
-                setSelectedLead(null);
+                setSelectedLeadForReasignacion(null);
                 alert(`Lead reasignado a ${asesorNombre}`);
               }}
-              onCancel={() => setSelectedLead(null)}
+              onCancel={() => setSelectedLeadForReasignacion(null)}
             />
           </div>
         </div>

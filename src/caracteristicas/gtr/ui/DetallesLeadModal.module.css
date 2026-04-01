@@ -1,0 +1,256 @@
+/* DetallesLeadModal.module.css */
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+}
+
+.modal {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  z-index: 2001;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  z-index: 2002;
+  transition: color 0.2s;
+}
+
+.closeBtn:hover {
+  color: #000;
+}
+
+.container {
+  padding: 30px;
+}
+
+.section {
+  margin-bottom: 30px;
+}
+
+.section h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #eee;
+}
+
+/* Lead Info */
+.leadInfo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 15px;
+  background: #f9f9f9;
+  padding: 15px;
+  border-radius: 6px;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.label {
+  font-weight: 600;
+  color: #666;
+  min-width: 120px;
+}
+
+.value {
+  color: #333;
+  text-align: right;
+  word-break: break-word;
+}
+
+.value.badge {
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* Eventos List */
+.eventosList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.eventoItem {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.eventoHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #f5f5f5;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.eventoHeader:hover {
+  background: #eee;
+}
+
+.eventoBadge {
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 80px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.eventoDescripcion {
+  flex: 1;
+  color: #333;
+  font-weight: 500;
+}
+
+.eventoFecha {
+  color: #999;
+  font-size: 12px;
+  min-width: 160px;
+  text-align: right;
+}
+
+.eventoToggle {
+  color: #666;
+  font-size: 12px;
+  min-width: 20px;
+}
+
+.eventoDetalles {
+  background: white;
+  padding: 15px;
+  border-top: 1px solid #ddd;
+}
+
+.detalleRow {
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.detalleRow strong {
+  color: #666;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.pre {
+  background: #f5f5f5;
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  overflow-x: auto;
+  margin: 5px 0 0 0;
+  color: #333;
+}
+
+/* Empty State */
+.empty {
+  padding: 30px;
+  text-align: center;
+  color: #999;
+  background: #f9f9f9;
+  border-radius: 6px;
+}
+
+.loading {
+  padding: 30px;
+  text-align: center;
+  color: #999;
+  background: #f9f9f9;
+  border-radius: 6px;
+}
+
+.error {
+  padding: 15px;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 6px;
+  color: #721c24;
+}
+
+/* Footer */
+.footer {
+  padding: 20px 30px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.closeButton {
+  padding: 8px 16px;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.closeButton:hover {
+  background-color: #5a6268;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .modal {
+    max-width: calc(100% - 40px);
+  }
+
+  .container {
+    padding: 20px;
+  }
+
+  .leadInfo {
+    grid-template-columns: 1fr;
+  }
+
+  .eventoHeader {
+    flex-wrap: wrap;
+  }
+
+  .eventoFecha {
+    width: 100%;
+    text-align: left;
+    margin-top: 5px;
+    min-width: auto;
+  }
+}

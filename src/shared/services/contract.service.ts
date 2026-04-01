@@ -5,9 +5,9 @@
  */
 
 import { BaseService } from '@shared/lib/base.service';
-import { ContractRepository, type ContratoDetalles } from '@shared/api/repositories/contract.repository';
+import { ContractRepository } from '@shared/api/repositories/contract.repository';
 import { adaptEmpleadoResponseToEmployee } from '@shared/types';
-import type { Employee, RegistrarContratoRequest, CerrarContratoRequest, ContratoRegistroResponse } from '@shared/types';
+import type { Employee, RegistrarContratoRequest, CerrarContratoRequest, ContratoRegistroResponse, ContratoResponse } from '@shared/types';
 
 export class ContractService extends BaseService<Employee> {
   /**
@@ -52,9 +52,10 @@ export class ContractService extends BaseService<Employee> {
   }
 
   /**
-   * Obtener detalles del contrato de un empleado
+   * Obtener detalles del contrato vigente de un empleado
+   * GET /rrhh/contratos/{id}/vigente
    */
-  static async getContractDetails(empleadoId: number): Promise<ContratoDetalles> {
+  static async getContractDetails(empleadoId: number): Promise<ContratoResponse> {
     try {
       return await ContractRepository.getContractDetails(empleadoId);
     } catch (error) {

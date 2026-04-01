@@ -131,12 +131,33 @@ const AdminPage: React.FC = () => {
         empleadoId: resultado.empleadoId,
       }));
 
-      let message = `Empleado registrado correctamente con ID: ${resultado.empleadoId}`;
+      /**
+       * TODO: CREDENCIALES - Pendiente de implementación completa
+       * Decisión de producto confirmada:
+       * - Modal con botón "Copiar" para el admin (mejora UX sobre alert)
+       * - Página de bienvenida en primer login del usuario nuevo con credenciales
+       * - Envío de credenciales por email al usuario
+       * Ver ticket: [agregar referencia cuando se cree]
+       *
+       * Por ahora: mostrar credenciales en alert() legible
+       */
+      
+      let message = `✅ Empleado registrado correctamente\n`;
+      message += `═══════════════════════════════════\n`;
+      message += `ID Empleado: ${resultado.empleadoId}\n`;
 
       if (resultado.partial) {
-        message += `\n\nAtención: el contrato se registró, pero no se pudieron generar credenciales en auth-service.`;
+        message += `\n⚠️ ATENCIÓN:\n`;
+        message += `El contrato se registró, pero no se pudieron generar credenciales en auth-service.\n`;
+        message += `Detalles: ${resultado.message || 'error auth-service'}\n`;
       } else if (resultado.username && resultado.password) {
-        message += `\n\nCredenciales generadas:\nUsuario: ${resultado.username}\nContraseña: ${resultado.password}`;
+        message += `\n🔐 CREDENCIALES GENERADAS:\n`;
+        message += `───────────────────────────────────\n`;
+        message += `Usuario: ${resultado.username}\n`;
+        message += `Contraseña: ${resultado.password}\n`;
+        message += `───────────────────────────────────\n`;
+        message += `\n⚠️ Guarda estas credenciales.\n`;
+        message += `El usuario recibirá un email de bienvenida (pendiente).\n`;
       }
 
       alert(message);

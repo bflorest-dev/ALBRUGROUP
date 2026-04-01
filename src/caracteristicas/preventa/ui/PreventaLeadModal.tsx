@@ -7,6 +7,7 @@ import type {
   LeadDatosPreventaRequest,
   LeadDireccionRequest,
   LeadOfertaComercialRequest,
+  LeadAdicionalOferta,
   LeadTipificacionRequest,
 } from '@entidades/lead/types';
 import { DocumentoEnum, TipoViaEnum, TipoDomicilioEnum } from '@shared/types/backendEnums';
@@ -57,6 +58,7 @@ const isPreventaCompleta = (datos: LeadDatosPreventaRequest): boolean => {
  */
 const isDireccionCompleta = (dir: LeadDireccionRequest): boolean => {
   return (
+    isNonEmpty(dir.ubigeoDomicilio) &&
     isNonEmpty(dir.tipoDomicilio) &&
     isNonEmpty(dir.tipoVia) &&
     isNonEmpty(dir.via) &&
@@ -113,17 +115,28 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
   });
 
   const [direccion, setDireccion] = useState<LeadDireccionRequest>({
+    ubigeoDomicilio: '',
     tipoDomicilio: '',
     tipoVia: '',
     via: '',
     numero: '',
     direccion: '',
     referencia: '',
+    latitud: undefined,
+    longitud: undefined,
+    urbanizacion: '',
+    manzana: '',
+    lote: '',
+    nombreEdificio: '',
+    nombreCondominio: '',
+    piso: '',
+    interior: '',
   });
 
   const [oferta, setOferta] = useState<LeadOfertaComercialRequest>({
     idPlan: 0,
-    idPromocion: undefined,
+    idPromocionInterna: undefined,
+    idPromocionProveedor: undefined,
     adicionales: [],
   });
 
@@ -149,11 +162,12 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
 
   // Códigos de tipificaciones permitidas dinámicamente según nivel de completitud
   const getTipificacionesPermitidas = (level: CompletionLevel): string[] => {
-    const basicas = ['SIN_CONTACTO', 'SEGUIMIENTO', 'AGENDADO', 'REITERADO', 'LISTA_NEGRA'];
-    const adicionales = level >= 1 
-      ? ['RECHAZADO', 'NO_DESEA', 'NO_CALIFICA', 'ZONA_FRAUDE', 'VC_DESAPROBADA', 'CON_PROGRAMACION']
-      : [];
-    return [...basicas, ...adicionales];
+    if (level >= 1) {
+      // Nivel 1+: SOLO tipificaciones avanzadas
+      return ['RECHAZADO', 'NO_DESEA', 'NO_CALIFICA', 'ZONA_FRAUDE', 'VC_DESAPROBADA', 'CON_PROGRAMACION'];
+    }
+    // Nivel 0: Tipificaciones básicas
+    return ['SIN_CONTACTO', 'SEGUIMIENTO', 'AGENDADO', 'REITERADO', 'LISTA_NEGRA'];
   };
 
   const sortedTipificaciones = useMemo(() => {
@@ -334,10 +348,9 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
         </div>
 
         {/* Sección Flujo de Pasos */}
-        <div className={`border rounded p-3 ${completionLevel >= 1 ? '' : 'opacity-60'}`}>
+        <div className="border rounded p-3">
           <div className="mb-3 font-semibold">
             Flujo PREVENTA (Paso {step} de 3)
-            {completionLevel < 1 && <span className="text-gray-500 text-sm ml-2">Completa los campos para continuar</span>}
           </div>
 
           {step === 1 && (
@@ -464,15 +477,23 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
           )}
 
           {step === 2 && (
-            <div className={completionLevel < 2 ? 'opacity-50 pointer-events-none' : ''}>
+            <div className="space-y-3">
               <div className="space-y-3">
+                <label>
+                  Ubigeo Domicilio*:
+                  <input
+                    className="w-full border rounded px-2 py-1"
+                    value={direccion.ubigeoDomicilio ?? ''}
+                    onChange={(e) => setDireccion((v) => ({ ...v, ubigeoDomicilio: e.target.value }))}
+                    placeholder="Código de ubigeo"
+                  />
+                </label>
                 <label>
                   Tipo Domicilio*:
                   <select
                     className="w-full border rounded px-2 py-1"
                     value={direccion.tipoDomicilio ?? ''}
                     onChange={(e) => setDireccion((v) => ({ ...v, tipoDomicilio: e.target.value }))}
-                    disabled={completionLevel < 2}
                   >
                     <option value="">Seleccione un tipo de domicilio</option>
                     {enumToOptions(TipoDomicilioEnum).map((opt) => (
@@ -488,7 +509,6 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
                     className="w-full border rounded px-2 py-1"
                     value={direccion.tipoVia ?? ''}
                     onChange={(e) => setDireccion((v) => ({ ...v, tipoVia: e.target.value }))}
-                    disabled={completionLevel < 2}
                   >
                     <option value="">Seleccione un tipo de vía</option>
                     {enumToOptions(TipoViaEnum).map((opt) => (
@@ -504,7 +524,7 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
                     className="w-full border rounded px-2 py-1"
                     value={direccion.via ?? ''}
                     onChange={(e) => setDireccion((v) => ({ ...v, via: e.target.value }))}
-                    disabled={completionLevel < 2}
+                    placeholder="Nombre de la vía"
                   />
                 </label>
                 <label>
@@ -513,7 +533,7 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
                     className="w-full border rounded px-2 py-1"
                     value={direccion.numero ?? ''}
                     onChange={(e) => setDireccion((v) => ({ ...v, numero: e.target.value }))}
-                    disabled={completionLevel < 2}
+                    placeholder="Número de vía"
                   />
                 </label>
                 <label>
@@ -522,16 +542,101 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
                     className="w-full border rounded px-2 py-1"
                     value={direccion.direccion ?? ''}
                     onChange={(e) => setDireccion((v) => ({ ...v, direccion: e.target.value }))}
-                    disabled={completionLevel < 2}
+                    placeholder="Dirección completa"
                   />
                 </label>
                 <label>
-                  Referencia (opcional):
+                  Referencia:
                   <input
                     className="w-full border rounded px-2 py-1"
                     value={direccion.referencia ?? ''}
                     onChange={(e) => setDireccion((v) => ({ ...v, referencia: e.target.value }))}
-                    disabled={completionLevel < 2}
+                    placeholder="Referencias adicionales"
+                  />
+                </label>
+                <label>
+                  Latitud:
+                  <input
+                    type="number"
+                    step="0.000001"
+                    className="w-full border rounded px-2 py-1"
+                    value={direccion.latitud ?? ''}
+                    onChange={(e) => setDireccion((v) => ({ ...v, latitud: e.target.value ? Number(e.target.value) : undefined }))}
+                    placeholder="Coordenada de latitud"
+                  />
+                </label>
+                <label>
+                  Longitud:
+                  <input
+                    type="number"
+                    step="0.000001"
+                    className="w-full border rounded px-2 py-1"
+                    value={direccion.longitud ?? ''}
+                    onChange={(e) => setDireccion((v) => ({ ...v, longitud: e.target.value ? Number(e.target.value) : undefined }))}
+                    placeholder="Coordenada de longitud"
+                  />
+                </label>
+                <label>
+                  Urbanización:
+                  <input
+                    className="w-full border rounded px-2 py-1"
+                    value={direccion.urbanizacion ?? ''}
+                    onChange={(e) => setDireccion((v) => ({ ...v, urbanizacion: e.target.value }))}
+                    placeholder="Nombre de la urbanización"
+                  />
+                </label>
+                <label>
+                  Manzana:
+                  <input
+                    className="w-full border rounded px-2 py-1"
+                    value={direccion.manzana ?? ''}
+                    onChange={(e) => setDireccion((v) => ({ ...v, manzana: e.target.value }))}
+                    placeholder="Manzana"
+                  />
+                </label>
+                <label>
+                  Lote:
+                  <input
+                    className="w-full border rounded px-2 py-1"
+                    value={direccion.lote ?? ''}
+                    onChange={(e) => setDireccion((v) => ({ ...v, lote: e.target.value }))}
+                    placeholder="Lote"
+                  />
+                </label>
+                <label>
+                  Nombre Edificio:
+                  <input
+                    className="w-full border rounded px-2 py-1"
+                    value={direccion.nombreEdificio ?? ''}
+                    onChange={(e) => setDireccion((v) => ({ ...v, nombreEdificio: e.target.value }))}
+                    placeholder="Nombre del edificio"
+                  />
+                </label>
+                <label>
+                  Nombre Condominio:
+                  <input
+                    className="w-full border rounded px-2 py-1"
+                    value={direccion.nombreCondominio ?? ''}
+                    onChange={(e) => setDireccion((v) => ({ ...v, nombreCondominio: e.target.value }))}
+                    placeholder="Nombre del condominio"
+                  />
+                </label>
+                <label>
+                  Piso:
+                  <input
+                    className="w-full border rounded px-2 py-1"
+                    value={direccion.piso ?? ''}
+                    onChange={(e) => setDireccion((v) => ({ ...v, piso: e.target.value }))}
+                    placeholder="Número de piso"
+                  />
+                </label>
+                <label>
+                  Interior:
+                  <input
+                    className="w-full border rounded px-2 py-1"
+                    value={direccion.interior ?? ''}
+                    onChange={(e) => setDireccion((v) => ({ ...v, interior: e.target.value }))}
+                    placeholder="Número de interior"
                   />
                 </label>
               </div>
@@ -539,7 +644,7 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
           )}
 
           {step === 3 && (
-            <div className={completionLevel < 3 ? 'opacity-50 pointer-events-none' : ''}>
+            <div className="space-y-3">
               <div className="space-y-3">
                 <label>
                   ID Plan*:
@@ -548,39 +653,94 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
                     className="w-full border rounded px-2 py-1"
                     value={oferta.idPlan}
                     onChange={(e) => setOferta((v) => ({ ...v, idPlan: Number(e.target.value) }))}
-                    disabled={completionLevel < 3}
+                    placeholder="ID del plan"
                   />
                 </label>
                 <label>
-                  ID Promoción:
+                  ID Promoción Interna:
                   <input
                     type="number"
                     className="w-full border rounded px-2 py-1"
-                    value={oferta.idPromocion ?? ''}
+                    value={oferta.idPromocionInterna ?? ''}
                     onChange={(e) =>
-                      setOferta((v) => ({ ...v, idPromocion: e.target.value ? Number(e.target.value) : undefined }))
+                      setOferta((v) => ({ ...v, idPromocionInterna: e.target.value ? Number(e.target.value) : undefined }))
                     }
-                    disabled={completionLevel < 3}
+                    placeholder="ID de la promoción interna"
                   />
                 </label>
                 <label>
-                  Adicionales (IDs separados por coma):
+                  ID Promoción Proveedor:
                   <input
-                    type="text"
-                    value={(oferta.adicionales ?? []).join(',')}
-                    onChange={(e) =>
-                      setOferta((v) => ({
-                        ...v,
-                        adicionales: e.target.value
-                          .split(',')
-                          .map((n) => Number(n.trim()))
-                          .filter((n) => !Number.isNaN(n)),
-                      }))
-                    }
+                    type="number"
                     className="w-full border rounded px-2 py-1"
-                    disabled={completionLevel < 3}
+                    value={oferta.idPromocionProveedor ?? ''}
+                    onChange={(e) =>
+                      setOferta((v) => ({ ...v, idPromocionProveedor: e.target.value ? Number(e.target.value) : undefined }))
+                    }
+                    placeholder="ID de la promoción del proveedor"
                   />
                 </label>
+                <div className="border rounded p-3 bg-gray-50">
+                  <div className="font-semibold mb-3">Adicionales</div>
+                  <div className="space-y-2">
+                    {(oferta.adicionales ?? []).map((adi, idx) => (
+                      <div key={idx} className="flex gap-2 items-end">
+                        <label className="flex-1">
+                          ID Adicional:
+                          <input
+                            type="number"
+                            className="w-full border rounded px-2 py-1"
+                            value={adi.idAdicional}
+                            onChange={(e) => {
+                              const newAdis = [...(oferta.adicionales ?? [])];
+                              if (newAdis[idx]) {
+                                newAdis[idx].idAdicional = Number(e.target.value);
+                                setOferta((v) => ({ ...v, adicionales: newAdis }));
+                              }
+                            }}
+                            placeholder="ID del adicional"
+                          />
+                        </label>
+                        <label className="flex-1">
+                          Cantidad:
+                          <input
+                            type="number"
+                            className="w-full border rounded px-2 py-1"
+                            value={adi.cantidad}
+                            onChange={(e) => {
+                              const newAdis = [...(oferta.adicionales ?? [])];
+                              if (newAdis[idx]) {
+                                newAdis[idx].cantidad = Number(e.target.value);
+                                setOferta((v) => ({ ...v, adicionales: newAdis }));
+                              }
+                            }}
+                            placeholder="Cantidad"
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newAdis = (oferta.adicionales ?? []).filter((_, i) => i !== idx);
+                            setOferta((v) => ({ ...v, adicionales: newAdis }));
+                          }}
+                          className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newAdis = [...(oferta.adicionales ?? []), { idAdicional: 0, cantidad: 1 }];
+                        setOferta((v) => ({ ...v, adicionales: newAdis }));
+                      }}
+                      className="w-full px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                    >
+                      + Agregar Adicional
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           )}

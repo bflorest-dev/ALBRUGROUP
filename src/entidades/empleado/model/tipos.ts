@@ -1,8 +1,8 @@
 /**
- * Tipos de dominio para Empleado
- * 
- * Source of truth para el contrato de backend:
- * POST /rrhh/empleados espera exactamente estos campos
+ * POST /rrhh/empleados
+ * Registra un nuevo empleado con todos sus datos personales,
+ * de contacto, financieros y de empresa en una sola petición.
+ * Documentación oficial actualizada: 1 de abril de 2026
  */
 
 export interface RegistrarEmpleadoRequest {

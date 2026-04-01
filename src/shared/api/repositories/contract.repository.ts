@@ -5,18 +5,7 @@
  */
 
 import { rrhhHttp } from '@shared/api/httpClient';
-import type { EmpleadoResponse, RegistrarContratoRequest, CerrarContratoRequest, ContratoRegistroResponse } from '@shared/types';
-
-export interface ContratoDetalles {
-  id: number;
-  empleadoId: number;
-  regimen: string;
-  modalidad: string;
-  sueldo: number;
-  fechaInicio: string;
-  fechaFin?: string;
-  estado: string;
-}
+import type { EmpleadoResponse, RegistrarContratoRequest, CerrarContratoRequest, ContratoRegistroResponse, ContratoResponse } from '@shared/types';
 
 export class ContractRepository {
   /**
@@ -58,11 +47,11 @@ export class ContractRepository {
   }
 
   /**
-   * Obtener detalles del contrato de un empleado
-   * GET /contratos/{id}
+   * Obtener detalles del contrato vigente de un empleado
+   * GET /rrhh/contratos/{id}/vigente
    */
-  static async getContractDetails(empleadoId: number): Promise<ContratoDetalles> {
-    const response = await rrhhHttp.get<ContratoDetalles>(`/contratos/${empleadoId}`);
+  static async getContractDetails(empleadoId: number): Promise<ContratoResponse> {
+    const response = await rrhhHttp.get<ContratoResponse>(`/contratos/${empleadoId}/vigente`);
     return response.data;
   }
 }

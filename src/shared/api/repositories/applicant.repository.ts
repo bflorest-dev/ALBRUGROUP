@@ -17,7 +17,6 @@ import type {
   PostulanteResponse,
   RegistrarPostulanteRequest,
   EventoPostulanteRequest,
-  EstadoCapacitacionRequest,
 } from '@shared/types';
 
 // Etapas vÃ¡lidas segÃºn el backend
@@ -95,21 +94,13 @@ export class ApplicantRepository {
   }
 
   /**
-   * Actualizar estado de capacitaciÃ³n en bulk
-   * PATCH /postulantes/estado-capacitacion
-   */
-  static async updateEstadoCapacitacion(
-    cambios: EstadoCapacitacionRequest[]
-  ): Promise<PostulanteResponse[]> {
-    const response = await rrhhHttp.patch<PostulanteResponse[]>(
-      '/postulantes/estado-capacitacion',
-      cambios
-    );
-    return response.data;
-  }
-
-  /**
-   * Rechazar postulante por inasistencia a capacitaciÃ³n
+   * ⚠️ ENDPOINT INEXISTENTE EN BACKEND
+   * Confirmado con equipo backend 1 de abril de 2026
+   * Este método causará 404 en producción.
+   * Pendiente: definir si se implementa en backend
+   * o si se elimina del frontend.
+   * NO USAR hasta resolución.
+   * 
    * PATCH /postulantes/{id}/rechazo-inasistencia-capacitacion
    */
   static async rechazarPorInasistencia(id: number): Promise<PostulanteResponse> {

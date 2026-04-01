@@ -98,10 +98,19 @@ export function useAssignLeadMutation() {
     mutationFn: ({ idLead, data }: { idLead: number; data: LeadAsignacionRequest }) =>
       GtrRepository.assignLead(idLead, data),
     onSuccess: (_, { idLead }) => {
-      // Invalidar caches
-      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsGTR() });
-      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsAsesor() });
-      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadDetalle(idLead) });
+      // Invalidar caches usando exact: false para que coincida con queryKeys que tengan filtros adicionales
+      queryClient.invalidateQueries({ 
+        queryKey: gtrQueryKeys.leadsGTR(), 
+        exact: false 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: gtrQueryKeys.leadsAsesor(), 
+        exact: false 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: gtrQueryKeys.leadDetalle(idLead),
+        exact: false
+      });
     },
   });
 }
@@ -116,7 +125,9 @@ export function useUpdateLeadPreventaMutation() {
     mutationFn: ({ idLead, data }: { idLead: number; data: LeadDatosPreventaRequest }) =>
       GtrRepository.updateLeadPreventa(idLead, data),
     onSuccess: (_, { idLead }) => {
-      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadDetalle(idLead) });
+      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsGTR(), exact: false });
+      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsAsesor(), exact: false });
+      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadDetalle(idLead), exact: false });
     },
   });
 }
@@ -131,7 +142,9 @@ export function useUpdateLeadDireccionMutation() {
     mutationFn: ({ idLead, data }: { idLead: number; data: LeadDireccionRequest }) =>
       GtrRepository.updateLeadDireccion(idLead, data),
     onSuccess: (_, { idLead }) => {
-      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadDetalle(idLead) });
+      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsGTR(), exact: false });
+      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsAsesor(), exact: false });
+      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadDetalle(idLead), exact: false });
     },
   });
 }
@@ -146,8 +159,9 @@ export function useTypifyLeadMutation() {
     mutationFn: ({ idLead, data }: { idLead: number; data: LeadTipificacionRequest }) =>
       GtrRepository.typifyLead(idLead, data),
     onSuccess: (_, { idLead }) => {
-      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsGTR() });
-      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadDetalle(idLead) });
+      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsGTR(), exact: false });
+      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsAsesor(), exact: false });
+      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadDetalle(idLead), exact: false });
     },
   });
 }
@@ -161,9 +175,9 @@ export function useContactLeadMutation() {
   return useMutation({
     mutationFn: (idLead: number) => GtrRepository.contactLead(idLead),
     onSuccess: (_, idLead) => {
-      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsGTR() });
-      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsAsesor() });
-      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadDetalle(idLead) });
+      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsGTR(), exact: false });
+      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsAsesor(), exact: false });
+      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadDetalle(idLead), exact: false });
     },
   });
 }

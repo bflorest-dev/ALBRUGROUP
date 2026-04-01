@@ -50,11 +50,16 @@ export interface LeadDireccionRequest {
   interior?: string;
 }
 
+export interface LeadAdicionalOferta {
+  idAdicional: number;
+  cantidad: number;
+}
+
 export interface LeadOfertaComercialRequest {
-  idCampana?: number;
-  idPlan?: number;
-  idPromocion?: number;
-  adicionales?: number[];
+  idPlan: number;
+  idPromocionInterna?: number;
+  idPromocionProveedor?: number;
+  adicionales?: LeadAdicionalOferta[];
 }
 
 export interface LeadTipificacionRequest {
