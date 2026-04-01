@@ -80,10 +80,10 @@ export function useCreateLeadMutation() {
   return useMutation({
     mutationFn: (data: LeadIntakeRequest) => GtrRepository.createLead(data),
     onSuccess: () => {
-      // Invalidar caches relevantes (incluyendo variante con fecha) para refrescar Tablero
-      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsGTR() });
-      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsGTRByDate() });
-      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsAsesor() });
+      // Invalidar caches relevantes usando prefix matching
+      // exact: false permite que invalide todas las queries que comiencen con estas keys
+      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsGTR(), exact: false });
+      queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsAsesor(), exact: false });
     },
   });
 }

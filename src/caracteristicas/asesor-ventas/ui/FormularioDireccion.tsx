@@ -1,5 +1,7 @@
 import React, { FormEvent, useState } from 'react';
 import { useActualizarDireccionMutation } from '../hooks';
+import { TipoViaEnum, TipoDomicilioEnum } from '@shared/types/backendEnums';
+import { enumToOptions } from '@shared/utils/enumToOptions';
 
 interface FormularioDireccionProps {
   idLead: number;
@@ -9,18 +11,26 @@ interface FormularioDireccionProps {
 /**
  * Formulario para actualizar dirección del cliente
  * Endpoint: PATCH /leads/{idLead}/direccion
+ * 
+ * FSD: caracteristicas/asesor-ventas/ui
+ * Contrato: LeadDireccionRequest
  */
 export const FormularioDireccion: React.FC<FormularioDireccionProps> = ({ idLead, onSuccess }) => {
   const [form, setForm] = useState({
-    tipoVia: '',
+    tipoVia: TipoViaEnum.CALLE,
     via: '',
     numero: '',
+    tipoDomicilio: TipoDomicilioEnum.MULTIFAMILIAR,
     departamento: '',
     ciudad: '',
     codigoPostal: '',
   });
 
   const { mutate, isPending, error } = useActualizarDireccionMutation();
+
+  // Generar opciones desde enums
+  const tipoViaOptions = enumToOptions(TipoViaEnum);
+  const tipoDomicilioOptions = enumToOptions(TipoDomicilioEnum);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -33,6 +43,7 @@ export const FormularioDireccion: React.FC<FormularioDireccionProps> = ({ idLead
       tipoVia: form.tipoVia,
       via: form.via,
       numero: form.numero,
+      tipoDomicilio: form.tipoDomicilio,
       ciudad: form.ciudad,
       ...(form.departamento && { departamento: form.departamento }),
       ...(form.codigoPostal && { codigoPostal: form.codigoPostal }),
@@ -51,72 +62,106 @@ export const FormularioDireccion: React.FC<FormularioDireccionProps> = ({ idLead
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1">Tipo de Vía</label>
-        <select
-          value={form.tipoVia}
-          onChange={(e) => setForm({ ...form, tipoVia: e.target.value })}
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">-- Seleccione --</option>
-          <option value="Calle">Calle</option>
-          <option value="Carrera">Carrera</option>
-          <option value="Avenida">Avenida</option>
-          <option value="Transversal">Transversal</option>
-          <option value="Diagonal">Diagonal</option>
-        </select>
+      {/* Tipo de Vía y Vía */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Tipo de Vía <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={form.tipoVia}
+            onChange={(e) => setForm({ ...form, tipoVia: e.target.value })}
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {tipoViaOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Vía <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={form.via}
+            onChange={(e) => setForm({ ...form, via: e.target.value })}
+            placeholder="Ej: 5"
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1">Vía</label>
-        <input
-          type="text"
-          value={form.via}
-          onChange={(e) => setForm({ ...form, via: e.target.value })}
-          placeholder="Ej: 5"
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+      {/* Número + Tipo de Domicilio */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Número <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={form.numero}
+            onChange={(e) => setForm({ ...form, numero: e.target.value })}
+            placeholder="Ej: 45"
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Tipo de Domicilio
+          </label>
+          <select
+            value={form.tipoDomicilio}
+            onChange={(e) => setForm({ ...form, tipoDomicilio: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {tipoDomicilioOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1">Número</label>
-        <input
-          type="text"
-          value={form.numero}
-          onChange={(e) => setForm({ ...form, numero: e.target.value })}
-          placeholder="Ej: 45"
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+      {/* Departamento + Ciudad */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Departamento (opcional)
+          </label>
+          <input
+            type="text"
+            value={form.departamento}
+            onChange={(e) => setForm({ ...form, departamento: e.target.value })}
+            placeholder="Ej: 304"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Ciudad <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={form.ciudad}
+            onChange={(e) => setForm({ ...form, ciudad: e.target.value })}
+            placeholder="Ej: Bogotá"
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1">
-          Departamento (opcional)
-        </label>
-        <input
-          type="text"
-          value={form.departamento}
-          onChange={(e) => setForm({ ...form, departamento: e.target.value })}
-          placeholder="Ej: 304"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1">Ciudad</label>
-        <input
-          type="text"
-          value={form.ciudad}
-          onChange={(e) => setForm({ ...form, ciudad: e.target.value })}
-          placeholder="Ej: Bogotá"
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
+      {/* Código Postal */}
       <div>
         <label className="block text-sm font-semibold text-gray-700 mb-1">
           Código Postal (opcional)

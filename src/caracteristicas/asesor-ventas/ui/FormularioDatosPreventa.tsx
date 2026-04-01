@@ -1,5 +1,7 @@
 import React, { FormEvent, useState } from 'react';
 import { useActualizarDatosPreventaMutation } from '../hooks';
+import { DocumentoEnum, DistritoEnum } from '@shared/types/backendEnums';
+import { enumToOptions } from '@shared/utils/enumToOptions';
 
 interface FormularioDatosPreventaProps {
   idLead: number;
@@ -9,30 +11,37 @@ interface FormularioDatosPreventaProps {
 /**
  * Formulario para actualizar datos de preventa (información personal del cliente)
  * Endpoint: PATCH /leads/{idLead}/datos-preventa
+ * 
+ * FSD: caracteristicas/asesor-ventas/ui
+ * Contrato: LeadDatosPreventaRequest
  */
 export const FormularioDatosPreventa: React.FC<FormularioDatosPreventaProps> = ({
   idLead,
   onSuccess,
 }) => {
   const [form, setForm] = useState({
-    nombreTitular: '',
-    apellidoTitular: '',
-    tipoDocumento: 'CC',
-    numeroDocumento: '',
+    tipoDocumento: 'DNI',
+    numeroDocumentoTitularServicio: '',
+    nombreTitularServicio: '',
+    ubigeoNacimiento: '',
     celularRegistro: '',
     celularReferencia: '',
     correo: '',
-    fechaNacimiento: '',
+    numeroDocumentoTitularCelularRegistro: '',
+    nombreTitularCelularRegistro: '',
   });
 
   const { mutate, isPending, error } = useActualizarDatosPreventaMutation();
 
+  // Generar opciones desde enums
+  const tipoDocumentoOptions = enumToOptions(DocumentoEnum);
+  const ubigeoNacimientoOptions = enumToOptions(DistritoEnum);
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (
-      !form.nombreTitular ||
-      !form.apellidoTitular ||
-      !form.numeroDocumento ||
+      !form.numeroDocumentoTitularServicio ||
+      !form.nombreTitularServicio ||
       !form.celularRegistro ||
       !form.correo
     ) {
@@ -41,14 +50,15 @@ export const FormularioDatosPreventa: React.FC<FormularioDatosPreventaProps> = (
     }
 
     const payload = {
-      nombreTitular: form.nombreTitular,
-      apellidoTitular: form.apellidoTitular,
       tipoDocumento: form.tipoDocumento,
-      numeroDocumento: form.numeroDocumento,
+      numeroDocumentoTitularServicio: form.numeroDocumentoTitularServicio,
+      nombreTitularServicio: form.nombreTitularServicio,
       celularRegistro: form.celularRegistro,
       correo: form.correo,
+      ...(form.ubigeoNacimiento && { ubigeoNacimiento: form.ubigeoNacimiento }),
       ...(form.celularReferencia && { celularReferencia: form.celularReferencia }),
-      ...(form.fechaNacimiento && { fechaNacimiento: form.fechaNacimiento }),
+      ...(form.numeroDocumentoTitularCelularRegistro && { numeroDocumentoTitularCelularRegistro: form.numeroDocumentoTitularCelularRegistro }),
+      ...(form.nombreTitularCelularRegistro && { nombreTitularCelularRegistro: form.nombreTitularCelularRegistro }),
     };
 
     mutate(
@@ -64,57 +74,34 @@ export const FormularioDatosPreventa: React.FC<FormularioDatosPreventaProps> = (
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre</label>
-          <input
-            type="text"
-            value={form.nombreTitular}
-            onChange={(e) => setForm({ ...form, nombreTitular: e.target.value })}
-            placeholder="Nombre"
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Apellido</label>
-          <input
-            type="text"
-            value={form.apellidoTitular}
-            onChange={(e) => setForm({ ...form, apellidoTitular: e.target.value })}
-            placeholder="Apellido"
-            required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-      </div>
-
+      {/* Tipo de Documento + Número */}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">
-            Tipo de Documento
+            Tipo de Documento <span className="text-red-500">*</span>
           </label>
           <select
             value={form.tipoDocumento}
             onChange={(e) => setForm({ ...form, tipoDocumento: e.target.value })}
+            required
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="CC">Cédula de Ciudadanía</option>
-            <option value="CE">Cédula de Extranjería</option>
-            <option value="PP">Pasaporte</option>
-            <option value="TI">Tarjeta de Identidad</option>
+            {tipoDocumentoOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
           </select>
         </div>
 
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">
-            Número de Documento
+            Número de Documento <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
-            value={form.numeroDocumento}
-            onChange={(e) => setForm({ ...form, numeroDocumento: e.target.value })}
+            value={form.numeroDocumentoTitularServicio}
+            onChange={(e) => setForm({ ...form, numeroDocumentoTitularServicio: e.target.value })}
             placeholder="Ej: 1234567890"
             required
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -122,10 +109,45 @@ export const FormularioDatosPreventa: React.FC<FormularioDatosPreventaProps> = (
         </div>
       </div>
 
+      {/* Nombre Titular */}
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 mb-1">
+          Nombre Titular <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          value={form.nombreTitularServicio}
+          onChange={(e) => setForm({ ...form, nombreTitularServicio: e.target.value })}
+          placeholder="Nombre completo del titular"
+          required
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      {/* Ubicación Nacimiento - SELECT */}
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 mb-1">
+          Lugar de Nacimiento (opcional)
+        </label>
+        <select
+          value={form.ubigeoNacimiento}
+          onChange={(e) => setForm({ ...form, ubigeoNacimiento: e.target.value })}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">-- Seleccione distrito --</option>
+          {ubigeoNacimientoOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Celulares */}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">
-            Celular Registro
+            Celular Registro <span className="text-red-500">*</span>
           </label>
           <input
             type="tel"
@@ -151,8 +173,11 @@ export const FormularioDatosPreventa: React.FC<FormularioDatosPreventaProps> = (
         </div>
       </div>
 
+      {/* Correo */}
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1">Correo</label>
+        <label className="block text-sm font-semibold text-gray-700 mb-1">
+          Correo <span className="text-red-500">*</span>
+        </label>
         <input
           type="email"
           value={form.correo}
@@ -163,16 +188,33 @@ export const FormularioDatosPreventa: React.FC<FormularioDatosPreventaProps> = (
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-1">
-          Fecha de Nacimiento (opcional)
-        </label>
-        <input
-          type="date"
-          value={form.fechaNacimiento}
-          onChange={(e) => setForm({ ...form, fechaNacimiento: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+      {/* Campos adicionales: Documento y Nombre del titular del celular de registro */}
+      <div className="grid grid-cols-2 gap-4 border-t pt-4 mt-4">
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Documento Titular Celular Registro (opcional)
+          </label>
+          <input
+            type="text"
+            value={form.numeroDocumentoTitularCelularRegistro}
+            onChange={(e) => setForm({ ...form, numeroDocumentoTitularCelularRegistro: e.target.value })}
+            placeholder="Ej: 1234567890"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Nombre Titular Celular Registro (opcional)
+          </label>
+          <input
+            type="text"
+            value={form.nombreTitularCelularRegistro}
+            onChange={(e) => setForm({ ...form, nombreTitularCelularRegistro: e.target.value })}
+            placeholder="Nombre del titular"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
       </div>
 
       {error && <div className="text-red-600 text-sm">Error al actualizar datos de preventa</div>}

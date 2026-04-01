@@ -157,3 +157,17 @@ export enum EmpresaContratistaEnum {
   ALBRU = 'ALBRU',
   RUNA = 'RUNA',
 }
+
+/**
+ * Enums para LEADS - Direcciones (LeadDireccionRequest)
+ * Definidos en Endpoints.md - Sección 6.3 Enums de Leads
+ */
+export enum TipoViaEnum {
+  JIRON = 'JIRON',
+  CALLE = 'CALLE',
+}
+
+export enum TipoDomicilioEnum {
+  MULTIFAMILIAR = 'MULTIFAMILIAR',
+  JURIDICA = 'JURIDICA',
+}
