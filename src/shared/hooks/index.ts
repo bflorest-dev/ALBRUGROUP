@@ -64,6 +64,7 @@ export { useEmployeesSync } from '@caracteristicas/registrar-empleado/modelo/gan
 export { useBackofficeLeads } from './useBackofficeLeads';
 export { useTipification } from './useTipification';
 export { useAsesoresVentasConectados, useAsesoresConectados } from './useAsesoresConectados';
+export { useHeartbeat } from './useHeartbeat';
 
 // Compatibility aliases (Spanish/English)
 export const useSidebar = () => ({ collapsed: false, toggle: () => {} });

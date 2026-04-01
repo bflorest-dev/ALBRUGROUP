@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { User } from './types';
 import { AuthService } from '@entidades/auth/model';
@@ -23,6 +23,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return stored ? JSON.parse(stored) : null;
   });
 
+  // Trackear usuario anterior para detectar transiciones (login vs logout)
+  const prevUserRef = useRef<User | null>(null);
+
   useEffect(() => {
     AuthService.initialize();
   }, []);
@@ -31,15 +34,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * Sincronizar presencia con servidor cuando el usuario se autentica/desautentica
    * 
    * Casos manejados:
-   * 1. Login exitoso: currentUser se actualiza → markOnline() + updateDisponibilidad()
+   * 1. Login exitoso: currentUser = null → {user} → markOnline() + updateDisponibilidad()
    * 2. Recarga de página: currentUser del localStorage → markOnline() + updateDisponibilidad()
-   * 3. Logout: currentUser = null → cleanup dispara markOffline()
+   * 3. Logout: currentUser = {user} → null → markOffline() (en el método logout())
+   * 4. Desmontaje: Si se desmonta con usuario activo, marcar offline
+   * 
+   * IMPORTANTE: El cleanup aquí NUNCA se ejecuta durante login porque
+   * solo lo disparamos cuando pasamos de user → null (logout), no null → user.
    * 
    * Manejo de errores: Los errores se loguean pero no bloquean el acceso
    */
   useEffect(() => {
     if (!currentUser) {
       // Usuario deslogueado, no hacer nada
+      prevUserRef.current = null;
       return;
     }
 
@@ -50,13 +58,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const registerPresence = async () => {
       try {
-        // Paso 1: Marcar como online
+        // Paso 1: Marcar como online (esperar respuesta 200)
         console.log('[AuthContext] 🟢 POST /presence/online');
         await PresenceRepository.markOnline();
 
         if (!isActive) return; // Verificar si el componente se desmontó
 
-        // Paso 2: Establecer disponibilidad inicial
+        // Paso 2: Establecer disponibilidad inicial (SOLO después de confirmar online)
         console.log('[AuthContext] 🟡 PATCH /presence/disponibilidad/DISPONIBLE');
         await PresenceRepository.updateDisponibilidad('DISPONIBLE');
 
@@ -68,16 +76,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
 
+    // Guardar usuario anterior para comparación
+    prevUserRef.current = currentUser;
+
     // Ejecutar registro de presencia
     registerPresence();
 
-    // Cleanup: Marcar como offline cuando se desloguea
+    // Cleanup: Solo marcar offline cuando REALMENTE hacemos logout
+    // (transición de user → null), NO en otras circunstancias
     return () => {
       isActive = false;
-      PresenceRepository.markOffline()
-        .catch((err) => {
-          console.warn('[AuthContext] ⚠️ Error al marcar offline en cleanup:', err);
-        });
+      // CRÍTICO: Verificar que currentUser CAMBIÓ A NULL, no solo si prevUserRef tiene valor
+      // Esto evita markOffline() espurio en StrictMode o cuando currentUser no cambió
+      if (prevUserRef.current && !currentUser) {
+        console.log('[AuthContext] 🔴 POST /presence/offline (desde cleanup - logout real)');
+        PresenceRepository.markOffline()
+          .catch((err) => {
+            console.warn('[AuthContext] ⚠️ Error al marcar offline en cleanup:', err);
+          });
+      }
     };
   }, [currentUser]);
 
@@ -101,6 +118,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // No bloquear el logout si presencia falla
       });
 
+    // Cambiar currentUser a null dispara el cleanup que verifica !currentUser
     setCurrentUser(null);
     AuthService.logout();
   };
