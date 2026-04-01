@@ -11,10 +11,11 @@ import { useAuth } from '@shared/auth/useAuth';
 import { AuthService } from '@shared/services/auth.service';
 import { PuestoTrabajoEnum } from '@shared/types';
 import { BiUserPlus, BiIdCard } from 'react-icons/bi';
+import { TipificacionesAdmin } from '@caracteristicas/tipificaciones/ui/TipificacionesAdmin';
 import type { NewApplicantFormData, NewEmployeeFormData, UserProfile, RegistrarContratoRequest } from '@shared/types';
 import './AdminPage.css';
 
-type AdminTab = 'postulante' | 'empleado' | 'credenciales';
+type AdminTab = 'postulante' | 'empleado' | 'credenciales' | 'tipificaciones';
 
 const AdminPage: React.FC = () => {
   const [tab, setTab] = useState<AdminTab>('postulante');
@@ -55,14 +56,25 @@ const AdminPage: React.FC = () => {
     { label: 'Registrar Postulante', icon: BiUserPlus, active: tab === 'postulante' },
     { label: 'Registrar Empleado', icon: BiIdCard, active: tab === 'empleado' },
     { label: 'Credenciales Generadas', icon: BiUserPlus, active: tab === 'credenciales' },
+    { label: 'Tipificaciones', icon: BiIdCard, active: tab === 'tipificaciones' },
   ];
 
   const handleNavClick = (label: string) => {
     if (label.includes('Postulante')) {
       setTab('postulante');
+      return;
     }
     if (label.includes('Empleado')) {
       setTab('empleado');
+      return;
+    }
+    if (label.includes('Credenciales')) {
+      setTab('credenciales');
+      return;
+    }
+    if (label.includes('Tipificaciones')) {
+      setTab('tipificaciones');
+      return;
     }
   };
 
@@ -282,6 +294,13 @@ const AdminPage: React.FC = () => {
                   </div>
                 </>
               )}
+            </section>
+          )}
+
+          {tab === 'tipificaciones' && (
+            <section>
+              <h2>Administración de Tipificaciones</h2>
+              <TipificacionesAdmin />
             </section>
           )}
 

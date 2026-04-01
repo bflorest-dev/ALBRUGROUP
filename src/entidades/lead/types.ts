@@ -6,10 +6,11 @@
 // ========== REQUEST TYPES ==========
 
 export interface LeadIntakeRequest {
-  prefijo: string; // ej: "+51"
-  lead: string; // Solo números
+  numTelefono?: string; // opcional, formato +51987654321
+  prefijo?: string;     // prefijo como +51
+  lead?: string;        // número como 987654321
   idCampana: number;
-  base: 'WHATSAPP' | string; // Base del lead (canal)
+  base: 'WHATSAPP' | 'MESSENGER' | 'REFERIDO' | 'MASIVO' | string;
 }
 
 export interface LeadAsignacionRequest {

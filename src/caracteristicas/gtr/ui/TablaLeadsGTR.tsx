@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import { useAuth } from '@shared/auth/useAuth';
 import { Badge, Spinner, Alert, Button } from '@shared/ui/utilities/Utilities';
 import { useLeadsGTR, useContactLeadMutation, useAssignLeadMutation } from '../hooks/useGtrQueries';
 import type { LeadGtrResponse, PermisosGTR } from '@entidades/lead/types';
@@ -13,6 +14,7 @@ import styles from './TablaLeadsGTR.module.css';
 interface TablaLeadsGTRProps {
   permisos: PermisosGTR;
   onReasignarClick?: (lead: LeadGtrResponse, asesores: Array<{ id: number; nombre: string }>) => void;
+  onViewLead?: (lead: LeadGtrResponse) => void;
   filtros?: {
     campana?: string;
     asesor?: string;
@@ -32,6 +34,7 @@ interface TablaLeadsGTRProps {
 export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
   permisos,
   onReasignarClick,
+  onViewLead,
   filtros,
   itemsPerPage = 20,
 }) => {
@@ -60,6 +63,36 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
 
   // ========== MUTACIONES ==========
   const contactMutation = useContactLeadMutation();
+  const assignMutation = useAssignLeadMutation();
+  const { currentUser } = useAuth();
+  const [feedbackMessage, setFeedbackMessage] = useState<string>('');
+  const [feedbackTipo, setFeedbackTipo] = useState<'success' | 'error'>('success');
+
+  const handleAssignToMe = async (lead: LeadGtrResponse) => {
+    if (!currentUser?.id || !currentUser?.name) {
+      setFeedbackTipo('error');
+      setFeedbackMessage('No se pudo obtener usuario actual para asignación.');
+      return;
+    }
+
+    try {
+      await assignMutation.mutateAsync({
+        idLead: lead.id,
+        data: {
+          idAsesorAsignado: Number(currentUser.id),
+          nombreAsesorAsignado: currentUser.name,
+        },
+      });
+
+      setFeedbackTipo('success');
+      setFeedbackMessage(`Lead #${lead.id} asignado a ${currentUser.name}`);
+    } catch (err) {
+      setFeedbackTipo('error');
+      setFeedbackMessage(
+        err instanceof Error ? err.message : 'Error al asignar lead al usuario actual.'
+      );
+    }
+  };
 
   // ========== FUNCIONES DE FILTRADO ==========
   const filteredLeads = useMemo(() => {
@@ -110,14 +143,6 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
   }, [filteredLeads, currentPage, itemsPerPage]);
 
   // ========== HANDLERS ==========
-  const handleContactLead = async (leadId: number) => {
-    try {
-      await contactMutation.mutateAsync(leadId);
-    } catch (error) {
-      console.error('Error contacting lead:', error);
-    }
-  };
-
   const toggleSelectLead = (leadId: number) => {
     const newSelected = new Set(selectedLeads);
     if (newSelected.has(leadId)) {
@@ -244,6 +269,15 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
       </div>
 
       {/* CONTADOR */}
+      {feedbackMessage && (
+        <Alert
+          type={feedbackTipo === 'success' ? 'success' : 'error'}
+          message={feedbackMessage}
+          dismissible
+          onClose={() => setFeedbackMessage('')}
+        />
+      )}
+
       <div className={styles.stats}>
         <span className={styles.total}>
           {filteredLeads.length} leads encontrados
@@ -341,25 +375,26 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
                   </td>
                   <td className={styles.colAcciones}>
                     <div className={styles.actionButtons}>
-                      {permisos.ASSIGN_LEADS && (
-                        <button
-                          className={styles.actionBtn}
-                          title="Reasignar"
-                          onClick={() => onReasignarClick?.(lead, [])}
-                          disabled={false}
-                        >
-                          🔄
-                        </button>
-                      )}
-                      {permisos.CONTACT_LEADS && (
-                        <button
-                          className={styles.actionBtn}
-                          title="Contactar"
-                          onClick={() => handleContactLead(lead.id)}
-                          disabled={contactMutation.isPending}
-                        >
-                          ☎️
-                        </button>
+                      {permisos.ASSIGN_LEADS ? (
+                        <>
+                          <button
+                            className={styles.actionBtn}
+                            title="Reasignar"
+                            onClick={() => onReasignarClick?.(lead, [])}
+                          >
+                            🔁
+                          </button>
+
+                          <button
+                            className={styles.actionBtn}
+                            title="Ver más"
+                            onClick={() => onViewLead?.(lead)}
+                          >
+                            ℹ️
+                          </button>
+                        </>
+                      ) : (
+                        <span style={{ color: '#888', fontSize: '0.78rem' }}>Sin permiso</span>
                       )}
                     </div>
                   </td>

@@ -10,7 +10,7 @@ const PaginaAutenticacionAvanzada = lazy(() =>
     (m) => ({ default: m.PaginaAutenticacionAvanzada })
   )
 );
-const PaginaPanel = lazy(() => import('@pages/PaginaPanel'));
+const PaginaPanel = lazy(() => import('@caracteristicas/admin/pages/AdminPage'));
 const PaginaRRHH = lazy(() => import('@caracteristicas/rrhh/pages/PaginaRRHH'));
 const PaginaReclutamiento = lazy(() => import('@caracteristicas/reclutamiento/pages/PaginaReclutamiento'));
 const PaginaCapacitacion = lazy(() => import('@caracteristicas/capacitacion/pages/PaginaCapacitacion'));

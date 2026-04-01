@@ -200,6 +200,21 @@ addAuthInterceptor(leadsHttp, 'leadsHttp');
 addErrorInterceptor(leadsHttp, 'leadsHttp');
 
 /**
+ * Cliente para PRESENCE (Disponibilidad y Conectados)
+ * - CON JWT requerido (Bearer token)
+ * - Usado por: PresenceRepository
+ */
+export const presenceHttp: AxiosInstance = axios.create({
+  baseURL: env.PRESENCE_BASE_URL,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+addAuthInterceptor(presenceHttp, 'presenceHttp');
+addErrorInterceptor(presenceHttp, 'presenceHttp');
+
+/**
  * Alias para backward compatibility
  * Algunos repos importan `http` en lugar de `rrhhHttp`
  */

@@ -1,4 +1,4 @@
-import { leadsHttp } from '@shared/api';
+import { leadsHttp, LeadsRepository } from '@shared/api';
 import type {
   LeadAsesorVentasResponse,
   ContactoRequest,
@@ -30,10 +30,7 @@ export class AsesorVentasRepository {
    * Obtiene la bandeja de leads asignados al asesor actual
    */
   static async getBandejaLeads(): Promise<LeadAsesorVentasResponse[]> {
-    const response = await leadsHttp.get<{ leads: LeadAsesorVentasResponse[] }>(
-      `${this.baseUrl}/asesor-ventas`
-    );
-    return response.data.leads;
+    return LeadsRepository.getBandejaAsesorVentas();
   }
 
   /**

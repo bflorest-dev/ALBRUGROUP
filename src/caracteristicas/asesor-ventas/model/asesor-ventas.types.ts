@@ -1,18 +1,13 @@
 /**
  * ASESOR_VENTAS Types
  * Tipos para leads asignados al asesor de ventas con operaciones permitidas
+ *
+ * Este módulo delega el tipo desde shared/types/lead.responses
  */
 
-export interface LeadAsesorVentasResponse {
-  id: number;
-  numeroLead: string;
-  nombreCliente: string;
-  telefonoContacto: string;
-  correoContacto: string;
-  producto: string;
-  estado: 'NUEVO' | 'EN_CONTACTO' | 'TIPIFICADO' | 'CONVERTIDO' | 'DESCARTADO';
-  fechaRegistro: string;
-}
+import type { LeadAsesorVentasResponse as SharedLeadAsesorVentasResponse } from '@shared/types';
+
+export type LeadAsesorVentasResponse = SharedLeadAsesorVentasResponse;
 
 export interface ContactoRequest {
   fecha: string;

@@ -29,7 +29,13 @@ interface AltaLeadProps {
  */
 export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
   // ========== ESTADO FORMULARIO ==========
-  const [formData, setFormData] = useState<LeadIntakeRequest>({
+  // Mantenemos prefijo y lead separados para UX, pero los combinamos al enviar
+  const [formData, setFormData] = useState<{
+    prefijo: string;
+    lead: string;
+    idCampana: number;
+    base: 'WHATSAPP' | 'MESSENGER' | 'REFERIDO' | 'MASIVO';
+  }>({
     prefijo: '',
     lead: '',
     idCampana: 0,
@@ -75,7 +81,10 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
   };
 
   // ========== HANDLERS ==========
-  const handleInputChange = (field: keyof LeadIntakeRequest, value: string | number) => {
+  const handleInputChange = (
+    field: 'prefijo' | 'lead' | 'idCampana' | 'base',
+    value: string | number
+  ) => {
     setFormData((prev) => ({
       ...prev,
       [field]: field === 'idCampana' ? Number(value) : String(value),
@@ -109,7 +118,22 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
     }
 
     try {
-      await createLeadMutation.mutateAsync(formData);
+      // Payload completo para evitar interpretaciones incorrectas en backend.
+      // Enviamos los 4 campos que pueden ser usados por el endpoint:
+      // - prefijo + lead (deseado)
+      // - numTelefono (combinado, para compatibilidad con parsing antiguo)
+      const payload = {
+        prefijo: formData.prefijo,
+        lead: formData.lead,
+        numTelefono: `${formData.prefijo}${formData.lead}`,
+        idCampana: formData.idCampana,
+        base: formData.base,
+      };
+
+      console.log('payload enviado', payload);
+      console.log('prefijo', payload.prefijo, 'lead', payload.lead, 'numTelefono', payload.numTelefono);
+
+      await createLeadMutation.mutateAsync(payload);
 
       // Reset form
       setFormData({
@@ -169,7 +193,7 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
           value={formData.prefijo}
           onChange={(prefix) => handleInputChange('prefijo', prefix)}
           label="Prefijo Telefónico"
-          placeholder="Ej: +34 o 628123456"
+          placeholder="Selecciona un país"
           error={errors.prefijo}
         />
 

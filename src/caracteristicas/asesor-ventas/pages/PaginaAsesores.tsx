@@ -4,6 +4,7 @@ import {
   TablaLeadsAsesorVentas,
   DetalleLeadModal,
 } from '../ui';
+import { PreventaLeadModal } from '@caracteristicas/preventa/ui/PreventaLeadModal';
 import type { LeadAsesorVentasResponse } from '../model';
 
 /**
@@ -19,12 +20,19 @@ import type { LeadAsesorVentasResponse } from '../model';
 const PaginaAsesores: React.FC = () => {
   const [selectedLead, setSelectedLead] = useState<LeadAsesorVentasResponse | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [selectedLeadPreventa, setSelectedLeadPreventa] = useState<LeadAsesorVentasResponse | null>(null);
+  const [showPreventaModal, setShowPreventaModal] = useState(false);
 
   const { data: leads = [], isLoading, error, refetch } = useBandejaLeads();
 
   const handleSelectLead = (lead: LeadAsesorVentasResponse) => {
     setSelectedLead(lead);
     setShowModal(true);
+  };
+
+  const handlePreventaLead = (lead: LeadAsesorVentasResponse) => {
+    setSelectedLeadPreventa(lead);
+    setShowPreventaModal(true);
   };
 
   const handleCloseModal = () => {
@@ -68,6 +76,7 @@ const PaginaAsesores: React.FC = () => {
           leads={leads}
           isLoading={isLoading}
           onSelectLead={handleSelectLead}
+          onPreventa={handlePreventaLead}
         />
       </div>
 
@@ -77,6 +86,18 @@ const PaginaAsesores: React.FC = () => {
           lead={selectedLead}
           isOpen={showModal}
           onClose={handleCloseModal}
+        />
+      )}
+
+      {selectedLeadPreventa && (
+        <PreventaLeadModal
+          idLead={selectedLeadPreventa.id}
+          isOpen={showPreventaModal}
+          onClose={() => {
+            setShowPreventaModal(false);
+            setSelectedLeadPreventa(null);
+            refetch();
+          }}
         />
       )}
 
@@ -90,19 +111,19 @@ const PaginaAsesores: React.FC = () => {
           <div className="bg-green-50 rounded-lg p-4 border border-green-200">
             <p className="text-sm text-green-600 font-semibold">Nuevos</p>
             <p className="text-2xl font-bold text-green-900">
-              {leads.filter((l) => l.estado === 'NUEVO').length}
+              {leads.filter((l) => l.estadoSeguimiento === 'NUEVO').length}
             </p>
           </div>
           <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
             <p className="text-sm text-yellow-600 font-semibold">En Contacto</p>
             <p className="text-2xl font-bold text-yellow-900">
-              {leads.filter((l) => l.estado === 'EN_CONTACTO').length}
+              {leads.filter((l) => l.estadoSeguimiento === 'EN_CONTACTO').length}
             </p>
           </div>
           <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
             <p className="text-sm text-purple-600 font-semibold">Tipificados</p>
             <p className="text-2xl font-bold text-purple-900">
-              {leads.filter((l) => l.estado === 'TIPIFICADO').length}
+              {leads.filter((l) => l.estadoSeguimiento === 'TIPIFICADO').length}
             </p>
           </div>
         </div>
