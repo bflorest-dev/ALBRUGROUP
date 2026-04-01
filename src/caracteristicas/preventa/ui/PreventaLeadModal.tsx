@@ -147,12 +147,19 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
 
   const tipificaciones = catalogo.tipificaciones || [];
 
-  // Códigos de tipificaciones permitidas para mostrar inicialmente
-  const TIPIFICACIONES_PERMITIDAS = ['SIN_CONTACTO', 'SEGUIMIENTO', 'AGENDADO', 'REITERADO', 'LISTA_NEGRA'];
+  // Códigos de tipificaciones permitidas dinámicamente según nivel de completitud
+  const getTipificacionesPermitidas = (level: CompletionLevel): string[] => {
+    const basicas = ['SIN_CONTACTO', 'SEGUIMIENTO', 'AGENDADO', 'REITERADO', 'LISTA_NEGRA'];
+    const adicionales = level >= 1 
+      ? ['RECHAZADO', 'NO_DESEA', 'NO_CALIFICA', 'ZONA_FRAUDE', 'VC_DESAPROBADA', 'CON_PROGRAMACION']
+      : [];
+    return [...basicas, ...adicionales];
+  };
 
   const sortedTipificaciones = useMemo(() => {
+    const permitidas = getTipificacionesPermitidas(completionLevel);
     const sorted = [...tipificaciones]
-      .filter((t) => TIPIFICACIONES_PERMITIDAS.includes(t.codigo))
+      .filter((t) => permitidas.includes(t.codigo))
       .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
       .map((t) => ({
         ...t,
@@ -160,7 +167,7 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
       }));
 
     return sorted;
-  }, [catalogo, tipificaciones]);
+  }, [catalogo, tipificaciones, completionLevel]);
 
   useEffect(() => {
     if (!isOpen) {
