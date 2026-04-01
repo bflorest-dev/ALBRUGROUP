@@ -19,6 +19,7 @@ interface PreventaLeadModalProps {
 }
 
 type Step = 1 | 2 | 3;
+type CompletionLevel = 0 | 1 | 2 | 3; // 0: sin data, 1: preventa, 2:+dirección, 3: +oferta
 
 const isNonEmpty = (value: unknown): boolean => {
   if (value === null || value === undefined) return false;
@@ -35,6 +36,59 @@ const buildErrorMessage = (error: unknown): string => {
   }
   if (error instanceof Error) return error.message;
   return String(error);
+};
+
+/**
+ * Verifica si los datos de preventa están completos (campos requeridos)
+ */
+const isPreventaCompleta = (datos: LeadDatosPreventaRequest): boolean => {
+  return (
+    isNonEmpty(datos.tipoDocumento) &&
+    isNonEmpty(datos.numeroDocumentoTitularServicio) &&
+    isNonEmpty(datos.nombreTitular) &&
+    isNonEmpty(datos.celularRegistro) &&
+    isNonEmpty(datos.correo)
+  );
+};
+
+/**
+ * Verifica si la dirección está completa (campos requeridos)
+ */
+const isDireccionCompleta = (dir: LeadDireccionRequest): boolean => {
+  return (
+    isNonEmpty(dir.tipoDomicilio) &&
+    isNonEmpty(dir.tipoVia) &&
+    isNonEmpty(dir.via) &&
+    isNonEmpty(dir.numero) &&
+    isNonEmpty(dir.direccion)
+  );
+};
+
+/**
+ * Verifica si la oferta es válida
+ */
+const isOfertaValida = (oferta: LeadOfertaComercialRequest): boolean => {
+  return oferta.idPlan > 0;
+};
+
+/**
+ * Deriva el nivel de completitud actual basado en los datos
+ */
+const deriveCompletionLevel = (
+  preventa: LeadDatosPreventaRequest,
+  direccion: LeadDireccionRequest,
+  oferta: LeadOfertaComercialRequest,
+): CompletionLevel => {
+  if (isOfertaValida(oferta) && isDireccionCompleta(direccion) && isPreventaCompleta(preventa)) {
+    return 3;
+  }
+  if (isDireccionCompleta(direccion) && isPreventaCompleta(preventa)) {
+    return 2;
+  }
+  if (isPreventaCompleta(preventa)) {
+    return 1;
+  }
+  return 0;
 };
 
 export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, isOpen, onClose }) => {
@@ -80,6 +134,12 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
     retry: 1,
   });
 
+  // Derivar el nivel de completitud automáticamente
+  const completionLevel: CompletionLevel = useMemo(
+    () => deriveCompletionLevel(datosPreventa, direccion, oferta),
+    [datosPreventa, direccion, oferta]
+  );
+
   const tipificaciones = catalogo.tipificaciones || [];
 
   const sortedTipificaciones = useMemo(() => {
@@ -89,10 +149,6 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
         ...t,
         subtipificaciones: (t.subtipificaciones || []).slice().sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0)),
       }));
-
-    console.log('Catalogo recibido:', catalogo);
-    console.log('Tipificaciones:', tipificaciones);
-    console.log('Tipificaciones final para render:', sorted);
 
     return sorted;
   }, [catalogo, tipificaciones]);
@@ -106,6 +162,14 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
     }
   }, [isOpen]);
 
+  // Resetear tipificación si deja de ser válida según el nivel
+  useEffect(() => {
+    if (selectedTipificacionId && !sortedTipificaciones.find((t) => t.id === selectedTipificacionId)) {
+      setSelectedTipificacionId('');
+      setSelectedSubtipificacionId('');
+    }
+  }, [completionLevel, sortedTipificaciones, selectedTipificacionId]);
+
   const subtipificacionesDisponibles: Array<{
     id: number;
     codigo: string;
@@ -113,43 +177,30 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
     orden: number;
   }> = useMemo(() => {
     const tip = sortedTipificaciones.find((t) => t.id === selectedTipificacionId);
-    const result = tip?.subtipificaciones || [];
-    console.log('Subtipificaciones disponibles para tipificacionId', selectedTipificacionId, ':', result);
-    return result;
+    return tip?.subtipificaciones || [];
   }, [sortedTipificaciones, selectedTipificacionId]);
 
-  const validTipificacion = () => {
-    if (!isNonEmpty(selectedTipificacionId)) return 'Elija una tipificación';
-    if (!isNonEmpty(selectedSubtipificacionId)) return 'Elija una subtipificación';
-    return null;
-  };
-
   const handleGuardarTipificacion = async () => {
-    const validation = validTipificacion();
-    if (validation) {
-      setApiError(validation);
-      return;
-    }
+    // Validación de UI solo - sin errores
+    if (!selectedTipificacionId || !selectedSubtipificacionId) return;
 
     const tip = sortedTipificaciones.find((t) => t.id === selectedTipificacionId);
     const sub = subtipificacionesDisponibles.find((s) => s.id === selectedSubtipificacionId);
 
-    if (!tip || !sub) {
-      setApiError('Tipificación o subtipificación inválida');
-      return;
-    }
+    if (!tip || !sub) return;
 
     const payload: LeadTipificacionRequest = {
       codigoTipificacion: tip.codigo,
       codigoSubtipificacion: sub.codigo,
     };
 
-    console.log('payload', payload);
     setIsSubmitting(true);
     setApiError(null);
     try {
       await PreventaApi.postTipificacion(idLead, payload);
-      setApiError('Tipificación guardada correctamente');
+      setApiError(null); // Éxito silencioso o mensaje positivo breve
+      setSelectedTipificacionId('');
+      setSelectedSubtipificacionId('');
     } catch (error) {
       setApiError(buildErrorMessage(error));
     } finally {
@@ -158,14 +209,9 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
   };
 
   const handleSubmitPaso1 = async () => {
-    const required = ['tipoDocumento', 'numeroDocumentoTitularServicio', 'nombreTitular', 'celularRegistro', 'correo'];
-    const missing = required.filter((key) => !isNonEmpty(datosPreventa[key as keyof LeadDatosPreventaRequest]));
-    if (missing.length > 0) {
-      setApiError(`Complete los campos: ${missing.join(', ')}`);
-      return;
-    }
+    // Solo proceder si está completo
+    if (!isPreventaCompleta(datosPreventa)) return;
 
-    console.log('payload', datosPreventa);
     setIsSubmitting(true);
     setApiError(null);
     try {
@@ -179,14 +225,9 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
   };
 
   const handleSubmitPaso2 = async () => {
-    const required = ['tipoDomicilio', 'tipoVia', 'via', 'numero', 'direccion'];
-    const missing = required.filter((key) => !isNonEmpty(direccion[key as keyof LeadDireccionRequest]));
-    if (missing.length > 0) {
-      setApiError(`Complete los campos: ${missing.join(', ')}`);
-      return;
-    }
+    // Solo proceder si dirección está completa
+    if (!isDireccionCompleta(direccion)) return;
 
-    console.log('payload', direccion);
     setIsSubmitting(true);
     setApiError(null);
     try {
@@ -200,17 +241,14 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
   };
 
   const handleSubmitPaso3 = async () => {
-    if (!oferta.idPlan || oferta.idPlan <= 0) {
-      setApiError('Seleccione un plan válido');
-      return;
-    }
+    // Solo proceder si oferta es válida
+    if (!isOfertaValida(oferta)) return;
 
-    console.log('payload', oferta);
     setIsSubmitting(true);
     setApiError(null);
     try {
       await PreventaApi.patchOfertaComercial(idLead, oferta);
-      setApiError('Flujo completado con éxito');
+      setApiError(null);
       onClose();
     } catch (error) {
       setApiError(buildErrorMessage(error));
@@ -219,14 +257,23 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
     }
   };
 
+  // Determinar si botón "Siguiente" está habilitado
+  const isStep1Complete = isPreventaCompleta(datosPreventa);
+  const isStep2Complete = isDireccionCompleta(direccion);
+  const isStep3Complete = isOfertaValida(oferta);
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Gestión Lead PREVENTA" className="max-w-3xl">
       <div className="space-y-4">
         {tipificacionesError && <p className="text-red-600">No se pudo cargar tipificaciones</p>}
-        <div className="p-3 bg-gray-50 rounded border">
-          <h3 className="font-semibold mb-2">Tipificación</h3>
+        
+        {/* Sección Tipificación - Habilitada según el nivel (Nivel 0+) */}
+        <div className={`p-3 rounded border ${completionLevel >= 0 ? 'bg-gray-50' : 'bg-gray-100 opacity-50'}`}>
+          <h3 className="font-semibold mb-2">
+            Tipificación {completionLevel < 1 && <span className="text-gray-500 text-sm">(completa preventa primero)</span>}
+          </h3>
           {loadingTipificaciones ? (
-            <p>Cargando tipificaciones...</p>
+            <p className="text-gray-600">Cargando tipificaciones...</p>
           ) : (
             <>
               <div className="grid grid-cols-2 gap-3 mb-3">
@@ -238,7 +285,8 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
                       setSelectedTipificacionId(Number(e.target.value) || '');
                       setSelectedSubtipificacionId('');
                     }}
-                    className="w-full border rounded px-2 py-1"
+                    disabled={completionLevel < 1}
+                    className="w-full border rounded px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="" disabled>
                       Seleccione una tipificación
@@ -255,8 +303,8 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
                   <select
                     value={selectedSubtipificacionId}
                     onChange={(e) => setSelectedSubtipificacionId(Number(e.target.value) || '')}
-                    className="w-full border rounded px-2 py-1"
-                    disabled={!selectedTipificacionId}
+                    disabled={!selectedTipificacionId || completionLevel < 1}
+                    className="w-full border rounded px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="" disabled>
                       Seleccione una subtipificación
@@ -271,8 +319,8 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
               </div>
               <button
                 onClick={handleGuardarTipificacion}
-                className="bg-blue-600 text-white px-4 py-2 rounded"
-                disabled={isSubmitting}
+                disabled={!selectedTipificacionId || !selectedSubtipificacionId || isSubmitting || completionLevel < 1}
+                className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Guardar tipificación
               </button>
@@ -280,8 +328,12 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
           )}
         </div>
 
-        <div className="border rounded p-3">
-          <div className="mb-3 font-semibold">Flujo PREVENTA (Paso {step} de 3)</div>
+        {/* Sección Flujo de Pasos */}
+        <div className={`border rounded p-3 ${completionLevel >= 1 ? '' : 'opacity-60'}`}>
+          <div className="mb-3 font-semibold">
+            Flujo PREVENTA (Paso {step} de 3)
+            {completionLevel < 1 && <span className="text-gray-500 text-sm ml-2">Completa los campos para continuar</span>}
+          </div>
 
           {step === 1 && (
             <div className="space-y-3">
@@ -338,111 +390,124 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
           )}
 
           {step === 2 && (
-            <div className="space-y-3">
-              <label>
-                Tipo Domicilio*:
-                <select
-                  className="w-full border rounded px-2 py-1"
-                  value={direccion.tipoDomicilio ?? ''}
-                  onChange={(e) => setDireccion((v) => ({ ...v, tipoDomicilio: e.target.value }))}
-                >
-                  <option value="">Seleccione un tipo de domicilio</option>
-                  {enumToOptions(TipoDomicilioEnum).map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Tipo Vía*:
-                <select
-                  className="w-full border rounded px-2 py-1"
-                  value={direccion.tipoVia ?? ''}
-                  onChange={(e) => setDireccion((v) => ({ ...v, tipoVia: e.target.value }))}
-                >
-                  <option value="">Seleccione un tipo de vía</option>
-                  {enumToOptions(TipoViaEnum).map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Vía*:
-                <input
-                  className="w-full border rounded px-2 py-1"
-                  value={direccion.via ?? ''}
-                  onChange={(e) => setDireccion((v) => ({ ...v, via: e.target.value }))}
-                />
-              </label>
-              <label>
-                Número*:
-                <input
-                  className="w-full border rounded px-2 py-1"
-                  value={direccion.numero ?? ''}
-                  onChange={(e) => setDireccion((v) => ({ ...v, numero: e.target.value }))}
-                />
-              </label>
-              <label>
-                Dirección*:
-                <input
-                  className="w-full border rounded px-2 py-1"
-                  value={direccion.direccion ?? ''}
-                  onChange={(e) => setDireccion((v) => ({ ...v, direccion: e.target.value }))}
-                />
-              </label>
-              <label>
-                Referencia (opcional):
-                <input
-                  className="w-full border rounded px-2 py-1"
-                  value={direccion.referencia ?? ''}
-                  onChange={(e) => setDireccion((v) => ({ ...v, referencia: e.target.value }))}
-                />
-              </label>
+            <div className={completionLevel < 2 ? 'opacity-50 pointer-events-none' : ''}>
+              <div className="space-y-3">
+                <label>
+                  Tipo Domicilio*:
+                  <select
+                    className="w-full border rounded px-2 py-1"
+                    value={direccion.tipoDomicilio ?? ''}
+                    onChange={(e) => setDireccion((v) => ({ ...v, tipoDomicilio: e.target.value }))}
+                    disabled={completionLevel < 2}
+                  >
+                    <option value="">Seleccione un tipo de domicilio</option>
+                    {enumToOptions(TipoDomicilioEnum).map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Tipo Vía*:
+                  <select
+                    className="w-full border rounded px-2 py-1"
+                    value={direccion.tipoVia ?? ''}
+                    onChange={(e) => setDireccion((v) => ({ ...v, tipoVia: e.target.value }))}
+                    disabled={completionLevel < 2}
+                  >
+                    <option value="">Seleccione un tipo de vía</option>
+                    {enumToOptions(TipoViaEnum).map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Vía*:
+                  <input
+                    className="w-full border rounded px-2 py-1"
+                    value={direccion.via ?? ''}
+                    onChange={(e) => setDireccion((v) => ({ ...v, via: e.target.value }))}
+                    disabled={completionLevel < 2}
+                  />
+                </label>
+                <label>
+                  Número*:
+                  <input
+                    className="w-full border rounded px-2 py-1"
+                    value={direccion.numero ?? ''}
+                    onChange={(e) => setDireccion((v) => ({ ...v, numero: e.target.value }))}
+                    disabled={completionLevel < 2}
+                  />
+                </label>
+                <label>
+                  Dirección*:
+                  <input
+                    className="w-full border rounded px-2 py-1"
+                    value={direccion.direccion ?? ''}
+                    onChange={(e) => setDireccion((v) => ({ ...v, direccion: e.target.value }))}
+                    disabled={completionLevel < 2}
+                  />
+                </label>
+                <label>
+                  Referencia (opcional):
+                  <input
+                    className="w-full border rounded px-2 py-1"
+                    value={direccion.referencia ?? ''}
+                    onChange={(e) => setDireccion((v) => ({ ...v, referencia: e.target.value }))}
+                    disabled={completionLevel < 2}
+                  />
+                </label>
+              </div>
             </div>
           )}
 
           {step === 3 && (
-            <div className="space-y-3">
-              <label>
-                ID Plan*:
-                <input
-                  type="number"
-                  className="w-full border rounded px-2 py-1"
-                  value={oferta.idPlan}
-                  onChange={(e) => setOferta((v) => ({ ...v, idPlan: Number(e.target.value) }))}
-                />
-              </label>
-              <label>
-                ID Promoción:
-                <input
-                  type="number"
-                  className="w-full border rounded px-2 py-1"
-                  value={oferta.idPromocion ?? ''}
-                  onChange={(e) =>
-                    setOferta((v) => ({ ...v, idPromocion: e.target.value ? Number(e.target.value) : undefined }))
-                  }
-                />
-              </label>
-              <label>
-                Adicionales (IDs separados por coma):
-                <input
-                  type="text"
-                  value={(oferta.adicionales ?? []).join(',')}
-                  onChange={(e) =>
-                    setOferta((v) => ({
-                      ...v,
-                      adicionales: e.target.value
-                        .split(',')
-                        .map((n) => Number(n.trim()))
-                        .filter((n) => !Number.isNaN(n)),
-                    }))
-                  }
-                  className="w-full border rounded px-2 py-1"
-                />
-              </label>
+            <div className={completionLevel < 3 ? 'opacity-50 pointer-events-none' : ''}>
+              <div className="space-y-3">
+                <label>
+                  ID Plan*:
+                  <input
+                    type="number"
+                    className="w-full border rounded px-2 py-1"
+                    value={oferta.idPlan}
+                    onChange={(e) => setOferta((v) => ({ ...v, idPlan: Number(e.target.value) }))}
+                    disabled={completionLevel < 3}
+                  />
+                </label>
+                <label>
+                  ID Promoción:
+                  <input
+                    type="number"
+                    className="w-full border rounded px-2 py-1"
+                    value={oferta.idPromocion ?? ''}
+                    onChange={(e) =>
+                      setOferta((v) => ({ ...v, idPromocion: e.target.value ? Number(e.target.value) : undefined }))
+                    }
+                    disabled={completionLevel < 3}
+                  />
+                </label>
+                <label>
+                  Adicionales (IDs separados por coma):
+                  <input
+                    type="text"
+                    value={(oferta.adicionales ?? []).join(',')}
+                    onChange={(e) =>
+                      setOferta((v) => ({
+                        ...v,
+                        adicionales: e.target.value
+                          .split(',')
+                          .map((n) => Number(n.trim()))
+                          .filter((n) => !Number.isNaN(n)),
+                      }))
+                    }
+                    className="w-full border rounded px-2 py-1"
+                    disabled={completionLevel < 3}
+                  />
+                </label>
+              </div>
             </div>
           )}
 
@@ -450,7 +515,7 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
             <button
               disabled={step === 1 || isSubmitting}
               onClick={() => setStep((prev) => (prev === 1 ? 1 : (prev - 1) as Step))}
-              className="px-4 py-2 border rounded bg-gray-100"
+              className="px-4 py-2 border rounded bg-gray-100 disabled:opacity-50"
             >
               Anterior
             </button>
@@ -458,22 +523,23 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
             {step < 3 ? (
               <button
                 onClick={step === 1 ? handleSubmitPaso1 : handleSubmitPaso2}
-                disabled={isSubmitting}
-                className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+                disabled={isSubmitting || (step === 1 && !isStep1Complete) || (step === 2 && !isStep2Complete)}
+                className="px-4 py-2 bg-blue-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Siguiente
               </button>
             ) : (
               <button
                 onClick={handleSubmitPaso3}
-                disabled={isSubmitting}
-                className="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50"
+                disabled={isSubmitting || !isStep3Complete}
+                className="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Finalizar
               </button>
             )}
           </div>
 
+          {/* Solo mostrar errores de API, no de validación */}
           {apiError && <p className="text-red-600 mt-3">{apiError}</p>}
           {isSubmitting && <p className="text-gray-600 mt-1">Enviando...</p>}
         </div>
