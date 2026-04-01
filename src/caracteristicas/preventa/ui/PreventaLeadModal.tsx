@@ -162,14 +162,6 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
     }
   }, [isOpen]);
 
-  // Resetear tipificación si deja de ser válida según el nivel
-  useEffect(() => {
-    if (selectedTipificacionId && !sortedTipificaciones.find((t) => t.id === selectedTipificacionId)) {
-      setSelectedTipificacionId('');
-      setSelectedSubtipificacionId('');
-    }
-  }, [completionLevel, sortedTipificaciones, selectedTipificacionId]);
-
   const subtipificacionesDisponibles: Array<{
     id: number;
     codigo: string;
@@ -267,11 +259,9 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
       <div className="space-y-4">
         {tipificacionesError && <p className="text-red-600">No se pudo cargar tipificaciones</p>}
         
-        {/* Sección Tipificación - Habilitada según el nivel (Nivel 0+) */}
-        <div className={`p-3 rounded border ${completionLevel >= 0 ? 'bg-gray-50' : 'bg-gray-100 opacity-50'}`}>
-          <h3 className="font-semibold mb-2">
-            Tipificación {completionLevel < 1 && <span className="text-gray-500 text-sm">(completa preventa primero)</span>}
-          </h3>
+        {/* Sección Tipificación - Siempre habilitada (independiente del flujo de pasos) */}
+        <div className="p-3 rounded border bg-gray-50">
+          <h3 className="font-semibold mb-2">Tipificación</h3>
           {loadingTipificaciones ? (
             <p className="text-gray-600">Cargando tipificaciones...</p>
           ) : (
@@ -285,8 +275,7 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
                       setSelectedTipificacionId(Number(e.target.value) || '');
                       setSelectedSubtipificacionId('');
                     }}
-                    disabled={completionLevel < 1}
-                    className="w-full border rounded px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full border rounded px-2 py-1"
                   >
                     <option value="" disabled>
                       Seleccione una tipificación
@@ -303,7 +292,7 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
                   <select
                     value={selectedSubtipificacionId}
                     onChange={(e) => setSelectedSubtipificacionId(Number(e.target.value) || '')}
-                    disabled={!selectedTipificacionId || completionLevel < 1}
+                    disabled={!selectedTipificacionId}
                     className="w-full border rounded px-2 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="" disabled>
@@ -319,7 +308,7 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({ idLead, is
               </div>
               <button
                 onClick={handleGuardarTipificacion}
-                disabled={!selectedTipificacionId || !selectedSubtipificacionId || isSubmitting || completionLevel < 1}
+                disabled={!selectedTipificacionId || !selectedSubtipificacionId || isSubmitting}
                 className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Guardar tipificación
