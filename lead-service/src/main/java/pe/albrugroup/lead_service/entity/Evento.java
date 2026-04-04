@@ -7,6 +7,7 @@ import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Entity @Getter @Setter @Builder
 @Table(indexes = {
@@ -32,6 +33,8 @@ public class Evento {
     private Etapa etapa;
     private String tipificacion;
     private String subtipificacion;
+    private LocalDate fechaInstalacion;
+    private String comentario;
 
     @CreationTimestamp @Column(updatable = false)
     private Instant createdAt;

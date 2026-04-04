@@ -57,7 +57,6 @@ public class LeadService {
     private final SubtipificacionRepository subtipificacionRepository;
     private final LeadMapper leadMapper;
 
-    private static final String TIPIFICACION_PREVENTA_COMPLETA = "PREVENTA_COMPLETA";
     private static final String TIPIFICACION_AGENDADO = "AGENDADO";
 
     public List<LeadGtrResponse> listarBandejaGtr(LocalDate fecha) {
@@ -165,9 +164,12 @@ public class LeadService {
                 )
                 .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getCodigoSubtipificacion()));
 
-        if (TIPIFICACION_PREVENTA_COMPLETA.equals(tipificacion.getCodigo())) {
-            validarPreventaCompleta(lead);
-            lead.setEtapa(Etapa.VENTA);
+        Etapa etapaDestino = subtipificacion.getEtapaCambio();
+        if (etapaDestino != null && etapaDestino != etapaActual) {
+            if (etapaActual == Etapa.PREVENTA && etapaDestino == Etapa.VENTA) {
+                validarPreventaCompleta(lead);
+            }
+            lead.setEtapa(etapaDestino);
             lead.setEstado(EstadoSeguimiento.GESTIONADO);
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
@@ -178,7 +180,7 @@ public class LeadService {
         lead.setCodigoTipificacion(tipificacion.getCodigo());
         lead.setIdSubtipificacion(subtipificacion.getId());
         lead.setCodigoSubtipificacion(subtipificacion.getCodigo());
-        if (!TIPIFICACION_PREVENTA_COMPLETA.equals(tipificacion.getCodigo())
+        if ((etapaDestino == null || etapaDestino == etapaActual)
                 && !TIPIFICACION_AGENDADO.equals(tipificacion.getCodigo())) {
             lead.setEstado(EstadoSeguimiento.GESTIONADO);
             lead.setIdAsesorAsignado(null);
@@ -376,6 +378,8 @@ public class LeadService {
                 datosPreventa == null ? null : datosPreventa.getCelularRegistro(),
                 datosPreventa == null ? null : datosPreventa.getCelularReferencia(),
                 datosPreventa == null ? null : datosPreventa.getCorreo(),
+                datosPreventa == null ? null : datosPreventa.getNombreMadre(),
+                datosPreventa == null ? null : datosPreventa.getNombrePadre(),
                 datosPreventa == null ? null : datosPreventa.getNumeroDocumentoTitularCelularRegistro(),
                 datosPreventa == null ? null : datosPreventa.getNombreTitularCelularRegistro(),
                 datosPreventa == null ? null : datosPreventa.getUbigeoNacimiento(),
@@ -393,6 +397,7 @@ public class LeadService {
                 direccion == null ? null : direccion.getLote(),
                 direccion == null ? null : direccion.getNombreEdificio(),
                 direccion == null ? null : direccion.getNombreCondominio(),
+                direccion == null ? null : direccion.getPlano(),
                 direccion == null ? null : direccion.getPiso(),
                 direccion == null ? null : direccion.getInterior()
         );

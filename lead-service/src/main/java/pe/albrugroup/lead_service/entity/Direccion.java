@@ -37,6 +37,7 @@ public class Direccion {
     private String nombreEdificio;
     private String nombreCondominio;
 
+    private String plano;
     private String piso;
     private String interior;
 }

@@ -81,7 +81,7 @@ public class DataLoader {
         saveSubtipificacion(scorePreventa, "PDTE_SCORE", "Validacion de score pendiente", 2);
 
         Tipificacion preventaCompleta = saveTipificacion(Etapa.PREVENTA, "PREVENTA_COMPLETA", "Gestion de preventa finalizada", 8);
-        saveSubtipificacion(preventaCompleta, "VENTA_CERRADA", "Venta cerrada en la gestion actual", 1);
+        saveSubtipificacion(preventaCompleta, "VENTA_CERRADA", "Venta cerrada en la gestion actual", 1, Etapa.VENTA);
         saveSubtipificacion(preventaCompleta, "VC_SIGUIENTE_MES", "Venta proyectada para el siguiente mes", 2);
 
         Tipificacion listaNegra = saveTipificacion(Etapa.PREVENTA, "LISTA_NEGRA", "Lead restringido por lista negra", 9);
@@ -104,6 +104,10 @@ public class DataLoader {
     }
 
     private void saveSubtipificacion(Tipificacion tipificacion, String codigo, String descripcion, Integer orden) {
+        saveSubtipificacion(tipificacion, codigo, descripcion, orden, null);
+    }
+
+    private void saveSubtipificacion(Tipificacion tipificacion, String codigo, String descripcion, Integer orden, Etapa etapaCambio) {
         subtipificacionRepository.findByTipificacionIdAndCodigo(tipificacion.getId(), codigo)
                 .orElseGet(() -> {
                     SubtipificacionRequest request = SubtipificacionRequest.builder()
@@ -111,6 +115,7 @@ public class DataLoader {
                             .codigo(codigo)
                             .descripcion(descripcion)
                             .orden(orden)
+                            .etapaCambio(etapaCambio)
                             .build();
                     Subtipificacion entity = tipificacionMapper.toEntity(request);
                     entity.setTipificacion(tipificacion);

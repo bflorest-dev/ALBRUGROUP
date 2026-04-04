@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import pe.albrugroup.recruitment_service.configuration.CurrentUser;
 import pe.albrugroup.recruitment_service.entity.OfertaAmpliacion;
 import pe.albrugroup.recruitment_service.entity.OfertaLaboral;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoOferta;
@@ -27,6 +28,7 @@ public class OfertaLaboralService {
     private final OfertaLaboralRepository ofertaRepository;
     private final OfertaAmpliacionRepository ampliacionRepository;
     private final OfertaMapper ofertaMapper;
+    private final CurrentUser currentUser;
 
 
     public OfertaLaboralResponse registrarOfertaLaboral(OfertaLaboralRequest request) {
@@ -34,6 +36,7 @@ public class OfertaLaboralService {
         validarNoExisteOfertaEquivalenteActiva(request);
 
         OfertaLaboral oferta = ofertaMapper.toEntity(request);
+        oferta.setIdSolicitante(currentUser.empleadoID());
         oferta.setEstado(EstadoOferta.ACTIVO);
         return ofertaMapper.toResponse(ofertaRepository.save(oferta));
     }
@@ -54,6 +57,7 @@ public class OfertaLaboralService {
         validarPlazoAmpliacion(oferta, request);
 
         OfertaAmpliacion ampliacion = ofertaMapper.toEntity(request);
+        ampliacion.setIdSolicitante(currentUser.empleadoID());
         ampliacion.setOfertaLaboral(oferta);
         return ofertaMapper.toResponse(ampliacionRepository.save(ampliacion));
     }

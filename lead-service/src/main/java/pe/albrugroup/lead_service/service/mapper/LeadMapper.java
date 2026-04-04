@@ -50,6 +50,8 @@ public interface LeadMapper {
     @Mapping(target = "celularRegistro", expression = "java(trimToNull(request.getCelularRegistro()))")
     @Mapping(target = "celularReferencia", expression = "java(trimToNull(request.getCelularReferencia()))")
     @Mapping(target = "correo", expression = "java(trimToNull(request.getCorreo()))")
+    @Mapping(target = "nombreMadre", expression = "java(trimToNull(request.getNombreMadre()))")
+    @Mapping(target = "nombrePadre", expression = "java(trimToNull(request.getNombrePadre()))")
     @Mapping(target = "numeroDocumentoTitularCelularRegistro", expression = "java(trimToNull(request.getNumeroDocumentoTitularCelularRegistro()))")
     @Mapping(target = "nombreTitularCelularRegistro", expression = "java(trimToNull(request.getNombreTitularCelularRegistro()))")
     void updateDatosPreventa(LeadDatosPreventaRequest request, @MappingTarget DatosPreventa entity);
@@ -69,6 +71,7 @@ public interface LeadMapper {
     @Mapping(target = "lote", expression = "java(trimToNull(request.getLote()))")
     @Mapping(target = "nombreEdificio", expression = "java(trimToNull(request.getNombreEdificio()))")
     @Mapping(target = "nombreCondominio", expression = "java(trimToNull(request.getNombreCondominio()))")
+    @Mapping(target = "plano", expression = "java(trimToNull(request.getPlano()))")
     @Mapping(target = "piso", expression = "java(trimToNull(request.getPiso()))")
     @Mapping(target = "interior", expression = "java(trimToNull(request.getInterior()))")
     void updateDireccion(LeadDireccionRequest request, @MappingTarget Direccion entity);

@@ -38,6 +38,8 @@ public class LeadAsesorDetalleResponse {
     private String celularRegistro;
     private String celularReferencia;
     private String correo;
+    private String nombreMadre;
+    private String nombrePadre;
     private String numeroDocumentoTitularCelularRegistro;
     private String nombreTitularCelularRegistro;
     private String ubigeoNacimiento;
@@ -55,6 +57,7 @@ public class LeadAsesorDetalleResponse {
     private String lote;
     private String nombreEdificio;
     private String nombreCondominio;
+    private String plano;
     private String piso;
     private String interior;
 }

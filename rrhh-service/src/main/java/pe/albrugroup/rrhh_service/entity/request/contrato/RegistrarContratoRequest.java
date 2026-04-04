@@ -24,4 +24,6 @@ public class RegistrarContratoRequest {
     // VIGENCIA
     @NotNull private LocalDate fechaInicio;
     private LocalDate fechaFin;
+
+    // TODO: Agregar campo created_at
 }

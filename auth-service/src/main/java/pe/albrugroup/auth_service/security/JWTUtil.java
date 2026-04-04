@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,13 +19,17 @@ import java.util.function.Function;
 @Component
 public class JWTUtil {
 
-    private static final long JWT_EXPIRATION = 1000 * 60 * 60 * 2;
     private static final String ISSUER = "http://localhost:8081";
 
     private final SecretKey key;
+    private final Duration jwtExpiration;
 
-    public JWTUtil(@Value("${jwt.secret}") String secretKey) {
+    public JWTUtil(
+            @Value("${jwt.secret}") String secretKey,
+            @Value("${jwt.expiration:30m}") Duration jwtExpiration
+    ) {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
+        this.jwtExpiration = jwtExpiration;
     }
 
     public String generateToken(CustomUserDetails userDetails) {
@@ -54,7 +59,7 @@ public class JWTUtil {
                 .setSubject(subject)
                 .setIssuer(ISSUER)
                 .setIssuedAt(new Date(now))
-                .setExpiration(new Date(now + JWT_EXPIRATION))
+                .setExpiration(new Date(now + jwtExpiration.toMillis()))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }

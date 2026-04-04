@@ -170,10 +170,14 @@ public class DataLoader {
 
                 getPermiso("CREATE_POSTULACIONES"),
                 getPermiso("UPDATE_POSTULACIONES"),
+                getPermiso("UPDATE_ESTADO_OFERTAS_LABORALES"),
+                
                 getPermiso("READ_POSTULACION"),
                 getPermiso("READ_POSTULACIONES"),
                 getPermiso("CONFIRM_CONTRATACION_POSTULACIONES"),
 
+                getPermiso("CREATE_OFERTAS_LABORALES"),
+                getPermiso("UPDATE_OFERTAS_LABORALES"),
                 getPermiso("READ_OFERTAS_LABORALES_ACTIVAS"),
                 getPermiso("READ_EVENTOS_RECRUITMENT"),
 

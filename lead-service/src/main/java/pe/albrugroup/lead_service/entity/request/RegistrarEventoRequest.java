@@ -5,6 +5,8 @@ import lombok.Getter;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
+import java.time.LocalDate;
+
 @Getter
 @Builder
 public class RegistrarEventoRequest {
@@ -15,4 +17,6 @@ public class RegistrarEventoRequest {
     private Etapa etapa;
     private String tipificacion;
     private String subtipificacion;
+    private LocalDate fechaInstalacion;
+    private String comentario;
 }

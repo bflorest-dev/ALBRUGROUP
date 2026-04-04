@@ -22,6 +22,8 @@ public class DatosPreventa {
     private String celularRegistro;
     private String celularReferencia;
     private String correo;
+    private String nombreMadre;
+    private String nombrePadre;
 
     private String numeroDocumentoTitularCelularRegistro;
     private String nombreTitularCelularRegistro;

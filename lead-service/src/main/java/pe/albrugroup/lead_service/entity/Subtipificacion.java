@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 @Entity @Getter @Setter
 @AllArgsConstructor @NoArgsConstructor
@@ -20,6 +21,8 @@ public class Subtipificacion {
     private String codigo;
     private String descripcion;
     private Integer orden;
+    @Enumerated(EnumType.STRING)
+    private Etapa etapaCambio;
 
     private Boolean activo;
 }

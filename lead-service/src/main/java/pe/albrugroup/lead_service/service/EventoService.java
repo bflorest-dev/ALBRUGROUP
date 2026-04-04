@@ -44,6 +44,8 @@ public class EventoService {
                 .etapa(request.getEtapa())
                 .tipificacion(request.getTipificacion())
                 .subtipificacion(request.getSubtipificacion())
+                .fechaInstalacion(request.getFechaInstalacion())
+                .comentario(request.getComentario())
                 .build();
 
         return eventoMapper.toResponse(eventoRepository.save(evento));

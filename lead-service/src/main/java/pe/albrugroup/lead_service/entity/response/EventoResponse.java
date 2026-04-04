@@ -6,6 +6,7 @@ import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Getter
 @Builder
@@ -21,5 +22,7 @@ public class EventoResponse {
     private Etapa etapa;
     private String tipificacion;
     private String subtipificacion;
+    private LocalDate fechaInstalacion;
+    private String comentario;
     private Instant createdAt;
 }

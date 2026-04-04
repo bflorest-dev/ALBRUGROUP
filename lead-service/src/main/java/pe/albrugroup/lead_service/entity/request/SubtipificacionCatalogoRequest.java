@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 @Builder
 @Getter
@@ -27,4 +28,6 @@ public class SubtipificacionCatalogoRequest {
     @NotNull
     @Positive
     private Integer orden;
+
+    private Etapa etapaCambio;
 }
