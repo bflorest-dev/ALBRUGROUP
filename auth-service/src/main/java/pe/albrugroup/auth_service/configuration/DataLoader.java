@@ -228,6 +228,9 @@ public class DataLoader {
                 getPermiso("READ_EVENTOS_RECRUITMENT"),
                 getPermiso("TYPIFY_POSTULACIONES"),
 
+                getPermiso("READ_POSTULACIONES_CAPACITACION"),
+                getPermiso("READ_POSTULACION"),
+
                 getPermiso("READ_TIPIFICACIONES_CAPACITACION")
         );
         saveRol("CAPACITADOR", "Capacitacion - Gestion de postulantes", capacitadorPermisos);
