@@ -209,6 +209,9 @@ public class DataLoader {
                 getPermiso("TYPIFY_POSTULACIONES"),
                 getPermiso("READ_TIPIFICACIONES_RECLUTAMIENTO"),
 
+                getPermiso("READ_POSTULACIONES_RECLUTAMIENTO"),
+                getPermiso("READ_POSTULACION"),
+
                 getPermiso("CREATE_GRUPOS_CAPACITACION"),
                 getPermiso("READ_GRUPOS_CAPACITACION"),
                 getPermiso("ASSIGN_GRUPOS_CAPACITACION"),
