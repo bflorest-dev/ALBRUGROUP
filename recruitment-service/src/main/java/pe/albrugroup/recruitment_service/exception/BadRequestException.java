@@ -2,7 +2,7 @@ package pe.albrugroup.recruitment_service.exception;
 
 import org.springframework.http.HttpStatus;
 
-public class BadRequestException extends BussinessException {
+public class BadRequestException extends BusinessException {
 
     public BadRequestException(String message, Object id, Object details) {
         super(HttpStatus.BAD_REQUEST, id, details, message);

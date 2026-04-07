@@ -2,7 +2,7 @@ package pe.albrugroup.recruitment_service.exception;
 
 import org.springframework.http.HttpStatus;
 
-public class ConflictException extends BussinessException {
+public class ConflictException extends BusinessException {
 
     public ConflictException(String message, Object id, Object details) {
         super(HttpStatus.CONFLICT, id, details, message);

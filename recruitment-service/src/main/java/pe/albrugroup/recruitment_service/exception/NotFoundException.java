@@ -1,6 +1,6 @@
 package pe.albrugroup.recruitment_service.exception;
 
-public class NotFoundException extends BussinessException {
+public class NotFoundException extends BusinessException {
 
     public NotFoundException(Class<?> resourceClass, Object id) {
         super(org.springframework.http.HttpStatus.NOT_FOUND, id, resourceClass.getSimpleName() + " no encontrado");

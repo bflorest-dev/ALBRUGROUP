@@ -11,7 +11,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -22,8 +21,8 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(BussinessException.class)
-    public ResponseEntity<Map<String, Object>> handleBusinessException(BussinessException e) {
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<Map<String, Object>> handleBusinessException(BusinessException e) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("status", e.getStatus().value());
         body.put("error", e.getStatus().getReasonPhrase());
@@ -35,16 +34,6 @@ public class GlobalExceptionHandler {
             body.put("details", e.getDetails());
         }
         return ResponseEntity.status(e.getStatus()).body(body);
-    }
-
-    @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<Map<String, Object>> handleResponseStatusException(ResponseStatusException e) {
-        HttpStatus status = HttpStatus.valueOf(e.getStatusCode().value());
-        return ResponseEntity.status(status).body(Map.of(
-                "status", status.value(),
-                "error", status.getReasonPhrase(),
-                "message", e.getReason() == null ? "Error en la solicitud" : e.getReason()
-        ));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

@@ -2,7 +2,7 @@ package pe.albrugroup.recruitment_service.exception;
 
 import org.springframework.http.HttpStatus;
 
-public class UnauthorizedException extends BussinessException {
+public class UnauthorizedException extends BusinessException {
 
     public UnauthorizedException(String message, Object id, Object details) {
         super(HttpStatus.UNAUTHORIZED, id, details, message);

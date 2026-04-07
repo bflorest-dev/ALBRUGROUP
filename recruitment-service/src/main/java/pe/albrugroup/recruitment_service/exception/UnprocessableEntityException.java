@@ -2,7 +2,7 @@ package pe.albrugroup.recruitment_service.exception;
 
 import org.springframework.http.HttpStatus;
 
-public class UnprocessableEntityException extends BussinessException {
+public class UnprocessableEntityException extends BusinessException {
 
     public UnprocessableEntityException(String message, Object id, Object details) {
         super(HttpStatus.UNPROCESSABLE_ENTITY, id, details, message);

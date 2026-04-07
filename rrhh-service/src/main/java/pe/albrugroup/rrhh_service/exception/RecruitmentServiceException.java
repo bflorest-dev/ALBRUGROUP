@@ -3,10 +3,10 @@ package pe.albrugroup.rrhh_service.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.RestClientResponseException;
 
-public class RecruitmentServiceException extends BusinessException {
+public class RecruitmentServiceException extends UpstreamServiceException {
 
     public RecruitmentServiceException(HttpStatus status, String message, String details) {
-        super(status, message, null, details);
+        super(status, "recruitment-service", message, details);
     }
 
     public static RecruitmentServiceException from(RestClientResponseException e) {

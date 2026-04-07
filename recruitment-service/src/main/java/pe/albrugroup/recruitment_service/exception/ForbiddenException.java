@@ -2,7 +2,7 @@ package pe.albrugroup.recruitment_service.exception;
 
 import org.springframework.http.HttpStatus;
 
-public class ForbiddenException extends BussinessException {
+public class ForbiddenException extends BusinessException {
 
     public ForbiddenException(String message, Object id, Object details) {
         super(HttpStatus.FORBIDDEN, id, details, message);
