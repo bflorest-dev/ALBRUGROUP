@@ -1,10 +1,8 @@
 package pe.albrugroup.lead_service.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.entity.*;
 import pe.albrugroup.lead_service.entity.enums.Accion;
@@ -21,6 +19,7 @@ import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorVentasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
+import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.AdicionalRepository;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
@@ -450,10 +449,7 @@ public class LeadService {
     private void validarEstadoParaContacto(Lead lead) {
         if (lead.getEstado() != EstadoSeguimiento.ASIGNADO
                 && lead.getEstado() != EstadoSeguimiento.EN_GESTION) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Solo se puede registrar contacto para leads ASIGNADO o EN_GESTION"
-            );
+            throw new BadRequestException("Solo se puede registrar contacto para leads ASIGNADO o EN_GESTION");
         }
     }
 
@@ -490,20 +486,20 @@ public class LeadService {
         Direccion direccion = lead.getDireccion();
 
         if (datosPreventa == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Faltan datos de preventa");
+            throw new BadRequestException("Faltan datos de preventa");
         }
         if (direccion == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Faltan datos de direccion");
+            throw new BadRequestException("Faltan datos de direccion");
         }
         if (lead.getPlan() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Falta seleccionar un plan");
+            throw new BadRequestException("Falta seleccionar un plan");
         }
         if (lead.getPromocionInterna() == null && lead.getPromocionProveedor() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Falta seleccionar al menos una promocion");
+            throw new BadRequestException("Falta seleccionar al menos una promocion");
         }
 
         if (datosPreventa.getTipoDocumento() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Falta tipoDocumento");
+            throw new BadRequestException("Falta tipoDocumento");
         }
         validarTextoObligatorio(datosPreventa.getNumeroDocumentoTitularServicio(), "Falta numeroDocumentoTitularServicio");
         validarTextoObligatorio(datosPreventa.getNombreTitularServicio(), "Falta nombreTitularServicio");
@@ -514,10 +510,10 @@ public class LeadService {
 
         validarTextoObligatorio(direccion.getUbigeoDomicilio(), "Falta ubigeoDomicilio");
         if (direccion.getTipoDomicilio() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Falta tipoDomicilio");
+            throw new BadRequestException("Falta tipoDomicilio");
         }
         if (direccion.getTipoVia() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Falta tipoVia");
+            throw new BadRequestException("Falta tipoVia");
         }
         validarTextoObligatorio(direccion.getVia(), "Falta via");
         validarTextoObligatorio(direccion.getDireccion(), "Falta direccion");
@@ -526,7 +522,7 @@ public class LeadService {
 
     private void validarTextoObligatorio(String value, String message) {
         if (value == null || value.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+            throw new BadRequestException(message);
         }
     }
 }

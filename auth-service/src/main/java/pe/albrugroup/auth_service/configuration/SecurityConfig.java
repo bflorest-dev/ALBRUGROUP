@@ -19,6 +19,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import pe.albrugroup.auth_service.security.AuthenticationFilter;
+import pe.albrugroup.auth_service.security.RestAccessDeniedHandler;
+import pe.albrugroup.auth_service.security.RestAuthenticationEntryPoint;
 
 @Configuration
 @EnableWebSecurity
@@ -28,6 +30,8 @@ public class SecurityConfig {
 
     private final AuthenticationFilter authFilter;
     private final UserDetailsService userDetailsService;
+    private final RestAuthenticationEntryPoint authenticationEntryPoint;
+    private final RestAccessDeniedHandler accessDeniedHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -62,6 +66,10 @@ public class SecurityConfig {
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler)
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class)

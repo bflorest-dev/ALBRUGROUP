@@ -23,6 +23,7 @@ import java.util.stream.Stream;
 public class AuthenticationFilter implements WebFilter {
 
     private final JwtUtil jwtUtil;
+    private final RestAuthenticationEntryPoint authenticationEntryPoint;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
@@ -35,8 +36,7 @@ public class AuthenticationFilter implements WebFilter {
         try {
             if (!jwtUtil.validateToken(token)) {
                 log.warn("Token invalido o expirado");
-                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-                return exchange.getResponse().setComplete();
+                return authenticationEntryPoint.writeJson(exchange, HttpStatus.UNAUTHORIZED, "Token invalido o expirado");
             }
 
             String username = jwtUtil.extractUsername(token);
@@ -64,8 +64,7 @@ public class AuthenticationFilter implements WebFilter {
                     .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
         } catch (Exception e) {
             log.error("Error validando JWT: {}", e.getMessage());
-            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
+            return authenticationEntryPoint.writeJson(exchange, HttpStatus.UNAUTHORIZED, "No autenticado o token invalido");
         }
     }
 }

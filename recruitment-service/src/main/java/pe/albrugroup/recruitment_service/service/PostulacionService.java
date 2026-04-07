@@ -6,7 +6,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 import pe.albrugroup.recruitment_service.configuration.CurrentUser;
 import pe.albrugroup.recruitment_service.entity.OfertaLaboral;
 import pe.albrugroup.recruitment_service.entity.Postulacion;
@@ -25,6 +24,8 @@ import pe.albrugroup.recruitment_service.entity.request.ConfirmarContratacionReq
 import pe.albrugroup.recruitment_service.entity.request.PostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.TipificarPostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
+import pe.albrugroup.recruitment_service.exception.BadRequestException;
+import pe.albrugroup.recruitment_service.exception.ConflictException;
 import pe.albrugroup.recruitment_service.exception.NotFoundException;
 import pe.albrugroup.recruitment_service.repository.GrupoCapacitacionDetalleRepository;
 import pe.albrugroup.recruitment_service.repository.OfertaLaboralRepository;
@@ -207,10 +208,7 @@ public class PostulacionService {
                 .orElseThrow(() -> new NotFoundException(Postulacion.class, idPostulacion));
 
         var detalle = grupoCapacitacionDetalleRepository.findByPostulacionId(idPostulacion)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "La postulacion no tiene un detalle de grupo de capacitacion asociado"
-                ));
+                .orElseThrow(() -> new BadRequestException("La postulacion no tiene un detalle de grupo de capacitacion asociado"));
 
         validarPostulacionListaParaContratar(postulacion, detalle.getEstadoCapacitacion());
 
@@ -243,10 +241,7 @@ public class PostulacionService {
                 .orElseThrow(() -> new NotFoundException(OfertaLaboral.class, idOfertaLaboral));
 
         if (ofertaLaboral.getEstado() != EstadoOferta.ACTIVO) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "La postulacion solo puede registrarse o editarse con una oferta laboral activa"
-            );
+            throw new BadRequestException("La postulacion solo puede registrarse o editarse con una oferta laboral activa");
         }
 
         return ofertaLaboral;
@@ -254,7 +249,7 @@ public class PostulacionService {
 
     private void validarTipificacionActiva(Tipificacion tipificacion) {
         if (!Boolean.TRUE.equals(tipificacion.getActivo())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La tipificacion enviada esta inactiva");
+            throw new BadRequestException("La tipificacion enviada esta inactiva");
         }
     }
 
@@ -262,35 +257,26 @@ public class PostulacionService {
         grupoCapacitacionDetalleRepository.findByPostulacionId(postulacion.getId())
                 .ifPresent(detalle -> {
                     if (detalle.getIdEmpleadoContratado() != null) {
-                        throw new ResponseStatusException(
-                                HttpStatus.BAD_REQUEST,
-                                "La postulacion ya tiene una contratacion confirmada y no admite nuevas tipificaciones"
-                        );
+                        throw new BadRequestException("La postulacion ya tiene una contratacion confirmada y no admite nuevas tipificaciones");
                     }
                 });
     }
 
     private void validarSubtipificacionActiva(Subtipificacion subtipificacion) {
         if (!Boolean.TRUE.equals(subtipificacion.getActivo())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La subtipificacion enviada esta inactiva");
+            throw new BadRequestException("La subtipificacion enviada esta inactiva");
         }
     }
 
     private void validarTipificacionPorEtapa(Postulacion postulacion, Tipificacion tipificacion) {
         if (tipificacion.getEtapa() != postulacion.getEtapa()) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "La tipificacion no pertenece a la etapa actual de la postulacion"
-            );
+            throw new BadRequestException("La tipificacion no pertenece a la etapa actual de la postulacion");
         }
     }
 
     private void validarSubtipificacionPerteneceATipificacion(Tipificacion tipificacion, Subtipificacion subtipificacion) {
         if (!subtipificacion.getTipificacion().getId().equals(tipificacion.getId())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "La subtipificacion no pertenece a la tipificacion enviada"
-            );
+            throw new BadRequestException("La subtipificacion no pertenece a la tipificacion enviada");
         }
     }
 
@@ -302,10 +288,7 @@ public class PostulacionService {
         PuestoObjetivo puestoObjetivo = postulacion.getOfertaLaboral().getPuestoObjetivo();
         if (puestoObjetivo != PuestoObjetivo.ASESOR_VENTAS
                 || subtipificacion.getAlcance() != AlcanceSubtipificacion.ASESOR_VENTAS) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "La subtipificacion no aplica al puesto objetivo de la postulacion"
-            );
+            throw new BadRequestException("La subtipificacion no aplica al puesto objetivo de la postulacion");
         }
     }
 
@@ -369,10 +352,7 @@ public class PostulacionService {
         if (estadoActual == EstadoCapacitacionPostulante.APROBADO
                 || estadoActual == EstadoCapacitacionPostulante.DESAPROBADO
                 || estadoActual == EstadoCapacitacionPostulante.RETIRADO) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "El detalle del grupo ya se encuentra en un estado final y no admite nuevas tipificaciones de capacitacion"
-            );
+            throw new BadRequestException("El detalle del grupo ya se encuentra en un estado final y no admite nuevas tipificaciones de capacitacion");
         }
     }
 
@@ -403,17 +383,11 @@ public class PostulacionService {
 
     private void validarPostulacionListaParaContratar(Postulacion postulacion, EstadoCapacitacionPostulante estadoCapacitacion) {
         if (postulacion.getEtapa() != Etapa.CONTRATACION) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Solo se puede confirmar la contratacion de postulaciones en etapa CONTRATACION"
-            );
+            throw new BadRequestException("Solo se puede confirmar la contratacion de postulaciones en etapa CONTRATACION");
         }
 
         if (estadoCapacitacion != EstadoCapacitacionPostulante.APROBADO) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Solo se puede confirmar la contratacion de postulaciones aprobadas en capacitacion"
-            );
+            throw new BadRequestException("Solo se puede confirmar la contratacion de postulaciones aprobadas en capacitacion");
         }
     }
 
@@ -428,10 +402,7 @@ public class PostulacionService {
             return postulacionMapper.toResponse(postulacion);
         }
 
-        throw new ResponseStatusException(
-                HttpStatus.CONFLICT,
-                "La postulacion ya tiene una contratacion confirmada con datos diferentes"
-        );
+        throw new ConflictException("La postulacion ya tiene una contratacion confirmada con datos diferentes");
     }
 
     private PostulacionResponse mapearPostulacionResponse(Postulacion postulacion) {

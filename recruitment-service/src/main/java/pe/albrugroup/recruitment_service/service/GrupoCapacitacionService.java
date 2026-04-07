@@ -1,10 +1,8 @@
 package pe.albrugroup.recruitment_service.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 import pe.albrugroup.recruitment_service.entity.GrupoCapacitacion;
 import pe.albrugroup.recruitment_service.entity.GrupoCapacitacionDetalle;
 import pe.albrugroup.recruitment_service.entity.Postulacion;
@@ -18,6 +16,8 @@ import pe.albrugroup.recruitment_service.entity.request.AgregarPostulacionGrupoC
 import pe.albrugroup.recruitment_service.entity.request.GrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.response.GrupoCapacitacionDetalleResponse;
 import pe.albrugroup.recruitment_service.entity.response.GrupoCapacitacionResponse;
+import pe.albrugroup.recruitment_service.exception.BadRequestException;
+import pe.albrugroup.recruitment_service.exception.ConflictException;
 import pe.albrugroup.recruitment_service.exception.NotFoundException;
 import pe.albrugroup.recruitment_service.repository.GrupoCapacitacionDetalleRepository;
 import pe.albrugroup.recruitment_service.repository.GrupoCapacitacionRepository;
@@ -102,8 +102,7 @@ public class GrupoCapacitacionService {
             ActualizarDetalleGrupoCapacitacionRequest request
     ) {
         GrupoCapacitacionDetalle detalle = detalleRepository.findByGrupoCapacitacionIdAndPostulacionId(idGrupoCapacitacion, idPostulacion)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
+                .orElseThrow(() -> new NotFoundException(
                         "No existe un detalle de capacitacion para la postulacion indicada en el grupo enviado"
                 ));
 
@@ -173,63 +172,45 @@ public class GrupoCapacitacionService {
 
     private void validarCodigoGrupoUnico(String codigo) {
         if (grupoCapacitacionRepository.existsByCodigo(codigo)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya existe un grupo de capacitacion con el codigo indicado");
+            throw new ConflictException("Ya existe un grupo de capacitacion con el codigo indicado");
         }
     }
 
     private void validarFechasGrupo(LocalDate fechaInicio, LocalDate fechaFin) {
         if (fechaFin != null && fechaFin.isBefore(fechaInicio)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La fecha fin no puede ser menor a la fecha inicio");
+            throw new BadRequestException("La fecha fin no puede ser menor a la fecha inicio");
         }
     }
 
     private void validarGrupoDisponible(GrupoCapacitacion grupo) {
         if (grupo.getEstado() == EstadoGrupoCapacitacion.CERRADO || grupo.getEstado() == EstadoGrupoCapacitacion.ANULADO) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "No se pueden agregar postulaciones a un grupo de capacitacion cerrado o anulado"
-            );
+            throw new BadRequestException("No se pueden agregar postulaciones a un grupo de capacitacion cerrado o anulado");
         }
     }
 
     private void validarPostulacionAptaParaCapacitacion(Postulacion postulacion) {
         if (postulacion.getEtapa() != Etapa.CAPACITACION) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Solo se pueden agregar postulaciones que esten en la etapa de capacitacion"
-            );
+            throw new BadRequestException("Solo se pueden agregar postulaciones que esten en la etapa de capacitacion");
         }
 
         if (postulacion.getOfertaLaboral().getPuestoObjetivo() != PuestoObjetivo.ASESOR_VENTAS) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Solo se pueden agregar postulaciones del puesto objetivo ASESOR_VENTAS"
-            );
+            throw new BadRequestException("Solo se pueden agregar postulaciones del puesto objetivo ASESOR_VENTAS");
         }
     }
 
     private void validarPostulacionSinGrupoPrevio(Long idPostulacion) {
         if (detalleRepository.existsByPostulacionId(idPostulacion)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "La postulacion indicada ya fue asignada a un grupo de capacitacion"
-            );
+            throw new ConflictException("La postulacion indicada ya fue asignada a un grupo de capacitacion");
         }
     }
 
     private void validarActualizacionDetalle(ActualizarDetalleGrupoCapacitacionRequest request) {
         if (request.getFechaContratacion() != null && request.getIdEmpleadoContratado() == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "No se puede registrar fecha de contratacion sin idEmpleadoContratado"
-            );
+            throw new BadRequestException("No se puede registrar fecha de contratacion sin idEmpleadoContratado");
         }
 
         if (Boolean.TRUE.equals(request.getCumplioTresMeses()) && request.getIdEmpleadoContratado() == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "No se puede marcar cumplimiento de tres meses sin idEmpleadoContratado"
-            );
+            throw new BadRequestException("No se puede marcar cumplimiento de tres meses sin idEmpleadoContratado");
         }
     }
 }

@@ -9,6 +9,8 @@ import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import pe.albrugroup.gateway_service.security.AuthenticationFilter;
+import pe.albrugroup.gateway_service.security.RestAccessDeniedHandler;
+import pe.albrugroup.gateway_service.security.RestAuthenticationEntryPoint;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -16,6 +18,8 @@ import pe.albrugroup.gateway_service.security.AuthenticationFilter;
 public class SecurityConfig {
 
     private final AuthenticationFilter authFilter;
+    private final RestAuthenticationEntryPoint authenticationEntryPoint;
+    private final RestAccessDeniedHandler accessDeniedHandler;
 
     @Bean
     public SecurityWebFilterChain securityFilterChain(ServerHttpSecurity http) {
@@ -44,6 +48,10 @@ public class SecurityConfig {
                         ).permitAll()
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyExchange().authenticated()
+                )
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler)
                 )
                 .addFilterAt(authFilter, SecurityWebFiltersOrder.AUTHENTICATION);
         return http.build();

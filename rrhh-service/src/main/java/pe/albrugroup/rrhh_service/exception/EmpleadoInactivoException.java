@@ -1,13 +1,7 @@
 package pe.albrugroup.rrhh_service.exception;
 
-import org.springframework.http.HttpStatus;
-
-public class EmpleadoInactivoException extends BusinessException {
+public class EmpleadoInactivoException extends UnprocessableEntityException {
     public EmpleadoInactivoException(Long idEmpleado) {
-        super(
-                HttpStatus.UNPROCESSABLE_ENTITY,
-                "Empleado se encuentra Inactivo",
-                idEmpleado
-        );
+        super("Empleado se encuentra Inactivo", idEmpleado);
     }
 }

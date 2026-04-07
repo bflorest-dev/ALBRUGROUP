@@ -14,6 +14,9 @@ import pe.albrugroup.auth_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.auth_service.entity.request.ActualizarCredencialesRequest;
 import pe.albrugroup.auth_service.entity.request.ForgotPasswordRequest;
 import pe.albrugroup.auth_service.entity.request.RegistrarUsuarioRequest;
+import pe.albrugroup.auth_service.exception.ConflictException;
+import pe.albrugroup.auth_service.exception.ForbiddenException;
+import pe.albrugroup.auth_service.exception.NotFoundException;
 import pe.albrugroup.auth_service.mapper.Mapper;
 import pe.albrugroup.auth_service.repository.RolRepository;
 import pe.albrugroup.auth_service.repository.UsuarioRepository;
@@ -23,8 +26,10 @@ import java.security.SecureRandom;
 import java.util.HashSet;
 import java.util.Set;
 
-@Service @Slf4j
-@RequiredArgsConstructor @Transactional
+@Service
+@Slf4j
+@RequiredArgsConstructor
+@Transactional
 public class UsuarioService implements IUsuario {
 
     private final UsuarioRepository usuarioRepository;
@@ -45,11 +50,10 @@ public class UsuarioService implements IUsuario {
     @Override
     public UsuarioResponse actualizarUsernameRoles(Long empleadoId, ActualizarCredencialesRequest request) {
         Usuario usuario = usuarioRepository.findByEmpleadoId(empleadoId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado por EmpleadoID: " + empleadoId));
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado por EmpleadoID", empleadoId));
 
         PuestoTrabajo puestoTrabajo = request.getPuestoTrabajo();
-        Rol rol = rolRepository.findByNombre(puestoTrabajo.name())
-                .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + puestoTrabajo.name()));
+        Rol rol = obtenerRol(puestoTrabajo);
 
         String nuevoUsername = usernameGenerator(
                 request.getNombres(),
@@ -58,10 +62,7 @@ public class UsuarioService implements IUsuario {
                 puestoTrabajo
         );
 
-        if (usuarioRepository.existsByUsername(nuevoUsername)
-                && !nuevoUsername.equalsIgnoreCase(usuario.getUsername())) {
-            throw new RuntimeException("El username ya existe: " + nuevoUsername);
-        }
+        validarUsernameDisponible(nuevoUsername, usuario.getUsername());
 
         usuario.setUsername(nuevoUsername);
         usuario.setDni(request.getDni().trim());
@@ -74,7 +75,7 @@ public class UsuarioService implements IUsuario {
     @Override
     public CredencialesResponse resetPassword(Long empleadoId) {
         Usuario usuario = usuarioRepository.findByEmpleadoId(empleadoId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado por EmpleadoID: " + empleadoId));
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado por EmpleadoID", empleadoId));
         String plainPassword = passwordGenerator();
         usuario.setPassword(passwordEncoder.encode(plainPassword));
         usuario.setPasswordInicializada(true);
@@ -92,10 +93,10 @@ public class UsuarioService implements IUsuario {
                         request.getEmail().trim(),
                         request.getDni().trim()
                 )
-                .orElseThrow(() -> new RuntimeException("No se encontraron datos coincidentes para recuperar acceso"));
+                .orElseThrow(() -> new NotFoundException("No se encontraron datos coincidentes para recuperar acceso"));
 
         if (!usuario.getActivo()) {
-            throw new RuntimeException("El usuario se encuentra inactivo");
+            throw new ForbiddenException("El usuario se encuentra inactivo");
         }
 
         String plainPassword = passwordGenerator();
@@ -112,7 +113,7 @@ public class UsuarioService implements IUsuario {
     @Transactional(readOnly = true)
     public EstadoAccesoResponse getEstadoAcceso(String username) {
         Usuario usuario = usuarioRepository.findByUsername(username.trim())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado"));
         return EstadoAccesoResponse.builder()
                 .activo(usuario.getActivo())
                 .passwordInicializada(usuario.getPasswordInicializada())
@@ -122,17 +123,13 @@ public class UsuarioService implements IUsuario {
     private RegistroUsuarioResult registrarUsuarioInternal(RegistrarUsuarioRequest request) {
         log.info("Registrando nuevo usuario: DNI[{}]", request.getDni());
 
-        if(usuarioRepository.existsByEmail(request.getEmail())) {
+        if (usuarioRepository.existsByEmail(request.getEmail())) {
             log.error("El email ya existe: {}", request.getEmail());
-            throw new RuntimeException("âŒ El email ya existe: " +  request.getEmail());
+            throw new ConflictException("El email ya existe: " + request.getEmail());
         }
 
         PuestoTrabajo puestoTrabajo = request.getPuestoTrabajo();
-        Rol rol = rolRepository.findByNombre(puestoTrabajo.name())
-                .orElseThrow(() -> {
-                    log.error("El rol no existe: {}", puestoTrabajo.name());
-                    return new RuntimeException("âŒ El rol no existe: " + puestoTrabajo.name());
-                });
+        Rol rol = obtenerRol(puestoTrabajo);
         log.info("Rol asignado: {}", rol.getNombre());
 
         String plainPassword = passwordGenerator();
@@ -161,8 +158,7 @@ public class UsuarioService implements IUsuario {
 
     private void actualizarUsuarioExistente(Usuario usuario, RegistrarUsuarioRequest request) {
         PuestoTrabajo puestoTrabajo = request.getPuestoTrabajo();
-        Rol rol = rolRepository.findByNombre(puestoTrabajo.name())
-                .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + puestoTrabajo.name()));
+        Rol rol = obtenerRol(puestoTrabajo);
 
         String nuevoUsername = usernameGenerator(
                 request.getNombres(),
@@ -171,15 +167,8 @@ public class UsuarioService implements IUsuario {
                 puestoTrabajo
         );
 
-        if (usuarioRepository.existsByUsername(nuevoUsername)
-                && !nuevoUsername.equalsIgnoreCase(usuario.getUsername())) {
-            throw new RuntimeException("El username ya existe: " + nuevoUsername);
-        }
-
-        if (usuarioRepository.existsByEmail(request.getEmail())
-                && !request.getEmail().equalsIgnoreCase(usuario.getEmail())) {
-            throw new RuntimeException("El email ya existe: " + request.getEmail());
-        }
+        validarUsernameDisponible(nuevoUsername, usuario.getUsername());
+        validarEmailDisponible(request.getEmail(), usuario.getEmail());
 
         usuario.setUsername(nuevoUsername);
         usuario.setEmail(request.getEmail().trim());
@@ -190,19 +179,39 @@ public class UsuarioService implements IUsuario {
         usuarioRepository.save(usuario);
     }
 
+    private Rol obtenerRol(PuestoTrabajo puestoTrabajo) {
+        return rolRepository.findByNombre(puestoTrabajo.name())
+                .orElseThrow(() -> new NotFoundException("Rol no encontrado: " + puestoTrabajo.name()));
+    }
+
+    private void validarUsernameDisponible(String nuevoUsername, String usernameActual) {
+        if (usuarioRepository.existsByUsername(nuevoUsername)
+                && !nuevoUsername.equalsIgnoreCase(usernameActual)) {
+            throw new ConflictException("El username ya existe: " + nuevoUsername);
+        }
+    }
+
+    private void validarEmailDisponible(String nuevoEmail, String emailActual) {
+        if (usuarioRepository.existsByEmail(nuevoEmail)
+                && !nuevoEmail.equalsIgnoreCase(emailActual)) {
+            throw new ConflictException("El email ya existe: " + nuevoEmail);
+        }
+    }
+
     private String usernameGenerator(String nombres, String apellidos, String dni, PuestoTrabajo puesto) {
         String first = nombres.substring(0, 1).toUpperCase();
         String last = apellidos.substring(0, 1).toUpperCase();
         String cargoIngles = puesto.getEnglishName();
 
-        return first + dni + last + "@albru."+ cargoIngles + ".pe";
+        return first + dni + last + "@albru." + cargoIngles + ".pe";
     }
+
     private String passwordGenerator() {
         String caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZ" + "abcdefghijkmnopqrstuvwxyz" + "23456789" + "@#$%&*-_";
         SecureRandom random = new SecureRandom();
 
         StringBuilder pass = new StringBuilder(UsuarioService.PASSWORD_LENGTH);
-        for(int i = 0; i < UsuarioService.PASSWORD_LENGTH; i++) {
+        for (int i = 0; i < UsuarioService.PASSWORD_LENGTH; i++) {
             pass.append(caracteres.charAt(random.nextInt(caracteres.length())));
         }
         return pass.toString();
@@ -219,29 +228,33 @@ public class UsuarioService implements IUsuario {
         log.info("Actualizando roles del usuario ID: {}", empleadoId);
 
         Usuario usuario = usuarioRepository.findByEmpleadoId(empleadoId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-        Rol rol = rolRepository.findByNombre(puesto.name())
-                .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + puesto.name()));
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado", empleadoId));
+        Rol rol = obtenerRol(puesto);
         usuario.setRoles(new HashSet<>(Set.of(rol)));
 
         log.info("Rol actualizado para el usuario: {}|{}", usuario.getUsername(), rol.getNombre());
         return Mapper.toResponse(usuario);
     }
+
     @Override
     public UsuarioResponse getUsuarioPorEmpleadoID(Long empleadoId) {
         log.info("Buscando usuario por EmpleadoID: {}", empleadoId);
 
         Usuario usuario = usuarioRepository.findByEmpleadoId(empleadoId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado por EmpleadoID: " + empleadoId));
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado por EmpleadoID", empleadoId));
         return Mapper.toResponse(usuario);
     }
+
     @Override
     public void deshabilitarUsuario(Long empleadoId) {
         log.info("Deshabilitando Empleado ID: {}", empleadoId);
 
         Usuario usuario = usuarioRepository.findByEmpleadoId(empleadoId)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + empleadoId));
-        if(!usuario.getActivo()) { log.warn("El usuario ya se encuentra deshabilitado"); return; }
+                .orElseThrow(() -> new NotFoundException("Usuario no encontrado", empleadoId));
+        if (!usuario.getActivo()) {
+            log.warn("El usuario ya se encuentra deshabilitado");
+            return;
+        }
         usuario.setActivo(false);
         usuarioRepository.save(usuario);
 

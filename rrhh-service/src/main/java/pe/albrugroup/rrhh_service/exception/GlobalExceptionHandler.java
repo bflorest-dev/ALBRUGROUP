@@ -1,5 +1,6 @@
 package pe.albrugroup.rrhh_service.exception;
 
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -32,6 +34,16 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(e.getStatus()).body(body);
     }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleResponseStatusException(ResponseStatusException e) {
+        HttpStatus status = HttpStatus.valueOf(e.getStatusCode().value());
+        return ResponseEntity.status(status).body(Map.of(
+                "status", status.value(),
+                "error", status.getReasonPhrase(),
+                "message", e.getReason() == null ? "Error en la solicitud" : e.getReason()
+        ));
+    }
     // CAMPOS INVALIDOS EN REQUESTS
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationErrors(MethodArgumentNotValidException e) {
@@ -48,6 +60,21 @@ public class GlobalExceptionHandler {
         errors.put("details", message);
 
         return ResponseEntity.badRequest().body(errors);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleConstraintViolation(ConstraintViolationException e) {
+        List<String> details = e.getConstraintViolations()
+                .stream()
+                .map(violation -> violation.getMessage())
+                .toList();
+
+        return ResponseEntity.badRequest().body(Map.of(
+                "status", HttpStatus.BAD_REQUEST.value(),
+                "error", HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                "message", "Parametros invalidos",
+                "details", details
+        ));
     }
 
     // PARAMETROS INVALIDOS EN LOS ENDPOINTS

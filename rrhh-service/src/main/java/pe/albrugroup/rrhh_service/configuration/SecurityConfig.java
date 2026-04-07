@@ -11,6 +11,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import pe.albrugroup.rrhh_service.security.AuthenticationFilter;
+import pe.albrugroup.rrhh_service.security.RestAccessDeniedHandler;
+import pe.albrugroup.rrhh_service.security.RestAuthenticationEntryPoint;
 
 @Configuration
 @EnableWebSecurity
@@ -19,6 +21,8 @@ import pe.albrugroup.rrhh_service.security.AuthenticationFilter;
 public class SecurityConfig {
 
     private final AuthenticationFilter authFilter;
+    private final RestAuthenticationEntryPoint authenticationEntryPoint;
+    private final RestAccessDeniedHandler accessDeniedHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -31,6 +35,10 @@ public class SecurityConfig {
                                 "/v3/api-docs/**"
                         ).permitAll()
                         .anyRequest().authenticated()
+                )
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler)
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)

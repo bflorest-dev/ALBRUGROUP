@@ -3,7 +3,6 @@ package pe.albrugroup.recruitment_service.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 import pe.albrugroup.recruitment_service.entity.Subtipificacion;
 import pe.albrugroup.recruitment_service.entity.Tipificacion;
 import pe.albrugroup.recruitment_service.entity.enums.AlcanceSubtipificacion;
@@ -16,6 +15,8 @@ import pe.albrugroup.recruitment_service.entity.request.TipificacionRequest;
 import pe.albrugroup.recruitment_service.entity.response.CatalogoTipificacionResponse;
 import pe.albrugroup.recruitment_service.entity.response.SubtipificacionResponse;
 import pe.albrugroup.recruitment_service.entity.response.TipificacionResponse;
+import pe.albrugroup.recruitment_service.exception.BadRequestException;
+import pe.albrugroup.recruitment_service.exception.ConflictException;
 import pe.albrugroup.recruitment_service.exception.NotFoundException;
 import pe.albrugroup.recruitment_service.repository.SubtipificacionRepository;
 import pe.albrugroup.recruitment_service.repository.TipificacionRepository;
@@ -97,7 +98,7 @@ public class TipificacionService {
                 .orElseThrow(() -> new NotFoundException(Tipificacion.class, tipificacionId));
 
         if (!Boolean.TRUE.equals(tipificacion.getActivo())) {
-            throw new ResponseStatusException(BAD_REQUEST, "Solo se pueden agregar subtipificaciones a tipificaciones activas");
+            throw new BadRequestException("Solo se pueden agregar subtipificaciones a tipificaciones activas");
         }
 
         validarCodigoSubtipificacionDisponible(tipificacion.getId(), request.getCodigo());
@@ -159,13 +160,13 @@ public class TipificacionService {
 
     private void validarCodigoTipificacionDisponible(Etapa etapa, String codigo) {
         if (tipificacionRepository.existsByEtapaAndCodigoIgnoreCase(etapa, codigo)) {
-            throw new ResponseStatusException(CONFLICT, "Ya existe una tipificacion con el codigo indicado para la etapa");
+            throw new ConflictException("Ya existe una tipificacion con el codigo indicado para la etapa");
         }
     }
 
     private void validarCodigoSubtipificacionDisponible(Long tipificacionId, String codigo) {
         if (subtipificacionRepository.existsByTipificacionIdAndCodigoIgnoreCase(tipificacionId, codigo)) {
-            throw new ResponseStatusException(CONFLICT, "Ya existe una subtipificacion con el codigo indicado para la tipificacion");
+            throw new ConflictException("Ya existe una subtipificacion con el codigo indicado para la tipificacion");
         }
     }
 
@@ -183,7 +184,7 @@ public class TipificacionService {
                 && tipificacionesDesactivar.isEmpty()
                 && subtipificacionesActivar.isEmpty()
                 && subtipificacionesDesactivar.isEmpty()) {
-            throw new ResponseStatusException(BAD_REQUEST, "La solicitud no tiene operaciones para ejecutar");
+            throw new BadRequestException("La solicitud no tiene operaciones para ejecutar");
         }
 
         validarInterseccionVacia(tipificacionesActivar, tipificacionesDesactivar, "tipificaciones");
@@ -207,8 +208,7 @@ public class TipificacionService {
         Set<Long> conflicto = new HashSet<>(activar);
         conflicto.retainAll(desactivar);
         if (!conflicto.isEmpty()) {
-            throw new ResponseStatusException(
-                    BAD_REQUEST,
+            throw new BadRequestException(
                     "No se puede activar y desactivar el mismo conjunto de " + tipo + " en la misma solicitud"
             );
         }
@@ -229,7 +229,7 @@ public class TipificacionService {
                 throw new NotFoundException(Tipificacion.class, id);
             }
             if (tipificacion.getEtapa() != etapa) {
-                throw new ResponseStatusException(BAD_REQUEST, "La tipificacion no pertenece a la etapa enviada");
+                throw new BadRequestException("La tipificacion no pertenece a la etapa enviada");
             }
         }
 
@@ -251,7 +251,7 @@ public class TipificacionService {
                 throw new NotFoundException(Subtipificacion.class, id);
             }
             if (subtipificacion.getTipificacion().getEtapa() != etapa) {
-                throw new ResponseStatusException(BAD_REQUEST, "La subtipificacion no pertenece a la etapa enviada");
+                throw new BadRequestException("La subtipificacion no pertenece a la etapa enviada");
             }
         }
 
@@ -298,7 +298,7 @@ public class TipificacionService {
         for (Long id : subtipificacionesActivar) {
             Subtipificacion subtipificacion = subtipificacionesPorId.get(id);
             if (!Boolean.TRUE.equals(subtipificacion.getTipificacion().getActivo())) {
-                throw new ResponseStatusException(BAD_REQUEST, "No se puede activar una subtipificacion si su tipificacion padre esta inactiva");
+                throw new BadRequestException("No se puede activar una subtipificacion si su tipificacion padre esta inactiva");
             }
 
             subtipificacion.setActivo(Boolean.TRUE);

@@ -22,4 +22,10 @@ public abstract class BusinessException extends RuntimeException {
     protected BusinessException(HttpStatus status, String message) {
         this(status, message, null, null);
     }
+    protected BusinessException(HttpStatus status, String message, Object id, Object details, Throwable cause) {
+        super(message, cause);
+        this.status = status;
+        this.id = id;
+        this.details = details;
+    }
 }

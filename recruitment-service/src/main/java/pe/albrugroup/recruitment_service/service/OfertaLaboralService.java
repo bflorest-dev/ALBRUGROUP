@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 import pe.albrugroup.recruitment_service.configuration.CurrentUser;
 import pe.albrugroup.recruitment_service.entity.OfertaAmpliacion;
 import pe.albrugroup.recruitment_service.entity.OfertaLaboral;
@@ -14,6 +13,8 @@ import pe.albrugroup.recruitment_service.entity.request.OfertaAmpliacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.OfertaLaboralRequest;
 import pe.albrugroup.recruitment_service.entity.response.OfertaAmpliacionResponse;
 import pe.albrugroup.recruitment_service.entity.response.OfertaLaboralResponse;
+import pe.albrugroup.recruitment_service.exception.BadRequestException;
+import pe.albrugroup.recruitment_service.exception.ConflictException;
 import pe.albrugroup.recruitment_service.exception.NotFoundException;
 import pe.albrugroup.recruitment_service.repository.OfertaAmpliacionRepository;
 import pe.albrugroup.recruitment_service.repository.OfertaLaboralRepository;
@@ -76,10 +77,7 @@ public class OfertaLaboralService {
 
     private void validarCodigoUnico(String codigo) {
         if (ofertaRepository.existsByCodigo(codigo)) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Ya existe una oferta laboral con el codigo indicado"
-            );
+            throw new ConflictException("Ya existe una oferta laboral con el codigo indicado");
         }
     }
 
@@ -91,47 +89,32 @@ public class OfertaLaboralService {
                 request.getHorario()
         );
         if (existeEquivalente) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Ya existe una oferta activa equivalente para negocio, puesto objetivo y horario"
-            );
+            throw new ConflictException("Ya existe una oferta activa equivalente para negocio, puesto objetivo y horario");
         }
     }
 
     private void validarOfertaActiva(OfertaLaboral oferta) {
         if (oferta.getEstado() != EstadoOferta.ACTIVO) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Solo se pueden registrar ampliaciones sobre ofertas activas"
-            );
+            throw new BadRequestException("Solo se pueden registrar ampliaciones sobre ofertas activas");
         }
     }
 
     private void validarPlazoAmpliacion(OfertaLaboral oferta, OfertaAmpliacionRequest request) {
         if (request.getPlazo().isBefore(oferta.getPlazoInicial())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "El plazo de la ampliacion no puede ser menor al plazo inicial de la oferta"
-            );
+            throw new BadRequestException("El plazo de la ampliacion no puede ser menor al plazo inicial de la oferta");
         }
 
         ampliacionRepository.findTopByOfertaLaboralIdOrderByPlazoDescIdDesc(oferta.getId())
                 .ifPresent(ultimaAmpliacion -> {
                     if (request.getPlazo().isBefore(ultimaAmpliacion.getPlazo())) {
-                        throw new ResponseStatusException(
-                                HttpStatus.BAD_REQUEST,
-                                "El plazo de la ampliacion no puede ser menor al de la ultima ampliacion registrada"
-                        );
+                        throw new BadRequestException("El plazo de la ampliacion no puede ser menor al de la ultima ampliacion registrada");
                     }
                 });
     }
 
     private void validarCambioEstado(OfertaLaboral oferta, EstadoOferta nuevoEstado) {
         if (oferta.getEstado() == nuevoEstado) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "La oferta laboral ya se encuentra en el estado indicado"
-            );
+            throw new BadRequestException("La oferta laboral ya se encuentra en el estado indicado");
         }
 
         switch (oferta.getEstado()) {
@@ -146,16 +129,10 @@ public class OfertaLaboralService {
                 }
             }
             case CANCELADO, COMPLETADO -> {
-                throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "No se puede cambiar el estado de una oferta laboral cancelada o completada"
-                );
+                throw new BadRequestException("No se puede cambiar el estado de una oferta laboral cancelada o completada");
             }
         }
 
-        throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "La transicion de estado indicada no esta permitida para la oferta laboral"
-        );
+        throw new BadRequestException("La transicion de estado indicada no esta permitida para la oferta laboral");
     }
 }
