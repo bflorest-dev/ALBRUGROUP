@@ -212,6 +212,8 @@ public class DataLoader {
                 getPermiso("READ_POSTULACIONES_RECLUTAMIENTO"),
                 getPermiso("READ_POSTULACION"),
 
+                getPermiso("READ_EMPLEADOS"),
+
                 getPermiso("CREATE_GRUPOS_CAPACITACION"),
                 getPermiso("READ_GRUPOS_CAPACITACION"),
                 getPermiso("ASSIGN_GRUPOS_CAPACITACION"),
@@ -227,6 +229,8 @@ public class DataLoader {
                 getPermiso("READ_GRUPOS_CAPACITACION"),
                 getPermiso("READ_EVENTOS_RECRUITMENT"),
                 getPermiso("TYPIFY_POSTULACIONES"),
+
+                getPermiso("READ_EMPLEADOS"),
 
                 getPermiso("READ_POSTULACIONES_CAPACITACION"),
                 getPermiso("READ_POSTULACION"),
