@@ -23,9 +23,12 @@ import pe.albrugroup.rrhh_service.entity.request.empleado.DatosContactoUbicacion
 import pe.albrugroup.rrhh_service.entity.request.empleado.DatosFinancierosRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.DatosPersonalesRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.RegistrarEmpleadoRequest;
+import pe.albrugroup.rrhh_service.entity.response.EmpleadoRolResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 import pe.albrugroup.rrhh_service.security.UserSession;
 import pe.albrugroup.rrhh_service.usecase.IEmpleado;
+
+import java.util.List;
 
 @RestController
 @Validated
@@ -86,6 +89,16 @@ public class EmpleadoController {
             @Parameter(description = "Parametros de paginacion: `page`, `size`, `sort` (ejemplo: sort=nombres,asc)")
             Pageable pageable) {
         return ResponseEntity.ok(empleadoService.getEmpleadoUniversal(dato, pageable));
+    }
+
+    @Operation(
+            summary = "Listar personal activo para recruitment",
+            description = "Devuelve empleados activos con contrato vigente cuyo puesto de trabajo es CAPACITADOR, RECLUTADOR o RRHH."
+    )
+    @GetMapping("/personal-recruitment")
+    @PreAuthorize("hasAuthority('READ_PERSONAL_RECRUITMENT')")
+    public ResponseEntity<List<EmpleadoRolResponse>> listarPersonalRecruitment() {
+        return ResponseEntity.ok(empleadoService.listarPersonalRecruitment());
     }
 
     @Operation(

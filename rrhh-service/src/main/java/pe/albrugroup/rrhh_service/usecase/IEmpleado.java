@@ -8,6 +8,7 @@ import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.enums.Origen;
 import pe.albrugroup.rrhh_service.entity.request.empleado.*;
+import pe.albrugroup.rrhh_service.entity.response.EmpleadoRolResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 
 import java.util.List;
@@ -25,4 +26,5 @@ public interface IEmpleado {
     EmpleadoResponse actualizarDatosFinancieros(Long idEmpleado, DatosFinancierosRequest datosFinancieros);
     EmpleadoResponse actualizarContactoCorporativo(Long idEmpleado, DatosContactoCorporativoRequest datosCorporativos);
     EmpleadoResponse listaNegraEmpleado(Long idEmpleado, Long responsableId);
+    List<EmpleadoRolResponse> listarPersonalRecruitment();
 }

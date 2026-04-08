@@ -91,4 +91,41 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("idLead") Long idLead,
             @Param("idAsesor") Long idAsesor
     );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.LeadGtrResponse(
+                l.id,
+                l.createdAt,
+                l.prefijo,
+                l.lead,
+                c.nombre,
+                p.nombre,
+                l.base,
+                dp.nombreTitularServicio,
+                l.codigoTipificacion,
+                l.codigoSubtipificacion,
+                l.nombreAsesorAsignado,
+                l.estado,
+                0
+            )
+            FROM Lead l
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor p
+            LEFT JOIN l.datosPreventa dp
+            WHERE (:idProveedor IS NULL OR p.id = :idProveedor)
+              AND (:etapa IS NULL OR l.etapa = :etapa)
+              AND (l.codigoTipificacion IS NULL OR l.codigoTipificacion NOT IN :codigosTipificacionExcluidos)
+              AND (:filtrarTipificaciones = false OR l.idTipificacion IN :tipificacionIds)
+              AND (:filtrarSubtipificaciones = false OR l.idSubtipificacion IN :subtipificacionIds)
+            ORDER BY l.lastEntryAt DESC, l.id DESC
+            """)
+    List<LeadGtrResponse> listarLeadsMasivo(
+            @Param("idProveedor") Long idProveedor,
+            @Param("etapa") Etapa etapa,
+            @Param("filtrarTipificaciones") boolean filtrarTipificaciones,
+            @Param("tipificacionIds") Collection<Long> tipificacionIds,
+            @Param("filtrarSubtipificaciones") boolean filtrarSubtipificaciones,
+            @Param("subtipificacionIds") Collection<Long> subtipificacionIds,
+            @Param("codigosTipificacionExcluidos") Collection<String> codigosTipificacionExcluidos
+    );
 }

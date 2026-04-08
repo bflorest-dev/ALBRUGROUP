@@ -81,6 +81,7 @@ public class DataLoader {
         // EMPLEADOS
         savePermiso("CREATE_EMPLEADOS", "Puede registrar empleados directamente", "EMPLEADO", "CREATE");
         savePermiso("READ_EMPLEADOS", "Puede listar y ver empleados", "EMPLEADO", "READ");
+        savePermiso("READ_PERSONAL_RECRUITMENT", "Puede listar personal activo de recruitment", "EMPLEADO", "READ");
         savePermiso("UPDATE_EMPLEADOS", "Puede editar empleados", "EMPLEADO", "UPDATE");
         savePermiso("BLACKLIST_EMPLEADO", "Puede marcar como lista negra a los empleados", "EMPLEADO", "BLACKLIST");
 
@@ -195,6 +196,7 @@ public class DataLoader {
 
                 getPermiso("CREATE_EMPLEADOS"),
                 getPermiso("READ_EMPLEADOS"),
+                getPermiso("READ_PERSONAL_RECRUITMENT"),
                 getPermiso("UPDATE_EMPLEADOS"),
                 getPermiso("BLACKLIST_EMPLEADO"),
 
@@ -221,6 +223,7 @@ public class DataLoader {
                 getPermiso("READ_POSTULACION"),
 
                 getPermiso("READ_EMPLEADOS"),
+                getPermiso("READ_PERSONAL_RECRUITMENT"),
 
                 getPermiso("CREATE_GRUPOS_CAPACITACION"),
                 getPermiso("READ_GRUPOS_CAPACITACION"),
@@ -239,6 +242,7 @@ public class DataLoader {
                 getPermiso("TYPIFY_POSTULACIONES"),
 
                 getPermiso("READ_EMPLEADOS"),
+                getPermiso("READ_PERSONAL_RECRUITMENT"),
 
                 getPermiso("READ_POSTULACIONES_CAPACITACION"),
                 getPermiso("READ_POSTULACION"),

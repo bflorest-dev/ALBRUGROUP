@@ -11,15 +11,20 @@ import pe.albrugroup.rrhh_service.entity.enums.Banco;
 import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.enums.Origen;
+import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.rrhh_service.entity.request.empleado.*;
+import pe.albrugroup.rrhh_service.entity.response.EmpleadoRolResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 import pe.albrugroup.rrhh_service.exception.NotFoundException;
 import pe.albrugroup.rrhh_service.exception.UnprocessableEntityException;
+import pe.albrugroup.rrhh_service.repository.ContratoRepository;
 import pe.albrugroup.rrhh_service.repository.EmpresaContratistaRepository;
+import pe.albrugroup.rrhh_service.service.mapper.EmpleadoRolMapper;
 import pe.albrugroup.rrhh_service.service.mapper.EmpleadoMapper;
 import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
 import pe.albrugroup.rrhh_service.usecase.IEmpleado;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service @Transactional
@@ -27,8 +32,10 @@ import java.util.List;
 public class EmpleadoService implements IEmpleado {
 
     private final EmpleadoRepository repository;
+    private final ContratoRepository contratoRepository;
     private final EmpresaContratistaRepository empresaContratistaRepository;
     private final EmpleadoMapper mapper;
+    private final EmpleadoRolMapper empleadoRolMapper;
     private final EmpleadoEventoService eventoService;
 
     @Override
@@ -105,6 +112,24 @@ public class EmpleadoService implements IEmpleado {
                 .orElseThrow(() -> new NotFoundException(Empleado.class, idEmpleado));
         mapper.updateDatosContactoCorporativo(datosCorporativos, empleado);
         return mapper.toResponse(empleado);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EmpleadoRolResponse> listarPersonalRecruitment() {
+        List<PuestoTrabajo> puestosRecruitment = List.of(
+                PuestoTrabajo.CAPACITADOR,
+                PuestoTrabajo.RECLUTADOR,
+                PuestoTrabajo.RRHH
+        );
+
+        return empleadoRolMapper.toResponseList(
+                contratoRepository.findEmpleadosActivosByPuestosTrabajo(
+                        EstadoOperativo.ACTIVO,
+                        LocalDate.now(),
+                        puestosRecruitment
+                )
+        );
     }
 
     private EmpresaContratista obtenerEmpresaContratista(Long idEmpresaContratista) {
