@@ -146,16 +146,24 @@ public class DataLoader {
     }
 
     private void savePermiso(String nombre, String descripcion, String recurso, String accion) {
-        if (permisoRepository.existsByNombre(nombre)) {
-            return;
-        }
-        Permiso permiso = Permiso.builder()
-                .nombre(nombre)
-                .descripcion(descripcion)
-                .recurso(recurso)
-                .accion(accion)
-                .build();
-        permisoRepository.save(permiso);
+        permisoRepository.findByNombre(nombre)
+                .ifPresentOrElse(
+                        permiso -> {
+                            permiso.setDescripcion(descripcion);
+                            permiso.setRecurso(recurso);
+                            permiso.setAccion(accion);
+                            permisoRepository.save(permiso);
+                        },
+                        () -> {
+                            Permiso permiso = Permiso.builder()
+                                    .nombre(nombre)
+                                    .descripcion(descripcion)
+                                    .recurso(recurso)
+                                    .accion(accion)
+                                    .build();
+                            permisoRepository.save(permiso);
+                        }
+                );
     }
 
     private void crearRoles() {
@@ -417,15 +425,22 @@ public class DataLoader {
                 .orElseThrow(() -> new RuntimeException("Permiso no encontrado " + nombre));
     }
     private void saveRol(String nombre, String descripcion, Set<Permiso> permisos) {
-        if (rolRepository.existsByNombre(nombre)) {
-            return;
-        }
-        Rol rol = Rol.builder()
-                .nombre(nombre)
-                .descripcion(descripcion)
-                .permisos(permisos)
-                .build();
-        rolRepository.save(rol);
+        rolRepository.findByNombre(nombre)
+                .ifPresentOrElse(
+                        rol -> {
+                            rol.setDescripcion(descripcion);
+                            rol.setPermisos(new HashSet<>(permisos));
+                            rolRepository.save(rol);
+                        },
+                        () -> {
+                            Rol rol = Rol.builder()
+                                    .nombre(nombre)
+                                    .descripcion(descripcion)
+                                    .permisos(new HashSet<>(permisos))
+                                    .build();
+                            rolRepository.save(rol);
+                        }
+                );
     }
 
     private void crearUsuariosIniciales() {
