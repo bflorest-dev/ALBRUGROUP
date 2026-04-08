@@ -6,7 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.rrhh_service.entity.EmpresaContratista;
 import pe.albrugroup.rrhh_service.entity.request.empresaContratista.RegistrarEmpresaContratistaRequest;
 import pe.albrugroup.rrhh_service.entity.response.EmpresaContratistaResponse;
-import pe.albrugroup.rrhh_service.exception.EmpresaContratistaConflictException;
+import pe.albrugroup.rrhh_service.exception.ConflictException;
 import pe.albrugroup.rrhh_service.exception.NotFoundException;
 import pe.albrugroup.rrhh_service.repository.EmpresaContratistaRepository;
 import pe.albrugroup.rrhh_service.service.mapper.EmpresaContratistaMapper;
@@ -26,7 +26,7 @@ public class EmpresaContratistaService implements IEmpresaContratista {
     public EmpresaContratistaResponse registrarEmpresaContratista(RegistrarEmpresaContratistaRequest request) {
         String nombreNormalizado = request.getNombre().trim();
         if (repository.existsByNombreIgnoreCase(nombreNormalizado)) {
-            throw new EmpresaContratistaConflictException(nombreNormalizado);
+            throw new ConflictException("La empresa contratista ya existe", nombreNormalizado);
         }
 
         EmpresaContratista empresaContratista = mapper.toEntity(request);

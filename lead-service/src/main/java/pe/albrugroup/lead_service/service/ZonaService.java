@@ -16,7 +16,7 @@ import pe.albrugroup.lead_service.entity.request.ZonaReglaRequest;
 import pe.albrugroup.lead_service.entity.request.ZonaRequest;
 import pe.albrugroup.lead_service.entity.response.ZonaResponse;
 import pe.albrugroup.lead_service.exception.NotFoundException;
-import pe.albrugroup.lead_service.exception.ZonaInvalidaException;
+import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.repository.DepartamentoRepository;
 import pe.albrugroup.lead_service.repository.DistritoRepository;
 import pe.albrugroup.lead_service.repository.ProvinciaRepository;
@@ -120,8 +120,9 @@ public class ZonaService {
         for (ZonaReglaRequest regla : reglas) {
             String key = regla.getNivelGeografico() + "|" + regla.getGeoId() + "|" + regla.getCriterio();
             if (!firma.add(key)) {
-                throw new ZonaInvalidaException(
+                throw new BadRequestException(
                         "La zona contiene reglas duplicadas",
+                        null,
                         key
                 );
             }

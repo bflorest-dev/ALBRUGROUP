@@ -16,10 +16,8 @@ import pe.albrugroup.lead_service.entity.request.TipificacionCatalogoRequest;
 import pe.albrugroup.lead_service.entity.response.CatalogoResponse;
 import pe.albrugroup.lead_service.entity.response.SubtipificacionResponse;
 import pe.albrugroup.lead_service.entity.response.TipificacionResponse;
-import pe.albrugroup.lead_service.exception.CatalogoEstadoInvalidoException;
+import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
-import pe.albrugroup.lead_service.exception.SubtipificacionNoPerteneceATipificacionException;
-import pe.albrugroup.lead_service.exception.SubtipificacionPadreInactivoException;
 import pe.albrugroup.lead_service.repository.SubtipificacionRepository;
 import pe.albrugroup.lead_service.repository.TipificacionRepository;
 import pe.albrugroup.lead_service.service.mapper.TipificacionMapper;
@@ -159,7 +157,8 @@ public class TipificacionService {
                 .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getId()));
 
         if (!subtipificacion.getTipificacion().getId().equals(tipificacion.getId())) {
-            throw new SubtipificacionNoPerteneceATipificacionException(
+            throw new BadRequestException(
+                    "La subtipificacion no pertenece a la tipificacion indicada",
                     request.getId(),
                     tipificacion.getId()
             );
@@ -184,8 +183,9 @@ public class TipificacionService {
                 && tipificacionesDesactivar.isEmpty()
                 && subtipificacionesActivar.isEmpty()
                 && subtipificacionesDesactivar.isEmpty()) {
-            throw new CatalogoEstadoInvalidoException(
+            throw new BadRequestException(
                     "La solicitud no tiene operaciones para ejecutar",
+                    null,
                     null
             );
         }
@@ -198,8 +198,9 @@ public class TipificacionService {
         Set<Long> conflicto = new HashSet<>(activar);
         conflicto.retainAll(desactivar);
         if (!conflicto.isEmpty()) {
-            throw new CatalogoEstadoInvalidoException(
+            throw new BadRequestException(
                     "No se puede activar y desactivar el mismo elemento en la misma solicitud",
+                    null,
                     Map.of("tipo", tipo, "ids", conflicto)
             );
         }
@@ -220,8 +221,9 @@ public class TipificacionService {
                 throw new NotFoundException(Tipificacion.class, id);
             }
             if (tipificacion.getEtapa() != etapa) {
-                throw new CatalogoEstadoInvalidoException(
+                throw new BadRequestException(
                         "La tipificacion no pertenece a la etapa enviada",
+                        null,
                         Map.of("idTipificacion", id, "etapa", etapa)
                 );
             }
@@ -245,8 +247,9 @@ public class TipificacionService {
                 throw new NotFoundException(Subtipificacion.class, id);
             }
             if (subtipificacion.getTipificacion().getEtapa() != etapa) {
-                throw new CatalogoEstadoInvalidoException(
+                throw new BadRequestException(
                         "La subtipificacion no pertenece a la etapa enviada",
+                        null,
                         Map.of("idSubtipificacion", id, "etapa", etapa)
                 );
             }
@@ -295,7 +298,11 @@ public class TipificacionService {
         for (Long id : subtipificacionesActivar) {
             Subtipificacion subtipificacion = subtipificacionesPorId.get(id);
             if (!Boolean.TRUE.equals(subtipificacion.getTipificacion().getActivo())) {
-                throw new SubtipificacionPadreInactivoException(id, subtipificacion.getTipificacion().getId());
+                throw new BadRequestException(
+                        "No se puede activar una subtipificacion cuando su tipificacion esta inactiva",
+                        id,
+                        subtipificacion.getTipificacion().getId()
+                );
             }
 
             subtipificacion.setActivo(Boolean.TRUE);

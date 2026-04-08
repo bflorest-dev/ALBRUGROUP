@@ -16,7 +16,8 @@ import pe.albrugroup.lead_service.entity.response.AdicionalResponse;
 import pe.albrugroup.lead_service.entity.response.PlanAdicionalResponse;
 import pe.albrugroup.lead_service.entity.response.PlanResponse;
 import pe.albrugroup.lead_service.entity.response.ServiciosProveedorResponse;
-import pe.albrugroup.lead_service.exception.DuplicateResourceException;
+import pe.albrugroup.lead_service.exception.BadRequestException;
+import pe.albrugroup.lead_service.exception.ConflictException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.*;
 import pe.albrugroup.lead_service.service.mapper.PlanMapper;
@@ -45,8 +46,9 @@ public class PlanService {
                 request.getIdProveedor(),
                 request.getNombre()
         )) {
-            throw new DuplicateResourceException(
+            throw new ConflictException(
                     "Ya existe un adicional activo con ese nombre para el proveedor",
+                    null,
                     Map.of("idProveedor", request.getIdProveedor(), "nombre", request.getNombre())
             );
         }
@@ -146,8 +148,9 @@ public class PlanService {
             plan.setVigenciaDesde(fechaActual);
         }
         if (plan.getVigenciaHasta() != null && plan.getVigenciaHasta().isBefore(plan.getVigenciaDesde())) {
-            throw new DuplicateResourceException(
+            throw new BadRequestException(
                     "La vigenciaHasta no puede ser menor que la vigenciaDesde",
+                    null,
                     Map.of(
                             "vigenciaDesde", plan.getVigenciaDesde(),
                             "vigenciaHasta", plan.getVigenciaHasta()
@@ -225,8 +228,9 @@ public class PlanService {
         Set<PlanAdicional> adicionales = new HashSet<>();
         for (PlanAdicionalRequest adicionalRequest : adicionalesRequest) {
             if (!ids.add(adicionalRequest.getIdAdicional())) {
-                throw new DuplicateResourceException(
+                throw new ConflictException(
                         "No se puede repetir el mismo adicional dentro del plan",
+                        null,
                         Map.of("idAdicional", adicionalRequest.getIdAdicional())
                 );
             }
@@ -235,8 +239,9 @@ public class PlanService {
                     .orElseThrow(() -> new NotFoundException(Adicional.class, adicionalRequest.getIdAdicional()));
 
             if (!adicional.getProveedor().getId().equals(proveedor.getId())) {
-                throw new DuplicateResourceException(
+                throw new BadRequestException(
                         "El adicional no pertenece al proveedor del plan",
+                        null,
                         Map.of(
                                 "idAdicional", adicionalRequest.getIdAdicional(),
                                 "idProveedorPlan", proveedor.getId(),

@@ -13,8 +13,8 @@ import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.enums.Origen;
 import pe.albrugroup.rrhh_service.entity.request.empleado.*;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
-import pe.albrugroup.rrhh_service.exception.EmpleadoListaNegraException;
 import pe.albrugroup.rrhh_service.exception.NotFoundException;
+import pe.albrugroup.rrhh_service.exception.UnprocessableEntityException;
 import pe.albrugroup.rrhh_service.repository.EmpresaContratistaRepository;
 import pe.albrugroup.rrhh_service.service.mapper.EmpleadoMapper;
 import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
@@ -35,7 +35,7 @@ public class EmpleadoService implements IEmpleado {
     public EmpleadoResponse listaNegraEmpleado(Long idEmpleado, Long responsableId) {
         Empleado empleado = repository.findById(idEmpleado)
                 .orElseThrow(() -> new NotFoundException(Empleado.class, idEmpleado));
-        if(empleado.getListaNegra()) throw new EmpleadoListaNegraException(idEmpleado);
+        if(empleado.getListaNegra()) throw new UnprocessableEntityException("Se encuentra en la Lista Negra", idEmpleado);
         empleado.setListaNegra(true);
         eventoService.registrarEventoListaNegra(empleado, responsableId);
         return mapper.toResponse(empleado);
@@ -115,4 +115,3 @@ public class EmpleadoService implements IEmpleado {
                 .orElseThrow(() -> new NotFoundException(EmpresaContratista.class, idEmpresaContratista));
     }
 }
-

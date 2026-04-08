@@ -11,7 +11,7 @@ import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.Zona;
 import pe.albrugroup.lead_service.entity.request.PromocionComercialRequest;
 import pe.albrugroup.lead_service.entity.response.PromocionComercialResponse;
-import pe.albrugroup.lead_service.exception.DuplicateResourceException;
+import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.PromocionComercialRepository;
 import pe.albrugroup.lead_service.repository.ProveedorRepository;
@@ -79,14 +79,16 @@ public class PromocionComercialService {
 
     private void validarConsistencia(PromocionComercialRequest request, Proveedor proveedor) {
         if (Boolean.TRUE.equals(request.getInterno()) && request.getIdProveedor() != null) {
-            throw new DuplicateResourceException(
+            throw new BadRequestException(
                     "Una promocion interna no debe tener proveedor asociado",
+                    null,
                     Map.of("idProveedor", request.getIdProveedor())
             );
         }
         if (Boolean.FALSE.equals(request.getInterno()) && proveedor == null) {
-            throw new DuplicateResourceException(
+            throw new BadRequestException(
                     "Una promocion no interna debe indicar un proveedor",
+                    null,
                     null
             );
         }
@@ -100,14 +102,16 @@ public class PromocionComercialService {
 
         if (Boolean.TRUE.equals(request.getDescuento())) {
             if (descuentoPorcentual == null && descuentoMonto == null) {
-                throw new DuplicateResourceException(
+                throw new BadRequestException(
                         "La promocion con descuento debe indicar descuentoPorcentual o descuentoMonto",
+                        null,
                         null
                 );
             }
             if (descuentoPorcentual != null && descuentoMonto != null) {
-                throw new DuplicateResourceException(
+                throw new BadRequestException(
                         "La promocion no puede tener descuentoPorcentual y descuentoMonto al mismo tiempo",
+                        null,
                         Map.of(
                                 "descuentoPorcentual", descuentoPorcentual,
                                 "descuentoMonto", descuentoMonto
@@ -118,8 +122,9 @@ public class PromocionComercialService {
         }
 
         if (descuentoPorcentual != null || descuentoMonto != null) {
-            throw new DuplicateResourceException(
+            throw new BadRequestException(
                     "La promocion sin descuento no debe enviar descuentoPorcentual ni descuentoMonto",
+                    null,
                     Map.of(
                             "descuentoPorcentual", descuentoPorcentual,
                             "descuentoMonto", descuentoMonto
@@ -133,8 +138,9 @@ public class PromocionComercialService {
             promocion.setVigenciaDesde(fechaActual);
         }
         if (promocion.getVigenciaHasta() != null && promocion.getVigenciaHasta().isBefore(promocion.getVigenciaDesde())) {
-            throw new DuplicateResourceException(
+            throw new BadRequestException(
                     "La vigenciaHasta no puede ser menor que la vigenciaDesde",
+                    null,
                     Map.of(
                             "vigenciaDesde", promocion.getVigenciaDesde(),
                             "vigenciaHasta", promocion.getVigenciaHasta()

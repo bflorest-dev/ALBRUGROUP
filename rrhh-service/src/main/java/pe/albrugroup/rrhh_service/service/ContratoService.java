@@ -79,7 +79,7 @@ public class ContratoService implements IContrato {
         if (fechaFin == null) {
             boolean hayContratosFuturos = contratoRepository.existenContratosFuturos(idEmpleado, fechaInicio);
             if (hayContratosFuturos) {
-                throw new ContratoConflictoException(
+                throw new ConflictException(
                         "Existe contrato vigente con fecha posterior a " + fechaInicio +
                         ". Por favor, especifica una fecha de fin para este contrato."
                 );
@@ -90,7 +90,7 @@ public class ContratoService implements IContrato {
                     idEmpleado, fechaInicio, fechaFin
             );
             if (haySolapamiento) {
-                throw new ContratoConflictoException(
+                throw new ConflictException(
                         "El rango de fechas [" + fechaInicio + " - " + fechaFin + "] " +
                                 "se solapa con un contrato existente."
                 );
@@ -116,7 +116,7 @@ public class ContratoService implements IContrato {
         if(e.getCuentaBancaria() == null || e.getCuentaBancaria().isBlank()) faltantes.add("cuentaBancaria");
         if(e.getCuentaInterbancaria() == null || e.getCuentaInterbancaria().isBlank()) faltantes.add("cuentaInterbancaria");
 
-        if (!faltantes.isEmpty()) throw new EmpleadoIncompletoException(e.getId(), faltantes);
+        if (!faltantes.isEmpty()) throw new UnprocessableEntityException("Empleado tiene datos incompletos", e.getId(), faltantes);
     }
 
     @Override
