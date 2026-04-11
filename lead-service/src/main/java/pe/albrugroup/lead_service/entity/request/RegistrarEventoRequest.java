@@ -15,6 +15,8 @@ public class RegistrarEventoRequest {
     private Long idCampana;
     private Accion accion;
     private Etapa etapa;
+    private Long idAsesorAsignado;
+    private String nombreAsesorAsignado;
     private String tipificacion;
     private String subtipificacion;
     private LocalDate fechaInstalacion;

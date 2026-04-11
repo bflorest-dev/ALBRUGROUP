@@ -18,6 +18,8 @@ public class EventoResponse {
     private Long idActor;
     private String nombreActor;
     private String rolActor;
+    private Long idAsesorAsignado;
+    private String nombreAsesorAsignado;
     private Accion accion;
     private Etapa etapa;
     private String tipificacion;

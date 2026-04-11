@@ -27,6 +27,8 @@ public class Evento {
     private Long idActor;
     private String nombreActor;
     private String rolActor;
+    private Long idAsesorAsignado;
+    private String nombreAsesorAsignado;
     @Enumerated(EnumType.STRING)
     private Accion accion;
     @Enumerated(EnumType.STRING)

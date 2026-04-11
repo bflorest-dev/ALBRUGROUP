@@ -221,7 +221,13 @@ public class LeadService {
 
         Lead savedLead = leadRepository.save(lead);
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
-        registrarEventoAsignacion(savedLead.getId(), idCampana, savedLead.getEtapa());
+        registrarEventoAsignacion(
+                savedLead.getId(),
+                idCampana,
+                savedLead.getEtapa(),
+                savedLead.getIdAsesorAsignado(),
+                savedLead.getNombreAsesorAsignado()
+        );
     }
 
     @Transactional
@@ -274,13 +280,21 @@ public class LeadService {
         );
     }
 
-    private void registrarEventoAsignacion(Long idLead, Long idCampana, Etapa etapa) {
+    private void registrarEventoAsignacion(
+            Long idLead,
+            Long idCampana,
+            Etapa etapa,
+            Long idAsesorAsignado,
+            String nombreAsesorAsignado
+    ) {
         eventoService.registrarEvento(
                 RegistrarEventoRequest.builder()
                         .idLead(idLead)
                         .idCampana(idCampana)
                         .accion(Accion.ASIGNACION)
                         .etapa(etapa)
+                        .idAsesorAsignado(idAsesorAsignado)
+                        .nombreAsesorAsignado(nombreAsesorAsignado)
                         .build()
         );
     }

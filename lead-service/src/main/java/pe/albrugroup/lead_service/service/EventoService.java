@@ -40,6 +40,8 @@ public class EventoService {
                 .idActor(currentUser.empleadoID())
                 .nombreActor(currentUser.nombreCompleto())
                 .rolActor(currentUser.rolPrincipal())
+                .idAsesorAsignado(request.getIdAsesorAsignado())
+                .nombreAsesorAsignado(request.getNombreAsesorAsignado())
                 .accion(request.getAccion())
                 .etapa(request.getEtapa())
                 .tipificacion(request.getTipificacion())

@@ -1,0 +1,25 @@
+Requisitos conversados con rrhh: 
+
+-El objetivo es que ahora los empleado cuando hagan login al sistema no este disponibles inmediatamente, sino que tengan un lista de estados en los que ellos mismos puedan cambiar su estado actual y esto no solo impacte en su registro en Redis para disponibilidad sino también en el nuevo schedule-service para controlar asistencia, tardanzas, hora de almuerzo y hora de desconexión. Los estados que tengo en mente: No Disponible, Disponible, Baño, Capacitación, Almuerzo. Y se debe guardar cuanto tiempo el empleado estuvo en cada estado(menos No Disponible) de manera diaria, aquí seria evaluar si se guarda como instant de inicio y fin o solo cantidad de horas y minutos exacto como una variable acumulador. 
+
+- Se tienen que cumplir cierto numero de horas semanales y mensuales dependiendo del contrato(mi idea es tener el mismo enum MODALIDAD que hay en rrhh-service y que cada uno represente un grupo de horas semanales y mensuales)
+- Se considera tardanza marcar Disponible 5 minutos después de la hora de inicio
+
+- El horario es flexible, un día se pueden cumplir ciertas horas y otro día mas o menos horas pero cumpliendo cantidad de horas semanal, pero todo esto requiere que ellos pidan permiso, por ende se debe ingresar cualquier modificación por el sistema para esos días puntuales.
+
+- La idea es que se pueda asignar horarios base, apartir de ahí se puedan hacer modificaciones semanales que luego los empleados puedan ver su horario semanal, pero con la capacidad de modificar algún día o grupo de días específicos, es decir indicar que cierto dia se ingresa en otro horario, este mismo endpoint también serviría para modificar algún otro dia que un empleado se quedaría mas horas para cumplir con sus horas semanales. Entonces debe haber un endpoint para modificar el horario base de un empleado o grupo de empleados, y otro endpoint para modificar solo un dia o grupo de días puntuales para la siguiente semana. 
+
+- Hay hora de Almuerzo(1 hora)
+
+- Hay unos minutos de baño permitido por dia(15 mins) que básicamente solo cuenta cuántos minutos estuvo un empleado en ese estado.
+Se tiene que mostrar un resumen de horario tanto semanal como mensual, donde se vea el cumplimiento de las horas, tardanzas, tiempos de baño, tiempos de almuerzo. Para esto se tiene que evaluar si se necesita mas de 1 endpoint o un solo endpoint con parámetros.
+
+Objetivos funcionales que se deben traducir a endpoints:
+
+1.Se debe poder asignar horarios base al momento de crear el contrato.
+2.Se debe poder agregar modificaciones para la semana, pero asegurando que se cumplan las horas mensuales. Es decir al momento de agregar menos horas, también se debe agregar que otro dia se recuperaran esas horas.
+3. Se debe poder ver el detalle semanal y mensual de cumplimiento de horarios de todos los empleados filtrados por rol.
+4. Cuando el empleado se conecte debe empezar en No Disponible, luego debe pasar manualmente a Disponible, lo cual lo pondrá como Online en REDIS pero también marcara su horario de conexión o inicio en schedule-service.
+5. Cuando el empleado marque Almuerzo empezara un contador que mostrar su tiempo disponible, y hasta que no pase manualmente a Disponible no se terminara el contador, luego se tiene que guardar cuanto tiempo uso de almuerzo.
+6. Cuando el empleado marque Baño empezara un contador que mostrar su tiempo disponible, y hasta que no pase manualmente a Disponible no se terminara el contador, luego se tiene que guardar cuanto tiempo uso de almuerzo.
+7. El empleado debe ponerse en estado Capacitación cuando se lo indique rrhh y solo contar el tiempo que estuvo en ese estado. Sera el supervisor u otro que alerte si se esta usando este estado o se uso de manera inadecuada.
