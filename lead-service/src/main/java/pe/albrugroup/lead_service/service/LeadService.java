@@ -217,6 +217,10 @@ public class LeadService {
 
         lead.setIdAsesorAsignado(request.getIdAsesorAsignado());
         lead.setNombreAsesorAsignado(request.getNombreAsesorAsignado().trim());
+        lead.setIdTipificacion(null);
+        lead.setCodigoTipificacion(null);
+        lead.setIdSubtipificacion(null);
+        lead.setCodigoSubtipificacion(null);
         lead.setEstado(EstadoSeguimiento.ASIGNADO);
 
         Lead savedLead = leadRepository.save(lead);
