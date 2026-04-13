@@ -1,13 +1,13 @@
 import React from 'react';
 
-export interface Campaign {
+export type Campaign = {
   id: string;
   name: string;
   whatsapp: string;
   advertiserAccount: string;
   accountNumber: string;
   company: string;
-}
+};
 
 interface CampaignCardProps {
   campaign: Campaign;

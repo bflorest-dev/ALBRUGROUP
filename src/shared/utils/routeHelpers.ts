@@ -4,6 +4,7 @@ export const routeHelpers = {
       'ADMINISTRADOR': '/panel',
       'RRHH': '/rrhh',
       'RECLUTAMIENTO': '/reclutamiento',
+      'RECLUTADOR': '/reclutamiento',
       'CAPACITACIÓN': '/capacitacion',
       'COMMUNITY': '/community',
       'GTR': '/gtr',

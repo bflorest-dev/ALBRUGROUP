@@ -19,6 +19,8 @@ export interface ConnectedUser {
   status: string;
   disponibilidad: string;
   lastSeen: string;
+  puestoTrabajo?: string;
+  conectado?: boolean;
 }
 
 export interface ConnectedStatus {

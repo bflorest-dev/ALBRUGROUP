@@ -4,22 +4,24 @@ import { RequireAuth } from './RequireAuth';
 import { RequireRole } from './RequireRole';
 
 // Lazy load pages
-const PaginaLogin = lazy(() => import('@caracteristicas/auth/pages/PaginaLogin'));
+const PaginaLogin = lazy(() => import('@features/auth/pages/PaginaLogin'));
 const PaginaAutenticacionAvanzada = lazy(() =>
-  import('@caracteristicas/autenticacion/pages/PaginaAutenticacionAvanzada').then(
+  import('@features/autenticacion/pages/PaginaAutenticacionAvanzada').then(
     (m) => ({ default: m.PaginaAutenticacionAvanzada })
   )
 );
-const PaginaPanel = lazy(() => import('@caracteristicas/admin/pages/AdminPage'));
-const PaginaRRHH = lazy(() => import('@caracteristicas/rrhh/pages/PaginaRRHH'));
-const PaginaReclutamiento = lazy(() => import('@caracteristicas/reclutamiento/pages/PaginaReclutamiento'));
-const PaginaCapacitacion = lazy(() => import('@caracteristicas/capacitacion/pages/PaginaCapacitacion'));
-const PaginaCommunity = lazy(() => import('@caracteristicas/community/pages/PaginaCommunity'));
-const PaginaGTR = lazy(() => import('@caracteristicas/gtr/pages/PaginaGTR'));
-const PaginaAsesores = lazy(() => import('@caracteristicas/asesor-ventas/pages/PaginaAsesores'));
-const PaginaAsesorVentasDetail = lazy(() => import('@caracteristicas/asesor-ventas/pages/PaginaAsesorVentasDetail'));
-const PaginaAsesorBackoffice = lazy(() => import('@caracteristicas/asesor-backoffice/pages/PaginaAsesorBackoffice'));
-const PaginaAdmin = lazy(() => import('@caracteristicas/admin/pages/AdminPage'));
+const PaginaPanel = lazy(() => import('@features/admin/pages/AdminPage'));
+const PaginaRRHH = lazy(() => import('@features/rrhh/pages/PaginaRRHH'));
+const PaginaListadoOfertasActivas = lazy(() => import('@features/rrhh/pages/PaginaListadoOfertasActivas'));
+const PaginaAmpliacionOferta = lazy(() => import('@features/rrhh/pages/PaginaAmpliacionOferta'));
+const PaginaReclutamiento = lazy(() => import('@features/reclutamiento/pages/PaginaReclutamiento'));
+const PaginaCapacitacion = lazy(() => import('@features/capacitacion/pages/PaginaCapacitacion'));
+const PaginaCommunity = lazy(() => import('@features/community/pages/PaginaCommunity'));
+const PaginaGTR = lazy(() => import('@features/gtr/pages/PaginaGTR'));
+const PaginaAsesores = lazy(() => import('@features/asesor-ventas/pages/PaginaAsesores'));
+const PaginaAsesorVentasDetail = lazy(() => import('@features/asesor-ventas/pages/PaginaAsesorVentasDetail'));
+const PaginaAsesorBackoffice = lazy(() => import('@features/asesor-backoffice/pages/PaginaAsesorBackoffice'));
+const PaginaAdmin = lazy(() => import('@features/admin/pages/AdminPage'));
 const PaginaNoAutorizado = lazy(() => import('@pages/PaginaNoAutorizado'));
 
 const LoadingFallback = () => <div>Cargando...</div>;
@@ -71,10 +73,32 @@ export const AppRoutes: React.FC = () => {
           />
           
           <Route
+            path="/rrhh/ofertas-laborales"
+            element={
+              <RequireAuth>
+                <RequireRole allowedRoles={['ADMINISTRADOR', 'RRHH']}>
+                  <PaginaListadoOfertasActivas />
+                </RequireRole>
+              </RequireAuth>
+            }
+          />
+          
+          <Route
+            path="/rrhh/ofertas-laborales/:id/ampliacion"
+            element={
+              <RequireAuth>
+                <RequireRole allowedRoles={['ADMINISTRADOR', 'RRHH']}>
+                  <PaginaAmpliacionOferta />
+                </RequireRole>
+              </RequireAuth>
+            }
+          />
+          
+          <Route
             path="/reclutamiento"
             element={
               <RequireAuth>
-                <RequireRole allowedRoles={['ADMINISTRADOR', 'RECLUTAMIENTO']}>
+                <RequireRole allowedRoles={['ADMINISTRADOR', 'RECLUTAMIENTO', 'RECLUTADOR']}>
                   <PaginaReclutamiento />
                 </RequireRole>
               </RequireAuth>
@@ -85,7 +109,7 @@ export const AppRoutes: React.FC = () => {
             path="/capacitacion"
             element={
               <RequireAuth>
-                <RequireRole allowedRoles={['ADMINISTRADOR', 'CAPACITACIÓN']}>
+                <RequireRole allowedRoles={['ADMINISTRADOR', 'CAPACITACIÓN', 'CAPACITACION', 'CAPACITADOR']}>
                   <PaginaCapacitacion />
                 </RequireRole>
               </RequireAuth>

@@ -5,8 +5,7 @@
  */
 
 import { http } from '@shared/api/httpClient';
-import type { EmpleadoResponse, PageResponse, NewEmployeeFormData, EmployeeDetailFormData } from '@shared/types';
-import type { RegistrarEmpleadoRequest } from '@entidades/empleado/model';
+import type { EmpleadoResponse, PageResponse, NewEmployeeFormData, EmployeeDetailFormData, RegistrarEmpleadoRequest } from '@shared/types';
 
 // Tipos especÃ­ficos para las respuestas de la API
 export type EmployeesPageResponse = PageResponse<EmpleadoResponse>;

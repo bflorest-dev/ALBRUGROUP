@@ -1,7 +1,6 @@
 import React from 'react';
 import type { ReactNode } from 'react';
-import { AuthProvider } from '@shared/auth/AuthContext';
-import { HeartbeatManager } from '@shared/auth/HeartbeatManager';
+import { AuthProvider, HeartbeatManager } from '@entities/auth';
 
 interface ProveedorAuthProps {
   children: ReactNode;

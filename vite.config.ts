@@ -1,19 +1,25 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react-swc'
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [tailwindcss(), react()],
   resolve: {
     alias: [
       { find: '@pages', replacement: path.resolve(__dirname, 'src/pages') },
       { find: '@widgets', replacement: path.resolve(__dirname, 'src/widgets') },
-      { find: '@caracteristicas', replacement: path.resolve(__dirname, 'src/caracteristicas') },
       { find: '@features', replacement: path.resolve(__dirname, 'src/features') },
-      { find: '@entidades', replacement: path.resolve(__dirname, 'src/entidades') },
+      { find: '@entities', replacement: path.resolve(__dirname, 'src/entities') },
+      { find: '@caracteristicas', replacement: path.resolve(__dirname, 'src/features') },
+      { find: '@entidades', replacement: path.resolve(__dirname, 'src/entities') },
       { find: '@shared', replacement: path.resolve(__dirname, 'src/shared') },
       { find: '@shared/validacion', replacement: path.resolve(__dirname, 'src/shared/validation') },
+      { find: '@shared/api/servicioBase', replacement: path.resolve(__dirname, 'src/shared/api/servicioBase.ts') },
       { find: '@app', replacement: path.resolve(__dirname, 'src/app') },
     ],
   },

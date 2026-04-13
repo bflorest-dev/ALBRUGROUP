@@ -1,14 +1,19 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '@shared/auth/useAuth';
+import { useAuth } from '@entities/auth';
 import { canUserAccess } from './RoleHierarchy';
-import type { Role } from '@shared/auth/types';
+import type { Role } from '@entities/auth';
 
 const roleRoutes: Partial<Record<Role, string>> = {
   COMMUNITY: '/community/dashboard',
   ASESOR_GTR: '/gtr/dashboard',
   ASESOR_VENTAS: '/ventas/dashboard',
   ASESOR_BACKOFFICE: '/backoffice/dashboard',
+  RECLUTAMIENTO: '/reclutamiento',
+  RECLUTADOR: '/reclutamiento',
+  'CAPACITACIÓN': '/capacitacion',
+  CAPACITACION: '/capacitacion',
+  CAPACITADOR: '/capacitacion',
 };
 
 const getRoleDashboard = (roles: Role[] | undefined): string => {

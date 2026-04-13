@@ -8,16 +8,17 @@
  * - Validación de responses
  * 
  * Backends disponibles:
- *  - authHttp   → :8080/autorizacion (sin JWT)
- *  - rrhhHttp   → :8080/rrhh (con JWT)
- *  - leadsHttp  → :8080/leads (con JWT)
+ *  - authHttp        → :8080/autorizacion (sin JWT)
+ *  - rrhhHttp        → :8080/rrhh (con JWT)
+ *  - leadsHttp       → :8080/leads (con JWT)
+ *  - recruitmentHttp → :8080/recruitment (con JWT)
  * 
  * FSD: shared/api - Capa de transporte HTTP
  */
 
 import axios from 'axios';
 import type { AxiosInstance, AxiosResponse, AxiosError, AxiosRequestConfig } from 'axios';
-import { env } from '@app/config/env';
+import { env } from '@shared/config/env';
 
 /**
  * Tipo de error API normalizado
@@ -44,7 +45,7 @@ export interface ApiResult<T = unknown> {
 
 /**
  * Adjunta JWT Bearer token desde localStorage a todas las requests
- * Usado por rrhhHttp y leadsHttp
+ * Usado por rrhhHttp, leadsHttp y recruitmentHttp
  * NO usado por authHttp (login no requiere token)
  */
 function addAuthInterceptor(instance: AxiosInstance, instanceName: string): void {
@@ -90,17 +91,21 @@ function addErrorInterceptor(instance: AxiosInstance, instanceName: string): voi
       return response;
     },
     async (error: AxiosError | any) => {
-      // Log de error inicial
+      const suppressErrorLog = (error.config as any)?.suppressErrorLog === true;
+
+      // Log de error inicial solo si no está silenciado
       const method = error.config?.method?.toUpperCase() || 'UNKNOWN';
       const url = error.config?.url || 'UNKNOWN';
       const status = error.response?.status || 'NO_STATUS';
 
-      console.error(`[${instanceName}] HTTP Error`, {
-        method,
-        url,
-        status,
-        message: error.message,
-      });
+      if (!suppressErrorLog) {
+        console.error(`[${instanceName}] HTTP Error`, {
+          method,
+          url,
+          status,
+          message: error.message,
+        });
+      }
 
       // Retry automático en TIMEOUT (ECONNABORTED)
       if (
@@ -145,7 +150,9 @@ function addErrorInterceptor(instance: AxiosInstance, instanceName: string): voi
         apiError.code = 'UNKNOWN_ERROR';
       }
 
-      console.error(`[${instanceName}] Normalized error`, apiError);
+      if (!suppressErrorLog) {
+        console.error(`[${instanceName}] Normalized error`, apiError);
+      }
       return Promise.reject(apiError);
     }
   );
@@ -198,6 +205,21 @@ export const leadsHttp: AxiosInstance = axios.create({
 });
 addAuthInterceptor(leadsHttp, 'leadsHttp');
 addErrorInterceptor(leadsHttp, 'leadsHttp');
+
+/**
+ * Cliente para RECRUITMENT (Postulaciones y ofertas laborales)
+ * - CON JWT requerido (Bearer token)
+ * - Usado por: Postulaciones API
+ */
+export const recruitmentHttp: AxiosInstance = axios.create({
+  baseURL: env.RECRUITMENT_BASE_URL,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+addAuthInterceptor(recruitmentHttp, 'recruitmentHttp');
+addErrorInterceptor(recruitmentHttp, 'recruitmentHttp');
 
 /**
  * Cliente para PRESENCE (Disponibilidad y Conectados)

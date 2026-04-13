@@ -25,5 +25,31 @@ export default [
       ...globals.browser,
     },
   },
+  {
+    files: ['src/shared/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            '@app',
+            '@app/*',
+            '@pages',
+            '@pages/*',
+            '@widgets',
+            '@widgets/*',
+            '@features',
+            '@features/*',
+            '@caracteristicas',
+            '@caracteristicas/*',
+            '@entities',
+            '@entities/*',
+            '@entidades',
+            '@entidades/*',
+          ],
+        },
+      ],
+    },
+  },
   prettier,
 ]

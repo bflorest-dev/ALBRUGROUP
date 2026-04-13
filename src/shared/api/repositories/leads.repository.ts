@@ -15,7 +15,6 @@ import type {
   ServiciosProveedorResponse,
   ProveedorResponse,
   ProveedorRequest,
-  LeadAsesorVentasResponse,
   LeadAsesorDetalleResponse,
   LeadGtrResponse,
   LeadIntakeRequest,
@@ -129,30 +128,6 @@ export class LeadsRepository {
     payload: LeadAsignacionRequest,
   ): Promise<void> {
     await leadsHttp.patch(`/leads/${idLead}/asignacion`, payload);
-  }
-
-  /**
-   * Obtiene bandeja de leads del asesor de ventas actual
-   * GET /leads/leads/asesor-ventas
-   */
-  static async getBandejaAsesorVentas(): Promise<LeadAsesorVentasResponse[]> {
-    const response = await leadsHttp.get<unknown>('/leads/asesor-ventas');
-    const data = response.data;
-
-    // Support both contract shapes: array or object { leads: [...] }
-    if (Array.isArray(data)) {
-      return data as LeadAsesorVentasResponse[];
-    }
-
-    if (data && typeof data === 'object' && 'leads' in (data as Record<string, unknown>)) {
-      const leads = (data as Record<string, unknown>)['leads'];
-      if (Array.isArray(leads)) {
-        return leads as LeadAsesorVentasResponse[];
-      }
-    }
-
-    console.warn('[LeadsRepository] Formato inesperado en /leads/asesor-ventas', data);
-    return [];
   }
 
   /**

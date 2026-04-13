@@ -749,344 +749,1275 @@ export interface ZonaRequest {
 
 ### 3.1 Auth (`/auth/autorizacion`)
 
-1. **Endpoint**: `POST /auth/autorizacion/login`
-   - Parámetros: body `LoginRequest`
-   - Headers: `Content-Type`
-   - Ejemplo JSON de respuesta: `loginResponse` (arriba)
-   - Interfaz TypeScript: `LoginResponse`
-   - Feature asociada (FSD): `features/auth/login`
-   - Códigos: `200`, `401` (texto: "Credenciales inválidas")
+- `POST /auth/autorizacion/login`
+  - Request DTO: `LoginRequest`
+  - Request JSON:
+    ```json
+    {
+      "username": "juan.perez",
+      "password": "P@ssw0rd"
+    }
+    ```
+  - Response DTO: `LoginResponse`
+  - Response JSON:
+    ```json
+    {
+      "token": "eyJhbGciOi...",
+      "type": "Bearer",
+      "username": "juan.perez",
+      "empleadoId": 42,
+      "nombreCompleto": "Juan Pérez",
+      "roles": ["ADMINISTRADOR"]
+    }
+    ```
+  - Headers: `Content-Type: application/json`
+  - Códigos: `200`, `401`
 
-2. **Endpoint**: `POST /auth/autorizacion/registro`
-   - Parámetros: body `RegistrarUsuarioRequest`
-   - Headers: `Authorization`, `Content-Type`
-   - Ejemplo JSON: objeto tipo `UsuarioResponse`
-   - Interfaz: `UsuarioResponse`
-   - Feature: `features/auth/user-admin`
-   - Códigos: `201`, `401`, `403`
+- `POST /auth/autorizacion/upsert-usuario`
+  - Request DTO: `RegistrarUsuarioRequest`
+  - Request JSON:
+    ```json
+    {
+      "empleadoId": 42,
+      "nombres": "Juan",
+      "apellidos": "Pérez",
+      "dni": "12345678",
+      "email": "juan.perez@example.com",
+      "puestoTrabajo": "ADMINISTRADOR"
+    }
+    ```
+  - Response: `200` sin body
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `200`, `400`, `401`, `403`
 
-3. **Endpoint**: `POST /auth/autorizacion/registro-credenciales`
-   - Parámetros: body `RegistrarUsuarioRequest`
-   - Headers: `Authorization`, `Content-Type`
-   - Ejemplo JSON: `{ "username": "u1", "password": "tmp123" }`
-   - Interfaz: `CredencialesResponse`
-   - Feature: `features/auth/user-admin`
-   - Códigos: `201`, `401`, `403`
+- `PATCH /auth/autorizacion/{empleadoId}/roles`
+  - Request DTO: `PuestoTrabajo` enum
+  - Request JSON:
+    ```json
+    "ADMINISTRADOR"
+    ```
+  - Response DTO: `UsuarioResponse`
+  - Response JSON:
+    ```json
+    {
+      "empleadoId": 42,
+      "dni": "12345678",
+      "nombreCompleto": "Juan Pérez",
+      "username": "juan.perez",
+      "activo": true,
+      "passwordInicializada": true,
+      "email": "juan.perez@example.com",
+      "roles": ["ADMINISTRADOR"]
+    }
+    ```
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `200`, `400`, `401`, `403`
 
-4. **Endpoint**: `PATCH /auth/autorizacion/{empleadoId}/roles`
-   - Parámetros: path `empleadoId`, body enum `PuestoTrabajo`
-   - Headers: `Authorization`, `Content-Type`
-   - Ejemplo JSON: objeto tipo `UsuarioResponse`
-   - Interfaz: `UsuarioResponse`
-   - Feature: `features/auth/user-admin`
-   - Códigos: `200`, `400`, `401`, `403`
+- `PATCH /auth/autorizacion/{empleadoId}/username-roles`
+  - Request DTO: `ActualizarCredencialesRequest`
+  - Request JSON:
+    ```json
+    {
+      "nombres": "Juan",
+      "apellidos": "Pérez",
+      "dni": "12345678",
+      "puestoTrabajo": "ADMINISTRADOR"
+    }
+    ```
+  - Response DTO: `UsuarioResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `200`, `400`, `401`, `403`
 
-5. **Endpoint**: `PATCH /auth/autorizacion/{empleadoId}/username-roles`
-   - Parámetros: path `empleadoId`, body `ActualizarCredencialesRequest`
-   - Headers: `Authorization`, `Content-Type`
-   - Ejemplo JSON: objeto tipo `UsuarioResponse`
-   - Interfaz: `UsuarioResponse`
-   - Feature: `features/auth/user-admin`
-   - Códigos: `200`, `400`, `401`, `403`
+- `POST /auth/autorizacion/{empleadoId}/reset-password`
+  - Request: sin body
+  - Response DTO: `CredencialesResponse`
+  - Response JSON:
+    ```json
+    {
+      "username": "juan.perez",
+      "password": "Nuev0P@ss"
+    }
+    ```
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
 
-6. **Endpoint**: `POST /auth/autorizacion/{empleadoId}/reset-password`
-   - Parámetros: path `empleadoId`
-   - Headers: `Authorization`
-   - Ejemplo JSON: `{ "username": "u1", "password": "tmp123" }`
-   - Interfaz: `CredencialesResponse`
-   - Feature: `features/auth/user-admin`
-   - Códigos: `200`, `401`, `403`
+- `POST /auth/autorizacion/forgot-password`
+  - Request DTO: `ForgotPasswordRequest`
+  - Request JSON:
+    ```json
+    {
+      "username": "juan.perez",
+      "email": "juan.perez@example.com",
+      "dni": "12345678"
+    }
+    ```
+  - Response DTO: `CredencialesResponse`
+  - Response JSON:
+    ```json
+    {
+      "username": "juan.perez",
+      "password": "Nuev0P@ss"
+    }
+    ```
+  - Headers: `Content-Type: application/json`
+  - Códigos: `200`, `400`, `401`
 
-6a. **Endpoint**: `POST /auth/autorizacion/upsert-usuario`
-   - Parámetros: body `RegistrarUsuarioRequest`
-   - Headers: `Authorization`
-   - Ejemplo JSON: (mismo que registro)
-   - Interfaz: `void`
-   - Feature: `features/auth/user-admin`
-   - Códigos: `200`, `400`, `401`, `403`
+- `GET /auth/autorizacion/estado-acceso/{username}`
+  - Request: sin body
+  - Response DTO: `EstadoAccesoResponse`
+  - Response JSON:
+    ```json
+    {
+      "activo": true,
+      "passwordInicializada": false
+    }
+    ```
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `404`
 
-6b. **Endpoint**: `POST /auth/autorizacion/forgot-password`
-   - Parámetros: body `ForgotPasswordRequest`
-   - Headers: `Content-Type`
-   - Ejemplo JSON: `{ "username": "u1" }`
-   - Interfaz: `CredencialesResponse`
-   - Feature: `features/auth/password-recovery`
-   - Códigos: `200`, `400`, `401`
+- `GET /auth/autorizacion/{empleadoId}/empleado`
+  - Request: sin body
+  - Response DTO: `UsuarioResponse`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`, `404`
 
-6c. **Endpoint**: `GET /auth/autorizacion/estado-acceso/{username}`
-   - Parámetros: path `username`
-   - Headers: `Authorization`
-   - Ejemplo JSON: objeto tipo `EstadoAccesoResponse`
-   - Interfaz: `EstadoAccesoResponse`
-   - Feature: `features/auth/user-admin`
-   - Códigos: `200`, `401`, `404`
-
-7. **Endpoint**: `GET /auth/autorizacion/{empleadoId}/empleado`
-   - Parámetros: path `empleadoId`
-   - Headers: `Authorization`
-   - Ejemplo JSON: objeto tipo `UsuarioResponse`
-   - Interfaz: `UsuarioResponse`
-   - Feature: `features/auth/user-admin`
-   - Códigos: `200`, `401`, `403`, `404`
-
-8. **Endpoint**: `DELETE /auth/autorizacion/{empleadoId}/deshabilitar`
-   - Parámetros: path `empleadoId`
-   - Headers: `Authorization`
-   - Ejemplo JSON: vacío (204)
-   - Interfaz: `void`
-   - Feature: `features/auth/user-admin`
-   - Códigos: `204`, `401`, `403`
+- `DELETE /auth/autorizacion/{empleadoId}/deshabilitar`
+  - Request: sin body
+  - Response: `204` sin body
+  - Headers: `Authorization`
+  - Códigos: `204`, `401`, `403`
 
 ### 3.2 Presence Gateway (`/presence`)
 
-1. **Endpoint**: `POST /presence/online`
-   - Parámetros: sin body
-   - Headers: `Authorization`
-   - Ejemplo JSON: vacío
-   - Interfaz: `void`
-   - Feature: `features/presence/online`
-   - Códigos: `200`, `401`
+- `POST /presence/online`
+  - Request: sin body
+  - Response: `200` sin body
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`
 
-2. **Endpoint**: `POST /presence/heartbeat`
-   - Parámetros: sin body
-   - Headers: `Authorization`
-   - Ejemplo JSON: vacío
-   - Interfaz: `void`
-   - Feature: `features/presence/heartbeat`
-   - Códigos: `200`, `401`
+- `POST /presence/heartbeat`
+  - Request: sin body
+  - Response: `200` sin body
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`
 
-3. **Endpoint**: `POST /presence/offline`
-   - Parámetros: sin body
-   - Headers: `Authorization`
-   - Ejemplo JSON: vacío
-   - Interfaz: `void`
-   - Feature: `features/presence/offline`
-   - Códigos: `204`, `401`
+- `POST /presence/offline`
+  - Request: sin body
+  - Response: `204` sin body
+  - Headers: `Authorization`
+  - Códigos: `204`, `401`
 
-4. **Endpoint**: `PATCH /presence/disponibilidad/{disponibilidad}`
-   - Parámetros: path `disponibilidad` (enum)
-   - Headers: `Authorization`
-   - Ejemplo JSON: vacío
-   - Interfaz: `void`
-   - Feature: `features/presence/status`
-   - Códigos: `204`, `401`, `404`
+- `PATCH /presence/disponibilidad/{disponibilidad}`
+  - Request: sin body
+  - Response: `200` sin body
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `404`
 
-5. **Endpoint**: `GET /presence/connected-users`
-   - Parámetros: query opcional `role`
-   - Headers: `Authorization`
-   - Ejemplo JSON: `[ConnectedUserResponse]`
-   - Interfaz: `ConnectedUserResponse[]`
-   - Feature: `features/presence/monitor`
-   - Códigos: `200`, `401`
+- `GET /presence/connected-users`
+  - Query: opcional `role`
+  - Request: sin body
+  - Response DTO: `ConnectedUserResponse[]`
+  - Response JSON:
+    ```json
+    [
+      {
+        "empleadoId": 12,
+        "nombreCompleto": "Ana Gómez",
+        "roles": ["ASESOR_VENTAS"],
+        "status": "ONLINE",
+        "disponibilidad": "DISPONIBLE",
+        "lastSeen": "2026-04-03T12:34:56Z"
+      }
+    ]
+    ```
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`
 
-6. **Endpoint**: `GET /presence/connected-users/{empleadoId}`
-   - Parámetros: path `empleadoId`
-   - Headers: `Authorization`
-   - Ejemplo JSON: `{ "empleadoId": 12, "conectado": true }`
-   - Interfaz: `ConnectedStatusResponse`
-   - Feature: `features/presence/monitor`
-   - Códigos: `200`, `401`
+- `GET /presence/connected-users/{empleadoId}`
+  - Request: sin body
+  - Response DTO: `ConnectedStatusResponse`
+  - Response JSON:
+    ```json
+    {
+      "empleadoId": 12,
+      "conectado": true
+    }
+    ```
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`
 
 ### 3.3 Leads (`/leads`)
 
 #### LeadController (`/leads/leads`)
-- `POST /leads/leads/intake` | body `LeadIntakeRequest` | headers `Authorization` | resp `void` | feature `features/leads/intake` | códigos `204,400,401,403`
-- `PATCH /leads/leads/{idLead}/asignacion` | path `idLead`, body `LeadAsignacionRequest` | headers `Authorization` | resp `void` | feature `features/leads/asignacion` | códigos `204,400,401,403`
-- `GET /leads/leads/asesor-ventas` | headers `Authorization` | resp `LeadAsesorVentasResponse[]` | feature `features/leads/bandeja-asesor` | códigos `200,401,403`
-- `GET /leads/leads/{idLead}/detalle-asesor` | path `idLead` | headers `Authorization` | resp `LeadAsesorDetalleResponse` | feature `features/leads/detalle-asesor` | códigos `200,401,403,404`
-- `PATCH /leads/leads/{idLead}/datos-preventa` | path `idLead`, body `LeadDatosPreventaRequest` | headers `Authorization` | resp `void` | feature `features/leads/preventa` | códigos `204,400,401,403`
-- `PATCH /leads/leads/{idLead}/direccion` | path `idLead`, body `LeadDireccionRequest` | headers `Authorization` | resp `void` | feature `features/leads/direccion` | códigos `204,400,401,403`
-- `PATCH /leads/leads/{idLead}/oferta-comercial` | path `idLead`, body `LeadOfertaComercialRequest` | headers `Authorization` | resp `void` | feature `features/leads/oferta-comercial` | códigos `204,400,401,403`
-- `POST /leads/leads/{idLead}/tipificacion` | path `idLead`, body `LeadTipificacionRequest` | headers `Authorization` | resp `void` | feature `features/leads/tipificacion` | códigos `204,400,401,403`
-- `POST /leads/leads/{idLead}/contacto` | path `idLead` | headers `Authorization` | resp `void` | feature `features/leads/contacto` | códigos `204,400,401,403`
-- `GET /leads/leads/gtr` | query opcional `fecha` | headers `Authorization` | resp `LeadGtrResponse[]` | feature `features/leads/bandeja-gtr` | códigos `200,401,403`
+
+- `POST /leads/leads/intake`
+  - Request DTO: `LeadIntakeRequest`
+  - Request JSON:
+    ```json
+    {
+      "prefijo": "+51",
+      "lead": "987654321",
+      "idCampana": 10,
+      "base": "WHATSAPP"
+    }
+    ```
+  - Response: `204` sin body
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `204`, `400`, `401`, `403`
+
+- `PATCH /leads/leads/{idLead}/asignacion`
+  - Request DTO: `LeadAsignacionRequest`
+  - Request JSON:
+    ```json
+    {
+      "idAsesorAsignado": 5,
+      "nombreAsesorAsignado": "María López"
+    }
+    ```
+  - Response: `204` sin body
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `204`, `400`, `401`, `403`
+
+- `GET /leads/leads/asesor-ventas`
+  - Request: sin body
+  - Response DTO: `LeadAsesorVentasResponse[]`
+  - Response JSON:
+    ```json
+    [
+      {
+        "id": 12,
+        "fechaAsignacion": "2026-04-01T09:15:00Z",
+        "prefijo": "+51",
+        "lead": "987654321",
+        "nombreTitular": "Carlos Pérez",
+        "correo": "carlos.perez@example.com",
+        "estadoSeguimiento": "NUEVO"
+      }
+    ]
+    ```
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
+
+- `GET /leads/leads/{idLead}/detalle-asesor`
+  - Request: sin body
+  - Response DTO: `LeadAsesorDetalleResponse`
+  - Response JSON:
+    ```json
+    {
+      "id": 12,
+      "fechaAsignacion": "2026-04-01T09:15:00Z",
+      "lastEntryAt": "2026-04-02T10:22:00Z",
+      "prefijo": "+51",
+      "lead": "987654321",
+      "nombreCampana": "Campaña A",
+      "nombreProveedorCampana": "Proveedor X",
+      "base": "WHATSAPP",
+      "estadoSeguimiento": "NUEVO",
+      "idAsesorAsignado": 5,
+      "nombreAsesorAsignado": "María López",
+      "tipoDocumento": "DNI",
+      "numeroDocumentoTitularServicio": "12345678",
+      "nombreTitular": "Carlos Pérez",
+      "celularRegistro": "987654321",
+      "correo": "carlos.perez@example.com",
+      "ubigeoNacimiento": "150101",
+      "ubigeoDomicilio": "150101",
+      "tipoDomicilio": "MULTIFAMILIAR",
+      "tipoVia": "CALLE",
+      "via": "Los Álamos",
+      "direccion": "Av. Principal 123",
+      "referencia": "Frente al parque",
+      "latitud": -12.0464,
+      "longitud": -77.0428,
+      "urbanizacion": "San Isidro",
+      "numero": "123",
+      "manzana": "A",
+      "lote": "2",
+      "nombreEdificio": "Torres del Sol",
+      "nombreCondominio": "Central Park",
+      "piso": "5",
+      "interior": "A"
+    }
+    ```
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`, `404`
+
+- `PATCH /leads/leads/{idLead}/datos-preventa`
+  - Request DTO: `LeadDatosPreventaRequest`
+  - Request JSON:
+    ```json
+    {
+      "tipoDocumento": "DNI",
+      "numeroDocumentoTitularServicio": "12345678",
+      "ubigeoNacimiento": "150101",
+      "nombreTitularServicio": "Carlos Pérez",
+      "celularRegistro": "987654321",
+      "celularReferencia": "912345678",
+      "correo": "carlos.perez@example.com",
+      "numeroDocumentoTitularCelularRegistro": "87654321",
+      "nombreTitularCelularRegistro": "Carlos Pérez"
+    }
+    ```
+  - Response: `204` sin body
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `204`, `400`, `401`, `403`
+
+- `PATCH /leads/leads/{idLead}/direccion`
+  - Request DTO: `LeadDireccionRequest`
+  - Request JSON:
+    ```json
+    {
+      "ubigeoDomicilio": "150101",
+      "tipoDomicilio": "MULTIFAMILIAR",
+      "tipoVia": "CALLE",
+      "via": "Santa Cruz",
+      "direccion": "Av. Principal 123",
+      "referencia": "Frente al colegio",
+      "latitud": -12.0464,
+      "longitud": -77.0428,
+      "urbanizacion": "San Isidro",
+      "numero": "123",
+      "manzana": "A",
+      "lote": "2",
+      "nombreEdificio": "Torres del Sol",
+      "nombreCondominio": "Central Park",
+      "piso": "5",
+      "interior": "A"
+    }
+    ```
+  - Response: `204` sin body
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `204`, `400`, `401`, `403`
+
+- `PATCH /leads/leads/{idLead}/oferta-comercial`
+  - Request DTO: `LeadOfertaComercialRequest`
+  - Request JSON:
+    ```json
+    {
+      "idPlan": 22,
+      "idPromocionInterna": 5,
+      "idPromocionProveedor": 7,
+      "adicionales": [
+        { "idAdicional": 10, "cantidad": 2 }
+      ]
+    }
+    ```
+  - Response: `204` sin body
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `204`, `400`, `401`, `403`
+
+- `POST /leads/leads/{idLead}/tipificacion`
+  - Request DTO: `LeadTipificacionRequest`
+  - Request JSON:
+    ```json
+    {
+      "codigoTipificacion": "VENTA_EXITOSA",
+      "codigoSubtipificacion": "ALTA_CLIENTE"
+    }
+    ```
+  - Response: `204` sin body
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `204`, `400`, `401`, `403`
+
+- `POST /leads/leads/{idLead}/contacto`
+  - Request: sin body
+  - Response: `204` sin body
+  - Headers: `Authorization`
+  - Códigos: `204`, `401`, `403`
+
+- `GET /leads/leads/gtr`
+  - Query: opcional `fecha` (YYYY-MM-DD)
+  - Request: sin body
+  - Response DTO: `LeadGtrResponse[]`
+  - Response JSON:
+    ```json
+    [
+      {
+        "id": 42,
+        "createdAt": "2026-04-01T09:15:00Z",
+        "prefijo": "+51",
+        "lead": "987654321",
+        "nombreCampana": "Campaña A",
+        "nombreProveedorCampana": "Proveedor X",
+        "base": "WHATSAPP",
+        "nombreTitular": "Carlos Pérez",
+        "codigoTipificacion": "CONTACTADO",
+        "codigoSubtipificacion": "INTERESADO",
+        "nombreAsesorAsignado": "María López",
+        "estadoSeguimiento": "NUEVO",
+        "reasignaciones": 1
+      }
+    ]
+    ```
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
 
 #### Campaña (`/leads/campanas`)
-- `POST /leads/campanas` | body `CampanaRequest` | headers `Authorization` | resp `CampanaResponse` | feature `features/campanas/gestion` | `201,400,401,403,409`
-- `PUT /leads/campanas/{idCampana}` | path `idCampana`, body `CampanaWhatsappRequest` | headers `Authorization` | resp `CampanaResponse` | feature `features/campanas/gestion` | `200,400,401,403,404`
-- `DELETE /leads/campanas/{idCampana}` | path `idCampana` | headers `Authorization` | resp `CampanaResponse` | feature `features/campanas/gestion` | `200,401,403,404`
-- `GET /leads/campanas` | query opcional `activo` | headers `Authorization` | resp `CampanaResponse[]` | feature `features/campanas/listado` | `200,401,403`
+
+- `POST /leads/campanas`
+  - Request DTO: `CampanaRequest`
+  - Request JSON:
+    ```json
+    {
+      "nombre": "Campaña Abril",
+      "numeroWhatsappEmpresa": "+51987654321",
+      "idCuentaPublicitaria": 3,
+      "idProveedor": 2
+    }
+    ```
+  - Response DTO: `CampanaResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `201`, `400`, `401`, `403`, `409`
+
+- `PUT /leads/campanas/{idCampana}`
+  - Request DTO: `CampanaWhatsappRequest`
+  - Request JSON:
+    ```json
+    {
+      "numeroWhatsappEmpresa": "+51987654399"
+    }
+    ```
+  - Response DTO: `CampanaResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `200`, `400`, `401`, `403`, `404`
+
+- `DELETE /leads/campanas/{idCampana}`
+  - Request: sin body
+  - Response DTO: `CampanaResponse`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`, `404`
+
+- `GET /leads/campanas`
+  - Query: opcional `activo`
+  - Request: sin body
+  - Response DTO: `CampanaResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
 
 #### Cuentas publicitarias (`/leads/cuentas-publicitarias`)
-- `POST /leads/cuentas-publicitarias` | body `CuentaPublicitariaRequest` | headers `Authorization` | resp `CuentaPublicitariaResponse` | feature `features/cuentas-publicitarias/gestion` | `201,400,401,403,409`
-- `GET /leads/cuentas-publicitarias` | query opcional `activo` | headers `Authorization` | resp `CuentaPublicitariaResponse[]` | feature `features/cuentas-publicitarias/listado` | `200,401,403`
-- `GET /leads/cuentas-publicitarias/activas` | headers `Authorization` | resp `CuentaPublicitariaResponse[]` | feature `features/cuentas-publicitarias/listado` | `200,401,403`
-- `DELETE /leads/cuentas-publicitarias/{idCuentaPublicitaria}` | path `idCuentaPublicitaria` | headers `Authorization` | resp `CuentaPublicitariaResponse` | feature `features/cuentas-publicitarias/gestion` | `200,401,403,404`
+
+- `POST /leads/cuentas-publicitarias`
+  - Request DTO: `CuentaPublicitariaRequest`
+  - Request JSON:
+    ```json
+    {
+      "numeroCuenta": "CUENTA123",
+      "nombreCuenta": "Cuenta Principal"
+    }
+    ```
+  - Response DTO: `CuentaPublicitariaResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `201`, `400`, `401`, `403`, `409`
+
+- `GET /leads/cuentas-publicitarias`
+  - Query: opcional `activo`
+  - Request: sin body
+  - Response DTO: `CuentaPublicitariaResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
+
+- `GET /leads/cuentas-publicitarias/activas`
+  - Request: sin body
+  - Response DTO: `CuentaPublicitariaResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
+
+- `DELETE /leads/cuentas-publicitarias/{idCuentaPublicitaria}`
+  - Request: sin body
+  - Response DTO: `CuentaPublicitariaResponse`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`, `404`
 
 #### Eventos de leads (`/leads/eventos`)
-- `GET /leads/eventos/lead/{idLead}` | path `idLead` | headers `Authorization` | resp `EventoResponse[]` | feature `features/leads/eventos` | `200,401,403`
-- `GET /leads/eventos/empleado/{idEmpleado}` | path `idEmpleado`, query opcional `fechaDesde`, `fechaHasta` | headers `Authorization` | resp `EventoResponse[]` | feature `features/leads/eventos` | `200,401,403`
+
+- `GET /leads/eventos/lead/{idLead}`
+  - Request: sin body
+  - Response DTO: `EventoResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
+
+- `GET /leads/eventos/empleado/{idEmpleado}`
+  - Query: opcional `fechaDesde`, `fechaHasta`
+  - Request: sin body
+  - Response DTO: `EventoResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
 
 #### Planes (`/leads/planes`)
-- `POST /leads/planes/adicionales` | body `AdicionalRequest` | headers `Authorization` | resp `AdicionalResponse` | feature `features/planes/adicionales` | `201,400,401,403,409`
-- `POST /leads/planes` | body `PlanRequest` | headers `Authorization` | resp `PlanResponse` | feature `features/planes/gestion` | `201,400,401,403,409`
-- `GET /leads/planes` | query opcional `idProveedor`, `soloVigentes` | headers `Authorization` | resp `PlanResponse[]` | feature `features/planes/listado` | `200,401,403`
-- `GET /leads/planes/adicionales` | query requerido `idProveedor` | headers `Authorization` | resp `AdicionalResponse[]` | feature `features/planes/adicionales` | `200,400,401,403`
-- `GET /leads/planes/servicios` | query requerido `idProveedor` | headers `Authorization` | resp `ServiciosProveedorResponse` | feature `features/planes/servicios` | `200,400,401,403`
-- `PUT /leads/planes/{idPlan}` | path `idPlan`, body `PlanUpdateRequest` | headers `Authorization` | resp `PlanResponse` | feature `features/planes/gestion` | `200,400,401,403,404`
-- `DELETE /leads/planes/{idPlan}` | path `idPlan` | headers `Authorization` | resp `PlanResponse` | feature `features/planes/gestion` | `200,401,403,404`
 
-#### Proveedores (`/leads/proveedores`)
-- `POST /leads/proveedores` | body `ProveedorRequest` | headers `Authorization` | resp `ProveedorResponse` | feature `features/proveedores/gestion` | `201,400,401,403,409`
-- `PATCH /leads/proveedores/{idProveedor}/estado` | path `idProveedor` | headers `Authorization` | resp `ProveedorResponse` | feature `features/proveedores/gestion` | `200,401,403,404`
-
-#### Promociones (`/leads/promociones`)
-- `POST /leads/promociones` | body `PromocionComercialRequest` | headers `Authorization` | resp `PromocionComercialResponse` | feature `features/promociones/gestion` | `201,400,401,403,409`
-- `GET /leads/promociones` | query opcional `idProveedor`, `interno`, `idZona` | headers `Authorization` | resp `PromocionComercialResponse[]` | feature `features/promociones/listado` | `200,401,403`
-- `DELETE /leads/promociones/{idPromocion}` | path `idPromocion` | headers `Authorization` | resp `PromocionComercialResponse` | feature `features/promociones/gestion` | `200,401,403,404`
-
-#### Tipificaciones (`/leads/tipificaciones`)
-- `GET /leads/tipificaciones/{etapa}/catalogo` | path `etapa` (enum: PREVENTA, VENTA, POSTVENTA) | headers `Authorization` | resp `CatalogoResponse` | feature `features/tipificaciones/catalogo` | `200,400,401,403`
-- `PUT /leads/tipificaciones/catalogo` | body `CatalogoRequest` | headers `Authorization` | resp `CatalogoResponse` | feature `features/tipificaciones/catalogo` | `200,400,401,403`
-- `PATCH /leads/tipificaciones/catalogo/estado` | body `CatalogoEstadoRequest` | headers `Authorization` | resp `CatalogoResponse` | feature `features/tipificaciones/catalogo` | `200,400,401,403`
-
-**Estructura de Tipificaciones por Etapa:**
-
-**PREVENTA**: Categorías iniciales de seguimiento al lead (datos personales, dirección, oferta comercial)
-- Típicamente agrupa a subtipificaciones de clasificación temprana por respuesta/interés
-
-**VENTA**: Etapa de cierre comercial
-- Agrupa subtipificaciones relacionadas a efectividad de venta, objeciones, cerradas gang, etc.
-
-**POSTVENTA**: Seguimiento post-contratación
-- Agrupa subtipificaciones de satisfacción, renovación, soporte, incidencias, etc.
-
-Cada tipificación contiene:
-- `id` (number): Identificador único
-- `codigo` (string): Código corto para auditoría (ej: "PREVTA_INT", "VENTA_OK")
-- `descripción` (string): Descripción legible (ej: "Interés mostrado", "Venta ejecutada")
-- `orden` (number): Posición en listado (default 0)
-- `subtipificaciones` (SubtipificacionResponse[]): Detalles específicos de categorización
-
-**Ejemplo de respuesta GET /leads/tipificaciones/PREVENTA/catalogo:**
-```json
-{
-  "etapa": "PREVENTA",
-  "tipificaciones": [
+- `POST /leads/planes/adicionales`
+  - Request DTO: `AdicionalRequest`
+  - Request JSON:
+    ```json
     {
-      "id": 1,
-      "codigo": "PREVTA_INT",
-      "descripcion": "Interés mostrado",
-      "orden": 1,
-      "subtipificaciones": [
-        {
-          "id": 10,
-          "codigo": "INT_ALTO",
-          "descripcion": "Interés alto",
-          "orden": 1
-        },
-        {
-          "id": 11,
-          "codigo": "INT_MEDIO",
-          "descripcion": "Interés medio",
-          "orden": 2
-        }
-      ]
-    },
+      "idProveedor": 2,
+      "nombre": "Adicional TV",
+      "precioUnitario": 35.5
+    }
+    ```
+  - Response DTO: `AdicionalResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `201`, `400`, `401`, `403`, `409`
+
+- `POST /leads/planes`
+  - Request DTO: `PlanRequest`
+  - Request JSON:
+    ```json
     {
-      "id": 2,
-      "codigo": "PREVTA_NORESPONDE",
-      "descripcion": "No responde",
-      "orden": 2,
-      "subtipificaciones": [
+      "idProveedor": 2,
+      "nombre": "Plan 200 Mbps",
+      "precio": 99.9,
+      "vigenciaDesde": "2026-04-01",
+      "vigenciaHasta": "2026-12-31",
+      "internet": {
+        "velocidad": 200,
+        "unidad": "MBPS",
+        "tecnologia": "FTTH"
+      },
+      "television": {
+        "nombre": "Básico",
+        "cantidadCanales": 120
+      },
+      "telefono": {
+        "minutos": 500,
+        "descripcion": "Minutos nacionales"
+      },
+      "adicionales": [
         {
-          "id": 20,
-          "codigo": "NR_CELULAR",
-          "descripcion": "Celular no contacta",
-          "orden": 1
+          "idAdicional": 10,
+          "cantidadIncluida": 2,
+          "permiteCompraAdicional": true,
+          "cantidadMaximaAdicional": 5,
+          "precioUnitarioAdicional": 10.0
         }
       ]
     }
-  ]
-}
-```
+    ```
+  - Response DTO: `PlanResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `201`, `400`, `401`, `403`, `409`
+
+- `GET /leads/planes`
+  - Query: opcional `idProveedor`, `soloVigentes`
+  - Request: sin body
+  - Response DTO: `PlanResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
+
+- `GET /leads/planes/adicionales`
+  - Query: requerido `idProveedor`
+  - Request: sin body
+  - Response DTO: `AdicionalResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `400`, `401`, `403`
+
+- `GET /leads/planes/servicios`
+  - Query: requerido `idProveedor`
+  - Request: sin body
+  - Response DTO: `ServiciosProveedorResponse`
+  - Headers: `Authorization`
+  - Códigos: `200`, `400`, `401`, `403`
+
+- `PUT /leads/planes/{idPlan}`
+  - Request DTO: `PlanUpdateRequest`
+  - Request JSON:
+    ```json
+    {
+      "nombre": "Plan 250 Mbps",
+      "precio": 109.9,
+      "vigenciaDesde": "2026-05-01",
+      "vigenciaHasta": "2027-04-30"
+    }
+    ```
+  - Response DTO: `PlanResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `200`, `400`, `401`, `403`, `404`
+
+- `DELETE /leads/planes/{idPlan}`
+  - Request: sin body
+  - Response DTO: `PlanResponse`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`, `404`
+
+#### Proveedores (`/leads/proveedores`)
+
+- `POST /leads/proveedores`
+  - Request DTO: `ProveedorRequest`
+  - Request JSON:
+    ```json
+    {
+      "nombre": "Proveedor Y"
+    }
+    ```
+  - Response DTO: `ProveedorResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `201`, `400`, `401`, `403`, `409`
+
+- `PATCH /leads/proveedores/{idProveedor}/estado`
+  - Request: sin body
+  - Response DTO: `ProveedorResponse`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`, `404`
+
+#### Promociones (`/leads/promociones`)
+
+- `POST /leads/promociones`
+  - Request DTO: `PromocionComercialRequest`
+  - Request JSON:
+    ```json
+    {
+      "nombre": "Promoción Abril",
+      "interno": false,
+      "idProveedor": 2,
+      "idZona": 3,
+      "descuento": true,
+      "descuentoPorcentual": 10.0,
+      "cantidadMeses": 6,
+      "vigenciaDesde": "2026-04-01",
+      "vigenciaHasta": "2026-09-30"
+    }
+    ```
+  - Response DTO: `PromocionComercialResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `201`, `400`, `401`, `403`, `409`
+
+- `GET /leads/promociones`
+  - Query: opcional `idProveedor`, `interno`, `idZona`
+  - Request: sin body
+  - Response DTO: `PromocionComercialResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
+
+- `DELETE /leads/promociones/{idPromocion}`
+  - Request: sin body
+  - Response DTO: `PromocionComercialResponse`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`, `404`
+
+#### Tipificaciones (`/leads/tipificaciones`)
+
+- `GET /leads/tipificaciones/{etapa}/catalogo`
+  - Request: sin body
+  - Response DTO: `CatalogoResponse`
+  - Headers: `Authorization`
+  - Códigos: `200`, `400`, `401`, `403`
+
+- `PUT /leads/tipificaciones/catalogo`
+  - Request DTO: `CatalogoRequest`
+  - Request JSON:
+    ```json
+    {
+      "etapa": "PREVENTA",
+      "tipificaciones": [
+        {
+          "id": 1,
+          "codigo": "INTERESADO",
+          "descripcion": "Interesado",
+          "orden": 1,
+          "subtipificaciones": [
+            {
+              "id": 11,
+              "codigo": "ALTA",
+              "descripcion": "Alta por oferta",
+              "orden": 1
+            }
+          ]
+        }
+      ]
+    }
+    ```
+  - Response DTO: `CatalogoResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `200`, `400`, `401`, `403`
+
+- `PATCH /leads/tipificaciones/catalogo/estado`
+  - Request DTO: `CatalogoEstadoRequest`
+  - Request JSON:
+    ```json
+    {
+      "etapa": "PREVENTA",
+      "tipificacionesActivar": [1],
+      "tipificacionesDesactivar": [2],
+      "subtipificacionesActivar": [11],
+      "subtipificacionesDesactivar": [12]
+    }
+    ```
+  - Response DTO: `CatalogoResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `200`, `400`, `401`, `403`
 
 #### Ubigeo (`/leads/ubigeo`)
-- `GET /leads/ubigeo/departamentos` | headers `Authorization` | resp `DepartamentoResponse[]` | feature `features/ubigeo/catalogo` | `200,401,403`
-- `GET /leads/ubigeo/departamentos/{idDepartamento}/provincias` | path `idDepartamento` | headers `Authorization` | resp `ProvinciaResponse[]` | feature `features/ubigeo/catalogo` | `200,401,403`
-- `GET /leads/ubigeo/provincias/{idProvincia}/distritos` | path `idProvincia` | headers `Authorization` | resp `DistritoResponse[]` | feature `features/ubigeo/catalogo` | `200,401,403`
+
+- `GET /leads/ubigeo/departamentos`
+  - Request: sin body
+  - Response DTO: `DepartamentoResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
+
+- `GET /leads/ubigeo/departamentos/{idDepartamento}/provincias`
+  - Request: sin body
+  - Response DTO: `ProvinciaResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
+
+- `GET /leads/ubigeo/provincias/{idProvincia}/distritos`
+  - Request: sin body
+  - Response DTO: `DistritoResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
 
 #### Zonas (`/leads/zonas`)
-- `POST /leads/zonas` | body `ZonaRequest` | headers `Authorization` | resp `ZonaResponse` | feature `features/zonas/gestion` | `201,400,401,403,409`
-- `GET /leads/zonas` | query opcional `activo` | headers `Authorization` | resp `ZonaResponse[]` | feature `features/zonas/listado` | `200,401,403`
-- `PATCH /leads/zonas/{idZona}/estado` | path `idZona` | headers `Authorization` | resp `ZonaResponse` | feature `features/zonas/gestion` | `200,401,403,404`
-- `PUT /leads/zonas/{idZona}` | path `idZona`, body `ZonaRequest` | headers `Authorization` | resp `ZonaResponse` | feature `features/zonas/gestion` | `200,400,401,403,404`
+
+- `POST /leads/zonas`
+  - Request DTO: `ZonaRequest`
+  - Request JSON:
+    ```json
+    {
+      "nombre": "Zona Norte",
+      "reglas": [
+        {
+          "nivelGeografico": "DEPARTAMENTO",
+          "geoId": 15,
+          "criterio": "INCLUIR"
+        }
+      ]
+    }
+    ```
+  - Response DTO: `ZonaResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `201`, `400`, `401`, `403`, `409`
+
+- `GET /leads/zonas`
+  - Request: sin body
+  - Response DTO: `ZonaResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
+
+- `PATCH /leads/zonas/{idZona}/estado`
+  - Request: sin body
+  - Response DTO: `ZonaResponse`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`, `404`
+
+- `PUT /leads/zonas/{idZona}`
+  - Request DTO: `ZonaRequest`
+  - Response DTO: `ZonaResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `200`, `400`, `401`, `403`, `404`
 
 ### 3.3.1 Recruitment (`/recruitment/postulaciones`, `/recruitment/ofertas-laborales`, `/recruitment/grupos-capacitacion`)
 
 #### Grupo de capacitación (`/recruitment/grupos-capacitacion`)
-- `POST /recruitment/grupos-capacitacion` | body `GrupoCapacitacionRequest` | headers `Authorization` | resp `GrupoCapacitacionResponse` | feature `features/recruitment/grupos-capacitacion` | `201,400,401,403`
-- `GET /recruitment/grupos-capacitacion` | query opcional `estado` | headers `Authorization` | resp `GrupoCapacitacionResponse[]` | feature `features/recruitment/grupos-capacitacion` | `200,401,403`
-- `GET /recruitment/grupos-capacitacion/{idGrupoCapacitacion}` | path `idGrupoCapacitacion` | headers `Authorization` | resp `GrupoCapacitacionResponse` | feature `features/recruitment/grupos-capacitacion` | `200,401,403,404`
-- `POST /recruitment/grupos-capacitacion/{idGrupoCapacitacion}/postulaciones` | path `idGrupoCapacitacion`, body `AgregarPostulacionGrupoCapacitacionRequest` | headers `Authorization` | resp `GrupoCapacitacionDetalleResponse` | feature `features/recruitment/grupos-capacitacion` | `201,400,401,403,404`
-- `PATCH /recruitment/grupos-capacitacion/{idGrupoCapacitacion}/postulaciones/{idPostulacion}` | path `idGrupoCapacitacion,idPostulacion`, body `ActualizarDetalleGrupoCapacitacionRequest` | headers `Authorization` | resp `GrupoCapacitacionDetalleResponse` | feature `features/recruitment/grupos-capacitacion` | `200,400,401,403,404`
+
+- `POST /recruitment/grupos-capacitacion`
+  - Request DTO: `GrupoCapacitacionRequest`
+  - Request JSON:
+    ```json
+    {
+      "codigo": "GRUPO-01",
+      "idCapacitador": 8,
+      "turno": "MORNING",
+      "sala": "SALON_A",
+      "fechaInicio": "2026-05-10",
+      "fechaFin": "2026-05-20"
+    }
+    ```
+  - Response DTO: `GrupoCapacitacionResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `201`, `400`, `401`, `403`
+
+- `GET /recruitment/grupos-capacitacion`
+  - Query: opcional `estado`
+  - Request: sin body
+  - Response DTO: `GrupoCapacitacionResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
+
+- `GET /recruitment/grupos-capacitacion/{idGrupoCapacitacion}`
+  - Request: sin body
+  - Response DTO: `GrupoCapacitacionResponse`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`, `404`
+
+- `POST /recruitment/grupos-capacitacion/{idGrupoCapacitacion}/postulaciones`
+  - Request DTO: `AgregarPostulacionGrupoCapacitacionRequest`
+  - Request JSON:
+    ```json
+    {
+      "idPostulacion": 42,
+      "fechaAsignacion": "2026-05-12"
+    }
+    ```
+  - Response DTO: `GrupoCapacitacionDetalleResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `201`, `400`, `401`, `403`, `404`
+
+- `PATCH /recruitment/grupos-capacitacion/{idGrupoCapacitacion}/postulaciones/{idPostulacion}`
+  - Request DTO: `ActualizarDetalleGrupoCapacitacionRequest`
+  - Request JSON:
+    ```json
+    {
+      "estadoCapacitacion": "APROBADO",
+      "fechaResultado": "2026-05-15",
+      "idEmpleadoContratado": 123,
+      "fechaContratacion": "2026-05-20",
+      "cumplioTresMeses": false,
+      "fechaCumplioTresMeses": "2026-08-20"
+    }
+    ```
+  - Response DTO: `GrupoCapacitacionDetalleResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `200`, `400`, `401`, `403`, `404`
 
 #### Ofertas laborales (`/recruitment/ofertas-laborales`)
-- `POST /recruitment/ofertas-laborales` | body `OfertaLaboralRequest` | headers `Authorization` | resp `OfertaLaboralResponse` | feature `features/recruitment/ofertas-laborales` | `201,400,401,403`
-- `POST /recruitment/ofertas-laborales/{idOfertaLaboral}/ampliacion` | path `idOfertaLaboral`, body `OfertaAmpliacionRequest` | headers `Authorization` | resp `OfertaAmpliacionResponse` | feature `features/recruitment/ofertas-laborales` | `201,400,401,403`
-- `GET /recruitment/ofertas-laborales/activas` | headers `Authorization` | resp `OfertaLaboralResponse[]` | feature `features/recruitment/ofertas-laborales` | `200,401,403`
-- `GET /recruitment/ofertas-laborales` | query opcional `estado` | headers `Authorization` | resp `OfertaLaboralResponse[]` | feature `features/recruitment/ofertas-laborales` | `200,401,403`
-- `PATCH /recruitment/ofertas-laborales/{idOfertaLaboral}/estado` | path `idOfertaLaboral`, body `ActualizarEstadoOfertaLaboralRequest` | headers `Authorization` | resp `OfertaLaboralResponse` | feature `features/recruitment/ofertas-laborales` | `200,400,401,403,404`
+
+- `POST /recruitment/ofertas-laborales`
+  - Request DTO: `OfertaLaboralRequest`
+  - Request JSON:
+    ```json
+    {
+      "codigo": "OF-2026-01",
+      "negocio": "TELECOM",
+      "puestoObjetivo": "ASESOR_VENTAS",
+      "horario": "AFTERNOON",
+      "cantidadInicial": 10,
+      "plazoInicial": "2026-06-01"
+    }
+    ```
+  - Response DTO: `OfertaLaboralResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `201`, `400`, `401`, `403`
+
+- `POST /recruitment/ofertas-laborales/{idOfertaLaboral}/ampliacion`
+  - Request DTO: `OfertaAmpliacionRequest`
+  - Request JSON:
+    ```json
+    {
+      "cantidad": 5,
+      "plazo": "2026-07-01"
+    }
+    ```
+  - Response DTO: `OfertaAmpliacionResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `201`, `400`, `401`, `403`
+
+- `GET /recruitment/ofertas-laborales/activas`
+  - Request: sin body
+  - Response DTO: `OfertaLaboralResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
+
+- `GET /recruitment/ofertas-laborales`
+  - Query: opcional `estado`
+  - Request: sin body
+  - Response DTO: `OfertaLaboralResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
+
+- `PATCH /recruitment/ofertas-laborales/{idOfertaLaboral}/estado`
+  - Request DTO: `ActualizarEstadoOfertaLaboralRequest`
+  - Request JSON: `{}`
+  - Response DTO: `OfertaLaboralResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `200`, `400`, `401`, `403`, `404`
 
 #### Postulaciones (`/recruitment/postulaciones`)
-- `POST /recruitment/postulaciones` | body `PostulacionRequest` | headers `Authorization` | resp `PostulacionResponse` | feature `features/recruitment/postulaciones` | `201,400,401,403`
-- `PUT /recruitment/postulaciones/{idPostulacion}` | path `idPostulacion`, body `PostulacionRequest` | headers `Authorization` | resp `PostulacionResponse` | feature `features/recruitment/postulaciones` | `200,400,401,403,404`
-- `POST /recruitment/postulaciones/{idPostulacion}/tipificacion` | path `idPostulacion`, body `TipificarPostulacionRequest` | headers `Authorization` | resp `PostulacionResponse` | feature `features/recruitment/postulaciones` | `200,400,401,403,404`
-- `GET /recruitment/postulaciones/{idPostulacion}` | path `idPostulacion` | headers `Authorization` | resp `PostulacionResponse` | feature `features/recruitment/postulaciones` | `200,401,403,404`
-- `GET /recruitment/postulaciones` | query opcional `etapa,estado,estadoBandeja` | headers `Authorization` | resp `PostulacionResponse[]` | feature `features/recruitment/postulaciones` | `200,401,403`
-- `GET /recruitment/postulaciones/bandeja/reclutamiento` | query opcional `estadoBandeja` | headers `Authorization` | resp `PostulacionResponse[]` | feature `features/recruitment/postulaciones` | `200,401,403`
-- `GET /recruitment/postulaciones/bandeja/capacitacion` | query opcional `sinGrupo` | headers `Authorization` | resp `PostulacionResponse[]` | feature `features/recruitment/postulaciones` | `200,401,403`
-- `GET /recruitment/postulaciones/bandeja/contratacion` | headers `Authorization` | resp `PostulacionResponse[]` | feature `features/recruitment/postulaciones` | `200,401,403`
-- `POST /recruitment/postulaciones/{idPostulacion}/confirmar-contratacion` | path `idPostulacion`, body `ConfirmarContratacionRequest` | headers `Authorization` | resp `PostulacionResponse` | feature `features/recruitment/postulaciones` | `200,400,401,403,404`
+
+- `POST /recruitment/postulaciones`
+  - Request DTO: `PostulacionRequest`
+  - Request JSON:
+    ```json
+    {
+      "idOfertaLaboral": 15,
+      "origen": "COMPUTRABAJO",
+      "postulante": {
+        "nombres": "Ana",
+        "apellidos": "Ramírez",
+        "tipoDocumento": "DNI",
+        "documento": "12345678",
+        "celular": "987654321",
+        "fechaNacimiento": "1995-10-10"
+      }
+    }
+    ```
+  - Response DTO: `PostulacionResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `201`, `400`, `401`, `403`
+
+- `PUT /recruitment/postulaciones/{idPostulacion}`
+  - Request DTO: `PostulacionRequest`
+  - Request JSON: igual que POST /recruitment/postulaciones
+  - Response DTO: `PostulacionResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `200`, `400`, `401`, `403`, `404`
+
+- `POST /recruitment/postulaciones/{idPostulacion}/tipificacion`
+  - Request DTO: `TipificarPostulacionRequest`
+  - Request JSON:
+    ```json
+    {
+      "idTipificacion": 4,
+      "idSubtipificacion": 22,
+      "modalidadContacto": "TELEFONO",
+      "observacion": "Cliente interesado"
+    }
+    ```
+  - Response DTO: `PostulacionResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `200`, `400`, `401`, `403`, `404`
+
+- `GET /recruitment/postulaciones/{idPostulacion}`
+  - Request: sin body
+  - Response DTO: `PostulacionResponse`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`, `404`
+
+- `GET /recruitment/postulaciones`
+  - Query: opcional `etapa`, `estado`, `estadoBandeja`
+  - Request: sin body
+  - Response DTO: `PostulacionResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
+
+- `GET /recruitment/postulaciones/bandeja/reclutamiento`
+  - Query: opcional `estadoBandeja`
+  - Request: sin body
+  - Response DTO: `PostulacionResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
+
+- `GET /recruitment/postulaciones/bandeja/capacitacion`
+  - Query: opcional `sinGrupo`
+  - Request: sin body
+  - Response DTO: `PostulacionResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
+
+- `GET /recruitment/postulaciones/bandeja/contratacion`
+  - Request: sin body
+  - Response DTO: `PostulacionResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
+
+- `POST /recruitment/postulaciones/{idPostulacion}/confirmar-contratacion`
+  - Request DTO: `ConfirmarContratacionRequest`
+  - Request JSON:
+    ```json
+    {
+      "idEmpleadoContratado": 99,
+      "fechaContratacion": "2026-05-01"
+    }
+    ```
+  - Response DTO: `PostulacionResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `200`, `400`, `401`, `403`, `404`
 
 #### Eventos de postulaciones (`/recruitment/postulaciones/{idPostulacion}/eventos`)
-- `GET /recruitment/postulaciones/{idPostulacion}/eventos` | path `idPostulacion` | headers `Authorization` | resp `EventoResponse[]` | feature `features/recruitment/eventos` | `200,401,403`
+
+- `GET /recruitment/postulaciones/{idPostulacion}/eventos`
+  - Request: sin body
+  - Response DTO: `EventoResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
 
 #### Tipificaciones recruitment (`/recruitment/tipificaciones`)
-- `GET /recruitment/tipificaciones/{etapa}/catalogo` | path `etapa` | headers `Authorization` | resp `CatalogoTipificacionResponse` | feature `features/recruitment/tipificaciones` | `200,400,401,403`
-- `POST /recruitment/tipificaciones/catalogo` | body `CatalogoTipificacionRequest` | headers `Authorization` | resp `CatalogoTipificacionResponse` | feature `features/recruitment/tipificaciones` | `201,400,401,403`
-- `PATCH /recruitment/tipificaciones/estado` | body `CatalogoEstadoRequest` | headers `Authorization` | resp `CatalogoTipificacionResponse` | feature `features/recruitment/tipificaciones` | `200,400,401,403`
-- `POST /recruitment/tipificaciones/{idTipificacion}/subtipificaciones` | path `idTipificacion`, body `SubtipificacionRequest` | headers `Authorization` | resp `SubtipificacionResponse` | feature `features/recruitment/tipificaciones` | `201,400,401,403,404`
+
+- `GET /recruitment/tipificaciones/{etapa}/catalogo`
+  - Query: opcional `puestoObjetivo`
+  - Request: sin body
+  - Response DTO: `CatalogoTipificacionResponse`
+  - Headers: `Authorization`
+  - Códigos: `200`, `400`, `401`, `403`
+
+- `POST /recruitment/tipificaciones/catalogo`
+  - Request DTO: `CatalogoTipificacionRequest`
+  - Request JSON:
+    ```json
+    {
+      "etapa": "RECLUTAMIENTO",
+      "tipificaciones": [
+        {
+          "codigo": "PRESELECCION",
+          "descripcion": "Preselección",
+          "orden": 1,
+          "subtipificaciones": [
+            {
+              "codigo": "ENTREVISTA",
+              "descripcion": "Entrevista agendada",
+              "orden": 1,
+              "etapaCambio": "CAPACITACION"
+            }
+          ]
+        }
+      ]
+    }
+    ```
+  - Response DTO: `CatalogoTipificacionResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `201`, `400`, `401`, `403`
+
+- `PATCH /recruitment/tipificaciones/estado`
+  - Request DTO: `CatalogoEstadoRequest`
+  - Request JSON:
+    ```json
+    {
+      "etapa": "RECLUTAMIENTO",
+      "tipificacionesActivar": [1],
+      "tipificacionesDesactivar": [],
+      "subtipificacionesActivar": [11],
+      "subtipificacionesDesactivar": []
+    }
+    ```
+  - Response DTO: `CatalogoTipificacionResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `200`, `400`, `401`, `403`
+
+- `POST /recruitment/tipificaciones/{idTipificacion}/subtipificaciones`
+  - Request DTO: `SubtipificacionRequest`
+  - Request JSON:
+    ```json
+    {
+      "codigo": "SEGUIMIENTO",
+      "descripcion": "Seguimiento telefónico",
+      "orden": 2,
+      "alcance": "GLOBAL",
+      "etapaDestino": "CAPACITACION",
+      "estadoDestino": "APROBADO",
+      "estadoBandejaDestino": "EN_PROCESO"
+    }
+    ```
+  - Response DTO: `SubtipificacionResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `201`, `400`, `401`, `403`, `404`
 
 ### 3.4 RRHH (`/rrhh`)
 
 #### Empleados (`/rrhh/empleados`)
-- `PATCH /rrhh/empleados/{id}/lista-negra` | path `id` | headers `Authorization` | resp `EmpleadoResponse` | feature `features/rrhh/empleados` | `200,401,403,404,406`
-- `GET /rrhh/empleados` | query opcional `q,dni,celular,distrito,banco,idEmpresaContratista,origen,estado,page,size,sort` | headers `Authorization` | resp `Page<EmpleadoResponse>` | feature `features/rrhh/empleados` | `200,400,401,403`
-- `GET /rrhh/empleados/{dato}/universal` | path `dato`, query `page,size,sort` | headers `Authorization` | resp `Page<EmpleadoResponse>` | feature `features/rrhh/empleados` | `200,400,401,403`
-- `GET /rrhh/empleados/{documento}/numero-documento` | path `documento` | headers `Authorization` | resp `EmpleadoResponse` | feature `features/rrhh/empleados` | `200,401,403,404`
-- `POST /rrhh/empleados` | body `RegistrarEmpleadoRequest` | headers `Authorization` | resp `EmpleadoResponse` | feature `features/rrhh/empleados` | `201,400,401,403,409`
-- `PATCH /rrhh/empleados/{id}/datos-personales` | path `id`, body `DatosPersonalesRequest` | headers `Authorization` | resp `EmpleadoResponse` | feature `features/rrhh/empleados` | `200,400,401,403,404`
-- `PATCH /rrhh/empleados/{id}/datos-contacto-ubicacion` | path `id`, body `DatosContactoUbicacionRequest` | headers `Authorization` | resp `EmpleadoResponse` | feature `features/rrhh/empleados` | `200,400,401,403,404`
-- `PATCH /rrhh/empleados/{id}/datos-financieros` | path `id`, body `DatosFinancierosRequest` | headers `Authorization` | resp `EmpleadoResponse` | feature `features/rrhh/empleados` | `200,400,401,403,404`
-- `PATCH /rrhh/empleados/{id}/datos-corporativos` | path `id`, body `DatosContactoCorporativoRequest` | headers `Authorization` | resp `EmpleadoResponse` | feature `features/rrhh/empleados` | `200,400,401,403,404`
 
-#### Postulantes (`/rrhh/postulantes`)
-- `POST /rrhh/postulantes` | body `RegistrarPostulanteRequest` | headers `Authorization` | resp `PostulanteResponse` | feature `features/rrhh/postulantes` | `201,400,401,403,409`
-- `GET /rrhh/postulantes/reclutamiento` | query opcional `estado,subestado,origen,puesto,desde,hasta,listaNegra` | headers `Authorization` | resp `PostulanteResponse[]` | feature `features/rrhh/reclutamiento` | `200,400,401,403`
-- `GET /rrhh/postulantes/capacitacion` | query opcional `estado,subestado,origen,puesto,desde,hasta,listaNegra` | headers `Authorization` | resp `PostulanteResponse[]` | feature `features/rrhh/capacitacion` | `200,400,401,403`
-- `GET /rrhh/postulantes` | query requerido `etapa` + filtros opcionales | headers `Authorization` | resp `PostulanteResponse[]` | feature `features/rrhh/postulantes` | `200,400,401`
-- `PATCH /rrhh/postulantes/{id}/estado-reclutamiento` | path `id`, body `EventoPostulanteRequest` | headers `Authorization` | resp `PostulanteResponse` | feature `features/rrhh/reclutamiento` | `200,400,401,403`
-- `PATCH /rrhh/postulantes/estado-capacitacion` | body `EstadoCapacitacionRequest[]` | headers `Authorization` | resp `PostulanteResponse[]` | feature `features/rrhh/capacitacion` | `200,400,401,403`
-- `PATCH /rrhh/postulantes/{id}/rechazo-inasistencia-capacitacion` | path `id` | headers `Authorization` | resp `PostulanteResponse` | feature `features/rrhh/capacitacion` | `200,400,401,403`
+- `PATCH /rrhh/empleados/{id}/lista-negra`
+  - Request: sin body
+  - Response DTO: `EmpleadoResponse`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`, `404`, `406`
+
+- `GET /rrhh/empleados`
+  - Query: opcional `q`, `dni`, `celular`, `distrito`, `banco`, `idEmpresaContratista`, `origen`, `estado`, `page`, `size`, `sort`
+  - Request: sin body
+  - Response DTO: `Page<EmpleadoResponse>`
+  - Headers: `Authorization`
+  - Códigos: `200`, `400`, `401`, `403`
+
+- `GET /rrhh/empleados/{dato}/universal`
+  - Query: `page`, `size`, `sort`
+  - Request: sin body
+  - Response DTO: `Page<EmpleadoResponse>`
+  - Headers: `Authorization`
+  - Códigos: `200`, `400`, `401`, `403`
+
+- `GET /rrhh/empleados/{documento}/numero-documento`
+  - Request: sin body
+  - Response DTO: `EmpleadoResponse`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`, `404`
+
+- `POST /rrhh/empleados`
+  - Request DTO: `RegistrarEmpleadoRequest`
+  - Request JSON:
+    ```json
+    {
+      "nombres": "Ana",
+      "apellidos": "Torres",
+      "tipoDocumento": "DNI",
+      "numeroDocumento": "76543210",
+      "nacionalidad": "PERUANO",
+      "fechaNacimiento": "1990-05-20",
+      "estadoCivil": "SOLTERO",
+      "tieneHijos": false,
+      "celularPersonal": "987654321",
+      "correoPersonal": "ana.torres@example.com",
+      "origen": "REFERIDO",
+      "distrito": "SURCO",
+      "direccion": "Av. Los Próceres 123",
+      "banco": "BCP",
+      "cuentaBancaria": "123456789012",
+      "cuentaInterbancaria": "00112345678901234567",
+      "cuentaPropia": true
+    }
+    ```
+  - Response DTO: `EmpleadoResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `201`, `400`, `401`, `403`, `409`
+
+- `PATCH /rrhh/empleados/{id}/datos-personales`
+  - Request DTO: `DatosPersonalesRequest`
+  - Request JSON:
+    ```json
+    {
+      "nombres": "Ana",
+      "apellidos": "Torres",
+      "tipoDocumento": "DNI",
+      "numeroDocumento": "76543210",
+      "nacionalidad": "PERUANO",
+      "fechaNacimiento": "1990-05-20",
+      "estadoCivil": "SOLTERO",
+      "tieneHijos": false
+    }
+    ```
+  - Response DTO: `EmpleadoResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `200`, `400`, `401`, `403`, `404`
+
+- `PATCH /rrhh/empleados/{id}/datos-contacto-ubicacion`
+  - Request DTO: `DatosContactoUbicacionRequest`
+  - Request JSON:
+    ```json
+    {
+      "celularPersonal": "987654321",
+      "correoPersonal": "ana.torres@example.com",
+      "distrito": "SURCO",
+      "direccion": "Av. Los Próceres 123"
+    }
+    ```
+  - Response DTO: `EmpleadoResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `200`, `400`, `401`, `403`, `404`
+
+- `PATCH /rrhh/empleados/{id}/datos-financieros`
+  - Request DTO: `DatosFinancierosRequest`
+  - Request JSON:
+    ```json
+    {
+      "banco": "BCP",
+      "cuentaBancaria": "123456789012",
+      "cuentaInterbancaria": "00112345678901234567",
+      "cuentaPropia": true,
+      "parentesco": "OTRO",
+      "celularTransferencia": "987654321",
+      "idEmpresaContratista": 2
+    }
+    ```
+  - Response DTO: `EmpleadoResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `200`, `400`, `401`, `403`, `404`
+
+- `PATCH /rrhh/empleados/{id}/datos-corporativos`
+  - Request DTO: `DatosContactoCorporativoRequest`
+  - Request JSON:
+    ```json
+    {
+      "celularCorporativo": "987654321",
+      "correoCorporativo": "ana.torres@empresa.com"
+    }
+    ```
+  - Response DTO: `EmpleadoResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `200`, `400`, `401`, `403`, `404`
 
 #### Contratos (`/rrhh/contratos`)
-- `GET /rrhh/contratos/{id}/historico` | path `id` | headers `Authorization` | resp `ContratoResponse[]` | feature `features/rrhh/contratos` | `200,401,403,404`
-- `GET /rrhh/contratos/{id}/vigente` | path `id` | headers `Authorization` | resp `ContratoResponse` | feature `features/rrhh/contratos` | `200,401,403,404`
-- `POST /rrhh/contratos/{id}/registrar` | path `id`, body `RegistrarContratoRequest` | headers `Authorization` | resp `ContratoRegistroResponse` | feature `features/rrhh/contratos` | `201,400,401,403,404,409,422`
-- `PATCH /rrhh/contratos/{id}/cesar-contrato` | path `id`, body `CerrarContratoRequest` | headers `Authorization` | resp `ContratoResponse` | feature `features/rrhh/contratos` | `200,400,401,403,404,409`
+
+- `GET /rrhh/contratos/{id}/historico`
+  - Request: sin body
+  - Response DTO: `ContratoResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`, `404`
+
+- `GET /rrhh/contratos/{id}/vigente`
+  - Request: sin body
+  - Response DTO: `ContratoResponse`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`, `404`
+
+- `POST /rrhh/contratos/{id}/registrar`
+  - Request DTO: `RegistrarContratoRequest`
+  - Request JSON:
+    ```json
+    {
+      "idPostulacion": 77,
+      "puestoTrabajo": "ASESOR_VENTAS",
+      "regimen": "PLANILLA",
+      "modalidad": "FULL_TIME",
+      "seguroSalud": "ESSALUD",
+      "sistemaPensiones": "ONP",
+      "sueldoBase": 1500.0,
+      "fechaInicio": "2026-05-01",
+      "fechaFin": "2027-04-30"
+    }
+    ```
+  - Response DTO: `ContratoRegistroResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `201`, `400`, `401`, `403`, `404`, `409`, `422`
+
+- `PATCH /rrhh/contratos/{id}/cesar-contrato`
+  - Request DTO: `CerrarContratoRequest`
+  - Request JSON:
+    ```json
+    {}
+    ```
+  - Response DTO: `ContratoResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `200`, `400`, `401`, `403`, `404`, `409`
 
 #### Pagos (`/rrhh/pagos`)
-- `GET /rrhh/pagos` | query opcional `contrato,empleado,desde,hasta` | headers `Authorization` | resp `PagoResponse[]` | feature `features/rrhh/pagos` | `200,400,401,403`
-- `POST /rrhh/pagos/{id}/pagar-contrato` | path `id`, body `RegistrarPagoRequest` | headers `Authorization` | resp `PagoResponse` | feature `features/rrhh/pagos` | `201,400,401,403,404,409`
+
+- `GET /rrhh/pagos`
+  - Query: opcional `contrato`, `empleado`, `desde`, `hasta`
+  - Request: sin body
+  - Response DTO: `PagoResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `400`, `401`, `403`
+
+- `POST /rrhh/pagos/{id}/pagar-contrato`
+  - Request DTO: `RegistrarPagoRequest`
+  - Request JSON:
+    ```json
+    {
+      "fechaInicio": "2026-05-01",
+      "fechaFin": "2026-05-31",
+      "asignacionFamiliar": 93.1,
+      "bonoPuntualidad": 50.0,
+      "comisionSemanal": 120.0,
+      "comisionMensual": 240.0,
+      "bonoExtra": 30.0
+    }
+    ```
+  - Response DTO: `PagoResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `201`, `400`, `401`, `403`, `404`, `409`
 
 #### Empresas contratistas (`/rrhh/empresas-contratistas`)
-- `POST /rrhh/empresas-contratistas` | body `RegistrarEmpresaContratistaRequest` | headers `Authorization` | resp `EmpresaContratistaResponse` | feature `features/rrhh/contratistas` | `201,400,401,403,409`
-- `GET /rrhh/empresas-contratistas` | query opcional `activo` | headers `Authorization` | resp `EmpresaContratistaResponse[]` | feature `features/rrhh/contratistas` | `200,401,403`
-- `PATCH /rrhh/empresas-contratistas/{id}/desactivar` | path `id` | headers `Authorization` | resp `EmpresaContratistaResponse` | feature `features/rrhh/contratistas` | `200,401,403,404`
+
+- `POST /rrhh/empresas-contratistas`
+  - Request DTO: `RegistrarEmpresaContratistaRequest`
+  - Request JSON:
+    ```json
+    {
+      "nombre": "Contratistas SAC"
+    }
+    ```
+  - Response DTO: `EmpresaContratistaResponse`
+  - Headers: `Authorization`, `Content-Type: application/json`
+  - Códigos: `201`, `400`, `401`, `403`, `409`
+
+- `GET /rrhh/empresas-contratistas`
+  - Query: opcional `activo`
+  - Request: sin body
+  - Response DTO: `EmpresaContratistaResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
+
+- `PATCH /rrhh/empresas-contratistas/{id}/desactivar`
+  - Request: sin body
+  - Response DTO: `EmpresaContratistaResponse`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`, `404`
 
 #### Eventos (`/rrhh/eventos`)
-- `GET /rrhh/eventos/{idEmpleado}/empleados` | path `idEmpleado` | headers `Authorization` | resp `EmpleadoEventoResponse[]` | feature `features/rrhh/eventos` | `200,401,403`
+
+- `GET /rrhh/eventos/{idEmpleado}/empleados`
+  - Request: sin body
+  - Response DTO: `EmpleadoEventoResponse[]`
+  - Headers: `Authorization`
+  - Códigos: `200`, `401`, `403`
 
 ## 4) Errores y códigos (resumen)
 
@@ -1110,11 +2041,10 @@ Cada tipificación contiene:
 
 ## 5) Duplicados detectados y fuente de verdad
 
-1. **Postulantes por etapa (duplicado funcional):**
-   - `GET /rrhh/postulantes/reclutamiento`
-   - `GET /rrhh/postulantes/capacitacion`
-   - `GET /rrhh/postulantes?etapa=RECLUTAMIENTO|CAPACITACION`
-   - **Fuente de verdad recomendada para frontend:** endpoint genérico `GET /rrhh/postulantes` (evita duplicar lógica de filtros).
+1. **Postulantes por etapa (antiguo / no implementado):**
+   - En el código actual no se encontró `/rrhh/postulantes/reclutamiento` ni `/rrhh/postulantes/capacitacion`.
+   - El servicio vigente de postulaciones está en `recruitment-service` bajo `/recruitment/postulaciones` y `recruitment/tipificaciones`.
+   - **Fuente de verdad recomendada para frontend:** `GET /recruitment/postulaciones` con los filtros `etapa`, `estado` y `estadoBandeja`.
 
 2. **Cuentas publicitarias activas (duplicado funcional):**
    - `GET /leads/cuentas-publicitarias/activas`
@@ -1397,11 +2327,9 @@ export enum EtapaProceso {
 }
 ```
 
-**Endpoints que usan este enum:**
-- `GET /rrhh/postulantes/reclutamiento` (devuelve etapa)
-- `GET /rrhh/postulantes/capacitacion` (devuelve etapa)
-- `GET /rrhh/postulantes?etapa=RECLUTAMIENTO|CAPACITACION|...`
-- Response en `GET /rrhh/postulantes` → campo etapaProceso
+**Notas:**
+- Este enum está definido en rrhh-service, pero las rutas públicas actuales de postulados no exponen `/rrhh/postulantes/*`.
+- La gestión de postulaciones en el código actual se realiza desde `recruitment-service`.
 
 #### ReclutamientoEstado (Estado en reclutamiento)
 Presente en: `rrhh-service` (PostulanteController)
@@ -1417,9 +2345,8 @@ export enum ReclutamientoEstado {
 }
 ```
 
-**Endpoints que usan este enum:**
-- Response en `GET /rrhh/postulantes/reclutamiento` → campo estadoProceso
-- Request en `PATCH /rrhh/postulantes/{id}/estado-reclutamiento` → evento.estado
+**Notas:**
+- Este enum está definido en rrhh-service, pero no hay rutas públicas de `/rrhh/postulantes/*` en el código actual.
 
 #### ReclutamientoSubEstado (Sub-razones de rechazo/no interés en reclutamiento)
 Presente en: `rrhh-service` (PostulanteController)
@@ -1441,9 +2368,8 @@ export enum ReclutamientoSubEstado {
 }
 ```
 
-**Endpoints que usan este enum:**
-- Request en `PATCH /rrhh/postulantes/{id}/estado-reclutamiento` → evento.subestado
-- Response en `GET /rrhh/postulantes` → campo subestadoProceso
+**Notas:**
+- Este enum está definido en rrhh-service, pero no hay rutas públicas de `/rrhh/postulantes/*` en el código actual.
 
 #### CapacitacionEstado (Estado en capacitación)
 Presente en: `rrhh-service` (PostulanteController)
@@ -1456,9 +2382,8 @@ export enum CapacitacionEstado {
 }
 ```
 
-**Endpoints que usan este enum:**
-- Response en `GET /rrhh/postulantes/capacitacion` → campo estadoProceso
-- Request en `PATCH /rrhh/postulantes/estado-capacitacion` → estado
+**Notas:**
+- Este enum está definido en rrhh-service, pero no hay rutas públicas de `/rrhh/postulantes/*` en el código actual.
 
 #### CapacitacionSubEstado (Razones de rechazo en capacitación)
 Presente en: `rrhh-service` (PostulanteController)
@@ -1472,9 +2397,8 @@ export enum CapacitacionSubEstado {
 }
 ```
 
-**Endpoints que usan este enum:**
-- Request en `PATCH /rrhh/postulantes/{id}/rechazo-inasistencia-capacitacion` → subestado
-- Response en `GET /rrhh/postulantes` → campo subestadoProceso
+**Notas:**
+- Este enum está definido en rrhh-service, pero no hay rutas públicas de `/rrhh/postulantes/*` en el código actual.
 
 #### Documento (Tipo de documento de identidad - RRHH)
 Presente en: `rrhh-service` (EmpleadoController, PostulanteController)
@@ -1490,7 +2414,6 @@ export enum Documento {
 - Request en `POST /rrhh/empleados` → tipoDocumento
 - Request en `PATCH /rrhh/empleados/{id}/datos-personales` → tipoDocumento
 - Response en `GET /rrhh/empleados` → tipoDocumento
-- Request en `POST /rrhh/postulantes` → tipoDocumento
 
 #### Nacionalidad
 Presente en: `rrhh-service` (EmpleadoController, PostulanteController)
@@ -1559,9 +2482,7 @@ export enum Origen {
 ```
 
 **Endpoints que usan este enum:**
-- Request en `POST /rrhh/postulantes` → origen
-- Request en `GET /rrhh/postulantes` (query filter)
-- Response en `GET /rrhh/postulantes` → origen
+- Request en `POST /rrhh/empleados` → origen
 
 #### Compania
 Presente en: `rrhh-service` (EmpleadoController, PostulanteController)
@@ -1577,7 +2498,6 @@ export enum Compania {
 **Endpoints que usan este enum:**
 - Request en `POST /rrhh/empleados` → compania
 - Response en `GET /rrhh/empleados` → compania
-- Response en `GET /rrhh/postulantes` → compania
 
 #### Distrito (Distritos de Lima - RRHH)
 Presente en: `rrhh-service` (EmpleadoController)
@@ -1749,8 +2669,7 @@ export enum EventoPostulante {
 ```
 
 **Endpoints que usan este enum:**
-- Request en `PATCH /rrhh/postulantes/{id}/estado-reclutamiento` → evento.tipo
-- Response en `GET /rrhh/eventos/{idPostulante}/postulantes` → evento
+- Response mappings internos para eventos de postulantes
 
 #### EventoEmpleado (Tipos de eventos para empleados)
 Presente en: `rrhh-service` (EmpleadoController)

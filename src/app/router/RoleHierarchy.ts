@@ -1,4 +1,4 @@
-import type { Role } from '@shared/auth/types';
+import type { Role } from '@entities/auth';
 
 export const ROLE_HIERARCHY: Record<Role, Role[]> = {
   'ADMINISTRADOR': [
@@ -13,9 +13,10 @@ export const ROLE_HIERARCHY: Record<Role, Role[]> = {
   ],
   'RRHH': ['RRHH', 'LOGIN'],
   'RECLUTAMIENTO': ['RECLUTAMIENTO', 'LOGIN'],
-  'CAPACITACIÓN': ['CAPACITACIÓN', 'LOGIN'],
+  'RECLUTADOR': ['RECLUTADOR', 'RECLUTAMIENTO', 'LOGIN'],
+  'CAPACITACIÓN': ['CAPACITACIÓN', 'CAPACITACION', 'LOGIN'],
+  'CAPACITADOR': ['CAPACITADOR', 'CAPACITACIÓN', 'CAPACITACION', 'LOGIN'],
   'COMMUNITY': ['COMMUNITY', 'LOGIN'],
-  'GTR': ['GTR', 'LOGIN'],
   'ASESOR_DE_VENTAS': ['ASESOR_DE_VENTAS', 'LOGIN'],
   'CAPACITACION': ['CAPACITACION', 'LOGIN'],
   'CONTABILIDAD': ['CONTABILIDAD', 'LOGIN'],

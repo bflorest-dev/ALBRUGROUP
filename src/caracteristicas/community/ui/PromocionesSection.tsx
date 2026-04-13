@@ -79,7 +79,6 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
       };
       console.debug('[PromocionesSection] POST /promociones', payload);
       await onCreatePromocion(payload);
-      await onRefresh();
       setMessage('✅ Promoción creada correctamente');
       reset();
     } catch (err: any) {
@@ -91,7 +90,7 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
   };
 
   const renderTable = () => {
-    if (!promociones || promociones.length === 0) return <p style={{ color: '#666' }}>Sin promociones</p>;
+    if (!promociones || promociones.length === 0) return <p className="community-empty">Sin promociones</p>;
 
     const columns = [
       'id',
@@ -109,12 +108,12 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
     ];
 
     return (
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div className="community-table-wrapper">
+        <table className="community-table">
           <thead>
             <tr>
               {columns.map((col) => (
-                <th key={col} style={{ border: '1px solid #ddd', padding: 8, background: '#f4f4f4' }}>
+                <th key={col}>
                   {col}
                 </th>
               ))}
@@ -122,12 +121,9 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
           </thead>
           <tbody>
             {promociones.map((promo, index) => (
-              <tr
-                key={`promo-${promo.id ?? 'x'}-${index}`}
-                style={{ background: index % 2 === 0 ? '#fff' : '#f9f9f9' }}
-              >
+              <tr key={`promo-${promo.id ?? 'x'}-${index}`}>
                 {columns.map((col) => (
-                  <td key={`promo-${promo.id ?? 'x'}-${col}-${index}`} style={{ border: '1px solid #ddd', padding: 8 }}>
+                  <td key={`promo-${promo.id ?? 'x'}-${col}-${index}`}>
                     {typeof (promo as any)[col] === 'object'
                       ? JSON.stringify((promo as any)[col])
                       : (promo as any)[col]}
@@ -142,74 +138,103 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
   };
 
   return (
-    <section style={{ border: '1px solid #ccc', borderRadius: 8, padding: 16, background: '#fff' }}>
-      <h2>Promociones</h2>
+    <section className="community-card">
+      <div className="community-section-head">
+        <div>
+          <h2>Promociones</h2>
+          <p>Administra promociones por proveedor y zona con fechas de vigencia.</p>
+        </div>
+      </div>
 
-      <form onSubmit={handleSubmit} style={{ marginBottom: 16 }}>
-        {message && <div style={{ marginBottom: 12, color: message.startsWith('✅') ? '#155724' : '#721c24' }}>{message}</div>}
+      <form onSubmit={handleSubmit} className="community-form" style={{ marginBottom: 16 }}>
+        {message && (
+          <div className={message.startsWith('✅') ? 'community-alert' : 'community-error'} style={{ marginBottom: 12 }}>
+            {message}
+          </div>
+        )}
 
         <div style={{ display: 'grid', gap: 12, marginBottom: 12 }}>
-          <input
-            style={{ padding: 8 }}
-            placeholder="Nombre de la promoción"
-            value={form.nombre}
-            onChange={(e) => setForm((s) => ({ ...s, nombre: e.target.value }))}
-            disabled={submitting}
-          />
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <select
-              style={{ padding: 8 }}
-              value={form.idProveedor}
-              onChange={(e) => setForm((s) => ({ ...s, idProveedor: e.target.value }))}
+          <div className="community-field">
+            <label>Nombre de la promoción</label>
+            <input
+              className="community-input"
+              placeholder="Nombre de la promoción"
+              value={form.nombre}
+              onChange={(e) => setForm((s) => ({ ...s, nombre: e.target.value }))}
               disabled={submitting}
-            >
-              <option value="">Selecciona proveedor</option>
-              {proveedores.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre}
-                </option>
-              ))}
-            </select>
-
-            <select
-              style={{ padding: 8 }}
-              value={form.idZona}
-              onChange={(e) => setForm((s) => ({ ...s, idZona: e.target.value }))}
-              disabled={submitting}
-            >
-              <option value="">Selecciona zona</option>
-              {zonas.map((z) => (
-                <option key={z.id} value={z.id}>
-                  {z.nombre}
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <input
-              type="number"
-              min={1}
-              style={{ padding: 8 }}
-              value={form.cantidadMeses}
-              onChange={(e) => setForm((s) => ({ ...s, cantidadMeses: Number(e.target.value) }))}
-              disabled={submitting}
-              placeholder="Cantidad de meses"
-            />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <input
-                type="date"
-                value={form.vigenciaDesde}
-                onChange={(e) => setForm((s) => ({ ...s, vigenciaDesde: e.target.value }))}
+          <div className="community-grid-2">
+            <div className="community-field">
+              <label>Proveedor</label>
+              <select
+                className="community-select"
+                value={form.idProveedor}
+                onChange={(e) => setForm((s) => ({ ...s, idProveedor: e.target.value }))}
                 disabled={submitting}
-              />
-              <input
-                type="date"
-                value={form.vigenciaHasta}
-                onChange={(e) => setForm((s) => ({ ...s, vigenciaHasta: e.target.value }))}
+              >
+                <option value="">Selecciona proveedor</option>
+                {proveedores.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="community-field">
+              <label>Zona</label>
+              <select
+                className="community-select"
+                value={form.idZona}
+                onChange={(e) => setForm((s) => ({ ...s, idZona: e.target.value }))}
                 disabled={submitting}
+              >
+                <option value="">Selecciona zona</option>
+                {zonas.map((z) => (
+                  <option key={z.id} value={z.id}>
+                    {z.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="community-grid-2">
+            <div className="community-field">
+              <label>Cantidad de meses</label>
+              <input
+                type="number"
+                min={1}
+                className="community-input"
+                value={form.cantidadMeses}
+                onChange={(e) => setForm((s) => ({ ...s, cantidadMeses: Number(e.target.value) }))}
+                disabled={submitting}
+                placeholder="Cantidad de meses"
               />
+            </div>
+            <div className="community-grid-2">
+              <div className="community-field">
+                <label>Vigencia desde</label>
+                <input
+                  type="date"
+                  className="community-input"
+                  value={form.vigenciaDesde}
+                  onChange={(e) => setForm((s) => ({ ...s, vigenciaDesde: e.target.value }))}
+                  disabled={submitting}
+                />
+              </div>
+              <div className="community-field">
+                <label>Vigencia hasta</label>
+                <input
+                  type="date"
+                  className="community-input"
+                  value={form.vigenciaHasta}
+                  onChange={(e) => setForm((s) => ({ ...s, vigenciaHasta: e.target.value }))}
+                  disabled={submitting}
+                />
+              </div>
             </div>
           </div>
 
@@ -237,17 +262,17 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
         </div>
 
         <div style={{ display: 'flex', gap: 8 }}>
-          <button type="submit" disabled={submitting} style={{ padding: '8px 12px' }}>
+          <button type="submit" className="community-btn primary" disabled={submitting}>
             {submitting ? 'Creando...' : 'Crear Promoción'}
           </button>
-          <button type="button" onClick={() => onRefresh()} style={{ padding: '8px 12px' }}>
+          <button type="button" className="community-btn ghost" onClick={() => onRefresh()}>
             Recargar Promociones
           </button>
         </div>
       </form>
 
       {error ? (
-        <div style={{ color: 'red' }}>Error al cargar promociones (status {status})</div>
+        <div className="community-error">Error al cargar promociones (status {status})</div>
       ) : (
         renderTable()
       )}

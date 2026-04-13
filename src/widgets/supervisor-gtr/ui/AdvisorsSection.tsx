@@ -1,11 +1,11 @@
-﻿/**
+/**
  * Componentes para la secciÃ³n de Asesores
  * Separados y reutilizables
  */
 
 import React from 'react';
 import { Girador } from '@shared/ui/base';
-import type { AdvisorDTO } from '@shared/types';
+import type { AdvisorDTO } from '@entities/asesor/model';
 
 // Tipo alias para compatibilidad con el cÃ³digo existente
 export type Advisor = AdvisorDTO;

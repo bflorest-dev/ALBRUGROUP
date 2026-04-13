@@ -11,6 +11,36 @@
 import { useQuery } from '@tanstack/react-query';
 import { PresenceRepository, type ConnectedUser } from '@shared/api';
 
+function isAsesorVentas(user: ConnectedUser): boolean {
+  const puesto = String(user.puestoTrabajo ?? '').toUpperCase();
+  const roles = Array.isArray(user.roles) ? user.roles.map((r) => String(r).toUpperCase()) : [];
+
+  return (
+    puesto === 'ASESOR_VENTAS' ||
+    roles.includes('ASESOR_VENTAS') ||
+    roles.includes('ASESOR_DE_VENTAS')
+  );
+}
+
+function isOnline(user: ConnectedUser): boolean {
+  const status = String(user.status ?? '').toUpperCase();
+  const conectado = user.conectado;
+
+  if (typeof conectado === 'boolean') {
+    return conectado;
+  }
+
+  return (
+    status === 'ONLINE' ||
+    status === 'CONECTADO' ||
+    status === 'ACTIVO'
+  );
+}
+
+function isDisponible(user: ConnectedUser): boolean {
+  return String(user.disponibilidad ?? '').toUpperCase() === 'DISPONIBLE';
+}
+
 /**
  * Formatea ConnectedUser a formato select, filtrando por disponibilidad
  */
@@ -25,7 +55,16 @@ function formatToAsesor(user: ConnectedUser) {
  * Filtra usarios por disponibilidad = DISPONIBLE
  */
 function filterDisponibles(users: ConnectedUser[]): ConnectedUser[] {
-  return users.filter((u) => u.disponibilidad === 'DISPONIBLE');
+  return users.filter((u) => isOnline(u) && isDisponible(u));
+}
+
+function filterAsesoresVentasDisponibles(users: ConnectedUser[]): ConnectedUser[] {
+  return users.filter(
+    (u) =>
+      isAsesorVentas(u) &&
+      isOnline(u) &&
+      isDisponible(u)
+  );
 }
 
 export function useAsesoresVentasConectados() {
@@ -36,7 +75,7 @@ export function useAsesoresVentasConectados() {
       const usuarios = await PresenceRepository.getConnectedUsers('ASESOR_VENTAS');
       
       // Filtrar solo los disponibles (excluir OCUPADO, GESTIONANDO, SATURADO)
-      const disponibles = filterDisponibles(usuarios);
+      const disponibles = filterAsesoresVentasDisponibles(usuarios);
       
       const mapped = disponibles.map(formatToAsesor);
 
@@ -44,8 +83,9 @@ export function useAsesoresVentasConectados() {
       const unique = new Map(mapped.map((a) => [a.id, a]));
       return Array.from(unique.values());
     },
-    staleTime: 10 * 1000,
-    refetchInterval: 30 * 1000,
+    staleTime: 5 * 1000,
+    refetchInterval: 5 * 1000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -67,6 +107,7 @@ export function useAsesoresConectados(role?: string) {
     },
     enabled: !!role,
     staleTime: 10 * 1000,
-    refetchInterval: 30 * 1000,
+    refetchInterval: 10 * 1000,
+    refetchOnWindowFocus: true,
   });
 }

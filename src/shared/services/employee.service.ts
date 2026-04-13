@@ -7,8 +7,7 @@
 import { BaseService } from '@shared/lib/base.service';
 import { EmployeeRepository } from '@shared/api/repositories/employee.repository';
 import { adaptEmpleadoResponseToEmployee } from '@shared/types';
-import type { Employee, NewEmployeeFormData, EmployeeDetailFormData } from '@shared/types';
-import type { RegistrarEmpleadoRequest } from '@entidades/empleado/model/tipos';
+import type { Employee, NewEmployeeFormData, EmployeeDetailFormData, RegistrarEmpleadoRequest } from '@shared/types';
 import { validateDataOrThrow, NewEmployeeFormDataSchema } from '../validation/schemas';
 
 type UpdateDataType = 'personal' | 'contact' | 'financial' | 'corporate';

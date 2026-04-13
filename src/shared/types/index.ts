@@ -9,9 +9,8 @@ export * from './eventos';
 export * from './enums';
 export * from './backendEnums';
 export * from './tipification.types';
-
-// legacy / shared cross feature types
-export type { AdvisorDTO } from '../../entidades/asesor/model';
+export * from './ofertaLaboral';
+export * from './employee';
 
 export const dispatchAppEvent = (eventName: string, payload?: unknown): void => {
   console.debug('dispatchAppEvent', eventName, payload);

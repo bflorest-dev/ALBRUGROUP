@@ -219,6 +219,21 @@ dist/assets/Form-DPNdFgfr.js         1.51 kB │ gzip:  0.59 kB
 
 ---
 
+## 7. Actualizaciones de Arquitectura Adicionales
+
+- ✅ Sincronizado `vite.config.ts` con `tsconfig.app.json`:
+  - Eliminado alias `@features` obsoleto.
+  - Agregado alias `@shared/validacion` para `src/shared/validation`.
+  - Agregado alias `@shared/api/servicioBase` para `src/shared/api/servicioBase.ts`.
+- ✅ Creado `src/shared/config/env.ts` para que `shared` use configuración de entorno sin depender de `@app/config/env`.
+- ✅ Movidos los servicios específicos de Community desde `shared` hacia `caracteristicas/community/api`:
+  - `campaignService.ts`
+  - `proveedorService.ts`
+- ✅ Eliminado el re-export de hooks de features desde `src/shared/hooks/index.ts` para evitar que `shared` dependa de `@caracteristicas`.
+- ⚠️ Nota: la base actual del proyecto mantiene implementaciones maduras en `shared/api` y `shared/services`, por lo que una refactorización FSD completa requeriría mover esas capas con mayor alcance. Estas correcciones son un primer paso de alineación estricta.
+
+---
+
 ## 7. Próximos Pasos Sugeridos
 
 1. **Git Commit:** 

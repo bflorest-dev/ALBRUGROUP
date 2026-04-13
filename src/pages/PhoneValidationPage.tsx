@@ -5,7 +5,7 @@
  * Demuestra cómo consumir la feature desde una página (capa superior)
  * 
  * Regla FSD:
- * - Pages importa desde @caracteristicas (capa inferior)
+ * - Pages importa desde @features (capa inferior)
  * - Pages NO importa de capas superiores (@pages, @widgets, etc.)
  */
 
@@ -15,7 +15,7 @@ import {
   PhoneNumberInput,
   PhoneValidationResult,
   type PhoneValidationResultType,
-} from '@caracteristicas/phone-validation';
+} from '@features/phone-validation';
 import styles from './PhoneValidationPage.module.css';
 
 export const PhoneValidationPage: React.FC = () => {

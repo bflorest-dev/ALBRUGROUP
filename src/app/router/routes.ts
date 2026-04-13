@@ -1,4 +1,4 @@
-import type { Role } from '@shared/auth/types';
+import type { Role } from '@entities/auth';
 
 export interface RouteDefinition {
   path: string;
@@ -10,8 +10,8 @@ export const routes: RouteDefinition[] = [
   { path: '/login', label: 'Login', allowedRoles: ['LOGIN', 'ADMINISTRADOR', 'RRHH', 'RECLUTAMIENTO', 'CAPACITACIÓN', 'COMMUNITY', 'GTR', 'ASESOR_DE_VENTAS'] },
   { path: '/panel', label: 'Panel', allowedRoles: ['ADMINISTRADOR'] },
   { path: '/rrhh', label: 'RRHH', allowedRoles: ['ADMINISTRADOR', 'RRHH'] },
-  { path: '/reclutamiento', label: 'Reclutamiento', allowedRoles: ['ADMINISTRADOR', 'RECLUTAMIENTO'] },
-  { path: '/capacitacion', label: 'Capacitación', allowedRoles: ['ADMINISTRADOR', 'CAPACITACIÓN'] },
+  { path: '/reclutamiento', label: 'Reclutamiento', allowedRoles: ['ADMINISTRADOR', 'RECLUTAMIENTO', 'RECLUTADOR'] },
+  { path: '/capacitacion', label: 'Capacitación', allowedRoles: ['ADMINISTRADOR', 'CAPACITACIÓN', 'CAPACITACION', 'CAPACITADOR'] },
   { path: '/community', label: 'Community', allowedRoles: ['ADMINISTRADOR', 'COMMUNITY'] },
   { path: '/gtr', label: 'GTR', allowedRoles: ['ADMINISTRADOR', 'GTR'] },
   { path: '/asesores', label: 'Asesores de Ventas', allowedRoles: ['ADMINISTRADOR', 'ASESOR_DE_VENTAS'] },

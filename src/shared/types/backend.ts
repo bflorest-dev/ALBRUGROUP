@@ -25,10 +25,14 @@ export interface EventoResponse {
   idActor: number;
   nombreActor: string;
   rolActor: string;
+  idAsesorAsignado: number;
+  nombreAsesorAsignado: string;
   accion: string;
   etapa: string;
   tipificacion: string;
   subtipificacion: string;
+  fechaInstalacion: string;
+  comentario: string;
   createdAt: string;
 }
 

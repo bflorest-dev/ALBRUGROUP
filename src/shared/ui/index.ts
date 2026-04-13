@@ -6,6 +6,14 @@
 // Form Components
 export { FormInput } from './form-input/FormInput';
 export { FormSelect } from './form-select/FormSelect';
+export { SelectInput } from './SelectInput';
+
+// Modal Components
+export { Modal } from './Modal';
+
+// State Components
+export { EmptyState } from './EmptyState';
+export { ErrorState } from './ErrorState';
 
 // Utility Components (excluding Button to avoid conflicts)
 export { Alert, Spinner, Badge, ErrorMessage, TextArea } from './utilities/Utilities';

@@ -1,6 +1,90 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* ─────────────────────────────────────────────────────────── */
+/* IMPORT FONTS FIRST (MUST be first in CSS file)             */
+/* ─────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ─────────────────────────────────────────────────────────── */
+/* TAILWIND CSS V4.x - Single Import Entry Point              */
+/* ─────────────────────────────────────────────────────────── */
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────── */
+/* SEMANTIC CSS VARIABLES (Light Mode)                        */
+/* ─────────────────────────────────────────────────────────── */
+:root {
+  --surface-page: #F8FAFF;
+  --surface-card: #FFFFFF;
+  --surface-input: #F1F5FE;
+  --surface-border: #E2EAF8;
+  --content-primary: #111827;
+  --content-secondary: #666666;
+  --status-success-bg: #DCFCE7;
+  --status-success-fg: #166534;
+  --status-error-bg: #FEE2E2;
+  --status-error-fg: #991B1B;
+  --status-warning-bg: #FEF3C7;
+  --status-warning-fg: #92400E;
+  --input-border: #E2EAF8;
+  --input-border-focus: #2563EB;
+  --input-border-error: #DC3545;
+  --input-bg-disabled: #F1F5FE;
+}
+
+/* Dark mode disabled - always use light mode */
+
+/* ─────────────────────────────────────────────────────────── */
+/* ANIMATION KEYFRAMES                                        */
+/* ─────────────────────────────────────────────────────────── */
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0%, 100% {
+    background-position: -1000px 0;
+  }
+  50% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-fadeSlideUp {
+  animation: fadeSlideUp 300ms ease-out both;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* GLOBAL RESETS & SPACING                                    */
+/* ─────────────────────────────────────────────────────────── */
 
 * {
   margin: 0;
@@ -20,4 +104,54 @@ html,
 body,
 #root {
   height: 100%;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #F8FAFF 0%, #FFFFFF 100%);
+  font-family: var(--font-family-body, inherit);
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* FORM INPUTS — Date picker specifics                        */
+/* ─────────────────────────────────────────────────────────── */
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  filter: invert(0.4) sepia(0.8) saturate(1.5) hue-rotate(200deg);
+}
+
+input[type="date"]:hover::-webkit-calendar-picker-indicator {
+  opacity: 1;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* UTILITY CLASSES — Animation helpers                        */
+/* ─────────────────────────────────────────────────────────── */
+
+.animate-fade-slide-up {
+  animation: fadeSlideUp 300ms ease both;
+}
+
+.animate-slide-down {
+  animation: slideDown 200ms ease both;
+}
+
+.animate-slide-up {
+  animation: slideUp 300ms ease both;
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    #EEF2FF 25%,
+    #E0E7FF 50%,
+    #EEF2FF 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
 }

@@ -13,22 +13,13 @@
 
 import { BaseService } from '@shared/lib/base.service';
 import { ApplicantRepository } from '@shared/api/repositories/applicant.repository';
+import type { FiltrosPostulante } from '@shared/api/repositories/applicant.repository';
 import type { Applicant, NewApplicantFormData, RegistrarPostulanteRequest } from '@shared/types';
 import { adaptPostulanteResponseToApplicant } from '@shared/types';
 import { validateDataOrThrow, NewApplicantFormDataSchema } from '../validation/schemas';
 
 // Etapas vÃ¡lidas del proceso (del Swagger)
 export type EtapaProceso = 'RECLUTAMIENTO' | 'CAPACITACION' | 'GESTION' | 'CONTRATADO';
-
-export interface FiltrosPostulante {
-  estado?: string;
-  subestado?: string;
-  origen?: 'COMPUTRABAJO' | 'INDEED' | 'REFERIDO';
-  puesto?: string;
-  desde?: string;
-  hasta?: string;
-  listaNegra?: boolean;
-}
 
 export class ApplicantService extends BaseService<Applicant> {
 

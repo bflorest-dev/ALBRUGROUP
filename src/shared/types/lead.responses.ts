@@ -70,6 +70,8 @@ export interface LeadAsesorDetalleResponse {
 export interface LeadGtrResponse {
   id: number;
   createdAt: string;
+  prefijo: string;
+  lead: string;
   nombreCampana: string;
   nombreProveedorCampana: string;
   base: string;
@@ -213,9 +215,11 @@ export interface PlanUpdateRequest extends Partial<PlanRequest> {}
 export interface PromocionComercialRequest {
   nombre: string;
   interno: boolean;
-  idProveedor: number;
-  idZona: number;
+  idProveedor?: number;
+  idZona?: number;
   descuento: boolean;
+  descuentoPorcentual?: number;
+  descuentoMonto?: number;
   cantidadMeses: number;
   vigenciaDesde: string;
   vigenciaHasta: string;
@@ -235,7 +239,7 @@ export interface ProveedorRequest {
 // Leads - Requests
 // ============================================================================
 
-export interface LeadIntakeRequest {
+export type LeadIntakeRequest = {
   numTelefono: string;
   idCampana: number;
   idCuentaPublicitaria: number;
@@ -244,20 +248,22 @@ export interface LeadIntakeRequest {
   nombreTitular?: string;
   base?: string;
   tipoVenta?: string;
-}
+};
 
-export interface LeadAsignacionRequest {
+export type LeadAsignacionRequest = {
   idAsesorAsignado: number;
-}
+};
 
-export interface LeadDatosPreventaRequest {
+export type LeadDatosPreventaRequest = {
   nombreTitular?: string;
   celularRegistro?: string;
   celularReferencia?: string;
   correo?: string;
-}
+  nombreMadre?: string;
+  nombrePadre?: string;
+};
 
-export interface LeadDireccionRequest {
+export type LeadDireccionRequest = {
   tipoVia?: string;
   via?: string;
   direccion?: string;
@@ -269,17 +275,18 @@ export interface LeadDireccionRequest {
   urbanizacion?: string;
   manzana?: string;
   lote?: string;
+  plano?: string;
   piso?: string;
   interior?: string;
-}
+};
 
-export interface LeadOfertaComercialRequest {
+export type LeadOfertaComercialRequest = {
   idPlan: number;
   idPromocion?: number;
   planUsb?: boolean;
   planTv?: boolean;
   planWifi?: boolean;
-}
+};
 
 export interface LeadTipificacionRequest {
   codigoTipificacion: string;

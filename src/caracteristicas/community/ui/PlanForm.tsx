@@ -247,7 +247,6 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
       await onCreatePlan(payload);
       setGlobalMessage('✅ Plan creado correctamente');
       resetForm();
-      onCreated?.();
     } catch (error: any) {
       console.error('[PlanForm] create plan error', error);
       if (error?.message?.includes('401')) {
@@ -265,22 +264,21 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ border: '1px solid #ccc', borderRadius: 8, padding: 16, background: '#fff' }}>
+    <form onSubmit={handleSubmit} className="community-form">
       <h3>Crear Plan</h3>
 
       {globalMessage && (
-        <div style={{ marginBottom: 12, color: globalMessage.startsWith('✅') ? '#155724' : '#721c24' }}>
+        <div className={globalMessage.startsWith('✅') ? 'community-alert' : 'community-error'} style={{ marginBottom: 12 }}>
           {globalMessage}
         </div>
       )}
 
-      <div style={{ marginBottom: 12 }}>
+      <div className="community-field">
         <label>Proveedor*</label>
         <select
           value={idProveedor}
           onChange={(e) => setIdProveedor(Number(e.target.value) as number | '')}
           disabled={loading}
-          style={{ width: '100%', padding: 8 }}
         >
           <option value="">Selecciona proveedor</option>
           {proveedores.map((p) => (
@@ -289,22 +287,21 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
             </option>
           ))}
         </select>
-        {errors.idProveedor && <small style={{ color: 'red' }}>{errors.idProveedor}</small>}
+        {errors.idProveedor && <small>{errors.idProveedor}</small>}
       </div>
 
-      <div style={{ marginBottom: 12 }}>
+      <div className="community-field">
         <label>Nombre*</label>
         <input
           type="text"
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
           disabled={loading}
-          style={{ width: '100%', padding: 8 }}
         />
-        {errors.nombre && <small style={{ color: 'red' }}>{errors.nombre}</small>}
+        {errors.nombre && <small>{errors.nombre}</small>}
       </div>
 
-      <div style={{ marginBottom: 12 }}>
+      <div className="community-field">
         <label>Precio*</label>
         <input
           type="number"
@@ -313,50 +310,47 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
           value={precio}
           onChange={(e) => setPrecio(e.target.value)}
           disabled={loading}
-          style={{ width: '100%', padding: 8 }}
         />
-        {errors.precio && <small style={{ color: 'red' }}>{errors.precio}</small>}
+        {errors.precio && <small>{errors.precio}</small>}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-        <div>
+      <div className="community-grid-2">
+        <div className="community-field">
           <label>Vigencia Desde*</label>
           <input
             type="date"
             value={vigenciaDesde}
             onChange={(e) => setVigenciaDesde(e.target.value)}
             disabled={loading}
-            style={{ width: '100%', padding: 8 }}
           />
-          {errors.vigenciaDesde && <small style={{ color: 'red' }}>{errors.vigenciaDesde}</small>}
+          {errors.vigenciaDesde && <small>{errors.vigenciaDesde}</small>}
         </div>
-        <div>
+        <div className="community-field">
           <label>Vigencia Hasta*</label>
           <input
             type="date"
             value={vigenciaHasta}
             onChange={(e) => setVigenciaHasta(e.target.value)}
             disabled={loading}
-            style={{ width: '100%', padding: 8 }}
           />
-          {errors.vigenciaHasta && <small style={{ color: 'red' }}>{errors.vigenciaHasta}</small>}
+          {errors.vigenciaHasta && <small>{errors.vigenciaHasta}</small>}
         </div>
       </div>
 
-      <div style={{ marginBottom: 12 }}>
-        <label>
+      <div>
+        <label className="community-check-row">
           <input
             type="checkbox"
             checked={internetEnabled}
             onChange={(e) => setInternetEnabled(e.target.checked)}
             disabled={loading}
-          />{' '}
+          />
           Incluir Internet
         </label>
       </div>
       {internetEnabled && (
-        <div style={{ marginBottom: 12, borderLeft: '3px solid #ddd', paddingLeft: 12 }}>
-          <div style={{ marginBottom: 8 }}>
+        <div className="community-subcard muted">
+          <div className="community-field">
             <label>Velocidad*</label>
             <input
               type="number"
@@ -364,25 +358,23 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
               value={internetVelocidad}
               onChange={(e) => setInternetVelocidad(e.target.value)}
               disabled={loading}
-              style={{ width: '100%', padding: 8 }}
             />
-            {errors.internetVelocidad && <small style={{ color: 'red' }}>{errors.internetVelocidad}</small>}
+            {errors.internetVelocidad && <small>{errors.internetVelocidad}</small>}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
+          <div className="community-grid-2">
+            <div className="community-field">
               <label>Unidad*</label>
               <select
                 value={internetUnidad}
                 onChange={(e) => setInternetUnidad(e.target.value as 'MBPS' | 'GBPS')}
                 disabled={loading}
-                style={{ width: '100%', padding: 8 }}
               >
                 <option value="MBPS">MBPS</option>
                 <option value="GBPS">GBPS</option>
               </select>
             </div>
-            <div>
+            <div className="community-field">
               <label>Tecnología*</label>
               <select
                 value={internetTecnologia}
@@ -390,7 +382,6 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
                   setInternetTecnologia(e.target.value as 'HFC' | 'FTTH' | 'ADSL')
                 }
                 disabled={loading}
-                style={{ width: '100%', padding: 8 }}
               >
                 <option value="HFC">HFC</option>
                 <option value="FTTH">FTTH</option>
@@ -401,31 +392,30 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
         </div>
       )}
 
-      <div style={{ marginBottom: 12 }}>
-        <label>
+      <div>
+        <label className="community-check-row">
           <input
             type="checkbox"
             checked={televisionEnabled}
             onChange={(e) => setTelevisionEnabled(e.target.checked)}
             disabled={loading}
-          />{' '}
+          />
           Incluir Televisión
         </label>
       </div>
       {televisionEnabled && (
-        <div style={{ marginBottom: 12, borderLeft: '3px solid #ddd', paddingLeft: 12 }}>
-          <div style={{ marginBottom: 8 }}>
+        <div className="community-subcard muted">
+          <div className="community-field">
             <label>Nombre del paquete*</label>
             <input
               type="text"
               value={televisionNombre}
               onChange={(e) => setTelevisionNombre(e.target.value)}
               disabled={loading}
-              style={{ width: '100%', padding: 8 }}
             />
-            {errors.televisionNombre && <small style={{ color: 'red' }}>{errors.televisionNombre}</small>}
+            {errors.televisionNombre && <small>{errors.televisionNombre}</small>}
           </div>
-          <div>
+          <div className="community-field">
             <label>Cantidad de canales*</label>
             <input
               type="number"
@@ -433,29 +423,28 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
               value={televisionCantidadCanales}
               onChange={(e) => setTelevisionCantidadCanales(e.target.value)}
               disabled={loading}
-              style={{ width: '100%', padding: 8 }}
             />
             {errors.televisionCantidadCanales && (
-              <small style={{ color: 'red' }}>{errors.televisionCantidadCanales}</small>
+              <small>{errors.televisionCantidadCanales}</small>
             )}
           </div>
         </div>
       )}
 
-      <div style={{ marginBottom: 12 }}>
-        <label>
+      <div>
+        <label className="community-check-row">
           <input
             type="checkbox"
             checked={telefonoEnabled}
             onChange={(e) => setTelefonoEnabled(e.target.checked)}
             disabled={loading}
-          />{' '}
+          />
           Incluir Teléfono
         </label>
       </div>
       {telefonoEnabled && (
-        <div style={{ marginBottom: 12, borderLeft: '3px solid #ddd', paddingLeft: 12 }}>
-          <div style={{ marginBottom: 8 }}>
+        <div className="community-subcard muted">
+          <div className="community-field">
             <label>Minutos*</label>
             <input
               type="number"
@@ -463,40 +452,37 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
               value={telefonoMinutos}
               onChange={(e) => setTelefonoMinutos(e.target.value)}
               disabled={loading}
-              style={{ width: '100%', padding: 8 }}
             />
-            {errors.telefonoMinutos && <small style={{ color: 'red' }}>{errors.telefonoMinutos}</small>}
+            {errors.telefonoMinutos && <small>{errors.telefonoMinutos}</small>}
           </div>
-          <div>
+          <div className="community-field">
             <label>Descripción*</label>
             <input
               type="text"
               value={telefonoDescripcion}
               onChange={(e) => setTelefonoDescripcion(e.target.value)}
               disabled={loading}
-              style={{ width: '100%', padding: 8 }}
             />
-            {errors.telefonoDescripcion && <small style={{ color: 'red' }}>{errors.telefonoDescripcion}</small>}
+            {errors.telefonoDescripcion && <small>{errors.telefonoDescripcion}</small>}
           </div>
         </div>
       )}
 
-      <div style={{ marginBottom: 12 }}>
+      <div>
         <h4>Adicionales</h4>
-        <button type="button" onClick={handleAddAdicional} disabled={loading} style={{ marginBottom: 8 }}>
+        <button type="button" className="community-btn ghost" onClick={handleAddAdicional} disabled={loading} style={{ marginBottom: 8 }}>
           + Agregar adicional
         </button>
 
         {adicionales.map((item, index) => (
-          <div key={`adicional-${index}`} style={{ border: '1px solid #eee', padding: 12, marginBottom: 8 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-              <div>
+          <div key={`adicional-${index}`} className="community-subcard" style={{ marginBottom: 8 }}>
+            <div className="community-grid-3">
+              <div className="community-field">
                 <label>Adicional*</label>
                 <select
                   value={item.idAdicional}
                   onChange={(e) => handleAdicionalChange(index, 'idAdicional', Number(e.target.value))}
                   disabled={loading}
-                  style={{ width: '100%', padding: 8 }}
                 >
                   <option value="">Selecciona</option>
                   {adicionalesOpciones.map((opt) => (
@@ -506,11 +492,11 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
                   ))}
                 </select>
                 {errors[`adicionales.${index}.idAdicional`] && (
-                  <small style={{ color: 'red' }}>{errors[`adicionales.${index}.idAdicional`]}</small>
+                  <small>{errors[`adicionales.${index}.idAdicional`]}</small>
                 )}
               </div>
 
-              <div>
+              <div className="community-field">
                 <label>Cantidad incluida*</label>
                 <input
                   type="number"
@@ -518,15 +504,14 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
                   value={item.cantidadIncluida}
                   onChange={(e) => handleAdicionalChange(index, 'cantidadIncluida', e.target.value)}
                   disabled={loading}
-                  style={{ width: '100%', padding: 8 }}
                 />
                 {errors[`adicionales.${index}.cantidadIncluida`] && (
-                  <small style={{ color: 'red' }}>{errors[`adicionales.${index}.cantidadIncluida`]}</small>
+                  <small>{errors[`adicionales.${index}.cantidadIncluida`]}</small>
                 )}
               </div>
 
-              <div>
-                <label>Permite compra adicional</label>
+              <div className="community-field">
+                <label className="community-check-row">Permite compra adicional</label>
                 <input
                   type="checkbox"
                   checked={item.permiteCompraAdicional}
@@ -536,8 +521,8 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
-              <div>
+            <div className="community-grid-2" style={{ marginTop: 8 }}>
+              <div className="community-field">
                 <label>Cantidad máxima*</label>
                 <input
                   type="number"
@@ -545,13 +530,12 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
                   value={item.cantidadMaximaAdicional}
                   onChange={(e) => handleAdicionalChange(index, 'cantidadMaximaAdicional', e.target.value)}
                   disabled={loading}
-                  style={{ width: '100%', padding: 8 }}
                 />
                 {errors[`adicionales.${index}.cantidadMaximaAdicional`] && (
-                  <small style={{ color: 'red' }}>{errors[`adicionales.${index}.cantidadMaximaAdicional`]}</small>
+                  <small>{errors[`adicionales.${index}.cantidadMaximaAdicional`]}</small>
                 )}
               </div>
-              <div>
+              <div className="community-field">
                 <label>Precio unitario*</label>
                 <input
                   type="number"
@@ -560,10 +544,9 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
                   value={item.precioUnitarioAdicional}
                   onChange={(e) => handleAdicionalChange(index, 'precioUnitarioAdicional', e.target.value)}
                   disabled={loading}
-                  style={{ width: '100%', padding: 8 }}
                 />
                 {errors[`adicionales.${index}.precioUnitarioAdicional`] && (
-                  <small style={{ color: 'red' }}>{errors[`adicionales.${index}.precioUnitarioAdicional`]}</small>
+                  <small>{errors[`adicionales.${index}.precioUnitarioAdicional`]}</small>
                 )}
               </div>
             </div>
@@ -572,7 +555,8 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
               type="button"
               onClick={() => handleRemoveAdicional(index)}
               disabled={loading}
-              style={{ marginTop: 8, color: '#c82333' }}
+              className="community-btn ghost"
+              style={{ marginTop: 8, color: '#9c1d1d' }}
             >
               Eliminar adicional
             </button>
@@ -580,7 +564,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
         ))}
       </div>
 
-      <button type="submit" disabled={loading} style={{ padding: '8px 16px', background: '#007bff', color: '#fff' }}>
+      <button type="submit" className="community-btn primary" disabled={loading}>
         {loading ? '⏳ Enviando...' : 'Crear Plan'}
       </button>
     </form>

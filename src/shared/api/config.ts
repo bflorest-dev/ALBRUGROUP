@@ -19,6 +19,7 @@ export const API_CONFIG = {
     AUTH_BASE_URL: '/api/auth',           // POST /autorizacion/login
     RRHH_BASE_URL: '/api/rrhh',           // GET /postulantes, etc
     LEADS_BASE_URL: '/api/leads',         // GET /campanas, etc
+    RECRUITMENT_BASE_URL: '/api/recruitment', // GET /recruitment/* through gateway proxy
   },
 
   // ─── ENDPOINTS EXACTOS (SIN cambios) ──────────────────────────────────
@@ -46,6 +47,7 @@ export const API_CONFIG = {
     console.log('🌐 AUTH_BASE_URL:', this.DEV.AUTH_BASE_URL);
     console.log('🌐 RRHH_BASE_URL:', this.DEV.RRHH_BASE_URL);
     console.log('🌐 LEADS_BASE_URL:', this.DEV.LEADS_BASE_URL);
+    console.log('🌐 RECRUITMENT_BASE_URL:', this.DEV.RECRUITMENT_BASE_URL);
     
     console.log('\n🔒 Endpoints autenticación:');
     console.log('  POST', this.ENDPOINTS.AUTH.LOGIN);
@@ -56,6 +58,7 @@ export const API_CONFIG = {
     console.log('  /api/auth → http://localhost:8080');
     console.log('  /api/rrhh → http://localhost:8080');
     console.log('  /api/leads → http://localhost:8080');
+    console.log('  /api/recruitment → http://localhost:8080');
     
     console.groupEnd();
   },

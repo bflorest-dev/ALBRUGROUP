@@ -53,9 +53,7 @@ export const usePaginationPattern = usePaginacion;
 // FEATURE-SPECIFIC HOOKS (Hooks con lógica de negocio - importar desde features)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export { useApplicantsSync } from '@caracteristicas/registrar-postulante/modelo/ganchos';
-export { useApplicantsTable } from '@widgets/tabla-postulantes/ganchos';
-export { useEmployeesSync } from '@caracteristicas/registrar-empleado/modelo/ganchos';
+export { useApplicantsTable } from './useApplicantsTable';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // OTHER HOOKS

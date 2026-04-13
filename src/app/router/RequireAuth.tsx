@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '@shared/auth/useAuth';
+import { useAuth } from '@entities/auth';
 
 interface RequireAuthProps {
   children: React.ReactElement;
