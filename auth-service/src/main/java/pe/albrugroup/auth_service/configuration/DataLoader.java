@@ -267,6 +267,7 @@ public class DataLoader {
                 getPermiso("UPDATE_PROVEEDORES"),
 
                 getPermiso("CREATE_ZONAS"),
+                getPermiso("UPDATE_ZONAS"),
                 getPermiso("READ_ZONAS"),
 
                 getPermiso("READ_UBIGEO"),
