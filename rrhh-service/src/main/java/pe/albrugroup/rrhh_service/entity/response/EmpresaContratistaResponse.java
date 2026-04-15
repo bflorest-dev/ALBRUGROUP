@@ -16,4 +16,5 @@ public class EmpresaContratistaResponse {
     private String nombre;
     private Boolean activo;
     private Instant createdAt;
+    private Instant updatedAt;
 }

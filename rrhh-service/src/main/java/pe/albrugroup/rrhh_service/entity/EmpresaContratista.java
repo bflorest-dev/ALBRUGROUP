@@ -1,11 +1,9 @@
 package pe.albrugroup.rrhh_service.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 
@@ -17,6 +15,9 @@ public class EmpresaContratista {
     private Long id;
     private String nombre;
     private Boolean activo;
-    @CreationTimestamp
+
+    @CreationTimestamp @Column(updatable = false)
     private Instant createdAt;
+    @UpdateTimestamp
+    private Instant updatedAt;
 }

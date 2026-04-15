@@ -1,8 +1,6 @@
 package pe.albrugroup.rrhh_service.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.rrhh_service.entity.Empleado;
@@ -12,9 +10,11 @@ import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.enums.Origen;
 import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
+import pe.albrugroup.rrhh_service.entity.request.PageRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.*;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoRolResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
+import pe.albrugroup.rrhh_service.entity.response.PageResponse;
 import pe.albrugroup.rrhh_service.exception.NotFoundException;
 import pe.albrugroup.rrhh_service.exception.UnprocessableEntityException;
 import pe.albrugroup.rrhh_service.repository.ContratoRepository;
@@ -26,6 +26,7 @@ import pe.albrugroup.rrhh_service.usecase.IEmpleado;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 @Service @Transactional
 @RequiredArgsConstructor
@@ -36,7 +37,20 @@ public class EmpleadoService implements IEmpleado {
     private final EmpresaContratistaRepository empresaContratistaRepository;
     private final EmpleadoMapper mapper;
     private final EmpleadoRolMapper empleadoRolMapper;
-    private final EmpleadoEventoService eventoService;
+    private final EventoService eventoService;
+    private final PaginationService paginationService;
+
+    private static final Set<String> EMPLEADO_SORT_FIELDS = Set.of(
+            "id",
+            "createdAt",
+            "updatedAt",
+            "nombres",
+            "apellidos",
+            "numeroDocumento",
+            "celularPersonal",
+            "correoPersonal",
+            "estadoOperativo"
+    );
 
     @Override
     public EmpleadoResponse listaNegraEmpleado(Long idEmpleado, Long responsableId) {
@@ -49,12 +63,16 @@ public class EmpleadoService implements IEmpleado {
     }
 
     @Override @Transactional(readOnly = true)
-    public Page<EmpleadoResponse> getEmpleados(String q, String dni, String celular, Distrito distrito, Banco banco,
-                                               Long idEmpresaContratista, Origen origen, EstadoOperativo estado, Pageable pageable)
+    public PageResponse<EmpleadoResponse> getEmpleados(String q, String dni, String celular, Distrito distrito, Banco banco,
+                                                       Long idEmpresaContratista, Origen origen, EstadoOperativo estado,
+                                                       PageRequest pageRequest)
     {
         EstadoOperativo estadoOperativo = estado != null ? estado : EstadoOperativo.ACTIVO;
-        return repository.getEmpleados(q, dni, celular, distrito, banco, idEmpresaContratista, origen, estadoOperativo, pageable)
+        var empleados = repository
+                .getEmpleados(q, dni, celular, distrito, banco, idEmpresaContratista, origen, estadoOperativo,
+                        paginationService.toPageable(pageRequest, EMPLEADO_SORT_FIELDS))
                 .map(mapper::toResponse);
+        return PageResponse.from(empleados);
     }
     @Override @Transactional(readOnly = true)
     public EmpleadoResponse getEmpleadoDocumento(String documento) {
@@ -63,22 +81,25 @@ public class EmpleadoService implements IEmpleado {
         return mapper.toResponse(empleado);
     }
     @Override @Transactional(readOnly = true)
-    public Page<EmpleadoResponse> getEmpleadoUniversal(String dato, Pageable pageable) {
-        return repository.busquedaUniversal(dato, pageable)
+    public PageResponse<EmpleadoResponse> getEmpleadoUniversal(String dato, PageRequest pageRequest) {
+        var empleados = repository.busquedaUniversal(dato, paginationService.toPageable(pageRequest, EMPLEADO_SORT_FIELDS))
                 .map(mapper::toResponse);
+        return PageResponse.from(empleados);
     }
 
     @Override
-    public void registrarEmpleados(List<RegistrarEmpleadoRequest> nuevosEmpleados) {
-        nuevosEmpleados.forEach(this::registrarEmpleado);
+    public void registrarEmpleados(List<RegistrarEmpleadoRequest> nuevosEmpleados, Long responsableId) {
+        nuevosEmpleados.forEach(nuevoEmpleado -> registrarEmpleado(nuevoEmpleado, responsableId));
     }
     @Override
-    public EmpleadoResponse registrarEmpleado(RegistrarEmpleadoRequest nuevoEmpleado) {
+    public EmpleadoResponse registrarEmpleado(RegistrarEmpleadoRequest nuevoEmpleado, Long responsableId) {
         Empleado empleado = mapper.toEntity(nuevoEmpleado);
         empleado.setEmpresaContratista(obtenerEmpresaContratista(nuevoEmpleado.getIdEmpresaContratista()));
         empleado.setEstadoOperativo(EstadoOperativo.INACTIVO);
         empleado.setListaNegra(false);
-        return mapper.toResponse(repository.save(empleado));
+        Empleado empleadoRegistrado = repository.save(empleado);
+        eventoService.registrarEventoRegistro(empleadoRegistrado, responsableId);
+        return mapper.toResponse(empleadoRegistrado);
     }
 
     @Override

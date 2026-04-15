@@ -1,13 +1,16 @@
 package pe.albrugroup.rrhh_service.controller;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import pe.albrugroup.rrhh_service.entity.response.EmpleadoEventoResponse;
-import pe.albrugroup.rrhh_service.service.EmpleadoEventoService;
+import pe.albrugroup.rrhh_service.entity.request.PageRequest;
+import pe.albrugroup.rrhh_service.entity.response.EventoResponse;
+import pe.albrugroup.rrhh_service.entity.response.PageResponse;
+import pe.albrugroup.rrhh_service.service.EventoService;
 
 import java.util.List;
 
@@ -17,13 +20,16 @@ import java.util.List;
 @RequestMapping("/eventos")
 public class EventosController {
 
-    private final EmpleadoEventoService empleadoEventoService;
+    private final EventoService eventoService;
 
     @GetMapping("/{idEmpleado}/empleados")
     @PreAuthorize("hasAuthority('READ_EVENTOS')")
-    public ResponseEntity<List<EmpleadoEventoResponse>> listarEventosEmpleado(
-            @PathVariable @Positive Long idEmpleado
+    public ResponseEntity<PageResponse<EventoResponse>> listarEventosEmpleado(
+            @PathVariable @Positive Long idEmpleado,
+            @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        return ResponseEntity.ok(empleadoEventoService.listarEventosEmpleado(idEmpleado));
+        return ResponseEntity.ok(
+                eventoService.listarEventosEmpleado(idEmpleado, pageRequest)
+        );
     }
 }

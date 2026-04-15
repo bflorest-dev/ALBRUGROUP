@@ -1,5 +1,7 @@
 package pe.albrugroup.rrhh_service.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,7 +18,7 @@ import java.util.Optional;
 @Repository
 public interface ContratoRepository extends JpaRepository<Contrato, Long> {
 
-    List<Contrato> findByEmpleadoId(Long empleadoId);
+    Page<Contrato> findByEmpleadoId(Long empleadoId, Pageable pageable);
     @Query("SELECT c FROM Contrato c WHERE c.empleado.id = :empleadoId AND c.fechaInicio <= :fechaActual " +
             "AND (c.fechaFin IS NULL OR c.fechaFin >= :fechaActual)")
     Optional<Contrato> findContratoVigenteByEmpleadoId(@Param("empleadoId") Long empleadoId,

@@ -145,7 +145,7 @@ public class PostulacionService {
 
     @Transactional(readOnly = true)
     public PostulacionResponse obtenerPostulacion(Long idPostulacion) {
-        Postulacion postulacion = postulacionRepository.findById(idPostulacion)
+        Postulacion postulacion = postulacionRepository.findDetalleById(idPostulacion)
                 .orElseThrow(() -> new NotFoundException(Postulacion.class, idPostulacion));
         return mapearPostulacionResponse(postulacion);
     }

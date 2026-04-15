@@ -6,6 +6,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.BindException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -35,10 +36,14 @@ public class GlobalExceptionHandler {
     }
 
     // CAMPOS INVALIDOS EN REQUESTS
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationErrors(MethodArgumentNotValidException e) {
+    @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class})
+    public ResponseEntity<Map<String, Object>> handleValidationErrors(Exception e) {
         Map<String, Object> errors = new LinkedHashMap<>();
-        List<String> message = e.getBindingResult()
+        var bindingResult = e instanceof MethodArgumentNotValidException methodArgumentNotValidException
+                ? methodArgumentNotValidException.getBindingResult()
+                : ((BindException) e).getBindingResult();
+
+        List<String> message = bindingResult
                 .getFieldErrors()
                 .stream()
                 .map(DefaultMessageSourceResolvable::getDefaultMessage)

@@ -1,9 +1,12 @@
 package pe.albrugroup.recruitment_service.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.albrugroup.recruitment_service.configuration.CacheNames;
 import pe.albrugroup.recruitment_service.configuration.CurrentUser;
 import pe.albrugroup.recruitment_service.entity.OfertaAmpliacion;
 import pe.albrugroup.recruitment_service.entity.OfertaLaboral;
@@ -32,6 +35,7 @@ public class OfertaLaboralService {
     private final CurrentUser currentUser;
 
 
+    @CacheEvict(value = CacheNames.OFERTAS_ACTIVAS, allEntries = true)
     public OfertaLaboralResponse registrarOfertaLaboral(OfertaLaboralRequest request) {
         validarCodigoUnico(request.getCodigo());
         validarNoExisteOfertaEquivalenteActiva(request);
@@ -42,6 +46,7 @@ public class OfertaLaboralService {
         return ofertaMapper.toResponse(ofertaRepository.save(oferta));
     }
 
+    @Cacheable(value = CacheNames.OFERTAS_ACTIVAS, key = "'activas'", condition = "#estado != null && #estado == T(pe.albrugroup.recruitment_service.entity.enums.EstadoOferta).ACTIVO")
     public List<OfertaLaboralResponse> listarOfertasLaborales(EstadoOferta estado) {
         List<OfertaLaboral> ofertas = estado == null
                 ? ofertaRepository.findAllByOrderByCreatedAtDesc()
@@ -51,6 +56,7 @@ public class OfertaLaboralService {
                 .toList();
     }
 
+    @CacheEvict(value = CacheNames.OFERTAS_ACTIVAS, allEntries = true)
     public OfertaAmpliacionResponse registrarAmpliacion(Long idOfertaLaboral, OfertaAmpliacionRequest request) {
         OfertaLaboral oferta = ofertaRepository.findById(idOfertaLaboral)
                 .orElseThrow(() -> new NotFoundException(OfertaLaboral.class, idOfertaLaboral));
@@ -63,6 +69,7 @@ public class OfertaLaboralService {
         return ofertaMapper.toResponse(ampliacionRepository.save(ampliacion));
     }
 
+    @CacheEvict(value = CacheNames.OFERTAS_ACTIVAS, allEntries = true)
     public OfertaLaboralResponse actualizarEstadoOfertaLaboral(
             Long idOfertaLaboral,
             ActualizarEstadoOfertaLaboralRequest request

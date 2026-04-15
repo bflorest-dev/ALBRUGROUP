@@ -4,10 +4,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,6 +17,7 @@ import pe.albrugroup.rrhh_service.entity.enums.Banco;
 import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.enums.Origen;
+import pe.albrugroup.rrhh_service.entity.request.PageRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.DatosContactoCorporativoRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.DatosContactoUbicacionRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.DatosFinancierosRequest;
@@ -25,6 +25,7 @@ import pe.albrugroup.rrhh_service.entity.request.empleado.DatosPersonalesRequest
 import pe.albrugroup.rrhh_service.entity.request.empleado.RegistrarEmpleadoRequest;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoRolResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
+import pe.albrugroup.rrhh_service.entity.response.PageResponse;
 import pe.albrugroup.rrhh_service.security.UserSession;
 import pe.albrugroup.rrhh_service.usecase.IEmpleado;
 
@@ -52,7 +53,7 @@ public class EmpleadoController {
                     "estado operativo y paginacion.")
     @GetMapping
     @PreAuthorize("hasAuthority('READ_EMPLEADOS')")
-    public ResponseEntity<Page<EmpleadoResponse>> getEmpleados(
+    public ResponseEntity<PageResponse<EmpleadoResponse>> getEmpleados(
             @Parameter(description = "Texto libre para busqueda en multiples campos", example = "Perez")
             @RequestParam(required = false) String q,
             @Parameter(description = "Numero de documento (DNI u otro)", example = "12345678")
@@ -69,11 +70,10 @@ public class EmpleadoController {
             @RequestParam(required = false) Origen origen,
             @Parameter(description = "Estado operativo del empleado", schema = @Schema(implementation = EstadoOperativo.class))
             @RequestParam(required = false) EstadoOperativo estado,
-            @Parameter(description = "Parametros de paginacion: `page`, `size`, `sort` (ejemplo: sort=apellidos,asc)")
-            Pageable pageable
+            @Valid @ModelAttribute PageRequest pageRequest
     ) {
         return ResponseEntity.ok(
-                empleadoService.getEmpleados(q, dni, celular, distrito, banco, idEmpresaContratista, origen, estado, pageable)
+                empleadoService.getEmpleados(q, dni, celular, distrito, banco, idEmpresaContratista, origen, estado, pageRequest)
         );
     }
 
@@ -83,12 +83,13 @@ public class EmpleadoController {
     )
     @GetMapping("/{dato}/universal")
     @PreAuthorize("hasAuthority('READ_EMPLEADOS')")
-    public ResponseEntity<Page<EmpleadoResponse>> obtenerEmpleadoFiltroUniversal(
+    public ResponseEntity<PageResponse<EmpleadoResponse>> obtenerEmpleadoFiltroUniversal(
             @Parameter(description = "Dato universal para busqueda (documento, nombres, apellidos, celular o correo)", example = "Juan")
             @PathVariable String dato,
-            @Parameter(description = "Parametros de paginacion: `page`, `size`, `sort` (ejemplo: sort=nombres,asc)")
-            Pageable pageable) {
-        return ResponseEntity.ok(empleadoService.getEmpleadoUniversal(dato, pageable));
+            @Valid @ModelAttribute PageRequest pageRequest) {
+        return ResponseEntity.ok(
+                empleadoService.getEmpleadoUniversal(dato, pageRequest)
+        );
     }
 
     @Operation(
@@ -117,8 +118,9 @@ public class EmpleadoController {
             description = "Registra un nuevo empleado a partir de datos personales, de contacto, financieros y corporativos.")
     @PostMapping
     @PreAuthorize("hasAuthority('CREATE_EMPLEADOS')")
-    public ResponseEntity<EmpleadoResponse> registrarEmpleado(@RequestBody RegistrarEmpleadoRequest request) {
-        var empleado = empleadoService.registrarEmpleado(request);
+    public ResponseEntity<EmpleadoResponse> registrarEmpleado(@RequestBody RegistrarEmpleadoRequest request,
+                                                              @AuthenticationPrincipal UserSession user) {
+        var empleado = empleadoService.registrarEmpleado(request, user.empleadoId());
         return ResponseEntity.status(HttpStatus.CREATED).body(empleado);
     }
 

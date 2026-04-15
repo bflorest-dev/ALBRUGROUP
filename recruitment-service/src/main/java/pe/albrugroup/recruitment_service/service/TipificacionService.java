@@ -1,8 +1,11 @@
 package pe.albrugroup.recruitment_service.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.albrugroup.recruitment_service.configuration.CacheNames;
 import pe.albrugroup.recruitment_service.entity.Subtipificacion;
 import pe.albrugroup.recruitment_service.entity.Tipificacion;
 import pe.albrugroup.recruitment_service.entity.enums.AlcanceSubtipificacion;
@@ -45,6 +48,7 @@ public class TipificacionService {
     private final SubtipificacionRepository subtipificacionRepository;
     private final TipificacionMapper mapper;
 
+    @Cacheable(value = CacheNames.TIPIFICACIONES, key = "#etapa.name() + ':' + (#puestoObjetivo == null ? 'all' : #puestoObjetivo.name())")
     public CatalogoTipificacionResponse getCatalogoPorEtapa(Etapa etapa, PuestoObjetivo puestoObjetivo) {
         List<Tipificacion> tipificaciones = tipificacionRepository.findByEtapaAndActivoTrueOrderByOrdenAsc(etapa);
         if (tipificaciones.isEmpty()) {
@@ -77,6 +81,7 @@ public class TipificacionService {
     }
 
     @Transactional
+    @CacheEvict(value = CacheNames.TIPIFICACIONES, allEntries = true)
     public CatalogoTipificacionResponse crearCatalogo(CatalogoTipificacionRequest request) {
         for (TipificacionRequest tipificacionRequest : request.getTipificaciones()) {
             Tipificacion tipificacion = crearTipificacion(request.getEtapa(), tipificacionRequest);
@@ -93,6 +98,7 @@ public class TipificacionService {
     }
 
     @Transactional
+    @CacheEvict(value = CacheNames.TIPIFICACIONES, allEntries = true)
     public SubtipificacionResponse crearSubtipificacion(Long tipificacionId, SubtipificacionRequest request) {
         Tipificacion tipificacion = tipificacionRepository.findById(tipificacionId)
                 .orElseThrow(() -> new NotFoundException(Tipificacion.class, tipificacionId));
@@ -107,6 +113,7 @@ public class TipificacionService {
     }
 
     @Transactional
+    @CacheEvict(value = CacheNames.TIPIFICACIONES, allEntries = true)
     public CatalogoTipificacionResponse actualizarEstadoCatalogo(CatalogoEstadoRequest request) {
         List<Long> tipificacionesActivar = normalizarIds(request.getTipificacionesActivar());
         List<Long> tipificacionesDesactivar = normalizarIds(request.getTipificacionesDesactivar());

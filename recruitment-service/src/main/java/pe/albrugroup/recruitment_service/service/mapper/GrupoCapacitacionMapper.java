@@ -19,5 +19,8 @@ public interface GrupoCapacitacionMapper {
 
     GrupoCapacitacionResponse toResponse(GrupoCapacitacion entity);
 
+    @Mapping(target = "detalles", ignore = true)
+    GrupoCapacitacionResponse toResumenResponse(GrupoCapacitacion entity);
+
     GrupoCapacitacionDetalleResponse toResponse(GrupoCapacitacionDetalle entity);
 }

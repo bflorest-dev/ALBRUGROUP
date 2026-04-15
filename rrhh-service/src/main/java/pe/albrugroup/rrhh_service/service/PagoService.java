@@ -5,7 +5,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.rrhh_service.entity.Contrato;
 import pe.albrugroup.rrhh_service.entity.Pago;
+import pe.albrugroup.rrhh_service.entity.request.PageRequest;
 import pe.albrugroup.rrhh_service.entity.request.pago.RegistrarPagoRequest;
+import pe.albrugroup.rrhh_service.entity.response.PageResponse;
 import pe.albrugroup.rrhh_service.entity.response.PagoResponse;
 import pe.albrugroup.rrhh_service.exception.ConflictException;
 import pe.albrugroup.rrhh_service.exception.NotFoundException;
@@ -18,6 +20,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 @Service
@@ -28,18 +31,31 @@ public class PagoService implements IPago {
     private final PagoRepository pagoRepository;
     private final ContratoRepository contratoRepository;
     private final PagoMapper mapper;
+    private final EventoService eventoService;
+    private final PaginationService paginationService;
+
+    private static final Set<String> PAGO_SORT_FIELDS = Set.of(
+            "id",
+            "createdAt",
+            "updatedAt",
+            "fechaInicio",
+            "fechaFin",
+            "sueldoTotal"
+    );
 
     @Transactional(readOnly = true)
     @Override
-    public List<PagoResponse> getPagos(Long idContrato, Long idEmpleado, LocalDate desde, LocalDate hasta) {
-        return pagoRepository.getPagosContratoEmpleadoFechas(idContrato, idEmpleado, desde, hasta)
-                .stream()
-                .map(mapper::toResponse)
-                .toList();
+    public PageResponse<PagoResponse> getPagos(Long idContrato, Long idEmpleado, LocalDate desde, LocalDate hasta,
+                                               PageRequest pageRequest) {
+        var pagos = pagoRepository
+                .getPagosContratoEmpleadoFechas(idContrato, idEmpleado, desde, hasta,
+                        paginationService.toPageable(pageRequest, PAGO_SORT_FIELDS))
+                .map(mapper::toResponse);
+        return PageResponse.from(pagos);
     }
 
     @Override
-    public PagoResponse registrarPago(Long idContrato, RegistrarPagoRequest nuevoPago) {
+    public PagoResponse registrarPago(Long idContrato, RegistrarPagoRequest nuevoPago, Long responsableId) {
         Contrato contrato = contratoRepository.findById(idContrato)
                 .orElseThrow(() -> new NotFoundException(Contrato.class, idContrato));
         Pago pago = mapper.toEntity(nuevoPago);
@@ -47,7 +63,9 @@ public class PagoService implements IPago {
         validarPagoDentroDelContrato(contrato, pago.getFechaInicio(), pago.getFechaFin());
         calcularPagoTotal(pago, contrato);
         pago.setContrato(contrato);
-        return mapper.toResponse(pagoRepository.save(pago));
+        Pago pagoRegistrado = pagoRepository.save(pago);
+        eventoService.registrarEventoPago(contrato.getEmpleado(), responsableId);
+        return mapper.toResponse(pagoRegistrado);
     }
 
     private void validarPagoDentroDelContrato(Contrato contrato, LocalDate pagoInicio, LocalDate pagoFin) {
@@ -107,11 +125,12 @@ public class PagoService implements IPago {
     }
 
     @Override
-    public void registrarPagos(List<Long> idContratos, List<RegistrarPagoRequest> nuevosPagos) {
+    public void registrarPagos(List<Long> idContratos, List<RegistrarPagoRequest> nuevosPagos, Long responsableId) {
         IntStream.range(0, idContratos.size())
                 .forEach(i -> registrarPago(
                         idContratos.get(i),
-                        nuevosPagos.get(i)
+                        nuevosPagos.get(i),
+                        responsableId
                 ));
     }
 }

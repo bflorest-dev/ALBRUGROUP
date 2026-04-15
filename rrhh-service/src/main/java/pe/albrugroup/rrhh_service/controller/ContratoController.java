@@ -9,11 +9,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import pe.albrugroup.rrhh_service.entity.request.PageRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.RegistrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.response.ContratoResponse;
+import pe.albrugroup.rrhh_service.entity.response.PageResponse;
+import pe.albrugroup.rrhh_service.security.UserSession;
 import pe.albrugroup.rrhh_service.usecase.IContrato;
 
 import java.util.List;
@@ -29,10 +33,13 @@ public class ContratoController {
     @Operation(summary = "Histórico de contratos por empleado",
             description = "Obtiene el listado completo de contratos registrados para un empleado.")
     @GetMapping("/{id}/historico") @PreAuthorize("hasAuthority('READ_CONTRATOS')")
-    public ResponseEntity<List<ContratoResponse>> listarContratosEmpleado(
+    public ResponseEntity<PageResponse<ContratoResponse>> listarContratosEmpleado(
     @Parameter(description = "ID del empleado", example = "10")
-            @PathVariable @Positive Long id) {
-        return ResponseEntity.ok(contratoService.listarContratosEmpleado(id));
+            @PathVariable @Positive Long id,
+            @Valid @ModelAttribute PageRequest pageRequest) {
+        return ResponseEntity.ok(
+                contratoService.listarContratosEmpleado(id, pageRequest)
+        );
     }
     @Operation(summary = "Contrato vigente por empleado",
             description = "Devuelve el contrato vigente del empleado según la fecha actual.")
@@ -48,9 +55,10 @@ public class ContratoController {
     @PostMapping("/{id}/registrar") @PreAuthorize("hasAuthority('CREATE_CONTRATOS')")
     public ResponseEntity<ContratoResponse> registrarContrato(@Valid @RequestBody RegistrarContratoRequest request,
                                                 @Parameter(description = "ID del empleado", example = "10")
-                                                                @PathVariable @Positive Long id,
-                                                @RequestHeader(value = "Authorization", required = false) String authHeader) {
-        var contrato = contratoService.registrarContrato(id, request, authHeader);
+                                                                 @PathVariable @Positive Long id,
+                                                 @RequestHeader(value = "Authorization", required = false) String authHeader,
+                                                 @AuthenticationPrincipal UserSession user) {
+        var contrato = contratoService.registrarContrato(id, request, authHeader, user.empleadoId());
         return ResponseEntity.status(HttpStatus.CREATED).body(contrato);
     }
     @Operation(summary = "Finalizar contrato",

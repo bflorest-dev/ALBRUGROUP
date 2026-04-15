@@ -3,6 +3,7 @@ package pe.albrugroup.rrhh_service.entity.response;
 import lombok.*;
 import pe.albrugroup.rrhh_service.entity.enums.*;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 @Builder @Getter @Setter
@@ -41,4 +42,6 @@ public class EmpleadoResponse {
     private EstadoOperativo estadoOperativo;
     private Compania compania;
     private Boolean listaNegra;
+    private Instant createdAt;
+    private Instant updatedAt;
 }

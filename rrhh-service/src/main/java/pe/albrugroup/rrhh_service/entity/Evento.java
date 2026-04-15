@@ -3,13 +3,14 @@ package pe.albrugroup.rrhh_service.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import pe.albrugroup.rrhh_service.entity.enums.EventoEmpleado;
 
 import java.time.Instant;
 
 @Entity @Getter @Setter @Builder
 @AllArgsConstructor @NoArgsConstructor
-public class EmpleadoEvento {
+public class Evento {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -19,11 +20,11 @@ public class EmpleadoEvento {
     private Empleado responsable;
     @Enumerated(EnumType.STRING)
     private EventoEmpleado evento;
-    private String estado;
-    private String subestado;
-    @CreationTimestamp
-    @Column(name = "fecha_creacion", updatable = false)
-    private Instant fechaCreacion;
     @Column(name = "fecha_evento")
     private Instant fechaEvento;
+
+    @CreationTimestamp @Column(updatable = false)
+    private Instant createdAt;
+    @UpdateTimestamp
+    private Instant updatedAt;
 }

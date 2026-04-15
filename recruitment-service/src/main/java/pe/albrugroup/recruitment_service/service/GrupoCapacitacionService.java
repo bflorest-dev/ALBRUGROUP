@@ -54,7 +54,7 @@ public class GrupoCapacitacionService {
                 ? grupoCapacitacionRepository.findAllByOrderByCreatedAtDesc()
                 : grupoCapacitacionRepository.findByEstadoOrderByCreatedAtDesc(estado);
         return grupos.stream()
-                .map(grupoCapacitacionMapper::toResponse)
+                .map(grupoCapacitacionMapper::toResumenResponse)
                 .toList();
     }
 

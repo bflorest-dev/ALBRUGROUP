@@ -10,14 +10,13 @@ import java.time.Instant;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class EmpleadoEventoResponse {
+public class EventoResponse {
 
     private Long id;
     private Long empleadoId;
     private Long responsableId;
     private EventoEmpleado evento;
-    private String estado;
-    private String subestado;
-    private Instant fechaCreacion;
     private Instant fechaEvento;
+    private Instant createdAt;
+    private Instant updatedAt;
 }

@@ -2,8 +2,11 @@ package pe.albrugroup.rrhh_service.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 
 @Entity @Getter @Setter @Builder
@@ -34,4 +37,10 @@ public class Pago {
     private BigDecimal bonoExtra;
     @Column(name = "sueldo_total", precision = 10, scale = 2)
     private BigDecimal sueldoTotal;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private Instant createdAt;
+    @UpdateTimestamp
+    private Instant updatedAt;
 }

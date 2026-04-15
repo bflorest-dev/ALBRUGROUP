@@ -15,9 +15,7 @@ public interface GrupoCapacitacionRepository extends JpaRepository<GrupoCapacita
     @EntityGraph(attributePaths = {"detalles", "detalles.postulacion", "detalles.postulacion.postulante", "detalles.postulacion.ofertaLaboral"})
     Optional<GrupoCapacitacion> findWithDetallesById(Long id);
 
-    @EntityGraph(attributePaths = {"detalles", "detalles.postulacion", "detalles.postulacion.postulante", "detalles.postulacion.ofertaLaboral"})
     List<GrupoCapacitacion> findAllByOrderByCreatedAtDesc();
 
-    @EntityGraph(attributePaths = {"detalles", "detalles.postulacion", "detalles.postulacion.postulante", "detalles.postulacion.ofertaLaboral"})
     List<GrupoCapacitacion> findByEstadoOrderByCreatedAtDesc(EstadoGrupoCapacitacion estado);
 }

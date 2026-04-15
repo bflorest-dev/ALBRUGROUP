@@ -1,5 +1,7 @@
 package pe.albrugroup.rrhh_service.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,8 +20,7 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
         AND (:idEmpleado IS NULL OR p.contrato.empleado.id = :idEmpleado)
         AND (:fechaDesde IS NULL OR p.fechaFin >= :fechaDesde)
         AND (:fechaHasta IS NULL OR p.fechaInicio <= :fechaHasta)
-        ORDER BY p.fechaInicio DESC
     """)
-    List<Pago> getPagosContratoEmpleadoFechas(@Param("idContrato") Long idContrato, @Param("idEmpleado") Long idEmpleado,
-            @Param("fechaDesde") LocalDate desde, @Param("fechaHasta") LocalDate hasta);
+    Page<Pago> getPagosContratoEmpleadoFechas(@Param("idContrato") Long idContrato, @Param("idEmpleado") Long idEmpleado,
+            @Param("fechaDesde") LocalDate desde, @Param("fechaHasta") LocalDate hasta, Pageable pageable);
 }

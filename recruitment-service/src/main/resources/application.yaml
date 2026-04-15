@@ -4,6 +4,13 @@ server:
 spring:
   application:
     name: recruitment-service
+  cache:
+    type: redis
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
 
   datasource:
     url: jdbc:h2:mem:recruitmentdb
@@ -32,3 +39,8 @@ jwt:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+app:
+  cache:
+    ttl:
+      catalogos: 12h

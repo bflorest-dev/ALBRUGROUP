@@ -9,9 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.rrhh_service.entity.Contrato;
 import pe.albrugroup.rrhh_service.entity.Empleado;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
+import pe.albrugroup.rrhh_service.entity.request.PageRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.RegistrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.response.ContratoResponse;
+import pe.albrugroup.rrhh_service.entity.response.PageResponse;
 import pe.albrugroup.rrhh_service.exception.*;
 import pe.albrugroup.rrhh_service.integration.auth.AuthServiceClient;
 import pe.albrugroup.rrhh_service.integration.auth.dto.RegistrarUsuarioRequest;
@@ -25,6 +27,7 @@ import pe.albrugroup.rrhh_service.usecase.IContrato;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 @Service
@@ -37,12 +40,24 @@ public class ContratoService implements IContrato {
     private final ContratoMapper mapper;
     private final AuthServiceClient authServiceClient;
     private final RecruitmentServiceClient recruitmentServiceClient;
+    private final EventoService eventoService;
+    private final PaginationService paginationService;
+
+    private static final Set<String> CONTRATO_SORT_FIELDS = Set.of(
+            "id",
+            "createdAt",
+            "updatedAt",
+            "fechaInicio",
+            "fechaFin",
+            "sueldoBase"
+    );
 
     @Transactional(readOnly = true) @Override
-    public List<ContratoResponse> listarContratosEmpleado(Long idEmpleado) {
-        return contratoRepository.findByEmpleadoId(idEmpleado).stream()
-                .map(mapper::toResponse)
-                .toList();
+    public PageResponse<ContratoResponse> listarContratosEmpleado(Long idEmpleado, PageRequest pageRequest) {
+        var contratos = contratoRepository
+                .findByEmpleadoId(idEmpleado, paginationService.toPageable(pageRequest, CONTRATO_SORT_FIELDS))
+                .map(mapper::toResponse);
+        return PageResponse.from(contratos);
     }
     @Transactional(readOnly = true) @Override
     public ContratoResponse getContratoVigente(Long idEmpleado) {
@@ -52,7 +67,7 @@ public class ContratoService implements IContrato {
         return mapper.toResponse(contrato);
     }
     @Override @Transactional
-    public ContratoResponse registrarContrato(Long idEmpleado, RegistrarContratoRequest nuevoContrato, String authHeader) {
+    public ContratoResponse registrarContrato(Long idEmpleado, RegistrarContratoRequest nuevoContrato, String authHeader, Long responsableId) {
         validarAuthorizationRequerida(authHeader);
         Empleado empleado = empleadoRepository.findById(idEmpleado)
                 .orElseThrow(() -> new NotFoundException(Empleado.class, idEmpleado));
@@ -71,6 +86,7 @@ public class ContratoService implements IContrato {
         contrato.setEmpleado(empleado);
 
         ContratoResponse contratoResponse = mapper.toResponse(contratoRepository.save(contrato));
+        eventoService.registrarEventoContratacion(empleado, responsableId);
         programarSincronizacionExternaPostCommit(empleado, nuevoContrato, authHeader);
         return contratoResponse;
     }
@@ -135,13 +151,15 @@ public class ContratoService implements IContrato {
 
     @Override
     public void registrarContratos(List<Long> idEmpleados,
-                                   List<RegistrarContratoRequest> nuevosContratosVigentes,
-                                   String authHeader) {
+                                    List<RegistrarContratoRequest> nuevosContratosVigentes,
+                                    String authHeader,
+                                    Long responsableId) {
         IntStream.range(0, idEmpleados.size())
                 .forEach(i -> registrarContrato(
                         idEmpleados.get(i),
                         nuevosContratosVigentes.get(i),
-                        authHeader
+                        authHeader,
+                        responsableId
                 ));
     }
 

@@ -3,6 +3,7 @@ package pe.albrugroup.rrhh_service.entity.response;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 
 @Builder @Getter @Setter
@@ -22,4 +23,6 @@ public class PagoResponse {
     private BigDecimal comisionMensual;
     private BigDecimal bonoExtra;
     private BigDecimal sueldoTotal;
+    private Instant createdAt;
+    private Instant updatedAt;
 }

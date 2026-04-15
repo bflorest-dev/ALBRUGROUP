@@ -472,7 +472,7 @@ public class DataLoader {
         log.info("  Password: 123456");
         log.info("  Email: jevbxx@gmail.com");
         log.info("  EmpleadoId: 0");
-        log.info("  Dni: 00000000");
+        log.info("  Dni: 76543210");
         log.info("  NombreCompleto: Edinson Vitterio");
         log.info("  Roles: [ADMINISTRADOR]");
         log.info("═══════════════════════════════════════════════════════");

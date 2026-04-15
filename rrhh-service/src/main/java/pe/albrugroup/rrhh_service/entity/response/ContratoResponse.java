@@ -4,6 +4,7 @@ import lombok.*;
 import pe.albrugroup.rrhh_service.entity.enums.*;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 
 @Builder @Getter @Setter
@@ -22,4 +23,6 @@ public class ContratoResponse {
     // VIGENCIA
     private LocalDate fechaInicio;
     private LocalDate fechaFin;
+    private Instant createdAt;
+    private Instant updatedAt;
 }

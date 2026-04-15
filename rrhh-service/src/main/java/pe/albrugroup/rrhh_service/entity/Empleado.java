@@ -2,7 +2,11 @@ package pe.albrugroup.rrhh_service.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import pe.albrugroup.rrhh_service.entity.enums.*;
+
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -81,4 +85,9 @@ public class Empleado {
     private Compania compania;
     @Column(name = "lista_negra")
     private Boolean listaNegra;
+
+    @CreationTimestamp @Column(updatable = false)
+    private Instant createdAt;
+    @UpdateTimestamp
+    private Instant updatedAt;
 }

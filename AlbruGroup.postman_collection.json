@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "654e1f08-7d30-4128-9b00-19958187f5bf",
+    "_postman_id": "f1ecdd8f-9d2c-4b2c-ab5a-b34be1afb690",
     "name": "AlbruGroup",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "32906795"
@@ -9,145 +9,6 @@
     {
       "name": "gateway-service",
       "item": [
-        {
-          "name": "Login",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const json = pm.response.json();",
-                  "pm.collectionVariables.set(\"token\", json.token);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"username\": \"admin@albru.admin.pe\",\r\n  \"password\": \"123456\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "http://localhost:8080/auth/autorizacion/login",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "auth",
-                "autorizacion",
-                "login"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Forget Password",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"username\": \"M25413802M@albru.rrhh.pe\",\r\n  \"email\": \"pablo@gmail.com\",\r\n  \"dni\": \"25413802\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "http://localhost:8080/auth/autorizacion/forgot-password",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "auth",
-                "autorizacion",
-                "forgot-password"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Estado Acceso (Primer Inicio)",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:8080/auth/autorizacion/estado-acceso/M25413802M@albru.rrhh.pe",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "auth",
-                "autorizacion",
-                "estado-acceso",
-                "M25413802M@albru.rrhh.pe"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Usuario",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"username\": \"J75413802B@albru.recruiter.pe\",\r\n  \"password\": \"123456\"\r\n}"
-            },
-            "url": {
-              "raw": "http://localhost:8080/auth/autorizacion/1/empleado",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "8080",
-              "path": [
-                "auth",
-                "autorizacion",
-                "1",
-                "empleado"
-              ]
-            }
-          },
-          "response": []
-        },
         {
           "name": "Presence",
           "item": [
@@ -377,6 +238,145 @@
               "response": []
             }
           ]
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set(\"token\", json.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"username\": \"admin@albru.admin.pe\",\r\n  \"password\": \"123456\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/auth/autorizacion/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "auth",
+                "autorizacion",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Forget Password",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"username\": \"E75413802M@albru.recruiter.pe\",\r\n  \"email\": \"ernesto@gmail.com\",\r\n  \"dni\": \"75413802\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8080/auth/autorizacion/forgot-password",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "auth",
+                "autorizacion",
+                "forgot-password"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Estado Acceso (Primer Inicio)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/auth/autorizacion/estado-acceso/M25413802M@albru.rrhh.pe",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "auth",
+                "autorizacion",
+                "estado-acceso",
+                "M25413802M@albru.rrhh.pe"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Usuario",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"username\": \"J75413802B@albru.recruiter.pe\",\r\n  \"password\": \"123456\"\r\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/auth/autorizacion/1/empleado",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "auth",
+                "autorizacion",
+                "1",
+                "empleado"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -1122,7 +1122,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\r\n    \"puestoTrabajo\": \"COMMUNITY\",\r\n    \"idPostulacion\": null,\r\n    \"regimen\": \"RECIBO_POR_HONORARIOS\",\r\n    \"modalidad\": \"SUPER_FULL\",\r\n    \"seguroSalud\": \"SIS\",\r\n    \"sistemaPensiones\": \"AFP_HABITAT\",\r\n    \"sueldoBase\": 2000.00,\r\n    \"fechaInicio\": \"2026-03-06\",\r\n    \"fechaFin\": null\r\n}\r\n\r\n// {\r\n//     \"puestoTrabajo\": \"ASESOR_VENTAS\",\r\n//     \"regimen\": \"RECIBO_POR_HONORARIOS\",\r\n//     \"modalidad\": \"SUPER_FULL\",\r\n//     \"seguroSalud\": \"SIS\",\r\n//     \"sistemaPensiones\": \"AFP_HABITAT\",\r\n//     \"sueldoBase\": 1800.00,\r\n//     \"fechaInicio\": \"2026-03-28\",\r\n//     \"fechaFin\": null\r\n// }",
+                  "raw": "{\r\n    \"puestoTrabajo\": \"RRHH\",\r\n    \"idPostulacion\": null,\r\n    \"regimen\": \"RECIBO_POR_HONORARIOS\",\r\n    \"modalidad\": \"SUPER_FULL\",\r\n    \"seguroSalud\": \"SIS\",\r\n    \"sistemaPensiones\": \"AFP_HABITAT\",\r\n    \"sueldoBase\": 2000.00,\r\n    \"fechaInicio\": \"2026-03-06\",\r\n    \"fechaFin\": null\r\n}\r\n\r\n// {\r\n//     \"puestoTrabajo\": \"ASESOR_VENTAS\",\r\n//     \"regimen\": \"RECIBO_POR_HONORARIOS\",\r\n//     \"modalidad\": \"SUPER_FULL\",\r\n//     \"seguroSalud\": \"SIS\",\r\n//     \"sistemaPensiones\": \"AFP_HABITAT\",\r\n//     \"sueldoBase\": 1800.00,\r\n//     \"fechaInicio\": \"2026-03-28\",\r\n//     \"fechaFin\": null\r\n// }",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -3225,7 +3225,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"codigo\": \"AsesoresMarzo2026\",\n    \"negocio\": \"FIBRA_MIXTO\",\n    \"puestoObjetivo\": \"ASESOR_VENTAS\",\n    \"horario\": \"AFTERNOON\",\n    \"cantidadInicial\": 5,\n    \"plazoInicial\": \"2026-03-30\"\n}",
+                  "raw": "{\n    \"codigo\": \"AsesoresMarzo2026\",\n    \"negocio\": \"FIBRA_MIXTO\",\n    \"puestoObjetivo\": \"ASESOR_VENTAS\",\n    \"horario\": \"AFTERNOON\",\n    \"cantidadInicial\": 5,\n    \"plazoInicial\": \"2026-04-15\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -3264,7 +3264,7 @@
                 "header": [],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"cantidad\": 7,\n    \"plazo\": \"2026-04-10\"\n}",
+                  "raw": "{\n    \"cantidad\": 7,\n    \"plazo\": \"2026-04-22\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
