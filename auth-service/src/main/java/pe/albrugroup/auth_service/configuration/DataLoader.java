@@ -3,6 +3,7 @@ package pe.albrugroup.auth_service.configuration;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import pe.albrugroup.auth_service.entity.Permiso;
@@ -15,7 +16,9 @@ import pe.albrugroup.auth_service.repository.UsuarioRepository;
 import java.util.HashSet;
 import java.util.Set;
 
-@Component @Slf4j
+@Component
+@Profile("dev")
+@Slf4j
 @RequiredArgsConstructor
 public class DataLoader {
 
@@ -458,17 +461,29 @@ public class DataLoader {
         log.info("Creando Usuario ADMINISTRADOR INICIAL");
         Rol adminRol = rolRepository.findByNombre("ADMINISTRADOR")
                         .orElseThrow(() -> new RuntimeException("Rol ADMINISTRADOR no encontrado"));
-        Usuario adminUsuario = Usuario.builder()
-                .username("admin@albru.admin.pe")
-                .password(passwordEncoder.encode("123456"))
-                .passwordInicializada(true)
-                .email("jevbxx@gmail.com")
-                .empleadoId(0L)
-                .dni("00000000")
-                .nombreCompleto("Edinson Vitterio")
-                .activo(true)
-                .roles(new HashSet<>(Set.of(adminRol)))
-                .build();
+        Usuario adminUsuario = usuarioRepository.findByUsername("admin@albru.admin.pe")
+                .map(usuario -> {
+                    usuario.setPassword(passwordEncoder.encode("123456"));
+                    usuario.setPasswordInicializada(true);
+                    usuario.setEmail("jevbxx@gmail.com");
+                    usuario.setEmpleadoId(0L);
+                    usuario.setDni("00000000");
+                    usuario.setNombreCompleto("Edinson Vitterio");
+                    usuario.setActivo(true);
+                    usuario.setRoles(new HashSet<>(Set.of(adminRol)));
+                    return usuario;
+                })
+                .orElseGet(() -> Usuario.builder()
+                        .username("admin@albru.admin.pe")
+                        .password(passwordEncoder.encode("123456"))
+                        .passwordInicializada(true)
+                        .email("jevbxx@gmail.com")
+                        .empleadoId(0L)
+                        .dni("00000000")
+                        .nombreCompleto("Edinson Vitterio")
+                        .activo(true)
+                        .roles(new HashSet<>(Set.of(adminRol)))
+                        .build());
         usuarioRepository.save(adminUsuario);
 
         log.info("══════════════════════════════════════════════════════");

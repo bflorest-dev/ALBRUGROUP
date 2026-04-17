@@ -3,6 +3,7 @@ package pe.albrugroup.recruitment_service.configuration;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.recruitment_service.entity.Subtipificacion;
@@ -17,7 +18,9 @@ import pe.albrugroup.recruitment_service.repository.SubtipificacionRepository;
 import pe.albrugroup.recruitment_service.repository.TipificacionRepository;
 import pe.albrugroup.recruitment_service.service.mapper.TipificacionMapper;
 
-@Component @Slf4j
+@Component
+@Profile("dev")
+@Slf4j
 @RequiredArgsConstructor
 public class DataLoader {
 

@@ -4,45 +4,24 @@ server:
 spring:
   application:
     name: rrhh-service
-
-  datasource:
-    url: jdbc:h2:mem:authdb
-    username: sa
-    password:
-    driver-class-name: org.h2.Driver
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-      settings:
-        web-allow-others: false
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: true
-#    properties:
-#      hibernate:
-#        dialect: org.hibernate.dialect.H2Dialect
-#        format_sql: true
+  profiles:
+    active: dev
 
 jwt:
-  secret: 3bZ4bR0S5c7hFQ2nTzF8oQv9vKxM2yP7aLw8eJrHkU1cNdWqXyZp6tR9mVb4sL0Q8nF5gH2kJ3lP6rS9uVw==
+  secret: ${JWT_SECRET:3bZ4bR0S5c7hFQ2nTzF8oQv9vKxM2yP7aLw8eJrHkU1cNdWqXyZp6tR9mVb4sL0Q8nF5gH2kJ3lP6rS9uVw==}
 
 logging:
   level:
     org.springframework.security: DEBUG
     org.hibernate.sql: DEBUG
-    pe.albrugroup.auth_service: DEBUG
+    pe.albrugroup.rrhh_service: DEBUG
 
 services:
   auth:
-    base-url: http://localhost:8081
+    base-url: ${AUTH_SERVICE_URL:http://localhost:8081}
   recruitment:
-    base-url: http://localhost:8084
+    base-url: ${RECRUITMENT_SERVICE_URL:http://localhost:8084}
 
-
-
-# OpenAPI-Swagger
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

@@ -1,0 +1,6 @@
+spring:
+  data:
+    redis:
+      host: ${GATEWAY_REDIS_HOST:localhost}
+      port: ${GATEWAY_REDIS_PORT:6379}
+      timeout: 2000ms

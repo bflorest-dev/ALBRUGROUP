@@ -3,11 +3,13 @@ package pe.albrugroup.rrhh_service.configuration;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import pe.albrugroup.rrhh_service.entity.EmpresaContratista;
 import pe.albrugroup.rrhh_service.repository.EmpresaContratistaRepository;
 
 @Component
+@Profile("dev")
 @Slf4j
 @RequiredArgsConstructor
 public class DataLoader {

@@ -1,0 +1,25 @@
+spring:
+  data:
+    redis:
+      host: ${LEAD_REDIS_HOST:localhost}
+      port: ${LEAD_REDIS_PORT:6379}
+      timeout: 2000ms
+  datasource:
+    url: jdbc:h2:file:./data/leaddb;MODE=PostgreSQL;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: false
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
