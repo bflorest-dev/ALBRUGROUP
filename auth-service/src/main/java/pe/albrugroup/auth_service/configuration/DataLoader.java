@@ -22,6 +22,13 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class DataLoader {
 
+    private static final String ADMIN_USERNAME = "admin@albru.admin.pe";
+    private static final String ADMIN_PASSWORD = "albruadminpe";
+    private static final String ADMIN_EMAIL = "jevbxx@gmail.com";
+    private static final Long ADMIN_EMPLEADO_ID = 1L;
+    private static final String ADMIN_DNI = "76543210";
+    private static final String ADMIN_NOMBRE_COMPLETO = "Edinson Vitterio";
+
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final PermisoRepository  permisoRepository;
@@ -461,26 +468,28 @@ public class DataLoader {
         log.info("Creando Usuario ADMINISTRADOR INICIAL");
         Rol adminRol = rolRepository.findByNombre("ADMINISTRADOR")
                         .orElseThrow(() -> new RuntimeException("Rol ADMINISTRADOR no encontrado"));
-        Usuario adminUsuario = usuarioRepository.findByUsername("admin@albru.admin.pe")
+        Usuario adminUsuario = usuarioRepository.findByEmpleadoId(ADMIN_EMPLEADO_ID)
+                .or(() -> usuarioRepository.findByUsername(ADMIN_USERNAME))
                 .map(usuario -> {
-                    usuario.setPassword(passwordEncoder.encode("123456"));
+                    usuario.setUsername(ADMIN_USERNAME);
+                    usuario.setPassword(passwordEncoder.encode(ADMIN_PASSWORD));
                     usuario.setPasswordInicializada(true);
-                    usuario.setEmail("jevbxx@gmail.com");
-                    usuario.setEmpleadoId(0L);
-                    usuario.setDni("00000000");
-                    usuario.setNombreCompleto("Edinson Vitterio");
+                    usuario.setEmail(ADMIN_EMAIL);
+                    usuario.setEmpleadoId(ADMIN_EMPLEADO_ID);
+                    usuario.setDni(ADMIN_DNI);
+                    usuario.setNombreCompleto(ADMIN_NOMBRE_COMPLETO);
                     usuario.setActivo(true);
                     usuario.setRoles(new HashSet<>(Set.of(adminRol)));
                     return usuario;
                 })
                 .orElseGet(() -> Usuario.builder()
-                        .username("admin@albru.admin.pe")
-                        .password(passwordEncoder.encode("123456"))
+                        .username(ADMIN_USERNAME)
+                        .password(passwordEncoder.encode(ADMIN_PASSWORD))
                         .passwordInicializada(true)
-                        .email("jevbxx@gmail.com")
-                        .empleadoId(0L)
-                        .dni("00000000")
-                        .nombreCompleto("Edinson Vitterio")
+                        .email(ADMIN_EMAIL)
+                        .empleadoId(ADMIN_EMPLEADO_ID)
+                        .dni(ADMIN_DNI)
+                        .nombreCompleto(ADMIN_NOMBRE_COMPLETO)
                         .activo(true)
                         .roles(new HashSet<>(Set.of(adminRol)))
                         .build());
@@ -488,12 +497,12 @@ public class DataLoader {
 
         log.info("══════════════════════════════════════════════════════");
         log.info("✓ Usuario ADMINISTRADOR creado:");
-        log.info("  Username: admin@albru.admin.pe");
-        log.info("  Password: 123456");
-        log.info("  Email: jevbxx@gmail.com");
-        log.info("  EmpleadoId: 0");
-        log.info("  Dni: 76543210");
-        log.info("  NombreCompleto: Edinson Vitterio");
+        log.info("  Username: {}", ADMIN_USERNAME);
+        log.info("  Password: {}", ADMIN_PASSWORD);
+        log.info("  Email: {}", ADMIN_EMAIL);
+        log.info("  EmpleadoId: {}", ADMIN_EMPLEADO_ID);
+        log.info("  Dni: {}", ADMIN_DNI);
+        log.info("  NombreCompleto: {}", ADMIN_NOMBRE_COMPLETO);
         log.info("  Roles: [ADMINISTRADOR]");
         log.info("═══════════════════════════════════════════════════════");
 
