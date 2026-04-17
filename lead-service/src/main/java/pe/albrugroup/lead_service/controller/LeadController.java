@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,9 +22,13 @@ import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaComercialRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionRequest;
+import pe.albrugroup.lead_service.entity.request.PageRequest;
+import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorVentasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
+import pe.albrugroup.lead_service.entity.response.PageResponse;
+import pe.albrugroup.lead_service.entity.response.SupervisorVentasResumenResponse;
 import pe.albrugroup.lead_service.service.LeadService;
 
 import java.time.LocalDate;
@@ -52,8 +57,27 @@ public class LeadController {
     }
 
     @GetMapping("/asesor-ventas") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
-    public ResponseEntity<List<LeadAsesorVentasResponse>> listarBandejaAsesorVentas() {
-        var leads = leadService.listarBandejaAsesorVentas();
+    public ResponseEntity<PageResponse<LeadAsesorVentasResponse>> listarBandejaAsesorVentas(
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        var leads = leadService.listarBandejaAsesorVentas(pageRequest);
+        return ResponseEntity.status(HttpStatus.OK).body(leads);
+    }
+
+    @GetMapping("/supervisor-ventas/resumen") @PreAuthorize("hasAuthority('READ_LEADS_SUPERVISOR_VENTAS_RESUMEN')")
+    public ResponseEntity<List<SupervisorVentasResumenResponse>> listarResumenSupervisorVentas(
+            @RequestParam(required = false) List<Long> idsAsesor
+    ) {
+        var resumen = leadService.listarResumenSupervisorVentas(idsAsesor);
+        return ResponseEntity.status(HttpStatus.OK).body(resumen);
+    }
+
+    @GetMapping("/supervisor-ventas/asesor/{idAsesor}/bandeja") @PreAuthorize("hasAuthority('READ_LEADS_SUPERVISOR_VENTAS_BANDEJA')")
+    public ResponseEntity<PageResponse<LeadAsesorVentasResponse>> listarBandejaSupervisorVentas(
+            @PathVariable Long idAsesor,
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        var leads = leadService.listarBandejaAsesorVentas(idAsesor, pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
 
@@ -106,11 +130,20 @@ public class LeadController {
     }
 
     @GetMapping("/gtr") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
-    public ResponseEntity<List<LeadGtrResponse>> listarBandejaGtr(
+    public ResponseEntity<PageResponse<LeadGtrResponse>> listarBandejaGtr(
             @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+            @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var leads = leadService.listarBandejaGtr(fecha);
+        var leads = leadService.listarBandejaGtr(fecha, pageRequest);
+        return ResponseEntity.status(HttpStatus.OK).body(leads);
+    }
+
+    @GetMapping("/gtr/agendados") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
+    public ResponseEntity<PageResponse<LeadAgendadoGtrResponse>> listarAgendadosGtr(
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        var leads = leadService.listarAgendadosGtr(pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
 }

@@ -23,5 +23,4 @@ public class GrupoCapacitacionRequest {
     @NotNull private TurnoHorario turno;
     @NotNull private SalaCapacitacion sala;
     @NotNull @FutureOrPresent private LocalDate fechaInicio;
-    @FutureOrPresent private LocalDate fechaFin;
 }

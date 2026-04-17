@@ -25,9 +25,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
-@Configuration
+@Configuration @Slf4j
 @EnableCaching
-@Slf4j
 public class CacheConfig {
 
     @Bean

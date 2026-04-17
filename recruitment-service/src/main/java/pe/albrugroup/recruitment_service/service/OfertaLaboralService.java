@@ -3,6 +3,7 @@ package pe.albrugroup.recruitment_service.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,8 +15,10 @@ import pe.albrugroup.recruitment_service.entity.enums.EstadoOferta;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarEstadoOfertaLaboralRequest;
 import pe.albrugroup.recruitment_service.entity.request.OfertaAmpliacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.OfertaLaboralRequest;
+import pe.albrugroup.recruitment_service.entity.request.PageRequest;
 import pe.albrugroup.recruitment_service.entity.response.OfertaAmpliacionResponse;
 import pe.albrugroup.recruitment_service.entity.response.OfertaLaboralResponse;
+import pe.albrugroup.recruitment_service.entity.response.PageResponse;
 import pe.albrugroup.recruitment_service.exception.BadRequestException;
 import pe.albrugroup.recruitment_service.exception.ConflictException;
 import pe.albrugroup.recruitment_service.exception.NotFoundException;
@@ -24,15 +27,22 @@ import pe.albrugroup.recruitment_service.repository.OfertaLaboralRepository;
 import pe.albrugroup.recruitment_service.service.mapper.OfertaMapper;
 
 import java.util.List;
+import java.util.Set;
 
 @Service @Transactional
 @RequiredArgsConstructor
 public class OfertaLaboralService {
 
+    private static final Set<String> OFERTA_SORT_FIELDS = Set.of(
+            "id", "codigo", "negocio", "puestoObjetivo", "modalidad", "horario",
+            "cantidadInicial", "plazoInicial", "estado", "createdAt"
+    );
+
     private final OfertaLaboralRepository ofertaRepository;
     private final OfertaAmpliacionRepository ampliacionRepository;
     private final OfertaMapper ofertaMapper;
     private final CurrentUser currentUser;
+    private final PaginationService paginationService;
 
 
     @CacheEvict(value = CacheNames.OFERTAS_ACTIVAS, allEntries = true)
@@ -46,14 +56,27 @@ public class OfertaLaboralService {
         return ofertaMapper.toResponse(ofertaRepository.save(oferta));
     }
 
-    @Cacheable(value = CacheNames.OFERTAS_ACTIVAS, key = "'activas'", condition = "#estado != null && #estado == T(pe.albrugroup.recruitment_service.entity.enums.EstadoOferta).ACTIVO")
-    public List<OfertaLaboralResponse> listarOfertasLaborales(EstadoOferta estado) {
-        List<OfertaLaboral> ofertas = estado == null
-                ? ofertaRepository.findAllByOrderByCreatedAtDesc()
-                : ofertaRepository.findByEstadoOrderByCreatedAtDesc(estado);
-        return ofertas.stream()
+    @Transactional(readOnly = true)
+    @Cacheable(value = CacheNames.OFERTAS_ACTIVAS, key = "'activas'")
+    public List<OfertaLaboralResponse> listarOfertasActivas() {
+        return ofertaRepository.findByEstadoOrderByCreatedAtDesc(EstadoOferta.ACTIVO).stream()
                 .map(ofertaMapper::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<OfertaLaboralResponse> listarOfertasLaborales(
+            EstadoOferta estado,
+            PageRequest pageRequest
+    ) {
+        Page<OfertaLaboralResponse> ofertas = (estado == null
+                ? ofertaRepository.findAll(paginationService.toPageable(pageRequest, OFERTA_SORT_FIELDS))
+                : ofertaRepository.findByEstado(
+                        estado,
+                        paginationService.toPageable(pageRequest, OFERTA_SORT_FIELDS)
+                ))
+                .map(ofertaMapper::toResponse);
+        return PageResponse.from(ofertas);
     }
 
     @CacheEvict(value = CacheNames.OFERTAS_ACTIVAS, allEntries = true)
@@ -89,14 +112,15 @@ public class OfertaLaboralService {
     }
 
     private void validarNoExisteOfertaEquivalenteActiva(OfertaLaboralRequest request) {
-        boolean existeEquivalente = ofertaRepository.existsByEstadoAndNegocioAndPuestoObjetivoAndHorario(
+        boolean existeEquivalente = ofertaRepository.existsByEstadoAndNegocioAndPuestoObjetivoAndModalidadAndHorario(
                 EstadoOferta.ACTIVO,
                 request.getNegocio(),
                 request.getPuestoObjetivo(),
+                request.getModalidad(),
                 request.getHorario()
         );
         if (existeEquivalente) {
-            throw new ConflictException("Ya existe una oferta activa equivalente para negocio, puesto objetivo y horario");
+            throw new ConflictException("Ya existe una oferta activa equivalente para negocio, puesto objetivo, modalidad y horario");
         }
     }
 

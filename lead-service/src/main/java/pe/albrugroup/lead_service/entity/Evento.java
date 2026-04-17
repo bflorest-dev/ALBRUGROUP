@@ -8,6 +8,7 @@ import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Entity @Getter @Setter @Builder
 @Table(indexes = {
@@ -29,6 +30,7 @@ public class Evento {
     private String rolActor;
     private Long idAsesorAsignado;
     private String nombreAsesorAsignado;
+    private Long idPlanOfrecido;
     @Enumerated(EnumType.STRING)
     private Accion accion;
     @Enumerated(EnumType.STRING)
@@ -37,6 +39,7 @@ public class Evento {
     private String subtipificacion;
     private LocalDate fechaInstalacion;
     private String comentario;
+    private LocalTime horaProgramada;
 
     @CreationTimestamp @Column(updatable = false)
     private Instant createdAt;

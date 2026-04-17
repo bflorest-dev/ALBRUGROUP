@@ -2,6 +2,7 @@ package pe.albrugroup.recruitment_service.entity.response;
 
 import lombok.*;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoOferta;
+import pe.albrugroup.recruitment_service.entity.enums.Modalidad;
 import pe.albrugroup.recruitment_service.entity.enums.Negocio;
 import pe.albrugroup.recruitment_service.entity.enums.PuestoObjetivo;
 import pe.albrugroup.recruitment_service.entity.enums.TurnoHorario;
@@ -19,6 +20,7 @@ public class OfertaLaboralResponse {
     private Long idSolicitante;
     private Negocio negocio;
     private PuestoObjetivo puestoObjetivo;
+    private Modalidad modalidad;
     private TurnoHorario horario;
     private Integer cantidadInicial;
     private LocalDate plazoInicial;

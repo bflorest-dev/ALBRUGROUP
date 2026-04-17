@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -19,12 +20,12 @@ import pe.albrugroup.recruitment_service.entity.enums.EstadoBandejaPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.Etapa;
 import pe.albrugroup.recruitment_service.entity.request.ConfirmarContratacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.PageRequest;
 import pe.albrugroup.recruitment_service.entity.request.PostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.TipificarPostulacionRequest;
+import pe.albrugroup.recruitment_service.entity.response.PageResponse;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
 import pe.albrugroup.recruitment_service.service.PostulacionService;
-
-import java.util.List;
 
 @RestController
 @Validated
@@ -66,34 +67,39 @@ public class PostulacionController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('READ_POSTULACIONES')")
-    public ResponseEntity<List<PostulacionResponse>> listarPostulaciones(
+    public ResponseEntity<PageResponse<PostulacionResponse>> listarPostulaciones(
             @RequestParam(required = false) Etapa etapa,
             @RequestParam(required = false) EstadoPostulacion estado,
-            @RequestParam(required = false) EstadoBandejaPostulacion estadoBandeja
+            @RequestParam(required = false) EstadoBandejaPostulacion estadoBandeja,
+            @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        return ResponseEntity.ok(postulacionService.listarPostulaciones(etapa, estado, estadoBandeja));
+        return ResponseEntity.ok(postulacionService.listarPostulaciones(etapa, estado, estadoBandeja, pageRequest));
     }
 
     @GetMapping("/bandeja/reclutamiento")
     @PreAuthorize("hasAuthority('READ_POSTULACIONES_RECLUTAMIENTO')")
-    public ResponseEntity<List<PostulacionResponse>> listarBandejaReclutamiento(
-            @RequestParam(required = false) EstadoBandejaPostulacion estadoBandeja
+    public ResponseEntity<PageResponse<PostulacionResponse>> listarBandejaReclutamiento(
+            @RequestParam(required = false) EstadoBandejaPostulacion estadoBandeja,
+            @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        return ResponseEntity.ok(postulacionService.listarBandejaReclutamiento(estadoBandeja));
+        return ResponseEntity.ok(postulacionService.listarBandejaReclutamiento(estadoBandeja, pageRequest));
     }
 
     @GetMapping("/bandeja/capacitacion")
     @PreAuthorize("hasAuthority('READ_POSTULACIONES_CAPACITACION')")
-    public ResponseEntity<List<PostulacionResponse>> listarBandejaCapacitacion(
-            @RequestParam(required = false) Boolean sinGrupo
+    public ResponseEntity<PageResponse<PostulacionResponse>> listarBandejaCapacitacion(
+            @RequestParam(required = false) Boolean sinGrupo,
+            @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        return ResponseEntity.ok(postulacionService.listarBandejaCapacitacion(sinGrupo));
+        return ResponseEntity.ok(postulacionService.listarBandejaCapacitacion(sinGrupo, pageRequest));
     }
 
     @GetMapping("/bandeja/contratacion")
     @PreAuthorize("hasAuthority('READ_POSTULACIONES')")
-    public ResponseEntity<List<PostulacionResponse>> listarBandejaContratacion() {
-        return ResponseEntity.ok(postulacionService.listarBandejaContratacion());
+    public ResponseEntity<PageResponse<PostulacionResponse>> listarBandejaContratacion(
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        return ResponseEntity.ok(postulacionService.listarBandejaContratacion(pageRequest));
     }
 
     @PostMapping("/{idPostulacion}/confirmar-contratacion")

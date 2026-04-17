@@ -1,12 +1,14 @@
 package pe.albrugroup.recruitment_service.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.recruitment_service.configuration.CurrentUser;
+import pe.albrugroup.recruitment_service.entity.GrupoCapacitacionDetalle;
 import pe.albrugroup.recruitment_service.entity.OfertaLaboral;
 import pe.albrugroup.recruitment_service.entity.Postulacion;
 import pe.albrugroup.recruitment_service.entity.Postulante;
@@ -21,8 +23,10 @@ import pe.albrugroup.recruitment_service.entity.enums.EstadoPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.Etapa;
 import pe.albrugroup.recruitment_service.entity.enums.PuestoObjetivo;
 import pe.albrugroup.recruitment_service.entity.request.ConfirmarContratacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.PageRequest;
 import pe.albrugroup.recruitment_service.entity.request.PostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.TipificarPostulacionRequest;
+import pe.albrugroup.recruitment_service.entity.response.PageResponse;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
 import pe.albrugroup.recruitment_service.exception.BadRequestException;
 import pe.albrugroup.recruitment_service.exception.ConflictException;
@@ -36,12 +40,16 @@ import pe.albrugroup.recruitment_service.service.mapper.PostulacionMapper;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
+import java.util.Set;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
 public class PostulacionService {
+
+    private static final Set<String> POSTULACION_SORT_FIELDS = Set.of(
+            "id", "createdAt", "updatedAt", "etapa", "estado", "estadoBandeja", "origen"
+    );
 
     private final PostulacionRepository postulacionRepository;
     private final OfertaLaboralRepository ofertaLaboralRepository;
@@ -52,6 +60,7 @@ public class PostulacionService {
     private final SubtipificacionRepository subtipificacionRepository;
     private final GrupoCapacitacionDetalleRepository grupoCapacitacionDetalleRepository;
     private final CurrentUser currentUser;
+    private final PaginationService paginationService;
 
     public PostulacionResponse registrarPostulacion(PostulacionRequest request) {
         OfertaLaboral ofertaLaboral = obtenerOfertaActiva(request.getIdOfertaLaboral());
@@ -151,56 +160,66 @@ public class PostulacionService {
     }
 
     @Transactional(readOnly = true)
-    public List<PostulacionResponse> listarPostulaciones(
+    public PageResponse<PostulacionResponse> listarPostulaciones(
             Etapa etapa,
             EstadoPostulacion estado,
-            EstadoBandejaPostulacion estadoBandeja
+            EstadoBandejaPostulacion estadoBandeja,
+            PageRequest pageRequest
     ) {
         Specification<Postulacion> spec = Specification.where(conEtapa(etapa))
                 .and(conEstado(estado))
                 .and(conEstadoBandeja(estadoBandeja));
 
-        return postulacionRepository.findAll(spec, org.springframework.data.domain.Sort.by(
-                        org.springframework.data.domain.Sort.Direction.DESC,
-                        "createdAt"
-                )).stream()
-                .map(this::mapearPostulacionResponse)
-                .toList();
+        Page<PostulacionResponse> postulaciones = postulacionRepository.findAll(
+                        spec,
+                        paginationService.toPageable(pageRequest, POSTULACION_SORT_FIELDS)
+                )
+                .map(this::mapearPostulacionResponse);
+        return PageResponse.from(postulaciones);
     }
 
     @Transactional(readOnly = true)
-    public List<PostulacionResponse> listarBandejaReclutamiento(EstadoBandejaPostulacion estadoBandeja) {
+    public PageResponse<PostulacionResponse> listarBandejaReclutamiento(
+            EstadoBandejaPostulacion estadoBandeja,
+            PageRequest pageRequest
+    ) {
         Instant limiteReciente = Instant.now().minus(1, ChronoUnit.DAYS);
         Specification<Postulacion> spec = Specification.where(conEtapa(Etapa.RECLUTAMIENTO))
                 .and(conEstadoBandeja(estadoBandeja))
                 .and(enProcesoOReciente(limiteReciente));
 
-        return postulacionRepository.findAll(spec, ordenarPorActualizacionDesc()).stream()
-                .map(this::mapearPostulacionResponse)
-                .toList();
+        Page<PostulacionResponse> postulaciones = postulacionRepository.findAll(
+                        spec,
+                        paginationService.toPageable(pageRequest, POSTULACION_SORT_FIELDS)
+                )
+                .map(this::mapearPostulacionResponse);
+        return PageResponse.from(postulaciones);
     }
 
     @Transactional(readOnly = true)
-    public List<PostulacionResponse> listarBandejaCapacitacion(Boolean sinGrupo) {
-        Specification<Postulacion> spec = Specification.where(conEtapa(Etapa.CAPACITACION));
+    public PageResponse<PostulacionResponse> listarBandejaCapacitacion(Boolean sinGrupo, PageRequest pageRequest) {
+        Specification<Postulacion> spec = Specification.where(conEtapa(Etapa.CAPACITACION))
+                .and(Boolean.TRUE.equals(sinGrupo) ? sinGrupoCapacitacion() : null);
 
-        List<Postulacion> postulaciones = postulacionRepository.findAll(spec, ordenarPorActualizacionDesc());
-        if (Boolean.TRUE.equals(sinGrupo)) {
-            postulaciones = postulaciones.stream()
-                    .filter(postulacion -> !postulacionRepository.existsDetalleCapacitacionByIdPostulacion(postulacion.getId()))
-                    .toList();
-        }
-
-        return postulaciones.stream()
-                .map(this::mapearPostulacionResponse)
-                .toList();
+        Page<PostulacionResponse> postulaciones = postulacionRepository.findAll(
+                        spec,
+                        paginationService.toPageable(pageRequest, POSTULACION_SORT_FIELDS)
+                )
+                .map(this::mapearPostulacionResponse);
+        return PageResponse.from(postulaciones);
     }
 
     @Transactional(readOnly = true)
-    public List<PostulacionResponse> listarBandejaContratacion() {
-        return grupoCapacitacionDetalleRepository.findListosParaContratar(EstadoCapacitacionPostulante.APROBADO).stream()
-                .map(detalle -> mapearPostulacionResponse(detalle.getPostulacion()))
-                .toList();
+    public PageResponse<PostulacionResponse> listarBandejaContratacion(PageRequest pageRequest) {
+        Specification<Postulacion> spec = Specification.where(conEtapa(Etapa.CONTRATACION))
+                .and(listoParaContratacion());
+
+        Page<PostulacionResponse> postulaciones = postulacionRepository.findAll(
+                        spec,
+                        paginationService.toPageable(pageRequest, POSTULACION_SORT_FIELDS)
+                )
+                .map(this::mapearPostulacionResponse);
+        return PageResponse.from(postulaciones);
     }
 
     public PostulacionResponse confirmarContratacion(Long idPostulacion, ConfirmarContratacionRequest request) {
@@ -412,10 +431,27 @@ public class PostulacionService {
         return response;
     }
 
-    private Sort ordenarPorActualizacionDesc() {
-        return Sort.by(
-                Sort.Direction.DESC,
-                "updatedAt"
-        );
+    private Specification<Postulacion> sinGrupoCapacitacion() {
+        return (root, query, builder) -> {
+            var subquery = query.subquery(Long.class);
+            var detalleRoot = subquery.from(GrupoCapacitacionDetalle.class);
+            subquery.select(builder.literal(1L))
+                    .where(builder.equal(detalleRoot.get("postulacion").get("id"), root.get("id")));
+            return builder.not(builder.exists(subquery));
+        };
+    }
+
+    private Specification<Postulacion> listoParaContratacion() {
+        return (root, query, builder) -> {
+            var subquery = query.subquery(Long.class);
+            var detalleRoot = subquery.from(GrupoCapacitacionDetalle.class);
+            subquery.select(builder.literal(1L))
+                    .where(
+                            builder.equal(detalleRoot.get("postulacion").get("id"), root.get("id")),
+                            builder.equal(detalleRoot.get("estadoCapacitacion"), EstadoCapacitacionPostulante.APROBADO),
+                            builder.isNull(detalleRoot.get("idEmpleadoContratado"))
+                    );
+            return builder.exists(subquery);
+        };
     }
 }

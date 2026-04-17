@@ -1,6 +1,7 @@
 package pe.albrugroup.recruitment_service.repository;
 
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -9,14 +10,13 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.repository.query.Param;
 import pe.albrugroup.recruitment_service.entity.Postulacion;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface PostulacionRepository extends JpaRepository<Postulacion, Long>, JpaSpecificationExecutor<Postulacion> {
 
     @Override
     @EntityGraph(attributePaths = {"postulante", "ofertaLaboral"})
-    List<Postulacion> findAll(Specification<Postulacion> spec, Sort sort);
+    Page<Postulacion> findAll(Specification<Postulacion> spec, Pageable pageable);
 
     @EntityGraph(attributePaths = {"postulante", "ofertaLaboral"})
     @Query("""

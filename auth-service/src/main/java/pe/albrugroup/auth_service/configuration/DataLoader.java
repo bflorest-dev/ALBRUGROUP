@@ -27,18 +27,18 @@ public class DataLoader {
     @PostConstruct
     public void loadData() {
         log.info("=================================");
-        log.info("🚀 INICIANDO CARGA DE DATOS INICIAL");
+        log.info("INICIANDO CARGA DE DATOS INICIAL");
 
         crearPermisos();
         crearRoles();
         crearUsuariosIniciales();
 
-        log.info("✅ DATOS CARGADOS");
+        log.info("DATOS CARGADOS");
         log.info("=================================");
     }
 
     private void crearPermisos() {
-        log.info("🚀 Creando Permisos...");
+        log.info("Creando Permisos...");
 
         // RECRUITMENT-SERVICE - POSTULACIONES
         savePermiso("CREATE_POSTULACIONES", "Puede registrar postulaciones nuevas", "POSTULACION", "CREATE");
@@ -140,10 +140,12 @@ public class DataLoader {
         savePermiso("TYPIFY_LEADS", "Puede tipificar leads", "LEAD", "TYPIFY");
         savePermiso("CONTACT_LEADS", "Puede registrar contacto de leads", "LEAD", "CONTACT");
         savePermiso("READ_LEADS_GTR", "Puede ver bandeja de leads para GTR", "LEAD", "READ");
+        savePermiso("READ_LEADS_SUPERVISOR_VENTAS_RESUMEN", "Puede ver resumen de acumuladores de supervisor de ventas", "LEAD_SUPERVISOR_VENTAS", "READ");
+        savePermiso("READ_LEADS_SUPERVISOR_VENTAS_BANDEJA", "Puede ver la bandeja de cualquier asesor para supervisor de ventas", "LEAD_SUPERVISOR_VENTAS", "READ");
 
         savePermiso("READ_EVENTOS_LEADS", "Puede ver el historico de eventos de leads", "EVENTO_LEAD", "READ");
 
-        log.info("✅ Permisos Creados");
+        log.info("Permisos Creados");
     }
 
     private void savePermiso(String nombre, String descripcion, String recurso, String accion) {
@@ -168,7 +170,7 @@ public class DataLoader {
     }
 
     private void crearRoles() {
-        log.info("🚀 Creando Roles...");
+        log.info("Creando Roles...");
 
         // ADMINISTRADOR
         Set<Permiso> adminPermisos = new HashSet<>(permisoRepository.findAll());
@@ -351,6 +353,8 @@ public class DataLoader {
                 getPermiso("CONTACT_LEADS"),
 
                 getPermiso("READ_LEADS_GTR"),
+                getPermiso("READ_LEADS_SUPERVISOR_VENTAS_RESUMEN"),
+                getPermiso("READ_LEADS_SUPERVISOR_VENTAS_BANDEJA"),
                 getPermiso("READ_EVENTOS_LEADS")
         );
         saveRol("SUPERVISOR_VENTAS", "Ventas - Supervision de leads asignados", supervisorVentasPermisos);
@@ -422,7 +426,7 @@ public class DataLoader {
         );
         saveRol("CONTADOR", "Contabilidad - Gestion de pagos y consulta laboral", contadorPermisos);
 
-        log.info("✅ Roles Creados");
+        log.info("Roles Creados");
     }
 
     private Permiso getPermiso(String nombre) {
@@ -449,7 +453,7 @@ public class DataLoader {
     }
 
     private void crearUsuariosIniciales() {
-        log.info("🚀 Creando Usuarios...");
+        log.info("Creando Usuarios...");
 
         log.info("Creando Usuario ADMINISTRADOR INICIAL");
         Rol adminRol = rolRepository.findByNombre("ADMINISTRADOR")
@@ -478,6 +482,6 @@ public class DataLoader {
         log.info("  Roles: [ADMINISTRADOR]");
         log.info("═══════════════════════════════════════════════════════");
 
-        log.info("✅ Usuarios Creados");
+        log.info("Usuarios Creados");
     }
 }

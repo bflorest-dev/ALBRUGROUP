@@ -3,10 +3,7 @@ package pe.albrugroup.recruitment_service.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import pe.albrugroup.recruitment_service.entity.enums.EstadoOferta;
-import pe.albrugroup.recruitment_service.entity.enums.Negocio;
-import pe.albrugroup.recruitment_service.entity.enums.PuestoObjetivo;
-import pe.albrugroup.recruitment_service.entity.enums.TurnoHorario;
+import pe.albrugroup.recruitment_service.entity.enums.*;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -28,6 +25,8 @@ public class OfertaLaboral {
     private Negocio negocio;
     @Enumerated(EnumType.STRING)
     private PuestoObjetivo puestoObjetivo;
+    @Enumerated(EnumType.STRING)
+    private Modalidad modalidad;
     @Enumerated(EnumType.STRING)
     private TurnoHorario horario;
     private Integer cantidadInicial;

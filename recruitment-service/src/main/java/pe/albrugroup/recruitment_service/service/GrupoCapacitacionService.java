@@ -1,6 +1,7 @@
 package pe.albrugroup.recruitment_service.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.recruitment_service.entity.GrupoCapacitacion;
@@ -14,8 +15,10 @@ import pe.albrugroup.recruitment_service.entity.enums.PuestoObjetivo;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarDetalleGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.AgregarPostulacionGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.GrupoCapacitacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.PageRequest;
 import pe.albrugroup.recruitment_service.entity.response.GrupoCapacitacionDetalleResponse;
 import pe.albrugroup.recruitment_service.entity.response.GrupoCapacitacionResponse;
+import pe.albrugroup.recruitment_service.entity.response.PageResponse;
 import pe.albrugroup.recruitment_service.exception.BadRequestException;
 import pe.albrugroup.recruitment_service.exception.ConflictException;
 import pe.albrugroup.recruitment_service.exception.NotFoundException;
@@ -25,37 +28,47 @@ import pe.albrugroup.recruitment_service.repository.PostulacionRepository;
 import pe.albrugroup.recruitment_service.service.mapper.GrupoCapacitacionMapper;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.Set;
 
 @Service
 @Transactional
 @RequiredArgsConstructor
 public class GrupoCapacitacionService {
 
+    private static final Set<String> GRUPO_SORT_FIELDS = Set.of(
+            "id", "codigo", "turno", "sala", "fechaInicio", "fechaFin", "estado", "createdAt"
+    );
+
     private final GrupoCapacitacionRepository grupoCapacitacionRepository;
     private final GrupoCapacitacionDetalleRepository detalleRepository;
     private final PostulacionRepository postulacionRepository;
     private final GrupoCapacitacionMapper grupoCapacitacionMapper;
     private final EventoService eventoService;
+    private final PaginationService paginationService;
 
     public GrupoCapacitacionResponse crearGrupo(GrupoCapacitacionRequest request) {
         validarCodigoGrupoUnico(request.getCodigo());
-        validarFechasGrupo(request.getFechaInicio(), request.getFechaFin());
 
         GrupoCapacitacion grupo = grupoCapacitacionMapper.toEntity(request);
+        grupo.setFechaFin(calcularFechaFin(request.getFechaInicio()));
         grupo.setEstado(EstadoGrupoCapacitacion.ABIERTO);
 
         return grupoCapacitacionMapper.toResponse(grupoCapacitacionRepository.save(grupo));
     }
 
     @Transactional(readOnly = true)
-    public List<GrupoCapacitacionResponse> listarGrupos(EstadoGrupoCapacitacion estado) {
-        List<GrupoCapacitacion> grupos = estado == null
-                ? grupoCapacitacionRepository.findAllByOrderByCreatedAtDesc()
-                : grupoCapacitacionRepository.findByEstadoOrderByCreatedAtDesc(estado);
-        return grupos.stream()
-                .map(grupoCapacitacionMapper::toResumenResponse)
-                .toList();
+    public PageResponse<GrupoCapacitacionResponse> listarGrupos(
+            EstadoGrupoCapacitacion estado,
+            PageRequest pageRequest
+    ) {
+        Page<GrupoCapacitacionResponse> grupos = (estado == null
+                ? grupoCapacitacionRepository.findAll(paginationService.toPageable(pageRequest, GRUPO_SORT_FIELDS))
+                : grupoCapacitacionRepository.findByEstado(
+                        estado,
+                        paginationService.toPageable(pageRequest, GRUPO_SORT_FIELDS)
+                ))
+                .map(grupoCapacitacionMapper::toResumenResponse);
+        return PageResponse.from(grupos);
     }
 
     @Transactional(readOnly = true)
@@ -176,10 +189,8 @@ public class GrupoCapacitacionService {
         }
     }
 
-    private void validarFechasGrupo(LocalDate fechaInicio, LocalDate fechaFin) {
-        if (fechaFin != null && fechaFin.isBefore(fechaInicio)) {
-            throw new BadRequestException("La fecha fin no puede ser menor a la fecha inicio");
-        }
+    private LocalDate calcularFechaFin(LocalDate fechaInicio) {
+        return fechaInicio.plusWeeks(1);
     }
 
     private void validarGrupoDisponible(GrupoCapacitacion grupo) {

@@ -1,6 +1,7 @@
 package pe.albrugroup.lead_service.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
@@ -15,10 +16,15 @@ import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaAdicionalRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaComercialRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionRequest;
+import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorVentasResponse;
+import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
+import pe.albrugroup.lead_service.entity.response.PageResponse;
+import pe.albrugroup.lead_service.entity.response.SupervisorVentasProveedorResumenResponse;
+import pe.albrugroup.lead_service.entity.response.SupervisorVentasResumenResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.AdicionalRepository;
@@ -35,9 +41,12 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)
@@ -55,36 +64,130 @@ public class LeadService {
     private final TipificacionRepository tipificacionRepository;
     private final SubtipificacionRepository subtipificacionRepository;
     private final LeadMapper leadMapper;
+    private final PaginationService paginationService;
 
     private static final String TIPIFICACION_AGENDADO = "AGENDADO";
+    private static final String TIPIFICACION_SCORE_PREVENTA = "SCORE_PREVENTA";
+    private static final String SUBTIPIFICACION_PREVENTA = "PREVENTA";
+    private static final Set<String> LEAD_GTR_SORT_FIELDS = Set.of(
+            "lastEntryAt", "createdAt", "lead", "nombreAsesorAsignado", "estado"
+    );
+    private static final Set<String> LEAD_ASESOR_SORT_FIELDS = Set.of(
+            "lastEntryAt", "createdAt", "lead", "estado"
+    );
+    private static final Set<String> LEAD_AGENDADO_SORT_FIELDS = Set.of(
+            "horaProgramada", "createdAt", "lead", "nombreAsesorAsignado", "estado"
+    );
 
-    public List<LeadGtrResponse> listarBandejaGtr(LocalDate fecha) {
+    public PageResponse<LeadGtrResponse> listarBandejaGtr(LocalDate fecha, PageRequest pageRequest) {
         LocalDate fechaTrabajo = fecha == null ? LocalDate.now(ZoneId.systemDefault()) : fecha;
         Instant inicioDia = fechaTrabajo.atStartOfDay(ZoneId.systemDefault()).toInstant();
         Instant finDia = fechaTrabajo.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
 
-        return leadRepository.listarBandejaGtr(
+        Page<LeadGtrResponse> leads = leadRepository.listarBandejaGtr(
                 Etapa.PREVENTA,
                 Accion.ASIGNACION,
                 inicioDia,
-                finDia
-        ).stream()
-                .map(this::normalizarLeadGtr)
-                .toList();
+                finDia,
+                paginationService.toPageable(pageRequest, LEAD_GTR_SORT_FIELDS)
+        ).map(this::normalizarLeadGtr);
+        return PageResponse.from(leads);
     }
 
-    public List<LeadAsesorVentasResponse> listarBandejaAsesorVentas() {
-        Long idAsesor = currentUser.empleadoID();
-        List<Lead> leads = leadRepository.listarPendientesAsesorVentas(
-                idAsesor,
+    public PageResponse<LeadAgendadoGtrResponse> listarAgendadosGtr(PageRequest pageRequest) {
+        Page<LeadAgendadoGtrResponse> leads = leadRepository.listarLeadsAgendadosGtr(
                 Etapa.PREVENTA,
                 TIPIFICACION_AGENDADO,
-                List.of(EstadoSeguimiento.ASIGNADO, EstadoSeguimiento.EN_GESTION)
+                Accion.TIPIFICACION,
+                Accion.ASIGNACION,
+                paginationService.toPageable(pageRequest, LEAD_AGENDADO_SORT_FIELDS)
         );
-        Map<Long, Instant> fechasAsignacion = obtenerFechasAsignacion(leads);
+        return PageResponse.from(leads);
+    }
 
-        return leads.stream()
-                .map(lead -> toAsesorResponse(lead, fechasAsignacion.get(lead.getId())))
+    public PageResponse<LeadAsesorVentasResponse> listarBandejaAsesorVentas(PageRequest pageRequest) {
+        return listarBandejaAsesorVentas(currentUser.empleadoID(), pageRequest);
+    }
+
+    public PageResponse<LeadAsesorVentasResponse> listarBandejaAsesorVentas(Long idAsesor, PageRequest pageRequest) {
+        Page<Lead> leads = obtenerLeadsPendientesAsesorVentas(idAsesor, pageRequest);
+        return mapearBandejaAsesorVentas(leads);
+    }
+
+    public List<SupervisorVentasResumenResponse> listarResumenSupervisorVentas(List<Long> idsAsesor) {
+        ZoneId zoneId = ZoneId.systemDefault();
+        LocalDate hoy = LocalDate.now(zoneId);
+        Instant inicioHoy = hoy.atStartOfDay(zoneId).toInstant();
+        Instant finHoy = hoy.plusDays(1).atStartOfDay(zoneId).toInstant();
+        LocalDate inicioMesLocal = hoy.withDayOfMonth(1);
+        Instant inicioMes = inicioMesLocal.atStartOfDay(zoneId).toInstant();
+        Instant finMes = inicioMesLocal.plusMonths(1).atStartOfDay(zoneId).toInstant();
+
+        List<Long> asesorIds = idsAsesor == null ? List.of() : idsAsesor.stream().distinct().toList();
+        boolean filtrarAsesores = !asesorIds.isEmpty();
+
+        Map<Long, ResumenSupervisorVentasAccumulator> acumulados = new HashMap<>();
+
+        leadRepository.resumirAsignadosActualesPorAsesor(
+                        Etapa.PREVENTA,
+                        List.of(EstadoSeguimiento.ASIGNADO, EstadoSeguimiento.EN_GESTION),
+                        filtrarAsesores,
+                        asesorIds
+                )
+                .forEach(row -> {
+                    ResumenSupervisorVentasAccumulator item = obtenerAcumulador(acumulados, row.getIdAsesor(), row.getNombreAsesor());
+                    item.asignadosActuales = row.getCantidad();
+                });
+
+        eventoRepository.resumirTipificacionesPorAsesor(
+                        Accion.TIPIFICACION,
+                        inicioHoy,
+                        finHoy,
+                        filtrarAsesores,
+                        asesorIds
+                )
+                .forEach(row -> {
+                    ResumenSupervisorVentasAccumulator item = obtenerAcumulador(acumulados, row.getIdAsesor(), row.getNombreAsesor());
+                    item.gestionadosHoy = row.getCantidad();
+                });
+
+        eventoRepository.resumirPreventasPorAsesor(
+                        Accion.TIPIFICACION,
+                        TIPIFICACION_SCORE_PREVENTA,
+                        SUBTIPIFICACION_PREVENTA,
+                        inicioHoy,
+                        finHoy,
+                        filtrarAsesores,
+                        asesorIds
+                )
+                .forEach(row -> {
+                    ResumenSupervisorVentasAccumulator item = obtenerAcumulador(acumulados, row.getIdAsesor(), row.getNombreAsesor());
+                    item.preventasHoy = row.getCantidad();
+                });
+
+        eventoRepository.resumirPreventasMensualesPorProveedor(
+                        Accion.TIPIFICACION,
+                        TIPIFICACION_SCORE_PREVENTA,
+                        SUBTIPIFICACION_PREVENTA,
+                        inicioMes,
+                        finMes,
+                        filtrarAsesores,
+                        asesorIds
+                )
+                .forEach(row -> {
+                    ResumenSupervisorVentasAccumulator item = obtenerAcumulador(acumulados, row.getIdAsesor(), row.getNombreAsesor());
+                    item.preventasMes += row.getCantidad();
+                    item.preventasMesPorProveedor.add(new SupervisorVentasProveedorResumenResponse(
+                            row.getIdProveedor(),
+                            row.getNombreProveedor(),
+                            row.getCantidad()
+                    ));
+                });
+
+        return acumulados.values().stream()
+                .sorted(Comparator.comparing(ResumenSupervisorVentasAccumulator::nombreAsesorOrdenable)
+                        .thenComparing(ResumenSupervisorVentasAccumulator::idAsesor))
+                .map(ResumenSupervisorVentasAccumulator::toResponse)
                 .toList();
     }
 
@@ -163,6 +266,7 @@ public class LeadService {
                 )
                 .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getCodigoSubtipificacion()));
 
+        validarHoraProgramada(tipificacion.getCodigo(), request.getHoraProgramada());
         Etapa etapaDestino = subtipificacion.getEtapaCambio();
         if (etapaDestino != null && etapaDestino != etapaActual) {
             if (etapaActual == Etapa.PREVENTA && etapaDestino == Etapa.VENTA) {
@@ -172,15 +276,12 @@ public class LeadService {
             lead.setEstado(EstadoSeguimiento.GESTIONADO);
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
-        } else if (TIPIFICACION_AGENDADO.equals(tipificacion.getCodigo())) {
-            lead.setEstado(EstadoSeguimiento.ASIGNADO);
         }
         lead.setIdTipificacion(tipificacion.getId());
         lead.setCodigoTipificacion(tipificacion.getCodigo());
         lead.setIdSubtipificacion(subtipificacion.getId());
         lead.setCodigoSubtipificacion(subtipificacion.getCodigo());
-        if ((etapaDestino == null || etapaDestino == etapaActual)
-                && !TIPIFICACION_AGENDADO.equals(tipificacion.getCodigo())) {
+        if (etapaDestino == null || etapaDestino == etapaActual) {
             lead.setEstado(EstadoSeguimiento.GESTIONADO);
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
@@ -192,8 +293,11 @@ public class LeadService {
                 savedLead.getId(),
                 idCampana,
                 etapaActual,
+                obtenerIdPlanOfrecido(lead, tipificacion.getCodigo(), subtipificacion.getCodigo()),
                 tipificacion.getCodigo(),
-                subtipificacion.getCodigo()
+                subtipificacion.getCodigo(),
+                request.getComentario(),
+                request.getHoraProgramada()
         );
     }
 
@@ -318,8 +422,11 @@ public class LeadService {
             Long idLead,
             Long idCampana,
             Etapa etapa,
+            Long idPlanOfrecido,
             String tipificacion,
-            String subtipificacion
+            String subtipificacion,
+            String comentario,
+            java.time.LocalTime horaProgramada
     ) {
         eventoService.registrarEvento(
                 RegistrarEventoRequest.builder()
@@ -327,10 +434,26 @@ public class LeadService {
                         .idCampana(idCampana)
                         .accion(Accion.TIPIFICACION)
                         .etapa(etapa)
+                        .idPlanOfrecido(idPlanOfrecido)
                         .tipificacion(tipificacion)
                         .subtipificacion(subtipificacion)
+                        .comentario(comentario)
+                        .horaProgramada(horaProgramada)
                         .build()
         );
+    }
+
+    private void validarHoraProgramada(String codigoTipificacion, java.time.LocalTime horaProgramada) {
+        if (TIPIFICACION_AGENDADO.equals(codigoTipificacion)) {
+            if (horaProgramada == null) {
+                throw new BadRequestException("La horaProgramada es obligatoria para la tipificacion AGENDADO");
+            }
+            return;
+        }
+
+        if (horaProgramada != null) {
+            throw new BadRequestException("La horaProgramada solo se permite para la tipificacion AGENDADO");
+        }
     }
 
     private Campana obtenerCampanaActiva(Long idCampana) {
@@ -357,6 +480,22 @@ public class LeadService {
             fechas.put((Long) row[0], (Instant) row[1]);
         }
         return fechas;
+    }
+
+    private Page<Lead> obtenerLeadsPendientesAsesorVentas(Long idAsesor, PageRequest pageRequest) {
+        return leadRepository.listarPendientesAsesorVentas(
+                idAsesor,
+                Etapa.PREVENTA,
+                TIPIFICACION_AGENDADO,
+                List.of(EstadoSeguimiento.ASIGNADO, EstadoSeguimiento.EN_GESTION),
+                paginationService.toPageable(pageRequest, LEAD_ASESOR_SORT_FIELDS)
+        );
+    }
+
+    private PageResponse<LeadAsesorVentasResponse> mapearBandejaAsesorVentas(Page<Lead> leads) {
+        Map<Long, Instant> fechasAsignacion = obtenerFechasAsignacion(leads.getContent());
+        Page<LeadAsesorVentasResponse> responsePage = leads.map(lead -> toAsesorResponse(lead, fechasAsignacion.get(lead.getId())));
+        return PageResponse.from(responsePage);
     }
 
     private LeadAsesorVentasResponse toAsesorResponse(Lead lead, Instant fechaAsignacion) {
@@ -422,6 +561,18 @@ public class LeadService {
 
     private LeadGtrResponse normalizarLeadGtr(LeadGtrResponse response) {
         return response;
+    }
+
+    private Long obtenerIdPlanOfrecido(Lead lead, String codigoTipificacion, String codigoSubtipificacion) {
+        if (!esTipificacionPreventa(codigoTipificacion, codigoSubtipificacion)) {
+            return null;
+        }
+        return lead.getPlan() == null ? null : lead.getPlan().getId();
+    }
+
+    private boolean esTipificacionPreventa(String codigoTipificacion, String codigoSubtipificacion) {
+        return TIPIFICACION_SCORE_PREVENTA.equals(codigoTipificacion)
+                && SUBTIPIFICACION_PREVENTA.equals(codigoSubtipificacion);
     }
 
     private Lead obtenerLeadPreventaDelAsesor(Long idLead) {
@@ -541,6 +692,60 @@ public class LeadService {
     private void validarTextoObligatorio(String value, String message) {
         if (value == null || value.isBlank()) {
             throw new BadRequestException(message);
+        }
+    }
+
+    private ResumenSupervisorVentasAccumulator obtenerAcumulador(
+            Map<Long, ResumenSupervisorVentasAccumulator> acumulados,
+            Long idAsesor,
+            String nombreAsesor
+    ) {
+        ResumenSupervisorVentasAccumulator item = acumulados.computeIfAbsent(
+                idAsesor,
+                key -> new ResumenSupervisorVentasAccumulator(idAsesor)
+        );
+        if (item.nombreAsesor == null && nombreAsesor != null && !nombreAsesor.isBlank()) {
+            item.nombreAsesor = nombreAsesor;
+        }
+        return item;
+    }
+
+    private static final class ResumenSupervisorVentasAccumulator {
+        private final Long idAsesor;
+        private String nombreAsesor;
+        private long asignadosActuales;
+        private long gestionadosHoy;
+        private long preventasHoy;
+        private long preventasMes;
+        private final List<SupervisorVentasProveedorResumenResponse> preventasMesPorProveedor = new ArrayList<>();
+
+        private ResumenSupervisorVentasAccumulator(Long idAsesor) {
+            this.idAsesor = idAsesor;
+        }
+
+        private Long idAsesor() {
+            return idAsesor;
+        }
+
+        private String nombreAsesorOrdenable() {
+            return nombreAsesor == null ? "" : nombreAsesor;
+        }
+
+        private SupervisorVentasResumenResponse toResponse() {
+            List<SupervisorVentasProveedorResumenResponse> proveedores = preventasMesPorProveedor.stream()
+                    .sorted(Comparator.comparing(SupervisorVentasProveedorResumenResponse::getNombreProveedor,
+                            Comparator.nullsLast(String::compareToIgnoreCase)))
+                    .toList();
+
+            return new SupervisorVentasResumenResponse(
+                    idAsesor,
+                    nombreAsesor,
+                    asignadosActuales,
+                    gestionadosHoy,
+                    preventasHoy,
+                    preventasMes,
+                    proveedores
+            );
         }
     }
 }

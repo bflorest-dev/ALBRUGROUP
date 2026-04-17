@@ -12,11 +12,11 @@ import pe.albrugroup.recruitment_service.entity.enums.EstadoGrupoCapacitacion;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarDetalleGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.AgregarPostulacionGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.GrupoCapacitacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.PageRequest;
 import pe.albrugroup.recruitment_service.entity.response.GrupoCapacitacionDetalleResponse;
 import pe.albrugroup.recruitment_service.entity.response.GrupoCapacitacionResponse;
+import pe.albrugroup.recruitment_service.entity.response.PageResponse;
 import pe.albrugroup.recruitment_service.service.GrupoCapacitacionService;
-
-import java.util.List;
 
 @RestController
 @Validated
@@ -34,10 +34,11 @@ public class GrupoCapacitacionController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('READ_GRUPOS_CAPACITACION')")
-    public ResponseEntity<List<GrupoCapacitacionResponse>> listarGrupos(
-            @RequestParam(required = false) EstadoGrupoCapacitacion estado
+    public ResponseEntity<PageResponse<GrupoCapacitacionResponse>> listarGrupos(
+            @RequestParam(required = false) EstadoGrupoCapacitacion estado,
+            @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        return ResponseEntity.ok(grupoCapacitacionService.listarGrupos(estado));
+        return ResponseEntity.ok(grupoCapacitacionService.listarGrupos(estado, pageRequest));
     }
 
     @GetMapping("/{idGrupoCapacitacion}")
