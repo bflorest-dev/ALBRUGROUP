@@ -4,11 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.entity.*;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.request.LeadAsignacionMasivaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadAsignacionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
@@ -18,6 +20,8 @@ import pe.albrugroup.lead_service.entity.request.LeadOfertaComercialRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionRequest;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
+import pe.albrugroup.lead_service.entity.response.LeadAsignacionMasivaResponse;
+import pe.albrugroup.lead_service.entity.response.LeadAsignacionResultadoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorVentasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
@@ -25,7 +29,9 @@ import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.entity.response.SupervisorVentasProveedorResumenResponse;
 import pe.albrugroup.lead_service.entity.response.SupervisorVentasResumenResponse;
+import pe.albrugroup.lead_service.exception.BusinessException;
 import pe.albrugroup.lead_service.exception.BadRequestException;
+import pe.albrugroup.lead_service.exception.ConflictException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.AdicionalRepository;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
@@ -65,10 +71,12 @@ public class LeadService {
     private final SubtipificacionRepository subtipificacionRepository;
     private final LeadMapper leadMapper;
     private final PaginationService paginationService;
+    private final TransactionTemplate transactionTemplate;
 
     private static final String TIPIFICACION_AGENDADO = "AGENDADO";
     private static final String TIPIFICACION_SCORE_PREVENTA = "SCORE_PREVENTA";
     private static final String SUBTIPIFICACION_PREVENTA = "PREVENTA";
+    private static final List<Accion> ACCIONES_GESTION_LEAD = List.of(Accion.CONTACTO, Accion.TIPIFICACION);
     private static final Set<String> LEAD_GTR_SORT_FIELDS = Set.of(
             "lastEntryAt", "createdAt", "lead", "nombreAsesorAsignado", "estado"
     );
@@ -316,11 +324,67 @@ public class LeadService {
 
     @Transactional
     public void asignarLead(Long idLead, LeadAsignacionRequest request) {
+        asignarLeadInterno(idLead, request.getIdAsesorAsignado(), request.getNombreAsesorAsignado());
+    }
+
+    public LeadAsignacionMasivaResponse asignarLeads(LeadAsignacionMasivaRequest request) {
+        List<Long> idsLead = request.getIdsLead().stream()
+                .filter(id -> id != null && id > 0)
+                .distinct()
+                .toList();
+
+        if (idsLead.isEmpty()) {
+            throw new BadRequestException("Debe enviar al menos un idLead valido");
+        }
+
+        List<LeadAsignacionResultadoResponse> resultados = new ArrayList<>();
+        for (Long idLead : idsLead) {
+            try {
+                ejecutarAsignacionIndependiente(idLead, request.getIdAsesorAsignado(), request.getNombreAsesorAsignado());
+                resultados.add(LeadAsignacionResultadoResponse.builder()
+                        .idLead(idLead)
+                        .asignado(true)
+                        .mensaje("Lead asignado correctamente")
+                        .build());
+            } catch (BusinessException e) {
+                resultados.add(crearResultadoFallido(idLead, e.getMessage()));
+            } catch (Exception e) {
+                resultados.add(crearResultadoFallido(idLead, "Ocurrio un error inesperado"));
+            }
+        }
+
+        int totalAsignados = (int) resultados.stream().filter(LeadAsignacionResultadoResponse::isAsignado).count();
+        return LeadAsignacionMasivaResponse.builder()
+                .totalSolicitados(request.getIdsLead().size())
+                .totalProcesados(resultados.size())
+                .totalAsignados(totalAsignados)
+                .totalFallidos(resultados.size() - totalAsignados)
+                .resultados(resultados)
+                .build();
+    }
+
+    private void ejecutarAsignacionIndependiente(Long idLead, Long idAsesorAsignado, String nombreAsesorAsignado) {
+        TransactionTemplate transaction = new TransactionTemplate(transactionTemplate.getTransactionManager());
+        transaction.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
+        transaction.executeWithoutResult(status -> asignarLeadInterno(idLead, idAsesorAsignado, nombreAsesorAsignado));
+    }
+
+    private LeadAsignacionResultadoResponse crearResultadoFallido(Long idLead, String mensaje) {
+        return LeadAsignacionResultadoResponse.builder()
+                .idLead(idLead)
+                .asignado(false)
+                .mensaje(mensaje)
+                .build();
+    }
+
+    private void asignarLeadInterno(Long idLead, Long idAsesorAsignado, String nombreAsesorAsignado) {
         Lead lead = leadRepository.findById(idLead)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
 
-        lead.setIdAsesorAsignado(request.getIdAsesorAsignado());
-        lead.setNombreAsesorAsignado(request.getNombreAsesorAsignado().trim());
+        validarAsesorNoGestionoLead(idLead, idAsesorAsignado);
+
+        lead.setIdAsesorAsignado(idAsesorAsignado);
+        lead.setNombreAsesorAsignado(nombreAsesorAsignado.trim());
         lead.setIdTipificacion(null);
         lead.setCodigoTipificacion(null);
         lead.setIdSubtipificacion(null);
@@ -336,6 +400,17 @@ public class LeadService {
                 savedLead.getIdAsesorAsignado(),
                 savedLead.getNombreAsesorAsignado()
         );
+    }
+
+    private void validarAsesorNoGestionoLead(Long idLead, Long idAsesorAsignado) {
+        boolean yaGestionado = eventoRepository.existsByIdLeadAndIdActorAndAccionIn(
+                idLead,
+                idAsesorAsignado,
+                ACCIONES_GESTION_LEAD
+        );
+        if (yaGestionado) {
+            throw new ConflictException("Asesor de Ventas ya ha gestionado el Lead anteriormente");
+        }
     }
 
     @Transactional

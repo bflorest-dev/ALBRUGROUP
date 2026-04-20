@@ -3239,6 +3239,476 @@
                                                ]
                                   }
                               ]
+                 },
+                 {
+                     "name":  "schedule-service",
+                     "item":  [
+                                  {
+                                      "name":  "HorarioController",
+                                      "item":  [
+                                                   {
+                                                       "name":  "Registrar Horario",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "noauth"
+                                                                                },
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json",
+                                                                                          "type":  "text"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"idEmpleado\": 15,\n  \"idContrato\": 44,\n  \"modalidad\": \"FULL_TIME\",\n  \"fechaInicio\": \"2026-04-21\",\n  \"compensable\": true,\n  \"detalles\": [\n    {\n      \"dia\": \"LUNES\",\n      \"horaEntrada\": \"08:00:00\",\n      \"horaSalida\": \"17:00:00\",\n      \"inicioAlmuerzo\": \"13:00:00\",\n      \"finAlmuerzo\": \"14:00:00\",\n      \"laborable\": true\n    },\n    {\n      \"dia\": \"MARTES\",\n      \"horaEntrada\": \"08:00:00\",\n      \"horaSalida\": \"17:00:00\",\n      \"inicioAlmuerzo\": \"13:00:00\",\n      \"finAlmuerzo\": \"14:00:00\",\n      \"laborable\": true\n    },\n    {\n      \"dia\": \"MIERCOLES\",\n      \"horaEntrada\": \"08:00:00\",\n      \"horaSalida\": \"17:00:00\",\n      \"inicioAlmuerzo\": \"13:00:00\",\n      \"finAlmuerzo\": \"14:00:00\",\n      \"laborable\": true\n    },\n    {\n      \"dia\": \"JUEVES\",\n      \"horaEntrada\": \"08:00:00\",\n      \"horaSalida\": \"17:00:00\",\n      \"inicioAlmuerzo\": \"13:00:00\",\n      \"finAlmuerzo\": \"14:00:00\",\n      \"laborable\": true\n    },\n    {\n      \"dia\": \"VIERNES\",\n      \"horaEntrada\": \"08:00:00\",\n      \"horaSalida\": \"17:00:00\",\n      \"inicioAlmuerzo\": \"13:00:00\",\n      \"finAlmuerzo\": \"14:00:00\",\n      \"laborable\": true\n    }\n  ]\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "http://localhost:8085/horarios"
+                                                                   },
+                                                       "response":  [
+                 
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Reemplazar Horario",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "noauth"
+                                                                                },
+                                                                       "method":  "PUT",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json",
+                                                                                          "type":  "text"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"modalidad\": \"FULL_TIME\",\n  \"fechaInicio\": \"2026-05-01\",\n  \"compensable\": false,\n  \"detalles\": [\n    {\n      \"dia\": \"LUNES\",\n      \"horaEntrada\": \"09:00:00\",\n      \"horaSalida\": \"18:00:00\",\n      \"inicioAlmuerzo\": \"13:00:00\",\n      \"finAlmuerzo\": \"14:00:00\",\n      \"laborable\": true\n    },\n    {\n      \"dia\": \"MARTES\",\n      \"horaEntrada\": \"09:00:00\",\n      \"horaSalida\": \"18:00:00\",\n      \"inicioAlmuerzo\": \"13:00:00\",\n      \"finAlmuerzo\": \"14:00:00\",\n      \"laborable\": true\n    },\n    {\n      \"dia\": \"MIERCOLES\",\n      \"horaEntrada\": \"09:00:00\",\n      \"horaSalida\": \"18:00:00\",\n      \"inicioAlmuerzo\": \"13:00:00\",\n      \"finAlmuerzo\": \"14:00:00\",\n      \"laborable\": true\n    },\n    {\n      \"dia\": \"JUEVES\",\n      \"horaEntrada\": \"09:00:00\",\n      \"horaSalida\": \"18:00:00\",\n      \"inicioAlmuerzo\": \"13:00:00\",\n      \"finAlmuerzo\": \"14:00:00\",\n      \"laborable\": true\n    },\n    {\n      \"dia\": \"VIERNES\",\n      \"horaEntrada\": \"09:00:00\",\n      \"horaSalida\": \"18:00:00\",\n      \"inicioAlmuerzo\": \"13:00:00\",\n      \"finAlmuerzo\": \"14:00:00\",\n      \"laborable\": true\n    }\n  ]\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "http://localhost:8085/horarios/1"
+                                                                   },
+                                                       "response":  [
+                 
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Finalizar Horario",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "noauth"
+                                                                                },
+                                                                       "method":  "PATCH",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json",
+                                                                                          "type":  "text"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"fechaFin\": \"2026-04-30\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "http://localhost:8085/horarios/1/finalizar"
+                                                                   },
+                                                       "response":  [
+                 
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Registrar Excepcion",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "noauth"
+                                                                                },
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json",
+                                                                                          "type":  "text"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"fecha\": \"2026-04-23\",\n  \"tipo\": \"CAMBIO_COMPLETO\",\n  \"horaEntrada\": \"09:00:00\",\n  \"horaSalida\": \"16:00:00\",\n  \"inicioAlmuerzo\": \"13:00:00\",\n  \"finAlmuerzo\": \"13:30:00\",\n  \"laborable\": true,\n  \"motivo\": \"Permiso personal\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "http://localhost:8085/horarios/1/excepciones"
+                                                                   },
+                                                       "response":  [
+                 
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Actualizar Excepcion",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "noauth"
+                                                                                },
+                                                                       "method":  "PUT",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json",
+                                                                                          "type":  "text"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"fecha\": \"2026-04-23\",\n  \"tipo\": \"CAMBIO_COMPLETO\",\n  \"horaEntrada\": \"10:00:00\",\n  \"horaSalida\": \"17:00:00\",\n  \"inicioAlmuerzo\": \"13:30:00\",\n  \"finAlmuerzo\": \"14:00:00\",\n  \"laborable\": true,\n  \"motivo\": \"Actualizacion de permiso personal\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "http://localhost:8085/horarios/1/excepciones/1"
+                                                                   },
+                                                       "response":  [
+                 
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Eliminar Excepcion",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "noauth"
+                                                                                },
+                                                                       "method":  "DELETE",
+                                                                       "header":  [
+                 
+                                                                                  ],
+                                                                       "body":  null,
+                                                                       "url":  "http://localhost:8085/horarios/1/excepciones/1"
+                                                                   },
+                                                       "response":  [
+                 
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Horario Vigente",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "noauth"
+                                                                                },
+                                                                       "method":  "GET",
+                                                                       "header":  [
+                 
+                                                                                  ],
+                                                                       "body":  null,
+                                                                       "url":  "http://localhost:8085/horarios/empleados/15/vigente?fecha=2026-04-23"
+                                                                   },
+                                                       "response":  [
+                 
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Historico de Horarios",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "noauth"
+                                                                                },
+                                                                       "method":  "GET",
+                                                                       "header":  [
+                 
+                                                                                  ],
+                                                                       "body":  null,
+                                                                       "url":  "http://localhost:8085/horarios/empleados/15/historico?page=0\u0026size=10\u0026sortBy=fechaInicio\u0026direction=desc"
+                                                                   },
+                                                       "response":  [
+                 
+                                                                    ]
+                                                   }
+                                               ]
+                                  },
+                                  {
+                                      "name":  "AsistenciaController",
+                                      "item":  [
+                                                   {
+                                                       "name":  "Registrar Ingreso",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "noauth"
+                                                                                },
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json",
+                                                                                          "type":  "text"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"idEmpleado\": 15,\n  \"fechaHora\": \"2026-04-23T08:00:00\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "http://localhost:8085/asistencia/ingreso"
+                                                                   },
+                                                       "response":  [
+                 
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Registrar Salida",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "noauth"
+                                                                                },
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json",
+                                                                                          "type":  "text"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"idEmpleado\": 15,\n  \"fechaHora\": \"2026-04-23T17:00:00\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "http://localhost:8085/asistencia/salida"
+                                                                   },
+                                                       "response":  [
+                 
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Iniciar Almuerzo",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "noauth"
+                                                                                },
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json",
+                                                                                          "type":  "text"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"idEmpleado\": 15,\n  \"fechaHora\": \"2026-04-23T13:00:00\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "http://localhost:8085/asistencia/almuerzo/inicio"
+                                                                   },
+                                                       "response":  [
+                 
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Finalizar Almuerzo",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "noauth"
+                                                                                },
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json",
+                                                                                          "type":  "text"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"idEmpleado\": 15,\n  \"fechaHora\": \"2026-04-23T14:00:00\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "http://localhost:8085/asistencia/almuerzo/fin"
+                                                                   },
+                                                       "response":  [
+                 
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Iniciar Servicios",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "noauth"
+                                                                                },
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json",
+                                                                                          "type":  "text"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"idEmpleado\": 15,\n  \"fechaHora\": \"2026-04-23T15:30:00\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "http://localhost:8085/asistencia/servicios/inicio"
+                                                                   },
+                                                       "response":  [
+                 
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Finalizar Servicios",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "noauth"
+                                                                                },
+                                                                       "method":  "POST",
+                                                                       "header":  [
+                                                                                      {
+                                                                                          "key":  "Content-Type",
+                                                                                          "value":  "application/json",
+                                                                                          "type":  "text"
+                                                                                      }
+                                                                                  ],
+                                                                       "body":  {
+                                                                                    "mode":  "raw",
+                                                                                    "raw":  "{\n  \"idEmpleado\": 15,\n  \"fechaHora\": \"2026-04-23T15:40:00\"\n}",
+                                                                                    "options":  {
+                                                                                                    "raw":  {
+                                                                                                                "language":  "json"
+                                                                                                            }
+                                                                                                }
+                                                                                },
+                                                                       "url":  "http://localhost:8085/asistencia/servicios/fin"
+                                                                   },
+                                                       "response":  [
+                 
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Estado Actual",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "noauth"
+                                                                                },
+                                                                       "method":  "GET",
+                                                                       "header":  [
+                 
+                                                                                  ],
+                                                                       "body":  null,
+                                                                       "url":  "http://localhost:8085/asistencia/empleados/15/estado-actual?fecha=2026-04-23"
+                                                                   },
+                                                       "response":  [
+                 
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Asistencia del Dia",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "noauth"
+                                                                                },
+                                                                       "method":  "GET",
+                                                                       "header":  [
+                 
+                                                                                  ],
+                                                                       "body":  null,
+                                                                       "url":  "http://localhost:8085/asistencia/empleados/15/dia?fecha=2026-04-23"
+                                                                   },
+                                                       "response":  [
+                 
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Resumen Semanal",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "noauth"
+                                                                                },
+                                                                       "method":  "GET",
+                                                                       "header":  [
+                 
+                                                                                  ],
+                                                                       "body":  null,
+                                                                       "url":  "http://localhost:8085/asistencia/empleados/15/semana?fecha=2026-04-23"
+                                                                   },
+                                                       "response":  [
+                 
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Resumen Mensual",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "noauth"
+                                                                                },
+                                                                       "method":  "GET",
+                                                                       "header":  [
+                 
+                                                                                  ],
+                                                                       "body":  null,
+                                                                       "url":  "http://localhost:8085/asistencia/empleados/15/mes?fecha=2026-04-23"
+                                                                   },
+                                                       "response":  [
+                 
+                                                                    ]
+                                                   },
+                                                   {
+                                                       "name":  "Historial de Asistencia",
+                                                       "request":  {
+                                                                       "auth":  {
+                                                                                    "type":  "noauth"
+                                                                                },
+                                                                       "method":  "GET",
+                                                                       "header":  [
+                 
+                                                                                  ],
+                                                                       "body":  null,
+                                                                       "url":  "http://localhost:8085/asistencia/empleados/15/historial?desde=2026-04-01\u0026hasta=2026-04-30"
+                                                                   },
+                                                       "response":  [
+                 
+                                                                    ]
+                                                   }
+                                               ]
+                                  }
+                              ]
                  }
              ],
     "variable":  [
