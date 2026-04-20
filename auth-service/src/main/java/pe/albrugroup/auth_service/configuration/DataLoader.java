@@ -110,6 +110,14 @@ public class DataLoader {
         // EVENTOS en RRHH-SERVICE
         savePermiso("READ_EVENTOS", "Puede ver el historico de eventos", "ENTIDAD", "READ");
 
+        // SCHEDULE-SERVICE - HORARIOS Y ASISTENCIAS
+        savePermiso("CREATE_HORARIOS", "Puede registrar horarios", "HORARIO", "CREATE");
+        savePermiso("READ_HORARIOS", "Puede listar y consultar horarios", "HORARIO", "READ");
+        savePermiso("UPDATE_HORARIOS", "Puede actualizar horarios y sus excepciones", "HORARIO", "UPDATE");
+        savePermiso("READ_ASISTENCIAS_SELF", "Puede consultar su propia informacion de asistencia", "ASISTENCIA", "READ_SELF");
+        savePermiso("READ_ASISTENCIAS", "Puede consultar asistencia de cualquier empleado autorizado", "ASISTENCIA", "READ");
+        savePermiso("UPDATE_ASISTENCIAS", "Puede registrar movimientos de asistencia", "ASISTENCIA", "UPDATE");
+
         // LEADS
         savePermiso("CREATE_CUENTA_PUBLICITARIA", "Puede registrar cuentas publicitarias", "CUENTA_PUBLICITARIA", "CREATE");
         savePermiso("READ_CUENTAS_PUBLICITARIAS", "Puede listar y ver cuentas publicitarias", "CUENTA_PUBLICITARIA", "READ");
@@ -219,7 +227,13 @@ public class DataLoader {
                 getPermiso("READ_CONTRATOS"),
                 getPermiso("CANCEL_CONTRATOS"),
 
-                getPermiso("READ_EVENTOS")
+                getPermiso("READ_EVENTOS"),
+                getPermiso("CREATE_HORARIOS"),
+                getPermiso("READ_HORARIOS"),
+                getPermiso("UPDATE_HORARIOS"),
+                getPermiso("READ_ASISTENCIAS_SELF"),
+                getPermiso("READ_ASISTENCIAS"),
+                getPermiso("UPDATE_ASISTENCIAS")
 
         );
         saveRol("RRHH", "Recursos Humanos - Gestion de personal", rrhhPermisos);
@@ -242,7 +256,9 @@ public class DataLoader {
                 getPermiso("ASSIGN_GRUPOS_CAPACITACION"),
                 getPermiso("UPDATE_GRUPOS_CAPACITACION"),
 
-                getPermiso("READ_EVENTOS_RECRUITMENT")
+                getPermiso("READ_EVENTOS_RECRUITMENT"),
+                getPermiso("READ_ASISTENCIAS_SELF"),
+                getPermiso("UPDATE_ASISTENCIAS")
         );
         saveRol("RECLUTADOR", "Recursos Humanos - Contacto con postulantes", reclutadorPermisos);
 
@@ -259,7 +275,9 @@ public class DataLoader {
                 getPermiso("READ_POSTULACIONES_CAPACITACION"),
                 getPermiso("READ_POSTULACION"),
 
-                getPermiso("READ_TIPIFICACIONES_CAPACITACION")
+                getPermiso("READ_TIPIFICACIONES_CAPACITACION"),
+                getPermiso("READ_ASISTENCIAS_SELF"),
+                getPermiso("UPDATE_ASISTENCIAS")
         );
         saveRol("CAPACITADOR", "Capacitacion - Gestion de postulantes", capacitadorPermisos);
 
@@ -294,7 +312,9 @@ public class DataLoader {
 
                 getPermiso("CREATE_PROMOCIONES"),
                 getPermiso("READ_PROMOCIONES"),
-                getPermiso("DELETE_PROMOCIONES")
+                getPermiso("DELETE_PROMOCIONES"),
+                getPermiso("READ_ASISTENCIAS_SELF"),
+                getPermiso("UPDATE_ASISTENCIAS")
         );
         saveRol("COMMUNITY", "Marketing - Generacion y apoyo comercial", communityPermisos);
 
@@ -316,7 +336,9 @@ public class DataLoader {
                 getPermiso("CONTACT_LEADS"),
 
                 getPermiso("READ_LEADS_GTR"),
-                getPermiso("READ_EVENTOS_LEADS")
+                getPermiso("READ_EVENTOS_LEADS"),
+                getPermiso("READ_ASISTENCIAS_SELF"),
+                getPermiso("UPDATE_ASISTENCIAS")
         );
         saveRol("ASESOR_GTR", "GTR - Asignacion y seguimiento de leads", asesorGtrPermisos);
 
@@ -324,7 +346,9 @@ public class DataLoader {
                 getPermiso("READ_LEADS_GTR"),
                 getPermiso("ASSIGN_LEADS"),
                 getPermiso("READ_EVENTOS_LEADS"),
-                getPermiso("READ_CAMPANA")
+                getPermiso("READ_CAMPANA"),
+                getPermiso("READ_ASISTENCIAS_SELF"),
+                getPermiso("UPDATE_ASISTENCIAS")
         );
         saveRol("SUPERVISOR_GTR", "GTR - Supervision de asignacion de leads", supervisorGtrPermisos);
 
@@ -342,7 +366,9 @@ public class DataLoader {
                 getPermiso("READ_LEADS_ASESOR"),
                 getPermiso("UPDATE_LEADS_ASESOR"),
                 getPermiso("TYPIFY_LEADS"),
-                getPermiso("CONTACT_LEADS")
+                getPermiso("CONTACT_LEADS"),
+                getPermiso("READ_ASISTENCIAS_SELF"),
+                getPermiso("UPDATE_ASISTENCIAS")
 
         );
         saveRol("ASESOR_VENTAS", "Ventas - Gestion de leads asignados", asesorVentasPermisos);
@@ -365,7 +391,10 @@ public class DataLoader {
                 getPermiso("READ_LEADS_GTR"),
                 getPermiso("READ_LEADS_SUPERVISOR_VENTAS_RESUMEN"),
                 getPermiso("READ_LEADS_SUPERVISOR_VENTAS_BANDEJA"),
-                getPermiso("READ_EVENTOS_LEADS")
+                getPermiso("READ_EVENTOS_LEADS"),
+                getPermiso("READ_ASISTENCIAS_SELF"),
+                getPermiso("READ_ASISTENCIAS"),
+                getPermiso("UPDATE_ASISTENCIAS")
         );
         saveRol("SUPERVISOR_VENTAS", "Ventas - Supervision de leads asignados", supervisorVentasPermisos);
 
@@ -382,7 +411,10 @@ public class DataLoader {
                 getPermiso("READ_POSTULACIONES_RECLUTAMIENTO"),
                 getPermiso("READ_POSTULACIONES_CAPACITACION"),
                 getPermiso("READ_OFERTAS_LABORALES"),
-                getPermiso("READ_GRUPOS_CAPACITACION")
+                getPermiso("READ_GRUPOS_CAPACITACION"),
+                getPermiso("READ_HORARIOS"),
+                getPermiso("READ_ASISTENCIAS_SELF"),
+                getPermiso("READ_ASISTENCIAS")
 
 
         );
@@ -398,7 +430,9 @@ public class DataLoader {
                 getPermiso("READ_PLANES"),
                 getPermiso("READ_ADICIONALES"),
                 getPermiso("READ_PROMOCIONES"),
-                getPermiso("READ_UBIGEO")
+                getPermiso("READ_UBIGEO"),
+                getPermiso("READ_ASISTENCIAS_SELF"),
+                getPermiso("UPDATE_ASISTENCIAS")
         );
         saveRol("ASESOR_BACKOFFICE", "Backoffice - Gestion operativa comercial", backofficePermisos);
         saveRol("SUPERVISOR_BACKOFFICE", "Backoffice - Supervision operativa comercial", backofficePermisos);
@@ -413,7 +447,9 @@ public class DataLoader {
                 getPermiso("READ_PLANES"),
                 getPermiso("READ_ADICIONALES"),
                 getPermiso("READ_PROMOCIONES"),
-                getPermiso("READ_UBIGEO")
+                getPermiso("READ_UBIGEO"),
+                getPermiso("READ_ASISTENCIAS_SELF"),
+                getPermiso("UPDATE_ASISTENCIAS")
         );
         saveRol("ASESOR_POSTVENTA", "Postventa - Gestion de cartera y seguimiento", postventaPermisos);
         saveRol("SUPERVISOR_POSTVENTA", "Postventa - Supervision de cartera y seguimiento", postventaPermisos);
@@ -423,7 +459,10 @@ public class DataLoader {
                 getPermiso("READ_EVENTOS"),
                 getPermiso("READ_EVENTOS_LEADS"),
                 getPermiso("READ_EVENTOS_RECRUITMENT"),
-                getPermiso("READ_UBIGEO")
+                getPermiso("READ_UBIGEO"),
+                getPermiso("READ_HORARIOS"),
+                getPermiso("READ_ASISTENCIAS_SELF"),
+                getPermiso("READ_ASISTENCIAS")
         );
         saveRol("DESARROLLADOR", "Tecnologia - Soporte y mantenimiento", desarrolladorPermisos);
 
@@ -432,7 +471,11 @@ public class DataLoader {
                 getPermiso("READ_EMPLEADOS"),
                 getPermiso("READ_CONTRATOS"),
                 getPermiso("READ_PAGOS"),
-                getPermiso("CREATE_PAGOS")
+                getPermiso("CREATE_PAGOS"),
+                getPermiso("READ_HORARIOS"),
+                getPermiso("READ_ASISTENCIAS_SELF"),
+                getPermiso("READ_ASISTENCIAS"),
+                getPermiso("UPDATE_ASISTENCIAS")
         );
         saveRol("CONTADOR", "Contabilidad - Gestion de pagos y consulta laboral", contadorPermisos);
 

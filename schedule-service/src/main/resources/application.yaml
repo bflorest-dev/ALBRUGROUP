@@ -1,0 +1,11 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: schedule-service
+  profiles:
+    active: dev
+
+jwt:
+  secret: ${JWT_SECRET:change-this-secret-key-change-this-secret-key-123456}

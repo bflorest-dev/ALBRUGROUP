@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.auth_service.entity.Response.CredencialesResponse;
 import pe.albrugroup.auth_service.entity.Response.EstadoAccesoResponse;
+import pe.albrugroup.auth_service.entity.Response.UsuarioRolResponse;
 import pe.albrugroup.auth_service.entity.Response.UsuarioResponse;
 import pe.albrugroup.auth_service.entity.Rol;
 import pe.albrugroup.auth_service.entity.Usuario;
@@ -24,6 +25,7 @@ import pe.albrugroup.auth_service.usecase.IUsuario;
 
 import java.security.SecureRandom;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -243,6 +245,19 @@ public class UsuarioService implements IUsuario {
         Usuario usuario = usuarioRepository.findByEmpleadoId(empleadoId)
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado por EmpleadoID", empleadoId));
         return Mapper.toResponse(usuario);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UsuarioRolResponse> listarUsuariosActivosPorRol(PuestoTrabajo puestoTrabajo) {
+        return usuarioRepository.findDistinctByRolesNombreAndActivoTrue(puestoTrabajo.name())
+                .stream()
+                .map(usuario -> UsuarioRolResponse.builder()
+                        .empleadoId(usuario.getEmpleadoId())
+                        .nombreCompleto(usuario.getNombreCompleto())
+                        .roles(usuario.getRoles().stream().map(Rol::getNombre).collect(java.util.stream.Collectors.toSet()))
+                        .build())
+                .toList();
     }
 
     @Override

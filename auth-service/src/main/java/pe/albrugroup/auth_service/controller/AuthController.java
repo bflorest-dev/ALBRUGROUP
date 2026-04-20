@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.auth_service.entity.Response.CredencialesResponse;
 import pe.albrugroup.auth_service.entity.Response.EstadoAccesoResponse;
 import pe.albrugroup.auth_service.entity.Response.LoginResponse;
+import pe.albrugroup.auth_service.entity.Response.UsuarioRolResponse;
 import pe.albrugroup.auth_service.entity.Response.UsuarioResponse;
 import pe.albrugroup.auth_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.auth_service.entity.request.ActualizarCredencialesRequest;
@@ -28,6 +29,7 @@ import pe.albrugroup.auth_service.security.JWTUtil;
 import pe.albrugroup.auth_service.usecase.IUsuario;
 
 import java.util.Map;
+import java.util.List;
 
 @RestController
 @Validated
@@ -147,6 +149,13 @@ public class AuthController {
         log.info("Buscando usuario por empleadoID: {}", empleadoId);
         var usuario = usuarioService.getUsuarioPorEmpleadoID(empleadoId);
         return ResponseEntity.ok(usuario);
+    }
+
+    @GetMapping("/roles/{puestoTrabajo}/usuarios")
+    @PreAuthorize("hasAnyAuthority('READ_EMPLEADOS','READ_LEADS_GTR','READ_LEADS_SUPERVISOR_VENTAS_RESUMEN')")
+    @Operation(summary = "Listar usuarios activos por rol", description = "Retorna los usuarios activos asociados al rol solicitado.")
+    public ResponseEntity<List<UsuarioRolResponse>> listarUsuariosActivosPorRol(@PathVariable PuestoTrabajo puestoTrabajo) {
+        return ResponseEntity.ok(usuarioService.listarUsuariosActivosPorRol(puestoTrabajo));
     }
 
     @DeleteMapping("{empleadoId}/deshabilitar")

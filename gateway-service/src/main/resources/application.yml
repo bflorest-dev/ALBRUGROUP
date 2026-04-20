@@ -35,6 +35,12 @@ spring:
                 - Path=/recruitment/**
               filters:
                 - StripPrefix=1
+            - id: schedule-service
+              uri: http://localhost:8085
+              predicates:
+                - Path=/schedule/**
+              filters:
+                - StripPrefix=1
           default-filters:
             - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
           globalcors:
@@ -75,6 +81,14 @@ springdoc:
         url: /leads/v3/api-docs
       - name: recruitment-service
         url: /recruitment/v3/api-docs
+      - name: schedule-service
+        url: /schedule/v3/api-docs
 
 presence:
   ttl: ${PRESENCE_TTL:90s}
+
+services:
+  auth:
+    base-url: ${AUTH_SERVICE_URL:http://localhost:8081}
+  schedule:
+    base-url: ${SCHEDULE_SERVICE_URL:http://localhost:8085}

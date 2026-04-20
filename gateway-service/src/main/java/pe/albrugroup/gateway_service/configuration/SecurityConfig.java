@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -14,6 +15,7 @@ import pe.albrugroup.gateway_service.security.RestAuthenticationEntryPoint;
 
 @Configuration
 @EnableWebFluxSecurity
+@EnableReactiveMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -44,7 +46,10 @@ public class SecurityConfig {
                                 "/leads/v3/api-docs/**",
                                 "/recruitment/swagger-ui.html",
                                 "/recruitment/swagger-ui/**",
-                                "/recruitment/v3/api-docs/**"
+                                "/recruitment/v3/api-docs/**",
+                                "/schedule/swagger-ui.html",
+                                "/schedule/swagger-ui/**",
+                                "/schedule/v3/api-docs/**"
                         ).permitAll()
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyExchange().authenticated()
