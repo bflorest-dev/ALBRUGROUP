@@ -9,3 +9,7 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET:change-this-secret-key-change-this-secret-key-123456}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
