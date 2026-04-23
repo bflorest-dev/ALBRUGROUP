@@ -1,0 +1,5 @@
+CREATE DATABASE auth_db;
+CREATE DATABASE rrhh_db;
+CREATE DATABASE lead_db;
+CREATE DATABASE recruitment_db;
+CREATE DATABASE schedule_db;

@@ -19,17 +19,18 @@ import java.util.function.Function;
 @Component
 public class JWTUtil {
 
-    private static final String ISSUER = "http://localhost:8081";
-
     private final SecretKey key;
     private final Duration jwtExpiration;
+    private final String issuer;
 
     public JWTUtil(
             @Value("${jwt.secret}") String secretKey,
-            @Value("${jwt.expiration:30m}") Duration jwtExpiration
+            @Value("${jwt.expiration:30m}") Duration jwtExpiration,
+            @Value("${jwt.issuer}") String issuer
     ) {
         this.key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
         this.jwtExpiration = jwtExpiration;
+        this.issuer = issuer;
     }
 
     public String generateToken(CustomUserDetails userDetails) {
@@ -57,7 +58,7 @@ public class JWTUtil {
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(subject)
-                .setIssuer(ISSUER)
+                .setIssuer(issuer)
                 .setIssuedAt(new Date(now))
                 .setExpiration(new Date(now + jwtExpiration.toMillis()))
                 .signWith(key, SignatureAlgorithm.HS256)

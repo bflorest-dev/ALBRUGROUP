@@ -57,6 +57,8 @@ public class SecurityConfig {
                                 "/autorizacion/login",
                                 "/autorizacion/forgot-password",
                                 "/autorizacion/estado-acceso/**",
+                                "/actuator/health",
+                                "/actuator/health/**",
                                 "/h2-console/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",

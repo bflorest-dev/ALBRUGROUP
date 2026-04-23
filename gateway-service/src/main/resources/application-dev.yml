@@ -4,3 +4,22 @@ spring:
       host: ${GATEWAY_REDIS_HOST:localhost}
       port: ${GATEWAY_REDIS_PORT:6379}
       timeout: 2000ms
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins:
+                  - "http://localhost:3000"
+                  - "http://localhost:5173"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PATCH
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders: "*"
+                allowCredentials: true

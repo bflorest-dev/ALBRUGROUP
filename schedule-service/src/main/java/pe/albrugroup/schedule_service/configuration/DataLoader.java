@@ -1,15 +1,17 @@
 package pe.albrugroup.schedule_service.configuration;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import pe.albrugroup.schedule_service.entity.PoliticaModalidad;
 import pe.albrugroup.schedule_service.entity.enums.ModalidadContrato;
 import pe.albrugroup.schedule_service.repository.PoliticaModalidadRepository;
 
-import java.util.Arrays;
-
 @Component
+@Profile("dev")
+@Slf4j
 @RequiredArgsConstructor
 public class DataLoader implements CommandLineRunner {
 
@@ -17,35 +19,32 @@ public class DataLoader implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (politicaModalidadRepository.count() > 0) {
-            return;
-        }
+        log.info("Cargando politicas de modalidad iniciales...");
 
-        Arrays.asList(
-                PoliticaModalidad.builder().modalidad(ModalidadContrato.PART_TIME)
-                        .horasObjetivoSemanal(24)
-                        .horasObjetivoMensual(96)
-                        .minutosAlmuerzo(30)
-                        .minutosServicios(20)
-                        .build(),
-                PoliticaModalidad.builder().modalidad(ModalidadContrato.SEMI_FULL)
-                        .horasObjetivoSemanal(36)
-                        .horasObjetivoMensual(144)
-                        .minutosAlmuerzo(45)
-                        .minutosServicios(25)
-                        .build(),
-                PoliticaModalidad.builder().modalidad(ModalidadContrato.FULL_TIME)
-                        .horasObjetivoSemanal(48)
-                        .horasObjetivoMensual(192)
-                        .minutosAlmuerzo(60)
-                        .minutosServicios(30)
-                        .build(),
-                PoliticaModalidad.builder().modalidad(ModalidadContrato.SUPER_FULL)
-                        .horasObjetivoSemanal(54)
-                        .horasObjetivoMensual(216)
-                        .minutosAlmuerzo(60)
-                        .minutosServicios(35)
-                        .build()
-        ).forEach(politicaModalidadRepository::save);
+        savePolitica(ModalidadContrato.PART_TIME, 24, 96, 30, 20);
+        savePolitica(ModalidadContrato.SEMI_FULL, 36, 144, 45, 25);
+        savePolitica(ModalidadContrato.FULL_TIME, 48, 192, 60, 30);
+        savePolitica(ModalidadContrato.SUPER_FULL, 54, 216, 60, 35);
+
+        log.info("Politicas de modalidad iniciales cargadas");
+    }
+
+    private void savePolitica(
+            ModalidadContrato modalidad,
+            Integer horasObjetivoSemanal,
+            Integer horasObjetivoMensual,
+            Integer minutosAlmuerzo,
+            Integer minutosServicios
+    ) {
+        PoliticaModalidad politica = politicaModalidadRepository.findByModalidad(modalidad)
+                .orElseGet(PoliticaModalidad::new);
+
+        politica.setModalidad(modalidad);
+        politica.setHorasObjetivoSemanal(horasObjetivoSemanal);
+        politica.setHorasObjetivoMensual(horasObjetivoMensual);
+        politica.setMinutosAlmuerzo(minutosAlmuerzo);
+        politica.setMinutosServicios(minutosServicios);
+
+        politicaModalidadRepository.save(politica);
     }
 }
