@@ -1,0 +1,9 @@
+services:
+  frontend:
+    build:
+      context: .
+    image: albrugroup-frontend:local
+    container_name: frontend-albru
+    ports:
+      - "${HOST_IP:-0.0.0.0}:5173:5173"
+    restart: unless-stopped
