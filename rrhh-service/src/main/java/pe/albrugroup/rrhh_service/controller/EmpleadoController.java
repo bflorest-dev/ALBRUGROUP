@@ -17,6 +17,7 @@ import pe.albrugroup.rrhh_service.entity.enums.Banco;
 import pe.albrugroup.rrhh_service.entity.enums.Distrito;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
 import pe.albrugroup.rrhh_service.entity.enums.Origen;
+import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.rrhh_service.entity.request.PageRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.DatosContactoCorporativoRequest;
 import pe.albrugroup.rrhh_service.entity.request.empleado.DatosContactoUbicacionRequest;
@@ -90,6 +91,18 @@ public class EmpleadoController {
         return ResponseEntity.ok(
                 empleadoService.getEmpleadoUniversal(dato, pageRequest)
         );
+    }
+
+    @Operation(
+            summary = "Listar empleados vigentes de forma ligera",
+            description = "Devuelve empleados activos con contrato vigente a la fecha actual. Permite filtrar opcionalmente por uno o varios puestos de trabajo."
+    )
+    @GetMapping("/light")
+    @PreAuthorize("hasAuthority('READ_EMPLEADOS')")
+    public ResponseEntity<List<EmpleadoRolResponse>> listarEmpleadosLight(
+            @RequestParam(required = false) List<PuestoTrabajo> puestosTrabajo
+    ) {
+        return ResponseEntity.ok(empleadoService.listarEmpleadosLight(puestosTrabajo));
     }
 
     @Operation(

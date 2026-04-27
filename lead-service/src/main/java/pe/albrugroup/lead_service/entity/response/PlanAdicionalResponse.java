@@ -6,8 +6,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-
 @Getter
 @Setter
 @Builder
@@ -20,5 +18,4 @@ public class PlanAdicionalResponse {
     private Integer cantidadIncluida;
     private Boolean permiteCompraAdicional;
     private Integer cantidadMaximaAdicional;
-    private BigDecimal precioUnitarioAdicional;
 }

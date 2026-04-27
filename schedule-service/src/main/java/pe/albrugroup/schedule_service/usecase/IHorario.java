@@ -7,6 +7,7 @@ import pe.albrugroup.schedule_service.entity.request.horario.RegistrarHorarioReq
 import pe.albrugroup.schedule_service.entity.request.horario.ReemplazarHorarioRequest;
 import pe.albrugroup.schedule_service.entity.response.PageResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.ExcepcionHorarioResponse;
+import pe.albrugroup.schedule_service.entity.response.horario.HorarioMesResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.HorarioResponse;
 
 import java.time.LocalDate;
@@ -18,6 +19,7 @@ public interface IHorario {
     ExcepcionHorarioResponse registrarExcepcion(Long idHorario, RegistrarExcepcionHorarioRequest request);
     ExcepcionHorarioResponse actualizarExcepcion(Long idHorario, Long idExcepcion, RegistrarExcepcionHorarioRequest request);
     void eliminarExcepcion(Long idHorario, Long idExcepcion);
+    HorarioMesResponse getHorarioMes(Integer anio, Integer mes);
     HorarioResponse getHorarioVigente(Long idEmpleado, LocalDate fecha);
     PageResponse<HorarioResponse> listarHistorico(Long idEmpleado, PageRequest pageRequest);
 }

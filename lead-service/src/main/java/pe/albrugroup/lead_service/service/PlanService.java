@@ -22,6 +22,7 @@ import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.*;
 import pe.albrugroup.lead_service.service.mapper.PlanMapper;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -38,6 +39,7 @@ public class PlanService {
     private final InternetRepository internetRepository;
     private final TelevisionRepository televisionRepository;
     private final TelefonoRepository telefonoRepository;
+    private final ZonaRepository zonaRepository;
 
     @CacheEvict(value = CacheNames.ADICIONALES, allEntries = true)
     public AdicionalResponse registrarAdicional(AdicionalRequest request) {
@@ -67,10 +69,12 @@ public class PlanService {
         Plan plan = mapper.toEntity(request);
         plan.setProveedor(proveedor);
         plan.setActivo(Boolean.TRUE);
+        plan.setZona(resolverZona(request.getIdZona()));
         normalizarVigencias(plan, fechaActual);
         plan.setInternet(resolverInternet(request, proveedor));
         plan.setTelevision(resolverTelevision(request, proveedor));
         plan.setTelefono(resolverTelefono(request, proveedor));
+        validarPromocionesPlan(plan);
 
         Plan planGuardado = planRepository.save(plan);
         Set<PlanAdicional> adicionales = construirPlanAdicionales(
@@ -125,6 +129,8 @@ public class PlanService {
                 .orElseThrow(() -> new NotFoundException(Plan.class, idPlan));
 
         mapper.updatePlan(request, plan);
+        plan.setZona(resolverZona(request.getIdZona()));
+        validarPromocionesPlan(plan);
         normalizarVigencias(plan, LocalDate.now());
         return toPlanResponse(planRepository.save(plan));
     }
@@ -154,6 +160,79 @@ public class PlanService {
                     Map.of(
                             "vigenciaDesde", plan.getVigenciaDesde(),
                             "vigenciaHasta", plan.getVigenciaHasta()
+                    )
+            );
+        }
+    }
+
+    private Zona resolverZona(Long idZona) {
+        if (idZona == null) {
+            return null;
+        }
+        return zonaRepository.findById(idZona)
+                .orElseThrow(() -> new NotFoundException(Zona.class, idZona));
+    }
+
+    private void validarPromocionesPlan(Plan plan) {
+        validarPromocionPrecio(plan.getPrecio(), plan.getPrecioPromocional(), plan.getMesesPromocionPrecio());
+        Integer velocidadBase = plan.getInternet() == null ? null : plan.getInternet().getVelocidad();
+        validarPromocionVelocidad(velocidadBase, plan.getVelocidadPromocional(), plan.getMesesPromocionVelocidad());
+    }
+
+    private void validarPromocionPrecio(BigDecimal precio, BigDecimal precioPromocional, Integer mesesPromocionPrecio) {
+        if (precioPromocional == null && mesesPromocionPrecio == null) {
+            return;
+        }
+        if (precioPromocional == null || mesesPromocionPrecio == null) {
+            throw new BadRequestException(
+                    "La promocion de precio requiere precioPromocional y mesesPromocionPrecio",
+                    null,
+                    Map.of(
+                            "precioPromocional", precioPromocional,
+                            "mesesPromocionPrecio", mesesPromocionPrecio
+                    )
+            );
+        }
+        if (precioPromocional.compareTo(precio) >= 0) {
+            throw new BadRequestException(
+                    "El precioPromocional debe ser menor al precio regular",
+                    null,
+                    Map.of(
+                            "precio", precio,
+                            "precioPromocional", precioPromocional
+                    )
+            );
+        }
+    }
+
+    private void validarPromocionVelocidad(Integer velocidadBase, Integer velocidadPromocional, Integer mesesPromocionVelocidad) {
+        if (velocidadPromocional == null && mesesPromocionVelocidad == null) {
+            return;
+        }
+        if (velocidadBase == null) {
+            throw new BadRequestException(
+                    "La promocion de velocidad requiere que el plan tenga internet",
+                    null,
+                    null
+            );
+        }
+        if (velocidadPromocional == null || mesesPromocionVelocidad == null) {
+            throw new BadRequestException(
+                    "La promocion de velocidad requiere velocidadPromocional y mesesPromocionVelocidad",
+                    null,
+                    Map.of(
+                            "velocidadPromocional", velocidadPromocional,
+                            "mesesPromocionVelocidad", mesesPromocionVelocidad
+                    )
+            );
+        }
+        if (velocidadPromocional <= velocidadBase) {
+            throw new BadRequestException(
+                    "La velocidadPromocional debe ser mayor a la velocidad regular",
+                    null,
+                    Map.of(
+                            "velocidad", velocidadBase,
+                            "velocidadPromocional", velocidadPromocional
                     )
             );
         }
@@ -256,7 +335,6 @@ public class PlanService {
                     .cantidadIncluida(adicionalRequest.getCantidadIncluida())
                     .permiteCompraAdicional(adicionalRequest.getPermiteCompraAdicional())
                     .cantidadMaximaAdicional(adicionalRequest.getCantidadMaximaAdicional())
-                    .precioUnitarioAdicional(adicionalRequest.getPrecioUnitarioAdicional())
                     .activo(Boolean.TRUE)
                     .build();
             adicionales.add(planAdicional);
@@ -271,6 +349,8 @@ public class PlanService {
                 plan.getId(),
                 plan.getNombre(),
                 plan.getPrecio(),
+                plan.getPrecioPromocional(),
+                plan.getMesesPromocionPrecio(),
                 plan.getVigenciaDesde(),
                 plan.getVigenciaHasta(),
                 plan.getProveedor().getId(),
@@ -278,6 +358,10 @@ public class PlanService {
                 mapper.toResponse(plan.getInternet()),
                 mapper.toResponse(plan.getTelevision()),
                 mapper.toResponse(plan.getTelefono()),
+                plan.getVelocidadPromocional(),
+                plan.getMesesPromocionVelocidad(),
+                plan.getZona() == null ? null : plan.getZona().getId(),
+                plan.getZona() == null ? null : plan.getZona().getNombre(),
                 plan.getAdicionales().stream()
                         .map(mapper::toResponse)
                         .sorted(Comparator.comparing(PlanAdicionalResponse::getNombreAdicional, String.CASE_INSENSITIVE_ORDER))

@@ -12,13 +12,18 @@ import pe.albrugroup.schedule_service.entity.HorarioDetalle;
 import pe.albrugroup.schedule_service.entity.enums.Dia;
 import pe.albrugroup.schedule_service.entity.enums.EstadoAsistencia;
 import pe.albrugroup.schedule_service.entity.enums.TipoExcepcionHorario;
+import pe.albrugroup.schedule_service.entity.request.asistencia.ConsultaCumplimientoRequest;
 import pe.albrugroup.schedule_service.entity.request.asistencia.ConsultaMonitoreoRequest;
 import pe.albrugroup.schedule_service.entity.request.asistencia.MovimientoAsistenciaRequest;
+import pe.albrugroup.schedule_service.entity.response.asistencia.AsistenciaDiaCalendarioResponse;
+import pe.albrugroup.schedule_service.entity.response.asistencia.AsistenciaMesResponse;
+import pe.albrugroup.schedule_service.entity.response.asistencia.CumplimientoDetalleDiaResponse;
+import pe.albrugroup.schedule_service.entity.response.asistencia.CumplimientoDetalleEmpleadoResponse;
+import pe.albrugroup.schedule_service.entity.response.asistencia.CumplimientoDetalleResponse;
+import pe.albrugroup.schedule_service.entity.response.asistencia.CumplimientoResumenEmpleadoResponse;
+import pe.albrugroup.schedule_service.entity.response.asistencia.CumplimientoResumenResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleAsistenciaResponse;
-import pe.albrugroup.schedule_service.entity.response.asistencia.EstadoActualResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.EstadoMonitorResponse;
-import pe.albrugroup.schedule_service.entity.response.asistencia.HistorialAsistenciaResponse;
-import pe.albrugroup.schedule_service.entity.response.asistencia.ResumenAsistenciaResponse;
 import pe.albrugroup.schedule_service.exception.BadRequestException;
 import pe.albrugroup.schedule_service.exception.NotFoundException;
 import pe.albrugroup.schedule_service.repository.AsistenciaRepository;
@@ -32,6 +37,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -138,82 +144,96 @@ public class AsistenciaService implements IAsistencia {
 
     @Override
     @Transactional(readOnly = true)
-    public EstadoActualResponse getEstadoActual(LocalDate fecha) {
-        return getEstadoActual(currentUser.empleadoID(), fecha);
+    public AsistenciaMesResponse getAsistenciaMes(Integer anio, Integer mes) {
+        return getAsistenciaMesByEmpleado(currentUser.empleadoID(), anio, mes);
     }
 
-    @Override
     @Transactional(readOnly = true)
-    public EstadoActualResponse getEstadoActual(Long idEmpleado, LocalDate fecha) {
-        LocalDate consulta = fecha != null ? fecha : LocalDate.now();
-        Asistencia asistencia = getAsistenciaOperativa(idEmpleado, consulta);
-        return EstadoActualResponse.builder()
+    private AsistenciaMesResponse getAsistenciaMesByEmpleado(Long idEmpleado, Integer anio, Integer mes) {
+        YearMonth yearMonth = resolvePeriodoMensual(anio, mes);
+        LocalDate hoy = LocalDate.now();
+        if (yearMonth.isAfter(YearMonth.from(hoy))) {
+            return AsistenciaMesResponse.builder()
+                    .idEmpleado(idEmpleado)
+                    .anio(yearMonth.getYear())
+                    .mes(yearMonth.getMonthValue())
+                    .dias(List.of())
+                    .build();
+        }
+
+        LocalDate desde = yearMonth.atDay(1);
+        LocalDate hasta = yearMonth.equals(YearMonth.from(hoy)) ? hoy : yearMonth.atEndOfMonth();
+        Map<LocalDate, Asistencia> asistenciasPorFecha = asistenciaRepository
+                .findByIdEmpleadoAndFechaBetweenOrderByFechaAsc(idEmpleado, desde, hasta)
+                .stream()
+                .collect(LinkedHashMap::new, (map, asistencia) -> map.put(asistencia.getFecha(), asistencia), Map::putAll);
+
+        List<AsistenciaDiaCalendarioResponse> dias = new ArrayList<>();
+        for (LocalDate fecha = desde; !fecha.isAfter(hasta); fecha = fecha.plusDays(1)) {
+            dias.add(construirDiaCalendario(idEmpleado, fecha, asistenciasPorFecha.get(fecha)));
+        }
+
+        return AsistenciaMesResponse.builder()
                 .idEmpleado(idEmpleado)
-                .fecha(consulta)
-                .estadoActual(asistencia.getEstadoActual())
-                .desde(getDesdeEstado(asistencia))
-                .minutosServiciosPermitidos(asistencia.getMinutosServiciosPermitidos())
-                .minutosServiciosAcumulados(asistencia.getMinutosServiciosAcumulados())
-                .minutosServiciosEnCurso(calcularMinutosServiciosEnCurso(asistencia, LocalDateTime.now()))
-                .excedioServicios(asistencia.getExcedioServicios())
+                .anio(yearMonth.getYear())
+                .mes(yearMonth.getMonthValue())
+                .dias(dias)
                 .build();
     }
 
     @Override
     @Transactional(readOnly = true)
     public DetalleAsistenciaResponse getAsistenciaDia(LocalDate fecha) {
-        return getAsistenciaDia(currentUser.empleadoID(), fecha);
+        return getAsistenciaDiaByEmpleado(currentUser.empleadoID(), fecha);
     }
 
-    @Override
     @Transactional(readOnly = true)
-    public DetalleAsistenciaResponse getAsistenciaDia(Long idEmpleado, LocalDate fecha) {
+    private DetalleAsistenciaResponse getAsistenciaDiaByEmpleado(Long idEmpleado, LocalDate fecha) {
         return mapper.toDetalleResponse(getAsistenciaOperativa(idEmpleado, fecha));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ResumenAsistenciaResponse getResumenSemanal(LocalDate fecha) {
-        return getResumenSemanal(currentUser.empleadoID(), fecha);
-    }
+    public CumplimientoResumenResponse getCumplimientoResumen(ConsultaCumplimientoRequest request) {
+        ConsultaRangoNormalizada consulta = normalizarConsultaCumplimiento(request);
+        Map<Long, Map<LocalDate, Asistencia>> asistenciasPorEmpleado = cargarAsistenciasPorEmpleado(consulta.empleadoIds(), consulta.desde(), consulta.hasta());
 
-    @Override
-    @Transactional(readOnly = true)
-    public ResumenAsistenciaResponse getResumenSemanal(Long idEmpleado, LocalDate fecha) {
-        LocalDate referencia = fecha != null ? fecha : LocalDate.now();
-        LocalDate desde = referencia.minusDays(referencia.getDayOfWeek().getValue() - 1L);
-        return construirResumen(idEmpleado, desde, desde.plusDays(6));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public ResumenAsistenciaResponse getResumenMensual(LocalDate fecha) {
-        return getResumenMensual(currentUser.empleadoID(), fecha);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public ResumenAsistenciaResponse getResumenMensual(Long idEmpleado, LocalDate fecha) {
-        LocalDate referencia = fecha != null ? fecha : LocalDate.now();
-        YearMonth yearMonth = YearMonth.from(referencia);
-        return construirResumen(idEmpleado, yearMonth.atDay(1), yearMonth.atEndOfMonth());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<HistorialAsistenciaResponse> getHistorial(LocalDate desde, LocalDate hasta) {
-        return getHistorial(currentUser.empleadoID(), desde, hasta);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<HistorialAsistenciaResponse> getHistorial(Long idEmpleado, LocalDate desde, LocalDate hasta) {
-        LocalDate inicio = desde != null ? desde : LocalDate.now().minusDays(30);
-        LocalDate fin = hasta != null ? hasta : LocalDate.now();
-        return asistenciaRepository.findByIdEmpleadoAndFechaBetweenOrderByFechaAsc(idEmpleado, inicio, fin)
-                .stream()
-                .map(mapper::toHistorialResponse)
+        List<CumplimientoResumenEmpleadoResponse> empleados = consulta.empleadoIds().stream()
+                .map(idEmpleado -> construirResumenCumplimientoEmpleado(
+                        idEmpleado,
+                        consulta.desde(),
+                        consulta.hasta(),
+                        asistenciasPorEmpleado.getOrDefault(idEmpleado, Map.of())
+                ))
                 .toList();
+
+        return CumplimientoResumenResponse.builder()
+                .desde(consulta.desde())
+                .hasta(consulta.hasta())
+                .empleados(empleados)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CumplimientoDetalleResponse getCumplimientoDetalle(ConsultaCumplimientoRequest request) {
+        ConsultaRangoNormalizada consulta = normalizarConsultaCumplimiento(request);
+        Map<Long, Map<LocalDate, Asistencia>> asistenciasPorEmpleado = cargarAsistenciasPorEmpleado(consulta.empleadoIds(), consulta.desde(), consulta.hasta());
+
+        List<CumplimientoDetalleEmpleadoResponse> empleados = consulta.empleadoIds().stream()
+                .map(idEmpleado -> construirDetalleCumplimientoEmpleado(
+                        idEmpleado,
+                        consulta.desde(),
+                        consulta.hasta(),
+                        asistenciasPorEmpleado.getOrDefault(idEmpleado, Map.of())
+                ))
+                .toList();
+
+        return CumplimientoDetalleResponse.builder()
+                .desde(consulta.desde())
+                .hasta(consulta.hasta())
+                .empleados(empleados)
+                .build();
     }
 
     @Override
@@ -318,6 +338,123 @@ public class AsistenciaService implements IAsistencia {
                 .orElseThrow(() -> new NotFoundException("Asistencia no encontrada para la fecha", fecha));
     }
 
+    private AsistenciaDiaCalendarioResponse construirDiaCalendario(Long idEmpleado, LocalDate fecha, Asistencia asistencia) {
+        ProgramacionDiaria programacion = resolverProgramacionMensual(idEmpleado, fecha, asistencia);
+        return AsistenciaDiaCalendarioResponse.builder()
+                .fecha(fecha)
+                .laborable(programacion.laborable())
+                .horaEntradaEstablecida(asistencia != null ? asistencia.getEntradaProgramada() : programacion.horaEntrada())
+                .horaEntradaAsistencia(asistencia != null && asistencia.getFechaHoraIngreso() != null ? asistencia.getFechaHoraIngreso().toLocalTime() : null)
+                .horaSalidaEstablecida(asistencia != null ? asistencia.getSalidaProgramada() : programacion.horaSalida())
+                .horaSalidaAsistencia(asistencia != null && asistencia.getFechaHoraSalida() != null ? asistencia.getFechaHoraSalida().toLocalTime() : null)
+                .jornadaCerrada(asistencia != null && asistencia.getFechaHoraSalida() != null)
+                .build();
+    }
+
+    private CumplimientoResumenEmpleadoResponse construirResumenCumplimientoEmpleado(
+            Long idEmpleado,
+            LocalDate desde,
+            LocalDate hasta,
+            Map<LocalDate, Asistencia> asistenciasPorFecha
+    ) {
+        int diasLaborables = 0;
+        int diasConRegistro = 0;
+        int diasSinRegistro = 0;
+        int diasCerrados = 0;
+        int cantidadTardanzas = 0;
+        int minutosObjetivo = 0;
+        int minutosTrabajados = 0;
+        int minutosBalance = 0;
+        int minutosServiciosAcumulados = 0;
+        int cantidadDiasConExcesoServicios = 0;
+
+        for (LocalDate fecha = desde; !fecha.isAfter(hasta); fecha = fecha.plusDays(1)) {
+            Asistencia asistencia = asistenciasPorFecha.get(fecha);
+            ProgramacionDiaria programacion = resolverProgramacionMensual(idEmpleado, fecha, asistencia);
+            if (!programacion.laborable()) {
+                continue;
+            }
+
+            diasLaborables++;
+            minutosObjetivo += asistencia != null ? asistencia.getMinutosObjetivoDia() : programacion.minutosObjetivo();
+
+            if (asistencia == null || asistencia.getFechaHoraIngreso() == null) {
+                diasSinRegistro++;
+                continue;
+            }
+
+            diasConRegistro++;
+            minutosTrabajados += asistencia.getMinutosTrabajados();
+            minutosBalance += asistencia.getMinutosBalance();
+            minutosServiciosAcumulados += asistencia.getMinutosServiciosAcumulados();
+
+            if (asistencia.getFechaHoraSalida() != null) {
+                diasCerrados++;
+            }
+            if (Boolean.TRUE.equals(asistencia.getExcedioServicios())) {
+                cantidadDiasConExcesoServicios++;
+            }
+            if (esTardanza(asistencia.getFechaHoraIngreso(), asistencia.getEntradaProgramada())) {
+                cantidadTardanzas++;
+            }
+        }
+
+        return CumplimientoResumenEmpleadoResponse.builder()
+                .idEmpleado(idEmpleado)
+                .diasLaborables(diasLaborables)
+                .diasConRegistro(diasConRegistro)
+                .diasSinRegistro(diasSinRegistro)
+                .diasCerrados(diasCerrados)
+                .cantidadTardanzas(cantidadTardanzas)
+                .minutosObjetivo(minutosObjetivo)
+                .minutosTrabajados(minutosTrabajados)
+                .minutosBalance(minutosBalance)
+                .minutosServiciosAcumulados(minutosServiciosAcumulados)
+                .cantidadDiasConExcesoServicios(cantidadDiasConExcesoServicios)
+                .build();
+    }
+
+    private CumplimientoDetalleEmpleadoResponse construirDetalleCumplimientoEmpleado(
+            Long idEmpleado,
+            LocalDate desde,
+            LocalDate hasta,
+            Map<LocalDate, Asistencia> asistenciasPorFecha
+    ) {
+        List<CumplimientoDetalleDiaResponse> dias = new ArrayList<>();
+        for (LocalDate fecha = desde; !fecha.isAfter(hasta); fecha = fecha.plusDays(1)) {
+            dias.add(construirDetalleCumplimientoDia(idEmpleado, fecha, asistenciasPorFecha.get(fecha)));
+        }
+
+        return CumplimientoDetalleEmpleadoResponse.builder()
+                .idEmpleado(idEmpleado)
+                .dias(dias)
+                .build();
+    }
+
+    private CumplimientoDetalleDiaResponse construirDetalleCumplimientoDia(Long idEmpleado, LocalDate fecha, Asistencia asistencia) {
+        ProgramacionDiaria programacion = resolverProgramacionMensual(idEmpleado, fecha, asistencia);
+        LocalTime horaEntradaEstablecida = asistencia != null ? asistencia.getEntradaProgramada() : programacion.horaEntrada();
+        LocalTime horaSalidaEstablecida = asistencia != null ? asistencia.getSalidaProgramada() : programacion.horaSalida();
+        LocalTime horaEntradaAsistencia = asistencia != null && asistencia.getFechaHoraIngreso() != null ? asistencia.getFechaHoraIngreso().toLocalTime() : null;
+        LocalTime horaSalidaAsistencia = asistencia != null && asistencia.getFechaHoraSalida() != null ? asistencia.getFechaHoraSalida().toLocalTime() : null;
+
+        return CumplimientoDetalleDiaResponse.builder()
+                .fecha(fecha)
+                .laborable(programacion.laborable())
+                .horaEntradaEstablecida(horaEntradaEstablecida)
+                .horaEntradaAsistencia(horaEntradaAsistencia)
+                .horaSalidaEstablecida(horaSalidaEstablecida)
+                .horaSalidaAsistencia(horaSalidaAsistencia)
+                .jornadaCerrada(asistencia != null && asistencia.getFechaHoraSalida() != null)
+                .minutosObjetivoDia(asistencia != null ? asistencia.getMinutosObjetivoDia() : programacion.minutosObjetivo())
+                .minutosTrabajados(asistencia != null ? asistencia.getMinutosTrabajados() : 0)
+                .minutosBalance(asistencia != null ? asistencia.getMinutosBalance() : 0)
+                .minutosServiciosAcumulados(asistencia != null ? asistencia.getMinutosServiciosAcumulados() : 0)
+                .excedioServicios(asistencia != null && Boolean.TRUE.equals(asistencia.getExcedioServicios()))
+                .tardanza(esTardanza(asistencia != null ? asistencia.getFechaHoraIngreso() : null, horaEntradaEstablecida))
+                .build();
+    }
+
     private EstadoMonitorResponse construirEstadoMonitor(Long idEmpleado, LocalDate fecha, Asistencia asistencia) {
         if (asistencia != null) {
             return EstadoMonitorResponse.builder()
@@ -381,6 +518,75 @@ public class AsistenciaService implements IAsistencia {
         }
     }
 
+    private ProgramacionDiaria resolverProgramacionMensual(Long idEmpleado, LocalDate fecha, Asistencia asistencia) {
+        if (asistencia != null) {
+            return ProgramacionDiaria.builder()
+                    .laborable(true)
+                    .horaEntrada(asistencia.getEntradaProgramada())
+                    .horaSalida(asistencia.getSalidaProgramada())
+                    .inicioAlmuerzo(asistencia.getInicioAlmuerzoProgramado())
+                    .finAlmuerzo(asistencia.getFinAlmuerzoProgramado())
+                    .minutosObjetivo(asistencia.getMinutosObjetivoDia())
+                    .build();
+        }
+
+        try {
+            Horario horario = horarioService.getHorarioById(horarioService.getHorarioVigente(idEmpleado, fecha).getId());
+            return resolverProgramacion(horario, fecha);
+        } catch (NotFoundException e) {
+            return ProgramacionDiaria.builder()
+                    .laborable(false)
+                    .minutosObjetivo(0)
+                    .build();
+        }
+    }
+
+    private Map<Long, Map<LocalDate, Asistencia>> cargarAsistenciasPorEmpleado(List<Long> empleadoIds, LocalDate desde, LocalDate hasta) {
+        Map<Long, Map<LocalDate, Asistencia>> asistenciasPorEmpleado = new LinkedHashMap<>();
+        for (Long idEmpleado : empleadoIds) {
+            asistenciasPorEmpleado.put(idEmpleado, new LinkedHashMap<>());
+        }
+
+        asistenciaRepository.findByIdEmpleadoInAndFechaBetweenOrderByIdEmpleadoAscFechaAsc(empleadoIds, desde, hasta)
+                .forEach(asistencia -> asistenciasPorEmpleado
+                        .computeIfAbsent(asistencia.getIdEmpleado(), ignored -> new LinkedHashMap<>())
+                        .put(asistencia.getFecha(), asistencia));
+
+        return asistenciasPorEmpleado;
+    }
+
+    private ConsultaRangoNormalizada normalizarConsultaCumplimiento(ConsultaCumplimientoRequest request) {
+        if (request.getDesde().isAfter(request.getHasta())) {
+            throw new BadRequestException("desde no puede ser posterior a hasta");
+        }
+
+        List<Long> empleadoIds = request.getEmpleadoIds().stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (empleadoIds.isEmpty()) {
+            throw new BadRequestException("empleadoIds es obligatorio");
+        }
+
+        return new ConsultaRangoNormalizada(empleadoIds, request.getDesde(), request.getHasta());
+    }
+
+    private boolean esTardanza(LocalDateTime fechaHoraIngreso, LocalTime horaEntradaEstablecida) {
+        return fechaHoraIngreso != null
+                && horaEntradaEstablecida != null
+                && fechaHoraIngreso.toLocalTime().isAfter(horaEntradaEstablecida);
+    }
+
+    private YearMonth resolvePeriodoMensual(Integer anio, Integer mes) {
+        if (anio == null && mes == null) {
+            return YearMonth.now();
+        }
+        if (anio == null || mes == null) {
+            throw new BadRequestException("anio y mes deben enviarse juntos");
+        }
+        return YearMonth.of(anio, mes);
+    }
+
     private void validarEstadoOnline(Asistencia asistencia) {
         if (asistencia.getFechaHoraIngreso() == null) {
             throw new BadRequestException("No existe ingreso registrado para la fecha");
@@ -423,22 +629,6 @@ public class AsistenciaService implements IAsistencia {
         };
     }
 
-    private ResumenAsistenciaResponse construirResumen(Long idEmpleado, LocalDate desde, LocalDate hasta) {
-        List<Asistencia> asistencias = asistenciaRepository.findByIdEmpleadoAndFechaBetweenOrderByFechaAsc(idEmpleado, desde, hasta);
-        return ResumenAsistenciaResponse.builder()
-                .idEmpleado(idEmpleado)
-                .desde(desde)
-                .hasta(hasta)
-                .diasConRegistro(asistencias.size())
-                .diasCerrados((int) asistencias.stream().filter(asistencia -> asistencia.getFechaHoraSalida() != null).count())
-                .minutosObjetivo(asistencias.stream().mapToInt(Asistencia::getMinutosObjetivoDia).sum())
-                .minutosTrabajados(asistencias.stream().mapToInt(Asistencia::getMinutosTrabajados).sum())
-                .minutosBalance(asistencias.stream().mapToInt(Asistencia::getMinutosBalance).sum())
-                .minutosServiciosPermitidos(asistencias.stream().mapToInt(Asistencia::getMinutosServiciosPermitidos).sum())
-                .minutosServiciosAcumulados(asistencias.stream().mapToInt(Asistencia::getMinutosServiciosAcumulados).sum())
-                .build();
-    }
-
     private int calcularMinutosServiciosEnCurso(Asistencia asistencia, LocalDateTime ahora) {
         if (asistencia.getFechaHoraInicioServiciosActual() == null) {
             return 0;
@@ -458,6 +648,12 @@ public class AsistenciaService implements IAsistencia {
     private boolean esOperativo(EstadoAsistencia estado) {
         return estado == EstadoAsistencia.ONLINE;
     }
+
+    private record ConsultaRangoNormalizada(
+            List<Long> empleadoIds,
+            LocalDate desde,
+            LocalDate hasta
+    ) {}
 
     @Builder
     private record ProgramacionDiaria(

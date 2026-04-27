@@ -116,6 +116,8 @@ public class DataLoader {
         savePermiso("UPDATE_HORARIOS", "Puede actualizar horarios y sus excepciones", "HORARIO", "UPDATE");
         savePermiso("READ_ASISTENCIAS_SELF", "Puede consultar su propia informacion de asistencia", "ASISTENCIA", "READ_SELF");
         savePermiso("READ_ASISTENCIAS", "Puede consultar asistencia de cualquier empleado autorizado", "ASISTENCIA", "READ");
+        savePermiso("READ_ASISTENCIAS_MONITOR", "Puede consultar estados de asistencia en tiempo real para monitoreo", "ASISTENCIA", "READ_MONITOR");
+        savePermiso("READ_ASISTENCIAS_CUMPLIMIENTO", "Puede consultar cumplimiento de asistencia por periodos y grupos", "ASISTENCIA", "READ_COMPLIANCE");
         savePermiso("UPDATE_ASISTENCIAS", "Puede registrar movimientos de asistencia", "ASISTENCIA", "UPDATE");
 
         // LEADS
@@ -233,6 +235,7 @@ public class DataLoader {
                 getPermiso("UPDATE_HORARIOS"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("READ_ASISTENCIAS"),
+                getPermiso("READ_ASISTENCIAS_CUMPLIMIENTO"),
                 getPermiso("UPDATE_ASISTENCIAS")
 
         );
@@ -337,6 +340,7 @@ public class DataLoader {
 
                 getPermiso("READ_LEADS_GTR"),
                 getPermiso("READ_EVENTOS_LEADS"),
+                getPermiso("READ_ASISTENCIAS_MONITOR"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("UPDATE_ASISTENCIAS")
         );
@@ -347,6 +351,7 @@ public class DataLoader {
                 getPermiso("ASSIGN_LEADS"),
                 getPermiso("READ_EVENTOS_LEADS"),
                 getPermiso("READ_CAMPANA"),
+                getPermiso("READ_ASISTENCIAS_MONITOR"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("UPDATE_ASISTENCIAS")
         );
@@ -392,6 +397,7 @@ public class DataLoader {
                 getPermiso("READ_LEADS_SUPERVISOR_VENTAS_RESUMEN"),
                 getPermiso("READ_LEADS_SUPERVISOR_VENTAS_BANDEJA"),
                 getPermiso("READ_EVENTOS_LEADS"),
+                getPermiso("READ_ASISTENCIAS_MONITOR"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("READ_ASISTENCIAS"),
                 getPermiso("UPDATE_ASISTENCIAS")
@@ -413,8 +419,10 @@ public class DataLoader {
                 getPermiso("READ_OFERTAS_LABORALES"),
                 getPermiso("READ_GRUPOS_CAPACITACION"),
                 getPermiso("READ_HORARIOS"),
+                getPermiso("READ_ASISTENCIAS_MONITOR"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
-                getPermiso("READ_ASISTENCIAS")
+                getPermiso("READ_ASISTENCIAS"),
+                getPermiso("READ_ASISTENCIAS_CUMPLIMIENTO")
 
 
         );
@@ -475,6 +483,7 @@ public class DataLoader {
                 getPermiso("READ_HORARIOS"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("READ_ASISTENCIAS"),
+                getPermiso("READ_ASISTENCIAS_CUMPLIMIENTO"),
                 getPermiso("UPDATE_ASISTENCIAS")
         );
         saveRol("CONTADOR", "Contabilidad - Gestion de pagos y consulta laboral", contadorPermisos);

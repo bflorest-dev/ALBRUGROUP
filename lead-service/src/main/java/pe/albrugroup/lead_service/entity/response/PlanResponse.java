@@ -20,6 +20,8 @@ public class PlanResponse {
     private Long id;
     private String nombre;
     private BigDecimal precio;
+    private BigDecimal precioPromocional;
+    private Integer mesesPromocionPrecio;
     private LocalDate vigenciaDesde;
     private LocalDate vigenciaHasta;
     private Long idProveedor;
@@ -27,6 +29,10 @@ public class PlanResponse {
     private InternetResponse internet;
     private TelevisionResponse television;
     private TelefonoResponse telefono;
+    private Integer velocidadPromocional;
+    private Integer mesesPromocionVelocidad;
+    private Long idZona;
+    private String nombreZona;
     private List<PlanAdicionalResponse> adicionales;
     private Boolean activo;
 }

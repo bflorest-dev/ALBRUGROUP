@@ -6,6 +6,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.CacheNames;
+import pe.albrugroup.lead_service.entity.Plan;
 import pe.albrugroup.lead_service.entity.PromocionComercial;
 import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.Zona;
@@ -13,15 +14,16 @@ import pe.albrugroup.lead_service.entity.request.PromocionComercialRequest;
 import pe.albrugroup.lead_service.entity.response.PromocionComercialResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
+import pe.albrugroup.lead_service.repository.PlanRepository;
 import pe.albrugroup.lead_service.repository.PromocionComercialRepository;
 import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.repository.ZonaRepository;
 import pe.albrugroup.lead_service.service.mapper.PromocionComercialMapper;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @Transactional
@@ -31,6 +33,7 @@ public class PromocionComercialService {
     private final PromocionComercialRepository repository;
     private final ProveedorRepository proveedorRepository;
     private final ZonaRepository zonaRepository;
+    private final PlanRepository planRepository;
     private final PromocionComercialMapper mapper;
 
     @CacheEvict(value = CacheNames.PROMOCIONES_COMERCIALES, allEntries = true)
@@ -47,24 +50,23 @@ public class PromocionComercialService {
                     .orElseThrow(() -> new NotFoundException(Zona.class, request.getIdZona()));
         }
 
-        validarConsistencia(request, proveedor);
+        Set<Plan> planes = resolverPlanes(request.getIdsPlanes());
+        validarConsistencia(request, proveedor, planes);
 
         PromocionComercial promocion = mapper.toEntity(request);
         promocion.setProveedor(proveedor);
         promocion.setZona(zona);
+        promocion.setPlanes(planes);
         promocion.setActivo(Boolean.TRUE);
-        normalizarVigencias(promocion, LocalDate.now());
 
-        return mapper.toResponse(repository.save(promocion));
+        return toResponse(repository.save(promocion));
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = CacheNames.PROMOCIONES_COMERCIALES, key = "(#idProveedor == null ? 'all' : #idProveedor) + ':' + (#interno == null ? 'all' : #interno) + ':' + (#idZona == null ? 'all' : #idZona)")
-    public List<PromocionComercialResponse> listarPromociones(Long idProveedor, Boolean interno, Long idZona) {
-        LocalDate fechaActual = LocalDate.now();
-        return repository.listarActivas(idProveedor, interno, idZona).stream()
-                .filter(promocion -> esVigente(promocion, fechaActual))
-                .map(mapper::toResponse)
+    @Cacheable(value = CacheNames.PROMOCIONES_COMERCIALES, key = "(#idProveedor == null ? 'all' : #idProveedor) + ':' + (#idZona == null ? 'all' : #idZona) + ':' + (#idPlan == null ? 'all' : #idPlan)")
+    public List<PromocionComercialResponse> listarPromociones(Long idProveedor, Long idZona, Long idPlan) {
+        return repository.listarActivas(idProveedor, idZona, idPlan).stream()
+                .map(this::toResponse)
                 .toList();
     }
 
@@ -74,89 +76,105 @@ public class PromocionComercialService {
                 .orElseThrow(() -> new NotFoundException(PromocionComercial.class, idPromocion));
 
         promocion.setActivo(Boolean.FALSE);
-        return mapper.toResponse(repository.save(promocion));
+        return toResponse(repository.save(promocion));
     }
 
-    private void validarConsistencia(PromocionComercialRequest request, Proveedor proveedor) {
-        if (Boolean.TRUE.equals(request.getInterno()) && request.getIdProveedor() != null) {
+    private Set<Plan> resolverPlanes(List<Long> idsPlanes) {
+        Set<Long> idsUnicos = new HashSet<>(idsPlanes);
+        if (idsUnicos.size() != idsPlanes.size()) {
             throw new BadRequestException(
-                    "Una promocion interna no debe tener proveedor asociado",
+                    "No se puede repetir el mismo plan dentro de la promocion",
                     null,
-                    Map.of("idProveedor", request.getIdProveedor())
+                    Map.of("idsPlanes", idsPlanes)
             );
         }
-        if (Boolean.FALSE.equals(request.getInterno()) && proveedor == null) {
+
+        Set<Plan> planes = new HashSet<>(planRepository.findAllById(idsUnicos));
+        if (planes.size() != idsUnicos.size()) {
             throw new BadRequestException(
-                    "Una promocion no interna debe indicar un proveedor",
+                    "Uno o mas planes enviados no existen",
+                    null,
+                    Map.of("idsPlanes", idsPlanes)
+            );
+        }
+        return planes;
+    }
+
+    private void validarConsistencia(PromocionComercialRequest request, Proveedor proveedor, Set<Plan> planes) {
+        if (request.getIdZona() == null) {
+            throw new BadRequestException(
+                    "La promocion interna debe indicar una zona",
                     null,
                     null
             );
         }
 
-        validarDescuento(request);
-    }
-
-    private void validarDescuento(PromocionComercialRequest request) {
-        BigDecimal descuentoPorcentual = request.getDescuentoPorcentual();
-        BigDecimal descuentoMonto = request.getDescuentoMonto();
-
-        if (Boolean.TRUE.equals(request.getDescuento())) {
-            if (descuentoPorcentual == null && descuentoMonto == null) {
+        Set<Long> proveedoresDePlanes = new HashSet<>();
+        for (Plan plan : planes) {
+            if (!Boolean.TRUE.equals(plan.getActivo())) {
                 throw new BadRequestException(
-                        "La promocion con descuento debe indicar descuentoPorcentual o descuentoMonto",
+                        "La promocion solo puede asociarse a planes activos",
                         null,
-                        null
+                        Map.of("idPlan", plan.getId())
                 );
             }
-            if (descuentoPorcentual != null && descuentoMonto != null) {
-                throw new BadRequestException(
-                        "La promocion no puede tener descuentoPorcentual y descuentoMonto al mismo tiempo",
-                        null,
-                        Map.of(
-                                "descuentoPorcentual", descuentoPorcentual,
-                                "descuentoMonto", descuentoMonto
-                        )
-                );
-            }
-            return;
+            proveedoresDePlanes.add(plan.getProveedor().getId());
         }
 
-        if (descuentoPorcentual != null || descuentoMonto != null) {
+        if (proveedoresDePlanes.size() > 1) {
             throw new BadRequestException(
-                    "La promocion sin descuento no debe enviar descuentoPorcentual ni descuentoMonto",
+                    "Todos los planes de una promocion deben pertenecer al mismo proveedor",
+                    null,
+                    Map.of("idsPlanes", request.getIdsPlanes())
+                );
+        }
+
+        Long proveedorDePlanes = proveedoresDePlanes.iterator().next();
+        if (proveedor == null) {
+            throw new BadRequestException(
+                    "La promocion interna debe indicar un proveedor",
+                    null,
+                    null
+            );
+        }
+        if (!proveedor.getId().equals(proveedorDePlanes)) {
+            throw new BadRequestException(
+                    "Los planes no pertenecen al proveedor de la promocion",
                     null,
                     Map.of(
-                            "descuentoPorcentual", descuentoPorcentual,
-                            "descuentoMonto", descuentoMonto
+                            "idProveedor", proveedor.getId(),
+                            "idsPlanes", request.getIdsPlanes()
+                    )
+            );
+        }
+
+        boolean existeReglaActiva = repository.listarActivas(proveedor.getId(), request.getIdZona(), null).stream()
+                .anyMatch(promocion -> promocion.getReglaComercial().equalsIgnoreCase(request.getReglaComercial()));
+        if (existeReglaActiva) {
+            throw new BadRequestException(
+                    "Ya existe una promocion interna activa con la misma regla comercial para ese proveedor y zona",
+                    null,
+                    Map.of(
+                            "reglaComercial", request.getReglaComercial(),
+                            "idProveedor", proveedor.getId(),
+                            "idZona", request.getIdZona()
                     )
             );
         }
     }
 
-    private void normalizarVigencias(PromocionComercial promocion, LocalDate fechaActual) {
-        if (promocion.getVigenciaDesde() == null) {
-            promocion.setVigenciaDesde(fechaActual);
-        }
-        if (promocion.getVigenciaHasta() != null && promocion.getVigenciaHasta().isBefore(promocion.getVigenciaDesde())) {
-            throw new BadRequestException(
-                    "La vigenciaHasta no puede ser menor que la vigenciaDesde",
-                    null,
-                    Map.of(
-                            "vigenciaDesde", promocion.getVigenciaDesde(),
-                            "vigenciaHasta", promocion.getVigenciaHasta()
-                    )
-            );
-        }
-    }
-
-    private boolean esVigente(PromocionComercial promocion, LocalDate fechaActual) {
-        LocalDate vigenciaDesde = promocion.getVigenciaDesde();
-        LocalDate vigenciaHasta = promocion.getVigenciaHasta();
-
-        if (vigenciaDesde == null) {
-            return vigenciaHasta == null || !vigenciaHasta.isBefore(fechaActual);
-        }
-        return !vigenciaDesde.isAfter(fechaActual)
-                && (vigenciaHasta == null || !vigenciaHasta.isBefore(fechaActual));
+    private PromocionComercialResponse toResponse(PromocionComercial entity) {
+        return PromocionComercialResponse.builder()
+                .id(entity.getId())
+                .reglaComercial(entity.getReglaComercial())
+                .idProveedor(entity.getProveedor() == null ? null : entity.getProveedor().getId())
+                .nombreProveedor(entity.getProveedor() == null ? null : entity.getProveedor().getNombre())
+                .idZona(entity.getZona() == null ? null : entity.getZona().getId())
+                .nombreZona(entity.getZona() == null ? null : entity.getZona().getNombre())
+                .idsPlanes(entity.getPlanes().stream().map(Plan::getId).sorted().toList())
+                .nombresPlanes(entity.getPlanes().stream().map(Plan::getNombre).sorted(String.CASE_INSENSITIVE_ORDER).toList())
+                .activo(entity.getActivo())
+                .createdAt(entity.getCreatedAt())
+                .build();
     }
 }

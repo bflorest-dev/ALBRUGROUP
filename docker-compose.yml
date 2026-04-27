@@ -1,13 +1,32 @@
 services:
-  postgres:
+  postgres-core:
     image: postgres:17-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+      - postgres-core-data:/var/lib/postgresql/data
+      - ./docker/postgres/core-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - albru-network
+
+  postgres-lead:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres-lead-data:/var/lib/postgresql/data
+      - ./docker/postgres/lead-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 10s
@@ -36,7 +55,8 @@ services:
       context: ./auth-service
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      AUTH_DB_URL: jdbc:postgresql://postgres:5432/auth_db
+      JAVA_TOOL_OPTIONS: -Xms128m -Xmx256m
+      AUTH_DB_URL: jdbc:postgresql://postgres-core:5432/auth_db
       AUTH_DB_USERNAME: postgres
       AUTH_DB_PASSWORD: postgres
       JWT_SECRET: 3bZ4bR0S5c7hFQ2nTzF8oQv9vKxM2yP7aLw8eJrHkU1cNdWqXyZp6tR9mVb4sL0Q8nF5gH2kJ3lP6rS9uVw==
@@ -44,7 +64,7 @@ services:
       AUTH_DOCS_GATEWAY_URL: http://localhost:8080/auth
       AUTH_DOCS_PUBLIC_URL: http://localhost:8080/auth
     depends_on:
-      postgres:
+      postgres-core:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O - http://localhost:8081/actuator/health/readiness | grep '\"status\":\"UP\"' >/dev/null || exit 1"]
@@ -61,7 +81,8 @@ services:
       context: ./rrhh-service
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      RRHH_DB_URL: jdbc:postgresql://postgres:5432/rrhh_db
+      JAVA_TOOL_OPTIONS: -Xms128m -Xmx256m
+      RRHH_DB_URL: jdbc:postgresql://postgres-core:5432/rrhh_db
       RRHH_DB_USERNAME: postgres
       RRHH_DB_PASSWORD: postgres
       AUTH_SERVICE_URL: http://auth-service:8081
@@ -70,7 +91,7 @@ services:
       RRHH_DOCS_GATEWAY_URL: http://localhost:8080/rrhh
       RRHH_DOCS_PUBLIC_URL: http://localhost:8080/rrhh
     depends_on:
-      postgres:
+      postgres-core:
         condition: service_healthy
       auth-service:
         condition: service_healthy
@@ -91,7 +112,8 @@ services:
       context: ./lead-service
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      LEAD_DB_URL: jdbc:postgresql://postgres:5432/lead_db
+      JAVA_TOOL_OPTIONS: -Xms256m -Xmx512m
+      LEAD_DB_URL: jdbc:postgresql://postgres-lead:5432/lead_db
       LEAD_DB_USERNAME: postgres
       LEAD_DB_PASSWORD: postgres
       LEAD_REDIS_HOST: redis
@@ -100,7 +122,7 @@ services:
       LEAD_DOCS_GATEWAY_URL: http://localhost:8080/leads
       LEAD_DOCS_PUBLIC_URL: http://localhost:8080/leads
     depends_on:
-      postgres:
+      postgres-lead:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -119,7 +141,8 @@ services:
       context: ./recruitment-service
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      RECRUITMENT_DB_URL: jdbc:postgresql://postgres:5432/recruitment_db
+      JAVA_TOOL_OPTIONS: -Xms128m -Xmx256m
+      RECRUITMENT_DB_URL: jdbc:postgresql://postgres-core:5432/recruitment_db
       RECRUITMENT_DB_USERNAME: postgres
       RECRUITMENT_DB_PASSWORD: postgres
       RECRUITMENT_REDIS_HOST: redis
@@ -128,7 +151,7 @@ services:
       RECRUITMENT_DOCS_GATEWAY_URL: http://localhost:8080/recruitment
       RECRUITMENT_DOCS_PUBLIC_URL: http://localhost:8080/recruitment
     depends_on:
-      postgres:
+      postgres-core:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -147,14 +170,15 @@ services:
       context: ./schedule-service
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      SCHEDULE_DB_URL: jdbc:postgresql://postgres:5432/schedule_db
+      JAVA_TOOL_OPTIONS: -Xms128m -Xmx256m
+      SCHEDULE_DB_URL: jdbc:postgresql://postgres-core:5432/schedule_db
       SCHEDULE_DB_USERNAME: postgres
       SCHEDULE_DB_PASSWORD: postgres
       JWT_SECRET: 3bZ4bR0S5c7hFQ2nTzF8oQv9vKxM2yP7aLw8eJrHkU1cNdWqXyZp6tR9mVb4sL0Q8nF5gH2kJ3lP6rS9uVw==
       SCHEDULE_DOCS_GATEWAY_URL: http://localhost:8080/schedule
       SCHEDULE_DOCS_PUBLIC_URL: http://localhost:8080/schedule
     depends_on:
-      postgres:
+      postgres-core:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O - http://localhost:8085/actuator/health/readiness | grep '\"status\":\"UP\"' >/dev/null || exit 1"]
@@ -171,6 +195,7 @@ services:
       context: ./gateway-service
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      JAVA_TOOL_OPTIONS: -Xms128m -Xmx256m
       GATEWAY_REDIS_HOST: redis
       GATEWAY_REDIS_PORT: 6379
       AUTH_SERVICE_URI: http://auth-service:8081
@@ -207,26 +232,41 @@ services:
     networks:
       - albru-network
 
-  frontend:
-    build:
-      context: ./albrufrontend
+  db-seeder:
+    image: postgres:17-alpine
+    environment:
+      PGPASSWORD: postgres
+      PGUSER: postgres
+      PGPORT: 5432
+      PGHOST: postgres-core
+      LEAD_PGHOST: postgres-lead
     depends_on:
-      gateway-service:
+      postgres-core:
         condition: service_healthy
-    ports:
-      - "80:80"
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
-    restart: unless-stopped
+      postgres-lead:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      rrhh-service:
+        condition: service_healthy
+      lead-service:
+        condition: service_healthy
+      recruitment-service:
+        condition: service_healthy
+      schedule-service:
+        condition: service_healthy
+    volumes:
+      - ./docker/postgres/seeds:/seeds:ro
+      - ./lead-service/src/main/resources/ubigeo:/seed-data/ubigeo:ro
+      - ./BACKUP:/seed-data/legacy:ro
+    command: ["sh", "/seeds/run-seeds.sh"]
+    restart: "no"
     networks:
       - albru-network
 
 volumes:
-  postgres-data:
+  postgres-core-data:
+  postgres-lead-data:
 
 networks:
   albru-network:

@@ -13,21 +13,18 @@ public interface PromocionComercialRepository extends JpaRepository<PromocionCom
     Optional<PromocionComercial> findByIdAndActivoTrue(Long id);
 
     @Query("""
-            select p
+            select distinct p
             from PromocionComercial p
+            left join p.planes plan
             where p.activo = true
-              and (
-                    :idProveedor is null
-                    or (p.interno = false and p.proveedor is not null and p.proveedor.id = :idProveedor)
-                    or (p.interno = true and (p.proveedor is null or p.proveedor.id = :idProveedor))
-              )
-              and (:interno is null or p.interno = :interno)
+              and (:idProveedor is null or (p.proveedor is not null and p.proveedor.id = :idProveedor))
               and (:idZona is null or (p.zona is not null and p.zona.id = :idZona))
-            order by p.nombre asc
+              and (:idPlan is null or plan.id = :idPlan)
+            order by p.reglaComercial asc
             """)
     List<PromocionComercial> listarActivas(
             @Param("idProveedor") Long idProveedor,
-            @Param("interno") Boolean interno,
-            @Param("idZona") Long idZona
+            @Param("idZona") Long idZona,
+            @Param("idPlan") Long idPlan
     );
 }

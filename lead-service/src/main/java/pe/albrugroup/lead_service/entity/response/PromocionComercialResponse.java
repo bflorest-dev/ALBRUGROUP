@@ -6,9 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
+import java.util.List;
 
 @Getter
 @Setter
@@ -18,18 +17,13 @@ import java.time.LocalDate;
 public class PromocionComercialResponse {
 
     private Long id;
-    private String nombre;
-    private Boolean interno;
+    private String reglaComercial;
     private Long idProveedor;
     private String nombreProveedor;
     private Long idZona;
     private String nombreZona;
-    private Boolean descuento;
-    private BigDecimal descuentoPorcentual;
-    private BigDecimal descuentoMonto;
-    private Integer cantidadMeses;
-    private LocalDate vigenciaDesde;
-    private LocalDate vigenciaHasta;
+    private List<Long> idsPlanes;
+    private List<String> nombresPlanes;
     private Boolean activo;
     private Instant createdAt;
 }

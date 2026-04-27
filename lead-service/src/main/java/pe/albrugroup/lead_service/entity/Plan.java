@@ -21,6 +21,8 @@ public class Plan {
 
     private String nombre;
     private BigDecimal precio;
+    private BigDecimal precioPromocional;
+    private Integer mesesPromocionPrecio;
 
     private LocalDate vigenciaDesde;
     private LocalDate vigenciaHasta;
@@ -34,6 +36,12 @@ public class Plan {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_telefono")
     private Telefono telefono;
+    private Integer velocidadPromocional;
+    private Integer mesesPromocionVelocidad;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_zona")
+    private Zona zona;
 
     @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

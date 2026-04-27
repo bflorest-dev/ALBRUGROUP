@@ -1,6 +1,8 @@
 package pe.albrugroup.schedule_service.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,6 +17,7 @@ import pe.albrugroup.schedule_service.entity.request.horario.RegistrarHorarioReq
 import pe.albrugroup.schedule_service.entity.request.horario.ReemplazarHorarioRequest;
 import pe.albrugroup.schedule_service.entity.response.PageResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.ExcepcionHorarioResponse;
+import pe.albrugroup.schedule_service.entity.response.horario.HorarioMesResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.HorarioResponse;
 import pe.albrugroup.schedule_service.usecase.IHorario;
 
@@ -69,6 +72,15 @@ public class HorarioController {
                                                   @PathVariable @Positive Long idExcepcion) {
         horarioService.eliminarExcepcion(idHorario, idExcepcion);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/mes")
+    @PreAuthorize("hasAuthority('READ_HORARIOS_SELF')")
+    public ResponseEntity<HorarioMesResponse> getHorarioMes(
+            @RequestParam(required = false) Integer anio,
+            @RequestParam(required = false) @Min(1) @Max(12) Integer mes
+    ) {
+        return ResponseEntity.ok(horarioService.getHorarioMes(anio, mes));
     }
 
     @GetMapping("/empleados/{idEmpleado}/vigente")

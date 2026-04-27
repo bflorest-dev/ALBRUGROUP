@@ -31,10 +31,10 @@ public class PromocionComercialController {
     @GetMapping @PreAuthorize("hasAuthority('READ_PROMOCIONES')")
     public ResponseEntity<List<PromocionComercialResponse>> listarPromociones(
             @RequestParam(required = false) Long idProveedor,
-            @RequestParam(required = false) Boolean interno,
-            @RequestParam(required = false) Long idZona
+            @RequestParam(required = false) Long idZona,
+            @RequestParam(required = false) Long idPlan
     ) {
-        return ResponseEntity.ok(service.listarPromociones(idProveedor, interno, idZona));
+        return ResponseEntity.ok(service.listarPromociones(idProveedor, idZona, idPlan));
     }
 
     @DeleteMapping("/{idPromocion}") @PreAuthorize("hasAuthority('DELETE_PROMOCIONES')")

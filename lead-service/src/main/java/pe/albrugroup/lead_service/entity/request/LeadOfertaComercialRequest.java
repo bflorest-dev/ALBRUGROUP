@@ -12,7 +12,6 @@ public class LeadOfertaComercialRequest {
 
     private Long idPlan;
     private Long idPromocionInterna;
-    private Long idPromocionProveedor;
 
     @Valid
     private List<LeadOfertaAdicionalRequest> adicionales;

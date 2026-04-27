@@ -12,15 +12,11 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.util.List;
 
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter @Setter @Builder
+@NoArgsConstructor @AllArgsConstructor
 public class ConsultaMonitoreoRequest {
 
     @NotEmpty(message = "empleadoIds es obligatorio")
     private List<@NotNull(message = "empleadoId no puede ser nulo") @Positive(message = "empleadoId debe ser positivo") Long> empleadoIds;
-
     private LocalDate fecha;
 }

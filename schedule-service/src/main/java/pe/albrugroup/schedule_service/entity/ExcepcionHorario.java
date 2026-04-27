@@ -13,7 +13,16 @@ import java.time.LocalTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "excepcion_horario")
+@Table(
+        name = "excepcion_horario",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_excepcion_horario_fecha",
+                columnNames = {"horario_id", "fecha"}
+        ),
+        indexes = {
+                @Index(name = "idx_excepcion_horario_horario", columnList = "horario_id")
+        }
+)
 public class ExcepcionHorario {
 
     @Id

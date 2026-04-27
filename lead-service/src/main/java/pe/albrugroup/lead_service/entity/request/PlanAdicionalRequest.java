@@ -3,8 +3,6 @@ package pe.albrugroup.lead_service.entity.request;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
-import java.math.BigDecimal;
-
 @Builder
 @Getter
 @Setter
@@ -22,5 +20,4 @@ public class PlanAdicionalRequest {
     private Boolean permiteCompraAdicional;
 
     private Integer cantidadMaximaAdicional;
-    private BigDecimal precioUnitarioAdicional;
 }

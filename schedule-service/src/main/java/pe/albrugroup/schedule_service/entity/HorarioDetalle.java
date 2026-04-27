@@ -6,17 +6,21 @@ import pe.albrugroup.schedule_service.entity.enums.Dia;
 
 import java.time.LocalTime;
 
-@Entity
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@Table(name = "horario_detalle")
+@Entity @Getter @Setter @Builder
+@NoArgsConstructor @AllArgsConstructor
+@Table(
+        name = "horario_detalle",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_horario_detalle_dia",
+                columnNames = {"horario_id", "dia"}
+        ),
+        indexes = {
+                @Index(name = "idx_horario_detalle_horario", columnList = "horario_id")
+        }
+)
 public class HorarioDetalle {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

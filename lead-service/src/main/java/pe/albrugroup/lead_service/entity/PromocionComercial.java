@@ -3,11 +3,9 @@ package pe.albrugroup.lead_service.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
-import pe.albrugroup.lead_service.entity.enums.TipoVenta;
-
-import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity @Getter @Setter @Builder
 @AllArgsConstructor @NoArgsConstructor
@@ -15,9 +13,7 @@ public class PromocionComercial {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String nombre;
-
-    private Boolean interno;
+    private String reglaComercial;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_proveedor")
     private Proveedor proveedor;
@@ -26,17 +22,14 @@ public class PromocionComercial {
     @JoinColumn(name = "id_zona")
     private Zona zona;
 
-    // A revisar donde va este campo
-//    @Enumerated(EnumType.STRING)
-//    private TipoVenta tipoVenta;
-
-    private Boolean descuento;
-    private BigDecimal descuentoPorcentual;
-    private BigDecimal descuentoMonto;
-    private Integer cantidadMeses;
-
-    private LocalDate vigenciaDesde;
-    private LocalDate vigenciaHasta;
+    @ManyToMany
+    @JoinTable(
+            name = "promocion_comercial_plan",
+            joinColumns = @JoinColumn(name = "id_promocion_comercial"),
+            inverseJoinColumns = @JoinColumn(name = "id_plan")
+    )
+    @Builder.Default
+    private Set<Plan> planes = new HashSet<>();
 
     private Boolean activo;
 

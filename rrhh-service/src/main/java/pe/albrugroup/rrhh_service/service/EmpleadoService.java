@@ -137,6 +137,21 @@ public class EmpleadoService implements IEmpleado {
 
     @Override
     @Transactional(readOnly = true)
+    public List<EmpleadoRolResponse> listarEmpleadosLight(List<PuestoTrabajo> puestosTrabajo) {
+        List<EmpleadoRolResponse> empleados = empleadoRolMapper.toResponseList(
+                puestosTrabajo == null || puestosTrabajo.isEmpty()
+                        ? contratoRepository.findEmpleadosActivos(EstadoOperativo.ACTIVO, LocalDate.now())
+                        : contratoRepository.findEmpleadosActivosByPuestosTrabajo(
+                                EstadoOperativo.ACTIVO,
+                                LocalDate.now(),
+                                puestosTrabajo
+                        )
+        );
+        return empleados;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<EmpleadoRolResponse> listarPersonalRecruitment() {
         List<PuestoTrabajo> puestosRecruitment = List.of(
                 PuestoTrabajo.CAPACITADOR,

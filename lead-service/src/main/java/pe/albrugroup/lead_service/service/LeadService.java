@@ -239,9 +239,7 @@ public class LeadService {
 
         Plan plan = request.getIdPlan() == null ? null : obtenerPlanVigente(request.getIdPlan());
         PromocionComercial promocionInterna = request.getIdPromocionInterna() == null ? null
-                : obtenerPromocionVigente(request.getIdPromocionInterna());
-        PromocionComercial promocionProveedor = request.getIdPromocionProveedor() == null ? null
-                : obtenerPromocionVigente(request.getIdPromocionProveedor());
+                : obtenerPromocionInternaActiva(request.getIdPromocionInterna(), plan);
 
         lead.setPlan(plan);
         lead.setNombrePlanSnapshot(plan == null ? null : plan.getNombre());
@@ -249,9 +247,7 @@ public class LeadService {
         lead.setPrecioPlanSnapshot(plan == null ? null : plan.getPrecio());
 
         lead.setPromocionInterna(promocionInterna);
-        lead.setPromocionProveedor(promocionProveedor);
-        lead.setNombrePromocionInternaSnapshot(promocionInterna == null ? null : promocionInterna.getNombre());
-        lead.setNombrePromocionProveedorSnapshot(promocionProveedor == null ? null : promocionProveedor.getNombre());
+        lead.setNombrePromocionInternaSnapshot(promocionInterna == null ? null : promocionInterna.getReglaComercial());
 
         reemplazarAdicionales(lead, request.getAdicionales());
         moverAEnGestionSiAplica(lead);
@@ -711,16 +707,37 @@ public class LeadService {
         return plan;
     }
 
-    private PromocionComercial obtenerPromocionVigente(Long idPromocion) {
+    private PromocionComercial obtenerPromocionInternaActiva(Long idPromocion, Plan plan) {
         PromocionComercial promocion = promocionComercialRepository.findByIdAndActivoTrue(idPromocion)
                 .orElseThrow(() -> new NotFoundException(PromocionComercial.class, idPromocion));
 
-        LocalDate fechaActual = LocalDate.now(ZoneId.systemDefault());
-        boolean vigente = (promocion.getVigenciaDesde() == null || !promocion.getVigenciaDesde().isAfter(fechaActual))
-                && (promocion.getVigenciaHasta() == null || !promocion.getVigenciaHasta().isBefore(fechaActual));
-
-        if (!vigente) {
-            throw new NotFoundException(PromocionComercial.class, idPromocion);
+        if (plan == null) {
+            throw new BadRequestException("No se puede seleccionar una promocion interna sin plan");
+        }
+        boolean aplicaAlPlan = promocion.getPlanes().stream()
+                .anyMatch(item -> item.getId().equals(plan.getId()));
+        if (!aplicaAlPlan) {
+            throw new BadRequestException(
+                    "La promocion interna no aplica al plan seleccionado",
+                    null,
+                    Map.of(
+                            "idPromocion", idPromocion,
+                            "idPlan", plan.getId()
+                    )
+            );
+        }
+        if (promocion.getProveedor() != null && plan.getProveedor() != null
+                && !promocion.getProveedor().getId().equals(plan.getProveedor().getId())) {
+            throw new BadRequestException(
+                    "La promocion interna no pertenece al proveedor del plan",
+                    null,
+                    Map.of(
+                            "idPromocion", idPromocion,
+                            "idPlan", plan.getId(),
+                            "idProveedorPlan", plan.getProveedor().getId(),
+                            "idProveedorPromocion", promocion.getProveedor().getId()
+                    )
+            );
         }
         return promocion;
     }
@@ -737,9 +754,6 @@ public class LeadService {
         }
         if (lead.getPlan() == null) {
             throw new BadRequestException("Falta seleccionar un plan");
-        }
-        if (lead.getPromocionInterna() == null && lead.getPromocionProveedor() == null) {
-            throw new BadRequestException("Falta seleccionar al menos una promocion");
         }
 
         if (datosPreventa.getTipoDocumento() == null) {

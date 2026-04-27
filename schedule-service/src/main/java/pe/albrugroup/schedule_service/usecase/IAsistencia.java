@@ -1,12 +1,13 @@
 package pe.albrugroup.schedule_service.usecase;
 
+import pe.albrugroup.schedule_service.entity.request.asistencia.ConsultaCumplimientoRequest;
 import pe.albrugroup.schedule_service.entity.request.asistencia.ConsultaMonitoreoRequest;
 import pe.albrugroup.schedule_service.entity.request.asistencia.MovimientoAsistenciaRequest;
+import pe.albrugroup.schedule_service.entity.response.asistencia.AsistenciaMesResponse;
+import pe.albrugroup.schedule_service.entity.response.asistencia.CumplimientoDetalleResponse;
+import pe.albrugroup.schedule_service.entity.response.asistencia.CumplimientoResumenResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleAsistenciaResponse;
-import pe.albrugroup.schedule_service.entity.response.asistencia.EstadoActualResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.EstadoMonitorResponse;
-import pe.albrugroup.schedule_service.entity.response.asistencia.HistorialAsistenciaResponse;
-import pe.albrugroup.schedule_service.entity.response.asistencia.ResumenAsistenciaResponse;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -18,15 +19,9 @@ public interface IAsistencia {
     DetalleAsistenciaResponse finalizarAlmuerzo(MovimientoAsistenciaRequest request);
     DetalleAsistenciaResponse iniciarServicios(MovimientoAsistenciaRequest request);
     DetalleAsistenciaResponse finalizarServicios(MovimientoAsistenciaRequest request);
-    EstadoActualResponse getEstadoActual(LocalDate fecha);
-    EstadoActualResponse getEstadoActual(Long idEmpleado, LocalDate fecha);
+    AsistenciaMesResponse getAsistenciaMes(Integer anio, Integer mes);
     DetalleAsistenciaResponse getAsistenciaDia(LocalDate fecha);
-    DetalleAsistenciaResponse getAsistenciaDia(Long idEmpleado, LocalDate fecha);
-    ResumenAsistenciaResponse getResumenSemanal(LocalDate fecha);
-    ResumenAsistenciaResponse getResumenSemanal(Long idEmpleado, LocalDate fecha);
-    ResumenAsistenciaResponse getResumenMensual(LocalDate fecha);
-    ResumenAsistenciaResponse getResumenMensual(Long idEmpleado, LocalDate fecha);
-    List<HistorialAsistenciaResponse> getHistorial(LocalDate desde, LocalDate hasta);
-    List<HistorialAsistenciaResponse> getHistorial(Long idEmpleado, LocalDate desde, LocalDate hasta);
+    CumplimientoResumenResponse getCumplimientoResumen(ConsultaCumplimientoRequest request);
+    CumplimientoDetalleResponse getCumplimientoDetalle(ConsultaCumplimientoRequest request);
     List<EstadoMonitorResponse> getEstadosMonitor(ConsultaMonitoreoRequest request);
 }

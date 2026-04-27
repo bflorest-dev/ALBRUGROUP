@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.albrugroup.schedule_service.configuration.CurrentUser;
 import pe.albrugroup.schedule_service.entity.ExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.Horario;
 import pe.albrugroup.schedule_service.entity.PoliticaModalidad;
@@ -14,6 +15,8 @@ import pe.albrugroup.schedule_service.entity.request.horario.RegistrarHorarioReq
 import pe.albrugroup.schedule_service.entity.request.horario.ReemplazarHorarioRequest;
 import pe.albrugroup.schedule_service.entity.response.PageResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.ExcepcionHorarioResponse;
+import pe.albrugroup.schedule_service.entity.response.horario.HorarioMesResponse;
+import pe.albrugroup.schedule_service.entity.response.horario.HorarioMesVigenciaResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.HorarioResponse;
 import pe.albrugroup.schedule_service.exception.BadRequestException;
 import pe.albrugroup.schedule_service.exception.ConflictException;
@@ -24,6 +27,7 @@ import pe.albrugroup.schedule_service.service.mapper.HorarioMapper;
 import pe.albrugroup.schedule_service.usecase.IHorario;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -37,6 +41,7 @@ public class HorarioService implements IHorario {
     private final PoliticaModalidadService politicaModalidadService;
     private final PaginationService paginationService;
     private final HorarioMapper mapper;
+    private final CurrentUser currentUser;
 
     @Override
     @Transactional
@@ -132,6 +137,44 @@ public class HorarioService implements IHorario {
 
     @Override
     @Transactional(readOnly = true)
+    public HorarioMesResponse getHorarioMes(Integer anio, Integer mes) {
+        Long idEmpleado = currentUser.empleadoID();
+        YearMonth periodo = resolvePeriodoMensual(anio, mes);
+        LocalDate desde = periodo.atDay(1);
+        LocalDate hasta = periodo.atEndOfMonth();
+
+        List<HorarioMesVigenciaResponse> vigencias = horarioRepository.findHorariosEnRango(idEmpleado, desde, hasta)
+                .stream()
+                .map(horario -> HorarioMesVigenciaResponse.builder()
+                        .idHorario(horario.getId())
+                        .modalidad(horario.getModalidadContrato())
+                        .horasObjetivoSemanal(horario.getHorasObjetivoSemanal())
+                        .horasObjetivoMensual(horario.getHorasObjetivoMensual())
+                        .minutosAlmuerzo(horario.getMinutosAlmuerzo())
+                        .minutosServicios(horario.getMinutosServicios())
+                        .fechaInicio(horario.getFechaInicio())
+                        .fechaFin(horario.getFechaFin())
+                        .desdeAplicacion(maxDate(desde, horario.getFechaInicio()))
+                        .hastaAplicacion(minDate(hasta, horario.getFechaFin()))
+                        .compensable(horario.getCompensable())
+                        .detallesBase(horario.getDetalles().stream().map(mapper::toResponse).toList())
+                        .modificaciones(horario.getExcepciones().stream()
+                                .filter(excepcion -> !excepcion.getFecha().isBefore(desde) && !excepcion.getFecha().isAfter(hasta))
+                                .map(mapper::toResponse)
+                                .toList())
+                        .build())
+                .toList();
+
+        return HorarioMesResponse.builder()
+                .idEmpleado(idEmpleado)
+                .anio(periodo.getYear())
+                .mes(periodo.getMonthValue())
+                .vigencias(vigencias)
+                .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public HorarioResponse getHorarioVigente(Long idEmpleado, LocalDate fecha) {
         LocalDate consulta = fecha != null ? fecha : LocalDate.now();
         return mapper.toResponse(horarioRepository.findHorarioVigente(idEmpleado, consulta)
@@ -173,5 +216,26 @@ public class HorarioService implements IHorario {
         return excepcionHorarioRepository.findById(idExcepcion)
                 .filter(value -> value.getHorario().getId().equals(idHorario))
                 .orElseThrow(() -> new NotFoundException(ExcepcionHorario.class, idExcepcion));
+    }
+
+    private YearMonth resolvePeriodoMensual(Integer anio, Integer mes) {
+        if (anio == null && mes == null) {
+            return YearMonth.now();
+        }
+        if (anio == null || mes == null) {
+            throw new BadRequestException("anio y mes deben enviarse juntos");
+        }
+        return YearMonth.of(anio, mes);
+    }
+
+    private LocalDate maxDate(LocalDate left, LocalDate right) {
+        return left.isAfter(right) ? left : right;
+    }
+
+    private LocalDate minDate(LocalDate left, LocalDate right) {
+        if (right == null) {
+            return left;
+        }
+        return left.isBefore(right) ? left : right;
     }
 }

@@ -47,7 +47,7 @@ public class GlobalExceptionHandler {
 
         errors.put("status", HttpStatus.BAD_REQUEST.value());
         errors.put("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
-        errors.put("message", "Campos Invalidos en la solicitud");
+        errors.put("message", "Campos invalidos en la solicitud");
         errors.put("details", details);
         return ResponseEntity.badRequest().body(errors);
     }
@@ -96,10 +96,28 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(DataIntegrityViolationException e) {
+        Map<String, String> constraintMessages = Map.of(
+                "uk_asistencia_empleado_fecha", "Ya existe una asistencia registrada para el empleado en esa fecha",
+                "uk_excepcion_horario_fecha", "Ya existe una excepcion registrada para ese horario en esa fecha",
+                "uk_horario_detalle_dia", "Ya existe un detalle de horario registrado para ese dia",
+                "politica_modalidad_modalidad_key", "Ya existe una politica registrada para esa modalidad"
+        );
+
+        String message = "Ya existe un registro con estos datos";
+        String errorMsg = e.getMostSpecificCause().getMessage();
+        if (errorMsg != null) {
+            String errorMsgLower = errorMsg.toLowerCase();
+            message = constraintMessages.entrySet().stream()
+                    .filter(entry -> errorMsgLower.contains(entry.getKey().toLowerCase()))
+                    .map(Map.Entry::getValue)
+                    .findFirst()
+                    .orElse(message);
+        }
+
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
                 "status", HttpStatus.CONFLICT.value(),
                 "error", HttpStatus.CONFLICT.getReasonPhrase(),
-                "message", "Ya existe un registro con estos datos"
+                "message", message
         ));
     }
 

@@ -62,4 +62,23 @@ public interface ContratoRepository extends JpaRepository<Contrato, Long> {
     List<EmpleadoRolProjection> findEmpleadosActivosByPuestosTrabajo(@Param("estadoOperativo") EstadoOperativo estadoOperativo,
                                                                      @Param("fechaActual") LocalDate fechaActual,
                                                                      @Param("puestosTrabajo") List<PuestoTrabajo> puestosTrabajo);
+
+    @Query("""
+            SELECT
+                e.id AS idEmpleado,
+                e.nombres AS nombres,
+                e.apellidos AS apellidos,
+                e.numeroDocumento AS numeroDocumento,
+                e.celularPersonal AS celularPersonal,
+                e.correoPersonal AS correoPersonal,
+                c.puestoTrabajo AS puestoTrabajo
+            FROM Contrato c
+            JOIN c.empleado e
+            WHERE e.estadoOperativo = :estadoOperativo
+              AND c.fechaInicio <= :fechaActual
+              AND (c.fechaFin IS NULL OR c.fechaFin >= :fechaActual)
+            ORDER BY e.nombres ASC, e.apellidos ASC
+            """)
+    List<EmpleadoRolProjection> findEmpleadosActivos(@Param("estadoOperativo") EstadoOperativo estadoOperativo,
+                                                     @Param("fechaActual") LocalDate fechaActual);
 }

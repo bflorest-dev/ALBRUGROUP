@@ -1,20 +1,19 @@
 package pe.albrugroup.schedule_service.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.schedule_service.entity.request.asistencia.MovimientoAsistenciaRequest;
+import pe.albrugroup.schedule_service.entity.response.asistencia.AsistenciaMesResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleAsistenciaResponse;
-import pe.albrugroup.schedule_service.entity.response.asistencia.EstadoActualResponse;
-import pe.albrugroup.schedule_service.entity.response.asistencia.HistorialAsistenciaResponse;
-import pe.albrugroup.schedule_service.entity.response.asistencia.ResumenAsistenciaResponse;
 import pe.albrugroup.schedule_service.usecase.IAsistencia;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @RestController
 @Validated
@@ -60,34 +59,18 @@ public class AsistenciaController {
         return ResponseEntity.ok(asistenciaService.finalizarServicios(request));
     }
 
-    @GetMapping("/estado-actual")
-    @PreAuthorize("hasAuthority('READ_ASISTENCIAS_SELF')")
-    public ResponseEntity<EstadoActualResponse> getEstadoActual(@RequestParam(required = false) LocalDate fecha) {
-        return ResponseEntity.ok(asistenciaService.getEstadoActual(fecha));
-    }
-
     @GetMapping("/dia")
     @PreAuthorize("hasAuthority('READ_ASISTENCIAS_SELF')")
     public ResponseEntity<DetalleAsistenciaResponse> getAsistenciaDia(@RequestParam(required = false) LocalDate fecha) {
         return ResponseEntity.ok(asistenciaService.getAsistenciaDia(fecha != null ? fecha : LocalDate.now()));
     }
 
-    @GetMapping("/semana")
-    @PreAuthorize("hasAuthority('READ_ASISTENCIAS_SELF')")
-    public ResponseEntity<ResumenAsistenciaResponse> getResumenSemanal(@RequestParam(required = false) LocalDate fecha) {
-        return ResponseEntity.ok(asistenciaService.getResumenSemanal(fecha));
-    }
-
     @GetMapping("/mes")
     @PreAuthorize("hasAuthority('READ_ASISTENCIAS_SELF')")
-    public ResponseEntity<ResumenAsistenciaResponse> getResumenMensual(@RequestParam(required = false) LocalDate fecha) {
-        return ResponseEntity.ok(asistenciaService.getResumenMensual(fecha));
-    }
-
-    @GetMapping("/historial")
-    @PreAuthorize("hasAuthority('READ_ASISTENCIAS_SELF')")
-    public ResponseEntity<List<HistorialAsistenciaResponse>> getHistorial(@RequestParam(required = false) LocalDate desde,
-                                                                          @RequestParam(required = false) LocalDate hasta) {
-        return ResponseEntity.ok(asistenciaService.getHistorial(desde, hasta));
+    public ResponseEntity<AsistenciaMesResponse> getAsistenciaMes(
+            @RequestParam(required = false) Integer anio,
+            @RequestParam(required = false) @Min(1) @Max(12) Integer mes
+    ) {
+        return ResponseEntity.ok(asistenciaService.getAsistenciaMes(anio, mes));
     }
 }

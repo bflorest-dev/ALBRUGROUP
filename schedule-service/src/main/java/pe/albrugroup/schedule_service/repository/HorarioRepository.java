@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import pe.albrugroup.schedule_service.entity.Horario;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 public interface HorarioRepository extends JpaRepository<Horario, Long> {
@@ -31,6 +32,17 @@ public interface HorarioRepository extends JpaRepository<Horario, Long> {
                                @Param("fechaInicio") LocalDate fechaInicio,
                                @Param("fechaFin") LocalDate fechaFin,
                                @Param("excludeId") Long excludeId);
+
+    @Query("""
+            SELECT h FROM Horario h
+            WHERE h.idEmpleado = :idEmpleado
+              AND h.fechaInicio <= :hasta
+              AND (h.fechaFin IS NULL OR h.fechaFin >= :desde)
+            ORDER BY h.fechaInicio ASC
+            """)
+    List<Horario> findHorariosEnRango(@Param("idEmpleado") Long idEmpleado,
+                                      @Param("desde") LocalDate desde,
+                                      @Param("hasta") LocalDate hasta);
 
     Page<Horario> findByIdEmpleado(Long idEmpleado, Pageable pageable);
 }

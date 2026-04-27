@@ -10,5 +10,6 @@ import java.util.Optional;
 public interface AsistenciaRepository extends JpaRepository<Asistencia, Long> {
     Optional<Asistencia> findByIdEmpleadoAndFecha(Long idEmpleado, LocalDate fecha);
     List<Asistencia> findByIdEmpleadoAndFechaBetweenOrderByFechaAsc(Long idEmpleado, LocalDate desde, LocalDate hasta);
+    List<Asistencia> findByIdEmpleadoInAndFechaBetweenOrderByIdEmpleadoAscFechaAsc(List<Long> empleadoIds, LocalDate desde, LocalDate hasta);
     List<Asistencia> findByIdEmpleadoInAndFecha(List<Long> empleadoIds, LocalDate fecha);
 }
