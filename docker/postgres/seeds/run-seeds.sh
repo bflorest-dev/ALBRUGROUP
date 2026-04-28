@@ -20,6 +20,5 @@ run_sql "schedule_db" "/seeds/04-schedule-seed.sql"
 
 export PGHOST="${LEAD_PGHOST:-postgres-lead}"
 run_sql "lead_db" "/seeds/02-lead-seed.sql"
-run_sql "lead_db" "/seeds/05-lead-migration-seed.sql"
 
 echo "==> Database seeds completed"

@@ -4,8 +4,9 @@ Este seed toma el backup filtrado `clientes_campos_utiles_full.csv` y lo transfo
 
 ## Como se ejecuta
 
-- `docker-compose.yml` ahora monta `BACKUP` en `/seed-data/legacy`.
-- `run-seeds.sh` sigue ejecutando `05-lead-migration-seed.sql` despues de `02-lead-seed.sql`.
+- `docker-compose.yml` monta `BACKUP` en `/seed-data/legacy` solo para el servicio manual `lead-migration`.
+- El arranque normal ejecuta `run-seeds.sh` sin `05-lead-migration-seed.sql`.
+- Para correr la migracion legacy debes ejecutar `docker compose up lead-migration`.
 - No hace falta mover el CSV a otra carpeta mientras el archivo siga llamandose `clientes_campos_utiles_full.csv`.
 
 ## Criterios de transformacion

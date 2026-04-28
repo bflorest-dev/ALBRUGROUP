@@ -258,8 +258,29 @@ services:
     volumes:
       - ./docker/postgres/seeds:/seeds:ro
       - ./lead-service/src/main/resources/ubigeo:/seed-data/ubigeo:ro
-      - ./BACKUP:/seed-data/legacy:ro
     command: ["sh", "/seeds/run-seeds.sh"]
+    restart: "no"
+    networks:
+      - albru-network
+
+  lead-migration:
+    image: postgres:17-alpine
+    environment:
+      PGPASSWORD: postgres
+      PGUSER: postgres
+      PGPORT: 5432
+      PGHOST: postgres-lead
+    depends_on:
+      postgres-lead:
+        condition: service_healthy
+      lead-service:
+        condition: service_healthy
+      db-seeder:
+        condition: service_completed_successfully
+    volumes:
+      - ./docker/postgres/seeds:/seeds:ro
+      - ./BACKUP:/seed-data/legacy:ro
+    command: ["sh", "/seeds/run-lead-migration.sh"]
     restart: "no"
     networks:
       - albru-network
