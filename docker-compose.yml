@@ -279,7 +279,7 @@ services:
         condition: service_completed_successfully
     volumes:
       - ./docker/postgres/seeds:/seeds:ro
-      - ./BACKUP:/seed-data/legacy:ro
+      - ./docker/postgres/seeds/legacy:/seed-data/legacy:ro
     command: ["sh", "/seeds/run-lead-migration.sh"]
     restart: "no"
     networks:

@@ -45,6 +45,7 @@ export PGUSER="${PGUSER:-postgres}"
 log "lead-migration starting with PGUSER=$PGUSER PGPORT=$PGPORT PGHOST=$PGHOST"
 
 require_file "/seeds/05-lead-migration-seed.sql"
+require_file "/seed-data/legacy/clientes_campos_utiles_full.csv"
 wait_for_db "$PGHOST" "lead_db"
 
 log "Running legacy lead migration"
