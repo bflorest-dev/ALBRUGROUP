@@ -113,6 +113,14 @@ public class LeadService {
         return PageResponse.from(leads);
     }
 
+    public PageResponse<LeadGtrResponse> listarBandejaVenta(PageRequest pageRequest) {
+        Page<LeadGtrResponse> leads = leadRepository.listarLeadsDisponiblesPorEtapa(
+                Etapa.VENTA,
+                paginationService.toPageable(pageRequest, LEAD_GTR_SORT_FIELDS)
+        );
+        return PageResponse.from(leads);
+    }
+
     public PageResponse<LeadAsesorVentasResponse> listarBandejaAsesorVentas(PageRequest pageRequest) {
         return listarBandejaAsesorVentas(currentUser.empleadoID(), pageRequest);
     }
