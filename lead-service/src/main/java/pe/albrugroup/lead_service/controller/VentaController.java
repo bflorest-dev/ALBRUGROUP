@@ -64,7 +64,7 @@ public class VentaController {
         leadService.registrarContactoVenta(idLead);
         return ResponseEntity.noContent().build();
     }
-    // 5. Ver detalle del Lead similar al endpoint
+    // 5. Ver detalle del Lead
     @GetMapping("/{idLead}/detalle-asesor") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
     public ResponseEntity<LeadDetalleResponse> obtenerDetalleLeadVenta(@PathVariable Long idLead) {
         var lead = leadService.obtenerDetalleLeadAsignado(idLead, Etapa.VENTA);

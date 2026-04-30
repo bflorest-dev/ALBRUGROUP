@@ -16,7 +16,11 @@ public class PostventaController {
     // Asesor Posventa
 
     // 1. Listar Leads que se encuentren en la etapa de POSTVENTA
+    // 2. Registrar evento de contacto con el Lead
+    // 3. Ver detalle del Lead
+    // 4. Ver el historial de eventos de un Lead
+    // 5. Registrar encuesta
 
-    // 2. Listar Leads asignados a
+    // 9. Tipificar Leads, cualquier tipi que cambie de etapa limpia el Lead
 
 }
