@@ -13,13 +13,14 @@ import pe.albrugroup.lead_service.entity.enums.TipoVia;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LeadAsesorDetalleResponse {
+public class LeadDetalleResponse {
 
     private Long id;
     private Instant fechaAsignacion;
@@ -60,4 +61,15 @@ public class LeadAsesorDetalleResponse {
     private String plano;
     private String piso;
     private String interior;
+    private Long idPlan;
+    private String nombrePlan;
+    private String nombreProveedorPlan;
+    private BigDecimal precioPlan;
+    private Long idPromocionInterna;
+    private String nombrePromocionInterna;
+    private BigDecimal precioAdicionales;
+    private BigDecimal precioFinal;
+    private LeadPlanDetalleResponse plan;
+    private LeadPromocionDetalleResponse promocionInterna;
+    private List<LeadAdicionalDetalleResponse> adicionales;
 }

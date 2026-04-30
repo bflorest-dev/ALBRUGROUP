@@ -1,8 +1,10 @@
 package pe.albrugroup.lead_service.repository;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -12,6 +14,7 @@ import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
+import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.repository.projection.AsesorCantidadProjection;
 
 import java.time.Instant;
@@ -24,6 +27,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
 
     Optional<Lead> findByPrefijoAndLead(String prefijo, String lead);
     Optional<Lead> findByIdAndIdAsesorAsignadoAndEtapa(Long id, Long idAsesorAsignado, Etapa etapa);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<Lead> findByIdAndEtapa(Long id, Etapa etapa);
 
     @Query("""
             SELECT new pe.albrugroup.lead_service.entity.response.LeadGtrResponse(
@@ -152,25 +157,30 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     );
 
     @Query("""
-            SELECT new pe.albrugroup.lead_service.entity.response.LeadGtrResponse(
+            SELECT new pe.albrugroup.lead_service.entity.response.LeadResponse(
                 l.id,
-                l.createdAt,
                 l.prefijo,
                 l.lead,
-                c.nombre,
-                p.nombre,
-                l.base,
-                dp.nombreTitularServicio,
-                l.codigoTipificacion,
-                l.codigoSubtipificacion,
-                l.nombreAsesorAsignado,
+                l.etapa,
                 l.estado,
-                0
+                l.idAsesorAsignado,
+                l.nombreAsesorAsignado,
+                l.base,
+                l.idTipificacion,
+                l.codigoTipificacion,
+                l.idSubtipificacion,
+                l.codigoSubtipificacion,
+                l.nombrePlanSnapshot,
+                l.nombreProveedorSnapshot,
+                l.precioPlanSnapshot,
+                l.nombrePromocionInternaSnapshot,
+                l.precioAdicionalesSnapshot,
+                l.precioFinal,
+                l.createdAt,
+                l.lastEntryAt,
+                l.updatedAt
             )
             FROM Lead l
-            LEFT JOIN l.campana c
-            LEFT JOIN c.proveedor p
-            LEFT JOIN l.datosPreventa dp
             WHERE l.etapa = :etapa
               AND l.idAsesorAsignado IS NULL
               AND l.nombreAsesorAsignado IS NULL
@@ -180,24 +190,39 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND l.codigoSubtipificacion IS NULL
             ORDER BY l.lastEntryAt DESC, l.id DESC
             """)
-    Page<LeadGtrResponse> listarLeadsDisponiblesPorEtapa(
+    Page<LeadResponse> listarLeadsDisponiblesPorEtapa(
             @Param("etapa") Etapa etapa,
             Pageable pageable
     );
 
     @Query("""
-            SELECT l
+            SELECT DISTINCT l
             FROM Lead l
             LEFT JOIN FETCH l.campana c
             LEFT JOIN FETCH c.proveedor
             LEFT JOIN FETCH l.datosPreventa
             LEFT JOIN FETCH l.direccion
+            LEFT JOIN FETCH l.plan
+            LEFT JOIN FETCH l.plan.proveedor
+            LEFT JOIN FETCH l.plan.internet
+            LEFT JOIN FETCH l.plan.television
+            LEFT JOIN FETCH l.plan.telefono
+            LEFT JOIN FETCH l.plan.zona
+            LEFT JOIN FETCH l.plan.adicionales pa
+            LEFT JOIN FETCH pa.adicional
+            LEFT JOIN FETCH l.promocionInterna
+            LEFT JOIN FETCH l.promocionInterna.proveedor
+            LEFT JOIN FETCH l.promocionInterna.zona
+            LEFT JOIN FETCH l.adicionales la
+            LEFT JOIN FETCH la.adicional
             WHERE l.id = :idLead
               AND l.idAsesorAsignado = :idAsesor
+              AND l.etapa = :etapa
             """)
     Optional<Lead> buscarDetalleAsesor(
             @Param("idLead") Long idLead,
-            @Param("idAsesor") Long idAsesor
+            @Param("idAsesor") Long idAsesor,
+            @Param("etapa") Etapa etapa
     );
 
     @Query("""

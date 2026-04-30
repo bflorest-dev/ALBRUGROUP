@@ -120,7 +120,7 @@ public class DataLoader {
         savePermiso("READ_ASISTENCIAS_CUMPLIMIENTO", "Puede consultar cumplimiento de asistencia por periodos y grupos", "ASISTENCIA", "READ_COMPLIANCE");
         savePermiso("UPDATE_ASISTENCIAS", "Puede registrar movimientos de asistencia", "ASISTENCIA", "UPDATE");
 
-        // LEADS
+        // LEADS - PREVENTA
         savePermiso("CREATE_CUENTA_PUBLICITARIA", "Puede registrar cuentas publicitarias", "CUENTA_PUBLICITARIA", "CREATE");
         savePermiso("READ_CUENTAS_PUBLICITARIAS", "Puede listar y ver cuentas publicitarias", "CUENTA_PUBLICITARIA", "READ");
         savePermiso("DELETE_CUENTA_PUBLICITARIA", "Puede desactivar cuentas publicitarias", "CUENTA_PUBLICITARIA", "DELETE");
@@ -164,6 +164,11 @@ public class DataLoader {
         savePermiso("READ_LEADS_SUPERVISOR_VENTAS_BANDEJA", "Puede ver la bandeja de cualquier asesor para supervisor de ventas", "LEAD_SUPERVISOR_VENTAS", "READ");
 
         savePermiso("READ_EVENTOS_LEADS", "Puede ver el historico de eventos de leads", "EVENTO_LEAD", "READ");
+
+        // LEADS - VENTA
+        savePermiso("READ_LEADS_VENTA", "Puede ver la bandeja de leads disponibles en venta", "LEAD_VENTA", "READ");
+
+        // LEADS - POSTVENTA
 
         log.info("Permisos Creados");
     }
@@ -430,6 +435,8 @@ public class DataLoader {
 
         // BACKOFFICE
         Set<Permiso> backofficePermisos = Set.of(
+                getPermiso("READ_LEADS_VENTA"),
+                getPermiso("ASSIGN_LEADS"),
                 getPermiso("READ_LEADS_ASESOR"),
                 getPermiso("UPDATE_LEADS_ASESOR"),
                 getPermiso("TYPIFY_LEADS"),

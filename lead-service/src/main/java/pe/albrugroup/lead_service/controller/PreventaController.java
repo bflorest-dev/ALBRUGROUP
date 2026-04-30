@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pe.albrugroup.lead_service.entity.request.*;
+import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.response.*;
 import pe.albrugroup.lead_service.service.LeadService;
 
@@ -67,8 +68,8 @@ public class PreventaController {
     }
     // GENERAL. Ver detalle de un Lead
     @GetMapping("/{idLead}/detalle-asesor") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
-    public ResponseEntity<LeadAsesorDetalleResponse> obtenerDetalleAsesor(@PathVariable Long idLead) {
-        var lead = leadService.obtenerDetalleAsesor(idLead);
+    public ResponseEntity<LeadDetalleResponse> obtenerDetalleAsesor(@PathVariable Long idLead) {
+        var lead = leadService.obtenerDetalleLeadAsignado(idLead, Etapa.PREVENTA);
         return ResponseEntity.status(HttpStatus.OK).body(lead);
     }
 

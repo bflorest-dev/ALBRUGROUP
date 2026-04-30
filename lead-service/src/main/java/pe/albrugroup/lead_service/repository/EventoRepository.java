@@ -20,6 +20,7 @@ import java.util.Optional;
 public interface EventoRepository extends JpaRepository<Evento, Long> {
 
     Page<Evento> findByIdLeadOrderByCreatedAtDesc(Long idLead, Pageable pageable);
+    List<Evento> findAllByIdLeadOrderByCreatedAtDesc(Long idLead);
 
     @Query("""
             SELECT e

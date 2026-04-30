@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.entity.Evento;
 import pe.albrugroup.lead_service.entity.Lead;
+import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
@@ -63,6 +64,18 @@ public class EventoService {
 
     public PageResponse<EventoResponse> listarPorLead(Long idLead, PageRequest pageRequest) {
         if (!leadRepository.existsById(idLead)) {
+            throw new NotFoundException(Lead.class, idLead);
+        }
+
+        var eventos = eventoRepository.findByIdLeadOrderByCreatedAtDesc(
+                idLead,
+                paginationService.toPageable(pageRequest, EVENTO_SORT_FIELDS)
+        ).map(eventoMapper::toResponse);
+        return PageResponse.from(eventos);
+    }
+
+    public PageResponse<EventoResponse> listarPorLeadAsignado(Long idLead, Etapa etapa, PageRequest pageRequest) {
+        if (leadRepository.findByIdAndIdAsesorAsignadoAndEtapa(idLead, currentUser.empleadoID(), etapa).isEmpty()) {
             throw new NotFoundException(Lead.class, idLead);
         }
 

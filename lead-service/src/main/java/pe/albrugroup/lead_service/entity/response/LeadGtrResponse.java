@@ -10,11 +10,8 @@ import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 
 import java.time.Instant;
 
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter @Setter @Builder
+@NoArgsConstructor @AllArgsConstructor
 public class LeadGtrResponse {
 
     private Long id;

@@ -22,13 +22,21 @@ import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.LeadAsignacionMasivaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsignacionResultadoResponse;
-import pe.albrugroup.lead_service.entity.response.LeadAsesorDetalleResponse;
+import pe.albrugroup.lead_service.entity.response.LeadAdicionalDetalleResponse;
+import pe.albrugroup.lead_service.entity.response.LeadDetalleResponse;
+import pe.albrugroup.lead_service.entity.response.LeadPlanDetalleResponse;
+import pe.albrugroup.lead_service.entity.response.LeadPromocionDetalleResponse;
+import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorVentasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
+import pe.albrugroup.lead_service.entity.response.InternetResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
+import pe.albrugroup.lead_service.entity.response.PlanAdicionalResponse;
 import pe.albrugroup.lead_service.entity.response.SupervisorVentasProveedorResumenResponse;
 import pe.albrugroup.lead_service.entity.response.SupervisorVentasResumenResponse;
+import pe.albrugroup.lead_service.entity.response.TelefonoResponse;
+import pe.albrugroup.lead_service.entity.response.TelevisionResponse;
 import pe.albrugroup.lead_service.exception.BusinessException;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.ConflictException;
@@ -113,8 +121,8 @@ public class LeadService {
         return PageResponse.from(leads);
     }
 
-    public PageResponse<LeadGtrResponse> listarBandejaVenta(PageRequest pageRequest) {
-        Page<LeadGtrResponse> leads = leadRepository.listarLeadsDisponiblesPorEtapa(
+    public PageResponse<LeadResponse> listarBandejaVenta(PageRequest pageRequest) {
+        Page<LeadResponse> leads = leadRepository.listarLeadsDisponiblesPorEtapa(
                 Etapa.VENTA,
                 paginationService.toPageable(pageRequest, LEAD_GTR_SORT_FIELDS)
         );
@@ -207,44 +215,78 @@ public class LeadService {
                 .toList();
     }
 
-    public LeadAsesorDetalleResponse obtenerDetalleAsesor(Long idLead) {
+    public LeadDetalleResponse obtenerDetalleLeadAsignado(Long idLead, Etapa etapa) {
         Long idAsesor = currentUser.empleadoID();
-        Lead lead = leadRepository.buscarDetalleAsesor(idLead, idAsesor)
+        Lead lead = leadRepository.buscarDetalleAsesor(idLead, idAsesor, etapa)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
 
         Instant fechaAsignacion = eventoRepository.findTopByIdLeadAndAccionOrderByCreatedAtDesc(idLead, Accion.ASIGNACION)
                 .map(Evento::getCreatedAt)
                 .orElse(null);
 
-        return toAsesorDetalleResponse(lead, fechaAsignacion);
+        return toDetalleResponse(lead, fechaAsignacion);
     }
 
     @Transactional
     public void actualizarDatosPreventa(Long idLead, LeadDatosPreventaRequest request) {
         Lead lead = obtenerLeadPreventaDelAsesor(idLead);
-        DatosPreventa datosPreventa = lead.getDatosPreventa() == null ? new DatosPreventa() : lead.getDatosPreventa();
-        leadMapper.updateDatosPreventa(request, datosPreventa);
-
-        lead.setDatosPreventa(datosPreventa);
-        moverAEnGestionSiAplica(lead);
-        leadRepository.save(lead);
+        actualizarDatosPreventaInterno(lead, request);
     }
 
     @Transactional
     public void actualizarDireccion(Long idLead, LeadDireccionRequest request) {
         Lead lead = obtenerLeadPreventaDelAsesor(idLead);
-        Direccion direccion = lead.getDireccion() == null ? new Direccion() : lead.getDireccion();
-        leadMapper.updateDireccion(request, direccion);
-
-        lead.setDireccion(direccion);
-        moverAEnGestionSiAplica(lead);
-        leadRepository.save(lead);
+        actualizarDireccionInterno(lead, request);
     }
 
     @Transactional
     public void actualizarOfertaComercial(Long idLead, LeadOfertaComercialRequest request) {
         Lead lead = obtenerLeadPreventaDelAsesor(idLead);
+        actualizarOfertaComercialInterno(lead, request);
+    }
 
+    @Transactional
+    public void actualizarDatosPreventaVenta(Long idLead, LeadDatosPreventaRequest request) {
+        Lead lead = obtenerLeadAsignadoEnEtapa(idLead, Etapa.VENTA);
+        Lead savedLead = actualizarDatosPreventaInterno(lead, request);
+        registrarEventoActualizacion(savedLead, Accion.ACTUALIZACION_DATOS_PREVENTA, null);
+    }
+
+    @Transactional
+    public void actualizarDireccionVenta(Long idLead, LeadDireccionRequest request) {
+        Lead lead = obtenerLeadAsignadoEnEtapa(idLead, Etapa.VENTA);
+        Lead savedLead = actualizarDireccionInterno(lead, request);
+        registrarEventoActualizacion(savedLead, Accion.ACTUALIZACION_DIRECCION, null);
+    }
+
+    @Transactional
+    public void actualizarOfertaComercialVenta(Long idLead, LeadOfertaComercialRequest request) {
+        Lead lead = obtenerLeadAsignadoEnEtapa(idLead, Etapa.VENTA);
+        validarOfertaComercialEditableEnCicloActualVenta(lead.getId());
+        Lead savedLead = actualizarOfertaComercialInterno(lead, request);
+        Long idPlanOfrecido = savedLead.getPlan() == null ? null : savedLead.getPlan().getId();
+        registrarEventoActualizacion(savedLead, Accion.ACTUALIZACION_OFERTA_COMERCIAL, idPlanOfrecido);
+    }
+
+    private Lead actualizarDatosPreventaInterno(Lead lead, LeadDatosPreventaRequest request) {
+        DatosPreventa datosPreventa = lead.getDatosPreventa() == null ? new DatosPreventa() : lead.getDatosPreventa();
+        leadMapper.updateDatosPreventa(request, datosPreventa);
+
+        lead.setDatosPreventa(datosPreventa);
+        moverAEnGestionSiAplica(lead);
+        return leadRepository.save(lead);
+    }
+
+    private Lead actualizarDireccionInterno(Lead lead, LeadDireccionRequest request) {
+        Direccion direccion = lead.getDireccion() == null ? new Direccion() : lead.getDireccion();
+        leadMapper.updateDireccion(request, direccion);
+
+        lead.setDireccion(direccion);
+        moverAEnGestionSiAplica(lead);
+        return leadRepository.save(lead);
+    }
+
+    private Lead actualizarOfertaComercialInterno(Lead lead, LeadOfertaComercialRequest request) {
         Plan plan = request.getIdPlan() == null ? null : obtenerPlanVigente(request.getIdPlan());
         PromocionComercial promocionInterna = request.getIdPromocionInterna() == null ? null
                 : obtenerPromocionInternaActiva(request.getIdPromocionInterna(), plan);
@@ -259,7 +301,7 @@ public class LeadService {
 
         reemplazarAdicionales(lead, request.getAdicionales());
         moverAEnGestionSiAplica(lead);
-        leadRepository.save(lead);
+        return leadRepository.save(lead);
     }
 
     @Transactional
@@ -314,6 +356,57 @@ public class LeadService {
     }
 
     @Transactional
+    public void tipificarLeadVenta(Long idLead, LeadTipificacionRequest request) {
+        Lead lead = obtenerLeadAsignadoEnEtapa(idLead, Etapa.VENTA);
+        Etapa etapaActual = lead.getEtapa();
+
+        Tipificacion tipificacion = tipificacionRepository.findByEtapaAndCodigoAndActivoTrue(
+                        etapaActual,
+                        request.getCodigoTipificacion().trim()
+                )
+                .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getCodigoTipificacion()));
+        Subtipificacion subtipificacion = subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
+                        tipificacion.getId(),
+                        request.getCodigoSubtipificacion().trim()
+                )
+                .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getCodigoSubtipificacion()));
+
+        validarHoraProgramada(tipificacion.getCodigo(), request.getHoraProgramada());
+        Etapa etapaDestino = subtipificacion.getEtapaCambio();
+
+        if (etapaDestino != null && etapaDestino != etapaActual) {
+            lead.setEtapa(etapaDestino);
+            lead.setEstado(EstadoSeguimiento.GESTIONADO);
+            lead.setIdAsesorAsignado(null);
+            lead.setNombreAsesorAsignado(null);
+            lead.setIdTipificacion(null);
+            lead.setCodigoTipificacion(null);
+            lead.setIdSubtipificacion(null);
+            lead.setCodigoSubtipificacion(null);
+        } else {
+            lead.setIdTipificacion(tipificacion.getId());
+            lead.setCodigoTipificacion(tipificacion.getCodigo());
+            lead.setIdSubtipificacion(subtipificacion.getId());
+            lead.setCodigoSubtipificacion(subtipificacion.getCodigo());
+            moverAEnGestionSiAplica(lead);
+        }
+
+        Lead savedLead = leadRepository.save(lead);
+        Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
+        Long idPlanOfrecido = savedLead.getPlan() == null ? null : savedLead.getPlan().getId();
+        registrarEventoTipificacion(
+                savedLead.getId(),
+                idCampana,
+                etapaActual,
+                idPlanOfrecido,
+                tipificacion.getCodigo(),
+                subtipificacion.getCodigo(),
+                request.getComentario(),
+                request.getHoraProgramada()
+        );
+    }
+
+    @Transactional
     public void registrarIngresoLead(LeadIntakeRequest request) {
         String prefijo = normalizarPrefijo(request.getPrefijo());
         String numeroLead = normalizarLead(request.getLead());
@@ -329,6 +422,28 @@ public class LeadService {
     @Transactional
     public void asignarLead(Long idLead, LeadAsignacionRequest request) {
         asignarLeadInterno(idLead, request.getIdAsesorAsignado(), request.getNombreAsesorAsignado());
+    }
+
+    @Transactional
+    public void tomarLeadDisponible(Long idLead, Etapa etapa) {
+        Lead lead = leadRepository.findByIdAndEtapa(idLead, etapa)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+
+        validarLeadDisponibleParaToma(lead);
+
+        lead.setIdAsesorAsignado(currentUser.empleadoID());
+        lead.setNombreAsesorAsignado(currentUser.nombreCompleto().trim());
+        lead.setEstado(EstadoSeguimiento.ASIGNADO);
+
+        Lead savedLead = leadRepository.save(lead);
+        Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
+        registrarEventoAsignacion(
+                savedLead.getId(),
+                idCampana,
+                savedLead.getEtapa(),
+                savedLead.getIdAsesorAsignado(),
+                savedLead.getNombreAsesorAsignado()
+        );
     }
 
     public LeadAsignacionMasivaResponse asignarLeads(LeadAsignacionMasivaRequest request) {
@@ -417,9 +532,29 @@ public class LeadService {
         }
     }
 
+    private void validarLeadDisponibleParaToma(Lead lead) {
+        if (lead.getIdAsesorAsignado() != null || lead.getNombreAsesorAsignado() != null) {
+            throw new ConflictException("El Lead ya fue tomado por otro asesor");
+        }
+        if (lead.getIdTipificacion() != null || lead.getCodigoTipificacion() != null
+                || lead.getIdSubtipificacion() != null || lead.getCodigoSubtipificacion() != null) {
+            throw new ConflictException("El Lead ya no se encuentra disponible para ser tomado");
+        }
+    }
+
     @Transactional
     public void registrarContacto(Long idLead) {
         Lead lead = obtenerLeadPreventaDelAsesor(idLead);
+        registrarContactoInterno(lead);
+    }
+
+    @Transactional
+    public void registrarContactoVenta(Long idLead) {
+        Lead lead = obtenerLeadAsignadoEnEtapa(idLead, Etapa.VENTA);
+        registrarContactoInterno(lead);
+    }
+
+    private void registrarContactoInterno(Lead lead) {
         validarEstadoParaContacto(lead);
         moverAEnGestionSiAplica(lead);
 
@@ -522,6 +657,19 @@ public class LeadService {
         );
     }
 
+    private void registrarEventoActualizacion(Lead lead, Accion accion, Long idPlanOfrecido) {
+        Long idCampana = lead.getCampana() == null ? null : lead.getCampana().getId();
+        eventoService.registrarEvento(
+                RegistrarEventoRequest.builder()
+                        .idLead(lead.getId())
+                        .idCampana(idCampana)
+                        .accion(accion)
+                        .etapa(lead.getEtapa())
+                        .idPlanOfrecido(idPlanOfrecido)
+                        .build()
+        );
+    }
+
     private void validarHoraProgramada(String codigoTipificacion, java.time.LocalTime horaProgramada) {
         if (TIPIFICACION_AGENDADO.equals(codigoTipificacion)) {
             if (horaProgramada == null) {
@@ -591,11 +739,26 @@ public class LeadService {
         );
     }
 
-    private LeadAsesorDetalleResponse toAsesorDetalleResponse(Lead lead, Instant fechaAsignacion) {
+    private LeadDetalleResponse toDetalleResponse(Lead lead, Instant fechaAsignacion) {
         DatosPreventa datosPreventa = lead.getDatosPreventa();
         Direccion direccion = lead.getDireccion();
+        List<LeadAdicionalDetalleResponse> adicionales = lead.getAdicionales().stream()
+                .map(adicional -> new LeadAdicionalDetalleResponse(
+                        adicional.getAdicional() == null ? null : adicional.getAdicional().getId(),
+                        adicional.getAdicional() == null ? null : adicional.getAdicional().getNombre(),
+                        adicional.getCantidad(),
+                        adicional.getPrecioUnitario(),
+                        adicional.getSubtotal()
+                ))
+                .sorted(java.util.Comparator.comparing(
+                        LeadAdicionalDetalleResponse::getNombreAdicional,
+                        java.util.Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
+                ))
+                .toList();
+        LeadPlanDetalleResponse plan = toLeadPlanDetalleResponse(lead.getPlan());
+        LeadPromocionDetalleResponse promocionInterna = toLeadPromocionDetalleResponse(lead.getPromocionInterna());
 
-        return new LeadAsesorDetalleResponse(
+        return new LeadDetalleResponse(
                 lead.getId(),
                 fechaAsignacion,
                 lead.getLastEntryAt(),
@@ -634,7 +797,86 @@ public class LeadService {
                 direccion == null ? null : direccion.getNombreCondominio(),
                 direccion == null ? null : direccion.getPlano(),
                 direccion == null ? null : direccion.getPiso(),
-                direccion == null ? null : direccion.getInterior()
+                direccion == null ? null : direccion.getInterior(),
+                lead.getPlan() == null ? null : lead.getPlan().getId(),
+                lead.getNombrePlanSnapshot(),
+                lead.getNombreProveedorSnapshot(),
+                lead.getPrecioPlanSnapshot(),
+                lead.getPromocionInterna() == null ? null : lead.getPromocionInterna().getId(),
+                lead.getNombrePromocionInternaSnapshot(),
+                lead.getPrecioAdicionalesSnapshot(),
+                lead.getPrecioFinal(),
+                plan,
+                promocionInterna,
+                adicionales
+        );
+    }
+
+    private LeadPlanDetalleResponse toLeadPlanDetalleResponse(Plan plan) {
+        if (plan == null) {
+            return null;
+        }
+
+        List<PlanAdicionalResponse> adicionalesIncluidos = plan.getAdicionales().stream()
+                .map(adicional -> new PlanAdicionalResponse(
+                        adicional.getAdicional() == null ? null : adicional.getAdicional().getId(),
+                        adicional.getAdicional() == null ? null : adicional.getAdicional().getNombre(),
+                        adicional.getCantidadIncluida(),
+                        adicional.getPermiteCompraAdicional(),
+                        adicional.getCantidadMaximaAdicional()
+                ))
+                .sorted(Comparator.comparing(
+                        PlanAdicionalResponse::getNombreAdicional,
+                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
+                ))
+                .toList();
+
+        InternetResponse internet = plan.getInternet() == null ? null : new InternetResponse(
+                plan.getInternet().getId(),
+                plan.getInternet().getVelocidad(),
+                plan.getInternet().getUnidad(),
+                plan.getInternet().getTecnologia()
+        );
+        TelevisionResponse television = plan.getTelevision() == null ? null : new TelevisionResponse(
+                plan.getTelevision().getId(),
+                plan.getTelevision().getNombre(),
+                plan.getTelevision().getCantidadCanales()
+        );
+        TelefonoResponse telefono = plan.getTelefono() == null ? null : new TelefonoResponse(
+                plan.getTelefono().getId(),
+                plan.getTelefono().getMinutos(),
+                plan.getTelefono().getDescripcion()
+        );
+
+        return new LeadPlanDetalleResponse(
+                plan.getId(),
+                plan.getNombre(),
+                plan.getPrecio(),
+                plan.getPrecioPromocional(),
+                plan.getMesesPromocionPrecio(),
+                plan.getVigenciaDesde(),
+                plan.getVigenciaHasta(),
+                plan.getProveedor() == null ? null : plan.getProveedor().getNombre(),
+                internet,
+                television,
+                telefono,
+                plan.getVelocidadPromocional(),
+                plan.getMesesPromocionVelocidad(),
+                plan.getZona() == null ? null : plan.getZona().getNombre(),
+                adicionalesIncluidos
+        );
+    }
+
+    private LeadPromocionDetalleResponse toLeadPromocionDetalleResponse(PromocionComercial promocionInterna) {
+        if (promocionInterna == null) {
+            return null;
+        }
+
+        return new LeadPromocionDetalleResponse(
+                promocionInterna.getId(),
+                promocionInterna.getReglaComercial(),
+                promocionInterna.getProveedor() == null ? null : promocionInterna.getProveedor().getNombre(),
+                promocionInterna.getZona() == null ? null : promocionInterna.getZona().getNombre()
         );
     }
 
@@ -655,8 +897,24 @@ public class LeadService {
     }
 
     private Lead obtenerLeadPreventaDelAsesor(Long idLead) {
-        return leadRepository.findByIdAndIdAsesorAsignadoAndEtapa(idLead, currentUser.empleadoID(), Etapa.PREVENTA)
+        return obtenerLeadAsignadoEnEtapa(idLead, Etapa.PREVENTA);
+    }
+
+    private Lead obtenerLeadAsignadoEnEtapa(Long idLead, Etapa etapa) {
+        return leadRepository.findByIdAndIdAsesorAsignadoAndEtapa(idLead, currentUser.empleadoID(), etapa)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+    }
+
+    private void validarOfertaComercialEditableEnCicloActualVenta(Long idLead) {
+        List<Evento> eventos = eventoRepository.findAllByIdLeadOrderByCreatedAtDesc(idLead);
+        for (Evento evento : eventos) {
+            if (evento.getEtapa() != Etapa.VENTA) {
+                break;
+            }
+            if (evento.getAccion() == Accion.ACTUALIZACION_OFERTA_COMERCIAL) {
+                throw new ConflictException("La oferta comercial ya fue actualizada en el ciclo actual de VENTA");
+            }
+        }
     }
 
     private void reemplazarAdicionales(Lead lead, List<LeadOfertaAdicionalRequest> adicionalesRequest) {
