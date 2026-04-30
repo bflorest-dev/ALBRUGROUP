@@ -196,6 +196,41 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     );
 
     @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.LeadResponse(
+                l.id,
+                l.prefijo,
+                l.lead,
+                l.etapa,
+                l.estado,
+                l.idAsesorAsignado,
+                l.nombreAsesorAsignado,
+                l.base,
+                l.idTipificacion,
+                l.codigoTipificacion,
+                l.idSubtipificacion,
+                l.codigoSubtipificacion,
+                l.nombrePlanSnapshot,
+                l.nombreProveedorSnapshot,
+                l.precioPlanSnapshot,
+                l.nombrePromocionInternaSnapshot,
+                l.precioAdicionalesSnapshot,
+                l.precioFinal,
+                l.createdAt,
+                l.lastEntryAt,
+                l.updatedAt
+            )
+            FROM Lead l
+            WHERE l.etapa = :etapa
+              AND l.idAsesorAsignado = :idAsesor
+            ORDER BY l.lastEntryAt DESC, l.id DESC
+            """)
+    Page<LeadResponse> listarLeadsAsignadosPorEtapaYAsesor(
+            @Param("etapa") Etapa etapa,
+            @Param("idAsesor") Long idAsesor,
+            Pageable pageable
+    );
+
+    @Query("""
             SELECT DISTINCT l
             FROM Lead l
             LEFT JOIN FETCH l.campana c

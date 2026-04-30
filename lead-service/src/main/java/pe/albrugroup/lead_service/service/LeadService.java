@@ -18,6 +18,7 @@ import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaAdicionalRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaComercialRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionRequest;
+import pe.albrugroup.lead_service.entity.request.LeadTipificacionVentaRequest;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.LeadAsignacionMasivaResponse;
@@ -125,6 +126,15 @@ public class LeadService {
         Page<LeadResponse> leads = leadRepository.listarLeadsDisponiblesPorEtapa(
                 Etapa.VENTA,
                 paginationService.toPageable(pageRequest, LEAD_GTR_SORT_FIELDS)
+        );
+        return PageResponse.from(leads);
+    }
+
+    public PageResponse<LeadResponse> listarLeadsVentaAsignados(PageRequest pageRequest) {
+        Page<LeadResponse> leads = leadRepository.listarLeadsAsignadosPorEtapaYAsesor(
+                Etapa.VENTA,
+                currentUser.empleadoID(),
+                paginationService.toPageable(pageRequest, LEAD_ASESOR_SORT_FIELDS)
         );
         return PageResponse.from(leads);
     }
@@ -356,7 +366,7 @@ public class LeadService {
     }
 
     @Transactional
-    public void tipificarLeadVenta(Long idLead, LeadTipificacionRequest request) {
+    public void tipificarLeadVenta(Long idLead, LeadTipificacionVentaRequest request) {
         Lead lead = obtenerLeadAsignadoEnEtapa(idLead, Etapa.VENTA);
         Etapa etapaActual = lead.getEtapa();
 
@@ -371,7 +381,6 @@ public class LeadService {
                 )
                 .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getCodigoSubtipificacion()));
 
-        validarHoraProgramada(tipificacion.getCodigo(), request.getHoraProgramada());
         Etapa etapaDestino = subtipificacion.getEtapaCambio();
 
         if (etapaDestino != null && etapaDestino != etapaActual) {
@@ -402,7 +411,7 @@ public class LeadService {
                 tipificacion.getCodigo(),
                 subtipificacion.getCodigo(),
                 request.getComentario(),
-                request.getHoraProgramada()
+                request.getFechaInstalacion()
         );
     }
 
@@ -653,6 +662,31 @@ public class LeadService {
                         .subtipificacion(subtipificacion)
                         .comentario(comentario)
                         .horaProgramada(horaProgramada)
+                        .build()
+        );
+    }
+
+    private void registrarEventoTipificacion(
+            Long idLead,
+            Long idCampana,
+            Etapa etapa,
+            Long idPlanOfrecido,
+            String tipificacion,
+            String subtipificacion,
+            String comentario,
+            java.time.LocalDate fechaInstalacion
+    ) {
+        eventoService.registrarEvento(
+                RegistrarEventoRequest.builder()
+                        .idLead(idLead)
+                        .idCampana(idCampana)
+                        .accion(Accion.TIPIFICACION)
+                        .etapa(etapa)
+                        .idPlanOfrecido(idPlanOfrecido)
+                        .tipificacion(tipificacion)
+                        .subtipificacion(subtipificacion)
+                        .comentario(comentario)
+                        .fechaInstalacion(fechaInstalacion)
                         .build()
         );
     }

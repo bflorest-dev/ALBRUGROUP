@@ -17,7 +17,7 @@ import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaComercialRequest;
-import pe.albrugroup.lead_service.entity.request.LeadTipificacionRequest;
+import pe.albrugroup.lead_service.entity.request.LeadTipificacionVentaRequest;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDetalleResponse;
@@ -43,26 +43,34 @@ public class VentaController {
         var leads = leadService.listarBandejaVenta(pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
-    // 2. Asignarse el lead, ahora la diferencia seria que el mismo backoffice se asigna lead si mismo
+    // 2. Listar los Leads asignados al backoffice en la etapa Venta
+    @GetMapping("/asignados") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
+    public ResponseEntity<PageResponse<LeadResponse>> listarLeadsVentaAsignados(
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        var leads = leadService.listarLeadsVentaAsignados(pageRequest);
+        return ResponseEntity.status(HttpStatus.OK).body(leads);
+    }
+    // 3. Asignarse el lead, ahora la diferencia seria que el mismo backoffice se asigna lead si mismo
     // Una vez un backoffice se haga responsable de un lead, otro no podra hacerlo durante esa etapa.
     @PatchMapping("/{idLead}/asignacion") @PreAuthorize("hasAuthority('ASSIGN_LEADS')")
     public ResponseEntity<Void> tomarLeadVenta(@PathVariable Long idLead) {
         leadService.tomarLeadDisponible(idLead, Etapa.VENTA);
         return ResponseEntity.noContent().build();
     }
-    // 3. Registrar evento de contacto con el Lead
+    // 4. Registrar evento de contacto con el Lead
     @PatchMapping("/{idLead}/contacto") @PreAuthorize("hasAuthority('CONTACT_LEADS')")
     public ResponseEntity<Void> registrarContactoLeadVenta(@PathVariable Long idLead) {
         leadService.registrarContactoVenta(idLead);
         return ResponseEntity.noContent().build();
     }
-    // 4. Ver detalle del Lead similar al endpoint
+    // 5. Ver detalle del Lead similar al endpoint
     @GetMapping("/{idLead}/detalle-asesor") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
     public ResponseEntity<LeadDetalleResponse> obtenerDetalleLeadVenta(@PathVariable Long idLead) {
         var lead = leadService.obtenerDetalleLeadAsignado(idLead, Etapa.VENTA);
         return ResponseEntity.status(HttpStatus.OK).body(lead);
     }
-    // 5. Ver el historial de eventos de un Lead, esto solo se permitira para el asesor asignado
+    // 6. Ver el historial de eventos de un Lead, esto solo se permitira para el asesor asignado
     @GetMapping("/{idLead}/eventos") @PreAuthorize("hasAuthority('READ_EVENTOS_LEADS')")
     public ResponseEntity<PageResponse<EventoResponse>> listarEventosLeadVenta(
             @PathVariable Long idLead,
@@ -71,7 +79,7 @@ public class VentaController {
         var eventos = eventoService.listarPorLeadAsignado(idLead, Etapa.VENTA, pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(eventos);
     }
-    // 6. Editar Lead. El Backoffice, solo puede actualizar la OfertaComercial 1 sola vez.
+    // 7. Editar Lead. El Backoffice, solo puede actualizar la OfertaComercial 1 sola vez.
     @PatchMapping("/{idLead}/datos-preventa") @PreAuthorize("hasAuthority('UPDATE_LEADS_ASESOR')")
     public ResponseEntity<Void> actualizarDatosPreventaVenta(
             @PathVariable Long idLead,
@@ -96,11 +104,11 @@ public class VentaController {
         leadService.actualizarOfertaComercialVenta(idLead, request);
         return ResponseEntity.noContent().build();
     }
-    // 7. Tipificar Leads, cualquier tipi que cambie de etapa limpia el Lead
+    // 8. Tipificar Leads, cualquier tipi que cambie de etapa limpia el Lead
     @PatchMapping("/{idLead}/tipificacion") @PreAuthorize("hasAuthority('TYPIFY_LEADS')")
     public ResponseEntity<Void> tipificarLeadVenta(
             @PathVariable Long idLead,
-            @Valid @RequestBody LeadTipificacionRequest request
+            @Valid @RequestBody LeadTipificacionVentaRequest request
     ) {
         leadService.tipificarLeadVenta(idLead, request);
         return ResponseEntity.noContent().build();

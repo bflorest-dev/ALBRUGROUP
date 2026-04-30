@@ -13,5 +13,10 @@ public class PostventaController {
 
     private final LeadService leadService;
 
+    // Asesor Posventa
+
+    // 1. Listar Leads que se encuentren en la etapa de POSTVENTA
+
+    // 2. Listar Leads asignados a
 
 }
