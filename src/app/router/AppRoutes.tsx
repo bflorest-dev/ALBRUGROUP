@@ -4,24 +4,24 @@ import { RequireAuth } from './RequireAuth';
 import { RequireRole } from './RequireRole';
 
 // Lazy load pages
-const PaginaLogin = lazy(() => import('@features/auth/pages/PaginaLogin'));
+const PaginaLogin = lazy(() => import('@pages/auth/PaginaLogin'));
 const PaginaAutenticacionAvanzada = lazy(() =>
-  import('@features/autenticacion/pages/PaginaAutenticacionAvanzada').then(
+  import('@pages/auth/PaginaAutenticacionAvanzada').then(
     (m) => ({ default: m.PaginaAutenticacionAvanzada })
   )
 );
-const PaginaPanel = lazy(() => import('@features/admin/pages/AdminPage'));
-const PaginaRRHH = lazy(() => import('@features/rrhh/pages/PaginaRRHH'));
-const PaginaListadoOfertasActivas = lazy(() => import('@features/rrhh/pages/PaginaListadoOfertasActivas'));
-const PaginaAmpliacionOferta = lazy(() => import('@features/rrhh/pages/PaginaAmpliacionOferta'));
-const PaginaReclutamiento = lazy(() => import('@features/reclutamiento/pages/PaginaReclutamiento'));
-const PaginaCapacitacion = lazy(() => import('@features/capacitacion/pages/PaginaCapacitacion'));
-const PaginaCommunity = lazy(() => import('@features/community/pages/PaginaCommunity'));
-const PaginaGTR = lazy(() => import('@features/gtr/pages/PaginaGTR'));
-const PaginaAsesores = lazy(() => import('@features/asesor-ventas/pages/PaginaAsesores'));
-const PaginaAsesorVentasDetail = lazy(() => import('@features/asesor-ventas/pages/PaginaAsesorVentasDetail'));
-const PaginaAsesorBackoffice = lazy(() => import('@features/asesor-backoffice/pages/PaginaAsesorBackoffice'));
-const PaginaAdmin = lazy(() => import('@features/admin/pages/AdminPage'));
+const PaginaPanel = lazy(() => import('@pages/admin/AdminPage'));
+const PaginaRRHH = lazy(() => import('@pages/hr/PaginaRRHH'));
+const PaginaListadoOfertasActivas = lazy(() => import('@pages/hr/PaginaListadoOfertasActivas'));
+const PaginaAmpliacionOferta = lazy(() => import('@pages/hr/PaginaAmpliacionOferta'));
+const PaginaReclutamiento = lazy(() => import('@pages/recruitment/PaginaReclutamiento'));
+const PaginaCapacitacion = lazy(() => import('@pages/training/PaginaCapacitacion'));
+const PaginaCommunity = lazy(() => import('@pages/community/PaginaCommunity'));
+const PaginaGTR = lazy(() => import('@pages/gtr/PaginaGTR'));
+const PaginaAsesores = lazy(() => import('@pages/sales-advisor/PaginaAsesores'));
+const PaginaAsesorVentasDetail = lazy(() => import('@pages/sales-advisor/PaginaAsesorVentasDetail'));
+const PaginaAsesorBackoffice = lazy(() => import('@pages/backoffice-advisor/PaginaAsesorBackoffice'));
+const PaginaAdmin = lazy(() => import('@pages/admin/AdminPage'));
 const PaginaNoAutorizado = lazy(() => import('@pages/PaginaNoAutorizado'));
 
 const LoadingFallback = () => <div>Cargando...</div>;

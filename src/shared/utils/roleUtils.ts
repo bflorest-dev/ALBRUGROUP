@@ -1,11 +1,10 @@
-import type { Role } from '../auth/types';
+import type { Role } from '../../shared/types';
 
 export const roleHierarchy: Partial<Record<Role, Role[]>> = {
   'ADMINISTRADOR': ['ADMINISTRADOR', 'RRHH', 'RECLUTAMIENTO', 'CAPACITACIÓN', 'COMMUNITY', 'GTR', 'ASESOR_DE_VENTAS', 'LOGIN'],
   'RRHH': ['RRHH'],
   'RECLUTAMIENTO': ['RECLUTAMIENTO'],
   'CAPACITACIÓN': ['CAPACITACIÓN', 'CAPACITACION'],
-  'CAPACITADOR': ['CAPACITADOR', 'CAPACITACIÓN', 'CAPACITACION'],
   'COMMUNITY': ['COMMUNITY'],
   'GTR': ['GTR'],
   'ASESOR_DE_VENTAS': ['ASESOR_DE_VENTAS'],

@@ -1,0 +1,56 @@
+/* AdicionalesSection Styles */
+.adicionales-section {
+  /* Placeholder styles for AdicionalesSection component */
+}
+
+.adicionales-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.adicionales-table th,
+.adicionales-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.adicionales-table th {
+  background-color: #f5f5f5;
+  font-weight: 600;
+}
+
+.adicionales-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.adicionales-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.adicionales-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.adicionales-form-group label {
+  font-weight: 500;
+  color: #333;
+}
+
+.adicionales-form-group input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.adicionales-form-group input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}

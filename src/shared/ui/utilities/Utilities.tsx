@@ -4,13 +4,16 @@
  */
 
 import React from 'react';
+import { DsBadge, DsButton } from '@shared/ui/design-system';
 import styles from './Utilities.module.css';
 
 // ========== ALERT ==========
 
 interface AlertProps {
   type?: 'error' | 'success' | 'info' | 'warning';
-  message: string;
+  variant?: 'error' | 'success' | 'info' | 'warning';
+  message?: string;
+  children?: React.ReactNode;
   onClose?: () => void;
   dismissible?: boolean;
   className?: string;
@@ -18,14 +21,19 @@ interface AlertProps {
 
 export const Alert: React.FC<AlertProps> = ({
   type = 'info',
+  variant,
   message,
+  children,
   onClose,
   dismissible = true,
   className,
 }) => {
+  const alertType = variant ?? type;
+  const content = children ?? message ?? '';
+
   return (
-    <div className={`${styles.alert} ${styles[`alert-${type}`]} ${className || ''}`}>
-      <div className={styles.alertContent}>{message}</div>
+    <div className={`${styles.alert} ${styles[`alert-${alertType}`]} ${className || ''}`}>
+      <div className={styles.alertContent}>{content}</div>
       {dismissible && onClose && (
         <button className={styles.alertClose} onClick={onClose} aria-label="Cerrar alerta">
           ✕
@@ -65,21 +73,26 @@ interface BadgeProps {
   className?: string;
 }
 
+const badgeVariantMap = {
+  primary: 'info',
+  success: 'success',
+  warning: 'warning',
+  danger: 'error',
+  info: 'info',
+} as const;
+
+const badgeSizeMap = {
+  small: 'sm',
+  medium: 'md',
+} as const;
+
 export const Badge: React.FC<BadgeProps> = ({
   label,
   variant = 'primary',
   size = 'medium',
   className,
 }) => {
-  return (
-    <span
-      className={`${styles.badge} ${styles[`badge-${variant}`]} ${styles[`badge-${size}`]} ${
-        className || ''
-      }`}
-    >
-      {label}
-    </span>
-  );
+  return <DsBadge label={label} variant={badgeVariantMap[variant]} size={badgeSizeMap[size]} className={className} />;
 };
 
 // ========== ERROR MESSAGE ==========
@@ -114,6 +127,19 @@ interface ButtonProps
   fullWidth?: boolean;
 }
 
+const buttonVariantMap = {
+  primary: 'primary',
+  secondary: 'secondary',
+  danger: 'danger',
+  success: 'success',
+} as const;
+
+const buttonSizeMap = {
+  small: 'sm',
+  medium: 'md',
+  large: 'lg',
+} as const;
+
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
@@ -130,31 +156,18 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     return (
-      <button
+      <DsButton
         ref={ref}
-        disabled={disabled || isLoading}
-        className={`
-          ${styles.button}
-          ${styles[`button-${variant}`]}
-          ${styles[`button-${size}`]}
-          ${fullWidth ? styles.fullWidth : ''}
-          ${isLoading ? styles.loading : ''}
-          ${className || ''}
-        `}
+        variant={buttonVariantMap[variant]}
+        size={buttonSizeMap[size]}
+        fullWidth={fullWidth}
+        isLoading={isLoading}
+        disabled={disabled}
+        className={className}
         {...props}
       >
-        {isLoading ? (
-          <>
-            <span className={styles.buttonSpinner} />
-            Cargando...
-          </>
-        ) : (
-          <>
-            {icon && <span className={styles.buttonIcon}>{icon}</span>}
-            {children}
-          </>
-        )}
-      </button>
+        {isLoading ? 'Cargando...' : (<>{icon && <span className={styles.iconSlot}>{icon}</span>}{children}</>)}
+      </DsButton>
     );
   }
 );

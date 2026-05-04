@@ -1,0 +1,19 @@
+.icon-inline {
+  display: inline;
+  margin-right: 8px;
+}
+
+.icon-error {
+  margin-right: 6px;
+}
+
+.error-alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.error-text {
+  color: #dc2626;
+}

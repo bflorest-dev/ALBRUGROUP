@@ -5,28 +5,29 @@
 import React, { useState } from 'react';
 import type { LeadGtrResponse } from '@entities/lead/types';
 import { useEventosByLead } from '../hooks/useEventosQueries';
-import type { EventoResponse } from '../model/eventos.api';
+import type { EventoResponse } from '@shared/types';
 import styles from './DetallesLeadModal.module.css';
 
 interface DetallesLeadModalProps {
   lead: LeadGtrResponse;
   onClose: () => void;
+  dashboardMode?: boolean;
 }
 
 /**
  * Obtiene el color de badge según el tipo de evento
  */
-const getTipoEventoBadgeColor = (tipo: string): string => {
-  const colorMap: Record<string, string> = {
-    CONTACTO: '#0066cc',         // Azul
-    TIPIFICACION: '#28a745',     // Verde
-    VALIDACION: '#fd7e14',       // Naranja
-    CAMBIO_ETAPA: '#6c757d',     // Gris
-    ASIGNACION: '#17a2b8',       // Cian
-    REASIGNACION: '#17a2b8',     // Cian
-    ERROR: '#dc3545',            // Rojo
+const getTipoEventoBadgeClass = (tipo: string): string => {
+  const badgeClassMap: Record<string, string | undefined> = {
+    CONTACTO: styles.badgeContacto,
+    TIPIFICACION: styles.badgeTipificacion,
+    VALIDACION: styles.badgeValidacion,
+    CAMBIO_ETAPA: styles.badgeCambioEtapa,
+    ASIGNACION: styles.badgeAsignacion,
+    REASIGNACION: styles.badgeReasignacion,
+    ERROR: styles.badgeError,
   };
-  return colorMap[tipo] || '#6c757d';
+  return badgeClassMap[tipo] ?? styles.badgeDefault ?? '';
 };
 
 /**
@@ -66,13 +67,37 @@ const getEventoDescripcion = (evento: EventoResponse): string => {
   return evento.comentario ?? 'Sin descripción';
 };
 
-export const DetallesLeadModal: React.FC<DetallesLeadModalProps> = ({ lead, onClose }) => {
+const formatRol = (rol?: string): string => {
+  if (!rol) {
+    return '-';
+  }
+
+  return rol.replace(/_/g, ' ').toUpperCase();
+};
+
+const getRolAsesorAsignado = (evento: EventoResponse): string | null => {
+  if (evento.rolAsesorAsignado) {
+    return evento.rolAsesorAsignado;
+  }
+
+  if (evento.nombreAsesorAsignado) {
+    return 'ASESOR_VENTAS';
+  }
+
+  return null;
+};
+
+export const DetallesLeadModal: React.FC<DetallesLeadModalProps> = ({
+  lead,
+  onClose,
+  dashboardMode = false,
+}) => {
   const [mostrarDetalles, setMostrarDetalles] = useState<number | null>(null);
   const { data: eventos, isLoading: eventosLoading, isError: eventosError } = useEventosByLead(lead.id);
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div className={`${styles.overlay} ${dashboardMode ? styles.dashboardMode : ''}`} onClick={onClose}>
+      <div className={`${styles.modal} ${dashboardMode ? styles.dashboardModal : ''}`} onClick={(e) => e.stopPropagation()}>
         <button className={styles.closeBtn} onClick={onClose}>✕</button>
 
         <div className={styles.container}>
@@ -102,7 +127,7 @@ export const DetallesLeadModal: React.FC<DetallesLeadModalProps> = ({ lead, onCl
               </div>
               <div className={styles.infoRow}>
                 <span className={styles.label}>Estado:</span>
-                <span className={`${styles.value} ${styles.badge}`}>
+                <span className={`${styles.value} ${styles.statusPill}`}>
                   {lead.estadoSeguimiento}
                 </span>
               </div>
@@ -126,31 +151,35 @@ export const DetallesLeadModal: React.FC<DetallesLeadModalProps> = ({ lead, onCl
             
             {eventosLoading && (
               <div className={styles.loading}>
-                <p>⏳ Cargando eventos...</p>
+                <p>{dashboardMode ? 'Cargando eventos...' : '⏳ Cargando eventos...'}</p>
               </div>
             )}
 
             {eventosError && (
               <div className={styles.error}>
-                <p>❌ Error al cargar los eventos</p>
+                <p>{dashboardMode ? 'Error al cargar los eventos' : '❌ Error al cargar los eventos'}</p>
               </div>
             )}
 
             {!eventosLoading && !eventosError && (!eventos || eventos.length === 0) && (
               <div className={styles.empty}>
-                <p>📭 No hay eventos registrados para este lead</p>
+                <p>{dashboardMode ? 'No hay eventos registrados para este lead' : '📭 No hay eventos registrados para este lead'}</p>
               </div>
             )}
 
             {!eventosLoading && !eventosError && eventos && eventos.length > 0 && (
               <div className={styles.eventosList}>
-                {eventos.map((evento, idx) => (
-                  <div key={evento.id} className={styles.eventoItem}>
+                {eventos.map((evento, idx) => {
+                  const rolActor = formatRol(evento.rolActor);
+                  const rolAsesorAsignado = getRolAsesorAsignado(evento);
+
+                  return (
+                    <div key={evento.id} className={styles.eventoItem}>
                     <div
                       className={styles.eventoHeader}
                       onClick={() => setMostrarDetalles(mostrarDetalles === idx ? null : idx)}
                     >
-                      <span className={styles.eventoBadge} style={{ backgroundColor: getTipoEventoBadgeColor(evento.accion ?? evento.etapa ?? 'EVENTO') }}>
+                      <span className={`${styles.eventoBadge} ${getTipoEventoBadgeClass(evento.accion ?? evento.etapa ?? 'EVENTO')}`}>
                         {evento.accion ?? evento.etapa ?? 'EVENTO'}
                       </span>
                       <span className={styles.eventoDescripcion}>
@@ -163,23 +192,27 @@ export const DetallesLeadModal: React.FC<DetallesLeadModalProps> = ({ lead, onCl
                     {mostrarDetalles === idx && (
                       <div className={styles.eventoDetalles}>
                         {evento.nombreActor && (
-                          <div className={styles.detalleRow}>
-                            <strong>Actor:</strong> {evento.nombreActor}
-                          </div>
-                        )}
-                        {evento.rolActor && (
-                          <div className={styles.detalleRow}>
-                            <strong>Rol Actor:</strong> {evento.rolActor}
+                          <div className={styles.personRow}>
+                            <span className={styles.personLabel}>Actor:</span>
+                            <span className={styles.personName}>{evento.nombreActor}</span>
+                            {evento.rolActor && (
+                              <span className={styles.personRole}>{rolActor}</span>
+                            )}
                           </div>
                         )}
                         {evento.nombreAsesorAsignado && (
-                          <div className={styles.detalleRow}>
-                            <strong>Nombre Asesor Asignado:</strong> {evento.nombreAsesorAsignado}
+                          <div className={styles.personRow}>
+                            <span className={styles.personLabel}>Asesor asignado:</span>
+                            <span className={styles.personName}>{evento.nombreAsesorAsignado}</span>
+                            {rolAsesorAsignado && (
+                              <span className={styles.personRole}>{formatRol(rolAsesorAsignado)}</span>
+                            )}
                           </div>
                         )}
                         {evento.etapa && (
-                          <div className={styles.detalleRow}>
-                            <strong>Etapa:</strong> {evento.etapa}
+                          <div className={styles.inlineDetalleRow}>
+                            <strong>Etapa:</strong>
+                            <span>{evento.etapa}</span>
                           </div>
                         )}
                         {evento.tipificacion && (
@@ -204,8 +237,9 @@ export const DetallesLeadModal: React.FC<DetallesLeadModalProps> = ({ lead, onCl
                         )}
                       </div>
                     )}
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </section>

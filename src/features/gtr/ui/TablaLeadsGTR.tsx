@@ -4,10 +4,10 @@
  * FSD: caracteristicas/gtr/ui
  */
 
-import React, { useState, useMemo } from 'react';
-import { useAuth } from '@entities/auth';
-import { Badge, Spinner, Alert, Button } from '@shared/ui/utilities/Utilities';
-import { useLeadsGTR, useContactLeadMutation, useAssignLeadMutation } from '../hooks/useGtrQueries';
+import React, { useState, useMemo, useCallback } from 'react';
+import { Badge, Spinner, Alert } from '@shared/ui/utilities/Utilities';
+import { DsDataTable, type DsDataTableAction, type DsDataTableColumn } from '@shared/ui/design-system';
+import { useLeadsGTR } from '../hooks/useGtrQueries';
 import type { LeadGtrResponse, PermisosGTR } from '@entities/lead/types';
 import styles from './TablaLeadsGTR.module.css';
 
@@ -21,6 +21,7 @@ interface TablaLeadsGTRProps {
     estado?: string;
   };
   itemsPerPage?: number;
+  dashboardMode?: boolean;
 }
 
 /**
@@ -37,6 +38,7 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
   onViewLead,
   filtros,
   itemsPerPage = 20,
+  dashboardMode = false,
 }) => {
   // ========== ESTADO ==========
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -48,7 +50,10 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
 
   // ========== QUERIES ==========
   const leadsQuery = useLeadsGTR();
-  const leads = leadsQuery.data ?? [];
+  const leads = useMemo(
+    () => (Array.isArray(leadsQuery.data) ? leadsQuery.data : []),
+    [leadsQuery.data]
+  );
 
   // Debug: Log para verificar si hay datos
   React.useEffect(() => {
@@ -60,39 +65,6 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
       leads: leads.slice(0, 3), // Primeros 3 para debug
     });
   }, [leads, leadsQuery]);
-
-  // ========== MUTACIONES ==========
-  const contactMutation = useContactLeadMutation();
-  const assignMutation = useAssignLeadMutation();
-  const { currentUser } = useAuth();
-  const [feedbackMessage, setFeedbackMessage] = useState<string>('');
-  const [feedbackTipo, setFeedbackTipo] = useState<'success' | 'error'>('success');
-
-  const handleAssignToMe = async (lead: LeadGtrResponse) => {
-    if (!currentUser?.id || !currentUser?.name) {
-      setFeedbackTipo('error');
-      setFeedbackMessage('No se pudo obtener usuario actual para asignación.');
-      return;
-    }
-
-    try {
-      await assignMutation.mutateAsync({
-        idLead: lead.id,
-        data: {
-          idAsesorAsignado: Number(currentUser.id),
-          nombreAsesorAsignado: currentUser.name,
-        },
-      });
-
-      setFeedbackTipo('success');
-      setFeedbackMessage(`Lead #${lead.id} asignado a ${currentUser.name}`);
-    } catch (err) {
-      setFeedbackTipo('error');
-      setFeedbackMessage(
-        err instanceof Error ? err.message : 'Error al asignar lead al usuario actual.'
-      );
-    }
-  };
 
   // ========== FUNCIONES DE FILTRADO ==========
   const filteredLeads = useMemo(() => {
@@ -143,15 +115,17 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
   }, [filteredLeads, currentPage, itemsPerPage]);
 
   // ========== HANDLERS ==========
-  const toggleSelectLead = (leadId: number) => {
-    const newSelected = new Set(selectedLeads);
-    if (newSelected.has(leadId)) {
-      newSelected.delete(leadId);
-    } else {
-      newSelected.add(leadId);
-    }
-    setSelectedLeads(newSelected);
-  };
+  const toggleSelectLead = useCallback((leadId: number) => {
+    setSelectedLeads((prev) => {
+      const newSelected = new Set(prev);
+      if (newSelected.has(leadId)) {
+        newSelected.delete(leadId);
+      } else {
+        newSelected.add(leadId);
+      }
+      return newSelected;
+    });
+  }, []);
 
   const getEstadoBadgeVariant = (estado: string) => {
     const variants: Record<string, 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
@@ -165,6 +139,152 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
     };
     return variants[estado] || 'primary';
   };
+
+  const formatLeadWithPrefix = (prefijo?: string, lead?: string): string => {
+    const p = String(prefijo ?? '').trim();
+    const l = String(lead ?? '').trim();
+    if (p && l) return `${p} ${l}`;
+    return l || p || '-';
+  };
+
+  const formatDateOnly = (rawDate: string): string => {
+    return new Date(rawDate).toLocaleDateString('es-PE', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+  };
+
+  const sanitizeCode = (value?: string | null): string => {
+    const code = String(value ?? '').trim();
+    if (!code) return '-';
+    return code.replace(/_/g, ' ');
+  };
+
+  const allSelectedOnPage =
+    paginatedLeads.length > 0 && paginatedLeads.every((lead) => selectedLeads.has(lead.id));
+
+  const columns = useMemo<DsDataTableColumn<LeadGtrResponse>[]>(
+    () => [
+      {
+        key: 'selected',
+        label: (
+          <input
+            type="checkbox"
+            checked={allSelectedOnPage}
+            onChange={(e) => {
+              if (e.target.checked) {
+                setSelectedLeads(new Set(paginatedLeads.map((lead) => lead.id)));
+              } else {
+                setSelectedLeads(new Set());
+              }
+            }}
+            aria-label="Seleccionar leads de la página"
+          />
+        ),
+        align: 'center',
+        render: (lead) => (
+          <input
+            type="checkbox"
+            checked={selectedLeads.has(lead.id)}
+            onChange={(e) => {
+              e.stopPropagation();
+              toggleSelectLead(lead.id);
+            }}
+            aria-label={`Seleccionar lead ${lead.id}`}
+          />
+        ),
+      },
+      {
+        key: 'id',
+        label: 'N°',
+        render: (lead) => <strong>{lead.id}</strong>,
+      },
+      {
+        key: 'lead',
+        label: 'Lead',
+        render: (lead) => formatLeadWithPrefix(lead.prefijo, lead.lead),
+      },
+      {
+        key: 'createdAt',
+        label: 'Fecha',
+        render: (lead) => formatDateOnly(lead.createdAt),
+      },
+      {
+        key: 'nombreCampana',
+        label: 'Campaña',
+      },
+      {
+        key: 'nombreProveedorCampana',
+        label: 'Proveedor',
+      },
+      {
+        key: 'base',
+        label: 'Base',
+        render: (lead) => <Badge label={lead.base} variant="info" size="small" />,
+      },
+      {
+        key: 'nombreTitular',
+        label: 'Titular',
+      },
+      {
+        key: 'codigoTipificacion',
+        label: 'Tipificación',
+        render: (lead) => sanitizeCode(lead.codigoTipificacion),
+      },
+      {
+        key: 'codigoSubtipificacion',
+        label: 'Subtipificación',
+        render: (lead) => sanitizeCode(lead.codigoSubtipificacion),
+      },
+      {
+        key: 'nombreAsesorAsignado',
+        label: 'Asesor',
+      },
+      {
+        key: 'estadoSeguimiento',
+        label: 'Estado',
+        render: (lead) => (
+          <Badge
+            label={lead.estadoSeguimiento}
+            variant={getEstadoBadgeVariant(lead.estadoSeguimiento)}
+            size="small"
+          />
+        ),
+      },
+      {
+        key: 'reasignaciones',
+        label: 'Reasignaciones',
+        render: (lead) => <strong>{lead.reasignaciones}</strong>,
+      },
+    ],
+    [allSelectedOnPage, paginatedLeads, selectedLeads, toggleSelectLead]
+  );
+
+  const actions = useMemo<DsDataTableAction<LeadGtrResponse>[]>(
+    () => [
+      {
+        label: 'Reasignar',
+        variant: 'secondary',
+        onClick: (lead) => onReasignarClick?.(lead, []),
+        isVisible: () => permisos.ASSIGN_LEADS,
+      },
+      {
+        label: 'Ver',
+        variant: 'ghost',
+        onClick: (lead) => onViewLead?.(lead),
+        isVisible: () => permisos.ASSIGN_LEADS,
+      },
+      {
+        label: 'Sin permiso',
+        variant: 'ghost',
+        onClick: () => undefined,
+        disabled: () => true,
+        isVisible: () => !permisos.ASSIGN_LEADS,
+      },
+    ],
+    [onReasignarClick, onViewLead, permisos.ASSIGN_LEADS]
+  );
 
   // ========== RENDER ==========
   if (leadsQuery.isPending) {
@@ -181,8 +301,8 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
   }
 
   return (
-    <div className={styles.container}>
-      <h2>Tablero de Leads GTR</h2>
+    <div className={`${styles.container} ${dashboardMode ? styles.dashboardMode : ''}`}>
+      <h2 className={styles.title}>Tablero de Leads GTR</h2>
 
       {leadsQuery.isError && (
         <Alert
@@ -269,15 +389,6 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
       </div>
 
       {/* CONTADOR */}
-      {feedbackMessage && (
-        <Alert
-          type={feedbackTipo === 'success' ? 'success' : 'error'}
-          message={feedbackMessage}
-          dismissible
-          onClose={() => setFeedbackMessage('')}
-        />
-      )}
-
       <div className={styles.stats}>
         <span className={styles.total}>
           {filteredLeads.length} leads encontrados
@@ -288,121 +399,19 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
       </div>
 
       {/* TABLA */}
-      <div className={styles.tableWrapper}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th className={styles.colCheckbox}>
-                <input
-                  type="checkbox"
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedLeads(new Set(paginatedLeads.map((l) => l.id)));
-                    } else {
-                      setSelectedLeads(new Set());
-                    }
-                  }}
-                />
-              </th>
-              <th className={styles.colId}>ID</th>
-              <th className={styles.colPrefijo}>Prefijo</th>
-              <th className={styles.colLead}>Lead</th>
-              <th className={styles.colFecha}>Fecha</th>
-              <th className={styles.colCampana}>Campaña</th>
-              <th className={styles.colProveedor}>Proveedor</th>
-              <th className={styles.colBase}>Base</th>
-              <th className={styles.colTitular}>Titular</th>
-              <th className={styles.colTipificacion}>Tipificación</th>
-              <th className={styles.colSubtipificacion}>Subtipificación</th>
-              <th className={styles.colAsesor}>Asesor</th>
-              <th className={styles.colEstado}>Estado</th>
-              <th className={styles.colReasignaciones}>Reasignaciones</th>
-              <th className={styles.colAcciones}>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedLeads.length === 0 ? (
-              <tr>
-                <td colSpan={13} className={styles.noData}>
-                  {leadsQuery.isPending ? (
-                    'Cargando leads...'
-                  ) : leadsQuery.isError ? (
-                    `Error al cargar leads: ${leadsQuery.error?.message || 'Desconocido'}`
-                  ) : (
-                    'No hay leads para mostrar'
-                  )}
-                </td>
-              </tr>
-            ) : (
-              paginatedLeads.map((lead) => (
-                <tr key={lead.id} className={styles.row}>
-                  <td className={styles.colCheckbox}>
-                    <input
-                      type="checkbox"
-                      checked={selectedLeads.has(lead.id)}
-                      onChange={() => toggleSelectLead(lead.id)}
-                    />
-                  </td>
-                  <td className={styles.colId}><strong>#{lead.id}</strong></td>
-                  <td className={styles.colPrefijo}>{lead.prefijo || '-'}</td>
-                  <td className={styles.colLead}>{lead.lead || '-'}</td>
-                  <td className={styles.colFecha}>
-                    {new Date(lead.createdAt).toLocaleDateString('es-ES', {
-                      year: 'numeric', month: '2-digit', day: '2-digit',
-                      hour: '2-digit', minute: '2-digit', second: '2-digit',
-                    })}
-                  </td>
-                  <td className={styles.colCampana}>{lead.nombreCampana}</td>
-                  <td className={styles.colProveedor}>{lead.nombreProveedorCampana}</td>
-                  <td className={styles.colBase}>
-                    <Badge label={lead.base} variant="info" size="small" />
-                  </td>
-                  <td className={styles.colTitular}>{lead.nombreTitular}</td>
-                  <td className={styles.colTipificacion}>{lead.codigoTipificacion || '-'}</td>
-                  <td className={styles.colSubtipificacion}>
-                    {lead.codigoSubtipificacion || '-'}
-                  </td>
-                  <td className={styles.colAsesor}>{lead.nombreAsesorAsignado}</td>
-                  <td className={styles.colEstado}>
-                    <Badge
-                      label={lead.estadoSeguimiento}
-                      variant={getEstadoBadgeVariant(lead.estadoSeguimiento)}
-                      size="small"
-                    />
-                  </td>
-                  <td className={styles.colReasignaciones}>
-                    <strong>{lead.reasignaciones}</strong>
-                  </td>
-                  <td className={styles.colAcciones}>
-                    <div className={styles.actionButtons}>
-                      {permisos.ASSIGN_LEADS ? (
-                        <>
-                          <button
-                            className={styles.actionBtn}
-                            title="Reasignar"
-                            onClick={() => onReasignarClick?.(lead, [])}
-                          >
-                            🔁
-                          </button>
-
-                          <button
-                            className={styles.actionBtn}
-                            title="Ver más"
-                            onClick={() => onViewLead?.(lead)}
-                          >
-                            ℹ️
-                          </button>
-                        </>
-                      ) : (
-                        <span style={{ color: '#888', fontSize: '0.78rem' }}>Sin permiso</span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      <div className={styles.dataGridWrap}>
+        <DsDataTable
+          rows={paginatedLeads}
+          columns={columns}
+          actions={actions}
+          loading={false}
+          emptyMessage={
+            leadsQuery.isError
+              ? `Error al cargar leads: ${leadsQuery.error?.message || 'Desconocido'}`
+              : 'No hay leads para mostrar'
+          }
+          rowKey={(lead) => lead.id}
+        />
       </div>
 
       {/* PAGINACIÓN */}

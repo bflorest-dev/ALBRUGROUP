@@ -19,10 +19,14 @@ export interface CurrentUser {
 }
 
 export class AuthService {
+  private static getObject(value: unknown): Record<string, unknown> | null {
+    return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null;
+  }
+
   /**
    * Decodificar JWT y obtener payload
    */
-  static getPayloadFromToken(token: string): any | null {
+  static getPayloadFromToken(token: string): unknown {
     try {
       const payload = token.split('.')[1];
       if (!payload) return null;
@@ -37,11 +41,19 @@ export class AuthService {
    * Obtener rol del payload JWT
    */
   static getRoleFromToken(token: string): string | null {
-    const payload = AuthService.getPayloadFromToken(token);
+    const payload = AuthService.getObject(AuthService.getPayloadFromToken(token));
     if (!payload) return null;
 
-    const role = payload.rol || payload.role || payload.roles?.[0] || payload.auth?.[0];
-    return role ?? null;
+    const rol = payload.rol;
+    const role = payload.role;
+    const roles = payload.roles;
+    const auth = payload.auth;
+
+    if (typeof rol === 'string') return rol;
+    if (typeof role === 'string') return role;
+    if (Array.isArray(roles) && typeof roles[0] === 'string') return roles[0];
+    if (Array.isArray(auth) && typeof auth[0] === 'string') return auth[0];
+    return null;
   }
 
   /**
@@ -64,7 +76,9 @@ export class AuthService {
     const { token, type, username, empleadoId, nombreCompleto, roles } = response;
 
     // Obtener rol del payload o la respuesta
-    const responseRole = (response as any).usuario?.rol;
+    const rawResponse = response as unknown as Record<string, unknown>;
+    const usuario = AuthService.getObject(rawResponse.usuario);
+    const responseRole = typeof usuario?.rol === 'string' ? usuario.rol : undefined;
     const tokenRole = AuthService.getRoleFromToken(token);
     const role = responseRole || (roles && roles[0]) || tokenRole || undefined;
     const normalizedRoles = role

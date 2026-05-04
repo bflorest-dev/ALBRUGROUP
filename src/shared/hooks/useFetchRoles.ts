@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Role } from '../auth/types';
+import type { Role } from '../../shared/types';
 
 export const useFetchRoles = (): Role[] => {
   const [roles, setRoles] = useState<Role[]>([]);

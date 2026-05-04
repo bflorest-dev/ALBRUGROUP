@@ -1,5 +1,8 @@
+/* eslint-disable no-restricted-syntax */
+// TODO: Migrar layout y estilos del kanban a primitives del design-system con cva + cn.
+
 import React, { useState } from 'react';
-import { BiPlus, BiChevronLeft, BiChevronRight } from 'react-icons/bi';
+import { BiPlus } from 'react-icons/bi';
 import { Modal } from '@shared/ui/base';
 import { CampaignCard, type Campaign } from './CampaignCard';
 import './CampaignsKanban.css';
@@ -21,20 +24,12 @@ interface CampaignsKanbanProps {
   advertiserAccounts: AdvertiserAccount[];
 }
 
-interface CampaignFormData {
-  name: string;
-  whatsapp: string;
-  advertiserAccount: string;
-  accountNumber: string;
-  company: string;
-}
-
 export const CampaignsKanban: React.FC<CampaignsKanbanProps> = ({ 
   companies,
   advertiserAccounts
 }) => {
-  // Load campaigns from localStorage or use empty array
-  const [campaigns, setCampaigns] = useState<Campaign[]>(() => {
+  // TODO: Migrar Kanban a componente DS con cva + cn
+  const [campaigns] = useState<Campaign[]>(() => {
     try {
       const stored = localStorage.getItem('kanban_campaigns');
       return stored ? JSON.parse(stored) : [];
@@ -42,17 +37,9 @@ export const CampaignsKanban: React.FC<CampaignsKanbanProps> = ({
       return [];
     }
   });
+  void advertiserAccounts;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<CampaignFormData>({
-    name: '',
-    whatsapp: '',
-    advertiserAccount: '',
-    accountNumber: '',
-    company: ''
-  });
-  const [currentPage, setCurrentPage] = useState<{ [key: string]: number }>({});
 
   // Filter active companies
   const activeCompanies = companies.filter(c => c.status === 'ACTIVO');
@@ -63,49 +50,9 @@ export const CampaignsKanban: React.FC<CampaignsKanbanProps> = ({
     campaigns: campaigns.filter(c => c.company === company.name)
   }));
 
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    
-    // Si cambia el whatsapp, validar que solo sean números y máximo 9 dígitos
-    if (name === 'whatsapp') {
-      const numericValue = value.replace(/\D/g, '').slice(0, 9);
-      setFormData(prev => ({
-        ...prev,
-        [name]: numericValue
-      }));
-    }
-    // Si cambia la cuenta publicitaria, obtener su número de cuenta
-    else if (name === 'advertiserAccount') {
-      const selectedAccount = advertiserAccounts.find(acc => acc.name === value);
-      setFormData(prev => ({
-        ...prev,
-        advertiserAccount: value,
-        accountNumber: selectedAccount?.accountNumber || ''
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
-  };
-
-  const validateWhatsApp = (phone: string): boolean => {
-    // Solo permite exactamente 9 dígitos
-    const phoneRegex = /^\d{9}$/;
-    return phoneRegex.test(phone);
-  };
-
   const handleOpenEdit = (campaign: Campaign) => {
+    void campaign;
     setIsEditing(true);
-    setEditingId(campaign.id);
-    setFormData({
-      name: campaign.name,
-      whatsapp: campaign.whatsapp,
-      advertiserAccount: campaign.advertiserAccount,
-      accountNumber: campaign.accountNumber,
-      company: campaign.company
-    });
     setIsModalOpen(true);
   };
 
@@ -145,14 +92,6 @@ export const CampaignsKanban: React.FC<CampaignsKanbanProps> = ({
           onClose={() => {
             setIsModalOpen(false);
             setIsEditing(false);
-            setEditingId(null);
-            setFormData({
-              name: '',
-              whatsapp: '',
-              advertiserAccount: '',
-              accountNumber: '',
-              company: ''
-            });
           }}
           title={isEditing ? 'Editar Campaña' : 'Nueva Campaña'}
         >

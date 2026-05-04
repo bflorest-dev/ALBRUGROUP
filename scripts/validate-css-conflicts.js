@@ -23,11 +23,6 @@ const WATCH_CLASSES = [
   'header-title'
 ];
 
-// Patrones de clases riesgosas (names genéricas sin namespace)
-const GENERIC_PATTERNS = [
-  /^\.[\w-]+$/, // Clases simples sin guion bajo o prefix
-];
-
 /**
  * Busca definiciones de clases CSS en un archivo
  */

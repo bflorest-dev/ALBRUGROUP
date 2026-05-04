@@ -1,12 +1,18 @@
 import React from 'react';
 import { AppShell } from '@app/layout/AppShell';
+import { DsSectionCard } from '@shared/ui/design-system';
+import styles from './PaginaPanel.module.css';
 
 const PaginaPanel: React.FC = () => {
   return (
     <AppShell>
-      <div className="p-8">
-        <h1 className="text-3xl font-bold mb-4">Panel Administrativo</h1>
-        <p>Bienvenido al panel administrativo</p>
+      <div className={styles.container}>
+        <DsSectionCard
+          title="Panel Administrativo"
+          description="Bienvenido al panel administrativo"
+        >
+          <p className={styles.placeholderText}>Selecciona un módulo desde la barra lateral para comenzar.</p>
+        </DsSectionCard>
       </div>
     </AppShell>
   );

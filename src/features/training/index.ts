@@ -1,0 +1,2 @@
+// Capacitacion feature
+export {};

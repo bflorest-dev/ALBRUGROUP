@@ -1,0 +1,80 @@
+.card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid #dbe7ff;
+  background: linear-gradient(to bottom, #ffffff 0%, #f6f9ff 100%);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+  padding: 1.05rem 1rem 0.9rem;
+  transition: transform 0.18s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 26px rgba(29, 78, 216, 0.14);
+}
+
+.topLine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #2f64dd 0%, #7eb2ff 55%, #cde2ff 100%);
+  opacity: 0.9;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.9rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #40608e;
+}
+
+.value {
+  margin: 0.35rem 0 0;
+  font-size: clamp(2.1rem, 1.6rem + 1.5vw, 2.7rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: #0f2a52;
+}
+
+.badge {
+  flex-shrink: 0;
+  letter-spacing: 0.08em;
+}
+
+.footer {
+  margin-top: 0.7rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid #e1ebff;
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+}
+
+.dot {
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: #3b82f6;
+  flex-shrink: 0;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.25;
+  color: #5f7598;
+}

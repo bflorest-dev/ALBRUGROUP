@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Login - Proxy vs Directo</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 20px; margin: 5px; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Login - Diagnóstico CORS</h1>
+    
+    <div>
+        <label>Username: <input type="text" id="username" value="admin@albru.admin.pe"></label><br><br>
+        <label>Password: <input type="password" id="password" value=""></label><br><br>
+    </div>
+    
+    <button onclick="testProxy()">🔄 Test Proxy (/api/auth)</button>
+    <button onclick="testDirect()">🎯 Test Directo (localhost:8080)</button>
+    <button onclick="clearResults()">🧹 Limpiar</button>
+    
+    <div id="results"></div>
+
+    <script>
+        function getCredentials() {
+            return {
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value
+            };
+        }
+        
+        function addResult(title, success, data) {
+            const div = document.createElement('div');
+            div.className = `test ${success ? 'success' : 'error'}`;
+            div.innerHTML = `
+                <h3>${title}</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            document.getElementById('results').appendChild(div);
+        }
+        
+        async function testProxy() {
+            console.log('🔄 Testing proxy...');
+            const creds = getCredentials();
+            
+            try {
+                const response = await fetch('/api/auth/autorizacion/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(creds)
+                });
+                
+                const data = await response.json();
+                
+                addResult('✅ Proxy Test (/api/auth)', response.ok, {
+                    status: response.status,
+                    statusText: response.statusText,
+                    url: response.url,
+                    data: data
+                });
+                
+            } catch (error) {
+                addResult('❌ Proxy Test (/api/auth)', false, {
+                    error: error.message,
+                    stack: error.stack
+                });
+            }
+        }
+        
+        async function testDirect() {
+            console.log('🎯 Testing direct...');
+            const creds = getCredentials();
+            
+            try {
+                const response = await fetch('http://localhost:8080/autorizacion/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(creds)
+                });
+                
+                const data = await response.json();
+                
+                addResult('✅ Direct Test (localhost:8080)', response.ok, {
+                    status: response.status,
+                    statusText: response.statusText,
+                    url: response.url,
+                    data: data
+                });
+                
+            } catch (error) {
+                addResult('❌ Direct Test (localhost:8080)', false, {
+                    error: error.message,
+                    note: 'CORS error expected - this is normal'
+                });
+            }
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        // Auto-focus password field
+        document.getElementById('password').focus();
+    </script>
+</body>
+</html>

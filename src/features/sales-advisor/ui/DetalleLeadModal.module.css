@@ -1,0 +1,256 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(6, 20, 43, 0.48);
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  width: min(100%, 980px);
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  border: 1px solid #d9e6ff;
+  background: #ffffff;
+  box-shadow: 0 28px 62px rgba(9, 30, 66, 0.3);
+  animation: modalIn 220ms ease-out;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1px solid #d9e5fb;
+  background: linear-gradient(180deg, #f9fbff 0%, #f0f6ff 100%);
+}
+
+.headerTitle {
+  margin: 0;
+  color: #0f2a52;
+  font-size: 1.22rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.headerSubtitle {
+  margin: 0.25rem 0 0;
+  color: #4a688f;
+  font-size: 0.86rem;
+}
+
+.closeButton {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #c8dcff;
+  border-radius: 9px;
+  background: #edf4ff;
+  color: #1d4ed8;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.closeButton:hover {
+  background: #dce9ff;
+}
+
+.tabBar {
+  display: flex;
+  overflow-x: auto;
+  gap: 0.4rem;
+  padding: 0.62rem 0.75rem;
+  border-bottom: 1px solid #dfe9fb;
+  background: #f7faff;
+}
+
+.tabButton {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #4a658b;
+  padding: 0.52rem 0.76rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+.tabButton:hover {
+  color: #1d4ed8;
+  background: #e9f2ff;
+}
+
+.tabButtonActive {
+  color: #1d4ed8;
+  background: #e7f0ff;
+  border-color: #cadcff;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+.summarySection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.summaryItem {
+  border: 1px solid #deebff;
+  border-radius: 12px;
+  background: #f8fbff;
+  padding: 0.72rem 0.78rem;
+}
+
+.summaryLabel {
+  display: block;
+  margin-bottom: 0.18rem;
+  color: #5a759a;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.summaryValue {
+  margin: 0;
+  color: #0f2a52;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.summaryNote {
+  border: 1px solid #cfe0ff;
+  border-radius: 12px;
+  background: #edf5ff;
+  padding: 0.78rem 0.84rem;
+}
+
+.summaryNoteText {
+  margin: 0;
+  color: #1f4c84;
+  font-size: 0.85rem;
+}
+
+.preventaSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.preventaButton {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #2a61d4;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #3a7bff 0%, #1d4ed8 100%);
+  color: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 140ms ease;
+}
+
+.preventaButton:hover {
+  filter: brightness(1.04);
+}
+
+.content :global(form) {
+  border: 1px solid #dfebff;
+  border-radius: 14px;
+  padding: 0.92rem;
+  background: #f9fbff;
+}
+
+.content :global(label) {
+  color: #375781;
+}
+
+.content :global(input),
+.content :global(select),
+.content :global(textarea) {
+  border-radius: 10px;
+  border: 1px solid #c7daf8;
+  background: #ffffff;
+  color: #15355f;
+}
+
+.content :global(input:focus),
+.content :global(select:focus),
+.content :global(textarea:focus) {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.content :global(button[type='submit']) {
+  border: 1px solid #2a61d4;
+  background: linear-gradient(180deg, #3a7bff 0%, #1d4ed8 100%);
+  color: #ffffff;
+  border-radius: 10px;
+}
+
+.content :global(button[type='submit']:hover:enabled) {
+  filter: brightness(1.03);
+}
+
+.content :global(button[class*='bg-orange-600']),
+.content :global(button[class*='bg-green-600']),
+.content :global(button[class*='bg-indigo-600']),
+.content :global(button[class*='bg-purple-600']) {
+  border: 1px solid #2a61d4;
+  background: linear-gradient(180deg, #3a7bff 0%, #1d4ed8 100%);
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .modal {
+    width: 100%;
+    border-radius: 14px;
+  }
+
+  .header {
+    padding: 0.92rem;
+  }
+
+  .headerTitle {
+    font-size: 1.06rem;
+  }
+
+  .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .content {
+    padding: 0.86rem;
+  }
+}

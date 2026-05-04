@@ -1,21 +1,42 @@
 import React, { useState } from 'react';
-import type { LoginFormData } from '../modelo/login.model';
+import type { LoginFormData } from '../model/login.model';
 
 interface LoginFormProps {
   onSubmit: (data: LoginFormData) => Promise<void> | void;
+  username?: string;
+  onBack?: () => void;
+  onForgotPassword?: () => void;
+  loading?: boolean;
+  error?: string | null;
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
+
+export const LoginForm: React.FC<LoginFormProps> = ({ 
+  onSubmit, 
+  username: propUsername, 
+  loading: propLoading = false, 
+  error: propError,
+  onBack,
+  onForgotPassword 
+}) => {
   const [formData, setFormData] = useState<LoginFormData>({
-    email: '',
+    username: propUsername || '',
     password: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Sincroniza el username si cambia la prop
+  React.useEffect(() => {
+    if (typeof propUsername === 'string' && propUsername !== formData.username) {
+      setFormData((prev) => ({ ...prev, username: propUsername }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propUsername]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev: LoginFormData) => ({ ...prev, [name]: value as LoginFormData[keyof LoginFormData] }));
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -38,18 +59,18 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit }) => {
       <h2 className="text-3xl font-bold text-center">Iniciar sesión</h2>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="email" className="font-semibold">
-          EMAIL
+        <label htmlFor="username" className="font-semibold">
+          USERNAME
         </label>
         <input
-          type="email"
-          id="email"
-          name="email"
-          value={formData.email}
+          type="username"
+          id="username"
+          name="username"
+          value={formData.username}
           onChange={handleChange}
           required
           className="w-full border px-3 py-2 rounded"
-          placeholder="Ingresa tu email"
+          placeholder="Ingresa tu username"
         />
       </div>
 

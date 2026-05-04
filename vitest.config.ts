@@ -1,5 +1,8 @@
 import { defineConfig } from 'vitest/config';
-import path from 'path';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   test: {
@@ -7,16 +10,13 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/setupTests.ts',
     alias: {
-      '@': path.resolve(__dirname, 'src'),
-      '@components': path.resolve(__dirname, 'src/components'),
-      '@atoms': path.resolve(__dirname, 'src/components/atoms'),
-      '@molecules': path.resolve(__dirname, 'src/components/molecules'),
-      '@organisms': path.resolve(__dirname, 'src/components/organisms'),
-      '@hooks': path.resolve(__dirname, 'src/hooks'),
-      '@contexts': path.resolve(__dirname, 'src/contexts'),
-      '@utils': path.resolve(__dirname, 'src/utils'),
-      '@services': path.resolve(__dirname, 'src/services'),
-      '@types': path.resolve(__dirname, 'src/types'),
+      '@': resolve(__dirname, 'src'),
+      '@app': resolve(__dirname, 'src/app'),
+      '@pages': resolve(__dirname, 'src/pages'),
+      '@widgets': resolve(__dirname, 'src/widgets'),
+      '@features': resolve(__dirname, 'src/features'),
+      '@entities': resolve(__dirname, 'src/entities'),
+      '@shared': resolve(__dirname, 'src/shared'),
     },
   },
 });

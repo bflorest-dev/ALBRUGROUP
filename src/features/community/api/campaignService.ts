@@ -3,7 +3,7 @@
  * Capa: caracteristicas/community/api
  */
 import { leadsHttp } from '@shared/api/clienteHttp';
-import type { Campaign, CuentaPublicitaria, CreateCampaignPayload, Proveedor } from '@entities/campana';
+import type { Campaign, CuentaPublicitaria, CreateCampaignPayload, Proveedor } from '@entities/campaign/model/campaign';
 
 export const fetchCuentasPublicitarias = async (): Promise<CuentaPublicitaria[]> => {
   const res = await leadsHttp.get<CuentaPublicitaria[]>('/cuentas-publicitarias');

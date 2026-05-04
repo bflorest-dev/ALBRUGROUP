@@ -6,7 +6,7 @@
 
 import { useState, useCallback } from 'react';
 import { createCampaign } from '@features/community/api/campaignService';
-import type { CreateCampaignPayload, CuentaPublicitaria, Proveedor } from '@entities/campana';
+import type { CreateCampaignPayload, CuentaPublicitaria, Proveedor } from '@entities/campaign/model/campaign';
 
 export interface CampaignFormState {
   nombre: string;

@@ -6,7 +6,7 @@ import { clearAllStorage } from '@shared/lib'
 
 // Make clearAllStorage available in dev console
 if (import.meta.env.DEV) {
-  (window as any).clearAllStorage = clearAllStorage
+  (window as unknown as Record<string, unknown>).clearAllStorage = clearAllStorage
 }
 
 createRoot(document.getElementById('root')!).render(

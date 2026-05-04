@@ -29,6 +29,8 @@ interface CampaignSectionProps {
   loading?: boolean;
   error?: boolean;
   onRefresh: () => Promise<void>;
+  updatingEstadoId?: number | null;
+  onToggleEstado?: (campana: CampanaResponse, nextActivo: boolean) => Promise<void>;
 }
 
 export const CampaignSection: React.FC<CampaignSectionProps> = ({

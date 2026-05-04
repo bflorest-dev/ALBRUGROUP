@@ -10,7 +10,6 @@
 import { useState, useCallback } from 'react';
 import { validatePhone } from '../api/phoneValidation.api';
 import type {
-  NumverifyResponse,
   PhoneValidationState,
   PhoneValidationResult,
 } from './types';

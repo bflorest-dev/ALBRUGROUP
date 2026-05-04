@@ -3,7 +3,7 @@
  * Tabla con lista de Proveedores
  */
 import React from 'react';
-import type { Proveedor } from '@entities/proveedor';
+import type { Proveedor } from '@entities/provider/model/proveedor';
 
 interface ProveedoresListProps {
   proveedores: Proveedor[];

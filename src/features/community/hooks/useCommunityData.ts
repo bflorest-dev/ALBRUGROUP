@@ -40,6 +40,9 @@ export const useCommunityData = () => {
   // Adicionales
   const [adicionales, setAdicionales] = useState<AdicionalResponse[]>([]);
 
+  // Adicionales
+  const [adicionales, setAdicionales] = useState<AdicionalResponse[]>([]);
+
   // ========================================================================
   // Campañas
   // ========================================================================
@@ -403,6 +406,75 @@ export const useCommunityData = () => {
     }
   }, []);
 
+  // ========================================================================
+  // Adicionales
+  // ========================================================================
+
+  const fetchAdicionales = useCallback(async (idProveedor?: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await LeadsRepository.getAdicionales(idProveedor);
+      setAdicionales(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al cargar adicionales');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const createAdicional = useCallback(
+    async (payload: Parameters<typeof LeadsRepository.createAdicional>[0]) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const nuevo = await LeadsRepository.createAdicional(payload);
+        setAdicionales((prev) => [...prev, nuevo]);
+        return nuevo;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error al crear adicional');
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
+
+  // ========================================================================
+  // Toggle Estado Functions (Local State Updates)
+  // ========================================================================
+
+  const toggleCampanaEstado = useCallback((id: number, nextActivo?: boolean) => {
+    setCampanas((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, activo: nextActivo ?? !c.activo } : c))
+    );
+  }, []);
+
+  const toggleCuentaEstadoLocal = useCallback((id: number, nextActivo?: boolean) => {
+    setCuentas((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, activo: nextActivo ?? !c.activo } : c))
+    );
+  }, []);
+
+  const togglePlanEstado = useCallback(async (id: number, nextActivo?: boolean) => {
+    setPlanes((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, activo: nextActivo ?? !p.activo } : p))
+    );
+  }, []);
+
+  const togglePromocionEstadoLocal = useCallback((id: number, nextActivo?: boolean) => {
+    setPromociones((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, activo: nextActivo ?? !p.activo } : p))
+    );
+  }, []);
+
+  const toggleZonaEstado = useCallback(async (id: number, nextActivo?: boolean) => {
+    setZonas((prev) =>
+      prev.map((z) => (z.id === id ? { ...z, activo: nextActivo ?? !z.activo } : z))
+    );
+  }, []);
+
   return {
     loading,
     error,
@@ -412,22 +484,26 @@ export const useCommunityData = () => {
     createCampana,
     updateCampana,
     deleteCampana,
+    toggleCampanaEstado,
     // Cuentas
     cuentas,
     fetchCuentas,
     createCuenta,
     deleteCuenta,
+    toggleCuentaEstadoLocal,
     // Planes
     planes,
     fetchPlanes,
     createPlan,
     updatePlan,
     deletePlan,
+    togglePlanEstado,
     // Promociones
     promociones,
     fetchPromociones,
     createPromocion,
     deletePromocion,
+    togglePromocionEstadoLocal,
     // Proveedores
     proveedores,
     fetchProveedores,
@@ -438,5 +514,10 @@ export const useCommunityData = () => {
     createZona,
     updateZona,
     deleteZona,
+    toggleZonaEstado,
+    // Adicionales
+    adicionales,
+    fetchAdicionales,
+    createAdicional,
   };
 };

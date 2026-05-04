@@ -1,0 +1,33 @@
+.pageShell {
+  min-height: 100vh;
+  padding: 1.4rem;
+  background: radial-gradient(circle at top right, var(--color-surface-accent, #ecf3ff) 0%, var(--color-surface-page, #f6f9ff) 42%, var(--color-surface-card, #ffffff) 100%);
+}
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.pageTitle {
+  margin: 0 0 1rem;
+  color: var(--color-content-strong, #0f2a52);
+  font-weight: 800;
+}
+
+@media (max-width: 768px) {
+  .pageTitle {
+    margin: 0;
+  }
+}
+
+.tabsList {
+  margin-bottom: 1rem;
+}
+
+.sectionGap {
+  margin-bottom: 0.75rem;
+}

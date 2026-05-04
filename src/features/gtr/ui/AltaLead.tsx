@@ -7,16 +7,17 @@
 import React, { useState } from 'react';
 import { FormInput } from '@shared/ui/form-input/FormInput';
 import { FormSelect } from '@shared/ui/form-select/FormSelect';
-import { Button, Alert, Spinner } from '@shared/ui/utilities/Utilities';
+import { Button, Alert } from '@shared/ui/utilities/Utilities';
 import { PrefixSelector } from '@features/phone-validation';
 import { useLeadsCampaignsQuery } from '@shared/api/queries';
 import { useCreateLeadMutation } from '../hooks/useGtrQueries';
-import type { LeadIntakeRequest, PermisosGTR, BaseLead } from '@entities/lead/types';
+import type { PermisosGTR, BaseLead } from '@entities/lead/types';
 import styles from './AltaLead.module.css';
 
 interface AltaLeadProps {
   permisos: PermisosGTR;
   onSuccess?: () => void;
+  dashboardMode?: boolean;
 }
 
 /**
@@ -27,7 +28,7 @@ interface AltaLeadProps {
  * - idCampana: requerido, select
  * - base: requerido, select con valores predefinidos
  */
-export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
+export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess, dashboardMode = false }) => {
   // ========== ESTADO FORMULARIO ==========
   // Mantenemos prefijo y lead separados para UX, pero los combinamos al enviar
   const [formData, setFormData] = useState<{
@@ -130,9 +131,6 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
         base: formData.base,
       };
 
-      console.log('payload enviado', payload);
-      console.log('prefijo', payload.prefijo, 'lead', payload.lead, 'numTelefono', payload.numTelefono);
-
       await createLeadMutation.mutateAsync(payload);
 
       // Reset form
@@ -175,8 +173,8 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
   ];
 
   return (
-    <div className={styles.formContainer}>
-      <h2>Registrar Nuevo Lead</h2>
+    <div className={`${styles.formContainer} ${dashboardMode ? styles.dashboardMode : ''}`}>
+      <h2 className={styles.formTitle}>Registrar Nuevo Lead</h2>
 
       {errors.form && (
         <Alert
@@ -189,13 +187,15 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
 
       <form onSubmit={handleSubmit} className={styles.form}>
         {/* Prefijo con detección de país */}
-        <PrefixSelector
-          value={formData.prefijo}
-          onChange={(prefix) => handleInputChange('prefijo', prefix)}
-          label="Prefijo Telefónico"
-          placeholder="Selecciona un país"
-          error={errors.prefijo}
-        />
+        <div className={dashboardMode ? styles.dashboardField : ''}>
+          <PrefixSelector
+            value={formData.prefijo}
+            onChange={(prefix) => handleInputChange('prefijo', prefix)}
+            label="Prefijo Telefónico"
+            placeholder="Selecciona un país"
+            error={errors.prefijo}
+          />
+        </div>
 
         {/* Lead (número) */}
         <FormInput
@@ -209,6 +209,8 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
           error={errors.lead}
           maxLength={15}
           helpText="Solo números"
+          inputMode="numeric"
+          className={`${dashboardMode ? styles.dashboardInput : ''} ${styles.leadNumberInput}`.trim()}
         />
 
         {/* Campaña */}
@@ -223,6 +225,7 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
           isLoading={campaignsQuery.isPending}
           error={errors.idCampana}
           disabled={campaignsQuery.isPending}
+          className={dashboardMode ? styles.dashboardField : ''}
         />
 
         {selectedCampaign && (
@@ -240,6 +243,7 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess }) => {
           options={baseOptions}
           required
           error={errors.base}
+          className={dashboardMode ? styles.dashboardField : ''}
         />
 
         {/* Botón Submit */}

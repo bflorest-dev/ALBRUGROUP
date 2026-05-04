@@ -3,7 +3,8 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { EventosApi, type EventoResponse } from '../model/eventos.api';
+import { EventosApi } from '../model/eventos.api';
+import type { EventoResponse } from '@shared/types';
 
 /**
  * Hook para obtener eventos de un lead específico

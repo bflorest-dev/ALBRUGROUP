@@ -14,6 +14,7 @@ interface PromocionesSectionProps {
   onRefresh: () => Promise<void>;
   error: boolean;
   status: number;
+  onToggleEstado?: (id: number, nextActivo: boolean) => void;
 }
 
 const defaultForm = {

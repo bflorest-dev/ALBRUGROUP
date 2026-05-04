@@ -3,7 +3,7 @@
  * Maneja estado, validación, y lógica de formulario para Proveedores
  */
 import { useState, useEffect, useCallback } from 'react';
-import type { Proveedor, CreateProveedorPayload } from '@entities/proveedor';
+import type { Proveedor, CreateProveedorPayload } from '@entities/provider/model/proveedor';
 import { proveedorService } from '@features/community/api/proveedorService';
 
 interface ProveedorFormState {

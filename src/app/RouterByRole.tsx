@@ -13,9 +13,9 @@ interface RouterByRoleProps {
 
 const RouterByRole: React.FC<RouterByRoleProps> = ({ role }) => {
   return (
-    <div style={{ padding: '20px', textAlign: 'center' }}>
+    <div className="p-5 text-center">
       <h1>Dashboard para {role}</h1>
-      <p>Funcionalidad en desarrollo - MigraciÃ³n FSD en progreso</p>
+      <p>Funcionalidad en desarrollo - Migración FSD en progreso</p>
     </div>
   );
 };

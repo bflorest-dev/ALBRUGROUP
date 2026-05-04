@@ -3,7 +3,7 @@
  * Capa: caracteristicas/community/api
  */
 import { leadsHttp } from '@shared/api/clienteHttp';
-import type { Proveedor, CreateProveedorPayload } from '@entities/proveedor';
+import type { Proveedor, CreateProveedorPayload } from '@entities/provider/model/proveedor';
 
 export const proveedorService = {
   async fetchProveedores(): Promise<Proveedor[]> {

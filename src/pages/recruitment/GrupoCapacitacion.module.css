@@ -1,0 +1,28 @@
+.pageSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.heroCard {
+  padding-top: 1.8rem;
+  padding-bottom: 1.8rem;
+  border-radius: var(--radius-lg, 16px);
+  border: 1px solid var(--color-surface-border, #dbe7ff);
+  box-shadow: var(--shadow-soft, 0 8px 18px rgba(15, 42, 82, 0.06));
+}
+
+.heroTitle {
+  margin: 0.75rem 0 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: rgb(15 42 82);
+}
+
+.heroDescription {
+  margin-top: 0.5rem;
+  max-width: 42rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: rgb(74 104 143);
+}

@@ -4,10 +4,10 @@
  * FSD: caracteristicas/gtr/ui
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FormSelect } from '@shared/ui/form-select/FormSelect';
-import { FormInput } from '@shared/ui/form-input/FormInput';
-import { Button, Alert, Spinner } from '@shared/ui/utilities/Utilities';
+//import { FormInput } from '@shared/ui/form-input/FormInput';
+import { Button, Alert } from '@shared/ui/utilities/Utilities';
 import { useAssignLeadMutation } from '../hooks/useGtrQueries';
 import type { LeadAsignacionRequest, PermisosGTR } from '@entities/lead/types';
 import styles from './AsignacionLead.module.css';
@@ -21,6 +21,7 @@ interface AsignacionLeadProps {
   onSuccess?: (asesorNombre: string) => void;
   onCancel?: () => void;
   permisos: PermisosGTR;
+  dashboardMode?: boolean;
 }
 
 /**
@@ -37,12 +38,12 @@ export const AsignacionLead: React.FC<AsignacionLeadProps> = ({
   onSuccess,
   onCancel,
   permisos,
+  dashboardMode = false,
 }) => {
   // ========== ESTADO ==========
   const [idAsesorAsignado, setIdAsesorAsignado] = useState<string>(
     asesorActual?.id.toString() || ''
   );
-  const [observaciones, setObservaciones] = useState<string>('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // ========== MUTACIONES ==========
@@ -97,7 +98,6 @@ export const AsignacionLead: React.FC<AsignacionLeadProps> = ({
 
       // Limpiar
       setIdAsesorAsignado('');
-      setObservaciones('');
       setErrors({});
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Error al asignar lead';
@@ -125,9 +125,9 @@ export const AsignacionLead: React.FC<AsignacionLeadProps> = ({
   );
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${dashboardMode ? styles.dashboardMode : ''}`}>
       <div className={styles.header}>
-        <h3>Asignar Lead</h3>
+        <h3 className={styles.title}>Asignar Lead</h3>
         {nombreLeadActual && (
           <p className={styles.leadInfo}>Lead: <strong>{nombreLeadActual}</strong></p>
         )}
@@ -161,6 +161,7 @@ export const AsignacionLead: React.FC<AsignacionLeadProps> = ({
           required
           error={errors.asesor}
           disabled={isLoading || assignMutation.isPending}
+          className={dashboardMode ? styles.dashboardField : ''}
         />
 
         {asesorSeleccionado && (

@@ -166,14 +166,54 @@ function addErrorInterceptor(instance: AxiosInstance, instanceName: string): voi
  * Cliente para AUTENTICACIÓN
  * - SIN JWT requerido (login no tiene token aún)
  * - Usado por: AuthRepository
+ * 
+ * IMPORTANTE: Este cliente NO debe tener interceptor de autenticación
+ * porque el endpoint /autorizacion/login no requiere token.
+ * 
+ * NOTA: Usa proxy de Vite (/api/auth) para evitar problemas de CORS
  */
 export const authHttp: AxiosInstance = axios.create({
-  baseURL: env.AUTH_BASE_URL,
+  baseURL: env.AUTH_BASE_URL, // '/api/auth' - usa proxy de Vite
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Interceptor para LIMPIAR cualquier Authorization header que pueda existir
+authHttp.interceptors.request.use(
+  (config) => {
+    // Log ANTES de limpiar
+    console.log('[authHttp] 🔍 ANTES de limpiar:', {
+      hasAuthHeader: !!config.headers?.Authorization,
+      authHeaderValue: config.headers?.Authorization,
+      allHeaders: { ...config.headers },
+    });
+    
+    // Asegurar que NO se envíe Authorization header en requests de auth
+    if (config.headers.Authorization) {
+      console.warn('[authHttp] ⚠️ Removiendo Authorization header de request de autenticación');
+      delete config.headers.Authorization;
+    }
+    
+    // Log DESPUÉS de limpiar
+    console.log('[authHttp] 📤 REQUEST FINAL:', {
+      method: config.method?.toUpperCase(),
+      url: config.url,
+      baseURL: config.baseURL,
+      fullURL: `${config.baseURL}${config.url}`,
+      headers: { ...config.headers },
+      hasAuthHeaderAfterClean: !!config.headers?.Authorization,
+    });
+    
+    return config;
+  },
+  (error) => {
+    console.error('[authHttp] Request interceptor error', error);
+    return Promise.reject(error);
+  }
+);
+
 addErrorInterceptor(authHttp, 'authHttp');
 
 /**

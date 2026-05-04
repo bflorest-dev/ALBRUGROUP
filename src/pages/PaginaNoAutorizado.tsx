@@ -1,20 +1,31 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Button, SessionLogoutButton } from '@shared/ui';
+import { DsSectionCard, DsStatusBadge } from '@shared/ui/design-system';
+import styles from './PaginaNoAutorizado.module.css';
 
 const PaginaNoAutorizado: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-md text-center">
-        <h1 className="text-4xl font-bold mb-4 text-red-600">403</h1>
-        <p className="text-xl mb-6">No tienes permiso para acceder a esta página</p>
-        <button
-          onClick={() => navigate('/panel')}
-          className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600"
+    <div className={styles.page}>
+      <div className={styles.container}>
+        <div className={styles.headerActions}>
+          <SessionLogoutButton />
+        </div>
+
+        <DsSectionCard
+          title="Acceso denegado"
+          description="No tienes permiso para acceder a esta página"
+          className={styles.noticePanel}
         >
-          Volver al Panel
-        </button>
+          <div className={styles.content}>
+            <DsStatusBadge tone="danger" label="403" className={styles.codeBadge} />
+            <Button onClick={() => navigate('/panel')} variant="primary">
+              Volver al panel
+            </Button>
+          </div>
+        </DsSectionCard>
       </div>
     </div>
   );

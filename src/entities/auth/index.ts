@@ -1,5 +1,4 @@
-export { AuthService } from './model';
-export type { CurrentUser } from './model';
+export { AuthService, type CurrentUser, AdminAuthService } from './model';
 export { useAuth } from './useAuth';
 export type { Role, User } from './types';
 export { AuthProvider } from './ui/AuthContext';

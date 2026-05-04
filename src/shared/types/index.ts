@@ -1,3 +1,5 @@
+export type { TipificacionResponse } from './lead.responses';
+export type { TipificarLeadPayload, UpdatePreventaPayload } from './lead.requests';
 export type { Role } from './roles';
 export type { ApiResponse, PaginatedResponse } from './api';
 
@@ -199,7 +201,9 @@ export interface RegistrarContratoRequest {
   puestoTrabajo?: string; // para backend auth-service (consistencia con enum)
   salario?: number;
   fechaInicio?: string;
+  fechaFin?: string; // Fecha de fin del contrato (opcional)
   tipoContrato?: string;
+  idPostulacion?: number; // ID de la postulación asociada (opcional)
 }
 
 export interface CerrarContratoRequest {

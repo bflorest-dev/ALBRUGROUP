@@ -1,0 +1,113 @@
+.advisor-card {
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  background-color: #ffffff;
+}
+
+.advisor-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.advisor-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #eef2ff;
+  color: #3730a3;
+  font-weight: 700;
+}
+
+.advisor-info h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.advisor-info p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.advisor-status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.advisor-status-disponible {
+  background-color: #d1fae5;
+  color: #047857;
+}
+
+.advisor-status-ocupado {
+  background-color: #fef3c7;
+  color: #b45309;
+}
+
+.advisor-status-saturado {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.advisor-status-default {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+.progress-container {
+  margin-top: 12px;
+}
+
+.gtr-progress-bar {
+  width: 100%;
+  height: 10px;
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.gtr-progress-fill {
+  width: 100%;
+  height: 100%;
+  appearance: none;
+}
+
+.gtr-progress-fill::-webkit-progress-bar {
+  background-color: transparent;
+}
+
+.gtr-progress-fill::-webkit-progress-value {
+  border-radius: 9999px;
+}
+
+.gtr-progress-fill::-moz-progress-bar {
+  border-radius: 9999px;
+}
+
+.gtr-progress-disponible::-webkit-progress-value,
+.gtr-progress-disponible::-moz-progress-bar {
+  background-color: #10b981;
+}
+
+.gtr-progress-ocupado::-webkit-progress-value,
+.gtr-progress-ocupado::-moz-progress-bar {
+  background-color: #f59e0b;
+}
+
+.gtr-progress-saturado::-webkit-progress-value,
+.gtr-progress-saturado::-moz-progress-bar {
+  background-color: #ef4444;
+}
+
+.gtr-progress-default::-webkit-progress-value,
+.gtr-progress-default::-moz-progress-bar {
+  background-color: #6b7280;
+}

@@ -5,8 +5,10 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { Badge, Spinner, Alert, Button } from '@shared/ui/utilities/Utilities';
-import { useLeadsAsesorVentas, useTypifyLeadMutation } from '../hooks/useGtrQueries';
+import { Badge, Spinner, Alert } from '@shared/ui/utilities/Utilities';
+import { DsDataTable, type DsDataTableAction, type DsDataTableColumn } from '@shared/ui/design-system';
+import { useLeadsAsesorVentas } from '../hooks/useGtrQueries';
+//import { useLeadsAsesorVentas, useTypifyLeadMutation } from '../hooks/useGtrQueries';
 import type { LeadAsesorVentasResponse, PermisosGTR } from '@entities/lead/types';
 import styles from './TablaLeadsAsesorVentas.module.css';
 
@@ -15,6 +17,7 @@ interface TablaLeadsAsesorVentasProps {
   idAsesor?: number;
   onLeadClick?: (lead: LeadAsesorVentasResponse) => void;
   itemsPerPage?: number;
+  dashboardMode?: boolean;
 }
 
 /**
@@ -30,6 +33,7 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
   idAsesor,
   onLeadClick,
   itemsPerPage = 20,
+  dashboardMode = false,
 }) => {
   // ========== ESTADO ==========
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -40,10 +44,14 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
   const leadsQuery = useLeadsAsesorVentas({
     idAsesor,
   });
-  const leads = leadsQuery.data ?? [];
+  
+  // ✅ CORREGIDO: Usar useMemo para estabilizar 'leads' y evitar cambios en cada render
+  const leads = useMemo(() => leadsQuery.data ?? [], [leadsQuery.data]);
 
   // ========== MUTACIONES ==========
-  const typifyMutation = useTypifyLeadMutation();
+  // ✅ CORREGIDO: Prefijo _ para indicar que es intencionalmente no usado (o eliminar si no se necesita)
+  // Si no se usa en el futuro, elimina esta línea completamente
+  //const _typifyMutation = useTypifyLeadMutation(); // O eliminar: // const typifyMutation = useTypifyLeadMutation();
 
   // ========== FILTRADO ==========
   const filteredLeads = useMemo(() => {
@@ -59,13 +67,13 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
 
       return matchesSearch && matchesEstado;
     });
-  }, [leads, searchTerm, filterEstado]);
+  }, [leads, searchTerm, filterEstado]); // ✅ CORREGIDO: 'leads' ahora es estable
 
   // ========== VALORES ÚNICOS PARA FILTROS ==========
   const estados = useMemo(() => {
     const unique = new Set(leads.map((l) => l.estadoSeguimiento));
     return Array.from(unique).sort();
-  }, [leads]);
+  }, [leads]); // ✅ CORREGIDO: 'leads' ahora es estable
 
   // ========== PAGINACIÓN ==========
   const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
@@ -102,6 +110,78 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
     return `${prefijo}${lead}`;
   };
 
+  const columns = useMemo<DsDataTableColumn<LeadAsesorVentasResponse>[]>(
+    () => [
+      {
+        key: 'id',
+        label: 'ID',
+        render: (lead) => <strong>#{lead.id}</strong>,
+      },
+      {
+        key: 'fechaAsignacion',
+        label: 'Fecha Asignación',
+        render: (lead) => formatDate(lead.fechaAsignacion),
+      },
+      {
+        key: 'lead',
+        label: 'Teléfono',
+        render: (lead) => <code className={styles.phone}>{formatPhone(lead.prefijo, lead.lead)}</code>,
+      },
+      {
+        key: 'nombreTitular',
+        label: 'Titular',
+        render: (lead) => <span className={styles.titular}>{lead.nombreTitular}</span>,
+      },
+      {
+        key: 'correo',
+        label: 'Email',
+        render: (lead) =>
+          lead.correo ? (
+            <a href={`mailto:${lead.correo}`} className={styles.email}>
+              {lead.correo}
+            </a>
+          ) : (
+            <span className={styles.noData}>-</span>
+          ),
+      },
+      {
+        key: 'estadoSeguimiento',
+        label: 'Estado Seguimiento',
+        render: (lead) => (
+          <Badge
+            label={lead.estadoSeguimiento}
+            variant={getEstadoBadgeVariant(lead.estadoSeguimiento)}
+            size="small"
+          />
+        ),
+      },
+    ],
+    []
+  );
+
+  const actions = useMemo<DsDataTableAction<LeadAsesorVentasResponse>[]>(
+    () => [
+      {
+        label: 'Ver',
+        variant: 'ghost',
+        onClick: (lead) => onLeadClick?.(lead),
+      },
+      {
+        label: 'Editar',
+        variant: 'secondary',
+        onClick: (lead) => onLeadClick?.(lead),
+        isVisible: () => permisos.UPDATE_LEADS_ASESOR,
+      },
+      {
+        label: 'Tipificar',
+        variant: 'primary',
+        onClick: (lead) => onLeadClick?.(lead),
+        isVisible: () => permisos.TYPIFY_LEADS,
+      },
+    ],
+    [onLeadClick, permisos.TYPIFY_LEADS, permisos.UPDATE_LEADS_ASESOR]
+  );
+
   // ========== RENDER ==========
   if (leadsQuery.isPending) {
     return <Spinner text="Cargando leads del asesor..." />;
@@ -117,8 +197,8 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
   }
 
   return (
-    <div className={styles.container}>
-      <h2>Mis Leads - Seguimiento</h2>
+    <div className={`${styles.container} ${dashboardMode ? styles.dashboardMode : ''}`}>
+      <h2 className={styles.title}>Mis Leads - Seguimiento</h2>
 
       {leadsQuery.isError && (
         <Alert
@@ -181,99 +261,15 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
       </div>
 
       {/* TABLA */}
-      <div className={styles.tableWrapper}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th className={styles.colId}>ID</th>
-              <th className={styles.colFecha}>Fecha Asignación</th>
-              <th className={styles.colTelefono}>Teléfono</th>
-              <th className={styles.colTitular}>Titular</th>
-              <th className={styles.colEmail}>Email</th>
-              <th className={styles.colEstado}>Estado Seguimiento</th>
-              <th className={styles.colAcciones}>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedLeads.length === 0 ? (
-              <tr>
-                <td colSpan={7} className={styles.noData}>
-                  {searchTerm || filterEstado ? (
-                    <>No hay leads que coincidan con tu búsqueda</>
-                  ) : (
-                    <>No tienes leads asignados aún</>
-                  )}
-                </td>
-              </tr>
-            ) : (
-              paginatedLeads.map((lead) => (
-                <tr key={lead.id} className={styles.row}>
-                  <td className={styles.colId}>
-                    <strong>#{lead.id}</strong>
-                  </td>
-                  <td className={styles.colFecha}>
-                    {formatDate(lead.fechaAsignacion)}
-                  </td>
-                  <td className={styles.colTelefono}>
-                    <code className={styles.phone}>
-                      {formatPhone(lead.prefijo, lead.lead)}
-                    </code>
-                  </td>
-                  <td className={styles.colTitular}>
-                    <span className={styles.titular}>{lead.nombreTitular}</span>
-                  </td>
-                  <td className={styles.colEmail}>
-                    {lead.correo ? (
-                      <a href={`mailto:${lead.correo}`} className={styles.email}>
-                        {lead.correo}
-                      </a>
-                    ) : (
-                      <span className={styles.noData}>-</span>
-                    )}
-                  </td>
-                  <td className={styles.colEstado}>
-                    <Badge
-                      label={lead.estadoSeguimiento}
-                      variant={getEstadoBadgeVariant(lead.estadoSeguimiento)}
-                      size="small"
-                    />
-                  </td>
-                  <td className={styles.colAcciones}>
-                    <div className={styles.actionButtons}>
-                      <button
-                        className={styles.actionBtn}
-                        title="Ver detalles"
-                        onClick={() => onLeadClick?.(lead)}
-                      >
-                        👁️
-                      </button>
-
-                      {permisos.UPDATE_LEADS_ASESOR && (
-                        <button
-                          className={styles.actionBtn}
-                          title="Actualizar estado"
-                          onClick={() => onLeadClick?.(lead)}
-                        >
-                          ✏️
-                        </button>
-                      )}
-
-                      {permisos.TYPIFY_LEADS && (
-                        <button
-                          className={styles.actionBtn}
-                          title="Tipificar"
-                          onClick={() => onLeadClick?.(lead)}
-                        >
-                          🏷️
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      <div className={styles.dataGridWrap}>
+        <DsDataTable
+          rows={paginatedLeads}
+          columns={columns}
+          actions={actions}
+          loading={false}
+          emptyMessage={searchTerm || filterEstado ? 'No hay leads que coincidan con tu búsqueda' : 'No tienes leads asignados aún'}
+          rowKey={(lead) => lead.id}
+        />
       </div>
 
       {/* PAGINACIÓN */}

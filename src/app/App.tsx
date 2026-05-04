@@ -1,19 +1,18 @@
 import React from 'react';
 import { AppRoutes } from '@app/router/AppRoutes';
 import { ProveedorAuth } from '@app/providers/ProveedorAuth';
-import { ProveedorQuery } from '@app/providers/ProveedorQuery';
 import { AppProvider } from '@app/AppContext';
-import '@shared/api/interceptors';
+import { ErrorBoundary } from '@shared/ui';
 
 const App: React.FC = () => {
   return (
-    <ProveedorQuery>
+    <ErrorBoundary>
       <ProveedorAuth>
         <AppProvider>
           <AppRoutes />
         </AppProvider>
       </ProveedorAuth>
-    </ProveedorQuery>
+    </ErrorBoundary>
   );
 };
 

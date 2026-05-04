@@ -1,153 +1,109 @@
-/* TablaLeadsAsesorVentas.module.css - Estilos para tabla de asesor */
+/* TablaLeadsAsesorVentas.module.css */
 
 .container {
-  padding: 1.5rem;
-  background-color: white;
-  border-radius: 8px;
+  padding: 1.2rem;
+  background: #ffffff;
+  border: 1px solid #dde6f5;
+  border-radius: 14px;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
 }
 
-.container h2 {
-  margin-top: 0;
-  margin-bottom: 1.5rem;
-  color: #333;
+.dashboardMode {
+  border-color: #dbe7ff;
+  box-shadow: 0 18px 30px rgba(29, 78, 216, 0.11);
+}
+
+.title {
+  margin: 0 0 1rem;
+  color: #0f2a52;
+  font-size: 1.14rem;
+  font-weight: 700;
 }
 
 .filterBar {
   display: grid;
-  grid-template-columns: 2fr 1fr auto;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: minmax(250px, 2fr) minmax(180px, 1fr) auto;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
   align-items: end;
+  padding: 0.85rem;
+  border-radius: 12px;
+  border: 1px solid #e2ecff;
+  background: #f7faff;
 }
 
 .searchInput,
 .filterSelect {
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.95rem;
-  font-family: inherit;
+  min-height: 40px;
+  padding: 0.58rem 0.75rem;
+  border: 1px solid #c7d9f7;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: #0f2a52;
+  background: #ffffff;
 }
 
 .searchInput:focus,
 .filterSelect:focus {
   outline: none;
-  border-color: #0066cc;
-  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
 }
 
 .clearButton {
-  padding: 0.75rem 1rem;
-  background-color: #f0f0f0;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  min-height: 40px;
+  padding: 0.58rem 0.95rem;
+  background: #eef4ff;
+  border: 1px solid #c4d6f8;
+  border-radius: 10px;
   cursor: pointer;
+  font-size: 0.84rem;
   font-weight: 600;
-  transition: all 200ms ease;
+  color: #1d4ed8;
+  transition: all 0.16s ease;
 }
 
 .clearButton:hover {
-  background-color: #e0e0e0;
+  background: #dce9ff;
 }
 
 .stats {
   display: flex;
-  gap: 2rem;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
-  color: #666;
+  flex-wrap: wrap;
+  gap: 1.1rem;
+  margin-bottom: 0.85rem;
+  font-size: 0.88rem;
 }
 
 .total {
-  font-weight: 600;
-  color: #333;
+  font-weight: 700;
+  color: #0f2a52;
 }
 
 .info {
-  color: #0066cc;
+  color: #1d4ed8;
 }
 
-.tableWrapper {
-  overflow-x: auto;
-  margin-bottom: 1.5rem;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.95rem;
-}
-
-.table thead {
-  background-color: #f8f9fa;
-  border-bottom: 2px solid #ddd;
-}
-
-.table th {
-  padding: 0.75rem;
-  text-align: left;
-  font-weight: 600;
-  color: #333;
-}
-
-.table tbody tr {
-  border-bottom: 1px solid #f0f0f0;
-  transition: background-color 200ms ease;
-}
-
-.table tbody tr:hover {
-  background-color: #f8f9fa;
-}
-
-.table td {
-  padding: 0.75rem;
-}
-
-.colId {
-  width: 60px;
-}
-
-.colFecha {
-  width: 120px;
-}
-
-.colTelefono {
-  min-width: 130px;
-}
-
-.colTitular {
-  min-width: 150px;
-}
-
-.colEmail {
-  min-width: 150px;
-}
-
-.colEstado {
-  width: 130px;
-}
-
-.colAcciones {
-  width: 100px;
-  text-align: center;
+.dataGridWrap {
+  margin-bottom: 1rem;
 }
 
 .phone {
-  font-weight: 600;
-  color: #0066cc;
-  font-family: 'Courier New', monospace;
-  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1d4ed8;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 0.88rem;
 }
 
 .titular {
   font-weight: 600;
-  color: #333;
+  color: #0f2a52;
 }
 
 .email {
-  color: #0066cc;
+  color: #1d4ed8;
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
 }
 
 .email:hover {
@@ -156,51 +112,33 @@
 
 .noData {
   text-align: center;
-  color: #999;
-  padding: 2rem !important;
-}
-
-.actionButtons {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: center;
-}
-
-.actionBtn {
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 0.25rem;
-  transition: opacity 200ms ease;
-}
-
-.actionBtn:hover {
-  opacity: 0.7;
+  color: #64748b;
+  padding: 1.4rem !important;
 }
 
 .pagination {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 1rem;
-  margin-top: 1.5rem;
+  gap: 0.7rem;
+  margin-top: 0.8rem;
 }
 
 .paginationBtn {
-  padding: 0.5rem 1rem;
-  background-color: #f0f0f0;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  min-height: 36px;
+  padding: 0.45rem 0.8rem;
+  background: #eef4ff;
+  border: 1px solid #c7d9f7;
+  border-radius: 8px;
   cursor: pointer;
+  font-size: 0.84rem;
   font-weight: 600;
-  transition: all 200ms ease;
+  color: #1d4ed8;
+  transition: all 0.16s ease;
 }
 
 .paginationBtn:hover:not(:disabled) {
-  background-color: #0066cc;
-  color: white;
-  border-color: #0066cc;
+  background: #dce9ff;
 }
 
 .paginationBtn:disabled {
@@ -209,32 +147,12 @@
 }
 
 .pageInfo {
-  color: #666;
-  font-size: 0.9rem;
+  color: #416089;
+  font-size: 0.84rem;
 }
 
 @media (max-width: 768px) {
   .filterBar {
     grid-template-columns: 1fr;
-  }
-
-  .table {
-    font-size: 0.85rem;
-  }
-
-  .table th,
-  .table td {
-    padding: 0.5rem;
-  }
-
-  .colFecha {
-    display: none;
-  }
-}
-
-@media (max-width: 640px) {
-  .colTelefono,
-  .colEmail {
-    display: none;
   }
 }

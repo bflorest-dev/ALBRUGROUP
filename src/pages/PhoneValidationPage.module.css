@@ -4,7 +4,7 @@
 
 .page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  background: radial-gradient(circle at top right, var(--color-surface-accent, #ecf3ff) 0%, var(--color-surface-page, #f6f9ff) 42%, var(--color-surface-card, #ffffff) 100%);
   padding: 2rem 1rem;
 }
 
@@ -21,13 +21,13 @@
 .header h1 {
   font-size: 2rem;
   font-weight: 800;
-  color: #111827;
+  color: var(--color-content-strong, #0f2a52);
   margin: 0 0 0.5rem 0;
 }
 
 .subtitle {
   font-size: 1.05rem;
-  color: #6b7280;
+  color: var(--color-content-muted, #4d678f);
   margin: 0;
   line-height: 1.6;
 }
@@ -39,38 +39,40 @@
 }
 
 .section {
-  background: white;
-  border-radius: 0.75rem;
+  background: var(--color-surface-card, #ffffff);
+  border: 1px solid var(--color-surface-border, #dbe7ff);
+  border-radius: var(--radius-md, 12px);
   padding: 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  box-shadow: var(--shadow-soft, 0 8px 18px rgba(15, 42, 82, 0.06));
 }
 
 .sectionTitle {
   margin: 0 0 1.5rem 0;
   font-size: 1.25rem;
-  font-weight: 700;
-  color: #1f2937;
+  font-weight: 800;
+  color: var(--color-content-strong, #0f2a52);
   padding-bottom: 1rem;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 1px solid var(--color-surface-border-soft, #e3ecfb);
 }
 
 .info {
-  background: #eff6ff;
-  border-left: 4px solid #3b82f6;
-  border-radius: 0.375rem;
+  background: var(--color-status-info-bg, #eff5ff);
+  border-left: 4px solid var(--color-brand-500, #3b82f6);
+  border-radius: var(--radius-sm, 10px);
+  border: 1px solid var(--color-surface-border-soft, #e3ecfb);
   padding: 1.5rem;
   margin-top: 1rem;
 
   h3 {
     margin: 0 0 1rem 0;
     font-size: 1.05rem;
-    color: #1e40af;
+    color: var(--color-brand-700, #1e3a8a);
   }
 
   ul {
     margin: 0;
     padding-left: 1.5rem;
-    color: #1e40af;
+    color: var(--color-content-default, #1c365b);
     line-height: 1.8;
 
     li {

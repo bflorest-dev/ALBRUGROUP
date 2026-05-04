@@ -1,9 +1,10 @@
 import React, { ReactNode } from 'react';
+import { DsDataTable, type DsDataTableColumn } from './design-system';
 
 interface TableColumn<T> {
   key: keyof T;
   label: string;
-  render?: (value: any, item: T) => ReactNode;
+  render?: (value: unknown, item: T) => ReactNode;
 }
 
 interface TableProps<T> {
@@ -29,59 +30,27 @@ export const Table = <T extends { id: number | string }>({
   onRowClick,
   actions,
 }: TableProps<T>) => {
-  if (loading) {
-    return <div className="table-loading">Cargando...</div>;
-  }
+  const dsColumns: DsDataTableColumn<T>[] = columns.map((col) => ({
+    key: String(col.key),
+    label: col.label,
+    render: (item) => (col.render ? col.render(item[col.key], item) : String(item[col.key] ?? '-')),
+  }));
+
+  const dsActions = actions?.map((action) => ({
+    label: action.label,
+    variant: action.danger ? ('danger' as const) : ('primary' as const),
+    onClick: action.onClick,
+  }));
 
   return (
-    <table className="table table-striped table-hover">
-      <thead>
-        <tr>
-          {columns.map((col) => (
-            <th key={String(col.key)}>{col.label}</th>
-          ))}
-          {actions && <th>Acciones</th>}
-        </tr>
-      </thead>
-      <tbody>
-        {data.length === 0 ? (
-          <tr>
-            <td colSpan={columns.length + (actions ? 1 : 0)} className="text-center">
-              No hay datos
-            </td>
-          </tr>
-        ) : (
-          data.map((item) => (
-            <tr
-              key={item.id}
-              onClick={() => onRowClick?.(item)}
-              style={{ cursor: onRowClick ? 'pointer' : undefined }}
-            >
-              {columns.map((col) => (
-                <td key={String(col.key)}>
-                  {col.render ? col.render(item[col.key], item) : String(item[col.key])}
-                </td>
-              ))}
-              {actions && (
-                <td>
-                  {actions.map((action, idx) => (
-                    <button
-                      key={idx}
-                      className={`btn btn-sm ${action.danger ? 'btn-danger' : 'btn-primary'}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        action.onClick(item);
-                      }}
-                    >
-                      {action.label}
-                    </button>
-                  ))}
-                </td>
-              )}
-            </tr>
-          ))
-        )}
-      </tbody>
-    </table>
+    <DsDataTable
+      rows={data}
+      columns={dsColumns}
+      loading={loading}
+      onRowClick={onRowClick}
+      actions={dsActions}
+      emptyMessage="No hay datos"
+      rowKey={(item) => item.id}
+    />
   );
 };

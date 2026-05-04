@@ -1,0 +1,131 @@
+.section {
+  display: grid;
+  gap: 1rem;
+}
+
+.sectionTitle {
+  margin: 0;
+  color: rgb(15 23 42);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.gridTwoColumns {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 1024px) {
+  .gridTwoColumns {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.panel {
+  border: 1px solid rgb(226 232 240);
+  border-radius: 0.85rem;
+  background: rgb(255 255 255);
+  padding: 1rem;
+}
+
+.panelTitle {
+  margin: 0 0 0.75rem;
+  color: rgb(30 41 59);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.formStack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.control {
+  width: 100%;
+  border: 1px solid rgb(203 213 225);
+  border-radius: 0.55rem;
+  padding: 0.5rem 0.7rem;
+  color: rgb(30 41 59);
+  font-size: 0.9rem;
+  background: rgb(255 255 255);
+  outline: none;
+}
+
+.control:focus {
+  border-color: rgb(59 130 246);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.14);
+}
+
+.actionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid rgb(203 213 225);
+  border-radius: 0.55rem;
+  background: rgb(255 255 255);
+  color: rgb(71 85 105);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.iconButton:hover {
+  border-color: rgb(148 163 184);
+  background: rgb(248 250 252);
+}
+
+.contractPreview {
+  margin-top: 0.75rem;
+  border: 1px solid rgb(226 232 240);
+  border-radius: 0.55rem;
+  padding: 0.65rem;
+}
+
+.contractTitle {
+  margin: 0 0 0.5rem;
+  color: rgb(15 23 42);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.contractDetails {
+  display: grid;
+  gap: 0.4rem;
+  color: rgb(51 65 85);
+  font-size: 0.87rem;
+}
+
+.fieldLabel {
+  color: rgb(15 23 42);
+  font-weight: 700;
+}
+
+.mutedText {
+  margin: 0;
+  color: rgb(100 116 139);
+  font-size: 0.88rem;
+}
+
+.ctaRow {
+  margin-top: 0.75rem;
+}
+
+.historyCard {
+  border: 1px solid rgb(226 232 240);
+  border-radius: 0.7rem;
+  padding: 0.9rem;
+}
+
+.historyDetails {
+  display: grid;
+  gap: 0.3rem;
+  color: rgb(51 65 85);
+  font-size: 0.84rem;
+}

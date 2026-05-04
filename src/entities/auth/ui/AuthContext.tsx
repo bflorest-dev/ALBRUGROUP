@@ -12,17 +12,48 @@ interface AuthContextType {
   logout: () => void;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
 }
 
+const beforeUnloadBypassKey = 'skip_beforeunload_once';
+
+const getStoredAuthenticatedUser = (): User | null => {
+  const token = localStorage.getItem('auth_token');
+  if (!token) {
+    localStorage.removeItem('auth_user');
+    localStorage.removeItem('user');
+    return null;
+  }
+
+  const stored = localStorage.getItem('auth_user') || localStorage.getItem('user');
+  if (!stored) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(stored) as Partial<User>;
+    if (
+      typeof parsed?.id !== 'string' ||
+      typeof parsed?.name !== 'string' ||
+      !Array.isArray(parsed?.roles)
+    ) {
+      throw new Error('Invalid stored user payload');
+    }
+
+    return parsed as User;
+  } catch {
+    localStorage.removeItem('auth_user');
+    localStorage.removeItem('user');
+    return null;
+  }
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const stored = localStorage.getItem('auth_user') || localStorage.getItem('user');
-    return stored ? JSON.parse(stored) : null;
-  });
+  const [currentUser, setCurrentUser] = useState<User | null>(() => getStoredAuthenticatedUser());
 
   const prevUserRef = useRef<User | null>(null);
 
@@ -34,6 +65,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!currentUser) return;
 
     const confirmCloseSession = (event: BeforeUnloadEvent) => {
+      if (sessionStorage.getItem(beforeUnloadBypassKey) === '1') {
+        sessionStorage.removeItem(beforeUnloadBypassKey);
+        return;
+      }
+
       // Browsers show a native confirmation dialog when returnValue is set.
       event.preventDefault();
       event.returnValue = '';

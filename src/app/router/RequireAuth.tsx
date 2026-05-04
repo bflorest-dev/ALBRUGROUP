@@ -8,8 +8,9 @@ interface RequireAuthProps {
 
 export const RequireAuth: React.FC<RequireAuthProps> = ({ children }) => {
   const { isAuthenticated } = useAuth();
+  const hasToken = !!localStorage.getItem('auth_token');
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !hasToken) {
     return <Navigate to="/login" replace />;
   }
 

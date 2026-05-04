@@ -1,0 +1,9 @@
+.container {
+  padding: 1.6rem;
+}
+
+.placeholderText {
+  margin: 0;
+  color: var(--color-content-muted, #4d678f);
+  font-size: 0.94rem;
+}

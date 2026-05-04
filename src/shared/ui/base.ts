@@ -4,3 +4,4 @@
  */
 
 export * from './index';
+export { Boton } from './button/Boton';

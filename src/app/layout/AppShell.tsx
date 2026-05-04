@@ -1,3 +1,6 @@
+/* eslint-disable no-restricted-syntax */
+// TODO: Migrar clases/markup a primitives del design-system con cva + cn.
+
 import React from 'react';
 import type { ReactNode } from 'react';
 

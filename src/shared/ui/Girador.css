@@ -1,0 +1,14 @@
+.girador {
+  width: var(--girador-size, 24px);
+  height: var(--girador-size, 24px);
+  border: 3px solid #ccc;
+  border-top: 3px solid #333;
+  border-radius: 50%;
+  animation: girador-spin 1s linear infinite;
+}
+
+@keyframes girador-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

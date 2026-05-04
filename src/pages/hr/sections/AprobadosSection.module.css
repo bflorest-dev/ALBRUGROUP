@@ -1,0 +1,119 @@
+.section {
+  display: grid;
+  gap: 1rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.sectionTitle {
+  margin: 0;
+  color: rgb(15 23 42);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.dataTablePane {
+  border-radius: 0.8rem;
+}
+
+.historyWrap {
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.historyList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.historyItem {
+  border: 1px solid rgb(226 232 240);
+  border-radius: 0.65rem;
+  padding: 0.6rem;
+  background: rgb(255 255 255);
+}
+
+.historyTitle {
+  margin: 0;
+  color: rgb(30 41 59);
+  font-size: 0.87rem;
+  font-weight: 700;
+}
+
+.historyDescription {
+  margin: 0.18rem 0 0;
+  color: rgb(71 85 105);
+  font-size: 0.84rem;
+}
+
+.historyDate {
+  margin: 0.18rem 0 0;
+  color: rgb(100 116 139);
+  font-size: 0.76rem;
+}
+
+.modalBody {
+  display: grid;
+  gap: 1rem;
+}
+
+.formGrid {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.field {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.label {
+  color: rgb(51 65 85);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.control {
+  width: 100%;
+  border: 1px solid rgb(203 213 225);
+  border-radius: 0.55rem;
+  padding: 0.5rem 0.7rem;
+  color: rgb(30 41 59);
+  font-size: 0.88rem;
+  background: rgb(255 255 255);
+  outline: none;
+}
+
+.control:focus {
+  border-color: rgb(59 130 246);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.14);
+}
+
+.contratoGrid {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 768px) {
+  .contratoGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.footerActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}

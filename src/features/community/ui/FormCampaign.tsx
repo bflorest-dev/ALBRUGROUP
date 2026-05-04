@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import type { CuentaPublicitaria, Proveedor } from '@entities/campana';
+import type { CuentaPublicitaria, Proveedor } from '@entities/campaign/model/campaign';
 import type { CampaignFormState, CampaignFormErrors } from '../hooks/useCampaignForm';
 
 interface FormCampaignProps {

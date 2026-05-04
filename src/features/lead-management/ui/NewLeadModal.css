@@ -1,0 +1,45 @@
+.error-text {
+  color: #ef4444;
+  margin-left: 4px;
+}
+
+.error-message {
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 5px;
+  display: block;
+}
+
+.validation-msg {
+  color: #059669;
+  font-size: 12px;
+  margin-top: 5px;
+  display: block;
+}
+
+.form-control.input-error {
+  border-color: #ef4444;
+  background-color: #fcefef;
+}
+
+.form-grid {
+  display: grid;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.grid-1-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.grid-1-1 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.form-label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: #374151;
+}

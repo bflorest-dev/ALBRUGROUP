@@ -1,0 +1,123 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: radial-gradient(circle at top right, var(--color-surface-accent, #ecf3ff) 0%, var(--color-surface-page, #f6f9ff) 42%, var(--color-surface-card, #ffffff) 100%);
+}
+
+.header {
+  background: linear-gradient(120deg, var(--color-surface-card, #ffffff) 0%, var(--color-surface-muted, #f5f8ff) 100%);
+  color: var(--color-content-strong, #0f2a52);
+  padding: 1.8rem;
+  box-shadow: var(--shadow-card, 0 14px 32px rgba(30, 64, 175, 0.1));
+  border-bottom: 1px solid var(--color-surface-border, #dbe7ff);
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--color-content-muted, #4d678f);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.header h1 {
+  margin: 0.3rem 0 0;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-content-strong, #0f2a52);
+}
+
+.subtitle {
+  margin: 0.45rem 0 0;
+  font-size: 0.98rem;
+  color: var(--color-content-muted, #4d678f);
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  background: var(--color-surface-card, #ffffff);
+  border-bottom: 1px solid var(--color-surface-border-soft, #e3ecfb);
+  flex-wrap: wrap;
+}
+
+.tab {
+  padding: 0.7rem 1.35rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-content-muted, #4d678f);
+  cursor: pointer;
+  font-size: 0.93rem;
+  font-weight: 600;
+  transition: all 0.18s ease;
+}
+
+.tab:hover {
+  color: var(--color-brand-600, #1d4ed8);
+  background: var(--color-brand-50, #eff5ff);
+}
+
+.active {
+  background: var(--color-brand-50, #eff5ff);
+  border-color: var(--color-surface-border, #dbe7ff);
+  color: var(--color-brand-600, #1d4ed8);
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--color-brand-500, #3b82f6);
+  outline-offset: 2px;
+}
+
+.content {
+  flex: 1;
+  padding: 1.6rem;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 1.35rem 1rem;
+  }
+
+  .header h1 {
+    font-size: 1.5rem;
+  }
+
+  .tabs {
+    padding: 0.85rem 1rem;
+  }
+
+  .tab {
+    padding: 0.58rem 1rem;
+    font-size: 0.86rem;
+  }
+
+  .content {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .tabs {
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .tab {
+    width: 100%;
+    text-align: left;
+  }
+}
