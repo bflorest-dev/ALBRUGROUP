@@ -17,12 +17,6 @@ app:
     gateway-url: ${AUTH_DOCS_GATEWAY_URL:http://localhost:8080/auth}
     public-url: ${AUTH_DOCS_PUBLIC_URL:https://api.albrugroup.com/auth}
 
-logging:
-  level:
-    org.springframework.security: DEBUG
-    org.hibernate.sql: DEBUG
-    pe.albrugroup.auth_service: DEBUG
-
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

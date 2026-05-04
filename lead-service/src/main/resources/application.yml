@@ -12,12 +12,6 @@ spring:
 jwt:
   secret: ${JWT_SECRET:3bZ4bR0S5c7hFQ2nTzF8oQv9vKxM2yP7aLw8eJrHkU1cNdWqXyZp6tR9mVb4sL0Q8nF5gH2kJ3lP6rS9uVw==}
 
-logging:
-  level:
-    org.springframework.security: DEBUG
-    org.hibernate.sql: DEBUG
-    pe.albrugroup.lead_service: DEBUG
-
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

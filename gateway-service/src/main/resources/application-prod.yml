@@ -22,3 +22,7 @@ spring:
                   - OPTIONS
                 allowedHeaders: "*"
                 allowCredentials: true
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO

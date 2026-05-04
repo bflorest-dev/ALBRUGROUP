@@ -205,7 +205,7 @@ services:
       SCHEDULE_SERVICE_URI: http://schedule-service:8085
       AUTH_SERVICE_URL: http://auth-service:8081
       SCHEDULE_SERVICE_URL: http://schedule-service:8085
-      FRONTEND_URL: http://localhost:5173
+      FRONTEND_URL: http://localhost:4200
       JWT_SECRET: 3bZ4bR0S5c7hFQ2nTzF8oQv9vKxM2yP7aLw8eJrHkU1cNdWqXyZp6tR9mVb4sL0Q8nF5gH2kJ3lP6rS9uVw==
     depends_on:
       redis:
