@@ -24,9 +24,17 @@ export class BrowserSessionService {
       return;
     }
 
-    this.tabId = this.getOrCreateTabId();
+    const existingTabId = sessionStorage.getItem(STORAGE_KEYS.tabId);
+    this.tabId = existingTabId ?? this.createAndStoreTabId();
+
     this.registerCurrentTab();
     this.pruneStaleTabs();
+
+    if (!existingTabId && this.getActiveTabCount() === 1) {
+      this.sessionService.clearSession();
+      this.registerCurrentTab();
+    }
+
     this.startHeartbeat();
 
     window.addEventListener('beforeunload', this.handleTabClose);
@@ -82,7 +90,10 @@ export class BrowserSessionService {
     ) as ActiveTabsRegistry;
 
     this.saveActiveTabs(freshTabs);
+  }
 
+  private getActiveTabCount(): number {
+    return Object.keys(this.getActiveTabs()).length;
   }
 
   private getActiveTabs(): ActiveTabsRegistry {
@@ -109,13 +120,7 @@ export class BrowserSessionService {
     localStorage.setItem(STORAGE_KEYS.activeTabs, JSON.stringify(activeTabs));
   }
 
-  private getOrCreateTabId(): string {
-    const existingTabId = sessionStorage.getItem(STORAGE_KEYS.tabId);
-
-    if (existingTabId) {
-      return existingTabId;
-    }
-
+  private createAndStoreTabId(): string {
     const newTabId =
       typeof crypto !== 'undefined' && 'randomUUID' in crypto
         ? crypto.randomUUID()

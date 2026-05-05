@@ -180,6 +180,10 @@
   font-size: 0.92rem;
 }
 
+.row-enter {
+  animation: row-slide-in 280ms ease-out;
+}
+
 .actions-cell {
   width: 5rem;
 }
@@ -208,6 +212,18 @@
   justify-content: space-between;
   gap: 1rem;
   margin-top: 1rem;
+}
+
+@keyframes row-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 1180px) {

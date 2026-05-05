@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, NgZone, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -18,7 +18,6 @@ export class ForgotPasswordPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
-  private readonly ngZone = inject(NgZone);
 
   protected readonly forgotPasswordForm = this.formBuilder.nonNullable.group({
     username: [{ value: '', disabled: true }, [Validators.required]],
@@ -57,20 +56,16 @@ export class ForgotPasswordPageComponent {
         email: this.forgotPasswordForm.controls.email.getRawValue(),
         dni: this.forgotPasswordForm.controls.dni.getRawValue()
       })
-      .pipe(finalize(() => this.ngZone.run(() => (this.isSubmitting = false))))
+      .pipe(finalize(() => (this.isSubmitting = false)))
       .subscribe({
         next: (response) => {
-          this.ngZone.run(() => {
-            this.generatedCredentials = response;
-          });
+          this.generatedCredentials = response;
         },
         error: (error: HttpErrorResponse) => {
-          this.ngZone.run(() => {
-            this.errorMessage = this.getErrorMessage(
-              error,
-              'No fue posible generar una nueva password.'
-            );
-          });
+          this.errorMessage = this.getErrorMessage(
+            error,
+            'No fue posible generar una nueva password.'
+          );
         }
       });
   }

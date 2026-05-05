@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, NgZone, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -23,7 +23,6 @@ export class LoginPageComponent {
   private readonly authService = inject(AuthService);
   private readonly tokenService = inject(TokenService);
   private readonly sessionService = inject(SessionService);
-  private readonly ngZone = inject(NgZone);
 
   protected readonly loginForm = this.formBuilder.nonNullable.group({
     username: [{ value: '', disabled: true }, [Validators.required]],
@@ -58,13 +57,11 @@ export class LoginPageComponent {
         username: this.loginForm.controls.username.getRawValue(),
         password: this.loginForm.controls.password.getRawValue()
       })
-      .pipe(finalize(() => this.ngZone.run(() => (this.isSubmitting = false))))
+      .pipe(finalize(() => (this.isSubmitting = false)))
       .subscribe({
-        next: (response) => this.ngZone.run(() => this.handleLoginSuccess(response)),
+        next: (response) => this.handleLoginSuccess(response),
         error: (error: HttpErrorResponse) => {
-          this.ngZone.run(() => {
-            this.errorMessage = this.getErrorMessage(error, 'No se pudo iniciar sesion.');
-          });
+          this.errorMessage = this.getErrorMessage(error, 'No se pudo iniciar sesion.');
         }
       });
   }

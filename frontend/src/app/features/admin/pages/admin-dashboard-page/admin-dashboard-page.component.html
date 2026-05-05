@@ -291,7 +291,7 @@
 
       @if (isLoadingEmployees) {
         <p class="helper-text">Cargando empleados...</p>
-      } @else if (employeesPage?.content?.length) {
+      } @else if (getEmployees().length) {
         <div class="table-scroll">
           <table class="employee-table">
             <thead>
@@ -303,8 +303,8 @@
               </tr>
             </thead>
             <tbody>
-              @for (employee of employeesPage?.content; track employee.id) {
-                <tr>
+              @for (employee of getEmployees(); track employee.id) {
+                <tr animate.enter="row-enter">
                   <td>
                     <strong>{{ employee.nombres }} {{ employee.apellidos }}</strong>
                     <span>{{ toLabel(employee.origen) }}</span>
@@ -354,17 +354,17 @@
           <button
             type="button"
             class="ghost-button"
-            [disabled]="!employeesPage?.page"
-            (click)="loadEmployees((employeesPage?.page ?? 0) - 1)"
+            [disabled]="!(employeesPage()?.page)"
+            (click)="loadEmployees((employeesPage()?.page ?? 0) - 1)"
           >
             Anterior
           </button>
-          <span>Pagina {{ (employeesPage?.page ?? 0) + 1 }} de {{ employeesPage?.totalPages ?? 1 }}</span>
+          <span>Pagina {{ (employeesPage()?.page ?? 0) + 1 }} de {{ employeesPage()?.totalPages ?? 1 }}</span>
           <button
             type="button"
             class="ghost-button"
-            [disabled]="(employeesPage?.page ?? 0) + 1 >= (employeesPage?.totalPages ?? 1)"
-            (click)="loadEmployees((employeesPage?.page ?? 0) + 1)"
+            [disabled]="(employeesPage()?.page ?? 0) + 1 >= (employeesPage()?.totalPages ?? 1)"
+            (click)="loadEmployees((employeesPage()?.page ?? 0) + 1)"
           >
             Siguiente
           </button>

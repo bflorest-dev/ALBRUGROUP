@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, NgZone, OnInit, inject } from '@angular/core';
+import { Component, OnInit, WritableSignal, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize, switchMap, timeout } from 'rxjs';
 import { AuthService } from '../../../auth/services/auth.service';
@@ -11,6 +11,7 @@ import { EmpleadoResponse } from '../../../../shared/models/rrhh/empleado-respon
 import { EmpresaContratistaResponse } from '../../../../shared/models/rrhh/empresa-contratista-response';
 import { RegistrarContratoRequest } from '../../../../shared/models/rrhh/registrar-contrato-request';
 import { RegistrarEmpleadoRequest } from '../../../../shared/models/rrhh/registrar-empleado-request';
+import { upsertById } from '../../../../shared/utils/collection.utils';
 
 @Component({
   selector: 'app-admin-dashboard-page',
@@ -23,7 +24,6 @@ export class AdminDashboardPageComponent implements OnInit {
   private readonly formBuilder = inject(FormBuilder);
   private readonly adminRrhhService = inject(AdminRrhhService);
   private readonly authService = inject(AuthService);
-  private readonly ngZone = inject(NgZone);
 
   protected readonly documentoOptions = ['DNI', 'CE'];
   protected readonly nacionalidadOptions = ['PERUANO', 'EXTRANJERO'];
@@ -175,7 +175,7 @@ export class AdminDashboardPageComponent implements OnInit {
   protected employeeListErrorMessage = '';
   protected creationResult: UsuarioResponse | null = null;
   protected createdEmployee: EmpleadoResponse | null = null;
-  protected employeesPage: PageResponse<EmpleadoResponse> | null = null;
+  protected readonly employeesPage: WritableSignal<PageResponse<EmpleadoResponse> | null> = signal(null);
   protected empresasContratistas: EmpresaContratistaResponse[] = [];
   protected readonly accessByEmployeeId: Record<number, UsuarioResponse | null> = {};
   protected readonly accessErrorByEmployeeId: Record<number, string> = {};
@@ -239,19 +239,16 @@ export class AdminDashboardPageComponent implements OnInit {
       )
       .subscribe({
         next: (usuario) => {
-          this.ngZone.run(() => {
-            this.creationResult = usuario;
-            this.currentStep = 3;
-            this.loadEmployees();
-          });
+          this.creationResult = usuario;
+          this.currentStep = 3;
+          this.insertEmployeeIntoList(usuario);
+          this.loadEmployees(0, true);
         },
         error: (error: HttpErrorResponse) => {
-          this.ngZone.run(() => {
-            this.submitErrorMessage = this.getErrorMessage(
-              error,
-              'No se pudo completar el alta de empleado y contrato.'
-            );
-          });
+          this.submitErrorMessage = this.getErrorMessage(
+            error,
+            'No se pudo completar el alta de empleado y contrato.'
+          );
         }
       });
   }
@@ -295,27 +292,25 @@ export class AdminDashboardPageComponent implements OnInit {
     });
   }
 
-  protected loadEmployees(pageNumber = 0): void {
-    this.isLoadingEmployees = true;
+  protected loadEmployees(pageNumber = 0, silent = false): void {
+    if (!silent) {
+      this.isLoadingEmployees = true;
+    }
     this.employeeListErrorMessage = '';
 
     this.adminRrhhService
       .getEmpleados(pageNumber)
       .pipe(timeout(this.requestTimeoutMs))
-      .pipe(finalize(() => this.ngZone.run(() => (this.isLoadingEmployees = false))))
+      .pipe(finalize(() => (this.isLoadingEmployees = false)))
       .subscribe({
         next: (page) => {
-          this.ngZone.run(() => {
-            this.employeesPage = page;
-          });
+          this.employeesPage.set(page);
         },
         error: (error: HttpErrorResponse) => {
-          this.ngZone.run(() => {
-            this.employeeListErrorMessage = this.getErrorMessage(
-              error,
-              'No fue posible cargar el listado de empleados.'
-            );
-          });
+          this.employeeListErrorMessage = this.getErrorMessage(
+            error,
+            'No fue posible cargar el listado de empleados.'
+          );
         }
       });
   }
@@ -326,14 +321,10 @@ export class AdminDashboardPageComponent implements OnInit {
       .pipe(timeout(this.requestTimeoutMs))
       .subscribe({
         next: (empresas) => {
-          this.ngZone.run(() => {
-            this.empresasContratistas = empresas;
-          });
+          this.empresasContratistas = empresas;
         },
         error: () => {
-          this.ngZone.run(() => {
-            this.empresasContratistas = [];
-          });
+          this.empresasContratistas = [];
         }
       });
   }
@@ -345,27 +336,27 @@ export class AdminDashboardPageComponent implements OnInit {
     this.authService
       .getUsuarioPorEmpleadoId(empleadoId)
       .pipe(timeout(this.requestTimeoutMs))
-      .pipe(finalize(() => this.ngZone.run(() => (this.accessLoadingByEmployeeId[empleadoId] = false))))
+      .pipe(finalize(() => (this.accessLoadingByEmployeeId[empleadoId] = false)))
       .subscribe({
         next: (usuario) => {
-          this.ngZone.run(() => {
-            this.accessByEmployeeId[empleadoId] = usuario;
-          });
+          this.accessByEmployeeId[empleadoId] = usuario;
         },
         error: (error: HttpErrorResponse) => {
-          this.ngZone.run(() => {
-            this.accessByEmployeeId[empleadoId] = null;
-            this.accessErrorByEmployeeId[empleadoId] = this.getErrorMessage(
-              error,
-              'No se pudo consultar el acceso del empleado.'
-            );
-          });
+          this.accessByEmployeeId[empleadoId] = null;
+          this.accessErrorByEmployeeId[empleadoId] = this.getErrorMessage(
+            error,
+            'No se pudo consultar el acceso del empleado.'
+          );
         }
       });
   }
 
   protected getHasAccessLoaded(empleadoId: number): boolean {
     return empleadoId in this.accessByEmployeeId || !!this.accessErrorByEmployeeId[empleadoId];
+  }
+
+  protected getEmployees(): EmpleadoResponse[] {
+    return this.employeesPage()?.content ?? [];
   }
 
   protected toLabel(value: string | null | undefined): string {
@@ -434,5 +425,29 @@ export class AdminDashboardPageComponent implements OnInit {
 
   private getToday(): string {
     return new Date().toISOString().slice(0, 10);
+  }
+
+  private insertEmployeeIntoList(usuario: UsuarioResponse): void {
+    const currentPage = this.employeesPage();
+
+    if (!currentPage || !this.createdEmployee) {
+      return;
+    }
+
+    const insertedEmployee: EmpleadoResponse = {
+      ...this.createdEmployee,
+      id: usuario.empleadoId,
+      estadoOperativo: 'ACTIVO'
+    };
+
+    const updatedContent = upsertById(currentPage.content, insertedEmployee, {
+      prependIfNew: true
+    }).slice(0, currentPage.size);
+
+    this.employeesPage.set({
+      ...currentPage,
+      totalElements: currentPage.totalElements + (currentPage.content.some((item) => item.id === insertedEmployee.id) ? 0 : 1),
+      content: updatedContent
+    });
   }
 }

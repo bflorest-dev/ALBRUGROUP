@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, NgZone, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -19,7 +19,6 @@ export class AccessCheckPageComponent {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly sessionService = inject(SessionService);
-  private readonly ngZone = inject(NgZone);
 
   protected readonly accessForm = this.formBuilder.nonNullable.group({
     username: ['', [Validators.required]]
@@ -41,16 +40,11 @@ export class AccessCheckPageComponent {
 
     this.authService
       .getEstadoAcceso(username)
-      .pipe(finalize(() => this.ngZone.run(() => (this.isSubmitting = false))))
+      .pipe(finalize(() => (this.isSubmitting = false)))
       .subscribe({
-        next: (response) => this.ngZone.run(() => this.handleEstadoAcceso(username, response)),
+        next: (response) => this.handleEstadoAcceso(username, response),
         error: (error: HttpErrorResponse) => {
-          this.ngZone.run(() => {
-            this.errorMessage = this.getErrorMessage(
-              error,
-              'No se pudo validar el usuario ingresado.'
-            );
-          });
+          this.errorMessage = this.getErrorMessage(error, 'No se pudo validar el usuario ingresado.');
         }
       });
   }
