@@ -3,11 +3,10 @@
  * Formulario de mÃºltiples pasos para registro de empleados
  */
 
-import { useState } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { Select } from '@shared/ui/input';
 import { FlatpickrDateInput } from '@shared/ui/date-picker';
 import {
-  CompaniaEnum,
   DocumentoEnum,
   NacionalidadEnum,
   EstadoCivilEnum,
@@ -20,6 +19,7 @@ import {
   ParentescoEnum,
   EmpresaContratistaEnum,
   PuestoTrabajoEnum,
+  OrigenEnum,
 } from '@shared/types';
 import type { NewEmployeeFormData } from '@shared/types';
 import { enumToOptions, formatEnumLabel } from '@shared/utils/enumToOptions';
@@ -37,7 +37,6 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
   const documentoOptions = enumToOptions(DocumentoEnum);
   const nacionalidadOptions = enumToOptions(NacionalidadEnum);
   const civilStatusOptions = enumToOptions(EstadoCivilEnum);
-  const companyOptions = enumToOptions(CompaniaEnum);
   const distritoOptions = enumToOptions(DistritoEnum);
   const regimenOptions = enumToOptions(RegimenEnum);
   const seguroOptions = enumToOptions(SeguroSaludEnum);
@@ -45,18 +44,17 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
   const modalidadOptions = enumToOptions(ModalidadEnum);
   const bancoOptions = enumToOptions(BancoEnum);
   const parentescoOptions = enumToOptions(ParentescoEnum);
-  const empresaContratistaOptions = enumToOptions(EmpresaContratistaEnum);
   const puestoOptions = enumToOptions(PuestoTrabajoEnum);
 
-  // Additional options (não são enums)
-  const campaigns = [
-    { value: 'COMPUTRABAJO', label: 'Computrabajo' },
-    { value: 'INDEED', label: 'Indeed' },
-    { value: 'REFERIDO', label: 'Referido' },
-    { value: 'TIKTOK', label: 'TikTok' },
-    { value: 'FACEBOOK', label: 'Facebook' },
-    { value: 'LINKEDIN', label: 'LinkedIn' },
-  ];
+  const origenOptions = Object.values(OrigenEnum).map((value) => ({
+    value,
+    label: formatEnumLabel(value),
+  }));
+
+  const empresaContratistaOptions = Object.values(EmpresaContratistaEnum).map((value, index) => ({
+    value: String(index + 1),
+    label: formatEnumLabel(value),
+  }));
 
   const yesNoOptions = [
     { value: 'SI', label: 'Sí' },
@@ -66,122 +64,134 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
   const [formData, setFormData] = useState<NewEmployeeFormData>({
     nombres: '',
     apellidos: '',
-    documentType: 'DNI',
+    tipoDocumento: 'DNI',
     numeroDocumento: '',
-    nationality: 'PERUANO',
-    birthDate: '',
-    civilStatus: 'SOLTERO',
-    hasChildren: false, // stored boolean; select shows SI/NO
-    district: '',
-    address: '',
-    phoneMobile: '',
-    bank: '',
-    accountNumber: '',
-    interbankNumber: '',
-    baseSalary: '',
-    startDate: '',
-    endDate: '',
-    modality: '',
-    scheduleType: '',
-    personalEmail: '',
-    campaign: '',
-    // optional contract fields
-    regimen: '',
-    seguro: '',
-    pension: '',
-    contractOwnAccount: '',
-    contractKinship: '',
-    contractCellularTransfer: '',
-    contractorCompany: '',
-    puesto: '',
+    nacionalidad: 'PERUANO',
+    fechaNacimiento: '',
+    estadoCivil: 'SOLTERO',
+    tieneHijos: false,
+    celularPersonal: '',
+    correoPersonal: '',
+    origen: 'COMPUTRABAJO',
+    distrito: '',
+    direccion: '',
+    banco: 'BCP',
+    cuentaBancaria: '',
+    cuentaInterbancaria: '',
+    cuentaPropia: false,
+    parentesco: '',
+    celularTransferencia: '',
+    idEmpresaContratista: '',
+    idPostulacion: '',
+    puestoTrabajo: '',
+    regimen: 'RECIBO_POR_HONORARIOS',
+    modalidad: 'PART_TIME',
+    seguroSalud: 'SIS',
+    sistemaPensiones: 'ONP',
+    sueldoBase: '',
+    fechaInicio: '',
+    fechaFin: '',
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target as any;
-    let newVal: any = value;
-    if (name === 'hasChildren') {
-      // convert select value to boolean
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    let newVal: string | boolean | number = value;
+
+    if (name === 'tieneHijos' || name === 'cuentaPropia') {
       newVal = value === 'SI';
-    } else if (name === 'puesto') {
-      newVal = value;
-      if (value === 'DESARROLLADOR' || value === 'CONTABILIDAD') {
-        // auto assign ALBRU and clear any previous selection
-        setFormData(prev => ({...prev, puesto: newVal, compania: 'ALBRU'}));
-        return;
-      } else {
-        // selecting other puesto: clear empresa para obligar selección
-        setFormData(prev => ({...prev, puesto: newVal, compania: ''}));
-        return;
+    }
+
+    if (name === 'idEmpresaContratista' || name === 'sueldoBase') {
+      newVal = value === '' ? '' : Number(value);
+    }
+
+    if (
+      name === 'numeroDocumento' ||
+      name === 'celularPersonal' ||
+      name === 'cuentaBancaria' ||
+      name === 'cuentaInterbancaria' ||
+      name === 'celularTransferencia'
+    ) {
+      newVal = String(value).replace(/\D/g, '');
+      if (name === 'celularPersonal' || name === 'celularTransferencia') {
+        newVal = newVal.slice(0, 9);
       }
-    } else if (name === 'company' || name === 'compania') {
-      newVal = value;
-    } else if (name === 'numeroDocumento' ||
-               name === 'phoneMobile' ||
-               name === 'accountNumber' ||
-               name === 'interbankNumber' ||
-               name === 'contractCellularTransfer') {
-      // strip non-digits for all numeric fields
-      newVal = value.replace(/\D/g, '');
-      // enforce max lengths depending on field
-      if (name === 'phoneMobile') {
-        newVal = newVal.slice(0,9);
-      } else if (name === 'contractCellularTransfer') {
-        newVal = newVal.slice(0,9);
-      } else if (name === 'accountNumber') {
+      if (name === 'cuentaBancaria') {
         const limits: Record<string, number> = {
           BCP: 14,
           BBVA: 18,
           INTERBANK: 13,
-          SCOTIABANK: 10
+          SCOTIABANK: 10,
         };
-        const lim = limits[formData.bank] || Infinity;
-        newVal = newVal.slice(0, lim);
-      } else if (name === 'interbankNumber') {
-        newVal = newVal.slice(0,20);
+        const limit = limits[formData.banco] ?? Infinity;
+        newVal = newVal.slice(0, limit);
+      }
+      if (name === 'cuentaInterbancaria') {
+        newVal = newVal.slice(0, 20);
       }
     }
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
       [name]: newVal,
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    // verify document number length matches type
+
     const len = formData.numeroDocumento?.length ?? 0;
-    if (formData.documentType === 'DNI' && len !== 8) {
+    if (formData.tipoDocumento === 'DNI' && len !== 8) {
       alert('DNI debe tener 8 dígitos');
       return;
     }
-    if (formData.documentType === 'CE' && len !== 9) {
+    if (formData.tipoDocumento === 'CE' && len !== 9) {
       alert('CE debe tener 9 dígitos');
       return;
     }
-    // company required for puestos other than DESARROLLADOR/CONTABILIDAD
-    if (formData.puesto && formData.puesto !== 'DESARROLLADOR' && formData.puesto !== 'CONTABILIDAD') {
-      if (!formData.compania) {
-        alert('Debe seleccionar una compañía');
-        return;
-      }
+
+    if (!formData.nombres || !formData.apellidos) {
+      alert('Nombres y apellidos son obligatorios.');
+      return;
     }
-    onSubmit(formData);
+
+    if (!formData.idEmpresaContratista || Number(formData.idEmpresaContratista) <= 0) {
+      alert('Empresa contratista es obligatoria.');
+      return;
+    }
+
+    // Enviar null cuando parentesco esté vacío
+    const dataToSubmit = {
+      ...formData,
+      parentesco: formData.parentesco && formData.parentesco.trim() ? formData.parentesco : null,
+    };
+
+    onSubmit(dataToSubmit as NewEmployeeFormData);
   };
 
-  // Validar que Paso 1 (EMPLEADO) estÃ© completo
+  // Validar que Paso 1 (EMPLEADO) esté completo
   const isStep1Complete = () => {
-    return formData.nombres && formData.apellidos && formData.documentType && formData.numeroDocumento;
+    return Boolean(formData.nombres && formData.apellidos && formData.tipoDocumento && formData.numeroDocumento);
   };
 
-  // Validar que Paso 2 (DATOS PERSONALES & CONTACTO) estÃ© completo
+  // Validar que Paso 2 (DATOS PERSONALES & CONTACTO) esté completo
   const isStep2Complete = () => {
-    return formData.nationality && formData.birthDate && formData.civilStatus !== undefined &&
-           formData.phoneMobile && formData.personalEmail && formData.district && formData.address;
+    return Boolean(
+      formData.nacionalidad &&
+      formData.fechaNacimiento &&
+      formData.estadoCivil !== undefined &&
+      (formData.tieneHijos === true || formData.tieneHijos === false) &&
+      formData.celularPersonal &&
+      formData.correoPersonal &&
+      formData.distrito &&
+      formData.direccion &&
+      formData.origen
+    );
   };
 
-  // Validar que Paso 3 (INFORMACIÃ“N BANCARIA & TRANSFERENCIA) estÃ© completo
+  // Validar que Paso 3 (INFORMACIÓN BANCARIA & TRANSFERENCIA) esté completo
   const isStep3Complete = () => {
-    return formData.bank && formData.accountNumber && formData.interbankNumber;
+    return Boolean(formData.banco && formData.cuentaBancaria && formData.cuentaInterbancaria && formData.idEmpresaContratista);
   };
 
   // Verificar si puede avanzar a Paso 4
@@ -234,8 +244,8 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
             <Select
               label="Doc."
               options={documentoOptions}
-              value={formData.documentType || ''}
-              onChange={(value) => setFormData(prev => ({ ...prev, documentType: value }))}
+              value={formData.tipoDocumento || ''}
+              onChange={(value) => setFormData((prev) => ({ ...prev, tipoDocumento: value as NewEmployeeFormData['tipoDocumento'] }))}
               required
             />
             <label>N°Doc</label>
@@ -243,7 +253,7 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
               name="numeroDocumento"
               value={formData.numeroDocumento}
               onChange={handleChange}
-              maxLength={formData.documentType === 'CE' ? 9 : 8}
+              maxLength={formData.tipoDocumento === 'CE' ? 9 : 8}
               pattern="\d*"
               inputMode="numeric"
             />
@@ -256,53 +266,55 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
             <h3 className="new-employee-section-title">DATOS PERSONALES & CONTACTO</h3>
             <Select
               label="Nacionalidad"
-              options={[{ value: '', label: 'Seleccione...' }, ...nacionalidadOptions] as any}
-              value={formData.nationality || ''}
-              onChange={(value) => setFormData(prev => ({ ...prev, nationality: value }))}
+              options={[{ value: '', label: 'Seleccione...' }, ...nacionalidadOptions]}
+              value={formData.nacionalidad || ''}
+              onChange={(value) => setFormData((prev) => ({ ...prev, nacionalidad: value as NewEmployeeFormData['nacionalidad'] }))}
               required
             />
             <label>Fecha Nac.</label>
             <FlatpickrDateInput
-              name="birthDate"
-              value={formData.birthDate}
-              onChange={(value) => setFormData((prev) => ({ ...prev, birthDate: value }))}
+              name="fechaNacimiento"
+              value={formData.fechaNacimiento}
+              onChange={(value) => setFormData((prev) => ({ ...prev, fechaNacimiento: value }))}
             />
             <Select
               label="Estado Civil"
-              options={[{ value: '', label: 'Seleccione...' }, ...civilStatusOptions] as any}
-              value={formData.civilStatus || ''}
-              onChange={(value) => setFormData(prev => ({ ...prev, civilStatus: value }))}
+              options={[{ value: '', label: 'Seleccione...' }, ...civilStatusOptions]}
+              value={formData.estadoCivil || ''}
+              onChange={(value) => setFormData((prev) => ({ ...prev, estadoCivil: value as NewEmployeeFormData['estadoCivil'] }))}
               required
             />
-            <label>Â¿Hijos?</label>
-            <select name="hasChildren" value={formData.hasChildren ? 'SI' : 'NO'} onChange={handleChange}>
+            <label>¿Hijos?</label>
+            <select name="tieneHijos" value={formData.tieneHijos ? 'SI' : 'NO'} onChange={handleChange}>
               <option value="">Seleccione...</option>
-              {yesNoOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              {yesNoOptions.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
             <label>Celular</label>
             <input
-              name="phoneMobile"
-              value={formData.phoneMobile}
+              name="celularPersonal"
+              value={formData.celularPersonal}
               onChange={handleChange}
               pattern="\d*"
               inputMode="numeric"
               maxLength={9}
             />
             <label>Email</label>
-            <input name="personalEmail" value={formData.personalEmail} onChange={handleChange} />
+            <input name="correoPersonal" value={formData.correoPersonal} onChange={handleChange} />
             <label>Distrito</label>
-            <select name="district" value={formData.district} onChange={handleChange}>
+            <select name="distrito" value={formData.distrito} onChange={handleChange}>
               <option value="">Seleccione...</option>
-              {distritoOptions.map(opt => (
+              {distritoOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
             <label>Dirección</label>
-            <input name="address" value={formData.address} onChange={handleChange} />
-            <label>Campaña</label>
-            <select name="campaign" value={formData.campaign || ''} onChange={handleChange}>
-              <option value="">Seleccionar campaña</option>
-              {campaigns.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            <input name="direccion" value={formData.direccion} onChange={handleChange} />
+            <label>Origen</label>
+            <select name="origen" value={formData.origen || ''} onChange={handleChange}>
+              <option value="">Seleccionar origen</option>
+              {origenOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
             </select>
           </div>
         )}
@@ -312,52 +324,52 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
           <div className="section-group">
             <h3 className="new-employee-section-title">INFORMACIÓN BANCARIA & TRANSFERENCIA</h3>
             <label>Banco</label>
-            <select name="bank" value={formData.bank} onChange={handleChange}>
+            <select name="banco" value={formData.banco} onChange={handleChange}>
               <option value="">Seleccione...</option>
-              {bancoOptions.map(opt => (
+              {bancoOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
             <label>Cuenta</label>
             <input
-              name="accountNumber"
-              value={formData.accountNumber}
+              name="cuentaBancaria"
+              value={formData.cuentaBancaria}
               onChange={handleChange}
               pattern="\d*"
               inputMode="numeric"
             />
             <label>Interbancaria</label>
             <input
-              name="interbankNumber"
-              value={formData.interbankNumber}
+              name="cuentaInterbancaria"
+              value={formData.cuentaInterbancaria}
               onChange={handleChange}
               pattern="\d*"
               inputMode="numeric"
             />
             <label>Cuenta propia?</label>
-            <select name="contractOwnAccount" value={formData.contractOwnAccount || ''} onChange={handleChange}>
+            <select name="cuentaPropia" value={formData.cuentaPropia ? 'SI' : 'NO'} onChange={handleChange}>
               <option value="">Seleccione...</option>
-              {yesNoOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+              {yesNoOptions.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
             <label>Parentesco</label>
-            <select name="contractKinship" value={formData.contractKinship || ''} onChange={handleChange}>
+            <select name="parentesco" value={formData.parentesco || ''} onChange={handleChange}>
               <option value="">Seleccione...</option>
-              {parentescoOptions.map(opt => (
+              {parentescoOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
             <label>Celular Transferencia</label>
             <input
-              name="contractCellularTransfer"
-              value={formData.contractCellularTransfer}
+              name="celularTransferencia"
+              value={formData.celularTransferencia}
               onChange={handleChange}
               pattern="\d*"
               inputMode="numeric"
             />
             <label>Empresa Contratista</label>
-            <select name="contractorCompany" value={formData.contractorCompany || ''} onChange={handleChange}>
+            <select name="idEmpresaContratista" value={String(formData.idEmpresaContratista || '')} onChange={handleChange}>
               <option value="">Seleccione...</option>
-              {empresaContratistaOptions.map(opt => (
+              {empresaContratistaOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
@@ -383,8 +395,8 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
               <>
                 <label>Seguro</label>
                 <select
-                  name="seguro"
-                  value={formData.seguro || ''}
+                  name="seguroSalud"
+                  value={formData.seguroSalud || ''}
                   onChange={handleChange}
                 >
                   <option value="">Seleccione...</option>
@@ -394,8 +406,8 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
                 </select>
                 <label>Pensión</label>
                 <select
-                  name="pension"
-                  value={formData.pension || ''}
+                  name="sistemaPensiones"
+                  value={formData.sistemaPensiones || ''}
                   onChange={handleChange}
                 >
                   <option value="">Seleccione...</option>
@@ -407,8 +419,8 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
             )}
             <label>Modalidad</label>
             <select
-              name="modality"
-              value={formData.modality || ''}
+              name="modalidad"
+              value={formData.modalidad || ''}
               onChange={handleChange}
             >
               <option value="">Seleccione...</option>
@@ -417,46 +429,31 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
               ))}
             </select>
             <label>Puesto</label>
-            <select name="puesto" value={formData.puesto} onChange={handleChange}>
+            <select name="puestoTrabajo" value={formData.puestoTrabajo || ''} onChange={handleChange}>
               <option value="">Seleccione...</option>
-              {puestoOptions.map(opt => (
+              {puestoOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
-            {formData.puesto && formData.puesto !== PuestoTrabajoEnum.DESARROLLADOR && formData.puesto !== 'CONTADOR' ? (
-              <>
-                <label>Compañía</label>
-                <select name="compania" value={formData.compania || ''} onChange={handleChange}>
-                  <option value="">Seleccione...</option>
-                  {companyOptions.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </>
-            ) : (
-              (formData.puesto === PuestoTrabajoEnum.DESARROLLADOR || formData.puesto === 'CONTADOR') ? (
-                <input type="hidden" name="compania" value={CompaniaEnum.ALBRU} />
-              ) : null
-            )}
             <label>Sueldo</label>
             <input
               type="number"
-              name="baseSalary"
-              value={formData.baseSalary || ''}
+              name="sueldoBase"
+              value={formData.sueldoBase || ''}
               onChange={handleChange}
             />
             <label>Inicio</label>
             <FlatpickrDateInput
-              name="startDate"
-              value={formData.startDate || ''}
-              onChange={(value) => setFormData((prev) => ({ ...prev, startDate: value }))}
+              name="fechaInicio"
+              value={formData.fechaInicio || ''}
+              onChange={(value) => setFormData((prev) => ({ ...prev, fechaInicio: value }))}
             />
             <label>Fin</label>
             <FlatpickrDateInput
-              name="endDate"
-              value={formData.endDate || ''}
-              onChange={(value) => setFormData((prev) => ({ ...prev, endDate: value }))}
-              minDate={formData.startDate || undefined}
+              name="fechaFin"
+              value={formData.fechaFin || ''}
+              onChange={(value) => setFormData((prev) => ({ ...prev, fechaFin: value }))}
+              minDate={formData.fechaInicio || undefined}
             />
           </div>
         )}

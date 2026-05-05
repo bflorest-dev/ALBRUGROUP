@@ -98,11 +98,16 @@ export function useRegistrarEmpleadoConContrato() {
         return result;
       } catch (contractError) {
         // Codigo 403 / auth-service no encontrado → parcial: empleado + contrato puede estar creado, pero no se generan credenciales
+        const errorMessage = contractError instanceof Error ? contractError.message : String(contractError);
+        const errorCode = contractError && typeof contractError === 'object' && 'code' in contractError
+          ? String((contractError as Record<string, unknown>).code)
+          : '';
+
         const isAuthServiceError =
-          (contractError && typeof contractError === 'object' && 'message' in contractError &&
-            String((contractError as any).message).includes('auth-service')) ||
-          (contractError && typeof contractError === 'object' && 'code' in contractError &&
-            (contractError as any).code === 'Forbidden');
+          errorMessage.toLowerCase().includes('auth-service') ||
+          errorCode.includes('Forbidden') ||
+          errorMessage.includes('403') ||
+          errorMessage.toLowerCase().includes('unauthorized');
 
         if (isAuthServiceError) {
           const partialResult: RegistroEmpleadoResult = {

@@ -77,7 +77,7 @@ export interface NewEmployeeFormData {
   cuentaBancaria: string;
   cuentaInterbancaria: string;
   cuentaPropia: boolean;
-  parentesco: 'PADRE' | 'MADRE' | 'TIO' | 'ESPOSO' | 'HERMANO' | 'ABUELO' | 'PAREJA' | 'OTRO';
+  parentesco?: 'PADRE' | 'MADRE' | 'TIO' | 'ESPOSO' | 'HERMANO' | 'ABUELO' | 'PAREJA' | 'OTRO' | '';
   celularTransferencia: string;
   idEmpresaContratista: number | '';
 

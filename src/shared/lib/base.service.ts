@@ -8,8 +8,8 @@
 
 import type { PageResponse } from '@shared/types';
 
-export type RepositoryMethod<T = any> = () => Promise<T>;
-export type DataAdapter<Input = any, Output = any> = (data: Input) => Output;
+export type RepositoryMethod<T = unknown> = () => Promise<T>;
+export type DataAdapter<Input = unknown, Output = unknown> = (data: Input) => Output;
 
 export interface PagedResponse<T> {
   items: T[];
@@ -21,7 +21,7 @@ export interface PagedResponse<T> {
  * Clase base para todos los servicios
  * Proporciona métodos reutilizables para ejecutar operaciones con manejo de errores
  */
-export class BaseService<EntityType = any> {
+export class BaseService {
   /**
    * Ejecutar una operación HTTP y adaptar la respuesta
    */
@@ -84,7 +84,8 @@ export class BaseService<EntityType = any> {
       return new Error(`${fallbackMessage}: ${error}`);
     }
     if (error && typeof error === 'object' && 'message' in error) {
-      return new Error(`${fallbackMessage}: ${(error as any).message}`);
+      const errorObj = error as Record<string, unknown>;
+      return new Error(`${fallbackMessage}: ${errorObj.message}`);
     }
     return new Error(fallbackMessage);
   }

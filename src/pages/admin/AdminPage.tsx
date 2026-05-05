@@ -97,7 +97,7 @@ const AdminPage: React.FC = () => {
   ];
 
   const resolveEmpleadoId = useCallback((empleado: Employee): number => {
-    const rawId = empleado.id ?? empleado['empleadoId'];
+    const rawId = empleado.id ?? (empleado as unknown as { empleadoId?: number }).empleadoId;
     return Number(rawId);
   }, []);
 
@@ -236,7 +236,7 @@ const AdminPage: React.FC = () => {
           apellidos: formData.apellidos,
           fullName: `${formData.nombres} ${formData.apellidos}`.trim(),
           numeroDocumento: formData.numeroDocumento,
-          correoPersonal: formData.correoPersonal,
+          email: formData.correoPersonal,
         };
 
         const merged = mergeEmployeesById([nuevoEmpleado], prev);

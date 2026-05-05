@@ -16,8 +16,8 @@
  * FSD: shared/api - Capa de transporte HTTP
  */
 
-import axios from 'axios';
-import type { AxiosInstance, AxiosResponse, AxiosError, AxiosRequestConfig } from 'axios';
+import axios, { AxiosError } from 'axios';
+import type { AxiosInstance, AxiosResponse } from 'axios';
 import { env } from '@shared/config/env';
 
 /**
@@ -90,13 +90,15 @@ function addErrorInterceptor(instance: AxiosInstance, instanceName: string): voi
       });
       return response;
     },
-    async (error: AxiosError | any) => {
-      const suppressErrorLog = (error.config as any)?.suppressErrorLog === true;
+    async (error: AxiosError | Error) => {
+      const suppressErrorLog = error instanceof AxiosError && error.config
+        ? (error.config as unknown as { suppressErrorLog?: boolean }).suppressErrorLog === true
+        : false;
 
       // Log de error inicial solo si no está silenciado
-      const method = error.config?.method?.toUpperCase() || 'UNKNOWN';
-      const url = error.config?.url || 'UNKNOWN';
-      const status = error.response?.status || 'NO_STATUS';
+      const method = error instanceof AxiosError ? error.config?.method?.toUpperCase() || 'UNKNOWN' : 'UNKNOWN';
+      const url = error instanceof AxiosError ? error.config?.url || 'UNKNOWN' : 'UNKNOWN';
+      const status = error instanceof AxiosError ? error.response?.status || 'NO_STATUS' : 'NO_STATUS';
 
       if (!suppressErrorLog) {
         console.error(`[${instanceName}] HTTP Error`, {
@@ -109,17 +111,20 @@ function addErrorInterceptor(instance: AxiosInstance, instanceName: string): voi
 
       // Retry automático en TIMEOUT (ECONNABORTED)
       if (
+        error instanceof AxiosError &&
         error.code === 'ECONNABORTED' &&
-        error.config &&
-        !error.config._retryCount
+        error.config
       ) {
-        error.config._retryCount = 1;
-        console.warn(`[${instanceName}] TIMEOUT - Retrying request (attempt 1)`, { url, method });
-        return instance.request(error.config);
+        const config = error.config as unknown as { _retryCount?: number };
+        if (!config._retryCount) {
+          config._retryCount = 1;
+          console.warn(`[${instanceName}] TIMEOUT - Retrying request (attempt 1)`, { url, method });
+          return instance.request(error.config);
+        }
       }
 
       // 401 → limpiar sesión inmediatamente
-      if (error.response?.status === 401) {
+      if (error instanceof AxiosError && error.response?.status === 401) {
         console.warn(`[${instanceName}] 401 Unauthorized - Clearing session`);
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
@@ -129,24 +134,32 @@ function addErrorInterceptor(instance: AxiosInstance, instanceName: string): voi
       // Normalizar error
       const apiError: ApiError = {
         message: 'Error desconocido',
-        status: error.response?.status || 0,
-        code: error.code || 'UNKNOWN',
-        details: error.response?.data,
+        status: error instanceof AxiosError ? error.response?.status || 0 : 0,
+        code: error instanceof AxiosError ? error.code || 'UNKNOWN' : 'UNKNOWN',
+        details: error instanceof AxiosError ? error.response?.data : undefined,
       };
 
-      if (error.response) {
-        // HTTP Error
-        const data = error.response.data as Record<string, unknown>;
-        apiError.message = typeof data?.message === 'string'
-          ? data.message
-          : error.response.statusText || 'Error del servidor';
-        apiError.code = typeof data?.error === 'string' ? data.error : String(error.response.status);
-      } else if (error.request) {
-        // Network Error
-        apiError.message = 'Sin conexión con el servidor. Verifica que el backend esté corriendo.';
-        apiError.code = 'NETWORK_ERROR';
-      } else {
+      if (error instanceof AxiosError) {
+        if (error.response) {
+          // HTTP Error
+          const data = error.response.data as Record<string, unknown>;
+          apiError.message = typeof data?.message === 'string'
+            ? data.message
+            : error.response.statusText || 'Error del servidor';
+          apiError.code = typeof data?.error === 'string' ? data.error : String(error.response.status);
+        } else if (error.request) {
+          // Network Error
+          apiError.message = 'Sin conexión con el servidor. Verifica que el backend esté corriendo.';
+          apiError.code = 'NETWORK_ERROR';
+        } else {
+          apiError.message = error.message || 'Error desconocido';
+          apiError.code = 'UNKNOWN_ERROR';
+        }
+      } else if (error instanceof Error) {
         apiError.message = error.message || 'Error desconocido';
+        apiError.code = 'CLIENT_ERROR';
+      } else {
+        apiError.message = String(error) || 'Error desconocido';
         apiError.code = 'UNKNOWN_ERROR';
       }
 
