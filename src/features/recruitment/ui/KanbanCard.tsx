@@ -36,6 +36,20 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
       'SIN_ESTADO'
   ).trim() || 'SIN_ESTADO';
 
+  // Log para debugging
+  console.log('[KanbanCard] Postulación:', {
+    id: postulacion.id,
+    nombreCompleto,
+    etapa,
+    estado,
+    etapaProceso: postulacion.etapaProceso,
+    estadoProceso: postulacion.estadoProceso,
+    estadoBandeja: postulacion.estadoBandeja,
+    tipificacion: postulacion.tipificacion,
+    idTipificacion: postulacion.idTipificacion,
+    codigoTipificacion: postulacion.codigoTipificacion,
+  });
+
   return (
     <div
       className={`

@@ -6,7 +6,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { ApplicantRepository } from '../repositories/applicant.repository';
+import { ApplicantRepository } from '@shared/api';
 import type { PostulanteResponse } from '@shared/types';
 
 export const applicantsQueryKeys = {

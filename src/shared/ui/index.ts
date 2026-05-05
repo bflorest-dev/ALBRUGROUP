@@ -28,7 +28,6 @@ export * from './date-picker';
 
 // Compatibility exports
 export * from './ApplicantForm';
-export * from './Button';
 export * from './Girador';
 
 // Legacy components stubs

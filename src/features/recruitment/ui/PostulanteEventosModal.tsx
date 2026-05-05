@@ -28,10 +28,18 @@ export const PostulanteEventosModal: React.FC<PostulanteEventosModalProps> = ({
   postulacionId,
   nombrePostulante,
 }) => {
-  const { data: eventos = [], isLoading, error } = useEventosPostulante(
+  const { data: eventos = [], isLoading, error, refetch } = useEventosPostulante(
     postulacionId,
     isOpen
   );
+
+  // Refetch eventos cuando se abre el modal
+  React.useEffect(() => {
+    if (isOpen && postulacionId > 0) {
+      console.log('[PostulanteEventosModal] Modal abierto, refetching eventos para:', postulacionId);
+      refetch();
+    }
+  }, [isOpen, postulacionId, refetch]);
 
   if (!isOpen) return null;
 

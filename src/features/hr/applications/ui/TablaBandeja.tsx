@@ -36,22 +36,13 @@ function getEstadoVariant(
 }
 
 function resolveEtapa(post: PostulacionResponse): string {
-  const rawEtapa =
-    post.etapaProceso ??
-    (post as any).etapa ??
-    (post as any).etapa_proceso ??
-    '';
+  const rawEtapa = post.etapaProceso || '';
   const etapa = String(rawEtapa).trim();
   return etapa || 'SIN_ETAPA';
 }
 
 function resolveEstado(post: PostulacionResponse): string {
-  const rawEstado =
-    post.estadoProceso ??
-    (post as any).estado ??
-    post.estadoBandeja ??
-    (post as any).estado_bandeja ??
-    '';
+  const rawEstado = post.estadoProceso || post.estadoBandeja || '';
   const estado = String(rawEstado).trim();
   return estado || 'SIN_ESTADO';
 }
@@ -89,7 +80,7 @@ export const TablaBandeja: React.FC<TablaBandejaProps> = ({
         description="No se encontraron postulaciones en esta bandeja"
         action={
           onCreate ? (
-            <Button variant="primary" size="md" onClick={onCreate}>
+            <Button variant="default" size="default" onClick={onCreate}>
               Registrar Postulante
             </Button>
           ) : undefined

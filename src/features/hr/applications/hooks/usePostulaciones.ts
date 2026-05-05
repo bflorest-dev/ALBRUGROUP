@@ -7,6 +7,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import * as postulacionesApi from '../api';
 import type {
   PostulacionResponse,
@@ -23,8 +24,6 @@ import type {
 } from '../model';
 
 const DEFAULT_BACKGROUND_REFETCH_INTERVAL_MS = 0;
-const POSTULACIONES_SYNC_EVENT = 'postulaciones:updated';
-const POSTULACIONES_SYNC_CHANNEL = 'postulaciones-sync';
 const POSTULACIONES_SYNC_STORAGE_KEY = 'postulaciones:updatedAt';
 
 interface BandejaHookOptions {
@@ -45,32 +44,6 @@ interface QueuedReclutamientoFetch {
 interface QueuedCapacitacionFetch {
   params?: { sinGrupo?: boolean };
   executionOptions?: FetchExecutionOptions;
-}
-
-interface PostulacionesSyncPayload {
-  source: string;
-  timestamp: number;
-}
-
-let postulacionesSyncChannel: BroadcastChannel | null | undefined;
-
-function getPostulacionesSyncChannel(): BroadcastChannel | null {
-  if (postulacionesSyncChannel !== undefined) {
-    return postulacionesSyncChannel;
-  }
-
-  if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') {
-    postulacionesSyncChannel = null;
-    return postulacionesSyncChannel;
-  }
-
-  try {
-    postulacionesSyncChannel = new BroadcastChannel(POSTULACIONES_SYNC_CHANNEL);
-  } catch {
-    postulacionesSyncChannel = null;
-  }
-
-  return postulacionesSyncChannel;
 }
 
 function buildPostulacionSignature(postulacion: PostulacionResponse): string {
@@ -154,22 +127,11 @@ function reconcilePostulacionesData(
 function emitPostulacionesUpdated(source: string): void {
   if (typeof window === 'undefined') return;
 
-  const payload: PostulacionesSyncPayload = {
-    source,
-    timestamp: Date.now(),
-  };
-
-  window.dispatchEvent(new CustomEvent<PostulacionesSyncPayload>(POSTULACIONES_SYNC_EVENT, { detail: payload }));
-
-  const channel = getPostulacionesSyncChannel();
   try {
-    channel?.postMessage(payload);
-  } catch {
-    // Si BroadcastChannel falla, localStorage mantiene la sincronización entre pestañas.
-  }
-
-  try {
-    localStorage.setItem(POSTULACIONES_SYNC_STORAGE_KEY, JSON.stringify(payload));
+    localStorage.setItem(POSTULACIONES_SYNC_STORAGE_KEY, JSON.stringify({
+      source,
+      timestamp: Date.now(),
+    }));
   } catch {
     // Si localStorage no está disponible, la sincronización entre pestañas se omite.
   }
@@ -178,234 +140,78 @@ function emitPostulacionesUpdated(source: string): void {
 function subscribeToPostulacionesUpdates(onUpdate: () => void): () => void {
   if (typeof window === 'undefined') return () => undefined;
 
-  const handleLocalEvent = () => {
-    onUpdate();
-  };
-
   const handleStorage = (event: StorageEvent) => {
     if (event.key !== POSTULACIONES_SYNC_STORAGE_KEY) return;
     if (!event.newValue || event.newValue === event.oldValue) return;
     onUpdate();
   };
 
-  const channel = getPostulacionesSyncChannel();
-  const handleChannelMessage = () => {
-    onUpdate();
-  };
-
-  window.addEventListener(POSTULACIONES_SYNC_EVENT, handleLocalEvent as EventListener);
-
   window.addEventListener('storage', handleStorage);
-  channel?.addEventListener('message', handleChannelMessage);
 
   return () => {
-    window.removeEventListener(POSTULACIONES_SYNC_EVENT, handleLocalEvent as EventListener);
     window.removeEventListener('storage', handleStorage);
-    channel?.removeEventListener('message', handleChannelMessage);
   };
 }
 
 /**
  * ────────────────────────────────────────────────────────────
- * HOOK para Bandeja Reclutamiento
+ * HOOK para Bandeja Reclutamiento (con React Query)
  * ────────────────────────────────────────────────────────────
  */
 export function useBandejaReclutamiento(options?: BandejaHookOptions) {
-  const [data, setData] = useState<PostulacionResponse[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const reclutamientoInFlightRef = useRef<Promise<void> | null>(null);
-  const queuedReclutamientoRequestRef = useRef<QueuedReclutamientoFetch | null>(null);
+  const queryClient = useQueryClient();
 
-  const execute = useCallback(async (
-    params?: { estadoBandeja?: string },
-    executionOptions?: FetchExecutionOptions
-  ) => {
-    if (!executionOptions?.silent) {
-      setLoading(true);
-    }
-    setError(null);
-    try {
-      const result = await postulacionesApi.obtenerBandejaReclutamiento(params);
-      const sortedResult = sortPostulacionesByFechaCreacionDesc(result);
-      setData((previousData) => reconcilePostulacionesData(previousData, sortedResult));
-    } catch (err: any) {
-      const message = err.message || 'Error al cargar bandeja de reclutamiento';
-      setError(message);
-      console.error('useBandejaReclutamiento:', err);
-    } finally {
-      if (!executionOptions?.silent) {
-        setLoading(false);
-      }
-    }
-  }, []);
+  const query = useQuery({
+    queryKey: ['bandeja-reclutamiento'],
+    queryFn: () => postulacionesApi.obtenerBandejaReclutamiento(),
+    staleTime: 0, // Siempre considerar datos como stale para forzar refetch
+    refetchInterval: options?.refetchIntervalMs ?? DEFAULT_BACKGROUND_REFETCH_INTERVAL_MS,
+    enabled: options?.enabled !== false,
+  });
 
-  const runFetch = useCallback(
-    (
-      params?: { estadoBandeja?: string },
-      executionOptions?: FetchExecutionOptions
-    ) => {
-      if (reclutamientoInFlightRef.current) {
-        queuedReclutamientoRequestRef.current = {
-          params,
-          executionOptions,
-        };
-        return reclutamientoInFlightRef.current;
-      }
+  const refetch = useCallback(async () => {
+    // Invalidar caché y hacer refetch forzado
+    await queryClient.invalidateQueries({ queryKey: ['bandeja-reclutamiento'] });
+    await query.refetch();
+  }, [queryClient, query]);
 
-      const task = execute(params, executionOptions).finally(() => {
-        reclutamientoInFlightRef.current = null;
-
-        const queuedRequest = queuedReclutamientoRequestRef.current;
-        queuedReclutamientoRequestRef.current = null;
-
-        if (queuedRequest) {
-          void runFetch(queuedRequest.params, queuedRequest.executionOptions);
-        }
-      });
-
-      reclutamientoInFlightRef.current = task;
-      return task;
-    },
-    [execute]
-  );
-
-  useEffect(() => {
-    if (options?.enabled === false) return;
-    void runFetch(undefined, { silent: false });
-  }, [runFetch, options?.enabled]);
-
-  useEffect(() => {
-    if (options?.enabled === false) return;
-
-    const intervalMs = options?.refetchIntervalMs ?? DEFAULT_BACKGROUND_REFETCH_INTERVAL_MS;
-    if (intervalMs <= 0) return;
-
-    const intervalId = window.setInterval(() => {
-      void runFetch(undefined, { silent: true });
-    }, intervalMs);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [runFetch, options?.enabled, options?.refetchIntervalMs]);
-
-  useEffect(() => {
-    if (options?.enabled === false) return;
-    if (options?.syncBetweenTabs === false) return;
-
-    return subscribeToPostulacionesUpdates(() => {
-      void runFetch(undefined, { silent: true });
-      window.setTimeout(() => {
-        void runFetch(undefined, { silent: true });
-      }, 1000);
-    });
-  }, [runFetch, options?.enabled, options?.syncBetweenTabs]);
-
-  const refetch = useCallback(() => runFetch(undefined, { silent: true }), [runFetch]);
-
-  return { data, loading, error, execute, refetch };
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error?.message ?? null,
+    execute: refetch,
+    refetch,
+  };
 }
 
 /**
  * ────────────────────────────────────────────────────────────
- * HOOK para Bandeja Capacitación
+ * HOOK para Bandeja Capacitación (con React Query)
  * ────────────────────────────────────────────────────────────
  */
 export function useBandejaCapacitacion(options?: BandejaHookOptions) {
-  const [data, setData] = useState<PostulacionResponse[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const capacitacionInFlightRef = useRef<Promise<void> | null>(null);
-  const queuedCapacitacionRequestRef = useRef<QueuedCapacitacionFetch | null>(null);
+  const queryClient = useQueryClient();
 
-  const execute = useCallback(async (
-    params?: { sinGrupo?: boolean },
-    executionOptions?: FetchExecutionOptions
-  ) => {
-    if (!executionOptions?.silent) {
-      setLoading(true);
-    }
-    setError(null);
-    try {
-      const result = await postulacionesApi.obtenerBandejaCapacitacion(params);
-      setData((previousData) => reconcilePostulacionesData(previousData, result));
-    } catch (err: any) {
-      const message = err.message || 'Error al cargar bandeja de capacitación';
-      setError(message);
-      console.error('useBandejaCapacitacion:', err);
-    } finally {
-      if (!executionOptions?.silent) {
-        setLoading(false);
-      }
-    }
-  }, []);
+  const query = useQuery({
+    queryKey: ['bandeja-capacitacion'],
+    queryFn: () => postulacionesApi.obtenerBandejaCapacitacion(),
+    staleTime: 0,
+    refetchInterval: options?.refetchIntervalMs ?? DEFAULT_BACKGROUND_REFETCH_INTERVAL_MS,
+    enabled: options?.enabled !== false,
+  });
 
-  const runFetch = useCallback(
-    (
-      params?: { sinGrupo?: boolean },
-      executionOptions?: FetchExecutionOptions
-    ) => {
-      if (capacitacionInFlightRef.current) {
-        queuedCapacitacionRequestRef.current = {
-          params,
-          executionOptions,
-        };
-        return capacitacionInFlightRef.current;
-      }
+  const refetch = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['bandeja-capacitacion'] });
+    await query.refetch();
+  }, [queryClient, query]);
 
-      const task = execute(params, executionOptions).finally(() => {
-        capacitacionInFlightRef.current = null;
-
-        const queuedRequest = queuedCapacitacionRequestRef.current;
-        queuedCapacitacionRequestRef.current = null;
-
-        if (queuedRequest) {
-          void runFetch(queuedRequest.params, queuedRequest.executionOptions);
-        }
-      });
-
-      capacitacionInFlightRef.current = task;
-      return task;
-    },
-    [execute]
-  );
-
-  useEffect(() => {
-    if (options?.enabled === false) return;
-    void runFetch(undefined, { silent: false });
-  }, [runFetch, options?.enabled]);
-
-  useEffect(() => {
-    if (options?.enabled === false) return;
-
-    const intervalMs = options?.refetchIntervalMs ?? DEFAULT_BACKGROUND_REFETCH_INTERVAL_MS;
-    if (intervalMs <= 0) return;
-
-    const intervalId = window.setInterval(() => {
-      void runFetch(undefined, { silent: true });
-    }, intervalMs);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [runFetch, options?.enabled, options?.refetchIntervalMs]);
-
-  useEffect(() => {
-    if (options?.enabled === false) return;
-    if (options?.syncBetweenTabs === false) return;
-
-    return subscribeToPostulacionesUpdates(() => {
-      void runFetch(undefined, { silent: true });
-      window.setTimeout(() => {
-        void runFetch(undefined, { silent: true });
-      }, 1000);
-    });
-  }, [runFetch, options?.enabled, options?.syncBetweenTabs]);
-
-  const refetch = useCallback(() => runFetch(undefined, { silent: true }), [runFetch]);
-
-  return { data, loading, error, execute, refetch };
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error?.message ?? null,
+    execute: refetch,
+    refetch,
+  };
 }
 
 /**
@@ -447,88 +253,32 @@ export function usePostulaciones(options?: { enabled?: boolean }) {
 
 /**
  * ────────────────────────────────────────────────────────────
- * HOOK para Bandeja Contratación
+ * HOOK para Bandeja Contratación (con React Query)
  * ────────────────────────────────────────────────────────────
  */
 export function useBandejaContratacion(options?: BandejaHookOptions) {
-  const [data, setData] = useState<PostulacionResponse[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const contratacionInFlightRef = useRef<Promise<void> | null>(null);
-  const queuedContratacionRequestRef = useRef<FetchExecutionOptions | null>(null);
+  const queryClient = useQueryClient();
 
-  const execute = useCallback(async (executionOptions?: FetchExecutionOptions) => {
-    if (!executionOptions?.silent) {
-      setLoading(true);
-    }
-    setError(null);
-    try {
-      const result = await postulacionesApi.obtenerBandejaContratacion();
-      setData((previousData) => reconcilePostulacionesData(previousData, result));
-    } catch (err: any) {
-      const message = err.message || 'Error al cargar bandeja de contratación';
-      setError(message);
-      console.error('useBandejaContratacion:', err);
-    } finally {
-      if (!executionOptions?.silent) {
-        setLoading(false);
-      }
-    }
-  }, []);
+  const query = useQuery({
+    queryKey: ['bandeja-contratacion'],
+    queryFn: () => postulacionesApi.obtenerBandejaContratacion(),
+    staleTime: 0,
+    refetchInterval: options?.refetchIntervalMs ?? DEFAULT_BACKGROUND_REFETCH_INTERVAL_MS,
+    enabled: options?.enabled !== false,
+  });
 
-  const runFetch = useCallback((executionOptions?: FetchExecutionOptions) => {
-    if (contratacionInFlightRef.current) {
-      queuedContratacionRequestRef.current = executionOptions ?? {};
-      return contratacionInFlightRef.current;
-    }
+  const refetch = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['bandeja-contratacion'] });
+    await query.refetch();
+  }, [queryClient, query]);
 
-    const task = execute(executionOptions).finally(() => {
-      contratacionInFlightRef.current = null;
-
-      const queuedRequest = queuedContratacionRequestRef.current;
-      queuedContratacionRequestRef.current = null;
-
-      if (queuedRequest) {
-        void runFetch(queuedRequest);
-      }
-    });
-
-    contratacionInFlightRef.current = task;
-    return task;
-  }, [execute]);
-
-  useEffect(() => {
-    if (options?.enabled === false) return;
-    void runFetch({ silent: false });
-  }, [runFetch, options?.enabled]);
-
-  useEffect(() => {
-    if (options?.enabled === false) return;
-
-    const intervalMs = options?.refetchIntervalMs ?? DEFAULT_BACKGROUND_REFETCH_INTERVAL_MS;
-    if (intervalMs <= 0) return;
-
-    const intervalId = window.setInterval(() => {
-      void runFetch({ silent: true });
-    }, intervalMs);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [runFetch, options?.enabled, options?.refetchIntervalMs]);
-
-  useEffect(() => {
-    if (options?.enabled === false) return;
-    if (options?.syncBetweenTabs === false) return;
-
-    return subscribeToPostulacionesUpdates(() => {
-      void runFetch({ silent: true });
-    });
-  }, [runFetch, options?.enabled, options?.syncBetweenTabs]);
-
-  const refetch = useCallback(() => runFetch({ silent: true }), [runFetch]);
-
-  return { data, loading, error, execute, refetch };
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error?.message ?? null,
+    execute: refetch,
+    refetch,
+  };
 }
 
 /**
@@ -601,39 +351,38 @@ export function useActualizarPostulacion() {
 
 /**
  * ────────────────────────────────────────────────────────────
- * HOOK para Tipificar Postulación
+ * HOOK para Tipificar Postulación (con React Query)
  * ────────────────────────────────────────────────────────────
  */
 export function useTipificarPostulacion() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [data, setData] = useState<PostulacionResponse | null>(null);
+  const queryClient = useQueryClient();
 
-  const execute = useCallback(async (id: number, body: TipificarPostulacionRequest) => {
-    setLoading(true);
-    setError(null);
-    setSuccess(false);
-    try {
-      const result = await postulacionesApi.tipificarPostulacionDirecta({
-        idPostulacion: id,
-        ...body,
-      });
-      setData(result);
-      setSuccess(true);
+  return useMutation({
+    mutationFn: (params: { id: number; body: TipificarPostulacionRequest }) =>
+      postulacionesApi.tipificarPostulacionDirecta({
+        idPostulacion: params.id,
+        ...params.body,
+      }),
+    onSuccess: (data, variables) => {
+      console.log('[useTipificarPostulacion] Tipificación exitosa:', data);
+      
+      // Invalidar TODOS los cachés de bandejas para forzar refetch
+      queryClient.invalidateQueries({ queryKey: ['bandeja-reclutamiento'] });
+      queryClient.invalidateQueries({ queryKey: ['bandeja-capacitacion'] });
+      queryClient.invalidateQueries({ queryKey: ['bandeja-contratacion'] });
+      queryClient.invalidateQueries({ queryKey: ['tipificacion'] });
+      
+      // CRÍTICO: Invalidar eventos de la postulación específica
+      queryClient.invalidateQueries({ queryKey: ['postulante-eventos', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['eventos-postulacion', variables.id] });
+      
+      // Emitir evento de actualización para sincronización entre pestañas
       emitPostulacionesUpdated('tipificar-postulacion');
-      return result;
-    } catch (err: any) {
-      const message = err.message || 'Error al tipificar postulación';
-      setError(message);
-      console.error('useTipificarPostulacion:', err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  return { data, loading, error, execute, success };
+    },
+    onError: (error: any) => {
+      console.error('[useTipificarPostulacion] Error al tipificar postulación:', error);
+    },
+  });
 }
 
 /**
@@ -755,13 +504,15 @@ export function useEventosPostulacion(idPostulacion?: number) {
     setLoading(true);
     setError(null);
     try {
+      console.log('[useEventosPostulacion] Cargando eventos para postulación:', id);
       const result = await postulacionesApi.obtenerEventosPostulacion(id);
+      console.log('[useEventosPostulacion] Eventos cargados:', result);
       setData(result);
       return result;
     } catch (err: any) {
       const message = err.message || 'Error al cargar eventos de postulación';
       setError(message);
-      console.error('useEventosPostulacion:', err);
+      console.error('[useEventosPostulacion] Error:', err);
       throw err;
     } finally {
       setLoading(false);
@@ -813,34 +564,24 @@ export function useCrearGrupoCapacitacion() {
 }
 
 export function useAsignarPostulacionesAGrupo() {
-  const [data, setData] = useState<GrupoCapacitacionResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const execute = useCallback(
-    async (idGrupoCapacitacion: number, body: AsignarPostulacionesGrupoRequest) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const result = await postulacionesApi.asignarPostulacionesAGrupo(
-          idGrupoCapacitacion,
-          body
-        );
-        setData(result);
-        return result;
-      } catch (err: any) {
-        const message = err.message || 'Error al asignar postulaciones al grupo';
-        setError(message);
-        console.error('useAsignarPostulacionesAGrupo:', err);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
+  return useMutation({
+    mutationFn: (params: { idGrupoCapacitacion: number; body: AsignarPostulacionesGrupoRequest }) =>
+      postulacionesApi.asignarPostulacionesAGrupo(params.idGrupoCapacitacion, params.body),
+    onSuccess: () => {
+      console.log('[useAsignarPostulacionesAGrupo] Asignación exitosa');
+      
+      // Invalidar cachés relevantes
+      queryClient.invalidateQueries({ queryKey: ['bandeja-capacitacion'] });
+      queryClient.invalidateQueries({ queryKey: ['grupos-capacitacion'] });
+      
+      emitPostulacionesUpdated('asignar-grupo');
     },
-    []
-  );
-
-  return { data, loading, error, execute };
+    onError: (error: any) => {
+      console.error('[useAsignarPostulacionesAGrupo] Error al asignar:', error);
+    },
+  });
 }
 
 export function useActualizarPostulacionGrupo() {

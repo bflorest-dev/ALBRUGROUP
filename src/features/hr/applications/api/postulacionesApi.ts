@@ -26,7 +26,7 @@ import type {
 let warnedUnexpectedPostulacionesPayload = false;
 
 function normalizePostulacionResponse(raw: any): PostulacionResponse {
-  return {
+  const normalized = {
     ...raw,
     idTipificacion:
       raw.idTipificacion ??
@@ -88,6 +88,31 @@ function normalizePostulacionResponse(raw: any): PostulacionResponse {
       listaNegra: raw.postulante?.listaNegra ?? raw.postulante?.lista_negra ?? false,
     },
   };
+  
+  // Log detallado para debugging
+  if (import.meta.env.DEV) {
+    console.log('[normalizePostulacionResponse] Raw:', {
+      id: raw.id,
+      etapaProceso: raw.etapaProceso,
+      etapa: raw.etapa,
+      estadoProceso: raw.estadoProceso,
+      estado: raw.estado,
+      estadoBandeja: raw.estadoBandeja,
+      estado_bandeja: raw.estado_bandeja,
+      tipificacion: raw.tipificacion,
+      idTipificacion: raw.idTipificacion,
+    });
+    console.log('[normalizePostulacionResponse] Normalized:', {
+      id: normalized.id,
+      etapaProceso: normalized.etapaProceso,
+      estadoProceso: normalized.estadoProceso,
+      estadoBandeja: normalized.estadoBandeja,
+      tipificacion: normalized.tipificacion,
+      idTipificacion: normalized.idTipificacion,
+    });
+  }
+  
+  return normalized;
 }
 
 const asArray = <T>(value: unknown): T[] | null => {
@@ -205,14 +230,33 @@ export async function obtenerPostulacionPorId(
 /**
  * GET /postulaciones/{id}/eventos
  * Obtener eventos de una postulación
+ * 
+ * NOTA: El backend devuelve respuesta paginada con estructura:
+ * { content: [...], page, size, totalPages, totalElements }
  */
 export async function obtenerEventosPostulacion(
   id: number
 ): Promise<PostulacionEventoResponse[]> {
-  const response = await recruitmentHttp.get<PostulacionEventoResponse[]>(
-    `/postulaciones/${id}/eventos`
-  );
-  return Array.isArray(response.data) ? response.data : [];
+  console.log('[postulacionesApi] Obteniendo eventos para postulación:', id);
+  const response = await recruitmentHttp.get<
+    PostulacionEventoResponse[] | { content: PostulacionEventoResponse[] }
+  >(`/postulaciones/${id}/eventos`);
+  
+  console.log('[postulacionesApi] Respuesta de eventos:', response.data);
+  
+  // Extraer eventos del formato paginado o array directo
+  let eventos: PostulacionEventoResponse[] = [];
+  
+  if (Array.isArray(response.data)) {
+    // Respuesta directa como array
+    eventos = response.data;
+  } else if (response.data && typeof response.data === 'object' && 'content' in response.data) {
+    // Respuesta paginada con campo 'content'
+    eventos = Array.isArray(response.data.content) ? response.data.content : [];
+  }
+  
+  console.log('[postulacionesApi] Eventos procesados:', eventos);
+  return eventos;
 }
 
 /**
@@ -296,10 +340,12 @@ export async function tipificarPostulacion(
   id: number,
   body: TipificarPostulacionRequest
 ): Promise<PostulacionResponse> {
+  console.log('[postulacionesApi] Tipificando postulación:', { id, body });
   const response = await recruitmentHttp.post<PostulacionResponse>(
     `/postulaciones/${id}/tipificacion`,
     body
   );
+  console.log('[postulacionesApi] Respuesta de tipificación:', response.data);
   return normalizePostulacionResponse(response.data);
 }
 
@@ -365,11 +411,15 @@ export async function confirmarContratacionDirecta(
 export async function obtenerBandejaReclutamiento(
   params?: { estadoBandeja?: string }
 ): Promise<PostulacionResponse[]> {
+  console.log('[postulacionesApi] Obteniendo bandeja reclutamiento con params:', params);
   const response = await recruitmentHttp.get<unknown>(
     '/postulaciones/bandeja/reclutamiento',
     { params }
   );
-  return normalizePostulacionArray(response.data);
+  console.log('[postulacionesApi] Respuesta bandeja reclutamiento:', response.data);
+  const normalized = normalizePostulacionArray(response.data);
+  console.log('[postulacionesApi] Postulaciones normalizadas:', normalized);
+  return normalized;
 }
 
 /**

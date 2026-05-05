@@ -12,7 +12,7 @@
  */
 
 import { BaseService } from '@shared/lib/base.service';
-import { ApplicantRepository } from '@shared/api/repositories/applicant.repository';
+import { ApplicantRepository } from '@shared/api';
 import type { FiltrosPostulante } from '@shared/api/repositories/applicant.repository';
 import type { Applicant, NewApplicantFormData, RegistrarPostulanteRequest } from '@shared/types';
 import { adaptPostulanteResponseToApplicant } from '@shared/types';

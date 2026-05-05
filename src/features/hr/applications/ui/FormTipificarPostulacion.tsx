@@ -221,7 +221,7 @@ export const FormTipificarPostulacion: React.FC<
   };
 
   const postulacionActual: PostulacionResponse | null =
-    detalleHook.data ?? tipificarHook.data ?? null;
+    detalleHook.data ?? null;
 
   const etapaActual = String(postulacionActual?.etapaProceso ?? etapa)
     .trim()
@@ -370,10 +370,12 @@ export const FormTipificarPostulacion: React.FC<
     }
 
     try {
-      const tipificada = await tipificarHook.execute(idPostulacion, body);
-      const detalle = await detalleHook
-        .execute(idPostulacion)
-        .catch(() => tipificada);
+      console.log('[FormTipificarPostulacion] Enviando tipificación:', { idPostulacion, body });
+      
+      // Usar mutateAsync para obtener el resultado
+      const detalle = await tipificarHook.mutateAsync({ id: idPostulacion, body });
+      
+      console.log('[FormTipificarPostulacion] Tipificación exitosa:', detalle);
 
       const tipificadaReclutado =
         String(selectedTipificacion?.codigo ?? '')
@@ -398,22 +400,32 @@ export const FormTipificarPostulacion: React.FC<
       setStepAvanzoCapacitacion(avanzoCapacitacion);
 
       if (avanzoCapacitacion && requiereGrupoAntesDeConfirmar) {
-        await asignarHook.execute(Number(idGrupoSeleccionado), {
-          idPostulacion,
-          fechaAsignacion: getTodayIso(),
-        });
-        setAsignacionMensaje('Postulación tipificada y asignada correctamente al grupo de capacitación.');
-        onSuccess();
+        console.log('[FormTipificarPostulacion] Asignando a grupo:', idGrupoSeleccionado);
+        
+        try {
+          await asignarHook.mutateAsync({
+            idGrupoCapacitacion: Number(idGrupoSeleccionado),
+            body: { idPostulacion, fechaAsignacion: getTodayIso() }
+          });
+          
+          console.log('[FormTipificarPostulacion] Asignación exitosa');
+          setAsignacionMensaje('Postulación tipificada y asignada correctamente al grupo de capacitación.');
+          onSuccess();
+        } catch (err: any) {
+          console.error('[FormTipificarPostulacion] Error al asignar grupo:', err);
+          setAsignacionErrorUi(err.message || 'Error al asignar al grupo de capacitación');
+        }
         return;
       }
 
       if (avanzoCapacitacion) {
-        await loadGruposDisponibles();
+        loadGruposDisponibles();
       } else {
         onSuccess();
       }
-    } catch (err) {
-      console.error('Error al tipificar:', err);
+    } catch (err: any) {
+      console.error('[FormTipificarPostulacion] Error al tipificar:', err);
+      // El error ya se muestra a través del estado del hook
     }
   };
 
@@ -443,23 +455,26 @@ export const FormTipificarPostulacion: React.FC<
     }
 
     try {
-      await asignarHook.execute(idGrupo, {
-        idPostulacion,
-        fechaAsignacion: getTodayIso(),
+      console.log('[FormTipificarPostulacion] Asignando a grupo:', idGrupo);
+      
+      await asignarHook.mutateAsync({
+        idGrupoCapacitacion: idGrupo,
+        body: { idPostulacion, fechaAsignacion: getTodayIso() }
       });
-
-      await detalleHook.execute(idPostulacion).catch(() => undefined);
+      
+      console.log('[FormTipificarPostulacion] Asignación exitosa');
       setAsignacionMensaje('Postulación asignada correctamente al grupo de capacitación.');
       onSuccess();
-    } catch (err) {
-      console.error('Error al asignar a grupo:', err);
+    } catch (err: any) {
+      console.error('[FormTipificarPostulacion] Error al asignar a grupo:', err);
+      setAsignacionErrorUi(err.message || 'Error al asignar al grupo de capacitación');
     }
   };
 
   const isLoading =
-    catalogoHook.loading || tipificarHook.loading || detalleHook.loading || asignarHook.loading;
+    catalogoHook.loading || tipificarHook.isPending || detalleHook.loading || asignarHook.isPending;
   const error =
-    catalogoHook.error || tipificarHook.error || detalleHook.error || asignarHook.error;
+    catalogoHook.error || tipificarHook.error?.message || detalleHook.error || asignarHook.error?.message;
   const subtipificacionOptions = subtipificaciones.map((sub) => ({
     label: `${sub.codigo} - ${sub.descripcion}`,
     value: sub.id.toString(),
