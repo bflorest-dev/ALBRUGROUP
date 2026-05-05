@@ -1,0 +1,100 @@
+.layout-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  background: linear-gradient(180deg, #f2f4f7 0%, #e6ebf2 100%);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2rem;
+  color: #f8fafc;
+  background: linear-gradient(180deg, #11263c 0%, #1c3f63 100%);
+}
+
+.sidebar__top {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.brand__eyebrow {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+}
+
+.brand__title {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.menu {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.menu a {
+  padding: 0.85rem 1rem;
+  border-radius: 0.9rem;
+  color: inherit;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.menu a.is-active {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.sidebar__bottom {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.logout-button {
+  width: 3rem;
+  height: 3rem;
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.logout-button:hover {
+  background: rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
+}
+
+.logout-button svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: currentColor;
+}
+
+.content {
+  padding: 2rem;
+}
+
+@media (max-width: 900px) {
+  .layout-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    padding-bottom: 1rem;
+  }
+
+  .sidebar__bottom {
+    margin-top: 1.5rem;
+  }
+}

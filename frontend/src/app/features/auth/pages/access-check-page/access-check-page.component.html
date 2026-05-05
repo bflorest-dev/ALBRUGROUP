@@ -1,0 +1,22 @@
+<section class="auth-page">
+  <div class="auth-card">
+    <span class="auth-card__eyebrow">Ingreso</span>
+    <h1>Valida tu acceso</h1>
+    <p>Ingresa tu username para verificar si tu cuenta puede entrar al sistema.</p>
+
+    <form [formGroup]="accessForm" (ngSubmit)="submit()" class="auth-form">
+      <label>
+        <span>Username</span>
+        <input type="text" formControlName="username" placeholder="Ingresa tu username" />
+      </label>
+
+      @if (errorMessage) {
+        <p class="form-message form-message--error">{{ errorMessage }}</p>
+      }
+
+      <button type="submit" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Validando...' : 'Continuar' }}
+      </button>
+    </form>
+  </div>
+</section>

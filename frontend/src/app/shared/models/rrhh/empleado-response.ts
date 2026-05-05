@@ -1,0 +1,30 @@
+export interface EmpleadoResponse {
+  id: number;
+  nombres: string;
+  apellidos: string;
+  tipoDocumento: string;
+  numeroDocumento: string;
+  nacionalidad: string;
+  fechaNacimiento: string;
+  estadoCivil: string;
+  tieneHijos: boolean;
+  celularPersonal: string;
+  correoPersonal: string;
+  celularCorporativo?: string | null;
+  correoCorporativo?: string | null;
+  origen: string;
+  distrito: string;
+  direccion: string;
+  banco: string;
+  cuentaBancaria: string;
+  cuentaInterbancaria: string;
+  cuentaPropia: boolean;
+  parentesco?: string | null;
+  celularTransferencia?: string | null;
+  empresaContratista?: string | null;
+  estadoOperativo: string;
+  compania?: string | null;
+  listaNegra: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

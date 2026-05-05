@@ -1,0 +1,377 @@
+<section class="admin-page">
+  <header class="hero">
+    <span class="hero__eyebrow">Administrador</span>
+    <h2>Alta de personal y consulta de accesos</h2>
+    <p>
+      Esta vista resuelve el flujo directo `empleado -> contrato -> usuario auth` y permite revisar
+      el acceso de los empleados activos.
+    </p>
+  </header>
+
+  <div class="admin-grid">
+    <section class="panel panel--form">
+      <div class="panel__header">
+        <div>
+          <span class="panel__eyebrow">Bloque 1</span>
+          <h3>Alta de personal</h3>
+        </div>
+        <span class="step-chip">Paso {{ currentStep }} de 3</span>
+      </div>
+
+      @if (currentStep === 1) {
+        <form [formGroup]="empleadoForm" class="form-grid">
+          <label>
+            <span>Nombres</span>
+            <input type="text" formControlName="nombres" />
+          </label>
+
+          <label>
+            <span>Apellidos</span>
+            <input type="text" formControlName="apellidos" />
+          </label>
+
+          <label>
+            <span>Tipo de documento</span>
+            <select formControlName="tipoDocumento">
+              @for (option of documentoOptions; track option) {
+                <option [value]="option">{{ toLabel(option) }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            <span>Numero de documento</span>
+            <input type="text" formControlName="numeroDocumento" />
+          </label>
+
+          <label>
+            <span>Nacionalidad</span>
+            <select formControlName="nacionalidad">
+              @for (option of nacionalidadOptions; track option) {
+                <option [value]="option">{{ toLabel(option) }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            <span>Fecha de nacimiento</span>
+            <input type="date" formControlName="fechaNacimiento" />
+          </label>
+
+          <label>
+            <span>Estado civil</span>
+            <select formControlName="estadoCivil">
+              @for (option of estadoCivilOptions; track option) {
+                <option [value]="option">{{ toLabel(option) }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            <span>Tiene hijos</span>
+            <select formControlName="tieneHijos">
+              <option value="false">No</option>
+              <option value="true">Si</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Celular personal</span>
+            <input type="text" formControlName="celularPersonal" />
+          </label>
+
+          <label>
+            <span>Correo personal</span>
+            <input type="email" formControlName="correoPersonal" />
+          </label>
+
+          <label>
+            <span>Origen</span>
+            <select formControlName="origen">
+              @for (option of origenOptions; track option) {
+                <option [value]="option">{{ toLabel(option) }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            <span>Distrito</span>
+            <select formControlName="distrito">
+              @for (option of distritoOptions; track option) {
+                <option [value]="option">{{ toLabel(option) }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="field field--wide">
+            <span>Direccion</span>
+            <input type="text" formControlName="direccion" />
+          </label>
+
+          <label>
+            <span>Banco</span>
+            <select formControlName="banco">
+              @for (option of bancoOptions; track option) {
+                <option [value]="option">{{ toLabel(option) }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            <span>Cuenta bancaria</span>
+            <input type="text" formControlName="cuentaBancaria" />
+          </label>
+
+          <label>
+            <span>Cuenta interbancaria</span>
+            <input type="text" formControlName="cuentaInterbancaria" />
+          </label>
+
+          <label>
+            <span>Cuenta propia</span>
+            <select formControlName="cuentaPropia">
+              <option value="true">Si</option>
+              <option value="false">No</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Parentesco</span>
+            <select formControlName="parentesco">
+              <option value="">No aplica</option>
+              @for (option of parentescoOptions; track option) {
+                <option [value]="option">{{ toLabel(option) }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            <span>Celular transferencia</span>
+            <input type="text" formControlName="celularTransferencia" />
+          </label>
+
+          <label>
+            <span>Empresa contratista</span>
+            <select formControlName="idEmpresaContratista">
+              <option value="">No aplica</option>
+              @for (empresa of empresasContratistas; track empresa.id) {
+                <option [value]="empresa.id">{{ empresa.nombre }}</option>
+              }
+            </select>
+          </label>
+        </form>
+
+        <div class="actions">
+          <button type="button" class="primary-button" (click)="continueToContract()">
+            Continuar a contrato
+          </button>
+        </div>
+      }
+
+      @if (currentStep === 2) {
+        <form [formGroup]="contratoForm" class="form-grid">
+          <label>
+            <span>Puesto de trabajo</span>
+            <select formControlName="puestoTrabajo">
+              @for (option of puestoTrabajoOptions; track option) {
+                <option [value]="option">{{ toLabel(option) }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            <span>Regimen</span>
+            <select formControlName="regimen">
+              @for (option of regimenOptions; track option) {
+                <option [value]="option">{{ toLabel(option) }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            <span>Modalidad</span>
+            <select formControlName="modalidad">
+              @for (option of modalidadOptions; track option) {
+                <option [value]="option">{{ toLabel(option) }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            <span>Seguro de salud</span>
+            <select formControlName="seguroSalud">
+              <option value="">No aplica</option>
+              @for (option of seguroSaludOptions; track option) {
+                <option [value]="option">{{ toLabel(option) }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            <span>Sistema de pensiones</span>
+            <select formControlName="sistemaPensiones">
+              <option value="">No aplica</option>
+              @for (option of sistemaPensionesOptions; track option) {
+                <option [value]="option">{{ toLabel(option) }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            <span>Sueldo base</span>
+            <input type="number" formControlName="sueldoBase" min="0.01" step="0.01" />
+          </label>
+
+          <label>
+            <span>Fecha de inicio</span>
+            <input type="date" formControlName="fechaInicio" />
+          </label>
+
+          <label>
+            <span>Fecha de fin</span>
+            <input type="date" formControlName="fechaFin" />
+          </label>
+        </form>
+
+        @if (submitErrorMessage) {
+          <p class="form-message form-message--error">{{ submitErrorMessage }}</p>
+        }
+
+        <div class="actions">
+          <button type="button" class="secondary-button" (click)="backToEmployee()">Volver</button>
+          <button type="button" class="primary-button" [disabled]="isSubmitting" (click)="submitPersonalFlow()">
+            {{ isSubmitting ? 'Registrando...' : 'Registrar empleado y contrato' }}
+          </button>
+        </div>
+      }
+
+      @if (currentStep === 3 && creationResult) {
+        <div class="result-card">
+          <span class="panel__eyebrow">Resultado</span>
+          <h3>Alta completada</h3>
+
+          <div class="result-grid">
+            <div>
+              <span class="result-label">Empleado ID</span>
+              <strong>{{ creationResult.empleadoId }}</strong>
+            </div>
+            <div>
+              <span class="result-label">Username</span>
+              <strong>{{ creationResult.username }}</strong>
+            </div>
+            <div>
+              <span class="result-label">Rol</span>
+              <strong>{{ toLabel(creationResult.roles[0]) }}</strong>
+            </div>
+            <div>
+              <span class="result-label">Password inicializada</span>
+              <strong>{{ creationResult.passwordInicializada ? 'Si' : 'No' }}</strong>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="button" class="primary-button" (click)="resetFlow()">Registrar otro</button>
+          </div>
+        </div>
+      }
+    </section>
+
+    <section class="panel">
+      <div class="panel__header">
+        <div>
+          <span class="panel__eyebrow">Bloque 2</span>
+          <h3>Empleados activos</h3>
+        </div>
+        <button type="button" class="ghost-button" (click)="loadEmployees()">Recargar</button>
+      </div>
+
+      @if (employeeListErrorMessage) {
+        <p class="form-message form-message--error">{{ employeeListErrorMessage }}</p>
+      }
+
+      @if (isLoadingEmployees) {
+        <p class="helper-text">Cargando empleados...</p>
+      } @else if (employeesPage?.content?.length) {
+        <div class="table-scroll">
+          <table class="employee-table">
+            <thead>
+              <tr>
+                <th>Empleado</th>
+                <th>Documento</th>
+                <th>Estado</th>
+                <th>Acceso</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (employee of employeesPage?.content; track employee.id) {
+                <tr>
+                  <td>
+                    <strong>{{ employee.nombres }} {{ employee.apellidos }}</strong>
+                    <span>{{ toLabel(employee.origen) }}</span>
+                  </td>
+                  <td>{{ employee.numeroDocumento }}</td>
+                  <td>{{ toLabel(employee.estadoOperativo) }}</td>
+                  <td class="actions-cell">
+                    <button
+                      type="button"
+                      class="icon-button"
+                      [disabled]="accessLoadingByEmployeeId[employee.id]"
+                      (click)="loadUserAccess(employee.id)"
+                      aria-label="Ver acceso"
+                    >
+                      👁
+                    </button>
+                  </td>
+                </tr>
+                @if (getHasAccessLoaded(employee.id)) {
+                  <tr class="access-row">
+                    <td colspan="4">
+                      @if (accessErrorByEmployeeId[employee.id]) {
+                        <p class="form-message form-message--error">
+                          {{ accessErrorByEmployeeId[employee.id] }}
+                        </p>
+                      } @else if (accessByEmployeeId[employee.id]; as access) {
+                        <div class="access-card">
+                          <span><strong>Username:</strong> {{ access.username }}</span>
+                          <span><strong>Email:</strong> {{ access.email }}</span>
+                          <span><strong>Rol:</strong> {{ toLabel(access.roles[0]) }}</span>
+                          <span><strong>Activo:</strong> {{ access.activo ? 'Si' : 'No' }}</span>
+                          <span>
+                            <strong>Password inicializada:</strong>
+                            {{ access.passwordInicializada ? 'Si' : 'No' }}
+                          </span>
+                        </div>
+                      }
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination">
+          <button
+            type="button"
+            class="ghost-button"
+            [disabled]="!employeesPage?.page"
+            (click)="loadEmployees((employeesPage?.page ?? 0) - 1)"
+          >
+            Anterior
+          </button>
+          <span>Pagina {{ (employeesPage?.page ?? 0) + 1 }} de {{ employeesPage?.totalPages ?? 1 }}</span>
+          <button
+            type="button"
+            class="ghost-button"
+            [disabled]="(employeesPage?.page ?? 0) + 1 >= (employeesPage?.totalPages ?? 1)"
+            (click)="loadEmployees((employeesPage?.page ?? 0) + 1)"
+          >
+            Siguiente
+          </button>
+        </div>
+      } @else {
+        <p class="helper-text">No hay empleados activos para mostrar.</p>
+      }
+    </section>
+  </div>
+</section>

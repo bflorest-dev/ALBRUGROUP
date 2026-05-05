@@ -1,0 +1,27 @@
+<section class="auth-page">
+  <div class="auth-card">
+    <span class="auth-card__eyebrow">Acceso</span>
+    <h1>Ingresa tu password</h1>
+    <p>Tu usuario ya fue validado. Solo falta autenticar tus credenciales.</p>
+
+    <form [formGroup]="loginForm" (ngSubmit)="submit()" class="auth-form">
+      <label>
+        <span>Username</span>
+        <input type="text" formControlName="username" />
+      </label>
+
+      <label>
+        <span>Password</span>
+        <input type="password" formControlName="password" placeholder="Ingresa tu password" />
+      </label>
+
+      @if (errorMessage) {
+        <p class="form-message form-message--error">{{ errorMessage }}</p>
+      }
+
+      <button type="submit" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Validando...' : 'Ingresar' }}
+      </button>
+    </form>
+  </div>
+</section>
