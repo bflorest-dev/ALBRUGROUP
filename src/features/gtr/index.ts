@@ -1,5 +1,6 @@
 // GTR feature - Puntos de acceso público
 // Página principal
+export { default as PaginaGTR } from '@pages/gtr/PaginaGTR';
 
 // Componentes UI
 export { AltaLead, AsignacionLead, TablaLeadsGTR, TablaLeadsAsesorVentas } from './ui';

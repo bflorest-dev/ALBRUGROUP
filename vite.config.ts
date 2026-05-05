@@ -30,45 +30,20 @@ export default defineConfig({
         secure: false,
         rewrite: (path) => {
           // /api/auth/autorizacion/forgot-password → /autorizacion/forgot-password
-          // /api/auth/autorizacion/login → /autorizacion/login
           // /api/rrhh/... → /rrhh/...
           // /api/leads/... → /leads/...
-          const rewritten = path.replace(/^\/api\/auth/, '').replace(/^\/api/, '');
+          const rewritten = path.replace(/^\/api/, '');
           console.log(`[ViteProxy] ${path} → ${rewritten}`);
           return rewritten;
         },
         configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq, req) => {
+          proxy.on('proxyReq', (_proxyReq, req) => {
             console.log(`[ViteProxy] Forwarding ${req.method} ${req.url} to localhost:8080`);
-            console.log(`[ViteProxy] Headers being sent to backend:`, proxyReq.getHeaders());
-            
-            // Log del body si es POST
-            if (req.method === 'POST' && req.url?.includes('/login')) {
-              let body = '';
-              req.on('data', chunk => {
-                body += chunk.toString();
-              });
-              req.on('end', () => {
-                try {
-                  const parsed = JSON.parse(body);
-                  console.log(`[ViteProxy] Body being sent:`, {
-                    username: parsed.username,
-                    passwordLength: parsed.password?.length || 0,
-                    passwordPreview: parsed.password?.substring(0, 3) + '***'
-                  });
-                } catch (e) {
-                  console.log(`[ViteProxy] Raw body:`, body);
-                }
-              });
-            }
           });
-          proxy.on('proxyRes', (proxyRes, req) => {
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
             console.log(`[ViteProxy] Response ${proxyRes.statusCode} for ${req.url}`);
-            if (proxyRes.statusCode === 401) {
-              console.error(`[ViteProxy] 401 Response headers:`, proxyRes.headers);
-            }
           });
-          proxy.on('error', (err) => {
+          proxy.on('error', (err, _req) => {
             console.error(`[ViteProxy] Error: ${err.message}`);
           });
         },

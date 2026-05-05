@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { LeadsRepository } from '@shared/api/repositories/leads.repository';
 import type { AdicionalResponse, PlanRequest, ProveedorResponse } from '@shared/types';
+import { FlatpickrDateInput } from '@shared/ui/date-picker';
 
 interface AdicionalInput {
   idAdicional: number | '';
@@ -64,7 +65,18 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
       }
     };
 
+    const handleAdicionalCreado = (event: Event) => {
+      const detail = (event as CustomEvent).detail as AdicionalResponse | undefined;
+      if (detail?.idProveedor === idProveedor) {
+        void loadAdicionales();
+      }
+    };
+
     loadAdicionales();
+    window.addEventListener('adicional-creado', handleAdicionalCreado as EventListener);
+    return () => {
+      window.removeEventListener('adicional-creado', handleAdicionalCreado as EventListener);
+    };
   }, [idProveedor]);
 
   const validate = (): boolean => {
@@ -267,7 +279,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
       <h3>Crear Plan</h3>
 
       {globalMessage && (
-        <div className={globalMessage.startsWith('✅') ? 'community-alert' : 'community-error'} style={{ marginBottom: 12 }}>
+        <div className={`${globalMessage.startsWith('✅') ? 'community-alert' : 'community-error'} community-message`}>
           {globalMessage}
         </div>
       )}
@@ -316,21 +328,25 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
       <div className="community-grid-2">
         <div className="community-field">
           <label>Vigencia Desde*</label>
-          <input
-            type="date"
+          <FlatpickrDateInput
             value={vigenciaDesde}
-            onChange={(e) => setVigenciaDesde(e.target.value)}
+            onChange={setVigenciaDesde}
             disabled={loading}
+            required
+            hasError={Boolean(errors.vigenciaDesde)}
+            showRequiredMessage={false}
           />
           {errors.vigenciaDesde && <small>{errors.vigenciaDesde}</small>}
         </div>
         <div className="community-field">
           <label>Vigencia Hasta</label>
-          <input
-            type="date"
+          <FlatpickrDateInput
             value={vigenciaHasta}
-            onChange={(e) => setVigenciaHasta(e.target.value)}
+            onChange={setVigenciaHasta}
+            minDate={vigenciaDesde || undefined}
             disabled={loading}
+            hasError={Boolean(errors.vigenciaHasta)}
+            showRequiredMessage={false}
           />
           {errors.vigenciaHasta && <small>{errors.vigenciaHasta}</small>}
         </div>
@@ -469,12 +485,12 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
 
       <div>
         <h4>Adicionales</h4>
-        <button type="button" className="community-btn ghost" onClick={handleAddAdicional} disabled={loading} style={{ marginBottom: 8 }}>
+        <button type="button" className="community-btn ghost community-block-bottom-sm" onClick={handleAddAdicional} disabled={loading}>
           + Agregar adicional
         </button>
 
         {adicionales.map((item, index) => (
-          <div key={`adicional-${index}`} className="community-subcard" style={{ marginBottom: 8 }}>
+          <div key={`adicional-${index}`} className="community-subcard community-subcard-stack">
             <div className="community-grid-3">
               <div className="community-field">
                 <label>Adicional*</label>
@@ -520,7 +536,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
               </div>
             </div>
 
-            <div className="community-grid-2" style={{ marginTop: 8 }}>
+            <div className="community-grid-2 community-block-top-sm">
               <div className="community-field">
                 <label>Cantidad máxima*</label>
                 <input
@@ -554,8 +570,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
               type="button"
               onClick={() => handleRemoveAdicional(index)}
               disabled={loading}
-              className="community-btn ghost"
-              style={{ marginTop: 8, color: '#9c1d1d' }}
+              className="community-btn ghost danger"
             >
               Eliminar adicional
             </button>
@@ -563,9 +578,11 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
         ))}
       </div>
 
-      <button type="submit" className="community-btn primary" disabled={loading}>
-        {loading ? '⏳ Enviando...' : 'Crear Plan'}
-      </button>
+      <div className="community-actions">
+        <button type="submit" className="community-btn primary" disabled={loading}>
+          {loading ? '⏳ Enviando...' : 'Crear Plan'}
+        </button>
+      </div>
     </form>
   );
 };

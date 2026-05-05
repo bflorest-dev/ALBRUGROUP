@@ -36,7 +36,7 @@
   margin-bottom: 0.58rem;
 }
 
-.infoList > * + * {
+.infoList>*+* {
   margin-top: 0.32rem;
 }
 
@@ -71,7 +71,7 @@
   margin-bottom: 0.58rem;
 }
 
-.metaInfo > * + * {
+.metaInfo>*+* {
   margin-top: 0.12rem;
 }
 

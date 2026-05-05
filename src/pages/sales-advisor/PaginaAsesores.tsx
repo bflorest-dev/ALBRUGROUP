@@ -80,19 +80,19 @@ const PaginaAsesores: React.FC = () => {
           <div className={styles.statCard}>
             <p className={styles.statLabel}>Nuevos</p>
             <p className={styles.statValue}>
-              {leads.filter((l: LeadAsesorVentasResponse) => l.estadoSeguimiento === 'NUEVO').length}
+              {leads.filter((l) => l.estadoSeguimiento === 'NUEVO').length}
             </p>
           </div>
           <div className={styles.statCard}>
             <p className={styles.statLabel}>En Contacto</p>
             <p className={styles.statValue}>
-              {leads.filter((l: LeadAsesorVentasResponse) => l.estadoSeguimiento === 'EN_CONTACTO').length}
+              {leads.filter((l) => l.estadoSeguimiento === 'EN_CONTACTO').length}
             </p>
           </div>
           <div className={styles.statCard}>
             <p className={styles.statLabel}>Tipificados</p>
             <p className={styles.statValue}>
-              {leads.filter((l: LeadAsesorVentasResponse) => l.estadoSeguimiento === 'TIPIFICADO').length}
+              {leads.filter((l) => l.estadoSeguimiento === 'TIPIFICADO').length}
             </p>
           </div>
         </div>

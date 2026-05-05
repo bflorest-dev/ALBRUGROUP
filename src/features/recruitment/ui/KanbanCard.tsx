@@ -7,7 +7,6 @@
 import React from 'react';
 import { Phone, User, FileText } from 'lucide-react';
 import type { PostulacionResponse } from '@features/hr/applications/model';
-import styles from './KanbanCard.module.css';
 
 interface KanbanCardProps {
   postulacion: PostulacionResponse;
@@ -16,91 +15,88 @@ interface KanbanCardProps {
   onDetails?: (postulacion: PostulacionResponse) => void;
 }
 
-type LegacyPostulacionFields = PostulacionResponse & {
-  etapa?: string;
-  etapa_proceso?: string;
-  estado?: string;
-  estado_bandeja?: string;
-};
-
 export const KanbanCard: React.FC<KanbanCardProps> = ({
   postulacion,
   columnId,
   onTipificar,
   onDetails,
 }) => {
-  const normalizedPostulacion = postulacion as LegacyPostulacionFields;
   const nombreCompleto = `${postulacion.postulante.nombres} ${postulacion.postulante.apellidos}`;
   const etapa = String(
     postulacion.etapaProceso ??
-      normalizedPostulacion.etapa ??
-      normalizedPostulacion.etapa_proceso ??
+      (postulacion as any).etapa ??
+      (postulacion as any).etapa_proceso ??
       'SIN_ETAPA'
   ).trim() || 'SIN_ETAPA';
   const estado = String(
     postulacion.estadoProceso ??
-      normalizedPostulacion.estado ??
+      (postulacion as any).estado ??
       postulacion.estadoBandeja ??
-      normalizedPostulacion.estado_bandeja ??
+      (postulacion as any).estado_bandeja ??
       'SIN_ESTADO'
   ).trim() || 'SIN_ESTADO';
 
   return (
-    <div className={styles.card}>
+    <div
+      className={`
+        rounded-xl border border-[#d3e1f7] bg-white/95 p-[1.05rem] shadow-[0_8px_16px_rgba(15,42,82,0.08)]
+        transition-all duration-200 hover:-translate-y-0.5 hover:border-[#bfd3f7] hover:shadow-[0_14px_24px_rgba(37,99,235,0.14)]
+      `}
+    >
       {/* Header: Nombre + Documento */}
-      <div className={styles.header}>
-        <p className={styles.name}>
+      <div className="mb-3.5">
+        <p className="truncate text-[0.95rem] font-semibold leading-5 text-[#0f2a52]">
           {nombreCompleto}
         </p>
-        <p className={styles.document}>
+        <p className="text-[0.8rem] leading-5 text-[#5f7598]">
           {postulacion.postulante.tipoDocumento}: {postulacion.postulante.documento}
         </p>
       </div>
 
       {/* Info: Celular + Oferta */}
-      <div className={styles.infoList}>
+      <div className="mb-3.5 space-y-2.5">
         {postulacion.postulante.celular && (
-          <div className={styles.infoRow}>
+          <div className="flex items-center gap-2 text-[0.8rem] leading-5 text-[#4e6b92]">
             <Phone size={14} />
             <span>{postulacion.postulante.celular}</span>
           </div>
         )}
         {postulacion.ofertaLaboral && (
-          <div className={styles.infoRow}>
+          <div className="flex items-center gap-2 text-[0.8rem] leading-5 text-[#4e6b92]">
             <FileText size={14} />
-            <span className={styles.offerCode}>{postulacion.ofertaLaboral.codigo}</span>
+            <span className="font-medium">{postulacion.ofertaLaboral.codigo}</span>
           </div>
         )}
       </div>
 
       {/* Origen Badge */}
       {postulacion.origen && (
-        <div className={styles.originWrap}>
-          <span className={styles.originBadge}>
+        <div className="mb-3.5">
+          <span className="inline-block rounded-full border border-[#c8daf8] bg-[#eaf1ff] px-2.5 py-1 text-[0.75rem] font-semibold leading-5 tracking-[0.03em] text-[#2459c5]">
             {postulacion.origen}
           </span>
         </div>
       )}
 
-      <div className={styles.metaInfo}>
-        <p className={styles.metaRow}>
-          <span className={styles.metaLabel}>Etapa:</span> {etapa}
+      <div className="mb-3.5 space-y-1.5 text-[0.8rem] leading-5 text-[#4e6b92]">
+        <p>
+          <span className="font-medium">Etapa:</span> {etapa}
         </p>
-        <p className={styles.metaRow}>
-          <span className={styles.metaLabel}>Estado:</span> {estado}
+        <p>
+          <span className="font-medium">Estado:</span> {estado}
         </p>
       </div>
 
       {/* Acciones */}
       {(onTipificar || onDetails) && (
-        <div className={styles.actions}>
+        <div className="flex gap-2 border-t border-[#e3ebfb] pt-3.5">
           {onTipificar && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onTipificar(postulacion, columnId);
               }}
-              className={`${styles.actionButton} ${styles.actionPrimary}`}
+              className="flex-1 rounded-xl bg-[#2f64dd] px-3 py-2.5 text-[0.8rem] font-semibold leading-5 text-white transition-colors hover:bg-[#2557ca]"
             >
               Tipificar
             </button>
@@ -111,9 +107,9 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
                 e.stopPropagation();
                 onDetails(postulacion);
               }}
-              className={`${styles.actionButton} ${styles.actionSecondary}`}
+              className="flex-1 rounded-xl border border-[#d3e1f7] bg-white px-3 py-2.5 text-[0.8rem] font-semibold leading-5 text-[#2459c5] transition-colors hover:bg-[#f4f8ff]"
             >
-              <User size={14} className={styles.actionIcon} />
+              <User size={14} className="inline mr-1" />
               Ver más
             </button>
           )}

@@ -4,10 +4,10 @@
  * FSD: caracteristicas/gtr/ui
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FormSelect } from '@shared/ui/form-select/FormSelect';
-//import { FormInput } from '@shared/ui/form-input/FormInput';
-import { Button, Alert } from '@shared/ui/utilities/Utilities';
+import { FormInput } from '@shared/ui/form-input/FormInput';
+import { Button, Alert, Spinner } from '@shared/ui/utilities/Utilities';
 import { useAssignLeadMutation } from '../hooks/useGtrQueries';
 import type { LeadAsignacionRequest, PermisosGTR } from '@entities/lead/types';
 import styles from './AsignacionLead.module.css';
@@ -44,6 +44,7 @@ export const AsignacionLead: React.FC<AsignacionLeadProps> = ({
   const [idAsesorAsignado, setIdAsesorAsignado] = useState<string>(
     asesorActual?.id.toString() || ''
   );
+  const [observaciones, setObservaciones] = useState<string>('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // ========== MUTACIONES ==========
@@ -98,6 +99,7 @@ export const AsignacionLead: React.FC<AsignacionLeadProps> = ({
 
       // Limpiar
       setIdAsesorAsignado('');
+      setObservaciones('');
       setErrors({});
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Error al asignar lead';

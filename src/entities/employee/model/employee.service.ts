@@ -9,7 +9,9 @@
 import { BaseService } from '@shared/lib/base.service';
 import { EmployeeRepository } from '@shared/api/repositories/employee.repository';
 import { adaptEmpleadoResponseToEmployee } from '@shared/types';
-import type { Employee, EmployeeDetailFormData, RegistrarEmpleadoRequest } from '@shared/types';
+import type { Employee, NewEmployeeFormData, EmployeeDetailFormData } from '@shared/types';
+import type { RegistrarEmpleadoRequest } from './index';
+import { validateDataOrThrow, NewEmployeeFormDataSchema } from '@shared/lib/validation/schemas';
 
 type UpdateDataType = 'personal' | 'contact' | 'financial' | 'corporate';
 
@@ -48,10 +50,13 @@ export class EmployeeService extends BaseService<Employee> {
 
   /**
    * Obtener empleado por ID
-   * @deprecated No hay endpoint directo para obtener por ID, usar getByDocument
    */
   static async getEmployeeById(id: number): Promise<Employee> {
-    throw new Error('Método no implementado: No hay endpoint GET /empleados/{id}. Usar getEmployeeByDocument en su lugar.');
+    return this.executeOperation(
+      () => EmployeeRepository.getById(id),
+      'No se pudo cargar el empleado por ID',
+      adaptEmpleadoResponseToEmployee
+    );
   }
 
   /**

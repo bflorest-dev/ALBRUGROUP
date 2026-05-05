@@ -82,7 +82,7 @@ export const PhoneNumberInput = React.forwardRef<
           type="button"
           onClick={handleValidate}
           disabled={isLoading || !phoneNumber.trim()}
-          className={styles.button}
+          className={styles.validateButton}
           aria-busy={isLoading}
         >
           {isLoading ? (

@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { LeadsRepository } from '@shared/api/repositories/leads.repository';
-import type { DepartamentoResponse, DistritoResponse, ProvinciaResponse } from '@shared/types';
+import type {
+  DepartamentoResponse,
+  DistritoResponse,
+  ProvinciaResponse,
+  ZonaRequest,
+  ZonaResponse,
+} from '@shared/types';
 
 export type NivelGeografico = 'DEPARTAMENTO' | 'PROVINCIA' | 'DISTRITO';
 export type CriterioZona = 'INCLUIR' | 'EXCLUIR';
@@ -14,11 +20,13 @@ interface ZonaReglaInput {
 }
 
 interface ZonaFormProps {
-  onCreateZona: (payload: { nombre: string; reglas: Array<{ nivelGeografico: NivelGeografico; geoId: number; criterio: CriterioZona }> }) => Promise<unknown>;
+  editingZona?: ZonaResponse | null;
+  onSaveZona: (payload: ZonaRequest, id?: number) => Promise<unknown>;
   onCreated?: () => void;
+  onCancelEdit?: () => void;
 }
 
-export const ZonaForm: React.FC<ZonaFormProps> = ({ onCreateZona, onCreated }) => {
+export const ZonaForm: React.FC<ZonaFormProps> = ({ editingZona, onSaveZona, onCreated, onCancelEdit }) => {
   const [nombre, setNombre] = useState('');
   const [reglas, setReglas] = useState<ZonaReglaInput[]>([]);
 
@@ -44,25 +52,143 @@ export const ZonaForm: React.FC<ZonaFormProps> = ({ onCreateZona, onCreated }) =
     loadDepartamentos();
   }, []);
 
-  const loadProvincias = async (depId: number): Promise<void> => {
-    if (provincias[depId]) return; // cache
+  useEffect(() => {
+    if (!editingZona) {
+      setNombre('');
+      setReglas([]);
+      setErrors({});
+      setGlobalMessage('');
+      return;
+    }
+
+    setNombre(editingZona.nombre);
+    setReglas(
+      editingZona.reglas.map((regla) => ({
+        nivelGeografico: regla.nivelGeografico as NivelGeografico,
+        departamentoId: '',
+        provinciaId: '',
+        geoId: regla.geoId,
+        criterio: regla.criterio as CriterioZona,
+      })),
+    );
+    setErrors({});
+    setGlobalMessage('');
+  }, [editingZona]);
+
+  const getAllProvincias = (): ProvinciaResponse[] => Object.values(provincias).flat();
+  const getAllDistritos = (): DistritoResponse[] => Object.values(distritos).flat();
+
+  const getProvinciaById = (id: number) => getAllProvincias().find((prov) => prov.id === id);
+  const getDistritoById = (id: number) => getAllDistritos().find((dist) => dist.id === id);
+
+  const loadAllProvincias = async (): Promise<void> => {
+    await Promise.all(departamentos.map(async (dep) => loadProvincias(dep.id)));
+  };
+
+  const loadDistritoForRule = async (rule: ZonaReglaInput): Promise<ZonaReglaInput> => {
+    if (rule.nivelGeografico !== 'DISTRITO') {
+      return rule;
+    }
+
+    const district = getDistritoById(Number(rule.geoId));
+    if (district) {
+      return {
+        ...rule,
+        departamentoId: district.idDepartamento,
+        provinciaId: district.idProvincia,
+      };
+    }
+
+    const provinces = getAllProvincias();
+    for (const province of provinces) {
+      const loadedDistricts = await loadDistritos(province.id);
+      const districtFromCache = loadedDistricts.find((dist) => dist.id === Number(rule.geoId));
+      if (districtFromCache) {
+        return {
+          ...rule,
+          departamentoId: districtFromCache.idDepartamento,
+          provinciaId: districtFromCache.idProvincia,
+        };
+      }
+    }
+
+    return rule;
+  };
+
+  useEffect(() => {
+    const resolveEditingRuleHierarchy = async () => {
+      if (!editingZona || departamentos.length === 0) {
+        return;
+      }
+
+      const needsProvinceLoad = editingZona.reglas.some((rule) => rule.nivelGeografico === 'PROVINCIA' || rule.nivelGeografico === 'DISTRITO');
+      if (needsProvinceLoad) {
+        await loadAllProvincias();
+      }
+
+      const updatedReglas = await Promise.all(
+        editingZona.reglas.map(async (rule) => {
+          const base: ZonaReglaInput = {
+            nivelGeografico: rule.nivelGeografico as NivelGeografico,
+            departamentoId: '',
+            provinciaId: '',
+            geoId: rule.geoId,
+            criterio: rule.criterio as CriterioZona,
+          };
+
+          if (rule.nivelGeografico === 'PROVINCIA') {
+            const province = getProvinciaById(rule.geoId);
+            if (province) {
+              return {
+                ...base,
+                departamentoId: province.idDepartamento,
+              };
+            }
+          }
+
+          if (rule.nivelGeografico === 'DISTRITO') {
+            return loadDistritoForRule(base);
+          }
+
+          return base;
+        }),
+      );
+
+      setReglas(updatedReglas);
+    };
+
+    void resolveEditingRuleHierarchy();
+  }, [editingZona, departamentos]);
+
+  const loadProvincias = async (depId: number): Promise<ProvinciaResponse[]> => {
+    if (provincias[depId]) {
+      return provincias[depId];
+    }
+
     try {
       const data = await LeadsRepository.getProvinciasPorDepartamento(depId);
       setProvincias((prev) => ({ ...prev, [depId]: data }));
+      return data;
     } catch (err) {
       console.error('[ZonaForm] Error loading provincias', err);
       setProvincias((prev) => ({ ...prev, [depId]: [] }));
+      return [];
     }
   };
 
-  const loadDistritos = async (provId: number): Promise<void> => {
-    if (distritos[provId]) return;
+  const loadDistritos = async (provId: number): Promise<DistritoResponse[]> => {
+    if (distritos[provId]) {
+      return distritos[provId];
+    }
+
     try {
       const data = await LeadsRepository.getDistritosPorProvincia(provId);
       setDistritos((prev) => ({ ...prev, [provId]: data }));
+      return data;
     } catch (err) {
       console.error('[ZonaForm] Error loading distritos', err);
       setDistritos((prev) => ({ ...prev, [provId]: [] }));
+      return [];
     }
   };
 
@@ -167,12 +293,9 @@ export const ZonaForm: React.FC<ZonaFormProps> = ({ onCreateZona, onCreated }) =
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    console.log('submit triggered');
-    console.log('formValues', { nombre, reglas });
-
     if (!validate()) return;
 
-    const payload = {
+    const payload: ZonaRequest = {
       nombre: nombre.trim(),
       reglas: reglas.map((r) => ({
         nivelGeografico: r.nivelGeografico,
@@ -185,18 +308,24 @@ export const ZonaForm: React.FC<ZonaFormProps> = ({ onCreateZona, onCreated }) =
     setGlobalMessage('');
 
     try {
-      await onCreateZona(payload);
-      setGlobalMessage('✅ Zona creada exitosamente');
+      await onSaveZona(payload, editingZona?.id);
+      setGlobalMessage(editingZona ? '✅ Zona actualizada exitosamente' : '✅ Zona creada exitosamente');
       setNombre('');
       setReglas([]);
+      if (onCreated) {
+        await onCreated();
+      }
+      if (editingZona && onCancelEdit) {
+        onCancelEdit();
+      }
     } catch (err: any) {
-      console.error('[ZonaForm] createZona error', err);
+      console.error('[ZonaForm] saveZona error', err);
       if (err?.message?.includes('401')) {
         setGlobalMessage('🔐 Token inválido o expirado');
       } else if (err?.message?.includes('400')) {
         setGlobalMessage('⚠️ Error de validación en servidor');
       } else {
-        setGlobalMessage('💥 Error al crear zona');
+        setGlobalMessage(editingZona ? '💥 Error al actualizar zona' : '💥 Error al crear zona');
       }
     } finally {
       setLoading(false);
@@ -225,9 +354,9 @@ export const ZonaForm: React.FC<ZonaFormProps> = ({ onCreateZona, onCreated }) =
 
   return (
     <form onSubmit={handleSubmit} className="community-form">
-      <h3>Crear Zona</h3>
+      <h3>{editingZona ? 'Editar Zona' : 'Crear Zona'}</h3>
       {globalMessage && (
-        <div className={globalMessage.startsWith('✅') ? 'community-alert' : 'community-error'} style={{ marginBottom: 12 }}>
+        <div className={`${globalMessage.startsWith('✅') ? 'community-alert' : 'community-error'} community-message`}>
           {globalMessage}
         </div>
       )}
@@ -247,21 +376,21 @@ export const ZonaForm: React.FC<ZonaFormProps> = ({ onCreateZona, onCreated }) =
         <button type="button" className="community-btn ghost" onClick={addRegla} disabled={loading}>
           + Agregar regla
         </button>
-        {errors.reglas && <div className="community-error-text" style={{ marginTop: 8 }}>{errors.reglas}</div>}
+        {errors.reglas && <div className="community-error-text community-block-top-sm">{errors.reglas}</div>}
       </div>
 
       {reglas.map((regla, index) => {
         const geoOptions = generateGeoOptions(regla);
         return (
-          <div key={index} className="community-subcard" style={{ marginBottom: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <strong>Regla #{index + 1}</strong>
-              <button type="button" className="community-btn ghost" onClick={() => removeRegla(index)} disabled={loading} style={{ color: '#9c1d1d' }}>
+          <div key={index} className="community-subcard community-subcard-stack">
+            <div className="community-subcard-head">
+              <strong className="community-subcard-title">Regla #{index + 1}</strong>
+              <button type="button" className="community-btn ghost danger" onClick={() => removeRegla(index)} disabled={loading}>
                 Eliminar norma
               </button>
             </div>
 
-            <div className="community-grid-3" style={{ marginTop: 10 }}>
+            <div className="community-grid-3 community-block-top-sm">
               <div className="community-field">
                 <label>Nivel geográfico*</label>
                 <select
@@ -375,9 +504,16 @@ export const ZonaForm: React.FC<ZonaFormProps> = ({ onCreateZona, onCreated }) =
         );
       })}
 
-      <button type="submit" className="community-btn primary" disabled={loading} style={{ marginTop: 12 }}>
-        {loading ? '⏳ Creando zona...' : 'Crear zona'}
-      </button>
+      <div className="community-actions">
+        <button type="submit" className="community-btn primary" disabled={loading}>
+          {loading ? (editingZona ? '⏳ Actualizando zona...' : '⏳ Creando zona...') : editingZona ? 'Actualizar zona' : 'Crear zona'}
+        </button>
+        {editingZona && onCancelEdit && (
+          <button type="button" className="community-btn ghost" onClick={onCancelEdit} disabled={loading}>
+            Cancelar edición
+          </button>
+        )}
+      </div>
     </form>
   );
 };

@@ -5,7 +5,7 @@
 
 import type { ReactElement } from 'react';
 import { Briefcase } from 'lucide-react';
-import { Button } from '@shared/ui';
+import { Button } from '@shared/ui/Button';
 
 interface VacioOfertasActivasProps {
   onCrear?: () => void;

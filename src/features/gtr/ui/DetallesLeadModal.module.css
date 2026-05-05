@@ -148,35 +148,6 @@
   flex-shrink: 0;
 }
 
-.badgeContacto {
-  background: #0066cc;
-}
-
-.badgeTipificacion {
-  background: #28a745;
-}
-
-.badgeValidacion {
-  background: #fd7e14;
-}
-
-.badgeCambioEtapa {
-  background: #6c757d;
-}
-
-.badgeAsignacion,
-.badgeReasignacion {
-  background: #17a2b8;
-}
-
-.badgeError {
-  background: #dc3545;
-}
-
-.badgeDefault {
-  background: #6c757d;
-}
-
 .eventoDescripcion {
   flex: 1;
   color: #0f2a52;

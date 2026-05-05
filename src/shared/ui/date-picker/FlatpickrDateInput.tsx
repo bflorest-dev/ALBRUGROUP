@@ -70,7 +70,7 @@ export const FlatpickrDateInput: React.FC<FlatpickrDateInputProps> = ({
         <Flatpickr
           id={id}
           name={name}
-          value={value}
+          value={value || undefined}
           options={options}
           onChange={(_selectedDates, dateStr) => {
             setTouched(true);

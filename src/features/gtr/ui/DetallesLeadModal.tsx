@@ -5,7 +5,7 @@
 import React, { useState } from 'react';
 import type { LeadGtrResponse } from '@entities/lead/types';
 import { useEventosByLead } from '../hooks/useEventosQueries';
-import type { EventoResponse } from '@shared/types';
+import type { EventoResponse } from '../model/eventos.api';
 import styles from './DetallesLeadModal.module.css';
 
 interface DetallesLeadModalProps {
@@ -17,17 +17,17 @@ interface DetallesLeadModalProps {
 /**
  * Obtiene el color de badge según el tipo de evento
  */
-const getTipoEventoBadgeClass = (tipo: string): string => {
-  const badgeClassMap: Record<string, string | undefined> = {
-    CONTACTO: styles.badgeContacto,
-    TIPIFICACION: styles.badgeTipificacion,
-    VALIDACION: styles.badgeValidacion,
-    CAMBIO_ETAPA: styles.badgeCambioEtapa,
-    ASIGNACION: styles.badgeAsignacion,
-    REASIGNACION: styles.badgeReasignacion,
-    ERROR: styles.badgeError,
+const getTipoEventoBadgeColor = (tipo: string): string => {
+  const colorMap: Record<string, string> = {
+    CONTACTO: '#0066cc',         // Azul
+    TIPIFICACION: '#28a745',     // Verde
+    VALIDACION: '#fd7e14',       // Naranja
+    CAMBIO_ETAPA: '#6c757d',     // Gris
+    ASIGNACION: '#17a2b8',       // Cian
+    REASIGNACION: '#17a2b8',     // Cian
+    ERROR: '#dc3545',            // Rojo
   };
-  return badgeClassMap[tipo] ?? styles.badgeDefault ?? '';
+  return colorMap[tipo] || '#6c757d';
 };
 
 /**
@@ -179,7 +179,7 @@ export const DetallesLeadModal: React.FC<DetallesLeadModalProps> = ({
                       className={styles.eventoHeader}
                       onClick={() => setMostrarDetalles(mostrarDetalles === idx ? null : idx)}
                     >
-                      <span className={`${styles.eventoBadge} ${getTipoEventoBadgeClass(evento.accion ?? evento.etapa ?? 'EVENTO')}`}>
+                      <span className={styles.eventoBadge} style={{ backgroundColor: getTipoEventoBadgeColor(evento.accion ?? evento.etapa ?? 'EVENTO') }}>
                         {evento.accion ?? evento.etapa ?? 'EVENTO'}
                       </span>
                       <span className={styles.eventoDescripcion}>

@@ -156,6 +156,7 @@ export function OfertaLaboralForm({
         negocio: data.negocio,
         puestoObjetivo: data.puestoObjetivo,
         horario: data.horario,
+        modalidad: data.modalidad,
         cantidadInicial: data.cantidadInicial,
         plazoInicial: normalizeFecha(data.plazoInicial),
       };

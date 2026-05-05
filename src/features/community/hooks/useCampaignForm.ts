@@ -5,8 +5,10 @@
  */
 
 import { useState, useCallback } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
+import { getErrorMessage } from '@shared/lib/error-utils';
 import { createCampaign } from '@features/community/api/campaignService';
-import type { CreateCampaignPayload, CuentaPublicitaria, Proveedor } from '@entities/campaign/model/campaign';
+import type { CreateCampaignPayload, CuentaPublicitaria, Proveedor } from '@entities/campaign';
 
 export interface CampaignFormState {
   nombre: string;
@@ -24,7 +26,7 @@ export interface CampaignFormErrors {
 
 export interface UseCampaignFormReturn {
   formState: CampaignFormState;
-  setFormState: React.Dispatch<React.SetStateAction<CampaignFormState>>;
+  setFormState: Dispatch<SetStateAction<CampaignFormState>>;
   cuentas: CuentaPublicitaria[];
   proveedores: Proveedor[];
   loading: boolean;
@@ -118,6 +120,12 @@ export const useCampaignForm = ({ catalogs }: UseCampaignFormOptions): UseCampai
     setErrors((prev) => ({ ...prev, idProveedor: undefined }));
   }, []);
 
+  // Reset
+  const resetForm = useCallback(() => {
+    setFormState(initialFormState);
+    setErrors({});
+  }, []);
+
   // Submit con validaciones estrictas y debugging
   const handleSubmit = useCallback(async () => {
     if (!validateForm()) {
@@ -178,20 +186,14 @@ export const useCampaignForm = ({ catalogs }: UseCampaignFormOptions): UseCampai
 
       setGlobalMessage('✅ Campaña creada exitosamente');
       resetForm();
-    } catch (err: any) {
-      const errorMsg = err.message || 'Error desconocido';
+    } catch (err: unknown) {
+      const errorMsg = getErrorMessage(err, 'Error desconocido');
       console.error('[useCampaignForm] ❌ Error submitting:', errorMsg);
       setGlobalMessage(`❌ ${errorMsg}`);
     } finally {
       setSubmitting(false);
     }
-  }, [formState, submitting, validateForm, errors]);
-
-  // Reset
-  const resetForm = useCallback(() => {
-    setFormState(initialFormState);
-    setErrors({});
-  }, []);
+  }, [formState, submitting, validateForm, errors, resetForm]);
 
   return {
     formState,

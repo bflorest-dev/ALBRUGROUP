@@ -29,24 +29,21 @@ export class AuthService extends BaseService<UsuarioResponse> {
     }
 
     // Todas las validaciones pasaron → ejecutar actualización
-    return this.executeOperation<UsuarioResponse, UsuarioResponse>(
+    return this.executeOperation(
       () => AuthRepository.updateUsernameRoles(empleadoId, payload),
       'No se pudo actualizar username y roles',
-      (data: UsuarioResponse) => data
+      (data) => data
     );
   }
 
   /**
    * Obtener usuario por ID de empleado
    */
-  /**
-   * Obtener usuario por ID de empleado
-   */
   static async obtenerUsuarioPorEmpleadoId(empleadoId: number): Promise<UsuarioResponse> {
-    return this.executeOperation<UsuarioResponse, UsuarioResponse>(
+    return this.executeOperation(
       () => AuthRepository.getUserByEmployeeId(empleadoId),
       'No se pudo obtener el usuario por empleadoId',
-      (data: UsuarioResponse) => data
+      (data) => data
     );
   }
 }

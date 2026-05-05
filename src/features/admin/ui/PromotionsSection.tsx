@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BiPlus, BiTrash, BiPencil } from 'react-icons/bi';
 import { Modal } from '@shared/ui/base';
+import { FlatpickrDateInput } from '@shared/ui/date-picker';
 import type { Promocion } from '../types';
 import type { AdminDashboardState } from '../hooks/useAdminDashboard';
 import './PromotionsSection.css';
@@ -344,20 +345,21 @@ const PromotionsSectionComponent: React.FC<PromotionsSectionProps> = ({ state })
             <div className="form-row">
               <div className="form-group">
                 <label>Fecha de Inicio *</label>
-                <input
-                  type="date"
+                <FlatpickrDateInput
                   name="fechaInicio"
                   value={formData.fechaInicio}
-                  onChange={handleFormChange}
+                  onChange={(value) => setFormData((prev) => ({ ...prev, fechaInicio: value }))}
+                  required
                 />
               </div>
               <div className="form-group">
                 <label>Fecha de Fin *</label>
-                <input
-                  type="date"
+                <FlatpickrDateInput
                   name="fechaFin"
                   value={formData.fechaFin}
-                  onChange={handleFormChange}
+                  onChange={(value) => setFormData((prev) => ({ ...prev, fechaFin: value }))}
+                  minDate={formData.fechaInicio || undefined}
+                  required
                 />
               </div>
             </div>

@@ -1,17 +1,14 @@
 ﻿/**
  * Componente EmployeeDetailForm (moved to features/RRHH)
- * Migrado al Design System con componentes reutilizables
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { FlatpickrDateInput } from '@shared/ui/date-picker';
-import { Button } from '@shared/ui/button';
-import { Badge } from '@shared/ui/badge';
-import { cn } from '@shared/lib/utils';
 
 import type { Employee, EmployeeDetailFormData } from '@shared/types';
 import {
+  NacionalidadEnum,
   EstadoCivilEnum,
   DistritoEnum,
   BancoEnum,
@@ -23,10 +20,11 @@ import {
   ParentescoEnum,
   EmpresaContratistaEnum,
 } from '@shared/types';
-import { enumToOptions } from '@shared/utils/enumToOptions';
+import { enumToOptions, formatEnumLabel } from '@shared/utils/enumToOptions';
+import './EmployeeDetailForm.css';
 
 // Generate options from enums using the helper
-// TODO: Migrar opciones a hooks reutilizables si se repite
+const nacionalidadOptions = enumToOptions(NacionalidadEnum);
 const civilStatusOptions = enumToOptions(EstadoCivilEnum);
 const distritoOptions = enumToOptions(DistritoEnum);
 const bancoOptions = enumToOptions(BancoEnum);
@@ -50,101 +48,6 @@ interface EmployeeDetailFormProps {
   isEditMode?: boolean;
 }
 
-/**
- * Componente de campo de formulario reutilizable
- */
-interface FormFieldProps {
-  label: string;
-  children: React.ReactNode;
-  required?: boolean;
-}
-
-const FormField: React.FC<FormFieldProps> = ({ label, children, required }) => (
-  <div className="space-y-1">
-    <label className="text-sm font-medium text-foreground">
-      {label} {required && <span className="text-destructive">*</span>}
-    </label>
-    {children}
-  </div>
-);
-
-/**
- * Componente de input reutilizable
- */
-interface FormInputProps {
-  name: string;
-  value: string;
-  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  disabled?: boolean;
-  type?: string;
-  placeholder?: string;
-}
-
-const FormInput: React.FC<FormInputProps> = ({ 
-  name, 
-  value, 
-  onChange, 
-  disabled, 
-  type = 'text',
-  placeholder 
-}) => (
-  <input
-    name={name}
-    type={type}
-    value={value}
-    onChange={onChange}
-    disabled={disabled}
-    placeholder={placeholder}
-    className={cn(
-      'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background',
-      'file:border-0 file:bg-transparent file:text-sm file:font-medium',
-      'placeholder:text-muted-foreground',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-      'disabled:cursor-not-allowed disabled:opacity-50'
-    )}
-  />
-);
-
-/**
- * Componente de select reutilizable
- */
-interface FormSelectProps {
-  name: string;
-  value: string;
-  onChange: (e: ChangeEvent<HTMLSelectElement>) => void;
-  disabled?: boolean;
-  options: Array<{ value: string; label: string }>;
-  placeholder?: string;
-}
-
-const FormSelect: React.FC<FormSelectProps> = ({ 
-  name, 
-  value, 
-  onChange, 
-  disabled, 
-  options,
-  placeholder = 'Seleccione...'
-}) => (
-  <select
-    name={name}
-    value={value}
-    onChange={onChange}
-    disabled={disabled}
-    className={cn(
-      'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-      'disabled:cursor-not-allowed disabled:opacity-50'
-    )}
-  >
-    <option value="">{placeholder}</option>
-    {options.map(opt => (
-      <option key={opt.value} value={opt.value}>
-        {opt.label}
-      </option>
-    ))}
-  </select>
-);
-
 export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = false }: EmployeeDetailFormProps) => {
   const [editMode, setEditMode] = useState(isEditMode);
   const [formData, setFormData] = useState<EmployeeDetailFormData>({
@@ -157,8 +60,8 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target as HTMLInputElement | HTMLSelectElement;
     let newVal: unknown = value;
-    if (name === 'hasChildren' || name === 'contractOwnAccount') {
-      newVal = value === 'SI';
+    if (name === 'hasChildren') {
+      newVal = value === 'SI' || value === true;
     }
     setFormData(prev => ({ ...prev, [name]: newVal }));
   };
@@ -177,417 +80,352 @@ export const EmployeeDetailForm = ({ employee, onCancel, onSubmit, isEditMode = 
   const disabled = !editMode;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <form className="employee-detail-form" onSubmit={handleSubmit}>
+      <div className="form-sections-detail">
         {/* COLUMN 1: EMPLEADO */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-border">
-            <h3 className="text-lg font-semibold text-foreground">EMPLEADO</h3>
-            <Badge variant="secondary" size="sm">Solo lectura</Badge>
-          </div>
-          
-          <FormField label="Nombres">
-            <FormInput
-              name="nombres"
-              value={formData.nombres || ''}
-              onChange={handleChange}
-              disabled={true}
-            />
-          </FormField>
-          
-          <FormField label="Apellidos">
-            <FormInput
-              name="apellidos"
-              value={formData.apellidos || ''}
-              onChange={handleChange}
-              disabled={true}
-            />
-          </FormField>
-          
-          <FormField label="Tipo Doc.">
-            <FormInput
-              name="documentType"
-              value={formData.documentType || ''}
-              onChange={handleChange}
-              disabled={true}
-            />
-          </FormField>
-          
-          <FormField label="N° Documento">
-            <FormInput
-              name="documentNumber"
-              value={formData.documentNumber || ''}
-              onChange={handleChange}
-              disabled={true}
-            />
-          </FormField>
+        <div className="section-group disabled">
+          <h3 className="section-title">EMPLEADO</h3>
+          <label>Nombres</label>
+          <input
+            name="nombres"
+            value={formData.nombres || ''}
+            onChange={handleChange}
+            disabled={true}
+          />
+          <label>Apellidos</label>
+          <input
+            name="apellidos"
+            value={formData.apellidos || ''}
+            onChange={handleChange}
+            disabled={true}
+          />
+          <label>Doc.</label>
+          <input
+            value={formData.documentType || ''}
+            disabled={true}
+          />
+          <label>NÂ°Doc</label>
+          <input
+            name="documentNumber"
+            value={formData.documentNumber || ''}
+            onChange={handleChange}
+            disabled={true}
+          />
         </div>
 
         {/* COLUMN 2: DATOS PERSONALES & CONTACTO */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-foreground pb-2 border-b border-border">
-            DATOS PERSONALES & CONTACTO
-          </h3>
-          
-          <FormField label="Fecha Nac.">
-            <FlatpickrDateInput
-              name="birthDate"
-              value={formData.birthDate || ''}
-              onChange={(value) => setFormData((prev) => ({ ...prev, birthDate: value }))}
-              disabled={disabled}
+        <div className="section-group">
+          <h3 className="section-title">DATOS PERSONALES & CONTACTO</h3>
+          <label>Fecha Nac.</label>
+          <FlatpickrDateInput
+            name="birthDate"
+            value={formData.birthDate || ''}
+            onChange={(value) => setFormData((prev) => ({ ...prev, birthDate: value }))}
+            disabled={disabled}
+          />
+          <label>Nacionalidad</label>
+          {disabled ? (
+            <input
+              value={formData.nationality || ''}
+              disabled
             />
-          </FormField>
-          
-          <FormField label="Nacionalidad">
-            {disabled ? (
-              <FormInput
-                name="nationality"
-                value={formData.nationality || ''}
-                onChange={handleChange}
-                disabled
-              />
-            ) : (
-              <FormSelect
-                name="nationality"
-                value={formData.nationality || ''}
-                onChange={handleChange}
-                options={nationalities.map(n => ({ value: n, label: n }))}
-              />
-            )}
-          </FormField>
-          
-          <FormField label="Estado Civil">
-            {disabled ? (
-              <FormInput
-                name="civilStatus"
-                value={formData.civilStatus || ''}
-                onChange={handleChange}
-                disabled
-              />
-            ) : (
-              <FormSelect
-                name="civilStatus"
-                value={formData.civilStatus || ''}
-                onChange={handleChange}
-                options={civilStatusOptions}
-              />
-            )}
-          </FormField>
-          
-          <FormField label="¿Hijos?">
-            {disabled ? (
-              <FormInput
-                name="hasChildren"
-                value={formData.hasChildren ? 'SI' : 'NO'}
-                onChange={handleChange}
-                disabled
-              />
-            ) : (
-              <FormSelect
-                name="hasChildren"
-                value={formData.hasChildren ? 'SI' : 'NO'}
-                onChange={handleChange}
-                options={yesNoOptions}
-              />
-            )}
-          </FormField>
-          
-          <FormField label="Celular">
-            <FormInput
-              name="phoneMobile"
-              value={formData.phoneMobile || ''}
+          ) : (
+            <select
+              name="nationality"
+              value={formData.nationality || ''}
               onChange={handleChange}
-              disabled={disabled}
+            >
+              <option value="">Seleccione...</option>
+              {nationalities.map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+          )}
+          <label>Estado Civil</label>
+          {disabled ? (
+            <input
+              value={formData.civilStatus || ''}
+              disabled
             />
-          </FormField>
-          
-          <FormField label="Email">
-            <FormInput
-              name="personalEmail"
-              type="email"
-              value={formData.personalEmail || ''}
+          ) : (
+            <select
+              name="civilStatus"
+              value={formData.civilStatus || ''}
               onChange={handleChange}
-              disabled={disabled}
+            >
+              <option value="">Seleccione...</option>
+              {civilStatusOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+          )}
+          <label>Â¿Hijos?</label>
+          {disabled ? (
+            <input
+              value={formData.hasChildren ? 'SI' : 'NO'}
+              disabled
             />
-          </FormField>
-          
-          <FormField label="Distrito">
-            {disabled ? (
-              <FormInput
-                name="district"
-                value={formData.district || ''}
-                onChange={handleChange}
-                disabled
-              />
-            ) : (
-              <FormSelect
-                name="district"
-                value={formData.district || ''}
-                onChange={handleChange}
-                options={distritoOptions}
-              />
-            )}
-          </FormField>
-          
-          <FormField label="Dirección">
-            <FormInput
-              name="address"
-              value={formData.address || ''}
+          ) : (
+            <select
+              name="hasChildren"
+              value={formData.hasChildren ? 'SI' : 'NO'}
               onChange={handleChange}
-              disabled={disabled}
+            >
+              <option value="">Seleccione...</option>
+              {yesNoOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+          )}
+          <label>Celular</label>
+          <input
+            name="phoneMobile"
+            value={formData.phoneMobile || ''}
+            onChange={handleChange}
+            disabled={disabled}
+          />
+          <label>Email</label>
+          <input
+            name="personalEmail"
+            value={formData.personalEmail || ''}
+            onChange={handleChange}
+            disabled={disabled}
+          />
+          <label>Distrito</label>
+          {disabled ? (
+            <input
+              value={formData.district || ''}
+              disabled
             />
-          </FormField>
+          ) : (
+            <select
+              name="district"
+              value={formData.district || ''}
+              onChange={handleChange}
+            >
+              <option value="">Seleccione...</option>
+              {distritoOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+          )}
+          <label>DirecciÃ³n</label>
+          <input
+            name="address"
+            value={formData.address || ''}
+            onChange={handleChange}
+            disabled={disabled}
+          />
         </div>
 
-        {/* COLUMN 3: INFORMACIÓN LABORAL */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-foreground pb-2 border-b border-border">
-            INFORMACIÓN LABORAL
-          </h3>
-          
-          <FormField label="Régimen">
-            {disabled ? (
-              <FormInput
-                name="contractRegimen"
-                value={(formData as unknown as { contractRegimen?: string }).contractRegimen || ''}
-                onChange={handleChange}
-                disabled
-              />
-            ) : (
-              <FormSelect
-                name="contractRegimen"
-                value={(formData as unknown as { contractRegimen?: string }).contractRegimen || ''}
-                onChange={handleChange}
-                options={regimenOptions}
-              />
-            )}
-          </FormField>
-          
-          <FormField label="Modalidad">
-            {disabled ? (
-              <FormInput
-                name="contractModalidad"
-                value={(formData as unknown as { contractModalidad?: string }).contractModalidad || ''}
-                onChange={handleChange}
-                disabled
-              />
-            ) : (
-              <FormSelect
-                name="contractModalidad"
-                value={(formData as unknown as { contractModalidad?: string }).contractModalidad || ''}
-                onChange={handleChange}
-                options={modalidadOptions}
-              />
-            )}
-          </FormField>
-          
-          <FormField label="Puesto">
-            {disabled ? (
-              <FormInput
-                name="position"
-                value={(formData.position || '').replace(/_/g, ' ')}
-                onChange={handleChange}
-                disabled
-              />
-            ) : (
-              <FormSelect
-                name="position"
-                value={formData.position || ''}
-                onChange={handleChange}
-                options={puestoOptions}
-              />
-            )}
-          </FormField>
-          
-          <FormField label="Sueldo">
-            <FormInput
-              name="baseSalary"
-              type="number"
-              value={String(formData.baseSalary || '')}
+        {/* COLUMN 3: INFORMACIÃ“N LABORAL */}
+        <div className="section-group">
+          <h3 className="section-title">INFORMACIÃ“N LABORAL</h3>
+          <label>RÃ©gimen</label>
+          {disabled ? (
+            <input
+              value={(formData as any).contractRegimen || ''}
+              disabled
+            />
+          ) : (
+            <select
+              name="contractRegimen"
+              value={(formData as any).contractRegimen || ''}
               onChange={handleChange}
-              disabled={disabled}
+            >
+              <option value="">Seleccione...</option>
+              {regimenOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+          )}
+          <label>Modalidad</label>
+          {disabled ? (
+            <input
+              value={(formData as any).contractModalidad || ''}
+              disabled
             />
-          </FormField>
-          
-          <FormField label="Fecha Inicio">
-            <FlatpickrDateInput
-              name="startDate"
-              value={formData.startDate || ''}
-              onChange={(value) => setFormData((prev) => ({ ...prev, startDate: value }))}
-              disabled={disabled}
+          ) : (
+            <select
+              name="contractModalidad"
+              value={(formData as any).contractModalidad || ''}
+              onChange={handleChange}
+            >
+              <option value="">Seleccione...</option>
+              {modalidadOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+          )}
+          <label>Puesto</label>
+          {disabled ? (
+            <input
+              value={(formData.position || '').replace(/_/g, ' ')}
+              disabled
             />
-          </FormField>
-          
-          <FormField label="Fecha Fin">
-            <FlatpickrDateInput
-              name="endDate"
-              value={formData.endDate || ''}
-              onChange={(value) => setFormData((prev) => ({ ...prev, endDate: value }))}
-              disabled={disabled}
-              minDate={formData.startDate || undefined}
-            />
-          </FormField>
-          
-          {((formData as unknown as { contractRegimen?: string }).contractRegimen || '').toUpperCase() === 'PLANILLA' && (
+          ) : (
+            <select
+              name="position"
+              value={formData.position || ''}
+              onChange={handleChange}
+            >
+              <option value="">Seleccione...</option>
+              {puestoOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+          )}
+          <label>Sueldo</label>
+          <input
+            name="baseSalary"
+            value={formData.baseSalary || ''}
+            onChange={handleChange}
+            disabled={disabled}
+          />
+          <label>Inicio</label>
+          <FlatpickrDateInput
+            name="startDate"
+            value={formData.startDate || ''}
+            onChange={(value) => setFormData((prev) => ({ ...prev, startDate: value }))}
+            disabled={disabled}
+          />
+          <label>Fin</label>
+          <FlatpickrDateInput
+            name="endDate"
+            value={formData.endDate || ''}
+            onChange={(value) => setFormData((prev) => ({ ...prev, endDate: value }))}
+            disabled={disabled}
+            minDate={formData.startDate || undefined}
+          />
+          {((formData as any).contractRegimen || '').toUpperCase() === 'PLANILLA' && (
             <>
-              <FormField label="Seguro">
-                {disabled ? (
-                  <FormInput
-                    name="contractSeguro"
-                    value={(formData as unknown as { contractSeguro?: string }).contractSeguro || ''}
-                    onChange={handleChange}
-                    disabled
-                  />
-                ) : (
-                  <FormSelect
-                    name="contractSeguro"
-                    value={(formData as unknown as { contractSeguro?: string }).contractSeguro || ''}
-                    onChange={handleChange}
-                    options={seguroOptions}
-                  />
-                )}
-              </FormField>
-              
-              <FormField label="Pensión">
-                {disabled ? (
-                  <FormInput
-                    name="contractPension"
-                    value={(formData as unknown as { contractPension?: string }).contractPension || ''}
-                    onChange={handleChange}
-                    disabled
-                  />
-                ) : (
-                  <FormSelect
-                    name="contractPension"
-                    value={(formData as unknown as { contractPension?: string }).contractPension || ''}
-                    onChange={handleChange}
-                    options={pensionOptions}
-                  />
-                )}
-              </FormField>
+              <label>Seguro</label>
+              {disabled ? (
+                <input
+                  value={(formData as any).contractSeguro || ''}
+                  disabled
+                />
+              ) : (
+                <select
+                  name="contractSeguro"
+                  value={(formData as any).contractSeguro || ''}
+                  onChange={handleChange}
+                >
+                  <option value="">Seleccione...</option>
+                  {seguroOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
+              )}
+              <label>PensiÃ³n</label>
+              {disabled ? (
+                <input
+                  value={(formData as any).contractPension || ''}
+                  disabled
+                />
+              ) : (
+                <select
+                  name="contractPension"
+                  value={(formData as any).contractPension || ''}
+                  onChange={handleChange}
+                >
+                  <option value="">Seleccione...</option>
+                  {pensionOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
+              )}
             </>
           )}
         </div>
 
-        {/* COLUMN 4: INFORMACIÓN BANCARIA & TRANSFERENCIA */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-foreground pb-2 border-b border-border">
-            INFORMACIÓN BANCARIA & TRANSFERENCIA
-          </h3>
-          
-          <FormField label="Banco">
-            {disabled ? (
-              <FormInput
-                name="bank"
-                value={formData.bank || ''}
-                onChange={handleChange}
-                disabled
-              />
-            ) : (
-              <FormSelect
-                name="bank"
-                value={formData.bank || ''}
-                onChange={handleChange}
-                options={bancoOptions}
-              />
-            )}
-          </FormField>
-          
-          <FormField label="Cuenta">
-            <FormInput
-              name="accountNumber"
-              value={formData.accountNumber || ''}
-              onChange={handleChange}
-              disabled={disabled}
+        {/* COLUMN 4: INFORMACIÃ“N BANCARIA & TRANSFERENCIA */}
+        <div className="section-group">
+          <h3 className="section-title">INFORMACIÃ“N BANCARIA & TRANSFERENCIA</h3>
+          <label>Banco</label>
+          {disabled ? (
+            <input
+              value={formData.bank || ''}
+              disabled
             />
-          </FormField>
-          
-          <FormField label="Interbancaria">
-            <FormInput
-              name="interbankNumber"
-              value={formData.interbankNumber || ''}
+          ) : (
+            <select
+              name="bank"
+              value={formData.bank || ''}
               onChange={handleChange}
-              disabled={disabled}
+            >
+              <option value="">Seleccione...</option>
+              {bancoOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+          )}
+          <label>Cuenta</label>
+          <input
+            name="accountNumber"
+            value={formData.accountNumber || ''}
+            onChange={handleChange}
+            disabled={disabled}
+          />
+          <label>Interbancaria</label>
+          <input
+            name="interbankNumber"
+            value={formData.interbankNumber || ''}
+            onChange={handleChange}
+            disabled={disabled}
+          />
+          <label>Cuenta propia?</label>
+          {disabled ? (
+            <input
+              value={formData.contractOwnAccount || ''}
+              disabled
             />
-          </FormField>
-          
-          <FormField label="¿Cuenta propia?">
-            {disabled ? (
-              <FormInput
-                name="contractOwnAccount"
-                value={formData.contractOwnAccount ? 'SI' : 'NO'}
-                onChange={handleChange}
-                disabled
-              />
-            ) : (
-              <FormSelect
-                name="contractOwnAccount"
-                value={formData.contractOwnAccount ? 'SI' : 'NO'}
-                onChange={handleChange}
-                options={yesNoOptions}
-              />
-            )}
-          </FormField>
-          
-          {formData.contractOwnAccount !== true && (
-            <FormField label="Parentesco">
+          ) : (
+            <select
+              name="contractOwnAccount"
+              value={formData.contractOwnAccount || ''}
+              onChange={handleChange}
+            >
+              <option value="">Seleccione...</option>
+              {yesNoOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+          )}
+          {(formData.contractOwnAccount || '').toLowerCase() !== 'sÃ­' && (
+            <>
+              <label>Parentesco</label>
               {disabled ? (
-                <FormInput
-                  name="contractKinship"
+                <input
                   value={formData.contractKinship || ''}
-                  onChange={handleChange}
                   disabled
                 />
               ) : (
-                <FormSelect
+                <select
                   name="contractKinship"
                   value={formData.contractKinship || ''}
                   onChange={handleChange}
-                  options={parentescoOptions}
-                />
+                >
+                  <option value="">Seleccione...</option>
+                  {parentescoOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                </select>
               )}
-            </FormField>
+            </>
           )}
-          
-          <FormField label="Celular Transferencia">
-            <FormInput
-              name="contractCellularTransfer"
-              value={formData.contractCellularTransfer || ''}
-              onChange={handleChange}
-              disabled={disabled}
+          <label>Celular Transferencia</label>
+          <input
+            name="contractCellularTransfer"
+            value={formData.contractCellularTransfer || ''}
+            onChange={handleChange}
+            disabled={disabled}
+          />
+          <label>Empresa Contratista</label>
+          {disabled ? (
+            <input
+              value={formData.contractorCompany || ''}
+              disabled
             />
-          </FormField>
-          
-          <FormField label="Empresa Contratista">
-            {disabled ? (
-              <FormInput
-                name="contractorCompany"
-                value={formData.contractorCompany || ''}
-                onChange={handleChange}
-                disabled
-              />
-            ) : (
-              <FormSelect
-                name="contractorCompany"
-                value={formData.contractorCompany || ''}
-                onChange={handleChange}
-                options={empresaContratistaOptions}
-              />
-            )}
-          </FormField>
+          ) : (
+            <select
+              name="contractorCompany"
+              value={formData.contractorCompany || ''}
+              onChange={handleChange}
+            >
+              <option value="">Seleccione...</option>
+              {empresaContratistaOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+          )}
         </div>
       </div>
-
-      <div className="flex justify-end gap-3 pt-6 border-t border-border">
-        <Button type="button" variant="outline" onClick={handleCancel}>
+      <div className="form-actions-detail">
+        <button type="button" className="btn-cancel" onClick={handleCancel}>
           {editMode ? 'CANCELAR' : 'CERRAR'}
-        </Button>
+        </button>
         {editMode && (
-          <Button type="submit">
+          <button type="submit" className="btn-submit">
             GUARDAR
-          </Button>
+          </button>
         )}
       </div>
     </form>
   );
 };
+

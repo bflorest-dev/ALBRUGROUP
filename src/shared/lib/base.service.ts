@@ -43,21 +43,28 @@ export class BaseService<EntityType = any> {
    * Soporta tanto PageResponse<T> como respuestas con estructura { data, total, totalPages }
    */
   protected static executePagedOperation<T, R = T>(
-    operation: RepositoryMethod<PageResponse<T> | { data: T[]; total: number; totalPages?: number }>,
+    operation: RepositoryMethod<PageResponse<T> | { data: T[]; total: number; totalPages?: number } | T[]>,
     errorMessage: string = 'Error en operación paginada',
     adapter?: DataAdapter<T, R>
   ): Promise<PagedResponse<R>> {
     return operation()
       .then((response) => {
-        // Soportar ambas formas: PageResponse<T> (content/items) o { data, total, totalPages }
-        const items = 'data' in response 
-          ? response.data 
+        const items = Array.isArray(response)
+          ? response
+          : 'data' in response
+          ? response.data
           : response.content || response.items || [];
-        
+
+        const total = Array.isArray(response)
+          ? items.length
+          : response.total;
+
         return {
           items: items.map((item) => (adapter ? adapter(item) : (item as unknown as R))),
-          total: response.total,
-          totalPages: response.totalPages || Math.ceil(response.total / items.length) || 0,
+          total,
+          totalPages: Array.isArray(response)
+            ? Math.ceil(items.length / Math.max(items.length, 1))
+            : response.totalPages || Math.ceil(total / Math.max(items.length, 1)),
         };
       })
       .catch((error) => {

@@ -8,11 +8,10 @@ import { env } from '@shared/config/env';
 interface AuthContextType {
   currentUser: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<User>;
+  login: (username: string, password: string) => Promise<User>;
   logout: () => void;
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
@@ -59,6 +58,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     AuthService.initialize();
+
+    // Defensive cleanup: if token is gone, user must be logged out.
+    if (!localStorage.getItem('auth_token')) {
+      setCurrentUser(null);
+    }
   }, []);
 
   useEffect(() => {
@@ -146,8 +150,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, [currentUser]);
 
-  const login = async (email: string, password: string): Promise<User> => {
-    const response = await AuthService.login({ username: email, password });
+  const login = async (username: string, password: string): Promise<User> => {
+    const response = await AuthService.login({ username, password });
     const tokenRole = AuthService.getRoleFromToken(localStorage.getItem('auth_token') ?? '');
     const roles: Role[] = Array.isArray(response.roles) && response.roles.length > 0
       ? response.roles.map((role) => role.toUpperCase() as Role)

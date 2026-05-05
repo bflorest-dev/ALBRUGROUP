@@ -198,7 +198,7 @@ export function useNewLeadForm(): NewLeadFormState & NewLeadFormActions {
         });
       }
     },
-    [errors]
+    [formData.pois, errors]
   );
 
   /**

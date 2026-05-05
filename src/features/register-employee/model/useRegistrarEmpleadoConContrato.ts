@@ -13,7 +13,8 @@
 import { useState } from 'react';
 import { EmployeeService } from '@entities/employee/model';
 import { ContractService } from '@entities/contract/model';
-import type { RegistrarContratoRequest, RegistrarEmpleadoRequest } from '@shared/types';
+import type { RegistrarContratoRequest } from '@shared/types';
+import type { RegistrarEmpleadoRequest } from '@entities/employee/model';
 
 export interface RegistrarEmpleadoConContratoPayload {
   empleadoData: RegistrarEmpleadoRequest;
@@ -33,11 +34,6 @@ export interface UseRegistarEmpleadoConContratoState {
   loading: boolean;
   error: string | null;
   result: RegistroEmpleadoResult | null;
-}
-
-interface ContractErrorLike {
-  message?: string;
-  code?: string;
 }
 
 /**
@@ -102,14 +98,11 @@ export function useRegistrarEmpleadoConContrato() {
         return result;
       } catch (contractError) {
         // Codigo 403 / auth-service no encontrado → parcial: empleado + contrato puede estar creado, pero no se generan credenciales
-        const errorLike =
-          contractError && typeof contractError === 'object'
-            ? (contractError as ContractErrorLike)
-            : null;
-
         const isAuthServiceError =
-          (typeof errorLike?.message === 'string' && errorLike.message.includes('auth-service')) ||
-          errorLike?.code === 'Forbidden';
+          (contractError && typeof contractError === 'object' && 'message' in contractError &&
+            String((contractError as any).message).includes('auth-service')) ||
+          (contractError && typeof contractError === 'object' && 'code' in contractError &&
+            (contractError as any).code === 'Forbidden');
 
         if (isAuthServiceError) {
           const partialResult: RegistroEmpleadoResult = {

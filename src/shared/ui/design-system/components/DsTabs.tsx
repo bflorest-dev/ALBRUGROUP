@@ -40,7 +40,7 @@ export const DsTabs = <T extends string>({
     <nav
       aria-label='Tabs del design system'
       className={cn(
-        'flex flex-wrap gap-2 rounded-[999px] p-2.5',
+        'flex flex-wrap gap-2 rounded-2xl p-3',
         styles.tabsContainer,
         className
       )}
@@ -53,10 +53,12 @@ export const DsTabs = <T extends string>({
           <button
             key={item.value}
             type='button'
+            data-active={isActive ? 'true' : 'false'}
+            data-tab-value={item.value}
             disabled={item.disabled}
             onClick={() => onChange(item.value)}
             className={cn(
-              'rounded-full border px-4 py-2 text-[0.86rem] font-semibold transition-all duration-150',
+              'rounded-full border px-4 py-2 text-sm font-semibold transition-all duration-150',
               styles.tabButtonBase,
               isActive
                 ? styles.tabButtonActive

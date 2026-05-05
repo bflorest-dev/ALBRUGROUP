@@ -3,7 +3,7 @@ import { dsTokens } from '../tokens';
 import styles from './dsPrimitives.module.css';
 import { cn } from './cn';
 
-export type DsButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success' | 'outline';
+export type DsButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';
 export type DsButtonSize = 'sm' | 'md' | 'lg';
 
 interface DsButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -57,14 +57,6 @@ const getVariantVars = (
         '--ds-btn-border': c.successText,
         '--ds-btn-fg': c.successText,
         '--ds-btn-focus': c.successBg,
-      };
-    case 'outline':
-      return {
-        '--ds-btn-bg': 'transparent',
-        '--ds-btn-bg-hover': c.primarySoft,
-        '--ds-btn-border': c.primary,
-        '--ds-btn-fg': c.primary,
-        '--ds-btn-focus': c.primarySoft,
       };
     case 'primary':
     default:

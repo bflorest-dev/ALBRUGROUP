@@ -7,10 +7,10 @@ import atlasLocal from 'pe-atlas/districts-100k.json';
 import { LeadsRepository } from '@shared/api/repositories/leads.repository';
 import type { ZonaReglaResponse, ZonaResponse } from '@shared/types';
 import type { DepartamentoResponse, ProvinciaResponse } from '@shared/types';
-import { MAP_COLOR_DEPARTMENT, MAP_COLOR_EXCLUDED_FILL, MAP_COLOR_EXCLUDED_STROKE, MAP_COLOR_INCLUDED_FILL, MAP_COLOR_INCLUDED_STROKE, MAP_COLOR_PROVINCE } from '@shared/utils/constants';
 import 'leaflet/dist/leaflet.css';
 
 type AtlasGeometry = Polygon | MultiPolygon;
+type AtlasFeature = Feature<AtlasGeometry, { name?: string }>;
 type AtlasFeatureCollection = FeatureCollection<AtlasGeometry, { name?: string }>;
 
 type RuleLevel = 'DEPARTAMENTO' | 'PROVINCIA' | 'DISTRITO';
@@ -119,7 +119,7 @@ const normalizeCriteria = (value: string): RuleCriteria | null => {
 const toTitleCase = (value: string): string => {
   return value
     .toLowerCase()
-    .replace(/(^|\s|-)([a-z])/g, (_, sep: string, letter: string) => `${sep}${letter.toUpperCase()}`);
+    .replace(/(^|\s|\-)([a-z])/g, (_, sep: string, letter: string) => `${sep}${letter.toUpperCase()}`);
 };
 
 const addToGroupedSet = (groupedMap: Map<string, Set<string>>, key: string, value: string): void => {
@@ -448,22 +448,22 @@ const getDistrictStyle = (
   const included = districtCode ? includedDistrictCodes.has(districtCode) : false;
 
   return {
-    color: included ? MAP_COLOR_INCLUDED_STROKE : MAP_COLOR_EXCLUDED_STROKE,
+    color: included ? '#0a4db2' : '#8a97ab',
     weight: included ? 0.9 : 0.5,
-    fillColor: included ? MAP_COLOR_INCLUDED_FILL : MAP_COLOR_EXCLUDED_FILL,
+    fillColor: included ? '#0f6bff' : '#d8dee9',
     fillOpacity: included ? 0.52 : 0.1,
   };
 };
 
 const provinceStyle: PathOptions = {
-  color: MAP_COLOR_PROVINCE,
+  color: '#5e6f89',
   weight: 1,
   opacity: 0.5,
   fillOpacity: 0,
 };
 
 const departmentStyle: PathOptions = {
-  color: MAP_COLOR_DEPARTMENT,
+  color: '#31415e',
   weight: 1.5,
   opacity: 0.7,
   fillOpacity: 0,

@@ -3,7 +3,7 @@
  * Maneja estado, validación, y lógica de formulario para Proveedores
  */
 import { useState, useEffect, useCallback } from 'react';
-import type { Proveedor, CreateProveedorPayload } from '@entities/provider/model/proveedor';
+import type { Proveedor, CreateProveedorPayload } from '@entities/provider';
 import { proveedorService } from '@features/community/api/proveedorService';
 
 interface ProveedorFormState {
@@ -17,9 +17,11 @@ interface UseProveedoresFormReturn {
   globalMessage: string;
   loading: boolean;
   submitting: boolean;
+  updatingEstadoId: number | null;
   error: boolean;
   handleInputChange: (field: keyof ProveedorFormState, value: string) => void;
   handleSubmit: () => Promise<void>;
+  toggleEstadoProveedor: (id: number) => Promise<void>;
   refetch: () => Promise<void>;
 }
 
@@ -32,6 +34,7 @@ export const useProveedoresForm = (): UseProveedoresFormReturn => {
   const [globalMessage, setGlobalMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [updatingEstadoId, setUpdatingEstadoId] = useState<number | null>(null);
   const [error, setError] = useState(false);
   const initialToken = localStorage.getItem('auth_token');
   console.log('[useProveedoresForm] initial token:', initialToken ? '***' : 'MISSING');
@@ -148,6 +151,7 @@ export const useProveedoresForm = (): UseProveedoresFormReturn => {
 
       console.log('[useProveedoresForm] refetching from backend...');
       await refetch();
+      window.dispatchEvent(new CustomEvent('proveedor-creado'));
 
       setGlobalMessage('✅ Proveedor creado correctamente');
       console.log('[useProveedoresForm] SUCCESS');
@@ -175,6 +179,34 @@ export const useProveedoresForm = (): UseProveedoresFormReturn => {
     }
   };
 
+  const toggleEstadoProveedor = async (id: number) => {
+    if (updatingEstadoId !== null) {
+      return;
+    }
+
+    setUpdatingEstadoId(id);
+    try {
+      const actualizado = await proveedorService.toggleProveedorEstado(id);
+      setProveedores((prev) => prev.map((p) => (p.id === id ? actualizado : p)));
+      window.dispatchEvent(new CustomEvent('proveedor-actualizado', { detail: actualizado }));
+      setGlobalMessage('✅ Estado de proveedor actualizado');
+    } catch (err: any) {
+      const status = err.status || err.response?.status || 0;
+      const errorMap: Record<number, string> = {
+        401: '🔐 Sesión expirada',
+        403: '🚫 Permiso denegado',
+        404: '⚠️ Proveedor no encontrado',
+        500: '💥 Error del servidor',
+      };
+
+      const errorMessage = errorMap[status] || 'Error al actualizar estado del proveedor';
+      setGlobalMessage(`❌ ${errorMessage}`);
+      throw err;
+    } finally {
+      setUpdatingEstadoId(null);
+    }
+  };
+
   return {
     proveedores,
     formState,
@@ -182,9 +214,11 @@ export const useProveedoresForm = (): UseProveedoresFormReturn => {
     globalMessage,
     loading,
     submitting,
+    updatingEstadoId,
     error,
     handleInputChange,
     handleSubmit,
+    toggleEstadoProveedor,
     refetch,
   };
 };

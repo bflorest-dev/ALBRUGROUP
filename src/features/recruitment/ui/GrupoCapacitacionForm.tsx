@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { Alert, Button } from '@shared/ui';
+import { FlatpickrDateInput } from '@shared/ui/date-picker';
 import {
   grupoCapacitacionService,
   type CapacitadorOption,
@@ -12,18 +13,10 @@ import {
   getGrupoCapacitacionErrorMessage,
   useCrearGrupoCapacitacion,
 } from '../hooks/useCrearGrupoCapacitacion';
-import styles from './GrupoCapacitacionForm.module.css';
 
 type FormErrors = Partial<Record<keyof GrupoCapacitacionRequest, string>>;
 const USED_GROUP_CODES_KEY = 'recruitment.used-group-codes';
 const CREATED_GROUP_IDS_KEY = 'recruitment.created-group-ids';
-
-interface ErrorWithStatus {
-  status?: number;
-  response?: {
-    status?: number;
-  };
-}
 
 const getTodayIso = (): string => {
   const now = new Date();
@@ -68,14 +61,13 @@ const persistCreatedGroupIds = (ids: number[]): void => {
 const getQueryErrorStatus = (error: unknown): number | undefined => {
   if (!error || typeof error !== 'object') return undefined;
 
-  const normalizedError = error as ErrorWithStatus;
-
-  if (typeof normalizedError.status === 'number') {
-    return normalizedError.status;
+  if ('status' in error && typeof (error as any).status === 'number') {
+    return (error as any).status;
   }
 
-  if (typeof normalizedError.response?.status === 'number') {
-    return normalizedError.response.status;
+  const response = (error as any).response;
+  if (response && typeof response === 'object' && typeof response.status === 'number') {
+    return response.status;
   }
 
   return undefined;
@@ -138,11 +130,7 @@ export const GrupoCapacitacionForm: React.FC = () => {
     refetchOnWindowFocus: false,
   });
 
-  const capacitadoresData = capacitadoresResult?.options;
-  const capacitadores = useMemo<CapacitadorOption[]>(
-    () => capacitadoresData ?? [],
-    [capacitadoresData]
-  );
+  const capacitadores: CapacitadorOption[] = capacitadoresResult?.options ?? [];
   const fallbackMode = capacitadoresResult?.fallbackMode ?? false;
   const capacitadorNameById = useMemo(
     () => new Map(capacitadores.map((cap) => [cap.id, cap.nombre])),
@@ -176,10 +164,8 @@ export const GrupoCapacitacionForm: React.FC = () => {
 
     const nextIds = createdGroupIds.filter((id) => !staleIds.includes(id));
     if (nextIds.length !== createdGroupIds.length) {
+      setCreatedGroupIds(nextIds);
       persistCreatedGroupIds(nextIds);
-      queueMicrotask(() => {
-        setCreatedGroupIds(nextIds);
-      });
     }
   }, [createdGroupQueries, createdGroupIds]);
 
@@ -280,21 +266,21 @@ export const GrupoCapacitacionForm: React.FC = () => {
   };
 
   return (
-    <div className={styles.container}>
-      <form className={styles.form} onSubmit={handleSubmit} noValidate>
-        <div className={styles.formIntro}>
-          <h3 className={styles.formTitle}>Datos del grupo</h3>
-          <p className={styles.formSubtitle}>Completa la información para registrar un nuevo grupo.</p>
+    <div className="space-y-8 rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+      <form className="space-y-6" onSubmit={handleSubmit} noValidate>
+        <div>
+          <h3 className="text-lg font-semibold text-slate-900">Datos del grupo</h3>
+          <p className="text-sm text-slate-500">Completa la información para registrar un nuevo grupo.</p>
         </div>
 
-        <div className={styles.formGrid}>
-          <label className={styles.fieldLabel}>
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="space-y-2 text-sm font-medium text-slate-700">
             Código
-            <div className={styles.codeRow}>
+            <div className="flex gap-2">
               <input
                 value={form.codigo}
                 onChange={(event) => updateField('codigo', event.target.value)}
-                className={`${styles.control} ${styles.codeInput}`}
+                className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
                 placeholder="Ej: GRUPO-20260411-ABCD"
               />
               <Button
@@ -302,20 +288,20 @@ export const GrupoCapacitacionForm: React.FC = () => {
                 variant="secondary"
                 onClick={regenerateCode}
                 disabled={crearGrupo.isPending}
-                className={styles.regenerateButton}
+                className="whitespace-nowrap"
               >
                 Regenerar
               </Button>
             </div>
-            {errors.codigo && <span className={styles.fieldError}>{errors.codigo}</span>}
+            {errors.codigo && <span className="text-xs text-red-600">{errors.codigo}</span>}
           </label>
 
-          <label className={styles.fieldLabel}>
+          <label className="space-y-2 text-sm font-medium text-slate-700">
             Capacitador
             <select
               value={form.idCapacitador || ''}
               onChange={(event) => updateField('idCapacitador', Number(event.target.value))}
-              className={styles.control}
+              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
               disabled={isLoadingCapacitadores || crearGrupo.isPending}
             >
               <option value="">Seleccionar capacitador</option>
@@ -325,57 +311,55 @@ export const GrupoCapacitacionForm: React.FC = () => {
                 </option>
               ))}
             </select>
-            {errors.idCapacitador && <span className={styles.fieldError}>{errors.idCapacitador}</span>}
+            {errors.idCapacitador && <span className="text-xs text-red-600">{errors.idCapacitador}</span>}
           </label>
 
-          <label className={styles.fieldLabel}>
+          <label className="space-y-2 text-sm font-medium text-slate-700">
             Turno
             <select
               value={form.turno}
               onChange={(event) => updateField('turno', event.target.value as GrupoCapacitacionRequest['turno'])}
-              className={styles.control}
+              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
             >
               <option value="MORNING">Mañana</option>
               <option value="AFTERNOON">Tarde</option>
             </select>
-            {errors.turno && <span className={styles.fieldError}>{errors.turno}</span>}
+            {errors.turno && <span className="text-xs text-red-600">{errors.turno}</span>}
           </label>
 
-          <label className={styles.fieldLabel}>
+          <label className="space-y-2 text-sm font-medium text-slate-700">
             Sala
             <select
               value={form.sala}
               onChange={(event) => updateField('sala', event.target.value as GrupoCapacitacionRequest['sala'])}
-              className={styles.control}
+              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
             >
               <option value="SALA_FIBRA">Sala Fibra</option>
               <option value="SALA_CLARO">Sala Claro</option>
             </select>
-            {errors.sala && <span className={styles.fieldError}>{errors.sala}</span>}
+            {errors.sala && <span className="text-xs text-red-600">{errors.sala}</span>}
           </label>
 
-          <label className={styles.fieldLabel}>
+          <label className="space-y-2 text-sm font-medium text-slate-700">
             Fecha inicio
-            <input
-              type="date"
+            <FlatpickrDateInput
               value={form.fechaInicio}
-              onChange={(event) => updateField('fechaInicio', event.target.value)}
-              min={today}
-              className={styles.control}
+              onChange={(value) => updateField('fechaInicio', value)}
+              minDate={today}
+              inputClassName="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
             />
-            {errors.fechaInicio && <span className={styles.fieldError}>{errors.fechaInicio}</span>}
+            {errors.fechaInicio && <span className="text-xs text-red-600">{errors.fechaInicio}</span>}
           </label>
 
-          <label className={styles.fieldLabel}>
+          <label className="space-y-2 text-sm font-medium text-slate-700">
             Fecha fin
-            <input
-              type="date"
+            <FlatpickrDateInput
               value={form.fechaFin}
-              onChange={(event) => updateField('fechaFin', event.target.value)}
-              min={form.fechaInicio || today}
-              className={styles.control}
+              onChange={(value) => updateField('fechaFin', value)}
+              minDate={form.fechaInicio || today}
+              inputClassName="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
             />
-            {errors.fechaFin && <span className={styles.fieldError}>{errors.fechaFin}</span>}
+            {errors.fechaFin && <span className="text-xs text-red-600">{errors.fechaFin}</span>}
           </label>
         </div>
 
@@ -385,17 +369,17 @@ export const GrupoCapacitacionForm: React.FC = () => {
           <Alert variant="error">No se pudo cargar la lista de capacitadores.</Alert>
         )}
 
-        <div className={styles.submitActions}>
+        <div className="flex justify-end">
           <Button type="submit" disabled={crearGrupo.isPending || isLoadingCapacitadores}>
             {crearGrupo.isPending ? 'Creando...' : 'Crear grupo'}
           </Button>
         </div>
       </form>
 
-      <section className={styles.recentSection}>
-        <header className={styles.recentHeader}>
-          <h4 className={styles.recentTitle}>Grupos creados recientemente</h4>
-          {isLoadingCreatedGroups && <span className={styles.updating}>Actualizando...</span>}
+      <section className="space-y-4">
+        <header className="flex items-center justify-between">
+          <h4 className="text-base font-semibold text-slate-900">Grupos creados recientemente</h4>
+          {isLoadingCreatedGroups && <span className="text-xs text-slate-500">Actualizando...</span>}
         </header>
 
         {hasCreatedGroupsError && (
@@ -403,31 +387,31 @@ export const GrupoCapacitacionForm: React.FC = () => {
         )}
 
         {createdGroups.length === 0 ? (
-          <p className={styles.emptyState}>
+          <p className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-500">
             Aún no se registran grupos en esta sesión.
           </p>
         ) : (
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead className={styles.tableHead}>
+          <div className="overflow-x-auto rounded-2xl border border-slate-200">
+            <table className="min-w-full divide-y divide-slate-200 text-sm">
+              <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className={styles.th}>Código</th>
-                  <th className={styles.th}>Capacitador</th>
-                  <th className={styles.th}>Turno</th>
-                  <th className={styles.th}>Sala</th>
-                  <th className={styles.th}>Fechas</th>
+                  <th className="px-4 py-3">Código</th>
+                  <th className="px-4 py-3">Capacitador</th>
+                  <th className="px-4 py-3">Turno</th>
+                  <th className="px-4 py-3">Sala</th>
+                  <th className="px-4 py-3">Fechas</th>
                 </tr>
               </thead>
-              <tbody className={styles.tableBody}>
+              <tbody className="divide-y divide-slate-100">
                 {createdGroups.map((group) => (
-                  <tr key={group.id} className={styles.row}>
-                    <td className={`${styles.td} ${styles.codeCell}`}>{group.codigo}</td>
-                    <td className={styles.td}>
+                  <tr key={group.id} className="bg-white">
+                    <td className="px-4 py-3 font-medium text-slate-900">{group.codigo}</td>
+                    <td className="px-4 py-3 text-slate-700">
                       {capacitadorNameById.get(group.idCapacitador) ?? `ID ${group.idCapacitador}`}
                     </td>
-                    <td className={styles.td}>{group.turno}</td>
-                    <td className={styles.td}>{group.sala}</td>
-                    <td className={styles.td}>
+                    <td className="px-4 py-3 text-slate-700">{group.turno}</td>
+                    <td className="px-4 py-3 text-slate-700">{group.sala}</td>
+                    <td className="px-4 py-3 text-slate-700">
                       {group.fechaInicio} - {group.fechaFin}
                     </td>
                   </tr>

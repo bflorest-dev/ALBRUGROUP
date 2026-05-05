@@ -5,7 +5,7 @@ import type { PlanResponse } from '@shared/types';
 interface Props {
   planes: PlanResponse[];
   values: { idPlan: string; idPromocion: string };
-  onChange: (name: string, value: unknown) => void;
+  onChange: (name: string, value: string) => void;
   loading: boolean;
 }
 

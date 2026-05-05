@@ -1,12 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { LeadsRepository } from '@shared/api';
-import { AsesorVentasRepository } from '../model/asesor-ventas.repo';
 import type { UpdatePreventaPayload, TipificarLeadPayload } from '@shared/types';
 
 export const useBandejaLeads = () => {
   return useQuery({
     queryKey: ['bandeja-leads-asesor'],
-    queryFn: () => AsesorVentasRepository.getBandejaLeads(),
+    queryFn: () => LeadsRepository.getBandejaAsesor(),
   });
 };
 

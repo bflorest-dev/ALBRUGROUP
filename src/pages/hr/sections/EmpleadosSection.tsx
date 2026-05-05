@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Modal } from '@shared/ui';
+import { FlatpickrDateInput } from '@shared/ui/date-picker';
 import { DsDataTable, DsInlineMessage, type DsDataTableColumn } from '@shared/ui/design-system';
 import {
   getEmpleados,
@@ -15,46 +16,13 @@ import {
 } from '@features/hr/api/rrhhExtendedApi';
 import styles from './EmpleadosSection.module.css';
 
-type EmpleadoEditable = Partial<RrhhEmpleado> & {
-  tipoDocumento?: string;
-  nacionalidad?: string;
-  fechaNacimiento?: string;
-  estadoCivil?: string;
-  tieneHijos?: boolean;
-  celularPersonal?: string;
-  correoPersonal?: string;
-  distrito?: string;
-  direccion?: string;
-  banco?: string;
-  cuentaBancaria?: string;
-  cuentaInterbancaria?: string;
-  cuentaPropia?: boolean;
-  parentesco?: string;
-  celularTransferencia?: string;
-  idEmpresaContratista?: number;
-  celularCorporativo?: string;
-  correoCorporativo?: string;
-};
-
-const getErrorMessage = (error: unknown, fallback: string): string => {
-  if (
-    typeof error === 'object' &&
-    error !== null &&
-    'message' in error &&
-    typeof error.message === 'string'
-  ) {
-    return error.message;
-  }
-  return fallback;
-};
-
 export const EmpleadosSection: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [search, setSearch] = useState('');
   const [empleados, setEmpleados] = useState<RrhhEmpleado[]>([]);
-  const [selected, setSelected] = useState<EmpleadoEditable | null>(null);
-  const [selectedOriginal, setSelectedOriginal] = useState<EmpleadoEditable | null>(null);
+  const [selected, setSelected] = useState<Partial<RrhhEmpleado> | null>(null);
+  const [selectedOriginal, setSelectedOriginal] = useState<Partial<RrhhEmpleado> | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
   const [eventosOpen, setEventosOpen] = useState(false);
@@ -68,8 +36,8 @@ export const EmpleadosSection: React.FC = () => {
     setError('');
     try {
       setEmpleados(await getEmpleados());
-    } catch (err: unknown) {
-      setError(getErrorMessage(err, 'No se pudieron cargar empleados.'));
+    } catch (err: any) {
+      setError(err?.message ?? 'No se pudieron cargar empleados.');
     } finally {
       setLoading(false);
     }
@@ -80,8 +48,8 @@ export const EmpleadosSection: React.FC = () => {
     setError('');
     try {
       setEmpleados(await getPersonalRecruitment());
-    } catch (err: unknown) {
-      setError(getErrorMessage(err, 'No se pudo cargar personal recruitment.'));
+    } catch (err: any) {
+      setError(err?.message ?? 'No se pudo cargar personal recruitment.');
     } finally {
       setLoading(false);
     }
@@ -93,8 +61,8 @@ export const EmpleadosSection: React.FC = () => {
     setError('');
     try {
       setEmpleados(await searchEmpleadosUniversal(search.trim()));
-    } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Error en búsqueda universal.'));
+    } catch (err: any) {
+      setError(err?.message ?? 'Error en búsqueda universal.');
     } finally {
       setLoading(false);
     }
@@ -114,37 +82,37 @@ export const EmpleadosSection: React.FC = () => {
       await patchEmpleadoDatosPersonales(selectedId, {
         nombres: selected?.nombres,
         apellidos: selected?.apellidos,
-        tipoDocumento: String(selected?.tipoDocumento ?? 'DNI'),
+        tipoDocumento: String((selected as any)?.tipoDocumento ?? 'DNI'),
         numeroDocumento: selected?.numeroDocumento,
-        nacionalidad: String(selected?.nacionalidad ?? 'PERUANO'),
-        fechaNacimiento: String(selected?.fechaNacimiento ?? ''),
-        estadoCivil: String(selected?.estadoCivil ?? 'SOLTERO'),
-        tieneHijos: Boolean(selected?.tieneHijos),
+        nacionalidad: String((selected as any)?.nacionalidad ?? 'PERUANO'),
+        fechaNacimiento: String((selected as any)?.fechaNacimiento ?? ''),
+        estadoCivil: String((selected as any)?.estadoCivil ?? 'SOLTERO'),
+        tieneHijos: Boolean((selected as any)?.tieneHijos),
       });
       await patchEmpleadoDatosContactoUbicacion(selectedId, {
-        celularPersonal: selected?.celularPersonal,
-        correoPersonal: selected?.correoPersonal,
-        distrito: selected?.distrito,
-        direccion: selected?.direccion,
+        celularPersonal: (selected as any)?.celularPersonal,
+        correoPersonal: (selected as any)?.correoPersonal,
+        distrito: (selected as any)?.distrito,
+        direccion: (selected as any)?.direccion,
       });
       await patchEmpleadoDatosFinancieros(selectedId, {
-        banco: String(selected?.banco ?? 'BCP'),
-        cuentaBancaria: selected?.cuentaBancaria,
-        cuentaInterbancaria: selected?.cuentaInterbancaria,
-        cuentaPropia: Boolean(selected?.cuentaPropia),
-        parentesco: String(selected?.parentesco ?? 'OTRO'),
-        celularTransferencia: String(selected?.celularTransferencia ?? ''),
-        idEmpresaContratista: Number(selected?.idEmpresaContratista ?? 0),
+        banco: String((selected as any)?.banco ?? 'BCP'),
+        cuentaBancaria: (selected as any)?.cuentaBancaria,
+        cuentaInterbancaria: (selected as any)?.cuentaInterbancaria,
+        cuentaPropia: Boolean((selected as any)?.cuentaPropia),
+        parentesco: String((selected as any)?.parentesco ?? 'OTRO'),
+        celularTransferencia: String((selected as any)?.celularTransferencia ?? ''),
+        idEmpresaContratista: Number((selected as any)?.idEmpresaContratista ?? 0),
       });
       await patchEmpleadoDatosCorporativos(selectedId, {
-        celularCorporativo: String(selected?.celularCorporativo ?? ''),
-        correoCorporativo: String(selected?.correoCorporativo ?? ''),
+        celularCorporativo: String((selected as any)?.celularCorporativo ?? ''),
+        correoCorporativo: String((selected as any)?.correoCorporativo ?? ''),
       });
       setError('Cambios guardados correctamente.');
       setIsEditing(false);
       await loadAll();
-    } catch (err: unknown) {
-      setError(getErrorMessage(err, 'No se pudieron guardar los cambios.'));
+    } catch (err: any) {
+      setError(err?.message ?? 'No se pudieron guardar los cambios.');
     } finally {
       setLoading(false);
     }
@@ -159,8 +127,8 @@ export const EmpleadosSection: React.FC = () => {
       });
       setError('Estado de lista negra actualizado.');
       await loadAll();
-    } catch (err: unknown) {
-      setError(getErrorMessage(err, 'No se pudo actualizar lista negra.'));
+    } catch (err: any) {
+      setError(err?.message ?? 'No se pudo actualizar lista negra.');
     }
   };
 
@@ -280,7 +248,7 @@ export const EmpleadosSection: React.FC = () => {
               />
               <select
                 className={styles.control}
-                value={String(selected.tipoDocumento ?? 'DNI')}
+                value={String((selected as any).tipoDocumento ?? 'DNI')}
                 disabled={!isEditing}
                 onChange={(e) => setSelected((p) => ({ ...(p ?? {}), tipoDocumento: e.target.value }))}
               >
@@ -296,24 +264,23 @@ export const EmpleadosSection: React.FC = () => {
               />
               <select
                 className={styles.control}
-                value={String(selected.nacionalidad ?? 'PERUANO')}
+                value={String((selected as any).nacionalidad ?? 'PERUANO')}
                 disabled={!isEditing}
                 onChange={(e) => setSelected((p) => ({ ...(p ?? {}), nacionalidad: e.target.value }))}
               >
                 <option value="PERUANO">PERUANO</option>
                 <option value="EXTRANJERO">EXTRANJERO</option>
               </select>
-              <input
-                type="date"
-                className={styles.control}
-                value={String(selected.fechaNacimiento ?? '')}
+              <FlatpickrDateInput
+                value={String((selected as any).fechaNacimiento ?? '')}
+                onChange={(value) => setSelected((p) => ({ ...(p ?? {}), fechaNacimiento: value }))}
                 disabled={!isEditing}
-                onChange={(e) => setSelected((p) => ({ ...(p ?? {}), fechaNacimiento: e.target.value }))}
+                inputClassName={styles.control}
                 placeholder="Fecha Nacimiento"
               />
               <select
                 className={styles.control}
-                value={String(selected.estadoCivil ?? 'SOLTERO')}
+                value={String((selected as any).estadoCivil ?? 'SOLTERO')}
                 disabled={!isEditing}
                 onChange={(e) => setSelected((p) => ({ ...(p ?? {}), estadoCivil: e.target.value }))}
               >
@@ -325,7 +292,7 @@ export const EmpleadosSection: React.FC = () => {
               <label className={styles.checkboxRow}>
                 <input
                   type="checkbox"
-                  checked={Boolean(selected.tieneHijos)}
+                  checked={Boolean((selected as any).tieneHijos)}
                   disabled={!isEditing}
                   onChange={(e) => setSelected((p) => ({ ...(p ?? {}), tieneHijos: e.target.checked }))}
                 />
@@ -333,21 +300,21 @@ export const EmpleadosSection: React.FC = () => {
               </label>
               <input
                 className={styles.control}
-                value={String(selected.celularPersonal ?? '')}
+                value={String((selected as any).celularPersonal ?? '')}
                 disabled={!isEditing}
                 onChange={(e) => setSelected((p) => ({ ...(p ?? {}), celularPersonal: e.target.value }))}
                 placeholder="Celular Personal"
               />
               <input
                 className={styles.control}
-                value={String(selected.correoPersonal ?? '')}
+                value={String((selected as any).correoPersonal ?? '')}
                 disabled={!isEditing}
                 onChange={(e) => setSelected((p) => ({ ...(p ?? {}), correoPersonal: e.target.value }))}
                 placeholder="Correo Personal"
               />
               <select
                 className={styles.control}
-                value={String(selected.distrito ?? '')}
+                value={String((selected as any).distrito ?? '')}
                 disabled={!isEditing}
                 onChange={(e) => setSelected((p) => ({ ...(p ?? {}), distrito: e.target.value }))}
               >
@@ -405,7 +372,7 @@ export const EmpleadosSection: React.FC = () => {
               </select>
               <input
                 className={styles.control}
-                value={String(selected.direccion ?? '')}
+                value={String((selected as any).direccion ?? '')}
                 disabled={!isEditing}
                 onChange={(e) => setSelected((p) => ({ ...(p ?? {}), direccion: e.target.value }))}
                 placeholder="Dirección"
@@ -413,21 +380,21 @@ export const EmpleadosSection: React.FC = () => {
 
               <input
                 className={styles.control}
-                value={String(selected.banco ?? 'BCP')}
+                value={String((selected as any).banco ?? 'BCP')}
                 disabled={!isEditing}
                 onChange={(e) => setSelected((p) => ({ ...(p ?? {}), banco: e.target.value }))}
                 placeholder="Banco"
               />
               <input
                 className={styles.control}
-                value={String(selected.cuentaBancaria ?? '')}
+                value={String((selected as any).cuentaBancaria ?? '')}
                 disabled={!isEditing}
                 onChange={(e) => setSelected((p) => ({ ...(p ?? {}), cuentaBancaria: e.target.value }))}
                 placeholder="Cuenta Bancaria"
               />
               <input
                 className={styles.control}
-                value={String(selected.cuentaInterbancaria ?? '')}
+                value={String((selected as any).cuentaInterbancaria ?? '')}
                 disabled={!isEditing}
                 onChange={(e) => setSelected((p) => ({ ...(p ?? {}), cuentaInterbancaria: e.target.value }))}
                 placeholder="Cuenta Interbancaria"
@@ -435,7 +402,7 @@ export const EmpleadosSection: React.FC = () => {
               <label className={styles.checkboxRow}>
                 <input
                   type="checkbox"
-                  checked={Boolean(selected.cuentaPropia)}
+                  checked={Boolean((selected as any).cuentaPropia)}
                   disabled={!isEditing}
                   onChange={(e) => setSelected((p) => ({ ...(p ?? {}), cuentaPropia: e.target.checked }))}
                 />
@@ -443,7 +410,7 @@ export const EmpleadosSection: React.FC = () => {
               </label>
               <select
                 className={styles.control}
-                value={String(selected.parentesco ?? 'OTRO')}
+                value={String((selected as any).parentesco ?? 'OTRO')}
                 disabled={!isEditing}
                 onChange={(e) => setSelected((p) => ({ ...(p ?? {}), parentesco: e.target.value }))}
               >
@@ -458,7 +425,7 @@ export const EmpleadosSection: React.FC = () => {
               </select>
               <input
                 className={styles.control}
-                value={String(selected.celularTransferencia ?? '')}
+                value={String((selected as any).celularTransferencia ?? '')}
                 disabled={!isEditing}
                 onChange={(e) => setSelected((p) => ({ ...(p ?? {}), celularTransferencia: e.target.value }))}
                 placeholder="Celular Transferencia"
@@ -486,7 +453,7 @@ export const EmpleadosSection: React.FC = () => {
         </div>
       </div>
 
-      <Modal isOpen={eventosOpen} onClose={() => setEventosOpen(false)} title="Eventos del Empleado" size="lg">
+      <Modal isOpen={eventosOpen} onClose={() => setEventosOpen(false)} title="Eventos del Empleado" size="lg" className="rrhh-modal-theme">
         <div className={styles.modalJsonWrap}>
           <pre className={styles.modalJsonPre}>{JSON.stringify(eventos, null, 2)}</pre>
         </div>
@@ -494,4 +461,3 @@ export const EmpleadosSection: React.FC = () => {
     </div>
   );
 };
-

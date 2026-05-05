@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import type { LeadAsesorVentasResponse } from '../model';
 import { FormularioContacto } from './FormularioContacto';
-import { FormularioTipificacionContainer } from './FormularioTipificacionContainer';
+import { FormularioTipificacion } from './FormularioTipificacion';
 import { FormularioOferta } from './FormularioOferta';
 import { FormularioDireccion } from './FormularioDireccion';
-import { FormularioDatosPreventaContainer } from './FormularioDatosPreventaContainer';
+import { FormularioDatosPreventa } from './FormularioDatosPreventa';
 import { PreventaLeadModal } from '@features/presales/ui/PreventaLeadModal';
 import styles from './DetalleLeadModal.module.css';
 
@@ -119,7 +119,7 @@ export const DetalleLeadModal: React.FC<DetalleLeadModalProps> = ({
           {activeTab === 'contacto' && <FormularioContacto idLead={lead.id} onSuccess={onClose} />}
 
           {activeTab === 'tipificacion' && (
-            <FormularioTipificacionContainer idLead={lead.id} onSuccess={onClose} />
+            <FormularioTipificacion idLead={lead.id} onSuccess={onClose} />
           )}
 
           {activeTab === 'oferta' && (
@@ -132,7 +132,7 @@ export const DetalleLeadModal: React.FC<DetalleLeadModalProps> = ({
 
           {activeTab === 'preventa' && (
             <div className={dashboardMode ? styles.preventaSection : 'space-y-4'}>
-              <FormularioDatosPreventaContainer idLead={lead.id} onSuccess={onClose} />
+              <FormularioDatosPreventa idLead={lead.id} onSuccess={onClose} />
               <button
                 onClick={() => setShowPreventaAdvanced(true)}
                 className={dashboardMode ? styles.preventaButton : 'w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700'}

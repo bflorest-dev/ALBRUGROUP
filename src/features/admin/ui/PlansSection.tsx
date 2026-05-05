@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BiPlus, BiTrash, BiPencil } from 'react-icons/bi';
 import { Modal } from '@shared/ui/base';
+import { FlatpickrDateInput } from '@shared/ui/date-picker';
 import type { Plan, InternetConfig, TeleviConfig, TelefonConfig } from '../types';
 import type { AdminDashboardState } from '../hooks/useAdminDashboard';
 import './PlansSection.css';
@@ -285,20 +286,21 @@ const PlansSectionComponent: React.FC<PlansSectionProps> = ({ state }) => {
             <div className="form-row">
               <div className="form-group">
                 <label>Vigencia Desde *</label>
-                <input
-                  type="date"
+                <FlatpickrDateInput
                   name="vigenciaDesde"
                   value={formData.vigenciaDesde}
-                  onChange={handleFormChange}
+                  onChange={(value) => setFormData((prev) => ({ ...prev, vigenciaDesde: value }))}
+                  required
                 />
               </div>
               <div className="form-group">
                 <label>Vigencia Hasta *</label>
-                <input
-                  type="date"
+                <FlatpickrDateInput
                   name="vigenciaHasta"
                   value={formData.vigenciaHasta}
-                  onChange={handleFormChange}
+                  onChange={(value) => setFormData((prev) => ({ ...prev, vigenciaHasta: value }))}
+                  minDate={formData.vigenciaDesde || undefined}
+                  required
                 />
               </div>
             </div>

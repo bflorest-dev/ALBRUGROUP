@@ -9,7 +9,6 @@ import { KanbanColumn } from './KanbanColumn';
 import { PostulanteEventosModal } from './PostulanteEventosModal';
 import { Spinner } from '@shared/ui';
 import type { PostulacionResponse, TipificacionCatalogo } from '@features/hr/applications/model';
-import styles from './KanbanBoard.module.css';
 
 const DEFAULT_COLUMN_ID = 'SIN_CLASIFICAR';
 
@@ -27,12 +26,6 @@ interface KanbanBoardProps {
   onTipificar?: (postulacion: PostulacionResponse, columnId: string) => void;
   onDetails?: (postulacion: PostulacionResponse) => void;
   onUpdatePostulacion?: (id: number, estadoBandeja: string) => Promise<void>;
-}
-
-interface PostulacionCompatFields {
-  tipificacionId?: number | null;
-  tipificacion_id?: number | null;
-  codigo_tipificacion?: string | null;
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
@@ -75,20 +68,18 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     });
 
     postulaciones.forEach((post) => {
-      const postCompat = post as PostulacionResponse & PostulacionCompatFields;
-
       // EXTRAER tipificacionId de múltiples formas posibles
       const tipificacionId =
         post.tipificacion?.id ??
         post.idTipificacion ??
-        postCompat.tipificacionId ??
-        postCompat.tipificacion_id ??
+        (post as any).tipificacionId ??
+        (post as any).tipificacion_id ??
         null;
 
       const codigoTipificacion =
         post.tipificacion?.codigo ??
         post.codigoTipificacion ??
-        postCompat.codigo_tipificacion ??
+        (post as any).codigo_tipificacion ??
         '';
 
       // Buscar columna por ID de tipificación
@@ -130,20 +121,20 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   if (loading) {
     return (
-      <div className={styles.loadingState}>
+      <div className="flex h-64 items-center justify-center rounded-2xl border border-[#dbe7ff] bg-gradient-to-b from-white to-[#f8fbff]">
         <Spinner size="large" />
       </div>
     );
   }
 
   return (
-    <div className={styles.board}>
-      <div className={styles.boardHeader}>
-        <p className={styles.boardEyebrow}>Flujo de postulación</p>
-        <p className={styles.boardHint}>Desliza horizontalmente para ver todas las columnas</p>
+    <div className="overflow-x-auto rounded-2xl border border-[#dbe7ff] bg-gradient-to-b from-white to-[#f8fbff] p-3 pb-4">
+      <div className="mb-2 flex items-center justify-between px-0.5">
+        <p className="text-xs font-medium uppercase tracking-[0.1em] text-[#5f7598]">Flujo de postulación</p>
+        <p className="text-xs text-[#7a90b1]">Desliza horizontalmente para ver todas las columnas</p>
       </div>
 
-      <div className={styles.columnsRow}>
+      <div className="flex min-w-fit gap-4">
         {columnas.map((col) => (
           <KanbanColumn
             key={col.id}

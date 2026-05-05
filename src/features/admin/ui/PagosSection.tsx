@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getPagos, pagarContrato, type PagoContrato } from '../api/adminManagementApi';
+import { FlatpickrDateInput } from '@shared/ui/date-picker';
 
 const today = () => new Date().toISOString().split('T')[0] ?? '';
 
@@ -69,11 +70,11 @@ export const PagosSection: React.FC = () => {
       <div className="admin-form-grid">
         <div className="form-group">
           <label>Fecha Inicio</label>
-          <input type="date" value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)} />
+          <FlatpickrDateInput value={fechaInicio} onChange={setFechaInicio} />
         </div>
         <div className="form-group">
           <label>Fecha Fin</label>
-          <input type="date" value={fechaFin} onChange={(e) => setFechaFin(e.target.value)} />
+          <FlatpickrDateInput value={fechaFin} onChange={setFechaFin} minDate={fechaInicio || undefined} />
         </div>
         <div className="form-group">
           <label>Asignación Familiar</label>

@@ -20,4 +20,8 @@ export type Role =
   | 'ASESOR_POSTVENTA'
   | 'ASESOR_DE_VENTAS';
 
-export type User = { id: string; name: string; roles: Role[] };
+export type User = {
+  id: string;
+  name: string;
+  roles: Role[];
+};

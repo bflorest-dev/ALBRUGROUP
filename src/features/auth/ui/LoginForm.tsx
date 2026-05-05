@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { LoginFormData } from '../model/login.model';
 
 interface LoginFormProps {
@@ -7,36 +7,32 @@ interface LoginFormProps {
   onBack?: () => void;
   onForgotPassword?: () => void;
   loading?: boolean;
-  error?: string | null;
+  error?: string;
 }
 
-
-export const LoginForm: React.FC<LoginFormProps> = ({ 
-  onSubmit, 
-  username: propUsername, 
-  loading: propLoading = false, 
-  error: propError,
+export const LoginForm: React.FC<LoginFormProps> = ({
+  onSubmit,
+  username,
   onBack,
-  onForgotPassword 
+  onForgotPassword,
+  loading: externalLoading = false,
+  error: externalError,
 }) => {
   const [formData, setFormData] = useState<LoginFormData>({
-    username: propUsername || '',
+    email: '',
     password: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Sincroniza el username si cambia la prop
-  React.useEffect(() => {
-    if (typeof propUsername === 'string' && propUsername !== formData.username) {
-      setFormData((prev) => ({ ...prev, username: propUsername }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [propUsername]);
+  useEffect(() => {
+    if (!username) return;
+    setFormData((prev) => ({ ...prev, email: username }));
+  }, [username]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev: LoginFormData) => ({ ...prev, [name]: value as LoginFormData[keyof LoginFormData] }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -54,51 +50,92 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     }
   };
 
+  const isSubmitting = loading || externalLoading;
+  const shownError = externalError || error;
+
   return (
-    <form onSubmit={handleSubmit} id="formularioDeLogin" className="space-y-4">
-      <h2 className="text-3xl font-bold text-center">Iniciar sesión</h2>
+    <form onSubmit={handleSubmit} id="formularioDeLogin" className="login-form">
+      <div className="form-section">
+        <h2>Iniciar sesión</h2>
+        <p className="form-description">Ingresa tus credenciales para continuar.</p>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="username" className="font-semibold">
-          USERNAME
-        </label>
-        <input
-          type="username"
-          id="username"
-          name="username"
-          value={formData.username}
-          onChange={handleChange}
-          required
-          className="w-full border px-3 py-2 rounded"
-          placeholder="Ingresa tu username"
-        />
+        <div className="form-group">
+          <label htmlFor="email">Usuario</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            readOnly={Boolean(username)}
+            required
+            className={username ? 'readonly-input' : undefined}
+            placeholder="usuario@empresa.com"
+            autoComplete="username"
+          />
+          {username && <small className="hint">✓ Usuario validado</small>}
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="password">Contraseña</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            required
+            placeholder="Ingresa tu contraseña"
+            autoComplete="current-password"
+          />
+        </div>
+
+        {shownError && (
+          <div className="error-message">
+            <span>⚠️</span>
+            <span>{shownError}</span>
+          </div>
+        )}
+
+        {onForgotPassword && (
+          <button
+            type="button"
+            className="btn-link"
+            onClick={onForgotPassword}
+            disabled={isSubmitting}
+          >
+            Olvidé mi contraseña
+          </button>
+        )}
+
+        <div className="form-actions">
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <span className="btn-loader"></span>
+                Ingresando...
+              </>
+            ) : (
+              'Ingresar'
+            )}
+          </button>
+
+          {onBack && (
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={onBack}
+              disabled={isSubmitting}
+            >
+              Volver
+            </button>
+          )}
+        </div>
       </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="password" className="font-semibold">
-          CONTRASEÑA
-        </label>
-        <input
-          type="password"
-          id="password"
-          name="password"
-          value={formData.password}
-          onChange={handleChange}
-          required
-          className="w-full border px-3 py-2 rounded"
-          placeholder="Ingresa tu contraseña"
-        />
-      </div>
-
-      {error && <p className="text-red-500">{error}</p>}
-
-      <button
-        type="submit"
-        className="w-full rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
-        disabled={loading}
-      >
-        {loading ? 'Ingresando...' : 'Ingresar'}
-      </button>
     </form>
   );
 };

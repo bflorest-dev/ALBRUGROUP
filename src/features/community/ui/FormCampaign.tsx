@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import type { CuentaPublicitaria, Proveedor } from '@entities/campaign/model/campaign';
+import type { CuentaPublicitaria, Proveedor } from '@entities/campaign';
 import type { CampaignFormState, CampaignFormErrors } from '../hooks/useCampaignForm';
 
 interface FormCampaignProps {
@@ -44,21 +44,16 @@ export const FormCampaign: React.FC<FormCampaignProps> = ({
   return (
     <div>
       {globalMessage && (
-        <div
-          className={globalMessage.startsWith('✅') ? 'community-alert' : 'community-error'}
-          style={{ marginBottom: 16 }}
-        >
+        <div className={`${globalMessage.startsWith('✅') ? 'community-alert' : 'community-error'} community-message`}>
           {globalMessage}
         </div>
       )}
 
-      <form onSubmit={handleFormSubmit}>
-        {/* Nombre */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>Nombre *</label>
+      <form onSubmit={handleFormSubmit} className="community-form">
+        <div className="community-field">
+          <label>Nombre *</label>
           <input
-            className="community-input"
-            style={errors.nombre ? { borderColor: '#d74343' } : undefined}
+            className={`community-input ${errors.nombre ? 'is-invalid' : ''}`}
             type="text"
             value={formState.nombre}
             placeholder="Nombre de la campaña"
@@ -66,15 +61,13 @@ export const FormCampaign: React.FC<FormCampaignProps> = ({
             disabled={submitting}
             required
           />
-          {errors.nombre && <p style={{ color: '#dc3545', fontSize: '0.875rem', marginTop: 4 }}>{errors.nombre}</p>}
+          {errors.nombre && <p className="community-error-text">{errors.nombre}</p>}
         </div>
 
-        {/* Número WhatsApp - Nombre correcto: numeroWhatsappEmpresa */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>Número WhatsApp Empresa *</label>
+        <div className="community-field">
+          <label>Número WhatsApp Empresa *</label>
           <input
-            className="community-input"
-            style={errors.numeroWhatsappEmpresa ? { borderColor: '#d74343' } : undefined}
+            className={`community-input ${errors.numeroWhatsappEmpresa ? 'is-invalid' : ''}`}
             type="tel"
             value={formState.numeroWhatsappEmpresa}
             placeholder="+57 3001234567"
@@ -82,15 +75,13 @@ export const FormCampaign: React.FC<FormCampaignProps> = ({
             disabled={submitting}
             required
           />
-          {errors.numeroWhatsappEmpresa && <p style={{ color: '#dc3545', fontSize: '0.875rem', marginTop: 4 }}>{errors.numeroWhatsappEmpresa}</p>}
+          {errors.numeroWhatsappEmpresa && <p className="community-error-text">{errors.numeroWhatsappEmpresa}</p>}
         </div>
 
-        {/* Cuentas Publicitarias - SELECT SIMPLE (no multi) */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>Cuenta Publicitaria *</label>
+        <div className="community-field">
+          <label>Cuenta Publicitaria *</label>
           <select
-            className="community-select"
-            style={errors.idCuentaPublicitaria ? { borderColor: '#d74343' } : undefined}
+            className={`community-select ${errors.idCuentaPublicitaria ? 'is-invalid' : ''}`}
             value={formState.idCuentaPublicitaria ?? ''}
             onChange={(e) => onCuentasChange(e.target.value ? Number(e.target.value) : null)}
             disabled={submitting || loading}
@@ -104,15 +95,13 @@ export const FormCampaign: React.FC<FormCampaignProps> = ({
                 </option>
               ))}
           </select>
-          {errors.idCuentaPublicitaria && <p style={{ color: '#dc3545', fontSize: '0.875rem', marginTop: 4 }}>{errors.idCuentaPublicitaria}</p>}
+          {errors.idCuentaPublicitaria && <p className="community-error-text">{errors.idCuentaPublicitaria}</p>}
         </div>
 
-        {/* Proveedores - SELECT SIMPLE (no multi) */}
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 4, fontWeight: 'bold' }}>Proveedor *</label>
+        <div className="community-field">
+          <label>Proveedor *</label>
           <select
-            className="community-select"
-            style={errors.idProveedor ? { borderColor: '#d74343' } : undefined}
+            className={`community-select ${errors.idProveedor ? 'is-invalid' : ''}`}
             value={formState.idProveedor ?? ''}
             onChange={(e) => onProveedoresChange(e.target.value ? Number(e.target.value) : null)}
             disabled={submitting || loading}
@@ -126,11 +115,10 @@ export const FormCampaign: React.FC<FormCampaignProps> = ({
                 </option>
               ))}
           </select>
-          {errors.idProveedor && <p style={{ color: '#dc3545', fontSize: '0.875rem', marginTop: 4 }}>{errors.idProveedor}</p>}
+          {errors.idProveedor && <p className="community-error-text">{errors.idProveedor}</p>}
         </div>
 
-        {/* Botones */}
-        <div style={{ marginTop: 24 }}>
+        <div className="community-actions">
           <button
             className="community-btn primary"
             type="submit"

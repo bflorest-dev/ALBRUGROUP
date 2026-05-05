@@ -21,6 +21,39 @@ import type {
 class GtrRepo {
   private readonly baseUrl = '/leads';
 
+  private normalizeLeadsGtrPayload(payload: unknown): LeadGtrResponse[] {
+    if (Array.isArray(payload)) {
+      return payload as LeadGtrResponse[];
+    }
+
+    if (!payload || typeof payload !== 'object') {
+      return [];
+    }
+
+    const wrapped = payload as Record<string, unknown>;
+    const candidates = [
+      wrapped.data,
+      wrapped.content,
+      wrapped.items,
+      wrapped.results,
+    ];
+
+    for (const candidate of candidates) {
+      if (Array.isArray(candidate)) {
+        return candidate as LeadGtrResponse[];
+      }
+
+      if (candidate && typeof candidate === 'object') {
+        const nested = candidate as Record<string, unknown>;
+        if (Array.isArray(nested.content)) {
+          return nested.content as LeadGtrResponse[];
+        }
+      }
+    }
+
+    return [];
+  }
+
   /**
    * POST /leads/intake
    * Alta de nuevo lead
@@ -132,17 +165,18 @@ class GtrRepo {
     
     try {
       const response = await leadsHttp.get<LeadGtrResponse[]>(url);
+      const normalized = this.normalizeLeadsGtrPayload(response.data);
       
       // Debug: Log de respuesta
       console.log(`[GtrRepository] GET ${url}`, {
         status: response.status,
         dataType: typeof response.data,
         isArray: Array.isArray(response.data),
-        length: Array.isArray(response.data) ? response.data.length : 'N/A',
-        firstItem: Array.isArray(response.data) ? response.data[0] : response.data,
+        length: normalized.length,
+        firstItem: normalized[0] ?? null,
       });
       
-      return response.data;
+      return normalized;
     } catch (error) {
       console.error(`[GtrRepository] Error en GET ${url}:`, error);
       throw error;

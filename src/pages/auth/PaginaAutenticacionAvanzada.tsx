@@ -2,7 +2,6 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { AuthRepository } from '@shared/api';
-import { AuthService } from '@entities/auth/model/auth.service';
 import { useAuth } from '@entities/auth';
 import { routeHelpers } from '@shared/utils/routeHelpers';
 import type { LoginFormData } from '@features/auth/model';
@@ -54,32 +53,6 @@ interface AuthFlowState {
   generatedPassword?: string;
 }
 
-const getRoleFromLoginResponse = (response: unknown): string | null => {
-  if (!response || typeof response !== 'object') {
-    return null;
-  }
-
-  const record = response as Record<string, unknown>;
-  const usuario = record.usuario;
-
-  if (usuario && typeof usuario === 'object') {
-    const usuarioRecord = usuario as Record<string, unknown>;
-    if (typeof usuarioRecord.rol === 'string') {
-      return usuarioRecord.rol;
-    }
-  }
-
-  if (typeof record.role === 'string') {
-    return record.role;
-  }
-
-  if (Array.isArray(record.roles) && typeof record.roles[0] === 'string') {
-    return record.roles[0];
-  }
-
-  return null;
-};
-
 export const PaginaAutenticacionAvanzada: React.FC = () => {
   const navigate = useNavigate();
   const { login: authLogin } = useAuth();
@@ -126,14 +99,12 @@ export const PaginaAutenticacionAvanzada: React.FC = () => {
   /**
    * PASO 2: Iniciar sesión
    * 
-   * - Llamar: POST /autorizacion/login { username, password }
-   * - Si success: Guardar token, inicializar contexto, redirigir a dashboard
+   * - Llamar: authLogin(username, password) desde context
+   * - Si success: Contexto maneja token, localStorage, headers
    * - Si error: Mostrar mensaje sin perder el username
    */
   const handleLogin = useCallback(
     async (formData: LoginFormData) => {
-      const username = flowState.username || formData.username;
-
       setFlowState((prev) => ({
         ...prev,
         loading: true,
@@ -142,34 +113,24 @@ export const PaginaAutenticacionAvanzada: React.FC = () => {
 
       try {
         console.log(
-          `[AUTH FLOW] 🔓 Iniciando login para usuario: ${username}`
+          `[AUTH FLOW] 🔓 Iniciando login para usuario: ${formData.email}`
         );
         console.log('[AUTH FLOW] 🌐 POST /api/auth/autorizacion/login');
 
-        const response = await AuthService.login({
-          username,
-          password: formData.password,
+        const user = await authLogin(formData.email, formData.password);
+
+        console.log('[AUTH FLOW] ✅ Login successful, user:', {
+          id: user.id,
+          roles: user.roles,
         });
 
-        console.log('[AUTH FLOW] ✅ Login successful, response:', {
-          username: response.username,
-          token: response.token ? 'present' : 'missing',
-          roles: response.roles,
-        });
+        // authLogin() maneja todo: token, localStorage, headers, session normalization
+        console.log('[AUTH FLOW] 📝 Token guardado y sesión normalizada por contexto');
 
-        // Sincronizar contexto global (AuthProvider) + localStorage ya lo hace AuthService
-        await authLogin(username, formData.password).catch(() => null);
-
-        console.log('[AUTH FLOW] 📝 AuthContext sincronizado');
-
-        // Determinar rol
-        const responseRole = getRoleFromLoginResponse(response);
-        const tokenRole = AuthService.getRoleFromToken(response.token);
-        const role = ((responseRole || tokenRole || '') as string).toUpperCase();
+        // Usar el primer rol del usuario (contexto ya lo normalizó)
+        const role = user.roles[0];
 
         console.log('[AUTH FLOW] 🔑 Role resolution:', {
-          responseRole,
-          tokenRole,
           finalRole: role,
         });
 
@@ -180,7 +141,7 @@ export const PaginaAutenticacionAvanzada: React.FC = () => {
             error: 'Usuario sin rol asignado',
           }));
           console.error(
-            '[AUTH FLOW] ❌ No role found in response or token'
+            '[AUTH FLOW] ❌ No role found in user object'
           );
           return;
         }
@@ -199,7 +160,7 @@ export const PaginaAutenticacionAvanzada: React.FC = () => {
           return;
         }
 
-        console.log(`[AUTH FLOW] ✨ Login exitoso: ${response.username}`);
+        console.log(`[AUTH FLOW] ✨ Login exitoso para usuario: ${user.id}`);
         console.log(`[AUTH FLOW] 👤 Rol detectado: ${role}`);
         console.log(`[AUTH FLOW] 🎯 Redirigiendo a: ${destination}`);
         console.log(
@@ -233,7 +194,7 @@ export const PaginaAutenticacionAvanzada: React.FC = () => {
         }));
       }
     },
-    [navigate, authLogin, flowState.username]
+    [navigate, authLogin]
   );
 
   /**

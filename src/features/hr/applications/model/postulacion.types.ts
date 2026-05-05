@@ -6,7 +6,14 @@
  * Importa enums desde shared/backendEnums
  */
 
-import type { Origen, TipoDocumento, ModalidadContacto } from '@shared/types/backendEnums/rrhh';
+import type {
+  Origen,
+  TipoDocumento,
+  ModalidadContacto,
+  EtapaProceso,
+  EstadoProceso,
+  EstadoBandeja,
+} from '@shared/types/backendEnums';
 import type { OfertaLaboralResponse } from '@shared/types/ofertaLaboral';
 
 /**

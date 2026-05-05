@@ -150,10 +150,10 @@ const AdicionalesSectionComponent: React.FC<AdicionalesSectionProps> = ({ state 
 
       {/* Modal para crear/editar */}
       <Modal
+        className="admin-modal medium"
         isOpen={isModalOpen}
         title={isEditing ? 'Editar Adicional' : 'Nuevo Adicional'}
         onClose={handleCloseModal}
-        className="medium"
       >
         <div className="modal-form">
           <div className="form-group">

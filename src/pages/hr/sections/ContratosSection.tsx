@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Modal } from '@shared/ui';
+import { FlatpickrDateInput } from '@shared/ui/date-picker';
 import { DsInlineMessage } from '@shared/ui/design-system';
 import { Eye } from 'lucide-react';
 import {
@@ -14,18 +15,6 @@ import {
 import styles from './ContratosSection.module.css';
 
 const today = () => new Date().toISOString().split('T')[0] ?? '';
-
-const getErrorMessage = (error: unknown, fallback: string): string => {
-  if (
-    typeof error === 'object' &&
-    error !== null &&
-    'message' in error &&
-    typeof error.message === 'string'
-  ) {
-    return error.message;
-  }
-  return fallback;
-};
 
 export const ContratosSection: React.FC = () => {
   const [empleados, setEmpleados] = useState<RrhhEmpleado[]>([]);
@@ -73,8 +62,8 @@ export const ContratosSection: React.FC = () => {
       setVigente(contratoVigente);
       const contratoHistorico = await getContratoHistorico(empleadoId).catch(() => []);
       setHistorico(contratoHistorico);
-    } catch (err: unknown) {
-      setMessage(getErrorMessage(err, 'No se pudo registrar contrato.'));
+    } catch (err: any) {
+      setMessage(err?.message ?? 'No se pudo registrar contrato.');
     } finally {
       setLoading(false);
     }
@@ -98,9 +87,8 @@ export const ContratosSection: React.FC = () => {
 
   const getContratoId = (contrato: RrhhContrato | null): number | null => {
     if (!contrato) return null;
-    const contratoRecord = contrato as Record<string, unknown>;
     return (
-      Number(contrato.id ?? contratoRecord.idContrato ?? contratoRecord.id_contrato ?? 0) || null
+      Number(contrato.id ?? (contrato as any).idContrato ?? (contrato as any).id_contrato ?? 0) || null
     );
   };
 
@@ -119,8 +107,8 @@ export const ContratosSection: React.FC = () => {
         await handleVigente(employeeId);
         await handleHistorico(employeeId);
       }
-    } catch (err: unknown) {
-      setMessage(getErrorMessage(err, 'No se pudo finalizar el contrato.'));
+    } catch (err: any) {
+      setMessage(err?.message ?? 'No se pudo finalizar el contrato.');
     }
   };
 
@@ -222,8 +210,17 @@ export const ContratosSection: React.FC = () => {
               <option value="PRIMA_AFP">PRIMA_AFP</option>
             </select>
             <input className={styles.control} type="number" value={form.sueldoBase} onChange={(e) => setForm((prev) => ({ ...prev, sueldoBase: Number(e.target.value || 0) }))} placeholder="Sueldo Base" />
-            <input className={styles.control} type="date" value={form.fechaInicio} onChange={(e) => setForm((prev) => ({ ...prev, fechaInicio: e.target.value }))} />
-            <input className={styles.control} type="date" value={form.fechaFin} onChange={(e) => setForm((prev) => ({ ...prev, fechaFin: e.target.value }))} />
+            <FlatpickrDateInput
+              value={form.fechaInicio}
+              onChange={(value) => setForm((prev) => ({ ...prev, fechaInicio: value }))}
+              inputClassName={styles.control}
+            />
+            <FlatpickrDateInput
+              value={form.fechaFin}
+              onChange={(value) => setForm((prev) => ({ ...prev, fechaFin: value }))}
+              inputClassName={styles.control}
+              minDate={form.fechaInicio || undefined}
+            />
 
             <Button variant="primary" onClick={handleRegistrar} disabled={loading}>Registrar Contrato</Button>
           </div>
@@ -273,7 +270,7 @@ export const ContratosSection: React.FC = () => {
         </div>
       </div>
 
-      <Modal isOpen={historyOpen} onClose={() => setHistoryOpen(false)} title="Histórico de Contratos" size="lg">
+      <Modal isOpen={historyOpen} onClose={() => setHistoryOpen(false)} title="Histórico de Contratos" size="lg" className="rrhh-modal-theme">
         <div className={styles.formStack}>
           {historico.length === 0 ? (
             <p className={styles.mutedText}>No hay contratos históricos disponibles.</p>

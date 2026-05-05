@@ -5,7 +5,7 @@
 
 import type { ReactElement } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
-import { Button } from '@shared/ui';
+import { Button } from '@shared/ui/Button';
 
 interface ErrorOfertasActivasProps {
   error?: string;

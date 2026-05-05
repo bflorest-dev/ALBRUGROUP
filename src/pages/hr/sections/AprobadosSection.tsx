@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, Button } from '@shared/ui';
+import { FlatpickrDateInput } from '@shared/ui/date-picker';
 import { DsDataTable, DsInlineMessage, type DsDataTableColumn } from '@shared/ui/design-system';
 import {
   createEmpleado,
@@ -22,18 +23,6 @@ type PostulacionAprobada = RrhhPostulacion & {
 
 const getToday = () => new Date().toISOString().split('T')[0] ?? '';
 
-const getErrorMessage = (error: unknown, fallback: string): string => {
-  if (
-    typeof error === 'object' &&
-    error !== null &&
-    'message' in error &&
-    typeof error.message === 'string'
-  ) {
-    return error.message;
-  }
-  return fallback;
-};
-
 const normalizeToInputDate = (value: unknown): string => {
   const raw = String(value ?? '').trim();
   if (!raw) return '';
@@ -44,10 +33,8 @@ const normalizeToInputDate = (value: unknown): string => {
 };
 
 const getPostulanteFechaNacimiento = (row: RrhhPostulacion): string => {
-  const rawRow = row as unknown as Record<string, unknown>;
-  const rawPostulante =
-    (rawRow.postulante as Record<string, unknown> | undefined) ?? {};
-
+  const rawRow = row as any;
+  const rawPostulante = rawRow?.postulante ?? {};
   return normalizeToInputDate(
     rawPostulante.fechaNacimiento ??
       rawPostulante.fecha_nacimiento ??
@@ -76,7 +63,7 @@ const resolveUltimaTipificacion = (eventos: RrhhEventoPostulacion[]): string => 
 };
 
 const resolveEtapa = (item: RrhhPostulacion, eventos: RrhhEventoPostulacion[]): string => {
-  const row = item as unknown as Record<string, unknown>;
+  const row = item as any;
   const fromRow = item.etapaProceso ?? row.etapa ?? row.etapa_proceso;
   if (fromRow) return String(fromRow);
 
@@ -89,7 +76,7 @@ const resolveEtapa = (item: RrhhPostulacion, eventos: RrhhEventoPostulacion[]): 
 };
 
 const resolveEstado = (item: RrhhPostulacion): string => {
-  const row = item as unknown as Record<string, unknown>;
+  const row = item as any;
   return String(
     item.estadoProceso ??
       row.estado ??
@@ -161,8 +148,8 @@ export const AprobadosSection: React.FC = () => {
         })
       );
       setRows(enriched);
-    } catch (err: unknown) {
-      setMessage(getErrorMessage(err, 'No se pudo cargar la bandeja de aprobados.'));
+    } catch (err: any) {
+      setMessage(err?.message ?? 'No se pudo cargar la bandeja de aprobados.');
     } finally {
       setLoading(false);
     }
@@ -194,9 +181,6 @@ export const AprobadosSection: React.FC = () => {
   };
 
   const openEmpleadoModal = (row: PostulacionAprobada) => {
-    const postulanteRecord =
-      (row.postulante as Record<string, unknown> | undefined) ?? {};
-
     setEmpleadoPostulacion(row);
     setEmpleadoForm((prev) => ({
       ...prev,
@@ -204,8 +188,8 @@ export const AprobadosSection: React.FC = () => {
       apellidos: String(row.postulante?.apellidos ?? ''),
       numeroDocumento: String(row.postulante?.documento ?? ''),
       fechaNacimiento: getPostulanteFechaNacimiento(row),
-      celularPersonal: String(postulanteRecord.celular ?? ''),
-      correoPersonal: String(postulanteRecord.correo ?? ''),
+      celularPersonal: String((row as any).postulante?.celular ?? ''),
+      correoPersonal: String((row as any).postulante?.correo ?? ''),
       idEmpresaContratista: Number(empresasContratistasActivas[0]?.id ?? prev.idEmpresaContratista ?? 1),
     }));
     setContratoForm((prev) => ({
@@ -273,10 +257,8 @@ export const AprobadosSection: React.FC = () => {
       setEmpleadoOpen(false);
       setMessage('Empleado validado/registrado y contrato generado correctamente.');
       await loadData();
-    } catch (err: unknown) {
-      setMessage(
-        getErrorMessage(err, 'No se pudo completar registro automático de empleado/contrato.')
-      );
+    } catch (err: any) {
+      setMessage(err?.message ?? 'No se pudo completar registro automático de empleado/contrato.');
     }
   };
 
@@ -352,7 +334,7 @@ export const AprobadosSection: React.FC = () => {
         />
       </div>
 
-      <Modal isOpen={historialOpen} onClose={() => setHistorialOpen(false)} title="Historial de Eventos" size="lg">
+      <Modal isOpen={historialOpen} onClose={() => setHistorialOpen(false)} title="Historial de Eventos" size="lg" className="rrhh-modal-theme">
         <div className={styles.historyWrap}>
           <ul className={styles.historyList}>
             {eventosOrdenados.map((e) => (
@@ -366,7 +348,7 @@ export const AprobadosSection: React.FC = () => {
         </div>
       </Modal>
 
-      <Modal isOpen={empleadoOpen} onClose={() => setEmpleadoOpen(false)} title="Registrar Empleado" size="lg">
+      <Modal isOpen={empleadoOpen} onClose={() => setEmpleadoOpen(false)} title="Registrar Empleado" size="lg" className="rrhh-modal-theme">
         <div className={styles.modalBody}>
           <div className={styles.formGrid}>
             <div className={styles.field}>
@@ -402,7 +384,11 @@ export const AprobadosSection: React.FC = () => {
 
             <div className={styles.field}>
               <label className={styles.label}>Fecha Nacimiento</label>
-              <input type="date" className={styles.control} value={String(empleadoForm.fechaNacimiento ?? '')} onChange={(e) => setEmpleadoForm((prev) => ({ ...prev, fechaNacimiento: e.target.value }))} />
+              <FlatpickrDateInput
+                value={String(empleadoForm.fechaNacimiento ?? '')}
+                onChange={(value) => setEmpleadoForm((prev) => ({ ...prev, fechaNacimiento: value }))}
+                inputClassName={styles.control}
+              />
             </div>
 
             <div className={styles.field}>
@@ -621,21 +607,20 @@ export const AprobadosSection: React.FC = () => {
 
             <div className={styles.field}>
               <label className={styles.label}>Fecha Inicio</label>
-              <input
-                className={styles.control}
-                type="date"
+              <FlatpickrDateInput
                 value={String(contratoForm.fechaInicio ?? '')}
-                onChange={(e) => setContratoForm((prev) => ({ ...prev, fechaInicio: e.target.value }))}
+                onChange={(value) => setContratoForm((prev) => ({ ...prev, fechaInicio: value }))}
+                inputClassName={styles.control}
               />
             </div>
 
             <div className={styles.field}>
               <label className={styles.label}>Fecha Fin</label>
-              <input
-                className={styles.control}
-                type="date"
+              <FlatpickrDateInput
                 value={String(contratoForm.fechaFin ?? '')}
-                onChange={(e) => setContratoForm((prev) => ({ ...prev, fechaFin: e.target.value }))}
+                onChange={(value) => setContratoForm((prev) => ({ ...prev, fechaFin: value }))}
+                inputClassName={styles.control}
+                minDate={String(contratoForm.fechaInicio ?? '') || undefined}
               />
             </div>
           </div>

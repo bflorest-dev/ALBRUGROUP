@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Search, SlidersHorizontal, Plus } from 'lucide-react';
-import { Button, Modal, SessionLogoutButton } from '@shared/ui';
+import { Button, Modal } from '@shared/ui';
+import { DsPageShell, DsSectionCard, DsTabs } from '@shared/ui/design-system';
 import {
   ListadoOfertasActivas,
   OfertaLaboralForm,
@@ -47,119 +48,104 @@ const PaginaRRHH: React.FC = () => {
 
   return (
     <>
-      <div className={styles.container}>
-        <header className={styles.header}>
-          <div className={styles.headerRow}>
-            <div>
-              <p className={styles.eyebrow}>Recursos Humanos</p>
-              <h1>Recursos Humanos</h1>
-              <p className={styles.subtitle}>Gestiona ofertas laborales y candidatos de manera eficiente</p>
-            </div>
-            <SessionLogoutButton />
-          </div>
-        </header>
+      <DsPageShell
+        eyebrow="Recursos Humanos"
+        title="Recursos Humanos"
+        subtitle="Gestiona ofertas laborales y candidatos de manera eficiente"
+      >
+        <DsTabs
+          value={activeTab}
+          onChange={setActiveTab}
+          items={tabs.map((tab) => ({ value: tab.id, label: tab.label }))}
+          className="rrhh-tabs-theme"
+        />
 
-        <nav className={styles.tabs}>
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`${styles.tab} ${activeTab === tab.id ? styles.active : ''}`.trim()}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-
-        <main className={styles.content}>
-          {activeTab === 'ofertas' && (
-            <section className={styles.section}>
-              <div className={styles.toolbarPanel}>
-                <div className={styles.toolbar}>
-                  <Button type="button" onClick={openCreateModal} variant="primary">
-                    <Plus size={16} />
-                    Nueva Oferta
-                  </Button>
-                  <div className={styles.searchActions}>
-                    <label className={styles.searchField}>
-                      <Search size={16} className={styles.searchIcon} />
-                      <input
-                        type="text"
-                        value={searchTerm}
-                        onChange={(event) => setSearchTerm(event.target.value)}
-                        placeholder="Buscar por código, negocio o puesto..."
-                        className={styles.searchInput}
-                      />
-                    </label>
-                    <Button type="button" variant="secondary">
-                      <SlidersHorizontal size={16} />
-                      Filtros
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              <ListadoOfertasActivas
-                ofertasActivas={ofertasActivas}
-                ofertasLoading={ofertasLoading}
-                ofertasError={ofertasError}
-                onRefetchOfertas={refetchOfertasActivas}
-                searchTerm={searchTerm}
-                hideCreateButton
-                hideRefreshButton
-                onCreate={openCreateModal}
-              />
-            </section>
-          )}
-
-          {activeTab === 'reclutar' && (
-            <section className={styles.section}>
-              <div className={styles.sectionHead}>
-                <div>
-                  <h2 className={styles.sectionTitle}>Reclutar</h2>
-                  <p className={styles.sectionDescription}>Gestiona las postulaciones en la fase de reclutamiento.</p>
-                </div>
-                <Button type="button" onClick={openCreatePostulacionModal} variant="primary">
+        {activeTab === 'ofertas' && (
+          <>
+            <DsSectionCard>
+              <div className={styles.toolbar}>
+                <Button type="button" onClick={openCreateModal} variant="primary">
                   <Plus size={16} />
-                  Crear Postulación
+                  Nueva Oferta
                 </Button>
+                <div className={styles.searchActions}>
+                  <label className={styles.searchField}>
+                    <Search size={16} className={styles.searchIcon} />
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                      placeholder="Buscar por código, negocio o puesto..."
+                      className={styles.searchInput}
+                    />
+                  </label>
+                  <Button type="button" variant="secondary">
+                    <SlidersHorizontal size={16} />
+                    Filtros
+                  </Button>
+                </div>
               </div>
-              <BandejaPostulaciones
-                ref={postulacionesRef}
-                activeSection="reclutamiento"
-                hideTabs
-                hideHeader
-                hideCreateButton
-              />
-            </section>
-          )}
+            </DsSectionCard>
 
-          {activeTab === 'aprobados' && (
-            <section className={styles.section}>
-              <AprobadosSection />
-            </section>
-          )}
+            <ListadoOfertasActivas
+              ofertasActivas={ofertasActivas}
+              ofertasLoading={ofertasLoading}
+              ofertasError={ofertasError}
+              onRefetchOfertas={refetchOfertasActivas}
+              searchTerm={searchTerm}
+              hideCreateButton
+              hideRefreshButton
+              onCreate={openCreateModal}
+            />
+          </>
+        )}
 
-          {activeTab === 'empleados' && (
-            <section className={styles.section}>
-              <EmpleadosSection />
-            </section>
-          )}
+        {activeTab === 'reclutar' && (
+          <DsSectionCard
+            title="Reclutar"
+            description="Gestiona las postulaciones en la fase de reclutamiento."
+            actions={(
+              <Button type="button" onClick={openCreatePostulacionModal} variant="primary">
+                <Plus size={16} />
+                Crear Postulación
+              </Button>
+            )}
+          >
+            <BandejaPostulaciones
+              ref={postulacionesRef}
+              activeSection="reclutamiento"
+              hideTabs
+              hideHeader
+              hideCreateButton
+            />
+          </DsSectionCard>
+        )}
 
-          {activeTab === 'contratos' && (
-            <section className={styles.section}>
-              <ContratosSection />
-            </section>
-          )}
-        </main>
-      </div>
+        {activeTab === 'aprobados' && (
+          <DsSectionCard>
+            <AprobadosSection />
+          </DsSectionCard>
+        )}
+
+        {activeTab === 'empleados' && (
+          <DsSectionCard>
+            <EmpleadosSection />
+          </DsSectionCard>
+        )}
+
+        {activeTab === 'contratos' && (
+          <DsSectionCard>
+            <ContratosSection />
+          </DsSectionCard>
+        )}
+      </DsPageShell>
 
       <Modal
         isOpen={isCreateModalOpen}
         onClose={closeCreateModal}
         title="Crear Nueva Oferta"
         size="lg"
+        className="rrhh-modal-theme"
       >
         <OfertaLaboralForm
           onSuccess={handleCreateSuccess}

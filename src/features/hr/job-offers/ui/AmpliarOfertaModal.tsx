@@ -14,6 +14,9 @@ interface AmpliarOfertaModalProps {
 const formatTotalVacantes = (oferta: OfertaLaboralResponse): number =>
   oferta.cantidadInicial + oferta.ampliaciones.reduce((sum, amp) => sum + amp.cantidad, 0);
 
+const formatLabel = (value: OfertaLaboralResponse['horario']): string =>
+  value === 'AFTERNOON' ? 'Tarde' : 'Mañana';
+
 const normalizeFecha = (dateValue: string): string => {
   const ddmmyyyy = /^\s*(\d{2})\/(\d{2})\/(\d{4})\s*$/;
   const match = dateValue.match(ddmmyyyy);

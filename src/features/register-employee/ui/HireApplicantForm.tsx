@@ -1,12 +1,11 @@
 ﻿/**
  * Componente HireApplicantForm (moved to features/RRHH)
- * Migrado al Design System - Quick Win
  */
 
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import type { HireApplicantFormData, Applicant } from '@shared/types';
-import { Button } from '@shared/ui/button';
+import './HireApplicantForm.css';
 
 interface HireApplicantFormProps {
   applicant: Applicant;
@@ -34,7 +33,7 @@ export const HireApplicantForm = ({ applicant, onSubmit, onCancel }: HireApplica
     role: applicant?.positionOfInterest || '',
     puesto: applicant?.positionOfInterest || '',
     startDate: '',
-    modality: (applicant as unknown as { modality?: string })?.modality || '',
+    modality: applicant?.modality || '',
     scheduleType: '',
     personalEmail: '',
     applicantId: applicant?.id?.toString() || '',
@@ -49,13 +48,9 @@ export const HireApplicantForm = ({ applicant, onSubmit, onCancel }: HireApplica
   return (
     <form className="hire-applicant-form" onSubmit={handleSubmit}>
       <div className="form-columns">{/* ... */}</div>
-      <div className="flex justify-end gap-3 pt-4 border-t border-border">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
-        <Button type="submit">
-          Contratar
-        </Button>
+      <div className="form-actions">
+        <button type="button" className="btn-cancel" onClick={onCancel}>Cancelar</button>
+        <button type="submit" className="btn-submit">Contratar</button>
       </div>
     </form>
   );

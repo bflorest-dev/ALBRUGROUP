@@ -9,6 +9,10 @@ export const routeHelpers = {
       'COMMUNITY': '/community',
       'GTR': '/gtr',
       'ASESOR_DE_VENTAS': '/asesores',
+      'ASESOR_VENTAS': '/asesores',
+      'SUPERVISOR_VENTAS': '/asesores',
+      'ASESOR_GTR': '/gtr',
+      'ASESOR_BACKOFFICE': '/panel',
     };
 
     for (const role of roles) {

@@ -6,12 +6,6 @@ import './index.css'
 import App from '@app/App.tsx'
 import { clearAllStorage } from '@shared/lib'
 
-declare global {
-  interface Window {
-    clearAllStorage?: typeof clearAllStorage
-  }
-}
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -25,7 +19,7 @@ const queryClient = new QueryClient({
 
 // Make clearAllStorage available in dev console
 if (import.meta.env.DEV) {
-  window.clearAllStorage = clearAllStorage
+  (window as any).clearAllStorage = clearAllStorage
 }
 
 createRoot(document.getElementById('root')!).render(

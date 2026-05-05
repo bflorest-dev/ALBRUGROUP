@@ -37,6 +37,8 @@ export function ListadoOfertasActivas({
   onRefetchOfertas,
   searchTerm = '',
   hideHeader = false,
+  hideCreateButton = false,
+  hideRefreshButton = false,
   onCreate,
   isCreateModalOpen,
   onCloseCreateModal,

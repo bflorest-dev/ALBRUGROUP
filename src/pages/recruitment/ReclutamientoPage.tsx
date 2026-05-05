@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SessionLogoutButton } from '@shared/ui';
+import { DsTabs } from '@shared/ui/design-system';
 import BandejaReclutamiento from './BandejaReclutamiento';
 import GrupoCapacitacion from './GrupoCapacitacion';
 import styles from './ReclutamientoPage.module.css';
@@ -16,42 +16,20 @@ const ReclutamientoPage: React.FC = () => {
 
   return (
     <div className={styles.root}>
-      <header className={styles.header}>
-        <div className={styles.headerRow}>
-          <div>
-            <p className={styles.eyebrow}>Reclutamiento</p>
-            <h1>Reclutamiento</h1>
-            <p className={styles.subtitle}>Gestiona la bandeja de reclutamiento y grupos de capacitación.</p>
-          </div>
-          <SessionLogoutButton />
-        </div>
-      </header>
+      <DsTabs
+        value={activeTab}
+        onChange={setActiveTab}
+        items={TAB_ITEMS.map((tab) => ({ value: tab.id, label: tab.label }))}
+        className={`${styles.tabs} rrhh-tabs-theme`}
+      />
 
-      <nav className={styles.tabs} aria-label="Secciones de reclutamiento">
-        {TAB_ITEMS.map((tab) => {
-          const isActive = activeTab === tab.id;
-
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              className={`${styles.tab} ${isActive ? styles.active : ''}`}
-              aria-pressed={isActive}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </nav>
-
-      <main className={styles.content}>
+      <div className={styles.contentPane}>
         {activeTab === 'BANDEJA_RECLUTAMIENTO' ? (
           <BandejaReclutamiento />
         ) : (
           <GrupoCapacitacion />
         )}
-      </main>
+      </div>
     </div>
   );
 };

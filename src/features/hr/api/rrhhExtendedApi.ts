@@ -1,7 +1,4 @@
 import { http, recruitmentHttp, rrhhHttp } from '@shared/api/httpClient';
-import type { AxiosRequestConfig } from 'axios';
-import { isObject, hasProperty, isArray, isNumber, isString } from '@shared/lib/type-guards';
-import { getErrorMessage } from '@shared/lib/error-utils';
 
 export interface RrhhPostulacion {
   id: number;
@@ -14,6 +11,7 @@ export interface RrhhPostulacion {
     apellidos?: string;
     documento?: string;
   };
+  [key: string]: unknown;
 }
 
 export interface RrhhEventoPostulacion {
@@ -28,6 +26,7 @@ export interface RrhhEventoPostulacion {
   accion?: string;
   createdAt?: string;
   fecha?: string;
+  [key: string]: unknown;
 }
 
 export interface RrhhEmpleado {
@@ -38,6 +37,7 @@ export interface RrhhEmpleado {
   puesto?: string;
   compania?: string;
   estado?: string;
+  [key: string]: unknown;
 }
 
 export interface RrhhContrato {
@@ -51,6 +51,7 @@ export interface RrhhContrato {
   sueldoBase?: number;
   fechaInicio?: string;
   fechaFin?: string;
+  [key: string]: unknown;
 }
 
 export interface RrhhEmpresaContratista {
@@ -58,6 +59,7 @@ export interface RrhhEmpresaContratista {
   nombre: string;
   activo: boolean;
   createdAt?: string;
+  [key: string]: unknown;
 }
 
 interface PageResponse<T> {
@@ -65,53 +67,27 @@ interface PageResponse<T> {
   items?: T[];
 }
 
-type RrhhRequestConfig = AxiosRequestConfig & {
-  suppressErrorLog?: boolean;
-};
-
 const unwrapArray = <T>(payload: T[] | PageResponse<T> | null | undefined): T[] => {
   if (Array.isArray(payload)) return payload;
-  if (!payload || !isObject(payload)) return [];
-  
-  if (hasProperty(payload, 'content') && isArray(payload.content)) {
-    return payload.content as T[];
-  }
-  if (hasProperty(payload, 'items') && isArray(payload.items)) {
-    return payload.items as T[];
-  }
-  
+  if (!payload || typeof payload !== 'object') return [];
+  if (Array.isArray(payload.content)) return payload.content;
+  if (Array.isArray(payload.items)) return payload.items;
   return [];
 };
 
-// ✅ CORREGIDO: Usar type guards para validación segura
-const normalizeContrato = (contrato: unknown): RrhhContrato => {
-  if (!isObject(contrato)) {
-    return {};
-  }
-
-  const getNumberValue = (key: string): number | undefined => {
-    const value = contrato[key];
-    return isNumber(value) ? value : undefined;
-  };
-
-  const getStringValue = (key: string): string | undefined => {
-    const value = contrato[key];
-    return isString(value) ? value : undefined;
-  };
-
-  return {
-    id: getNumberValue('id') ?? getNumberValue('idContrato') ?? getNumberValue('id_contrato'),
-    idEmpleado: getNumberValue('idEmpleado') ?? getNumberValue('id_empleado'),
-    puestoTrabajo: getStringValue('puestoTrabajo') ?? getStringValue('puesto_trabajo'),
-    sueldoBase: getNumberValue('sueldoBase') ?? getNumberValue('sueldo_base'),
-    fechaInicio: getStringValue('fechaInicio') ?? getStringValue('fecha_inicio'),
-    fechaFin: getStringValue('fechaFin') ?? getStringValue('fecha_fin'),
-    regimen: getStringValue('regimen'),
-    modalidad: getStringValue('modalidad'),
-    seguroSalud: getStringValue('seguroSalud') ?? getStringValue('seguro_salud'),
-    sistemaPensiones: getStringValue('sistemaPensiones') ?? getStringValue('sistema_pensiones'),
-  };
-};
+const normalizeContrato = (contrato: any): RrhhContrato => ({
+  id: contrato.id ?? contrato.idContrato ?? contrato.id_contrato,
+  idEmpleado: contrato.idEmpleado ?? contrato.id_empleado,
+  puestoTrabajo: contrato.puestoTrabajo ?? contrato.puesto_trabajo,
+  sueldoBase: contrato.sueldoBase ?? contrato.sueldo_base,
+  fechaInicio: contrato.fechaInicio ?? contrato.fecha_inicio,
+  fechaFin: contrato.fechaFin ?? contrato.fecha_fin,
+  regimen: contrato.regimen,
+  modalidad: contrato.modalidad,
+  seguroSalud: contrato.seguroSalud ?? contrato.seguro_salud,
+  sistemaPensiones: contrato.sistemaPensiones ?? contrato.sistema_pensiones,
+  ...contrato,
+});
 
 export async function getBandejaContratacion(): Promise<RrhhPostulacion[]> {
   const response = await recruitmentHttp.get<RrhhPostulacion[]>('/postulaciones/bandeja/contratacion');
@@ -134,14 +110,10 @@ export async function confirmarContratacion(postulacionId: number, payload: { id
 }
 
 export async function getEmpleadoByDocumento(documento: string): Promise<RrhhEmpleado | null> {
-  const requestConfig: RrhhRequestConfig = {
+  const response = await http.get<RrhhEmpleado>(`/empleados/${documento}/numero-documento`, {
     suppressErrorLog: true,
     validateStatus: (status: number) => status === 200 || status === 404,
-  };
-
-  const response = await http.get<RrhhEmpleado>(`/empleados/${documento}/numero-documento`, {
-    ...requestConfig,
-  });
+  } as any);
   return response.status === 404 ? null : response.data;
 }
 
@@ -184,8 +156,7 @@ export async function patchEmpleadoDatosContactoUbicacion(id: number, payload: R
   try {
     const response = await http.patch(`/empleados/${id}/datos-contacto-ubicación`, payload);
     return response.data;
-  } catch (error) {
-    console.warn('Endpoint con tilde falló, intentando sin tilde:', getErrorMessage(error));
+  } catch {
     const fallback = await http.patch(`/empleados/${id}/datos-contacto-ubicacion`, payload);
     return fallback.data;
   }
@@ -197,9 +168,8 @@ export async function patchEmpleadoListaNegra(id: number, payload: { listaNegra:
 }
 
 export async function getEventosEmpleado(idEmpleado: number): Promise<Array<Record<string, unknown>>> {
-  const response = await http.get<unknown>(`/eventos/${idEmpleado}/empleados`);
-  const data = Array.isArray(response.data) ? response.data : [];
-  return data.filter(isObject);
+  const response = await http.get<Array<Record<string, unknown>>>(`/eventos/${idEmpleado}/empleados`);
+  return unwrapArray(response.data);
 }
 
 export async function registrarContrato(idEmpleado: number, payload: Record<string, unknown>) {
@@ -213,16 +183,9 @@ export async function getContratoVigente(idEmpleado: number): Promise<RrhhContra
 }
 
 export async function getContratoHistorico(idEmpleado: number): Promise<RrhhContrato[]> {
-  const response = await rrhhHttp.get<unknown>(`/contratos/${idEmpleado}/historico`);
+  const response = await rrhhHttp.get<RrhhContrato[] | { contratos?: RrhhContrato[] }>(`/contratos/${idEmpleado}/historico`);
   const data = response.data;
-  
-  let raw: unknown[] = [];
-  if (isArray(data)) {
-    raw = data;
-  } else if (isObject(data) && hasProperty(data, 'contratos') && isArray(data.contratos)) {
-    raw = data.contratos;
-  }
-  
+  const raw = Array.isArray(data) ? data : Array.isArray(data?.contratos) ? data.contratos : [];
   return raw.map(normalizeContrato);
 }
 
@@ -230,4 +193,3 @@ export async function cesarContrato(idContrato: number, payload: { fechaFin: str
   const response = await rrhhHttp.patch(`/contratos/${idContrato}/cesar-contrato`, payload);
   return response.data;
 }
-// ✅ CORREGIDO: Solo una llave de cierre al final

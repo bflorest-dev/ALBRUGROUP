@@ -23,6 +23,7 @@ export type PuestoObjetivo =
   | 'ASESOR_POSTVENTA';
 
 export type Horario = 'MORNING' | 'AFTERNOON';
+export type ModalidadOfertaLaboral = 'PART_TIME' | 'FULL_TIME' | 'SEMI_FULL' | 'SUPER_FULL';
 
 export type EstadoOferta = 'ACTIVO' | 'CANCELADO' | 'CERRADO' | 'COMPLETADO';
 
@@ -34,6 +35,7 @@ export interface CreateOfertaLaboralRequest {
   negocio: Negocio;
   puestoObjetivo: PuestoObjetivo;
   horario: Horario;
+  modalidad: ModalidadOfertaLaboral;
   cantidadInicial: number;
   plazoInicial: string; // YYYY-MM-DD
 }

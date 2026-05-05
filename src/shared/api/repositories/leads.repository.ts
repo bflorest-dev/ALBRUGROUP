@@ -15,6 +15,7 @@ import type {
   ServiciosProveedorResponse,
   ProveedorResponse,
   ProveedorRequest,
+  LeadAsesorVentasResponse,
   LeadAsesorDetalleResponse,
   LeadGtrResponse,
   LeadIntakeRequest,
@@ -29,18 +30,79 @@ import type {
   DistritoResponse,
   ZonaResponse,
   ZonaRequest,
-  TipificacionResponse,
-  SubtipificacionResponse,
   CatalogoResponse,
   CatalogoRequest,
   CatalogoEstadoRequest,
 } from '@shared/types';
+import {
+  leadCommandResponseSchema,
+  adicionalResponseArraySchema,
+  adicionalResponseSchema,
+  campanaResponseArraySchema,
+  campanaResponseSchema,
+  catalogoResponseSchema,
+  cuentaPublicitariaResponseArraySchema,
+  cuentaPublicitariaResponseSchema,
+  departamentoResponseArraySchema,
+  distritoResponseArraySchema,
+  eventoResponseArraySchema,
+  leadAsesorDetalleResponseSchema,
+  leadAsesorVentasResponseArraySchema,
+  leadGtrResponseArraySchema,
+  parseApiResponse,
+  planResponseArraySchema,
+  planResponseSchema,
+  promocionComercialResponseArraySchema,
+  promocionComercialResponseSchema,
+  provinciaResponseArraySchema,
+  proveedorResponseArraySchema,
+  proveedorResponseSchema,
+  serviciosProveedorResponseSchema,
+  zonaResponseArraySchema,
+  zonaResponseSchema,
+} from '@shared/api/responseSchemas';
 
 /**
  * Repositorio para Lead Service
  * Consumidor de endpoints: /leads/*
  */
 export class LeadsRepository {
+  private static parseLeadCommandPayload(payload: unknown, context: string): void {
+    if (payload === null || payload === undefined || payload === '') {
+      return;
+    }
+
+    parseApiResponse(leadCommandResponseSchema, payload, context);
+  }
+
+  private static normalizeLeadGtrList(payload: unknown): unknown[] {
+    if (Array.isArray(payload)) {
+      return payload;
+    }
+
+    if (!payload || typeof payload !== 'object') {
+      return [];
+    }
+
+    const wrapped = payload as Record<string, unknown>;
+    const candidates = [wrapped.data, wrapped.content, wrapped.items, wrapped.results];
+
+    for (const candidate of candidates) {
+      if (Array.isArray(candidate)) {
+        return candidate;
+      }
+
+      if (candidate && typeof candidate === 'object') {
+        const nested = candidate as Record<string, unknown>;
+        if (Array.isArray(nested.content)) {
+          return nested.content;
+        }
+      }
+    }
+
+    return [];
+  }
+
   // ========================================================================
   // CAMPAÑAS
   // ========================================================================
@@ -49,12 +111,12 @@ export class LeadsRepository {
     const response = await leadsHttp.get<CampanaResponse[]>('/campanas', {
       params: activo !== undefined ? { activo } : undefined,
     });
-    return response.data;
+    return parseApiResponse(campanaResponseArraySchema, response.data, 'GET /campanas');
   }
 
   static async createCampana(payload: CampanaRequest): Promise<CampanaResponse> {
     const response = await leadsHttp.post<CampanaResponse>('/campanas', payload);
-    return response.data;
+    return parseApiResponse(campanaResponseSchema, response.data, 'POST /campanas');
   }
 
   static async updateCampana(
@@ -62,12 +124,12 @@ export class LeadsRepository {
     payload: Partial<CampanaRequest>,
   ): Promise<CampanaResponse> {
     const response = await leadsHttp.put<CampanaResponse>(`/campanas/${id}`, payload);
-    return response.data;
+    return parseApiResponse(campanaResponseSchema, response.data, 'PUT /campanas/{id}');
   }
 
   static async deleteCampana(id: number): Promise<CampanaResponse> {
     const response = await leadsHttp.delete<CampanaResponse>(`/campanas/${id}`);
-    return response.data;
+    return parseApiResponse(campanaResponseSchema, response.data, 'DELETE /campanas/{id}');
   }
 
   // ========================================================================
@@ -78,14 +140,22 @@ export class LeadsRepository {
     const response = await leadsHttp.get<CuentaPublicitariaResponse[]>('/cuentas-publicitarias', {
       params: activo !== undefined ? { activo } : undefined,
     });
-    return response.data;
+    return parseApiResponse(
+      cuentaPublicitariaResponseArraySchema,
+      response.data,
+      'GET /cuentas-publicitarias',
+    );
   }
 
   static async getCuentasPublicitariasActivas(): Promise<CuentaPublicitariaResponse[]> {
     const response = await leadsHttp.get<CuentaPublicitariaResponse[]>(
       '/cuentas-publicitarias/activas',
     );
-    return response.data;
+    return parseApiResponse(
+      cuentaPublicitariaResponseArraySchema,
+      response.data,
+      'GET /cuentas-publicitarias/activas',
+    );
   }
 
   static async createCuentaPublicitaria(
@@ -95,7 +165,11 @@ export class LeadsRepository {
       '/cuentas-publicitarias',
       payload,
     );
-    return response.data;
+    return parseApiResponse(
+      cuentaPublicitariaResponseSchema,
+      response.data,
+      'POST /cuentas-publicitarias',
+    );
   }
 
   static async deleteCuentaPublicitaria(
@@ -104,7 +178,11 @@ export class LeadsRepository {
     const response = await leadsHttp.delete<CuentaPublicitariaResponse>(
       `/cuentas-publicitarias/${id}`,
     );
-    return response.data;
+    return parseApiResponse(
+      cuentaPublicitariaResponseSchema,
+      response.data,
+      'DELETE /cuentas-publicitarias/{id}',
+    );
   }
 
   // ========================================================================
@@ -116,7 +194,8 @@ export class LeadsRepository {
    * POST /leads/leads/intake
    */
   static async intakeLead(payload: LeadIntakeRequest): Promise<void> {
-    await leadsHttp.post('/leads/intake', payload);
+    const response = await leadsHttp.post('/leads/intake', payload);
+    this.parseLeadCommandPayload(response.data, 'POST /leads/intake');
   }
 
   /**
@@ -127,7 +206,23 @@ export class LeadsRepository {
     idLead: number,
     payload: LeadAsignacionRequest,
   ): Promise<void> {
-    await leadsHttp.patch(`/leads/${idLead}/asignacion`, payload);
+    const response = await leadsHttp.patch(`/leads/${idLead}/asignacion`, payload);
+    this.parseLeadCommandPayload(response.data, 'PATCH /leads/{idLead}/asignacion');
+  }
+
+  /**
+   * Obtiene la bandeja de leads asignados al asesor actual
+   * GET /leads/asesor-ventas
+   */
+  static async getBandejaAsesor(): Promise<LeadAsesorVentasResponse[]> {
+    const response = await leadsHttp.get<LeadAsesorVentasResponse[]>(
+      '/leads/asesor-ventas',
+    );
+    return parseApiResponse(
+      leadAsesorVentasResponseArraySchema,
+      response.data,
+      'GET /leads/asesor-ventas',
+    );
   }
 
   /**
@@ -138,7 +233,11 @@ export class LeadsRepository {
     const response = await leadsHttp.get<LeadAsesorDetalleResponse>(
       `/leads/${idLead}/detalle-asesor`,
     );
-    return response.data;
+    return parseApiResponse(
+      leadAsesorDetalleResponseSchema,
+      response.data,
+      'GET /leads/{idLead}/detalle-asesor',
+    );
   }
 
   /**
@@ -149,7 +248,8 @@ export class LeadsRepository {
     idLead: number,
     payload: LeadDatosPreventaRequest,
   ): Promise<void> {
-    await leadsHttp.patch(`/leads/${idLead}/datos-preventa`, payload);
+    const response = await leadsHttp.patch(`/leads/${idLead}/datos-preventa`, payload);
+    this.parseLeadCommandPayload(response.data, 'PATCH /leads/{idLead}/datos-preventa');
   }
 
   /**
@@ -160,7 +260,8 @@ export class LeadsRepository {
     idLead: number,
     payload: LeadDireccionRequest,
   ): Promise<void> {
-    await leadsHttp.patch(`/leads/${idLead}/direccion`, payload);
+    const response = await leadsHttp.patch(`/leads/${idLead}/direccion`, payload);
+    this.parseLeadCommandPayload(response.data, 'PATCH /leads/{idLead}/direccion');
   }
 
   /**
@@ -171,7 +272,8 @@ export class LeadsRepository {
     idLead: number,
     payload: LeadOfertaComercialRequest,
   ): Promise<void> {
-    await leadsHttp.patch(`/leads/${idLead}/oferta-comercial`, payload);
+    const response = await leadsHttp.patch(`/leads/${idLead}/oferta-comercial`, payload);
+    this.parseLeadCommandPayload(response.data, 'PATCH /leads/{idLead}/oferta-comercial');
   }
 
   /**
@@ -182,7 +284,8 @@ export class LeadsRepository {
     idLead: number,
     payload: LeadTipificacionRequest,
   ): Promise<void> {
-    await leadsHttp.post(`/leads/${idLead}/tipificacion`, payload);
+    const response = await leadsHttp.post(`/leads/${idLead}/tipificacion`, payload);
+    this.parseLeadCommandPayload(response.data, 'POST /leads/{idLead}/tipificacion');
   }
 
   /**
@@ -190,7 +293,8 @@ export class LeadsRepository {
    * POST /leads/leads/{idLead}/contacto
    */
   static async registrarContacto(idLead: number, payload?: LeadContactoRequest): Promise<void> {
-    await leadsHttp.post(`/leads/${idLead}/contacto`, payload);
+    const response = await leadsHttp.post(`/leads/${idLead}/contacto`, payload);
+    this.parseLeadCommandPayload(response.data, 'POST /leads/{idLead}/contacto');
   }
 
   /**
@@ -199,7 +303,11 @@ export class LeadsRepository {
    */
   static async getBandejaGtr(params?: Record<string, unknown>): Promise<LeadGtrResponse[]> {
     const response = await leadsHttp.get<LeadGtrResponse[]>('/leads/gtr', { params });
-    return response.data;
+    return parseApiResponse(
+      leadGtrResponseArraySchema,
+      this.normalizeLeadGtrList(response.data),
+      'GET /leads/gtr',
+    );
   }
 
   // ========================================================================
@@ -208,7 +316,7 @@ export class LeadsRepository {
 
   static async getEventosPorLead(idLead: number): Promise<EventoResponse[]> {
     const response = await leadsHttp.get<EventoResponse[]>(`/eventos/lead/${idLead}`);
-    return response.data;
+    return parseApiResponse(eventoResponseArraySchema, response.data, 'GET /eventos/lead/{idLead}');
   }
 
   static async getEventosPorEmpleado(
@@ -218,7 +326,11 @@ export class LeadsRepository {
     const response = await leadsHttp.get<EventoResponse[]>(`/eventos/empleado/${idEmpleado}`, {
       params,
     });
-    return response.data;
+    return parseApiResponse(
+      eventoResponseArraySchema,
+      response.data,
+      'GET /eventos/empleado/{idEmpleado}',
+    );
   }
 
   // ========================================================================
@@ -227,22 +339,22 @@ export class LeadsRepository {
 
   static async getPlanes(params?: Record<string, unknown>): Promise<PlanResponse[]> {
     const response = await leadsHttp.get<PlanResponse[]>('/planes', { params });
-    return response.data;
+    return parseApiResponse(planResponseArraySchema, response.data, 'GET /planes');
   }
 
   static async createPlan(payload: PlanRequest): Promise<PlanResponse> {
     const response = await leadsHttp.post<PlanResponse>('/planes', payload);
-    return response.data;
+    return parseApiResponse(planResponseSchema, response.data, 'POST /planes');
   }
 
   static async updatePlan(id: number, payload: PlanUpdateRequest): Promise<PlanResponse> {
     const response = await leadsHttp.put<PlanResponse>(`/planes/${id}`, payload);
-    return response.data;
+    return parseApiResponse(planResponseSchema, response.data, 'PUT /planes/{id}');
   }
 
   static async deletePlan(id: number): Promise<PlanResponse> {
     const response = await leadsHttp.delete<PlanResponse>(`/planes/${id}`);
-    return response.data;
+    return parseApiResponse(planResponseSchema, response.data, 'DELETE /planes/{id}');
   }
 
   // ========================================================================
@@ -253,7 +365,11 @@ export class LeadsRepository {
     const response = await leadsHttp.get<ServiciosProveedorResponse>(
       `/planes/servicios?idProveedor=${idProveedor}`,
     );
-    return response.data;
+    return parseApiResponse(
+      serviciosProveedorResponseSchema,
+      response.data,
+      'GET /planes/servicios',
+    );
   }
 
   // ========================================================================
@@ -264,12 +380,12 @@ export class LeadsRepository {
     const response = await leadsHttp.get<AdicionalResponse[]>('/planes/adicionales', {
       params: idProveedor ? { idProveedor } : undefined,
     });
-    return response.data;
+    return parseApiResponse(adicionalResponseArraySchema, response.data, 'GET /planes/adicionales');
   }
 
   static async createAdicional(payload: AdicionalRequest): Promise<AdicionalResponse> {
     const response = await leadsHttp.post<AdicionalResponse>('/planes/adicionales', payload);
-    return response.data;
+    return parseApiResponse(adicionalResponseSchema, response.data, 'POST /planes/adicionales');
   }
 
   // ========================================================================
@@ -300,19 +416,31 @@ export class LeadsRepository {
     const response = await leadsHttp.get<PromocionComercialResponse[]>('/promociones', {
       params: Object.keys(params).length > 0 ? params : undefined,
     });
-    return response.data;
+    return parseApiResponse(
+      promocionComercialResponseArraySchema,
+      response.data,
+      'GET /promociones',
+    );
   }
 
   static async createPromocion(
     payload: PromocionComercialRequest,
   ): Promise<PromocionComercialResponse> {
     const response = await leadsHttp.post<PromocionComercialResponse>('/promociones', payload);
-    return response.data;
+    return parseApiResponse(
+      promocionComercialResponseSchema,
+      response.data,
+      'POST /promociones',
+    );
   }
 
   static async deletePromocion(id: number): Promise<PromocionComercialResponse> {
     const response = await leadsHttp.delete<PromocionComercialResponse>(`/promociones/${id}`);
-    return response.data;
+    return parseApiResponse(
+      promocionComercialResponseSchema,
+      response.data,
+      'DELETE /promociones/{id}',
+    );
   }
 
   // ========================================================================
@@ -321,17 +449,21 @@ export class LeadsRepository {
 
   static async getProveedores(): Promise<ProveedorResponse[]> {
     const response = await leadsHttp.get<ProveedorResponse[]>('/proveedores');
-    return response.data;
+    return parseApiResponse(proveedorResponseArraySchema, response.data, 'GET /proveedores');
   }
 
   static async createProveedor(payload: ProveedorRequest): Promise<ProveedorResponse> {
     const response = await leadsHttp.post<ProveedorResponse>('/proveedores', payload);
-    return response.data;
+    return parseApiResponse(proveedorResponseSchema, response.data, 'POST /proveedores');
   }
 
   static async updateProveedorEstado(id: number): Promise<ProveedorResponse> {
     const response = await leadsHttp.patch<ProveedorResponse>(`/proveedores/${id}/estado`);
-    return response.data;
+    return parseApiResponse(
+      proveedorResponseSchema,
+      response.data,
+      'PATCH /proveedores/{id}/estado',
+    );
   }
 
   // ========================================================================
@@ -342,22 +474,22 @@ export class LeadsRepository {
     const response = await leadsHttp.get<ZonaResponse[]>('/zonas', {
       params: activo !== undefined ? { activo } : undefined,
     });
-    return response.data;
+    return parseApiResponse(zonaResponseArraySchema, response.data, 'GET /zonas');
   }
 
   static async createZona(payload: ZonaRequest): Promise<ZonaResponse> {
     const response = await leadsHttp.post<ZonaResponse>('/zonas', payload);
-    return response.data;
+    return parseApiResponse(zonaResponseSchema, response.data, 'POST /zonas');
   }
 
   static async updateZona(id: number, payload: ZonaRequest): Promise<ZonaResponse> {
     const response = await leadsHttp.put<ZonaResponse>(`/zonas/${id}`, payload);
-    return response.data;
+    return parseApiResponse(zonaResponseSchema, response.data, 'PUT /zonas/{id}');
   }
 
   static async updateZonaEstado(id: number): Promise<ZonaResponse> {
     const response = await leadsHttp.patch<ZonaResponse>(`/zonas/${id}/estado`);
-    return response.data;
+    return parseApiResponse(zonaResponseSchema, response.data, 'PATCH /zonas/{id}/estado');
   }
 
   // ========================================================================
@@ -368,12 +500,20 @@ export class LeadsRepository {
     const response = await leadsHttp.get<CatalogoResponse>(
       `/tipificaciones/${etapa}/catalogo`,
     );
-    return response.data;
+    return parseApiResponse(
+      catalogoResponseSchema,
+      response.data,
+      'GET /tipificaciones/{etapa}/catalogo',
+    );
   }
 
   static async updateCatalogoTipificacion(payload: CatalogoRequest): Promise<CatalogoResponse> {
     const response = await leadsHttp.put<CatalogoResponse>('/tipificaciones/catalogo', payload);
-    return response.data;
+    return parseApiResponse(
+      catalogoResponseSchema,
+      response.data,
+      'PUT /tipificaciones/catalogo',
+    );
   }
 
   static async updateCatalogoEstado(payload: CatalogoEstadoRequest): Promise<CatalogoResponse> {
@@ -381,7 +521,11 @@ export class LeadsRepository {
       '/tipificaciones/catalogo/estado',
       payload,
     );
-    return response.data;
+    return parseApiResponse(
+      catalogoResponseSchema,
+      response.data,
+      'PATCH /tipificaciones/catalogo/estado',
+    );
   }
 
   // ========================================================================
@@ -390,7 +534,11 @@ export class LeadsRepository {
 
   static async getDepartamentos(): Promise<DepartamentoResponse[]> {
     const response = await leadsHttp.get<DepartamentoResponse[]>('/ubigeo/departamentos');
-    return response.data;
+    return parseApiResponse(
+      departamentoResponseArraySchema,
+      response.data,
+      'GET /ubigeo/departamentos',
+    );
   }
 
   static async getProvinciasPorDepartamento(
@@ -399,13 +547,21 @@ export class LeadsRepository {
     const response = await leadsHttp.get<ProvinciaResponse[]>(
       `/ubigeo/departamentos/${idDepartamento}/provincias`,
     );
-    return response.data;
+    return parseApiResponse(
+      provinciaResponseArraySchema,
+      response.data,
+      'GET /ubigeo/departamentos/{idDepartamento}/provincias',
+    );
   }
 
   static async getDistritosPorProvincia(idProvincia: number): Promise<DistritoResponse[]> {
     const response = await leadsHttp.get<DistritoResponse[]>(
       `/ubigeo/provincias/${idProvincia}/distritos`,
     );
-    return response.data;
+    return parseApiResponse(
+      distritoResponseArraySchema,
+      response.data,
+      'GET /ubigeo/provincias/{idProvincia}/distritos',
+    );
   }
 }

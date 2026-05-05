@@ -1,4 +1,4 @@
-import { rrhhHttp } from '@shared/api/httpClient';
+import { apiClient } from '@shared/api/client';
 import type {
   CreateAmpliacionRequest,
   CreateOfertaLaboralRequest,
@@ -10,14 +10,14 @@ import type {
 const OFERTAS_BASE_PATH = '/ofertas-laborales';
 
 export const getOfertasLaboralesActivas = async (): Promise<OfertaLaboralResponse[]> => {
-  const response = await rrhhHttp.get<OfertaLaboralResponse[]>(`${OFERTAS_BASE_PATH}/activas`);
+  const response = await apiClient.get<OfertaLaboralResponse[]>(`${OFERTAS_BASE_PATH}/activas`);
   return response.data;
 };
 
 export const createOfertaLaboral = async (
   payload: CreateOfertaLaboralRequest
 ): Promise<OfertaLaboralResponse> => {
-  const response = await rrhhHttp.post<OfertaLaboralResponse>(OFERTAS_BASE_PATH, payload);
+  const response = await apiClient.post<OfertaLaboralResponse>(OFERTAS_BASE_PATH, payload);
   return response.data;
 };
 
@@ -25,7 +25,7 @@ export const createAmpliacionOferta = async (
   ofertaId: number,
   payload: CreateAmpliacionRequest
 ): Promise<OfertaAmpliacionResponse> => {
-  const response = await rrhhHttp.post<OfertaAmpliacionResponse>(
+  const response = await apiClient.post<OfertaAmpliacionResponse>(
     `${OFERTAS_BASE_PATH}/${ofertaId}/ampliacion`,
     payload
   );
@@ -36,7 +36,7 @@ export const updateEstadoOferta = async (
   ofertaId: number,
   payload: UpdateEstadoOfertaRequest
 ): Promise<OfertaLaboralResponse> => {
-  const response = await rrhhHttp.patch<OfertaLaboralResponse>(
+  const response = await apiClient.patch<OfertaLaboralResponse>(
     `${OFERTAS_BASE_PATH}/${ofertaId}/estado`,
     payload
   );

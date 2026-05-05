@@ -1,11 +1,10 @@
-export type { TipificacionResponse } from './lead.responses';
-export type { TipificarLeadPayload, UpdatePreventaPayload } from './lead.requests';
 export type { Role } from './roles';
 export type { ApiResponse, PaginatedResponse } from './api';
 
 export * from './community';
 export * from './lead.types';
 export * from './lead.responses';
+export * from './lead.requests';
 export * from './backend';
 export * from './eventos';
 export * from './enums';
@@ -55,26 +54,47 @@ export interface EmpleadoResponse {
   estado?: string;
   createdAt?: string;
   updatedAt?: string;
-  [key: string]: any;
 }
 
 export type Employee = EmpleadoResponse;
 
 export interface NewEmployeeFormData {
-  nombres?: string;
-  apellidos?: string;
-  email?: string;
-  celular?: string;
-  numeroDocumento?: string;
-  puesto?: string;
-  compania?: string;
-  estado?: string;
-  [key: string]: any;
+  // RegistrarEmpleadoRequest
+  nombres: string;
+  apellidos: string;
+  tipoDocumento: 'DNI' | 'CE';
+  numeroDocumento: string;
+  nacionalidad: 'PERUANO' | 'EXTRANJERO';
+  fechaNacimiento: string;
+  estadoCivil: 'SOLTERO' | 'CASADO' | 'VIUDO' | 'DIVORCIADO';
+  tieneHijos: boolean;
+  celularPersonal: string;
+  correoPersonal: string;
+  origen: 'COMPUTRABAJO' | 'INDEED' | 'TIKTOK' | 'FACEBOOK' | 'LINKEDIN' | 'REFERIDO';
+  distrito: string;
+  direccion: string;
+  banco: 'BCP' | 'BBVA' | 'INTERBANK' | 'SCOTIABANK' | 'BANCO_DE_LA_NACION';
+  cuentaBancaria: string;
+  cuentaInterbancaria: string;
+  cuentaPropia: boolean;
+  parentesco: 'PADRE' | 'MADRE' | 'TIO' | 'ESPOSO' | 'HERMANO' | 'ABUELO' | 'PAREJA' | 'OTRO';
+  celularTransferencia: string;
+  idEmpresaContratista: number | '';
+
+  // RegistrarContratoRequest
+  idPostulacion: number | '';
+  puestoTrabajo: string;
+  regimen: 'RECIBO_POR_HONORARIOS' | 'PLANILLA';
+  modalidad: 'PART_TIME' | 'FULL_TIME' | 'SEMI_FULL' | 'SUPER_FULL';
+  seguroSalud: 'SIS' | 'ESSALUD';
+  sistemaPensiones: 'ONP' | 'AFP_INTEGRA' | 'AFP_PROFUTURO' | 'AFP_HABITAT' | 'PRIMA_AFP';
+  sueldoBase: number | '';
+  fechaInicio: string;
+  fechaFin: string;
 }
 
 export interface EmployeeDetailFormData extends Partial<NewEmployeeFormData> {
   id?: number | string;
-  [key: string]: any;
 }
 
 export function adaptEmpleadoResponseToEmployee(data: EmpleadoResponse): Employee {
@@ -98,7 +118,6 @@ export interface PostulanteResponse {
   company?: string;
   createdAt?: string;
   updatedAt?: string;
-  [key: string]: any;
 }
 
 export type Applicant = PostulanteResponse;
@@ -197,13 +216,20 @@ export interface ContratoResponse {
 }
 
 export interface RegistrarContratoRequest {
+  idPostulacion?: number;
+  puestoTrabajo: string;
+  regimen: 'RECIBO_POR_HONORARIOS' | 'PLANILLA';
+  modalidad: 'PART_TIME' | 'FULL_TIME' | 'SEMI_FULL' | 'SUPER_FULL';
+  seguroSalud: 'SIS' | 'ESSALUD';
+  sistemaPensiones: 'ONP' | 'AFP_INTEGRA' | 'AFP_PROFUTURO' | 'AFP_HABITAT' | 'PRIMA_AFP';
+  sueldoBase: number;
+  fechaInicio: string;
+  fechaFin?: string;
+
+  // Legacy optional fields kept for backward compatibility.
   puesto?: string;
-  puestoTrabajo?: string; // para backend auth-service (consistencia con enum)
   salario?: number;
-  fechaInicio?: string;
-  fechaFin?: string; // Fecha de fin del contrato (opcional)
   tipoContrato?: string;
-  idPostulacion?: number; // ID de la postulación asociada (opcional)
 }
 
 export interface CerrarContratoRequest {
@@ -235,7 +261,6 @@ export interface LeadDTO {
   estado?: 'nuevo' | 'contactado' | 'tipificado' | 'convertido';
   createdAt?: string;
   updatedAt?: string;
-  [key: string]: any;
 }
 
 export interface Statistic {

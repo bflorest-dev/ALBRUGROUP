@@ -54,18 +54,6 @@ interface PostulacionesSyncPayload {
 
 let postulacionesSyncChannel: BroadcastChannel | null | undefined;
 
-function getErrorMessage(error: unknown, fallback: string): string {
-  if (
-    typeof error === 'object' &&
-    error !== null &&
-    'message' in error &&
-    typeof error.message === 'string'
-  ) {
-    return error.message;
-  }
-  return fallback;
-}
-
 function getPostulacionesSyncChannel(): BroadcastChannel | null {
   if (postulacionesSyncChannel !== undefined) {
     return postulacionesSyncChannel;
@@ -205,13 +193,13 @@ function subscribeToPostulacionesUpdates(onUpdate: () => void): () => void {
     onUpdate();
   };
 
-  window.addEventListener(POSTULACIONES_SYNC_EVENT, handleLocalEvent);
+  window.addEventListener(POSTULACIONES_SYNC_EVENT, handleLocalEvent as EventListener);
 
   window.addEventListener('storage', handleStorage);
   channel?.addEventListener('message', handleChannelMessage);
 
   return () => {
-    window.removeEventListener(POSTULACIONES_SYNC_EVENT, handleLocalEvent);
+    window.removeEventListener(POSTULACIONES_SYNC_EVENT, handleLocalEvent as EventListener);
     window.removeEventListener('storage', handleStorage);
     channel?.removeEventListener('message', handleChannelMessage);
   };
@@ -241,8 +229,8 @@ export function useBandejaReclutamiento(options?: BandejaHookOptions) {
       const result = await postulacionesApi.obtenerBandejaReclutamiento(params);
       const sortedResult = sortPostulacionesByFechaCreacionDesc(result);
       setData((previousData) => reconcilePostulacionesData(previousData, sortedResult));
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, 'Error al cargar bandeja de reclutamiento');
+    } catch (err: any) {
+      const message = err.message || 'Error al cargar bandeja de reclutamiento';
       setError(message);
       console.error('useBandejaReclutamiento:', err);
     } finally {
@@ -342,8 +330,8 @@ export function useBandejaCapacitacion(options?: BandejaHookOptions) {
     try {
       const result = await postulacionesApi.obtenerBandejaCapacitacion(params);
       setData((previousData) => reconcilePostulacionesData(previousData, result));
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, 'Error al cargar bandeja de capacitación');
+    } catch (err: any) {
+      const message = err.message || 'Error al cargar bandeja de capacitación';
       setError(message);
       console.error('useBandejaCapacitacion:', err);
     } finally {
@@ -437,8 +425,8 @@ export function usePostulaciones(options?: { enabled?: boolean }) {
       const result = await postulacionesApi.obtenerPostulaciones();
       setData(result);
       return result;
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, 'Error al cargar postulaciones');
+    } catch (err: any) {
+      const message = err.message || 'Error al cargar postulaciones';
       setError(message);
       console.error('usePostulaciones:', err);
       throw err;
@@ -477,8 +465,8 @@ export function useBandejaContratacion(options?: BandejaHookOptions) {
     try {
       const result = await postulacionesApi.obtenerBandejaContratacion();
       setData((previousData) => reconcilePostulacionesData(previousData, result));
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, 'Error al cargar bandeja de contratación');
+    } catch (err: any) {
+      const message = err.message || 'Error al cargar bandeja de contratación';
       setError(message);
       console.error('useBandejaContratacion:', err);
     } finally {
@@ -564,8 +552,8 @@ export function useCrearPostulacion() {
       setSuccess(true);
       emitPostulacionesUpdated('crear-postulacion');
       return result;
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, 'Error al crear postulación');
+    } catch (err: any) {
+      const message = err.message || 'Error al crear postulación';
       setError(message);
       console.error('useCrearPostulacion:', err);
       throw err;
@@ -598,8 +586,8 @@ export function useActualizarPostulacion() {
       setSuccess(true);
       emitPostulacionesUpdated('actualizar-postulacion');
       return result;
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, 'Error al actualizar postulación');
+    } catch (err: any) {
+      const message = err.message || 'Error al actualizar postulación';
       setError(message);
       console.error('useActualizarPostulacion:', err);
       throw err;
@@ -635,8 +623,8 @@ export function useTipificarPostulacion() {
       setSuccess(true);
       emitPostulacionesUpdated('tipificar-postulacion');
       return result;
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, 'Error al tipificar postulación');
+    } catch (err: any) {
+      const message = err.message || 'Error al tipificar postulación';
       setError(message);
       console.error('useTipificarPostulacion:', err);
       throw err;
@@ -672,8 +660,8 @@ export function useConfirmarContratacion() {
       setSuccess(true);
       emitPostulacionesUpdated('confirmar-contratacion');
       return result;
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, 'Error al confirmar contratación');
+    } catch (err: any) {
+      const message = err.message || 'Error al confirmar contratación';
       setError(message);
       console.error('useConfirmarContratacion:', err);
       throw err;
@@ -701,8 +689,8 @@ export function useCatalogoTipificaciones(etapa: string) {
     try {
       const result = await postulacionesApi.obtenerCatalogoTipificaciones(etapa);
       setData(result);
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, 'Error al cargar catálogo de tipificaciones');
+    } catch (err: any) {
+      const message = err.message || 'Error al cargar catálogo de tipificaciones';
       setError(message);
       console.error('useCatalogoTipificaciones:', err);
     } finally {
@@ -738,8 +726,8 @@ export function useDetallePostulacion() {
       const result = await postulacionesApi.obtenerPostulacionPorId(id);
       setData(result);
       return result;
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, 'Error al cargar detalle de postulación');
+    } catch (err: any) {
+      const message = err.message || 'Error al cargar detalle de postulación';
       setError(message);
       console.error('useDetallePostulacion:', err);
       throw err;
@@ -770,8 +758,8 @@ export function useEventosPostulacion(idPostulacion?: number) {
       const result = await postulacionesApi.obtenerEventosPostulacion(id);
       setData(result);
       return result;
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, 'Error al cargar eventos de postulación');
+    } catch (err: any) {
+      const message = err.message || 'Error al cargar eventos de postulación';
       setError(message);
       console.error('useEventosPostulacion:', err);
       throw err;
@@ -811,8 +799,8 @@ export function useCrearGrupoCapacitacion() {
       const result = await postulacionesApi.crearGrupoCapacitacion(body);
       setData(result);
       return result;
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, 'Error al crear grupo de capacitación');
+    } catch (err: any) {
+      const message = err.message || 'Error al crear grupo de capacitación';
       setError(message);
       console.error('useCrearGrupoCapacitacion:', err);
       throw err;
@@ -840,8 +828,8 @@ export function useAsignarPostulacionesAGrupo() {
         );
         setData(result);
         return result;
-      } catch (err: unknown) {
-        const message = getErrorMessage(err, 'Error al asignar postulaciones al grupo');
+      } catch (err: any) {
+        const message = err.message || 'Error al asignar postulaciones al grupo';
         setError(message);
         console.error('useAsignarPostulacionesAGrupo:', err);
         throw err;
@@ -876,8 +864,8 @@ export function useActualizarPostulacionGrupo() {
         );
         setData(result);
         return result;
-      } catch (err: unknown) {
-        const message = getErrorMessage(err, 'Error al actualizar postulación en grupo');
+      } catch (err: any) {
+        const message = err.message || 'Error al actualizar postulación en grupo';
         setError(message);
         console.error('useActualizarPostulacionGrupo:', err);
         throw err;
@@ -905,8 +893,8 @@ export function useDetalleGrupoCapacitacion() {
       );
       setData(result);
       return result;
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, 'Error al cargar detalle de grupo');
+    } catch (err: any) {
+      const message = err.message || 'Error al cargar detalle de grupo';
       setError(message);
       console.error('useDetalleGrupoCapacitacion:', err);
       throw err;
@@ -930,8 +918,8 @@ export function useGruposCapacitacion(options?: { enabled?: boolean }) {
       const result = await postulacionesApi.obtenerGruposCapacitacion();
       setData(result);
       return result;
-    } catch (err: unknown) {
-      const message = getErrorMessage(err, 'Error al cargar grupos de capacitación');
+    } catch (err: any) {
+      const message = err.message || 'Error al cargar grupos de capacitación';
       setError(message);
       console.error('useGruposCapacitacion:', err);
       throw err;
@@ -949,4 +937,3 @@ export function useGruposCapacitacion(options?: { enabled?: boolean }) {
 
   return { data, loading, error, execute, refetch };
 }
-

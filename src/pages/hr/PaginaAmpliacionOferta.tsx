@@ -8,8 +8,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAmpliarOfertaLaboral } from '@features/hr/job-offers';
 import { OfertaLaboralService } from '@entities/job-offer/api/ofertaLaboralService';
 import { Button, Spinner } from '@shared/ui';
+import { FlatpickrDateInput } from '@shared/ui/date-picker';
 import { DsInlineMessage, DsPageShell, DsSectionCard, DsStatusBadge } from '@shared/ui/design-system';
-import { FormInput } from '@shared/ui/form-input/FormInput';
 import type { OfertaLaboralResponse } from '@shared/types';
 import styles from './PaginaAmpliacionOferta.module.css';
 
@@ -240,15 +240,20 @@ const PaginaAmpliacionOferta: React.FC = () => {
             <p className={styles.fieldHint}>Mínimo 1 posición</p>
           </div>
 
-          <FormInput
-            label="Plazo"
-            name="plazo"
-            type="date"
-            value={form.plazo}
-            onChange={(value) => setForm((prev) => ({ ...prev, plazo: value }))}
-            disabled={isSubmitting}
-            required
-          />
+          <div className={styles.fieldGroup}>
+            <label htmlFor="plazo" className={styles.fieldLabel}>
+              Plazo
+            </label>
+            <FlatpickrDateInput
+              id="plazo"
+              name="plazo"
+              value={form.plazo}
+              onChange={(value) => setForm((prev) => ({ ...prev, plazo: value }))}
+              disabled={isSubmitting}
+              required
+              showRequiredMessage={false}
+            />
+          </div>
 
           <div className={styles.actionsRow}>
             <Button type="submit" variant="primary" isLoading={isSubmitting}>

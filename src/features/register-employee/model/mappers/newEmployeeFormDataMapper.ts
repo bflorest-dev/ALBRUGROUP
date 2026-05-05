@@ -78,10 +78,7 @@ export function mapFormToRegistrarEmpleadoRequest(
     cuentaBancaria: onlyDigits(formData.cuentaBancaria),
     cuentaInterbancaria: onlyDigits(formData.cuentaInterbancaria),
     cuentaPropia: formData.cuentaPropia,
-    // Si cuenta propia = true, parentesco no aplica → no enviar al backend
-    ...(formData.cuentaPropia === false && formData.parentesco
-      ? { parentesco: formData.parentesco }
-      : {}),
+    parentesco: formData.parentesco,
     celularTransferencia: onlyDigits(formData.celularTransferencia || ''),
     idEmpresaContratista: Number(formData.idEmpresaContratista),
   };

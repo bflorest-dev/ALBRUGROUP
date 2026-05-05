@@ -30,15 +30,10 @@ const BandejaReclutamiento: React.FC = () => {
   const postulaciones = useMemo(() => {
     const source = bandejaReclutamientoHook.data ?? [];
     return source.filter((post) => {
-      const postCompat = post as PostulacionResponse & {
-        etapa?: string;
-        etapa_proceso?: string;
-      };
-
       const etapa = String(
         post.etapaProceso ??
-          postCompat.etapa ??
-          postCompat.etapa_proceso ??
+          (post as any).etapa ??
+          (post as any).etapa_proceso ??
           ''
       )
         .trim()
@@ -134,11 +129,15 @@ const BandejaReclutamiento: React.FC = () => {
         />
       )}
 
-      <ReclutamientoSummary postulaciones={postulacionesEnriquecidas} />
+      <ReclutamientoSummary
+        postulaciones={postulacionesEnriquecidas}
+        className={styles.summaryGrid}
+      />
 
       <DsSectionCard
         title="Tablero Kanban"
         description="Cambia estado mediante tipificación y revisa historial de eventos por postulante."
+        className={styles.kanbanCard}
       >
         <KanbanBoard
           postulaciones={postulacionesEnriquecidas}
@@ -154,6 +153,7 @@ const BandejaReclutamiento: React.FC = () => {
         onClose={cerrarModalTipificar}
         title="Tipificar Postulación"
         size="md"
+        className="rrhh-modal-theme"
       >
         {postulacionSeleccionada && (
           <FormTipificarPostulacion

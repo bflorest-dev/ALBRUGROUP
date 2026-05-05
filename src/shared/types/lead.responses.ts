@@ -221,8 +221,8 @@ export interface PromocionComercialRequest {
   descuentoPorcentual?: number;
   descuentoMonto?: number;
   cantidadMeses: number;
-  vigenciaDesde: string;
-  vigenciaHasta: string;
+  vigenciaDesde?: string;
+  vigenciaHasta?: string;
   activo?: boolean;
 }
 

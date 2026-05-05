@@ -1,7 +1,6 @@
 import React from 'react';
 import { ReclutamientoStatusCard } from './ReclutamientoStatusCard';
 import type { PostulacionResponse } from '@features/hr/applications/model';
-import styles from './ReclutamientoSummary.module.css';
 
 interface ReclutamientoSummaryProps {
   postulaciones: PostulacionResponse[];
@@ -16,10 +15,9 @@ export const ReclutamientoSummary: React.FC<ReclutamientoSummaryProps> = ({
   const postulantesNegros = postulaciones.filter((post) => post.postulante.listaNegra).length;
   const enProceso = postulaciones.filter((post) => post.estadoProceso?.toLowerCase().includes('proceso')).length;
   const reclutados = postulaciones.filter((post) => post.estadoProceso?.toLowerCase().includes('aprobado') || post.estadoProceso?.toLowerCase().includes('completado')).length;
-  const sectionClassName = className ? `${styles.summaryGrid} ${className}` : styles.summaryGrid;
 
   return (
-    <section className={sectionClassName}>
+    <section className={`grid gap-3 md:gap-4 2xl:grid-cols-4 xl:grid-cols-2 md:grid-cols-2 grid-cols-1 ${className ?? ''}`}>
       <ReclutamientoStatusCard
         title="Total postulantes"
         value={total}

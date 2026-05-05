@@ -109,6 +109,7 @@ export interface UsuarioResponse {
   email: string;
   empleadoId: number;
   nombreCompleto: string;
+  dni?: string;
   activo: boolean;
   roles: string[];
 }

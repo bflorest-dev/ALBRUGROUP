@@ -5,8 +5,25 @@
  */
 
 import { leadsHttp } from '@shared/api/httpClient';
-import { eventoResponseArraySchema, parseApiResponse } from '@shared/api/responseSchemas';
-import type { EventoResponse } from '@shared/types';
+
+export type EventoResponse = {
+  id: number;
+  idLead?: number;
+  idCampana?: number;
+  idActor?: number;
+  nombreActor?: string;
+  rolActor?: string;
+  idAsesorAsignado?: number;
+  nombreAsesorAsignado?: string;
+  rolAsesorAsignado?: string;
+  accion?: string;
+  etapa?: string;
+  tipificacion?: string;
+  subtipificacion?: string;
+  fechaInstalacion?: string;
+  comentario?: string;
+  createdAt: string; // ISO datetime
+};
 
 export class EventosApi {
   /**
@@ -15,7 +32,7 @@ export class EventosApi {
    */
   static async getEventosByLead(idLead: number): Promise<EventoResponse[]> {
     const response = await leadsHttp.get<EventoResponse[]>(`/eventos/lead/${idLead}`);
-    return parseApiResponse(eventoResponseArraySchema, response.data, 'GET /eventos/lead/{idLead}');
+    return response.data;
   }
 
   /**
@@ -37,10 +54,6 @@ export class EventosApi {
     const queryString = params.toString();
     const url = `/eventos/empleado/${idEmpleado}${queryString ? `?${queryString}` : ''}`;
     const response = await leadsHttp.get<EventoResponse[]>(url);
-    return parseApiResponse(
-      eventoResponseArraySchema,
-      response.data,
-      'GET /eventos/empleado/{idEmpleado}',
-    );
+    return response.data;
   }
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useCommunityData } from '@features/community/hooks';
 import { CampaignSection } from '@features/community/ui/CampaignSection';
 import { EstadoConfirmModal } from '@features/community/ui/EstadoConfirmModal';
@@ -8,32 +8,24 @@ import { PromocionesSection } from '@features/community/ui/PromocionesSection';
 import { ZonaForm } from '@features/community/ui/ZonaForm';
 import { ZonasPeruMap } from '@features/community/ui/ZonasPeruMap';
 import { leadsHttp } from '@shared/api/clienteHttp';
-import { SessionLogoutButton } from '@shared/ui';
-import type { CampanaResponse, PromocionComercialResponse } from '@shared/types';
+import type { AdicionalResponse, CampanaResponse, PlanResponse, PromocionComercialResponse, ZonaRequest, ZonaResponse } from '@shared/types';
 import './PaginaCommunity.css';
 
-type RequestState = {
-  loading: boolean;
-  error: boolean;
-  status: number;
-  data: unknown[];
-};
-
-const initialState: RequestState = { loading: false, error: false, status: 0, data: [] };
+const initialState = { loading: false, error: false, status: 0, data: [] };
 let communityBootstrapInFlight: Promise<void> | null = null;
-type SectionKey = 'campanas' | 'cuentas' | 'planes' | 'adicionales' | 'promociones' | 'proveedores' | 'zonas';
+type SectionKey = 'campanas' | 'cuentas' | 'planes' | 'promociones' | 'proveedores' | 'zonas' | 'adicionales';
 
 const sections = [
   { key: 'campanas', label: 'Campanas' },
   { key: 'cuentas', label: 'Cuentas' },
   { key: 'planes', label: 'Planes' },
-  { key: 'adicionales', label: 'Adicionales' },
   { key: 'promociones', label: 'Promociones' },
   { key: 'proveedores', label: 'Proveedores' },
+  { key: 'adicionales', label: 'Adicionales' },
   { key: 'zonas', label: 'Zonas' },
 ] as const;
 
-type GenericEntity = 'cuentas' | 'planes' | 'zonas';
+type GenericEntity = 'cuentas' | 'planes' | 'zonas' | 'adicionales';
 
 type GenericRow = {
   id?: number;
@@ -69,35 +61,36 @@ const PaginaCommunity: React.FC = () => {
     campanas,
     cuentas,
     planes,
-    adicionales,
     promociones,
     zonas,
     proveedores,
     fetchCampanas,
     fetchCuentas,
     fetchPlanes,
-    fetchAdicionales,
     fetchPromociones,
     fetchZonas,
     fetchProveedores,
+    fetchAdicionales,
     createPlan,
-    createAdicional,
     createZona,
+    updateZona,
     createPromocion,
     toggleCampanaEstado,
     toggleCuentaEstadoLocal,
     togglePlanEstado,
     togglePromocionEstadoLocal,
     toggleZonaEstado,
+    toggleAdicionalEstadoLocal,
+    adicionales,
+    createAdicional,
   } = useCommunityData();
 
   const [cuentaForm, setCuentaForm] = useState({ numeroCuenta: '', nombreCuenta: '' });
 
-  const [planState] = useState(initialState);
-  const [zonaState] = useState(initialState);
+  const [planState, setPlanState] = useState(initialState);
+  const [zonaState, setZonaState] = useState(initialState);
   const [cuentaState, setCuentaState] = useState(initialState);
-  const [promoState] = useState(initialState);
-  const [adicionalState, setAdicionalState] = useState(initialState);
+  const [promoState, setPromoState] = useState(initialState);
 
   const [globalMessage, setGlobalMessage] = useState('');
   const [updatingCampanaId, setUpdatingCampanaId] = useState<number | null>(null);
@@ -105,12 +98,30 @@ const PaginaCommunity: React.FC = () => {
   const [pendingEstadoChange, setPendingEstadoChange] = useState<PendingEstadoChange | null>(null);
   const [estadoSubmitting, setEstadoSubmitting] = useState(false);
   const [estadoModalError, setEstadoModalError] = useState('');
-  const [adicionalForm, setAdicionalForm] = useState({
-    idProveedor: '',
-    nombre: '',
-    precioUnitario: '',
-    activo: true,
-  });
+  const [selectedZonaForMap, setSelectedZonaForMap] = useState<ZonaResponse | null>(null);
+  const [zonaEditTarget, setZonaEditTarget] = useState<ZonaResponse | null>(null);
+  const [adicionalNombre, setAdicionalNombre] = useState('');
+  const [adicionalPrecio, setAdicionalPrecio] = useState('');
+  const [adicionalProveedorId, setAdicionalProveedorId] = useState<number | ''>('');
+  const [adicionalActivo, setAdicionalActivo] = useState(true);
+  const [adicionalMessage, setAdicionalMessage] = useState('');
+  const messageTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (globalMessage.startsWith('✅')) {
+      if (messageTimeoutRef.current) {
+        window.clearTimeout(messageTimeoutRef.current);
+      }
+      messageTimeoutRef.current = window.setTimeout(() => {
+        setGlobalMessage('');
+      }, 2500);
+    }
+    return () => {
+      if (messageTimeoutRef.current) {
+        window.clearTimeout(messageTimeoutRef.current);
+      }
+    };
+  }, [globalMessage]);
 
   useEffect(() => {
     // Evita duplicar llamadas de bootstrap en React StrictMode (dev)
@@ -130,16 +141,39 @@ const PaginaCommunity: React.FC = () => {
     })().finally(() => {
       communityBootstrapInFlight = null;
     });
-  }, [fetchCampanas, fetchCuentas, fetchPlanes, fetchPromociones, fetchZonas, fetchProveedores]);
+  }, [fetchCampanas, fetchCuentas, fetchPlanes, fetchPromociones, fetchZonas, fetchProveedores, fetchAdicionales]);
+
+  useEffect(() => {
+    setSelectedZonaForMap((prev) => {
+      if (!prev) {
+        return null;
+      }
+
+      const updatedZona = zonas.find((zona) => zona.id === prev.id);
+      return updatedZona ?? null;
+    });
+  }, [zonas]);
 
   const normalizeLeadsPath = (path: string) => path.replace(/^\/api\/leads/, '');
 
-  const createOne = async (
-    path: string,
-    payload: unknown,
-    refresh: () => Promise<void>,
-    setter: React.Dispatch<React.SetStateAction<RequestState>>
-  ) => {
+  const getOne = async (path: string, refresh: () => Promise<void>, setter: React.Dispatch<React.SetStateAction<any>>) => {
+    setter({ loading: true, error: false, status: 0, data: [] });
+    const normalizedPath = normalizeLeadsPath(path);
+    try {
+      const token = localStorage.getItem('auth_token');
+      console.debug('[COMMUNITY] GET', normalizedPath, 'Authorization:', token ? 'Bearer *****' : 'NO TOKEN');
+
+      const res = await leadsHttp.get(normalizedPath);
+      setter({ loading: false, error: false, status: res.status, data: res.data ?? [] });
+      setGlobalMessage('');
+      await refresh();
+    } catch (err: any) {
+      setter({ loading: false, error: true, status: err.status || 0, data: [] });
+      setGlobalMessage(`Error al cargar ${normalizedPath}: ${err.message}`);
+    }
+  };
+
+  const createOne = async (path: string, payload: any, refresh: () => Promise<void>, setter: React.Dispatch<React.SetStateAction<any>>) => {
     setter({ loading: true, error: false, status: 0, data: [] });
     const normalizedPath = normalizeLeadsPath(path);
     try {
@@ -150,13 +184,8 @@ const PaginaCommunity: React.FC = () => {
       setGlobalMessage('✅ Creado correctamente');
       await refresh();
       setter({ loading: false, error: false, status: res.status, data: [] });
-    } catch (err: unknown) {
-      const errLike = err as {
-        status?: number;
-        response?: { status?: number };
-        message?: string;
-      };
-      const status = errLike.status ?? errLike.response?.status ?? 0;
+    } catch (err: any) {
+      const status = err.status || err.response?.status || 0;
       let message = '';
       if (status === 401) {
         message = '🔐 Sesión expirada';
@@ -167,10 +196,34 @@ const PaginaCommunity: React.FC = () => {
       } else if (status === 500) {
         message = '💥 Error del servidor';
       } else {
-        message = errLike.message || 'Error al crear';
+        message = err.message || 'Error al crear';
       }
       setter({ loading: false, error: true, status, data: [] });
       setGlobalMessage(`❌ ${message}`);
+    }
+  };
+
+  const getColumnLabel = (col: string) => {
+    switch (col) {
+      case 'numeroCuenta':
+        return 'Número cuenta';
+      case 'nombreCuenta':
+        return 'Nombre cuenta';
+      case 'idCuentaPublicitaria':
+        return 'Cuenta publicitaria';
+      case 'idProveedor':
+        return 'Proveedor';
+      case 'nombreProveedor':
+        return 'Proveedor';
+      case 'nombreZona':
+        return 'Zona';
+      case 'activo':
+        return 'Estado';
+      default:
+        return col
+          .replace(/([A-Z])/g, ' $1')
+          .replace(/_/g, ' ')
+          .trim();
     }
   };
 
@@ -179,12 +232,15 @@ const PaginaCommunity: React.FC = () => {
     options?: {
       onRequestToggleEstado?: (item: GenericRow) => void;
       disableToggle?: boolean;
+      hideColumns?: string[];
     },
   ) => {
     if (!data || data.length === 0) return <p className="community-empty">Sin resultados</p>;
     const firstItem = data[0];
     if (!firstItem) return <p className="community-empty">Sin datos</p>;
-    const cols = Object.keys(firstItem);
+    const cols = Object.keys(firstItem).filter(
+      (col) => !options?.hideColumns?.includes(col) && !/^id($|[A-Z_])/.test(col),
+    );
     if (cols.length === 0) return <p className="community-empty">Sin columnas</p>;
 
     return (
@@ -194,45 +250,206 @@ const PaginaCommunity: React.FC = () => {
             <tr>
               {cols.map((col) => (
                 <th key={col}>
-                  {col}
+                  {getColumnLabel(col)}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {data.map((item, index) => (
-              <tr key={typeof item.id === 'number' ? item.id : index}>
-                {cols.map((col) => {
-                  const rowValues = item as Record<string, unknown>;
-                  const cellValue = rowValues[col];
+            {data.map((item, index) => {
+              const rowValues = item as Record<string, unknown>;
+              const itemKey = typeof item.id === 'number' ? item.id : index;
 
-                  return (
-                    <td key={`${typeof item.id === 'number' ? item.id : index}-${col}`}>
-                      {col === 'activo' && typeof item.activo === 'boolean' && typeof item.id === 'number' && options?.onRequestToggleEstado ? (
-                        <div className="community-status-control">
-                          <label className="community-switch" aria-label={`Cambiar estado de ${String(item.nombre || item.nombreCuenta || item.id)}`}>
-                            <input
-                              type="checkbox"
-                              checked={item.activo}
-                              onChange={() => options.onRequestToggleEstado?.(item)}
-                              disabled={Boolean(options.disableToggle)}
-                            />
-                            <span className="community-switch-track" />
-                          </label>
-                          <span className={`community-switch-label ${item.activo ? 'is-active' : 'is-inactive'}`}>
-                            {item.activo ? 'Activo' : 'Inactivo'}
-                          </span>
-                        </div>
-                      ) : typeof cellValue === 'object' ? (
-                        JSON.stringify(cellValue)
-                      ) : (
-                        String(cellValue ?? '')
-                      )}
-                    </td>
-                  );
-                })}
+              return (
+                <tr key={itemKey}>
+                  {cols.map((col) => {
+                    const cellValue = rowValues[col];
+                    const isActiveColumn = col === 'activo' && typeof item.activo === 'boolean';
+                    const canToggle = isActiveColumn && typeof item.id === 'number' && typeof options?.onRequestToggleEstado === 'function';
+
+                    return (
+                      <td key={`${itemKey}-${col}`}>
+                        {isActiveColumn ? (
+                          <div className="community-status-control">
+                            <label className="community-switch" aria-label={`Cambiar estado de ${String(item.nombre || item.nombreCuenta || item.id)}`}>
+                              <input
+                                type="checkbox"
+                                checked={item.activo}
+                                onChange={canToggle ? () => options.onRequestToggleEstado?.(item) : undefined}
+                                disabled={!canToggle || Boolean(options?.disableToggle)}
+                              />
+                              <span className="community-switch-track" />
+                            </label>
+                            <span className={`community-switch-label ${item.activo ? 'is-active' : 'is-inactive'}`}>
+                              {item.activo ? 'Activo' : 'Inactivo'}
+                            </span>
+                          </div>
+                        ) : typeof cellValue === 'object' ? (
+                          JSON.stringify(cellValue)
+                        ) : (
+                          String(cellValue ?? '')
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  const formatDateString = (value?: string | null) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleDateString('es-PE');
+  };
+
+  const formatCurrency = (value?: number | null) => {
+    if (typeof value !== 'number' || Number.isNaN(value)) return '-';
+    return new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN', minimumFractionDigits: 2 }).format(value);
+  };
+
+  const renderPlanesTable = (data: PlanResponse[]) => {
+    if (!data || data.length === 0) return <p className="community-empty">Sin resultados</p>;
+
+    return (
+      <div className="community-table-wrapper">
+        <table className="community-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Precio</th>
+              <th>Desde</th>
+              <th>Hasta</th>
+              <th>Proveedor</th>
+              <th>Internet</th>
+              <th>Televisión</th>
+              <th>Teléfono</th>
+              <th>Adicionales</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((plan) => (
+              <tr key={plan.id}>
+                <td>{plan.nombre}</td>
+                <td>{formatCurrency(plan.precio)}</td>
+                <td>{formatDateString(plan.vigenciaDesde)}</td>
+                <td>{formatDateString(plan.vigenciaHasta)}</td>
+                <td>{plan.nombreProveedor || '-'}</td>
+                <td>
+                  {plan.internet
+                    ? `${plan.internet.velocidad} ${plan.internet.unidad} (${plan.internet.tecnologia})`
+                    : '-'}
+                </td>
+                <td>{plan.television ? plan.television.nombre : '-'}</td>
+                <td>{plan.telefono ? `${plan.telefono.minutos} min` : '-'}</td>
+                <td>{plan.adicionales?.length ?? 0}</td>
+                <td>
+                  <div className="community-status-control">
+                    <label className="community-switch" aria-label={`Cambiar estado de ${plan.nombre}`}>
+                      <input
+                        type="checkbox"
+                        checked={plan.activo}
+                        onChange={() => requestEstadoToggle('planes', plan as GenericRow)}
+                      />
+                      <span className="community-switch-track" />
+                    </label>
+                    <span className={`community-switch-label ${plan.activo ? 'is-active' : 'is-inactive'}`}>
+                      {plan.activo ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </div>
+                </td>
               </tr>
             ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  const handleEditZona = (zona: ZonaResponse) => {
+    setZonaEditTarget(zona);
+  };
+
+  const handleSaveZona = async (payload: ZonaRequest, id?: number) => {
+    if (typeof id === 'number') {
+      await updateZona(id, payload);
+      setZonaEditTarget(null);
+      return;
+    }
+    await createZona(payload);
+  };
+
+  const handleCancelEdit = () => {
+    setZonaEditTarget(null);
+  };
+
+  const renderZonasTable = (data: ZonaResponse[]) => {
+    if (!data || data.length === 0) {
+      return <p className="community-empty">Sin resultados</p>;
+    }
+
+    return (
+      <div className="community-table-wrapper">
+        <table className="community-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((zona) => {
+              const expanded = selectedZonaForMap?.id === zona.id;
+
+              return (
+                <tr key={zona.id}>
+                  <td>{zona.nombre}</td>
+                  <td>
+                    <div className="community-status-control">
+                      <label className="community-switch" aria-label={`Cambiar estado de ${String(zona.nombre || zona.id)}`}>
+                        <input
+                          type="checkbox"
+                          checked={zona.activo}
+                          onChange={() => requestEstadoToggle('zonas', zona as GenericRow)}
+                          disabled={estadoSubmitting}
+                        />
+                        <span className="community-switch-track" />
+                      </label>
+                      <span className={`community-switch-label ${zona.activo ? 'is-active' : 'is-inactive'}`}>
+                        {zona.activo ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="community-row-actions">
+                      <button
+                        type="button"
+                        className="community-btn ghost"
+                        onClick={() => handleEditZona(zona)}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        className="community-btn ghost"
+                        onClick={() => {
+                          setSelectedZonaForMap((prev) => (prev?.id === zona.id ? null : zona));
+                        }}
+                      >
+                        {expanded ? 'Ocultar' : 'Ver más'}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -278,6 +495,9 @@ const PaginaCommunity: React.FC = () => {
       } else if (pendingEstadoChange.entity === 'zonas') {
         await toggleZonaEstado(pendingEstadoChange.id);
         setGlobalMessage(`✅ Estado de zona actualizado: ${pendingEstadoChange.label}`);
+      } else if (pendingEstadoChange.entity === 'adicionales') {
+        toggleAdicionalEstadoLocal(pendingEstadoChange.id, nextActivo);
+        setGlobalMessage(`✅ Estado de adicional actualizado en pantalla: ${pendingEstadoChange.label} (sin endpoint de estado en backend).`);
       } else {
         toggleCuentaEstadoLocal(pendingEstadoChange.id, nextActivo);
         setGlobalMessage(`✅ Estado de cuenta actualizado en pantalla: ${pendingEstadoChange.label} (sin endpoint de estado en backend).`);
@@ -318,83 +538,50 @@ const PaginaCommunity: React.FC = () => {
     }
   };
 
-  const handleCreateAdicional = async (event: React.FormEvent) => {
-    event.preventDefault();
-
-    const idProveedor = Number(adicionalForm.idProveedor);
-    const precioUnitario = Number(adicionalForm.precioUnitario);
-
-    if (!idProveedor || !adicionalForm.nombre.trim()) {
-      setGlobalMessage('❌ Proveedor y nombre son obligatorios para crear un adicional.');
+  const handleCreateAdicional = async () => {
+    if (!adicionalProveedorId || !adicionalNombre.trim() || !adicionalPrecio.trim()) {
+      setAdicionalMessage('❌ Completa proveedor, nombre y precio del adicional');
       return;
     }
 
-    if (Number.isNaN(precioUnitario) || precioUnitario < 0) {
-      setGlobalMessage('❌ El precio unitario debe ser un número mayor o igual a 0.');
+    const precioNum = Number(adicionalPrecio);
+    if (Number.isNaN(precioNum) || precioNum <= 0) {
+      setAdicionalMessage('❌ Precio inválido');
       return;
     }
-
-    setAdicionalState({ loading: true, error: false, status: 0, data: [] });
 
     try {
-      const adicionalCreado = await createAdicional({
-        idProveedor,
-        nombre: adicionalForm.nombre.trim(),
-        precioUnitario,
-        activo: adicionalForm.activo,
+      await createAdicional({
+        nombre: adicionalNombre.trim(),
+        precioUnitario: precioNum,
+        idProveedor: Number(adicionalProveedorId),
+        activo: adicionalActivo,
       });
-
-      await fetchAdicionales();
-      setGlobalMessage(`✅ Adicional creado: ${adicionalCreado.nombre}`);
-      setAdicionalState({ loading: false, error: false, status: 201, data: [] });
-      setAdicionalForm((prev) => ({
-        ...prev,
-        nombre: '',
-        precioUnitario: '',
-        activo: true,
-      }));
-    } catch (err) {
-      const status = (err as { status?: number }).status ?? 0;
-      setAdicionalState({ loading: false, error: true, status, data: [] });
-      setGlobalMessage(`❌ ${getErrorMessage(err, 'No se pudo crear el adicional.')}`);
-    }
-  };
-
-  const handleFetchAdicionales = async () => {
-    const idProveedor = adicionalForm.idProveedor ? Number(adicionalForm.idProveedor) : undefined;
-
-    if (!idProveedor) {
-      setAdicionalState({ loading: false, error: true, status: 0, data: [] });
-      setGlobalMessage('❌ Selecciona un proveedor antes de cargar los adicionales.');
-      return;
-    }
-
-    setAdicionalState({ loading: true, error: false, status: 0, data: [] });
-    try {
-      await fetchAdicionales(idProveedor);
-      setAdicionalState({ loading: false, error: false, status: 200, data: [] });
-      setGlobalMessage('');
-    } catch (err) {
-      const status = (err as { status?: number }).status ?? 0;
-      setAdicionalState({ loading: false, error: true, status, data: [] });
-      setGlobalMessage(`❌ ${getErrorMessage(err, 'No se pudieron cargar los adicionales.')}`);
+      await fetchAdicionales(Number(adicionalProveedorId));
+      setAdicionalMessage('✅ Adicional creado correctamente');
+      setAdicionalNombre('');
+      setAdicionalPrecio('');
+      setAdicionalActivo(true);
+    } catch (err: any) {
+      setAdicionalMessage(err?.message || '💥 Error al crear adicional');
     }
   };
 
   const [activeSection, setActiveSection] = useState<SectionKey>('campanas');
 
+  useEffect(() => {
+    if (activeSection === 'adicionales' && adicionalProveedorId !== '') {
+      void fetchAdicionales(Number(adicionalProveedorId));
+    }
+  }, [activeSection, adicionalProveedorId, fetchAdicionales]);
+
   return (
     <div className="community-page">
       <div className="community-shell">
         <header className="community-header">
-          <div className="community-header-main">
-            <div>
-              <p className="community-eyebrow">Panel de Operaciones</p>
-              <h1>Community</h1>
-              <p className="community-subtitle">Gestiona campanas, cuentas, planes, adicionales, promociones, proveedores y zonas desde una sola vista.</p>
-            </div>
-            <SessionLogoutButton />
-          </div>
+          <p className="community-eyebrow">Panel de Operaciones</p>
+          <h1>Community</h1>
+          <p className="community-subtitle">Gestiona campanas, cuentas, planes, promociones, proveedores y zonas desde una sola vista.</p>
         </header>
 
         <div className="community-tabs" role="tablist" aria-label="Secciones de community">
@@ -428,10 +615,7 @@ const PaginaCommunity: React.FC = () => {
           {planState.error ? (
             <div className="community-error">Error al cargar datos (status: {planState.status})</div>
           ) : (
-            renderTable((planes || []) as GenericRow[], {
-              onRequestToggleEstado: (item) => requestEstadoToggle('planes', item),
-              disableToggle: estadoSubmitting,
-            })
+            renderPlanesTable(planes || [])
           )}
         </section>
       )}
@@ -441,71 +625,75 @@ const PaginaCommunity: React.FC = () => {
           <div className="community-section-head">
             <div>
               <h2>Adicionales</h2>
-              <p>Crea y consulta adicionales por proveedor para usarlos en la configuración de planes.</p>
+              <p>Crea y lista adicionales de proveedores aquí. Solo los adicionales creados estarán disponibles en los planes.</p>
             </div>
           </div>
-          <form className="community-inline-form" onSubmit={handleCreateAdicional}>
-            <select
-              className="community-select"
-              value={adicionalForm.idProveedor}
-              onChange={(e) =>
-                setAdicionalForm((prev) => ({ ...prev, idProveedor: e.target.value }))
-              }
-            >
-              <option value="">Selecciona proveedor</option>
-              {proveedores.map((proveedor) => (
-                <option key={proveedor.id} value={String(proveedor.id)}>
-                  {proveedor.nombre}
-                </option>
-              ))}
-            </select>
-            <input
-              className="community-input"
-              value={adicionalForm.nombre}
-              placeholder="Nombre del adicional"
-              onChange={(e) =>
-                setAdicionalForm((prev) => ({ ...prev, nombre: e.target.value }))
-              }
-            />
-            <input
-              className="community-input"
-              type="number"
-              min="0"
-              step="0.01"
-              value={adicionalForm.precioUnitario}
-              placeholder="Precio unitario"
-              onChange={(e) =>
-                setAdicionalForm((prev) => ({ ...prev, precioUnitario: e.target.value }))
-              }
-            />
-            <label className="community-check-row">
+
+          <form className="community-form community-form-spaced" onSubmit={(e) => { e.preventDefault(); void handleCreateAdicional(); }}>
+            {adicionalMessage && (
+              <div className={`${adicionalMessage.startsWith('✅') ? 'community-alert' : 'community-error'} community-message`}>
+                {adicionalMessage}
+              </div>
+            )}
+
+            <div className="community-field">
+              <label>Proveedor*</label>
+              <select
+                value={adicionalProveedorId}
+                onChange={(e) => setAdicionalProveedorId(Number(e.target.value) as number | '')}
+              >
+                <option value="">Selecciona proveedor</option>
+                {proveedores.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="community-field">
+              <label>Nombre del adicional*</label>
               <input
-                type="checkbox"
-                checked={adicionalForm.activo}
-                onChange={(e) =>
-                  setAdicionalForm((prev) => ({ ...prev, activo: e.target.checked }))
-                }
+                type="text"
+                value={adicionalNombre}
+                onChange={(e) => setAdicionalNombre(e.target.value)}
               />
-              Activo
-            </label>
-            <button className="community-btn primary" type="submit" disabled={adicionalState.loading}>
-              {adicionalState.loading ? 'Guardando...' : 'Crear adicional'}
-            </button>
-            <button
-              className="community-btn ghost"
-              type="button"
-              onClick={handleFetchAdicionales}
-              disabled={adicionalState.loading || !adicionalForm.idProveedor}
-            >
-              Cargar datos
-            </button>
+            </div>
+
+            <div className="community-field">
+              <label>Precio unitario*</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={adicionalPrecio}
+                onChange={(e) => setAdicionalPrecio(e.target.value)}
+              />
+            </div>
+
+            <div className="community-check-group">
+              <label className="community-check-row">
+                <input
+                  type="checkbox"
+                  checked={adicionalActivo}
+                  onChange={(e) => setAdicionalActivo(e.target.checked)}
+                />
+                Activo
+              </label>
+            </div>
+
+            <div className="community-actions">
+              <button type="submit" className="community-btn primary">
+                Crear adicional
+              </button>
+            </div>
           </form>
 
-          {adicionalState.error ? (
-            <div className="community-error">Error al cargar datos (status: {adicionalState.status})</div>
-          ) : (
-            renderTable((adicionales || []) as GenericRow[])
-          )}
+          {renderTable((adicionales || []) as GenericRow[], {
+            hideColumns: ['idProveedor'],
+            onRequestToggleEstado: (item) => requestEstadoToggle('adicionales', item),
+            disableToggle: estadoSubmitting,
+          })}
         </section>
       )}
 
@@ -518,20 +706,23 @@ const PaginaCommunity: React.FC = () => {
             </div>
           </div>
           <ZonaForm
-            onCreateZona={createZona}
+            editingZona={zonaEditTarget}
+            onSaveZona={handleSaveZona}
             onCreated={fetchZonas}
+            onCancelEdit={handleCancelEdit}
           />
-          <div className="community-block-top-md">
-            <h3 className="community-inline-title">Mapa de cobertura por zona</h3>
-            <ZonasPeruMap zonas={zonas} />
-          </div>
           {zonaState.error ? (
             <div className="community-error">Error al cargar datos (status: {zonaState.status})</div>
           ) : (
-            renderTable((zonas || []) as GenericRow[], {
-              onRequestToggleEstado: (item) => requestEstadoToggle('zonas', item),
-              disableToggle: estadoSubmitting,
-            })
+            renderZonasTable(zonas || [])
+          )}
+          {selectedZonaForMap && (
+            <div id={`community-zonas-map-${selectedZonaForMap.id}`} className="community-block-top-md">
+              <h3 className="community-inline-title">Reglas y cobertura: {selectedZonaForMap.nombre}</h3>
+              <div className="community-block-top-sm">
+                <ZonasPeruMap zonas={[selectedZonaForMap]} />
+              </div>
+            </div>
           )}
         </section>
       )}

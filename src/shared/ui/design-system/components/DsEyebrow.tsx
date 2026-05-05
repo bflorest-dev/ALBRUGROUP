@@ -1,9 +1,6 @@
 import React from 'react';
-
 import { dsTokens } from '../tokens';
-
 import { cn } from './cn';
-
 import styles from './dsPrimitives.module.css';
 
 interface DsEyebrowProps {

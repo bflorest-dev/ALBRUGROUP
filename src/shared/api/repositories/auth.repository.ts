@@ -1,4 +1,4 @@
-import { authHttp } from '../httpClient';
+import { authHttp, getStoredToken } from '../httpClient';
 import type {
   ActualizarCredencialesRequest,
   UsuarioResponse,
@@ -35,22 +35,12 @@ export class AuthRepository {
    * 
    * Paso 1: Validar usuario y obtener estado de contraseña
    * GET /autorizacion/estado-acceso/{username}
-   * 
-   * ⚠️ IMPORTANTE: Este endpoint REQUIERE autenticación (Authorization: Bearer <token>)
-   * según la documentación del backend. NO se puede usar antes del login.
-   * 
-   * Solo debe usarse DESPUÉS de que el usuario haya iniciado sesión, si se necesita
-   * verificar el estado de otro usuario.
    */
   static async obtenerEstadoAcceso(username: string): Promise<EstadoAccesoResponse> {
     return authHttp
       .get<EstadoAccesoResponse>(`/autorizacion/estado-acceso/${username}`)
       .then((res) => res.data)
       .catch((error) => {
-        // Si es 401, significa que no hay token o el token es inválido
-        if (error.response?.status === 401) {
-          throw new Error('No autenticado: Este endpoint requiere un token válido');
-        }
         throw new Error('Usuario inválido o no registrado');
       });
   }
@@ -60,54 +50,15 @@ export class AuthRepository {
    * POST /autorizacion/login
    */
   static async login(credentials: LoginRequest): Promise<LoginResponse> {
-    console.log('[AuthRepository] 📤 Enviando login request:', {
-      username: credentials.username,
-      passwordLength: credentials.password?.length || 0,
-      endpoint: '/autorizacion/login',
-      baseURL: '/api/auth',
-    });
-
-    // LIMPIAR COMPLETAMENTE cualquier token viejo
-    console.log('[AuthRepository] 🧹 Limpiando localStorage antes del login...');
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_user');
-    localStorage.removeItem('user');
-    
-    // También limpiar headers globales de axios si existen
-    if (typeof window !== 'undefined') {
-      try {
-        // Importar dinámicamente para evitar problemas de dependencias circulares
-        const { rrhhHttp, leadsHttp } = await import('../httpClient');
-        delete rrhhHttp.defaults.headers.common['Authorization'];
-        delete leadsHttp.defaults.headers.common['Authorization'];
-        console.log('[AuthRepository] 🧹 Headers globales limpiados');
-      } catch (e) {
-        console.warn('[AuthRepository] ⚠️ No se pudieron limpiar headers globales:', e);
-      }
-    }
-
     const response = await authHttp
       .post<AuthLoginResponse>('/autorizacion/login', {
         username: credentials.username,
         password: credentials.password,
       })
-      .then((res) => {
-        console.log('[AuthRepository] ✅ Login response recibida:', {
-          status: res.status,
-          hasToken: !!res.data.token,
-          username: res.data.username,
-          roles: res.data.roles,
-        });
-        return res.data;
-      })
+      .then((res) => res.data)
       .catch((error) => {
-        console.error('[AuthRepository] ❌ Login error:', {
-          status: error.status,
-          message: error.message,
-          details: error.details,
-        });
         throw new Error(
-          error.message || error.response?.data?.message || 'Credenciales inválidas'
+          error.response?.data?.message || 'Credenciales inválidas'
         );
       });
 
@@ -145,12 +96,41 @@ export class AuthRepository {
    */
   static async verificarEmpleadoExiste(empleadoId: number): Promise<boolean> {
     try {
-      await authHttp.get(`/autorizacion/${empleadoId}/empleado`);
+      const token = getStoredToken();
+      const config = token ? { headers: { Authorization: `Bearer ${token}` } } : undefined;
+      await authHttp.get(`/autorizacion/${empleadoId}/empleado`, config);
       return true;
     } catch (error) {
       // 404 o 403 = no existe
       return false;
     }
+  }
+
+  /**
+   * Obtener usuario por ID de empleado
+   * GET /autorizacion/{empleadoId}/empleado
+   */
+  static async getUserByEmployeeId(empleadoId: number): Promise<UsuarioResponse> {
+    const token = getStoredToken();
+    if (!token) {
+      throw new Error('No se encontró auth_token en localStorage');
+    }
+    const response = await authHttp.get<UsuarioResponse>(
+      `/autorizacion/${empleadoId}/empleado`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    const raw = response.data as Partial<UsuarioResponse> & Record<string, unknown>;
+    return {
+      id: Number(raw.id ?? raw.empleadoId ?? empleadoId),
+      username: String(raw.username ?? ''),
+      email: String(raw.email ?? raw.correo ?? ''),
+      empleadoId: Number(raw.empleadoId ?? empleadoId),
+      nombreCompleto: String(raw.nombreCompleto ?? raw.fullName ?? ''),
+      dni: raw.dni != null ? String(raw.dni) : undefined,
+      activo: raw.activo !== false,
+      roles: Array.isArray(raw.roles) ? raw.roles.map((role) => String(role)) : [],
+    };
   }
 
   /**
@@ -161,27 +141,16 @@ export class AuthRepository {
     empleadoId: number,
     payload: ActualizarCredencialesRequest
   ): Promise<UsuarioResponse> {
+    const token = getStoredToken();
+    if (!token) {
+      throw new Error('No se encontró auth_token en localStorage');
+    }
     return authHttp
       .patch<UsuarioResponse>(
         `/autorizacion/${empleadoId}/username-roles`,
-        payload
+        payload,
+        { headers: { Authorization: `Bearer ${token}` } }
       )
       .then((res) => res.data);
   }
-
-  /**
-   * Obtener usuario por ID de empleado
-   * GET /autorizacion/{empleadoId}/usuario
-   */
-  static async getUserByEmployeeId(empleadoId: number): Promise<UsuarioResponse> {
-    return authHttp
-      .get<UsuarioResponse>(`/autorizacion/${empleadoId}/usuario`)
-      .then((res) => res.data)
-      .catch((error) => {
-        throw new Error(
-          error.response?.data?.message || `Usuario con empleadoId ${empleadoId} no encontrado`
-        );
-      });
-  }
 }
-

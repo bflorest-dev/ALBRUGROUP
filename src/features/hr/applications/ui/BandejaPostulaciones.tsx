@@ -145,58 +145,45 @@ export const BandejaPostulaciones = forwardRef<
 
   const reclutamientoError = bandejaReclutamiento.error || bandejaCapacitacion.error;
 
-  // Refactor: desestructurar solo lo necesario de los hooks para dependencias limpias
-  const { refetch: refetchReclutamientoHook } = bandejaReclutamiento;
-  const { refetch: refetchCapacitacionHook } = bandejaCapacitacion;
-  const {
-    loading: contratacionLoading,
-    error: contratacionError,
-    refetch: refetchContratacionHook,
-  } = bandejaContratacion;
-
   const datosActuales = useMemo(() => {
     const refetchReclutamiento = async () => {
       await Promise.allSettled([
-        refetchReclutamientoHook(),
-        refetchCapacitacionHook(),
+        bandejaReclutamiento.refetch(),
+        bandejaCapacitacion.refetch(),
       ]);
     };
 
-    if (tabActiva === 'reclutamiento') {
-      return {
-        data: tablaDataEnriquecida,
-        loading: reclutamientoLoading,
-        error: reclutamientoError,
-        refetch: refetchReclutamiento,
-      };
+    switch (tabActiva) {
+      case 'reclutamiento':
+        return {
+          data: tablaDataEnriquecida,
+          loading: reclutamientoLoading,
+          error: reclutamientoError,
+          refetch: refetchReclutamiento,
+        };
+      case 'contratacion':
+        return {
+          data: tablaDataEnriquecida,
+          loading: bandejaContratacion.loading,
+          error: bandejaContratacion.error,
+          refetch: bandejaContratacion.refetch,
+        };
+      default:
+        return {
+          data: reclutamientoData,
+          loading: reclutamientoLoading,
+          error: reclutamientoError,
+          refetch: refetchReclutamiento,
+        };
     }
-
-    if (tabActiva === 'contratacion') {
-      return {
-        data: tablaDataEnriquecida,
-        loading: contratacionLoading,
-        error: contratacionError,
-        refetch: refetchContratacionHook,
-      };
-    }
-
-    return {
-      data: reclutamientoData,
-      loading: reclutamientoLoading,
-      error: reclutamientoError,
-      refetch: refetchReclutamiento,
-    };
   }, [
     tabActiva,
-    tablaDataEnriquecida,
+    reclutamientoData,
     reclutamientoLoading,
     reclutamientoError,
-    contratacionLoading,
-    contratacionError,
-    refetchContratacionHook,
-    reclutamientoData,
-    refetchReclutamientoHook,
-    refetchCapacitacionHook,
+    bandejaReclutamiento,
+    bandejaCapacitacion,
+    bandejaContratacion,
   ]);
 
   // Manejadores de modal
@@ -334,6 +321,7 @@ export const BandejaPostulaciones = forwardRef<
         onClose={cerrarModal}
         title="Nueva Postulación"
         size="lg"
+        className="rrhh-modal-theme"
       >
         <FormCrearPostulacion
           onSuccess={handleExitoModal}
@@ -348,6 +336,7 @@ export const BandejaPostulaciones = forwardRef<
         onClose={cerrarModal}
         title="Editar Postulación"
         size="lg"
+        className="rrhh-modal-theme"
       >
         {postulacionSeleccionada && (
           <FormCrearPostulacion
@@ -365,6 +354,7 @@ export const BandejaPostulaciones = forwardRef<
         onClose={cerrarModal}
         title="Historial de Postulación"
         size="xl"
+        className="rrhh-modal-theme"
       >
         {postulacionSeleccionada && (
           <PostulacionEventosModal
@@ -380,6 +370,7 @@ export const BandejaPostulaciones = forwardRef<
         onClose={cerrarModal}
         title="Confirmar Contratación"
         size="md"
+        className="rrhh-modal-theme"
       >
         {postulacionSeleccionada && (
           <FormConfirmarContratacion

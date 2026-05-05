@@ -91,13 +91,10 @@ export class AuthService {
 
     // Persistir sesión
     localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(USER_KEY, JSON.stringify({ username, empleadoId, nombreCompleto, roles: normalizedRoles }));
-    localStorage.setItem('user', JSON.stringify({ id: String(empleadoId), name: nombreCompleto, roles: normalizedRoles }));
 
-    // Inyectar token en headers
-    const authHeader = `${type} ${token}`;
-    rrhhHttp.defaults.headers.common['Authorization'] = authHeader;
-    leadsHttp.defaults.headers.common['Authorization'] = authHeader;
+    // Nota: El interceptor de httpClient (addAuthInterceptor) inyectará el token
+    // automáticamente en cada request usando localStorage.
+    // NO inyectamos manualmente aquí para evitar redundancia y conflictos de headers.
 
     return {
       token: response.token,

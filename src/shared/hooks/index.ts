@@ -62,7 +62,7 @@ export { useApplicantsTable } from './useApplicantsTable';
 export { useBackofficeLeads } from './useBackofficeLeads';
 export { useTipification } from './useTipification';
 export { useAsesoresVentasConectados, useAsesoresConectados } from './useAsesoresConectados';
-export { useHeartbeat } from './useHeartbeat';
+export { useHeartbeat } from '@entities/auth/hooks/useHeartbeat';
 
 // Compatibility aliases (Spanish/English)
 export const useSidebar = () => ({ collapsed: false, toggle: () => {} });

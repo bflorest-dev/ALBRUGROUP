@@ -1,21 +1,22 @@
 /**
  * @atom FormInput — Shared genérico
  * Extensible por cualquier feature. No agregar props específicas de dominio.
- * Tipos soportados: text, email, number, tel, password, date, textarea
+ * Tipos soportados: text, email, number, tel, password, date
  * Para nuevos tipos, extender el union type en la interfaz de props.
  */
 
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
+import { FlatpickrDateInput } from '../date-picker';
 
-type InputType = 'text' | 'email' | 'number' | 'tel' | 'password' | 'date';
-type TextareaType = 'textarea';
+type InputType = 'text' | 'email' | 'number' | 'tel' | 'password' | 'date' | 'textarea';
 
-interface BaseFormInputProps {
+interface FormInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'type'> {
   label: string;
   name: string;
   value: string | number;
   onChange: (value: string) => void;
+  type?: InputType;
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
@@ -26,38 +27,21 @@ interface BaseFormInputProps {
   minLength?: number;
   pattern?: string;
   className?: string;
-}
-
-interface InputProps extends BaseFormInputProps, Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'type' | 'value' | keyof BaseFormInputProps> {
-  type?: InputType;
-  rows?: never;
-}
-
-interface TextareaProps extends BaseFormInputProps, Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'onChange' | 'type' | 'value' | keyof BaseFormInputProps> {
-  type: TextareaType;
-  rows?: number;
-}
-
-type FormInputProps = InputProps | TextareaProps;
-
-/**
- * Type guard para verificar si es textarea
- */
-function isTextareaProps(props: FormInputProps): props is TextareaProps {
-  return props.type === 'textarea';
+  rows?: number; // Para textarea
 }
 
 /**
  * FormInput — Input genérico con validación y error message
  * Usa tokens de diseño del sistema (brand, surface, status)
  */
-export const FormInput = React.forwardRef<HTMLInputElement | HTMLTextAreaElement, FormInputProps>(
-  (props, ref) => {
-    const {
+export const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
+  (
+    {
       label,
       name,
       value,
       onChange,
+      type = 'text',
       placeholder,
       required = false,
       disabled = false,
@@ -68,11 +52,15 @@ export const FormInput = React.forwardRef<HTMLInputElement | HTMLTextAreaElement
       minLength,
       pattern,
       className,
-      ...restProps
-    } = props;
-
+      rows = 4,
+      ...props
+    },
+    ref
+  ) => {
     const resolvedHint = hint ?? helpText;
     const showHint = resolvedHint && !error;
+    const isTextarea = type === 'textarea';
+    const isDate = type === 'date';
 
     const baseInputClasses = `
       w-full border rounded-input bg-white px-3.5 py-2.5
@@ -88,20 +76,18 @@ export const FormInput = React.forwardRef<HTMLInputElement | HTMLTextAreaElement
 
     const inputClasses = `${baseInputClasses} ${focusClasses} ${className || ''}`;
 
-    if (isTextareaProps(props)) {
-      const { rows = 4, ...textareaRest } = restProps as Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, keyof BaseFormInputProps>;
+    return (
+      <div className="flex flex-col gap-1.5 mb-5">
+        {/* Label */}
+        <label htmlFor={name} className="text-sm font-medium text-gray-700">
+          {label}
+          {required && <span className="text-red-500 ml-0.5">*</span>}
+        </label>
 
-      return (
-        <div className="flex flex-col gap-1.5 mb-5">
-          {/* Label */}
-          <label htmlFor={name} className="text-sm font-medium text-gray-700">
-            {label}
-            {required && <span className="text-red-500 ml-0.5">*</span>}
-          </label>
-
-          {/* Textarea */}
+        {/* Input or Textarea */}
+        {isTextarea ? (
           <textarea
-            ref={ref as React.Ref<HTMLTextAreaElement>}
+            ref={ref as any}
             id={name}
             name={name}
             value={value}
@@ -115,59 +101,41 @@ export const FormInput = React.forwardRef<HTMLInputElement | HTMLTextAreaElement
             className={`${inputClasses} resize-y min-h-[100px]`}
             aria-invalid={!!error}
             aria-describedby={error ? `${name}-error` : showHint ? `${name}-hint` : undefined}
-            {...textareaRest}
+            {...(props as any)}
           />
-
-          {/* Error Message */}
-          {error && (
-            <p
-              id={`${name}-error`}
-              className="text-xs mt-0.5 text-red-500 flex items-center gap-1 animate-slide-down"
-            >
-              <AlertCircle size={12} className="flex-shrink-0" />
-              {error}
-            </p>
-          )}
-
-          {/* Helper / Hint Text */}
-          {showHint && (
-            <p id={`${name}-hint`} className="text-xs mt-0.5 text-gray-400">
-              {resolvedHint}
-            </p>
-          )}
-        </div>
-      );
-    }
-
-    const { type = 'text', ...inputRest } = restProps as Omit<React.InputHTMLAttributes<HTMLInputElement>, keyof BaseFormInputProps>;
-
-    return (
-      <div className="flex flex-col gap-1.5 mb-5">
-        {/* Label */}
-        <label htmlFor={name} className="text-sm font-medium text-gray-700">
-          {label}
-          {required && <span className="text-red-500 ml-0.5">*</span>}
-        </label>
-
-        {/* Input */}
-        <input
-          ref={ref as React.Ref<HTMLInputElement>}
-          id={name}
-          name={name}
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          disabled={disabled}
-          maxLength={maxLength}
-          minLength={minLength}
-          pattern={pattern}
-          required={required}
-          className={inputClasses}
-          aria-invalid={!!error}
-          aria-describedby={error ? `${name}-error` : showHint ? `${name}-hint` : undefined}
-          {...inputRest}
-        />
+        ) : isDate ? (
+          <FlatpickrDateInput
+            id={name}
+            name={name}
+            value={String(value ?? '')}
+            onChange={onChange}
+            placeholder={placeholder}
+            disabled={disabled}
+            required={required}
+            inputClassName={className}
+            hasError={Boolean(error)}
+            showRequiredMessage={false}
+          />
+        ) : (
+          <input
+            ref={ref}
+            id={name}
+            name={name}
+            type={type}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            disabled={disabled}
+            maxLength={maxLength}
+            minLength={minLength}
+            pattern={pattern}
+            required={required}
+            className={inputClasses}
+            aria-invalid={!!error}
+            aria-describedby={error ? `${name}-error` : showHint ? `${name}-hint` : undefined}
+            {...props}
+          />
+        )}
 
         {/* Error Message */}
         {error && (

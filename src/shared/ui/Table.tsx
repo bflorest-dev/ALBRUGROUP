@@ -4,7 +4,7 @@ import { DsDataTable, type DsDataTableColumn } from './design-system';
 interface TableColumn<T> {
   key: keyof T;
   label: string;
-  render?: (value: unknown, item: T) => ReactNode;
+  render?: (value: any, item: T) => ReactNode;
 }
 
 interface TableProps<T> {

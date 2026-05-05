@@ -34,7 +34,7 @@ export const PhoneValidationResult: React.FC<
   if (error) {
     return (
       <div className={styles.container}>
-        <div className={[styles.card, styles.error].join(' ')}>
+        <div className={[styles.resultPanel, styles.error].join(' ')}>
           <div className={styles.errorHeader}>
             <span className={styles.errorIcon}>⚠️</span>
             <h3>Error en la validación</h3>
@@ -58,7 +58,7 @@ export const PhoneValidationResult: React.FC<
 
   return (
     <div className={styles.container}>
-      <div className={[styles.card, statusClass].join(' ')}>
+      <div className={[styles.resultPanel, statusClass].join(' ')}>
         {/* Header */}
         <div className={styles.header}>
           <h3 className={styles.title}>

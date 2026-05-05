@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Sidebar } from '@widgets/sidebar/ui';
-import { Modal, SessionLogoutButton, Button } from '@shared/ui';
+import { Modal, SessionLogoutButton } from '@shared/ui';
 import { NewApplicantForm } from '@features/register-applicant/ui';
 import { NewEmployeeForm } from '@features/register-employee/ui/NewEmployeeForm';
 import { ApplicantService } from '@entities/applicant/model';
@@ -97,7 +97,7 @@ const AdminPage: React.FC = () => {
   ];
 
   const resolveEmpleadoId = useCallback((empleado: Employee): number => {
-    const rawId = empleado.id ?? (empleado as unknown as { empleadoId?: unknown }).empleadoId;
+    const rawId = empleado.id ?? empleado['empleadoId'];
     return Number(rawId);
   }, []);
 
@@ -236,7 +236,7 @@ const AdminPage: React.FC = () => {
           apellidos: formData.apellidos,
           fullName: `${formData.nombres} ${formData.apellidos}`.trim(),
           numeroDocumento: formData.numeroDocumento,
-          personalEmail: formData.correoPersonal,
+          correoPersonal: formData.correoPersonal,
         };
 
         const merged = mergeEmployeesById([nuevoEmpleado], prev);
@@ -391,9 +391,9 @@ const AdminPage: React.FC = () => {
             <section>
               <h2>Registrar Postulante</h2>
               <p>Completa los datos para registrar un nuevo postulante.</p>
-              <Button onClick={() => setIsApplicantModalOpen(true)}>
+              <button className="btn-primary" onClick={() => setIsApplicantModalOpen(true)}>
                 Registrar Postulante
-              </Button>
+              </button>
             </section>
           )}
 
@@ -401,9 +401,9 @@ const AdminPage: React.FC = () => {
             <section>
               <h2>Registrar Empleado</h2>
               <p>Completa los datos para registrar un nuevo empleado.</p>
-              <Button onClick={() => setIsEmployeeModalOpen(true)}>
+              <button className="btn-primary" onClick={() => setIsEmployeeModalOpen(true)}>
                 Registrar Empleado
-              </Button>
+              </button>
             </section>
           )}
 
@@ -520,9 +520,9 @@ const AdminPage: React.FC = () => {
             {employeeFeedbackModal?.message}
           </pre>
           <div className="admin-feedback-modal-actions">
-            <Button onClick={() => setEmployeeFeedbackModal(null)}>
+            <button className="btn-primary" onClick={() => setEmployeeFeedbackModal(null)}>
               Aceptar
-            </Button>
+            </button>
           </div>
         </div>
       </Modal>

@@ -26,33 +26,31 @@ interface TablaBandejaProps {
  */
 function getEstadoVariant(
   estado: string
-): 'success' | 'warning' | 'error' | 'info' | 'default' | 'secondary' | 'outline' | 'destructive' | null | undefined {
+): 'success' | 'warning' | 'danger' | 'info' | 'primary' {
   const lower = estado.toLowerCase();
   if (lower.includes('aprobado') || lower.includes('completado'))
     return 'success';
-  if (lower.includes('rechazado')) return 'error';
+  if (lower.includes('rechazado')) return 'danger';
   if (lower.includes('revision')) return 'warning';
   return 'info';
 }
 
 function resolveEtapa(post: PostulacionResponse): string {
-  // TODO: Migrar acceso dinámico a tipos seguros (unknown + validación)
   const rawEtapa =
     post.etapaProceso ??
-    (post as unknown as { etapa?: string }).etapa ??
-    (post as unknown as { etapa_proceso?: string }).etapa_proceso ??
+    (post as any).etapa ??
+    (post as any).etapa_proceso ??
     '';
   const etapa = String(rawEtapa).trim();
   return etapa || 'SIN_ETAPA';
 }
 
 function resolveEstado(post: PostulacionResponse): string {
-  // TODO: Migrar acceso dinámico a tipos seguros (unknown + validación)
   const rawEstado =
     post.estadoProceso ??
-    (post as unknown as { estado?: string }).estado ??
+    (post as any).estado ??
     post.estadoBandeja ??
-    (post as unknown as { estado_bandeja?: string }).estado_bandeja ??
+    (post as any).estado_bandeja ??
     '';
   const estado = String(rawEstado).trim();
   return estado || 'SIN_ESTADO';
@@ -168,26 +166,34 @@ export const TablaBandeja: React.FC<TablaBandejaProps> = ({
 
               {/* Etapa */}
               <td className="px-4 py-3">
-                <Badge variant="info" size="sm">
-                  {etapa}
-                </Badge>
+                <Badge
+                  label={etapa}
+                  variant="info"
+                  size="small"
+                />
               </td>
 
               {/* Estado */}
               <td className="px-4 py-3">
-                <Badge variant={getEstadoVariant(estado)} size="sm">
-                  {estado}
-                </Badge>
+                <Badge
+                  label={estado}
+                  variant={getEstadoVariant(estado)}
+                  size="small"
+                />
               </td>
 
               {/* Tipificación */}
               <td className="px-4 py-3">
-                <Badge variant="default" size="sm">
-                  {post.tipificacion?.codigo ||
+                <Badge
+                  label={
+                    post.tipificacion?.codigo ||
                     post.codigoTipificacion ||
                     post.tipificacion?.descripcion ||
-                    'SIN_TIPIFICACION'}
-                </Badge>
+                    'SIN_TIPIFICACION'
+                  }
+                  variant="primary"
+                  size="small"
+                />
               </td>
 
               {/* Fecha */}

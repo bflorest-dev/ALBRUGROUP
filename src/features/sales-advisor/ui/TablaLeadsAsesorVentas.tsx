@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import {
   DsBadge,
   DsDataTable,
@@ -30,7 +30,7 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
 }) => {
   const beforeUnloadBypassKey = 'skip_beforeunload_once';
 
-  const openExternalProtocol = useCallback((url: string) => {
+  const openExternalProtocol = (url: string) => {
     sessionStorage.setItem(beforeUnloadBypassKey, '1');
 
     const openedWindow = window.open(url, '_blank', 'noopener,noreferrer');
@@ -42,9 +42,9 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
     window.setTimeout(() => {
       sessionStorage.removeItem(beforeUnloadBypassKey);
     }, 1500);
-  }, [beforeUnloadBypassKey]);
+  };
 
-  const getDialNumber = useCallback((prefijo: string, numeroLead: string): string | null => {
+  const getDialNumber = (prefijo: string, numeroLead: string): string | null => {
     const prefijoLimpio = prefijo.replace(/\D/g, '');
     const numeroLimpio = numeroLead.replace(/\D/g, '');
     const numeroCompleto = `${prefijoLimpio}${numeroLimpio}`;
@@ -54,9 +54,9 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
     }
 
     return numeroCompleto;
-  }, []);
+  };
 
-  const getWhatsAppUrl = useCallback((prefijo: string, numeroLead: string): string | null => {
+  const getWhatsAppUrl = (prefijo: string, numeroLead: string): string | null => {
     const numeroCompleto = getDialNumber(prefijo, numeroLead);
 
     if (!numeroCompleto) {
@@ -64,9 +64,9 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
     }
 
     return `https://wa.me/${numeroCompleto}`;
-  }, [getDialNumber]);
+  };
 
-  const getMicroSipUrl = useCallback((numeroLead: string): string | null => {
+  const getMicroSipUrl = (numeroLead: string): string | null => {
     const numeroSoloLead = numeroLead.replace(/\D/g, '');
 
     if (!numeroSoloLead) {
@@ -74,7 +74,7 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
     }
 
     return `sip:${numeroSoloLead}`;
-  }, []);
+  };
 
   const formatDateParts = (fecha: string): { date: string; time: string } => {
     const parsedDate = new Date(fecha);
@@ -97,14 +97,14 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
     return { date, time };
   };
 
-  const formatEstado = useCallback((estado: string): string => {
+  const formatEstado = (estado: string): string => {
     return estado
       .toLowerCase()
       .replace(/_/g, ' ')
       .replace(/(^|\s)\S/g, (letter) => letter.toUpperCase());
-  }, []);
+  };
 
-  const getEstadoVariant = useCallback((estado: string): DsBadgeVariant => {
+  const getEstadoVariant = (estado: string): DsBadgeVariant => {
     switch (estado) {
       case 'NUEVO':
         return 'info';
@@ -121,22 +121,19 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
       default:
         return 'neutral';
     }
-  }, []);
+  };
 
-  const commonEstadoColumn = useMemo<DsDataTableColumn<LeadAsesorVentasResponse>>(
-    () => ({
-      key: 'estadoSeguimiento',
-      label: 'Estado',
-      render: (lead) => (
-        <DsBadge
-          label={formatEstado(lead.estadoSeguimiento)}
-          variant={getEstadoVariant(lead.estadoSeguimiento)}
-          size='sm'
-        />
-      ),
-    }),
-    [formatEstado, getEstadoVariant]
-  );
+  const commonEstadoColumn: DsDataTableColumn<LeadAsesorVentasResponse> = {
+    key: 'estadoSeguimiento',
+    label: 'Estado',
+    render: (lead) => (
+      <DsBadge
+        label={formatEstado(lead.estadoSeguimiento)}
+        variant={getEstadoVariant(lead.estadoSeguimiento)}
+        size='sm'
+      />
+    ),
+  };
 
   const defaultColumns = useMemo<DsDataTableColumn<LeadAsesorVentasResponse>[]>(
     () => [
@@ -148,7 +145,7 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
       { key: 'correo', label: 'Email', render: (lead) => lead.correo ?? '-' },
       commonEstadoColumn,
     ],
-    [commonEstadoColumn]
+    []
   );
 
   const dashboardColumns = useMemo<DsDataTableColumn<LeadAsesorVentasResponse>[]>(
@@ -178,7 +175,7 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
       },
       commonEstadoColumn,
     ],
-    [commonEstadoColumn]
+    []
   );
 
   const defaultActions = useMemo<DsDataTableAction<LeadAsesorVentasResponse>[]>(
@@ -225,7 +222,7 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
         onClick: onPreventa,
       },
     ],
-    [onPreventa, getWhatsAppUrl, getMicroSipUrl, openExternalProtocol]
+    [onPreventa]
   );
 
   return (

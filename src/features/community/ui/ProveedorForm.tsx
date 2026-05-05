@@ -23,47 +23,35 @@ export const ProveedorForm: React.FC<ProveedorFormProps> = ({
   onSubmit,
   globalMessage,
 }) => {
-  const labelStyle: React.CSSProperties = {
-    display: 'block',
-    marginBottom: '4px',
-    fontWeight: 'bold',
-    fontSize: '14px',
-  };
-
-  const errorStyle: React.CSSProperties = {
-    color: '#dc3545',
-    fontSize: '12px',
-    marginTop: '4px',
-  };
-
   return (
-    <div style={{ marginBottom: '24px' }}>
+    <div className="community-block-top-md">
       <h3>Crear proveedor</h3>
 
-      <div style={{ marginBottom: '16px' }}>
-        <label style={labelStyle}>Nombre</label>
+      <div className="community-field community-field-max-sm">
+        <label>Nombre</label>
         <input
           type="text"
           placeholder="Ej: Proveedor XYZ"
           value={formState.nombre}
           onChange={(e) => onInputChange('nombre', e.target.value)}
-          className="community-input"
-          style={{ maxWidth: 360, borderColor: errors.nombre ? '#d74343' : undefined }}
+          className={`community-input ${errors.nombre ? 'is-invalid' : ''}`}
           disabled={submitting || loading}
         />
-        {errors.nombre && <div style={errorStyle}>{errors.nombre}</div>}
+        {errors.nombre && <div className="community-error-text">{errors.nombre}</div>}
       </div>
 
-      <button
-        onClick={onSubmit}
-        disabled={submitting || loading}
-        className="community-btn primary"
-      >
-        {submitting ? 'Creando...' : 'Crear proveedor'}
-      </button>
+      <div className="community-actions">
+        <button
+          onClick={onSubmit}
+          disabled={submitting || loading}
+          className="community-btn primary"
+        >
+          {submitting ? 'Creando...' : 'Crear proveedor'}
+        </button>
+      </div>
 
       {globalMessage && (
-        <div className={globalMessage.includes('✅') ? 'community-alert' : 'community-error'} style={{ marginTop: 12 }}>
+        <div className={`${globalMessage.includes('✅') ? 'community-alert' : 'community-error'} community-message`}>
           {globalMessage}
         </div>
       )}

@@ -16,7 +16,7 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
-    "ignoreDeprecations": "6.0",
+    "ignoreDeprecations": "5.0",
     "paths": {
       "@/*": ["./src/*"],
       "@app": ["./src/app"],
@@ -27,16 +27,10 @@
       "@features/*": ["./src/features/*"],
       "@entities": ["./src/entities"],
       "@entities/*": ["./src/entities/*"],
-      "@caracteristicas": ["./src/features"],
-      "@caracteristicas/*": ["./src/features/*"],
-      "@entidades": ["./src/entities"],
-      "@entidades/*": ["./src/entities/*"],
       "@pages": ["./src/pages"],
       "@pages/*": ["./src/pages/*"],
       "@widgets": ["./src/widgets"],
-      "@widgets/*": ["./src/widgets/*"],
-      "@shared/validacion": ["./src/shared/validation"],
-      "@shared/api/servicioBase": ["./src/shared/api/servicioBase.ts"]
+      "@widgets/*": ["./src/widgets/*"]
     }
   },
   "include": ["src"]

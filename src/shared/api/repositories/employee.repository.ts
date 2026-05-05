@@ -40,8 +40,14 @@ export class EmployeeRepository {
     return response.data;
   }
 
-  /**
-   * BÃºsqueda universal de empleados
+  /**   * Obtener empleado por ID
+   */
+  static async getById(id: number): Promise<EmpleadoResponse> {
+    const response = await http.get<EmployeeResponse>(`/empleados/${id}`);
+    return response.data;
+  }
+
+  /**   * BÃºsqueda universal de empleados
    */
   static async searchUniversal(dato: string, params?: {
     page?: number;

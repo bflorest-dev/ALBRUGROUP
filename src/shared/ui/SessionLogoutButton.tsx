@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
-import { clearSession, getStoredToken } from '@shared/api/httpClient';
+import { useAuth } from '@entities/auth';
 
 interface SessionLogoutButtonProps {
   className?: string;
@@ -12,15 +12,15 @@ export const SessionLogoutButton: React.FC<SessionLogoutButtonProps> = ({
   className,
   label = 'Cerrar sesión',
 }) => {
+  const { isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
-  const isAuthenticated = !!getStoredToken();
 
   if (!isAuthenticated) {
     return null;
   }
 
   const handleLogout = () => {
-    clearSession();
+    logout();
     navigate('/login', { replace: true });
   };
 

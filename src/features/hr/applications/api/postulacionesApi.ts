@@ -23,157 +23,135 @@ import type {
   GrupoCapacitacionResponse,
 } from '../model';
 
-type RawPostulacion = Record<string, unknown>;
+let warnedUnexpectedPostulacionesPayload = false;
 
-function getRawValue<T = unknown>(raw: RawPostulacion, key: string): T | undefined {
-  return raw[key] as T | undefined;
-}
-
-function getRawObject(raw: RawPostulacion, key: string): RawPostulacion | undefined {
-  const value = raw[key];
-  if (value && typeof value === 'object') {
-    return value as RawPostulacion;
-  }
-  return undefined;
-}
-
-function normalizePostulacionResponse(raw: unknown): PostulacionResponse {
-  const payload = (raw as RawPostulacion) ?? {};
-  const tipificacion = getRawObject(payload, 'tipificacion') ?? {};
-  const postulante = getRawObject(payload, 'postulante') ?? {};
-
+function normalizePostulacionResponse(raw: any): PostulacionResponse {
   return {
-    ...(payload as unknown as PostulacionResponse),
+    ...raw,
     idTipificacion:
-      getRawValue<number>(payload, 'idTipificacion') ??
-      getRawValue<number>(payload, 'tipificacion_id') ??
-      getRawValue<number>(payload, 'id_tipificacion') ??
-      getRawValue<number>(tipificacion, 'id') ??
+      raw.idTipificacion ??
+      raw.tipificacion_id ??
+      raw.id_tipificacion ??
+      raw.tipificacion?.id ??
       null,
     codigoTipificacion:
-      getRawValue<string>(payload, 'codigoTipificacion') ??
-      getRawValue<string>(payload, 'codigo_tipificacion') ??
-      getRawValue<string>(tipificacion, 'codigo') ??
+      raw.codigoTipificacion ??
+      raw.codigo_tipificacion ??
+      raw.tipificacion?.codigo ??
       null,
     idSubtipificacion:
-      getRawValue<number>(payload, 'idSubtipificacion') ??
-      getRawValue<number>(payload, 'subtipificacion_id') ??
-      getRawValue<number>(payload, 'id_subtipificacion') ??
-      getRawValue<number>(getRawObject(payload, 'subtipificacion') ?? {}, 'id') ??
+      raw.idSubtipificacion ??
+      raw.subtipificacion_id ??
+      raw.id_subtipificacion ??
+      raw.subtipificacion?.id ??
       null,
-    tipificacion: getRawValue<unknown>(payload, 'tipificacion')
+    tipificacion: raw.tipificacion
       ? {
-          id:
-            getRawValue<number>(tipificacion, 'id') ??
-            getRawValue<number>(payload, 'idTipificacion') ??
-            getRawValue<number>(payload, 'tipificacion_id') ??
-            null,
+          id: raw.tipificacion?.id ?? raw.idTipificacion ?? raw.tipificacion_id ?? null,
           codigo:
-            getRawValue<string>(tipificacion, 'codigo') ??
-            getRawValue<string>(payload, 'codigoTipificacion') ??
-            getRawValue<string>(payload, 'codigo_tipificacion') ??
+            raw.tipificacion?.codigo ??
+            raw.codigoTipificacion ??
+            raw.codigo_tipificacion ??
             null,
-          descripcion: getRawValue<string>(tipificacion, 'descripcion') ?? null,
+          descripcion: raw.tipificacion?.descripcion ?? null,
         }
       : null,
     etapaProceso:
-      getRawValue<string>(payload, 'etapaProceso') ??
-      getRawValue<string>(payload, 'etapa') ??
-      getRawValue<string>(payload, 'etapa_proceso') ??
+      raw.etapaProceso ??
+      raw.etapa ??
+      raw.etapa_proceso ??
       '',
     estadoProceso:
-      getRawValue<string>(payload, 'estadoProceso') ??
-      getRawValue<string>(payload, 'estado') ??
-      getRawValue<string>(payload, 'estado_proceso') ??
+      raw.estadoProceso ??
+      raw.estado ??
+      raw.estado_proceso ??
       '',
     estadoBandeja:
-      getRawValue<string>(payload, 'estadoBandeja') ??
-      getRawValue<string>(payload, 'estado_bandeja') ??
+      raw.estadoBandeja ??
+      raw.estado_bandeja ??
       '',
     idOfertaLaboral:
-      getRawValue<number>(payload, 'idOfertaLaboral') ??
-      getRawValue<number>(getRawObject(payload, 'ofertaLaboral') ?? {}, 'id') ??
-      getRawValue<number>(payload, 'oferta_laboral_id') ??
-      0,
-    ofertaLaboral:
-      getRawValue<PostulacionResponse['ofertaLaboral']>(payload, 'ofertaLaboral') ??
-      getRawValue<PostulacionResponse['ofertaLaboral']>(payload, 'oferta_laboral'),
+      raw.idOfertaLaboral ?? raw.ofertaLaboral?.id ?? raw.oferta_laboral_id ?? 0,
+    ofertaLaboral: raw.ofertaLaboral ?? raw.oferta_laboral,
     fechaCreacion:
-      getRawValue<string>(payload, 'fechaCreacion') ??
-      getRawValue<string>(payload, 'createdAt') ??
-      getRawValue<string>(payload, 'created_at') ??
-      '',
+      raw.fechaCreacion ?? raw.createdAt ?? raw.created_at ?? '',
     fechaActualizacion:
-      getRawValue<string>(payload, 'fechaActualizacion') ??
-      getRawValue<string>(payload, 'updatedAt') ??
-      getRawValue<string>(payload, 'updated_at') ??
-      '',
+      raw.fechaActualizacion ?? raw.updatedAt ?? raw.updated_at ?? '',
     postulante: {
-      id: getRawValue<number>(postulante, 'id') ?? 0,
-      nombres: getRawValue<string>(postulante, 'nombres') ?? '',
-      apellidos: getRawValue<string>(postulante, 'apellidos') ?? '',
-      tipoDocumento:
-        getRawValue<string>(postulante, 'tipoDocumento') ??
-        getRawValue<string>(postulante, 'tipo_documento') ??
-        '',
-      documento: getRawValue<string>(postulante, 'documento') ?? '',
-      celular: getRawValue<string>(postulante, 'celular') ?? '',
-      fechaNacimiento:
-        getRawValue<string>(postulante, 'fechaNacimiento') ??
-        getRawValue<string>(postulante, 'fecha_nacimiento') ??
-        '',
-      listaNegra:
-        getRawValue<boolean>(postulante, 'listaNegra') ??
-        getRawValue<boolean>(postulante, 'lista_negra') ??
-        false,
+      id: raw.postulante?.id ?? 0,
+      nombres: raw.postulante?.nombres ?? '',
+      apellidos: raw.postulante?.apellidos ?? '',
+      tipoDocumento: raw.postulante?.tipoDocumento ?? raw.postulante?.tipo_documento ?? '',
+      documento: raw.postulante?.documento ?? '',
+      celular: raw.postulante?.celular ?? '',
+      fechaNacimiento: raw.postulante?.fechaNacimiento ?? raw.postulante?.fecha_nacimiento ?? '',
+      listaNegra: raw.postulante?.listaNegra ?? raw.postulante?.lista_negra ?? false,
     },
   };
 }
 
-function extractPostulacionArrayPayload(rawPayload: unknown): unknown[] {
-  if (Array.isArray(rawPayload)) {
-    return rawPayload;
+const asArray = <T>(value: unknown): T[] | null => {
+  return Array.isArray(value) ? (value as T[]) : null;
+};
+
+function extractPostulacionArray(rawPayload: unknown): unknown[] {
+  const directArray = asArray<unknown>(rawPayload);
+  if (directArray) return directArray;
+
+  if (!rawPayload || typeof rawPayload !== 'object') {
+    return [];
   }
 
-  if (rawPayload && typeof rawPayload === 'object') {
-    const payload = rawPayload as Record<string, unknown>;
+  const payload = rawPayload as Record<string, unknown>;
+  const directCandidates = [
+    payload.content,
+    payload.items,
+    payload.results,
+    payload.postulaciones,
+    payload.rows,
+  ];
 
-    if (Array.isArray(payload.data)) {
-      return payload.data;
+  for (const candidate of directCandidates) {
+    const candidateArray = asArray<unknown>(candidate);
+    if (candidateArray) {
+      return candidateArray;
     }
+  }
 
-    if (Array.isArray(payload.items)) {
-      return payload.items;
-    }
+  const data = payload.data;
+  const dataArray = asArray<unknown>(data);
+  if (dataArray) {
+    return dataArray;
+  }
 
-    if (Array.isArray(payload.content)) {
-      return payload.content;
-    }
+  if (data && typeof data === 'object') {
+    const nested = data as Record<string, unknown>;
+    const nestedCandidates = [
+      nested.content,
+      nested.items,
+      nested.results,
+      nested.postulaciones,
+      nested.rows,
+    ];
 
-    if (Array.isArray(payload.postulaciones)) {
-      return payload.postulaciones;
+    for (const candidate of nestedCandidates) {
+      const candidateArray = asArray<unknown>(candidate);
+      if (candidateArray) {
+        return candidateArray;
+      }
     }
+  }
 
-    if (Array.isArray(payload.results)) {
-      return payload.results;
-    }
-
-    if ('data' in payload && payload.data && typeof payload.data === 'object') {
-      return extractPostulacionArrayPayload(payload.data);
-    }
+  if (import.meta.env.DEV && !warnedUnexpectedPostulacionesPayload) {
+    warnedUnexpectedPostulacionesPayload = true;
+    console.warn('[postulacionesApi] Unexpected postulaciones payload shape:', rawPayload);
   }
 
   return [];
 }
 
-function normalizePostulacionArray(rawArray: unknown): PostulacionResponse[] {
-  const payload = extractPostulacionArrayPayload(rawArray);
-  if (!Array.isArray(payload)) {
-    console.warn('[postulacionesApi] Expected postulacion list, received:', rawArray);
-    return [];
-  }
-
-  return payload.map((item) => normalizePostulacionResponse(item));
+function normalizePostulacionArray(rawPayload: unknown): PostulacionResponse[] {
+  return extractPostulacionArray(rawPayload).map(normalizePostulacionResponse);
 }
 
 /**

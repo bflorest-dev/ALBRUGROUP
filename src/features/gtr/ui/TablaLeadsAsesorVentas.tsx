@@ -7,8 +7,7 @@
 import React, { useState, useMemo } from 'react';
 import { Badge, Spinner, Alert } from '@shared/ui/utilities/Utilities';
 import { DsDataTable, type DsDataTableAction, type DsDataTableColumn } from '@shared/ui/design-system';
-import { useLeadsAsesorVentas } from '../hooks/useGtrQueries';
-//import { useLeadsAsesorVentas, useTypifyLeadMutation } from '../hooks/useGtrQueries';
+import { useLeadsAsesorVentas, useTypifyLeadMutation } from '../hooks/useGtrQueries';
 import type { LeadAsesorVentasResponse, PermisosGTR } from '@entities/lead/types';
 import styles from './TablaLeadsAsesorVentas.module.css';
 
@@ -44,14 +43,10 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
   const leadsQuery = useLeadsAsesorVentas({
     idAsesor,
   });
-  
-  // ✅ CORREGIDO: Usar useMemo para estabilizar 'leads' y evitar cambios en cada render
-  const leads = useMemo(() => leadsQuery.data ?? [], [leadsQuery.data]);
+  const leads = leadsQuery.data ?? [];
 
   // ========== MUTACIONES ==========
-  // ✅ CORREGIDO: Prefijo _ para indicar que es intencionalmente no usado (o eliminar si no se necesita)
-  // Si no se usa en el futuro, elimina esta línea completamente
-  //const _typifyMutation = useTypifyLeadMutation(); // O eliminar: // const typifyMutation = useTypifyLeadMutation();
+  const typifyMutation = useTypifyLeadMutation();
 
   // ========== FILTRADO ==========
   const filteredLeads = useMemo(() => {
@@ -67,13 +62,13 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
 
       return matchesSearch && matchesEstado;
     });
-  }, [leads, searchTerm, filterEstado]); // ✅ CORREGIDO: 'leads' ahora es estable
+  }, [leads, searchTerm, filterEstado]);
 
   // ========== VALORES ÚNICOS PARA FILTROS ==========
   const estados = useMemo(() => {
     const unique = new Set(leads.map((l) => l.estadoSeguimiento));
     return Array.from(unique).sort();
-  }, [leads]); // ✅ CORREGIDO: 'leads' ahora es estable
+  }, [leads]);
 
   // ========== PAGINACIÓN ==========
   const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);

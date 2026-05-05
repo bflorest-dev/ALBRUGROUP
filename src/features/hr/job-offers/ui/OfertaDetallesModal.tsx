@@ -1,6 +1,6 @@
 import { Modal } from '@shared/ui';
 import type { ReactElement } from 'react';
-import { Layers } from 'lucide-react';
+import { Calendar, Layers, Users } from 'lucide-react';
 import type { OfertaLaboralResponse } from '@shared/types';
 import { AmpliacionesDetail } from './AmpliacionesDetail';
 

@@ -7,13 +7,7 @@ import { useProveedoresForm } from '../hooks/useProveedoresForm';
 import { ProveedorForm } from './ProveedorForm';
 import { ProveedoresList } from './ProveedoresList';
 
-interface ProveedoresSectionProps {
-  sectionStyle?: React.CSSProperties;
-}
-
-export const ProveedoresSection: React.FC<ProveedoresSectionProps> = ({
-  sectionStyle = {},
-}) => {
+export const ProveedoresSection: React.FC = () => {
   const {
     proveedores,
     formState,
@@ -21,20 +15,22 @@ export const ProveedoresSection: React.FC<ProveedoresSectionProps> = ({
     globalMessage,
     loading,
     submitting,
+    updatingEstadoId,
     error,
     handleInputChange,
     handleSubmit,
+    toggleEstadoProveedor,
   } = useProveedoresForm();
 
-  const defaultStyle: React.CSSProperties = {
-    border: 'none',
-    borderRadius: 0,
-    padding: 0,
-    backgroundColor: '#fff',
-  };
-
   return (
-    <div className="community-card" style={{ ...defaultStyle, ...sectionStyle }}>
+    <section className="community-card">
+      <div className="community-section-head">
+        <div>
+          <h2>Proveedores</h2>
+          <p>Registra proveedores y revisa su estado para asociarlos a campañas, planes y promociones.</p>
+        </div>
+      </div>
+
       <ProveedorForm
         formState={formState}
         errors={errors}
@@ -49,7 +45,9 @@ export const ProveedoresSection: React.FC<ProveedoresSectionProps> = ({
         proveedores={proveedores}
         loading={loading}
         error={error}
+        updatingEstadoId={updatingEstadoId}
+        onToggleEstado={toggleEstadoProveedor}
       />
-    </div>
+    </section>
   );
 };

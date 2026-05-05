@@ -1,16 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { AxiosError } from 'axios';
 import { Modal } from '@shared/ui';
-import { PreventaApi } from '../model/preventa.api';
+import { PreventaApi, Tipificacion } from '../model/preventa.api';
 import { useQuery } from '@tanstack/react-query';
 import type {
   LeadDatosPreventaRequest,
   LeadDireccionRequest,
   LeadOfertaComercialRequest,
+  LeadAdicionalOferta,
   LeadTipificacionRequest,
 } from '@entities/lead/types';
 import type { PlanResponse, PromocionComercialResponse } from '@shared/types';
-import { DocumentoEnum } from '@shared/types/backendEnums';
+import { DocumentoEnum, TipoViaEnum, TipoDomicilioEnum } from '@shared/types/backendEnums';
 import { enumToOptions } from '@shared/utils/enumToOptions';
 import styles from './PreventaLeadModal.module.css';
 
@@ -179,7 +180,7 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({
     isError: tipificacionesError,
   } = useQuery<import('@shared/types').CatalogoResponse>({
     queryKey: ['tipificaciones', 'PREVENTA'],
-    queryFn: () => PreventaApi.getCatalogo(),
+    queryFn: () => PreventaApi.getCatalogo().then((response) => response.data),
     enabled: isOpen,
     staleTime: 1000 * 60 * 3,
     retry: 1,
@@ -190,7 +191,7 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({
     isLoading: loadingPlanes,
   } = useQuery<PlanResponse[]>({
     queryKey: ['preventa', 'planes'],
-    queryFn: () => PreventaApi.getPlanes(),
+    queryFn: () => PreventaApi.getPlanes().then((response) => response.data),
     enabled: isOpen,
     staleTime: 1000 * 60 * 3,
     retry: 1,
@@ -201,7 +202,7 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({
     isLoading: loadingPromocionesInternas,
   } = useQuery<PromocionComercialResponse[]>({
     queryKey: ['preventa', 'promociones', 'internas'],
-    queryFn: () => PreventaApi.getPromociones(true),
+    queryFn: () => PreventaApi.getPromociones(true).then((response) => response.data),
     enabled: isOpen,
     staleTime: 1000 * 60 * 3,
     retry: 1,
@@ -212,7 +213,7 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({
     isLoading: loadingPromocionesExternas,
   } = useQuery<PromocionComercialResponse[]>({
     queryKey: ['preventa', 'promociones', 'externas'],
-    queryFn: () => PreventaApi.getPromociones(false),
+    queryFn: () => PreventaApi.getPromociones(false).then((response) => response.data),
     enabled: isOpen,
     staleTime: 1000 * 60 * 3,
     retry: 1,
@@ -224,10 +225,7 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({
     [datosPreventa, direccion, oferta]
   );
 
-  const tipificaciones = useMemo(
-    () => catalogo.tipificaciones || [],
-    [catalogo.tipificaciones]
-  );
+  const tipificaciones = catalogo.tipificaciones || [];
 
   // Códigos de tipificaciones permitidas dinámicamente según nivel de completitud
   const getTipificacionesPermitidas = (level: CompletionLevel): string[] => {
@@ -258,7 +256,7 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({
       }));
 
     return sorted;
-  }, [tipificaciones, completionLevel]);
+  }, [catalogo, tipificaciones, completionLevel]);
 
   useEffect(() => {
     if (!selectedTipificacionId) return;

@@ -10,3 +10,4 @@
  */
 
 export * from './hooks/index';
+export { PaginaAsesorBackoffice } from '@pages/backoffice-advisor';

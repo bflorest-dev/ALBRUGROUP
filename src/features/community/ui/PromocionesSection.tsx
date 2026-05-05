@@ -5,6 +5,8 @@ import type {
   ProveedorResponse,
   ZonaResponse,
 } from '@shared/types';
+import { FlatpickrDateInput } from '@shared/ui/date-picker';
+import { EstadoConfirmModal } from './EstadoConfirmModal';
 
 interface PromocionesSectionProps {
   promociones: PromocionComercialResponse[];
@@ -12,9 +14,10 @@ interface PromocionesSectionProps {
   zonas: ZonaResponse[];
   onCreatePromocion: (payload: PromocionComercialRequest) => Promise<unknown>;
   onRefresh: () => Promise<void>;
+  onToggleEstado: (promocion: PromocionComercialResponse, nextActivo: boolean) => Promise<void>;
+  updatingEstadoId: number | null;
   error: boolean;
   status: number;
-  onToggleEstado?: (id: number, nextActivo: boolean) => void;
 }
 
 const defaultForm = {
@@ -22,7 +25,6 @@ const defaultForm = {
   interno: false,
   idProveedor: '',
   idZona: '',
-  descuento: false,
   tipoDescuento: 'PORCENTUAL' as 'PORCENTUAL' | 'MONTO',
   descuentoPorcentual: '',
   descuentoMonto: '',
@@ -37,12 +39,19 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
   zonas,
   onCreatePromocion,
   onRefresh,
+  onToggleEstado,
+  updatingEstadoId,
   error,
   status,
 }) => {
   const [form, setForm] = useState(defaultForm);
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [pendingPromocion, setPendingPromocion] = useState<PromocionComercialResponse | null>(null);
+  const [modalError, setModalError] = useState('');
+
+  const activeProveedores = proveedores.filter((p) => p.activo);
+  const activeZonas = zonas.filter((z) => z.activo);
 
   const reset = () => setForm(defaultForm);
 
@@ -64,12 +73,20 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
       return;
     }
 
-    if (!form.vigenciaDesde || !form.vigenciaHasta) {
-      setMessage('❌ Completa las fechas de vigencia');
+    const today = new Date().toISOString().slice(0, 10);
+    const vigenciaDesdeIso = form.vigenciaDesde || today;
+    const vigenciaHastaIso = form.vigenciaHasta || '';
+
+    if (vigenciaHastaIso && vigenciaHastaIso < vigenciaDesdeIso) {
+      setMessage('❌ Vigencia hasta no puede ser anterior a vigencia desde');
       return;
     }
 
-    if (form.descuento) {
+    const hasDescuento = form.tipoDescuento === 'PORCENTUAL'
+      ? form.descuentoPorcentual.trim().length > 0
+      : form.descuentoMonto.trim().length > 0;
+
+    if (hasDescuento) {
       if (form.tipoDescuento === 'PORCENTUAL') {
         const porcentaje = Number(form.descuentoPorcentual);
         if (!form.descuentoPorcentual || Number.isNaN(porcentaje) || porcentaje <= 0 || porcentaje > 100) {
@@ -92,15 +109,15 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
         interno: form.interno,
         ...(form.interno ? {} : { idProveedor: Number(form.idProveedor) }),
         idZona: Number(form.idZona),
-        descuento: form.descuento,
-        ...(form.descuento
+        descuento: hasDescuento,
+        ...(hasDescuento
           ? form.tipoDescuento === 'PORCENTUAL'
             ? { descuentoPorcentual: Number(form.descuentoPorcentual) }
             : { descuentoMonto: Number(form.descuentoMonto) }
           : {}),
         cantidadMeses: Number(form.cantidadMeses),
-        vigenciaDesde: form.vigenciaDesde,
-        vigenciaHasta: form.vigenciaHasta,
+        vigenciaDesde: vigenciaDesdeIso,
+        vigenciaHasta: vigenciaHastaIso,
       };
       console.debug('[PromocionesSection] POST /promociones', payload);
       await onCreatePromocion(payload);
@@ -118,18 +135,14 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
     if (!promociones || promociones.length === 0) return <p className="community-empty">Sin promociones</p>;
 
     const columns = [
-      'id',
       'nombre',
-      'interno',
-      'idProveedor',
       'nombreProveedor',
-      'idZona',
       'nombreZona',
       'descuento',
       'cantidadMeses',
       'vigenciaDesde',
       'vigenciaHasta',
-      'activo',
+      'estado',
     ];
 
     return (
@@ -139,7 +152,19 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
             <tr>
               {columns.map((col) => (
                 <th key={col}>
-                  {col}
+                  {col === 'nombreProveedor'
+                    ? 'PROVEEDOR'
+                    : col === 'nombreZona'
+                    ? 'ZONA'
+                    : col === 'cantidadMeses'
+                    ? 'MES/ES'
+                    : col === 'vigenciaDesde'
+                    ? 'DESDE'
+                    : col === 'vigenciaHasta'
+                    ? 'HASTA'
+                    : col === 'estado'
+                    ? 'ESTADO'
+                    : col}
                 </th>
               ))}
             </tr>
@@ -149,9 +174,43 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
               <tr key={`promo-${promo.id ?? 'x'}-${index}`}>
                 {columns.map((col) => (
                   <td key={`promo-${promo.id ?? 'x'}-${col}-${index}`}>
-                    {typeof (promo as any)[col] === 'object'
-                      ? JSON.stringify((promo as any)[col])
-                      : (promo as any)[col]}
+                    {col === 'estado' ? (
+                      <div className="community-status-control">
+                        <label className="community-switch" aria-label={`Cambiar estado de ${promo.nombre}`}>
+                          <input
+                            type="checkbox"
+                            checked={promo.activo}
+                            onChange={() => {
+                              setModalError('');
+                              setPendingPromocion(promo);
+                            }}
+                            disabled={submitting || updatingEstadoId !== null}
+                          />
+                          <span className="community-switch-track" />
+                        </label>
+                        <span className={`community-switch-label ${promo.activo ? 'is-active' : 'is-inactive'}`}>
+                          {promo.activo ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </div>
+                    ) : col === 'descuento' ? (
+                      promo.descuento === false
+                        ? 'No'
+                        : promo.descuento === true
+                        ? typeof (promo as any).descuentoPorcentual === 'number'
+                          ? `Porcentual - ${(promo as any).descuentoPorcentual}%`
+                          : typeof (promo as any).descuentoMonto === 'number'
+                          ? `Monto - ${(promo as any).descuentoMonto}`
+                          : 'Sí'
+                        : '-'
+                    ) : col === 'nombreProveedor' ? (
+                      promo.interno === true ? 'ALBRU' : (promo as any)[col] ?? '-'
+                    ) : col === 'vigenciaHasta' ? (
+                      promo.vigenciaHasta ?? '-'
+                    ) : typeof (promo as any)[col] === 'object' ? (
+                      JSON.stringify((promo as any)[col])
+                    ) : (
+                      (promo as any)[col] ?? '-'
+                    )}
                   </td>
                 ))}
               </tr>
@@ -160,6 +219,28 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
         </table>
       </div>
     );
+  };
+
+  const handleCloseModal = () => {
+    if (updatingEstadoId !== null) {
+      return;
+    }
+    setPendingPromocion(null);
+    setModalError('');
+  };
+
+  const handleConfirmToggle = async () => {
+    if (!pendingPromocion) {
+      return;
+    }
+
+    try {
+      setModalError('');
+      await onToggleEstado(pendingPromocion, !pendingPromocion.activo);
+      setPendingPromocion(null);
+    } catch (err: any) {
+      setModalError(err instanceof Error ? err.message : 'No se pudo actualizar el estado.');
+    }
   };
 
   return (
@@ -171,14 +252,14 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="community-form" style={{ marginBottom: 16 }}>
+      <form onSubmit={handleSubmit} className="community-form community-form-spaced">
         {message && (
-          <div className={message.startsWith('✅') ? 'community-alert' : 'community-error'} style={{ marginBottom: 12 }}>
+          <div className={`${message.startsWith('✅') ? 'community-alert' : 'community-error'} community-message`}>
             {message}
           </div>
         )}
 
-        <div style={{ display: 'grid', gap: 12, marginBottom: 12 }}>
+        <div className="community-content-stack">
           <div className="community-field">
             <label>Nombre de la promoción</label>
             <input
@@ -193,19 +274,28 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
           <div className="community-grid-2">
             <div className="community-field">
               <label>Proveedor</label>
-              <select
-                className="community-select"
-                value={form.idProveedor}
-                onChange={(e) => setForm((s) => ({ ...s, idProveedor: e.target.value }))}
-                disabled={submitting || form.interno}
-              >
-                <option value="">{form.interno ? 'No aplica para promoción interna' : 'Selecciona proveedor'}</option>
-                {proveedores.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nombre}
-                  </option>
-                ))}
-              </select>
+              {form.interno ? (
+                <input
+                  className="community-input"
+                  type="text"
+                  value="ALBRU"
+                  disabled
+                />
+              ) : (
+                <select
+                  className="community-select"
+                  value={form.idProveedor}
+                  onChange={(e) => setForm((s) => ({ ...s, idProveedor: e.target.value }))}
+                  disabled={submitting}
+                >
+                  <option value="">Selecciona proveedor</option>
+                  {activeProveedores.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nombre}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div className="community-field">
@@ -217,7 +307,7 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
                 disabled={submitting}
               >
                 <option value="">Selecciona zona</option>
-                {zonas.map((z) => (
+                {activeZonas.map((z) => (
                   <option key={z.id} value={z.id}>
                     {z.nombre}
                   </option>
@@ -242,29 +332,70 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
             <div className="community-grid-2">
               <div className="community-field">
                 <label>Vigencia desde</label>
-                <input
-                  type="date"
-                  className="community-input"
+                <FlatpickrDateInput
                   value={form.vigenciaDesde}
-                  onChange={(e) => setForm((s) => ({ ...s, vigenciaDesde: e.target.value }))}
+                  onChange={(date) => setForm((s) => ({ ...s, vigenciaDesde: date }))}
                   disabled={submitting}
+                  required
                 />
               </div>
               <div className="community-field">
                 <label>Vigencia hasta</label>
-                <input
-                  type="date"
-                  className="community-input"
+                <FlatpickrDateInput
                   value={form.vigenciaHasta}
-                  onChange={(e) => setForm((s) => ({ ...s, vigenciaHasta: e.target.value }))}
+                  onChange={(date) => setForm((s) => ({ ...s, vigenciaHasta: date }))}
+                  minDate={form.vigenciaDesde || undefined}
                   disabled={submitting}
                 />
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div className="community-check-group">
+            <div className="community-field">
+              <label>Tipo de descuento</label>
+              <select
+                className="community-select"
+                value={form.tipoDescuento}
+                onChange={(e) =>
+                  setForm((s) => ({
+                    ...s,
+                    tipoDescuento: e.target.value as 'PORCENTUAL' | 'MONTO',
+                    descuentoPorcentual: e.target.value === 'PORCENTUAL' ? s.descuentoPorcentual : '',
+                    descuentoMonto: e.target.value === 'MONTO' ? s.descuentoMonto : '',
+                  }))
+                }
+                disabled={submitting}
+              >
+                <option value="PORCENTUAL">Porcentual (%)</option>
+                <option value="MONTO">Monto fijo</option>
+              </select>
+            </div>
+
+            <div className="community-field">
+              <label>{form.tipoDescuento === 'PORCENTUAL' ? 'Descuento porcentual (%)' : 'Descuento por monto'}</label>
+              <input
+                type="number"
+                min={form.tipoDescuento === 'PORCENTUAL' ? 1 : 0.01}
+                max={form.tipoDescuento === 'PORCENTUAL' ? 100 : undefined}
+                step={0.01}
+                className="community-input"
+                value={form.tipoDescuento === 'PORCENTUAL' ? form.descuentoPorcentual : form.descuentoMonto}
+                onChange={(e) =>
+                  setForm((s) => ({
+                    ...s,
+                    descuentoPorcentual: form.tipoDescuento === 'PORCENTUAL' ? e.target.value : s.descuentoPorcentual,
+                    descuentoMonto: form.tipoDescuento === 'MONTO' ? e.target.value : s.descuentoMonto,
+                  }))
+                }
+                disabled={submitting}
+                placeholder={form.tipoDescuento === 'PORCENTUAL' ? 'Ej: 25' : 'Ej: 49.90'}
+              />
+            </div>
+          </div>
+
+          <div className="community-check-group">
+            <label className="community-check-row">
               <input
                 type="checkbox"
                 checked={form.interno}
@@ -279,77 +410,12 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
               />
               Interno
             </label>
-
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <input
-                type="checkbox"
-                checked={form.descuento}
-                onChange={(e) =>
-                  setForm((s) => ({
-                    ...s,
-                    descuento: e.target.checked,
-                    descuentoPorcentual: e.target.checked ? s.descuentoPorcentual : '',
-                    descuentoMonto: e.target.checked ? s.descuentoMonto : '',
-                  }))
-                }
-                disabled={submitting}
-              />
-              Descuento
-            </label>
           </div>
-
-          {form.descuento && (
-            <div className="community-grid-2">
-              <div className="community-field">
-                <label>Tipo de descuento</label>
-                <select
-                  className="community-select"
-                  value={form.tipoDescuento}
-                  onChange={(e) =>
-                    setForm((s) => ({
-                      ...s,
-                      tipoDescuento: e.target.value as 'PORCENTUAL' | 'MONTO',
-                      descuentoPorcentual: e.target.value === 'PORCENTUAL' ? s.descuentoPorcentual : '',
-                      descuentoMonto: e.target.value === 'MONTO' ? s.descuentoMonto : '',
-                    }))
-                  }
-                  disabled={submitting}
-                >
-                  <option value="PORCENTUAL">Porcentual (%)</option>
-                  <option value="MONTO">Monto fijo</option>
-                </select>
-              </div>
-
-              <div className="community-field">
-                <label>{form.tipoDescuento === 'PORCENTUAL' ? 'Descuento porcentual (%)' : 'Descuento por monto'}</label>
-                <input
-                  type="number"
-                  min={form.tipoDescuento === 'PORCENTUAL' ? 1 : 0.01}
-                  max={form.tipoDescuento === 'PORCENTUAL' ? 100 : undefined}
-                  step={0.01}
-                  className="community-input"
-                  value={form.tipoDescuento === 'PORCENTUAL' ? form.descuentoPorcentual : form.descuentoMonto}
-                  onChange={(e) =>
-                    setForm((s) => ({
-                      ...s,
-                      descuentoPorcentual: form.tipoDescuento === 'PORCENTUAL' ? e.target.value : s.descuentoPorcentual,
-                      descuentoMonto: form.tipoDescuento === 'MONTO' ? e.target.value : s.descuentoMonto,
-                    }))
-                  }
-                  disabled={submitting}
-                  placeholder={form.tipoDescuento === 'PORCENTUAL' ? 'Ej: 25' : 'Ej: 49.90'}
-                />
-              </div>
-            </div>
-          )}
         </div>
 
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="community-actions">
           <button type="submit" className="community-btn primary" disabled={submitting}>
             {submitting ? 'Creando...' : 'Crear Promoción'}
-          </button>
-          <button type="button" className="community-btn ghost" onClick={() => onRefresh()}>
-            Recargar Promociones
           </button>
         </div>
       </form>
@@ -359,6 +425,14 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
       ) : (
         renderTable()
       )}
+
+      <EstadoConfirmModal
+        open={Boolean(pendingPromocion)}
+        submitting={updatingEstadoId !== null}
+        errorMessage={modalError}
+        onCancel={handleCloseModal}
+        onConfirm={handleConfirmToggle}
+      />
     </section>
   );
 };
