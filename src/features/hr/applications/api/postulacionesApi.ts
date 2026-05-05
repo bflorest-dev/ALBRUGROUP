@@ -26,33 +26,36 @@ import type {
 let warnedUnexpectedPostulacionesPayload = false;
 
 function normalizePostulacionResponse(raw: any): PostulacionResponse {
+  // Extraer tipificación de múltiples fuentes posibles
+  const idTipificacion = 
+    raw.idTipificacion ??
+    raw.tipificacion_id ??
+    raw.id_tipificacion ??
+    raw.tipificacion?.id ??
+    null;
+    
+  const codigoTipificacion =
+    raw.codigoTipificacion ??
+    raw.codigo_tipificacion ??
+    raw.tipificacion?.codigo ??
+    null;
+    
+  const idSubtipificacion =
+    raw.idSubtipificacion ??
+    raw.subtipificacion_id ??
+    raw.id_subtipificacion ??
+    raw.subtipificacion?.id ??
+    null;
+
   const normalized = {
     ...raw,
-    idTipificacion:
-      raw.idTipificacion ??
-      raw.tipificacion_id ??
-      raw.id_tipificacion ??
-      raw.tipificacion?.id ??
-      null,
-    codigoTipificacion:
-      raw.codigoTipificacion ??
-      raw.codigo_tipificacion ??
-      raw.tipificacion?.codigo ??
-      null,
-    idSubtipificacion:
-      raw.idSubtipificacion ??
-      raw.subtipificacion_id ??
-      raw.id_subtipificacion ??
-      raw.subtipificacion?.id ??
-      null,
-    tipificacion: raw.tipificacion
+    idTipificacion,
+    codigoTipificacion,
+    idSubtipificacion,
+    tipificacion: (idTipificacion || codigoTipificacion)
       ? {
-          id: raw.tipificacion?.id ?? raw.idTipificacion ?? raw.tipificacion_id ?? null,
-          codigo:
-            raw.tipificacion?.codigo ??
-            raw.codigoTipificacion ??
-            raw.codigo_tipificacion ??
-            null,
+          id: idTipificacion,
+          codigo: codigoTipificacion,
           descripcion: raw.tipificacion?.descripcion ?? null,
         }
       : null,
@@ -101,6 +104,7 @@ function normalizePostulacionResponse(raw: any): PostulacionResponse {
       estado_bandeja: raw.estado_bandeja,
       tipificacion: raw.tipificacion,
       idTipificacion: raw.idTipificacion,
+      codigoTipificacion: raw.codigoTipificacion,
     });
     console.log('[normalizePostulacionResponse] Normalized:', {
       id: normalized.id,
@@ -109,6 +113,7 @@ function normalizePostulacionResponse(raw: any): PostulacionResponse {
       estadoBandeja: normalized.estadoBandeja,
       tipificacion: normalized.tipificacion,
       idTipificacion: normalized.idTipificacion,
+      codigoTipificacion: normalized.codigoTipificacion,
     });
   }
   

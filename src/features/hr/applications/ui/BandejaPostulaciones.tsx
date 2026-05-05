@@ -86,12 +86,12 @@ export const BandejaPostulaciones = forwardRef<
   // Hooks de bandeja
   const bandejaReclutamiento = useBandejaReclutamiento({
     enabled: isReclutamientoTab,
-    refetchIntervalMs: 3000,
+    refetchIntervalMs: 0, // Desactivar polling automático
     syncBetweenTabs: true,
   });
   const bandejaCapacitacion = useBandejaCapacitacion({
     enabled: isReclutamientoTab,
-    refetchIntervalMs: 3000,
+    refetchIntervalMs: 0, // Desactivar polling automático
     syncBetweenTabs: true,
   });
   const bandejaContratacion = useBandejaContratacion({ enabled: isContratacionTab });
@@ -118,7 +118,8 @@ export const BandejaPostulaciones = forwardRef<
     queries: tablaData.map((post) => ({
       queryKey: ['ultima-tipificacion', post.id],
       queryFn: () => getUltimaTipificacion(post.id),
-      staleTime: 5 * 60 * 1000,
+      staleTime: 0, // CRÍTICO: Cambiar a 0 para forzar refetch inmediato
+      refetchOnMount: 'always', // Siempre refetch al montar
       enabled: post.id > 0,
     })),
   });

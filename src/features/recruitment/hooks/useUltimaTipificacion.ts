@@ -20,10 +20,26 @@ interface UltimaTipificacion {
 export const getUltimaTipificacion = async (
   postulacionId: number
 ): Promise<UltimaTipificacion> => {
-  const response = await recruitmentHttp.get<EventoResponse[]>(
-    `/postulaciones/${postulacionId}/eventos`
-  );
-  const eventos = Array.isArray(response.data) ? response.data : [];
+  console.log('[getUltimaTipificacion] Obteniendo última tipificación para:', postulacionId);
+  
+  const response = await recruitmentHttp.get<
+    EventoResponse[] | { content: EventoResponse[] }
+  >(`/postulaciones/${postulacionId}/eventos`);
+  
+  console.log('[getUltimaTipificacion] Respuesta raw:', response.data);
+  
+  // Extraer eventos del formato paginado o array directo
+  let eventos: EventoResponse[] = [];
+  
+  if (Array.isArray(response.data)) {
+    // Respuesta directa como array
+    eventos = response.data;
+  } else if (response.data && typeof response.data === 'object' && 'content' in response.data) {
+    // Respuesta paginada con campo 'content'
+    eventos = Array.isArray(response.data.content) ? response.data.content : [];
+  }
+  
+  console.log('[getUltimaTipificacion] Eventos extraídos:', eventos);
 
   // Buscar el último evento con tipificación resoluble, independientemente de la etapa.
   const ultimoEvento = eventos
@@ -38,17 +54,22 @@ export const getUltimaTipificacion = async (
       return bTs - aTs;
     })[0];
 
-  return {
+  const result = {
     id: ultimoEvento?.idTipificacion ?? null,
     codigo: ultimoEvento?.tipificacion ?? ultimoEvento?.codigoTipificacion ?? null,
   };
+  
+  console.log('[getUltimaTipificacion] Última tipificación encontrada:', result);
+
+  return result;
 };
 
 export const useUltimaTipificacion = (postulacionId: number) => {
   return useQuery({
-    queryKey: ['tipificacion', postulacionId],
+    queryKey: ['ultima-tipificacion', postulacionId], // Key estandarizada
     queryFn: () => getUltimaTipificacion(postulacionId),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0, // CRÍTICO: Cambiar a 0 para forzar refetch inmediato
+    refetchOnMount: 'always', // Siempre refetch al montar
     enabled: Number.isFinite(postulacionId) && postulacionId > 0,
   });
 };

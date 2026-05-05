@@ -370,11 +370,13 @@ export function useTipificarPostulacion() {
       queryClient.invalidateQueries({ queryKey: ['bandeja-reclutamiento'] });
       queryClient.invalidateQueries({ queryKey: ['bandeja-capacitacion'] });
       queryClient.invalidateQueries({ queryKey: ['bandeja-contratacion'] });
+      queryClient.invalidateQueries({ queryKey: ['ultima-tipificacion'] });
       queryClient.invalidateQueries({ queryKey: ['tipificacion'] });
       
-      // CRÍTICO: Invalidar eventos de la postulación específica
+      // CRÍTICO: Invalidar eventos y tipificación de la postulación específica
       queryClient.invalidateQueries({ queryKey: ['postulante-eventos', variables.id] });
       queryClient.invalidateQueries({ queryKey: ['eventos-postulacion', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['ultima-tipificacion', variables.id] });
       
       // Emitir evento de actualización para sincronización entre pestañas
       emitPostulacionesUpdated('tipificar-postulacion');

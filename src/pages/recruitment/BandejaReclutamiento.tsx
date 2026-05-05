@@ -54,9 +54,10 @@ const BandejaReclutamiento: React.FC = () => {
 
   const tipificacionesQueries = useQueries({
     queries: postulaciones.map((post) => ({
-      queryKey: ['tipificacion', post.id],
+      queryKey: ['ultima-tipificacion', post.id], // Usar la misma key que otros componentes
       queryFn: () => getUltimaTipificacion(post.id),
-      staleTime: 0,
+      staleTime: 0, // CRÍTICO: Forzar refetch
+      refetchOnMount: 'always', // Siempre refetch al montar
       enabled: post.id > 0,
     })),
   });
@@ -67,16 +68,20 @@ const BandejaReclutamiento: React.FC = () => {
       const idTipificacion = tipificacionData?.id ?? null;
       const codigoTipificacion = tipificacionData?.codigo ?? null;
 
+      // PRIORIZAR datos del backend sobre queries adicionales
+      const finalIdTipificacion = post.idTipificacion ?? idTipificacion;
+      const finalCodigoTipificacion = post.codigoTipificacion ?? codigoTipificacion;
+
       return {
         ...post,
-        tipificacion: codigoTipificacion
+        tipificacion: finalCodigoTipificacion
           ? {
-              id: idTipificacion,
-              codigo: codigoTipificacion,
+              id: finalIdTipificacion,
+              codigo: finalCodigoTipificacion,
             }
           : post.tipificacion ?? null,
-        idTipificacion: idTipificacion ?? post.idTipificacion ?? null,
-        codigoTipificacion: codigoTipificacion ?? post.codigoTipificacion ?? null,
+        idTipificacion: finalIdTipificacion,
+        codigoTipificacion: finalCodigoTipificacion,
       };
     });
     console.log('[BandejaReclutamiento] Postulaciones enriquecidas:', enriched);
@@ -101,33 +106,36 @@ const BandejaReclutamiento: React.FC = () => {
   };
 
   const handleTipificarExito = async () => {
-    console.log('[BandejaReclutamiento] Tipificación exitosa, iniciando refetch...');
+    console.log('[BandejaReclutamiento] 🎯 Tipificación exitosa, iniciando refetch...');
     
     cerrarModalTipificar();
     
-    // Esperar 800ms para que el backend procese la tipificación
-    await new Promise(resolve => setTimeout(resolve, 800));
+    // Esperar 1 segundo para que el backend procese completamente la tipificación
+    console.log('[BandejaReclutamiento] ⏳ Esperando 1 segundo para que el backend procese...');
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    console.log('[BandejaReclutamiento] Invalidando cachés...');
+    console.log('[BandejaReclutamiento] 🔄 Invalidando cachés...');
     
     // Invalidar TODO el caché de bandejas y tipificaciones
     await queryClient.invalidateQueries({ queryKey: ['bandeja-reclutamiento'] });
     await queryClient.invalidateQueries({ queryKey: ['bandeja-capacitacion'] });
     await queryClient.invalidateQueries({ queryKey: ['bandeja-contratacion'] });
-    await queryClient.invalidateQueries({ queryKey: ['tipificacion'] });
+    await queryClient.invalidateQueries({ queryKey: ['ultima-tipificacion'] }); // Key correcta
+    await queryClient.invalidateQueries({ queryKey: ['tipificacion'] }); // Por si acaso
     
     // CRÍTICO: Invalidar eventos de la postulación específica
     if (postulacionSeleccionada) {
       await queryClient.invalidateQueries({ queryKey: ['postulante-eventos', postulacionSeleccionada.id] });
       await queryClient.invalidateQueries({ queryKey: ['eventos-postulacion', postulacionSeleccionada.id] });
+      await queryClient.invalidateQueries({ queryKey: ['ultima-tipificacion', postulacionSeleccionada.id] });
     }
     
-    console.log('[BandejaReclutamiento] Forzando refetch de bandeja...');
+    console.log('[BandejaReclutamiento] 🔃 Forzando refetch de bandeja...');
     
     // Forzar refetch de la bandeja
-    const result = await bandejaReclutamientoHook.refetch();
+    await bandejaReclutamientoHook.refetch();
     
-    console.log('[BandejaReclutamiento] Refetch completado:', result);
+    console.log('[BandejaReclutamiento] ✅ Refetch completado');
   };
 
   const catalogo = Array.isArray(catalogoHook.data) ? catalogoHook.data : [];

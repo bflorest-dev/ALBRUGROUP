@@ -36,6 +36,23 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
       'SIN_ESTADO'
   ).trim() || 'SIN_ESTADO';
 
+  // Determinar si la postulación está en un estado terminal (no se puede tipificar más)
+  const codigoTipificacion = String(
+    postulacion.tipificacion?.codigo ??
+    postulacion.codigoTipificacion ??
+    ''
+  ).trim().toUpperCase();
+  
+  const estadoBandeja = String(postulacion.estadoBandeja ?? '').trim().toUpperCase();
+  
+  const esEstadoTerminal = 
+    codigoTipificacion === 'RECHAZADO' ||
+    codigoTipificacion === 'NO_INTERESADO' ||
+    estadoBandeja === 'RECHAZADO' ||
+    estadoBandeja === 'NO_INTERESADO' ||
+    columnId === 'RECHAZADO' ||
+    columnId === 'NO_INTERESADO';
+
   // Log para debugging
   console.log('[KanbanCard] Postulación:', {
     id: postulacion.id,
@@ -48,6 +65,8 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
     tipificacion: postulacion.tipificacion,
     idTipificacion: postulacion.idTipificacion,
     codigoTipificacion: postulacion.codigoTipificacion,
+    columnId,
+    esEstadoTerminal,
   });
 
   return (
@@ -104,7 +123,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
       {/* Acciones */}
       {(onTipificar || onDetails) && (
         <div className="flex gap-2 border-t border-[#e3ebfb] pt-3.5">
-          {onTipificar && (
+          {onTipificar && !esEstadoTerminal && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -114,6 +133,11 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
             >
               Tipificar
             </button>
+          )}
+          {esEstadoTerminal && (
+            <div className="flex-1 rounded-xl bg-gray-100 px-3 py-2.5 text-[0.8rem] font-semibold leading-5 text-gray-500 text-center">
+              Estado Final
+            </div>
           )}
           {onDetails && (
             <button

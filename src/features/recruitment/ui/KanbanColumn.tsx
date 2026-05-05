@@ -24,7 +24,12 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   onTipificar,
   onDetails,
 }) => {
-  const isTerminalColumn = columnId === 'NO_INTERESADO';
+  // Determinar si esta columna es terminal (no se puede tipificar más)
+  const isTerminalColumn = 
+    columnId === 'RECHAZADO' || 
+    columnId === 'NO_INTERESADO' ||
+    columnId === 'RECLUTADO'; // RECLUTADO también es terminal en reclutamiento
+  
   const countLabel = `${postulaciones.length} ${postulaciones.length === 1 ? 'postulación' : 'postulaciones'}`;
 
   return (
@@ -38,7 +43,16 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
     >
       {/* Header */}
       <div className="mb-3.5 border-b border-[#d8e4fb] pb-3">
-        <h3 className="truncate text-[1.05rem] font-semibold leading-6 tracking-[0.01em] text-[#0f2a52]">{columnLabel}</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="truncate text-[1.05rem] font-semibold leading-6 tracking-[0.01em] text-[#0f2a52]">
+            {columnLabel}
+          </h3>
+          {isTerminalColumn && (
+            <span className="text-[0.7rem] font-medium text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
+              FINAL
+            </span>
+          )}
+        </div>
         <div className="mt-1.5 inline-flex items-center rounded-full border border-[#c9dbfb] bg-white/85 px-2.5 py-1 text-[0.78rem] font-medium leading-5 text-[#3f5f89]">
           {countLabel}
         </div>
