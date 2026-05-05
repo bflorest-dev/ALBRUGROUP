@@ -108,8 +108,6 @@ const BandejaReclutamiento: React.FC = () => {
   const handleTipificarExito = async () => {
     console.log('[BandejaReclutamiento] 🎯 Tipificación exitosa, iniciando refetch...');
     
-    cerrarModalTipificar();
-    
     // Esperar 1 segundo para que el backend procese completamente la tipificación
     console.log('[BandejaReclutamiento] ⏳ Esperando 1 segundo para que el backend procese...');
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -135,7 +133,10 @@ const BandejaReclutamiento: React.FC = () => {
     // Forzar refetch de la bandeja
     await bandejaReclutamientoHook.refetch();
     
-    console.log('[BandejaReclutamiento] ✅ Refetch completado');
+    console.log('[BandejaReclutamiento] ✅ Refetch completado, cerrando modal');
+    
+    // Cerrar modal DESPUÉS de que todo se haya actualizado
+    cerrarModalTipificar();
   };
 
   const catalogo = Array.isArray(catalogoHook.data) ? catalogoHook.data : [];

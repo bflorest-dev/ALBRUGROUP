@@ -188,9 +188,6 @@ export const FormTipificarPostulacion: React.FC<
   const isTipificacionReclutadoSeleccionada =
     String(selectedTipificacion?.codigo ?? '').trim().toUpperCase() === 'RECLUTADO';
 
-  const shouldShowSelectorGrupoPreConfirmacion =
-    isTipificacionReclutadoSeleccionada && !!formState.subtipificacion;
-
   // Manejadores
   const handleChange = (field: keyof FormState) => (value: string) => {
     setFormState((prev) => {
@@ -232,6 +229,11 @@ export const FormTipificarPostulacion: React.FC<
     .trim()
     .toUpperCase();
   const yaTieneGrupo = Boolean(postulacionActual?.idGrupoCapacitacion);
+
+  const shouldShowSelectorGrupoPreConfirmacion =
+    isTipificacionReclutadoSeleccionada && 
+    !!formState.subtipificacion &&
+    puestoObjetivoActual === 'ASESOR_VENTAS'; // Solo mostrar si es ASESOR_VENTAS
 
   const reglasNoAsignable = useMemo(() => {
     const razones: string[] = [];
@@ -348,8 +350,11 @@ export const FormTipificarPostulacion: React.FC<
 
     if (!validate()) return;
 
+    // Solo requerir grupo si es ASESOR_VENTAS
     const requiereGrupoAntesDeConfirmar =
-      shouldShowSelectorGrupoPreConfirmacion && canAsignarPreConfirmacion;
+      shouldShowSelectorGrupoPreConfirmacion && 
+      canAsignarPreConfirmacion &&
+      puestoObjetivoActual === 'ASESOR_VENTAS';
 
     if (requiereGrupoAntesDeConfirmar && !idGrupoSeleccionado) {
       setAsignacionErrorUi('Selecciona un grupo de capacitación antes de confirmar.');
@@ -399,8 +404,9 @@ export const FormTipificarPostulacion: React.FC<
 
       setStepAvanzoCapacitacion(avanzoCapacitacion);
 
+      // Si avanzó a capacitación y requiere grupo (ASESOR_VENTAS), asignar automáticamente
       if (avanzoCapacitacion && requiereGrupoAntesDeConfirmar) {
-        console.log('[FormTipificarPostulacion] Asignando a grupo:', idGrupoSeleccionado);
+        console.log('[FormTipificarPostulacion] ✅ Asignando a grupo:', idGrupoSeleccionado);
         
         try {
           await asignarHook.mutateAsync({
@@ -408,19 +414,43 @@ export const FormTipificarPostulacion: React.FC<
             body: { idPostulacion, fechaAsignacion: getTodayIso() }
           });
           
-          console.log('[FormTipificarPostulacion] Asignación exitosa');
+          console.log('[FormTipificarPostulacion] ✅ Asignación exitosa, cerrando modal');
           setAsignacionMensaje('Postulación tipificada y asignada correctamente al grupo de capacitación.');
+          
+          // Esperar un momento para que el usuario vea el mensaje de éxito
+          await new Promise(resolve => setTimeout(resolve, 500));
           onSuccess();
         } catch (err: any) {
-          console.error('[FormTipificarPostulacion] Error al asignar grupo:', err);
+          console.error('[FormTipificarPostulacion] ❌ Error al asignar grupo:', err);
           setAsignacionErrorUi(err.message || 'Error al asignar al grupo de capacitación');
         }
         return;
       }
 
+      // Si avanzó a capacitación pero NO es ASESOR_VENTAS, cerrar modal inmediatamente
+      if (avanzoCapacitacion && puestoObjetivoActual !== 'ASESOR_VENTAS') {
+        console.log('[FormTipificarPostulacion] ✅ Postulación tipificada como RECLUTADO (no ASESOR_VENTAS), cerrando modal');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        onSuccess();
+        return;
+      }
+
+      // Si avanzó a capacitación y es ASESOR_VENTAS pero ya tiene grupo, cerrar modal
+      if (avanzoCapacitacion && yaTieneGrupo) {
+        console.log('[FormTipificarPostulacion] ✅ Postulación tipificada como RECLUTADO (ya tiene grupo), cerrando modal');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        onSuccess();
+        return;
+      }
+
+      // Si avanzó a capacitación y es ASESOR_VENTAS sin grupo, mostrar selector
       if (avanzoCapacitacion) {
+        console.log('[FormTipificarPostulacion] 📍 Mostrando selector de grupo (ASESOR_VENTAS sin grupo)');
         loadGruposDisponibles();
       } else {
+        // Si no avanzó a capacitación, cerrar modal
+        console.log('[FormTipificarPostulacion] ✅ Tipificación completada (no RECLUTADO), cerrando modal');
+        await new Promise(resolve => setTimeout(resolve, 500));
         onSuccess();
       }
     } catch (err: any) {
@@ -481,7 +511,8 @@ export const FormTipificarPostulacion: React.FC<
   }));
 
   const mostrarSeccionGrupos =
-    shouldShowSelectorGrupoPreConfirmacion || stepAvanzoCapacitacion || etapaActual === 'CAPACITACION';
+    (shouldShowSelectorGrupoPreConfirmacion || stepAvanzoCapacitacion || etapaActual === 'CAPACITACION') &&
+    puestoObjetivoActual === 'ASESOR_VENTAS'; // Solo mostrar si es ASESOR_VENTAS
   const flujoPreConfirmacionActivo = shouldShowSelectorGrupoPreConfirmacion && !stepAvanzoCapacitacion;
   const reglasNoAsignableActivas = flujoPreConfirmacionActivo
     ? reglasNoAsignablePreConfirmacion
@@ -493,7 +524,8 @@ export const FormTipificarPostulacion: React.FC<
     !!formState.tipificacion &&
     !!formState.subtipificacion &&
     (!shouldShowModalidadContacto || !!formState.modalidadContacto) &&
-    (!flujoPreConfirmacionActivo || (canAsignarActivo && !!idGrupoSeleccionado));
+    // Solo requerir grupo si es ASESOR_VENTAS y está en flujo pre-confirmación
+    (!flujoPreConfirmacionActivo || !canAsignarActivo || !!idGrupoSeleccionado || puestoObjetivoActual !== 'ASESOR_VENTAS');
   const disableConfirmButton =
     isLoading ||
     isTerminalNoInteresado ||
@@ -541,6 +573,12 @@ export const FormTipificarPostulacion: React.FC<
       {stepAvanzoCapacitacion && canAsignarBase && (
         <div className="rounded-md bg-emerald-50 p-3 text-sm text-emerald-800">
           Ya puedes asignar al grupo de capacitación.
+        </div>
+      )}
+
+      {stepAvanzoCapacitacion && puestoObjetivoActual !== 'ASESOR_VENTAS' && (
+        <div className="rounded-md bg-blue-50 p-3 text-sm text-blue-800">
+          La postulación no es ASESOR_VENTAS, no requiere asignación a grupo de capacitación.
         </div>
       )}
 
@@ -696,7 +734,7 @@ export const FormTipificarPostulacion: React.FC<
         </Button>
         <Button
           type="submit"
-          variant="primary"
+          variant="default"
           disabled={disableConfirmButton}
           className="min-w-[120px]"
         >
