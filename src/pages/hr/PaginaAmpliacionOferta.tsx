@@ -157,7 +157,7 @@ const PaginaAmpliacionOferta: React.FC = () => {
         <DsSectionCard>
           <DsInlineMessage tone="danger">{error}</DsInlineMessage>
           <div className={styles.actionsRow}>
-            <Button onClick={() => navigate('/rrhh')} variant="danger">
+            <Button onClick={() => navigate('/rrhh')} variant="destructive">
               Volver a ofertas
             </Button>
           </div>

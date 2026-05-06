@@ -5,7 +5,7 @@
 ### ✅ **className PERMITIDO (layout only)**
 ```tsx
 // ✅ Spacing y positioning
-<Button variant="primary" className="mt-4 ml-2" />
+<Button variant="default" className="mt-4 ml-2" />
 <Badge variant="success" className="absolute top-2 right-2" />
 
 // ✅ Layout containers

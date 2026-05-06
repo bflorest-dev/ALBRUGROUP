@@ -444,7 +444,7 @@ export const EmpleadosSection: React.FC = () => {
                   placeholder="Observación"
                 />
                 <div className={styles.actionRow}>
-                  <Button size="sm" variant="danger" onClick={saveListaNegra}>Actualizar Lista Negra</Button>
+                  <Button size="sm" variant="destructive" onClick={saveListaNegra}>Actualizar Lista Negra</Button>
                   <Button size="sm" variant="ghost" onClick={openEventos}>Eventos Empleado</Button>
                 </div>
               </div>

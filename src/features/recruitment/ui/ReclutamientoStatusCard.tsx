@@ -8,12 +8,23 @@ interface ReclutamientoStatusCardProps {
   variant?: 'primary' | 'success' | 'warning' | 'danger' | 'info';
 }
 
+// Mapeo de variantes legacy a modernas
+const variantMap = {
+  primary: 'info',
+  success: 'success',
+  warning: 'warning',
+  danger: 'error',
+  info: 'info',
+} as const;
+
 export const ReclutamientoStatusCard: React.FC<ReclutamientoStatusCardProps> = ({
   title,
   value,
   subtitle,
   variant = 'primary',
 }) => {
+  const badgeVariant = variantMap[variant];
+  
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-[#dbe7ff] bg-gradient-to-b from-white to-[#f4f8ff] p-5 pt-6 shadow-[0_8px_18px_rgba(29,78,216,0.08)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_24px_rgba(29,78,216,0.14)]">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#2f64dd] via-[#7eb2ff] to-[#cde2ff] opacity-80" />
@@ -24,8 +35,8 @@ export const ReclutamientoStatusCard: React.FC<ReclutamientoStatusCardProps> = (
         </div>
         <Badge
           label={variant.toUpperCase()}
-          variant={variant}
-          size="small"
+          variant={badgeVariant}
+          size="sm"
           className="shrink-0 tracking-[0.08em]"
         />
       </div>

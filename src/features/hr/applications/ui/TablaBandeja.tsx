@@ -182,7 +182,7 @@ export const TablaBandeja: React.FC<TablaBandejaProps> = ({
                     post.tipificacion?.descripcion ||
                     'SIN_TIPIFICACION'
                   }
-                  variant="primary"
+                  variant="info"
                   size="small"
                 />
               </td>

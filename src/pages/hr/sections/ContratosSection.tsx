@@ -265,7 +265,7 @@ export const ContratosSection: React.FC = () => {
           </div>
 
           <div className={styles.ctaRow}>
-            <Button size="sm" variant="danger" onClick={handleCesar}>Finalizar Contrato</Button>
+            <Button size="sm" variant="destructive" onClick={handleCesar}>Finalizar Contrato</Button>
           </div>
         </div>
       </div>
