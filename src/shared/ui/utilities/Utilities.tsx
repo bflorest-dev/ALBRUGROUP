@@ -1,10 +1,9 @@
 /**
- * Componentes de utilidad: Alert, Error, Spinner, Badge
+ * Componentes de utilidad: Alert, Spinner, ErrorMessage, TextArea
  * FSD: shared/ui/
  */
 
 import React from 'react';
-import { DsBadge, DsButton } from '@shared/ui/design-system';
 import styles from './Utilities.module.css';
 
 // ========== ALERT ==========
@@ -64,37 +63,6 @@ export const Spinner: React.FC<SpinnerProps> = ({
   );
 };
 
-// ========== BADGE ==========
-
-interface BadgeProps {
-  label: string;
-  variant?: 'primary' | 'success' | 'warning' | 'danger' | 'info';
-  size?: 'small' | 'medium';
-  className?: string;
-}
-
-const badgeVariantMap = {
-  primary: 'info',
-  success: 'success',
-  warning: 'warning',
-  danger: 'error',
-  info: 'info',
-} as const;
-
-const badgeSizeMap = {
-  small: 'sm',
-  medium: 'md',
-} as const;
-
-export const Badge: React.FC<BadgeProps> = ({
-  label,
-  variant = 'primary',
-  size = 'medium',
-  className,
-}) => {
-  return <DsBadge label={label} variant={badgeVariantMap[variant]} size={badgeSizeMap[size]} className={className} />;
-};
-
 // ========== ERROR MESSAGE ==========
 
 interface ErrorMessageProps {
@@ -115,64 +83,6 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
     </div>
   );
 };
-
-// ========== BUTTON ESTADOS ==========
-
-interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'success';
-  size?: 'small' | 'medium' | 'large';
-  isLoading?: boolean;
-  icon?: React.ReactNode;
-  fullWidth?: boolean;
-}
-
-const buttonVariantMap = {
-  primary: 'primary',
-  secondary: 'secondary',
-  danger: 'danger',
-  success: 'success',
-} as const;
-
-const buttonSizeMap = {
-  small: 'sm',
-  medium: 'md',
-  large: 'lg',
-} as const;
-
-export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    {
-      variant = 'primary',
-      size = 'medium',
-      isLoading = false,
-      icon,
-      fullWidth = false,
-      disabled = false,
-      children,
-      className,
-      ...props
-    },
-    ref
-  ) => {
-    return (
-      <DsButton
-        ref={ref}
-        variant={buttonVariantMap[variant]}
-        size={buttonSizeMap[size]}
-        fullWidth={fullWidth}
-        isLoading={isLoading}
-        disabled={disabled}
-        className={className}
-        {...props}
-      >
-        {isLoading ? 'Cargando...' : (<>{icon && <span className={styles.iconSlot}>{icon}</span>}{children}</>)}
-      </DsButton>
-    );
-  }
-);
-
-Button.displayName = 'Button';
 
 // ========== TEXT AREA ==========
 

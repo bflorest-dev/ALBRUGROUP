@@ -13,7 +13,8 @@ import { MdError } from 'react-icons/md';
 import type { LeadDTO } from '@shared/types';
 import type { TipificationOptionId } from '@shared/types';
 import { TIPIFICATION_BLOCKS } from '@shared/lib';
-import { LeadDetailCard, TipificationBlockPanel, Boton, Girador } from '@shared/ui/base';
+import { LeadDetailCard, TipificationBlockPanel, Girador } from '@shared/ui';
+import { Button } from '@shared/ui';
 import './TipificationPanel.css';
 
 interface BackofficeLead extends LeadDTO {
@@ -97,15 +98,15 @@ export const TipificationPanel: React.FC<TipificationPanelProps> = ({
 
           {/* Barra de acciones - Fondo */}
           <div className="tipification-action-buttons">
-        <Boton
+        <Button
           variant="secondary"
           onClick={onCancel}
           disabled={isSubmitting}
         >
           CANCELAR
-        </Boton>
-        <Boton
-          variant="primary"
+        </Button>
+        <Button
+          variant="default"
           onClick={onSaveAndNext}
           disabled={isSubmitting || !selectedOptionId}
         >
@@ -117,7 +118,7 @@ export const TipificationPanel: React.FC<TipificationPanelProps> = ({
           ) : (
             'GUARDAR Y SIGUIENTE â†’'
           )}
-        </Boton>
+        </Button>
       </div>
         </div>
       </div>

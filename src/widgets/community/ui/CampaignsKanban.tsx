@@ -3,7 +3,7 @@
 
 import React, { useState } from 'react';
 import { BiPlus } from 'react-icons/bi';
-import { Modal } from '@shared/ui/base';
+import { Modal } from '@shared/ui';
 import { CampaignCard, type Campaign } from './CampaignCard';
 import './CampaignsKanban.css';
 

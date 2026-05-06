@@ -1,5 +1,5 @@
 ﻿import React, { useState } from 'react';
-import { ApplicantForm } from '@shared/ui/base';
+import { ApplicantForm } from '@shared/ui';
 import { Select } from '@shared/ui/input';
 import { POSITIONS_WITH_COMPANY } from '@shared/lib';
 import { PuestoTrabajoEnum } from '@shared/types';

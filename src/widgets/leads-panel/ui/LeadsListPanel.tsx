@@ -9,7 +9,7 @@
 
 import React, { useMemo } from 'react';
 import { BiCheckCircle, BiTime, BiSearch } from 'react-icons/bi';
-import { Entrada, LeadListItem } from '@shared/ui/base';
+import { Entrada, LeadListItem } from '@shared/ui';
 import type { LeadDTO } from '@shared/types';
 import './LeadsListPanel.css';
 

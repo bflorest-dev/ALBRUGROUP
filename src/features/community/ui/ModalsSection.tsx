@@ -1,5 +1,5 @@
 ﻿import React from 'react';
-import { Modal } from '@shared/ui/base';
+import { Modal } from '@shared/ui';
 import type { CommunityDashboardState } from '@shared/types/community';
 
 /**

@@ -7,7 +7,8 @@
 import React, { useState } from 'react';
 import { FormInput } from '@shared/ui/form-input/FormInput';
 import { FormSelect } from '@shared/ui/form-select/FormSelect';
-import { Button, Alert } from '@shared/ui/utilities/Utilities';
+import { Button } from '@shared/ui';
+import { Alert } from '@shared/ui/utilities/Utilities';
 import { PrefixSelector } from '@features/phone-validation';
 import { useLeadsCampaignsQuery } from '@shared/api/queries';
 import { useCreateLeadMutation } from '../hooks/useGtrQueries';
@@ -249,10 +250,8 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess, dashboa
         {/* Botón Submit */}
         <Button
           type="submit"
-          variant="primary"
-          size="large"
-          fullWidth
-          isLoading={createLeadMutation.isPending}
+          variant="default"
+          className="w-full text-lg"
           disabled={
             !permisos.CREATE_LEADS ||
             campaignsQuery.isPending ||

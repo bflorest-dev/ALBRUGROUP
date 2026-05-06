@@ -222,7 +222,7 @@ export const ContratosSection: React.FC = () => {
               minDate={form.fechaInicio || undefined}
             />
 
-            <Button variant="primary" onClick={handleRegistrar} disabled={loading}>Registrar Contrato</Button>
+            <Button variant="default" onClick={handleRegistrar} disabled={loading}>Registrar Contrato</Button>
           </div>
         </div>
 

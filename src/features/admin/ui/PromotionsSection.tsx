@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BiPlus, BiTrash, BiPencil } from 'react-icons/bi';
-import { Modal } from '@shared/ui/base';
+import { Modal } from '@shared/ui';
 import { FlatpickrDateInput } from '@shared/ui/date-picker';
 import type { Promocion } from '../types';
 import type { AdminDashboardState } from '../hooks/useAdminDashboard';

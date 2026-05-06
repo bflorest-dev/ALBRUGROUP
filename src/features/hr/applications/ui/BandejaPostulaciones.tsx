@@ -126,18 +126,24 @@ export const BandejaPostulaciones = forwardRef<
 
   const tablaDataEnriquecida = useMemo(() => {
     return tablaData.map((post, index) => {
-      const ultimaTipificacion = tipificacionQueries[index]?.data;
-      const codigoTipificacion = ultimaTipificacion?.codigo ?? null;
+      const tipificacionData = tipificacionQueries[index]?.data;
+      const idTipificacion = tipificacionData?.id ?? null;
+      const codigoTipificacion = tipificacionData?.codigo ?? null;
+
+      // PRIORIZAR datos del backend sobre queries adicionales
+      const finalIdTipificacion = post.idTipificacion ?? idTipificacion;
+      const finalCodigoTipificacion = post.codigoTipificacion ?? codigoTipificacion;
+
       return {
         ...post,
-        tipificacion: codigoTipificacion
+        tipificacion: finalCodigoTipificacion
           ? {
-              id: ultimaTipificacion?.id ?? null,
-              codigo: codigoTipificacion,
+              id: finalIdTipificacion,
+              codigo: finalCodigoTipificacion,
             }
-          : post.tipificacion,
-        codigoTipificacion:
-          codigoTipificacion ?? post.codigoTipificacion ?? null,
+          : post.tipificacion ?? null,
+        idTipificacion: finalIdTipificacion,
+        codigoTipificacion: finalCodigoTipificacion,
       };
     });
   }, [tablaData, tipificacionQueries]);
@@ -253,7 +259,7 @@ export const BandejaPostulaciones = forwardRef<
         <div className="mt-4">
           <Button
             onClick={abrirModalCrear}
-            variant="primary"
+            variant="default"
             className="flex items-center gap-2"
           >
             <Plus size={18} />

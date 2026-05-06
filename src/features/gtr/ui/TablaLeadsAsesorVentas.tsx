@@ -5,7 +5,8 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { Badge, Spinner, Alert } from '@shared/ui/utilities/Utilities';
+import { Badge } from '@shared/ui';
+import { Spinner, Alert } from '@shared/ui/utilities/Utilities';
 import { DsDataTable, type DsDataTableAction, type DsDataTableColumn } from '@shared/ui/design-system';
 import { useLeadsAsesorVentas, useTypifyLeadMutation } from '../hooks/useGtrQueries';
 import type { LeadAsesorVentasResponse, PermisosGTR } from '@entities/lead/types';
@@ -79,17 +80,17 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
 
   // ========== HELPER FUNCTIONS ==========
   const getEstadoBadgeVariant = (estado: string) => {
-    const variants: Record<string, 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
+    const variants: Record<string, 'info' | 'success' | 'warning' | 'error'> = {
       NUEVO: 'info',
       EN_SEGUIMIENTO: 'warning',
-      CONTACTADO: 'primary',
+      CONTACTADO: 'info',
       INTERESADO: 'success',
-      NO_INTERESADO: 'danger',
+      NO_INTERESADO: 'error',
       SIN_RESPUESTA: 'warning',
       TIPIFICADO: 'success',
       CERRADO: 'success',
     };
-    return variants[estado] || 'primary';
+    return variants[estado] || 'info';
   };
 
   const formatDate = (dateString: string): string => {
@@ -146,7 +147,7 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
           <Badge
             label={lead.estadoSeguimiento}
             variant={getEstadoBadgeVariant(lead.estadoSeguimiento)}
-            size="small"
+            size="sm"
           />
         ),
       },

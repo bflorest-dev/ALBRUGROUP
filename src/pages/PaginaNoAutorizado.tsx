@@ -21,7 +21,7 @@ const PaginaNoAutorizado: React.FC = () => {
         >
           <div className={styles.content}>
             <DsStatusBadge tone="danger" label="403" className={styles.codeBadge} />
-            <Button onClick={() => navigate('/panel')} variant="primary">
+            <Button onClick={() => navigate('/panel')} variant="default">
               Volver al panel
             </Button>
           </div>

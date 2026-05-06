@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ApplicantForm } from '@shared/ui/base';
+import { ApplicantForm } from '@shared/ui';
 import { POSITIONS_WITH_COMPANY } from '@shared/lib';
 import type { NewApplicantFormData } from '@shared/types';
 
@@ -78,7 +78,7 @@ const EditApplicantForm: React.FC<EditApplicantFormProps> = ({ applicant }) => {
 
         <div className="community-grid-2">
           <div className="community-field">
-            <label>Teléfono móvil</label>
+            <label>Telï¿½fono mï¿½vil</label>
             <input name="phoneMobile" value={formData.phoneMobile ?? ''} onChange={handleInputChange} />
           </div>
           <div className="community-field">
@@ -116,7 +116,7 @@ const EditApplicantForm: React.FC<EditApplicantFormProps> = ({ applicant }) => {
         </div>
 
         <div className="community-field">
-          <label>Compañía</label>
+          <label>Compaï¿½ï¿½a</label>
           <input name="company" value={formData.company ?? ''} onChange={handleInputChange} />
         </div>
 

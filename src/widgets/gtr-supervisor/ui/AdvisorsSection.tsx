@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Girador } from '@shared/ui/base';
+import { Girador } from '@shared/ui';
 import type { AdvisorDTO } from '@entities/advisor/model';import './AdvisorsSection.css';
 // Tipo alias para compatibilidad con el cÃ³digo existente
 export type Advisor = AdvisorDTO;

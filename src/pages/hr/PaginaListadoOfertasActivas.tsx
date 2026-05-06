@@ -54,7 +54,7 @@ const PaginaListadoOfertasActivas = (): ReactElement => {
 
           <Button
             type="button"
-            variant="primary"
+            variant="default"
             className={styles.createButton}
             onClick={() => setShowCreateModal(true)}
           >

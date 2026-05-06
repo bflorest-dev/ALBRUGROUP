@@ -16,8 +16,8 @@ export { Modal } from './Modal';
 export { EmptyState } from './EmptyState';
 export { ErrorState } from './ErrorState';
 
-// Utility Components (excluding Button to avoid conflicts)
-export { Alert, Spinner, Badge, ErrorMessage, TextArea } from './utilities/Utilities';
+// Utility Components (excluding Button and Badge to avoid conflicts)
+export { Alert, Spinner, ErrorMessage, TextArea } from './utilities/Utilities';
 
 // Re-export component groups
 export * from './button/index';

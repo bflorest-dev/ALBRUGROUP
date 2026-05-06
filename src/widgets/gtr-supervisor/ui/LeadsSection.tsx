@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { BiSearch, BiPlus } from 'react-icons/bi';
-import { Boton } from '@shared/ui/base';
+import { Button } from '@shared/ui';
 
 interface LeadsHeaderProps {
   count: number;
@@ -36,10 +36,10 @@ export const LeadsHeader: React.FC<LeadsHeaderProps> = ({ count, onRegisterClick
       <div className="header-title">
         <h2>Tabla de Leads ({count})</h2>
       </div>
-      <Boton variant="primary" className="icon-button" onClick={onRegisterClick}>
+      <Button variant="default" className="icon-button" onClick={onRegisterClick}>
         <BiPlus size={18} />
         Registrar Lead
-      </Boton>
+      </Button>
     </div>
   );
 };

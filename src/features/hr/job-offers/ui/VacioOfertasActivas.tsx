@@ -29,7 +29,7 @@ export function VacioOfertasActivas({ onCrear }: VacioOfertasActivasProps): Reac
       </p>
       
       <div className="flex gap-3 mt-2">
-        <Button variant="primary" size="md" onClick={onCrear}>
+        <Button variant="default" size="md" onClick={onCrear}>
           Crear primera oferta
         </Button>
         

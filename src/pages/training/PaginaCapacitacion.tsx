@@ -171,18 +171,22 @@ const PaginaCapacitacion: React.FC = () => {
       observacion: tipificarForm.observacion,
     };
 
-    await tipificarHook.execute(activePostulacionId, payload).catch(() => undefined);
+    try {
+      await tipificarHook.mutateAsync({ id: activePostulacionId, body: payload });
 
-    if (selectedGroupId) {
-      await detalleGrupoHook.execute(selectedGroupId).catch(() => undefined);
+      if (selectedGroupId) {
+        await detalleGrupoHook.execute(selectedGroupId).catch(() => undefined);
+      }
+
+      await Promise.all([
+        bandejaCapacitacionHook.refetch(),
+        detallePostulacionHook.execute(activePostulacionId).catch(() => undefined),
+      ]);
+
+      setTipificarModalOpen(false);
+    } catch (error) {
+      console.error('[PaginaCapacitacion] Error al tipificar:', error);
     }
-
-    await Promise.all([
-      bandejaCapacitacionHook.refetch(),
-      detallePostulacionHook.execute(activePostulacionId).catch(() => undefined),
-    ]);
-
-    setTipificarModalOpen(false);
   };
 
   const refrescarTodo = async () => {
@@ -477,9 +481,9 @@ const PaginaCapacitacion: React.FC = () => {
             <div className={styles.modalFooter}>
               <Button
                 type="button"
-                variant="primary"
+                variant="default"
                 onClick={handleTipificar}
-                disabled={tipificarHook.loading || !tipificarForm.idTipificacion || !tipificarForm.idSubtipificacion}
+                disabled={tipificarHook.isPending || !tipificarForm.idTipificacion || !tipificarForm.idSubtipificacion}
               >
                 Confirmar tipificación
               </Button>
@@ -524,7 +528,7 @@ const PaginaCapacitacion: React.FC = () => {
         <div className={styles.floatingError}>
           <div className={styles.floatingErrorContent}>
             <AlertCircle size={14} />
-            {tipificarHook.error}
+            {tipificarHook.error.message || String(tipificarHook.error)}
           </div>
         </div>
       )}

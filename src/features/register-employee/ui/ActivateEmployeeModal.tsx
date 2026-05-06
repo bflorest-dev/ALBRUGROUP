@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react';
-import { Modal } from '@shared/ui/base';
+import { Modal } from '@shared/ui';
 import { FlatpickrDateInput } from '@shared/ui/date-picker';
 import { AVAILABLE_POSITIONS } from '@shared/lib';
 import type { Employee } from '@shared/types';

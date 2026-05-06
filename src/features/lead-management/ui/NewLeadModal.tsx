@@ -1,6 +1,6 @@
 import React from 'react';
 import type { NewLeadFormData } from '../model/useNewLeadForm';
-import { Modal, Button, Girador } from '@shared/ui/base';
+import { Modal, Button, Girador } from '@shared/ui';
 import './NewLeadModal.css';
 
 /**
@@ -227,7 +227,7 @@ export const NewLeadModal: React.FC<NewLeadModalProps> = ({
         <Button variant="secondary" className="flex-1" onClick={onClose} disabled={isSubmitting}>
           Cancelar
         </Button>
-        <Button variant="primary" className="flex-1" onClick={onSubmit} disabled={isSubmitting}>
+        <Button variant="default" className="flex-1" onClick={onSubmit} disabled={isSubmitting}>
           {isSubmitting ? (
             <span className="flex items-center justify-center gap-2">
               <Girador size="small" />

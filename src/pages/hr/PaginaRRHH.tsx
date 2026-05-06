@@ -64,7 +64,7 @@ const PaginaRRHH: React.FC = () => {
           <>
             <DsSectionCard>
               <div className={styles.toolbar}>
-                <Button type="button" onClick={openCreateModal} variant="primary">
+                <Button type="button" onClick={openCreateModal} variant="default">
                   <Plus size={16} />
                   Nueva Oferta
                 </Button>
@@ -105,7 +105,7 @@ const PaginaRRHH: React.FC = () => {
             title="Reclutar"
             description="Gestiona las postulaciones en la fase de reclutamiento."
             actions={(
-              <Button type="button" onClick={openCreatePostulacionModal} variant="primary">
+              <Button type="button" onClick={openCreatePostulacionModal} variant="default">
                 <Plus size={16} />
                 Crear Postulación
               </Button>

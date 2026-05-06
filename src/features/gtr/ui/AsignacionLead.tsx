@@ -7,7 +7,8 @@
 import React, { useState, useEffect } from 'react';
 import { FormSelect } from '@shared/ui/form-select/FormSelect';
 import { FormInput } from '@shared/ui/form-input/FormInput';
-import { Button, Alert, Spinner } from '@shared/ui/utilities/Utilities';
+import { Button } from '@shared/ui';
+import { Alert, Spinner } from '@shared/ui/utilities/Utilities';
 import { useAssignLeadMutation } from '../hooks/useGtrQueries';
 import type { LeadAsignacionRequest, PermisosGTR } from '@entities/lead/types';
 import styles from './AsignacionLead.module.css';
@@ -188,8 +189,7 @@ export const AsignacionLead: React.FC<AsignacionLeadProps> = ({
         <div className={styles.actions}>
           <Button
             type="submit"
-            variant="primary"
-            isLoading={assignMutation.isPending || isLoading}
+            variant="default"
             disabled={
               !permisos.ASSIGN_LEADS ||
               assignMutation.isPending ||
@@ -197,7 +197,7 @@ export const AsignacionLead: React.FC<AsignacionLeadProps> = ({
               !idAsesorAsignado
             }
           >
-            Asignar
+            {assignMutation.isPending || isLoading ? 'Asignando...' : 'Asignar'}
           </Button>
 
           <Button

@@ -154,7 +154,7 @@ export const FormConfirmarContratacion: React.FC<
         </Button>
         <Button
           type="submit"
-          variant="primary"
+          variant="default"
           isLoading={isLoading}
         >
           Confirmar Contratación

@@ -627,7 +627,7 @@ export const AprobadosSection: React.FC = () => {
         </div>
         <div className={styles.footerActions}>
           <Button variant="secondary" onClick={() => setEmpleadoOpen(false)}>Cancelar</Button>
-          <Button variant="primary" onClick={submitEmpleado}>Guardar Empleado y Generar Contrato</Button>
+          <Button variant="default" onClick={submitEmpleado}>Guardar Empleado y Generar Contrato</Button>
         </div>
       </Modal>
     </div>

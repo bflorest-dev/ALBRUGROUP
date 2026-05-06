@@ -5,7 +5,8 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { Badge, Spinner, Alert } from '@shared/ui/utilities/Utilities';
+import { Badge } from '@shared/ui';
+import { Spinner, Alert } from '@shared/ui/utilities/Utilities';
 import { DsDataTable, type DsDataTableAction, type DsDataTableColumn } from '@shared/ui/design-system';
 import { useLeadsGTR } from '../hooks/useGtrQueries';
 import type { LeadGtrResponse, PermisosGTR } from '@entities/lead/types';
@@ -128,16 +129,16 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
   }, []);
 
   const getEstadoBadgeVariant = (estado: string) => {
-    const variants: Record<string, 'primary' | 'success' | 'warning' | 'danger' | 'info'> = {
+    const variants: Record<string, 'info' | 'success' | 'warning' | 'error'> = {
       NUEVA: 'info',
-      ASIGNADA: 'primary',
+      ASIGNADA: 'info',
       EN_SEGUIMIENTO: 'warning',
       CONTACTADA: 'success',
       TIPIFICADA: 'success',
       CERRADA: 'success',
-      PERDIDA: 'danger',
+      PERDIDA: 'error',
     };
-    return variants[estado] || 'primary';
+    return variants[estado] || 'info';
   };
 
   const formatLeadWithPrefix = (prefijo?: string, lead?: string): string => {
@@ -221,7 +222,7 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
       {
         key: 'base',
         label: 'Base',
-        render: (lead) => <Badge label={lead.base} variant="info" size="small" />,
+        render: (lead) => <Badge label={lead.base} variant="info" size="sm" />,
       },
       {
         key: 'nombreTitular',
@@ -248,7 +249,7 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
           <Badge
             label={lead.estadoSeguimiento}
             variant={getEstadoBadgeVariant(lead.estadoSeguimiento)}
-            size="small"
+            size="sm"
           />
         ),
       },

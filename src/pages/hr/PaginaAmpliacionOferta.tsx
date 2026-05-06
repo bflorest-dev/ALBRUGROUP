@@ -256,7 +256,7 @@ const PaginaAmpliacionOferta: React.FC = () => {
           </div>
 
           <div className={styles.actionsRow}>
-            <Button type="submit" variant="primary" isLoading={isSubmitting}>
+            <Button type="submit" variant="default" isLoading={isSubmitting}>
               Crear Ampliación
             </Button>
             <Button
