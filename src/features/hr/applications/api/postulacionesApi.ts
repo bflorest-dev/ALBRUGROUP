@@ -467,8 +467,31 @@ export async function obtenerPostulaciones(): Promise<PostulacionResponse[]> {
  * Obtener listado de grupos de capacitación
  */
 export async function obtenerGruposCapacitacion(): Promise<GrupoCapacitacionResponse[]> {
-  const response = await recruitmentHttp.get<GrupoCapacitacionResponse[]>('/grupos-capacitacion');
-  return Array.isArray(response.data) ? response.data : [];
+  const response = await recruitmentHttp.get<{
+    content: GrupoCapacitacionResponse[];
+    page: number;
+    size: number;
+    totalPages: number;
+    totalElements: number;
+  }>('/grupos-capacitacion');
+  
+  console.log('📊 [obtenerGruposCapacitacion] Response:', response.data);
+  
+  // El API devuelve respuesta paginada, extraemos el content
+  if (response.data && typeof response.data === 'object' && 'content' in response.data) {
+    const grupos = Array.isArray(response.data.content) ? response.data.content : [];
+    console.log('✅ [obtenerGruposCapacitacion] Grupos extraídos:', grupos.length);
+    return grupos;
+  }
+  
+  // Fallback: si devuelve array directo (por compatibilidad)
+  if (Array.isArray(response.data)) {
+    console.log('✅ [obtenerGruposCapacitacion] Array directo:', response.data.length);
+    return response.data;
+  }
+  
+  console.warn('⚠️ [obtenerGruposCapacitacion] Formato inesperado:', response.data);
+  return [];
 }
 
 /**

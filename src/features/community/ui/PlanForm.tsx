@@ -292,7 +292,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
           disabled={loading}
         >
           <option value="">Selecciona proveedor</option>
-          {proveedores.map((p) => (
+          {proveedores.filter((p) => p.activo).map((p) => (
             <option key={p.id} value={p.id}>
               {p.nombre}
             </option>

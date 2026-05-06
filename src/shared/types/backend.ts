@@ -100,7 +100,7 @@ export interface ProveedorResponse {
   id: number;
   nombre: string;
   activo: boolean;
-  createdAt: string;
+  createdAt: string | null;
 }
 
 export interface UsuarioResponse {

@@ -136,15 +136,14 @@ export interface PostulacionEventoResponse {
 
 export interface GrupoCapacitacionResponse {
   id: number;
-  nombre: string;
-  codigo?: string;
-  idCapacitador?: number;
-  turno?: string;
-  sala?: string;
-  descripcion?: string;
-  fechaInicio?: string;
-  fechaFin?: string;
+  codigo: string;
+  idCapacitador: number;
+  turno: string;
+  sala: string;
+  fechaInicio: string;
+  fechaFin: string;
   estado?: string;
+  createdAt?: string;
   postulaciones?: PostulacionResponse[];
   detalles?: Array<{
     id: number;

@@ -643,7 +643,7 @@ const PaginaCommunity: React.FC = () => {
                 onChange={(e) => setAdicionalProveedorId(Number(e.target.value) as number | '')}
               >
                 <option value="">Selecciona proveedor</option>
-                {proveedores.map((p) => (
+                {proveedores.filter((p) => p.activo).map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.nombre}
                   </option>

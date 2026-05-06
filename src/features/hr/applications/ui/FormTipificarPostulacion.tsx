@@ -317,11 +317,8 @@ export const FormTipificarPostulacion: React.FC<
   );
 
   const gruposOptions = gruposAsignables.map((grupo) => {
-    const nombreGrupo = String(
-      grupo.nombre ?? (grupo as { codigo?: string }).codigo ?? `Grupo #${grupo.id}`
-    );
     return {
-      label: `${nombreGrupo}`,
+      label: grupo.codigo,
       value: grupo.id.toString(),
     };
   });

@@ -125,7 +125,9 @@ export const ProveedoresList: React.FC<ProveedoresListProps> = ({
                     </div>
                   </td>
                   <td>
-                    {new Date(proveedor.createdAt).toLocaleDateString('es-PE')}
+                    {proveedor.createdAt 
+                      ? new Date(proveedor.createdAt).toLocaleDateString('es-PE')
+                      : 'N/A'}
                   </td>
                 </tr>
               ))}

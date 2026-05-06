@@ -304,6 +304,12 @@ export const ZonaForm: React.FC<ZonaFormProps> = ({ editingZona, onSaveZona, onC
       })),
     };
 
+    console.log('📤 [ZonaForm] Enviando payload:', {
+      isEdit: !!editingZona,
+      zonaId: editingZona?.id,
+      payload,
+    });
+
     setLoading(true);
     setGlobalMessage('');
 
@@ -320,12 +326,27 @@ export const ZonaForm: React.FC<ZonaFormProps> = ({ editingZona, onSaveZona, onC
       }
     } catch (err: any) {
       console.error('[ZonaForm] saveZona error', err);
-      if (err?.message?.includes('401')) {
+      console.error('[ZonaForm] Error details:', {
+        message: err?.message,
+        code: err?.code,
+        status: err?.status,
+        details: err?.details,
+        fullError: err,
+      });
+      
+      // El error ya viene normalizado por el interceptor
+      // err.message contiene el mensaje del backend
+      const errorMessage = err?.message || 'Error desconocido';
+      const errorStatus = err?.status || err?.details?.status;
+      
+      if (errorStatus === 409) {
+        setGlobalMessage(`⚠️ ${errorMessage}`);
+      } else if (errorStatus === 401 || errorMessage.includes('401')) {
         setGlobalMessage('🔐 Token inválido o expirado');
-      } else if (err?.message?.includes('400')) {
+      } else if (errorStatus === 400 || errorMessage.includes('400')) {
         setGlobalMessage('⚠️ Error de validación en servidor');
       } else {
-        setGlobalMessage(editingZona ? '💥 Error al actualizar zona' : '💥 Error al crear zona');
+        setGlobalMessage(editingZona ? `💥 Error al actualizar zona: ${errorMessage}` : `💥 Error al crear zona: ${errorMessage}`);
       }
     } finally {
       setLoading(false);

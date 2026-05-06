@@ -109,7 +109,7 @@ export const FormCampaign: React.FC<FormCampaignProps> = ({
           >
             <option value="">-- Selecciona un proveedor --</option>
             {Array.isArray(proveedores) &&
-              proveedores.map((p) => (
+              proveedores.filter((p) => p.activo).map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.nombre}
                 </option>

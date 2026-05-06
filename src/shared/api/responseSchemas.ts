@@ -319,7 +319,7 @@ export const proveedorResponseSchema = z
     id: z.coerce.number().int(),
     nombre: z.string(),
     activo: z.boolean(),
-    createdAt: z.string(),
+    createdAt: z.string().nullable(),
   })
   .passthrough();
 

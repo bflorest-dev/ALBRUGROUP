@@ -79,6 +79,35 @@ const PaginaCapacitacion: React.FC = () => {
   const eventosHook = useEventosPostulacion(activePostulacionId ?? undefined);
 
   const grupos = useMemo(() => gruposHook.data ?? [], [gruposHook.data]);
+  
+  // 🔍 DEBUG: Log para verificar qué datos llegan
+  React.useEffect(() => {
+    console.log('🔍 [PaginaCapacitacion] Grupos Hook:', {
+      loading: gruposHook.loading,
+      error: gruposHook.error,
+      data: gruposHook.data,
+      gruposLength: grupos.length,
+      grupos: grupos,
+    });
+    
+    // Log adicional para debugging
+    if (!gruposHook.loading && !gruposHook.error && grupos.length === 0) {
+      console.warn('⚠️ [PaginaCapacitacion] No hay grupos disponibles. Verifica:');
+      console.warn('   1. Endpoint: GET /api/recruitment/grupos-capacitacion');
+      console.warn('   2. Respuesta del API en Network tab');
+      console.warn('   3. Si el backend tiene grupos creados');
+    }
+    
+    if (gruposHook.error) {
+      console.error('❌ [PaginaCapacitacion] Error al cargar grupos:', gruposHook.error);
+    }
+    
+    if (grupos.length > 0) {
+      console.log('✅ [PaginaCapacitacion] Grupos cargados correctamente:', grupos.length);
+      console.log('   Primer grupo:', grupos[0]);
+    }
+  }, [gruposHook.loading, gruposHook.error, gruposHook.data, grupos]);
+  
   const bandejaCapacitacion = useMemo(
     () => (bandejaCapacitacionHook.data ?? []).filter((item) => String(item.etapaProceso).toUpperCase() === 'CAPACITACION'),
     [bandejaCapacitacionHook.data]
@@ -276,6 +305,12 @@ const PaginaCapacitacion: React.FC = () => {
                 </DsInlineMessage>
               )}
 
+              {!gruposHook.loading && !gruposHook.error && grupos.length === 0 && (
+                <DsInlineMessage tone="info">
+                  No hay grupos de capacitación disponibles.
+                </DsInlineMessage>
+              )}
+
               <div className={styles.groupsList}>
                 {grupos.map((grupo) => {
                   const isActive = selectedGroupId === grupo.id;
@@ -291,7 +326,7 @@ const PaginaCapacitacion: React.FC = () => {
                       onClick={() => openGroup(grupo.id)}
                       className={`${styles.groupCard} ${isActive ? styles.groupCardActive : ''}`.trim()}
                     >
-                      <p className={styles.groupTitle}>{grupo.nombre || `Grupo ${grupo.id}`}</p>
+                      <p className={styles.groupTitle}>{grupo.codigo}</p>
                       <div className={styles.groupMeta}>
                         <DsStatusBadge
                           tone={getGroupStatusTone(grupo.estado)}
@@ -328,7 +363,7 @@ const PaginaCapacitacion: React.FC = () => {
               {selectedGroupId && selectedGroup && (
                 <>
                   <header className={styles.detailHeader}>
-                    <h3 className={styles.groupTitle}>{selectedGroup.nombre || `Grupo ${selectedGroup.id}`}</h3>
+                    <h3 className={styles.groupTitle}>{selectedGroup.codigo}</h3>
                   </header>
 
                   {assignedPostulaciones.length === 0 ? (

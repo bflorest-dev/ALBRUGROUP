@@ -650,33 +650,22 @@ export function useDetalleGrupoCapacitacion() {
 }
 
 export function useGruposCapacitacion(options?: { enabled?: boolean }) {
-  const [data, setData] = useState<GrupoCapacitacionResponse[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const execute = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await postulacionesApi.obtenerGruposCapacitacion();
-      setData(result);
-      return result;
-    } catch (err: any) {
-      const message = err.message || 'Error al cargar grupos de capacitación';
-      setError(message);
-      console.error('useGruposCapacitacion:', err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const query = useQuery({
+    queryKey: ['grupos-capacitacion'],
+    queryFn: () => postulacionesApi.obtenerGruposCapacitacion(),
+    staleTime: 0,
+    enabled: options?.enabled !== false,
+  });
 
-  useEffect(() => {
-    if (options?.enabled === false) return;
-    execute().catch(() => undefined);
-  }, [execute, options?.enabled]);
+  const refetch = useCallback(() => query.refetch(), [query]);
 
-  const refetch = useCallback(() => execute(), [execute]);
-
-  return { data, loading, error, execute, refetch };
+  return {
+    data: query.data ?? null,
+    loading: query.isLoading,
+    error: query.error?.message ?? null,
+    execute: refetch,
+    refetch,
+  };
 }

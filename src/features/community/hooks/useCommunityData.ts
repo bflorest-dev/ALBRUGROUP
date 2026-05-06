@@ -483,6 +483,36 @@ export const useCommunityData = () => {
     }
   }, []);
 
+  // ========================================================================
+  // Event Listeners
+  // ========================================================================
+
+  useEffect(() => {
+    const handleProveedorActualizado = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const proveedorActualizado = customEvent.detail;
+      
+      console.log('[useCommunityData] 🔄 Proveedor actualizado event received:', proveedorActualizado);
+      
+      setProveedores((prev) => 
+        prev.map((p) => (p.id === proveedorActualizado.id ? proveedorActualizado : p))
+      );
+    };
+
+    const handleProveedorCreado = () => {
+      console.log('[useCommunityData] 🔄 Proveedor creado event received, refetching...');
+      fetchProveedores();
+    };
+
+    window.addEventListener('proveedor-actualizado', handleProveedorActualizado);
+    window.addEventListener('proveedor-creado', handleProveedorCreado);
+
+    return () => {
+      window.removeEventListener('proveedor-actualizado', handleProveedorActualizado);
+      window.removeEventListener('proveedor-creado', handleProveedorCreado);
+    };
+  }, [fetchProveedores]);
+
   return {
     loading,
     error,
