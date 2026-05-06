@@ -7,13 +7,15 @@
       </div>
 
       <nav class="menu">
-        <a
-          [routerLink]="session?.homeRoute ?? '/app'"
-          routerLinkActive="is-active"
-          [routerLinkActiveOptions]="{ exact: true }"
-        >
-          Inicio
-        </a>
+        @for (item of menuItems(); track item.route) {
+          <a
+            [routerLink]="item.route"
+            routerLinkActive="is-active"
+            [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
+          >
+            {{ item.label }}
+          </a>
+        }
       </nav>
     </div>
 

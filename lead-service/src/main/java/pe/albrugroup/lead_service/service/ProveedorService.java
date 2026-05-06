@@ -13,6 +13,7 @@ import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.service.mapper.ProveedorMapper;
 
+import java.util.HashSet;
 import java.util.List;
 
 @Service @Transactional
@@ -25,6 +26,9 @@ public class ProveedorService {
     @CacheEvict(value = CacheNames.PROVEEDORES, allEntries = true)
     public ProveedorResponse registrarProveedor(ProveedorRequest request) {
         Proveedor proveedor = mapper.toEntity(request);
+        proveedor.setCortesFacturacion(request.getCortesFacturacion() == null
+                ? new HashSet<>()
+                : new HashSet<>(request.getCortesFacturacion()));
         proveedor.setActivo(Boolean.TRUE);
         return mapper.toResponse(repository.save(proveedor));
     }

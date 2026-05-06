@@ -1,3 +1,5 @@
+@use '@tabler/icons-webfont/dist/tabler-icons.scss';
+
 :root {
   font-family:
     'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -32,4 +34,18 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+.app-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.app-icon--accent {
+  color: transparent;
+  background: linear-gradient(135deg, #f97316 0%, #fb923c 55%, #fdba74 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
 }

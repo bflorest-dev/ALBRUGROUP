@@ -384,6 +384,7 @@ public class LeadService {
         Etapa etapaDestino = subtipificacion.getEtapaCambio();
 
         if (etapaDestino != null && etapaDestino != etapaActual) {
+            aplicarDatosPostventaSiCorresponde(lead, etapaDestino, request.getFechaInstalacion());
             lead.setEtapa(etapaDestino);
             lead.setEstado(EstadoSeguimiento.GESTIONADO);
             lead.setIdAsesorAsignado(null);
@@ -413,6 +414,58 @@ public class LeadService {
                 request.getComentario(),
                 request.getFechaInstalacion()
         );
+    }
+
+    private void aplicarDatosPostventaSiCorresponde(Lead lead, Etapa etapaDestino, LocalDate fechaInstalacion) {
+        if (etapaDestino != Etapa.POSTVENTA) {
+            return;
+        }
+
+        Plan plan = lead.getPlan();
+        if (plan == null) {
+            throw new BadRequestException("Falta seleccionar un plan para pasar a POSTVENTA");
+        }
+        Proveedor proveedor = plan.getProveedor();
+        if (proveedor == null) {
+            throw new BadRequestException("El plan no tiene proveedor configurado");
+        }
+
+        lead.setDiaCorteFacturacion(resolverDiaCorteFacturacion(proveedor, fechaInstalacion));
+        lead.setMesesPermanenciaSnapshot(proveedor.getMesesPermanencia());
+    }
+
+    private Integer resolverDiaCorteFacturacion(Proveedor proveedor, LocalDate fechaInstalacion) {
+        if (fechaInstalacion == null) {
+            throw new BadRequestException("La fechaInstalacion es obligatoria para pasar a POSTVENTA");
+        }
+        if (proveedor.getCortesFacturacion() == null || proveedor.getCortesFacturacion().isEmpty()) {
+            throw new BadRequestException("El proveedor no tiene cortes de facturacion configurados");
+        }
+
+        if ("WIN".equalsIgnoreCase(proveedor.getNombre())) {
+            Integer diaCorte = fechaInstalacion.getDayOfMonth() <= 22 ? 1 : 2;
+            validarCorteFacturacionConfigurado(proveedor, diaCorte);
+            return diaCorte;
+        }
+
+        if (proveedor.getCortesFacturacion().size() == 1) {
+            return proveedor.getCortesFacturacion().iterator().next();
+        }
+
+        throw new BadRequestException("No existe regla de corte de facturacion para el proveedor");
+    }
+
+    private void validarCorteFacturacionConfigurado(Proveedor proveedor, Integer diaCorte) {
+        if (!proveedor.getCortesFacturacion().contains(diaCorte)) {
+            throw new BadRequestException(
+                    "El corte de facturacion calculado no esta configurado para el proveedor",
+                    null,
+                    Map.of(
+                            "proveedor", proveedor.getNombre(),
+                            "diaCorteFacturacion", diaCorte
+                    )
+            );
+        }
     }
 
     @Transactional
@@ -840,6 +893,8 @@ public class LeadService {
                 lead.getNombrePromocionInternaSnapshot(),
                 lead.getPrecioAdicionalesSnapshot(),
                 lead.getPrecioFinal(),
+                lead.getDiaCorteFacturacion(),
+                lead.getMesesPermanenciaSnapshot(),
                 plan,
                 promocionInterna,
                 adicionales

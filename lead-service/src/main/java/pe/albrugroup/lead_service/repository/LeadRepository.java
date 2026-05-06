@@ -176,6 +176,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.nombrePromocionInternaSnapshot,
                 l.precioAdicionalesSnapshot,
                 l.precioFinal,
+                l.diaCorteFacturacion,
+                l.mesesPermanenciaSnapshot,
                 l.createdAt,
                 l.lastEntryAt,
                 l.updatedAt
@@ -215,6 +217,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.nombrePromocionInternaSnapshot,
                 l.precioAdicionalesSnapshot,
                 l.precioFinal,
+                l.diaCorteFacturacion,
+                l.mesesPermanenciaSnapshot,
                 l.createdAt,
                 l.lastEntryAt,
                 l.updatedAt

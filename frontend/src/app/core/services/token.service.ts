@@ -1,19 +1,34 @@
-import { Injectable } from '@angular/core';
+import { Injectable, effect, signal } from '@angular/core';
 import { STORAGE_KEYS } from '../constants/storage.constants';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TokenService {
+  private readonly tokenState = signal<string | null>(localStorage.getItem(STORAGE_KEYS.accessToken));
+
+  constructor() {
+    effect(() => {
+      const token = this.tokenState();
+
+      if (token) {
+        localStorage.setItem(STORAGE_KEYS.accessToken, token);
+        return;
+      }
+
+      localStorage.removeItem(STORAGE_KEYS.accessToken);
+    });
+  }
+
   getToken(): string | null {
-    return localStorage.getItem(STORAGE_KEYS.accessToken);
+    return this.tokenState();
   }
 
   setToken(token: string): void {
-    localStorage.setItem(STORAGE_KEYS.accessToken, token);
+    this.tokenState.set(token);
   }
 
   clearToken(): void {
-    localStorage.removeItem(STORAGE_KEYS.accessToken);
+    this.tokenState.set(null);
   }
 }

@@ -1,0 +1,104 @@
+<section class="panel">
+  <div class="panel__header panel__header--wrap">
+    <div>
+      <span class="panel__eyebrow">Bandeja</span>
+      <h3>Postulantes</h3>
+    </div>
+
+    <button type="button" class="ghost-button" (click)="reload.emit()">Recargar</button>
+  </div>
+
+  <form [formGroup]="filterForm" class="filters">
+    <label>
+      <span>Etapa</span>
+      <select formControlName="etapa">
+        <option value="">Todas</option>
+        @for (option of etapaOptions; track option) {
+          <option [value]="option">{{ toLabel(option) }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      <span>Estado</span>
+      <select formControlName="estado">
+        <option value="">Todos</option>
+        @for (option of estadoOptions; track option) {
+          <option [value]="option">{{ toLabel(option) }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      <span>Estado bandeja</span>
+      <select formControlName="estadoBandeja">
+        <option value="">Todos</option>
+        @for (option of estadoBandejaOptions; track option) {
+          <option [value]="option">{{ toLabel(option) }}</option>
+        }
+      </select>
+    </label>
+
+    <div class="filters__actions">
+      <button type="button" class="secondary-button" (click)="clearFilters.emit()">Limpiar</button>
+      <button type="button" class="primary-button" (click)="applyFilters.emit()">Aplicar</button>
+    </div>
+  </form>
+
+  @if (errorMessage) {
+    <p class="form-message form-message--error">{{ errorMessage }}</p>
+  }
+
+  @if (isLoading) {
+    <p class="helper-text">Cargando postulantes...</p>
+  } @else if (postulaciones.length) {
+    <div class="postulacion-list">
+      @for (postulacion of postulaciones; track postulacion.id) {
+        <article class="postulacion-card" animate.enter="row-enter">
+          <div>
+            <h4>{{ postulacion.postulante.nombres }} {{ postulacion.postulante.apellidos }}</h4>
+            <p>
+              {{ postulacion.postulante.tipoDocumento }} {{ postulacion.postulante.documento }} ·
+              {{ postulacion.postulante.celular }}
+            </p>
+          </div>
+
+          <div class="meta-grid">
+            <span><strong>Oferta:</strong> {{ postulacion.ofertaLaboral.codigo }}</span>
+            <span><strong>Puesto:</strong> {{ toLabel(postulacion.ofertaLaboral.puestoObjetivo) }}</span>
+            <span><strong>Origen:</strong> {{ toLabel(postulacion.origen) }}</span>
+            <span><strong>Etapa:</strong> {{ toLabel(postulacion.etapa) }}</span>
+            <span><strong>Estado:</strong> {{ toLabel(postulacion.estado) }}</span>
+            <span><strong>Bandeja:</strong> {{ toLabel(postulacion.estadoBandeja) }}</span>
+          </div>
+
+          <div class="card-actions">
+            <button type="button" class="secondary-button" (click)="edit.emit(postulacion)">Editar</button>
+          </div>
+        </article>
+      }
+    </div>
+
+    <div class="pagination">
+      <button
+        type="button"
+        class="ghost-button"
+        [disabled]="currentPage === 0"
+        (click)="pageChange.emit(currentPage - 1)"
+      >
+        Anterior
+      </button>
+      <span>Pagina {{ currentPage + 1 }} de {{ totalPages }}</span>
+      <button
+        type="button"
+        class="ghost-button"
+        [disabled]="currentPage + 1 >= totalPages"
+        (click)="pageChange.emit(currentPage + 1)"
+      >
+        Siguiente
+      </button>
+    </div>
+  } @else {
+    <p class="helper-text">No hay postulantes para mostrar.</p>
+  }
+</section>

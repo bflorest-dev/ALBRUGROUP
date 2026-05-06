@@ -77,6 +77,20 @@
   cursor: wait;
 }
 
+.auth-form .auth-form__link {
+  padding: 0;
+  justify-self: start;
+  color: #1c5fa8;
+  font-weight: 600;
+  background: transparent;
+  cursor: pointer;
+}
+
+.auth-form .auth-form__link:disabled {
+  opacity: 1;
+  cursor: pointer;
+}
+
 .form-message {
   margin: 0;
   font-size: 0.95rem;

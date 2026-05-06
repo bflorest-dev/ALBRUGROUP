@@ -1,7 +1,6 @@
 import {
   APP_INITIALIZER,
   ApplicationConfig,
-  provideZoneChangeDetection,
   provideBrowserGlobalErrorListeners
 } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
@@ -18,7 +17,6 @@ function initializeBrowserSession(browserSessionService: BrowserSessionService):
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideZoneChangeDetection(),
     provideHttpClient(withInterceptors([authTokenInterceptor])),
     provideRouter(routes),
     {

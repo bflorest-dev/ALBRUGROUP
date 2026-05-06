@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
 import { roleGuard } from '../../core/guards/role.guard';
 import { AdminDashboardPageComponent } from '../admin/pages/admin-dashboard-page/admin-dashboard-page.component';
+import { AdminEmployabilityPageComponent } from '../admin/pages/admin-employability-page/admin-employability-page.component';
+import { RrhhPostulantesPageComponent } from '../rrhh/pages/rrhh-postulantes-page/rrhh-postulantes-page.component';
 import { RoleHomeRedirectComponent } from './pages/role-home-redirect/role-home-redirect.component';
 import { RolePlatformPageComponent } from './pages/role-platform-page/role-platform-page.component';
 
@@ -11,6 +13,11 @@ export const PLATFORM_ROUTES: Routes = [
   },
   {
     path: 'admin',
+    pathMatch: 'full',
+    redirectTo: 'admin/personal'
+  },
+  {
+    path: 'admin/personal',
     component: AdminDashboardPageComponent,
     canActivate: [roleGuard],
     data: {
@@ -18,12 +25,24 @@ export const PLATFORM_ROUTES: Routes = [
     }
   },
   {
-    path: 'rrhh',
-    component: RolePlatformPageComponent,
+    path: 'admin/empleabilidad',
+    component: AdminEmployabilityPageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['RRHH'],
-      title: 'RRHH Platform'
+      roles: ['ADMINISTRADOR']
+    }
+  },
+  {
+    path: 'rrhh',
+    pathMatch: 'full',
+    redirectTo: 'rrhh/postulantes'
+  },
+  {
+    path: 'rrhh/postulantes',
+    component: RrhhPostulantesPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['RRHH']
     }
   },
   {

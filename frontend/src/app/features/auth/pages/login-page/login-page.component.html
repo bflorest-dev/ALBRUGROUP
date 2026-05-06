@@ -15,12 +15,16 @@
         <input type="password" formControlName="password" placeholder="Ingresa tu password" />
       </label>
 
-      @if (errorMessage) {
-        <p class="form-message form-message--error">{{ errorMessage }}</p>
+      @if (errorMessage()) {
+        <p class="form-message form-message--error">{{ errorMessage() }}</p>
       }
 
-      <button type="submit" [disabled]="isSubmitting">
-        {{ isSubmitting ? 'Validando...' : 'Ingresar' }}
+      <button type="button" class="auth-form__link" (click)="goToForgotPassword()">
+        Olvide mi contraseña
+      </button>
+
+      <button type="submit" [disabled]="isSubmitting()">
+        {{ isSubmitting() ? 'Validando...' : 'Ingresar' }}
       </button>
     </form>
   </div>

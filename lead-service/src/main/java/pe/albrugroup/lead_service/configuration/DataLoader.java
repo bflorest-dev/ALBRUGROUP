@@ -160,7 +160,7 @@ public class DataLoader {
     }
 
     private void crearCatalogoComercialBase() {
-        Proveedor win = saveProveedor("WIN");
+        Proveedor win = saveProveedor("WIN", Set.of(1, 2), null);
         Proveedor claro = saveProveedor("CLARO");
         Proveedor mifibra = saveProveedor("MIFIBRA");
         Proveedor perufibra = saveProveedor("PERUFIBRA");
@@ -191,11 +191,26 @@ public class DataLoader {
     }
 
     private Proveedor saveProveedor(String nombre) {
+        return saveProveedor(nombre, Set.of(), null);
+    }
+
+    private Proveedor saveProveedor(String nombre, Set<Integer> cortesFacturacion, Integer mesesPermanencia) {
         return proveedorRepository.listarPorActivo(Boolean.TRUE).stream()
                 .filter(proveedor -> proveedor.getNombre().equalsIgnoreCase(nombre))
                 .findFirst()
+                .map(proveedor -> {
+                    if (!cortesFacturacion.isEmpty()) {
+                        proveedor.setCortesFacturacion(new HashSet<>(cortesFacturacion));
+                    }
+                    if (mesesPermanencia != null) {
+                        proveedor.setMesesPermanencia(mesesPermanencia);
+                    }
+                    return proveedorRepository.save(proveedor);
+                })
                 .orElseGet(() -> proveedorRepository.save(Proveedor.builder()
                         .nombre(nombre)
+                        .cortesFacturacion(new HashSet<>(cortesFacturacion))
+                        .mesesPermanencia(mesesPermanencia)
                         .activo(Boolean.TRUE)
                         .build()));
     }

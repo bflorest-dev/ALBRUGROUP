@@ -37,6 +37,8 @@ public class LeadResponse {
     private String nombrePromocionInternaSnapshot;
     private BigDecimal precioAdicionalesSnapshot;
     private BigDecimal precioFinal;
+    private Integer diaCorteFacturacion;
+    private Integer mesesPermanenciaSnapshot;
     private Instant createdAt;
     private Instant lastEntryAt;
     private Instant updatedAt;

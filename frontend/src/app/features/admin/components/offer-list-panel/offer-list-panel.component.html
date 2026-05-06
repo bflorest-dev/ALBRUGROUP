@@ -1,0 +1,155 @@
+<section class="panel">
+  <div class="panel__header panel__header--wrap">
+    <div>
+      <span class="panel__eyebrow">Listado</span>
+      <h3>Ofertas laborales</h3>
+    </div>
+
+    <div class="toolbar">
+      <select (change)="emitEstadoFilter($event)">
+        <option value="">Todos los estados</option>
+        @for (option of estadoOptions; track option) {
+          <option [value]="option">{{ toLabel(option) }}</option>
+        }
+      </select>
+
+      <button type="button" class="ghost-button" (click)="reload.emit()">Recargar</button>
+    </div>
+  </div>
+
+  @if (listErrorMessage) {
+    <p class="form-message form-message--error">{{ listErrorMessage }}</p>
+  }
+
+  @if (isLoadingOffers) {
+    <p class="helper-text">Cargando ofertas laborales...</p>
+  } @else if (offers.length) {
+    <div class="offer-list">
+      @for (offer of offers; track offer.id) {
+        <article class="offer-card">
+          <div class="offer-card__header">
+            <div>
+              <h4>{{ offer.codigo }}</h4>
+              <p>{{ toLabel(offer.negocio) }} · {{ toLabel(offer.puestoObjetivo) }}</p>
+            </div>
+
+            <div class="offer-card__actions">
+              <button
+                type="button"
+                class="icon-button"
+                (click)="toggleExpansion.emit(offer.id)"
+                aria-label="Registrar ampliacion"
+              >
+                +
+              </button>
+            </div>
+          </div>
+
+          <div class="offer-card__meta">
+            <span><strong>Modalidad:</strong> {{ toLabel(offer.modalidad) }}</span>
+            <span><strong>Horario:</strong> {{ toLabel(offer.horario) }}</span>
+            <span><strong>Cantidad inicial:</strong> {{ offer.cantidadInicial }}</span>
+            <span><strong>Plazo inicial:</strong> {{ offer.plazoInicial }}</span>
+            <span><strong>Estado:</strong> {{ toLabel(offer.estado) }}</span>
+          </div>
+
+          <div class="offer-card__status">
+            <select [value]="getDraftEstado(offer)" (change)="emitStatusDraftChange(offer.id, $event)">
+              @for (option of estadoOptions; track option) {
+                <option [value]="option">{{ toLabel(option) }}</option>
+              }
+            </select>
+
+            <button
+              type="button"
+              class="secondary-button"
+              [disabled]="isStatusLoading(offer.id)"
+              (click)="updateEstado.emit(offer.id)"
+            >
+              {{ isStatusLoading(offer.id) ? 'Actualizando...' : 'Actualizar estado' }}
+            </button>
+          </div>
+
+          @if (getStatusError(offer.id)) {
+            <p class="form-message form-message--error">{{ getStatusError(offer.id) }}</p>
+          }
+
+          @if (isExpansionOpen(offer.id)) {
+            <div class="expansion-box">
+              <h5>Nueva ampliacion</h5>
+
+              <form [formGroup]="expansionForm" class="form-grid form-grid--compact">
+                <label>
+                  <span>Cantidad</span>
+                  <input type="number" formControlName="cantidad" min="1" />
+                </label>
+
+                <label>
+                  <span>Plazo</span>
+                  <input type="date" formControlName="plazo" />
+                </label>
+              </form>
+
+              @if (getExpansionError(offer.id)) {
+                <p class="form-message form-message--error">{{ getExpansionError(offer.id) }}</p>
+              }
+
+              <div class="actions">
+                <button type="button" class="secondary-button" (click)="toggleExpansion.emit(offer.id)">
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  class="primary-button"
+                  [disabled]="isExpansionLoading(offer.id)"
+                  (click)="submitExpansion.emit(offer.id)"
+                >
+                  {{ isExpansionLoading(offer.id) ? 'Guardando...' : 'Guardar ampliacion' }}
+                </button>
+              </div>
+            </div>
+          }
+
+          <div class="ampliaciones">
+            <span class="ampliaciones__title">Ampliaciones</span>
+
+            @if (offer.ampliaciones.length) {
+              <div class="ampliaciones__list">
+                @for (ampliacion of offer.ampliaciones; track ampliacion.createdAt) {
+                  <div class="ampliacion-chip">
+                    <span>Cantidad: {{ ampliacion.cantidad }}</span>
+                    <span>Plazo: {{ ampliacion.plazo }}</span>
+                  </div>
+                }
+              </div>
+            } @else {
+              <p class="helper-text">Sin ampliaciones registradas.</p>
+            }
+          </div>
+        </article>
+      }
+    </div>
+
+    <div class="pagination">
+      <button
+        type="button"
+        class="ghost-button"
+        [disabled]="currentPage === 0"
+        (click)="pageChange.emit(currentPage - 1)"
+      >
+        Anterior
+      </button>
+      <span>Pagina {{ currentPage + 1 }} de {{ totalPages }}</span>
+      <button
+        type="button"
+        class="ghost-button"
+        [disabled]="currentPage + 1 >= totalPages"
+        (click)="pageChange.emit(currentPage + 1)"
+      >
+        Siguiente
+      </button>
+    </div>
+  } @else {
+    <p class="helper-text">No hay ofertas laborales para mostrar.</p>
+  }
+</section>

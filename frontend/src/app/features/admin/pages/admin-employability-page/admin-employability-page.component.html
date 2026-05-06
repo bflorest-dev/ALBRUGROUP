@@ -1,0 +1,56 @@
+<section class="employability-page">
+  <header class="hero">
+    <span class="hero__eyebrow">Administrador</span>
+    <div class="hero__row">
+      <div>
+        <h2>Empleabilidad</h2>
+        <p>Gestiona ofertas laborales, ampliaciones y estados desde recruitment.</p>
+      </div>
+      <button
+        type="button"
+        class="icon-action"
+        (click)="facade.toggleCreateForm()"
+        aria-label="Registrar oferta"
+      >
+        +
+      </button>
+    </div>
+  </header>
+
+  @if (facade.showCreateForm()) {
+    <app-offer-registration-panel
+      [createOfferForm]="facade.createOfferForm"
+      [negocioOptions]="facade.negocioOptions"
+      [puestoObjetivoOptions]="facade.puestoObjetivoOptions"
+      [modalidadOptions]="facade.modalidadOptions"
+      [horarioOptions]="facade.horarioOptions"
+      [createErrorMessage]="facade.createErrorMessage()"
+      [isCreatingOffer]="facade.isCreatingOffer()"
+      (cancel)="facade.toggleCreateForm()"
+      (save)="facade.submitCreateOffer()"
+    />
+  }
+
+  <app-offer-list-panel
+    [offers]="facade.offers()"
+    [estadoOptions]="facade.estadoOptions"
+    [expansionForm]="facade.expansionForm"
+    [currentPage]="facade.currentPage()"
+    [totalPages]="facade.totalPages()"
+    [isLoadingOffers]="facade.isLoadingOffers()"
+    [listErrorMessage]="facade.listErrorMessage()"
+    [expandedOfferId]="facade.expandedOfferId()"
+    [draftEstadoByOfferId]="facade.draftEstadoByOfferId()"
+    [expansionErrorByOfferId]="facade.expansionErrorByOfferId()"
+    [expansionLoadingByOfferId]="facade.expansionLoadingByOfferId()"
+    [statusErrorByOfferId]="facade.statusErrorByOfferId()"
+    [statusLoadingByOfferId]="facade.statusLoadingByOfferId()"
+    (estadoFilter)="facade.applyEstadoFilter($event)"
+    (reload)="facade.loadOffers()"
+    (pageChange)="facade.loadOffers($event)"
+    (toggleExpansion)="facade.toggleExpansionForm($event)"
+    (submitExpansion)="facade.submitExpansion($event)"
+    (statusDraftChange)="facade.setDraftEstado($event.offerId, $event.estado)"
+    (updateEstado)="facade.updateEstado($event)"
+  />
+</section>

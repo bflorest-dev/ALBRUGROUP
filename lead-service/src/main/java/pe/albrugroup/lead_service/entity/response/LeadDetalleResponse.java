@@ -69,6 +69,8 @@ public class LeadDetalleResponse {
     private String nombrePromocionInterna;
     private BigDecimal precioAdicionales;
     private BigDecimal precioFinal;
+    private Integer diaCorteFacturacion;
+    private Integer mesesPermanenciaSnapshot;
     private LeadPlanDetalleResponse plan;
     private LeadPromocionDetalleResponse promocionInterna;
     private List<LeadAdicionalDetalleResponse> adicionales;

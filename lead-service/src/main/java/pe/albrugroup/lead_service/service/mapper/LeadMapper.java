@@ -36,6 +36,8 @@ public interface LeadMapper {
     @Mapping(target = "adicionales", ignore = true)
     @Mapping(target = "precioAdicionalesSnapshot", ignore = true)
     @Mapping(target = "precioFinal", ignore = true)
+    @Mapping(target = "diaCorteFacturacion", ignore = true)
+    @Mapping(target = "mesesPermanenciaSnapshot", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     Lead toNuevoLead(String prefijo, String lead, Base base, Campana campana, Instant lastEntryAt);

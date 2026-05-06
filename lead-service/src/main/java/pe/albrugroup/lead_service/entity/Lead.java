@@ -87,6 +87,9 @@ public class Lead {
     private BigDecimal precioAdicionalesSnapshot;
     private BigDecimal precioFinal;
 
+    private Integer diaCorteFacturacion;
+    private Integer mesesPermanenciaSnapshot;
+
     @CreationTimestamp @Column(updatable = false)
     private Instant createdAt;
     private Instant lastEntryAt;

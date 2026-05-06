@@ -1,23 +1,65 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { finalize } from 'rxjs';
+import { catchError, filter, map, of, startWith, switchMap } from 'rxjs';
 import { ApiErrorResponse } from '../../../../shared/models/api/api-error-response';
 import { CredencialesResponse } from '../../../../shared/models/auth/credenciales-response';
+import { ForgotPasswordRequest } from '../../../../shared/models/auth/forgot-password-request';
 import { AuthService } from '../../services/auth.service';
+
+type ForgotPasswordSubmission = {
+  requestId: number;
+  payload: ForgotPasswordRequest;
+};
+
+type ForgotPasswordState =
+  | { status: 'idle' }
+  | { status: 'loading'; requestId: number }
+  | { status: 'error'; requestId: number; message: string }
+  | { status: 'success'; requestId: number; credentials: CredencialesResponse };
 
 @Component({
   selector: 'app-forgot-password-page',
   imports: [ReactiveFormsModule],
   templateUrl: './forgot-password-page.component.html',
-  styleUrl: './forgot-password-page.component.scss'
+  styleUrl: './forgot-password-page.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ForgotPasswordPageComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
+  private nextRequestId = 1;
+  private readonly submittedRequest = signal<ForgotPasswordSubmission | null>(null);
+
+  private readonly forgotPasswordState = toSignal(
+    toObservable(this.submittedRequest).pipe(
+      filter((submission): submission is ForgotPasswordSubmission => submission !== null),
+      switchMap((submission) =>
+        this.authService.forgotPassword(submission.payload).pipe(
+          map(
+            (credentials): ForgotPasswordState => ({
+              status: 'success',
+              requestId: submission.requestId,
+              credentials
+            })
+          ),
+          startWith<ForgotPasswordState>({ status: 'loading', requestId: submission.requestId }),
+          catchError((error: HttpErrorResponse) =>
+            of<ForgotPasswordState>({
+              status: 'error',
+              requestId: submission.requestId,
+              message: this.getErrorMessage(error, 'No fue posible generar una nueva password.')
+            })
+          )
+        )
+      )
+    ),
+    { initialValue: { status: 'idle' } }
+  );
 
   protected readonly forgotPasswordForm = this.formBuilder.nonNullable.group({
     username: [{ value: '', disabled: true }, [Validators.required]],
@@ -25,9 +67,15 @@ export class ForgotPasswordPageComponent {
     dni: ['', [Validators.required]]
   });
 
-  protected isSubmitting = false;
-  protected errorMessage = '';
-  protected generatedCredentials: CredencialesResponse | null = null;
+  protected readonly isSubmitting = computed(() => this.forgotPasswordState().status === 'loading');
+  protected readonly errorMessage = computed(() => {
+    const state = this.forgotPasswordState();
+    return state.status === 'error' ? state.message : '';
+  });
+  protected readonly generatedCredentials = computed(() => {
+    const state = this.forgotPasswordState();
+    return state.status === 'success' ? state.credentials : null;
+  });
 
   constructor() {
     const username = this.route.snapshot.queryParamMap.get('username')?.trim() ?? '';
@@ -46,33 +94,23 @@ export class ForgotPasswordPageComponent {
       return;
     }
 
-    this.isSubmitting = true;
-    this.errorMessage = '';
-    this.generatedCredentials = null;
-
-    this.authService
-      .forgotPassword({
+    this.submittedRequest.set({
+      requestId: this.nextRequestId++,
+      payload: {
         username: this.forgotPasswordForm.controls.username.getRawValue(),
         email: this.forgotPasswordForm.controls.email.getRawValue(),
         dni: this.forgotPasswordForm.controls.dni.getRawValue()
-      })
-      .pipe(finalize(() => (this.isSubmitting = false)))
-      .subscribe({
-        next: (response) => {
-          this.generatedCredentials = response;
-        },
-        error: (error: HttpErrorResponse) => {
-          this.errorMessage = this.getErrorMessage(
-            error,
-            'No fue posible generar una nueva password.'
-          );
-        }
-      });
+      }
+    });
   }
 
   protected continueToLogin(): void {
     const username = this.forgotPasswordForm.controls.username.getRawValue();
     void this.router.navigate(['/auth/login'], { queryParams: { username } });
+  }
+
+  protected async copyPassword(password: string): Promise<void> {
+    await navigator.clipboard.writeText(password);
   }
 
   private getErrorMessage(error: HttpErrorResponse, fallbackMessage: string): string {

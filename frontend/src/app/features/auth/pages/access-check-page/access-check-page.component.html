@@ -10,12 +10,12 @@
         <input type="text" formControlName="username" placeholder="Ingresa tu username" />
       </label>
 
-      @if (errorMessage) {
-        <p class="form-message form-message--error">{{ errorMessage }}</p>
+      @if (errorMessage()) {
+        <p class="form-message form-message--error">{{ errorMessage() }}</p>
       }
 
-      <button type="submit" [disabled]="isSubmitting">
-        {{ isSubmitting ? 'Validando...' : 'Continuar' }}
+      <button type="submit" [disabled]="isSubmitting()">
+        {{ isSubmitting() ? 'Validando...' : 'Continuar' }}
       </button>
     </form>
   </div>

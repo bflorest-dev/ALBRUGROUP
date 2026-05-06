@@ -1,0 +1,44 @@
+<section class="rrhh-page">
+  <header class="hero">
+    <span class="hero__eyebrow">RRHH</span>
+    <h2>Gestion de postulantes</h2>
+    <p>
+      Registra postulantes contra ofertas laborales activas, edita sus datos base y filtra la
+      bandeja por etapa, estado y estado de bandeja.
+    </p>
+  </header>
+
+  <div class="rrhh-grid">
+    <app-postulante-form-panel
+      [postulanteForm]="facade.postulanteForm"
+      [activeOffers]="facade.activeOffers()"
+      [documentoOptions]="facade.documentoOptions"
+      [origenOptions]="facade.origenOptions"
+      [isLoadingActiveOffers]="facade.isLoadingActiveOffers()"
+      [activeOffersErrorMessage]="facade.activeOffersErrorMessage()"
+      [isSaving]="facade.isSaving()"
+      [isEditing]="facade.isEditing()"
+      [saveErrorMessage]="facade.saveErrorMessage()"
+      [saveSuccessMessage]="facade.saveSuccessMessage()"
+      (save)="facade.submitPostulacion()"
+      (cancelEdit)="facade.resetForm()"
+    />
+
+    <app-postulantes-list-panel
+      [filterForm]="facade.filterForm"
+      [postulaciones]="facade.postulaciones()"
+      [etapaOptions]="facade.etapaOptions"
+      [estadoOptions]="facade.estadoOptions"
+      [estadoBandejaOptions]="facade.estadoBandejaOptions"
+      [currentPage]="facade.currentPage()"
+      [totalPages]="facade.totalPages()"
+      [isLoading]="facade.isLoadingList()"
+      [errorMessage]="facade.listErrorMessage()"
+      (applyFilters)="facade.applyFilters()"
+      (clearFilters)="facade.clearFilters()"
+      (reload)="facade.loadPostulaciones()"
+      (pageChange)="facade.loadPostulaciones($event)"
+      (edit)="facade.editPostulacion($event)"
+    />
+  </div>
+</section>

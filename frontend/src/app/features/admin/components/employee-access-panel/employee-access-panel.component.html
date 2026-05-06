@@ -1,0 +1,97 @@
+<section class="panel">
+  <div class="panel__header">
+    <div>
+      <span class="panel__eyebrow">Bloque 2</span>
+      <h3>Empleados activos</h3>
+    </div>
+    <button type="button" class="ghost-button" (click)="reload.emit()">Recargar</button>
+  </div>
+
+  @if (errorMessage) {
+    <p class="form-message form-message--error">{{ errorMessage }}</p>
+  }
+
+  @if (isLoading) {
+    <p class="helper-text">Cargando empleados...</p>
+  } @else if (employees.length) {
+    <div class="table-scroll">
+      <table class="employee-table">
+        <thead>
+          <tr>
+            <th>Empleado</th>
+            <th>Documento</th>
+            <th>Estado</th>
+            <th>Acceso</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (employee of employees; track employee.id) {
+            <tr animate.enter="row-enter">
+              <td>
+                <strong>{{ employee.nombres }} {{ employee.apellidos }}</strong>
+                <span>{{ toLabel(employee.origen) }}</span>
+              </td>
+              <td>{{ employee.numeroDocumento }}</td>
+              <td>{{ toLabel(employee.estadoOperativo) }}</td>
+              <td class="actions-cell">
+                <button
+                  type="button"
+                  class="icon-button"
+                  [disabled]="isAccessLoading(employee.id)"
+                  (click)="toggleAccess.emit(employee.id)"
+                  aria-label="Ver acceso"
+                >
+                  &#128065;
+                </button>
+              </td>
+            </tr>
+            @if (hasAccessLoaded(employee.id)) {
+              <tr class="access-row">
+                <td colspan="4">
+                  @if (getAccessError(employee.id)) {
+                    <p class="form-message form-message--error">
+                      {{ getAccessError(employee.id) }}
+                    </p>
+                  } @else if (getAccess(employee.id); as access) {
+                    <div class="access-card">
+                      <span><strong>Username:</strong> {{ access.username }}</span>
+                      <span><strong>Email:</strong> {{ access.email }}</span>
+                      <span><strong>Rol:</strong> {{ toLabel(access.roles[0]) }}</span>
+                      <span><strong>Activo:</strong> {{ access.activo ? 'Si' : 'No' }}</span>
+                      <span>
+                        <strong>Password inicializada:</strong>
+                        {{ access.passwordInicializada ? 'Si' : 'No' }}
+                      </span>
+                    </div>
+                  }
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination">
+      <button
+        type="button"
+        class="ghost-button"
+        [disabled]="currentPage === 0"
+        (click)="pageChange.emit(currentPage - 1)"
+      >
+        Anterior
+      </button>
+      <span>Pagina {{ currentPage + 1 }} de {{ totalPages }}</span>
+      <button
+        type="button"
+        class="ghost-button"
+        [disabled]="currentPage + 1 >= totalPages"
+        (click)="pageChange.emit(currentPage + 1)"
+      >
+        Siguiente
+      </button>
+    </div>
+  } @else {
+    <p class="helper-text">No hay empleados activos para mostrar.</p>
+  }
+</section>

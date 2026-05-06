@@ -97,7 +97,8 @@ public class ZonaService {
         mapper.updateDatosZona(request, zona);
         Zona zonaActualizada = zonaRepository.save(zona);
 
-        zonaReglaRepository.deleteByZonaId(zonaActualizada.getId());
+        zonaReglaRepository.deleteAllByZonaId(zonaActualizada.getId());
+        zonaReglaRepository.flush();
 
         List<ZonaRegla> reglas = request.getReglas().stream()
                 .map(reglaRequest -> crearRegla(zonaActualizada, reglaRequest))

@@ -1,0 +1,136 @@
+.panel {
+  padding: 1.5rem;
+  border: 1px solid #d8e1eb;
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.panel__eyebrow {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.panel h3 {
+  margin: 0.75rem 0;
+}
+
+.step-chip {
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1c3f63;
+  background: #e8eef5;
+}
+
+.form-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field,
+.form-grid label {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.field--wide {
+  grid-column: 1 / -1;
+}
+
+.form-grid span {
+  font-weight: 600;
+  color: #24384d;
+}
+
+.form-grid input,
+.form-grid select {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: 1px solid #c7d2df;
+  border-radius: 0.9rem;
+  background: #fff;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.primary-button,
+.secondary-button {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  padding: 0.9rem 1rem;
+  border-radius: 0.9rem;
+  font-weight: 700;
+}
+
+.primary-button {
+  color: #fff;
+  background: linear-gradient(135deg, #bd4f31 0%, #d97745 100%);
+}
+
+.secondary-button {
+  color: #1c3f63;
+  background: #e8eef5;
+}
+
+.primary-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.result-card {
+  padding: 1.25rem;
+  border-radius: 1.25rem;
+  background: #f5f8fb;
+}
+
+.result-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.result-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #5a6c7e;
+}
+
+.form-message {
+  margin: 0;
+}
+
+.form-message--error {
+  color: #b42318;
+}
+
+@media (max-width: 760px) {
+  .form-grid,
+  .result-grid,
+  .panel__header,
+  .actions {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .panel__header,
+  .actions {
+    align-items: stretch;
+  }
+}
