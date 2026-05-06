@@ -261,7 +261,6 @@ export const planAdicionalResponseSchema = z
     cantidadIncluida: z.coerce.number().int(),
     permiteCompraAdicional: z.boolean(),
     cantidadMaximaAdicional: z.coerce.number().int(),
-    precioUnitarioAdicional: z.coerce.number(),
   })
   .passthrough();
 
@@ -270,13 +269,19 @@ export const planResponseSchema = z
     id: z.coerce.number().int(),
     nombre: z.string(),
     precio: z.coerce.number(),
+    precioPromocional: z.coerce.number().default(0),
+    mesesPromocionPrecio: z.coerce.number().int().default(0),
     vigenciaDesde: z.string(),
-    vigenciaHasta: z.string(),
+    vigenciaHasta: z.string().nullable().default(null),
     idProveedor: z.coerce.number().int(),
     nombreProveedor: z.string(),
     internet: internetResponseSchema.nullable(),
     television: televisionResponseSchema.nullable(),
     telefono: telefonoResponseSchema.nullable(),
+    velocidadPromocional: z.coerce.number().int().default(0),
+    mesesPromocionVelocidad: z.coerce.number().int().default(0),
+    idZona: z.coerce.number().int().nullable().default(null),
+    nombreZona: z.string().nullable().default(null),
     adicionales: z.array(planAdicionalResponseSchema),
     activo: z.boolean(),
   })
@@ -297,16 +302,13 @@ export const serviciosProveedorResponseSchema = z
 export const promocionComercialResponseSchema = z
   .object({
     id: z.coerce.number().int(),
-    nombre: z.string(),
-    interno: z.boolean(),
+    reglaComercial: z.string(),
     idProveedor: z.coerce.number().int(),
     nombreProveedor: z.string(),
     idZona: z.coerce.number().int(),
     nombreZona: z.string(),
-    descuento: z.boolean(),
-    cantidadMeses: z.coerce.number().int(),
-    vigenciaDesde: z.string(),
-    vigenciaHasta: z.string(),
+    idsPlanes: z.array(z.coerce.number().int()),
+    nombresPlanes: z.array(z.string()),
     activo: z.boolean(),
     createdAt: z.string(),
   })

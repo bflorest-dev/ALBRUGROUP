@@ -179,11 +179,13 @@ export interface CampanaRequest {
 // ============================================================================
 
 export interface PlanRequest {
+  idProveedor: number;
   nombre: string;
   precio: number;
+  precioPromocional: number;
+  mesesPromocionPrecio: number;
   vigenciaDesde: string;
   vigenciaHasta: string;
-  idProveedor: number;
   internet?: {
     velocidad: number;
     unidad: string;
@@ -197,33 +199,30 @@ export interface PlanRequest {
     minutos: number;
     descripcion: string;
   };
+  velocidadPromocional: number;
+  mesesPromocionVelocidad: number;
+  idZona: number;
   adicionales?: Array<{
     idAdicional: number;
     cantidadIncluida: number;
     permiteCompraAdicional: boolean;
     cantidadMaximaAdicional: number;
   }>;
-  activo?: boolean;
 }
 
-export interface PlanUpdateRequest extends Partial<PlanRequest> {}
+export interface PlanUpdateRequest extends Partial<PlanRequest> {
+  activo?: boolean;
+}
 
 // ============================================================================
 // Promociones (extendidas)
 // ============================================================================
 
 export interface PromocionComercialRequest {
-  nombre: string;
-  interno: boolean;
-  idProveedor?: number;
-  idZona?: number;
-  descuento: boolean;
-  descuentoPorcentual?: number;
-  descuentoMonto?: number;
-  cantidadMeses: number;
-  vigenciaDesde?: string;
-  vigenciaHasta?: string;
-  activo?: boolean;
+  reglaComercial: string;
+  idProveedor: number;
+  idZona: number;
+  idsPlanes: number[];
 }
 
 // ============================================================================

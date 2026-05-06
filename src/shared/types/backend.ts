@@ -70,20 +70,25 @@ export interface PlanAdicionalResponse {
   cantidadIncluida: number;
   permiteCompraAdicional: boolean;
   cantidadMaximaAdicional: number;
-  precioUnitarioAdicional: number;
 }
 
 export interface PlanResponse {
   id: number;
   nombre: string;
   precio: number;
+  precioPromocional: number;
+  mesesPromocionPrecio: number;
   vigenciaDesde: string;
-  vigenciaHasta: string;
+  vigenciaHasta: string | null;
   idProveedor: number;
   nombreProveedor: string;
   internet: InternetResponse | null;
   television: TelevisionResponse | null;
   telefono: TelefonoResponse | null;
+  velocidadPromocional: number;
+  mesesPromocionVelocidad: number;
+  idZona: number | null;
+  nombreZona: string | null;
   adicionales: PlanAdicionalResponse[];
   activo: boolean;
 }
@@ -123,16 +128,13 @@ export interface ActualizarCredencialesRequest {
 
 export interface PromocionComercialResponse {
   id: number;
-  nombre: string;
-  interno: boolean;
+  reglaComercial: string;
   idProveedor: number;
   nombreProveedor: string;
   idZona: number;
   nombreZona: string;
-  descuento: boolean;
-  cantidadMeses: number;
-  vigenciaDesde: string;
-  vigenciaHasta: string;
+  idsPlanes: number[];
+  nombresPlanes: string[];
   activo: boolean;
   createdAt: string;
 }

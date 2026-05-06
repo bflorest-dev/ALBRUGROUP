@@ -4,6 +4,7 @@ import { CampaignSection } from '@features/community/ui/CampaignSection';
 import { EstadoConfirmModal } from '@features/community/ui/EstadoConfirmModal';
 import { ProveedoresSection } from '@features/community/ui/ProveedoresSection';
 import { PlanForm } from '@features/community/ui/PlanForm';
+import { PlanDetailsModal } from '@features/community/ui/PlanDetailsModal';
 import { PromocionesSection } from '@features/community/ui/PromocionesSection';
 import { ZonaForm } from '@features/community/ui/ZonaForm';
 import { ZonasPeruMap } from '@features/community/ui/ZonasPeruMap';
@@ -11,7 +12,6 @@ import { leadsHttp } from '@shared/api/clienteHttp';
 import type { AdicionalResponse, CampanaResponse, PlanResponse, PromocionComercialResponse, ZonaRequest, ZonaResponse } from '@shared/types';
 import './PaginaCommunity.css';
 
-const initialState = { loading: false, error: false, status: 0, data: [] };
 let communityBootstrapInFlight: Promise<void> | null = null;
 type SectionKey = 'campanas' | 'cuentas' | 'planes' | 'promociones' | 'proveedores' | 'zonas' | 'adicionales';
 
@@ -87,11 +87,6 @@ const PaginaCommunity: React.FC = () => {
 
   const [cuentaForm, setCuentaForm] = useState({ numeroCuenta: '', nombreCuenta: '' });
 
-  const [planState, setPlanState] = useState(initialState);
-  const [zonaState, setZonaState] = useState(initialState);
-  const [cuentaState, setCuentaState] = useState(initialState);
-  const [promoState, setPromoState] = useState(initialState);
-
   const [globalMessage, setGlobalMessage] = useState('');
   const [updatingCampanaId, setUpdatingCampanaId] = useState<number | null>(null);
   const [updatingPromocionId, setUpdatingPromocionId] = useState<number | null>(null);
@@ -100,6 +95,7 @@ const PaginaCommunity: React.FC = () => {
   const [estadoModalError, setEstadoModalError] = useState('');
   const [selectedZonaForMap, setSelectedZonaForMap] = useState<ZonaResponse | null>(null);
   const [zonaEditTarget, setZonaEditTarget] = useState<ZonaResponse | null>(null);
+  const [selectedPlanForDetails, setSelectedPlanForDetails] = useState<PlanResponse | null>(null);
   const [adicionalNombre, setAdicionalNombre] = useState('');
   const [adicionalPrecio, setAdicionalPrecio] = useState('');
   const [adicionalProveedorId, setAdicionalProveedorId] = useState<number | ''>('');
@@ -156,25 +152,7 @@ const PaginaCommunity: React.FC = () => {
 
   const normalizeLeadsPath = (path: string) => path.replace(/^\/api\/leads/, '');
 
-  const getOne = async (path: string, refresh: () => Promise<void>, setter: React.Dispatch<React.SetStateAction<any>>) => {
-    setter({ loading: true, error: false, status: 0, data: [] });
-    const normalizedPath = normalizeLeadsPath(path);
-    try {
-      const token = localStorage.getItem('auth_token');
-      console.debug('[COMMUNITY] GET', normalizedPath, 'Authorization:', token ? 'Bearer *****' : 'NO TOKEN');
-
-      const res = await leadsHttp.get(normalizedPath);
-      setter({ loading: false, error: false, status: res.status, data: res.data ?? [] });
-      setGlobalMessage('');
-      await refresh();
-    } catch (err: any) {
-      setter({ loading: false, error: true, status: err.status || 0, data: [] });
-      setGlobalMessage(`Error al cargar ${normalizedPath}: ${err.message}`);
-    }
-  };
-
-  const createOne = async (path: string, payload: any, refresh: () => Promise<void>, setter: React.Dispatch<React.SetStateAction<any>>) => {
-    setter({ loading: true, error: false, status: 0, data: [] });
+  const createOne = async (path: string, payload: any, refresh: () => Promise<void>) => {
     const normalizedPath = normalizeLeadsPath(path);
     try {
       const token = localStorage.getItem('auth_token');
@@ -183,7 +161,6 @@ const PaginaCommunity: React.FC = () => {
       const res = await leadsHttp.post(normalizedPath, payload);
       setGlobalMessage('✅ Creado correctamente');
       await refresh();
-      setter({ loading: false, error: false, status: res.status, data: [] });
     } catch (err: any) {
       const status = err.status || err.response?.status || 0;
       let message = '';
@@ -198,7 +175,6 @@ const PaginaCommunity: React.FC = () => {
       } else {
         message = err.message || 'Error al crear';
       }
-      setter({ loading: false, error: true, status, data: [] });
       setGlobalMessage(`❌ ${message}`);
     }
   };
@@ -331,6 +307,7 @@ const PaginaCommunity: React.FC = () => {
               <th>Teléfono</th>
               <th>Adicionales</th>
               <th>Estado</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -339,7 +316,7 @@ const PaginaCommunity: React.FC = () => {
                 <td>{plan.nombre}</td>
                 <td>{formatCurrency(plan.precio)}</td>
                 <td>{formatDateString(plan.vigenciaDesde)}</td>
-                <td>{formatDateString(plan.vigenciaHasta)}</td>
+                <td>{plan.vigenciaHasta ? formatDateString(plan.vigenciaHasta) : '-'}</td>
                 <td>{plan.nombreProveedor || '-'}</td>
                 <td>
                   {plan.internet
@@ -363,6 +340,15 @@ const PaginaCommunity: React.FC = () => {
                       {plan.activo ? 'Activo' : 'Inactivo'}
                     </span>
                   </div>
+                </td>
+                <td>
+                  <button
+                    className="community-btn ghost"
+                    onClick={() => setSelectedPlanForDetails(plan)}
+                    style={{ padding: '0.25rem 0.75rem', fontSize: '0.875rem' }}
+                  >
+                    Ver Detalles
+                  </button>
                 </td>
               </tr>
             ))}
@@ -532,7 +518,7 @@ const PaginaCommunity: React.FC = () => {
     setUpdatingPromocionId(promocion.id);
     try {
       togglePromocionEstadoLocal(promocion.id, nextActivo);
-      setGlobalMessage(`✅ Estado de promoción actualizado en pantalla: ${promocion.nombre} (sin endpoint de estado en backend).`);
+      setGlobalMessage(`✅ Estado de promoción actualizado en pantalla: ${promocion.reglaComercial} (sin endpoint de estado en backend).`);
     } finally {
       setUpdatingPromocionId(null);
     }
@@ -612,10 +598,12 @@ const PaginaCommunity: React.FC = () => {
             onCreatePlan={createPlan}
             onCreated={fetchPlanes}
           />
-          {planState.error ? (
-            <div className="community-error">Error al cargar datos (status: {planState.status})</div>
+          {loading ? (
+            <div className="community-state">Cargando planes...</div>
+          ) : planes.length === 0 ? (
+            <p className="community-empty">Sin planes disponibles</p>
           ) : (
-            renderPlanesTable(planes || [])
+            renderPlanesTable(planes)
           )}
         </section>
       )}
@@ -671,17 +659,6 @@ const PaginaCommunity: React.FC = () => {
               />
             </div>
 
-            <div className="community-check-group">
-              <label className="community-check-row">
-                <input
-                  type="checkbox"
-                  checked={adicionalActivo}
-                  onChange={(e) => setAdicionalActivo(e.target.checked)}
-                />
-                Activo
-              </label>
-            </div>
-
             <div className="community-actions">
               <button type="submit" className="community-btn primary">
                 Crear adicional
@@ -711,11 +688,7 @@ const PaginaCommunity: React.FC = () => {
             onCreated={fetchZonas}
             onCancelEdit={handleCancelEdit}
           />
-          {zonaState.error ? (
-            <div className="community-error">Error al cargar datos (status: {zonaState.status})</div>
-          ) : (
-            renderZonasTable(zonas || [])
-          )}
+          {renderZonasTable(zonas || [])}
           {selectedZonaForMap && (
             <div id={`community-zonas-map-${selectedZonaForMap.id}`} className="community-block-top-md">
               <h3 className="community-inline-title">Reglas y cobertura: {selectedZonaForMap.nombre}</h3>
@@ -751,7 +724,7 @@ const PaginaCommunity: React.FC = () => {
           className="community-inline-form"
           onSubmit={async (e) => {
             e.preventDefault();
-            await createOne('/api/leads/cuentas-publicitarias', { numeroCuenta: cuentaForm.numeroCuenta, nombreCuenta: cuentaForm.nombreCuenta }, fetchCuentas, setCuentaState);
+            await createOne('/api/leads/cuentas-publicitarias', { numeroCuenta: cuentaForm.numeroCuenta, nombreCuenta: cuentaForm.nombreCuenta }, fetchCuentas);
           }}
         >
           <input className="community-input" value={cuentaForm.numeroCuenta} placeholder="Numero cuenta" onChange={(e) => setCuentaForm((s) => ({ ...s, numeroCuenta: e.target.value }))} />
@@ -759,14 +732,10 @@ const PaginaCommunity: React.FC = () => {
           <button className="community-btn primary" type="submit">Crear Cuenta</button>
           <button className="community-btn ghost" type="button" onClick={() => fetchCuentas()}>Cargar datos</button>
         </form>
-        {cuentaState.error ? (
-          <div className="community-error">Error al cargar datos (status: {cuentaState.status})</div>
-        ) : (
-          renderTable((cuentas || []) as GenericRow[], {
-            onRequestToggleEstado: (item) => requestEstadoToggle('cuentas', item),
-            disableToggle: estadoSubmitting,
-          })
-        )}
+        {renderTable((cuentas || []) as GenericRow[], {
+          onRequestToggleEstado: (item) => requestEstadoToggle('cuentas', item),
+          disableToggle: estadoSubmitting,
+        })}
       </section>
       )}
 
@@ -775,12 +744,13 @@ const PaginaCommunity: React.FC = () => {
           promociones={promociones}
           proveedores={proveedores}
           zonas={zonas}
+          planes={planes}
           onCreatePromocion={createPromocion}
           onRefresh={fetchPromociones}
           onToggleEstado={handleTogglePromocionEstado}
           updatingEstadoId={updatingPromocionId}
-          error={promoState.error}
-          status={promoState.status}
+          error={false}
+          status={0}
         />
       )}
 
@@ -794,6 +764,11 @@ const PaginaCommunity: React.FC = () => {
         errorMessage={estadoModalError}
         onCancel={handleCloseEstadoModal}
         onConfirm={handleConfirmEstadoToggle}
+      />
+
+      <PlanDetailsModal
+        plan={selectedPlanForDetails}
+        onClose={() => setSelectedPlanForDetails(null)}
       />
       </div>
     </div>

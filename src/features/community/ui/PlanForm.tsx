@@ -8,7 +8,6 @@ interface AdicionalInput {
   cantidadIncluida: string;
   permiteCompraAdicional: boolean;
   cantidadMaximaAdicional: string;
-  precioUnitarioAdicional: string;
 }
 
 interface PlanFormProps {
@@ -21,6 +20,8 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
   const [idProveedor, setIdProveedor] = useState<number | ''>('');
   const [nombre, setNombre] = useState('');
   const [precio, setPrecio] = useState('');
+  const [precioPromocional, setPrecioPromocional] = useState('');
+  const [mesesPromocionPrecio, setMesesPromocionPrecio] = useState('');
   const [vigenciaDesde, setVigenciaDesde] = useState('');
   const [vigenciaHasta, setVigenciaHasta] = useState('');
 
@@ -28,6 +29,8 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
   const [internetVelocidad, setInternetVelocidad] = useState('');
   const [internetUnidad, setInternetUnidad] = useState<'MBPS' | 'GBPS'>('MBPS');
   const [internetTecnologia, setInternetTecnologia] = useState<'HFC' | 'FTTH' | 'ADSL'>('HFC');
+  const [velocidadPromocional, setVelocidadPromocional] = useState('');
+  const [mesesPromocionVelocidad, setMesesPromocionVelocidad] = useState('');
 
   const [televisionEnabled, setTelevisionEnabled] = useState(false);
   const [televisionNombre, setTelevisionNombre] = useState('');
@@ -36,6 +39,9 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
   const [telefonoEnabled, setTelefonoEnabled] = useState(false);
   const [telefonoMinutos, setTelefonoMinutos] = useState('');
   const [telefonoDescripcion, setTelefonoDescripcion] = useState('');
+
+  const [idZona, setIdZona] = useState<number | ''>('');
+  const [zonasOpciones, setZonasOpciones] = useState<Array<{ id: number; nombre: string }>>([]);
 
   const [adicionalesOpciones, setAdicionalesOpciones] = useState<AdicionalResponse[]>([]);
   const [adicionales, setAdicionales] = useState<AdicionalInput[]>([]);
@@ -48,6 +54,20 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
     () => proveedores.find((p) => p.id === idProveedor) ?? null,
     [idProveedor, proveedores],
   );
+
+  // Cargar zonas
+  useEffect(() => {
+    const loadZonas = async () => {
+      try {
+        const data = await LeadsRepository.getZonas(true); // Solo activas
+        setZonasOpciones(data || []);
+      } catch (err) {
+        console.error('[PlanForm] Error fetching zonas:', err);
+        setZonasOpciones([]);
+      }
+    };
+    loadZonas();
+  }, []);
 
   useEffect(() => {
     if (idProveedor === '') {
@@ -95,15 +115,41 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
       newErrors.precio = 'Precio debe ser un número mayor a 0';
     }
 
+    const precioPromoNum = Number(precioPromocional);
+    if (!precioPromocional.trim()) {
+      newErrors.precioPromocional = 'Precio promocional es requerido';
+    } else if (Number.isNaN(precioPromoNum) || precioPromoNum < 0.01) {
+      newErrors.precioPromocional = 'Precio promocional debe ser >= 0.01';
+    }
+
+    const mesesPromoNum = Number(mesesPromocionPrecio);
+    if (!mesesPromocionPrecio.trim()) {
+      newErrors.mesesPromocionPrecio = 'Meses de promoción de precio es requerido';
+    } else if (Number.isNaN(mesesPromoNum) || mesesPromoNum < 0) {
+      newErrors.mesesPromocionPrecio = 'Meses debe ser un número válido';
+    }
+
     if (!vigenciaDesde) newErrors.vigenciaDesde = 'Fecha desde es requerida';
     if (vigenciaDesde && vigenciaHasta && vigenciaDesde > vigenciaHasta) {
       newErrors.vigenciaHasta = 'Fecha hasta debe ser mayor o igual a vigencia desde';
+    }
+
+    if (!idZona) {
+      newErrors.idZona = 'Zona es requerida';
     }
 
     if (internetEnabled) {
       const velocidadNum = Number(internetVelocidad);
       if (!internetVelocidad.trim()) newErrors.internetVelocidad = 'Velocidad internet requerida';
       else if (Number.isNaN(velocidadNum) || velocidadNum <= 0) newErrors.internetVelocidad = 'Velocidad debe ser un número mayor a 0';
+
+      const velocidadPromoNum = Number(velocidadPromocional);
+      if (!velocidadPromocional.trim()) newErrors.velocidadPromocional = 'Velocidad promocional requerida';
+      else if (Number.isNaN(velocidadPromoNum) || velocidadPromoNum < 0) newErrors.velocidadPromocional = 'Velocidad promocional debe ser >= 0';
+
+      const mesesVelocidadNum = Number(mesesPromocionVelocidad);
+      if (!mesesPromocionVelocidad.trim()) newErrors.mesesPromocionVelocidad = 'Meses de promoción de velocidad requerido';
+      else if (Number.isNaN(mesesVelocidadNum) || mesesVelocidadNum < 0) newErrors.mesesPromocionVelocidad = 'Meses debe ser un número válido';
     }
 
     if (televisionEnabled) {
@@ -134,10 +180,6 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
       } else if (cantidadMaximaNum < cantidadIncluidaNum) {
         newErrors[`adicionales.${index}.cantidadMaximaAdicional`] = 'Cantidad máxima debe ser >= cantidad incluida';
       }
-      const precioUnitNum = Number(item.precioUnitarioAdicional);
-      if (!item.precioUnitarioAdicional.trim() || Number.isNaN(precioUnitNum) || precioUnitNum < 0) {
-        newErrors[`adicionales.${index}.precioUnitarioAdicional`] = 'Precio unitario inválido';
-      }
     });
 
     setErrors(newErrors);
@@ -154,12 +196,17 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
     setIdProveedor('');
     setNombre('');
     setPrecio('');
+    setPrecioPromocional('');
+    setMesesPromocionPrecio('');
     setVigenciaDesde('');
     setVigenciaHasta('');
+    setIdZona('');
     setInternetEnabled(false);
     setInternetVelocidad('');
     setInternetUnidad('MBPS');
     setInternetTecnologia('HFC');
+    setVelocidadPromocional('');
+    setMesesPromocionVelocidad('');
     setTelevisionEnabled(false);
     setTelevisionNombre('');
     setTelevisionCantidadCanales('');
@@ -179,7 +226,6 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
         cantidadIncluida: '',
         permiteCompraAdicional: false,
         cantidadMaximaAdicional: '',
-        precioUnitarioAdicional: '',
       },
     ]);
   };
@@ -214,8 +260,13 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
       idProveedor: Number(idProveedor),
       nombre: nombre.trim(),
       precio: Number(precio),
+      precioPromocional: Number(precioPromocional),
+      mesesPromocionPrecio: Number(mesesPromocionPrecio),
       vigenciaDesde,
       vigenciaHasta,
+      idZona: Number(idZona),
+      velocidadPromocional: internetEnabled ? Number(velocidadPromocional) : 0,
+      mesesPromocionVelocidad: internetEnabled ? Number(mesesPromocionVelocidad) : 0,
       ...(internetEnabled
         ? {
             internet: {
@@ -247,7 +298,6 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
             cantidadIncluida: Number(item.cantidadIncluida),
             permiteCompraAdicional: item.permiteCompraAdicional,
             cantidadMaximaAdicional: Number(item.cantidadMaximaAdicional),
-            precioUnitarioAdicional: Number(item.precioUnitarioAdicional),
           }))
         : undefined,
     };
@@ -327,6 +377,32 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
 
       <div className="community-grid-2">
         <div className="community-field">
+          <label>Precio Promocional*</label>
+          <input
+            type="number"
+            min="0.01"
+            step="0.01"
+            value={precioPromocional}
+            onChange={(e) => setPrecioPromocional(e.target.value)}
+            disabled={loading}
+          />
+          {errors.precioPromocional && <small>{errors.precioPromocional}</small>}
+        </div>
+        <div className="community-field">
+          <label>Meses Promoción Precio*</label>
+          <input
+            type="number"
+            min="0"
+            value={mesesPromocionPrecio}
+            onChange={(e) => setMesesPromocionPrecio(e.target.value)}
+            disabled={loading}
+          />
+          {errors.mesesPromocionPrecio && <small>{errors.mesesPromocionPrecio}</small>}
+        </div>
+      </div>
+
+      <div className="community-grid-2">
+        <div className="community-field">
           <label>Vigencia Desde*</label>
           <FlatpickrDateInput
             value={vigenciaDesde}
@@ -350,6 +426,23 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
           />
           {errors.vigenciaHasta && <small>{errors.vigenciaHasta}</small>}
         </div>
+      </div>
+
+      <div className="community-field">
+        <label>Zona*</label>
+        <select
+          value={idZona}
+          onChange={(e) => setIdZona(Number(e.target.value) as number | '')}
+          disabled={loading}
+        >
+          <option value="">Selecciona zona</option>
+          {zonasOpciones.map((z) => (
+            <option key={z.id} value={z.id}>
+              {z.nombre}
+            </option>
+          ))}
+        </select>
+        {errors.idZona && <small>{errors.idZona}</small>}
       </div>
 
       <div>
@@ -402,6 +495,31 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
                 <option value="FTTH">FTTH</option>
                 <option value="ADSL">ADSL</option>
               </select>
+            </div>
+          </div>
+
+          <div className="community-grid-2">
+            <div className="community-field">
+              <label>Velocidad Promocional*</label>
+              <input
+                type="number"
+                min="0"
+                value={velocidadPromocional}
+                onChange={(e) => setVelocidadPromocional(e.target.value)}
+                disabled={loading}
+              />
+              {errors.velocidadPromocional && <small>{errors.velocidadPromocional}</small>}
+            </div>
+            <div className="community-field">
+              <label>Meses Promoción Velocidad*</label>
+              <input
+                type="number"
+                min="0"
+                value={mesesPromocionVelocidad}
+                onChange={(e) => setMesesPromocionVelocidad(e.target.value)}
+                disabled={loading}
+              />
+              {errors.mesesPromocionVelocidad && <small>{errors.mesesPromocionVelocidad}</small>}
             </div>
           </div>
         </div>
@@ -536,7 +654,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
               </div>
             </div>
 
-            <div className="community-grid-2 community-block-top-sm">
+            <div className="community-block-top-sm">
               <div className="community-field">
                 <label>Cantidad máxima*</label>
                 <input
@@ -548,20 +666,6 @@ export const PlanForm: React.FC<PlanFormProps> = ({ proveedores, onCreatePlan, o
                 />
                 {errors[`adicionales.${index}.cantidadMaximaAdicional`] && (
                   <small>{errors[`adicionales.${index}.cantidadMaximaAdicional`]}</small>
-                )}
-              </div>
-              <div className="community-field">
-                <label>Precio unitario*</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={item.precioUnitarioAdicional}
-                  onChange={(e) => handleAdicionalChange(index, 'precioUnitarioAdicional', e.target.value)}
-                  disabled={loading}
-                />
-                {errors[`adicionales.${index}.precioUnitarioAdicional`] && (
-                  <small>{errors[`adicionales.${index}.precioUnitarioAdicional`]}</small>
                 )}
               </div>
             </div>

@@ -179,9 +179,12 @@ export const useCommunityData = () => {
     setLoading(true);
     setError(null);
     try {
+      console.log('[useCommunityData] Fetching planes...');
       const data = await LeadsRepository.getPlanes();
+      console.log('[useCommunityData] Planes fetched:', data);
       setPlanes(data);
     } catch (err) {
+      console.error('[useCommunityData] Error fetching planes:', err);
       setError(err instanceof Error ? err.message : 'Error al cargar planes');
     } finally {
       setLoading(false);
