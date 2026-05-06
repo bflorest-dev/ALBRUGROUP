@@ -51,6 +51,7 @@ export const useCommunityData = () => {
       const data = await LeadsRepository.getCampanas(activo);
       setCampanas(data);
     } catch (err) {
+      console.error('[useCommunityData] Error fetching campañas:', err);
       setError(err instanceof Error ? err.message : 'Error al cargar campañas');
     } finally {
       setLoading(false);

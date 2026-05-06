@@ -102,7 +102,7 @@ export const campanaResponseSchema = z
     nombreCuenta: z.string().min(1),
     idProveedor: z.coerce.number().int(),
     nombreProveedor: z.string().min(1),
-    updatedAt: isoDateStringSchema,
+    updatedAt: isoDateStringSchema.nullable(),
   })
   .passthrough();
 

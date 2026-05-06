@@ -704,8 +704,6 @@ const PaginaCommunity: React.FC = () => {
         <CampaignSection
           campanas={campanas}
           catalogs={{ cuentas, proveedores, planes, zonas, promociones }}
-          loading={loading}
-          error={!!error}
           onRefresh={fetchCampanas}
           updatingEstadoId={updatingCampanaId}
           onToggleEstado={handleToggleCampanaEstado}

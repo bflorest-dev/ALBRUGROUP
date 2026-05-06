@@ -75,10 +75,6 @@ export const CampaignSection: React.FC<CampaignSectionProps> = ({
   });
 
   const renderCampanasTable = () => {
-    if (error) {
-      return <p className="community-error">Error al cargar campanas.</p>;
-    }
-
     if (!campanas || campanas.length === 0) {
       return <p className="community-empty">No hay campanas registradas.</p>;
     }

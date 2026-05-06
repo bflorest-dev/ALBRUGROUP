@@ -8,7 +8,7 @@ export interface CampanaResponse {
   nombreCuenta: string;
   idProveedor: number;
   nombreProveedor: string;
-  updatedAt: string;
+  updatedAt: string | null;
 }
 
 export interface CuentaPublicitariaResponse {
