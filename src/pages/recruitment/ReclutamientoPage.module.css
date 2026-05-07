@@ -1,0 +1,34 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #dbe7ff;
+  border-radius: 1.2rem;
+  background: radial-gradient(circle at top right, #ecf3ff 0%, #f6f9ff 42%, #f8fafc 100%);
+  box-shadow: 0 12px 24px rgba(15, 42, 82, 0.08);
+}
+
+.tabs {
+  border-radius: 999px;
+  box-shadow: 0 8px 18px rgba(15, 42, 82, 0.07);
+}
+
+.contentPane {
+  border: 1px solid #dbe7ff;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 22px rgba(15, 42, 82, 0.05);
+  padding: 1rem;
+}
+
+@media (max-width: 768px) {
+  .root {
+    border-radius: 0.9rem;
+    padding: 0.7rem;
+  }
+
+  .contentPane {
+    padding: 0.65rem;
+  }
+}

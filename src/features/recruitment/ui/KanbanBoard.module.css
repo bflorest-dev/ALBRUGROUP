@@ -1,0 +1,59 @@
+.loadingState {
+  display: flex;
+  height: 16rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  border: 1px solid #dbe7ff;
+  background: linear-gradient(to bottom, #ffffff 0%, #f8fbff 100%);
+}
+
+.board {
+  overflow-x: auto;
+  border-radius: 14px;
+  border: 1px solid #dde6f5;
+  background: #ffffff;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+  padding: 0.8rem;
+}
+
+.boardHeader {
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.boardEyebrow {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #5f7598;
+}
+
+.boardHint {
+  margin: 0;
+  font-size: 0.76rem;
+  color: #7a90b1;
+}
+
+.columnsRow {
+  display: flex;
+  width: 100%;
+  min-width: 100%;
+  gap: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .board {
+    padding: 0.65rem;
+  }
+
+  .boardHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

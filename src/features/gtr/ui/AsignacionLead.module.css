@@ -1,0 +1,109 @@
+/* AsignacionLead.module.css */
+
+.container {
+  padding: 1.25rem;
+  background: #ffffff;
+  border: 1px solid #dbe5f2;
+  border-radius: 14px;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+  max-width: 520px;
+}
+
+.dashboardMode {
+  border-color: #dbe7ff;
+  box-shadow: 0 16px 30px rgba(29, 78, 216, 0.11);
+}
+
+.header {
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e8eef9;
+  padding-bottom: 0.9rem;
+}
+
+.title {
+  margin: 0 0 0.35rem;
+  color: #0f2a52;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.leadInfo {
+  margin: 0;
+  color: #4f678f;
+  font-size: 0.9rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.05rem;
+}
+
+.currentAsesor {
+  padding: 0.8rem;
+  background: #f7fbff;
+  border: 1px solid #d9e8ff;
+  border-left: 3px solid #2563eb;
+  border-radius: 10px;
+}
+
+.currentAsesor small {
+  display: block;
+  color: #34517b;
+}
+
+.dashboardField :global(label) {
+  color: #0f2a52;
+  font-weight: 600;
+}
+
+.dashboardField :global(select) {
+  border-color: #cbdcf8;
+  border-radius: 10px;
+}
+
+.dashboardField :global(select:focus) {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.asesorPreview {
+  padding: 0.95rem;
+  background: #ecfdf3;
+  border: 1px solid #bbf0cf;
+  border-radius: 10px;
+  color: #166534;
+}
+
+.asesorPreview strong {
+  display: block;
+  font-size: 1.02rem;
+  margin-bottom: 0.2rem;
+}
+
+.asesorPreview small {
+  display: block;
+  font-size: 0.84rem;
+  opacity: 0.88;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.actions button {
+  flex: 1;
+}
+
+@media (max-width: 640px) {
+  .container {
+    max-width: 100%;
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+}

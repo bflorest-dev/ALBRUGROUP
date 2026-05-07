@@ -1,0 +1,19 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: radial-gradient(circle at top right, var(--color-surface-accent, #ecf3ff) 0%, var(--color-surface-page, #f6f9ff) 42%, var(--color-surface-card, #ffffff) 100%);
+}
+
+.container {
+  width: min(100%, 26rem);
+}
+
+.loginPanel {
+  padding-top: 1.5rem;
+  border-radius: var(--radius-lg, 16px);
+  border: 1px solid var(--color-surface-border, #dbe7ff);
+  box-shadow: var(--shadow-card, 0 14px 32px rgba(30, 64, 175, 0.1));
+}

@@ -1,0 +1,1 @@
+export { FlatpickrDateInput } from './FlatpickrDateInput';

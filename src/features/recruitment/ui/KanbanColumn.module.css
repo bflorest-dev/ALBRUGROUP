@@ -1,0 +1,97 @@
+.column {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 240px;
+  flex-direction: column;
+  border-radius: 14px;
+  border: 1px solid #dbe7ff;
+  background: linear-gradient(to bottom, #f9fbff 0%, #eef3ff 100%);
+  box-shadow: 0 10px 22px rgba(29, 78, 216, 0.1);
+  padding: 0.75rem;
+}
+
+.terminalColumn {
+  border-color: #f2d5d8;
+  background: linear-gradient(to bottom, #fff9f9 0%, #fff3f4 100%);
+}
+
+.header {
+  margin-bottom: 0.65rem;
+  border-bottom: 1px solid #d8e4fb;
+  padding-bottom: 0.65rem;
+}
+
+.title {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  color: #0f2a52;
+}
+
+.countBadge {
+  margin-top: 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid #c9dbfb;
+  background: rgba(255, 255, 255, 0.88);
+  padding: 0.2rem 0.5rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #3f5f89;
+}
+
+.listArea {
+  min-height: 240px;
+  flex: 1;
+}
+
+.emptyState {
+  display: flex;
+  height: 100%;
+  min-height: 184px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 1px dashed #c9dbfb;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.8rem;
+  text-align: center;
+}
+
+.emptyIcon {
+  margin-bottom: 0.45rem;
+  color: #8ca1bf;
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #7f96b8;
+}
+
+.emptyText {
+  margin: 0.15rem 0 0;
+  font-size: 0.79rem;
+  line-height: 1.35;
+  color: #93a8c3;
+}
+
+.cardsList {
+  max-height: 62vh;
+  overflow-y: auto;
+  padding-right: 0.2rem;
+}
+
+.cardsList>*+* {
+  margin-top: 0.62rem;
+}

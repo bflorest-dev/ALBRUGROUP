@@ -1,0 +1,15 @@
+export interface Evento {
+  id: string;
+  type: string;
+  timestamp: string;
+  details?: string;
+}
+
+export const EVENT_NAMES = {
+  APPLICANT_CREATED: 'APPLICANT_CREATED',
+  APPLICANT_UPDATED: 'APPLICANT_UPDATED',
+  APPLICANTS_UPDATED: 'APPLICANTS_UPDATED',
+  EMPLOYEE_CREATED: 'EMPLOYEE_CREATED',
+  EMPLOYEE_UPDATED: 'EMPLOYEE_UPDATED',
+  EMPLOYEES_UPDATED: 'EMPLOYEES_UPDATED',
+} as const;

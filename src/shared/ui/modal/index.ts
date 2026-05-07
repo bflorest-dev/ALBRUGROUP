@@ -1,0 +1,1 @@
+export { Modal, modalVariants, type ModalProps } from './Modal';

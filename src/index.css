@@ -1,0 +1,335 @@
+/* ─────────────────────────────────────────────────────────── */
+/* IMPORT FONTS FIRST (MUST be first in CSS file)             */
+/* ─────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ─────────────────────────────────────────────────────────── */
+/* TAILWIND CSS V4.x - Single Import Entry Point              */
+/* ─────────────────────────────────────────────────────────── */
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────── */
+/* SEMANTIC CSS VARIABLES (Light Mode)                        */
+/* ─────────────────────────────────────────────────────────── */
+:root {
+  --surface-page: #F8FAFF;
+  --surface-card: #FFFFFF;
+  --surface-input: #F1F5FE;
+  --surface-border: #E2EAF8;
+  --content-primary: #111827;
+  --content-secondary: #666666;
+  --status-success-bg: #DCFCE7;
+  --status-success-fg: #166534;
+  --status-error-bg: #FEE2E2;
+  --status-error-fg: #991B1B;
+  --status-warning-bg: #FEF3C7;
+  --status-warning-fg: #92400E;
+  --input-border: #E2EAF8;
+  --input-border-focus: #2563EB;
+  --input-border-error: #DC3545;
+  --input-bg-disabled: #F1F5FE;
+}
+
+/* Dark mode disabled - always use light mode */
+
+/* ─────────────────────────────────────────────────────────── */
+/* ANIMATION KEYFRAMES                                        */
+/* ─────────────────────────────────────────────────────────── */
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+
+  0%,
+  100% {
+    background-position: -1000px 0;
+  }
+
+  50% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-fadeSlideUp {
+  animation: fadeSlideUp 300ms ease-out both;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* GLOBAL RESETS & SPACING                                    */
+/* ─────────────────────────────────────────────────────────── */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #F8FAFF 0%, #FFFFFF 100%);
+  font-family: var(--font-family-body, inherit);
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* FORM INPUTS — Date picker specifics                        */
+/* ─────────────────────────────────────────────────────────── */
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  filter: invert(0.4) sepia(0.8) saturate(1.5) hue-rotate(200deg);
+}
+
+input[type="date"]:hover::-webkit-calendar-picker-indicator {
+  opacity: 1;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* UTILITY CLASSES — Animation helpers                        */
+/* ─────────────────────────────────────────────────────────── */
+
+.animate-fade-slide-up {
+  animation: fadeSlideUp 300ms ease both;
+}
+
+.animate-slide-down {
+  animation: slideDown 200ms ease both;
+}
+
+.animate-slide-up {
+  animation: slideUp 300ms ease both;
+}
+
+.shimmer {
+  background: linear-gradient(90deg,
+      #EEF2FF 25%,
+      #E0E7FF 50%,
+      #EEF2FF 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* RRHH THEME — GTR visual alignment                          */
+/* ─────────────────────────────────────────────────────────── */
+
+.rrhh-tabs-theme {
+  border: 1px solid #dbe7ff;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f9ff 100%);
+  box-shadow: 0 10px 20px rgba(15, 42, 82, 0.07);
+  gap: 0.75rem;
+  padding: 0.7rem;
+}
+
+.rrhh-tabs-theme>button {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: #40608e;
+  padding: 0.62rem 1rem;
+  transition: all 180ms ease;
+}
+
+.rrhh-tabs-theme>button:hover:not(:disabled) {
+  background: #edf3ff;
+  border-color: #d6e5ff;
+  color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.rrhh-tabs-theme>button[data-active='true'] {
+  background: #eaf1ff;
+  border-color: #cddffd;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.18);
+  color: #1d4ed8;
+}
+
+.rrhh-tabs-theme>button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.rrhh-modal-theme {
+  border: 1px solid #c9d8f6;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #f8fbff 0%, #f4f8ff 100%);
+  box-shadow: 0 24px 54px rgba(16, 34, 70, 0.34), 0 16px 34px rgba(56, 102, 196, 0.16);
+  animation: rrhhModalSlideUp 0.24s ease;
+  color: #0f2a52;
+}
+
+.rrhh-modal-theme>div:first-child {
+  background: transparent;
+  border-bottom-color: #d8e4fb;
+  padding: 1.15rem 1.55rem;
+}
+
+.rrhh-modal-theme>div:first-child h2 {
+  color: #072d66;
+  font-size: clamp(1.55rem, 1.1rem + 1.1vw, 2.05rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.rrhh-modal-theme>div:last-child {
+  background: transparent;
+  padding: 1.55rem;
+}
+
+.rrhh-modal-theme button[aria-label='Cerrar modal'] {
+  align-items: center;
+  background: transparent;
+  border-radius: 8px;
+  color: #6b7f9e;
+  display: flex;
+  height: 34px;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.16s ease;
+  width: 34px;
+}
+
+.rrhh-modal-theme button[aria-label='Cerrar modal']:hover {
+  background: #e7efff;
+  color: #17438e;
+}
+
+.rrhh-modal-overlay {
+  background: rgba(12, 24, 48, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.rrhh-modal-theme :is(h3, h4, h5) {
+  color: #0b336f;
+}
+
+.rrhh-modal-theme label {
+  color: #10366d;
+  font-weight: 700;
+}
+
+.rrhh-modal-theme :is(p, small) {
+  color: #5f7394;
+}
+
+.rrhh-modal-theme :is(input:not([type='checkbox']):not([type='radio']), select, textarea, .fp-date-input) {
+  border: 1px solid #bfd1f3 !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  color: #0f2a52 !important;
+  min-height: 2.8rem;
+  padding: 0.62rem 0.82rem !important;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.rrhh-modal-theme :is(input:not([type='checkbox']):not([type='radio']), select, textarea, .fp-date-input)::placeholder {
+  color: #91a4c3;
+}
+
+.rrhh-modal-theme :is(input:not([type='checkbox']):not([type='radio']), select, textarea, .fp-date-input):focus {
+  border-color: #3a72de !important;
+  box-shadow: 0 0 0 2px rgba(58, 114, 222, 0.16) !important;
+  outline: none;
+}
+
+.rrhh-modal-theme form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+}
+
+.rrhh-modal-theme form button[type='submit'] {
+  background: #2f64dd;
+  border: 1px solid #2f64dd;
+  border-radius: 12px;
+  color: #ffffff;
+  font-weight: 700;
+  min-height: 2.75rem;
+}
+
+.rrhh-modal-theme form button[type='submit']:hover:enabled {
+  background: #2557ca;
+  border-color: #2557ca;
+}
+
+.rrhh-modal-theme form button[type='button'] {
+  border-radius: 12px;
+  min-height: 2.65rem;
+}
+
+@keyframes rrhhModalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .rrhh-tabs-theme {
+    border-radius: 22px;
+    gap: 0.5rem;
+    padding: 0.55rem;
+  }
+
+  .rrhh-tabs-theme>button {
+    font-size: 0.85rem;
+    padding: 0.52rem 0.85rem;
+  }
+}

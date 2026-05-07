@@ -1,0 +1,1 @@
+export { useEmployeesSync } from './useSincEmpleados';

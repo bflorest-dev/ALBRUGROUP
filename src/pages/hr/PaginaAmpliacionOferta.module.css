@@ -1,0 +1,78 @@
+.centerState {
+  display: flex;
+  justify-content: center;
+  padding: 2rem 0;
+}
+
+.redirectMessage {
+  margin-top: 0.8rem;
+  font-size: 0.9rem;
+  color: rgb(22 101 52);
+}
+
+.offerGrid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.metaLabel {
+  margin: 0;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(74 104 143);
+}
+
+.metaValue {
+  margin: 0.35rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: rgb(15 42 82);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.fieldLabel {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgb(30 58 96);
+}
+
+.numberInput {
+  border: 1px solid rgb(203 213 225);
+  border-radius: 0.65rem;
+  background: white;
+  color: rgb(15 42 82);
+  font-size: 0.92rem;
+  padding: 0.6rem 0.75rem;
+  outline: none;
+}
+
+.numberInput:focus {
+  border-color: rgb(59 130 246);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.18);
+}
+
+.fieldHint {
+  margin: 0;
+  font-size: 0.76rem;
+  color: rgb(74 104 143);
+}
+
+.actionsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}

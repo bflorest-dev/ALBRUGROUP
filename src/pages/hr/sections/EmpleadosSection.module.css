@@ -1,0 +1,131 @@
+.section {
+  display: grid;
+  gap: 1rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.sectionTitle {
+  margin: 0;
+  color: rgb(15 23 42);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.searchRow {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.gridSplit {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 1024px) {
+  .gridSplit {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  }
+}
+
+.control {
+  width: 100%;
+  border: 1px solid rgb(203 213 225);
+  border-radius: 0.55rem;
+  padding: 0.52rem 0.72rem;
+  color: rgb(30 41 59);
+  font-size: 0.9rem;
+  background: rgb(255 255 255);
+  outline: none;
+}
+
+.control:focus {
+  border-color: rgb(59 130 246);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.14);
+}
+
+.dataTablePane {
+  border-radius: 0.8rem;
+}
+
+.dataTableRowActive {
+  background: rgb(239 246 255) !important;
+}
+
+.editorCard {
+  border: 1px solid rgb(226 232 240);
+  border-radius: 0.8rem;
+  background: rgb(255 255 255);
+  padding: 1rem;
+}
+
+.editorTitle {
+  margin: 0 0 0.75rem;
+  color: rgb(30 41 59);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.emptyText {
+  margin: 0;
+  color: rgb(100 116 139);
+  font-size: 0.88rem;
+}
+
+.formStack {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.actionRow {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.checkboxRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: rgb(51 65 85);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.blacklistBox {
+  border: 1px solid rgb(226 232 240);
+  border-radius: 0.65rem;
+  padding: 0.6rem;
+  display: grid;
+  gap: 0.6rem;
+  background: rgb(248 250 252);
+}
+
+.modalJsonWrap {
+  max-height: 60vh;
+  overflow: auto;
+  border: 1px solid rgb(226 232 240);
+  border-radius: 0.7rem;
+}
+
+.modalJsonPre {
+  margin: 0;
+  padding: 0.75rem;
+  white-space: pre-wrap;
+  color: rgb(51 65 85);
+  font-size: 0.73rem;
+}

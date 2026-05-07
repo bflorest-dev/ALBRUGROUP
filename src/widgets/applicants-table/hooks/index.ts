@@ -1,0 +1,1 @@
+export { useApplicantsTable } from './useTablaPostulantes';

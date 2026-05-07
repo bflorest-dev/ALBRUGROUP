@@ -1,0 +1,1 @@
+export { mapFormToRegistrarEmpleadoRequest } from './newEmployeeFormDataMapper';

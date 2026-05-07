@@ -1,0 +1,208 @@
+// Enums basados en BACKEND_ENDPOINTS_FSD
+
+export enum DocumentoEnum {
+  DNI = 'DNI',
+  CE = 'CE',
+  RUC = 'RUC',
+}
+
+export enum NacionalidadEnum {
+  PERUANO = 'PERUANO',
+  EXTRANJERO = 'EXTRANJERO',
+}
+
+export enum EstadoCivilEnum {
+  SOLTERO = 'SOLTERO',
+  CASADO = 'CASADO',
+  VIUDO = 'VIUDO',
+  DIVORCIADO = 'DIVORCIADO',
+}
+
+export enum CompaniaEnum {
+  ALBRU = 'ALBRU',
+  WIN = 'WIN',
+  CLARO = 'CLARO',
+}
+
+export enum PuestoTrabajoEnum {
+  ADMINISTRADOR = 'ADMINISTRADOR',
+  RECLUTADOR = 'RECLUTADOR',
+  RRHH = 'RRHH',
+  CAPACITADOR = 'CAPACITADOR',
+  DESARROLLADOR = 'DESARROLLADOR',
+  CONTADOR = 'CONTADOR',
+  COMMUNITY = 'COMMUNITY',
+  MONITOR = 'MONITOR',
+  SUPERVISOR_VENTAS = 'SUPERVISOR_VENTAS',
+  ASESOR_VENTAS = 'ASESOR_VENTAS',
+  SUPERVISOR_BACKOFFICE = 'SUPERVISOR_BACKOFFICE',
+  ASESOR_BACKOFFICE = 'ASESOR_BACKOFFICE',
+  SUPERVISOR_GTR = 'SUPERVISOR_GTR',
+  ASESOR_GTR = 'ASESOR_GTR',
+  SUPERVISOR_POSTVENTA = 'SUPERVISOR_POSTVENTA',
+  ASESOR_POSTVENTA = 'ASESOR_POSTVENTA',
+}
+
+export enum OrigenEnum {
+  COMPUTRABAJO = 'COMPUTRABAJO',
+  INDEED = 'INDEED',
+  REFERIDO = 'REFERIDO',
+  TIKTOK = 'TIKTOK',
+  FACEBOOK = 'FACEBOOK',
+  LINKEDIN = 'LINKEDIN',
+}
+
+export enum EstadoEmpleadoEnum {
+  ACTIVO = 'ACTIVO',
+  INACTIVO = 'INACTIVO',
+}
+
+export enum DistritoEnum {
+  ANCÓN = 'ANCÓN',
+  ATE = 'ATE',
+  BARRANCO = 'BARRANCO',
+  BELLAVISTA = 'BELLAVISTA',
+  BREÑA = 'BREÑA',
+  CALLAO = 'CALLAO',
+  CARABAYLLO = 'CARABAYLLO',
+  CARMEN_DE_LA_LEGUA = 'CARMEN_DE_LA_LEGUA',
+  CERCADO_DE_LIMA = 'CERCADO_DE_LIMA',
+  CHACLACAYO = 'CHACLACAYO',
+  CHORRILLOS = 'CHORRILLOS',
+  CIENEGUILLA = 'CIENEGUILLA',
+  COMAS = 'COMAS',
+  EL_AGUSTINO = 'EL_AGUSTINO',
+  INDEPENDENCIA = 'INDEPENDENCIA',
+  JESUS_MARIA = 'JESUS_MARIA',
+  LA_MOLINA = 'LA_MOLINA',
+  LA_PUNTA = 'LA_PUNTA',
+  LA_PERLA = 'LA_PERLA',
+  LA_VICTORIA = 'LA_VICTORIA',
+  LINCE = 'LINCE',
+  LOS_OLIVOS = 'LOS_OLIVOS',
+  LURÍN = 'LURÍN',
+  LURIGANCHO = 'LURIGANCHO',
+  MAGDALENA_DEL_MAR = 'MAGDALENA_DEL_MAR',
+  MIRAFLORES = 'MIRAFLORES',
+  MI_PERU = 'MI_PERU',
+  PACHACÁMAC = 'PACHACÁMAC',
+  PUCUSANA = 'PUCUSANA',
+  PUEBLO_LIBRE = 'PUEBLO_LIBRE',
+  PUENTE_PIEDRA = 'PUENTE_PIEDRA',
+  PUNTA_HERMOSA = 'PUNTA_HERMOSA',
+  PUNTA_NEGRA = 'PUNTA_NEGRA',
+  RÍMAC = 'RÍMAC',
+  SAN_BARTOLO = 'SAN_BARTOLO',
+  SAN_BORJA = 'SAN_BORJA',
+  SAN_ISIDRO = 'SAN_ISIDRO',
+  SAN_JUAN_DE_LURIGANCHO = 'SAN_JUAN_DE_LURIGANCHO',
+  SAN_JUAN_DE_MIRAFLORES = 'SAN_JUAN_DE_MIRAFLORES',
+  SAN_LUIS = 'SAN_LUIS',
+  SAN_MARTÍN_DE_PORRES = 'SAN_MARTÍN_DE_PORRES',
+  SAN_MIGUEL = 'SAN_MIGUEL',
+  SANTA_ANITA = 'SANTA_ANITA',
+  SANTA_MARÍA_DEL_MAR = 'SANTA_MARÍA_DEL_MAR',
+  SANTA_ROSA = 'SANTA_ROSA',
+  SANTIAGO_DE_SURCO = 'SANTIAGO_DE_SURCO',
+  SURQUILLO = 'SURQUILLO',
+  VENTANILLA = 'VENTANILLA',
+  VILLA_EL_SALVADOR = 'VILLA_EL_SALVADOR',
+  VILLA_MARÍA_DEL_TRIUNFO = 'VILLA_MARÍA_DEL_TRIUNFO',
+}
+
+export enum RegimenEnum {
+  RECIBO_POR_HONORARIOS = 'RECIBO_POR_HONORARIOS',
+  PLANILLA = 'PLANILLA',
+}
+
+export enum SeguroSaludEnum {
+  SIS = 'SIS',
+  ESSALUD = 'ESSALUD',
+}
+
+export enum SistemaPensionesEnum {
+  ONP = 'ONP',
+  AFP_INTEGRA = 'AFP_INTEGRA',
+  AFP_PROFUTURO = 'AFP_PROFUTURO',
+  AFP_HABITAT = 'AFP_HABITAT',
+  PRIMA_AFP = 'PRIMA_AFP',
+}
+
+export enum ModalidadEnum {
+  PART_TIME = 'PART_TIME',
+  SEMI_FULL = 'SEMI_FULL',
+  FULL_TIME = 'FULL_TIME',
+  SUPER_FULL = 'SUPER_FULL',
+}
+
+export enum BancoEnum {
+  BCP = 'BCP',
+  BBVA = 'BBVA',
+  INTERBANK = 'INTERBANK',
+  SCOTIABANK = 'SCOTIABANK',
+}
+
+export enum ParentescoEnum {
+  PADRE = 'PADRE',
+  MADRE = 'MADRE',
+  TIO = 'TIO',
+  ESPOSO = 'ESPOSO',
+  HERMANO = 'HERMANO',
+  ABUELO = 'ABUELO',
+  PAREJA = 'PAREJA',
+  OTRO = 'OTRO',
+}
+
+export enum EmpresaContratistaEnum {
+  ALBRU = 'ALBRU',
+  RUNA = 'RUNA',
+}
+
+/**
+ * Enums para LEADS - Direcciones (LeadDireccionRequest)
+ * Definidos en Endpoints.md - Sección 6.3 Enums de Leads
+ */
+export enum TipoViaEnum {
+  JIRON = 'JIRON',
+  CALLE = 'CALLE',
+}
+
+export enum TipoDomicilioEnum {
+  MULTIFAMILIAR = 'MULTIFAMILIAR',
+  JURIDICA = 'JURIDICA',
+}
+
+// Backward-compatible aliases used by RRHH/recruitment modules
+export const TipoDocumento = DocumentoEnum;
+export const Origen = OrigenEnum;
+export type TipoDocumento = DocumentoEnum;
+export type Origen = OrigenEnum;
+
+export enum ModalidadContacto {
+  TELEFONO = 'TELEFONO',
+  PRESENCIAL = 'PRESENCIAL',
+  VIRTUAL = 'VIRTUAL',
+  EMAIL = 'EMAIL',
+  WHATSAPP = 'WHATSAPP',
+}
+
+export enum EtapaProceso {
+  RECLUTAMIENTO = 'RECLUTAMIENTO',
+  CAPACITACION = 'CAPACITACION',
+  CONTRATACION = 'CONTRATACION',
+  FINAL = 'FINAL',
+}
+
+export enum EstadoProceso {
+  PENDIENTE = 'PENDIENTE',
+  EN_REVISION = 'EN_REVISION',
+  APROBADO = 'APROBADO',
+  RECHAZADO = 'RECHAZADO',
+  COMPLETADO = 'COMPLETADO',
+}
+
+export enum EstadoBandeja {
+  ACTIVO = 'ACTIVO',
+  INACTIVO = 'INACTIVO',
+  COMPLETADO = 'COMPLETADO',
+}

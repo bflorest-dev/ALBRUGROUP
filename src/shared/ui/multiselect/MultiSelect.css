@@ -1,0 +1,55 @@
+.multiselect-root {
+  margin-bottom: 12px;
+}
+
+.multiselect-box {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px;
+  min-height: 100px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.multiselect-box-error {
+  border-color: #dc3545;
+}
+
+.multiselect-box-loading {
+  background: #f9f9f9;
+}
+
+.multiselect-message {
+  margin: 0;
+}
+
+.multiselect-message-muted {
+  color: #666;
+}
+
+.multiselect-message-placeholder {
+  color: #999;
+}
+
+.multiselect-option {
+  display: block;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.multiselect-checkbox {
+  margin-right: 8px;
+}
+
+.multiselect-error {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 4px;
+}
+
+.multiselect-required {
+  color: #856404;
+  font-size: 0.875rem;
+  margin-top: 4px;
+}

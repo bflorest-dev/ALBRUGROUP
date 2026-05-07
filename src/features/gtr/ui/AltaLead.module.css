@@ -1,0 +1,97 @@
+/* AltaLead.module.css */
+
+.formContainer {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.07);
+}
+
+.formTitle {
+  margin: 0 0 1.35rem;
+  color: #0f2a52;
+  font-size: 1.9rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.campaignInfo {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border-left: 3px solid #2563eb;
+  border-radius: 10px;
+  background: #eef4ff;
+  color: #1d4ed8;
+  font-size: 0.9rem;
+}
+
+.dashboardMode {
+  border-color: #dbe7ff;
+  border-radius: 18px;
+  box-shadow: 0 16px 30px rgba(29, 78, 216, 0.11);
+}
+
+.dashboardMode .formTitle {
+  color: #0f2a52;
+}
+
+.dashboardField {
+  margin-bottom: 0.15rem;
+}
+
+.dashboardField :global(label) {
+  color: #0f2a52;
+  font-weight: 600;
+}
+
+.dashboardField :global(select) {
+  border-color: #cbdcf8;
+  border-radius: 10px;
+  background-color: #ffffff;
+}
+
+.dashboardField :global(select:focus) {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.dashboardInput {
+  border-color: #cbdcf8 !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  padding: 0.75rem !important;
+}
+
+.dashboardInput:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+.leadNumberInput {
+  min-height: 42px !important;
+  font-size: 0.98rem !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0.01em;
+  padding-left: 0.75rem !important;
+  padding-right: 0.75rem !important;
+}
+
+@media (max-width: 640px) {
+  .formContainer {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .formTitle {
+    font-size: 1.4rem;
+  }
+}
