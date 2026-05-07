@@ -41,22 +41,26 @@ export function mapFormToRegistrarPostulanteRequest(
   }
 
   // Mapeo explícito: UI → Backend DTO
-  return {
+  // Usamos array de pares clave-valor para garantizar el orden exacto
+  const orderedEntries: [string, any][] = [
     // Datos personales (requeridos)
-    nombres: formData.nombres.trim(),
-    apellidos: formData.apellidos.trim(),
-    tipoDocumento: (formData.documentType as 'DNI' | 'CE'),
-    numeroDocumento: formData.documentNumber?.trim() || '',
+    ['nombres', formData.nombres.trim()],
+    ['apellidos', formData.apellidos.trim()],
+    ['tipoDocumento', (formData.documentType as 'DNI' | 'CE')],
+    ['numeroDocumento', formData.documentNumber?.trim() || ''],
 
     // Contacto
-    phoneMobile: formData.phoneMobile.trim(),
-    email: formData.email?.trim(),
+    ['phoneMobile', formData.phoneMobile.trim()],
+    ['email', formData.email?.trim()],
 
     // Laboral (requerido)
-    puestoTrabajo: (formData.positionOfInterest as string),
-    compania: formData.company ? (formData.company as 'ALBRU' | 'WIN' | 'CLARO') : undefined,
+    ['puestoTrabajo', (formData.positionOfInterest as string)],
+    ['compania', formData.company ? (formData.company as 'ALBRU' | 'WIN' | 'CLARO') : undefined],
 
     // Origen/Campaña (requerido)
-    origen: (formData.campaign as string),
-  };
+    ['origen', (formData.campaign as string)],
+  ];
+
+  // Object.fromEntries mantiene el orden de inserción en JavaScript moderno
+  return Object.fromEntries(orderedEntries);
 }

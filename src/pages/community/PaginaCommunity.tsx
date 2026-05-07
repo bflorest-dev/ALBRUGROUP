@@ -9,7 +9,7 @@ import { PromocionesSection } from '@features/community/ui/PromocionesSection';
 import { ZonaForm } from '@features/community/ui/ZonaForm';
 import { ZonasPeruMap } from '@features/community/ui/ZonasPeruMap';
 import { leadsHttp } from '@shared/api/clienteHttp';
-import type { AdicionalResponse, CampanaResponse, PlanResponse, PromocionComercialResponse, ZonaRequest, ZonaResponse } from '@shared/types';
+import type { AdicionalResponse, CampanaResponse, CuentaPublicitariaResponse, PlanResponse, PromocionComercialResponse, ZonaRequest, ZonaResponse } from '@shared/types';
 import './PaginaCommunity.css';
 
 let communityBootstrapInFlight: Promise<void> | null = null;
@@ -25,7 +25,7 @@ const sections = [
   { key: 'zonas', label: 'Zonas' },
 ] as const;
 
-type GenericEntity = 'cuentas' | 'planes' | 'zonas' | 'adicionales';
+type GenericEntity = 'zonas' | 'adicionales';
 
 type GenericRow = {
   id?: number;
@@ -75,10 +75,10 @@ const PaginaCommunity: React.FC = () => {
     createZona,
     updateZona,
     createPromocion,
-    toggleCampanaEstado,
-    toggleCuentaEstadoLocal,
-    togglePlanEstado,
-    togglePromocionEstadoLocal,
+    deleteCampana,
+    deleteCuenta,
+    deletePlan,
+    deletePromocion,
     toggleZonaEstado,
     toggleAdicionalEstadoLocal,
     adicionales,
@@ -96,6 +96,8 @@ const PaginaCommunity: React.FC = () => {
   const [selectedZonaForMap, setSelectedZonaForMap] = useState<ZonaResponse | null>(null);
   const [zonaEditTarget, setZonaEditTarget] = useState<ZonaResponse | null>(null);
   const [selectedPlanForDetails, setSelectedPlanForDetails] = useState<PlanResponse | null>(null);
+  const [planToDelete, setPlanToDelete] = useState<PlanResponse | null>(null);
+  const [deletingPlanId, setDeletingPlanId] = useState<number | null>(null);
   const [adicionalNombre, setAdicionalNombre] = useState('');
   const [adicionalPrecio, setAdicionalPrecio] = useState('');
   const [adicionalProveedorId, setAdicionalProveedorId] = useState<number | ''>('');
@@ -306,7 +308,6 @@ const PaginaCommunity: React.FC = () => {
               <th>Televisión</th>
               <th>Teléfono</th>
               <th>Adicionales</th>
-              <th>Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -327,28 +328,22 @@ const PaginaCommunity: React.FC = () => {
                 <td>{plan.telefono ? `${plan.telefono.minutos} min` : '-'}</td>
                 <td>{plan.adicionales?.length ?? 0}</td>
                 <td>
-                  <div className="community-status-control">
-                    <label className="community-switch" aria-label={`Cambiar estado de ${plan.nombre}`}>
-                      <input
-                        type="checkbox"
-                        checked={plan.activo}
-                        onChange={() => requestEstadoToggle('planes', plan as GenericRow)}
-                      />
-                      <span className="community-switch-track" />
-                    </label>
-                    <span className={`community-switch-label ${plan.activo ? 'is-active' : 'is-inactive'}`}>
-                      {plan.activo ? 'Activo' : 'Inactivo'}
-                    </span>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      className="community-btn ghost"
+                      onClick={() => setSelectedPlanForDetails(plan)}
+                      style={{ padding: '0.25rem 0.75rem', fontSize: '0.875rem' }}
+                    >
+                      Ver Detalles
+                    </button>
+                    <button
+                      className="community-btn ghost"
+                      onClick={() => handleDeletePlan(plan)}
+                      style={{ padding: '0.25rem 0.75rem', fontSize: '0.875rem', color: '#dc2626' }}
+                    >
+                      Eliminar
+                    </button>
                   </div>
-                </td>
-                <td>
-                  <button
-                    className="community-btn ghost"
-                    onClick={() => setSelectedPlanForDetails(plan)}
-                    style={{ padding: '0.25rem 0.75rem', fontSize: '0.875rem' }}
-                  >
-                    Ver Detalles
-                  </button>
                 </td>
               </tr>
             ))}
@@ -475,18 +470,12 @@ const PaginaCommunity: React.FC = () => {
     setEstadoModalError('');
 
     try {
-      if (pendingEstadoChange.entity === 'planes') {
-        await togglePlanEstado(pendingEstadoChange.id, nextActivo);
-        setGlobalMessage(`✅ Estado de plan actualizado: ${pendingEstadoChange.label}`);
-      } else if (pendingEstadoChange.entity === 'zonas') {
+      if (pendingEstadoChange.entity === 'zonas') {
         await toggleZonaEstado(pendingEstadoChange.id);
         setGlobalMessage(`✅ Estado de zona actualizado: ${pendingEstadoChange.label}`);
       } else if (pendingEstadoChange.entity === 'adicionales') {
         toggleAdicionalEstadoLocal(pendingEstadoChange.id, nextActivo);
         setGlobalMessage(`✅ Estado de adicional actualizado en pantalla: ${pendingEstadoChange.label} (sin endpoint de estado en backend).`);
-      } else {
-        toggleCuentaEstadoLocal(pendingEstadoChange.id, nextActivo);
-        setGlobalMessage(`✅ Estado de cuenta actualizado en pantalla: ${pendingEstadoChange.label} (sin endpoint de estado en backend).`);
       }
 
       setPendingEstadoChange(null);
@@ -500,10 +489,10 @@ const PaginaCommunity: React.FC = () => {
   const handleToggleCampanaEstado = async (campana: CampanaResponse, nextActivo: boolean) => {
     setUpdatingCampanaId(campana.id);
     try {
-      await toggleCampanaEstado(campana.id, nextActivo);
-      setGlobalMessage(`✅ Estado de campaña actualizado: ${campana.nombre}`);
+      await deleteCampana(campana.id);
+      setGlobalMessage(`✅ Campaña eliminada: ${campana.nombre}`);
     } catch (err) {
-      const message = getErrorMessage(err, 'No se pudo actualizar el estado de la campaña.');
+      const message = getErrorMessage(err, 'No se pudo eliminar la campaña.');
       setGlobalMessage(`❌ ${message}`);
       throw err;
     } finally {
@@ -517,10 +506,89 @@ const PaginaCommunity: React.FC = () => {
   ) => {
     setUpdatingPromocionId(promocion.id);
     try {
-      togglePromocionEstadoLocal(promocion.id, nextActivo);
-      setGlobalMessage(`✅ Estado de promoción actualizado en pantalla: ${promocion.reglaComercial} (sin endpoint de estado en backend).`);
+      await deletePromocion(promocion.id);
+      setGlobalMessage(`✅ Promoción eliminada: ${promocion.reglaComercial}`);
+    } catch (err) {
+      const message = getErrorMessage(err, 'No se pudo eliminar la promoción.');
+      setGlobalMessage(`❌ ${message}`);
+      throw err;
     } finally {
       setUpdatingPromocionId(null);
+    }
+  };
+
+  const handleDeletePlan = (plan: PlanResponse) => {
+    setPlanToDelete(plan);
+  };
+
+  const handleConfirmDeletePlan = async () => {
+    if (!planToDelete) return;
+
+    setDeletingPlanId(planToDelete.id);
+    try {
+      await deletePlan(planToDelete.id);
+      setGlobalMessage(`✅ Plan eliminado: ${planToDelete.nombre}`);
+      setPlanToDelete(null);
+    } catch (err) {
+      const message = getErrorMessage(err, 'No se pudo eliminar el plan.');
+      setGlobalMessage(`❌ ${message}`);
+    } finally {
+      setDeletingPlanId(null);
+    }
+  };
+
+  const [cuentaToDelete, setCuentaToDelete] = useState<{ id: number; nombre: string } | null>(null);
+  const [deletingCuentaId, setDeletingCuentaId] = useState<number | null>(null);
+
+  const renderCuentasTable = (data: CuentaPublicitariaResponse[]) => {
+    if (!data || data.length === 0) return <p className="community-empty">Sin resultados</p>;
+
+    return (
+      <div className="community-table-wrapper">
+        <table className="community-table">
+          <thead>
+            <tr>
+              <th>Número Cuenta</th>
+              <th>Nombre Cuenta</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((cuenta) => (
+              <tr key={cuenta.id}>
+                <td>{cuenta.numeroCuenta}</td>
+                <td>{cuenta.nombreCuenta}</td>
+                <td>
+                  <button
+                    className="community-btn ghost"
+                    onClick={() => setCuentaToDelete({ id: cuenta.id, nombre: cuenta.nombreCuenta })}
+                    disabled={deletingCuentaId !== null}
+                    style={{ padding: '0.25rem 0.75rem', fontSize: '0.875rem', color: '#dc2626' }}
+                  >
+                    Eliminar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  const handleConfirmDeleteCuenta = async () => {
+    if (!cuentaToDelete) return;
+
+    setDeletingCuentaId(cuentaToDelete.id);
+    try {
+      await deleteCuenta(cuentaToDelete.id);
+      setGlobalMessage(`✅ Cuenta eliminada: ${cuentaToDelete.nombre}`);
+      setCuentaToDelete(null);
+    } catch (err) {
+      const message = getErrorMessage(err, 'No se pudo eliminar la cuenta.');
+      setGlobalMessage(`❌ ${message}`);
+    } finally {
+      setDeletingCuentaId(null);
     }
   };
 
@@ -730,10 +798,7 @@ const PaginaCommunity: React.FC = () => {
           <button className="community-btn primary" type="submit">Crear Cuenta</button>
           <button className="community-btn ghost" type="button" onClick={() => fetchCuentas()}>Cargar datos</button>
         </form>
-        {renderTable((cuentas || []) as GenericRow[], {
-          onRequestToggleEstado: (item) => requestEstadoToggle('cuentas', item),
-          disableToggle: estadoSubmitting,
-        })}
+        {renderCuentasTable(cuentas || [])}
       </section>
       )}
 
@@ -762,6 +827,26 @@ const PaginaCommunity: React.FC = () => {
         errorMessage={estadoModalError}
         onCancel={handleCloseEstadoModal}
         onConfirm={handleConfirmEstadoToggle}
+      />
+
+      <EstadoConfirmModal
+        open={Boolean(planToDelete)}
+        submitting={deletingPlanId !== null}
+        errorMessage=""
+        onCancel={() => setPlanToDelete(null)}
+        onConfirm={handleConfirmDeletePlan}
+        title="Confirmar eliminación"
+        message={`¿Seguro que quieres eliminar el plan "${planToDelete?.nombre}"? Esta acción no se puede deshacer.`}
+      />
+
+      <EstadoConfirmModal
+        open={Boolean(cuentaToDelete)}
+        submitting={deletingCuentaId !== null}
+        errorMessage=""
+        onCancel={() => setCuentaToDelete(null)}
+        onConfirm={handleConfirmDeleteCuenta}
+        title="Confirmar eliminación"
+        message={`¿Seguro que quieres eliminar la cuenta "${cuentaToDelete?.nombre}"? Esta acción no se puede deshacer.`}
       />
 
       <PlanDetailsModal

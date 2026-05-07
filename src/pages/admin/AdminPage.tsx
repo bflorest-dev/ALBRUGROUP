@@ -197,8 +197,14 @@ const AdminPage: React.FC = () => {
   const handleCrearEmpleado = async (formData: NewEmployeeFormData) => {
     setLoading(true);
     try {
+      // Debug: Log de datos del formulario
+      console.log('[AdminPage] Datos del formulario recibidos:', formData);
+      
       // PASO 1: Mapear datos de UI a DTO de backend (explícito, sin spread)
       const empleadoData = mapFormToRegistrarEmpleadoRequest(formData);
+      
+      // Debug: Log de datos mapeados
+      console.log('[AdminPage] Datos mapeados para empleado:', empleadoData);
 
       const sueldoBase = Number(formData.sueldoBase);
 

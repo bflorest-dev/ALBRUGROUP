@@ -6,6 +6,8 @@ interface EstadoConfirmModalProps {
   errorMessage?: string;
   onCancel: () => void;
   onConfirm: () => void;
+  title?: string;
+  message?: string;
 }
 
 export const EstadoConfirmModal: React.FC<EstadoConfirmModalProps> = ({
@@ -14,6 +16,8 @@ export const EstadoConfirmModal: React.FC<EstadoConfirmModalProps> = ({
   errorMessage,
   onCancel,
   onConfirm,
+  title = 'Confirmar cambio de estado',
+  message = '¿Seguro que quieres activar/desactivar este elemento?',
 }) => {
   if (!open) {
     return null;
@@ -27,8 +31,8 @@ export const EstadoConfirmModal: React.FC<EstadoConfirmModalProps> = ({
         aria-modal="true"
         aria-labelledby="community-estado-modal-title"
       >
-        <h3 id="community-estado-modal-title">Confirmar cambio de estado</h3>
-        <p>¿Seguro que quieres activar/desactivar este elemento?</p>
+        <h3 id="community-estado-modal-title">{title}</h3>
+        <p>{message}</p>
 
         {errorMessage ? <div className="community-error">{errorMessage}</div> : null}
 

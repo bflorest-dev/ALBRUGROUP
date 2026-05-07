@@ -130,7 +130,7 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
               <th>PROVEEDOR</th>
               <th>ZONA</th>
               <th>PLANES</th>
-              <th>ESTADO</th>
+              <th>ACCIONES</th>
             </tr>
           </thead>
           <tbody>
@@ -151,23 +151,17 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
                   )}
                 </td>
                 <td>
-                  <div className="community-status-control">
-                    <label className="community-switch" aria-label={`Cambiar estado de ${promo.reglaComercial}`}>
-                      <input
-                        type="checkbox"
-                        checked={promo.activo}
-                        onChange={() => {
-                          setModalError('');
-                          setPendingPromocion(promo);
-                        }}
-                        disabled={submitting || updatingEstadoId !== null}
-                      />
-                      <span className="community-switch-track" />
-                    </label>
-                    <span className={`community-switch-label ${promo.activo ? 'is-active' : 'is-inactive'}`}>
-                      {promo.activo ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </div>
+                  <button
+                    className="community-btn ghost"
+                    onClick={() => {
+                      setModalError('');
+                      setPendingPromocion(promo);
+                    }}
+                    disabled={submitting || updatingEstadoId !== null}
+                    style={{ padding: '0.25rem 0.75rem', fontSize: '0.875rem', color: '#dc2626' }}
+                  >
+                    Eliminar
+                  </button>
                 </td>
               </tr>
             ))}
@@ -195,7 +189,7 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
       await onToggleEstado(pendingPromocion, !pendingPromocion.activo);
       setPendingPromocion(null);
     } catch (err: any) {
-      setModalError(err instanceof Error ? err.message : 'No se pudo actualizar el estado.');
+      setModalError(err instanceof Error ? err.message : 'No se pudo eliminar la promoción.');
     }
   };
 
@@ -525,6 +519,8 @@ export const PromocionesSection: React.FC<PromocionesSectionProps> = ({
         errorMessage={modalError}
         onCancel={handleCloseModal}
         onConfirm={handleConfirmToggle}
+        title="Confirmar eliminación"
+        message={`¿Seguro que quieres eliminar la promoción "${pendingPromocion?.reglaComercial}"? Esta acción no se puede deshacer.`}
       />
     </section>
   );

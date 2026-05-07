@@ -63,6 +63,15 @@ export class EmployeeRepository {
    * @param employeeData - RegistrarEmpleadoRequest (DTO mapeado, no FormData)
    */
   static async create(employeeData: RegistrarEmpleadoRequest): Promise<EmpleadoResponse> {
+    // Debug: Log de datos que se envían al backend
+    console.log('[EmployeeRepository] Enviando al backend:', {
+      url: '/empleados',
+      method: 'POST',
+      data: employeeData,
+      dataKeys: Object.keys(employeeData),
+      dataJSON: JSON.stringify(employeeData, null, 2)
+    });
+    
     const response = await http.post<CreateEmployeeResponse>('/empleados', employeeData);
     return response.data;
   }

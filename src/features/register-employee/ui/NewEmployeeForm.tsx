@@ -160,13 +160,12 @@ export const NewEmployeeForm = ({ onSubmit, onCancel }: NewEmployeeFormProps) =>
       return;
     }
 
-    // Enviar null cuando parentesco esté vacío
-    const dataToSubmit = {
-      ...formData,
-      parentesco: formData.parentesco && formData.parentesco.trim() ? formData.parentesco : null,
-    };
+    if (!formData.celularTransferencia?.trim()) {
+      alert('Por favor ingrese el celular de transferencia');
+      return;
+    }
 
-    onSubmit(dataToSubmit as NewEmployeeFormData);
+    onSubmit(formData);
   };
 
   // Validar que Paso 1 (EMPLEADO) esté completo

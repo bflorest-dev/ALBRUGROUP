@@ -49,19 +49,23 @@ export function mapFormToActualizarPostulanteRequest(
   }
 
   // Mapeo explícito
-  return {
+  // Usamos array de pares clave-valor para garantizar el orden exacto
+  const orderedEntries: [string, any][] = [
     // Datos personales
-    nombres: formData.nombres.trim(),
-    apellidos: formData.apellidos.trim(),
-    tipoDocumento: formData.documentType as 'DNI' | 'CE',
-    numeroDocumento: formData.documentNumber?.trim(),
+    ['nombres', formData.nombres.trim()],
+    ['apellidos', formData.apellidos.trim()],
+    ['tipoDocumento', formData.documentType as 'DNI' | 'CE'],
+    ['numeroDocumento', formData.documentNumber?.trim()],
 
     // Contacto
-    phoneMobile: formData.phoneMobile.trim(),
-    email: formData.email?.trim(),
+    ['phoneMobile', formData.phoneMobile.trim()],
+    ['email', formData.email?.trim()],
 
     // Laboral
-    puestoTrabajo: formData.positionOfInterest?.trim(),
-    compania: formData.company?.trim(),
-  };
+    ['puestoTrabajo', formData.positionOfInterest?.trim()],
+    ['compania', formData.company?.trim()],
+  ];
+
+  // Object.fromEntries mantiene el orden de inserción en JavaScript moderno
+  return Object.fromEntries(orderedEntries);
 }

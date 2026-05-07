@@ -53,34 +53,56 @@ export function mapFormToRegistrarEmpleadoRequest(
   if (!formData.cuentaInterbancaria?.trim()) {
     throw new Error('Cuenta interbancaria es requerida');
   }
+  if (!formData.celularTransferencia?.trim()) {
+    throw new Error('Celular de transferencia es requerido');
+  }
   if (formData.idEmpresaContratista === '' || Number(formData.idEmpresaContratista) <= 0) {
     throw new Error('ID empresa contratista es requerido');
   }
 
   const onlyDigits = (value: string): string => value.replace(/\D/g, '');
 
-  // Mapeo explicito: UI -> Backend DTO
-  return {
-    nombres: formData.nombres.trim(),
-    apellidos: formData.apellidos.trim(),
-    tipoDocumento: formData.tipoDocumento,
-    numeroDocumento: onlyDigits(formData.numeroDocumento),
-    nacionalidad: formData.nacionalidad,
+  // Debug: Log de datos de entrada
+  console.log('[mapFormToRegistrarEmpleadoRequest] Datos de entrada:', {
     fechaNacimiento: formData.fechaNacimiento,
-    estadoCivil: formData.estadoCivil,
-    tieneHijos: formData.tieneHijos,
-    celularPersonal: onlyDigits(formData.celularPersonal),
-    correoPersonal: formData.correoPersonal.trim(),
-    origen: formData.origen,
     distrito: formData.distrito,
-    direccion: formData.direccion.trim(),
-    banco: formData.banco,
-    cuentaBancaria: onlyDigits(formData.cuentaBancaria),
-    cuentaInterbancaria: onlyDigits(formData.cuentaInterbancaria),
-    cuentaPropia: formData.cuentaPropia,
     parentesco: formData.parentesco,
-    celularTransferencia: onlyDigits(formData.celularTransferencia || ''),
-    idEmpresaContratista: Number(formData.idEmpresaContratista),
-  };
+    idEmpresaContratista: formData.idEmpresaContratista,
+  });
+
+  // Mapeo explicito: UI -> Backend DTO
+  // Usamos array de pares clave-valor para garantizar el orden exacto
+  const orderedEntries: [string, any][] = [
+    ['nombres', formData.nombres.trim()],
+    ['apellidos', formData.apellidos.trim()],
+    ['tipoDocumento', formData.tipoDocumento],
+    ['numeroDocumento', onlyDigits(formData.numeroDocumento)],
+    ['nacionalidad', formData.nacionalidad],
+    ['fechaNacimiento', formData.fechaNacimiento || ''],
+    ['estadoCivil', formData.estadoCivil],
+    ['tieneHijos', Boolean(formData.tieneHijos)],
+    ['celularPersonal', onlyDigits(formData.celularPersonal)],
+    ['correoPersonal', formData.correoPersonal.trim()],
+    ['origen', formData.origen],
+    ['distrito', formData.distrito.trim()],
+    ['direccion', formData.direccion.trim()],
+    ['banco', formData.banco],
+    ['cuentaBancaria', onlyDigits(formData.cuentaBancaria)],
+    ['cuentaInterbancaria', onlyDigits(formData.cuentaInterbancaria)],
+    ['cuentaPropia', Boolean(formData.cuentaPropia)],
+    ['parentesco', formData.parentesco?.trim() || undefined],
+    ['celularTransferencia', onlyDigits(formData.celularTransferencia)],
+    ['idEmpresaContratista', Number(formData.idEmpresaContratista)],
+  ];
+
+  // Filtrar entradas con valores undefined y Object.fromEntries mantiene el orden de inserción
+  const filteredEntries = orderedEntries.filter(([_, value]) => value !== undefined);
+  const result = Object.fromEntries(filteredEntries) as RegistrarEmpleadoRequest;
+  
+  // Debug: Log de datos de salida
+  console.log('[mapFormToRegistrarEmpleadoRequest] Datos de salida:', result);
+  console.log('[mapFormToRegistrarEmpleadoRequest] Orden de campos:', Object.keys(result));
+  
+  return result;
 }
 

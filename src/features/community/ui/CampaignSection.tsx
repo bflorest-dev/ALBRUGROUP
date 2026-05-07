@@ -86,9 +86,9 @@ export const CampaignSection: React.FC<CampaignSectionProps> = ({
             <tr>
               <th>Nombre</th>
               <th>Número WhatsApp</th>
-              <th>Estado</th>
               <th>Cuenta publicitaria</th>
               <th>Proveedor</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -96,27 +96,21 @@ export const CampaignSection: React.FC<CampaignSectionProps> = ({
               <tr key={c.id}>
                 <td>{c.nombre}</td>
                 <td>{c.numeroWhatsappEmpresa}</td>
-                <td>
-                  <div className="community-status-control">
-                    <label className="community-switch" aria-label={`Cambiar estado de ${c.nombre}`}>
-                      <input
-                        type="checkbox"
-                        checked={c.activo}
-                        onChange={() => {
-                          setModalError('');
-                          setPendingCampana(c);
-                        }}
-                        disabled={Boolean(loading) || updatingEstadoId !== null}
-                      />
-                      <span className="community-switch-track" />
-                    </label>
-                    <span className={`community-switch-label ${c.activo ? 'is-active' : 'is-inactive'}`}>
-                      {c.activo ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </div>
-                </td>
                 <td>{cuentaNombreById.get(c.idCuentaPublicitaria) ?? `#${c.idCuentaPublicitaria}`}</td>
                 <td>{proveedorNombreById.get(c.idProveedor) ?? `#${c.idProveedor}`}</td>
+                <td>
+                  <button
+                    className="community-btn ghost"
+                    onClick={() => {
+                      setModalError('');
+                      setPendingCampana(c);
+                    }}
+                    disabled={Boolean(loading) || updatingEstadoId !== null}
+                    style={{ padding: '0.25rem 0.75rem', fontSize: '0.875rem', color: '#dc2626' }}
+                  >
+                    Eliminar
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -143,7 +137,7 @@ export const CampaignSection: React.FC<CampaignSectionProps> = ({
       await onToggleEstado(pendingCampana, !pendingCampana.activo);
       setPendingCampana(null);
     } catch (err: any) {
-      setModalError(err instanceof Error ? err.message : 'No se pudo actualizar el estado.');
+      setModalError(err instanceof Error ? err.message : 'No se pudo eliminar la campaña.');
     }
   };
 
@@ -189,6 +183,8 @@ export const CampaignSection: React.FC<CampaignSectionProps> = ({
         errorMessage={modalError}
         onCancel={handleCloseModal}
         onConfirm={handleConfirmToggle}
+        title="Confirmar eliminación"
+        message={`¿Seguro que quieres eliminar la campaña "${pendingCampana?.nombre}"? Esta acción no se puede deshacer.`}
       />
     </section>
   );
