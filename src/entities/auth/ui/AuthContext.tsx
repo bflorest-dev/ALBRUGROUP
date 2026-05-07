@@ -9,7 +9,7 @@ interface AuthContextType {
   currentUser: User | null;
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<User>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -169,12 +169,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return user;
   };
 
-  const logout = () => {
-    PresenceRepository.markOffline()
-      .catch((err) => {
-        console.warn('[AuthContext] ⚠️ Error al notificar offline en logout:', err);
-      });
+  const logout = async () => {
+    // PASO 1: Notificar al backend que el usuario se va offline (con token válido)
+    try {
+      await PresenceRepository.markOffline();
+      console.log('[AuthContext] ✅ Usuario marcado como offline exitosamente');
+    } catch (err) {
+      console.warn('[AuthContext] ⚠️ Error al notificar offline en logout:', err);
+      // Continuar con el logout aunque falle la notificación
+    }
 
+    // PASO 2: Limpiar estado local y token
     setCurrentUser(null);
     AuthService.logout();
   };
