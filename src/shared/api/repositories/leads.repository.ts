@@ -191,122 +191,122 @@ export class LeadsRepository {
 
   /**
    * Registra un nuevo lead (Intake)
-   * POST /leads/leads/intake
+   * POST /preventa/intake
    */
   static async intakeLead(payload: LeadIntakeRequest): Promise<void> {
-    const response = await leadsHttp.post('/leads/intake', payload);
-    this.parseLeadCommandPayload(response.data, 'POST /leads/intake');
+    const response = await leadsHttp.post('/preventa/intake', payload);
+    this.parseLeadCommandPayload(response.data, 'POST /preventa/intake');
   }
 
   /**
    * Asigna un lead a un asesor
-   * PATCH /leads/leads/{idLead}/asignacion
+   * PATCH /preventa/{idLead}/asignacion
    */
   static async asignarLead(
     idLead: number,
     payload: LeadAsignacionRequest,
   ): Promise<void> {
-    const response = await leadsHttp.patch(`/leads/${idLead}/asignacion`, payload);
-    this.parseLeadCommandPayload(response.data, 'PATCH /leads/{idLead}/asignacion');
+    const response = await leadsHttp.patch(`/preventa/${idLead}/asignacion`, payload);
+    this.parseLeadCommandPayload(response.data, 'PATCH /preventa/{idLead}/asignacion');
   }
 
   /**
    * Obtiene la bandeja de leads asignados al asesor actual
-   * GET /leads/asesor-ventas
+   * GET /preventa/asesor-ventas
    */
   static async getBandejaAsesor(): Promise<LeadAsesorVentasResponse[]> {
     const response = await leadsHttp.get<LeadAsesorVentasResponse[]>(
-      '/leads/asesor-ventas',
+      '/preventa/asesor-ventas',
     );
     return parseApiResponse(
       leadAsesorVentasResponseArraySchema,
-      response.data,
-      'GET /leads/asesor-ventas',
+      this.normalizeLeadGtrList(response.data),
+      'GET /preventa/asesor-ventas',
     );
   }
 
   /**
    * Obtiene detalle del lead para asesor de ventas
-   * GET /leads/leads/{idLead}/detalle-asesor
+   * GET /preventa/{idLead}/detalle-asesor
    */
   static async getDetalleAsesor(idLead: number): Promise<LeadAsesorDetalleResponse> {
     const response = await leadsHttp.get<LeadAsesorDetalleResponse>(
-      `/leads/${idLead}/detalle-asesor`,
+      `/preventa/${idLead}/detalle-asesor`,
     );
     return parseApiResponse(
       leadAsesorDetalleResponseSchema,
       response.data,
-      'GET /leads/{idLead}/detalle-asesor',
+      'GET /preventa/{idLead}/detalle-asesor',
     );
   }
 
   /**
    * Actualiza datos de preventa del lead
-   * PATCH /leads/leads/{idLead}/datos-preventa
+   * PATCH /preventa/{idLead}/datos-preventa
    */
   static async updateDatosPreventa(
     idLead: number,
     payload: LeadDatosPreventaRequest,
   ): Promise<void> {
-    const response = await leadsHttp.patch(`/leads/${idLead}/datos-preventa`, payload);
-    this.parseLeadCommandPayload(response.data, 'PATCH /leads/{idLead}/datos-preventa');
+    const response = await leadsHttp.patch(`/preventa/${idLead}/datos-preventa`, payload);
+    this.parseLeadCommandPayload(response.data, 'PATCH /preventa/{idLead}/datos-preventa');
   }
 
   /**
    * Actualiza dirección del lead
-   * PATCH /leads/leads/{idLead}/direccion
+   * PATCH /preventa/{idLead}/direccion
    */
   static async updateDireccion(
     idLead: number,
     payload: LeadDireccionRequest,
   ): Promise<void> {
-    const response = await leadsHttp.patch(`/leads/${idLead}/direccion`, payload);
-    this.parseLeadCommandPayload(response.data, 'PATCH /leads/{idLead}/direccion');
+    const response = await leadsHttp.patch(`/preventa/${idLead}/direccion`, payload);
+    this.parseLeadCommandPayload(response.data, 'PATCH /preventa/{idLead}/direccion');
   }
 
   /**
    * Actualiza oferta comercial del lead
-   * PATCH /leads/leads/{idLead}/oferta-comercial
+   * PATCH /preventa/{idLead}/oferta-comercial
    */
   static async updateOfertaComercial(
     idLead: number,
     payload: LeadOfertaComercialRequest,
   ): Promise<void> {
-    const response = await leadsHttp.patch(`/leads/${idLead}/oferta-comercial`, payload);
-    this.parseLeadCommandPayload(response.data, 'PATCH /leads/{idLead}/oferta-comercial');
+    const response = await leadsHttp.patch(`/preventa/${idLead}/oferta-comercial`, payload);
+    this.parseLeadCommandPayload(response.data, 'PATCH /preventa/{idLead}/oferta-comercial');
   }
 
   /**
    * Tipifica el lead (cierre de venta)
-   * POST /leads/leads/{idLead}/tipificacion
+   * POST /preventa/{idLead}/tipificacion
    */
   static async tipificarLead(
     idLead: number,
     payload: LeadTipificacionRequest,
   ): Promise<void> {
-    const response = await leadsHttp.post(`/leads/${idLead}/tipificacion`, payload);
-    this.parseLeadCommandPayload(response.data, 'POST /leads/{idLead}/tipificacion');
+    const response = await leadsHttp.post(`/preventa/${idLead}/tipificacion`, payload);
+    this.parseLeadCommandPayload(response.data, 'POST /preventa/{idLead}/tipificacion');
   }
 
   /**
    * Registra contacto/interacción con el lead
-   * POST /leads/leads/{idLead}/contacto
+   * POST /preventa/{idLead}/contacto
    */
   static async registrarContacto(idLead: number, payload?: LeadContactoRequest): Promise<void> {
-    const response = await leadsHttp.post(`/leads/${idLead}/contacto`, payload);
-    this.parseLeadCommandPayload(response.data, 'POST /leads/{idLead}/contacto');
+    const response = await leadsHttp.post(`/preventa/${idLead}/contacto`, payload);
+    this.parseLeadCommandPayload(response.data, 'POST /preventa/{idLead}/contacto');
   }
 
   /**
    * Obtiene bandeja de leads para GTR
-   * GET /leads/leads/gtr
+   * GET /preventa/gtr
    */
   static async getBandejaGtr(params?: Record<string, unknown>): Promise<LeadGtrResponse[]> {
-    const response = await leadsHttp.get<LeadGtrResponse[]>('/leads/gtr', { params });
+    const response = await leadsHttp.get<LeadGtrResponse[]>('/preventa/gtr', { params });
     return parseApiResponse(
       leadGtrResponseArraySchema,
       this.normalizeLeadGtrList(response.data),
-      'GET /leads/gtr',
+      'GET /preventa/gtr',
     );
   }
 
@@ -316,7 +316,11 @@ export class LeadsRepository {
 
   static async getEventosPorLead(idLead: number): Promise<EventoResponse[]> {
     const response = await leadsHttp.get<EventoResponse[]>(`/eventos/lead/${idLead}`);
-    return parseApiResponse(eventoResponseArraySchema, response.data, 'GET /eventos/lead/{idLead}');
+    return parseApiResponse(
+      eventoResponseArraySchema,
+      this.normalizeLeadGtrList(response.data),
+      'GET /eventos/lead/{idLead}'
+    );
   }
 
   static async getEventosPorEmpleado(
@@ -328,6 +332,7 @@ export class LeadsRepository {
     });
     return parseApiResponse(
       eventoResponseArraySchema,
+      this.normalizeLeadGtrList(response.data),
       response.data,
       'GET /eventos/empleado/{idEmpleado}',
     );

@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { LeadsRepository } from '@shared/api';
+import { leadsQueryKeys } from '@shared/api/queries';
 import type {
   CampanaResponse,
   CuentaPublicitariaResponse,
@@ -16,6 +18,7 @@ import type {
  * Centraliza llamadas a API y estado
  */
 export const useCommunityData = () => {
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,6 +68,10 @@ export const useCommunityData = () => {
       try {
         const nueva = await LeadsRepository.createCampana(payload);
         setCampanas((prev) => [...prev, nueva]);
+        
+        // Invalidar caché de React Query para sincronizar con GTR
+        queryClient.invalidateQueries({ queryKey: leadsQueryKeys.campaigns() });
+        
         return nueva;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error al crear campaña');
@@ -73,7 +80,7 @@ export const useCommunityData = () => {
         setLoading(false);
       }
     },
-    [],
+    [queryClient],
   );
 
   const updateCampana = useCallback(
@@ -83,6 +90,10 @@ export const useCommunityData = () => {
       try {
         const actualizada = await LeadsRepository.updateCampana(id, payload);
         setCampanas((prev) => prev.map((c) => (c.id === id ? actualizada : c)));
+        
+        // Invalidar caché de React Query para sincronizar con GTR
+        queryClient.invalidateQueries({ queryKey: leadsQueryKeys.campaigns() });
+        
         return actualizada;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error al actualizar campaña');
@@ -91,7 +102,7 @@ export const useCommunityData = () => {
         setLoading(false);
       }
     },
-    [],
+    [queryClient],
   );
 
   const deleteCampana = useCallback(async (id: number) => {
@@ -100,13 +111,16 @@ export const useCommunityData = () => {
     try {
       await LeadsRepository.deleteCampana(id);
       setCampanas((prev) => prev.filter((c) => c.id !== id));
+      
+      // Invalidar caché de React Query para sincronizar con GTR
+      queryClient.invalidateQueries({ queryKey: leadsQueryKeys.campaigns() });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al eliminar campaña');
       throw err;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [queryClient]);
 
   const toggleCampanaEstado = useCallback(
     async (id: number, activo: boolean) => {
@@ -236,6 +250,10 @@ export const useCommunityData = () => {
       try {
         const nuevo = await LeadsRepository.createPlan(payload);
         setPlanes((prev) => [...prev, nuevo]);
+        
+        // Invalidar caché de React Query para sincronizar con otros módulos
+        queryClient.invalidateQueries({ queryKey: leadsQueryKeys.plans() });
+        
         return nuevo;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error al crear plan');
@@ -244,7 +262,7 @@ export const useCommunityData = () => {
         setLoading(false);
       }
     },
-    [],
+    [queryClient],
   );
 
   const updatePlan = useCallback(
@@ -254,6 +272,10 @@ export const useCommunityData = () => {
       try {
         const actualizado = await LeadsRepository.updatePlan(id, payload);
         setPlanes((prev) => prev.map((p) => (p.id === id ? actualizado : p)));
+        
+        // Invalidar caché de React Query para sincronizar con otros módulos
+        queryClient.invalidateQueries({ queryKey: leadsQueryKeys.plans() });
+        
         return actualizado;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error al actualizar plan');
@@ -262,7 +284,7 @@ export const useCommunityData = () => {
         setLoading(false);
       }
     },
-    [],
+    [queryClient],
   );
 
   const deletePlan = useCallback(async (id: number) => {
@@ -271,13 +293,16 @@ export const useCommunityData = () => {
     try {
       await LeadsRepository.deletePlan(id);
       setPlanes((prev) => prev.filter((p) => p.id !== id));
+      
+      // Invalidar caché de React Query para sincronizar con otros módulos
+      queryClient.invalidateQueries({ queryKey: leadsQueryKeys.plans() });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al eliminar plan');
       throw err;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [queryClient]);
 
   const togglePlanEstado = useCallback(
     async (id: number, activo: boolean) => {
@@ -321,6 +346,10 @@ export const useCommunityData = () => {
       try {
         const nueva = await LeadsRepository.createPromocion(payload);
         setPromociones((prev) => [...prev, nueva]);
+        
+        // Invalidar caché de React Query para sincronizar con otros módulos
+        queryClient.invalidateQueries({ queryKey: leadsQueryKeys.promotions() });
+        
         return nueva;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error al crear promoción');
@@ -329,7 +358,7 @@ export const useCommunityData = () => {
         setLoading(false);
       }
     },
-    [],
+    [queryClient],
   );
 
   const deletePromocion = useCallback(async (id: number) => {
@@ -338,13 +367,16 @@ export const useCommunityData = () => {
     try {
       await LeadsRepository.deletePromocion(id);
       setPromociones((prev) => prev.filter((p) => p.id !== id));
+      
+      // Invalidar caché de React Query para sincronizar con otros módulos
+      queryClient.invalidateQueries({ queryKey: leadsQueryKeys.promotions() });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al eliminar promoción');
       throw err;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [queryClient]);
 
   const togglePromocionEstadoLocal = useCallback((id: number, activo: boolean) => {
     setPromociones((prev) =>
@@ -394,6 +426,10 @@ export const useCommunityData = () => {
       try {
         const nuevo = await LeadsRepository.createProveedor(payload);
         setProveedores((prev) => [...prev, nuevo]);
+        
+        // Invalidar caché de React Query para sincronizar con otros módulos
+        queryClient.invalidateQueries({ queryKey: leadsQueryKeys.providers() });
+        
         return nuevo;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error al crear proveedor');
@@ -402,7 +438,7 @@ export const useCommunityData = () => {
         setLoading(false);
       }
     },
-    [],
+    [queryClient],
   );
 
   // ========================================================================
@@ -429,6 +465,10 @@ export const useCommunityData = () => {
       try {
         const nueva = await LeadsRepository.createZona(payload);
         setZonas((prev) => [...prev, nueva]);
+        
+        // Invalidar caché de React Query para sincronizar con otros módulos
+        queryClient.invalidateQueries({ queryKey: leadsQueryKeys.zones() });
+        
         return nueva;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error al crear zona');
@@ -437,7 +477,7 @@ export const useCommunityData = () => {
         setLoading(false);
       }
     },
-    [],
+    [queryClient],
   );
 
   const updateZona = useCallback(
@@ -447,6 +487,10 @@ export const useCommunityData = () => {
       try {
         const actualizada = await LeadsRepository.updateZona(id, payload);
         setZonas((prev) => prev.map((z) => (z.id === id ? actualizada : z)));
+        
+        // Invalidar caché de React Query para sincronizar con otros módulos
+        queryClient.invalidateQueries({ queryKey: leadsQueryKeys.zones() });
+        
         return actualizada;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error al actualizar zona');
@@ -455,7 +499,7 @@ export const useCommunityData = () => {
         setLoading(false);
       }
     },
-    [],
+    [queryClient],
   );
 
   const deleteZona = useCallback(async (id: number) => {

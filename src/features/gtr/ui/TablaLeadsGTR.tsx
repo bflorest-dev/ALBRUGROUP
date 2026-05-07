@@ -1,6 +1,6 @@
 /**
  * Componente TablaLeadsGTR - Tablero de leads para supervisores GTR
- * Endpoint: GET /leads/gtr
+ * Endpoint: GET /preventa/gtr
  * FSD: caracteristicas/gtr/ui
  */
 
@@ -99,12 +99,12 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
   }, [leads]);
 
   const asesores = useMemo(() => {
-    const unique = new Set(leads.map((l) => l.nombreAsesorAsignado));
+    const unique = new Set(leads.map((l) => l.nombreAsesorAsignado).filter(Boolean));
     return Array.from(unique).sort();
   }, [leads]);
 
   const estados = useMemo(() => {
-    const unique = new Set(leads.map((l) => l.estadoSeguimiento));
+    const unique = new Set(leads.map((l) => l.estadoSeguimiento).filter(Boolean));
     return Array.from(unique).sort();
   }, [leads]);
 
@@ -222,11 +222,12 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
       {
         key: 'base',
         label: 'Base',
-        render: (lead) => <Badge label={lead.base} variant="info" size="sm" />,
+        render: (lead) => <Badge variant="info" size="sm">{lead.base}</Badge>,
       },
       {
         key: 'nombreTitular',
         label: 'Titular',
+        render: (lead) => lead.nombreTitular || 'Sin asignar',
       },
       {
         key: 'codigoTipificacion',
@@ -241,16 +242,18 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
       {
         key: 'nombreAsesorAsignado',
         label: 'Asesor',
+        render: (lead) => lead.nombreAsesorAsignado || 'No asignado',
       },
       {
         key: 'estadoSeguimiento',
         label: 'Estado',
         render: (lead) => (
           <Badge
-            label={lead.estadoSeguimiento}
-            variant={getEstadoBadgeVariant(lead.estadoSeguimiento)}
+            variant={getEstadoBadgeVariant(lead.estadoSeguimiento || 'NUEVA')}
             size="sm"
-          />
+          >
+            {lead.estadoSeguimiento || 'Nuevo'}
+          </Badge>
         ),
       },
       {
@@ -353,8 +356,8 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
         >
           <option value="">Todos los asesores</option>
           {asesores.map((a) => (
-            <option key={a} value={a}>
-              {a}
+            <option key={a || 'sin-asesor'} value={a || ''}>
+              {a || 'Sin asignar'}
             </option>
           ))}
         </select>
@@ -369,8 +372,8 @@ export const TablaLeadsGTR: React.FC<TablaLeadsGTRProps> = ({
         >
           <option value="">Todos los estados</option>
           {estados.map((e) => (
-            <option key={e} value={e}>
-              {e}
+            <option key={e || 'sin-estado'} value={e || ''}>
+              {e || 'Sin estado'}
             </option>
           ))}
         </select>

@@ -28,20 +28,12 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
   onPreventa,
   dashboardMode = false,
 }) => {
-  const beforeUnloadBypassKey = 'skip_beforeunload_once';
-
   const openExternalProtocol = (url: string) => {
-    sessionStorage.setItem(beforeUnloadBypassKey, '1');
-
-    const openedWindow = window.open(url, '_blank', 'noopener,noreferrer');
-
-    if (!openedWindow) {
-      window.location.href = url;
-    }
-
-    window.setTimeout(() => {
-      sessionStorage.removeItem(beforeUnloadBypassKey);
-    }, 1500);
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.click();
   };
 
   const getDialNumber = (prefijo: string, numeroLead: string): string | null => {

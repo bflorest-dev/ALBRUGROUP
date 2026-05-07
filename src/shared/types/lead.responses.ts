@@ -23,9 +23,9 @@ export interface LeadAsesorVentasResponse {
   fechaAsignacion: string;
   prefijo: string;
   lead: string;
-  nombreTitular: string;
-  correo: string;
-  estadoSeguimiento: string;
+  nombreTitular: string | null;
+  correo: string | null;
+  estadoSeguimiento: string | null;
 }
 
 export interface LeadAsesorDetalleResponse {
@@ -75,11 +75,11 @@ export interface LeadGtrResponse {
   nombreCampana: string;
   nombreProveedorCampana: string;
   base: string;
-  nombreTitular: string;
-  codigoTipificacion: string;
-  codigoSubtipificacion: string;
-  nombreAsesorAsignado: string;
-  estadoSeguimiento: string;
+  nombreTitular: string | null;
+  codigoTipificacion: string | null;
+  codigoSubtipificacion: string | null;
+  nombreAsesorAsignado: string | null;
+  estadoSeguimiento: string | null;
   reasignaciones: number;
 }
 
@@ -239,14 +239,10 @@ export interface ProveedorRequest {
 // ============================================================================
 
 export type LeadIntakeRequest = {
-  numTelefono: string;
+  prefijo: string;
+  lead: string;
   idCampana: number;
-  idCuentaPublicitaria: number;
-  tipoDocumento?: string;
-  numeroDocumento?: string;
-  nombreTitular?: string;
-  base?: string;
-  tipoVenta?: string;
+  base: 'WHATSAPP' | 'MESSENGER' | 'REFERIDO' | 'MASIVO';
 };
 
 export type LeadAsignacionRequest = {

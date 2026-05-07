@@ -1,6 +1,6 @@
 /**
  * Componente AltaLead - Formulario para registrar nuevo lead
- * Endpoint: POST /leads/leads/intake
+ * Endpoint: POST /preventa/intake
  * FSD: caracteristicas/gtr/ui
  */
 
@@ -120,14 +120,11 @@ export const AltaLead: React.FC<AltaLeadProps> = ({ permisos, onSuccess, dashboa
     }
 
     try {
-      // Payload completo para evitar interpretaciones incorrectas en backend.
-      // Enviamos los 4 campos que pueden ser usados por el endpoint:
-      // - prefijo + lead (deseado)
-      // - numTelefono (combinado, para compatibilidad con parsing antiguo)
+      // Payload according to backend documentation
+      // POST /preventa/intake expects: { prefijo, lead, idCampana, base }
       const payload = {
         prefijo: formData.prefijo,
         lead: formData.lead,
-        numTelefono: `${formData.prefijo}${formData.lead}`,
         idCampana: formData.idCampana,
         base: formData.base,
       };

@@ -14,7 +14,7 @@ import type {
   LeadAsesorVentasResponse,
   LeadGtrResponse,
 } from '@entities/lead/types';
-import { GtrRepository } from '../model/gtr.repo';
+import { LeadsRepository } from '@shared/api/repositories/leads.repository';
 
 /**
  * Query Keys para caché de React Query
@@ -35,7 +35,7 @@ export const gtrQueryKeys = {
 export function useLeadsGTR(filtros?: { fecha?: string }) {
   return useQuery({
     queryKey: gtrQueryKeys.leadsGTRByDate(filtros?.fecha),
-    queryFn: () => GtrRepository.getLeadsGTR(filtros),
+    queryFn: () => LeadsRepository.getBandejaGtr(filtros),
     staleTime: 1000 * 60 * 5, // 5 min
     gcTime: 1000 * 60 * 10, // 10 min
   });
@@ -52,7 +52,7 @@ export function useLeadsAsesorVentas(filtros?: {
 }) {
   return useQuery({
     queryKey: gtrQueryKeys.leadsAsesorByFilter(filtros),
-    queryFn: () => GtrRepository.getLeadsAsesorVentas(filtros),
+    queryFn: () => LeadsRepository.getBandejaAsesor(),
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
   });
@@ -64,7 +64,7 @@ export function useLeadsAsesorVentas(filtros?: {
 export function useLeadDetalleAsesor(idLead?: number) {
   return useQuery({
     queryKey: idLead ? gtrQueryKeys.leadDetalle(idLead) : [],
-    queryFn: () => GtrRepository.getLeadDetalleAsesor(idLead!),
+    queryFn: () => LeadsRepository.getDetalleAsesor(idLead!),
     enabled: !!idLead,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
@@ -78,7 +78,7 @@ export function useCreateLeadMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: LeadIntakeRequest) => GtrRepository.createLead(data),
+    mutationFn: (data: LeadIntakeRequest) => LeadsRepository.intakeLead(data),
     onSuccess: () => {
       // Invalidar caches relevantes usando prefix matching
       // exact: false permite que invalide todas las queries que comiencen con estas keys
@@ -96,7 +96,7 @@ export function useAssignLeadMutation() {
 
   return useMutation({
     mutationFn: ({ idLead, data }: { idLead: number; data: LeadAsignacionRequest }) =>
-      GtrRepository.assignLead(idLead, data),
+      LeadsRepository.asignarLead(idLead, data),
     onSuccess: (_, { idLead }) => {
       // Invalidar caches usando exact: false para que coincida con queryKeys que tengan filtros adicionales
       queryClient.invalidateQueries({ 
@@ -123,7 +123,7 @@ export function useUpdateLeadPreventaMutation() {
 
   return useMutation({
     mutationFn: ({ idLead, data }: { idLead: number; data: LeadDatosPreventaRequest }) =>
-      GtrRepository.updateLeadPreventa(idLead, data),
+      LeadsRepository.updateDatosPreventa(idLead, data),
     onSuccess: (_, { idLead }) => {
       queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsGTR(), exact: false });
       queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsAsesor(), exact: false });
@@ -140,7 +140,7 @@ export function useUpdateLeadDireccionMutation() {
 
   return useMutation({
     mutationFn: ({ idLead, data }: { idLead: number; data: LeadDireccionRequest }) =>
-      GtrRepository.updateLeadDireccion(idLead, data),
+      LeadsRepository.updateDireccion(idLead, data),
     onSuccess: (_, { idLead }) => {
       queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsGTR(), exact: false });
       queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsAsesor(), exact: false });
@@ -157,7 +157,7 @@ export function useTypifyLeadMutation() {
 
   return useMutation({
     mutationFn: ({ idLead, data }: { idLead: number; data: LeadTipificacionRequest }) =>
-      GtrRepository.typifyLead(idLead, data),
+      LeadsRepository.tipificarLead(idLead, data),
     onSuccess: (_, { idLead }) => {
       queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsGTR(), exact: false });
       queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsAsesor(), exact: false });
@@ -173,7 +173,7 @@ export function useContactLeadMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (idLead: number) => GtrRepository.contactLead(idLead),
+    mutationFn: (idLead: number) => LeadsRepository.registrarContacto(idLead),
     onSuccess: (_, idLead) => {
       queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsGTR(), exact: false });
       queryClient.invalidateQueries({ queryKey: gtrQueryKeys.leadsAsesor(), exact: false });

@@ -13,12 +13,12 @@ import styles from './PaginaAsesores.module.css';
 /**
  * Página principal del Asesor de Ventas
  * Gestiona la bandeja de leads asignados y operaciones según los 6 endpoints:
- * - GET /leads/asesor-ventas (carga inicial)
- * - POST /leads/{idLead}/contacto
- * - POST /leads/{idLead}/tipificacion
- * - PATCH /leads/{idLead}/oferta-comercial
- * - PATCH /leads/{idLead}/direccion
- * - PATCH /leads/{idLead}/datos-preventa
+ * - GET /preventa/asesor-ventas (carga inicial)
+ * - POST /preventa/{idLead}/contacto
+ * - POST /preventa/{idLead}/tipificacion
+ * - PATCH /preventa/{idLead}/oferta-comercial
+ * - PATCH /preventa/{idLead}/direccion
+ * - PATCH /preventa/{idLead}/datos-preventa
  */
 const PaginaAsesores: React.FC = () => {
   const location = useLocation();

@@ -12,14 +12,8 @@ import type {
 import type { EventoResponse as SharedEventoResponse } from '@shared/types/backend';
 
 // ========== REQUEST TYPES ==========
-
-export interface LeadIntakeRequest {
-  numTelefono?: string; // opcional, formato +51987654321
-  prefijo?: string;     // prefijo como +51
-  lead?: string;        // número como 987654321
-  idCampana: number;
-  base: 'WHATSAPP' | 'MESSENGER' | 'REFERIDO' | 'MASIVO' | string;
-}
+// Using shared types for consistency
+export type { LeadIntakeRequest } from '@shared/types/lead.responses';
 
 export interface LeadAsignacionRequest {
   idAsesorAsignado: number; // ID del asesor

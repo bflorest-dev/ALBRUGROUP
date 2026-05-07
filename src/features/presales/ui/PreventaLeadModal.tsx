@@ -180,7 +180,7 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({
     isError: tipificacionesError,
   } = useQuery<import('@shared/types').CatalogoResponse>({
     queryKey: ['tipificaciones', 'PREVENTA'],
-    queryFn: () => PreventaApi.getCatalogo().then((response) => response.data),
+    queryFn: () => PreventaApi.getCatalogo(),
     enabled: isOpen,
     staleTime: 1000 * 60 * 3,
     retry: 1,
@@ -191,7 +191,7 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({
     isLoading: loadingPlanes,
   } = useQuery<PlanResponse[]>({
     queryKey: ['preventa', 'planes'],
-    queryFn: () => PreventaApi.getPlanes().then((response) => response.data),
+    queryFn: () => PreventaApi.getPlanes(),
     enabled: isOpen,
     staleTime: 1000 * 60 * 3,
     retry: 1,
@@ -202,7 +202,7 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({
     isLoading: loadingPromocionesInternas,
   } = useQuery<PromocionComercialResponse[]>({
     queryKey: ['preventa', 'promociones', 'internas'],
-    queryFn: () => PreventaApi.getPromociones(true).then((response) => response.data),
+    queryFn: () => PreventaApi.getPromociones(true),
     enabled: isOpen,
     staleTime: 1000 * 60 * 3,
     retry: 1,
@@ -213,7 +213,7 @@ export const PreventaLeadModal: React.FC<PreventaLeadModalProps> = ({
     isLoading: loadingPromocionesExternas,
   } = useQuery<PromocionComercialResponse[]>({
     queryKey: ['preventa', 'promociones', 'externas'],
-    queryFn: () => PreventaApi.getPromociones(false).then((response) => response.data),
+    queryFn: () => PreventaApi.getPromociones(false),
     enabled: isOpen,
     staleTime: 1000 * 60 * 3,
     retry: 1,

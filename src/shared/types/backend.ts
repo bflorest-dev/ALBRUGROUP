@@ -20,19 +20,20 @@ export interface CuentaPublicitariaResponse {
 
 export interface EventoResponse {
   id: number;
-  idLead: number;
-  idCampana: number;
-  idActor: number;
-  nombreActor: string;
-  rolActor: string;
-  idAsesorAsignado: number;
-  nombreAsesorAsignado: string;
-  accion: string;
-  etapa: string;
-  tipificacion: string;
-  subtipificacion: string;
-  fechaInstalacion: string;
-  comentario: string;
+  idLead?: number | null;
+  idCampana?: number | null;
+  idActor?: number | null;
+  nombreActor?: string | null;
+  rolActor?: string | null;
+  idAsesorAsignado?: number | null;
+  nombreAsesorAsignado?: string | null;
+  rolAsesorAsignado?: string | null;
+  accion?: string | null;
+  etapa?: string | null;
+  tipificacion?: string | null;
+  subtipificacion?: string | null;
+  fechaInstalacion?: string | null;
+  comentario?: string | null;
   createdAt: string;
 }
 

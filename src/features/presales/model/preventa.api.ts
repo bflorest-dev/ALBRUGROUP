@@ -44,25 +44,25 @@ export const PreventaApi = {
   },
 
   postTipificacion: async (idLead: number, payload: TipificacionPayload): Promise<void> => {
-    const response = await leadsHttp.post(`/leads/${idLead}/tipificacion`, payload);
-    parseLeadCommandPayload(response.data, 'POST /leads/{idLead}/tipificacion');
+    const response = await leadsHttp.post(`/preventa/${idLead}/tipificacion`, payload);
+    parseLeadCommandPayload(response.data, 'POST /preventa/{idLead}/tipificacion');
   },
 
   patchDatosPreventa: async (idLead: number, payload: LeadDatosPreventaRequest): Promise<void> => {
-    const response = await leadsHttp.patch(`/leads/${idLead}/datos-preventa`, payload);
-    parseLeadCommandPayload(response.data, 'PATCH /leads/{idLead}/datos-preventa');
+    const response = await leadsHttp.patch(`/preventa/${idLead}/datos-preventa`, payload);
+    parseLeadCommandPayload(response.data, 'PATCH /preventa/{idLead}/datos-preventa');
   },
 
   patchDireccion: async (idLead: number, payload: LeadDireccionRequest): Promise<void> => {
-    const response = await leadsHttp.patch(`/leads/${idLead}/direccion`, payload);
-    parseLeadCommandPayload(response.data, 'PATCH /leads/{idLead}/direccion');
+    const response = await leadsHttp.patch(`/preventa/${idLead}/direccion`, payload);
+    parseLeadCommandPayload(response.data, 'PATCH /preventa/{idLead}/direccion');
   },
 
   patchOfertaComercial: async (
     idLead: number,
     payload: LeadOfertaComercialRequest,
   ): Promise<void> => {
-    const response = await leadsHttp.patch(`/leads/${idLead}/oferta-comercial`, payload);
-    parseLeadCommandPayload(response.data, 'PATCH /leads/{idLead}/oferta-comercial');
+    const response = await leadsHttp.patch(`/preventa/${idLead}/oferta-comercial`, payload);
+    parseLeadCommandPayload(response.data, 'PATCH /preventa/{idLead}/oferta-comercial');
   },
 };

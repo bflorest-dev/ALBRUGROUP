@@ -56,8 +56,8 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
         !searchTerm ||
         lead.id.toString().includes(searchTerm) ||
         lead.lead.includes(searchTerm) ||
-        lead.nombreTitular.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.correo?.toLowerCase().includes(searchTerm.toLowerCase());
+        (lead.nombreTitular?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (lead.correo?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
       const matchesEstado = !filterEstado || lead.estadoSeguimiento === filterEstado;
 
@@ -67,7 +67,7 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
 
   // ========== VALORES ÚNICOS PARA FILTROS ==========
   const estados = useMemo(() => {
-    const unique = new Set(leads.map((l) => l.estadoSeguimiento));
+    const unique = new Set(leads.map((l) => l.estadoSeguimiento).filter(Boolean));
     return Array.from(unique).sort();
   }, [leads]);
 
@@ -126,7 +126,7 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
       {
         key: 'nombreTitular',
         label: 'Titular',
-        render: (lead) => <span className={styles.titular}>{lead.nombreTitular}</span>,
+        render: (lead) => <span className={styles.titular}>{lead.nombreTitular || 'Sin asignar'}</span>,
       },
       {
         key: 'correo',
@@ -145,10 +145,11 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
         label: 'Estado Seguimiento',
         render: (lead) => (
           <Badge
-            label={lead.estadoSeguimiento}
-            variant={getEstadoBadgeVariant(lead.estadoSeguimiento)}
+            variant={getEstadoBadgeVariant(lead.estadoSeguimiento || 'NUEVO')}
             size="sm"
-          />
+          >
+            {lead.estadoSeguimiento || 'Nuevo'}
+          </Badge>
         ),
       },
     ],
@@ -228,8 +229,8 @@ export const TablaLeadsAsesorVentas: React.FC<TablaLeadsAsesorVentasProps> = ({
         >
           <option value="">Todos los estados</option>
           {estados.map((e) => (
-            <option key={e} value={e}>
-              {e}
+            <option key={e || 'sin-estado'} value={e || ''}>
+              {e || 'Sin estado'}
             </option>
           ))}
         </select>

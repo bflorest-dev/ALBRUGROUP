@@ -8,8 +8,8 @@ export { AltaLead, AsignacionLead, TablaLeadsGTR, TablaLeadsAsesorVentas } from 
 // Hooks
 export * from './hooks';
 
-// Repositorio y tipos
-export { GtrRepository } from './model';
+// Repositorio y tipos - GTR Repository consolidado en LeadsRepository
+// export { GtrRepository } from './model'; // DEPRECATED: usar LeadsRepository
 export type {
   LeadIntakeRequest,
   LeadAsignacionRequest,

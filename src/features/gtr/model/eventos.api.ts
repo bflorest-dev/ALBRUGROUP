@@ -1,43 +1,25 @@
 /**
  * Servicio API para Eventos de Leads
- * Endpoints: GET /leads/eventos/lead/{idLead}, GET /leads/eventos/empleado/{idEmpleado}
- * (leadsHttp tiene baseURL /api/leads, así que las rutas son relativas)
+ * Usa LeadsRepository para mantener consistencia y validación de schemas
  */
 
-import { leadsHttp } from '@shared/api/httpClient';
+import { LeadsRepository } from '@shared/api/repositories/leads.repository';
+import type { EventoResponse } from '@shared/types';
 
-export type EventoResponse = {
-  id: number;
-  idLead?: number;
-  idCampana?: number;
-  idActor?: number;
-  nombreActor?: string;
-  rolActor?: string;
-  idAsesorAsignado?: number;
-  nombreAsesorAsignado?: string;
-  rolAsesorAsignado?: string;
-  accion?: string;
-  etapa?: string;
-  tipificacion?: string;
-  subtipificacion?: string;
-  fechaInstalacion?: string;
-  comentario?: string;
-  createdAt: string; // ISO datetime
-};
+export type { EventoResponse };
 
 export class EventosApi {
   /**
    * Obtiene todos los eventos registrados para un Lead específico
-   * GET /leads/eventos/lead/{idLead}
+   * GET /eventos/lead/{idLead}
    */
   static async getEventosByLead(idLead: number): Promise<EventoResponse[]> {
-    const response = await leadsHttp.get<EventoResponse[]>(`/eventos/lead/${idLead}`);
-    return response.data;
+    return LeadsRepository.getEventosPorLead(idLead);
   }
 
   /**
    * Obtiene todos los eventos registrados por un empleado específico
-   * GET /leads/eventos/empleado/{idEmpleado}
+   * GET /eventos/empleado/{idEmpleado}
    * @param idEmpleado ID del empleado
    * @param fechaDesde Fecha desde (ISO string, opcional)
    * @param fechaHasta Fecha hasta (ISO string, opcional)
@@ -47,13 +29,10 @@ export class EventosApi {
     fechaDesde?: string,
     fechaHasta?: string
   ): Promise<EventoResponse[]> {
-    const params = new URLSearchParams();
-    if (fechaDesde) params.append('fechaDesde', fechaDesde);
-    if (fechaHasta) params.append('fechaHasta', fechaHasta);
+    const params: Record<string, unknown> = {};
+    if (fechaDesde) params.fechaDesde = fechaDesde;
+    if (fechaHasta) params.fechaHasta = fechaHasta;
 
-    const queryString = params.toString();
-    const url = `/eventos/empleado/${idEmpleado}${queryString ? `?${queryString}` : ''}`;
-    const response = await leadsHttp.get<EventoResponse[]>(url);
-    return response.data;
+    return LeadsRepository.getEventosPorEmpleado(idEmpleado, params);
   }
 }

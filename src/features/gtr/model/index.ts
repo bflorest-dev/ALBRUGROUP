@@ -1,1 +1,2 @@
-export { GtrRepository } from './gtr.repo';
+// GTR Repository consolidado en LeadsRepository
+// Usar: import { LeadsRepository } from '@shared/api/repositories/leads.repository'

@@ -200,7 +200,7 @@ const PaginaGTR: React.FC = () => {
               dashboardMode={isDashboardRoute}
               onSuccess={(asesorNombre) => {
                 setSelectedLeadForReasignacion(null);
-                alert(`Lead reasignado a ${asesorNombre}`);
+                // El mensaje se mostrará en la card verde del componente
               }}
               onCancel={() => setSelectedLeadForReasignacion(null)}
             />

@@ -47,9 +47,19 @@ export const AsignacionLead: React.FC<AsignacionLeadProps> = ({
   );
   const [observaciones, setObservaciones] = useState<string>('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [successMessage, setSuccessMessage] = useState<string>('');
 
   // ========== MUTACIONES ==========
   const assignMutation = useAssignLeadMutation();
+
+  // ========== EFECTOS ==========
+  // Limpiar errores cuando se cambia de asesor
+  useEffect(() => {
+    if (idAsesorAsignado) {
+      setErrors({});
+      setSuccessMessage('');
+    }
+  }, [idAsesorAsignado]);
 
   // ========== VALIDACIONES ==========
   const validateForm = (): boolean => {
@@ -96,15 +106,53 @@ export const AsignacionLead: React.FC<AsignacionLeadProps> = ({
         data: assignData,
       });
 
-      onSuccess?.(asesorSeleccionado.nombre);
+      setSuccessMessage(`Lead asignado a ${asesorSeleccionado.nombre}`);
+      setErrors({});
+      
+      // Llamar onSuccess después de un breve delay para que el usuario vea el mensaje
+      setTimeout(() => {
+        onSuccess?.(asesorSeleccionado.nombre);
+      }, 1500);
 
       // Limpiar
       setIdAsesorAsignado('');
       setObservaciones('');
-      setErrors({});
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Error al asignar lead';
-      setErrors({ form: errorMsg });
+      // Extraer el mensaje de error del objeto ApiError normalizado o AxiosError
+      let errorMsg = 'Error al asignar lead';
+      
+      if (error && typeof error === 'object') {
+        if ('message' in error && typeof error.message === 'string') {
+          errorMsg = error.message;
+        } else if ('details' in error && error.details && typeof error.details === 'object') {
+          // Intentar extraer mensaje de details
+          const details = error.details as Record<string, unknown>;
+          if (typeof details.message === 'string') {
+            errorMsg = details.message;
+          }
+        }
+      } else if (error instanceof Error) {
+        errorMsg = error.message;
+      }
+      
+      console.log('[AsignacionLead] Error capturado:', errorMsg);
+      console.log('[AsignacionLead] Error completo:', error);
+      
+      // Si el error es que el asesor ya gestionó el lead, tratarlo como advertencia
+      // Buscar variaciones del mensaje (case-insensitive)
+      const errorMsgLower = errorMsg.toLowerCase();
+      if (
+        errorMsgLower.includes('ya ha gestionado') ||
+        errorMsgLower.includes('ya gestionó') ||
+        errorMsgLower.includes('gestionado') && errorMsgLower.includes('anteriormente')
+      ) {
+        // Mostrar como advertencia (error) pero sin cerrar el modal
+        setErrors({ form: `${asesorSeleccionado.nombre}: Asesor de Ventas ya ha gestionado el Lead anteriormente` });
+        setSuccessMessage('');
+      } else {
+        setErrors({ form: errorMsg });
+        setSuccessMessage('');
+      }
     }
   };
 
@@ -210,12 +258,12 @@ export const AsignacionLead: React.FC<AsignacionLeadProps> = ({
           </Button>
         </div>
 
-        {assignMutation.isSuccess && (
+        {successMessage && (
           <Alert
             type="success"
-            message={`Lead asignado a ${asesorSeleccionado?.nombre}`}
+            message={successMessage}
             dismissible
-            onClose={() => assignMutation.reset()}
+            onClose={() => setSuccessMessage('')}
           />
         )}
       </form>

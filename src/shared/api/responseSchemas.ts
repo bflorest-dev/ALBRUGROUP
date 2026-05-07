@@ -166,9 +166,9 @@ export const leadAsesorVentasResponseSchema = z
     fechaAsignacion: z.string(),
     prefijo: z.string(),
     lead: z.string(),
-    nombreTitular: z.string(),
-    correo: z.string(),
-    estadoSeguimiento: z.string(),
+    nombreTitular: z.string().nullable(),
+    correo: z.string().nullable(),
+    estadoSeguimiento: z.string().nullable(),
   })
   .passthrough();
 
@@ -183,11 +183,11 @@ export const leadGtrResponseSchema = z
     nombreCampana: z.string(),
     nombreProveedorCampana: z.string(),
     base: z.string(),
-    nombreTitular: z.string(),
-    codigoTipificacion: z.string(),
-    codigoSubtipificacion: z.string(),
-    nombreAsesorAsignado: z.string(),
-    estadoSeguimiento: z.string(),
+    nombreTitular: z.string().nullable(),
+    codigoTipificacion: z.string().nullable(),
+    codigoSubtipificacion: z.string().nullable(),
+    nombreAsesorAsignado: z.string().nullable(),
+    estadoSeguimiento: z.string().nullable(),
     reasignaciones: z.coerce.number().int(),
   })
   .passthrough();
@@ -197,19 +197,20 @@ export const leadGtrResponseArraySchema = z.array(leadGtrResponseSchema);
 export const eventoResponseSchema = z
   .object({
     id: z.coerce.number().int(),
-    idLead: z.coerce.number().int(),
-    idCampana: z.coerce.number().int(),
-    idActor: z.coerce.number().int(),
-    nombreActor: z.string(),
-    rolActor: z.string(),
-    idAsesorAsignado: z.coerce.number().int(),
-    nombreAsesorAsignado: z.string(),
-    accion: z.string(),
-    etapa: z.string(),
-    tipificacion: z.string(),
-    subtipificacion: z.string(),
-    fechaInstalacion: z.string(),
-    comentario: z.string(),
+    idLead: z.coerce.number().int().nullable().optional(),
+    idCampana: z.coerce.number().int().nullable().optional(),
+    idActor: z.coerce.number().int().nullable().optional(),
+    nombreActor: z.string().nullable().optional(),
+    rolActor: z.string().nullable().optional(),
+    idAsesorAsignado: z.coerce.number().int().nullable().optional(),
+    nombreAsesorAsignado: z.string().nullable().optional(),
+    rolAsesorAsignado: z.string().nullable().optional(),
+    accion: z.string().nullable().optional(),
+    etapa: z.string().nullable().optional(),
+    tipificacion: z.string().nullable().optional(),
+    subtipificacion: z.string().nullable().optional(),
+    fechaInstalacion: z.string().nullable().optional(),
+    comentario: z.string().nullable().optional(),
     createdAt: z.string(),
   })
   .passthrough();
