@@ -1,6 +1,7 @@
 package pe.albrugroup.lead_service.entity.request;
 
 import lombok.*;
+import pe.albrugroup.lead_service.entity.enums.EstadoPostventa;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 @Builder @Getter @Setter
@@ -12,4 +13,5 @@ public class SubtipificacionRequest {
     private String descripcion;
     private Integer orden;
     private Etapa etapaCambio;
+    private EstadoPostventa estadoPostventaCambio;
 }

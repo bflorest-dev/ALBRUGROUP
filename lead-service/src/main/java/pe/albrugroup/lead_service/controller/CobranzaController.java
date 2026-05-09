@@ -25,62 +25,61 @@ import pe.albrugroup.lead_service.service.LeadService;
 
 @RestController @Validated
 @RequiredArgsConstructor
-@RequestMapping("/postventa")
-public class PostventaController {
+@RequestMapping("/cobranza")
+public class CobranzaController {
 
     private final LeadService leadService;
     private final EventoService eventoService;
 
-    @GetMapping @PreAuthorize("hasAuthority('READ_LEADS_POSTVENTA')")
-    public ResponseEntity<PageResponse<LeadPostventaResponse>> listarBandejaPostventa(
+    @GetMapping @PreAuthorize("hasAuthority('READ_LEADS_COBRANZA')")
+    public ResponseEntity<PageResponse<LeadPostventaResponse>> listarBandejaCobranza(
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var leads = leadService.listarBandejaPostventa(pageRequest);
+        var leads = leadService.listarBandejaCobranza(pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
 
-    @GetMapping("/asignados") @PreAuthorize("hasAuthority('READ_LEADS_POSTVENTA')")
-    public ResponseEntity<PageResponse<LeadPostventaResponse>> listarLeadsPostventaAsignados(
+    @GetMapping("/asignados") @PreAuthorize("hasAuthority('READ_LEADS_COBRANZA')")
+    public ResponseEntity<PageResponse<LeadPostventaResponse>> listarLeadsCobranzaAsignados(
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var leads = leadService.listarLeadsPostventaAsignados(pageRequest);
+        var leads = leadService.listarLeadsCobranzaAsignados(pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
 
     @PatchMapping("/{idLead}/asignacion") @PreAuthorize("hasAuthority('ASSIGN_LEADS')")
-    public ResponseEntity<Void> tomarLeadPostventa(@PathVariable Long idLead) {
-        leadService.tomarLeadDisponible(idLead, Etapa.POSTVENTA);
+    public ResponseEntity<Void> tomarLeadCobranza(@PathVariable Long idLead) {
+        leadService.tomarLeadDisponible(idLead, Etapa.COBRANZA);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{idLead}/contacto") @PreAuthorize("hasAuthority('CONTACT_LEADS')")
-    public ResponseEntity<Void> registrarContactoLeadPostventa(@PathVariable Long idLead) {
-        leadService.registrarContactoPostventa(idLead);
+    public ResponseEntity<Void> registrarContactoLeadCobranza(@PathVariable Long idLead) {
+        leadService.registrarContactoCobranza(idLead);
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/{idLead}/detalle-asesor") @PreAuthorize("hasAuthority('READ_LEADS_POSTVENTA')")
-    public ResponseEntity<LeadDetalleResponse> obtenerDetalleLeadPostventa(@PathVariable Long idLead) {
-        var lead = leadService.obtenerDetalleLeadAsignado(idLead, Etapa.POSTVENTA);
+    @GetMapping("/{idLead}/detalle-asesor") @PreAuthorize("hasAuthority('READ_LEADS_COBRANZA')")
+    public ResponseEntity<LeadDetalleResponse> obtenerDetalleLeadCobranza(@PathVariable Long idLead) {
+        var lead = leadService.obtenerDetalleLeadAsignado(idLead, Etapa.COBRANZA);
         return ResponseEntity.status(HttpStatus.OK).body(lead);
     }
 
     @GetMapping("/{idLead}/eventos") @PreAuthorize("hasAuthority('READ_EVENTOS_LEADS')")
-    public ResponseEntity<PageResponse<EventoResponse>> listarEventosLeadPostventa(
+    public ResponseEntity<PageResponse<EventoResponse>> listarEventosLeadCobranza(
             @PathVariable Long idLead,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var eventos = eventoService.listarPorLeadAsignado(idLead, Etapa.POSTVENTA, pageRequest);
+        var eventos = eventoService.listarPorLeadAsignado(idLead, Etapa.COBRANZA, pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(eventos);
     }
 
     @PatchMapping("/{idLead}/tipificacion") @PreAuthorize("hasAuthority('TYPIFY_LEADS')")
-    public ResponseEntity<Void> tipificarLeadPostventa(
+    public ResponseEntity<Void> tipificarLeadCobranza(
             @PathVariable Long idLead,
             @Valid @RequestBody LeadTipificacionPostventaRequest request
     ) {
-        leadService.tipificarLeadPostventa(idLead, request);
+        leadService.tipificarLeadCobranza(idLead, request);
         return ResponseEntity.noContent().build();
     }
-
 }

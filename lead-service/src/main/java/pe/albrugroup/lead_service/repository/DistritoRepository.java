@@ -1,9 +1,12 @@
 package pe.albrugroup.lead_service.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.albrugroup.lead_service.entity.Distrito;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,4 +15,12 @@ public interface DistritoRepository extends JpaRepository<Distrito, Long> {
 
     Optional<Distrito> findByCodigo(String codigo);
     List<Distrito> findByProvinciaIdOrderByNombreAsc(Long provinciaId);
+
+    @Query("""
+            SELECT d
+            FROM Distrito d
+            JOIN FETCH d.departamento
+            WHERE d.codigo IN :codigos
+            """)
+    List<Distrito> findByCodigoInWithDepartamento(@Param("codigos") Collection<String> codigos);
 }

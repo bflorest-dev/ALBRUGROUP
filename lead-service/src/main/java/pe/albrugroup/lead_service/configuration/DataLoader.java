@@ -17,6 +17,7 @@ import pe.albrugroup.lead_service.entity.Subtipificacion;
 import pe.albrugroup.lead_service.entity.Telefono;
 import pe.albrugroup.lead_service.entity.Television;
 import pe.albrugroup.lead_service.entity.Tipificacion;
+import pe.albrugroup.lead_service.entity.enums.EstadoPostventa;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.Tecnologia;
 import pe.albrugroup.lead_service.entity.enums.Unidad;
@@ -121,6 +122,28 @@ public class DataLoader {
 
         Tipificacion listaNegra = saveTipificacion(Etapa.PREVENTA, "LISTA_NEGRA", "Lead restringido por lista negra", 9);
         saveSubtipificacion(listaNegra, "BLACKLIST", "Lead bloqueado por politica de blacklist", 1);
+
+        Tipificacion seguimientoPostventa = saveTipificacion(Etapa.POSTVENTA, "SEGUIMIENTO", "Seguimiento de servicio instalado", 1);
+        saveSubtipificacion(seguimientoPostventa, "SERVICIO_ACTIVO", "Cliente mantiene el servicio activo", 1, null, EstadoPostventa.EN_SEGUIMIENTO);
+        saveSubtipificacion(seguimientoPostventa, "CLIENTE_SATISFECHO", "Cliente conforme con el servicio", 2, null, EstadoPostventa.EN_SEGUIMIENTO);
+
+        Tipificacion incidenciaPostventa = saveTipificacion(Etapa.POSTVENTA, "INCIDENCIA", "Incidencia detectada durante la postventa", 2);
+        saveSubtipificacion(incidenciaPostventa, "PAGO_PENDIENTE", "Cliente presenta pago pendiente", 1, Etapa.COBRANZA, EstadoPostventa.EN_COBRANZA);
+        saveSubtipificacion(incidenciaPostventa, "RIESGO_BAJA", "Cliente presenta riesgo de baja", 2, null, EstadoPostventa.PAGO_PENDIENTE);
+        saveSubtipificacion(incidenciaPostventa, "BAJA_CONFIRMADA", "Proveedor confirma baja del servicio", 3, null, EstadoPostventa.BAJA_CONFIRMADA);
+
+        Tipificacion cierrePostventa = saveTipificacion(Etapa.POSTVENTA, "CIERRE", "Cierre de seguimiento postventa", 3);
+        saveSubtipificacion(cierrePostventa, "EFECTIVO", "Lead cumple permanencia requerida", 1, null, EstadoPostventa.EFECTIVO);
+        saveSubtipificacion(cierrePostventa, "NO_EFECTIVO", "Lead no cumple permanencia requerida", 2, null, EstadoPostventa.NO_EFECTIVO);
+
+        Tipificacion gestionCobranza = saveTipificacion(Etapa.COBRANZA, "GESTION_PAGO", "Gestion de pago pendiente", 1);
+        saveSubtipificacion(gestionCobranza, "COMPROMISO_PAGO", "Cliente asume compromiso de pago", 1, null, EstadoPostventa.PAGO_PENDIENTE);
+        saveSubtipificacion(gestionCobranza, "PAGO_CLIENTE", "Pago regularizado por el cliente", 2, Etapa.POSTVENTA, EstadoPostventa.EN_SEGUIMIENTO);
+        saveSubtipificacion(gestionCobranza, "PAGO_EMPRESA", "Pago cubierto por la empresa", 3, Etapa.POSTVENTA, EstadoPostventa.PAGO_CUBIERTO_EMPRESA);
+
+        Tipificacion cierreCobranza = saveTipificacion(Etapa.COBRANZA, "CIERRE", "Cierre de gestion de cobranza", 2);
+        saveSubtipificacion(cierreCobranza, "BAJA_CONFIRMADA", "Proveedor confirma baja del servicio", 1, null, EstadoPostventa.BAJA_CONFIRMADA);
+        saveSubtipificacion(cierreCobranza, "NO_EFECTIVO", "Lead no cumple permanencia requerida", 2, null, EstadoPostventa.NO_EFECTIVO);
     }
 
     private Tipificacion saveTipificacion(Etapa etapa, String codigo, String descripcion, Integer orden) {
@@ -143,20 +166,42 @@ public class DataLoader {
     }
 
     private void saveSubtipificacion(Tipificacion tipificacion, String codigo, String descripcion, Integer orden, Etapa etapaCambio) {
+        saveSubtipificacion(tipificacion, codigo, descripcion, orden, etapaCambio, null);
+    }
+
+    private void saveSubtipificacion(
+            Tipificacion tipificacion,
+            String codigo,
+            String descripcion,
+            Integer orden,
+            Etapa etapaCambio,
+            EstadoPostventa estadoPostventaCambio
+    ) {
         subtipificacionRepository.findByTipificacionIdAndCodigo(tipificacion.getId(), codigo)
-                .orElseGet(() -> {
+                .ifPresentOrElse(
+                        subtipificacion -> {
+                            subtipificacion.setDescripcion(descripcion);
+                            subtipificacion.setOrden(orden);
+                            subtipificacion.setEtapaCambio(etapaCambio);
+                            subtipificacion.setEstadoPostventaCambio(estadoPostventaCambio);
+                            subtipificacion.setActivo(Boolean.TRUE);
+                            subtipificacionRepository.save(subtipificacion);
+                        },
+                        () -> {
                     SubtipificacionRequest request = SubtipificacionRequest.builder()
                             .tipificacionId(tipificacion.getId())
                             .codigo(codigo)
                             .descripcion(descripcion)
                             .orden(orden)
                             .etapaCambio(etapaCambio)
+                            .estadoPostventaCambio(estadoPostventaCambio)
                             .build();
                     Subtipificacion entity = tipificacionMapper.toEntity(request);
                     entity.setTipificacion(tipificacion);
                     entity.setActivo(Boolean.TRUE);
-                    return subtipificacionRepository.save(entity);
-                });
+                    subtipificacionRepository.save(entity);
+                        }
+                );
     }
 
     private void crearCatalogoComercialBase() {

@@ -9,6 +9,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import pe.albrugroup.lead_service.entity.enums.Base;
+import pe.albrugroup.lead_service.entity.enums.EstadoPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
@@ -89,6 +90,8 @@ public class Lead {
 
     private Integer diaCorteFacturacion;
     private Integer mesesPermanenciaSnapshot;
+    @Enumerated(EnumType.STRING)
+    private EstadoPostventa estadoPostventa;
 
     @CreationTimestamp @Column(updatable = false)
     private Instant createdAt;

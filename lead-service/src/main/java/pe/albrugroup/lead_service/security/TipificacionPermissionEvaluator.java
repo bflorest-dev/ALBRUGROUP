@@ -19,6 +19,7 @@ public class TipificacionPermissionEvaluator {
             case PREVENTA -> "READ_TIPIFICACIONES_PREVENTA";
             case VENTA -> "READ_TIPIFICACIONES_VENTA";
             case POSTVENTA -> "READ_TIPIFICACIONES_POSTVENTA";
+            case COBRANZA -> "READ_TIPIFICACIONES_POSTVENTA";
         };
     }
 

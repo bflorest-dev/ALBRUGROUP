@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.albrugroup.lead_service.entity.Evento;
 import pe.albrugroup.lead_service.entity.enums.Accion;
+import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.repository.projection.AsesorCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.AsesorProveedorCantidadProjection;
 
@@ -51,6 +52,45 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     List<Object[]> listarUltimaFechaPorLeadIdsYAccion(
             @Param("leadIds") Collection<Long> leadIds,
             @Param("accion") Accion accion
+    );
+
+    @Query("""
+            SELECT e.idLead, e.nombreActor
+            FROM Evento e
+            WHERE e.idLead IN :leadIds
+              AND e.etapa = :etapa
+              AND e.accion = :accion
+              AND e.createdAt = (
+                  SELECT MAX(em.createdAt)
+                  FROM Evento em
+                  WHERE em.idLead = e.idLead
+                    AND em.etapa = :etapa
+                    AND em.accion = :accion
+              )
+            """)
+    List<Object[]> listarUltimoActorPorLeadIdsEtapaYAccion(
+            @Param("leadIds") Collection<Long> leadIds,
+            @Param("etapa") Etapa etapa,
+            @Param("accion") Accion accion
+    );
+
+    @Query("""
+            SELECT e.idLead, e.fechaInstalacion
+            FROM Evento e
+            WHERE e.idLead IN :leadIds
+              AND e.etapa = :etapa
+              AND e.fechaInstalacion IS NOT NULL
+              AND e.createdAt = (
+                  SELECT MAX(em.createdAt)
+                  FROM Evento em
+                  WHERE em.idLead = e.idLead
+                    AND em.etapa = :etapa
+                    AND em.fechaInstalacion IS NOT NULL
+              )
+            """)
+    List<Object[]> listarUltimaFechaInstalacionPorLeadIds(
+            @Param("leadIds") Collection<Long> leadIds,
+            @Param("etapa") Etapa etapa
     );
 
     @Query("""

@@ -27,6 +27,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
 
     Optional<Lead> findByPrefijoAndLead(String prefijo, String lead);
     Optional<Lead> findByIdAndIdAsesorAsignadoAndEtapa(Long id, Long idAsesorAsignado, Etapa etapa);
+    Optional<Lead> findByIdAndIdAsesorAsignadoAndEtapaIn(Long id, Long idAsesorAsignado, Collection<Etapa> etapas);
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Lead> findByIdAndEtapa(Long id, Etapa etapa);
 
@@ -229,6 +230,57 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             ORDER BY l.lastEntryAt DESC, l.id DESC
             """)
     Page<LeadResponse> listarLeadsAsignadosPorEtapaYAsesor(
+            @Param("etapa") Etapa etapa,
+            @Param("idAsesor") Long idAsesor,
+            Pageable pageable
+    );
+
+    @Query(value = """
+            SELECT l
+            FROM Lead l
+            LEFT JOIN FETCH l.datosPreventa
+            LEFT JOIN FETCH l.direccion
+            WHERE l.etapa = :etapa
+              AND l.idAsesorAsignado IS NULL
+              AND l.nombreAsesorAsignado IS NULL
+              AND l.idTipificacion IS NULL
+              AND l.codigoTipificacion IS NULL
+              AND l.idSubtipificacion IS NULL
+              AND l.codigoSubtipificacion IS NULL
+            ORDER BY l.lastEntryAt DESC, l.id DESC
+            """,
+            countQuery = """
+            SELECT COUNT(l)
+            FROM Lead l
+            WHERE l.etapa = :etapa
+              AND l.idAsesorAsignado IS NULL
+              AND l.nombreAsesorAsignado IS NULL
+              AND l.idTipificacion IS NULL
+              AND l.codigoTipificacion IS NULL
+              AND l.idSubtipificacion IS NULL
+              AND l.codigoSubtipificacion IS NULL
+            """)
+    Page<Lead> listarLeadsPostventaDisponibles(
+            @Param("etapa") Etapa etapa,
+            Pageable pageable
+    );
+
+    @Query(value = """
+            SELECT l
+            FROM Lead l
+            LEFT JOIN FETCH l.datosPreventa
+            LEFT JOIN FETCH l.direccion
+            WHERE l.etapa = :etapa
+              AND l.idAsesorAsignado = :idAsesor
+            ORDER BY l.lastEntryAt DESC, l.id DESC
+            """,
+            countQuery = """
+            SELECT COUNT(l)
+            FROM Lead l
+            WHERE l.etapa = :etapa
+              AND l.idAsesorAsignado = :idAsesor
+            """)
+    Page<Lead> listarLeadsPostventaAsignados(
             @Param("etapa") Etapa etapa,
             @Param("idAsesor") Long idAsesor,
             Pageable pageable

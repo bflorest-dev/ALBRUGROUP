@@ -169,6 +169,8 @@ public class DataLoader {
         savePermiso("READ_LEADS_VENTA", "Puede ver la bandeja de leads disponibles en venta", "LEAD_VENTA", "READ");
 
         // LEADS - POSTVENTA
+        savePermiso("READ_LEADS_POSTVENTA", "Puede ver la bandeja de leads disponibles en postventa", "LEAD_POSTVENTA", "READ");
+        savePermiso("READ_LEADS_COBRANZA", "Puede ver la bandeja de leads disponibles en cobranza", "LEAD_COBRANZA", "READ");
 
         log.info("Permisos Creados");
     }
@@ -454,10 +456,13 @@ public class DataLoader {
 
         // ASESOR POSTVENTA
         Set<Permiso> postventaPermisos = Set.of(
+                getPermiso("READ_LEADS_POSTVENTA"),
+                getPermiso("ASSIGN_LEADS"),
                 getPermiso("READ_LEADS_ASESOR"),
                 getPermiso("UPDATE_LEADS_ASESOR"),
                 getPermiso("TYPIFY_LEADS"),
                 getPermiso("CONTACT_LEADS"),
+                getPermiso("READ_TIPIFICACIONES_POSTVENTA"),
                 getPermiso("READ_EVENTOS_LEADS"),
                 getPermiso("READ_PLANES"),
                 getPermiso("READ_ADICIONALES"),
@@ -468,6 +473,25 @@ public class DataLoader {
         );
         saveRol("ASESOR_POSTVENTA", "Postventa - Gestion de cartera y seguimiento", postventaPermisos);
         saveRol("SUPERVISOR_POSTVENTA", "Postventa - Supervision de cartera y seguimiento", postventaPermisos);
+
+        // COBRANZA
+        Set<Permiso> cobranzaPermisos = Set.of(
+                getPermiso("READ_LEADS_COBRANZA"),
+                getPermiso("ASSIGN_LEADS"),
+                getPermiso("READ_LEADS_ASESOR"),
+                getPermiso("UPDATE_LEADS_ASESOR"),
+                getPermiso("TYPIFY_LEADS"),
+                getPermiso("CONTACT_LEADS"),
+                getPermiso("READ_TIPIFICACIONES_POSTVENTA"),
+                getPermiso("READ_EVENTOS_LEADS"),
+                getPermiso("READ_PLANES"),
+                getPermiso("READ_ADICIONALES"),
+                getPermiso("READ_PROMOCIONES"),
+                getPermiso("READ_UBIGEO"),
+                getPermiso("READ_ASISTENCIAS_SELF"),
+                getPermiso("UPDATE_ASISTENCIAS")
+        );
+        saveRol("ASESOR_COBRANZA", "Cobranza - Seguimiento de pagos postventa", cobranzaPermisos);
 
         // DESARROLLADOR
         Set<Permiso> desarrolladorPermisos = Set.of(

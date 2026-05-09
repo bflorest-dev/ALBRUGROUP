@@ -8,6 +8,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.entity.*;
 import pe.albrugroup.lead_service.entity.enums.Accion;
+import pe.albrugroup.lead_service.entity.enums.EstadoPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.LeadAsignacionMasivaRequest;
@@ -17,6 +18,7 @@ import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaAdicionalRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaComercialRequest;
+import pe.albrugroup.lead_service.entity.request.LeadTipificacionPostventaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionVentaRequest;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
@@ -32,6 +34,7 @@ import pe.albrugroup.lead_service.entity.response.LeadAsesorVentasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 import pe.albrugroup.lead_service.entity.response.InternetResponse;
+import pe.albrugroup.lead_service.entity.response.LeadPostventaResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.entity.response.PlanAdicionalResponse;
 import pe.albrugroup.lead_service.entity.response.SupervisorVentasProveedorResumenResponse;
@@ -44,6 +47,7 @@ import pe.albrugroup.lead_service.exception.ConflictException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.AdicionalRepository;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
+import pe.albrugroup.lead_service.repository.DistritoRepository;
 import pe.albrugroup.lead_service.repository.EventoRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
 import pe.albrugroup.lead_service.repository.PlanRepository;
@@ -57,8 +61,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -79,6 +85,7 @@ public class LeadService {
     private final TipificacionRepository tipificacionRepository;
     private final SubtipificacionRepository subtipificacionRepository;
     private final LeadMapper leadMapper;
+    private final DistritoRepository distritoRepository;
     private final PaginationService paginationService;
     private final TransactionTemplate transactionTemplate;
 
@@ -91,6 +98,9 @@ public class LeadService {
     );
     private static final Set<String> LEAD_ASESOR_SORT_FIELDS = Set.of(
             "lastEntryAt", "createdAt", "lead", "estado"
+    );
+    private static final Set<String> LEAD_POSTVENTA_SORT_FIELDS = Set.of(
+            "lastEntryAt", "createdAt", "lead", "nombreProveedorSnapshot", "estadoPostventa", "diaCorteFacturacion"
     );
     private static final Set<String> LEAD_AGENDADO_SORT_FIELDS = Set.of(
             "horaProgramada", "createdAt", "lead", "nombreAsesorAsignado", "estado"
@@ -137,6 +147,40 @@ public class LeadService {
                 paginationService.toPageable(pageRequest, LEAD_ASESOR_SORT_FIELDS)
         );
         return PageResponse.from(leads);
+    }
+
+    public PageResponse<LeadPostventaResponse> listarBandejaPostventa(PageRequest pageRequest) {
+        Page<Lead> leads = leadRepository.listarLeadsPostventaDisponibles(
+                Etapa.POSTVENTA,
+                paginationService.toPageable(pageRequest, LEAD_POSTVENTA_SORT_FIELDS)
+        );
+        return mapearBandejaPostventa(leads);
+    }
+
+    public PageResponse<LeadPostventaResponse> listarLeadsPostventaAsignados(PageRequest pageRequest) {
+        Page<Lead> leads = leadRepository.listarLeadsPostventaAsignados(
+                Etapa.POSTVENTA,
+                currentUser.empleadoID(),
+                paginationService.toPageable(pageRequest, LEAD_POSTVENTA_SORT_FIELDS)
+        );
+        return mapearBandejaPostventa(leads);
+    }
+
+    public PageResponse<LeadPostventaResponse> listarBandejaCobranza(PageRequest pageRequest) {
+        Page<Lead> leads = leadRepository.listarLeadsPostventaDisponibles(
+                Etapa.COBRANZA,
+                paginationService.toPageable(pageRequest, LEAD_POSTVENTA_SORT_FIELDS)
+        );
+        return mapearBandejaPostventa(leads);
+    }
+
+    public PageResponse<LeadPostventaResponse> listarLeadsCobranzaAsignados(PageRequest pageRequest) {
+        Page<Lead> leads = leadRepository.listarLeadsPostventaAsignados(
+                Etapa.COBRANZA,
+                currentUser.empleadoID(),
+                paginationService.toPageable(pageRequest, LEAD_POSTVENTA_SORT_FIELDS)
+        );
+        return mapearBandejaPostventa(leads);
     }
 
     public PageResponse<LeadAsesorVentasResponse> listarBandejaAsesorVentas(PageRequest pageRequest) {
@@ -416,6 +460,100 @@ public class LeadService {
         );
     }
 
+    @Transactional
+    public void tipificarLeadPostventa(Long idLead, LeadTipificacionPostventaRequest request) {
+        tipificarLeadSeguimientoPostventa(idLead, Etapa.POSTVENTA, request);
+    }
+
+    @Transactional
+    public void tipificarLeadCobranza(Long idLead, LeadTipificacionPostventaRequest request) {
+        tipificarLeadSeguimientoPostventa(idLead, Etapa.COBRANZA, request);
+    }
+
+    private void tipificarLeadSeguimientoPostventa(Long idLead, Etapa etapa, LeadTipificacionPostventaRequest request) {
+        Lead lead = obtenerLeadAsignadoEnEtapa(idLead, etapa);
+        Etapa etapaActual = lead.getEtapa();
+
+        Tipificacion tipificacion = tipificacionRepository.findByEtapaAndCodigoAndActivoTrue(
+                        etapaActual,
+                        request.getCodigoTipificacion().trim()
+                )
+                .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getCodigoTipificacion()));
+        Subtipificacion subtipificacion = subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
+                        tipificacion.getId(),
+                        request.getCodigoSubtipificacion().trim()
+                )
+                .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getCodigoSubtipificacion()));
+
+        Etapa etapaDestino = subtipificacion.getEtapaCambio();
+        EstadoPostventa estadoDestino = resolverEstadoPostventaDestino(etapaActual, etapaDestino, subtipificacion);
+
+        if (estadoDestino != null) {
+            lead.setEstadoPostventa(estadoDestino);
+        }
+
+        if (etapaDestino != null && etapaDestino != etapaActual) {
+            lead.setEtapa(etapaDestino);
+            lead.setEstado(EstadoSeguimiento.GESTIONADO);
+            lead.setIdAsesorAsignado(null);
+            lead.setNombreAsesorAsignado(null);
+            lead.setIdTipificacion(null);
+            lead.setCodigoTipificacion(null);
+            lead.setIdSubtipificacion(null);
+            lead.setCodigoSubtipificacion(null);
+        } else {
+            lead.setIdTipificacion(tipificacion.getId());
+            lead.setCodigoTipificacion(tipificacion.getCodigo());
+            lead.setIdSubtipificacion(subtipificacion.getId());
+            lead.setCodigoSubtipificacion(subtipificacion.getCodigo());
+
+            if (esEstadoPostventaFinal(estadoDestino)) {
+                lead.setEstado(EstadoSeguimiento.GESTIONADO);
+                lead.setIdAsesorAsignado(null);
+                lead.setNombreAsesorAsignado(null);
+            } else {
+                moverAEnGestionSiAplica(lead);
+            }
+        }
+
+        Lead savedLead = leadRepository.save(lead);
+        Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
+        Long idPlanOfrecido = savedLead.getPlan() == null ? null : savedLead.getPlan().getId();
+        registrarEventoTipificacion(
+                savedLead.getId(),
+                idCampana,
+                etapaActual,
+                idPlanOfrecido,
+                tipificacion.getCodigo(),
+                subtipificacion.getCodigo(),
+                request.getComentario(),
+                (java.time.LocalTime) null
+        );
+    }
+
+    private EstadoPostventa resolverEstadoPostventaDestino(
+            Etapa etapaActual,
+            Etapa etapaDestino,
+            Subtipificacion subtipificacion
+    ) {
+        if (subtipificacion.getEstadoPostventaCambio() != null) {
+            return subtipificacion.getEstadoPostventaCambio();
+        }
+        if (etapaDestino == Etapa.COBRANZA) {
+            return EstadoPostventa.EN_COBRANZA;
+        }
+        if (etapaActual == Etapa.COBRANZA && etapaDestino == Etapa.POSTVENTA) {
+            return EstadoPostventa.EN_SEGUIMIENTO;
+        }
+        return null;
+    }
+
+    private boolean esEstadoPostventaFinal(EstadoPostventa estadoPostventa) {
+        return estadoPostventa == EstadoPostventa.EFECTIVO
+                || estadoPostventa == EstadoPostventa.NO_EFECTIVO
+                || estadoPostventa == EstadoPostventa.BAJA_CONFIRMADA;
+    }
+
     private void aplicarDatosPostventaSiCorresponde(Lead lead, Etapa etapaDestino, LocalDate fechaInstalacion) {
         if (etapaDestino != Etapa.POSTVENTA) {
             return;
@@ -432,6 +570,7 @@ public class LeadService {
 
         lead.setDiaCorteFacturacion(resolverDiaCorteFacturacion(proveedor, fechaInstalacion));
         lead.setMesesPermanenciaSnapshot(proveedor.getMesesPermanencia());
+        lead.setEstadoPostventa(EstadoPostventa.EN_SEGUIMIENTO);
     }
 
     private Integer resolverDiaCorteFacturacion(Proveedor proveedor, LocalDate fechaInstalacion) {
@@ -613,6 +752,18 @@ public class LeadService {
     @Transactional
     public void registrarContactoVenta(Long idLead) {
         Lead lead = obtenerLeadAsignadoEnEtapa(idLead, Etapa.VENTA);
+        registrarContactoInterno(lead);
+    }
+
+    @Transactional
+    public void registrarContactoPostventa(Long idLead) {
+        Lead lead = obtenerLeadAsignadoEnEtapa(idLead, Etapa.POSTVENTA);
+        registrarContactoInterno(lead);
+    }
+
+    @Transactional
+    public void registrarContactoCobranza(Long idLead) {
+        Lead lead = obtenerLeadAsignadoEnEtapa(idLead, Etapa.COBRANZA);
         registrarContactoInterno(lead);
     }
 
@@ -810,6 +961,100 @@ public class LeadService {
         Map<Long, Instant> fechasAsignacion = obtenerFechasAsignacion(leads.getContent());
         Page<LeadAsesorVentasResponse> responsePage = leads.map(lead -> toAsesorResponse(lead, fechasAsignacion.get(lead.getId())));
         return PageResponse.from(responsePage);
+    }
+
+    private PageResponse<LeadPostventaResponse> mapearBandejaPostventa(Page<Lead> leads) {
+        List<Lead> content = leads.getContent();
+        Map<Long, String> asesoresPreventa = obtenerUltimosActoresPorEtapaYAccion(
+                content,
+                Etapa.PREVENTA,
+                Accion.TIPIFICACION
+        );
+        Map<Long, LocalDate> fechasInstalacion = obtenerFechasInstalacionVenta(content);
+        Map<String, String> departamentosPorUbigeo = obtenerDepartamentosPorUbigeo(content);
+
+        Page<LeadPostventaResponse> responsePage = leads.map(lead -> toPostventaResponse(
+                lead,
+                asesoresPreventa.get(lead.getId()),
+                fechasInstalacion.get(lead.getId()),
+                obtenerDepartamentoLead(lead, departamentosPorUbigeo)
+        ));
+        return PageResponse.from(responsePage);
+    }
+
+    private LeadPostventaResponse toPostventaResponse(
+            Lead lead,
+            String asesorPreventa,
+            LocalDate fechaInstalacion,
+            String departamento
+    ) {
+        DatosPreventa datosPreventa = lead.getDatosPreventa();
+        return new LeadPostventaResponse(
+                lead.getId(),
+                lead.getNombreProveedorSnapshot(),
+                asesorPreventa,
+                lead.getLead(),
+                datosPreventa == null ? null : datosPreventa.getTipoDocumento(),
+                datosPreventa == null ? null : datosPreventa.getNumeroDocumentoTitularServicio(),
+                datosPreventa == null ? null : datosPreventa.getNombreTitularServicio(),
+                departamento,
+                fechaInstalacion,
+                lead.getDiaCorteFacturacion(),
+                lead.getEstadoPostventa()
+        );
+    }
+
+    private Map<Long, String> obtenerUltimosActoresPorEtapaYAccion(List<Lead> leads, Etapa etapa, Accion accion) {
+        if (leads.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> leadIds = leads.stream().map(Lead::getId).toList();
+        Map<Long, String> actores = new HashMap<>();
+        for (Object[] row : eventoRepository.listarUltimoActorPorLeadIdsEtapaYAccion(leadIds, etapa, accion)) {
+            actores.putIfAbsent((Long) row[0], (String) row[1]);
+        }
+        return actores;
+    }
+
+    private Map<Long, LocalDate> obtenerFechasInstalacionVenta(List<Lead> leads) {
+        if (leads.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> leadIds = leads.stream().map(Lead::getId).toList();
+        Map<Long, LocalDate> fechas = new HashMap<>();
+        for (Object[] row : eventoRepository.listarUltimaFechaInstalacionPorLeadIds(leadIds, Etapa.VENTA)) {
+            fechas.putIfAbsent((Long) row[0], (LocalDate) row[1]);
+        }
+        return fechas;
+    }
+
+    private Map<String, String> obtenerDepartamentosPorUbigeo(List<Lead> leads) {
+        Set<String> ubigeos = new HashSet<>();
+        for (Lead lead : leads) {
+            Direccion direccion = lead.getDireccion();
+            if (direccion != null && direccion.getUbigeoDomicilio() != null && !direccion.getUbigeoDomicilio().isBlank()) {
+                ubigeos.add(direccion.getUbigeoDomicilio());
+            }
+        }
+        if (ubigeos.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<String, String> departamentos = new HashMap<>();
+        distritoRepository.findByCodigoInWithDepartamento(ubigeos)
+                .forEach(distrito -> departamentos.put(
+                        distrito.getCodigo(),
+                        distrito.getDepartamento() == null ? null : distrito.getDepartamento().getNombre()
+                ));
+        return departamentos;
+    }
+
+    private String obtenerDepartamentoLead(Lead lead, Map<String, String> departamentosPorUbigeo) {
+        Direccion direccion = lead.getDireccion();
+        if (direccion == null || direccion.getUbigeoDomicilio() == null) {
+            return null;
+        }
+        return departamentosPorUbigeo.get(direccion.getUbigeoDomicilio());
     }
 
     private LeadAsesorVentasResponse toAsesorResponse(Lead lead, Instant fechaAsignacion) {
