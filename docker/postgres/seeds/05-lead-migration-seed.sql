@@ -112,6 +112,7 @@ WITH raw_normalized AS (
             WHEN regexp_replace(pg_temp.seed_normalize_text(compania), '[^A-Z0-9]', '', 'g') LIKE '%WIN%' THEN 'WIN'
             WHEN regexp_replace(pg_temp.seed_normalize_text(compania), '[^A-Z0-9]', '', 'g') LIKE '%CLARO%' THEN 'CLARO'
             WHEN regexp_replace(pg_temp.seed_normalize_text(compania), '[^A-Z0-9]', '', 'g') LIKE '%PERUFIBRA%' THEN 'PERUFIBRA'
+            WHEN regexp_replace(pg_temp.seed_normalize_text(compania), '[^A-Z0-9]', '', 'g') LIKE '%PERFIBRA%' THEN 'PERUFIBRA'
             WHEN regexp_replace(pg_temp.seed_normalize_text(compania), '[^A-Z0-9]', '', 'g') = '' THEN 'WIN'
             ELSE regexp_replace(pg_temp.seed_normalize_text(compania), '[^A-Z0-9]', '', 'g')
         END AS proveedor_destino,
@@ -379,53 +380,26 @@ SELECT
 FROM ranked
 WHERE rn = 1;
 
-INSERT INTO proveedor (nombre, activo)
-SELECT DISTINCT s.proveedor_destino, TRUE
-FROM seed_legacy_cliente_stage s
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM proveedor p
-    WHERE UPPER(TRIM(p.nombre)) = UPPER(TRIM(s.proveedor_destino))
-);
+DO $$
+DECLARE
+    proveedores_desconocidos TEXT;
+BEGIN
+    SELECT string_agg(proveedor_destino, ', ' ORDER BY proveedor_destino)
+    INTO proveedores_desconocidos
+    FROM (
+        SELECT DISTINCT s.proveedor_destino
+        FROM seed_legacy_cliente_stage s
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM proveedor p
+            WHERE UPPER(TRIM(p.nombre)) = UPPER(TRIM(s.proveedor_destino))
+        )
+    ) faltantes;
 
-INSERT INTO cuenta_publicitaria (numero_cuenta, nombre_cuenta, activo)
-SELECT DISTINCT
-    'MIG-LEGACY-' || s.proveedor_destino,
-    'Migracion Legacy ' || s.proveedor_destino,
-    TRUE
-FROM seed_legacy_cliente_stage s
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM cuenta_publicitaria cp
-    WHERE cp.numero_cuenta = 'MIG-LEGACY-' || s.proveedor_destino
-);
-
-INSERT INTO campana (
-    nombre,
-    numero_whatsapp_empresa,
-    id_cuenta_publicitaria,
-    id_proveedor,
-    activo
-)
-SELECT
-    'Migracion Legacy - ' || s.proveedor_destino,
-    '51900000000',
-    cp.id,
-    p.id,
-    TRUE
-FROM (
-    SELECT DISTINCT proveedor_destino
-    FROM seed_legacy_cliente_stage
-) s
-JOIN proveedor p
-  ON UPPER(TRIM(p.nombre)) = UPPER(TRIM(s.proveedor_destino))
-JOIN cuenta_publicitaria cp
-  ON cp.numero_cuenta = 'MIG-LEGACY-' || s.proveedor_destino
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM campana c
-    WHERE c.id_proveedor = p.id
-);
+    IF proveedores_desconocidos IS NOT NULL THEN
+        RAISE EXCEPTION 'La migracion legacy contiene proveedores no catalogados: %', proveedores_desconocidos;
+    END IF;
+END $$;
 
 DO $$
 DECLARE
@@ -466,7 +440,9 @@ BEGIN
         FROM campana c
         JOIN proveedor p ON p.id = c.id_proveedor
         WHERE UPPER(TRIM(p.nombre)) = UPPER(TRIM(rec.proveedor_destino))
-        ORDER BY c.activo DESC, c.id ASC
+        ORDER BY
+            CASE WHEN c.activo THEN 0 ELSE 1 END,
+            c.id ASC
         LIMIT 1;
 
         v_id_tipificacion := NULL;

@@ -2,6 +2,8 @@ import { Routes } from '@angular/router';
 import { roleGuard } from '../../core/guards/role.guard';
 import { AdminDashboardPageComponent } from '../admin/pages/admin-dashboard-page/admin-dashboard-page.component';
 import { AdminEmployabilityPageComponent } from '../admin/pages/admin-employability-page/admin-employability-page.component';
+import { PostulantesBoardPageComponent } from '../recruiter/pages/postulantes-board-page/postulantes-board-page.component';
+import { TrainingGroupsPageComponent } from '../recruiter/pages/training-groups-page/training-groups-page.component';
 import { RrhhPostulantesPageComponent } from '../rrhh/pages/rrhh-postulantes-page/rrhh-postulantes-page.component';
 import { RoleHomeRedirectComponent } from './pages/role-home-redirect/role-home-redirect.component';
 import { RolePlatformPageComponent } from './pages/role-platform-page/role-platform-page.component';
@@ -47,6 +49,27 @@ export const PLATFORM_ROUTES: Routes = [
   },
   {
     path: 'reclutador',
+    pathMatch: 'full',
+    redirectTo: 'reclutador/grupos-capacitacion'
+  },
+  {
+    path: 'reclutador/grupos-capacitacion',
+    component: TrainingGroupsPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['RECLUTADOR']
+    }
+  },
+  {
+    path: 'reclutador/postulantes',
+    component: PostulantesBoardPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['RECLUTADOR']
+    }
+  },
+  {
+    path: 'reclutador/inicio',
     component: RolePlatformPageComponent,
     canActivate: [roleGuard],
     data: {

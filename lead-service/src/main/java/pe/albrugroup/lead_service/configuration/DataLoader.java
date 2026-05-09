@@ -160,10 +160,10 @@ public class DataLoader {
     }
 
     private void crearCatalogoComercialBase() {
-        Proveedor win = saveProveedor("WIN", Set.of(1, 2), null);
-        Proveedor claro = saveProveedor("CLARO");
-        Proveedor mifibra = saveProveedor("MIFIBRA");
-        Proveedor perufibra = saveProveedor("PERUFIBRA");
+        Proveedor win = saveProveedor("WIN", Set.of(1, 2), 3);
+        Proveedor claro = saveProveedor("CLARO", Set.of(1, 2), 5);
+        Proveedor mifibra = saveProveedor("MIFIBRA",  Set.of(1, 2), 3);
+        Proveedor perufibra = saveProveedor("PERUFIBRA", Set.of(1, 2), 3);
 
         CuentaPublicitaria runa = saveCuentaPublicitaria("1822236612034217", "Runa Contact Center");
         CuentaPublicitaria fibra = saveCuentaPublicitaria("1030035362376438", "Internet Fibra Optica");

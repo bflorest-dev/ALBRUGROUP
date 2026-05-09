@@ -37,6 +37,13 @@ export class PrivateLayoutComponent {
       return [{ label: 'Postulantes', route: '/app/rrhh/postulantes' }];
     }
 
+    if (session.primaryRole === 'RECLUTADOR') {
+      return [
+        { label: 'Grupos de capacitacion', route: '/app/reclutador/grupos-capacitacion' },
+        { label: 'Postulantes', route: '/app/reclutador/postulantes' }
+      ];
+    }
+
     return [{ label: 'Inicio', route: session.homeRoute, exact: true }];
   });
 

@@ -91,7 +91,7 @@ public class GrupoCapacitacionService {
                 .grupoCapacitacion(grupo)
                 .postulacion(postulacion)
                 .estadoCapacitacion(EstadoCapacitacionPostulante.ASIGNADO)
-                .fechaAsignacion(request.getFechaAsignacion() != null ? request.getFechaAsignacion() : LocalDate.now())
+                .fechaAsignacion(grupo.getFechaInicio())
                 .build();
 
         GrupoCapacitacionDetalle detalleGuardado = detalleRepository.save(detalle);

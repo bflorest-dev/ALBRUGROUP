@@ -1,0 +1,84 @@
+<section class="kanban">
+  @for (column of columns; track column.key) {
+    @let page = getPage(column.key);
+
+    <article class="kanban-column">
+      <header class="column-header">
+        <div>
+          <span class="column-header__eyebrow">{{ page.totalElements }} registros</span>
+          <h3>{{ column.title }}</h3>
+          <p>{{ column.hint }}</p>
+        </div>
+        <button type="button" class="icon-button" (click)="reloadColumn.emit(column.key)">
+          <i class="ti ti-refresh" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      @if (getError(column.key)) {
+        <p class="form-message form-message--error">{{ getError(column.key) }}</p>
+      }
+
+      @if (isLoading(column.key)) {
+        <p class="helper-text">Cargando...</p>
+      } @else if (page.content.length) {
+        <div class="cards">
+          @for (postulacion of page.content; track postulacion.id) {
+            <article class="postulante-card">
+              <div class="postulante-card__top">
+                <div>
+                  <h4>
+                    {{ postulacion.postulante.nombres }}
+                    {{ postulacion.postulante.apellidos }}
+                  </h4>
+                  <p>{{ postulacion.postulante.tipoDocumento }} {{ postulacion.postulante.documento }}</p>
+                </div>
+                <button
+                  type="button"
+                  class="detail-button"
+                  (click)="openDetail.emit(postulacion)"
+                  aria-label="Ver detalle"
+                >
+                  <i class="ti ti-list-details" aria-hidden="true"></i>
+                </button>
+              </div>
+
+              <div class="card-meta">
+                <span><i class="ti ti-phone" aria-hidden="true"></i>{{ postulacion.postulante.celular }}</span>
+                <span><i class="ti ti-cake" aria-hidden="true"></i>{{ getAge(postulacion.postulante.fechaNacimiento) }} años</span>
+                <span><i class="ti ti-briefcase" aria-hidden="true"></i>{{ toLabel(postulacion.ofertaLaboral.puestoObjetivo) }}</span>
+                <span><i class="ti ti-building-store" aria-hidden="true"></i>{{ toLabel(postulacion.ofertaLaboral.negocio) }}</span>
+              </div>
+
+              <div class="card-footer">
+                <span>{{ postulacion.ofertaLaboral.codigo }}</span>
+                <strong>{{ toLabel(postulacion.origen) }}</strong>
+              </div>
+            </article>
+          }
+        </div>
+
+        <div class="pagination">
+          <button
+            type="button"
+            class="ghost-button"
+            [disabled]="page.page === 0"
+            (click)="pageChange.emit({ column: column.key, pageNumber: page.page - 1 })"
+          >
+            Anterior
+          </button>
+          <span>{{ page.page + 1 }}/{{ page.totalPages }}</span>
+          <button
+            type="button"
+            class="ghost-button"
+            [disabled]="page.page + 1 >= page.totalPages"
+            (click)="pageChange.emit({ column: column.key, pageNumber: page.page + 1 })"
+          >
+            Siguiente
+          </button>
+        </div>
+      } @else {
+        <p class="helper-text">Sin postulantes en esta columna.</p>
+      }
+    </article>
+  }
+</section>

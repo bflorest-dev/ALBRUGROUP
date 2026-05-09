@@ -25,12 +25,13 @@ Este seed toma el backup filtrado `clientes_campos_utiles_full.csv` y lo transfo
   - `SEG LEAD` -> `RECONTACTO`
   - `FACEBOOK` -> `MESSENGER`
 - `compania` no se inserta directo en `lead`.
-  - primero se resuelve el `proveedor`
-  - luego se busca una `campana` de ese proveedor
-  - si el proveedor no tiene campana, se crea una `Migracion Legacy - {PROVEEDOR}`
+  - primero se valida que el `proveedor` exista en el catalogo base
+  - luego se busca una `campana` existente de ese proveedor
+  - si no hay campana existente, el lead se migra sin `id_campana`
+- La migracion no crea catalogos: no inserta proveedores, cuentas publicitarias, campanas, planes ni adicionales.
 - Siempre se crea `evento.REGISTRO`.
 - Solo se crea `evento.TIPIFICACION` cuando la pareja `tipificacion/subtipificacion` existe en los catalogos actuales.
-- `id_plan` se intenta resolver por `proveedor + precio + velocidad`.
+- `id_plan` se intenta resolver contra los planes existentes por `proveedor + precio + velocidad`.
 - Si no hay match exacto de plan, igual se conservan `nombre_plan_snapshot`, `nombre_proveedor_snapshot` y `precio_plan_snapshot`.
 
 ## Matriz principal de tipificacion
@@ -73,15 +74,15 @@ Este seed toma el backup filtrado `clientes_campos_utiles_full.csv` y lo transfo
 
 - `legacy id=1086`
   - origen: `WIN`, `LEADS`, `CAMPAÑA 08`, `Preventa completa / Venta cerrada`, `Duo`, `Fibra, WinTV Plus`, `850 Mbps`, `119.90`
-  - destino: `base=WHATSAPP`, `campana` de proveedor `WIN`, `PREVENTA_COMPLETA / VENTA_CERRADA`, snapshots de plan y 2 eventos
+  - destino: `base=WHATSAPP`, campana existente de proveedor `WIN` si hay match, `PREVENTA_COMPLETA / VENTA_CERRADA`, snapshots de plan y 2 eventos
 - `legacy id=2316`
   - origen: `WIN`, `LEADS`, `CAMPAÑA 09`, `Sin facilidades / Sin cobertura`
-  - destino: `base=WHATSAPP`, `campana` de proveedor `WIN`, `SIN_FACILIDADES / SIN_COBERTURA`
+  - destino: `base=WHATSAPP`, campana existente de proveedor `WIN` si hay match, `SIN_FACILIDADES / SIN_COBERTURA`
 - `legacy id=2940`
   - origen: `WIN`, `MASIVO`, `MASIVO`, `Sin contacto / No contesta`
-  - destino: `base=MASIVO`, `campana` de proveedor `WIN`, `SIN_CONTACTO / NO_CONTESTA`
+  - destino: `base=MASIVO`, campana existente de proveedor `WIN` si hay match, `SIN_CONTACTO / NO_CONTESTA`
 
 ## Limites de esta primera version
 
-- El match de plan real depende de que existan planes cargados para ese proveedor en tu catalogo.
+- El match de campana y plan real depende de que existan datos cargados para ese proveedor en la seed base.
 - Si despues aparecen nuevas combinaciones legacy, solo hay que ampliar los `CASE` del seed.

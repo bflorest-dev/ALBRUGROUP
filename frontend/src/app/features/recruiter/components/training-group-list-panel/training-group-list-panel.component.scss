@@ -1,0 +1,152 @@
+.panel {
+  padding: 1.5rem;
+  border-radius: 1.3rem;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 20px 42px rgba(15, 23, 42, 0.08);
+}
+
+.detail-panel {
+  align-self: start;
+}
+
+.panel__header,
+.toolbar,
+.pagination,
+.group-card__top,
+.detail-item {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel__header--wrap {
+  flex-wrap: wrap;
+}
+
+.panel__eyebrow {
+  display: inline-block;
+  margin-bottom: 0.45rem;
+  color: #0f766e;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.panel h3,
+.group-card h4,
+.detail-item h4 {
+  margin: 0;
+  color: #102a2a;
+}
+
+.group-card p,
+.detail-item p,
+.helper-text {
+  margin: 0.25rem 0 0;
+  color: #637878;
+}
+
+.toolbar select {
+  min-width: 190px;
+  padding: 0.78rem 0.9rem;
+  border: 1px solid rgba(16, 42, 42, 0.14);
+  border-radius: 0.85rem;
+  background: #fff;
+}
+
+.groups-grid,
+.detail-list {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.group-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(16, 42, 42, 0.08);
+  border-radius: 1rem;
+  background:
+    linear-gradient(135deg, rgba(236, 253, 245, 0.9), rgba(255, 255, 255, 0.98));
+}
+
+.group-card--active {
+  border-color: rgba(15, 118, 110, 0.45);
+  box-shadow: 0 14px 30px rgba(15, 118, 110, 0.12);
+}
+
+.group-card__meta,
+.detail-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.55rem 1rem;
+  color: #2f4f4f;
+}
+
+.detail-summary {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: rgba(15, 118, 110, 0.08);
+}
+
+.detail-item {
+  padding: 0.95rem 1rem;
+  border-radius: 0.95rem;
+  background: rgba(16, 42, 42, 0.05);
+}
+
+.status-chip {
+  padding: 0.45rem 0.65rem;
+  border-radius: 999px;
+  color: #0f4f49;
+  background: rgba(20, 184, 166, 0.16);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.ghost-button,
+.secondary-button {
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-radius: 0.9rem;
+  color: #164e4a;
+  background: rgba(15, 118, 110, 0.1);
+  cursor: pointer;
+}
+
+.secondary-button {
+  justify-self: start;
+}
+
+.form-message--error {
+  margin: 0.9rem 0 0;
+  color: #b3261e;
+}
+
+.pagination {
+  margin-top: 1rem;
+}
+
+button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (max-width: 760px) {
+  .panel__header,
+  .toolbar,
+  .pagination,
+  .group-card__top,
+  .detail-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .secondary-button {
+    justify-self: stretch;
+  }
+}

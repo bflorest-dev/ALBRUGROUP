@@ -1,0 +1,135 @@
+.kanban {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(260px, 1fr));
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+}
+
+.kanban-column {
+  min-width: 260px;
+  padding: 1rem;
+  border: 1px solid rgba(16, 42, 42, 0.08);
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(240, 253, 250, 0.88));
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.07);
+}
+
+.column-header {
+  display: flex;
+  gap: 0.75rem;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.column-header__eyebrow {
+  color: #0f766e;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.column-header h3,
+.postulante-card h4 {
+  margin: 0;
+  color: #102a2a;
+}
+
+.column-header p,
+.postulante-card p,
+.helper-text {
+  margin: 0.25rem 0 0;
+  color: #637878;
+}
+
+.icon-button,
+.detail-button,
+.ghost-button {
+  border: 0;
+  cursor: pointer;
+}
+
+.icon-button,
+.detail-button {
+  display: inline-grid;
+  width: 2.4rem;
+  height: 2.4rem;
+  place-items: center;
+  border-radius: 999px;
+  color: #0f766e;
+  background: rgba(20, 184, 166, 0.14);
+}
+
+.cards {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.postulante-card {
+  display: grid;
+  gap: 0.85rem;
+  padding: 0.95rem;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(16, 42, 42, 0.06);
+}
+
+.postulante-card__top {
+  display: flex;
+  gap: 0.75rem;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.card-meta {
+  display: grid;
+  gap: 0.45rem;
+  color: #2f4f4f;
+  font-size: 0.88rem;
+}
+
+.card-meta span {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.card-footer {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  color: #526b6b;
+  font-size: 0.84rem;
+}
+
+.card-footer strong {
+  color: #0f766e;
+}
+
+.pagination {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1rem;
+}
+
+.ghost-button {
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.75rem;
+  color: #164e4a;
+  background: rgba(15, 118, 110, 0.1);
+}
+
+.form-message--error {
+  color: #b3261e;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

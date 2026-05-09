@@ -1,0 +1,51 @@
+<section class="postulantes-page">
+  <header class="hero">
+    <span class="hero__eyebrow">Reclutador</span>
+    <div class="hero__row">
+      <div>
+        <h2>Bandeja de postulantes</h2>
+        <p>
+          Gestiona el contacto, revisa eventos y tipifica postulaciones para moverlas entre
+          columnas.
+        </p>
+      </div>
+      <button type="button" class="refresh-button" (click)="facade.refreshAllColumns(true)">
+        Recargar bandeja
+      </button>
+    </div>
+  </header>
+
+  <div class="board-layout">
+    <app-postulantes-kanban-panel
+      [columns]="facade.columns"
+      [pages]="facade.columnPages()"
+      [loadingByColumn]="facade.loadingByColumn()"
+      [errorByColumn]="facade.errorByColumn()"
+      (reloadColumn)="facade.loadColumn($event, 0)"
+      (pageChange)="facade.loadColumn($event.column, $event.pageNumber)"
+      (openDetail)="facade.openDetail($event)"
+    />
+
+    <app-postulacion-detail-panel
+      [postulacion]="facade.selectedPostulacion()"
+      [eventos]="facade.eventos()"
+      [trainingGroups]="facade.trainingGroups()"
+      [tipificaciones]="facade.tipificaciones()"
+      [modalidadContactoOptions]="facade.modalidadContactoOptions"
+      [typifyForm]="facade.typifyForm"
+      [requiresTrainingGroupAssignment]="facade.requiresTrainingGroupAssignment()"
+      [isLoadingDetail]="facade.isLoadingDetail()"
+      [isLoadingCatalogo]="facade.isLoadingCatalogo()"
+      [isLoadingTrainingGroups]="facade.isLoadingTrainingGroups()"
+      [isTypifying]="facade.isTypifying()"
+      [detailErrorMessage]="facade.detailErrorMessage()"
+      [catalogoErrorMessage]="facade.catalogoErrorMessage()"
+      [trainingGroupsErrorMessage]="facade.trainingGroupsErrorMessage()"
+      [typifyErrorMessage]="facade.typifyErrorMessage()"
+      [typifySuccessMessage]="facade.typifySuccessMessage()"
+      (closeDetail)="facade.closeDetail()"
+      (submitTypification)="facade.submitTypification()"
+      (tipificacionChange)="facade.resetSubtipificacion()"
+    />
+  </div>
+</section>

@@ -1,0 +1,45 @@
+<section class="training-page">
+  <header class="hero">
+    <span class="hero__eyebrow">Reclutador</span>
+    <div>
+      <h2>Grupos de capacitacion</h2>
+      <p>
+        Crea grupos disponibles, revisa su estado y consulta el detalle de postulantes asignados.
+      </p>
+    </div>
+  </header>
+
+  <app-training-group-form-panel
+    [groupForm]="facade.groupForm"
+    [capacitadores]="facade.capacitadores()"
+    [turnoOptions]="facade.turnoOptions"
+    [salaOptions]="facade.salaOptions"
+    [isLoadingCapacitadores]="facade.isLoadingCapacitadores()"
+    [capacitadoresErrorMessage]="facade.capacitadoresErrorMessage()"
+    [isCreatingGroup]="facade.isCreatingGroup()"
+    [createErrorMessage]="facade.createErrorMessage()"
+    [createSuccessMessage]="facade.createSuccessMessage()"
+    (save)="facade.submitGroup()"
+    (resetForm)="facade.resetForm()"
+  />
+
+  <div class="content-grid">
+    <app-training-group-list-panel
+      [groups]="facade.groups()"
+      [selectedGroup]="facade.selectedGroup()"
+      [estadoOptions]="facade.estadoOptions"
+      [selectedEstado]="facade.selectedEstado()"
+      [currentPage]="facade.currentPage()"
+      [totalPages]="facade.totalPages()"
+      [isLoadingGroups]="facade.isLoadingGroups()"
+      [isLoadingDetail]="facade.isLoadingDetail()"
+      [listErrorMessage]="facade.listErrorMessage()"
+      [detailErrorMessage]="facade.detailErrorMessage()"
+      (estadoFilter)="facade.applyEstadoFilter($event)"
+      (reload)="facade.loadGroups()"
+      (pageChange)="facade.loadGroups($event)"
+      (openDetail)="facade.openDetail($event)"
+      (closeDetail)="facade.closeDetail()"
+    />
+  </div>
+</section>

@@ -1,7 +1,7 @@
 export const ROLE_HOME_ROUTES: Record<string, string> = {
   ADMINISTRADOR: '/app/admin/personal',
   RRHH: '/app/rrhh/postulantes',
-  RECLUTADOR: '/app/reclutador',
+  RECLUTADOR: '/app/reclutador/grupos-capacitacion',
   CAPACITADOR: '/app/capacitador',
   ASESOR_GTR: '/app/gtr',
   SUPERVISOR_GTR: '/app/gtr',

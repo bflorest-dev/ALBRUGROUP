@@ -26,6 +26,7 @@ import pe.albrugroup.recruitment_service.entity.request.ConfirmarContratacionReq
 import pe.albrugroup.recruitment_service.entity.request.PageRequest;
 import pe.albrugroup.recruitment_service.entity.request.PostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.TipificarPostulacionRequest;
+import pe.albrugroup.recruitment_service.entity.request.TipificarYAsignarGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.response.PageResponse;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
 import pe.albrugroup.recruitment_service.exception.BadRequestException;
@@ -59,6 +60,7 @@ public class PostulacionService {
     private final TipificacionRepository tipificacionRepository;
     private final SubtipificacionRepository subtipificacionRepository;
     private final GrupoCapacitacionDetalleRepository grupoCapacitacionDetalleRepository;
+    private final GrupoCapacitacionService grupoCapacitacionService;
     private final CurrentUser currentUser;
     private final PaginationService paginationService;
 
@@ -92,38 +94,54 @@ public class PostulacionService {
     }
 
     public PostulacionResponse tipificarPostulacion(Long idPostulacion, TipificarPostulacionRequest request) {
-        Postulacion postulacion = postulacionRepository.findById(idPostulacion)
-                .orElseThrow(() -> new NotFoundException(Postulacion.class, idPostulacion));
+        TipificacionContext context = prepararTipificacion(idPostulacion, request.getIdTipificacion(), request.getIdSubtipificacion());
 
-        Tipificacion tipificacion = tipificacionRepository.findById(request.getIdTipificacion())
-                .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getIdTipificacion()));
+        /*
+        if (requiereAsignacionGrupoEnTipificacionEspecial(context.postulacion(), context.subtipificacion())) {
+            throw new BadRequestException(
+                    "Las postulaciones ASESOR_VENTAS que pasan a CAPACITACION deben usar el endpoint especializado de tipificacion con asignacion de grupo"
+            );
+        }
+        */
 
-        Subtipificacion subtipificacion = subtipificacionRepository.findById(request.getIdSubtipificacion())
-                .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getIdSubtipificacion()));
-
-        validarTipificacionActiva(tipificacion);
-        validarSubtipificacionActiva(subtipificacion);
-        validarTipificacionPorEtapa(postulacion, tipificacion);
-        validarSubtipificacionPerteneceATipificacion(tipificacion, subtipificacion);
-        validarAlcanceSubtipificacion(postulacion, subtipificacion);
-        validarPostulacionNoContratada(postulacion);
-
-        aplicarCambiosDeSubtipificacion(postulacion, subtipificacion);
-        sincronizarDetalleGrupoCapacitacion(postulacion, tipificacion);
-
-        Postulacion postulacionGuardada = postulacionRepository.save(postulacion);
-        eventoService.registrarEvento(
-                postulacionGuardada,
-                Accion.TIPIFICACION,
+        Postulacion postulacionGuardada = aplicarTipificacion(
+                context.postulacion(),
+                context.tipificacion(),
+                context.subtipificacion(),
                 request.getModalidadContacto(),
-                tipificacion.getId(),
-                subtipificacion.getId(),
-                tipificacion.getCodigo(),
-                subtipificacion.getCodigo(),
+                request.getObservacion()
+        );
+        return postulacionMapper.toResponse(postulacionGuardada);
+    }
+
+    public PostulacionResponse tipificarYAsignarGrupoCapacitacion(
+            Long idPostulacion,
+            TipificarYAsignarGrupoCapacitacionRequest request
+    ) {
+        TipificacionContext context = prepararTipificacion(idPostulacion, request.getIdTipificacion(), request.getIdSubtipificacion());
+
+        if (!requiereAsignacionGrupoEnTipificacionEspecial(context.postulacion(), context.subtipificacion())) {
+            throw new BadRequestException(
+                    "Solo se puede usar este endpoint para postulaciones ASESOR_VENTAS que pasan de RECLUTAMIENTO a CAPACITACION"
+            );
+        }
+
+        Postulacion postulacionGuardada = aplicarTipificacion(
+                context.postulacion(),
+                context.tipificacion(),
+                context.subtipificacion(),
+                request.getModalidadContacto(),
                 request.getObservacion()
         );
 
-        return postulacionMapper.toResponse(postulacionGuardada);
+        grupoCapacitacionService.agregarPostulacion(
+                request.getIdGrupoCapacitacion(),
+                pe.albrugroup.recruitment_service.entity.request.AgregarPostulacionGrupoCapacitacionRequest.builder()
+                        .idPostulacion(postulacionGuardada.getId())
+                        .build()
+        );
+
+        return mapearPostulacionResponse(postulacionGuardada);
     }
 
     public PostulacionResponse editarPostulacion(Long idPostulacion, PostulacionRequest request) {
@@ -311,6 +329,50 @@ public class PostulacionService {
         }
     }
 
+    private TipificacionContext prepararTipificacion(Long idPostulacion, Long idTipificacion, Long idSubtipificacion) {
+        Postulacion postulacion = postulacionRepository.findById(idPostulacion)
+                .orElseThrow(() -> new NotFoundException(Postulacion.class, idPostulacion));
+
+        Tipificacion tipificacion = tipificacionRepository.findById(idTipificacion)
+                .orElseThrow(() -> new NotFoundException(Tipificacion.class, idTipificacion));
+
+        Subtipificacion subtipificacion = subtipificacionRepository.findById(idSubtipificacion)
+                .orElseThrow(() -> new NotFoundException(Subtipificacion.class, idSubtipificacion));
+
+        validarTipificacionActiva(tipificacion);
+        validarSubtipificacionActiva(subtipificacion);
+        validarTipificacionPorEtapa(postulacion, tipificacion);
+        validarSubtipificacionPerteneceATipificacion(tipificacion, subtipificacion);
+        validarAlcanceSubtipificacion(postulacion, subtipificacion);
+        validarPostulacionNoContratada(postulacion);
+
+        return new TipificacionContext(postulacion, tipificacion, subtipificacion);
+    }
+
+    private Postulacion aplicarTipificacion(
+            Postulacion postulacion,
+            Tipificacion tipificacion,
+            Subtipificacion subtipificacion,
+            pe.albrugroup.recruitment_service.entity.enums.ModalidadContacto modalidadContacto,
+            String observacion
+    ) {
+        aplicarCambiosDeSubtipificacion(postulacion, subtipificacion);
+        sincronizarDetalleGrupoCapacitacion(postulacion, tipificacion);
+
+        Postulacion postulacionGuardada = postulacionRepository.save(postulacion);
+        eventoService.registrarEvento(
+                postulacionGuardada,
+                Accion.TIPIFICACION,
+                modalidadContacto,
+                tipificacion.getId(),
+                subtipificacion.getId(),
+                tipificacion.getCodigo(),
+                subtipificacion.getCodigo(),
+                observacion
+        );
+        return postulacionGuardada;
+    }
+
     private void aplicarCambiosDeSubtipificacion(Postulacion postulacion, Subtipificacion subtipificacion) {
         if (subtipificacion.getEtapaDestino() != null) {
             postulacion.setEtapa(subtipificacion.getEtapaDestino());
@@ -323,6 +385,12 @@ public class PostulacionService {
         if (subtipificacion.getEstadoBandejaDestino() != null) {
             postulacion.setEstadoBandeja(subtipificacion.getEstadoBandejaDestino());
         }
+    }
+
+    private boolean requiereAsignacionGrupoEnTipificacionEspecial(Postulacion postulacion, Subtipificacion subtipificacion) {
+        return postulacion.getEtapa() == Etapa.RECLUTAMIENTO
+                && postulacion.getOfertaLaboral().getPuestoObjetivo() == PuestoObjetivo.ASESOR_VENTAS
+                && subtipificacion.getEtapaDestino() == Etapa.CAPACITACION;
     }
 
     private void sincronizarDetalleGrupoCapacitacion(Postulacion postulacion, Tipificacion tipificacion) {
@@ -453,5 +521,12 @@ public class PostulacionService {
                     );
             return builder.exists(subquery);
         };
+    }
+
+    private record TipificacionContext(
+            Postulacion postulacion,
+            Tipificacion tipificacion,
+            Subtipificacion subtipificacion
+    ) {
     }
 }

@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, Validators } from '@angular/forms';
 import { catchError, filter, map, of, startWith, switchMap, timeout } from 'rxjs';
@@ -10,7 +10,6 @@ import { EmpleadoResponse } from '../../../shared/models/rrhh/empleado-response'
 import { EmpresaContratistaResponse } from '../../../shared/models/rrhh/empresa-contratista-response';
 import { RegistrarContratoRequest } from '../../../shared/models/rrhh/registrar-contrato-request';
 import { RegistrarEmpleadoRequest } from '../../../shared/models/rrhh/registrar-empleado-request';
-import { upsertById } from '../../../shared/utils/collection.utils';
 import { AuthService } from '../../auth/services/auth.service';
 import { AdminRrhhService } from '../services/admin-rrhh.service';
 
@@ -62,6 +61,7 @@ export class AdminPersonalFacade {
   private readonly adminRrhhService = inject(AdminRrhhService);
   private readonly authService = inject(AuthService);
   private nextRequestId = 1;
+  private handledCreateFlowRequestId = 0;
 
   private readonly employeeListRequest = signal<EmployeeListRequest | null>(null);
   private readonly createFlowRequest = signal<CreateFlowRequest | null>(null);
@@ -341,10 +341,17 @@ export class AdminPersonalFacade {
       const state = this.createFlowState();
 
       if (state.status === 'success') {
-        this.creationResult.set(state.usuario);
-        this.currentStep.set(3);
-        this.insertEmployeeIntoList(state.usuario, state.empleado);
-        this.loadEmployees(0, true);
+        if (state.requestId === this.handledCreateFlowRequestId) {
+          return;
+        }
+
+        this.handledCreateFlowRequestId = state.requestId;
+
+        untracked(() => {
+          this.creationResult.set(state.usuario);
+          this.currentStep.set(3);
+          this.loadEmployees(0, true);
+        });
         return;
       }
 
@@ -565,30 +572,5 @@ export class AdminPersonalFacade {
 
   private getToday(): string {
     return new Date().toISOString().slice(0, 10);
-  }
-
-  private insertEmployeeIntoList(usuario: UsuarioResponse, empleado: EmpleadoResponse): void {
-    const currentPage = this.employeesPage();
-
-    if (!currentPage) {
-      return;
-    }
-
-    const insertedEmployee: EmpleadoResponse = {
-      ...empleado,
-      id: usuario.empleadoId,
-      estadoOperativo: 'ACTIVO'
-    };
-
-    const alreadyExists = currentPage.content.some((item) => item.id === insertedEmployee.id);
-    const updatedContent = upsertById(currentPage.content, insertedEmployee, {
-      prependIfNew: true
-    }).slice(0, currentPage.size);
-
-    this.employeesPage.set({
-      ...currentPage,
-      totalElements: currentPage.totalElements + (alreadyExists ? 0 : 1),
-      content: updatedContent
-    });
   }
 }

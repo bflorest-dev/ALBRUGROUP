@@ -1,0 +1,76 @@
+<section class="panel panel--accent">
+  <div class="panel__header">
+    <div>
+      <span class="panel__eyebrow">Nuevo grupo</span>
+      <h3>Crear grupo de capacitacion</h3>
+    </div>
+  </div>
+
+  @if (capacitadoresErrorMessage) {
+    <p class="form-message form-message--error">{{ capacitadoresErrorMessage }}</p>
+  }
+
+  <form [formGroup]="groupForm" class="form-grid">
+    <label>
+      <span>Codigo</span>
+      <input type="text" formControlName="codigo" placeholder="GRP-MAY-01" />
+    </label>
+
+    <label>
+      <span>Capacitador</span>
+      <select formControlName="idCapacitador" [disabled]="isLoadingCapacitadores">
+        <option [value]="0">
+          {{ isLoadingCapacitadores ? 'Cargando capacitadores...' : 'Seleccionar capacitador' }}
+        </option>
+        @for (capacitador of capacitadores; track capacitador.empleadoId) {
+          <option [value]="capacitador.empleadoId">
+            {{ capacitador.nombreCompleto }} - {{ capacitador.username }}
+          </option>
+        }
+      </select>
+    </label>
+
+    <label>
+      <span>Turno</span>
+      <select formControlName="turno">
+        @for (option of turnoOptions; track option) {
+          <option [value]="option">{{ toLabel(option) }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      <span>Sala</span>
+      <select formControlName="sala">
+        @for (option of salaOptions; track option) {
+          <option [value]="option">{{ toLabel(option) }}</option>
+        }
+      </select>
+    </label>
+
+    <label>
+      <span>Fecha de inicio</span>
+      <input type="date" formControlName="fechaInicio" />
+    </label>
+  </form>
+
+  @if (createErrorMessage) {
+    <p class="form-message form-message--error">{{ createErrorMessage }}</p>
+  }
+
+  @if (createSuccessMessage) {
+    <p class="form-message form-message--success">{{ createSuccessMessage }}</p>
+  }
+
+  <div class="actions">
+    <button type="button" class="secondary-button" (click)="resetForm.emit()">Limpiar</button>
+    <button
+      type="button"
+      class="primary-button"
+      [disabled]="isCreatingGroup || isLoadingCapacitadores"
+      (click)="save.emit()"
+    >
+      {{ isCreatingGroup ? 'Creando...' : 'Crear grupo' }}
+    </button>
+  </div>
+</section>

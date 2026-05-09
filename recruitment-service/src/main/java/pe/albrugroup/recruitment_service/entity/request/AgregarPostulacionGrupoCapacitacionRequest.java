@@ -8,12 +8,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDate;
-
 @Builder @Getter @Setter
 @AllArgsConstructor @NoArgsConstructor
 public class AgregarPostulacionGrupoCapacitacionRequest {
 
     @NotNull @Positive private Long idPostulacion;
-    private LocalDate fechaAsignacion;
 }

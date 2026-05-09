@@ -1,0 +1,142 @@
+@if (postulacion; as item) {
+  <aside class="detail-panel">
+    <header class="detail-header">
+      <div>
+        <span class="detail-header__eyebrow">Postulacion #{{ item.id }}</span>
+        <h3>{{ item.postulante.nombres }} {{ item.postulante.apellidos }}</h3>
+        <p>{{ item.postulante.tipoDocumento }} {{ item.postulante.documento }}</p>
+      </div>
+      <button type="button" class="icon-button" (click)="closeDetail.emit()" aria-label="Cerrar detalle">
+        <i class="ti ti-x" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    <div class="summary-grid">
+      <span><strong>Celular:</strong> {{ item.postulante.celular }}</span>
+      <span><strong>Oferta:</strong> {{ item.ofertaLaboral.codigo }}</span>
+      <span><strong>Puesto:</strong> {{ toLabel(item.ofertaLaboral.puestoObjetivo) }}</span>
+      <span><strong>Negocio:</strong> {{ toLabel(item.ofertaLaboral.negocio) }}</span>
+      <span><strong>Etapa:</strong> {{ toLabel(item.etapa) }}</span>
+      <span><strong>Estado:</strong> {{ toLabel(item.estadoBandeja) }}</span>
+    </div>
+
+    <section class="typify-box">
+      <h4>Tipificar postulante</h4>
+
+      @if (catalogoErrorMessage) {
+        <p class="form-message form-message--error">{{ catalogoErrorMessage }}</p>
+      }
+
+      <form [formGroup]="typifyForm" class="form-grid">
+        <label>
+          <span>Tipificacion</span>
+          <select
+            formControlName="idTipificacion"
+            [disabled]="isLoadingCatalogo"
+            (change)="tipificacionChange.emit()"
+          >
+            <option [value]="0">
+              {{ isLoadingCatalogo ? 'Cargando catalogo...' : 'Seleccionar tipificacion' }}
+            </option>
+            @for (option of tipificaciones; track option.id) {
+              <option [value]="option.id">{{ option.codigo }}</option>
+            }
+          </select>
+        </label>
+
+        <label>
+          <span>Subtipificacion</span>
+          <select formControlName="idSubtipificacion">
+            <option [value]="0">Seleccionar subtipificacion</option>
+            @for (option of getSubtipificaciones(); track option.id) {
+              <option [value]="option.id">{{ option.codigo }}</option>
+            }
+          </select>
+        </label>
+
+        @if (requiresTrainingGroupAssignment) {
+          <label>
+            <span>Grupo de capacitacion</span>
+            <select formControlName="idGrupoCapacitacion" [disabled]="isLoadingTrainingGroups">
+              <option [value]="0">
+                {{ isLoadingTrainingGroups ? 'Cargando grupos...' : 'Seleccionar grupo abierto' }}
+              </option>
+              @for (group of trainingGroups; track group.id) {
+                <option [value]="group.id">
+                  {{ group.codigo }} - {{ toLabel(group.sala) }} - {{ group.fechaInicio }}
+                </option>
+              }
+            </select>
+          </label>
+        }
+
+        <label>
+          <span>Modalidad</span>
+          <select formControlName="modalidadContacto">
+            <option value="">No aplica</option>
+            @for (option of modalidadContactoOptions; track option) {
+              <option [value]="option">{{ toLabel(option) }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="field-wide">
+          <span>Observacion</span>
+          <textarea rows="3" formControlName="observacion"></textarea>
+        </label>
+      </form>
+
+      @if (typifyErrorMessage) {
+        <p class="form-message form-message--error">{{ typifyErrorMessage }}</p>
+      }
+
+      @if (requiresTrainingGroupAssignment && trainingGroupsErrorMessage) {
+        <p class="form-message form-message--error">{{ trainingGroupsErrorMessage }}</p>
+      }
+
+      @if (typifySuccessMessage) {
+        <p class="form-message form-message--success">{{ typifySuccessMessage }}</p>
+      }
+
+      <button
+        type="button"
+        class="primary-button"
+        [disabled]="isTypifying || isLoadingCatalogo"
+        (click)="submitTypification.emit()"
+      >
+        {{ isTypifying ? 'Tipificando...' : 'Guardar tipificacion' }}
+      </button>
+    </section>
+
+    <section class="events-box">
+      <h4>Eventos</h4>
+
+      @if (detailErrorMessage) {
+        <p class="form-message form-message--error">{{ detailErrorMessage }}</p>
+      }
+
+      @if (isLoadingDetail) {
+        <p class="helper-text">Cargando eventos...</p>
+      } @else if (eventos.length) {
+        <div class="events-list">
+          @for (evento of eventos; track evento.id) {
+            <article class="event-item">
+              <span class="event-item__icon">
+                <i [class]="getEventIcon(evento.accion)" aria-hidden="true"></i>
+              </span>
+              <div>
+                <span class="event-item__meta">
+                  {{ toLabel(evento.accion) }} - {{ evento.createdAt | date: 'short' }}
+                </span>
+                <strong>{{ getEventTitle(evento) }}</strong>
+                <p>{{ getEventDetail(evento) }}</p>
+              </div>
+            </article>
+          }
+        </div>
+      } @else {
+        <p class="helper-text">Sin eventos registrados.</p>
+      }
+    </section>
+  </aside>
+}

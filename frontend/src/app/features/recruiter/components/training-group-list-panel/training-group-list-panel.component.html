@@ -1,0 +1,123 @@
+<section class="panel">
+  <div class="panel__header panel__header--wrap">
+    <div>
+      <span class="panel__eyebrow">Disponibilidad</span>
+      <h3>Grupos de capacitacion</h3>
+    </div>
+
+    <div class="toolbar">
+      <select [value]="selectedEstado ?? ''" (change)="emitEstadoFilter($event)">
+        <option value="">Todos los estados</option>
+        @for (option of estadoOptions; track option) {
+          <option [value]="option">{{ toLabel(option) }}</option>
+        }
+      </select>
+
+      <button type="button" class="ghost-button" (click)="reload.emit()">Recargar</button>
+    </div>
+  </div>
+
+  @if (listErrorMessage) {
+    <p class="form-message form-message--error">{{ listErrorMessage }}</p>
+  }
+
+  @if (isLoadingGroups) {
+    <p class="helper-text">Cargando grupos...</p>
+  } @else if (groups.length) {
+    <div class="groups-grid">
+      @for (group of groups; track group.id) {
+        <article class="group-card" [class.group-card--active]="selectedGroup?.id === group.id">
+          <div class="group-card__top">
+            <div>
+              <h4>{{ group.codigo }}</h4>
+              <p>{{ toLabel(group.sala) }} · {{ toLabel(group.turno) }}</p>
+            </div>
+            <span class="status-chip">{{ toLabel(group.estado) }}</span>
+          </div>
+
+          <div class="group-card__meta">
+            <span><strong>Capacitador ID:</strong> {{ group.idCapacitador }}</span>
+            <span><strong>Inicio:</strong> {{ group.fechaInicio }}</span>
+            <span><strong>Fin:</strong> {{ group.fechaFin ?? 'Pendiente' }}</span>
+            <span><strong>Postulantes:</strong> {{ group.detalles.length }}</span>
+          </div>
+
+          <button type="button" class="secondary-button" (click)="openDetail.emit(group.id)">
+            Ver detalle
+          </button>
+        </article>
+      }
+    </div>
+
+    <div class="pagination">
+      <button
+        type="button"
+        class="ghost-button"
+        [disabled]="currentPage === 0"
+        (click)="pageChange.emit(currentPage - 1)"
+      >
+        Anterior
+      </button>
+      <span>Pagina {{ currentPage + 1 }} de {{ totalPages }}</span>
+      <button
+        type="button"
+        class="ghost-button"
+        [disabled]="currentPage + 1 >= totalPages"
+        (click)="pageChange.emit(currentPage + 1)"
+      >
+        Siguiente
+      </button>
+    </div>
+  } @else {
+    <p class="helper-text">No hay grupos para mostrar. Crea un grupo abierto para continuar.</p>
+  }
+</section>
+
+<section class="panel detail-panel">
+  <div class="panel__header">
+    <div>
+      <span class="panel__eyebrow">Detalle</span>
+      <h3>Postulantes del grupo</h3>
+    </div>
+
+    @if (selectedGroup) {
+      <button type="button" class="ghost-button" (click)="closeDetail.emit()">Cerrar</button>
+    }
+  </div>
+
+  @if (detailErrorMessage) {
+    <p class="form-message form-message--error">{{ detailErrorMessage }}</p>
+  }
+
+  @if (isLoadingDetail) {
+    <p class="helper-text">Cargando detalle...</p>
+  } @else if (selectedGroup; as group) {
+    <div class="detail-summary">
+      <span><strong>Codigo:</strong> {{ group.codigo }}</span>
+      <span><strong>Estado:</strong> {{ toLabel(group.estado) }}</span>
+      <span><strong>Fecha inicio:</strong> {{ group.fechaInicio }}</span>
+      <span><strong>Total asignados:</strong> {{ group.detalles.length }}</span>
+    </div>
+
+    @if (group.detalles.length) {
+      <div class="detail-list">
+        @for (detalle of group.detalles; track detalle.id) {
+          <article class="detail-item">
+            <div>
+              <h4>
+                {{ detalle.postulacion.postulante.nombres }}
+                {{ detalle.postulacion.postulante.apellidos }}
+              </h4>
+              <p>{{ detalle.postulacion.postulante.documento }}</p>
+            </div>
+            <span class="status-chip">{{ toLabel(detalle.estadoCapacitacion) }}</span>
+          </article>
+        }
+      </div>
+    } @else {
+      <p class="helper-text">Este grupo aun no tiene postulantes asignados.</p>
+    }
+  } @else {
+    <p class="helper-text">Selecciona un grupo para ver su detalle.</p>
+  }
+</section>
