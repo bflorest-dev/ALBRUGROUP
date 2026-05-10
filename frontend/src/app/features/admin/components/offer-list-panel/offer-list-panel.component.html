@@ -84,10 +84,7 @@
                   <input type="number" formControlName="cantidad" min="1" />
                 </label>
 
-                <label>
-                  <span>Plazo</span>
-                  <input type="date" formControlName="plazo" />
-                </label>
+                <app-date-field label="Plazo" formControlName="plazo" />
               </form>
 
               @if (getExpansionError(offer.id)) {

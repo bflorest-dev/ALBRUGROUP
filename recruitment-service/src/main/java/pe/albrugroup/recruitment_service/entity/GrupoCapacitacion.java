@@ -24,16 +24,12 @@ public class GrupoCapacitacion {
 
     private String codigo; // 23MAR28M // 30ABR04T
     private Long idCapacitador;
-
     @Enumerated(EnumType.STRING)
     private TurnoHorario turno;
-
     @Enumerated(EnumType.STRING)
     private SalaCapacitacion sala;
-
     private LocalDate fechaInicio;
     private LocalDate fechaFin;
-
     @Enumerated(EnumType.STRING)
     private EstadoGrupoCapacitacion estado;
 

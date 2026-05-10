@@ -23,7 +23,6 @@ import pe.albrugroup.recruitment_service.entity.request.ConfirmarContratacionReq
 import pe.albrugroup.recruitment_service.entity.request.PageRequest;
 import pe.albrugroup.recruitment_service.entity.request.PostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.TipificarPostulacionRequest;
-import pe.albrugroup.recruitment_service.entity.request.TipificarYAsignarGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.response.PageResponse;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
 import pe.albrugroup.recruitment_service.service.PostulacionService;
@@ -58,15 +57,6 @@ public class PostulacionController {
             @Valid @RequestBody TipificarPostulacionRequest request
     ) {
         return ResponseEntity.ok(postulacionService.tipificarPostulacion(idPostulacion, request));
-    }
-
-    @PostMapping("/{idPostulacion}/tipificacion-capacitacion")
-    @PreAuthorize("hasAuthority('TYPIFY_POSTULACIONES') and hasAuthority('ASSIGN_GRUPOS_CAPACITACION')")
-    public ResponseEntity<PostulacionResponse> tipificarYAsignarGrupoCapacitacion(
-            @PathVariable @Positive Long idPostulacion,
-            @Valid @RequestBody TipificarYAsignarGrupoCapacitacionRequest request
-    ) {
-        return ResponseEntity.ok(postulacionService.tipificarYAsignarGrupoCapacitacion(idPostulacion, request));
     }
 
     @GetMapping("/{idPostulacion}")

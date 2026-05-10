@@ -8,6 +8,23 @@ type SidebarItem = {
   exact?: boolean;
 };
 
+const ROLE_THEME_CLASS: Record<string, string> = {
+  ADMINISTRADOR: 'theme-admin',
+  RRHH: 'theme-rrhh',
+  RECLUTADOR: 'theme-recruiter',
+  CAPACITADOR: 'theme-recruiter',
+  ASESOR_GTR: 'theme-admin',
+  SUPERVISOR_GTR: 'theme-admin',
+  ASESOR_VENTAS: 'theme-admin',
+  SUPERVISOR_VENTAS: 'theme-admin',
+  ASESOR_BACKOFFICE: 'theme-admin',
+  SUPERVISOR_BACKOFFICE: 'theme-admin',
+  ASESOR_POSTVENTA: 'theme-admin',
+  SUPERVISOR_POSTVENTA: 'theme-admin',
+  COMMUNITY: 'theme-admin',
+  MONITOR: 'theme-admin'
+};
+
 @Component({
   selector: 'app-private-layout',
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
@@ -19,6 +36,11 @@ export class PrivateLayoutComponent {
   private readonly sessionService = inject(SessionService);
   private readonly router = inject(Router);
   protected readonly session = this.sessionService.session;
+  protected readonly themeClass = computed(() => {
+    const primaryRole = this.session()?.primaryRole;
+    return primaryRole ? ROLE_THEME_CLASS[primaryRole] ?? 'theme-admin' : 'theme-admin';
+  });
+
   protected readonly menuItems = computed<SidebarItem[]>(() => {
     const session = this.session();
 

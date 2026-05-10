@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 
 @Component({
   selector: 'app-offer-registration-panel',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, DateFieldComponent],
   templateUrl: './offer-registration-panel.component.html',
   styleUrl: './offer-registration-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

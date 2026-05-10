@@ -48,10 +48,7 @@
       </select>
     </label>
 
-    <label>
-      <span>Fecha de inicio</span>
-      <input type="date" formControlName="fechaInicio" />
-    </label>
+    <app-date-field label="Fecha de inicio" formControlName="fechaInicio" />
   </form>
 
   @if (createErrorMessage) {

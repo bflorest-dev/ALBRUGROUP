@@ -2,9 +2,7 @@ package pe.albrugroup.recruitment_service.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.recruitment_service.configuration.CurrentUser;
@@ -22,11 +20,11 @@ import pe.albrugroup.recruitment_service.entity.enums.EstadoOferta;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.Etapa;
 import pe.albrugroup.recruitment_service.entity.enums.PuestoObjetivo;
+import pe.albrugroup.recruitment_service.entity.request.AgregarPostulacionGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.ConfirmarContratacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.PageRequest;
 import pe.albrugroup.recruitment_service.entity.request.PostulacionRequest;
 import pe.albrugroup.recruitment_service.entity.request.TipificarPostulacionRequest;
-import pe.albrugroup.recruitment_service.entity.request.TipificarYAsignarGrupoCapacitacionRequest;
 import pe.albrugroup.recruitment_service.entity.response.PageResponse;
 import pe.albrugroup.recruitment_service.entity.response.PostulacionResponse;
 import pe.albrugroup.recruitment_service.exception.BadRequestException;
@@ -95,36 +93,15 @@ public class PostulacionService {
 
     public PostulacionResponse tipificarPostulacion(Long idPostulacion, TipificarPostulacionRequest request) {
         TipificacionContext context = prepararTipificacion(idPostulacion, request.getIdTipificacion(), request.getIdSubtipificacion());
-
-        /*
-        if (requiereAsignacionGrupoEnTipificacionEspecial(context.postulacion(), context.subtipificacion())) {
-            throw new BadRequestException(
-                    "Las postulaciones ASESOR_VENTAS que pasan a CAPACITACION deben usar el endpoint especializado de tipificacion con asignacion de grupo"
-            );
-        }
-        */
-
-        Postulacion postulacionGuardada = aplicarTipificacion(
+        boolean requiereAsignacionGrupo = requiereAsignacionGrupoEnTipificacionEspecial(
                 context.postulacion(),
-                context.tipificacion(),
-                context.subtipificacion(),
-                request.getModalidadContacto(),
-                request.getObservacion()
+                context.subtipificacion()
         );
-        return postulacionMapper.toResponse(postulacionGuardada);
-    }
-
-    public PostulacionResponse tipificarYAsignarGrupoCapacitacion(
-            Long idPostulacion,
-            TipificarYAsignarGrupoCapacitacionRequest request
-    ) {
-        TipificacionContext context = prepararTipificacion(idPostulacion, request.getIdTipificacion(), request.getIdSubtipificacion());
-
-        if (!requiereAsignacionGrupoEnTipificacionEspecial(context.postulacion(), context.subtipificacion())) {
-            throw new BadRequestException(
-                    "Solo se puede usar este endpoint para postulaciones ASESOR_VENTAS que pasan de RECLUTAMIENTO a CAPACITACION"
-            );
-        }
+        validarAsignacionGrupoCapacitacion(
+                context.postulacion(),
+                context.subtipificacion(),
+                request.getIdGrupoCapacitacion()
+        );
 
         Postulacion postulacionGuardada = aplicarTipificacion(
                 context.postulacion(),
@@ -134,12 +111,14 @@ public class PostulacionService {
                 request.getObservacion()
         );
 
-        grupoCapacitacionService.agregarPostulacion(
-                request.getIdGrupoCapacitacion(),
-                pe.albrugroup.recruitment_service.entity.request.AgregarPostulacionGrupoCapacitacionRequest.builder()
-                        .idPostulacion(postulacionGuardada.getId())
-                        .build()
-        );
+        if (requiereAsignacionGrupo) {
+            grupoCapacitacionService.agregarPostulacion(
+                    request.getIdGrupoCapacitacion(),
+                    AgregarPostulacionGrupoCapacitacionRequest.builder()
+                            .idPostulacion(postulacionGuardada.getId())
+                            .build()
+            );
+        }
 
         return mapearPostulacionResponse(postulacionGuardada);
     }
@@ -391,6 +370,26 @@ public class PostulacionService {
         return postulacion.getEtapa() == Etapa.RECLUTAMIENTO
                 && postulacion.getOfertaLaboral().getPuestoObjetivo() == PuestoObjetivo.ASESOR_VENTAS
                 && subtipificacion.getEtapaDestino() == Etapa.CAPACITACION;
+    }
+
+    private void validarAsignacionGrupoCapacitacion(
+            Postulacion postulacion,
+            Subtipificacion subtipificacion,
+            Long idGrupoCapacitacion
+    ) {
+        boolean requiereAsignacion = requiereAsignacionGrupoEnTipificacionEspecial(postulacion, subtipificacion);
+
+        if (requiereAsignacion && idGrupoCapacitacion == null) {
+            throw new BadRequestException(
+                    "Las postulaciones ASESOR_VENTAS que pasan a CAPACITACION deben enviarse con idGrupoCapacitacion"
+            );
+        }
+
+        if (!requiereAsignacion && idGrupoCapacitacion != null) {
+            throw new BadRequestException(
+                    "idGrupoCapacitacion solo se permite cuando una postulacion ASESOR_VENTAS pasa de RECLUTAMIENTO a CAPACITACION"
+            );
+        }
     }
 
     private void sincronizarDetalleGrupoCapacitacion(Postulacion postulacion, Tipificacion tipificacion) {

@@ -6,14 +6,14 @@
 .hero {
   padding: 1.5rem;
   border-radius: 1.25rem;
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  background: var(--app-surface-raised);
+  box-shadow: var(--app-shadow-soft);
 }
 
 .hero__eyebrow {
   display: inline-block;
   margin-bottom: 0.5rem;
-  color: #335c85;
+  color: var(--role-secondary);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.16em;
@@ -29,12 +29,12 @@
 
 .hero h2 {
   margin: 0;
-  color: #13263b;
+  color: var(--role-panel-text);
 }
 
 .hero p {
   margin: 0.35rem 0 0;
-  color: #617389;
+  color: var(--role-muted);
 }
 
 .icon-action {

@@ -1,4 +1,8 @@
 .postulantes-page {
+  --postulantes-hero-bg:
+    radial-gradient(circle at 8% 18%, rgba(20, 184, 166, 0.2), transparent 26%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(240, 253, 250, 0.9));
+
   display: grid;
   gap: 1.5rem;
 }
@@ -6,17 +10,15 @@
 .hero {
   padding: 1.5rem;
   border-radius: 1.35rem;
-  color: #102a2a;
-  background:
-    radial-gradient(circle at 8% 18%, rgba(20, 184, 166, 0.2), transparent 26%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(240, 253, 250, 0.9));
-  box-shadow: 0 20px 42px rgba(15, 23, 42, 0.08);
+  color: var(--role-hero-text);
+  background: var(--postulantes-hero-bg);
+  box-shadow: var(--app-shadow-soft);
 }
 
 .hero__eyebrow {
   display: inline-block;
   margin-bottom: 0.5rem;
-  color: #0f766e;
+  color: var(--role-accent);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.16em;
@@ -38,7 +40,7 @@
 .hero p {
   max-width: 54rem;
   margin: 0.5rem 0 0;
-  color: #526b6b;
+  color: var(--role-hero-muted);
 }
 
 .refresh-button {
@@ -46,7 +48,7 @@
   border: 0;
   border-radius: 0.9rem;
   color: #fff;
-  background: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+  background: var(--role-button-bg);
   cursor: pointer;
 }
 

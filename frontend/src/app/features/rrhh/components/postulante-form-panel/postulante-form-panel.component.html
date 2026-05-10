@@ -63,10 +63,7 @@
       <input type="text" formControlName="apellidos" />
     </label>
 
-    <label>
-      <span>Fecha nacimiento</span>
-      <input type="date" formControlName="fechaNacimiento" />
-    </label>
+    <app-date-field label="Fecha nacimiento" formControlName="fechaNacimiento" />
   </form>
 
   @if (saveErrorMessage) {

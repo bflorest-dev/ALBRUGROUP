@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 import { OfertaLaboralResponse } from '../../../../shared/models/recruitment/oferta-laboral-response';
 
 type StatusDraftChange = {
@@ -9,7 +10,7 @@ type StatusDraftChange = {
 
 @Component({
   selector: 'app-offer-list-panel',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, DateFieldComponent],
   templateUrl: './offer-list-panel.component.html',
   styleUrl: './offer-list-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

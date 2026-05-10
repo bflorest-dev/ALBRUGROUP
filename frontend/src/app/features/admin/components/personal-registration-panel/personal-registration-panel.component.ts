@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 import { UsuarioResponse } from '../../../../shared/models/auth/usuario-response';
 import { EmpresaContratistaResponse } from '../../../../shared/models/rrhh/empresa-contratista-response';
 
 @Component({
   selector: 'app-personal-registration-panel',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, DateFieldComponent],
   templateUrl: './personal-registration-panel.component.html',
   styleUrl: './personal-registration-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

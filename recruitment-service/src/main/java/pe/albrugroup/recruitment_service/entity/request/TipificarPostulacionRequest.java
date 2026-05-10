@@ -15,6 +15,7 @@ public class TipificarPostulacionRequest {
 
     @NotNull @Positive private Long idTipificacion;
     @NotNull @Positive private Long idSubtipificacion;
+    @Positive private Long idGrupoCapacitacion;
     private ModalidadContacto modalidadContacto;
     private String observacion;
 }

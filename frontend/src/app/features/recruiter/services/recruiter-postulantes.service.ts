@@ -8,7 +8,6 @@ import { EventoResponse } from '../../../shared/models/recruitment/evento-respon
 import { GrupoCapacitacionResponse } from '../../../shared/models/recruitment/grupo-capacitacion-response';
 import { PostulacionResponse } from '../../../shared/models/recruitment/postulacion-response';
 import { TipificarPostulacionRequest } from '../../../shared/models/recruitment/tipificar-postulacion-request';
-import { TipificarYAsignarGrupoCapacitacionRequest } from '../../../shared/models/recruitment/tipificar-y-asignar-grupo-capacitacion-request';
 
 @Injectable({
   providedIn: 'root'
@@ -76,16 +75,6 @@ export class RecruiterPostulantesService {
   ): Observable<PostulacionResponse> {
     return this.http.post<PostulacionResponse>(
       `${this.postulacionesUrl}/${idPostulacion}/tipificacion`,
-      request
-    );
-  }
-
-  tipificarYAsignarGrupoCapacitacion(
-    idPostulacion: number,
-    request: TipificarYAsignarGrupoCapacitacionRequest
-  ): Observable<PostulacionResponse> {
-    return this.http.post<PostulacionResponse>(
-      `${this.postulacionesUrl}/${idPostulacion}/tipificacion-capacitacion`,
       request
     );
   }

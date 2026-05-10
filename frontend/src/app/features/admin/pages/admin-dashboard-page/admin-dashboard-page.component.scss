@@ -6,8 +6,8 @@
 .hero {
   padding: 1.75rem;
   border-radius: 1.5rem;
-  color: #fff;
-  background: linear-gradient(135deg, #11263c 0%, #355c7d 100%);
+  color: var(--role-hero-text);
+  background: var(--role-hero-bg);
 }
 
 .hero__eyebrow {
@@ -23,7 +23,7 @@
 
 .hero p {
   margin-bottom: 0;
-  color: rgba(255, 255, 255, 0.88);
+  color: var(--role-hero-muted);
 }
 
 .admin-grid {

@@ -1,16 +1,136 @@
 @use '@tabler/icons-webfont/dist/tabler-icons.scss';
 
 :root {
+  --app-font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --app-bg: #f2f4f7;
+  --app-bg-raised: #e6ebf2;
+  --app-text: #11263c;
+  --app-text-muted: #43576d;
+  --app-surface: #ffffff;
+  --app-surface-soft: #f5f8fb;
+  --app-surface-raised: rgba(255, 255, 255, 0.94);
+  --app-border: #c7d2df;
+  --app-border-soft: rgba(17, 38, 60, 0.12);
+  --app-shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.08);
+  --app-shadow-popover: 0 20px 44px rgba(15, 23, 42, 0.18);
+  --app-danger: #b42318;
+  --app-success: #157347;
+  --app-focus: #2563eb;
+  --app-focus-ring: rgba(37, 99, 235, 0.14);
+
+  --date-field-text: #143047;
+  --date-field-icon: #476174;
+  --date-field-placeholder: #718096;
+  --date-field-muted: #9aa8b6;
+  --date-field-nav-text: #17304c;
+  --date-field-nav-bg: rgba(23, 48, 76, 0.08);
+  --date-field-clear-text: #607587;
+  --date-field-clear-bg: rgba(96, 117, 135, 0.12);
+  --date-field-selected-bg: #2563eb;
+  --date-field-selected-hover-bg: #1d4ed8;
+  --date-field-hover-bg: rgba(37, 99, 235, 0.1);
+  --date-field-today-ring: rgba(37, 99, 235, 0.4);
+
+  --sidebar-text: #f8fafc;
+  --sidebar-bg: linear-gradient(180deg, #11263c 0%, #1c3f63 100%);
+  --sidebar-link-bg: rgba(255, 255, 255, 0.08);
+  --sidebar-link-active-bg: rgba(255, 255, 255, 0.18);
+  --sidebar-bottom-bg: linear-gradient(
+    180deg,
+    rgba(28, 63, 99, 0) 0%,
+    rgba(28, 63, 99, 0.96) 28%
+  );
+
+  --role-primary: #11263c;
+  --role-secondary: #355c7d;
+  --role-accent: #bd4f31;
+  --role-accent-2: #d97745;
+  --role-accent-soft: rgba(23, 48, 76, 0.08);
+  --role-panel-text: #13263b;
+  --role-muted: #617389;
+  --role-hero-text: #ffffff;
+  --role-hero-muted: rgba(255, 255, 255, 0.88);
+  --role-hero-bg: linear-gradient(135deg, #11263c 0%, #355c7d 100%);
+  --role-button-bg: linear-gradient(135deg, #bd4f31 0%, #d97745 100%);
+  --role-button-alt-bg: #e8eef5;
+  --role-button-alt-text: #1c3f63;
+
   font-family:
-    'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    var(--app-font-family);
   line-height: 1.5;
   font-weight: 400;
-  color: #11263c;
-  background: #f2f4f7;
+  color: var(--app-text);
+  background: var(--app-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.theme-admin {
+  --role-primary: #11263c;
+  --role-secondary: #355c7d;
+  --role-accent: #bd4f31;
+  --role-accent-2: #d97745;
+  --role-accent-soft: rgba(23, 48, 76, 0.08);
+  --role-panel-text: #13263b;
+  --role-muted: #617389;
+  --role-hero-text: #ffffff;
+  --role-hero-muted: rgba(255, 255, 255, 0.88);
+  --role-hero-bg: linear-gradient(135deg, #11263c 0%, #355c7d 100%);
+  --role-button-bg: linear-gradient(135deg, #bd4f31 0%, #d97745 100%);
+  --role-button-alt-bg: #e8eef5;
+  --role-button-alt-text: #1c3f63;
+}
+
+.theme-rrhh {
+  --role-primary: #0f2e28;
+  --role-secondary: #235d4a;
+  --role-accent: #1f6f55;
+  --role-accent-2: #37a26f;
+  --role-accent-soft: rgba(31, 111, 85, 0.12);
+  --role-panel-text: #123029;
+  --role-muted: #60766e;
+  --role-hero-text: #ffffff;
+  --role-hero-muted: rgba(255, 255, 255, 0.86);
+  --role-hero-bg:
+    radial-gradient(circle at 82% 18%, rgba(125, 211, 166, 0.38), transparent 28%),
+    linear-gradient(135deg, #0f2e28 0%, #235d4a 55%, #3c8a62 100%);
+  --role-button-bg: linear-gradient(135deg, #1f6f55 0%, #37a26f 100%);
+  --role-button-alt-bg: rgba(31, 111, 85, 0.12);
+  --role-button-alt-text: #1f4d40;
+}
+
+.theme-recruiter {
+  --role-primary: #102a2a;
+  --role-secondary: #0f766e;
+  --role-accent: #0f766e;
+  --role-accent-2: #14b8a6;
+  --role-accent-soft: rgba(15, 118, 110, 0.1);
+  --role-panel-text: #102a2a;
+  --role-muted: #526b6b;
+  --role-hero-text: #102a2a;
+  --role-hero-muted: #526b6b;
+  --role-hero-bg:
+    radial-gradient(circle at 12% 20%, rgba(20, 184, 166, 0.22), transparent 26%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 253, 250, 0.92));
+  --role-button-bg: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
+  --role-button-alt-bg: rgba(15, 118, 110, 0.1);
+  --role-button-alt-text: #164e4a;
+}
+
+[data-theme='dark'] {
+  --app-bg: #0f172a;
+  --app-bg-raised: #111827;
+  --app-text: #e5e7eb;
+  --app-text-muted: #a7b4c4;
+  --app-surface: #111827;
+  --app-surface-soft: #172033;
+  --app-surface-raised: rgba(17, 24, 39, 0.94);
+  --app-border: rgba(226, 232, 240, 0.18);
+  --app-border-soft: rgba(226, 232, 240, 0.12);
+  --app-shadow-soft: 0 18px 40px rgba(0, 0, 0, 0.24);
+  --app-shadow-popover: 0 20px 44px rgba(0, 0, 0, 0.36);
 }
 
 * {
@@ -26,7 +146,7 @@ body {
 body {
   min-height: 100vh;
   font-family:
-    'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    var(--app-font-family);
 }
 
 button,

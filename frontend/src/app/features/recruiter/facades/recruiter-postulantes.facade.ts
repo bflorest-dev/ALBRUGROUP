@@ -11,7 +11,6 @@ import { GrupoCapacitacionResponse } from '../../../shared/models/recruitment/gr
 import { PostulacionResponse } from '../../../shared/models/recruitment/postulacion-response';
 import { SubtipificacionResponse } from '../../../shared/models/recruitment/subtipificacion-response';
 import { TipificarPostulacionRequest } from '../../../shared/models/recruitment/tipificar-postulacion-request';
-import { TipificarYAsignarGrupoCapacitacionRequest } from '../../../shared/models/recruitment/tipificar-y-asignar-grupo-capacitacion-request';
 import { RecruiterPostulantesService } from '../services/recruiter-postulantes.service';
 
 export type BandejaColumnKey =
@@ -59,8 +58,7 @@ type DetailState =
 type TypifyRequest = {
   requestId: number;
   idPostulacion: number;
-  payload: TipificarPostulacionRequest | TipificarYAsignarGrupoCapacitacionRequest;
-  withTrainingGroup: boolean;
+  payload: TipificarPostulacionRequest;
 };
 
 type TypifyState =
@@ -153,15 +151,10 @@ export class RecruiterPostulantesFacade {
     toObservable(this.typifyRequest).pipe(
       filter((request): request is TypifyRequest => request !== null),
       switchMap((request) => {
-        const save$ = request.withTrainingGroup
-          ? this.postulantesService.tipificarYAsignarGrupoCapacitacion(
-              request.idPostulacion,
-              request.payload as TipificarYAsignarGrupoCapacitacionRequest
-            )
-          : this.postulantesService.tipificarPostulacion(
-              request.idPostulacion,
-              request.payload as TipificarPostulacionRequest
-            );
+        const save$ = this.postulantesService.tipificarPostulacion(
+          request.idPostulacion,
+          request.payload
+        );
 
         return save$.pipe(
           timeout(this.requestTimeoutMs),
@@ -405,8 +398,7 @@ export class RecruiterPostulantesFacade {
     this.typifyRequest.set({
       requestId: this.nextRequestId++,
       idPostulacion: postulacion.id,
-      payload: withTrainingGroup ? this.buildTrainingGroupTypifyRequest() : this.buildTypifyRequest(),
-      withTrainingGroup
+      payload: this.buildTypifyRequest(withTrainingGroup)
     });
   }
 
@@ -508,24 +500,13 @@ export class RecruiterPostulantesFacade {
     }
   }
 
-  private buildTypifyRequest(): TipificarPostulacionRequest {
+  private buildTypifyRequest(withTrainingGroup: boolean): TipificarPostulacionRequest {
     const raw = this.typifyForm.getRawValue();
 
     return {
       idTipificacion: Number(raw.idTipificacion),
       idSubtipificacion: Number(raw.idSubtipificacion),
-      modalidadContacto: raw.modalidadContacto || null,
-      observacion: raw.observacion.trim() || null
-    };
-  }
-
-  private buildTrainingGroupTypifyRequest(): TipificarYAsignarGrupoCapacitacionRequest {
-    const raw = this.typifyForm.getRawValue();
-
-    return {
-      idTipificacion: Number(raw.idTipificacion),
-      idSubtipificacion: Number(raw.idSubtipificacion),
-      idGrupoCapacitacion: Number(raw.idGrupoCapacitacion),
+      idGrupoCapacitacion: withTrainingGroup ? Number(raw.idGrupoCapacitacion) : null,
       modalidadContacto: raw.modalidadContacto || null,
       observacion: raw.observacion.trim() || null
     };

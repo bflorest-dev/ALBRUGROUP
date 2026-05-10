@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 import { UsuarioResponse } from '../../../../shared/models/auth/usuario-response';
 
 @Component({
   selector: 'app-training-group-form-panel',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, DateFieldComponent],
   templateUrl: './training-group-form-panel.component.html',
   styleUrl: './training-group-form-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

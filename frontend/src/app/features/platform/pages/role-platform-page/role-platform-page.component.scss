@@ -8,8 +8,8 @@
   width: min(100%, 720px);
   padding: 2rem;
   border-radius: 1.5rem;
-  color: #fff;
-  background: linear-gradient(135deg, #11263c 0%, #355c7d 100%);
+  color: var(--role-hero-text);
+  background: var(--role-hero-bg);
   box-shadow: 0 20px 45px rgba(17, 38, 60, 0.16);
 }
 
@@ -27,5 +27,5 @@
 
 .platform-card p {
   margin-bottom: 0;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--role-hero-muted);
 }

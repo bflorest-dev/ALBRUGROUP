@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 import { OfertaLaboralResponse } from '../../../../shared/models/recruitment/oferta-laboral-response';
 
 @Component({
   selector: 'app-postulante-form-panel',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, DateFieldComponent],
   templateUrl: './postulante-form-panel.component.html',
   styleUrl: './postulante-form-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

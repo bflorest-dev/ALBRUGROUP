@@ -1,9 +1,9 @@
 .panel {
   padding: 1.5rem;
-  border: 1px solid rgba(27, 63, 93, 0.12);
+  border: 1px solid var(--app-border-soft);
   border-radius: 1.35rem;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 18px 40px rgba(12, 30, 48, 0.08);
+  background: var(--app-surface-raised);
+  box-shadow: var(--app-shadow-soft);
 }
 
 .panel__header {
@@ -14,7 +14,7 @@
 }
 
 .panel__eyebrow {
-  color: #2f6b57;
+  color: var(--role-accent);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.16em;
@@ -23,7 +23,7 @@
 
 .panel h3 {
   margin: 0.35rem 0 0;
-  color: #123029;
+  color: var(--role-panel-text);
 }
 
 .form-grid {
@@ -42,7 +42,7 @@
 }
 
 .form-grid span {
-  color: #27443c;
+  color: var(--role-panel-text);
   font-weight: 700;
 }
 
@@ -50,9 +50,9 @@
 .form-grid select {
   width: 100%;
   padding: 0.85rem 0.95rem;
-  border: 1px solid rgba(39, 68, 60, 0.18);
+  border: 1px solid var(--app-border-soft);
   border-radius: 0.9rem;
-  background: #fff;
+  background: var(--app-surface);
 }
 
 .actions {
@@ -74,12 +74,12 @@
 
 .primary-button {
   color: #fff;
-  background: linear-gradient(135deg, #1f6f55 0%, #37a26f 100%);
+  background: var(--role-button-bg);
 }
 
 .secondary-button {
-  color: #1f4d40;
-  background: rgba(31, 111, 85, 0.12);
+  color: var(--role-button-alt-text);
+  background: var(--role-button-alt-bg);
 }
 
 .form-message {
@@ -87,11 +87,11 @@
 }
 
 .form-message--error {
-  color: #b42318;
+  color: var(--app-danger);
 }
 
 .form-message--success {
-  color: #157347;
+  color: var(--app-success);
 }
 
 button:disabled {
