@@ -1172,6 +1172,166 @@
           ]
         },
         {
+          "name": "Cobranza",
+          "item": [
+            {
+              "name": "Listar Bandeja Cobranza",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/cobranza?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/cobranza?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Leads Cobranza Asignados",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/cobranza/asignados?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/cobranza/asignados?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
+              },
+              "response": []
+            },
+            {
+              "name": "Tomar Lead Cobranza",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": "{{path}}/leads/cobranza/1/asignacion",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request PATCH {{path}}/leads/cobranza/1/asignacion"
+              },
+              "response": []
+            },
+            {
+              "name": "Registrar Contacto Lead Cobranza",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": "{{path}}/leads/cobranza/1/contacto",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request PATCH {{path}}/leads/cobranza/1/contacto"
+              },
+              "response": []
+            },
+            {
+              "name": "Obtener Detalle Lead Cobranza",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/cobranza/1/detalle-asesor",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/cobranza/1/detalle-asesor"
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Eventos Lead Cobranza",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/cobranza/1/eventos?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/cobranza/1/eventos?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
+              },
+              "response": []
+            },
+            {
+              "name": "Tipificar Lead Cobranza",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{path}}/leads/cobranza/1/tipificacion",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"codigoTipificacion\": \"COD-001\",\n  \"codigoSubtipificacion\": \"COD-001\",\n  \"comentario\": \"Comentario demo\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request PATCH {{path}}/leads/cobranza/1/tipificacion"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
           "name": "Cuenta Publicitaria",
           "item": [
             {
@@ -1311,396 +1471,6 @@
                   ]
                 },
                 "description": "Request GET {{path}}/leads/eventos/empleado/1?fechaDesde=2026-04-01&fechaHasta=2026-04-30&pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
-              },
-              "response": []
-            }
-          ]
-        },
-        {
-          "name": "Lead",
-          "item": [
-            {
-              "name": "Registrar Ingreso Lead",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json",
-                    "type": "text"
-                  }
-                ],
-                "url": "{{path}}/leads/leads/intake",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"prefijo\": \"AG\",\n  \"lead\": \"998877665\",\n  \"idCampana\": 1,\n  \"base\": \"WHATSAPP\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "description": "Request POST {{path}}/leads/leads/intake"
-              },
-              "response": []
-            },
-            {
-              "name": "Asignar Lead",
-              "request": {
-                "method": "PATCH",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json",
-                    "type": "text"
-                  }
-                ],
-                "url": "{{path}}/leads/leads/1/asignacion",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"idAsesorAsignado\": 1,\n  \"nombreAsesorAsignado\": \"Demo\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "description": "Request PATCH {{path}}/leads/leads/1/asignacion"
-              },
-              "response": []
-            },
-            {
-              "name": "Asignar Leads",
-              "request": {
-                "method": "PATCH",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json",
-                    "type": "text"
-                  }
-                ],
-                "url": "{{path}}/leads/leads/asignacion-masiva",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"idAsesorAsignado\": 1,\n  \"nombreAsesorAsignado\": \"Demo\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "description": "Request PATCH {{path}}/leads/leads/asignacion-masiva"
-              },
-              "response": []
-            },
-            {
-              "name": "Listar Bandeja Asesor Ventas",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": "{{path}}/leads/leads/asesor-ventas?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "description": "Request GET {{path}}/leads/leads/asesor-ventas?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
-              },
-              "response": []
-            },
-            {
-              "name": "Listar Resumen Supervisor Ventas",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": "{{path}}/leads/leads/supervisor-ventas/resumen?idsAsesor=15&idsAsesor=21",
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "description": "Request GET {{path}}/leads/leads/supervisor-ventas/resumen?idsAsesor=15&idsAsesor=21"
-              },
-              "response": []
-            },
-            {
-              "name": "Listar Bandeja Supervisor Ventas",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": "{{path}}/leads/leads/supervisor-ventas/asesor/1/bandeja?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "description": "Request GET {{path}}/leads/leads/supervisor-ventas/asesor/1/bandeja?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
-              },
-              "response": []
-            },
-            {
-              "name": "Obtener Detalle Asesor",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": "{{path}}/leads/leads/1/detalle-asesor",
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "description": "Request GET {{path}}/leads/leads/1/detalle-asesor"
-              },
-              "response": []
-            },
-            {
-              "name": "Actualizar Datos Preventa",
-              "request": {
-                "method": "PATCH",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json",
-                    "type": "text"
-                  }
-                ],
-                "url": "{{path}}/leads/leads/1/datos-preventa",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"tipoDocumento\": \"DNI\",\n  \"numeroDocumentoTitularServicio\": \"75413802\",\n  \"ubigeoNacimiento\": \"150101\",\n  \"nombreTitularServicio\": \"Demo\",\n  \"celularRegistro\": \"987654321\",\n  \"celularReferencia\": \"987654321\",\n  \"correo\": \"demo@albru.pe\",\n  \"nombreMadre\": \"Demo\",\n  \"nombrePadre\": \"Demo\",\n  \"numeroDocumentoTitularCelularRegistro\": \"987654321\",\n  \"nombreTitularCelularRegistro\": \"Demo\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "description": "Request PATCH {{path}}/leads/leads/1/datos-preventa"
-              },
-              "response": []
-            },
-            {
-              "name": "Actualizar Direccion",
-              "request": {
-                "method": "PATCH",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json",
-                    "type": "text"
-                  }
-                ],
-                "url": "{{path}}/leads/leads/1/direccion",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"ubigeoDomicilio\": \"150101\",\n  \"tipoDomicilio\": \"MULTIFAMILIAR\",\n  \"tipoVia\": \"JIRON\",\n  \"via\": \"demo\",\n  \"direccion\": \"Av Primavera 123\",\n  \"referencia\": \"Referencia demo\",\n  \"latitud\": 99.9,\n  \"longitud\": 99.9,\n  \"urbanizacion\": \"demo\",\n  \"numero\": \"demo\",\n  \"manzana\": \"demo\",\n  \"lote\": \"demo\",\n  \"nombreEdificio\": \"Demo\",\n  \"nombreCondominio\": \"Demo\",\n  \"plano\": \"demo\",\n  \"piso\": \"demo\",\n  \"interior\": \"demo\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "description": "Request PATCH {{path}}/leads/leads/1/direccion"
-              },
-              "response": []
-            },
-            {
-              "name": "Actualizar Oferta Comercial",
-              "request": {
-                "method": "PATCH",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json",
-                    "type": "text"
-                  }
-                ],
-                "url": "{{path}}/leads/leads/1/oferta-comercial",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"idPlan\": 1,\n  \"idPromocionInterna\": 1,\n  \"adicionales\": [\n    {\n      \"idAdicional\": 1,\n      \"cantidad\": 1\n    }\n  ]\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "description": "Request PATCH {{path}}/leads/leads/1/oferta-comercial"
-              },
-              "response": []
-            },
-            {
-              "name": "Tipificar Lead",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json",
-                    "type": "text"
-                  }
-                ],
-                "url": "{{path}}/leads/leads/1/tipificacion",
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"codigoTipificacion\": \"COD-001\",\n  \"codigoSubtipificacion\": \"COD-001\",\n  \"comentario\": \"Comentario demo\",\n  \"horaProgramada\": \"10:00:00\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "description": "Request POST {{path}}/leads/leads/1/tipificacion"
-              },
-              "response": []
-            },
-            {
-              "name": "Registrar Contacto Lead",
-              "request": {
-                "method": "POST",
-                "header": [],
-                "url": "{{path}}/leads/leads/1/contacto",
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "description": "Request POST {{path}}/leads/leads/1/contacto"
-              },
-              "response": []
-            },
-            {
-              "name": "Listar Bandeja Gtr",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": "{{path}}/leads/leads/gtr?fecha=2026-04-25&pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "description": "Request GET {{path}}/leads/leads/gtr?fecha=2026-04-25&pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
-              },
-              "response": []
-            },
-            {
-              "name": "Listar Agendados Gtr",
-              "request": {
-                "method": "GET",
-                "header": [],
-                "url": "{{path}}/leads/leads/gtr/agendados?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
-                "auth": {
-                  "type": "bearer",
-                  "bearer": [
-                    {
-                      "key": "token",
-                      "value": "{{token}}",
-                      "type": "string"
-                    }
-                  ]
-                },
-                "description": "Request GET {{path}}/leads/leads/gtr/agendados?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
               },
               "response": []
             }
@@ -1922,6 +1692,731 @@
           ]
         },
         {
+          "name": "Postventa",
+          "item": [
+            {
+              "name": "Listar Bandeja Postventa",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/postventa?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/postventa?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Leads Postventa Asignados",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/postventa/asignados?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/postventa/asignados?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
+              },
+              "response": []
+            },
+            {
+              "name": "Tomar Lead Postventa",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": "{{path}}/leads/postventa/1/asignacion",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request PATCH {{path}}/leads/postventa/1/asignacion"
+              },
+              "response": []
+            },
+            {
+              "name": "Registrar Contacto Lead Postventa",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": "{{path}}/leads/postventa/1/contacto",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request PATCH {{path}}/leads/postventa/1/contacto"
+              },
+              "response": []
+            },
+            {
+              "name": "Obtener Detalle Lead Postventa",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/postventa/1/detalle-asesor",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/postventa/1/detalle-asesor"
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Eventos Lead Postventa",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/postventa/1/eventos?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/postventa/1/eventos?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
+              },
+              "response": []
+            },
+            {
+              "name": "Tipificar Lead Postventa",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{path}}/leads/postventa/1/tipificacion",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"codigoTipificacion\": \"COD-001\",\n  \"codigoSubtipificacion\": \"COD-001\",\n  \"comentario\": \"Comentario demo\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request PATCH {{path}}/leads/postventa/1/tipificacion"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Postventa Encuesta",
+          "item": [
+            {
+              "name": "Registrar Encuesta",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{path}}/leads/postventa/leads/1/encuestas",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"calificacionAsesor\": 1,\n  \"calificacionServicio\": 1\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request POST {{path}}/leads/postventa/leads/1/encuestas"
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Encuestas Por Lead",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/postventa/leads/1/encuestas?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/postventa/leads/1/encuestas?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
+              },
+              "response": []
+            },
+            {
+              "name": "Obtener Resumen Encuestas Por Lead",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/postventa/leads/1/encuestas/resumen",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/postventa/leads/1/encuestas/resumen"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Postventa Pago",
+          "item": [
+            {
+              "name": "Registrar Pago",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{path}}/leads/postventa/leads/1/pagos",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"aportante\": \"CLIENTE\",\n  \"monto\": 99.9,\n  \"fechaEmision\": \"2026-04-25\",\n  \"fechaVencimiento\": \"2026-04-25\",\n  \"fechaPago\": \"2026-04-25\",\n  \"fechaCompromisoPago\": \"2026-04-25\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request POST {{path}}/leads/postventa/leads/1/pagos"
+              },
+              "response": []
+            },
+            {
+              "name": "Actualizar Pago",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{path}}/leads/postventa/pagos/1",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"aportante\": \"CLIENTE\",\n  \"estado\": \"PENDIENTE\",\n  \"monto\": 99.9,\n  \"fechaEmision\": \"2026-04-25\",\n  \"fechaVencimiento\": \"2026-04-25\",\n  \"fechaPago\": \"2026-04-25\",\n  \"fechaCompromisoPago\": \"2026-04-25\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request PATCH {{path}}/leads/postventa/pagos/1"
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Pagos Por Lead",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/postventa/leads/1/pagos?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/postventa/leads/1/pagos?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Preventa",
+          "item": [
+            {
+              "name": "Registrar Ingreso Lead",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{path}}/leads/preventa/intake",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"prefijo\": \"AG\",\n  \"lead\": \"998877665\",\n  \"idCampana\": 1,\n  \"base\": \"WHATSAPP\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request POST {{path}}/leads/preventa/intake"
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Bandeja Gtr",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/preventa/gtr?fecha=2026-04-25&pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/preventa/gtr?fecha=2026-04-25&pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
+              },
+              "response": []
+            },
+            {
+              "name": "Asignar Lead",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{path}}/leads/preventa/1/asignacion",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAsesorAsignado\": 1,\n  \"nombreAsesorAsignado\": \"Demo\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request PATCH {{path}}/leads/preventa/1/asignacion"
+              },
+              "response": []
+            },
+            {
+              "name": "Asignar Leads",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{path}}/leads/preventa/asignacion-masiva",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idAsesorAsignado\": 1,\n  \"nombreAsesorAsignado\": \"Demo\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request PATCH {{path}}/leads/preventa/asignacion-masiva"
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Agendados Gtr",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/preventa/gtr/agendados?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/preventa/gtr/agendados?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
+              },
+              "response": []
+            },
+            {
+              "name": "Obtener Detalle Asesor",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/preventa/1/detalle-asesor",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/preventa/1/detalle-asesor"
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Resumen Supervisor Ventas",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/preventa/supervisor-ventas/resumen?idsAsesor=15&idsAsesor=21",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/preventa/supervisor-ventas/resumen?idsAsesor=15&idsAsesor=21"
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Bandeja Supervisor Ventas",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/preventa/supervisor-ventas/asesor/1/bandeja?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/preventa/supervisor-ventas/asesor/1/bandeja?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Bandeja Asesor Ventas",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/preventa/asesor-ventas?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/preventa/asesor-ventas?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
+              },
+              "response": []
+            },
+            {
+              "name": "Registrar Contacto Lead",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": "{{path}}/leads/preventa/1/contacto",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request POST {{path}}/leads/preventa/1/contacto"
+              },
+              "response": []
+            },
+            {
+              "name": "Actualizar Datos Preventa",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{path}}/leads/preventa/1/datos-preventa",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"tipoDocumento\": \"DNI\",\n  \"numeroDocumentoTitularServicio\": \"75413802\",\n  \"ubigeoNacimiento\": \"150101\",\n  \"nombreTitularServicio\": \"Demo\",\n  \"celularRegistro\": \"987654321\",\n  \"celularReferencia\": \"987654321\",\n  \"correo\": \"demo@albru.pe\",\n  \"nombreMadre\": \"Demo\",\n  \"nombrePadre\": \"Demo\",\n  \"numeroDocumentoTitularCelularRegistro\": \"987654321\",\n  \"nombreTitularCelularRegistro\": \"Demo\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request PATCH {{path}}/leads/preventa/1/datos-preventa"
+              },
+              "response": []
+            },
+            {
+              "name": "Actualizar Direccion",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{path}}/leads/preventa/1/direccion",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"ubigeoDomicilio\": \"150101\",\n  \"tipoDomicilio\": \"MULTIFAMILIAR\",\n  \"tipoVia\": \"JIRON\",\n  \"via\": \"demo\",\n  \"direccion\": \"Av Primavera 123\",\n  \"referencia\": \"Referencia demo\",\n  \"latitud\": 99.9,\n  \"longitud\": 99.9,\n  \"urbanizacion\": \"demo\",\n  \"numero\": \"demo\",\n  \"manzana\": \"demo\",\n  \"lote\": \"demo\",\n  \"nombreEdificio\": \"Demo\",\n  \"nombreCondominio\": \"Demo\",\n  \"plano\": \"demo\",\n  \"piso\": \"demo\",\n  \"interior\": \"demo\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request PATCH {{path}}/leads/preventa/1/direccion"
+              },
+              "response": []
+            },
+            {
+              "name": "Actualizar Oferta Comercial",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{path}}/leads/preventa/1/oferta-comercial",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idPlan\": 1,\n  \"idPromocionInterna\": 1,\n  \"adicionales\": [\n    {\n      \"idAdicional\": 1,\n      \"cantidad\": 1\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request PATCH {{path}}/leads/preventa/1/oferta-comercial"
+              },
+              "response": []
+            },
+            {
+              "name": "Tipificar Lead",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{path}}/leads/preventa/1/tipificacion",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"codigoTipificacion\": \"COD-001\",\n  \"codigoSubtipificacion\": \"COD-001\",\n  \"comentario\": \"Comentario demo\",\n  \"horaProgramada\": \"10:00:00\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request POST {{path}}/leads/preventa/1/tipificacion"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
           "name": "Promocion Comercial",
           "item": [
             {
@@ -2018,7 +2513,7 @@
                 "url": "{{path}}/leads/proveedores",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Plan Demo\"\n}",
+                  "raw": "{\n  \"nombre\": \"Plan Demo\",\n  \"mesesPermanencia\": 4\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2118,7 +2613,7 @@
                 "url": "{{path}}/leads/tipificaciones/catalogo",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"etapa\": \"PREVENTA\",\n  \"tipificaciones\": [\n    {\n      \"id\": 1,\n      \"codigo\": \"COD-001\",\n      \"descripcion\": \"Descripcion demo\",\n      \"orden\": 1,\n      \"subtipificaciones\": [\n        {\n          \"id\": 1,\n          \"codigo\": \"COD-001\",\n          \"descripcion\": \"Descripcion demo\",\n          \"orden\": 1,\n          \"etapaCambio\": \"PREVENTA\"\n        }\n      ]\n    }\n  ]\n}",
+                  "raw": "{\n  \"etapa\": \"PREVENTA\",\n  \"tipificaciones\": [\n    {\n      \"id\": 1,\n      \"codigo\": \"COD-001\",\n      \"descripcion\": \"Descripcion demo\",\n      \"orden\": 1,\n      \"subtipificaciones\": [\n        {\n          \"id\": 1,\n          \"codigo\": \"COD-001\",\n          \"descripcion\": \"Descripcion demo\",\n          \"orden\": 1,\n          \"etapaCambio\": \"PREVENTA\",\n          \"estadoPostventaCambio\": \"EN_SEGUIMIENTO\"\n        }\n      ]\n    }\n  ]\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2236,6 +2731,271 @@
                   ]
                 },
                 "description": "Request GET {{path}}/leads/ubigeo/provincias/1/distritos"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Venta",
+          "item": [
+            {
+              "name": "Listar Bandeja Venta",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/venta?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/venta?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Leads Venta Asignados",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/venta/asignados?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/venta/asignados?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
+              },
+              "response": []
+            },
+            {
+              "name": "Tomar Lead Venta",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": "{{path}}/leads/venta/1/asignacion",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request PATCH {{path}}/leads/venta/1/asignacion"
+              },
+              "response": []
+            },
+            {
+              "name": "Registrar Contacto Lead Venta",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": "{{path}}/leads/venta/1/contacto",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request PATCH {{path}}/leads/venta/1/contacto"
+              },
+              "response": []
+            },
+            {
+              "name": "Obtener Detalle Lead Venta",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/venta/1/detalle-asesor",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/venta/1/detalle-asesor"
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Eventos Lead Venta",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/venta/1/eventos?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/venta/1/eventos?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
+              },
+              "response": []
+            },
+            {
+              "name": "Actualizar Datos Preventa Venta",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{path}}/leads/venta/1/datos-preventa",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"tipoDocumento\": \"DNI\",\n  \"numeroDocumentoTitularServicio\": \"75413802\",\n  \"ubigeoNacimiento\": \"150101\",\n  \"nombreTitularServicio\": \"Demo\",\n  \"celularRegistro\": \"987654321\",\n  \"celularReferencia\": \"987654321\",\n  \"correo\": \"demo@albru.pe\",\n  \"nombreMadre\": \"Demo\",\n  \"nombrePadre\": \"Demo\",\n  \"numeroDocumentoTitularCelularRegistro\": \"987654321\",\n  \"nombreTitularCelularRegistro\": \"Demo\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request PATCH {{path}}/leads/venta/1/datos-preventa"
+              },
+              "response": []
+            },
+            {
+              "name": "Actualizar Direccion Venta",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{path}}/leads/venta/1/direccion",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"ubigeoDomicilio\": \"150101\",\n  \"tipoDomicilio\": \"MULTIFAMILIAR\",\n  \"tipoVia\": \"JIRON\",\n  \"via\": \"demo\",\n  \"direccion\": \"Av Primavera 123\",\n  \"referencia\": \"Referencia demo\",\n  \"latitud\": 99.9,\n  \"longitud\": 99.9,\n  \"urbanizacion\": \"demo\",\n  \"numero\": \"demo\",\n  \"manzana\": \"demo\",\n  \"lote\": \"demo\",\n  \"nombreEdificio\": \"Demo\",\n  \"nombreCondominio\": \"Demo\",\n  \"plano\": \"demo\",\n  \"piso\": \"demo\",\n  \"interior\": \"demo\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request PATCH {{path}}/leads/venta/1/direccion"
+              },
+              "response": []
+            },
+            {
+              "name": "Actualizar Oferta Comercial Venta",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{path}}/leads/venta/1/oferta-comercial",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idPlan\": 1,\n  \"idPromocionInterna\": 1,\n  \"adicionales\": [\n    {\n      \"idAdicional\": 1,\n      \"cantidad\": 1\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request PATCH {{path}}/leads/venta/1/oferta-comercial"
+              },
+              "response": []
+            },
+            {
+              "name": "Tipificar Lead Venta",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{path}}/leads/venta/1/tipificacion",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"codigoTipificacion\": \"COD-001\",\n  \"codigoSubtipificacion\": \"COD-001\",\n  \"comentario\": \"Comentario demo\",\n  \"fechaInstalacion\": \"2026-04-25\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request PATCH {{path}}/leads/venta/1/tipificacion"
               },
               "response": []
             }
@@ -2478,7 +3238,7 @@
                 "url": "{{path}}/recruitment/grupos-capacitacion/1/postulaciones",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"idPostulacion\": 1,\n  \"fechaAsignacion\": \"2026-04-25\"\n}",
+                  "raw": "{\n  \"idPostulacion\": 1\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2728,7 +3488,7 @@
                 "url": "{{path}}/recruitment/postulaciones/1/tipificacion",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"idTipificacion\": 1,\n  \"idSubtipificacion\": 1,\n  \"modalidadContacto\": \"LLAMADA\",\n  \"observacion\": \"Observacion demo\"\n}",
+                  "raw": "{\n  \"idTipificacion\": 1,\n  \"idSubtipificacion\": 1,\n  \"idGrupoCapacitacion\": 1,\n  \"modalidadContacto\": \"LLAMADA\",\n  \"observacion\": \"Observacion demo\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
