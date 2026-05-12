@@ -31,6 +31,14 @@ public class PreventaController {
         leadService.registrarIngresoLead(request);
         return ResponseEntity.noContent().build();
     }
+    @PatchMapping("/{idLead}/snapshots") @PreAuthorize("hasAuthority('CREATE_LEADS')")
+    public ResponseEntity<Void> actualizarSnapshotsLead(
+            @PathVariable Long idLead,
+            @Valid @RequestBody LeadSnapshotsRequest request
+    ) {
+        leadService.actualizarSnapshotsLead(idLead, request);
+        return ResponseEntity.noContent().build();
+    }
     // 2. Listar los Leads registrados y para gestionar Leads del día
     @GetMapping("/gtr") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
     public ResponseEntity<PageResponse<LeadGtrResponse>> listarBandejaGtr(

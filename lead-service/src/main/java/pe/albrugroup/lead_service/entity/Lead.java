@@ -57,6 +57,9 @@ public class Lead {
     private Long idSubtipificacion;
     private String codigoSubtipificacion;
 
+    private String numeroDocumentoTitularServicioSnapshot;
+    private String direccionSnapshot;
+
     // ASESOR VENTAS
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)

@@ -18,6 +18,7 @@ import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaAdicionalRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaComercialRequest;
+import pe.albrugroup.lead_service.entity.request.LeadSnapshotsRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionPostventaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionVentaRequest;
@@ -282,6 +283,39 @@ public class LeadService {
     }
 
     @Transactional
+    public void actualizarSnapshotsLead(Long idLead, LeadSnapshotsRequest request) {
+        Lead lead = leadRepository.findByIdAndEtapa(idLead, Etapa.PREVENTA)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+
+        String numeroDocumento = leadMapper.trimToNull(request.getNumeroDocumentoTitularServicio());
+        String direccion = leadMapper.trimToNull(request.getDireccion());
+        boolean solicitoNumeroDocumento = numeroDocumento != null;
+        boolean solicitoDireccion = direccion != null;
+        boolean actualizoSnapshot = false;
+
+        if (solicitoNumeroDocumento && lead.getDatosPreventa() == null) {
+            lead.setNumeroDocumentoTitularServicioSnapshot(numeroDocumento);
+            actualizoSnapshot = true;
+        }
+        if (solicitoDireccion && lead.getDireccion() == null) {
+            lead.setDireccionSnapshot(direccion);
+            actualizoSnapshot = true;
+        }
+        if (!actualizoSnapshot) {
+            throw new BadRequestException(
+                    "Los snapshots solicitados ya no son editables porque sus entidades ya existen",
+                    idLead,
+                    Map.of(
+                            "datosPreventaCreada", lead.getDatosPreventa() != null,
+                            "direccionCreada", lead.getDireccion() != null
+                    )
+            );
+        }
+
+        leadRepository.save(lead);
+    }
+
+    @Transactional
     public void actualizarDatosPreventa(Long idLead, LeadDatosPreventaRequest request) {
         Lead lead = obtenerLeadPreventaDelAsesor(idLead);
         actualizarDatosPreventaInterno(lead, request);
@@ -326,6 +360,7 @@ public class LeadService {
         DatosPreventa datosPreventa = lead.getDatosPreventa() == null ? new DatosPreventa() : lead.getDatosPreventa();
         leadMapper.updateDatosPreventa(request, datosPreventa);
 
+        lead.setNumeroDocumentoTitularServicioSnapshot(datosPreventa.getNumeroDocumentoTitularServicio());
         lead.setDatosPreventa(datosPreventa);
         moverAEnGestionSiAplica(lead);
         return leadRepository.save(lead);
@@ -335,6 +370,7 @@ public class LeadService {
         Direccion direccion = lead.getDireccion() == null ? new Direccion() : lead.getDireccion();
         leadMapper.updateDireccion(request, direccion);
 
+        lead.setDireccionSnapshot(direccion.getDireccion());
         lead.setDireccion(direccion);
         moverAEnGestionSiAplica(lead);
         return leadRepository.save(lead);
@@ -710,6 +746,7 @@ public class LeadService {
         lead.setIdSubtipificacion(null);
         lead.setCodigoSubtipificacion(null);
         lead.setEstado(EstadoSeguimiento.ASIGNADO);
+        lead.setLastEntryAt(Instant.now());
 
         Lead savedLead = leadRepository.save(lead);
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
@@ -995,7 +1032,7 @@ public class LeadService {
                 asesorPreventa,
                 lead.getLead(),
                 datosPreventa == null ? null : datosPreventa.getTipoDocumento(),
-                datosPreventa == null ? null : datosPreventa.getNumeroDocumentoTitularServicio(),
+                datosPreventa == null ? lead.getNumeroDocumentoTitularServicioSnapshot() : datosPreventa.getNumeroDocumentoTitularServicio(),
                 datosPreventa == null ? null : datosPreventa.getNombreTitularServicio(),
                 departamento,
                 fechaInstalacion,
@@ -1103,7 +1140,7 @@ public class LeadService {
                 lead.getIdAsesorAsignado(),
                 lead.getNombreAsesorAsignado(),
                 datosPreventa == null ? null : datosPreventa.getTipoDocumento(),
-                datosPreventa == null ? null : datosPreventa.getNumeroDocumentoTitularServicio(),
+                datosPreventa == null ? lead.getNumeroDocumentoTitularServicioSnapshot() : datosPreventa.getNumeroDocumentoTitularServicio(),
                 datosPreventa == null ? null : datosPreventa.getNombreTitularServicio(),
                 datosPreventa == null ? null : datosPreventa.getCelularRegistro(),
                 datosPreventa == null ? null : datosPreventa.getCelularReferencia(),
@@ -1117,7 +1154,7 @@ public class LeadService {
                 direccion == null ? null : direccion.getTipoDomicilio(),
                 direccion == null ? null : direccion.getTipoVia(),
                 direccion == null ? null : direccion.getVia(),
-                direccion == null ? null : direccion.getDireccion(),
+                direccion == null ? lead.getDireccionSnapshot() : direccion.getDireccion(),
                 direccion == null ? null : direccion.getReferencia(),
                 direccion == null ? null : direccion.getLatitud(),
                 direccion == null ? null : direccion.getLongitud(),

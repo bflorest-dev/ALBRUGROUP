@@ -25,6 +25,8 @@ public interface LeadMapper {
     @Mapping(target = "codigoTipificacion", ignore = true)
     @Mapping(target = "idSubtipificacion", ignore = true)
     @Mapping(target = "codigoSubtipificacion", ignore = true)
+    @Mapping(target = "numeroDocumentoTitularServicioSnapshot", ignore = true)
+    @Mapping(target = "direccionSnapshot", ignore = true)
     @Mapping(target = "datosPreventa", ignore = true)
     @Mapping(target = "direccion", ignore = true)
     @Mapping(target = "plan", ignore = true)
