@@ -341,6 +341,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND (l.codigoTipificacion IS NULL OR l.codigoTipificacion NOT IN :codigosTipificacionExcluidos)
               AND (:filtrarTipificaciones = false OR l.idTipificacion IN :tipificacionIds)
               AND (:filtrarSubtipificaciones = false OR l.idSubtipificacion IN :subtipificacionIds)
+              AND (:fechaDesde IS NULL OR l.lastEntryAt >= :fechaDesde)
+              AND (:fechaHasta IS NULL OR l.lastEntryAt < :fechaHasta)
             ORDER BY l.lastEntryAt DESC, l.id DESC
             """)
     Page<LeadGtrResponse> listarLeadsMasivo(
@@ -351,6 +353,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("filtrarSubtipificaciones") boolean filtrarSubtipificaciones,
             @Param("subtipificacionIds") Collection<Long> subtipificacionIds,
             @Param("codigosTipificacionExcluidos") Collection<String> codigosTipificacionExcluidos,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
             Pageable pageable
     );
 }

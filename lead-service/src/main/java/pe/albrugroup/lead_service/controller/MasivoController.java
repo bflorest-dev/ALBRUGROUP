@@ -2,6 +2,7 @@ package pe.albrugroup.lead_service.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,6 +18,7 @@ import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.service.MasivoService;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController @Validated
@@ -32,9 +34,19 @@ public class MasivoController {
             @RequestParam(required = false) Etapa etapa,
             @RequestParam(required = false) List<Long> tipificaciones,
             @RequestParam(required = false) List<Long> subtipificaciones,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var leads = masivoService.listarLeads(idProveedor, etapa, tipificaciones, subtipificaciones, pageRequest);
+        var leads = masivoService.listarLeads(
+                idProveedor,
+                etapa,
+                tipificaciones,
+                subtipificaciones,
+                fechaDesde,
+                fechaHasta,
+                pageRequest
+        );
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
 }

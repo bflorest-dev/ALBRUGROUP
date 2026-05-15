@@ -2065,6 +2065,41 @@
               "response": []
             },
             {
+              "name": "Actualizar Snapshots Lead",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{path}}/leads/preventa/1/snapshots",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"numeroDocumentoTitularServicio\": \"75413802\",\n  \"direccion\": \"Av Primavera 123\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request PATCH {{path}}/leads/preventa/1/snapshots"
+              },
+              "response": []
+            },
+            {
               "name": "Listar Bandeja Gtr",
               "request": {
                 "method": "GET",

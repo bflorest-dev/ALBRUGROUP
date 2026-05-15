@@ -7,9 +7,14 @@ import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
+import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.repository.LeadRepository;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -34,10 +39,13 @@ public class MasivoService {
             Etapa etapa,
             List<Long> tipificaciones,
             List<Long> subtipificaciones,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
             PageRequest pageRequest
     ) {
         List<Long> tipificacionesFiltro = normalizarIds(tipificaciones);
         List<Long> subtipificacionesFiltro = normalizarIds(subtipificaciones);
+        RangoFechas rangoFechas = resolverRangoFechas(fechaDesde, fechaHasta);
 
         var leads = leadRepository.listarLeadsMasivo(
                 idProveedor,
@@ -47,19 +55,52 @@ public class MasivoService {
                 !subtipificacionesFiltro.isEmpty(),
                 subtipificacionesFiltro.isEmpty() ? FILTRO_VACIO : subtipificacionesFiltro,
                 TIPIFICACIONES_EXCLUIDAS_MASIVO,
+                rangoFechas.inicio(),
+                rangoFechas.fin(),
                 paginationService.toPageable(pageRequest, MASIVO_SORT_FIELDS)
         );
         return PageResponse.from(leads);
     }
 
     private List<Long> normalizarIds(List<Long> ids) {
-        if (ids == null) {
-            return List.of();
-        }
+        if (ids == null) { return List.of(); }
 
         return ids.stream()
                 .filter(id -> id != null && id > 0)
                 .distinct()
                 .toList();
+    }
+
+    private RangoFechas resolverRangoFechas(LocalDate fechaDesde, LocalDate fechaHasta) {
+        if (fechaDesde == null && fechaHasta == null) {
+            return new RangoFechas(null, null);
+        }
+        if (fechaDesde == null) {
+            throw new BadRequestException(
+                    "Periodo invalido: fechaHasta requiere fechaDesde",
+                    null,
+                    Map.of("fechaHasta", fechaHasta)
+            );
+        }
+
+        LocalDate fechaHastaResuelta = fechaHasta == null ? LocalDate.now(ZoneId.systemDefault()) : fechaHasta;
+        if (fechaDesde.isAfter(fechaHastaResuelta)) {
+            throw new BadRequestException(
+                    "Periodo invalido: fechaDesde no puede ser mayor que fechaHasta",
+                    null,
+                    Map.of(
+                            "fechaDesde", fechaDesde,
+                            "fechaHasta", fechaHastaResuelta
+                    )
+            );
+        }
+
+        ZoneId zoneId = ZoneId.systemDefault();
+        Instant inicio = fechaDesde.atStartOfDay(zoneId).toInstant();
+        Instant fin = fechaHastaResuelta.plusDays(1).atStartOfDay(zoneId).toInstant();
+        return new RangoFechas(inicio, fin);
+    }
+
+    private record RangoFechas(Instant inicio, Instant fin) {
     }
 }
