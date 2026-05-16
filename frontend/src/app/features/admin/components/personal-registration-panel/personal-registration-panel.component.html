@@ -4,7 +4,7 @@
       <span class="panel__eyebrow">Bloque 1</span>
       <h3>Alta de personal</h3>
     </div>
-    <span class="step-chip">Paso {{ currentStep }} de 3</span>
+    <span class="step-chip">Paso {{ currentStep }} de 4</span>
   </div>
 
   @if (currentStep === 1) {
@@ -219,18 +219,82 @@
 
     <div class="actions">
       <button type="button" class="secondary-button" (click)="backToEmployee.emit()">Volver</button>
+      <button type="button" class="primary-button" (click)="continueToSchedule.emit()">
+        Continuar a horario
+      </button>
+    </div>
+  }
+
+  @if (currentStep === 3) {
+    <form [formGroup]="horarioForm" class="form-grid">
+      <app-date-field label="Fecha de inicio del horario" formControlName="fechaInicio" />
+
+      <label>
+        <span>Compensable</span>
+        <select formControlName="compensable">
+          <option value="true">Si</option>
+          <option value="false">No</option>
+        </select>
+      </label>
+
+      <div class="schedule-grid field--wide" formArrayName="detalles">
+        @for (detalle of getScheduleRows(); track $index) {
+          <div class="schedule-card" [formGroupName]="$index">
+            <div class="schedule-card__header">
+              <strong>{{ toLabel(diasSemanaOptions[$index]) }}</strong>
+              <label class="schedule-card__toggle">
+                <span>Laborable</span>
+                <select formControlName="laborable">
+                  <option value="true">Si</option>
+                  <option value="false">No</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="schedule-card__grid">
+              <label>
+                <span>Entrada</span>
+                <input type="time" formControlName="horaEntrada" />
+              </label>
+
+              <label>
+                <span>Salida</span>
+                <input type="time" formControlName="horaSalida" />
+              </label>
+
+              <label>
+                <span>Inicio almuerzo</span>
+                <input type="time" formControlName="inicioAlmuerzo" />
+              </label>
+
+              <label>
+                <span>Fin almuerzo</span>
+                <input type="time" formControlName="finAlmuerzo" />
+              </label>
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (submitErrorMessage) {
+        <p class="form-message form-message--error">{{ submitErrorMessage }}</p>
+      }
+    </form>
+
+    <div class="actions">
+      <button type="button" class="secondary-button" (click)="backToContract.emit()">Volver</button>
       <button
         type="button"
         class="primary-button"
         [disabled]="isSubmitting"
         (click)="submitPersonalFlow.emit()"
       >
-        {{ isSubmitting ? 'Registrando...' : 'Registrar empleado y contrato' }}
+        {{ isSubmitting ? 'Registrando...' : 'Registrar empleado, contrato y horario' }}
       </button>
     </div>
   }
 
-  @if (currentStep === 3 && creationResult; as result) {
+  @if (currentStep === 4 && creationResult; as result) {
     <div class="result-card">
       <span class="panel__eyebrow">Resultado</span>
       <h3>Alta completada</h3>

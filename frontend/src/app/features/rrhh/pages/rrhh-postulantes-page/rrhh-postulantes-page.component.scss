@@ -29,15 +29,32 @@
   color: var(--role-hero-muted);
 }
 
-.rrhh-grid {
-  display: grid;
-  grid-template-columns: minmax(320px, 0.85fr) minmax(0, 1.15fr);
-  gap: 1.5rem;
-  align-items: start;
+.workspace-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
-@media (max-width: 1180px) {
-  .rrhh-grid {
+.workspace-tab {
+  padding: 0.8rem 1rem;
+  border: 1px solid rgba(31, 111, 85, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--role-panel-text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.workspace-tab--active {
+  border-color: transparent;
+  color: #fff;
+  background: var(--role-button-bg);
+}
+
+@media (max-width: 760px) {
+  .workspace-nav {
+    display: grid;
     grid-template-columns: 1fr;
   }
 }

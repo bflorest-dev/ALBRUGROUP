@@ -12,6 +12,7 @@
     <app-personal-registration-panel
       [empleadoForm]="facade.empleadoForm"
       [contratoForm]="facade.contratoForm"
+      [horarioForm]="facade.horarioForm"
       [currentStep]="facade.currentStep()"
       [isSubmitting]="facade.isSubmitting()"
       [submitErrorMessage]="facade.submitErrorMessage()"
@@ -29,8 +30,11 @@
       [modalidadOptions]="facade.modalidadOptions"
       [seguroSaludOptions]="facade.seguroSaludOptions"
       [sistemaPensionesOptions]="facade.sistemaPensionesOptions"
+      [diasSemanaOptions]="facade.diasSemanaOptions"
       (continueToContract)="facade.continueToContract()"
+      (continueToSchedule)="facade.continueToSchedule()"
       (backToEmployee)="facade.backToEmployee()"
+      (backToContract)="facade.backToContract()"
       (submitPersonalFlow)="facade.submitPersonalFlow()"
       (resetFlow)="facade.resetFlow()"
     />

@@ -10,6 +10,7 @@ import { EmpleadoResponse } from '../../../shared/models/rrhh/empleado-response'
 import { EmpresaContratistaResponse } from '../../../shared/models/rrhh/empresa-contratista-response';
 import { RegistrarContratoRequest } from '../../../shared/models/rrhh/registrar-contrato-request';
 import { RegistrarEmpleadoRequest } from '../../../shared/models/rrhh/registrar-empleado-request';
+import { RegistrarHorarioRequest } from '../../../shared/models/schedule/registrar-horario-request';
 import { AuthService } from '../../auth/services/auth.service';
 import { AdminRrhhService } from '../services/admin-rrhh.service';
 
@@ -30,6 +31,7 @@ type CreateFlowRequest = {
   requestId: number;
   empleadoRequest: RegistrarEmpleadoRequest;
   contratoRequest: RegistrarContratoRequest;
+  horarioRequest: Omit<RegistrarHorarioRequest, 'idEmpleado' | 'idContrato'>;
 };
 
 type CreateFlowState =
@@ -106,18 +108,29 @@ export class AdminPersonalFacade {
           switchMap((empleado) =>
             this.adminRrhhService.registrarContrato(empleado.id, request.contratoRequest).pipe(
               timeout(this.requestTimeoutMs),
-              switchMap(() =>
-                this.authService.getUsuarioPorEmpleadoId(empleado.id).pipe(
-                  timeout(this.requestTimeoutMs),
-                  map(
-                    (usuario): CreateFlowState => ({
-                      status: 'success',
-                      requestId: request.requestId,
-                      usuario,
-                      empleado
-                    })
+              switchMap((contrato) =>
+                this.adminRrhhService
+                  .registrarHorario({
+                    idEmpleado: empleado.id,
+                    idContrato: contrato.id,
+                    ...request.horarioRequest
+                  })
+                  .pipe(
+                    timeout(this.requestTimeoutMs),
+                    switchMap(() =>
+                      this.authService.getUsuarioPorEmpleadoId(empleado.id).pipe(
+                        timeout(this.requestTimeoutMs),
+                        map(
+                          (usuario): CreateFlowState => ({
+                            status: 'success',
+                            requestId: request.requestId,
+                            usuario,
+                            empleado
+                          })
+                        )
+                      )
+                    )
                   )
-                )
               )
             )
           ),
@@ -128,7 +141,7 @@ export class AdminPersonalFacade {
               requestId: request.requestId,
               message: this.getErrorMessage(
                 error,
-                'No se pudo completar el alta de empleado y contrato.'
+                'No se pudo completar el alta de empleado, contrato y horario.'
               )
             })
           )
@@ -251,6 +264,15 @@ export class AdminPersonalFacade {
   readonly modalidadOptions = ['PART_TIME', 'FULL_TIME', 'SEMI_FULL', 'SUPER_FULL'];
   readonly seguroSaludOptions = ['SIS', 'ESSALUD'];
   readonly sistemaPensionesOptions = ['ONP', 'AFP_INTEGRA', 'AFP_PROFUTURO', 'AFP_HABITAT', 'PRIMA_AFP'];
+  readonly diasSemanaOptions = [
+    'LUNES',
+    'MARTES',
+    'MIERCOLES',
+    'JUEVES',
+    'VIERNES',
+    'SABADO',
+    'DOMINGO'
+  ];
 
   readonly empleadoForm = this.formBuilder.nonNullable.group({
     nombres: ['', [Validators.required]],
@@ -284,6 +306,12 @@ export class AdminPersonalFacade {
     sueldoBase: [1130, [Validators.required, Validators.min(0.01)]],
     fechaInicio: [this.getToday(), [Validators.required]],
     fechaFin: ['']
+  });
+
+  readonly horarioForm = this.formBuilder.nonNullable.group({
+    fechaInicio: [this.getToday(), [Validators.required]],
+    compensable: ['true', [Validators.required]],
+    detalles: this.formBuilder.nonNullable.array(this.buildDefaultScheduleRows())
   });
 
   readonly currentStep = signal(1);
@@ -349,7 +377,7 @@ export class AdminPersonalFacade {
 
         untracked(() => {
           this.creationResult.set(state.usuario);
-          this.currentStep.set(3);
+          this.currentStep.set(4);
           this.loadEmployees(0, true);
         });
         return;
@@ -421,6 +449,20 @@ export class AdminPersonalFacade {
     this.currentStep.set(1);
   }
 
+  continueToSchedule(): void {
+    if (this.contratoForm.invalid) {
+      this.contratoForm.markAllAsTouched();
+      return;
+    }
+
+    this.horarioForm.controls.fechaInicio.setValue(this.contratoForm.controls.fechaInicio.getRawValue());
+    this.currentStep.set(3);
+  }
+
+  backToContract(): void {
+    this.currentStep.set(2);
+  }
+
   submitPersonalFlow(): void {
     if (this.empleadoForm.invalid) {
       this.currentStep.set(1);
@@ -429,7 +471,14 @@ export class AdminPersonalFacade {
     }
 
     if (this.contratoForm.invalid) {
+      this.currentStep.set(2);
       this.contratoForm.markAllAsTouched();
+      return;
+    }
+
+    if (this.horarioForm.invalid) {
+      this.currentStep.set(3);
+      this.horarioForm.markAllAsTouched();
       return;
     }
 
@@ -438,7 +487,8 @@ export class AdminPersonalFacade {
     this.createFlowRequest.set({
       requestId: this.nextRequestId++,
       empleadoRequest: this.buildEmpleadoRequest(),
-      contratoRequest: this.buildContratoRequest()
+      contratoRequest: this.buildContratoRequest(),
+      horarioRequest: this.buildHorarioRequest()
     });
   }
 
@@ -478,6 +528,11 @@ export class AdminPersonalFacade {
       fechaInicio: this.getToday(),
       fechaFin: ''
     });
+    this.horarioForm.reset({
+      fechaInicio: this.getToday(),
+      compensable: 'true'
+    });
+    this.resetScheduleRows();
   }
 
   loadEmployees(pageNumber = 0, silent = false): void {
@@ -558,6 +613,43 @@ export class AdminPersonalFacade {
       fechaInicio: raw.fechaInicio,
       fechaFin: raw.fechaFin ? raw.fechaFin : null
     };
+  }
+
+  private buildHorarioRequest(): Omit<RegistrarHorarioRequest, 'idEmpleado' | 'idContrato'> {
+    const raw = this.horarioForm.getRawValue();
+
+    return {
+      modalidad: this.contratoForm.controls.modalidad.getRawValue(),
+      fechaInicio: raw.fechaInicio,
+      compensable: raw.compensable === 'true',
+      detalles: raw.detalles.map((detalle) => ({
+        dia: detalle.dia,
+        horaEntrada: detalle.horaEntrada,
+        horaSalida: detalle.horaSalida,
+        inicioAlmuerzo: detalle.inicioAlmuerzo,
+        finAlmuerzo: detalle.finAlmuerzo,
+        laborable: detalle.laborable === 'true'
+      }))
+    };
+  }
+
+  private buildDefaultScheduleRows() {
+    return this.diasSemanaOptions.map((dia) =>
+      this.formBuilder.nonNullable.group({
+        dia: [dia, [Validators.required]],
+        horaEntrada: ['09:00', [Validators.required]],
+        horaSalida: ['18:00', [Validators.required]],
+        inicioAlmuerzo: ['13:00', [Validators.required]],
+        finAlmuerzo: ['14:00', [Validators.required]],
+        laborable: [dia === 'SABADO' || dia === 'DOMINGO' ? 'false' : 'true', [Validators.required]]
+      })
+    );
+  }
+
+  private resetScheduleRows(): void {
+    const detalles = this.horarioForm.controls.detalles;
+    detalles.clear();
+    this.buildDefaultScheduleRows().forEach((group) => detalles.push(group));
   }
 
   private getErrorMessage(error: HttpErrorResponse, fallbackMessage: string): string {

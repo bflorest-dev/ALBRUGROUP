@@ -8,6 +8,8 @@ import { EmpleadoResponse } from '../../../shared/models/rrhh/empleado-response'
 import { EmpresaContratistaResponse } from '../../../shared/models/rrhh/empresa-contratista-response';
 import { RegistrarContratoRequest } from '../../../shared/models/rrhh/registrar-contrato-request';
 import { RegistrarEmpleadoRequest } from '../../../shared/models/rrhh/registrar-empleado-request';
+import { HorarioResponse } from '../../../shared/models/schedule/horario-response';
+import { RegistrarHorarioRequest } from '../../../shared/models/schedule/registrar-horario-request';
 
 @Injectable({
   providedIn: 'root'
@@ -16,6 +18,7 @@ export class AdminRrhhService {
   private readonly empleadosUrl = `${API_CONSTANTS.gatewayBaseUrl}/rrhh/empleados`;
   private readonly contratosUrl = `${API_CONSTANTS.gatewayBaseUrl}/rrhh/contratos`;
   private readonly empresasContratistasUrl = `${API_CONSTANTS.gatewayBaseUrl}/rrhh/empresas-contratistas`;
+  private readonly horariosUrl = `${API_CONSTANTS.gatewayBaseUrl}/schedule/horarios`;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -28,6 +31,10 @@ export class AdminRrhhService {
     request: RegistrarContratoRequest
   ): Observable<ContratoResponse> {
     return this.http.post<ContratoResponse>(`${this.contratosUrl}/${empleadoId}/registrar`, request);
+  }
+
+  registrarHorario(request: RegistrarHorarioRequest): Observable<HorarioResponse> {
+    return this.http.post<HorarioResponse>(this.horariosUrl, request);
   }
 
   getEmpleados(pageNumber = 0, pageSize = 8): Observable<PageResponse<EmpleadoResponse>> {

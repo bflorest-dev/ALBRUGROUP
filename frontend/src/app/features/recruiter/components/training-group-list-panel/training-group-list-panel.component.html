@@ -110,10 +110,94 @@
               </h4>
               <p>{{ detalle.postulacion.postulante.documento }}</p>
             </div>
-            <span class="status-chip">{{ toLabel(detalle.estadoCapacitacion) }}</span>
+            <div class="detail-item__actions">
+              <span class="status-chip">{{ toLabel(detalle.estadoCapacitacion) }}</span>
+              <button type="button" class="ghost-button" (click)="editDetail.emit(detalle)">
+                Actualizar seguimiento
+              </button>
+            </div>
           </article>
         }
       </div>
+
+      @if (selectedDetail; as detail) {
+        <section class="detail-editor">
+          <div class="detail-editor__header">
+            <div>
+              <span class="panel__eyebrow">Seguimiento</span>
+              <h4>
+                {{ detail.postulacion.postulante.nombres }}
+                {{ detail.postulacion.postulante.apellidos }}
+              </h4>
+            </div>
+            <button type="button" class="ghost-button" (click)="cancelDetailEdit.emit()">
+              Cerrar editor
+            </button>
+          </div>
+
+          <form [formGroup]="detailForm" class="editor-grid">
+            <label>
+              <span>Estado de capacitacion</span>
+              <select formControlName="estadoCapacitacion">
+                @for (option of estadoCapacitacionOptions; track option) {
+                  <option [value]="option">{{ toLabel(option) }}</option>
+                }
+              </select>
+            </label>
+
+            <label>
+              <span>Fecha de resultado</span>
+              <input type="date" formControlName="fechaResultado" />
+            </label>
+
+            <label>
+              <span>ID empleado contratado</span>
+              <input type="number" min="1" formControlName="idEmpleadoContratado" />
+            </label>
+
+            <label>
+              <span>Fecha de contratacion</span>
+              <input type="date" formControlName="fechaContratacion" />
+            </label>
+
+            <label>
+              <span>Cumplio tres meses</span>
+              <select formControlName="cumplioTresMeses">
+                <option value="">No aplica</option>
+                <option value="true">Si</option>
+                <option value="false">No</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Fecha de cumplimiento</span>
+              <input type="date" formControlName="fechaCumplioTresMeses" />
+            </label>
+          </form>
+
+          @if (updateDetailErrorMessage) {
+            <p class="form-message form-message--error">{{ updateDetailErrorMessage }}</p>
+          }
+
+          @if (updateDetailSuccessMessage) {
+            <p class="form-message form-message--success">{{ updateDetailSuccessMessage }}</p>
+          }
+
+          <div class="detail-editor__actions">
+            <button type="button" class="secondary-button" (click)="cancelDetailEdit.emit()">
+              Cancelar
+            </button>
+            <button
+              type="button"
+              class="ghost-button"
+              [disabled]="isUpdatingDetail"
+              (click)="submitDetailUpdate.emit()"
+            >
+              {{ isUpdatingDetail ? 'Guardando...' : 'Guardar seguimiento' }}
+            </button>
+          </div>
+        </section>
+      }
     } @else {
       <p class="helper-text">Este grupo aun no tiene postulantes asignados.</p>
     }

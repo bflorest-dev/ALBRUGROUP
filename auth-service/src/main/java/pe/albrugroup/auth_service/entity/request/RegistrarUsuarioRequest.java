@@ -6,19 +6,17 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import pe.albrugroup.auth_service.entity.enums.PuestoTrabajo;
 
-import java.util.Set;
-
 @Getter @Setter @Builder
 @AllArgsConstructor @NoArgsConstructor
 public class RegistrarUsuarioRequest {
 
     @NotNull(message = "EmpleadoID es obligatorio")
     private Long empleadoId;
-    @NotNull(message = "Nombres son obligatorios")
+    @NotBlank(message = "Nombres son obligatorios")
     private String nombres;
-    @NotNull(message = "Apellidos son obligatorios")
+    @NotBlank(message = "Apellidos son obligatorios")
     private String apellidos;
-    @NotNull(message = "Dni es obligatorio")
+    @NotBlank(message = "Dni es obligatorio")
     private String dni;
     @NotBlank(message = "Falta Email")
     @Email(message = "Email Invalido")

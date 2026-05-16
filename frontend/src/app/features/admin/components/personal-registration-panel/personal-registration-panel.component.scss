@@ -63,6 +63,45 @@
   background: #fff;
 }
 
+.schedule-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.schedule-card {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #d8e1eb;
+  border-radius: 1rem;
+  background: #f8fafc;
+}
+
+.schedule-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.schedule-card__toggle {
+  min-width: 160px;
+}
+
+.schedule-card__grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.schedule-card__grid input {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border: 1px solid #c7d2df;
+  border-radius: 0.9rem;
+  background: #fff;
+}
+
 .actions {
   display: flex;
   gap: 0.75rem;
@@ -123,6 +162,7 @@
 @media (max-width: 760px) {
   .form-grid,
   .result-grid,
+  .schedule-card__grid,
   .panel__header,
   .actions {
     grid-template-columns: 1fr;

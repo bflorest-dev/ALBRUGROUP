@@ -22,9 +22,9 @@
         <option [value]="0">
           {{ isLoadingCapacitadores ? 'Cargando capacitadores...' : 'Seleccionar capacitador' }}
         </option>
-        @for (capacitador of capacitadores; track capacitador.empleadoId) {
-          <option [value]="capacitador.empleadoId">
-            {{ capacitador.nombreCompleto }} - {{ capacitador.username }}
+        @for (capacitador of capacitadores; track capacitador.idEmpleado) {
+          <option [value]="capacitador.idEmpleado">
+            {{ getDisplayName(capacitador) }} - {{ capacitador.numeroDocumento }}
           </option>
         }
       </select>

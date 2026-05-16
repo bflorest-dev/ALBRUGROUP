@@ -9,7 +9,9 @@ import java.util.List;
 public class LoginResponse {
 
     private String token;
+    private String refreshToken;
     private String type;
+    private Long expiresIn;
     private String username;
     private Long empleadoId;
     private String nombreCompleto;

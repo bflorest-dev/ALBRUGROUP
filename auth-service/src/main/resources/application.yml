@@ -9,7 +9,8 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET:3bZ4bR0S5c7hFQ2nTzF8oQv9vKxM2yP7aLw8eJrHkU1cNdWqXyZp6tR9mVb4sL0Q8nF5gH2kJ3lP6rS9uVw==}
-  expiration: ${JWT_EXPIRATION:30m}
+  expiration: ${JWT_EXPIRATION:15m}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:8h}
   issuer: ${JWT_ISSUER:https://api.albrugroup.com/auth}
 
 app:

@@ -30,7 +30,7 @@ export class SessionService {
   }
 
   isAuthenticated(): boolean {
-    return !!this.tokenService.getToken();
+    return !!this.tokenService.getAccessToken();
   }
 
   getSession(): UserSession | null {
@@ -50,7 +50,7 @@ export class SessionService {
   }
 
   clearSession(): void {
-    this.tokenService.clearToken();
+    this.tokenService.clearTokens();
     this.sessionState.set(null);
   }
 

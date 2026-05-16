@@ -1,20 +1,27 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
-import { PostulanteFormPanelComponent } from '../../components/postulante-form-panel/postulante-form-panel.component';
-import { PostulantesListPanelComponent } from '../../components/postulantes-list-panel/postulantes-list-panel.component';
-import { RrhhPostulantesFacade } from '../../facades/rrhh-postulantes.facade';
+import { RrhhContractPanelComponent } from '../../components/rrhh-contract-panel/rrhh-contract-panel.component';
+import { RrhhEmployeePanelComponent } from '../../components/rrhh-employee-panel/rrhh-employee-panel.component';
+import { RrhhEventsPanelComponent } from '../../components/rrhh-events-panel/rrhh-events-panel.component';
+import { RrhhHiringPanelComponent } from '../../components/rrhh-hiring-panel/rrhh-hiring-panel.component';
+import { RrhhWorkspaceFacade } from '../../facades/rrhh-workspace.facade';
 
 @Component({
   selector: 'app-rrhh-postulantes-page',
-  imports: [PostulanteFormPanelComponent, PostulantesListPanelComponent],
-  providers: [RrhhPostulantesFacade],
+  imports: [
+    RrhhHiringPanelComponent,
+    RrhhEmployeePanelComponent,
+    RrhhContractPanelComponent,
+    RrhhEventsPanelComponent
+  ],
+  providers: [RrhhWorkspaceFacade],
   templateUrl: './rrhh-postulantes-page.component.html',
   styleUrl: './rrhh-postulantes-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RrhhPostulantesPageComponent implements OnInit {
-  protected readonly facade = inject(RrhhPostulantesFacade);
+  protected readonly facade = inject(RrhhWorkspaceFacade);
 
   ngOnInit(): void {
-    this.facade.initialize();
+    void this.facade.initialize();
   }
 }

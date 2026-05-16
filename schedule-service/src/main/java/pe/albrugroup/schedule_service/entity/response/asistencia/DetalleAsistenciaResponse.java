@@ -1,6 +1,7 @@
 package pe.albrugroup.schedule_service.entity.response.asistencia;
 
 import lombok.*;
+import pe.albrugroup.schedule_service.entity.enums.EstadoAsistencia;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -16,6 +17,7 @@ public class DetalleAsistenciaResponse {
     private Long idEmpleado;
     private Long idHorario;
     private LocalDate fecha;
+    private EstadoAsistencia estadoActual;
     private LocalTime entradaProgramada;
     private LocalTime salidaProgramada;
     private LocalTime inicioAlmuerzoProgramado;

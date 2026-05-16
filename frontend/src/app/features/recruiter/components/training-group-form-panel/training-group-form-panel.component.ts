@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
-import { UsuarioResponse } from '../../../../shared/models/auth/usuario-response';
+import { EmpleadoRolResponse } from '../../../../shared/models/rrhh/empleado-rol-response';
 
 @Component({
   selector: 'app-training-group-form-panel',
@@ -12,7 +12,7 @@ import { UsuarioResponse } from '../../../../shared/models/auth/usuario-response
 })
 export class TrainingGroupFormPanelComponent {
   @Input({ required: true }) groupForm!: FormGroup;
-  @Input({ required: true }) capacitadores: UsuarioResponse[] = [];
+  @Input({ required: true }) capacitadores: EmpleadoRolResponse[] = [];
   @Input({ required: true }) turnoOptions: string[] = [];
   @Input({ required: true }) salaOptions: string[] = [];
   @Input({ required: true }) isLoadingCapacitadores = false;
@@ -34,5 +34,9 @@ export class TrainingGroupFormPanelComponent {
       .split('_')
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
       .join(' ');
+  }
+
+  protected getDisplayName(capacitador: EmpleadoRolResponse): string {
+    return `${capacitador.nombres} ${capacitador.apellidos}`.trim();
   }
 }

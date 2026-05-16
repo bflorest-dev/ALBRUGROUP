@@ -5,30 +5,58 @@ import { STORAGE_KEYS } from '../constants/storage.constants';
   providedIn: 'root'
 })
 export class TokenService {
-  private readonly tokenState = signal<string | null>(localStorage.getItem(STORAGE_KEYS.accessToken));
+  private readonly accessTokenState = signal<string | null>(
+    localStorage.getItem(STORAGE_KEYS.accessToken)
+  );
+  private readonly refreshTokenState = signal<string | null>(
+    localStorage.getItem(STORAGE_KEYS.refreshToken)
+  );
 
   constructor() {
     effect(() => {
-      const token = this.tokenState();
+      const token = this.accessTokenState();
 
       if (token) {
         localStorage.setItem(STORAGE_KEYS.accessToken, token);
-        return;
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.accessToken);
       }
+    });
 
-      localStorage.removeItem(STORAGE_KEYS.accessToken);
+    effect(() => {
+      const token = this.refreshTokenState();
+
+      if (token) {
+        localStorage.setItem(STORAGE_KEYS.refreshToken, token);
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.refreshToken);
+      }
     });
   }
 
-  getToken(): string | null {
-    return this.tokenState();
+  getAccessToken(): string | null {
+    return this.accessTokenState();
   }
 
-  setToken(token: string): void {
-    this.tokenState.set(token);
+  getRefreshToken(): string | null {
+    return this.refreshTokenState();
   }
 
-  clearToken(): void {
-    this.tokenState.set(null);
+  setAccessToken(token: string): void {
+    this.accessTokenState.set(token);
+  }
+
+  setRefreshToken(token: string): void {
+    this.refreshTokenState.set(token);
+  }
+
+  setTokens(accessToken: string, refreshToken: string): void {
+    this.accessTokenState.set(accessToken);
+    this.refreshTokenState.set(refreshToken);
+  }
+
+  clearTokens(): void {
+    this.accessTokenState.set(null);
+    this.refreshTokenState.set(null);
   }
 }

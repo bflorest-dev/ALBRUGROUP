@@ -6,6 +6,16 @@
         <h1 class="brand__title">Frontend Base</h1>
       </div>
 
+      <app-attendance-status-picker
+        [statusLabel]="attendanceFacade.currentStatusMeta().label"
+        [statusColor]="attendanceFacade.currentStatusMeta().color"
+        [actions]="attendanceFacade.availableActions()"
+        [isLoading]="attendanceFacade.isLoading()"
+        [errorMessage]="attendanceFacade.errorMessage()"
+        (actionSelected)="attendanceFacade.submitAction($event)"
+        (retry)="attendanceFacade.reload()"
+      />
+
       <nav class="menu">
         @for (item of menuItems(); track item.route) {
           <a

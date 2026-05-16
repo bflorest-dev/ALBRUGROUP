@@ -53,6 +53,10 @@ public class JWTUtil {
         return createToken(claims, userDetails.getUsername());
     }
 
+    public Long getExpiresInSeconds() {
+        return jwtExpiration.toSeconds();
+    }
+
     private String createToken(Map<String, Object> claims, String subject) {
         long now = System.currentTimeMillis();
         return Jwts.builder()

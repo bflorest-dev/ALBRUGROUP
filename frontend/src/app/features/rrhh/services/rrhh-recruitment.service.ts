@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_CONSTANTS } from '../../../core/constants/api.constants';
 import { PageResponse } from '../../../shared/models/common/page-response';
+import { EventoResponse } from '../../../shared/models/recruitment/evento-response';
 import { OfertaLaboralResponse } from '../../../shared/models/recruitment/oferta-laboral-response';
 import { PostulacionRequest } from '../../../shared/models/recruitment/postulacion-request';
 import { PostulacionResponse } from '../../../shared/models/recruitment/postulacion-response';
@@ -62,5 +63,38 @@ export class RrhhRecruitmentService {
     request: PostulacionRequest
   ): Observable<PostulacionResponse> {
     return this.http.put<PostulacionResponse>(`${this.postulacionesUrl}/${idPostulacion}`, request);
+  }
+
+  listarBandejaContratacion(
+    pageNumber = 0,
+    pageSize = 8
+  ): Observable<PageResponse<PostulacionResponse>> {
+    const params = new HttpParams()
+      .set('pageNumber', pageNumber)
+      .set('pageSize', pageSize)
+      .set('sortBy', 'updatedAt')
+      .set('direction', 'desc');
+
+    return this.http.get<PageResponse<PostulacionResponse>>(
+      `${this.postulacionesUrl}/bandeja/contratacion`,
+      { params }
+    );
+  }
+
+  listarEventosPostulacion(
+    idPostulacion: number,
+    pageNumber = 0,
+    pageSize = 8
+  ): Observable<PageResponse<EventoResponse>> {
+    const params = new HttpParams()
+      .set('pageNumber', pageNumber)
+      .set('pageSize', pageSize)
+      .set('sortBy', 'createdAt')
+      .set('direction', 'desc');
+
+    return this.http.get<PageResponse<EventoResponse>>(
+      `${this.postulacionesUrl}/${idPostulacion}/eventos`,
+      { params }
+    );
   }
 }

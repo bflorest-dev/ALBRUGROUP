@@ -8,6 +8,9 @@ import { EstadoAccesoResponse } from '../../../shared/models/auth/estado-acceso-
 import { ForgotPasswordRequest } from '../../../shared/models/auth/forgot-password-request';
 import { LoginRequest } from '../../../shared/models/auth/login-request';
 import { LoginResponse } from '../../../shared/models/auth/login-response';
+import { LogoutRequest } from '../../../shared/models/auth/logout-request';
+import { RefreshRequest } from '../../../shared/models/auth/refresh-request';
+import { RefreshResponse } from '../../../shared/models/auth/refresh-response';
 
 @Injectable({
   providedIn: 'root'
@@ -29,6 +32,14 @@ export class AuthService {
 
   login(request: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.authUrl}/login`, request);
+  }
+
+  refresh(request: RefreshRequest): Observable<RefreshResponse> {
+    return this.http.post<RefreshResponse>(`${this.authUrl}/refresh`, request);
+  }
+
+  logout(request: LogoutRequest): Observable<void> {
+    return this.http.post<void>(`${this.authUrl}/logout`, request);
   }
 
   getUsuarioPorEmpleadoId(empleadoId: number): Observable<UsuarioResponse> {

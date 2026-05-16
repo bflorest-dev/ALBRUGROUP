@@ -33,13 +33,22 @@
       [totalPages]="facade.totalPages()"
       [isLoadingGroups]="facade.isLoadingGroups()"
       [isLoadingDetail]="facade.isLoadingDetail()"
+      [isUpdatingDetail]="facade.isUpdatingDetail()"
       [listErrorMessage]="facade.listErrorMessage()"
       [detailErrorMessage]="facade.detailErrorMessage()"
+      [detailForm]="facade.detailForm"
+      [selectedDetail]="facade.selectedDetail()"
+      [estadoCapacitacionOptions]="facade.estadoCapacitacionOptions"
+      [updateDetailErrorMessage]="facade.updateDetailErrorMessage()"
+      [updateDetailSuccessMessage]="facade.updateDetailSuccessMessage()"
       (estadoFilter)="facade.applyEstadoFilter($event)"
       (reload)="facade.loadGroups()"
       (pageChange)="facade.loadGroups($event)"
       (openDetail)="facade.openDetail($event)"
       (closeDetail)="facade.closeDetail()"
+      (editDetail)="facade.selectDetail($event)"
+      (cancelDetailEdit)="facade.cancelDetailEdit()"
+      (submitDetailUpdate)="facade.submitDetailUpdate()"
     />
   </div>
 </section>

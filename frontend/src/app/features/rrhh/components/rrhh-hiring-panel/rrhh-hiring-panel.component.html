@@ -1,0 +1,180 @@
+<div class="workspace-stack">
+  <div class="workspace-grid">
+    <app-postulante-form-panel
+      [postulanteForm]="postulanteForm"
+      [activeOffers]="activeOffers"
+      [documentoOptions]="documentoOptions"
+      [origenOptions]="origenOptions"
+      [isLoadingActiveOffers]="isLoadingActiveOffers"
+      [activeOffersErrorMessage]="activeOffersErrorMessage"
+      [isSaving]="isSaving"
+      [isEditing]="isEditing"
+      [saveErrorMessage]="saveErrorMessage"
+      [saveSuccessMessage]="saveSuccessMessage"
+      (save)="save.emit()"
+      (cancelEdit)="cancelEdit.emit()"
+    />
+
+    <app-postulantes-list-panel
+      [filterForm]="filterForm"
+      [postulaciones]="postulaciones"
+      [etapaOptions]="etapaOptions"
+      [estadoOptions]="estadoOptions"
+      [estadoBandejaOptions]="estadoBandejaOptions"
+      [currentPage]="currentPage"
+      [totalPages]="totalPages"
+      [isLoading]="isLoadingPostulaciones"
+      [errorMessage]="listErrorMessage"
+      (applyFilters)="applyFilters.emit()"
+      (clearFilters)="clearFilters.emit()"
+      (reload)="reload.emit()"
+      (pageChange)="pageChange.emit($event)"
+      (edit)="edit.emit($event)"
+    />
+  </div>
+
+  <div class="workspace-grid workspace-grid--secondary">
+    <section class="panel">
+      <div class="panel__header panel__header--wrap">
+        <div>
+          <span class="panel__eyebrow">REC-06</span>
+          <h3>Bandeja lista para contratación</h3>
+        </div>
+
+        <button type="button" class="ghost-button" (click)="reloadReadyCases.emit()">Recargar</button>
+      </div>
+
+      @if (readyCasesErrorMessage) {
+        <p class="form-message form-message--error">{{ readyCasesErrorMessage }}</p>
+      }
+
+      @if (isLoadingReadyCases) {
+        <p class="helper-text">Cargando casos listos para RRHH...</p>
+      } @else if (readyCases.length) {
+        <div class="card-list">
+          @for (postulacion of readyCases; track postulacion.id) {
+            <article
+              class="candidate-card"
+              [class.candidate-card--selected]="selectedHiringCase?.id === postulacion.id"
+            >
+              <div>
+                <h4>{{ postulacion.postulante.nombres }} {{ postulacion.postulante.apellidos }}</h4>
+                <p>
+                  {{ postulacion.postulante.tipoDocumento }} {{ postulacion.postulante.documento }} ·
+                  {{ postulacion.postulante.celular }}
+                </p>
+              </div>
+
+              <div class="meta-grid">
+                <span><strong>Oferta:</strong> {{ postulacion.ofertaLaboral.codigo }}</span>
+                <span><strong>Puesto:</strong> {{ toLabel(postulacion.ofertaLaboral.puestoObjetivo) }}</span>
+                <span><strong>Origen:</strong> {{ toLabel(postulacion.origen) }}</span>
+                <span><strong>Estado:</strong> {{ toLabel(postulacion.estado) }}</span>
+              </div>
+
+              <div class="card-actions">
+                <button type="button" class="secondary-button" (click)="selectHiringCase.emit(postulacion)">
+                  {{ selectedHiringCase?.id === postulacion.id ? 'Recargar detalle' : 'Ver caso' }}
+                </button>
+                @if (selectedHiringCase?.id === postulacion.id) {
+                  <button type="button" class="primary-button" (click)="openEmployeeRegistration.emit()">
+                    Preparar ficha de empleado
+                  </button>
+                }
+              </div>
+            </article>
+          }
+        </div>
+
+        <div class="pagination">
+          <button
+            type="button"
+            class="ghost-button"
+            [disabled]="currentReadyPage === 0"
+            (click)="readyCasePageChange.emit(currentReadyPage - 1)"
+          >
+            Anterior
+          </button>
+          <span>Página {{ currentReadyPage + 1 }} de {{ totalReadyPages }}</span>
+          <button
+            type="button"
+            class="ghost-button"
+            [disabled]="currentReadyPage + 1 >= totalReadyPages"
+            (click)="readyCasePageChange.emit(currentReadyPage + 1)"
+          >
+            Siguiente
+          </button>
+        </div>
+      } @else {
+        <p class="helper-text">No hay postulaciones listas para contratación.</p>
+      }
+    </section>
+
+    <section class="panel">
+      <div class="panel__header">
+        <div>
+          <span class="panel__eyebrow">Contexto</span>
+          <h3>Detalle del caso</h3>
+        </div>
+      </div>
+
+      @if (selectedHiringCase; as hiringCase) {
+        <div class="detail-card">
+          <div class="detail-card__summary">
+            <h4>{{ hiringCase.postulante.nombres }} {{ hiringCase.postulante.apellidos }}</h4>
+            <p>{{ hiringCase.ofertaLaboral.codigo }} · {{ toLabel(hiringCase.ofertaLaboral.puestoObjetivo) }}</p>
+          </div>
+
+          <div class="meta-grid">
+            <span><strong>Etapa:</strong> {{ toLabel(hiringCase.etapa) }}</span>
+            <span><strong>Bandeja:</strong> {{ toLabel(hiringCase.estadoBandeja) }}</span>
+            <span><strong>Creado:</strong> {{ toDate(hiringCase.createdAt) }}</span>
+            <span><strong>Actualizado:</strong> {{ toDate(hiringCase.updatedAt) }}</span>
+          </div>
+        </div>
+
+        <div class="timeline">
+          <div class="timeline__header">
+            <strong>Eventos de postulación</strong>
+          </div>
+
+          @if (hiringEventsErrorMessage) {
+            <p class="form-message form-message--error">{{ hiringEventsErrorMessage }}</p>
+          }
+
+          @if (isLoadingHiringEvents) {
+            <p class="helper-text">Cargando eventos...</p>
+          } @else if (hiringEvents.length) {
+            @for (event of hiringEvents; track event.id) {
+              <article class="timeline__item">
+                <div class="timeline__title">
+                  <strong>{{ toLabel(event.accion) }}</strong>
+                  <span>{{ toDate(event.createdAt) }}</span>
+                </div>
+                <p>
+                  {{ toLabel(event.etapa) }}
+                  @if (event.tipificacion) {
+                    · {{ event.tipificacion }}
+                  }
+                  @if (event.subtipificacion) {
+                    / {{ event.subtipificacion }}
+                  }
+                </p>
+                @if (event.observacion) {
+                  <p class="timeline__note">{{ event.observacion }}</p>
+                }
+              </article>
+            }
+          } @else {
+            <p class="helper-text">No hay eventos para esta postulación.</p>
+          }
+        </div>
+      } @else {
+        <p class="helper-text">
+          Selecciona un caso de la bandeja de contratación para preparar el alta de empleado y
+          revisar sus eventos.
+        </p>
+      }
+    </section>
+  </div>
+</div>

@@ -131,7 +131,7 @@ export class LoginPageComponent {
     const primaryRole = response.roles[0] ?? null;
     const homeRoute = primaryRole ? ROLE_HOME_ROUTES[primaryRole] ?? '/app/admin' : '/app/admin';
 
-    this.tokenService.setToken(response.token);
+    this.tokenService.setTokens(response.token, response.refreshToken);
     this.sessionService.setSession({
       username: response.username,
       empleadoId: response.empleadoId,

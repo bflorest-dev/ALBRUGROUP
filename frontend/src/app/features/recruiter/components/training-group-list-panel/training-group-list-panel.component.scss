@@ -13,7 +13,10 @@
 .toolbar,
 .pagination,
 .group-card__top,
-.detail-item {
+.detail-item,
+.detail-item__actions,
+.detail-editor__header,
+.detail-editor__actions {
   display: flex;
   gap: 1rem;
   align-items: center;
@@ -99,6 +102,50 @@
   background: rgba(16, 42, 42, 0.05);
 }
 
+.detail-item__actions {
+  flex-wrap: wrap;
+}
+
+.detail-editor {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(15, 118, 110, 0.18);
+  border-radius: 1rem;
+  background: rgba(236, 253, 245, 0.7);
+}
+
+.editor-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.editor-grid label {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.editor-grid span {
+  font-weight: 600;
+  color: #24384d;
+}
+
+.editor-grid input,
+.editor-grid select {
+  width: 100%;
+  padding: 0.78rem 0.9rem;
+  border: 1px solid rgba(16, 42, 42, 0.14);
+  border-radius: 0.85rem;
+  background: #fff;
+}
+
+.form-message--success {
+  margin: 0;
+  color: #146c43;
+}
+
 .status-chip {
   padding: 0.45rem 0.65rem;
   border-radius: 999px;
@@ -141,9 +188,16 @@ button:disabled {
   .toolbar,
   .pagination,
   .group-card__top,
-  .detail-item {
+  .detail-item,
+  .detail-item__actions,
+  .detail-editor__header,
+  .detail-editor__actions {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .editor-grid {
+    grid-template-columns: 1fr;
   }
 
   .secondary-button {

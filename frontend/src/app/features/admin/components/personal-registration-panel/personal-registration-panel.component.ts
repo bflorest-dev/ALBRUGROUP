@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { AbstractControl, FormArray, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 import { UsuarioResponse } from '../../../../shared/models/auth/usuario-response';
 import { EmpresaContratistaResponse } from '../../../../shared/models/rrhh/empresa-contratista-response';
@@ -14,6 +14,7 @@ import { EmpresaContratistaResponse } from '../../../../shared/models/rrhh/empre
 export class PersonalRegistrationPanelComponent {
   @Input({ required: true }) empleadoForm!: FormGroup;
   @Input({ required: true }) contratoForm!: FormGroup;
+  @Input({ required: true }) horarioForm!: FormGroup;
   @Input({ required: true }) currentStep = 1;
   @Input({ required: true }) isSubmitting = false;
   @Input({ required: true }) submitErrorMessage = '';
@@ -31,9 +32,12 @@ export class PersonalRegistrationPanelComponent {
   @Input({ required: true }) modalidadOptions: string[] = [];
   @Input({ required: true }) seguroSaludOptions: string[] = [];
   @Input({ required: true }) sistemaPensionesOptions: string[] = [];
+  @Input({ required: true }) diasSemanaOptions: string[] = [];
 
   @Output() readonly continueToContract = new EventEmitter<void>();
+  @Output() readonly continueToSchedule = new EventEmitter<void>();
   @Output() readonly backToEmployee = new EventEmitter<void>();
+  @Output() readonly backToContract = new EventEmitter<void>();
   @Output() readonly submitPersonalFlow = new EventEmitter<void>();
   @Output() readonly resetFlow = new EventEmitter<void>();
 
@@ -47,5 +51,9 @@ export class PersonalRegistrationPanelComponent {
       .split('_')
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
       .join(' ');
+  }
+
+  protected getScheduleRows(): AbstractControl[] {
+    return (this.horarioForm.get('detalles') as FormArray).controls;
   }
 }

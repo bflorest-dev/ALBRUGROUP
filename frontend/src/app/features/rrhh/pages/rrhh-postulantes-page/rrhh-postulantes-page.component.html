@@ -1,44 +1,180 @@
 <section class="rrhh-page">
   <header class="hero">
     <span class="hero__eyebrow">RRHH</span>
-    <h2>Gestion de postulantes</h2>
+    <h2>Workspace administrativo de RRHH</h2>
     <p>
-      Registra postulantes contra ofertas laborales activas, edita sus datos base y filtra la
-      bandeja por etapa, estado y estado de bandeja.
+      Gestiona el flujo completo desde la postulación lista para contratación hasta la ficha del
+      empleado, su contrato y su trazabilidad administrativa.
     </p>
   </header>
 
-  <div class="rrhh-grid">
-    <app-postulante-form-panel
+  <nav class="workspace-nav" aria-label="Modulos RRHH">
+    <button
+      type="button"
+      class="workspace-tab"
+      [class.workspace-tab--active]="facade.section() === 'contratacion'"
+      (click)="facade.setSection('contratacion')"
+    >
+      Contratación
+    </button>
+    <button
+      type="button"
+      class="workspace-tab"
+      [class.workspace-tab--active]="facade.section() === 'empleados'"
+      (click)="facade.setSection('empleados')"
+    >
+      Empleados
+    </button>
+    <button
+      type="button"
+      class="workspace-tab"
+      [class.workspace-tab--active]="facade.section() === 'contratos'"
+      (click)="facade.setSection('contratos')"
+    >
+      Contratos
+    </button>
+    <button
+      type="button"
+      class="workspace-tab"
+      [class.workspace-tab--active]="facade.section() === 'eventos'"
+      (click)="facade.setSection('eventos')"
+    >
+      Eventos
+    </button>
+  </nav>
+
+  @if (facade.section() === 'contratacion') {
+    <app-rrhh-hiring-panel
       [postulanteForm]="facade.postulanteForm"
+      [filterForm]="facade.filterForm"
       [activeOffers]="facade.activeOffers()"
       [documentoOptions]="facade.documentoOptions"
       [origenOptions]="facade.origenOptions"
-      [isLoadingActiveOffers]="facade.isLoadingActiveOffers()"
-      [activeOffersErrorMessage]="facade.activeOffersErrorMessage()"
-      [isSaving]="facade.isSaving()"
-      [isEditing]="facade.isEditing()"
-      [saveErrorMessage]="facade.saveErrorMessage()"
-      [saveSuccessMessage]="facade.saveSuccessMessage()"
-      (save)="facade.submitPostulacion()"
-      (cancelEdit)="facade.resetForm()"
-    />
-
-    <app-postulantes-list-panel
-      [filterForm]="facade.filterForm"
-      [postulaciones]="facade.postulaciones()"
       [etapaOptions]="facade.etapaOptions"
       [estadoOptions]="facade.estadoOptions"
       [estadoBandejaOptions]="facade.estadoBandejaOptions"
-      [currentPage]="facade.currentPage()"
-      [totalPages]="facade.totalPages()"
-      [isLoading]="facade.isLoadingList()"
-      [errorMessage]="facade.listErrorMessage()"
+      [postulaciones]="facade.postulaciones()"
+      [currentPage]="facade.currentPostulacionesPage()"
+      [totalPages]="facade.totalPostulacionesPages()"
+      [isLoadingPostulaciones]="facade.isLoadingPostulaciones()"
+      [isLoadingActiveOffers]="false"
+      [isSaving]="facade.isSavingPostulacion()"
+      [isEditing]="facade.isEditing()"
+      [listErrorMessage]="facade.listErrorMessage()"
+      [activeOffersErrorMessage]="''"
+      [saveErrorMessage]="facade.saveErrorMessage()"
+      [saveSuccessMessage]="facade.saveSuccessMessage()"
+      [readyCases]="facade.hiringReadyCases()"
+      [currentReadyPage]="facade.currentHiringReadyPage()"
+      [totalReadyPages]="facade.totalHiringReadyPages()"
+      [isLoadingReadyCases]="facade.isLoadingHiringReady()"
+      [readyCasesErrorMessage]="facade.hiringReadyErrorMessage()"
+      [selectedHiringCase]="facade.selectedHiringCase()"
+      [hiringEvents]="facade.hiringEvents()"
+      [isLoadingHiringEvents]="facade.isLoadingHiringEvents()"
+      [hiringEventsErrorMessage]="facade.hiringEventsErrorMessage()"
+      (save)="facade.submitPostulacion()"
+      (cancelEdit)="facade.resetPostulacionForm()"
       (applyFilters)="facade.applyFilters()"
       (clearFilters)="facade.clearFilters()"
       (reload)="facade.loadPostulaciones()"
       (pageChange)="facade.loadPostulaciones($event)"
       (edit)="facade.editPostulacion($event)"
+      (reloadReadyCases)="facade.loadHiringReadyCases()"
+      (readyCasePageChange)="facade.loadHiringReadyCases($event)"
+      (selectHiringCase)="facade.selectHiringCase($event)"
+      (openEmployeeRegistration)="facade.openEmployeeRegistrationFromHiring()"
     />
-  </div>
+  }
+
+  @if (facade.section() === 'empleados') {
+    <app-rrhh-employee-panel
+      [employeeCreateForm]="facade.employeeCreateForm"
+      [employeeFilterForm]="facade.employeeFilterForm"
+      [personalForm]="facade.personalForm"
+      [contactForm]="facade.contactForm"
+      [financialForm]="facade.financialForm"
+      [corporateForm]="facade.corporateForm"
+      [selectedHiringCase]="facade.selectedHiringCase()"
+      [selectedEmployee]="facade.selectedEmployee()"
+      [employees]="facade.employees()"
+      [empresasContratistas]="facade.empresasContratistas()"
+      [documentoOptions]="facade.documentoOptions"
+      [nacionalidadOptions]="facade.nacionalidadOptions"
+      [estadoCivilOptions]="facade.estadoCivilOptions"
+      [origenOptions]="facade.origenOptions"
+      [distritoOptions]="facade.distritoOptions"
+      [bancoOptions]="facade.bancoOptions"
+      [parentescoOptions]="facade.parentescoOptions"
+      [estadoOperativoOptions]="facade.estadoOperativoOptions"
+      [isLoadingEmployees]="facade.isLoadingEmployees()"
+      [isCreatingEmployee]="facade.isCreatingEmployee()"
+      [isUpdatingEmployee]="facade.isUpdatingEmployee()"
+      [currentPage]="facade.currentEmployeesPage()"
+      [totalPages]="facade.totalEmployeesPages()"
+      [employeeListErrorMessage]="facade.employeeListErrorMessage()"
+      [employeeActionErrorMessage]="facade.employeeActionErrorMessage()"
+      [employeeActionSuccessMessage]="facade.employeeActionSuccessMessage()"
+      (prepareBlankEmployee)="facade.prepareBlankEmployee()"
+      (registerEmployee)="facade.registerEmployee()"
+      (applyEmployeeFilters)="facade.applyEmployeeFilters()"
+      (clearEmployeeFilters)="facade.clearEmployeeFilters()"
+      (searchEmployeeUniversal)="facade.searchEmployeeUniversal()"
+      (searchEmployeeByDocument)="facade.searchEmployeeByDocument()"
+      (reloadEmployees)="facade.loadEmployees()"
+      (employeesPageChange)="facade.loadEmployees($event)"
+      (selectEmployee)="facade.selectEmployee($event)"
+      (submitPersonalUpdate)="facade.submitPersonalUpdate()"
+      (submitContactUpdate)="facade.submitContactUpdate()"
+      (submitFinancialUpdate)="facade.submitFinancialUpdate()"
+      (submitCorporateUpdate)="facade.submitCorporateUpdate()"
+      (markBlacklist)="facade.markSelectedEmployeeAsBlacklist()"
+    />
+  }
+
+  @if (facade.section() === 'contratos') {
+    <app-rrhh-contract-panel
+      [contractForm]="facade.contractForm"
+      [closeContractForm]="facade.closeContractForm"
+      [horarioForm]="facade.horarioForm"
+      [selectedEmployee]="facade.selectedEmployee()"
+      [selectedHiringCase]="facade.selectedHiringCase()"
+      [currentContract]="facade.currentContract()"
+      [contractHistory]="facade.contractHistory()"
+      [puestoTrabajoOptions]="facade.puestoTrabajoOptions"
+      [regimenOptions]="facade.regimenOptions"
+      [modalidadOptions]="facade.modalidadOptions"
+      [seguroSaludOptions]="facade.seguroSaludOptions"
+      [sistemaPensionesOptions]="facade.sistemaPensionesOptions"
+      [diasSemanaOptions]="facade.diasSemanaOptions"
+      [isLoadingContracts]="facade.isLoadingContracts()"
+      [isRegisteringContract]="facade.isRegisteringContract()"
+      [isClosingContract]="facade.isClosingContract()"
+      [isRegisteringSchedule]="facade.isRegisteringSchedule()"
+      [contractErrorMessage]="facade.contractErrorMessage()"
+      [contractSuccessMessage]="facade.contractSuccessMessage()"
+      [scheduleErrorMessage]="facade.scheduleErrorMessage()"
+      [scheduleSuccessMessage]="facade.scheduleSuccessMessage()"
+      [currentHistoryPage]="facade.currentContractHistoryPage()"
+      [totalHistoryPages]="facade.totalContractHistoryPages()"
+      (registerContract)="facade.registerContract()"
+      (closeCurrentContract)="facade.closeCurrentContract()"
+      (registerSchedule)="facade.registerSchedule()"
+      (reloadCurrentContract)="facade.loadCurrentContract()"
+      (historyPageChange)="facade.loadContractHistory($event)"
+    />
+  }
+
+  @if (facade.section() === 'eventos') {
+    <app-rrhh-events-panel
+      [selectedEmployee]="facade.selectedEmployee()"
+      [events]="facade.employeeEvents()"
+      [isLoading]="facade.isLoadingEmployeeEvents()"
+      [errorMessage]="facade.employeeEventsErrorMessage()"
+      [currentPage]="facade.currentEmployeeEventsPage()"
+      [totalPages]="facade.totalEmployeeEventsPages()"
+      (reload)="facade.loadEmployeeEvents()"
+      (pageChange)="facade.loadEmployeeEvents($event)"
+    />
+  }
 </section>

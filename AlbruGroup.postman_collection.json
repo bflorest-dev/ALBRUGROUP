@@ -1484,7 +1484,7 @@
               "request": {
                 "method": "GET",
                 "header": [],
-                "url": "{{path}}/leads/masivo/leads?idProveedor=1&etapa=PREVENTA&tipificaciones=1&subtipificaciones=3&pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
+                "url": "{{path}}/leads/masivo/leads?idProveedor=1&etapa=PREVENTA&tipificaciones=1&subtipificaciones=3&fechaDesde=2026-04-01&fechaHasta=2026-04-30&pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
                 "auth": {
                   "type": "bearer",
                   "bearer": [
@@ -1495,7 +1495,7 @@
                     }
                   ]
                 },
-                "description": "Request GET {{path}}/leads/masivo/leads?idProveedor=1&etapa=PREVENTA&tipificaciones=1&subtipificaciones=3&pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
+                "description": "Request GET {{path}}/leads/masivo/leads?idProveedor=1&etapa=PREVENTA&tipificaciones=1&subtipificaciones=3&fechaDesde=2026-04-01&fechaHasta=2026-04-30&pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
               },
               "response": []
             }

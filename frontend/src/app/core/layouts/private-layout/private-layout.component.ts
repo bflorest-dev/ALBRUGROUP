@@ -1,6 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { AttendanceFacade } from '../../facades/attendance.facade';
+import { AuthSessionService } from '../../services/auth-session.service';
 import { SessionService } from '../../services/session.service';
+import { AttendanceStatusPickerComponent } from '../../../shared/components/attendance-status-picker/attendance-status-picker.component';
 
 type SidebarItem = {
   label: string;
@@ -27,14 +30,15 @@ const ROLE_THEME_CLASS: Record<string, string> = {
 
 @Component({
   selector: 'app-private-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, AttendanceStatusPickerComponent],
   templateUrl: './private-layout.component.html',
   styleUrl: './private-layout.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PrivateLayoutComponent {
+  protected readonly attendanceFacade = inject(AttendanceFacade);
+  private readonly authSessionService = inject(AuthSessionService);
   private readonly sessionService = inject(SessionService);
-  private readonly router = inject(Router);
   protected readonly session = this.sessionService.session;
   protected readonly themeClass = computed(() => {
     const primaryRole = this.session()?.primaryRole;
@@ -69,8 +73,11 @@ export class PrivateLayoutComponent {
     return [{ label: 'Inicio', route: session.homeRoute, exact: true }];
   });
 
-  protected logout(): void {
-    this.sessionService.clearSession();
-    void this.router.navigate(['/auth/access']);
+  constructor() {
+    this.attendanceFacade.initialize();
+  }
+
+  protected async logout(): Promise<void> {
+    await this.authSessionService.logout();
   }
 }

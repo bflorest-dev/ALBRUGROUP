@@ -15,8 +15,8 @@ import pe.albrugroup.auth_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.auth_service.entity.request.ActualizarCredencialesRequest;
 import pe.albrugroup.auth_service.entity.request.ForgotPasswordRequest;
 import pe.albrugroup.auth_service.entity.request.RegistrarUsuarioRequest;
+import pe.albrugroup.auth_service.exception.BadRequestException;
 import pe.albrugroup.auth_service.exception.ConflictException;
-import pe.albrugroup.auth_service.exception.ForbiddenException;
 import pe.albrugroup.auth_service.exception.NotFoundException;
 import pe.albrugroup.auth_service.mapper.Mapper;
 import pe.albrugroup.auth_service.repository.RolRepository;
@@ -98,7 +98,7 @@ public class UsuarioService implements IUsuario {
                 .orElseThrow(() -> new NotFoundException("No se encontraron datos coincidentes para recuperar acceso"));
 
         if (!usuario.getActivo()) {
-            throw new ForbiddenException("El usuario se encuentra inactivo");
+            throw new NotFoundException("No se encontraron datos coincidentes para recuperar acceso");
         }
 
         String plainPassword = passwordGenerator();
@@ -182,6 +182,9 @@ public class UsuarioService implements IUsuario {
     }
 
     private Rol obtenerRol(PuestoTrabajo puestoTrabajo) {
+        if (puestoTrabajo == null) {
+            throw new BadRequestException("Falta Puesto de Trabajo");
+        }
         return rolRepository.findByNombre(puestoTrabajo.name())
                 .orElseThrow(() -> new NotFoundException("Rol no encontrado: " + puestoTrabajo.name()));
     }
@@ -201,8 +204,8 @@ public class UsuarioService implements IUsuario {
     }
 
     private String usernameGenerator(String nombres, String apellidos, String dni, PuestoTrabajo puesto) {
-        String first = nombres.substring(0, 1).toUpperCase();
-        String last = apellidos.substring(0, 1).toUpperCase();
+        String first = nombres.trim().substring(0, 1).toUpperCase();
+        String last = apellidos.trim().substring(0, 1).toUpperCase();
         String cargoIngles = puesto.getEnglishName();
 
         return first + dni + last + "@albru." + cargoIngles + ".pe";

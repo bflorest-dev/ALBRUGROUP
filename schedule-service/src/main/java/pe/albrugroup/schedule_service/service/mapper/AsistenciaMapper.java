@@ -12,6 +12,7 @@ public interface AsistenciaMapper {
                 .idEmpleado(entity.getIdEmpleado())
                 .idHorario(entity.getIdHorario())
                 .fecha(entity.getFecha())
+                .estadoActual(entity.getEstadoActual())
                 .entradaProgramada(entity.getEntradaProgramada())
                 .salidaProgramada(entity.getSalidaProgramada())
                 .inicioAlmuerzoProgramado(entity.getInicioAlmuerzoProgramado())
