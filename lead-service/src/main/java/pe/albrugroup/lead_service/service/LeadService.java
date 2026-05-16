@@ -36,6 +36,7 @@ import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 import pe.albrugroup.lead_service.entity.response.InternetResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPostventaResponse;
+import pe.albrugroup.lead_service.entity.response.LeadRealtimeEvent;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.entity.response.PlanAdicionalResponse;
 import pe.albrugroup.lead_service.entity.response.SupervisorVentasProveedorResumenResponse;
@@ -89,6 +90,7 @@ public class LeadService {
     private final DistritoRepository distritoRepository;
     private final PaginationService paginationService;
     private final TransactionTemplate transactionTemplate;
+    private final LeadRealtimeNotifier leadRealtimeNotifier;
 
     private static final String TIPIFICACION_AGENDADO = "AGENDADO";
     private static final String TIPIFICACION_SCORE_PREVENTA = "SCORE_PREVENTA";
@@ -312,48 +314,61 @@ public class LeadService {
             );
         }
 
-        leadRepository.save(lead);
+        Lead savedLead = leadRepository.save(lead);
+        notificarCambioLead("SNAPSHOTS_ACTUALIZADOS", savedLead, null, null);
     }
 
     @Transactional
     public void actualizarDatosPreventa(Long idLead, LeadDatosPreventaRequest request) {
         Lead lead = obtenerLeadPreventaDelAsesor(idLead);
-        actualizarDatosPreventaInterno(lead, request);
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
+        Lead savedLead = actualizarDatosPreventaInterno(lead, request);
+        notificarCambioLead("DATOS_PREVENTA_ACTUALIZADOS", savedLead, null, idAsesorAnterior);
     }
 
     @Transactional
     public void actualizarDireccion(Long idLead, LeadDireccionRequest request) {
         Lead lead = obtenerLeadPreventaDelAsesor(idLead);
-        actualizarDireccionInterno(lead, request);
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
+        Lead savedLead = actualizarDireccionInterno(lead, request);
+        notificarCambioLead("DIRECCION_ACTUALIZADA", savedLead, null, idAsesorAnterior);
     }
 
     @Transactional
     public void actualizarOfertaComercial(Long idLead, LeadOfertaComercialRequest request) {
         Lead lead = obtenerLeadPreventaDelAsesor(idLead);
-        actualizarOfertaComercialInterno(lead, request);
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
+        Lead savedLead = actualizarOfertaComercialInterno(lead, request);
+        notificarCambioLead("OFERTA_COMERCIAL_ACTUALIZADA", savedLead, null, idAsesorAnterior);
     }
 
     @Transactional
     public void actualizarDatosPreventaVenta(Long idLead, LeadDatosPreventaRequest request) {
         Lead lead = obtenerLeadAsignadoEnEtapa(idLead, Etapa.VENTA);
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
         Lead savedLead = actualizarDatosPreventaInterno(lead, request);
         registrarEventoActualizacion(savedLead, Accion.ACTUALIZACION_DATOS_PREVENTA, null);
+        notificarCambioLead("DATOS_PREVENTA_ACTUALIZADOS", savedLead, null, idAsesorAnterior);
     }
 
     @Transactional
     public void actualizarDireccionVenta(Long idLead, LeadDireccionRequest request) {
         Lead lead = obtenerLeadAsignadoEnEtapa(idLead, Etapa.VENTA);
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
         Lead savedLead = actualizarDireccionInterno(lead, request);
         registrarEventoActualizacion(savedLead, Accion.ACTUALIZACION_DIRECCION, null);
+        notificarCambioLead("DIRECCION_ACTUALIZADA", savedLead, null, idAsesorAnterior);
     }
 
     @Transactional
     public void actualizarOfertaComercialVenta(Long idLead, LeadOfertaComercialRequest request) {
         Lead lead = obtenerLeadAsignadoEnEtapa(idLead, Etapa.VENTA);
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
         validarOfertaComercialEditableEnCicloActualVenta(lead.getId());
         Lead savedLead = actualizarOfertaComercialInterno(lead, request);
         Long idPlanOfrecido = savedLead.getPlan() == null ? null : savedLead.getPlan().getId();
         registrarEventoActualizacion(savedLead, Accion.ACTUALIZACION_OFERTA_COMERCIAL, idPlanOfrecido);
+        notificarCambioLead("OFERTA_COMERCIAL_ACTUALIZADA", savedLead, null, idAsesorAnterior);
     }
 
     private Lead actualizarDatosPreventaInterno(Lead lead, LeadDatosPreventaRequest request) {
@@ -398,6 +413,7 @@ public class LeadService {
     public void tipificarLead(Long idLead, LeadTipificacionRequest request) {
         Lead lead = obtenerLeadPreventaDelAsesor(idLead);
         Etapa etapaActual = lead.getEtapa();
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
 
         Tipificacion tipificacion = tipificacionRepository.findByEtapaAndCodigoAndActivoTrue(
                         etapaActual,
@@ -443,12 +459,14 @@ public class LeadService {
                 request.getComentario(),
                 request.getHoraProgramada()
         );
+        notificarCambioLead("TIPIFICACION", savedLead, etapaActual, idAsesorAnterior);
     }
 
     @Transactional
     public void tipificarLeadVenta(Long idLead, LeadTipificacionVentaRequest request) {
         Lead lead = obtenerLeadAsignadoEnEtapa(idLead, Etapa.VENTA);
         Etapa etapaActual = lead.getEtapa();
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
 
         Tipificacion tipificacion = tipificacionRepository.findByEtapaAndCodigoAndActivoTrue(
                         etapaActual,
@@ -494,6 +512,7 @@ public class LeadService {
                 request.getComentario(),
                 request.getFechaInstalacion()
         );
+        notificarCambioLead("TIPIFICACION", savedLead, etapaActual, idAsesorAnterior);
     }
 
     @Transactional
@@ -509,6 +528,7 @@ public class LeadService {
     private void tipificarLeadSeguimientoPostventa(Long idLead, Etapa etapa, LeadTipificacionPostventaRequest request) {
         Lead lead = obtenerLeadAsignadoEnEtapa(idLead, etapa);
         Etapa etapaActual = lead.getEtapa();
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
 
         Tipificacion tipificacion = tipificacionRepository.findByEtapaAndCodigoAndActivoTrue(
                         etapaActual,
@@ -565,6 +585,7 @@ public class LeadService {
                 request.getComentario(),
                 (java.time.LocalTime) null
         );
+        notificarCambioLead("TIPIFICACION", savedLead, etapaActual, idAsesorAnterior);
     }
 
     private EstadoPostventa resolverEstadoPostventaDestino(
@@ -665,6 +686,7 @@ public class LeadService {
     public void tomarLeadDisponible(Long idLead, Etapa etapa) {
         Lead lead = leadRepository.findByIdAndEtapa(idLead, etapa)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
 
         validarLeadDisponibleParaToma(lead);
 
@@ -681,6 +703,7 @@ public class LeadService {
                 savedLead.getIdAsesorAsignado(),
                 savedLead.getNombreAsesorAsignado()
         );
+        notificarCambioLead("ASIGNACION", savedLead, null, idAsesorAnterior);
     }
 
     public LeadAsignacionMasivaResponse asignarLeads(LeadAsignacionMasivaRequest request) {
@@ -736,6 +759,7 @@ public class LeadService {
     private void asignarLeadInterno(Long idLead, Long idAsesorAsignado, String nombreAsesorAsignado) {
         Lead lead = leadRepository.findById(idLead)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
 
         validarAsesorNoGestionoLead(idLead, idAsesorAsignado);
 
@@ -757,6 +781,7 @@ public class LeadService {
                 savedLead.getIdAsesorAsignado(),
                 savedLead.getNombreAsesorAsignado()
         );
+        notificarCambioLead("ASIGNACION", savedLead, null, idAsesorAnterior);
     }
 
     private void validarAsesorNoGestionoLead(Long idLead, Long idAsesorAsignado) {
@@ -805,12 +830,14 @@ public class LeadService {
     }
 
     private void registrarContactoInterno(Lead lead) {
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
         validarEstadoParaContacto(lead);
         moverAEnGestionSiAplica(lead);
 
         Lead savedLead = leadRepository.save(lead);
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
         registrarEventoContacto(savedLead.getId(), idCampana, savedLead.getEtapa());
+        notificarCambioLead("CONTACTO", savedLead, null, idAsesorAnterior);
     }
 
     private void registrarLeadNuevo(String prefijo, String numeroLead, LeadIntakeRequest request, Campana campana) {
@@ -818,9 +845,12 @@ public class LeadService {
 
         Lead savedLead = leadRepository.save(lead);
         registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa());
+        notificarCambioLead("REGISTRO", savedLead, null, null);
     }
 
     private void registrarIngresoLeadExistente(Lead lead, LeadIntakeRequest request, Campana campana) {
+        Etapa etapaAnterior = lead.getEtapa();
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
         lead.setPrefijo(normalizarPrefijo(request.getPrefijo()));
         lead.setLead(normalizarLead(request.getLead()));
         lead.setCampana(campana);
@@ -839,6 +869,7 @@ public class LeadService {
 
         Lead savedLead = leadRepository.save(lead);
         registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa());
+        notificarCambioLead("REGISTRO", savedLead, etapaAnterior, idAsesorAnterior);
     }
 
     private void registrarEventoRegistro(Long idLead, Long idCampana, Etapa etapa) {
@@ -1419,6 +1450,22 @@ public class LeadService {
         if (value == null || value.isBlank()) {
             throw new BadRequestException(message);
         }
+    }
+
+    private void notificarCambioLead(String tipo, Lead lead, Etapa etapaAnterior, Long idAsesorAnterior) {
+        leadRealtimeNotifier.publishAfterCommit(LeadRealtimeEvent.builder()
+                .tipo(tipo)
+                .idLead(lead.getId())
+                .etapa(lead.getEtapa())
+                .etapaAnterior(etapaAnterior)
+                .estado(lead.getEstado())
+                .estadoPostventa(lead.getEstadoPostventa())
+                .idAsesorAsignado(lead.getIdAsesorAsignado())
+                .idAsesorAnterior(idAsesorAnterior)
+                .codigoTipificacion(lead.getCodigoTipificacion())
+                .codigoSubtipificacion(lead.getCodigoSubtipificacion())
+                .occurredAt(Instant.now())
+                .build());
     }
 
     private ResumenSupervisorVentasAccumulator obtenerAcumulador(

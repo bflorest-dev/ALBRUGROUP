@@ -12,6 +12,8 @@ Este documento resume los cambios aplicados en `auth-service` para robustecer au
 - Cada uso de refresh token rota la credencial: el token anterior queda revocado y se emite uno nuevo.
 - La duracion por defecto del access token es `15m`.
 - La duracion por defecto del refresh token es `8h`.
+- El access token se firma con RS256: `auth-service` usa clave privada y los demas servicios validan con clave publica.
+- El issuer del JWT es obligatorio y se valida en gateway y microservicios.
 
 ## Endpoints publicos de autenticacion
 
@@ -148,23 +150,30 @@ Permite enriquecer informacion de empleado con datos de acceso. Requiere permiso
 
 Usado por monitoreo para obtener usuarios activos por rol. Requiere permisos de lectura autorizados.
 
-### Endpoints candidatos a revision posterior
+### Endpoint removido
 
 - `PATCH /autorizacion/{empleadoId}/roles`
+
+Este endpoint se elimino porque se solapaba con `PATCH /autorizacion/{empleadoId}/username-roles`, que queda como flujo administrativo oficial para actualizar username y roles cuando cambia el puesto.
+
+### Endpoints administrativos pendientes de revision funcional
+
 - `PATCH /autorizacion/{empleadoId}/username-roles`
 - `POST /autorizacion/{empleadoId}/reset-password`
 
-Estos endpoints quedan seguros, pero deberian revisarse en una etapa posterior antes de decidir si se documentan como flujo oficial o se deprecian.
+Estos endpoints quedan seguros y disponibles para administradores, pero deberian validarse contra los flujos reales antes de documentarlos como operacion frecuente.
 
 ## Compatibilidad actual
 
 - El frontend actual puede seguir usando solo `token`; los campos nuevos de login son aditivos.
 - La renovacion automatica con `/refresh` no ocurre hasta que el frontend la integre.
 - La regla actual de pestañas abiertas sigue siendo responsabilidad del frontend. El backend solo provee las capacidades de emision, rotacion y revocacion de refresh tokens.
+- La migracion RS256 no cambia el uso desde frontend: se sigue enviando `Authorization: Bearer <token>`.
+- Los tokens HS256 emitidos antes de la migracion dejan de ser validos.
 
 ## Pendientes posteriores
 
 - Integrar `/refresh` y `/logout` en el frontend si se decide habilitar renovacion automatica.
 - Revisar y limpiar endpoints candidatos a deprecacion.
 - Migrar `ddl-auto` a Flyway.
-- Externalizar secretos reales por entorno y evitar usar defaults versionados en despliegues productivos.
+- Implementar una cuenta tecnica para bots en lugar de usar JWT permanentes sin expiracion.

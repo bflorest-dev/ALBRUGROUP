@@ -3,6 +3,7 @@ import { RrhhContractPanelComponent } from '../../components/rrhh-contract-panel
 import { RrhhEmployeePanelComponent } from '../../components/rrhh-employee-panel/rrhh-employee-panel.component';
 import { RrhhEventsPanelComponent } from '../../components/rrhh-events-panel/rrhh-events-panel.component';
 import { RrhhHiringPanelComponent } from '../../components/rrhh-hiring-panel/rrhh-hiring-panel.component';
+import { RrhhOperationsPanelComponent } from '../../components/rrhh-operations-panel/rrhh-operations-panel.component';
 import { RrhhWorkspaceFacade } from '../../facades/rrhh-workspace.facade';
 
 @Component({
@@ -11,7 +12,8 @@ import { RrhhWorkspaceFacade } from '../../facades/rrhh-workspace.facade';
     RrhhHiringPanelComponent,
     RrhhEmployeePanelComponent,
     RrhhContractPanelComponent,
-    RrhhEventsPanelComponent
+    RrhhEventsPanelComponent,
+    RrhhOperationsPanelComponent
   ],
   providers: [RrhhWorkspaceFacade],
   templateUrl: './rrhh-postulantes-page.component.html',

@@ -12,9 +12,22 @@ import { DatosPersonalesRequest } from '../../../shared/models/rrhh/datos-person
 import { EmpleadoResponse } from '../../../shared/models/rrhh/empleado-response';
 import { EmpresaContratistaResponse } from '../../../shared/models/rrhh/empresa-contratista-response';
 import { EventoEmpleadoResponse } from '../../../shared/models/rrhh/evento-empleado-response';
+import { PagoResponse } from '../../../shared/models/rrhh/pago-response';
 import { RegistrarContratoRequest } from '../../../shared/models/rrhh/registrar-contrato-request';
 import { RegistrarEmpleadoRequest } from '../../../shared/models/rrhh/registrar-empleado-request';
+import { RegistrarPagoRequest } from '../../../shared/models/rrhh/registrar-pago-request';
+import { ConsultaCumplimientoRequest } from '../../../shared/models/schedule/consulta-cumplimiento-request';
+import { ConsultaMonitoreoRequest } from '../../../shared/models/schedule/consulta-monitoreo-request';
+import {
+  CumplimientoDetalleResponse,
+  CumplimientoResumenResponse,
+  EstadoMonitorResponse
+} from '../../../shared/models/schedule/cumplimiento-response';
+import { ExcepcionHorarioResponse } from '../../../shared/models/schedule/excepcion-horario-response';
+import { FinalizarHorarioRequest } from '../../../shared/models/schedule/finalizar-horario-request';
 import { HorarioResponse } from '../../../shared/models/schedule/horario-response';
+import { ReemplazarHorarioRequest } from '../../../shared/models/schedule/reemplazar-horario-request';
+import { RegistrarExcepcionHorarioRequest } from '../../../shared/models/schedule/registrar-excepcion-horario-request';
 import { RegistrarHorarioRequest } from '../../../shared/models/schedule/registrar-horario-request';
 
 export type EmpleadoFilters = {
@@ -36,8 +49,10 @@ export class RrhhOperationsService {
   private readonly empleadosUrl = `${this.rrhhUrl}/empleados`;
   private readonly contratosUrl = `${this.rrhhUrl}/contratos`;
   private readonly eventosUrl = `${this.rrhhUrl}/eventos`;
+  private readonly pagosUrl = `${this.rrhhUrl}/pagos`;
   private readonly empresasContratistasUrl = `${this.rrhhUrl}/empresas-contratistas`;
   private readonly horariosUrl = `${API_CONSTANTS.gatewayBaseUrl}/schedule/horarios`;
+  private readonly revisionAsistenciaUrl = `${API_CONSTANTS.gatewayBaseUrl}/schedule/revision/asistencia`;
 
   constructor(private readonly http: HttpClient) {}
 
@@ -217,5 +232,137 @@ export class RrhhOperationsService {
 
   registrarHorario(request: RegistrarHorarioRequest): Observable<HorarioResponse> {
     return this.http.post<HorarioResponse>(this.horariosUrl, request);
+  }
+
+  reemplazarHorario(
+    idHorario: number,
+    request: ReemplazarHorarioRequest
+  ): Observable<HorarioResponse> {
+    return this.http.put<HorarioResponse>(`${this.horariosUrl}/${idHorario}`, request);
+  }
+
+  finalizarHorario(
+    idHorario: number,
+    request: FinalizarHorarioRequest
+  ): Observable<HorarioResponse> {
+    return this.http.patch<HorarioResponse>(`${this.horariosUrl}/${idHorario}/finalizar`, request);
+  }
+
+  registrarExcepcion(
+    idHorario: number,
+    request: RegistrarExcepcionHorarioRequest
+  ): Observable<ExcepcionHorarioResponse> {
+    return this.http.post<ExcepcionHorarioResponse>(
+      `${this.horariosUrl}/${idHorario}/excepciones`,
+      request
+    );
+  }
+
+  actualizarExcepcion(
+    idHorario: number,
+    idExcepcion: number,
+    request: RegistrarExcepcionHorarioRequest
+  ): Observable<ExcepcionHorarioResponse> {
+    return this.http.put<ExcepcionHorarioResponse>(
+      `${this.horariosUrl}/${idHorario}/excepciones/${idExcepcion}`,
+      request
+    );
+  }
+
+  eliminarExcepcion(idHorario: number, idExcepcion: number): Observable<void> {
+    return this.http.delete<void>(`${this.horariosUrl}/${idHorario}/excepciones/${idExcepcion}`);
+  }
+
+  obtenerHorarioVigente(empleadoId: number, fecha?: string | null): Observable<HorarioResponse> {
+    let params = new HttpParams();
+
+    if (fecha) {
+      params = params.set('fecha', fecha);
+    }
+
+    return this.http.get<HorarioResponse>(`${this.horariosUrl}/empleados/${empleadoId}/vigente`, {
+      params
+    });
+  }
+
+  listarHistoricoHorarios(
+    empleadoId: number,
+    pageNumber = 0,
+    pageSize = 8
+  ): Observable<PageResponse<HorarioResponse>> {
+    const params = new HttpParams()
+      .set('pageNumber', pageNumber)
+      .set('pageSize', pageSize)
+      .set('sortBy', 'fechaInicio')
+      .set('direction', 'desc');
+
+    return this.http.get<PageResponse<HorarioResponse>>(
+      `${this.horariosUrl}/empleados/${empleadoId}/historico`,
+      { params }
+    );
+  }
+
+  registrarPago(contratoId: number, request: RegistrarPagoRequest): Observable<PagoResponse> {
+    return this.http.post<PagoResponse>(`${this.pagosUrl}/${contratoId}/pagar-contrato`, request);
+  }
+
+  listarPagos(
+    filters: {
+      contrato: number | null;
+      empleado: number | null;
+      desde: string | null;
+      hasta: string | null;
+    },
+    pageNumber = 0,
+    pageSize = 8
+  ): Observable<PageResponse<PagoResponse>> {
+    let params = new HttpParams()
+      .set('pageNumber', pageNumber)
+      .set('pageSize', pageSize)
+      .set('sortBy', 'createdAt')
+      .set('direction', 'desc');
+
+    if (filters.contrato) {
+      params = params.set('contrato', filters.contrato);
+    }
+
+    if (filters.empleado) {
+      params = params.set('empleado', filters.empleado);
+    }
+
+    if (filters.desde) {
+      params = params.set('desde', filters.desde);
+    }
+
+    if (filters.hasta) {
+      params = params.set('hasta', filters.hasta);
+    }
+
+    return this.http.get<PageResponse<PagoResponse>>(this.pagosUrl, { params });
+  }
+
+  consultarCumplimientoResumen(
+    request: ConsultaCumplimientoRequest
+  ): Observable<CumplimientoResumenResponse> {
+    return this.http.post<CumplimientoResumenResponse>(
+      `${this.revisionAsistenciaUrl}/cumplimiento/resumen`,
+      request
+    );
+  }
+
+  consultarCumplimientoDetalle(
+    request: ConsultaCumplimientoRequest
+  ): Observable<CumplimientoDetalleResponse> {
+    return this.http.post<CumplimientoDetalleResponse>(
+      `${this.revisionAsistenciaUrl}/cumplimiento/detalle`,
+      request
+    );
+  }
+
+  consultarMonitorEstados(request: ConsultaMonitoreoRequest): Observable<EstadoMonitorResponse[]> {
+    return this.http.post<EstadoMonitorResponse[]>(
+      `${this.revisionAsistenciaUrl}/monitor/estados`,
+      request
+    );
   }
 }

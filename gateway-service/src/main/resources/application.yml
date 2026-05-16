@@ -11,6 +11,12 @@ spring:
       server:
         webflux:
           routes:
+            - id: lead-service-websocket
+              uri: ${LEAD_SERVICE_WS_URI:ws://lead-service:8083}
+              predicates:
+                - Path=/leads/ws/**
+              filters:
+                - StripPrefix=1
             - id: auth-service
               uri: ${AUTH_SERVICE_URI:http://auth-service:8081}
               predicates:
@@ -45,7 +51,8 @@ spring:
             - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
 
 jwt:
-  secret: ${JWT_SECRET:3bZ4bR0S5c7hFQ2nTzF8oQv9vKxM2yP7aLw8eJrHkU1cNdWqXyZp6tR9mVb4sL0Q8nF5gH2kJ3lP6rS9uVw==}
+  public-key-base64: ${JWT_PUBLIC_KEY_BASE64}
+  issuer: ${JWT_ISSUER}
 
 logging:
   level:

@@ -124,19 +124,6 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    @PatchMapping("{empleadoId}/roles")
-    @PreAuthorize("hasAuthority('UPDATE_EMPLEADOS')")
-    @Operation(summary = "Actualizar roles por puesto", description = "Actualiza los roles del usuario segun el puesto de trabajo recibido.")
-    public ResponseEntity<UsuarioResponse> actualizarRoles(
-            @PathVariable @Positive Long empleadoId,
-            @RequestBody PuestoTrabajo puesto
-    ) {
-        log.info("Actualizando roles para usuario: {}", empleadoId);
-        var usuario = usuarioService.actualizarRolesUsuario(empleadoId, puesto);
-        log.info("Usuario actualizado exitosamente: {}", usuario.getUsername());
-        return ResponseEntity.ok(usuario);
-    }
-
     @PatchMapping("{empleadoId}/username-roles")
     @PreAuthorize("hasAuthority('UPDATE_EMPLEADOS')")
     @Operation(summary = "Actualizar credenciales y roles", description = "Actualiza username y configuracion de roles del usuario por empleado.")

@@ -1,0 +1,166 @@
+.panel,
+.subpanel,
+.summary-card,
+.schedule-card {
+  padding: 1rem;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.75rem;
+  background: var(--app-surface-raised);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.panel__header,
+.actions,
+.pagination,
+.schedule-card__header {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.panel__header {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel__eyebrow {
+  color: var(--role-accent);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+h3,
+h4 {
+  margin: 0.35rem 0 0;
+  color: var(--role-panel-text);
+}
+
+.form-grid,
+.schedule-grid,
+.schedule-card__grid,
+.card-list,
+.meta-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.schedule-card__grid,
+.meta-grid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.field-wide {
+  grid-column: 1 / -1;
+}
+
+label {
+  display: grid;
+  gap: 0.45rem;
+}
+
+label span {
+  font-weight: 700;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.65rem;
+  background: var(--app-surface);
+  font: inherit;
+}
+
+.actions {
+  justify-content: flex-end;
+}
+
+.inline-form {
+  display: flex;
+  align-items: end;
+  gap: 1rem;
+}
+
+.primary-button,
+.ghost-button,
+.danger-button {
+  padding: 0.8rem 1rem;
+  border: 0;
+  border-radius: 0.65rem;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.primary-button {
+  color: #fff;
+  background: var(--role-button-bg);
+}
+
+.ghost-button {
+  color: var(--role-button-alt-text);
+  background: var(--role-button-alt-bg);
+}
+
+.danger-button {
+  color: #fff;
+  background: var(--app-danger);
+}
+
+.helper-text,
+.form-message {
+  margin: 0;
+}
+
+.form-message--error {
+  color: var(--app-danger);
+}
+
+.form-message--success {
+  color: var(--app-success);
+}
+
+pre {
+  max-height: 360px;
+  overflow: auto;
+  padding: 1rem;
+  border-radius: 0.65rem;
+  background: var(--app-surface);
+  white-space: pre-wrap;
+}
+
+button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .field-wide {
+    grid-column: auto;
+  }
+
+  .panel__header,
+  .actions,
+  .inline-form,
+  .schedule-card__header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

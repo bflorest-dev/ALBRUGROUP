@@ -31,6 +31,7 @@ public class PreventaController {
         leadService.registrarIngresoLead(request);
         return ResponseEntity.noContent().build();
     }
+    // 1.1. Enriqueser un Lead solo con la información puntual que podria detectar si el Lead es válido para seguir en el proceso de recopilar información
     @PatchMapping("/{idLead}/snapshots") @PreAuthorize("hasAuthority('CREATE_LEADS')")
     public ResponseEntity<Void> actualizarSnapshotsLead(
             @PathVariable Long idLead,

@@ -59,8 +59,9 @@ services:
       AUTH_DB_URL: jdbc:postgresql://postgres-core:5432/auth_db
       AUTH_DB_USERNAME: postgres
       AUTH_DB_PASSWORD: postgres
-      JWT_SECRET: 3bZ4bR0S5c7hFQ2nTzF8oQv9vKxM2yP7aLw8eJrHkU1cNdWqXyZp6tR9mVb4sL0Q8nF5gH2kJ3lP6rS9uVw==
-      JWT_ISSUER: http://localhost:8080/auth
+      JWT_PRIVATE_KEY_BASE64: ${JWT_PRIVATE_KEY_BASE64:?JWT_PRIVATE_KEY_BASE64 is required}
+      JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
+      JWT_ISSUER: ${JWT_ISSUER:?JWT_ISSUER is required}
       AUTH_DOCS_GATEWAY_URL: http://localhost:8080/auth
       AUTH_DOCS_PUBLIC_URL: http://localhost:8080/auth
     depends_on:
@@ -87,7 +88,8 @@ services:
       RRHH_DB_PASSWORD: postgres
       AUTH_SERVICE_URL: http://auth-service:8081
       RECRUITMENT_SERVICE_URL: http://recruitment-service:8084
-      JWT_SECRET: 3bZ4bR0S5c7hFQ2nTzF8oQv9vKxM2yP7aLw8eJrHkU1cNdWqXyZp6tR9mVb4sL0Q8nF5gH2kJ3lP6rS9uVw==
+      JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
+      JWT_ISSUER: ${JWT_ISSUER:?JWT_ISSUER is required}
       RRHH_DOCS_GATEWAY_URL: http://localhost:8080/rrhh
       RRHH_DOCS_PUBLIC_URL: http://localhost:8080/rrhh
     depends_on:
@@ -118,7 +120,8 @@ services:
       LEAD_DB_PASSWORD: postgres
       LEAD_REDIS_HOST: redis
       LEAD_REDIS_PORT: 6379
-      JWT_SECRET: 3bZ4bR0S5c7hFQ2nTzF8oQv9vKxM2yP7aLw8eJrHkU1cNdWqXyZp6tR9mVb4sL0Q8nF5gH2kJ3lP6rS9uVw==
+      JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
+      JWT_ISSUER: ${JWT_ISSUER:?JWT_ISSUER is required}
       LEAD_DOCS_GATEWAY_URL: http://localhost:8080/leads
       LEAD_DOCS_PUBLIC_URL: http://localhost:8080/leads
     depends_on:
@@ -147,7 +150,8 @@ services:
       RECRUITMENT_DB_PASSWORD: postgres
       RECRUITMENT_REDIS_HOST: redis
       RECRUITMENT_REDIS_PORT: 6379
-      JWT_SECRET: 3bZ4bR0S5c7hFQ2nTzF8oQv9vKxM2yP7aLw8eJrHkU1cNdWqXyZp6tR9mVb4sL0Q8nF5gH2kJ3lP6rS9uVw==
+      JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
+      JWT_ISSUER: ${JWT_ISSUER:?JWT_ISSUER is required}
       RECRUITMENT_DOCS_GATEWAY_URL: http://localhost:8080/recruitment
       RECRUITMENT_DOCS_PUBLIC_URL: http://localhost:8080/recruitment
     depends_on:
@@ -174,7 +178,8 @@ services:
       SCHEDULE_DB_URL: jdbc:postgresql://postgres-core:5432/schedule_db
       SCHEDULE_DB_USERNAME: postgres
       SCHEDULE_DB_PASSWORD: postgres
-      JWT_SECRET: 3bZ4bR0S5c7hFQ2nTzF8oQv9vKxM2yP7aLw8eJrHkU1cNdWqXyZp6tR9mVb4sL0Q8nF5gH2kJ3lP6rS9uVw==
+      JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
+      JWT_ISSUER: ${JWT_ISSUER:?JWT_ISSUER is required}
       SCHEDULE_DOCS_GATEWAY_URL: http://localhost:8080/schedule
       SCHEDULE_DOCS_PUBLIC_URL: http://localhost:8080/schedule
     depends_on:
@@ -206,7 +211,8 @@ services:
       AUTH_SERVICE_URL: http://auth-service:8081
       SCHEDULE_SERVICE_URL: http://schedule-service:8085
       FRONTEND_URL: http://localhost:4200
-      JWT_SECRET: 3bZ4bR0S5c7hFQ2nTzF8oQv9vKxM2yP7aLw8eJrHkU1cNdWqXyZp6tR9mVb4sL0Q8nF5gH2kJ3lP6rS9uVw==
+      JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
+      JWT_ISSUER: ${JWT_ISSUER:?JWT_ISSUER is required}
     depends_on:
       redis:
         condition: service_healthy

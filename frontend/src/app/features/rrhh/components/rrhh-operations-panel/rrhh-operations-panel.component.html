@@ -1,0 +1,275 @@
+@if (mode === 'horarios') {
+  <section class="panel">
+    <div class="panel__header">
+      <div>
+        <span class="panel__eyebrow">SCH-10 a SCH-17</span>
+        <h3>Horarios administrativos</h3>
+      </div>
+      <button type="button" class="ghost-button" (click)="reloadCurrentSchedule.emit()">Recargar</button>
+    </div>
+
+    @if (scheduleErrorMessage) {
+      <p class="form-message form-message--error">{{ scheduleErrorMessage }}</p>
+    }
+    @if (scheduleSuccessMessage) {
+      <p class="form-message form-message--success">{{ scheduleSuccessMessage }}</p>
+    }
+
+    @if (currentSchedule; as schedule) {
+      <div class="summary-card">
+        <div class="meta-grid">
+          <span><strong>ID:</strong> {{ schedule.id }}</span>
+          <span><strong>Modalidad:</strong> {{ toLabel(schedule.modalidad) }}</span>
+          <span><strong>Inicio:</strong> {{ schedule.fechaInicio }}</span>
+          <span><strong>Fin:</strong> {{ schedule.fechaFin || 'Vigente' }}</span>
+          <span><strong>Horas semana:</strong> {{ schedule.horasObjetivoSemanal }}</span>
+          <span><strong>Compensable:</strong> {{ schedule.compensable ? 'Si' : 'No' }}</span>
+        </div>
+      </div>
+
+      <form [formGroup]="horarioForm" class="form-grid">
+        <app-date-field label="Nueva fecha de inicio" formControlName="fechaInicio" />
+        <label>
+          <span>Compensable</span>
+          <select formControlName="compensable">
+            <option value="true">Si</option>
+            <option value="false">No</option>
+          </select>
+        </label>
+
+        <div class="schedule-grid field-wide" formArrayName="detalles">
+          @for (detalle of getScheduleRows(); track $index) {
+            <div class="schedule-card" [formGroupName]="$index">
+              <div class="schedule-card__header">
+                <strong>{{ toLabel(diasSemanaOptions[$index]) }}</strong>
+                <select formControlName="laborable">
+                  <option value="true">Laborable</option>
+                  <option value="false">No laborable</option>
+                </select>
+              </div>
+              <div class="schedule-card__grid">
+                <label><span>Entrada</span><input type="time" formControlName="horaEntrada" /></label>
+                <label><span>Salida</span><input type="time" formControlName="horaSalida" /></label>
+                <label><span>Inicio almuerzo</span><input type="time" formControlName="inicioAlmuerzo" /></label>
+                <label><span>Fin almuerzo</span><input type="time" formControlName="finAlmuerzo" /></label>
+              </div>
+            </div>
+          }
+        </div>
+      </form>
+
+      <div class="actions">
+        <button type="button" class="primary-button" [disabled]="isUpdatingSchedule" (click)="replaceCurrentSchedule.emit()">
+          Reemplazar horario
+        </button>
+      </div>
+
+      <form [formGroup]="finalizeScheduleForm" class="inline-form">
+        <app-date-field label="Fecha fin" formControlName="fechaFin" />
+        <button type="button" class="danger-button" [disabled]="isUpdatingSchedule" (click)="finalizeCurrentSchedule.emit()">
+          Finalizar horario
+        </button>
+      </form>
+
+      <section class="subpanel">
+        <h4>Excepciones</h4>
+        <form [formGroup]="exceptionForm" class="form-grid">
+          <input type="hidden" formControlName="idExcepcion" />
+          <app-date-field label="Fecha" formControlName="fecha" />
+          <label>
+            <span>Tipo</span>
+            <select formControlName="tipo">
+              <option value="CAMBIO_TURNO">Cambio turno</option>
+              <option value="DESCANSO">Descanso</option>
+              <option value="FERIADO">Feriado</option>
+              <option value="NO_LABORABLE">No laborable</option>
+            </select>
+          </label>
+          <label><span>Entrada</span><input type="time" formControlName="horaEntrada" /></label>
+          <label><span>Salida</span><input type="time" formControlName="horaSalida" /></label>
+          <label><span>Inicio almuerzo</span><input type="time" formControlName="inicioAlmuerzo" /></label>
+          <label><span>Fin almuerzo</span><input type="time" formControlName="finAlmuerzo" /></label>
+          <label>
+            <span>Laborable</span>
+            <select formControlName="laborable">
+              <option value="true">Si</option>
+              <option value="false">No</option>
+            </select>
+          </label>
+          <label class="field-wide"><span>Motivo</span><input type="text" formControlName="motivo" /></label>
+        </form>
+        <div class="actions">
+          <button type="button" class="ghost-button" (click)="resetExceptionForm.emit()">Limpiar</button>
+          <button type="button" class="primary-button" [disabled]="isSavingException" (click)="saveException.emit()">
+            Guardar excepcion
+          </button>
+        </div>
+
+        @if (schedule.excepciones.length) {
+          <div class="card-list">
+            @for (excepcion of schedule.excepciones; track asRecord(excepcion)['id']) {
+              <article class="summary-card">
+                <div class="meta-grid">
+                  <span><strong>Fecha:</strong> {{ asRecord(excepcion)['fecha'] }}</span>
+                  <span><strong>Tipo:</strong> {{ toLabel(asRecord(excepcion)['tipo'] + '') }}</span>
+                  <span><strong>Motivo:</strong> {{ asRecord(excepcion)['motivo'] }}</span>
+                </div>
+                <div class="actions">
+                  <button type="button" class="ghost-button" (click)="editException.emit(asRecord(excepcion))">Editar</button>
+                  <button type="button" class="danger-button" [disabled]="isDeletingException" (click)="deleteException.emit(+(asRecord(excepcion)['id'] || 0))">
+                    Eliminar
+                  </button>
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </section>
+    } @else {
+      <p class="helper-text">Selecciona un empleado con horario vigente para administrar horarios.</p>
+    }
+
+    <section class="subpanel">
+      <div class="panel__header">
+        <h4>Historico de horarios</h4>
+        <button type="button" class="ghost-button" (click)="reloadScheduleHistory.emit(0)">Recargar</button>
+      </div>
+      @if (scheduleHistory.length) {
+        @for (schedule of scheduleHistory; track schedule.id) {
+          <article class="summary-card">
+            <div class="meta-grid">
+              <span><strong>ID:</strong> {{ schedule.id }}</span>
+              <span><strong>Inicio:</strong> {{ schedule.fechaInicio }}</span>
+              <span><strong>Fin:</strong> {{ schedule.fechaFin || 'Vigente' }}</span>
+              <span><strong>Modalidad:</strong> {{ toLabel(schedule.modalidad) }}</span>
+            </div>
+          </article>
+        }
+      } @else {
+        <p class="helper-text">Sin historico para mostrar.</p>
+      }
+    </section>
+  </section>
+}
+
+@if (mode === 'pagos') {
+  <section class="panel">
+    <div class="panel__header">
+      <div>
+        <span class="panel__eyebrow">RRHH-16 · RRHH-17</span>
+        <h3>Pagos</h3>
+      </div>
+      <button type="button" class="ghost-button" (click)="loadPayments.emit(0)">Recargar</button>
+    </div>
+
+    @if (paymentErrorMessage) {
+      <p class="form-message form-message--error">{{ paymentErrorMessage }}</p>
+    }
+    @if (paymentSuccessMessage) {
+      <p class="form-message form-message--success">{{ paymentSuccessMessage }}</p>
+    }
+
+    <form [formGroup]="paymentForm" class="form-grid">
+      <app-date-field label="Fecha inicio" formControlName="fechaInicio" />
+      <app-date-field label="Fecha fin" formControlName="fechaFin" />
+      <label><span>Asignacion familiar</span><input type="number" min="0.01" step="0.01" formControlName="asignacionFamiliar" /></label>
+      <label><span>Bono puntualidad</span><input type="number" min="0.01" step="0.01" formControlName="bonoPuntualidad" /></label>
+      <label><span>Comision semanal</span><input type="number" min="0.01" step="0.01" formControlName="comisionSemanal" /></label>
+      <label><span>Comision mensual</span><input type="number" min="0.01" step="0.01" formControlName="comisionMensual" /></label>
+      <label><span>Bono extra</span><input type="number" min="0.01" step="0.01" formControlName="bonoExtra" /></label>
+    </form>
+
+    <div class="actions">
+      <button type="button" class="primary-button" [disabled]="isRegisteringPayment" (click)="registerPayment.emit()">
+        Registrar pago
+      </button>
+    </div>
+
+    <form [formGroup]="paymentFilterForm" class="form-grid subpanel">
+      <label><span>Contrato</span><input type="number" formControlName="contrato" /></label>
+      <label><span>Empleado</span><input type="number" formControlName="empleado" /></label>
+      <app-date-field label="Desde" formControlName="desde" />
+      <app-date-field label="Hasta" formControlName="hasta" />
+      <button type="button" class="ghost-button" (click)="loadPayments.emit(0)">Filtrar pagos</button>
+    </form>
+
+    @if (isLoadingPayments) {
+      <p class="helper-text">Cargando pagos...</p>
+    } @else if (payments.length) {
+      <div class="card-list">
+        @for (payment of payments; track payment.id) {
+          <article class="summary-card">
+            <div class="meta-grid">
+              <span><strong>ID:</strong> {{ payment.id }}</span>
+              <span><strong>Contrato:</strong> {{ payment.idContrato }}</span>
+              <span><strong>Periodo:</strong> {{ payment.fechaInicio }} / {{ payment.fechaFin }}</span>
+              <span><strong>Total:</strong> {{ toMoney(payment.sueldoTotal) }}</span>
+            </div>
+          </article>
+        }
+      </div>
+    } @else {
+      <p class="helper-text">No hay pagos para mostrar.</p>
+    }
+  </section>
+}
+
+@if (mode === 'cumplimiento') {
+  <section class="panel">
+    <div class="panel__header">
+      <div>
+        <span class="panel__eyebrow">SCH-18 · SCH-19 · SCH-20</span>
+        <h3>Cumplimiento y monitor</h3>
+      </div>
+    </div>
+
+    <form [formGroup]="complianceForm" class="form-grid">
+      <label class="field-wide"><span>IDs empleados separados por coma</span><input type="text" formControlName="empleadoIds" /></label>
+      <app-date-field label="Desde" formControlName="desde" />
+      <app-date-field label="Hasta" formControlName="hasta" />
+      <app-date-field label="Fecha monitor" formControlName="fechaMonitor" />
+    </form>
+
+    @if (complianceErrorMessage) {
+      <p class="form-message form-message--error">{{ complianceErrorMessage }}</p>
+    }
+
+    <div class="actions">
+      <button type="button" class="primary-button" [disabled]="isLoadingCompliance" (click)="queryCompliance.emit()">
+        Consultar cumplimiento
+      </button>
+    </div>
+
+    @if (monitorEstados.length) {
+      <section class="subpanel">
+        <h4>Monitor operativo</h4>
+        <div class="card-list">
+          @for (estado of monitorEstados; track estado.idEmpleado) {
+            <article class="summary-card">
+              <div class="meta-grid">
+                <span><strong>Empleado:</strong> {{ estado.idEmpleado }}</span>
+                <span><strong>Estado:</strong> {{ toLabel(estado.estadoActual || '-') }}</span>
+                <span><strong>Horario:</strong> {{ estado.tieneHorarioVigente ? 'Si' : 'No' }}</span>
+                <span><strong>Operativo:</strong> {{ estado.operativo ? 'Si' : 'No' }}</span>
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+    }
+
+    @if (complianceResumen) {
+      <section class="subpanel">
+        <h4>Resumen</h4>
+        <pre>{{ complianceResumen | json }}</pre>
+      </section>
+    }
+
+    @if (complianceDetalle) {
+      <section class="subpanel">
+        <h4>Detalle</h4>
+        <pre>{{ complianceDetalle | json }}</pre>
+      </section>
+    }
+  </section>
+}

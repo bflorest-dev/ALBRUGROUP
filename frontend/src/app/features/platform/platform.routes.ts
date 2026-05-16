@@ -2,9 +2,11 @@ import { Routes } from '@angular/router';
 import { roleGuard } from '../../core/guards/role.guard';
 import { AdminDashboardPageComponent } from '../admin/pages/admin-dashboard-page/admin-dashboard-page.component';
 import { AdminEmployabilityPageComponent } from '../admin/pages/admin-employability-page/admin-employability-page.component';
+import { CommunityWorkspacePageComponent } from '../community/pages/community-workspace-page/community-workspace-page.component';
 import { PostulantesBoardPageComponent } from '../recruiter/pages/postulantes-board-page/postulantes-board-page.component';
 import { TrainingGroupsPageComponent } from '../recruiter/pages/training-groups-page/training-groups-page.component';
 import { RrhhPostulantesPageComponent } from '../rrhh/pages/rrhh-postulantes-page/rrhh-postulantes-page.component';
+import { TrainerWorkspacePageComponent } from '../trainer/pages/trainer-workspace-page/trainer-workspace-page.component';
 import { RoleHomeRedirectComponent } from './pages/role-home-redirect/role-home-redirect.component';
 import { RolePlatformPageComponent } from './pages/role-platform-page/role-platform-page.component';
 
@@ -79,11 +81,10 @@ export const PLATFORM_ROUTES: Routes = [
   },
   {
     path: 'capacitador',
-    component: RolePlatformPageComponent,
+    component: TrainerWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['CAPACITADOR'],
-      title: 'CAPACITADOR Platform'
+      roles: ['CAPACITADOR']
     }
   },
   {
@@ -124,11 +125,10 @@ export const PLATFORM_ROUTES: Routes = [
   },
   {
     path: 'community',
-    component: RolePlatformPageComponent,
+    component: CommunityWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['COMMUNITY'],
-      title: 'COMMUNITY Platform'
+      roles: ['COMMUNITY']
     }
   },
   {

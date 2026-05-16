@@ -1,0 +1,372 @@
+<section class="community-page">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">COMMUNITY</p>
+      <h1>Operacion comercial de lead-service</h1>
+      <p class="hero-copy">
+        Administra proveedores, cuentas publicitarias, campanas, zonas, planes y promociones desde los endpoints operativos.
+      </p>
+    </div>
+    <button type="button" class="ghost-button" [disabled]="facade.isLoading()" (click)="facade.loadAll()">
+      {{ facade.isLoading() ? 'Actualizando...' : 'Actualizar datos' }}
+    </button>
+  </header>
+
+  <nav class="tabs" aria-label="Secciones de COMMUNITY">
+    @for (section of sections; track section.id) {
+      <button
+        type="button"
+        class="tab"
+        [class.tab--active]="facade.section() === section.id"
+        (click)="facade.setSection(section.id)"
+      >
+        {{ section.label }}
+      </button>
+    }
+  </nav>
+
+  @if (facade.successMessage()) {
+    <p class="alert alert--success">{{ facade.successMessage() }}</p>
+  }
+  @if (facade.errorMessage()) {
+    <p class="alert alert--error">{{ facade.errorMessage() }}</p>
+  }
+
+  @if (facade.section() === 'proveedores') {
+    <section class="grid">
+      <form class="panel form-grid" [formGroup]="facade.providerForm" (ngSubmit)="facade.submitProvider()">
+        <h2>Registrar proveedor</h2>
+        <label><span>Nombre</span><input type="text" formControlName="nombre" /></label>
+        <label><span>Cortes facturacion</span><input type="text" formControlName="cortesFacturacion" /></label>
+        <label><span>Meses permanencia</span><input type="number" min="1" formControlName="mesesPermanencia" /></label>
+        <button type="submit" [disabled]="facade.isSaving()">Registrar proveedor</button>
+      </form>
+
+      <section class="panel">
+        <h2>Proveedores</h2>
+        <div class="cards">
+          @for (proveedor of facade.proveedores(); track proveedor.id) {
+            <article class="entity-card">
+              <div>
+                <strong>{{ proveedor.nombre }}</strong>
+                <span>ID {{ proveedor.id }} · {{ proveedor.activo === false ? 'Inactivo' : 'Activo' }}</span>
+                <small>Cortes: {{ proveedor.cortesFacturacion || '-' }} · Permanencia: {{ display(proveedor.mesesPermanencia) }} meses</small>
+              </div>
+              <button type="button" class="secondary-button" (click)="facade.toggleProvider(proveedor.id)">
+                Alternar estado
+              </button>
+            </article>
+          } @empty {
+            <p class="helper-text">No hay proveedores registrados.</p>
+          }
+        </div>
+      </section>
+    </section>
+  }
+
+  @if (facade.section() === 'cuentas') {
+    <section class="grid">
+      <form class="panel form-grid" [formGroup]="facade.accountForm" (ngSubmit)="facade.submitAccount()">
+        <h2>Registrar cuenta publicitaria</h2>
+        <label><span>Numero cuenta</span><input type="text" formControlName="numeroCuenta" /></label>
+        <label><span>Nombre cuenta</span><input type="text" formControlName="nombreCuenta" /></label>
+        <button type="submit" [disabled]="facade.isSaving()">Registrar cuenta</button>
+      </form>
+
+      <section class="panel">
+        <h2>Cuentas publicitarias</h2>
+        <div class="cards">
+          @for (cuenta of facade.cuentas(); track cuenta.id) {
+            <article class="entity-card">
+              <div>
+                <strong>{{ cuenta.nombreCuenta }}</strong>
+                <span>{{ cuenta.numeroCuenta }} · ID {{ cuenta.id }} · {{ cuenta.activo === false ? 'Inactiva' : 'Activa' }}</span>
+              </div>
+              @if (cuenta.activo !== false) {
+                <button type="button" class="secondary-button" (click)="facade.deactivateAccount(cuenta.id)">Desactivar</button>
+              }
+            </article>
+          } @empty {
+            <p class="helper-text">No hay cuentas registradas.</p>
+          }
+        </div>
+      </section>
+    </section>
+  }
+
+  @if (facade.section() === 'campanas') {
+    <section class="grid">
+      <div class="panel-stack">
+        <form class="panel form-grid" [formGroup]="facade.campaignForm" (ngSubmit)="facade.submitCampaign()">
+          <h2>Registrar campana</h2>
+          <label><span>Nombre</span><input type="text" formControlName="nombre" /></label>
+          <label><span>WhatsApp empresa</span><input type="text" formControlName="numeroWhatsappEmpresa" /></label>
+          <label>
+            <span>Cuenta activa</span>
+            <select formControlName="idCuentaPublicitaria">
+              <option [value]="0">Seleccionar cuenta</option>
+              @for (cuenta of facade.cuentasActivas(); track cuenta.id) {
+                <option [value]="cuenta.id">{{ cuenta.nombreCuenta }} · {{ cuenta.numeroCuenta }}</option>
+              }
+            </select>
+          </label>
+          <label>
+            <span>Proveedor</span>
+            <select formControlName="idProveedor">
+              <option [value]="0">Seleccionar proveedor</option>
+              @for (proveedor of facade.proveedoresActivos(); track proveedor.id) {
+                <option [value]="proveedor.id">{{ proveedor.nombre }}</option>
+              }
+            </select>
+          </label>
+          <button type="submit" [disabled]="facade.isSaving()">Registrar campana</button>
+        </form>
+
+        <form class="panel form-grid" [formGroup]="facade.campaignWhatsappForm" (ngSubmit)="facade.updateCampaignWhatsapp()">
+          <h2>Actualizar WhatsApp</h2>
+          <label><span>ID campana</span><input type="number" min="1" formControlName="idCampana" /></label>
+          <label><span>Nuevo WhatsApp</span><input type="text" formControlName="numeroWhatsappEmpresa" /></label>
+          <button type="submit" [disabled]="facade.isSaving()">Actualizar WhatsApp</button>
+        </form>
+      </div>
+
+      <section class="panel">
+        <h2>Campanas</h2>
+        <div class="cards">
+          @for (campana of facade.campanas(); track campana.id) {
+            <article class="entity-card">
+              <div>
+                <strong>{{ campana.nombre }}</strong>
+                <span>ID {{ campana.id }} · {{ campana.nombreProveedor }} · {{ campana.nombreCuenta }}</span>
+                <small>WhatsApp: {{ campana.numeroWhatsappEmpresa }} · {{ campana.activo === false ? 'Inactiva' : 'Activa' }}</small>
+              </div>
+              @if (campana.activo !== false) {
+                <button type="button" class="secondary-button" (click)="facade.deactivateCampaign(campana.id)">Desactivar</button>
+              }
+            </article>
+          } @empty {
+            <p class="helper-text">No hay campanas registradas.</p>
+          }
+        </div>
+      </section>
+    </section>
+  }
+
+  @if (facade.section() === 'planes') {
+    <section class="grid">
+      <div class="panel-stack">
+        <form class="panel form-grid" [formGroup]="facade.additionalForm" (ngSubmit)="facade.submitAdditional()">
+          <h2>Registrar adicional</h2>
+          <label>
+            <span>Proveedor</span>
+            <select formControlName="idProveedor">
+              <option [value]="0">Seleccionar proveedor</option>
+              @for (proveedor of facade.proveedoresActivos(); track proveedor.id) {
+                <option [value]="proveedor.id">{{ proveedor.nombre }}</option>
+              }
+            </select>
+          </label>
+          <label><span>Nombre</span><input type="text" formControlName="nombre" /></label>
+          <label><span>Precio unitario</span><input type="number" min="0.01" step="0.01" formControlName="precioUnitario" /></label>
+          <button type="submit" [disabled]="facade.isSaving()">Registrar adicional</button>
+        </form>
+
+        <form class="panel form-grid" [formGroup]="facade.providerServicesForm" (ngSubmit)="facade.loadProviderServices()">
+          <h2>Servicios por proveedor</h2>
+          <label>
+            <span>Proveedor</span>
+            <select formControlName="idProveedor">
+              <option [value]="0">Seleccionar proveedor</option>
+              @for (proveedor of facade.proveedoresActivos(); track proveedor.id) {
+                <option [value]="proveedor.id">{{ proveedor.nombre }}</option>
+              }
+            </select>
+          </label>
+          <button type="submit">Consultar servicios</button>
+          @if (facade.serviciosProveedor()) {
+            <pre>{{ facade.serviciosProveedor() | json }}</pre>
+          }
+        </form>
+      </div>
+
+      <form class="panel form-grid form-grid--wide" [formGroup]="facade.planForm" (ngSubmit)="facade.submitPlan()">
+        <h2>Registrar o actualizar plan</h2>
+        <label><span>ID plan para actualizar</span><input type="number" min="0" formControlName="idPlan" /></label>
+        <label>
+          <span>Proveedor</span>
+          <select formControlName="idProveedor">
+            <option [value]="0">Seleccionar proveedor</option>
+            @for (proveedor of facade.proveedoresActivos(); track proveedor.id) {
+              <option [value]="proveedor.id">{{ proveedor.nombre }}</option>
+            }
+          </select>
+        </label>
+        <label><span>Nombre plan</span><input type="text" formControlName="nombre" /></label>
+        <label><span>Precio</span><input type="number" min="0.01" step="0.01" formControlName="precio" /></label>
+        <label><span>Precio promocional</span><input type="number" min="0" step="0.01" formControlName="precioPromocional" /></label>
+        <label><span>Meses promo precio</span><input type="number" min="0" formControlName="mesesPromocionPrecio" /></label>
+        <label><span>Vigencia desde</span><input type="date" formControlName="vigenciaDesde" /></label>
+        <label><span>Vigencia hasta</span><input type="date" formControlName="vigenciaHasta" /></label>
+        <label><span>Internet velocidad</span><input type="number" min="0" formControlName="internetVelocidad" /></label>
+        <label>
+          <span>Unidad</span>
+          <select formControlName="internetUnidad">
+            <option value="MBPS">MBPS</option>
+            <option value="GBPS">GBPS</option>
+          </select>
+        </label>
+        <label>
+          <span>Tecnologia</span>
+          <select formControlName="internetTecnologia">
+            <option value="FTTH">FTTH</option>
+            <option value="HFC">HFC</option>
+            <option value="HIBRIDA">HIBRIDA</option>
+          </select>
+        </label>
+        <label><span>TV nombre</span><input type="text" formControlName="televisionNombre" /></label>
+        <label><span>TV canales</span><input type="number" min="0" formControlName="televisionCanales" /></label>
+        <label><span>Telefono minutos</span><input type="number" min="0" formControlName="telefonoMinutos" /></label>
+        <label><span>Telefono descripcion</span><input type="text" formControlName="telefonoDescripcion" /></label>
+        <label><span>Velocidad promocional</span><input type="number" min="0" formControlName="velocidadPromocional" /></label>
+        <label><span>Meses promo velocidad</span><input type="number" min="0" formControlName="mesesPromocionVelocidad" /></label>
+        <label>
+          <span>Zona</span>
+          <select formControlName="idZona">
+            <option [value]="0">Sin zona</option>
+            @for (zona of facade.zonasActivas(); track zona.id) {
+              <option [value]="zona.id">{{ zona.nombre }}</option>
+            }
+          </select>
+        </label>
+        <label class="field-wide">
+          <span>Adicionales id:cantidad:permite:max separados por coma</span>
+          <input type="text" formControlName="adicionales" placeholder="1:1:true:2, 2:0:true:5" />
+        </label>
+        <div class="actions field-wide">
+          <button type="submit" [disabled]="facade.isSaving()">Registrar plan</button>
+          <button type="button" class="secondary-button" [disabled]="facade.isSaving()" (click)="facade.updatePlan()">Actualizar plan</button>
+        </div>
+      </form>
+
+      <section class="panel panel--full">
+        <h2>Planes y adicionales</h2>
+        <div class="table-list">
+          @for (plan of facade.planes(); track plan.id) {
+            <article class="entity-card">
+              <div>
+                <strong>{{ plan.nombre }}</strong>
+                <span>ID {{ plan.id }} · {{ plan.nombreProveedor }} · S/ {{ display(plan.precio) }}</span>
+                <small>Zona: {{ display(plan.nombreZona) }} · {{ plan.activo === false ? 'Inactivo' : 'Activo' }}</small>
+              </div>
+              @if (plan.activo !== false) {
+                <button type="button" class="secondary-button" (click)="facade.deactivatePlan(plan.id)">Desactivar</button>
+              }
+            </article>
+          } @empty {
+            <p class="helper-text">No hay planes registrados.</p>
+          }
+        </div>
+        <h3>Adicionales</h3>
+        <div class="chips">
+          @for (adicional of facade.adicionales(); track adicional.id) {
+            <span>ID {{ adicional.id }} · {{ adicional.nombre }} · {{ adicional.nombreProveedor }} · S/ {{ display(adicional.precioUnitario) }}</span>
+          } @empty {
+            <span>No hay adicionales.</span>
+          }
+        </div>
+      </section>
+    </section>
+  }
+
+  @if (facade.section() === 'promociones') {
+    <section class="grid">
+      <form class="panel form-grid" [formGroup]="facade.promotionForm" (ngSubmit)="facade.submitPromotion()">
+        <h2>Registrar promocion</h2>
+        <label class="field-wide"><span>Regla comercial</span><textarea rows="4" formControlName="reglaComercial"></textarea></label>
+        <label>
+          <span>Proveedor</span>
+          <select formControlName="idProveedor">
+            <option [value]="0">Seleccionar proveedor</option>
+            @for (proveedor of facade.proveedoresActivos(); track proveedor.id) {
+              <option [value]="proveedor.id">{{ proveedor.nombre }}</option>
+            }
+          </select>
+        </label>
+        <label>
+          <span>Zona</span>
+          <select formControlName="idZona">
+            <option [value]="0">Sin zona</option>
+            @for (zona of facade.zonasActivas(); track zona.id) {
+              <option [value]="zona.id">{{ zona.nombre }}</option>
+            }
+          </select>
+        </label>
+        <label class="field-wide"><span>IDs planes separados por coma</span><input type="text" formControlName="idsPlanes" /></label>
+        <button type="submit" [disabled]="facade.isSaving()">Registrar promocion</button>
+      </form>
+
+      <section class="panel">
+        <form class="compact-filters" [formGroup]="facade.promotionFiltersForm" (ngSubmit)="facade.filterPromotions()">
+          <h2>Promociones</h2>
+          <input type="number" min="0" placeholder="Proveedor" formControlName="idProveedor" />
+          <input type="number" min="0" placeholder="Zona" formControlName="idZona" />
+          <input type="number" min="0" placeholder="Plan" formControlName="idPlan" />
+          <button type="submit" class="secondary-button">Filtrar</button>
+        </form>
+        <div class="cards">
+          @for (promocion of facade.promociones(); track promocion.id) {
+            <article class="entity-card">
+              <div>
+                <strong>{{ promocion.reglaComercial }}</strong>
+                <span>ID {{ promocion.id }} · {{ promocion.nombreProveedor }} · {{ display(promocion.nombreZona) }}</span>
+                <small>Planes: {{ promocion.nombresPlanes || promocion.idsPlanes }} · {{ promocion.activo === false ? 'Inactiva' : 'Activa' }}</small>
+              </div>
+              @if (promocion.activo !== false) {
+                <button type="button" class="secondary-button" (click)="facade.deactivatePromotion(promocion.id)">Desactivar</button>
+              }
+            </article>
+          } @empty {
+            <p class="helper-text">No hay promociones registradas.</p>
+          }
+        </div>
+      </section>
+    </section>
+  }
+
+  @if (facade.section() === 'zonas') {
+    <section class="grid">
+      <form class="panel form-grid" [formGroup]="facade.zoneForm" (ngSubmit)="facade.submitZone()">
+        <h2>Registrar o actualizar zona</h2>
+        <label><span>ID zona para actualizar</span><input type="number" min="0" formControlName="idZona" /></label>
+        <label><span>Nombre</span><input type="text" formControlName="nombre" /></label>
+        <label class="field-wide">
+          <span>Reglas una por linea: NIVEL,geoId,CRITERIO</span>
+          <textarea rows="5" formControlName="reglas"></textarea>
+        </label>
+        <div class="actions field-wide">
+          <button type="submit" [disabled]="facade.isSaving()">Registrar zona</button>
+          <button type="button" class="secondary-button" [disabled]="facade.isSaving()" (click)="facade.updateZone()">Actualizar zona</button>
+        </div>
+        <p class="helper-text">Niveles: DEPARTAMENTO, PROVINCIA, DISTRITO. Criterios: INCLUIR, EXCLUIR.</p>
+      </form>
+
+      <section class="panel">
+        <h2>Zonas</h2>
+        <div class="cards">
+          @for (zona of facade.zonas(); track zona.id) {
+            <article class="entity-card">
+              <div>
+                <strong>{{ zona.nombre }}</strong>
+                <span>ID {{ zona.id }} · {{ zona.activo === false ? 'Inactiva' : 'Activa' }}</span>
+                <small>Reglas: {{ zona.reglas?.length || 0 }}</small>
+              </div>
+              <button type="button" class="secondary-button" (click)="facade.toggleZone(zona.id)">Alternar estado</button>
+            </article>
+          } @empty {
+            <p class="helper-text">No hay zonas registradas.</p>
+          }
+        </div>
+      </section>
+    </section>
+  }
+</section>

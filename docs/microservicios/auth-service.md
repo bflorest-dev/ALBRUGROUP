@@ -7,6 +7,7 @@ Servicio responsable de autenticacion, estado de acceso, credenciales y sincroni
 - Los endpoints publicos de acceso no requieren token.
 - Los endpoints protegidos usan permisos de Spring Security.
 - El login devuelve roles sin prefijo `ROLE_`.
+- Los access tokens se firman con RS256 y se validan por issuer.
 - `empleadoId` es el identificador operativo que frontend debe conservar para contexto de usuario.
 
 ## AUTH-01 estadoAcceso
@@ -24,7 +25,7 @@ Servicio responsable de autenticacion, estado de acceso, credenciales y sincroni
 - Metodo/ruta: `POST /autorizacion/login`
 - Permiso: publico.
 - Body: `username`, `password`.
-- Response relevante: `token`, `type`, `username`, `empleadoId`, `nombreCompleto`, `roles`.
+- Response relevante: `token`, `refreshToken`, `type`, `expiresIn`, `username`, `empleadoId`, `nombreCompleto`, `roles`.
 - Uso frontend: crear sesion solo cuando `AUTH-01` permitio continuar con login normal.
 - Error relevante: credenciales invalidas responden `401`.
 
@@ -45,40 +46,48 @@ Servicio responsable de autenticacion, estado de acceso, credenciales y sincroni
 - Body relevante: datos de empleado para registrar o actualizar usuario de autenticacion.
 - Efecto: crea o actualiza el usuario asociado al empleado.
 
-## AUTH-05 actualizarRoles
+## AUTH-05 refresh
 
-- Metodo/ruta: `PATCH /autorizacion/{empleadoId}/roles`
-- Permiso: protegido por token, sin `PreAuthorize` explicito en controller.
-- Body: `PuestoTrabajo`.
-- Uso pensado: actualizar roles segun puesto de trabajo.
+- Metodo/ruta: `POST /autorizacion/refresh`
+- Permiso: publico controlado por refresh token.
+- Body: `refreshToken`.
+- Response relevante: `token`, `refreshToken`, `type`, `expiresIn`.
+- Uso pensado: renovar access token y rotar refresh token.
 
-## AUTH-06 actualizarUsernameRoles
+## AUTH-06 logout
+
+- Metodo/ruta: `POST /autorizacion/logout`
+- Permiso: publico controlado por refresh token.
+- Body: `refreshToken`.
+- Efecto: revoca el refresh token recibido.
+
+## AUTH-07 actualizarUsernameRoles
 
 - Metodo/ruta: `PATCH /autorizacion/{empleadoId}/username-roles`
 - Permiso: `UPDATE_EMPLEADOS`.
 - Body: `username`, `puestoTrabajo`.
 - Uso pensado: corregir credenciales y roles de un usuario existente.
 
-## AUTH-07 resetPassword
+## AUTH-08 resetPassword
 
 - Metodo/ruta: `POST /autorizacion/{empleadoId}/reset-password`
 - Permiso: rol `ADMINISTRADOR`.
 - Uso pensado: reseteo administrativo de password.
 - Response relevante: `username`, `password`.
 
-## AUTH-08 getUsuarioPorEmpleado
+## AUTH-09 getUsuarioPorEmpleado
 
 - Metodo/ruta: `GET /autorizacion/{empleadoId}/empleado`
 - Permiso: `READ_EMPLEADOS`.
 - Uso pensado: consultar usuario de autenticacion asociado a un empleado.
 
-## AUTH-09 listarUsuariosActivosPorRol
+## AUTH-10 listarUsuariosActivosPorRol
 
 - Metodo/ruta: `GET /autorizacion/roles/{puestoTrabajo}/usuarios`
 - Permiso: cualquiera de `READ_EMPLEADOS`, `READ_LEADS_GTR`, `READ_LEADS_SUPERVISOR_VENTAS_RESUMEN`.
 - Uso pensado: catalogo de usuarios activos por puesto/rol.
 
-## AUTH-10 deshabilitarUsuario
+## AUTH-11 deshabilitarUsuario
 
 - Metodo/ruta: `DELETE /autorizacion/{empleadoId}/deshabilitar`
 - Permiso: `CANCEL_CONTRATOS`.

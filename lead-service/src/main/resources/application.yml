@@ -10,7 +10,8 @@ spring:
     type: redis
 
 jwt:
-  secret: ${JWT_SECRET:3bZ4bR0S5c7hFQ2nTzF8oQv9vKxM2yP7aLw8eJrHkU1cNdWqXyZp6tR9mVb4sL0Q8nF5gH2kJ3lP6rS9uVw==}
+  public-key-base64: ${JWT_PUBLIC_KEY_BASE64}
+  issuer: ${JWT_ISSUER}
 
 springdoc:
   swagger-ui:

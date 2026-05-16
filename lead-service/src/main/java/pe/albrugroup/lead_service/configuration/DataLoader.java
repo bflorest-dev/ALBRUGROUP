@@ -123,6 +123,10 @@ public class DataLoader {
         Tipificacion listaNegra = saveTipificacion(Etapa.PREVENTA, "LISTA_NEGRA", "Lead restringido por lista negra", 9);
         saveSubtipificacion(listaNegra, "BLACKLIST", "Lead bloqueado por politica de blacklist", 1);
 
+        Tipificacion validacionVenta = saveTipificacion(Etapa.VENTA, "VALIDACION_VENTA", "Validacion operativa de la venta", 1);
+        saveSubtipificacion(validacionVenta, "INSTALACION_CONFIRMADA", "Instalacion confirmada por backoffice", 1, Etapa.POSTVENTA, EstadoPostventa.EN_SEGUIMIENTO);
+        saveSubtipificacion(validacionVenta, "OBSERVADA", "Venta observada pendiente de regularizacion", 2);
+
         Tipificacion seguimientoPostventa = saveTipificacion(Etapa.POSTVENTA, "SEGUIMIENTO", "Seguimiento de servicio instalado", 1);
         saveSubtipificacion(seguimientoPostventa, "SERVICIO_ACTIVO", "Cliente mantiene el servicio activo", 1, null, EstadoPostventa.EN_SEGUIMIENTO);
         saveSubtipificacion(seguimientoPostventa, "CLIENTE_SATISFECHO", "Cliente conforme con el servicio", 2, null, EstadoPostventa.EN_SEGUIMIENTO);

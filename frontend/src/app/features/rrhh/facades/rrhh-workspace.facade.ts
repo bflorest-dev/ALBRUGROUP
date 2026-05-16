@@ -18,14 +18,28 @@ import { DatosPersonalesRequest } from '../../../shared/models/rrhh/datos-person
 import { EmpleadoResponse } from '../../../shared/models/rrhh/empleado-response';
 import { EmpresaContratistaResponse } from '../../../shared/models/rrhh/empresa-contratista-response';
 import { EventoEmpleadoResponse } from '../../../shared/models/rrhh/evento-empleado-response';
+import { PagoResponse } from '../../../shared/models/rrhh/pago-response';
 import { RegistrarContratoRequest } from '../../../shared/models/rrhh/registrar-contrato-request';
 import { RegistrarEmpleadoRequest } from '../../../shared/models/rrhh/registrar-empleado-request';
+import { RegistrarPagoRequest } from '../../../shared/models/rrhh/registrar-pago-request';
+import {
+  CumplimientoDetalleResponse,
+  CumplimientoResumenResponse,
+  EstadoMonitorResponse
+} from '../../../shared/models/schedule/cumplimiento-response';
 import { HorarioResponse } from '../../../shared/models/schedule/horario-response';
 import { RegistrarHorarioRequest } from '../../../shared/models/schedule/registrar-horario-request';
 import { RrhhOperationsService } from '../services/rrhh-operations.service';
 import { PostulacionFilters, RrhhRecruitmentService } from '../services/rrhh-recruitment.service';
 
-export type RrhhSection = 'contratacion' | 'empleados' | 'contratos' | 'eventos';
+export type RrhhSection =
+  | 'contratacion'
+  | 'empleados'
+  | 'contratos'
+  | 'horarios'
+  | 'pagos'
+  | 'cumplimiento'
+  | 'eventos';
 
 @Injectable()
 export class RrhhWorkspaceFacade {
@@ -237,6 +251,46 @@ export class RrhhWorkspaceFacade {
     detalles: this.formBuilder.nonNullable.array(this.buildDefaultScheduleRows())
   });
 
+  readonly finalizeScheduleForm = this.formBuilder.nonNullable.group({
+    fechaFin: [this.getToday(), [Validators.required]]
+  });
+
+  readonly exceptionForm = this.formBuilder.nonNullable.group({
+    idExcepcion: [''],
+    fecha: [this.getToday(), [Validators.required]],
+    tipo: ['CAMBIO_TURNO', [Validators.required]],
+    horaEntrada: ['09:00'],
+    horaSalida: ['18:00'],
+    inicioAlmuerzo: ['13:00'],
+    finAlmuerzo: ['14:00'],
+    laborable: ['true', [Validators.required]],
+    motivo: ['', [Validators.required]]
+  });
+
+  readonly paymentForm = this.formBuilder.nonNullable.group({
+    fechaInicio: [''],
+    fechaFin: [''],
+    asignacionFamiliar: [1, [Validators.required, Validators.min(0.01)]],
+    bonoPuntualidad: [''],
+    comisionSemanal: [''],
+    comisionMensual: [''],
+    bonoExtra: ['']
+  });
+
+  readonly paymentFilterForm = this.formBuilder.nonNullable.group({
+    contrato: [''],
+    empleado: [''],
+    desde: [''],
+    hasta: ['']
+  });
+
+  readonly complianceForm = this.formBuilder.nonNullable.group({
+    empleadoIds: [''],
+    desde: [this.getToday(), [Validators.required]],
+    hasta: [this.getToday(), [Validators.required]],
+    fechaMonitor: [this.getToday()]
+  });
+
   readonly activeOffersState = toSignal(
     this.recruitmentService.listarOfertasActivas().pipe(
       timeout(this.requestTimeoutMs),
@@ -259,6 +313,8 @@ export class RrhhWorkspaceFacade {
   readonly employeesPage = signal(this.emptyPage<EmpleadoResponse>());
   readonly contractHistoryPage = signal(this.emptyPage<ContratoResponse>());
   readonly employeeEventsPage = signal(this.emptyPage<EventoEmpleadoResponse>());
+  readonly scheduleHistoryPage = signal(this.emptyPage<HorarioResponse>());
+  readonly paymentsPage = signal(this.emptyPage<PagoResponse>());
 
   readonly selectedHiringCase = signal<PostulacionResponse | null>(null);
   readonly selectedEmployee = signal<EmpleadoResponse | null>(null);
@@ -276,6 +332,13 @@ export class RrhhWorkspaceFacade {
   readonly isRegisteringContract = signal(false);
   readonly isClosingContract = signal(false);
   readonly isRegisteringSchedule = signal(false);
+  readonly isLoadingSchedules = signal(false);
+  readonly isUpdatingSchedule = signal(false);
+  readonly isSavingException = signal(false);
+  readonly isDeletingException = signal(false);
+  readonly isRegisteringPayment = signal(false);
+  readonly isLoadingPayments = signal(false);
+  readonly isLoadingCompliance = signal(false);
   readonly isLoadingEmployeeEvents = signal(false);
 
   readonly editingPostulacionId = signal<number | null>(null);
@@ -292,8 +355,15 @@ export class RrhhWorkspaceFacade {
   readonly contractSuccessMessage = signal('');
   readonly scheduleErrorMessage = signal('');
   readonly scheduleSuccessMessage = signal('');
+  readonly paymentErrorMessage = signal('');
+  readonly paymentSuccessMessage = signal('');
+  readonly complianceErrorMessage = signal('');
   readonly employeeEventsErrorMessage = signal('');
   readonly registeredSchedule = signal<HorarioResponse | null>(null);
+  readonly currentSchedule = signal<HorarioResponse | null>(null);
+  readonly complianceResumen = signal<CumplimientoResumenResponse | null>(null);
+  readonly complianceDetalle = signal<CumplimientoDetalleResponse | null>(null);
+  readonly monitorEstados = signal<EstadoMonitorResponse[]>([]);
 
   readonly activeOffers = computed(() => this.activeOffersState());
   readonly empresasContratistas = computed(() => this.empresasContratistasState());
@@ -313,6 +383,12 @@ export class RrhhWorkspaceFacade {
   readonly employeeEvents = computed(() => this.employeeEventsPage().content);
   readonly currentEmployeeEventsPage = computed(() => this.employeeEventsPage().page);
   readonly totalEmployeeEventsPages = computed(() => this.employeeEventsPage().totalPages);
+  readonly scheduleHistory = computed(() => this.scheduleHistoryPage().content);
+  readonly currentScheduleHistoryPage = computed(() => this.scheduleHistoryPage().page);
+  readonly totalScheduleHistoryPages = computed(() => this.scheduleHistoryPage().totalPages);
+  readonly payments = computed(() => this.paymentsPage().content);
+  readonly currentPaymentsPage = computed(() => this.paymentsPage().page);
+  readonly totalPaymentsPages = computed(() => this.paymentsPage().totalPages);
   readonly isEditing = computed(() => this.editingPostulacionId() !== null);
 
   async initialize(): Promise<void> {
@@ -605,7 +681,13 @@ export class RrhhWorkspaceFacade {
   async selectEmployee(employee: EmpleadoResponse): Promise<void> {
     this.selectedEmployee.set(employee);
     this.syncEmployeeForms(employee);
-    await Promise.all([this.loadCurrentContract(), this.loadContractHistory(0), this.loadEmployeeEvents(0)]);
+    await Promise.all([
+      this.loadCurrentContract(),
+      this.loadContractHistory(0),
+      this.loadEmployeeEvents(0),
+      this.loadCurrentSchedule(),
+      this.loadScheduleHistory(0)
+    ]);
   }
 
   async submitPersonalUpdate(): Promise<void> {
@@ -860,6 +942,7 @@ export class RrhhWorkspaceFacade {
         )
       );
       this.registeredSchedule.set(schedule);
+      this.currentSchedule.set(schedule);
       this.scheduleSuccessMessage.set('Horario registrado correctamente.');
       this.section.set('eventos');
     } catch (error) {
@@ -893,6 +976,320 @@ export class RrhhWorkspaceFacade {
       );
     } finally {
       this.isLoadingEmployeeEvents.set(false);
+    }
+  }
+
+  async loadCurrentSchedule(): Promise<void> {
+    const employee = this.selectedEmployee();
+
+    if (!employee) {
+      this.currentSchedule.set(null);
+      return;
+    }
+
+    this.isLoadingSchedules.set(true);
+    this.scheduleErrorMessage.set('');
+
+    try {
+      const schedule = await this.withTimeout(this.rrhhService.obtenerHorarioVigente(employee.id));
+      this.currentSchedule.set(schedule);
+    } catch (error) {
+      if (error instanceof HttpErrorResponse && error.status === 404) {
+        this.currentSchedule.set(null);
+      } else {
+        this.scheduleErrorMessage.set(
+          this.getErrorMessage(error, 'No se pudo cargar el horario vigente.')
+        );
+      }
+    } finally {
+      this.isLoadingSchedules.set(false);
+    }
+  }
+
+  async loadScheduleHistory(pageNumber = 0): Promise<void> {
+    const employee = this.selectedEmployee();
+
+    if (!employee) {
+      this.scheduleHistoryPage.set(this.emptyPage<HorarioResponse>());
+      return;
+    }
+
+    this.isLoadingSchedules.set(true);
+
+    try {
+      const page = await this.withTimeout(this.rrhhService.listarHistoricoHorarios(employee.id, pageNumber));
+      this.scheduleHistoryPage.set(page);
+    } catch (error) {
+      this.scheduleErrorMessage.set(
+        this.getErrorMessage(error, 'No se pudo cargar el historico de horarios.')
+      );
+    } finally {
+      this.isLoadingSchedules.set(false);
+    }
+  }
+
+  async replaceCurrentSchedule(): Promise<void> {
+    const schedule = this.currentSchedule();
+
+    if (!schedule) {
+      this.scheduleErrorMessage.set('Selecciona un horario vigente antes de reemplazarlo.');
+      return;
+    }
+
+    if (this.horarioForm.invalid) {
+      this.horarioForm.markAllAsTouched();
+      return;
+    }
+
+    this.isUpdatingSchedule.set(true);
+    this.scheduleErrorMessage.set('');
+    this.scheduleSuccessMessage.set('');
+
+    try {
+      const updated = await this.withTimeout(
+        this.rrhhService.reemplazarHorario(schedule.id, {
+          modalidad: schedule.modalidad,
+          fechaInicio: this.horarioForm.controls.fechaInicio.getRawValue(),
+          compensable: this.horarioForm.controls.compensable.getRawValue() === 'true',
+          detalles: this.horarioForm.getRawValue().detalles.map((detalle) => ({
+            dia: detalle.dia,
+            horaEntrada: detalle.horaEntrada,
+            horaSalida: detalle.horaSalida,
+            inicioAlmuerzo: detalle.inicioAlmuerzo,
+            finAlmuerzo: detalle.finAlmuerzo,
+            laborable: detalle.laborable === 'true'
+          }))
+        })
+      );
+      this.currentSchedule.set(updated);
+      this.scheduleSuccessMessage.set('Horario reemplazado correctamente.');
+      await this.loadScheduleHistory(0);
+    } catch (error) {
+      this.scheduleErrorMessage.set(
+        this.getErrorMessage(error, 'No se pudo reemplazar el horario.')
+      );
+    } finally {
+      this.isUpdatingSchedule.set(false);
+    }
+  }
+
+  async finalizeCurrentSchedule(): Promise<void> {
+    const schedule = this.currentSchedule();
+
+    if (!schedule) {
+      return;
+    }
+
+    if (this.finalizeScheduleForm.invalid) {
+      this.finalizeScheduleForm.markAllAsTouched();
+      return;
+    }
+
+    this.isUpdatingSchedule.set(true);
+    this.scheduleErrorMessage.set('');
+    this.scheduleSuccessMessage.set('');
+
+    try {
+      const updated = await this.withTimeout(
+        this.rrhhService.finalizarHorario(schedule.id, this.finalizeScheduleForm.getRawValue())
+      );
+      this.currentSchedule.set(updated);
+      this.scheduleSuccessMessage.set('Horario finalizado correctamente.');
+      await this.loadScheduleHistory(0);
+    } catch (error) {
+      this.scheduleErrorMessage.set(
+        this.getErrorMessage(error, 'No se pudo finalizar el horario.')
+      );
+    } finally {
+      this.isUpdatingSchedule.set(false);
+    }
+  }
+
+  async saveException(): Promise<void> {
+    const schedule = this.currentSchedule();
+
+    if (!schedule) {
+      return;
+    }
+
+    if (this.exceptionForm.invalid) {
+      this.exceptionForm.markAllAsTouched();
+      return;
+    }
+
+    this.isSavingException.set(true);
+    this.scheduleErrorMessage.set('');
+    this.scheduleSuccessMessage.set('');
+
+    try {
+      const raw = this.exceptionForm.getRawValue();
+      const request = {
+        fecha: raw.fecha,
+        tipo: raw.tipo,
+        horaEntrada: raw.horaEntrada || null,
+        horaSalida: raw.horaSalida || null,
+        inicioAlmuerzo: raw.inicioAlmuerzo || null,
+        finAlmuerzo: raw.finAlmuerzo || null,
+        laborable: raw.laborable === 'true',
+        motivo: raw.motivo.trim()
+      };
+
+      if (raw.idExcepcion) {
+        await this.withTimeout(
+          this.rrhhService.actualizarExcepcion(schedule.id, Number(raw.idExcepcion), request)
+        );
+        this.scheduleSuccessMessage.set('Excepcion actualizada correctamente.');
+      } else {
+        await this.withTimeout(this.rrhhService.registrarExcepcion(schedule.id, request));
+        this.scheduleSuccessMessage.set('Excepcion registrada correctamente.');
+      }
+
+      this.resetExceptionForm();
+      await this.loadCurrentSchedule();
+    } catch (error) {
+      this.scheduleErrorMessage.set(
+        this.getErrorMessage(error, 'No se pudo guardar la excepcion.')
+      );
+    } finally {
+      this.isSavingException.set(false);
+    }
+  }
+
+  editException(excepcion: Record<string, unknown>): void {
+    this.exceptionForm.reset({
+      idExcepcion: String(excepcion['id'] ?? ''),
+      fecha: String(excepcion['fecha'] ?? this.getToday()),
+      tipo: String(excepcion['tipo'] ?? 'CAMBIO_TURNO'),
+      horaEntrada: String(excepcion['horaEntrada'] ?? ''),
+      horaSalida: String(excepcion['horaSalida'] ?? ''),
+      inicioAlmuerzo: String(excepcion['inicioAlmuerzo'] ?? ''),
+      finAlmuerzo: String(excepcion['finAlmuerzo'] ?? ''),
+      laborable: String(excepcion['laborable'] ?? true),
+      motivo: String(excepcion['motivo'] ?? '')
+    });
+  }
+
+  async deleteException(idExcepcion: number): Promise<void> {
+    const schedule = this.currentSchedule();
+
+    if (!schedule) {
+      return;
+    }
+
+    this.isDeletingException.set(true);
+    this.scheduleErrorMessage.set('');
+    this.scheduleSuccessMessage.set('');
+
+    try {
+      await this.withTimeout(this.rrhhService.eliminarExcepcion(schedule.id, idExcepcion));
+      this.scheduleSuccessMessage.set('Excepcion eliminada correctamente.');
+      await this.loadCurrentSchedule();
+    } catch (error) {
+      this.scheduleErrorMessage.set(
+        this.getErrorMessage(error, 'No se pudo eliminar la excepcion.')
+      );
+    } finally {
+      this.isDeletingException.set(false);
+    }
+  }
+
+  resetExceptionForm(): void {
+    this.exceptionForm.reset({
+      idExcepcion: '',
+      fecha: this.getToday(),
+      tipo: 'CAMBIO_TURNO',
+      horaEntrada: '09:00',
+      horaSalida: '18:00',
+      inicioAlmuerzo: '13:00',
+      finAlmuerzo: '14:00',
+      laborable: 'true',
+      motivo: ''
+    });
+  }
+
+  async registerPayment(): Promise<void> {
+    const contract = this.currentContract();
+
+    if (!contract) {
+      this.paymentErrorMessage.set('Necesitas un contrato vigente para registrar pago.');
+      return;
+    }
+
+    if (this.paymentForm.invalid) {
+      this.paymentForm.markAllAsTouched();
+      return;
+    }
+
+    this.isRegisteringPayment.set(true);
+    this.paymentErrorMessage.set('');
+    this.paymentSuccessMessage.set('');
+
+    try {
+      await this.withTimeout(this.rrhhService.registrarPago(contract.id, this.buildPaymentRequest()));
+      this.paymentSuccessMessage.set('Pago registrado correctamente.');
+      await this.loadPayments(0);
+    } catch (error) {
+      this.paymentErrorMessage.set(this.getErrorMessage(error, 'No se pudo registrar el pago.'));
+    } finally {
+      this.isRegisteringPayment.set(false);
+    }
+  }
+
+  async loadPayments(pageNumber = 0): Promise<void> {
+    this.isLoadingPayments.set(true);
+    this.paymentErrorMessage.set('');
+
+    try {
+      const raw = this.paymentFilterForm.getRawValue();
+      const page = await this.withTimeout(
+        this.rrhhService.listarPagos(
+          {
+            contrato: raw.contrato ? Number(raw.contrato) : this.currentContract()?.id ?? null,
+            empleado: raw.empleado ? Number(raw.empleado) : this.selectedEmployee()?.id ?? null,
+            desde: raw.desde || null,
+            hasta: raw.hasta || null
+          },
+          pageNumber
+        )
+      );
+      this.paymentsPage.set(page);
+    } catch (error) {
+      this.paymentErrorMessage.set(this.getErrorMessage(error, 'No se pudieron cargar pagos.'));
+    } finally {
+      this.isLoadingPayments.set(false);
+    }
+  }
+
+  async queryCompliance(): Promise<void> {
+    if (this.complianceForm.invalid) {
+      this.complianceForm.markAllAsTouched();
+      return;
+    }
+
+    this.isLoadingCompliance.set(true);
+    this.complianceErrorMessage.set('');
+
+    try {
+      const request = this.buildComplianceRequest();
+      const [resumen, detalle, monitor] = await Promise.all([
+        this.withTimeout(this.rrhhService.consultarCumplimientoResumen(request)),
+        this.withTimeout(this.rrhhService.consultarCumplimientoDetalle(request)),
+        this.withTimeout(
+          this.rrhhService.consultarMonitorEstados({
+            empleadoIds: request.empleadoIds,
+            fecha: this.complianceForm.controls.fechaMonitor.getRawValue() || null
+          })
+        )
+      ]);
+      this.complianceResumen.set(resumen);
+      this.complianceDetalle.set(detalle);
+      this.monitorEstados.set(monitor);
+    } catch (error) {
+      this.complianceErrorMessage.set(
+        this.getErrorMessage(error, 'No se pudo consultar cumplimiento.')
+      );
+    } finally {
+      this.isLoadingCompliance.set(false);
     }
   }
 
@@ -1129,6 +1526,38 @@ export class RrhhWorkspaceFacade {
   private buildCloseContractRequest(): CerrarContratoRequest {
     return {
       fechaFin: this.closeContractForm.controls.fechaFin.getRawValue()
+    };
+  }
+
+  private buildPaymentRequest(): RegistrarPagoRequest {
+    const raw = this.paymentForm.getRawValue();
+
+    return {
+      fechaInicio: raw.fechaInicio || null,
+      fechaFin: raw.fechaFin || null,
+      asignacionFamiliar: Number(raw.asignacionFamiliar),
+      bonoPuntualidad: raw.bonoPuntualidad ? Number(raw.bonoPuntualidad) : null,
+      comisionSemanal: raw.comisionSemanal ? Number(raw.comisionSemanal) : null,
+      comisionMensual: raw.comisionMensual ? Number(raw.comisionMensual) : null,
+      bonoExtra: raw.bonoExtra ? Number(raw.bonoExtra) : null
+    };
+  }
+
+  private buildComplianceRequest() {
+    const raw = this.complianceForm.getRawValue();
+    const employeeIds = raw.empleadoIds
+      .split(',')
+      .map((value) => Number(value.trim()))
+      .filter((value) => Number.isFinite(value) && value > 0);
+
+    if (!employeeIds.length && this.selectedEmployee()) {
+      employeeIds.push(this.selectedEmployee()!.id);
+    }
+
+    return {
+      empleadoIds: employeeIds,
+      desde: raw.desde,
+      hasta: raw.hasta
     };
   }
 

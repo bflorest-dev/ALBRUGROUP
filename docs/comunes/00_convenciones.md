@@ -11,6 +11,7 @@ Cada endpoint documentado tiene un ID estable:
 - `RRHH-XX`: `rrhh-service`
 - `SCH-XX`: `schedule-service`
 - `LEAD-XX`: `lead-service`
+- `GATE-XX`: `gateway-service`
 
 Los documentos por rol deben referenciar estos IDs. No deben copiar el contrato completo del endpoint salvo que una regla del flujo lo necesite.
 
@@ -30,6 +31,7 @@ Defaults conocidos:
 - `recruitment-service`: `sortBy=createdAt`, `direction=asc`.
 - `rrhh-service`: `sortBy=createdAt`, `direction=asc`.
 - `schedule-service`: `sortBy=fechaInicio`, `direction=desc`.
+- `lead-service`: `sortBy=createdAt`, `direction=asc`.
 
 Si un endpoint permite solo ciertos campos de orden, la ficha lo declara.
 

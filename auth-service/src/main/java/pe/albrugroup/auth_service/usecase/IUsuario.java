@@ -18,7 +18,6 @@ public interface IUsuario {
     CredencialesResponse resetPassword(Long empleadoId);
     CredencialesResponse forgotPassword(ForgotPasswordRequest request);
     EstadoAccesoResponse getEstadoAcceso(String username);
-    UsuarioResponse actualizarRolesUsuario(Long usuarioId, PuestoTrabajo puesto);
     UsuarioResponse getUsuarioPorEmpleadoID(Long empleadoId);
     List<UsuarioRolResponse> listarUsuariosActivosPorRol(PuestoTrabajo puestoTrabajo);
     void deshabilitarUsuario(Long empleadoId);

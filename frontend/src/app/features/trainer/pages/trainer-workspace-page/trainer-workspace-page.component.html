@@ -1,0 +1,269 @@
+<section class="trainer-page">
+  <header class="hero">
+    <span class="hero__eyebrow">Capacitador</span>
+    <h2>Seguimiento de capacitacion</h2>
+    <p>Revisa tus grupos abiertos, tipifica resultados y deja postulantes listos para contratacion.</p>
+  </header>
+
+  <nav class="workspace-nav" aria-label="Modulos capacitador">
+    <button
+      type="button"
+      class="workspace-tab"
+      [class.workspace-tab--active]="facade.section() === 'grupos'"
+      (click)="facade.setSection('grupos')"
+    >
+      Mis grupos
+    </button>
+    <button
+      type="button"
+      class="workspace-tab"
+      [class.workspace-tab--active]="facade.section() === 'bandeja'"
+      (click)="facade.setSection('bandeja')"
+    >
+      Bandeja capacitacion
+    </button>
+  </nav>
+
+  <div class="workspace-grid">
+    <section class="panel">
+      @if (facade.section() === 'grupos') {
+        <div class="panel__header">
+          <div>
+            <span class="panel__eyebrow">REC-14</span>
+            <h3>Mis grupos abiertos</h3>
+          </div>
+          <button type="button" class="ghost-button" (click)="facade.loadGroups()">Recargar</button>
+        </div>
+
+        @if (facade.groupsErrorMessage()) {
+          <p class="form-message form-message--error">{{ facade.groupsErrorMessage() }}</p>
+        }
+
+        @if (facade.isLoadingGroups()) {
+          <p class="helper-text">Cargando grupos...</p>
+        } @else if (facade.myGroups().length) {
+          <div class="card-list">
+            @for (group of facade.myGroups(); track group.id) {
+              <article class="group-card" [class.group-card--selected]="facade.selectedGroup()?.id === group.id">
+                <div>
+                  <h4>{{ group.codigo }}</h4>
+                  <p>{{ toLabel(group.turno) }} · {{ group.sala }} · {{ group.fechaInicio }}</p>
+                </div>
+                <div class="meta-grid">
+                  <span><strong>Estado:</strong> {{ toLabel(group.estado) }}</span>
+                  <span><strong>Postulantes:</strong> {{ group.detalles.length }}</span>
+                  <span><strong>Fin:</strong> {{ group.fechaFin || '-' }}</span>
+                </div>
+                <div class="card-actions">
+                  <button type="button" class="primary-button" (click)="facade.openGroup(group.id)">
+                    Abrir grupo
+                  </button>
+                </div>
+              </article>
+            }
+          </div>
+        } @else {
+          <p class="helper-text">No tienes grupos abiertos asignados.</p>
+        }
+      }
+
+      @if (facade.section() === 'bandeja') {
+        <div class="panel__header">
+          <div>
+            <span class="panel__eyebrow">REC-12</span>
+            <h3>Bandeja de capacitacion</h3>
+          </div>
+          <button type="button" class="ghost-button" (click)="facade.loadTrainingBoard()">Recargar</button>
+        </div>
+
+        <div class="filters">
+          <label>
+            <span>Asignacion</span>
+            <select #sinGrupo (change)="facade.setSinGrupoFilter(sinGrupo.value)">
+              <option value="">Todos</option>
+              <option value="false">Con grupo</option>
+              <option value="true">Sin grupo</option>
+            </select>
+          </label>
+        </div>
+
+        @if (facade.trainingErrorMessage()) {
+          <p class="form-message form-message--error">{{ facade.trainingErrorMessage() }}</p>
+        }
+
+        @if (facade.isLoadingTraining()) {
+          <p class="helper-text">Cargando postulantes...</p>
+        } @else if (facade.trainingRows().length) {
+          <div class="card-list">
+            @for (postulacion of facade.trainingRows(); track postulacion.id) {
+              <article class="group-card" [class.group-card--selected]="facade.selectedPostulacion()?.id === postulacion.id">
+                <div>
+                  <h4>{{ postulacion.postulante.nombres }} {{ postulacion.postulante.apellidos }}</h4>
+                  <p>{{ postulacion.postulante.tipoDocumento }} {{ postulacion.postulante.documento }} · {{ postulacion.postulante.celular }}</p>
+                </div>
+                <div class="meta-grid">
+                  <span><strong>Grupo:</strong> {{ postulacion.idGrupoCapacitacion || 'Sin grupo' }}</span>
+                  <span><strong>Oferta:</strong> {{ postulacion.ofertaLaboral.codigo }}</span>
+                  <span><strong>Puesto:</strong> {{ toLabel(postulacion.ofertaLaboral.puestoObjetivo) }}</span>
+                </div>
+                <div class="card-actions">
+                  <button type="button" class="primary-button" (click)="facade.selectPostulacion(postulacion)">
+                    Trabajar postulante
+                  </button>
+                </div>
+              </article>
+            }
+          </div>
+
+          <div class="pagination">
+            <button
+              type="button"
+              class="ghost-button"
+              [disabled]="facade.currentTrainingPage() === 0"
+              (click)="facade.loadTrainingBoard(facade.currentTrainingPage() - 1)"
+            >
+              Anterior
+            </button>
+            <span>Pagina {{ facade.currentTrainingPage() + 1 }} de {{ facade.totalTrainingPages() }}</span>
+            <button
+              type="button"
+              class="ghost-button"
+              [disabled]="facade.currentTrainingPage() + 1 >= facade.totalTrainingPages()"
+              (click)="facade.loadTrainingBoard(facade.currentTrainingPage() + 1)"
+            >
+              Siguiente
+            </button>
+          </div>
+        } @else {
+          <p class="helper-text">No hay postulantes en capacitacion.</p>
+        }
+      }
+    </section>
+
+    <section class="panel">
+      <div class="panel__header">
+        <div>
+          <span class="panel__eyebrow">REC-15 · REC-09</span>
+          <h3>Detalle y tipificacion</h3>
+        </div>
+      </div>
+
+      @if (facade.detailErrorMessage()) {
+        <p class="form-message form-message--error">{{ facade.detailErrorMessage() }}</p>
+      }
+
+      @if (facade.selectedGroup(); as group) {
+        <div class="detail-summary">
+          <h4>{{ group.codigo }}</h4>
+          <p>{{ toLabel(group.turno) }} · {{ group.sala }} · {{ group.fechaInicio }}</p>
+        </div>
+
+        @if (group.detalles.length) {
+          <div class="detail-list">
+            @for (detail of group.detalles; track detail.id) {
+              <button
+                type="button"
+                class="detail-row"
+                [class.detail-row--active]="facade.selectedDetail()?.id === detail.id"
+                (click)="facade.selectDetail(detail)"
+              >
+                <span>{{ detail.postulacion.postulante.nombres }} {{ detail.postulacion.postulante.apellidos }}</span>
+                <strong>{{ toLabel(detail.estadoCapacitacion) }}</strong>
+              </button>
+            }
+          </div>
+        } @else {
+          <p class="helper-text">El grupo no tiene postulantes asignados.</p>
+        }
+      } @else {
+        <p class="helper-text">Selecciona un grupo o postulante para trabajar el seguimiento.</p>
+      }
+
+      @if (facade.selectedPostulacion(); as postulacion) {
+        <div class="typify-box">
+          <h4>{{ postulacion.postulante.nombres }} {{ postulacion.postulante.apellidos }}</h4>
+
+          @if (facade.catalogoErrorMessage()) {
+            <p class="form-message form-message--error">{{ facade.catalogoErrorMessage() }}</p>
+          }
+
+          <form [formGroup]="facade.typifyForm" class="form-grid">
+            <label>
+              <span>Tipificacion</span>
+              <select formControlName="idTipificacion" (change)="facade.resetSubtipificacion()">
+                <option [value]="0">
+                  {{ facade.isLoadingCatalogo() ? 'Cargando catalogo...' : 'Seleccionar tipificacion' }}
+                </option>
+                @for (option of facade.catalogo(); track option.id) {
+                  <option [value]="option.id">{{ option.codigo }}</option>
+                }
+              </select>
+            </label>
+
+            <label>
+              <span>Subtipificacion</span>
+              <select formControlName="idSubtipificacion">
+                <option [value]="0">Seleccionar subtipificacion</option>
+                @for (option of facade.selectedSubtipificaciones(); track option.id) {
+                  <option [value]="option.id">{{ option.codigo }}</option>
+                }
+              </select>
+            </label>
+
+            <label>
+              <span>Modalidad</span>
+              <select formControlName="modalidadContacto">
+                <option value="">No aplica</option>
+                <option value="PRESENCIAL">Presencial</option>
+                <option value="LLAMADA">Llamada</option>
+                <option value="WHATSAPP">WhatsApp</option>
+              </select>
+            </label>
+
+            <label class="field-wide">
+              <span>Observacion</span>
+              <textarea rows="3" formControlName="observacion"></textarea>
+            </label>
+          </form>
+
+          @if (facade.typifyErrorMessage()) {
+            <p class="form-message form-message--error">{{ facade.typifyErrorMessage() }}</p>
+          }
+
+          @if (facade.typifySuccessMessage()) {
+            <p class="form-message form-message--success">{{ facade.typifySuccessMessage() }}</p>
+          }
+
+          <button
+            type="button"
+            class="primary-button"
+            [disabled]="facade.isTypifying() || facade.isLoadingCatalogo()"
+            (click)="facade.submitTypification()"
+          >
+            {{ facade.isTypifying() ? 'Tipificando...' : 'Guardar tipificacion' }}
+          </button>
+        </div>
+
+        <div class="events-box">
+          <h4>Eventos</h4>
+          @if (facade.eventsErrorMessage()) {
+            <p class="form-message form-message--error">{{ facade.eventsErrorMessage() }}</p>
+          }
+          @if (facade.isLoadingEvents()) {
+            <p class="helper-text">Cargando eventos...</p>
+          } @else if (facade.eventos().length) {
+            @for (event of facade.eventos(); track event.id) {
+              <article class="event-item">
+                <strong>{{ toLabel(event.accion) }}</strong>
+                <span>{{ toDate(event.createdAt) }}</span>
+                <p>{{ event.observacion || event.tipificacion || '-' }}</p>
+              </article>
+            }
+          } @else {
+            <p class="helper-text">Sin eventos registrados.</p>
+          }
+        </div>
+      }
+    </section>
+  </div>
+</section>

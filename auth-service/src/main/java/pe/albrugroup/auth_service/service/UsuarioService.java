@@ -229,19 +229,6 @@ public class UsuarioService implements IUsuario {
     }
 
     @Override
-    public UsuarioResponse actualizarRolesUsuario(Long empleadoId, PuestoTrabajo puesto) {
-        log.info("Actualizando roles del usuario ID: {}", empleadoId);
-
-        Usuario usuario = usuarioRepository.findByEmpleadoId(empleadoId)
-                .orElseThrow(() -> new NotFoundException("Usuario no encontrado", empleadoId));
-        Rol rol = obtenerRol(puesto);
-        usuario.setRoles(new HashSet<>(Set.of(rol)));
-
-        log.info("Rol actualizado para el usuario: {}|{}", usuario.getUsername(), rol.getNombre());
-        return Mapper.toResponse(usuario);
-    }
-
-    @Override
     public UsuarioResponse getUsuarioPorEmpleadoID(Long empleadoId) {
         log.info("Buscando usuario por EmpleadoID: {}", empleadoId);
 
