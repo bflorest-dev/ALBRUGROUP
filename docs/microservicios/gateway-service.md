@@ -10,7 +10,7 @@ Documento tecnico de endpoints propios del gateway. No repite rutas proxy hacia 
 - El patron heartbeat aplica a todos los empleados autenticados. Si el frontend no renueva heartbeat, el usuario desaparece de los listados conectados cuando vence el TTL.
 - `GATE-07`, `GATE-08` y `GATE-09` enriquecen presencia Redis con estados de asistencia desde `schedule-service`.
 - Los endpoints de monitoreo aceptan `fecha` opcional. Si no se envia, el calculo queda a criterio del backend integrado.
-- El gateway tambien expone el WebSocket realtime de leads en `/leads/ws/leads`; el contrato funcional esta documentado en `lead-service-realtime.md`.
+- El gateway tambien expone el WebSocket realtime de leads en `/leads/ws/leads`; el contrato funcional esta documentado en `/(docs)/lead-service-realtime`.
 
 ## GATE-01 registrarEmpleadosOnline
 
@@ -107,4 +107,4 @@ Documento tecnico de endpoints propios del gateway. No repite rutas proxy hacia 
 - Uso frontend: escuchar cambios realtime de leads para refrescar bandejas y detalles sin polling manual.
 - Topics principales: `/topic/leads`, `/topic/leads/etapa/{ETAPA}`, `/topic/leads/asesor/{idAsesor}`.
 - Regla: el frontend debe usar el evento como senal de invalidacion y volver a consultar la bandeja o detalle afectado.
-- Contrato completo: ver `lead-service-realtime.md`.
+- Contrato completo: ver `/(docs)/lead-service-realtime`.

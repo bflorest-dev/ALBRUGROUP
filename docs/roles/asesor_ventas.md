@@ -40,10 +40,12 @@ Reglas operativas:
 - `LEAD-34` devuelve leads del asesor autenticado, no de otros asesores.
 - La bandeja se limita a leads pendientes de gestion en preventa.
 - El detalle tambien valida pertenencia al asesor autenticado.
+- Si el frontend implementa realtime, debe suscribirse al menos a `/topic/leads/asesor/{empleadoId}` para refrescar bandeja y detalle cuando el asesor recibe una asignacion o cambia uno de sus leads.
 
 Documentacion tecnica:
 
 - Ver `/(docs)/lead-service`.
+- Ver `/(docs)/lead-service-realtime`.
 
 ## Flujo 2: catalogos para gestionar el lead
 

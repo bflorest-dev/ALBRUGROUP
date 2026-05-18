@@ -1,0 +1,11 @@
+Flujos Operativos del rol CAPACITADOR:
+
+A. Capacitar Postulantes y darles seguimiento (PostulacionController)
+
+1.getCatalogo, debe tener siempre su catalogo de tipificaciones
+2. listarBandejaCapacitacion, debe listar los postulantes y separarlos por su grupos de capacitacion
+3. obtenerGrupo(GrupoCapacitacionController), con esto se puede visualizar mejor los detalles del grupo asignado
+4.listarGrupos(GrupoCapacitacionController), o también listar todos los grupos ABIERTOS y solo visualizar los que tenga asignados a si mismo esa semana
+3. tipificarPostulacion, debe tipificarlo para aprobarlos o desaprobarlos y dejarlos listos para contratacion
+
+

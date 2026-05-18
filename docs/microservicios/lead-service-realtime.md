@@ -9,6 +9,7 @@ Este documento describe la capa WebSocket/STOMP agregada a `lead-service` para q
 - Los eventos se publican despues del commit de la transaccion. Si la operacion falla y no se guarda en BD, no se notifica al frontend.
 - El payload del evento es liviano: sirve para saber que bandejas invalidar o refrescar, no reemplaza necesariamente el detalle completo del lead.
 - `gateway-service` expone la ruta `/leads/ws/leads` y reenvia el trafico WebSocket a `lead-service`.
+- En esta version se valida JWT al conectar, pero no hay autorizacion granular por topic. Esa limitacion se acepta temporalmente.
 
 ## Conexion frontend
 
@@ -103,7 +104,7 @@ El evento se envia a:
 - `/topic/leads/asesor/{idAsesorAsignado}`
 - `/topic/leads/asesor/{idAsesorAnterior}`, si existia un asesor anterior distinto
 
-Caso esperado: si un supervisor o GTR asigna un lead al asesor `15`, el frontend del asesor `15`, suscrito a `/topic/leads/asesor/15`, recibe `ASIGNACION` y debe refrescar su bandeja actual.
+Caso esperado: si cualquier rol con capacidad de asignacion, incluido un administrador, asigna un lead al asesor `15`, el frontend del asesor `15`, suscrito a `/topic/leads/asesor/15`, recibe `ASIGNACION` y debe refrescar su bandeja actual.
 
 Recomendacion frontend:
 
@@ -173,5 +174,6 @@ El evento realtime debe usarse como senal de invalidacion:
 - Si llega un evento para la bandeja activa, volver a consultar el listado paginado actual.
 - Si el usuario esta en detalle del lead afectado, volver a consultar el detalle.
 - Si llega un evento de otra etapa o asesor que no afecta la vista actual, ignorarlo.
+- El frontend no debe asumir que el payload reemplaza la respuesta HTTP final; la fuente de verdad sigue siendo el endpoint REST correspondiente.
 
 Esto mantiene el backend simple y evita que el frontend intente reconstruir localmente todos los filtros, paginacion y reglas de visibilidad.

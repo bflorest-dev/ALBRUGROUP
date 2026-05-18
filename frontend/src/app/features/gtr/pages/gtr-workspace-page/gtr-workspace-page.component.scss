@@ -1,0 +1,306 @@
+.gtr-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.topbar,
+.metrics,
+.workspace,
+.board-head,
+.row,
+.advisor,
+.panel-head,
+.pager {
+  align-items: center;
+  display: flex;
+}
+
+.topbar {
+  justify-content: space-between;
+}
+
+.eyebrow,
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+.eyebrow {
+  color: #2563eb;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+h1 {
+  color: #0f1f33;
+  font-size: 1.7rem;
+  line-height: 1.1;
+}
+
+h2 {
+  color: #17233a;
+  font-size: 1rem;
+}
+
+.topbar span,
+.board-head span,
+.helper,
+.empty,
+small {
+  color: #64748b;
+}
+
+.metrics {
+  gap: 0.75rem;
+  overflow-x: auto;
+}
+
+.metric {
+  background: #ffffff;
+  border: 1px solid #dbe3ed;
+  border-radius: 8px;
+  display: grid;
+  min-width: 150px;
+  padding: 0.85rem;
+}
+
+.metric span {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.metric strong {
+  color: #16243a;
+  font-size: 1.45rem;
+}
+
+.metric--strong {
+  border-color: #2563eb;
+}
+
+.workspace {
+  align-items: start;
+  gap: 1rem;
+}
+
+.side {
+  display: grid;
+  gap: 1rem;
+  width: minmax(300px, 34%);
+  min-width: 300px;
+}
+
+.panel {
+  background: #fff;
+  border: 1px solid #dbe3ed;
+  border-radius: 8px;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+  padding: 1rem;
+}
+
+.form-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+.form-grid h2,
+.form-grid button,
+.wide {
+  grid-column: 1 / -1;
+}
+
+label {
+  color: #475569;
+  display: grid;
+  font-size: 0.78rem;
+  font-weight: 800;
+  gap: 0.3rem;
+}
+
+input,
+select {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #0f172a;
+  min-width: 0;
+  padding: 0.65rem 0.7rem;
+}
+
+button {
+  background: #2563eb;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 0.7rem 0.9rem;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.icon-button {
+  align-items: center;
+  aspect-ratio: 1;
+  display: inline-flex;
+  justify-content: center;
+  padding: 0;
+  width: 2.4rem;
+}
+
+.mini-button {
+  padding: 0.45rem 0.6rem;
+}
+
+.secondary-button,
+.subtle-button {
+  background: #e8eef7;
+  color: #21466f;
+}
+
+.advisors {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.panel-head {
+  justify-content: space-between;
+}
+
+.advisor {
+  gap: 0.65rem;
+}
+
+.advisor div {
+  display: grid;
+}
+
+.dot {
+  background: #cbd5e1;
+  border-radius: 999px;
+  height: 0.65rem;
+  width: 0.65rem;
+}
+
+.dot--on {
+  background: #f59e0b;
+}
+
+.dot--operative {
+  background: #16a34a;
+}
+
+.board {
+  flex: 1;
+  min-width: 0;
+}
+
+.board-head {
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+}
+
+.pager {
+  gap: 0.55rem;
+}
+
+.table {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.row {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  gap: 0.75rem;
+  grid-template-columns: 2rem minmax(8rem, 1fr) minmax(8rem, 1fr) 7rem minmax(8rem, 1fr) 4rem 5.5rem 5rem;
+  min-height: 3.2rem;
+  padding: 0.55rem;
+  transition:
+    background 280ms ease,
+    transform 280ms ease;
+  display: grid;
+}
+
+.row--head {
+  background: transparent;
+  border: 0;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  min-height: auto;
+}
+
+.row--new {
+  animation: enter 420ms ease-out;
+  background: #ecfdf5;
+  border-color: #86efac;
+}
+
+.check {
+  place-items: center;
+}
+
+.badge {
+  background: #e8eef7;
+  border-radius: 999px;
+  color: #21466f;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 0.25rem 0.5rem;
+  text-align: center;
+}
+
+.alert {
+  border-radius: 8px;
+  font-weight: 800;
+  padding: 0.8rem 1rem;
+}
+
+.alert--success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.alert--error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.empty {
+  padding: 1rem;
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@media (max-width: 1100px) {
+  .workspace {
+    display: grid;
+  }
+
+  .side {
+    width: auto;
+  }
+
+  .row {
+    grid-template-columns: 2rem 1fr 1fr;
+  }
+
+  .row span:nth-child(n + 4),
+  .row--head {
+    display: none;
+  }
+}

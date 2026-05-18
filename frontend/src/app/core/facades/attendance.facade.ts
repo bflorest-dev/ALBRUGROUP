@@ -12,6 +12,7 @@ import {
 } from '../../shared/models/schedule/estado-asistencia';
 import { MovimientoAsistenciaRequest } from '../../shared/models/schedule/movimiento-asistencia-request';
 import { AttendanceService } from '../services/attendance.service';
+import { PresenceService } from '../services/presence.service';
 
 type LoadRequest = {
   requestId: number;
@@ -31,7 +32,7 @@ type ActionRequest = {
 type ActionState =
   | { status: 'idle' }
   | { status: 'loading'; requestId: number; actionId: AttendanceActionId }
-  | { status: 'success'; requestId: number; detail: DetalleAsistenciaResponse }
+  | { status: 'success'; requestId: number; actionId: AttendanceActionId; detail: DetalleAsistenciaResponse }
   | { status: 'error'; requestId: number; message: string };
 
 @Injectable({
@@ -40,6 +41,7 @@ type ActionState =
 export class AttendanceFacade {
   private readonly requestTimeoutMs = 15000;
   private readonly attendanceService = inject(AttendanceService);
+  private readonly presenceService = inject(PresenceService);
   private nextRequestId = 1;
   private initialized = false;
 
@@ -91,6 +93,7 @@ export class AttendanceFacade {
             (detail): ActionState => ({
               status: 'success',
               requestId: request.requestId,
+              actionId: request.actionId,
               detail
             })
           ),
@@ -137,6 +140,7 @@ export class AttendanceFacade {
         this.attendanceDetail.set(state.detail);
         this.isLoading.set(false);
         this.errorMessage.set('');
+        void this.syncPresence(state.detail?.estadoActual ?? 'OFFLINE');
         return;
       }
 
@@ -159,6 +163,7 @@ export class AttendanceFacade {
         this.attendanceDetail.set(state.detail);
         this.isLoading.set(false);
         this.errorMessage.set('');
+        void this.syncPresence(state.detail.estadoActual);
         return;
       }
 
@@ -212,6 +217,19 @@ export class AttendanceFacade {
     return {
       fechaHora: this.formatLocalDateTime(new Date())
     };
+  }
+
+  private async syncPresence(status: EstadoAsistencia): Promise<void> {
+    if (this.shouldHavePresence(status)) {
+      await this.presenceService.start();
+      return;
+    }
+
+    await this.presenceService.offline();
+  }
+
+  private shouldHavePresence(status: EstadoAsistencia): boolean {
+    return status !== 'OFFLINE';
   }
 
   private formatLocalDateTime(date: Date): string {

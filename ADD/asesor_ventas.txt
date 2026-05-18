@@ -1,0 +1,22 @@
+Flujos Operativos del rol ASESOR_VENTAS:
+
+A. Gestionar LEADS de manera individual, solo los que les hayan asignado(PreventaController)
+
+1. listarBandejaAsesorVentas
+1.2 listarPlanes(PlanController)
+1.3 listarPromociones(PromocionComercialController)
+1.4 getCatalogo(TipificacionController)
+1.5 listarZonas (ZonaController)
+1.6 listar departamentos, listar provincias, listas distritos (UbigeoController)
+
+2. obtenerDetalleAsesor
+
+3. registrarContactoLead, cuando el asesor usa un botón lo que comunica mediante una llamada telefónica con este endpoint registraremos el evento de la llamada
+
+COMPLETAR la informar del LEAD según lo posible:
+
+4. actualizarDatosPreventa
+5. actualizarDireccion
+6. actualizarOfertaComercial
+
+7. tipificarLead

@@ -26,3 +26,7 @@ spring:
 logging:
   level:
     org.springframework.cloud.gateway: INFO
+
+app:
+  cors:
+    allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:${FRONTEND_URL}}

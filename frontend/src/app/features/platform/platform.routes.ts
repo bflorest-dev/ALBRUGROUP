@@ -2,7 +2,9 @@ import { Routes } from '@angular/router';
 import { roleGuard } from '../../core/guards/role.guard';
 import { AdminDashboardPageComponent } from '../admin/pages/admin-dashboard-page/admin-dashboard-page.component';
 import { AdminEmployabilityPageComponent } from '../admin/pages/admin-employability-page/admin-employability-page.component';
+import { AsesorVentasWorkspacePageComponent } from '../asesor-ventas/pages/asesor-ventas-workspace-page/asesor-ventas-workspace-page.component';
 import { CommunityWorkspacePageComponent } from '../community/pages/community-workspace-page/community-workspace-page.component';
+import { GtrWorkspacePageComponent } from '../gtr/pages/gtr-workspace-page/gtr-workspace-page.component';
 import { PostulantesBoardPageComponent } from '../recruiter/pages/postulantes-board-page/postulantes-board-page.component';
 import { TrainingGroupsPageComponent } from '../recruiter/pages/training-groups-page/training-groups-page.component';
 import { RrhhPostulantesPageComponent } from '../rrhh/pages/rrhh-postulantes-page/rrhh-postulantes-page.component';
@@ -89,20 +91,18 @@ export const PLATFORM_ROUTES: Routes = [
   },
   {
     path: 'gtr',
-    component: RolePlatformPageComponent,
+    component: GtrWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ASESOR_GTR', 'SUPERVISOR_GTR'],
-      title: 'GTR Platform'
+      roles: ['ASESOR_GTR', 'SUPERVISOR_GTR']
     }
   },
   {
     path: 'asesor-ventas',
-    component: RolePlatformPageComponent,
+    component: AsesorVentasWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ASESOR_VENTAS'],
-      title: 'ASESOR VENTAS Platform'
+      roles: ['ASESOR_VENTAS']
     }
   },
   {

@@ -1,6 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { Inject, Injectable } from '@angular/core';
 import { STORAGE_KEYS } from '../constants/storage.constants';
+import { PresenceService } from './presence.service';
 import { SessionService } from './session.service';
 
 type ActiveTabsRegistry = Record<string, number>;
@@ -16,6 +17,7 @@ export class BrowserSessionService {
 
   constructor(
     @Inject(DOCUMENT) private readonly document: Document,
+    private readonly presenceService: PresenceService,
     private readonly sessionService: SessionService
   ) {}
 
@@ -36,6 +38,7 @@ export class BrowserSessionService {
     }
 
     this.startHeartbeat();
+    void this.presenceService.start();
 
     window.addEventListener('beforeunload', this.handleTabClose);
     window.addEventListener('pagehide', this.handleTabClose);

@@ -1,0 +1,200 @@
+<section class="gtr-page">
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">GTR</p>
+      <h1>Bandeja diaria de preventa</h1>
+      <span>{{ facade.today }} &middot; orden lastEntryAt desc</span>
+    </div>
+    <button
+      type="button"
+      class="icon-button"
+      title="Actualizar"
+      [disabled]="facade.isLoading()"
+      (click)="facade.initialize()"
+    >
+      <i class="ti ti-refresh"></i>
+    </button>
+  </header>
+
+  <section class="metrics">
+    <article class="metric metric--strong">
+      <span>Total diario</span>
+      <strong>{{ facade.totalElements() }}</strong>
+    </article>
+    @for (state of facade.stateCounts(); track state[0]) {
+      <article class="metric">
+        <span>{{ state[0] }}</span>
+        <strong>{{ state[1] }}</strong>
+      </article>
+    } @empty {
+      <article class="metric">
+        <span>Estados</span>
+        <strong>0</strong>
+      </article>
+    }
+  </section>
+
+  @if (facade.successMessage()) {
+    <p class="alert alert--success">{{ facade.successMessage() }}</p>
+  }
+  @if (facade.errorMessage()) {
+    <p class="alert alert--error">{{ facade.errorMessage() }}</p>
+  }
+
+  <section class="workspace">
+    <aside class="side">
+      <form class="panel form-grid" [formGroup]="facade.intakeForm" (ngSubmit)="facade.submitIntake()">
+        <h2>Ingreso lead</h2>
+        <label><span>Prefijo</span><input type="text" formControlName="prefijo" /></label>
+        <label><span>Numero</span><input type="text" formControlName="lead" /></label>
+        <label>
+          <span>Campana</span>
+          <select formControlName="idCampana">
+            <option [ngValue]="0">Seleccionar</option>
+            @for (campana of facade.campanas(); track campana.id) {
+              <option [ngValue]="campana.id">
+                {{ campana.nombre }} &middot; {{ facade.display(campana.nombreProveedor) }}
+              </option>
+            }
+          </select>
+        </label>
+        <label>
+          <span>Base</span>
+          <select formControlName="base">
+            <option value="WHATSAPP">WHATSAPP</option>
+            <option value="MESSENGER">MESSENGER</option>
+            <option value="RECONTACTO">RECONTACTO</option>
+            <option value="PREDICTIVO">PREDICTIVO</option>
+            <option value="REFERIDO">REFERIDO</option>
+            <option value="MASIVO">MASIVO</option>
+          </select>
+        </label>
+        <button type="submit" [disabled]="facade.isSaving()">Registrar</button>
+      </form>
+
+      <form class="panel form-grid" [formGroup]="facade.snapshotForm" (ngSubmit)="facade.saveSnapshot()">
+        <h2>Snapshot inicial</h2>
+        @if (facade.selectedSnapshotLead(); as lead) {
+          <p class="wide helper">Lead {{ lead.prefijo }} {{ lead.lead }}</p>
+        } @else {
+          <p class="wide helper">Selecciona un lead de la bandeja para completar documento o direccion.</p>
+        }
+        <label class="wide">
+          <span>Documento titular</span>
+          <input type="text" formControlName="numeroDocumentoTitularServicio" />
+        </label>
+        <label class="wide">
+          <span>Direccion detectada</span>
+          <input type="text" formControlName="direccion" />
+        </label>
+        <button type="submit" [disabled]="facade.isSavingSnapshot()">Guardar snapshot</button>
+        <button type="button" class="secondary-button" (click)="facade.cancelSnapshot()">Limpiar</button>
+      </form>
+
+      <form class="panel form-grid" [formGroup]="facade.assignmentForm">
+        <h2>Asignacion</h2>
+        <label class="wide">
+          <span>Asesor ventas</span>
+          <select formControlName="idAsesorAsignado">
+            <option [ngValue]="0">Seleccionar asesor</option>
+            @for (advisor of facade.advisors(); track advisor.empleadoId) {
+              <option [ngValue]="advisor.empleadoId">
+                {{ advisor.nombreCompleto }} &middot;
+                {{ advisor.operativo ? 'Operativo' : advisor.connected ? 'Conectado no operativo' : 'Sin presencia' }}
+              </option>
+            }
+          </select>
+        </label>
+        <button type="button" [disabled]="facade.isSaving() || facade.selectedCount() === 0" (click)="facade.assignSelected()">
+          Asignar seleccion ({{ facade.selectedCount() }})
+        </button>
+      </form>
+
+      <section class="panel advisors">
+        <div class="panel-head">
+          <h2>Asesores disponibles</h2>
+          <button type="button" class="icon-button subtle-button" title="Actualizar asesores" (click)="facade.refreshAdvisors()">
+            <i class="ti ti-refresh"></i>
+          </button>
+        </div>
+        @for (advisor of facade.advisors(); track advisor.empleadoId) {
+          <article class="advisor">
+            <span [class.dot--on]="advisor.connected" [class.dot--operative]="advisor.operativo" class="dot"></span>
+            <div>
+              <strong>{{ advisor.nombreCompleto }}</strong>
+              <small>
+                {{ advisor.disponibilidad || 'SIN_PRESENCIA' }} &middot;
+                {{ advisor.operativo ? 'operativo' : advisor.connected ? 'conectado no operativo' : 'sin presencia' }}
+              </small>
+            </div>
+          </article>
+        } @empty {
+          <p class="helper">No hay asesores activos.</p>
+        }
+      </section>
+    </aside>
+
+    <section class="panel board">
+      <div class="board-head">
+        <div>
+          <h2>Bandeja diaria</h2>
+          <span>{{ facade.isReconciling() ? 'Sincronizando en segundo plano' : 'REST como fuente de verdad' }}</span>
+        </div>
+        <div class="pager">
+          <button
+            type="button"
+            class="icon-button"
+            title="Anterior"
+            [disabled]="facade.pageNumber() === 0"
+            (click)="facade.previousPage()"
+          >
+            <i class="ti ti-chevron-left"></i>
+          </button>
+          <strong>{{ facade.pageNumber() + 1 }} / {{ facade.totalPages() || 1 }}</strong>
+          <button
+            type="button"
+            class="icon-button"
+            title="Siguiente"
+            [disabled]="facade.pageNumber() + 1 >= facade.totalPages()"
+            (click)="facade.nextPage()"
+          >
+            <i class="ti ti-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="table">
+        <div class="row row--head">
+          <span></span>
+          <span>Lead</span>
+          <span>Campana</span>
+          <span>Estado</span>
+          <span>Asesor</span>
+          <span>Ingreso</span>
+          <span>Snapshot</span>
+          <span></span>
+        </div>
+        @for (row of facade.rows(); track row.id) {
+          <div class="row" [class.row--new]="row.isNew">
+            <label class="check">
+              <input
+                type="checkbox"
+                [checked]="facade.isSelected(row.id)"
+                (change)="facade.toggleSelection(row.id, $any($event.target).checked)"
+              />
+            </label>
+            <strong>{{ row.prefijo }} {{ row.lead }}</strong>
+            <span>{{ facade.display(row.nombreCampana) }}</span>
+            <span class="badge">{{ facade.display(row.estadoSeguimiento) }}</span>
+            <span>{{ facade.display(row.nombreAsesorAsignado) }}</span>
+            <span>{{ row.createdAt | date: 'HH:mm' }}</span>
+            <button type="button" class="mini-button secondary-button" (click)="facade.beginSnapshot(row)">Snapshot</button>
+            <button type="button" class="mini-button" [disabled]="facade.isSaving()" (click)="facade.assignOne(row)">Asignar</button>
+          </div>
+        } @empty {
+          <p class="empty">{{ facade.isLoading() ? 'Cargando bandeja...' : 'No hay leads para hoy.' }}</p>
+        }
+      </div>
+    </section>
+  </section>
+</section>

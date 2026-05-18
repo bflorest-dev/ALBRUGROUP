@@ -41,10 +41,12 @@ Reglas operativas:
 - `LEAD-46` es la vista general de leads en `VENTA`.
 - `LEAD-48` asigna el lead al backoffice autenticado.
 - Una vez tomado, otro backoffice ya no puede apropiarse del mismo lead en ese ciclo.
+- Si el frontend implementa realtime, conviene suscribirse a `/topic/leads/etapa/VENTA` para invalidar la bandeja general cuando cambia la disponibilidad de un lead.
 
 Documentacion tecnica:
 
 - Ver `/(docs)/lead-service`.
+- Ver `/(docs)/lead-service-realtime`.
 
 ## Flujo 2: mis leads de venta
 
@@ -60,10 +62,12 @@ Reglas operativas:
 
 - El backend valida `idAsesorAsignado` contra el usuario autenticado para detalle e historial.
 - Si el lead no esta asignado al backoffice actual, el detalle o eventos no deben abrirse.
+- El frontend puede suscribirse tambien a `/topic/leads/asesor/{empleadoId}` para refrescar la bandeja propia y el detalle cuando cambia un lead asignado al backoffice autenticado.
 
 Documentacion tecnica:
 
 - Ver `/(docs)/lead-service`.
+- Ver `/(docs)/lead-service-realtime`.
 
 ## Flujo 3: contacto y correcciones
 

@@ -52,10 +52,12 @@ Reglas operativas:
 - `LEAD-44` es un endpoint de supervision, no de gestion individual.
 - Cuando no se envian asesores, el backend resume todos los asesores considerados en el corte.
 - Este endpoint sirve para decidir en que bandejas entrar, no para editar leads.
+- Si el frontend implementa realtime, conviene suscribirse a `/topic/leads/etapa/PREVENTA` y tratar cada evento como senal para refrescar resumen y bandejas abiertas de supervision.
 
 Documentacion tecnica:
 
 - Ver `/(docs)/lead-service`.
+- Ver `/(docs)/lead-service-realtime`.
 
 ## Flujo 2: bandeja por asesor
 

@@ -1,0 +1,155 @@
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable } from 'rxjs';
+import { API_CONSTANTS } from '../../../core/constants/api.constants';
+import { UsuarioResponse } from '../../../shared/models/auth/usuario-response';
+import {
+  AdicionalResponse,
+  CampanaResponse,
+  CatalogoResponse,
+  LeadAsignacionMasivaRequest,
+  LeadAsignacionMasivaResponse,
+  LeadAsignacionRequest,
+  LeadAsesorVentasResponse,
+  LeadDatosPreventaRequest,
+  LeadDetalleResponse,
+  LeadDireccionRequest,
+  LeadGtrResponse,
+  LeadIntakeRequest,
+  LeadSnapshotsRequest,
+  LeadOfertaComercialRequest,
+  LeadPage,
+  LeadTipificacionRequest,
+  PageQuery,
+  PlanResponse,
+  PromocionComercialResponse,
+  UbigeoItem,
+  ZonaResponse
+} from '../../../shared/models/preventa/preventa.models';
+
+@Injectable({ providedIn: 'root' })
+export class PreventaLeadService {
+  private readonly http = inject(HttpClient);
+  private readonly leadUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads`;
+  private readonly authUrl = `${API_CONSTANTS.gatewayBaseUrl}${API_CONSTANTS.authBasePath}`;
+
+  listarBandejaGtr(fecha: string, query: PageQuery): Observable<LeadPage<LeadGtrResponse>> {
+    return this.http.get<LeadPage<LeadGtrResponse>>(`${this.leadUrl}/preventa/gtr`, {
+      params: this.pageParams(query).set('fecha', fecha)
+    });
+  }
+
+  registrarIngresoLead(request: LeadIntakeRequest): Observable<void> {
+    return this.http.post<void>(`${this.leadUrl}/preventa/intake`, request);
+  }
+
+  actualizarSnapshotsLead(idLead: number, request: LeadSnapshotsRequest): Observable<void> {
+    return this.http.patch<void>(`${this.leadUrl}/preventa/${idLead}/snapshots`, request);
+  }
+
+  asignarLead(idLead: number, request: LeadAsignacionRequest): Observable<void> {
+    return this.http.patch<void>(`${this.leadUrl}/preventa/${idLead}/asignacion`, request);
+  }
+
+  asignarLeads(request: LeadAsignacionMasivaRequest): Observable<LeadAsignacionMasivaResponse> {
+    return this.http.patch<LeadAsignacionMasivaResponse>(`${this.leadUrl}/preventa/asignacion-masiva`, request);
+  }
+
+  listarBandejaAsesorVentas(query: PageQuery): Observable<LeadPage<LeadAsesorVentasResponse>> {
+    return this.http.get<LeadPage<LeadAsesorVentasResponse>>(`${this.leadUrl}/preventa/asesor-ventas`, {
+      params: this.pageParams(query)
+    });
+  }
+
+  obtenerDetalleAsesor(idLead: number): Observable<LeadDetalleResponse> {
+    return this.http.get<LeadDetalleResponse>(`${this.leadUrl}/preventa/${idLead}/detalle-asesor`);
+  }
+
+  registrarContacto(idLead: number): Observable<void> {
+    return this.http.post<void>(`${this.leadUrl}/preventa/${idLead}/contacto`, {});
+  }
+
+  actualizarDatosPreventa(idLead: number, request: LeadDatosPreventaRequest): Observable<void> {
+    return this.http.patch<void>(`${this.leadUrl}/preventa/${idLead}/datos-preventa`, request);
+  }
+
+  actualizarDireccion(idLead: number, request: LeadDireccionRequest): Observable<void> {
+    return this.http.patch<void>(`${this.leadUrl}/preventa/${idLead}/direccion`, request);
+  }
+
+  actualizarOfertaComercial(idLead: number, request: LeadOfertaComercialRequest): Observable<void> {
+    return this.http.patch<void>(`${this.leadUrl}/preventa/${idLead}/oferta-comercial`, request);
+  }
+
+  tipificarLead(idLead: number, request: LeadTipificacionRequest): Observable<void> {
+    return this.http.post<void>(`${this.leadUrl}/preventa/${idLead}/tipificacion`, request);
+  }
+
+  getCatalogoTipificaciones(etapa: string): Observable<CatalogoResponse> {
+    return this.http.get<CatalogoResponse>(`${this.leadUrl}/tipificaciones/${etapa}/catalogo`);
+  }
+
+  listarCampanasActivas(): Observable<CampanaResponse[]> {
+    return this.http.get<CampanaResponse[]>(`${this.leadUrl}/campanas`, {
+      params: new HttpParams().set('activo', true)
+    });
+  }
+
+  listarPlanes(idProveedor?: number, soloVigentes = true): Observable<PlanResponse[]> {
+    let params = new HttpParams().set('soloVigentes', soloVigentes);
+    if (idProveedor) {
+      params = params.set('idProveedor', idProveedor);
+    }
+    return this.http.get<PlanResponse[]>(`${this.leadUrl}/planes`, { params });
+  }
+
+  listarPromociones(filters: { idProveedor?: number; idZona?: number; idPlan?: number }): Observable<PromocionComercialResponse[]> {
+    let params = new HttpParams();
+    if (filters.idProveedor) {
+      params = params.set('idProveedor', filters.idProveedor);
+    }
+    if (filters.idZona) {
+      params = params.set('idZona', filters.idZona);
+    }
+    if (filters.idPlan) {
+      params = params.set('idPlan', filters.idPlan);
+    }
+    return this.http.get<PromocionComercialResponse[]>(`${this.leadUrl}/promociones`, { params });
+  }
+
+  listarAdicionales(idProveedor: number): Observable<AdicionalResponse[]> {
+    return this.http.get<AdicionalResponse[]>(`${this.leadUrl}/planes/adicionales`, {
+      params: new HttpParams().set('idProveedor', idProveedor)
+    });
+  }
+
+  listarZonasActivas(): Observable<ZonaResponse[]> {
+    return this.http.get<ZonaResponse[]>(`${this.leadUrl}/zonas`, {
+      params: new HttpParams().set('activo', true)
+    });
+  }
+
+  listarDepartamentos(): Observable<UbigeoItem[]> {
+    return this.http.get<UbigeoItem[]>(`${this.leadUrl}/ubigeo/departamentos`);
+  }
+
+  listarProvincias(idDepartamento: number): Observable<UbigeoItem[]> {
+    return this.http.get<UbigeoItem[]>(`${this.leadUrl}/ubigeo/departamentos/${idDepartamento}/provincias`);
+  }
+
+  listarDistritos(idProvincia: number): Observable<UbigeoItem[]> {
+    return this.http.get<UbigeoItem[]>(`${this.leadUrl}/ubigeo/provincias/${idProvincia}/distritos`);
+  }
+
+  listarUsuariosActivosPorRol(puestoTrabajo: string): Observable<UsuarioResponse[]> {
+    return this.http.get<UsuarioResponse[]>(`${this.authUrl}/roles/${puestoTrabajo}/usuarios`);
+  }
+
+  private pageParams(query: PageQuery): HttpParams {
+    return new HttpParams()
+      .set('pageNumber', query.pageNumber)
+      .set('pageSize', query.pageSize)
+      .set('sortBy', query.sortBy)
+      .set('direction', query.direction);
+  }
+}

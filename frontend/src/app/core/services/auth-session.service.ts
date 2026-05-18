@@ -12,6 +12,7 @@ import {
   throwError
 } from 'rxjs';
 import { AuthService } from '../../features/auth/services/auth.service';
+import { PresenceService } from './presence.service';
 import { TokenService } from './token.service';
 import { SessionService } from './session.service';
 
@@ -22,6 +23,7 @@ export class AuthSessionService {
   private readonly authService = inject(AuthService);
   private readonly tokenService = inject(TokenService);
   private readonly sessionService = inject(SessionService);
+  private readonly presenceService = inject(PresenceService);
   private readonly router = inject(Router);
   private refreshInFlight$: Observable<string> | null = null;
 
@@ -60,6 +62,8 @@ export class AuthSessionService {
     const refreshToken = this.tokenService.getRefreshToken();
 
     try {
+      await this.presenceService.offline();
+
       if (refreshToken) {
         await firstValueFrom(
           this.authService.logout({ refreshToken }).pipe(

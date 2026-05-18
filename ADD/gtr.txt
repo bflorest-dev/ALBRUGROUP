@@ -1,0 +1,23 @@
+Flujos Operativos del rol GTR:
+
+A. Crear y asignar LEADS, para ello primero debe tener ciertos listados ya listos: 
+
+1. listarCampanas
+2. getCatalogo
+3. listarProveedores
+
+CREAR LEAD:
+
+4. registrarIngresoLead, Registrar un Lead, independientemente si es nuevo o ya esté registrado
+5. actualizarSnapshotsLead, Enriqueser un Lead solo con la información puntual que podria detectar si el Lead es válido para seguir en el proceso de recopilar información
+6.listarBandejaGtr, Listar los Leads registrados y para gestionar Leads del día
+7. listarAgendadosGtr, Listar los Leads tipificados como AGENDADOS para que puedan ser asignados nuevamente
+
+ASIGNAR UN LEAD:
+
+8. asignarLead, Asignar un Lead a un asesor de ventas
+9. asignarLeads, Asignar una seleccion multiple de Leads a un asesor de ventas
+10. obtenerDetalleAsesor, Ver detalle de un Lead
+
+
+GESTIONAR UN LEAD: El GTR también puede cumplir con todo lo que puede hacer un ASESOR_VENTAS, es decir puede hacer todo el proceso también, asi que la documentación debe indicarlo.

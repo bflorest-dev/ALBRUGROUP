@@ -137,10 +137,12 @@ Reglas operativas:
 - Si `fecha` no se envia, backend usa fecha actual.
 - La bandeja GTR es para control y asignacion, no necesariamente para editar datos completos.
 - Para gestionar como asesor, GTR debe tener el lead asignado a su propio `empleadoId`.
+- Si el frontend implementa realtime, conviene suscribirse a `/topic/leads/etapa/PREVENTA` y usar cada evento como senal para refrescar la bandeja GTR o los agendados visibles.
 
 Documentacion tecnica:
 
 - Ver `/(docs)/lead-service`.
+- Ver `/(docs)/lead-service-realtime`.
 
 ## Flujo 5: leads agendados
 
@@ -157,10 +159,12 @@ Reglas operativas:
 - Los agendados vienen de tipificaciones previas de preventa.
 - `horaProgramada` solo existe para tipificacion `AGENDADO`.
 - Reasignar limpia tipificacion/subtipificacion y vuelve el lead a `ASIGNADO`.
+- Si la vista de agendados esta abierta, un evento realtime de `PREVENTA` debe invalidar el listado actual para detectar reasignaciones o salidas de la bandeja.
 
 Documentacion tecnica:
 
 - Ver `/(docs)/lead-service`.
+- Ver `/(docs)/lead-service-realtime`.
 
 ## Flujo 6: asignacion de leads
 
