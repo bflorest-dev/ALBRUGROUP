@@ -31,6 +31,8 @@ export interface ConnectedStatusResponse {
   conectado: boolean;
 }
 
+export type DisponibilidadOperativa = 'DISPONIBLE' | 'GESTIONANDO' | 'OCUPADO' | 'SATURADO';
+
 @Injectable({ providedIn: 'root' })
 export class PresenceService {
   private readonly http = inject(HttpClient);
@@ -92,6 +94,10 @@ export class PresenceService {
     } finally {
       this.online = false;
     }
+  }
+
+  async actualizarDisponibilidad(disponibilidad: DisponibilidadOperativa): Promise<void> {
+    await firstValueFrom(this.http.patch<void>(`${this.baseUrl}/presence/disponibilidad/${disponibilidad}`, {}));
   }
 
   listarAsesoresConectadosGtr(fecha?: string): import('rxjs').Observable<AsesorGtrPresenceResponse[]> {

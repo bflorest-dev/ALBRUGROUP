@@ -33,6 +33,7 @@ import pe.albrugroup.lead_service.entity.response.LeadPromocionDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorVentasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
+import pe.albrugroup.lead_service.entity.response.LeadGtrMetricasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 import pe.albrugroup.lead_service.entity.response.InternetResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPostventaResponse;
@@ -94,7 +95,9 @@ public class LeadService {
 
     private static final String TIPIFICACION_AGENDADO = "AGENDADO";
     private static final String TIPIFICACION_SCORE_PREVENTA = "SCORE_PREVENTA";
+    private static final String TIPIFICACION_PREVENTA_COMPLETA = "PREVENTA_COMPLETA";
     private static final String SUBTIPIFICACION_PREVENTA = "PREVENTA";
+    private static final String SUBTIPIFICACION_VENTA_CERRADA = "VENTA_CERRADA";
     private static final List<Accion> ACCIONES_GESTION_LEAD = List.of(Accion.CONTACTO, Accion.TIPIFICACION);
     private static final Set<String> LEAD_GTR_SORT_FIELDS = Set.of(
             "lastEntryAt", "createdAt", "lead", "nombreAsesorAsignado", "estado"
@@ -122,6 +125,41 @@ public class LeadService {
                 paginationService.toPageable(pageRequest, LEAD_GTR_SORT_FIELDS)
         ).map(this::normalizarLeadGtr);
         return PageResponse.from(leads);
+    }
+
+    public LeadGtrMetricasResponse obtenerMetricasGtr(LocalDate fecha) {
+        LocalDate fechaTrabajo = fecha == null ? LocalDate.now(ZoneId.systemDefault()) : fecha;
+        Instant inicioDia = fechaTrabajo.atStartOfDay(ZoneId.systemDefault()).toInstant();
+        Instant finDia = fechaTrabajo.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+
+        long nuevos = leadRepository.countByEtapaAndEstadoAndLastEntryAtGreaterThanEqualAndLastEntryAtLessThan(
+                Etapa.PREVENTA,
+                EstadoSeguimiento.NUEVO,
+                inicioDia,
+                finDia
+        );
+        long sinGestionar = leadRepository.countByEtapaAndEstadoAndLastEntryAtGreaterThanEqualAndLastEntryAtLessThan(
+                Etapa.PREVENTA,
+                EstadoSeguimiento.ASIGNADO,
+                inicioDia,
+                finDia
+        );
+        long gestionados = eventoRepository.contarGestionadosGtr(
+                Etapa.PREVENTA,
+                ACCIONES_GESTION_LEAD,
+                TIPIFICACION_PREVENTA_COMPLETA,
+                inicioDia,
+                finDia
+        );
+        long preventas = eventoRepository.contarPreventasGtr(
+                Accion.TIPIFICACION,
+                TIPIFICACION_PREVENTA_COMPLETA,
+                SUBTIPIFICACION_VENTA_CERRADA,
+                inicioDia,
+                finDia
+        );
+
+        return new LeadGtrMetricasResponse(nuevos, sinGestionar, gestionados, preventas);
     }
 
     public PageResponse<LeadAgendadoGtrResponse> listarAgendadosGtr(PageRequest pageRequest) {

@@ -15,6 +15,7 @@ import {
   LeadDetalleResponse,
   LeadDireccionRequest,
   LeadGtrResponse,
+  LeadGtrMetricasResponse,
   LeadIntakeRequest,
   LeadSnapshotsRequest,
   LeadOfertaComercialRequest,
@@ -36,6 +37,12 @@ export class PreventaLeadService {
   listarBandejaGtr(fecha: string, query: PageQuery): Observable<LeadPage<LeadGtrResponse>> {
     return this.http.get<LeadPage<LeadGtrResponse>>(`${this.leadUrl}/preventa/gtr`, {
       params: this.pageParams(query).set('fecha', fecha)
+    });
+  }
+
+  obtenerMetricasGtr(fecha: string): Observable<LeadGtrMetricasResponse> {
+    return this.http.get<LeadGtrMetricasResponse>(`${this.leadUrl}/preventa/gtr/metricas`, {
+      params: new HttpParams().set('fecha', fecha)
     });
   }
 

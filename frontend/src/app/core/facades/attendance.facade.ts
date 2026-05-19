@@ -12,7 +12,8 @@ import {
 } from '../../shared/models/schedule/estado-asistencia';
 import { MovimientoAsistenciaRequest } from '../../shared/models/schedule/movimiento-asistencia-request';
 import { AttendanceService } from '../services/attendance.service';
-import { PresenceService } from '../services/presence.service';
+import { DisponibilidadOperativa, PresenceService } from '../services/presence.service';
+import { SessionService } from '../services/session.service';
 
 type LoadRequest = {
   requestId: number;
@@ -42,6 +43,7 @@ export class AttendanceFacade {
   private readonly requestTimeoutMs = 15000;
   private readonly attendanceService = inject(AttendanceService);
   private readonly presenceService = inject(PresenceService);
+  private readonly sessionService = inject(SessionService);
   private nextRequestId = 1;
   private initialized = false;
 
@@ -222,6 +224,7 @@ export class AttendanceFacade {
   private async syncPresence(status: EstadoAsistencia): Promise<void> {
     if (this.shouldHavePresence(status)) {
       await this.presenceService.start();
+      await this.syncSalesAdvisorDisponibilidad(status);
       return;
     }
 
@@ -230,6 +233,36 @@ export class AttendanceFacade {
 
   private shouldHavePresence(status: EstadoAsistencia): boolean {
     return status !== 'OFFLINE';
+  }
+
+  private async syncSalesAdvisorDisponibilidad(status: EstadoAsistencia): Promise<void> {
+    if (this.sessionService.getSession()?.primaryRole !== 'ASESOR_VENTAS') {
+      return;
+    }
+
+    const disponibilidad = this.resolveDisponibilidadFromAttendance(status);
+    if (!disponibilidad) {
+      return;
+    }
+
+    try {
+      await this.presenceService.actualizarDisponibilidad(disponibilidad);
+    } catch {
+      // La presencia puede expirar entre el cambio de asistencia y el PATCH; el proximo heartbeat la recupera.
+    }
+  }
+
+  private resolveDisponibilidadFromAttendance(status: EstadoAsistencia): DisponibilidadOperativa | null {
+    switch (status) {
+      case 'ONLINE':
+        return 'DISPONIBLE';
+      case 'ALMUERZO':
+      case 'SERVICIOS':
+      case 'CAPACITACION':
+        return 'OCUPADO';
+      default:
+        return null;
+    }
   }
 
   private formatLocalDateTime(date: Date): string {

@@ -63,10 +63,16 @@
             <h2>{{ lead.prefijo }} {{ lead.lead }}</h2>
             <span>{{ display(lead.nombreTitular) }} &middot; {{ display(lead.nombreCampana) }} &middot; {{ display(lead.estadoSeguimiento) }}</span>
           </div>
-          <button type="button" [disabled]="isSaving()" (click)="registrarContacto()">
-            <i class="ti ti-phone-call"></i>
-            Contactar
-          </button>
+          <div class="detail-actions">
+            <button type="button" [disabled]="isSaving()" (click)="registrarLlamada()">
+              <i class="ti ti-phone-call"></i>
+              Llamar
+            </button>
+            <button type="button" [disabled]="isSaving()" (click)="registrarChat()">
+              <i class="ti ti-brand-whatsapp"></i>
+              Chat
+            </button>
+          </div>
         </section>
 
         <section class="forms">

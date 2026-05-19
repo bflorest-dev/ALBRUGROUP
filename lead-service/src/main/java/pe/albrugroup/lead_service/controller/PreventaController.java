@@ -50,6 +50,15 @@ public class PreventaController {
         var leads = leadService.listarBandejaGtr(fecha, pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
+    // 2.1. Metricas acumuladas del dia para la operacion GTR
+    @GetMapping("/gtr/metricas") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
+    public ResponseEntity<LeadGtrMetricasResponse> obtenerMetricasGtr(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
+    ) {
+        var metricas = leadService.obtenerMetricasGtr(fecha);
+        return ResponseEntity.status(HttpStatus.OK).body(metricas);
+    }
     // 3. Asignar un Lead a un asesor de ventas
     @PatchMapping("/{idLead}/asignacion") @PreAuthorize("hasAuthority('ASSIGN_LEADS')")
     public ResponseEntity<Void> asignarLead(

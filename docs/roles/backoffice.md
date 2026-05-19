@@ -42,6 +42,8 @@ Reglas operativas:
 - `LEAD-48` asigna el lead al backoffice autenticado.
 - Una vez tomado, otro backoffice ya no puede apropiarse del mismo lead en ese ciclo.
 - Si el frontend implementa realtime, conviene suscribirse a `/topic/leads/etapa/VENTA` para invalidar la bandeja general cuando cambia la disponibilidad de un lead.
+- La bandeja general debe refrescar cuando un lead entra a `VENTA`, reingresa a `VENTA`, es tomado por un backoffice o sale de `VENTA`.
+- La bandeja general no necesita refrescar por contacto o ediciones sobre un lead ya tomado, porque ese lead ya no forma parte de esta vista.
 
 Documentacion tecnica:
 
@@ -62,7 +64,8 @@ Reglas operativas:
 
 - El backend valida `idAsesorAsignado` contra el usuario autenticado para detalle e historial.
 - Si el lead no esta asignado al backoffice actual, el detalle o eventos no deben abrirse.
-- El frontend puede suscribirse tambien a `/topic/leads/asesor/{empleadoId}` para refrescar la bandeja propia y el detalle cuando cambia un lead asignado al backoffice autenticado.
+- El frontend puede suscribirse tambien a `/topic/leads/asesor/{empleadoId}` para refrescar la bandeja propia, el detalle y el historial cuando cambia un lead asignado al backoffice autenticado.
+- La bandeja propia debe refrescar cuando el lead entra por toma/asignacion, cambia por contacto o edicion, se tipifica o sale de `VENTA`.
 
 Documentacion tecnica:
 
@@ -85,6 +88,7 @@ Reglas operativas:
 - El contacto solo se permite en estados `ASIGNADO` o `EN_GESTION`.
 - Corregir datos y direccion registra eventos de actualizacion.
 - El backend siempre valida que el lead este asignado al backoffice autenticado.
+- Si el detalle o historial del lead estan abiertos, conviene refrescarlos ante `CONTACTO`, `DATOS_PREVENTA_ACTUALIZADOS` y `DIRECCION_ACTUALIZADA`.
 
 Documentacion tecnica:
 
@@ -106,6 +110,7 @@ Reglas operativas:
 - En el ciclo actual de `VENTA`, la oferta comercial solo puede actualizarse una vez.
 - Un segundo intento responde conflicto.
 - La promocion interna requiere plan y debe aplicar al plan seleccionado.
+- Si el detalle o historial del lead estan abiertos, conviene refrescarlos tambien ante `OFERTA_COMERCIAL_ACTUALIZADA`.
 
 Documentacion tecnica:
 
@@ -128,6 +133,7 @@ Reglas operativas:
 - Para pasar a `POSTVENTA`, el backend exige `fechaInstalacion`, plan seleccionado y proveedor con cortes de facturacion configurados.
 - Si cambia de etapa, se limpia la asignacion del backoffice.
 - El evento de tipificacion guarda tambien la `fechaInstalacion` cuando aplica.
+- Si el lead sale de `VENTA`, debe desaparecer de la bandeja propia y dejar de estar visible en la bandeja general de venta.
 
 Documentacion tecnica:
 

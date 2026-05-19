@@ -120,10 +120,16 @@ small {
   margin-bottom: 1rem;
 }
 
+.detail-actions,
 .detail-head button {
   align-items: center;
   display: inline-flex;
   gap: 0.45rem;
+}
+
+.detail-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .forms {

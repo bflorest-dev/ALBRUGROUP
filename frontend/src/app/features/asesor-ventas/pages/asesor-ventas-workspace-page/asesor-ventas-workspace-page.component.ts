@@ -1,8 +1,11 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription, firstValueFrom } from 'rxjs';
+import { AttendanceFacade } from '../../../../core/facades/attendance.facade';
+import { DisponibilidadOperativa, PresenceService } from '../../../../core/services/presence.service';
 import { SessionService } from '../../../../core/services/session.service';
+import { EstadoAsistencia } from '../../../../shared/models/schedule/estado-asistencia';
 import {
   AdicionalResponse,
   CatalogoResponse,
@@ -26,11 +29,14 @@ type VisualLeadAsesor = LeadAsesorVentasResponse & { isNew?: boolean };
 })
 export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   private readonly fb = inject(NonNullableFormBuilder);
+  private readonly attendanceFacade = inject(AttendanceFacade);
+  private readonly presenceService = inject(PresenceService);
   private readonly sessionService = inject(SessionService);
   private readonly preventaService = inject(PreventaLeadService);
   private readonly realtimeService = inject(LeadRealtimeService);
   private readonly realtimeSubscription = new Subscription();
   private readonly newRowTimers = new Map<number, number>();
+  private readonly saturationThreshold = 10;
 
   protected readonly isLoading = signal(false);
   protected readonly isReconciling = signal(false);
@@ -47,6 +53,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly planes = signal<PlanResponse[]>([]);
   protected readonly promociones = signal<PromocionComercialResponse[]>([]);
   protected readonly adicionales = signal<AdicionalResponse[]>([]);
+  protected readonly isManagingLead = signal(false);
 
   protected readonly datosForm = this.fb.group({
     tipoDocumento: ['DNI', [Validators.required]],
@@ -99,6 +106,15 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     const codigo = this.tipificacionForm.controls.codigoTipificacion.value;
     return this.catalogo()?.tipificaciones.find((tipificacion) => tipificacion.codigo === codigo)?.subtipificaciones ?? [];
   });
+
+  constructor() {
+    effect(() => {
+      this.attendanceFacade.currentStatus();
+      this.totalElements();
+      this.isManagingLead();
+      void this.syncDisponibilidadOperativa();
+    });
+  }
 
   ngOnInit(): void {
     void this.initialize();
@@ -161,15 +177,26 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     }
   }
 
-  protected async registrarContacto(): Promise<void> {
+  protected async registrarLlamada(): Promise<void> {
+    await this.registrarContactoOperativo('Llamada registrada.');
+  }
+
+  protected async registrarChat(): Promise<void> {
+    await this.registrarContactoOperativo('Chat registrado.');
+  }
+
+  private async registrarContactoOperativo(successMessage: string): Promise<void> {
     const detail = this.detail();
     if (!detail) {
       return;
     }
     await this.saveAction(
       () => this.preventaService.registrarContacto(detail.id),
-      'Contacto registrado.',
-      () => this.reconcile(detail.id)
+      successMessage,
+      async () => {
+        this.isManagingLead.set(true);
+        await this.reconcile(detail.id);
+      }
     );
   }
 
@@ -233,7 +260,10 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
           horaProgramada: raw.horaProgramada || null
         }),
       'Lead tipificado.',
-      () => this.reconcile(detail.id)
+      async () => {
+        this.isManagingLead.set(false);
+        await this.reconcile(detail.id);
+      }
     );
   }
 
@@ -409,6 +439,45 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     } finally {
       this.isSaving.set(false);
     }
+  }
+
+  private async syncDisponibilidadOperativa(): Promise<void> {
+    const disponibilidad = this.resolveDisponibilidadOperativa();
+    if (!disponibilidad) {
+      return;
+    }
+
+    try {
+      await this.presenceService.actualizarDisponibilidad(disponibilidad);
+    } catch {
+      // La presencia puede no estar lista durante el arranque o haber expirado entre heartbeats.
+    }
+  }
+
+  private resolveDisponibilidadOperativa(): DisponibilidadOperativa | null {
+    const status = this.attendanceFacade.currentStatus();
+
+    if (status === 'OFFLINE') {
+      return null;
+    }
+
+    if (this.isBusyAttendanceStatus(status)) {
+      return 'OCUPADO';
+    }
+
+    if (this.totalElements() >= this.saturationThreshold) {
+      return 'SATURADO';
+    }
+
+    if (this.isManagingLead()) {
+      return 'GESTIONANDO';
+    }
+
+    return 'DISPONIBLE';
+  }
+
+  private isBusyAttendanceStatus(status: EstadoAsistencia): boolean {
+    return status === 'ALMUERZO' || status === 'SERVICIOS' || status === 'CAPACITACION';
   }
 
   private parseAdditionals(value: string): { idAdicional: number; cantidad: number }[] | null {

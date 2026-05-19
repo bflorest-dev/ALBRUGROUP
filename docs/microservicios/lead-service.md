@@ -381,6 +381,7 @@ Servicio responsable del flujo comercial de leads y de los catalogos operativos 
 - Query params: paginacion comun.
 - Orden permitido: `lastEntryAt`, `createdAt`, `lead`, `nombreAsesorAsignado`, `estado`.
 - Uso frontend: bandeja general de leads en etapa `VENTA`.
+- Realtime sugerido: escuchar `/topic/leads/etapa/VENTA` y refrescar solo cuando cambia la disponibilidad del lead en la etapa, por ejemplo entrada a `VENTA`, toma/asignacion o salida hacia otra etapa.
 
 ## LEAD-47 listarLeadsVentaAsignados
 
@@ -389,6 +390,7 @@ Servicio responsable del flujo comercial de leads y de los catalogos operativos 
 - Query params: paginacion comun.
 - Orden permitido: `lastEntryAt`, `createdAt`, `lead`, `estado`.
 - Uso frontend: listar leads de venta asignados al backoffice autenticado.
+- Realtime sugerido: escuchar `/topic/leads/asesor/{empleadoId}` para refrescar la bandeja propia cuando el lead entra, cambia durante la gestion o sale de `VENTA`.
 
 ## LEAD-48 tomarLeadVenta
 
@@ -396,6 +398,7 @@ Servicio responsable del flujo comercial de leads y de los catalogos operativos 
 - Permiso: `ASSIGN_LEADS`.
 - Uso frontend: permitir que un backoffice se asigne a si mismo un lead de venta.
 - Reglas: el lead debe estar disponible en etapa `VENTA`; si otro backoffice ya lo tomo o el lead ya no esta disponible, responde conflicto.
+- Evento realtime: publica `ASIGNACION`; la bandeja general debe remover el lead y la bandeja propia del backoffice debe incorporarlo.
 
 ## LEAD-49 registrarContactoLeadVenta
 
@@ -403,6 +406,7 @@ Servicio responsable del flujo comercial de leads y de los catalogos operativos 
 - Permiso: `CONTACT_LEADS`.
 - Uso frontend: registrar contacto operativo en etapa `VENTA`.
 - Reglas: valida que el lead pertenezca al backoffice autenticado y que este en estado `ASIGNADO` o `EN_GESTION`.
+- Evento realtime: publica `CONTACTO`; conviene refrescar bandeja propia, detalle e historial del lead, pero no la bandeja general si el lead ya estaba tomado.
 
 ## LEAD-50 obtenerDetalleLeadVenta
 
@@ -410,6 +414,7 @@ Servicio responsable del flujo comercial de leads y de los catalogos operativos 
 - Permiso: `READ_LEADS_VENTA`.
 - Uso frontend: ver detalle del lead de venta asignado al backoffice autenticado.
 - Regla: la lectura real valida `idAsesorAsignado` y etapa `VENTA`.
+- Realtime sugerido: si el detalle visible coincide con `idLead`, refrescar ante `ASIGNACION`, `CONTACTO`, `DATOS_PREVENTA_ACTUALIZADOS`, `DIRECCION_ACTUALIZADA`, `OFERTA_COMERCIAL_ACTUALIZADA` o `TIPIFICACION`.
 
 ## LEAD-51 listarEventosLeadVenta
 
@@ -418,6 +423,7 @@ Servicio responsable del flujo comercial de leads y de los catalogos operativos 
 - Query params: paginacion comun.
 - Uso frontend: historial de eventos del lead en venta.
 - Regla: el backend solo lo permite para el lead asignado al backoffice autenticado.
+- Realtime sugerido: si el historial visible coincide con `idLead`, refrescar ante cualquier evento operativo del lead, como `ASIGNACION`, `CONTACTO`, actualizaciones o `TIPIFICACION`.
 
 ## LEAD-52 actualizarDatosPreventaVenta
 
@@ -426,6 +432,7 @@ Servicio responsable del flujo comercial de leads y de los catalogos operativos 
 - Body: mismo contrato que `LEAD-36`.
 - Uso frontend: corregir o completar datos personales del lead en etapa `VENTA`.
 - Efecto: registra evento de actualizacion.
+- Evento realtime: publica `DATOS_PREVENTA_ACTUALIZADOS`; conviene refrescar bandeja propia, detalle e historial del lead.
 
 ## LEAD-53 actualizarDireccionVenta
 
@@ -434,6 +441,7 @@ Servicio responsable del flujo comercial de leads y de los catalogos operativos 
 - Body: mismo contrato que `LEAD-37`.
 - Uso frontend: corregir o completar direccion del lead en etapa `VENTA`.
 - Efecto: registra evento de actualizacion.
+- Evento realtime: publica `DIRECCION_ACTUALIZADA`; conviene refrescar bandeja propia, detalle e historial del lead.
 
 ## LEAD-54 actualizarOfertaComercialVenta
 
@@ -443,6 +451,7 @@ Servicio responsable del flujo comercial de leads y de los catalogos operativos 
 - Uso frontend: ajustar la oferta comercial en etapa `VENTA`.
 - Regla: en el ciclo actual de `VENTA`, solo se permite una actualizacion de oferta comercial; un segundo intento responde conflicto.
 - Efecto: registra evento de actualizacion comercial.
+- Evento realtime: publica `OFERTA_COMERCIAL_ACTUALIZADA`; conviene refrescar bandeja propia, detalle e historial del lead.
 
 ## LEAD-55 tipificarLeadVenta
 
@@ -452,3 +461,4 @@ Servicio responsable del flujo comercial de leads y de los catalogos operativos 
 - Uso frontend: tipificar leads en etapa `VENTA`.
 - Reglas: usa catalogo de `VENTA`; si la subtipificacion mueve a `POSTVENTA`, se exige `fechaInstalacion`, plan seleccionado y proveedor con cortes de facturacion configurados.
 - Efecto: si cambia de etapa, limpia asignacion y tipificaciones de venta; registra evento de tipificacion.
+- Evento realtime: publica `TIPIFICACION`; si el lead sale de `VENTA`, la bandeja propia debe removerlo y la bandeja general solo debe refrescarse si la disponibilidad de la etapa cambia.

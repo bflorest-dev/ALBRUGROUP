@@ -12,6 +12,7 @@ import { UsuarioResponse } from '../../../shared/models/auth/usuario-response';
 import {
   CampanaResponse,
   LeadGtrResponse,
+  LeadGtrMetricasResponse,
   PageQuery
 } from '../../../shared/models/preventa/preventa.models';
 import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
@@ -25,8 +26,12 @@ type AdvisorOption = {
   connected: boolean;
   operativo: boolean;
   disponibilidad?: string | null;
+  estadoSchedule?: string | null;
+  esperadoHoy?: boolean;
   lastSeen?: string | null;
 };
+
+type GtrDialog = 'lead' | 'snapshot' | 'assign' | null;
 
 type LoadError = {
   label: string;
@@ -51,13 +56,21 @@ export class GtrWorkspaceFacade {
   readonly successMessage = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
   readonly rows = signal<VisualLeadGtr[]>([]);
-  readonly metricRows = signal<LeadGtrResponse[]>([]);
+  readonly metrics = signal<LeadGtrMetricasResponse>({
+    nuevos: 0,
+    sinGestionar: 0,
+    gestionados: 0,
+    preventas: 0
+  });
   readonly totalElements = signal(0);
   readonly totalPages = signal(0);
   readonly pageNumber = signal(0);
   readonly selectedIds = signal<Set<number>>(new Set());
   readonly advisors = signal<AdvisorOption[]>([]);
   readonly campanas = signal<CampanaResponse[]>([]);
+  readonly activeDialog = signal<GtrDialog>(null);
+  readonly activeAssignmentLead = signal<LeadGtrResponse | null>(null);
+  readonly advisorsPanelOpen = signal(false);
 
   readonly intakeForm = this.fb.group({
     prefijo: ['+51', [Validators.required, Validators.pattern(/^\+\d{2,3}$/)]],
@@ -76,13 +89,14 @@ export class GtrWorkspaceFacade {
     direccion: ['']
   });
 
-  readonly stateCounts = computed(() => {
-    const seed: Record<string, number> = {};
-    for (const row of this.metricRows()) {
-      const key = row.estadoSeguimiento ?? 'SIN_ESTADO';
-      seed[key] = (seed[key] ?? 0) + 1;
-    }
-    return Object.entries(seed).sort(([left], [right]) => left.localeCompare(right));
+  readonly metricCards = computed(() => {
+    const metrics = this.metrics();
+    return [
+      { label: 'Nuevos', value: metrics.nuevos, tone: 'blue' },
+      { label: 'Sin Gestionar', value: metrics.sinGestionar, tone: 'amber' },
+      { label: 'Gestionados', value: metrics.gestionados, tone: 'green' },
+      { label: 'Preventas', value: metrics.preventas, tone: 'violet' }
+    ];
   });
 
   readonly selectedCount = computed(() => this.selectedIds().size);
@@ -150,6 +164,7 @@ export class GtrWorkspaceFacade {
       await firstValueFrom(this.preventaService.registrarIngresoLead(this.intakeForm.getRawValue()));
       this.intakeForm.controls.lead.reset('');
       this.successMessage.set('Lead ingresado. Completa snapshot desde la fila cuando aplique.');
+      this.activeDialog.set(null);
       await this.reconcile();
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo ingresar el lead.'));
@@ -164,6 +179,33 @@ export class GtrWorkspaceFacade {
       numeroDocumentoTitularServicio: '',
       direccion: ''
     });
+  }
+
+  openNewLead(): void {
+    this.activeDialog.set('lead');
+  }
+
+  openSnapshot(row: LeadGtrResponse): void {
+    this.beginSnapshot(row);
+    this.activeDialog.set('snapshot');
+  }
+
+  openAssignment(row?: LeadGtrResponse): void {
+    this.activeAssignmentLead.set(row ?? null);
+    this.activeDialog.set('assign');
+  }
+
+  closeDialog(): void {
+    this.activeDialog.set(null);
+    this.activeAssignmentLead.set(null);
+  }
+
+  toggleAdvisorsPanel(): void {
+    this.advisorsPanelOpen.update((isOpen) => !isOpen);
+  }
+
+  closeAdvisorsPanel(): void {
+    this.advisorsPanelOpen.set(false);
   }
 
   cancelSnapshot(): void {
@@ -195,6 +237,7 @@ export class GtrWorkspaceFacade {
       );
       this.successMessage.set('Snapshot inicial actualizado.');
       this.cancelSnapshot();
+      this.closeDialog();
       await this.reconcile();
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo actualizar el snapshot.'));
@@ -224,6 +267,7 @@ export class GtrWorkspaceFacade {
         })
       );
       this.successMessage.set(`Lead ${row.lead} asignado a ${advisor.nombreCompleto}.`);
+      this.closeDialog();
       await this.reconcile();
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo asignar el lead.'));
@@ -259,6 +303,7 @@ export class GtrWorkspaceFacade {
       this.successMessage.set(
         `Asignacion masiva: ${response.totalAsignados} asignados, ${response.totalFallidos} fallidos.`
       );
+      this.closeDialog();
       await this.reconcile();
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo completar la asignacion masiva.'));
@@ -310,6 +355,8 @@ export class GtrWorkspaceFacade {
           nombreCompleto: user.nombreCompleto,
           connected: !!presence,
           operativo: monitor?.operativo ?? false,
+          estadoSchedule: monitor?.estadoSchedule ?? null,
+          esperadoHoy: monitor?.esperadoHoy ?? false,
           disponibilidad: monitor?.disponibilidad ?? presence?.disponibilidad,
           lastSeen: monitor?.lastSeen ?? presence?.lastSeen
         };
@@ -359,6 +406,31 @@ export class GtrWorkspaceFacade {
     return String(value);
   }
 
+  advisorDotClass(advisor: AdvisorOption): string {
+    switch (advisor.disponibilidad) {
+      case 'DISPONIBLE':
+        return 'dot--available';
+      case 'GESTIONANDO':
+        return 'dot--working';
+      case 'OCUPADO':
+        return 'dot--busy';
+      case 'SATURADO':
+        return 'dot--saturated';
+      default:
+        return advisor.connected ? 'dot--connected' : 'dot--offline';
+    }
+  }
+
+  async submitAssignment(): Promise<void> {
+    const row = this.activeAssignmentLead();
+    if (row) {
+      await this.assignOne(row);
+      return;
+    }
+
+    await this.assignSelected();
+  }
+
   private async ensureAdvisorConnected(advisor: AdvisorOption): Promise<boolean> {
     try {
       const status = await firstValueFrom(this.presenceService.estaConectado(advisor.empleadoId));
@@ -383,7 +455,7 @@ export class GtrWorkspaceFacade {
     this.advisors.update((advisors) =>
       advisors.map((advisor) =>
         advisor.empleadoId === empleadoId
-          ? { ...advisor, connected: false, operativo: false, disponibilidad: 'SIN_PRESENCIA' }
+          ? { ...advisor, connected: false, operativo: false, disponibilidad: 'SIN_PRESENCIA', estadoSchedule: 'OFFLINE' }
           : advisor
       )
     );
@@ -464,9 +536,7 @@ export class GtrWorkspaceFacade {
   }
 
   private async refreshMetrics(): Promise<void> {
-    const page = await firstValueFrom(this.preventaService.listarBandejaGtr(this.today, this.currentQuery(100)));
-    this.metricRows.set(page.content);
-    this.totalElements.set(page.totalElements);
+    this.metrics.set(await firstValueFrom(this.preventaService.obtenerMetricasGtr(this.today)));
   }
 
   private async refreshCampanas(): Promise<void> {

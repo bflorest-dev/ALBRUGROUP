@@ -71,6 +71,13 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             Pageable pageable
     );
 
+    long countByEtapaAndEstadoAndLastEntryAtGreaterThanEqualAndLastEntryAtLessThan(
+            Etapa etapa,
+            EstadoSeguimiento estado,
+            Instant inicioDia,
+            Instant finDia
+    );
+
     @Query("""
             SELECT l
             FROM Lead l

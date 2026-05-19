@@ -42,22 +42,24 @@ public class PresenceService {
 
     public Mono<Void> registrarEmpleadoOnline(AuthenticatedUser user) {
         String employeeId = String.valueOf(user.empleadoId());
-        EmployeePresence presence = EmployeePresence.builder()
-                .empleadoId(user.empleadoId())
-                .username(user.username())
-                .nombreCompleto(user.nombreCompleto())
-                .roles(user.roles())
-                .status("ONLINE")
-                .disponibilidad(Disponibilidad.DISPONIBLE)
-                .lastSeen(Instant.now())
-                .build();
-
         return presenceRedisTemplate.opsForValue()
                 .get(PresenceKeys.employeeKey(user.empleadoId()))
                 .defaultIfEmpty(EmployeePresence.builder().roles(List.of()).build())
                 .flatMap(existingPresence -> {
                     Set<String> previousRoles = new HashSet<>(safeRoles(existingPresence.getRoles()));
                     Set<String> currentRoles = new HashSet<>(safeRoles(user.roles()));
+                    Disponibilidad disponibilidad = existingPresence.getDisponibilidad() == null
+                            ? Disponibilidad.DISPONIBLE
+                            : existingPresence.getDisponibilidad();
+                    EmployeePresence presence = EmployeePresence.builder()
+                            .empleadoId(user.empleadoId())
+                            .username(user.username())
+                            .nombreCompleto(user.nombreCompleto())
+                            .roles(user.roles())
+                            .status("ONLINE")
+                            .disponibilidad(disponibilidad)
+                            .lastSeen(Instant.now())
+                            .build();
 
                     Mono<Boolean> employeeWrite = presenceRedisTemplate.opsForValue()
                             .set(PresenceKeys.employeeKey(user.empleadoId()), presence, ttl);

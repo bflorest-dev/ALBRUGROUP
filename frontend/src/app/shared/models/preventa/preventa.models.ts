@@ -44,6 +44,13 @@ export interface LeadAsesorVentasResponse {
   estadoSeguimiento?: EstadoSeguimiento | string | null;
 }
 
+export interface LeadGtrMetricasResponse {
+  nuevos: number;
+  sinGestionar: number;
+  gestionados: number;
+  preventas: number;
+}
+
 export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   lastEntryAt?: string | null;
   nombreCampana?: string | null;

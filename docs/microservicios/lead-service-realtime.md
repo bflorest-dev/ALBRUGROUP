@@ -156,6 +156,69 @@ Cuando ingresa o reingresa un lead, se publica `REGISTRO`.
 
 Las bandejas GTR o vistas de entrada pueden suscribirse al topic de etapa para refrescar listados del dia.
 
+## Cobertura recomendada para VENTA
+
+La etapa `VENTA` tiene dos bandejas principales y dos vistas derivadas:
+
+- bandeja general `GET /venta`
+- bandeja propia `GET /venta/asignados`
+- detalle `GET /venta/{idLead}/detalle-asesor`
+- historial `GET /venta/{idLead}/eventos`
+
+### Bandeja general `GET /venta`
+
+Esta vista representa disponibilidad en etapa `VENTA`, no gestion activa. Conviene escuchar `/topic/leads/etapa/VENTA`.
+
+Refrescar cuando:
+
+- llega un lead a `VENTA` desde `PREVENTA` u otra etapa;
+- un lead disponible es tomado y deja de estar libre;
+- un lead sale de `VENTA`, por ejemplo hacia `POSTVENTA`;
+- un lead reingresa a `VENTA` y vuelve a quedar disponible.
+
+Ignorar cuando:
+
+- llega `CONTACTO` sobre un lead ya tomado;
+- llegan `DATOS_PREVENTA_ACTUALIZADOS`, `DIRECCION_ACTUALIZADA` u `OFERTA_COMERCIAL_ACTUALIZADA` sobre un lead ya asignado;
+- llega una actualizacion de un lead de otro asesor que no cambia disponibilidad en la bandeja general.
+
+### Bandeja propia `GET /venta/asignados`
+
+Esta vista representa los leads asignados al backoffice autenticado. Conviene escuchar `/topic/leads/asesor/{empleadoId}`.
+
+Refrescar cuando:
+
+- el backoffice toma un lead y este entra a su bandeja;
+- un lead ya asignado al backoffice cambia estado por `CONTACTO`;
+- un lead ya asignado recibe `DATOS_PREVENTA_ACTUALIZADOS`, `DIRECCION_ACTUALIZADA` u `OFERTA_COMERCIAL_ACTUALIZADA`;
+- un lead ya asignado se tipifica y permanece en `VENTA`;
+- un lead ya asignado sale de `VENTA` y debe desaparecer de la bandeja;
+- una reasignacion futura cambia el propietario del lead.
+
+### Detalle `GET /venta/{idLead}/detalle-asesor`
+
+Si el usuario tiene abierto el detalle del mismo `idLead`, volver a consultar cuando llegue cualquiera de estos eventos:
+
+- `ASIGNACION`
+- `CONTACTO`
+- `DATOS_PREVENTA_ACTUALIZADOS`
+- `DIRECCION_ACTUALIZADA`
+- `OFERTA_COMERCIAL_ACTUALIZADA`
+- `TIPIFICACION`
+
+### Historial `GET /venta/{idLead}/eventos`
+
+Si el usuario tiene abierto el historial del mismo `idLead`, volver a consultar cuando llegue un evento que registre movimiento operativo:
+
+- `ASIGNACION`
+- `CONTACTO`
+- `DATOS_PREVENTA_ACTUALIZADOS`
+- `DIRECCION_ACTUALIZADA`
+- `OFERTA_COMERCIAL_ACTUALIZADA`
+- `TIPIFICACION`
+
+Esto aplica porque esas operaciones registran evento en backend y pueden cambiar tanto la trazabilidad como la lectura del caso actual.
+
 ## Ruta gateway-service
 
 `gateway-service` tiene una ruta especifica para WebSocket:

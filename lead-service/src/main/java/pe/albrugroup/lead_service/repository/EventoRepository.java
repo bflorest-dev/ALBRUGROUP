@@ -136,6 +136,40 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     );
 
     @Query("""
+            SELECT COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            WHERE e.etapa = :etapa
+              AND e.accion IN :acciones
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt < :fechaHasta
+              AND (e.tipificacion IS NULL OR e.tipificacion <> :tipificacionPreventaCompleta)
+            """)
+    long contarGestionadosGtr(
+            @Param("etapa") Etapa etapa,
+            @Param("acciones") Collection<Accion> acciones,
+            @Param("tipificacionPreventaCompleta") String tipificacionPreventaCompleta,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta
+    );
+
+    @Query("""
+            SELECT COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            WHERE e.accion = :accion
+              AND e.tipificacion = :tipificacion
+              AND e.subtipificacion = :subtipificacion
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt < :fechaHasta
+            """)
+    long contarPreventasGtr(
+            @Param("accion") Accion accion,
+            @Param("tipificacion") String tipificacion,
+            @Param("subtipificacion") String subtipificacion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta
+    );
+
+    @Query("""
             SELECT e.idActor AS idAsesor,
                    e.nombreActor AS nombreAsesor,
                    p.id AS idProveedor,
