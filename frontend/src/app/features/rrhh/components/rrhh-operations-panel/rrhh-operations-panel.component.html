@@ -1,9 +1,9 @@
-@if (mode === 'horarios') {
+@if (mode === 'asistencia') {
   <section class="panel">
     <div class="panel__header">
       <div>
-        <span class="panel__eyebrow">SCH-10 a SCH-17</span>
-        <h3>Horarios administrativos</h3>
+        <span class="panel__eyebrow">Administración de horarios</span>
+        <h3>Asistencia y horarios</h3>
       </div>
       <button type="button" class="ghost-button" (click)="reloadCurrentSchedule.emit()">Recargar</button>
     </div>
@@ -18,7 +18,6 @@
     @if (currentSchedule; as schedule) {
       <div class="summary-card">
         <div class="meta-grid">
-          <span><strong>ID:</strong> {{ schedule.id }}</span>
           <span><strong>Modalidad:</strong> {{ toLabel(schedule.modalidad) }}</span>
           <span><strong>Inicio:</strong> {{ schedule.fechaInicio }}</span>
           <span><strong>Fin:</strong> {{ schedule.fechaFin || 'Vigente' }}</span>
@@ -138,7 +137,6 @@
         @for (schedule of scheduleHistory; track schedule.id) {
           <article class="summary-card">
             <div class="meta-grid">
-              <span><strong>ID:</strong> {{ schedule.id }}</span>
               <span><strong>Inicio:</strong> {{ schedule.fechaInicio }}</span>
               <span><strong>Fin:</strong> {{ schedule.fechaFin || 'Vigente' }}</span>
               <span><strong>Modalidad:</strong> {{ toLabel(schedule.modalidad) }}</span>
@@ -149,6 +147,63 @@
         <p class="helper-text">Sin historico para mostrar.</p>
       }
     </section>
+
+    <section class="subpanel">
+      <div class="panel__header">
+        <div>
+          <span class="panel__eyebrow">Cumplimiento</span>
+          <h4>Cumplimiento y tardanzas</h4>
+        </div>
+      </div>
+
+      <form [formGroup]="complianceForm" class="form-grid">
+        <label class="field-wide"><span>Empleados a consultar</span><input type="text" formControlName="empleadoIds" /></label>
+        <app-date-field label="Desde" formControlName="desde" />
+        <app-date-field label="Hasta" formControlName="hasta" />
+        <app-date-field label="Fecha monitor" formControlName="fechaMonitor" />
+      </form>
+
+      @if (complianceErrorMessage) {
+        <p class="form-message form-message--error">{{ complianceErrorMessage }}</p>
+      }
+
+      <div class="actions">
+        <button type="button" class="primary-button" [disabled]="isLoadingCompliance" (click)="queryCompliance.emit()">
+          Consultar cumplimiento
+        </button>
+      </div>
+
+      @if (monitorEstados.length) {
+        <section class="subpanel">
+          <h4>Monitor operativo</h4>
+          <div class="card-list">
+            @for (estado of monitorEstados; track estado.idEmpleado) {
+              <article class="summary-card">
+                <div class="meta-grid">
+                  <span><strong>Estado:</strong> {{ toLabel(estado.estadoActual || '-') }}</span>
+                  <span><strong>Horario:</strong> {{ estado.tieneHorarioVigente ? 'Si' : 'No' }}</span>
+                  <span><strong>Operativo:</strong> {{ estado.operativo ? 'Si' : 'No' }}</span>
+                </div>
+              </article>
+            }
+          </div>
+        </section>
+      }
+
+      @if (complianceResumen) {
+        <section class="subpanel">
+          <h4>Resumen</h4>
+          <pre>{{ complianceResumen | json }}</pre>
+        </section>
+      }
+
+      @if (complianceDetalle) {
+        <section class="subpanel">
+          <h4>Detalle</h4>
+          <pre>{{ complianceDetalle | json }}</pre>
+        </section>
+      }
+    </section>
   </section>
 }
 
@@ -156,7 +211,7 @@
   <section class="panel">
     <div class="panel__header">
       <div>
-        <span class="panel__eyebrow">RRHH-16 · RRHH-17</span>
+        <span class="panel__eyebrow">Registro de pago</span>
         <h3>Pagos</h3>
       </div>
       <button type="button" class="ghost-button" (click)="loadPayments.emit(0)">Recargar</button>
@@ -186,8 +241,6 @@
     </div>
 
     <form [formGroup]="paymentFilterForm" class="form-grid subpanel">
-      <label><span>Contrato</span><input type="number" formControlName="contrato" /></label>
-      <label><span>Empleado</span><input type="number" formControlName="empleado" /></label>
       <app-date-field label="Desde" formControlName="desde" />
       <app-date-field label="Hasta" formControlName="hasta" />
       <button type="button" class="ghost-button" (click)="loadPayments.emit(0)">Filtrar pagos</button>
@@ -200,9 +253,8 @@
         @for (payment of payments; track payment.id) {
           <article class="summary-card">
             <div class="meta-grid">
-              <span><strong>ID:</strong> {{ payment.id }}</span>
-              <span><strong>Contrato:</strong> {{ payment.idContrato }}</span>
               <span><strong>Periodo:</strong> {{ payment.fechaInicio }} / {{ payment.fechaFin }}</span>
+              <span><strong>Sueldo base:</strong> {{ toMoney(payment.sueldoBase) }}</span>
               <span><strong>Total:</strong> {{ toMoney(payment.sueldoTotal) }}</span>
             </div>
           </article>
@@ -210,66 +262,6 @@
       </div>
     } @else {
       <p class="helper-text">No hay pagos para mostrar.</p>
-    }
-  </section>
-}
-
-@if (mode === 'cumplimiento') {
-  <section class="panel">
-    <div class="panel__header">
-      <div>
-        <span class="panel__eyebrow">SCH-18 · SCH-19 · SCH-20</span>
-        <h3>Cumplimiento y monitor</h3>
-      </div>
-    </div>
-
-    <form [formGroup]="complianceForm" class="form-grid">
-      <label class="field-wide"><span>IDs empleados separados por coma</span><input type="text" formControlName="empleadoIds" /></label>
-      <app-date-field label="Desde" formControlName="desde" />
-      <app-date-field label="Hasta" formControlName="hasta" />
-      <app-date-field label="Fecha monitor" formControlName="fechaMonitor" />
-    </form>
-
-    @if (complianceErrorMessage) {
-      <p class="form-message form-message--error">{{ complianceErrorMessage }}</p>
-    }
-
-    <div class="actions">
-      <button type="button" class="primary-button" [disabled]="isLoadingCompliance" (click)="queryCompliance.emit()">
-        Consultar cumplimiento
-      </button>
-    </div>
-
-    @if (monitorEstados.length) {
-      <section class="subpanel">
-        <h4>Monitor operativo</h4>
-        <div class="card-list">
-          @for (estado of monitorEstados; track estado.idEmpleado) {
-            <article class="summary-card">
-              <div class="meta-grid">
-                <span><strong>Empleado:</strong> {{ estado.idEmpleado }}</span>
-                <span><strong>Estado:</strong> {{ toLabel(estado.estadoActual || '-') }}</span>
-                <span><strong>Horario:</strong> {{ estado.tieneHorarioVigente ? 'Si' : 'No' }}</span>
-                <span><strong>Operativo:</strong> {{ estado.operativo ? 'Si' : 'No' }}</span>
-              </div>
-            </article>
-          }
-        </div>
-      </section>
-    }
-
-    @if (complianceResumen) {
-      <section class="subpanel">
-        <h4>Resumen</h4>
-        <pre>{{ complianceResumen | json }}</pre>
-      </section>
-    }
-
-    @if (complianceDetalle) {
-      <section class="subpanel">
-        <h4>Detalle</h4>
-        <pre>{{ complianceDetalle | json }}</pre>
-      </section>
     }
   </section>
 }

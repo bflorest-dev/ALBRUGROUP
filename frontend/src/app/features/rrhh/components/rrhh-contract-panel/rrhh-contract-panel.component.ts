@@ -4,6 +4,7 @@ import { DateFieldComponent } from '../../../../shared/components/date-field/dat
 import { PostulacionResponse } from '../../../../shared/models/recruitment/postulacion-response';
 import { ContratoResponse } from '../../../../shared/models/rrhh/contrato-response';
 import { EmpleadoResponse } from '../../../../shared/models/rrhh/empleado-response';
+import { formatLabel } from '../../../../shared/utils/display-label';
 
 @Component({
   selector: 'app-rrhh-contract-panel',
@@ -44,15 +45,7 @@ export class RrhhContractPanelComponent {
   @Output() readonly historyPageChange = new EventEmitter<number>();
 
   protected toLabel(value: string | null | undefined): string {
-    if (!value) {
-      return '-';
-    }
-
-    return value
-      .toLowerCase()
-      .split('_')
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' ');
+    return formatLabel(value);
   }
 
   protected toMoney(value: number | null | undefined): string {
@@ -68,5 +61,54 @@ export class RrhhContractPanelComponent {
 
   protected getScheduleRows(): AbstractControl[] {
     return (this.horarioForm.get('detalles') as FormArray).controls;
+  }
+
+  protected hasContractEndDate(): boolean {
+    return this.contractForm.get('fechaFinHabilitada')?.value === 'true';
+  }
+
+  protected setContractEndDate(enabled: boolean): void {
+    this.contractForm.get('fechaFinHabilitada')?.setValue(String(enabled));
+    if (!enabled) {
+      this.contractForm.get('fechaFin')?.setValue('');
+    }
+  }
+
+  protected isAdvancedSchedule(): boolean {
+    return this.horarioForm.get('modoAvanzado')?.value === 'true';
+  }
+
+  protected setAdvancedSchedule(enabled: boolean): void {
+    this.horarioForm.get('modoAvanzado')?.setValue(String(enabled));
+    if (!enabled) {
+      this.applySimpleSchedule();
+    }
+  }
+
+  protected selectRestDay(day: string): void {
+    this.horarioForm.get('diaDescanso')?.setValue(day);
+    this.applySimpleSchedule();
+  }
+
+  protected applySimpleSchedule(): void {
+    const restDay = this.horarioForm.get('diaDescanso')?.value ?? 'DOMINGO';
+    const horaEntrada = this.horarioForm.get('horaEntrada')?.value ?? '09:00';
+    const horaSalida = this.horarioForm.get('horaSalida')?.value ?? '18:00';
+    const inicioAlmuerzo = this.horarioForm.get('inicioAlmuerzo')?.value ?? '13:00';
+    const finAlmuerzo = this.horarioForm.get('finAlmuerzo')?.value ?? '14:00';
+
+    for (const row of this.getScheduleRows()) {
+      row.patchValue({
+        horaEntrada,
+        horaSalida,
+        inicioAlmuerzo,
+        finAlmuerzo,
+        laborable: row.get('dia')?.value === restDay ? 'false' : 'true'
+      });
+    }
+  }
+
+  protected isRestDay(day: string): boolean {
+    return this.horarioForm.get('diaDescanso')?.value === day;
   }
 }

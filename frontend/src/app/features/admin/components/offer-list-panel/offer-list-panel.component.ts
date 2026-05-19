@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 import { OfertaLaboralResponse } from '../../../../shared/models/recruitment/oferta-laboral-response';
+import { formatLabel } from '../../../../shared/utils/display-label';
 
 type StatusDraftChange = {
   offerId: number;
@@ -72,14 +73,6 @@ export class OfferListPanelComponent {
   }
 
   protected toLabel(value: string | null | undefined): string {
-    if (!value) {
-      return '-';
-    }
-
-    return value
-      .toLowerCase()
-      .split('_')
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' ');
+    return formatLabel(value);
   }
 }

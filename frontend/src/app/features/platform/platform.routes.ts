@@ -20,14 +20,24 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'admin',
     pathMatch: 'full',
-    redirectTo: 'admin/personal'
+    redirectTo: 'admin/inicio'
+  },
+  {
+    path: 'admin/inicio',
+    component: AdminDashboardPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR'],
+      mode: 'inicio'
+    }
   },
   {
     path: 'admin/personal',
     component: AdminDashboardPageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ADMINISTRADOR']
+      roles: ['ADMINISTRADOR'],
+      mode: 'personal'
     }
   },
   {
@@ -41,14 +51,42 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'rrhh',
     pathMatch: 'full',
-    redirectTo: 'rrhh/postulantes'
+    redirectTo: 'rrhh/asistencia'
   },
   {
-    path: 'rrhh/postulantes',
+    path: 'rrhh/asistencia',
     component: RrhhPostulantesPageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['RRHH']
+      roles: ['RRHH'],
+      section: 'asistencia'
+    }
+  },
+  {
+    path: 'rrhh/empleabilidad',
+    component: RrhhPostulantesPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['RRHH'],
+      section: 'empleabilidad'
+    }
+  },
+  {
+    path: 'rrhh/contrataciones',
+    component: RrhhPostulantesPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['RRHH'],
+      section: 'contrataciones'
+    }
+  },
+  {
+    path: 'rrhh/pagos',
+    component: RrhhPostulantesPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['RRHH'],
+      section: 'pagos'
     }
   },
   {

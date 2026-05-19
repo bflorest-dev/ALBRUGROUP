@@ -3,6 +3,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Observable, catchError, firstValueFrom, of, timeout } from 'rxjs';
+import { ConnectedUserResponse, PresenceService } from '../../../core/services/presence.service';
 import { ApiErrorResponse } from '../../../shared/models/api/api-error-response';
 import { PageResponse } from '../../../shared/models/common/page-response';
 import { EventoResponse } from '../../../shared/models/recruitment/evento-response';
@@ -33,13 +34,18 @@ import { RrhhOperationsService } from '../services/rrhh-operations.service';
 import { PostulacionFilters, RrhhRecruitmentService } from '../services/rrhh-recruitment.service';
 
 export type RrhhSection =
-  | 'contratacion'
-  | 'empleados'
-  | 'contratos'
-  | 'horarios'
-  | 'pagos'
-  | 'cumplimiento'
-  | 'eventos';
+  | 'asistencia'
+  | 'empleabilidad'
+  | 'contrataciones'
+  | 'pagos';
+
+export interface RrhhAttendanceRow {
+  employee: EmpleadoResponse;
+  presence: ConnectedUserResponse | null;
+  monitor: EstadoMonitorResponse | null;
+  isOnline: boolean;
+  shouldBeOnline: boolean;
+}
 
 @Injectable()
 export class RrhhWorkspaceFacade {
@@ -47,8 +53,9 @@ export class RrhhWorkspaceFacade {
   private readonly formBuilder = inject(FormBuilder);
   private readonly recruitmentService = inject(RrhhRecruitmentService);
   private readonly rrhhService = inject(RrhhOperationsService);
+  private readonly presenceService = inject(PresenceService);
 
-  readonly section = signal<RrhhSection>('contratacion');
+  readonly section = signal<RrhhSection>('asistencia');
 
   readonly documentoOptions = ['DNI', 'CE'];
   readonly nacionalidadOptions = ['PERUANO', 'EXTRANJERO'];
@@ -238,7 +245,8 @@ export class RrhhWorkspaceFacade {
     sistemaPensiones: ['ONP'],
     sueldoBase: [1130, [Validators.required, Validators.min(0.01)]],
     fechaInicio: [this.getToday(), [Validators.required]],
-    fechaFin: ['']
+    fechaFin: [''],
+    fechaFinHabilitada: ['false']
   });
 
   readonly closeContractForm = this.formBuilder.nonNullable.group({
@@ -248,6 +256,12 @@ export class RrhhWorkspaceFacade {
   readonly horarioForm = this.formBuilder.nonNullable.group({
     fechaInicio: [this.getToday(), [Validators.required]],
     compensable: ['true', [Validators.required]],
+    horaEntrada: ['09:00', [Validators.required]],
+    horaSalida: ['18:00', [Validators.required]],
+    inicioAlmuerzo: ['13:00', [Validators.required]],
+    finAlmuerzo: ['14:00', [Validators.required]],
+    diaDescanso: ['DOMINGO', [Validators.required]],
+    modoAvanzado: ['false', [Validators.required]],
     detalles: this.formBuilder.nonNullable.array(this.buildDefaultScheduleRows())
   });
 
@@ -315,11 +329,13 @@ export class RrhhWorkspaceFacade {
   readonly employeeEventsPage = signal(this.emptyPage<EventoEmpleadoResponse>());
   readonly scheduleHistoryPage = signal(this.emptyPage<HorarioResponse>());
   readonly paymentsPage = signal(this.emptyPage<PagoResponse>());
+  readonly connectedUsers = signal<ConnectedUserResponse[]>([]);
 
   readonly selectedHiringCase = signal<PostulacionResponse | null>(null);
   readonly selectedEmployee = signal<EmpleadoResponse | null>(null);
   readonly currentContract = signal<ContratoResponse | null>(null);
   readonly linkedPostulacionId = signal<number | null>(null);
+  readonly employeeEventsPanelOpen = signal(false);
 
   readonly isLoadingPostulaciones = signal(false);
   readonly isSavingPostulacion = signal(false);
@@ -340,6 +356,7 @@ export class RrhhWorkspaceFacade {
   readonly isLoadingPayments = signal(false);
   readonly isLoadingCompliance = signal(false);
   readonly isLoadingEmployeeEvents = signal(false);
+  readonly isLoadingAttendanceOverview = signal(false);
 
   readonly editingPostulacionId = signal<number | null>(null);
 
@@ -359,6 +376,7 @@ export class RrhhWorkspaceFacade {
   readonly paymentSuccessMessage = signal('');
   readonly complianceErrorMessage = signal('');
   readonly employeeEventsErrorMessage = signal('');
+  readonly attendanceOverviewErrorMessage = signal('');
   readonly registeredSchedule = signal<HorarioResponse | null>(null);
   readonly currentSchedule = signal<HorarioResponse | null>(null);
   readonly complianceResumen = signal<CumplimientoResumenResponse | null>(null);
@@ -390,13 +408,42 @@ export class RrhhWorkspaceFacade {
   readonly currentPaymentsPage = computed(() => this.paymentsPage().page);
   readonly totalPaymentsPages = computed(() => this.paymentsPage().totalPages);
   readonly isEditing = computed(() => this.editingPostulacionId() !== null);
+  readonly attendanceRows = computed<RrhhAttendanceRow[]>(() => {
+    const connectedById = new Map(this.connectedUsers().map((user) => [user.empleadoId, user]));
+    const monitorById = new Map(this.monitorEstados().map((state) => [state.idEmpleado, state]));
 
-  async initialize(): Promise<void> {
-    await Promise.all([
-      this.loadPostulaciones(),
-      this.loadHiringReadyCases(),
-      this.loadEmployees()
-    ]);
+    return this.employees().map((employee) => {
+      const presence = connectedById.get(employee.id) ?? null;
+      const monitor = monitorById.get(employee.id) ?? null;
+      return {
+        employee,
+        presence,
+        monitor,
+        isOnline: !!presence,
+        shouldBeOnline: !presence && monitor?.esperadoHoy === true
+      };
+    });
+  });
+  readonly attendanceOnlineRows = computed(() => this.attendanceRows().filter((row) => row.isOnline));
+  readonly attendanceOfflineRows = computed(() => this.attendanceRows().filter((row) => !row.isOnline));
+
+  async initialize(section = this.section()): Promise<void> {
+    this.section.set(section);
+
+    switch (section) {
+      case 'asistencia':
+        await this.loadAttendanceOverview(0);
+        break;
+      case 'empleabilidad':
+        await this.loadPostulaciones(0);
+        break;
+      case 'contrataciones':
+        await Promise.all([this.loadHiringReadyCases(0), this.loadEmployees(0)]);
+        break;
+      case 'pagos':
+        await Promise.all([this.loadPaymentEmployees(0), this.loadPayments(0)]);
+        break;
+    }
   }
 
   setSection(section: RrhhSection): void {
@@ -522,7 +569,6 @@ export class RrhhWorkspaceFacade {
     this.linkedPostulacionId.set(postulacion.id);
     this.prefillEmployeeFromHiringCase(postulacion);
     this.prefillContractFromHiringCase(postulacion);
-    await this.loadHiringEvents(0);
   }
 
   async loadHiringEvents(pageNumber = 0): Promise<void> {
@@ -551,7 +597,7 @@ export class RrhhWorkspaceFacade {
   }
 
   openEmployeeRegistrationFromHiring(): void {
-    this.section.set('empleados');
+    this.section.set('contrataciones');
   }
 
   prepareBlankEmployee(): void {
@@ -559,7 +605,7 @@ export class RrhhWorkspaceFacade {
     this.selectedHiringCase.set(null);
     this.hiringEventsPage.set(this.emptyPage<EventoResponse>());
     this.resetEmployeeCreateForm();
-    this.contractForm.controls.puestoTrabajo.setValue('RECLUTADOR');
+    this.resetContractDraft();
   }
 
   async loadEmployees(pageNumber = 0): Promise<void> {
@@ -574,6 +620,58 @@ export class RrhhWorkspaceFacade {
     } catch (error) {
       this.employeeListErrorMessage.set(
         this.getErrorMessage(error, 'No fue posible cargar empleados.')
+      );
+    } finally {
+      this.isLoadingEmployees.set(false);
+    }
+  }
+
+  async loadAttendanceOverview(pageNumber = 0): Promise<void> {
+    this.isLoadingAttendanceOverview.set(true);
+    this.attendanceOverviewErrorMessage.set('');
+
+    try {
+      const employeesPage = await this.withTimeout(
+        this.rrhhService.listarEmpleados(this.buildActiveEmployeeFilters(), pageNumber, 12)
+      );
+      this.employeesPage.set(employeesPage);
+
+      const employeeIds = employeesPage.content.map((employee) => employee.id);
+      const [connectedUsers, monitorStates] = await Promise.all([
+        this.withTimeout(this.presenceService.listarUsuariosConectados()),
+        employeeIds.length
+          ? this.withTimeout(
+              this.rrhhService.consultarMonitorEstados({
+                empleadoIds: employeeIds,
+                fecha: this.getToday()
+              })
+            )
+          : Promise.resolve([] as EstadoMonitorResponse[])
+      ]);
+
+      this.connectedUsers.set(connectedUsers);
+      this.monitorEstados.set(monitorStates);
+    } catch (error) {
+      this.attendanceOverviewErrorMessage.set(
+        this.getErrorMessage(error, 'No fue posible cargar asistencia.')
+      );
+    } finally {
+      this.isLoadingAttendanceOverview.set(false);
+    }
+  }
+
+  async loadPaymentEmployees(pageNumber = 0): Promise<void> {
+    this.isLoadingEmployees.set(true);
+    this.employeeListErrorMessage.set('');
+
+    try {
+      const page = await this.withTimeout(
+        this.rrhhService.listarEmpleados(this.buildActiveEmployeeFilters(), pageNumber, 8)
+      );
+      this.employeesPage.set(page);
+    } catch (error) {
+      this.employeeListErrorMessage.set(
+        this.getErrorMessage(error, 'No fue posible cargar empleados para pagos.')
       );
     } finally {
       this.isLoadingEmployees.set(false);
@@ -668,7 +766,7 @@ export class RrhhWorkspaceFacade {
       );
       this.employeeActionSuccessMessage.set('Empleado registrado. Continúa con el contrato.');
       await Promise.all([this.loadEmployees(0), this.selectEmployee(employee)]);
-      this.section.set('contratos');
+      this.section.set('contrataciones');
     } catch (error) {
       this.employeeActionErrorMessage.set(
         this.getErrorMessage(error, 'No se pudo registrar el empleado.')
@@ -688,6 +786,31 @@ export class RrhhWorkspaceFacade {
       this.loadCurrentSchedule(),
       this.loadScheduleHistory(0)
     ]);
+  }
+
+  async preparePaymentForEmployee(employee: EmpleadoResponse): Promise<void> {
+    this.selectedEmployee.set(employee);
+    this.syncEmployeeForms(employee);
+    this.paymentFilterForm.patchValue({
+      contrato: '',
+      empleado: String(employee.id)
+    });
+
+    await Promise.all([
+      this.loadCurrentContract(),
+      this.loadPayments(0)
+    ]);
+  }
+
+  async openEmployeeEvents(employee: EmpleadoResponse): Promise<void> {
+    this.selectedEmployee.set(employee);
+    this.syncEmployeeForms(employee);
+    this.employeeEventsPanelOpen.set(true);
+    await this.loadEmployeeEvents(0);
+  }
+
+  closeEmployeeEvents(): void {
+    this.employeeEventsPanelOpen.set(false);
   }
 
   async submitPersonalUpdate(): Promise<void> {
@@ -944,7 +1067,7 @@ export class RrhhWorkspaceFacade {
       this.registeredSchedule.set(schedule);
       this.currentSchedule.set(schedule);
       this.scheduleSuccessMessage.set('Horario registrado correctamente.');
-      this.section.set('eventos');
+      await this.loadEmployeeEvents(0);
     } catch (error) {
       this.scheduleErrorMessage.set(
         this.getErrorMessage(error, 'No se pudo registrar el horario.')
@@ -1368,7 +1491,7 @@ export class RrhhWorkspaceFacade {
       correoCorporativo: employee.correoCorporativo ?? ''
     });
 
-    this.contractForm.controls.puestoTrabajo.setValue('RECLUTADOR');
+    this.resetContractDraft();
   }
 
   private prefillEmployeeFromHiringCase(postulacion: PostulacionResponse): void {
@@ -1386,6 +1509,20 @@ export class RrhhWorkspaceFacade {
   private prefillContractFromHiringCase(postulacion: PostulacionResponse): void {
     this.contractForm.patchValue({
       puestoTrabajo: postulacion.ofertaLaboral.puestoObjetivo
+    });
+  }
+
+  private resetContractDraft(): void {
+    this.contractForm.reset({
+      puestoTrabajo: 'RECLUTADOR',
+      regimen: 'PLANILLA',
+      modalidad: 'FULL_TIME',
+      seguroSalud: 'ESSALUD',
+      sistemaPensiones: 'ONP',
+      sueldoBase: 1130,
+      fechaInicio: this.getToday(),
+      fechaFin: '',
+      fechaFinHabilitada: 'false'
     });
   }
 
@@ -1431,6 +1568,19 @@ export class RrhhWorkspaceFacade {
     };
   }
 
+  private buildActiveEmployeeFilters() {
+    return {
+      q: null,
+      dni: null,
+      celular: null,
+      distrito: null,
+      banco: null,
+      origen: null,
+      estado: 'ACTIVO',
+      idEmpresaContratista: null
+    };
+  }
+
   private buildEmployeeCreateRequest(): RegistrarEmpleadoRequest {
     const raw = this.employeeCreateForm.getRawValue();
 
@@ -1452,8 +1602,9 @@ export class RrhhWorkspaceFacade {
       cuentaBancaria: raw.cuentaBancaria.trim(),
       cuentaInterbancaria: raw.cuentaInterbancaria.trim(),
       cuentaPropia: raw.cuentaPropia === 'true',
-      parentesco: raw.parentesco ? raw.parentesco : null,
-      celularTransferencia: raw.celularTransferencia ? raw.celularTransferencia.trim() : null,
+      parentesco: raw.cuentaPropia === 'true' ? null : raw.parentesco ? raw.parentesco : null,
+      celularTransferencia:
+        raw.cuentaPropia === 'true' ? null : raw.celularTransferencia ? raw.celularTransferencia.trim() : null,
       idEmpresaContratista: raw.idEmpresaContratista ? Number(raw.idEmpresaContratista) : null
     };
   }
@@ -1492,8 +1643,9 @@ export class RrhhWorkspaceFacade {
       cuentaBancaria: raw.cuentaBancaria.trim(),
       cuentaInterbancaria: raw.cuentaInterbancaria.trim(),
       cuentaPropia: raw.cuentaPropia === 'true',
-      parentesco: raw.parentesco ? raw.parentesco : null,
-      celularTransferencia: raw.celularTransferencia ? raw.celularTransferencia.trim() : null,
+      parentesco: raw.cuentaPropia === 'true' ? null : raw.parentesco ? raw.parentesco : null,
+      celularTransferencia:
+        raw.cuentaPropia === 'true' ? null : raw.celularTransferencia ? raw.celularTransferencia.trim() : null,
       idEmpresaContratista: raw.idEmpresaContratista ? Number(raw.idEmpresaContratista) : null
     };
   }
@@ -1519,7 +1671,7 @@ export class RrhhWorkspaceFacade {
       sistemaPensiones: raw.sistemaPensiones ? raw.sistemaPensiones : null,
       sueldoBase: Number(raw.sueldoBase),
       fechaInicio: raw.fechaInicio,
-      fechaFin: raw.fechaFin ? raw.fechaFin : null
+      fechaFin: raw.fechaFinHabilitada === 'true' && raw.fechaFin ? raw.fechaFin : null
     };
   }
 
@@ -1566,6 +1718,7 @@ export class RrhhWorkspaceFacade {
     contractId: number,
     modalidad: string
   ): RegistrarHorarioRequest {
+    this.syncSimpleScheduleRows();
     const raw = this.horarioForm.getRawValue();
 
     return {
@@ -1618,9 +1771,26 @@ export class RrhhWorkspaceFacade {
         horaSalida: ['18:00', [Validators.required]],
         inicioAlmuerzo: ['13:00', [Validators.required]],
         finAlmuerzo: ['14:00', [Validators.required]],
-        laborable: [dia === 'SABADO' || dia === 'DOMINGO' ? 'false' : 'true', [Validators.required]]
+        laborable: [dia === 'DOMINGO' ? 'false' : 'true', [Validators.required]]
       })
     );
+  }
+
+  private syncSimpleScheduleRows(): void {
+    const raw = this.horarioForm.getRawValue();
+    if (raw.modoAvanzado === 'true') {
+      return;
+    }
+
+    for (const row of this.horarioForm.controls.detalles.controls) {
+      row.patchValue({
+        horaEntrada: raw.horaEntrada,
+        horaSalida: raw.horaSalida,
+        inicioAlmuerzo: raw.inicioAlmuerzo,
+        finAlmuerzo: raw.finAlmuerzo,
+        laborable: row.controls.dia.getRawValue() === raw.diaDescanso ? 'false' : 'true'
+      });
+    }
   }
 
   private emptyPage<T>(): PageResponse<T> {

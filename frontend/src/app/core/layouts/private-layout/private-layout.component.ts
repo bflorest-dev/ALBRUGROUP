@@ -4,6 +4,7 @@ import { AttendanceFacade } from '../../facades/attendance.facade';
 import { AuthSessionService } from '../../services/auth-session.service';
 import { SessionService } from '../../services/session.service';
 import { AttendanceStatusPickerComponent } from '../../../shared/components/attendance-status-picker/attendance-status-picker.component';
+import { formatLabel } from '../../../shared/utils/display-label';
 
 type SidebarItem = {
   label: string;
@@ -44,6 +45,7 @@ export class PrivateLayoutComponent {
     const primaryRole = this.session()?.primaryRole;
     return primaryRole ? ROLE_THEME_CLASS[primaryRole] ?? 'theme-admin' : 'theme-admin';
   });
+  protected readonly primaryRoleLabel = computed(() => formatLabel(this.session()?.primaryRole));
 
   protected readonly menuItems = computed<SidebarItem[]>(() => {
     const session = this.session();
@@ -54,13 +56,19 @@ export class PrivateLayoutComponent {
 
     if (session.primaryRole === 'ADMINISTRADOR') {
       return [
-        { label: 'Personal', route: '/app/admin/personal' },
+        { label: 'Inicio', route: '/app/admin/inicio', exact: true },
+        { label: 'Personal', route: '/app/admin/personal', exact: true },
         { label: 'Empleabilidad', route: '/app/admin/empleabilidad' }
       ];
     }
 
     if (session.primaryRole === 'RRHH') {
-      return [{ label: 'Postulantes', route: '/app/rrhh/postulantes' }];
+      return [
+        { label: 'Asistencia', route: '/app/rrhh/asistencia', exact: true },
+        { label: 'Empleabilidad', route: '/app/rrhh/empleabilidad', exact: true },
+        { label: 'Contrataciones', route: '/app/rrhh/contrataciones', exact: true },
+        { label: 'Pagos', route: '/app/rrhh/pagos', exact: true }
+      ];
     }
 
     if (session.primaryRole === 'RECLUTADOR') {

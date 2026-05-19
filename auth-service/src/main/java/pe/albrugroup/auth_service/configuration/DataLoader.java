@@ -243,7 +243,8 @@ public class DataLoader {
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("READ_ASISTENCIAS"),
                 getPermiso("READ_ASISTENCIAS_CUMPLIMIENTO"),
-                getPermiso("UPDATE_ASISTENCIAS")
+                getPermiso("UPDATE_ASISTENCIAS"),
+                getPermiso("READ_ASISTENCIAS_MONITOR")
 
         );
         saveRol("RRHH", "Recursos Humanos - Gestion de personal", rrhhPermisos);

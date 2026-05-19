@@ -9,6 +9,7 @@ import {
   EstadoMonitorResponse
 } from '../../../../shared/models/schedule/cumplimiento-response';
 import { HorarioResponse } from '../../../../shared/models/schedule/horario-response';
+import { formatLabel } from '../../../../shared/utils/display-label';
 
 @Component({
   selector: 'app-rrhh-operations-panel',
@@ -18,7 +19,7 @@ import { HorarioResponse } from '../../../../shared/models/schedule/horario-resp
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RrhhOperationsPanelComponent {
-  @Input({ required: true }) mode!: 'horarios' | 'pagos' | 'cumplimiento';
+  @Input({ required: true }) mode!: 'asistencia' | 'pagos';
   @Input({ required: true }) horarioForm!: FormGroup;
   @Input({ required: true }) finalizeScheduleForm!: FormGroup;
   @Input({ required: true }) exceptionForm!: FormGroup;
@@ -62,15 +63,7 @@ export class RrhhOperationsPanelComponent {
   @Output() readonly queryCompliance = new EventEmitter<void>();
 
   protected toLabel(value: string | null | undefined): string {
-    if (!value) {
-      return '-';
-    }
-
-    return value
-      .toLowerCase()
-      .split('_')
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' ');
+    return formatLabel(value);
   }
 
   protected toMoney(value: number | null | undefined): string {

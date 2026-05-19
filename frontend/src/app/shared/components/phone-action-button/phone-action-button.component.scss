@@ -1,0 +1,34 @@
+.phone-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.35rem;
+  padding: 0.65rem 0.85rem;
+  border: 0;
+  border-radius: 0.75rem;
+  color: #fff;
+  background: var(--role-button-bg);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.phone-button--compact {
+  width: 2.35rem;
+  padding: 0;
+}
+
+.phone-button--compact span {
+  display: none;
+}
+
+.phone-button i {
+  font-size: 1.05rem;
+}
+
+.phone-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

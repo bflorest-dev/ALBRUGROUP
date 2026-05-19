@@ -4,6 +4,7 @@ import { DateFieldComponent } from '../../../../shared/components/date-field/dat
 import { EmpleadoResponse } from '../../../../shared/models/rrhh/empleado-response';
 import { EmpresaContratistaResponse } from '../../../../shared/models/rrhh/empresa-contratista-response';
 import { PostulacionResponse } from '../../../../shared/models/recruitment/postulacion-response';
+import { formatLabel } from '../../../../shared/utils/display-label';
 
 @Component({
   selector: 'app-rrhh-employee-panel',
@@ -49,6 +50,7 @@ export class RrhhEmployeePanelComponent {
   @Output() readonly reloadEmployees = new EventEmitter<void>();
   @Output() readonly employeesPageChange = new EventEmitter<number>();
   @Output() readonly selectEmployee = new EventEmitter<EmpleadoResponse>();
+  @Output() readonly openEmployeeEvents = new EventEmitter<EmpleadoResponse>();
   @Output() readonly submitPersonalUpdate = new EventEmitter<void>();
   @Output() readonly submitContactUpdate = new EventEmitter<void>();
   @Output() readonly submitFinancialUpdate = new EventEmitter<void>();
@@ -56,14 +58,10 @@ export class RrhhEmployeePanelComponent {
   @Output() readonly markBlacklist = new EventEmitter<void>();
 
   protected toLabel(value: string | null | undefined): string {
-    if (!value) {
-      return '-';
-    }
+    return formatLabel(value);
+  }
 
-    return value
-      .toLowerCase()
-      .split('_')
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' ');
+  protected isOwnAccount(form: FormGroup): boolean {
+    return form.get('cuentaPropia')?.value === 'true';
   }
 }

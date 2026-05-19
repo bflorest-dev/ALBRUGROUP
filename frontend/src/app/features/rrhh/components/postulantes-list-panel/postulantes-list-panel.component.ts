@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { PostulacionResponse } from '../../../../shared/models/recruitment/postulacion-response';
+import { formatLabel } from '../../../../shared/utils/display-label';
 
 @Component({
   selector: 'app-postulantes-list-panel',
@@ -27,14 +28,6 @@ export class PostulantesListPanelComponent {
   @Output() readonly edit = new EventEmitter<PostulacionResponse>();
 
   protected toLabel(value: string | null | undefined): string {
-    if (!value) {
-      return '-';
-    }
-
-    return value
-      .toLowerCase()
-      .split('_')
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' ');
+    return formatLabel(value);
   }
 }

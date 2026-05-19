@@ -1,0 +1,11 @@
+@if (href) {
+  <a class="phone-button" [class.phone-button--compact]="compact" [href]="href">
+    <i class="ti ti-phone-call" aria-hidden="true"></i>
+    <span>{{ label }}</span>
+  </a>
+} @else {
+  <button type="button" class="phone-button" [class.phone-button--compact]="compact" disabled>
+    <i class="ti ti-phone-off" aria-hidden="true"></i>
+    <span>{{ label }}</span>
+  </button>
+}

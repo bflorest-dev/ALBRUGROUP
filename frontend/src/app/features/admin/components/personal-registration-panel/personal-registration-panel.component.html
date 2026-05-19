@@ -9,6 +9,16 @@
 
   @if (currentStep === 1) {
     <form [formGroup]="empleadoForm" class="form-grid">
+      <label class="field field--wide">
+        <span>Empresa contratista</span>
+        <select formControlName="idEmpresaContratista">
+          <option value="">No aplica</option>
+          @for (empresa of empresasContratistas; track empresa.id) {
+            <option [value]="empresa.id">{{ empresa.nombre }}</option>
+          }
+        </select>
+      </label>
+
       <label>
         <span>Nombres</span>
         <input type="text" formControlName="nombres" />
@@ -121,30 +131,22 @@
         </select>
       </label>
 
-      <label>
-        <span>Parentesco</span>
-        <select formControlName="parentesco">
-          <option value="">No aplica</option>
-          @for (option of parentescoOptions; track option) {
-            <option [value]="option">{{ toLabel(option) }}</option>
-          }
-        </select>
-      </label>
+      @if (!isOwnAccount()) {
+        <label>
+          <span>Parentesco</span>
+          <select formControlName="parentesco">
+            <option value="">No aplica</option>
+            @for (option of parentescoOptions; track option) {
+              <option [value]="option">{{ toLabel(option) }}</option>
+            }
+          </select>
+        </label>
 
-      <label>
-        <span>Celular transferencia</span>
-        <input type="text" formControlName="celularTransferencia" />
-      </label>
-
-      <label>
-        <span>Empresa contratista</span>
-        <select formControlName="idEmpresaContratista">
-          <option value="">No aplica</option>
-          @for (empresa of empresasContratistas; track empresa.id) {
-            <option [value]="empresa.id">{{ empresa.nombre }}</option>
-          }
-        </select>
-      </label>
+        <label>
+          <span>Celular transferencia</span>
+          <input type="text" formControlName="celularTransferencia" />
+        </label>
+      }
     </form>
 
     <div class="actions">
@@ -210,7 +212,21 @@
 
       <app-date-field label="Fecha de inicio" formControlName="fechaInicio" />
 
-      <app-date-field label="Fecha de fin" formControlName="fechaFin" />
+      <label class="switch-field">
+        <span>Contrato con fecha de fin</span>
+        <button
+          type="button"
+          class="switch-button"
+          [class.switch-button--on]="hasContractEndDate()"
+          (click)="setContractEndDate(!hasContractEndDate())"
+        >
+          {{ hasContractEndDate() ? 'Si' : 'No' }}
+        </button>
+      </label>
+
+      @if (hasContractEndDate()) {
+        <app-date-field label="Fecha de fin" formControlName="fechaFin" />
+      }
     </form>
 
     @if (submitErrorMessage) {
@@ -237,6 +253,49 @@
         </select>
       </label>
 
+      @if (!isAdvancedSchedule()) {
+        <div class="schedule-simple field--wide">
+          <div class="schedule-simple__times">
+            <label>
+              <span>Entrada</span>
+              <input type="time" formControlName="horaEntrada" (change)="applySimpleSchedule()" />
+            </label>
+            <label>
+              <span>Salida</span>
+              <input type="time" formControlName="horaSalida" (change)="applySimpleSchedule()" />
+            </label>
+            <label>
+              <span>Inicio almuerzo</span>
+              <input type="time" formControlName="inicioAlmuerzo" (change)="applySimpleSchedule()" />
+            </label>
+            <label>
+              <span>Fin almuerzo</span>
+              <input type="time" formControlName="finAlmuerzo" (change)="applySimpleSchedule()" />
+            </label>
+          </div>
+
+          <div class="day-strip">
+            @for (day of diasSemanaOptions; track day) {
+              <button
+                type="button"
+                class="day-pill"
+                [class.day-pill--rest]="isRestDay(day)"
+                (click)="selectRestDay(day)"
+              >
+                {{ toLabel(day).slice(0, 3) }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="field--wide schedule-mode-action">
+        <button type="button" class="icon-only-button" title="Configuracion avanzada" (click)="setAdvancedSchedule(!isAdvancedSchedule())">
+          <i class="ti ti-settings"></i>
+        </button>
+      </div>
+
+      @if (isAdvancedSchedule()) {
       <div class="schedule-grid field--wide" formArrayName="detalles">
         @for (detalle of getScheduleRows(); track $index) {
           <div class="schedule-card" [formGroupName]="$index">
@@ -275,6 +334,7 @@
           </div>
         }
       </div>
+      }
 
       @if (submitErrorMessage) {
         <p class="form-message form-message--error">{{ submitErrorMessage }}</p>

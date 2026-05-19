@@ -55,6 +55,7 @@
 .filters,
 .filters__actions,
 .card-actions,
+.header-actions,
 .pagination {
   display: flex;
   gap: 1rem;
@@ -161,6 +162,12 @@ select {
   justify-content: flex-end;
 }
 
+.header-actions {
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
 .actions {
   display: flex;
   justify-content: flex-end;
@@ -171,6 +178,7 @@ select {
 .primary-button,
 .secondary-button,
 .ghost-button,
+.icon-text-button,
 .danger-button {
   padding: 0.8rem 1rem;
   border: 0;
@@ -186,9 +194,21 @@ select {
 }
 
 .secondary-button,
-.ghost-button {
+.ghost-button,
+.icon-text-button {
   color: var(--role-button-alt-text);
   background: var(--role-button-alt-bg);
+}
+
+.icon-text-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.icon-text-button i {
+  font-size: 1.05rem;
 }
 
 .danger-button {
@@ -237,7 +257,8 @@ button:disabled {
   .filters__actions,
   .pagination,
   .actions,
-  .card-actions {
+  .card-actions,
+  .header-actions {
     align-items: stretch;
     flex-direction: column;
   }

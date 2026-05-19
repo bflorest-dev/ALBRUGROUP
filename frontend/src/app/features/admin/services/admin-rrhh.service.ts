@@ -5,6 +5,7 @@ import { API_CONSTANTS } from '../../../core/constants/api.constants';
 import { PageResponse } from '../../../shared/models/common/page-response';
 import { ContratoResponse } from '../../../shared/models/rrhh/contrato-response';
 import { EmpleadoResponse } from '../../../shared/models/rrhh/empleado-response';
+import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
 import { EmpresaContratistaResponse } from '../../../shared/models/rrhh/empresa-contratista-response';
 import { RegistrarContratoRequest } from '../../../shared/models/rrhh/registrar-contrato-request';
 import { RegistrarEmpleadoRequest } from '../../../shared/models/rrhh/registrar-empleado-request';
@@ -45,6 +46,10 @@ export class AdminRrhhService {
       .set('direction', 'desc');
 
     return this.http.get<PageResponse<EmpleadoResponse>>(this.empleadosUrl, { params });
+  }
+
+  listarEmpleadosLight(): Observable<EmpleadoRolResponse[]> {
+    return this.http.get<EmpleadoRolResponse[]>(`${this.empleadosUrl}/light`);
   }
 
   listarEmpresasContratistas(activo = true): Observable<EmpresaContratistaResponse[]> {

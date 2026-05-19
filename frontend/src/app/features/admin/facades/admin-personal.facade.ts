@@ -2,11 +2,12 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, Validators } from '@angular/forms';
-import { catchError, filter, map, of, startWith, switchMap, timeout } from 'rxjs';
+import { catchError, filter, firstValueFrom, map, of, startWith, switchMap, timeout } from 'rxjs';
 import { ApiErrorResponse } from '../../../shared/models/api/api-error-response';
 import { UsuarioResponse } from '../../../shared/models/auth/usuario-response';
 import { PageResponse } from '../../../shared/models/common/page-response';
 import { EmpleadoResponse } from '../../../shared/models/rrhh/empleado-response';
+import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
 import { EmpresaContratistaResponse } from '../../../shared/models/rrhh/empresa-contratista-response';
 import { RegistrarContratoRequest } from '../../../shared/models/rrhh/registrar-contrato-request';
 import { RegistrarEmpleadoRequest } from '../../../shared/models/rrhh/registrar-empleado-request';
@@ -305,12 +306,19 @@ export class AdminPersonalFacade {
     sistemaPensiones: ['ONP'],
     sueldoBase: [1130, [Validators.required, Validators.min(0.01)]],
     fechaInicio: [this.getToday(), [Validators.required]],
-    fechaFin: ['']
+    fechaFin: [''],
+    fechaFinHabilitada: ['false']
   });
 
   readonly horarioForm = this.formBuilder.nonNullable.group({
     fechaInicio: [this.getToday(), [Validators.required]],
     compensable: ['true', [Validators.required]],
+    horaEntrada: ['09:00', [Validators.required]],
+    horaSalida: ['18:00', [Validators.required]],
+    inicioAlmuerzo: ['13:00', [Validators.required]],
+    finAlmuerzo: ['14:00', [Validators.required]],
+    diaDescanso: ['DOMINGO', [Validators.required]],
+    modoAvanzado: ['false', [Validators.required]],
     detalles: this.formBuilder.nonNullable.array(this.buildDefaultScheduleRows())
   });
 
@@ -320,6 +328,9 @@ export class AdminPersonalFacade {
   readonly employeesPage = signal<PageResponse<EmpleadoResponse> | null>(null);
   readonly isLoadingEmployees = signal(false);
   readonly employeeListErrorMessage = signal('');
+  readonly activeEmployees = signal<EmpleadoRolResponse[]>([]);
+  readonly isLoadingActiveEmployees = signal(false);
+  readonly activeEmployeeListErrorMessage = signal('');
   readonly accessByEmployeeId = signal<Record<number, UsuarioResponse | null>>({});
   readonly accessErrorByEmployeeId = signal<Record<number, string>>({});
   readonly accessLoadingByEmployeeId = signal<Record<number, boolean>>({});
@@ -336,6 +347,22 @@ export class AdminPersonalFacade {
   readonly employeeRows = computed(() => this.employeesPage()?.content ?? []);
   readonly currentPage = computed(() => this.employeesPage()?.page ?? 0);
   readonly totalPages = computed(() => this.employeesPage()?.totalPages ?? 1);
+  readonly activeEmployeeGroups = computed(() => {
+    const groups = new Map<string, EmpleadoRolResponse[]>();
+    for (const employee of this.activeEmployees()) {
+      const role = employee.puestoTrabajo || 'SIN_ROL';
+      groups.set(role, [...(groups.get(role) ?? []), employee]);
+    }
+
+    return [...groups.entries()]
+      .map(([role, employees]) => ({
+        role,
+        employees: employees.sort((left, right) =>
+          `${left.nombres} ${left.apellidos}`.localeCompare(`${right.nombres} ${right.apellidos}`)
+        )
+      }))
+      .sort((left, right) => left.role.localeCompare(right.role));
+  });
 
   constructor() {
     effect(() => {
@@ -434,6 +461,7 @@ export class AdminPersonalFacade {
 
   initialize(): void {
     this.loadEmployees();
+    void this.loadActiveEmployees();
   }
 
   continueToContract(): void {
@@ -526,11 +554,18 @@ export class AdminPersonalFacade {
       sistemaPensiones: 'ONP',
       sueldoBase: 1130,
       fechaInicio: this.getToday(),
-      fechaFin: ''
+      fechaFin: '',
+      fechaFinHabilitada: 'false'
     });
     this.horarioForm.reset({
       fechaInicio: this.getToday(),
-      compensable: 'true'
+      compensable: 'true',
+      horaEntrada: '09:00',
+      horaSalida: '18:00',
+      inicioAlmuerzo: '13:00',
+      finAlmuerzo: '14:00',
+      diaDescanso: 'DOMINGO',
+      modoAvanzado: 'false'
     });
     this.resetScheduleRows();
   }
@@ -541,6 +576,23 @@ export class AdminPersonalFacade {
       pageNumber,
       silent
     });
+  }
+
+  async loadActiveEmployees(): Promise<void> {
+    this.isLoadingActiveEmployees.set(true);
+    this.activeEmployeeListErrorMessage.set('');
+
+    try {
+      this.activeEmployees.set(
+        await firstValueFrom(this.adminRrhhService.listarEmpleadosLight().pipe(timeout(this.requestTimeoutMs)))
+      );
+    } catch (error) {
+      this.activeEmployeeListErrorMessage.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No fue posible cargar empleados activos.')
+      );
+    } finally {
+      this.isLoadingActiveEmployees.set(false);
+    }
   }
 
   toggleUserAccess(empleadoId: number): void {
@@ -594,8 +646,9 @@ export class AdminPersonalFacade {
       cuentaBancaria: raw.cuentaBancaria.trim(),
       cuentaInterbancaria: raw.cuentaInterbancaria.trim(),
       cuentaPropia: raw.cuentaPropia === 'true',
-      parentesco: raw.parentesco ? raw.parentesco : null,
-      celularTransferencia: raw.celularTransferencia ? raw.celularTransferencia.trim() : null,
+      parentesco: raw.cuentaPropia === 'true' ? null : raw.parentesco ? raw.parentesco : null,
+      celularTransferencia:
+        raw.cuentaPropia === 'true' ? null : raw.celularTransferencia ? raw.celularTransferencia.trim() : null,
       idEmpresaContratista: raw.idEmpresaContratista ? Number(raw.idEmpresaContratista) : null
     };
   }
@@ -611,11 +664,12 @@ export class AdminPersonalFacade {
       sistemaPensiones: raw.sistemaPensiones ? raw.sistemaPensiones : null,
       sueldoBase: Number(raw.sueldoBase),
       fechaInicio: raw.fechaInicio,
-      fechaFin: raw.fechaFin ? raw.fechaFin : null
+      fechaFin: raw.fechaFinHabilitada === 'true' && raw.fechaFin ? raw.fechaFin : null
     };
   }
 
   private buildHorarioRequest(): Omit<RegistrarHorarioRequest, 'idEmpleado' | 'idContrato'> {
+    this.syncSimpleScheduleRows();
     const raw = this.horarioForm.getRawValue();
 
     return {
@@ -641,9 +695,26 @@ export class AdminPersonalFacade {
         horaSalida: ['18:00', [Validators.required]],
         inicioAlmuerzo: ['13:00', [Validators.required]],
         finAlmuerzo: ['14:00', [Validators.required]],
-        laborable: [dia === 'SABADO' || dia === 'DOMINGO' ? 'false' : 'true', [Validators.required]]
+        laborable: [dia === 'DOMINGO' ? 'false' : 'true', [Validators.required]]
       })
     );
+  }
+
+  private syncSimpleScheduleRows(): void {
+    const raw = this.horarioForm.getRawValue();
+    if (raw.modoAvanzado === 'true') {
+      return;
+    }
+
+    for (const row of this.horarioForm.controls.detalles.controls) {
+      row.patchValue({
+        horaEntrada: raw.horaEntrada,
+        horaSalida: raw.horaSalida,
+        inicioAlmuerzo: raw.inicioAlmuerzo,
+        finAlmuerzo: raw.finAlmuerzo,
+        laborable: row.controls.dia.getRawValue() === raw.diaDescanso ? 'false' : 'true'
+      });
+    }
   }
 
   private resetScheduleRows(): void {

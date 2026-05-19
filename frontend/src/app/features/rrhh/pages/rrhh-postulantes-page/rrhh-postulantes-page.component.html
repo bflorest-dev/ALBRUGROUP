@@ -1,74 +1,132 @@
 <section class="rrhh-page">
   <header class="hero">
     <span class="hero__eyebrow">RRHH</span>
-    <h2>Workspace administrativo de RRHH</h2>
+    <h2>{{ toLabel(facade.section()) }}</h2>
     <p>
-      Gestiona el flujo completo desde la postulación lista para contratación hasta la ficha del
-      empleado, su contrato y su trazabilidad administrativa.
+      Gestiona empleados, postulantes, contrataciones, asistencia y pagos desde vistas separadas por flujo.
     </p>
   </header>
 
-  <nav class="workspace-nav" aria-label="Modulos RRHH">
-    <button
-      type="button"
-      class="workspace-tab"
-      [class.workspace-tab--active]="facade.section() === 'contratacion'"
-      (click)="facade.setSection('contratacion')"
-    >
-      Contratación
-    </button>
-    <button
-      type="button"
-      class="workspace-tab"
-      [class.workspace-tab--active]="facade.section() === 'empleados'"
-      (click)="facade.setSection('empleados')"
-    >
-      Empleados
-    </button>
-    <button
-      type="button"
-      class="workspace-tab"
-      [class.workspace-tab--active]="facade.section() === 'contratos'"
-      (click)="facade.setSection('contratos')"
-    >
-      Contratos
-    </button>
-    <button
-      type="button"
-      class="workspace-tab"
-      [class.workspace-tab--active]="facade.section() === 'horarios'"
-      (click)="facade.setSection('horarios')"
-    >
-      Horarios
-    </button>
-    <button
-      type="button"
-      class="workspace-tab"
-      [class.workspace-tab--active]="facade.section() === 'pagos'"
-      (click)="facade.setSection('pagos')"
-    >
-      Pagos
-    </button>
-    <button
-      type="button"
-      class="workspace-tab"
-      [class.workspace-tab--active]="facade.section() === 'cumplimiento'"
-      (click)="facade.setSection('cumplimiento')"
-    >
-      Cumplimiento
-    </button>
-    <button
-      type="button"
-      class="workspace-tab"
-      [class.workspace-tab--active]="facade.section() === 'eventos'"
-      (click)="facade.setSection('eventos')"
-    >
-      Eventos
-    </button>
-  </nav>
+  @if (facade.section() === 'asistencia') {
+    <section class="panel">
+      <div class="panel__header panel__header--wrap">
+        <div>
+          <span class="panel__eyebrow">Monitor operativo</span>
+          <h3>Asistencia del día</h3>
+        </div>
+        <button type="button" class="ghost-button" (click)="facade.loadAttendanceOverview(facade.currentEmployeesPage())">
+          Recargar
+        </button>
+      </div>
 
-  @if (facade.section() === 'contratacion') {
+      @if (facade.attendanceOverviewErrorMessage()) {
+        <p class="form-message form-message--error">{{ facade.attendanceOverviewErrorMessage() }}</p>
+      }
+
+      @if (facade.isLoadingAttendanceOverview()) {
+        <p class="helper-text">Cargando asistencia...</p>
+      } @else {
+        <div class="attendance-grid">
+          <section class="attendance-column">
+            <div class="column-title">
+              <span class="status-dot status-dot--online"></span>
+              <h4>Online</h4>
+              <strong>{{ facade.attendanceOnlineRows().length }}</strong>
+            </div>
+
+            @if (facade.attendanceOnlineRows().length) {
+              <div class="card-list">
+                @for (row of facade.attendanceOnlineRows(); track row.employee.id) {
+                  <article class="attendance-card">
+                    <div>
+                      <h4>{{ row.employee.nombres }} {{ row.employee.apellidos }}</h4>
+                      <p>{{ row.employee.tipoDocumento }} {{ row.employee.numeroDocumento }} · {{ row.employee.celularPersonal }}</p>
+                    </div>
+                    <div class="meta-grid">
+                      <span><strong>Asistencia:</strong> {{ toLabel(row.monitor?.estadoActual || 'ONLINE') }}</span>
+                      <span><strong>Disponibilidad:</strong> {{ toLabel(row.presence?.disponibilidad || 'DISPONIBLE') }}</span>
+                      <span><strong>Última señal:</strong> {{ toDate(row.presence?.lastSeen) }}</span>
+                    </div>
+                  </article>
+                }
+              </div>
+            } @else {
+              <p class="helper-text">No hay empleados online en esta página.</p>
+            }
+          </section>
+
+          <section class="attendance-column">
+            <div class="column-title">
+              <span class="status-dot status-dot--offline"></span>
+              <h4>Offline</h4>
+              <strong>{{ facade.attendanceOfflineRows().length }}</strong>
+            </div>
+
+            @if (facade.attendanceOfflineRows().length) {
+              <div class="card-list">
+                @for (row of facade.attendanceOfflineRows(); track row.employee.id) {
+                  <article class="attendance-card" [class.attendance-card--warning]="row.shouldBeOnline">
+                    <div class="attendance-card__top">
+                      <div>
+                        <h4>{{ row.employee.nombres }} {{ row.employee.apellidos }}</h4>
+                        <p>{{ row.employee.tipoDocumento }} {{ row.employee.numeroDocumento }} · {{ row.employee.celularPersonal }}</p>
+                      </div>
+
+                      @if (row.shouldBeOnline) {
+                        <div class="offline-action">
+                          <span class="warning-pill">
+                            <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+                            <span>Esperado</span>
+                          </span>
+                          <app-phone-action-button
+                            class="warning-call"
+                            [phoneNumber]="row.employee.celularPersonal"
+                            label="Llamar"
+                            [compact]="true"
+                          />
+                        </div>
+                      }
+                    </div>
+                    <div class="meta-grid">
+                      <span><strong>Asistencia:</strong> {{ toLabel(row.monitor?.estadoActual || 'Sin presencia') }}</span>
+                      <span><strong>Horario hoy:</strong> {{ row.monitor?.esperadoHoy ? 'Esperado' : 'No esperado' }}</span>
+                      <span><strong>Registro:</strong> {{ row.monitor?.tieneRegistroHoy ? 'Con marcación' : 'Sin marcación' }}</span>
+                    </div>
+                  </article>
+                }
+              </div>
+            } @else {
+              <p class="helper-text">No hay empleados offline en esta página.</p>
+            }
+          </section>
+        </div>
+
+        <div class="pagination">
+          <button
+            type="button"
+            class="ghost-button"
+            [disabled]="facade.currentEmployeesPage() === 0"
+            (click)="facade.loadAttendanceOverview(facade.currentEmployeesPage() - 1)"
+          >
+            Anterior
+          </button>
+          <span>Página {{ facade.currentEmployeesPage() + 1 }} de {{ facade.totalEmployeesPages() }}</span>
+          <button
+            type="button"
+            class="ghost-button"
+            [disabled]="facade.currentEmployeesPage() + 1 >= facade.totalEmployeesPages()"
+            (click)="facade.loadAttendanceOverview(facade.currentEmployeesPage() + 1)"
+          >
+            Siguiente
+          </button>
+        </div>
+      }
+    </section>
+  }
+
+  @if (facade.section() === 'empleabilidad') {
     <app-rrhh-hiring-panel
+      mode="empleabilidad"
       [postulanteForm]="facade.postulanteForm"
       [filterForm]="facade.filterForm"
       [activeOffers]="facade.activeOffers()"
@@ -111,7 +169,50 @@
     />
   }
 
-  @if (facade.section() === 'empleados') {
+  @if (facade.section() === 'contrataciones') {
+    <app-rrhh-hiring-panel
+      mode="contrataciones"
+      [postulanteForm]="facade.postulanteForm"
+      [filterForm]="facade.filterForm"
+      [activeOffers]="facade.activeOffers()"
+      [documentoOptions]="facade.documentoOptions"
+      [origenOptions]="facade.origenOptions"
+      [etapaOptions]="facade.etapaOptions"
+      [estadoOptions]="facade.estadoOptions"
+      [estadoBandejaOptions]="facade.estadoBandejaOptions"
+      [postulaciones]="facade.postulaciones()"
+      [currentPage]="facade.currentPostulacionesPage()"
+      [totalPages]="facade.totalPostulacionesPages()"
+      [isLoadingPostulaciones]="facade.isLoadingPostulaciones()"
+      [isLoadingActiveOffers]="false"
+      [isSaving]="facade.isSavingPostulacion()"
+      [isEditing]="facade.isEditing()"
+      [listErrorMessage]="facade.listErrorMessage()"
+      [activeOffersErrorMessage]="''"
+      [saveErrorMessage]="facade.saveErrorMessage()"
+      [saveSuccessMessage]="facade.saveSuccessMessage()"
+      [readyCases]="facade.hiringReadyCases()"
+      [currentReadyPage]="facade.currentHiringReadyPage()"
+      [totalReadyPages]="facade.totalHiringReadyPages()"
+      [isLoadingReadyCases]="facade.isLoadingHiringReady()"
+      [readyCasesErrorMessage]="facade.hiringReadyErrorMessage()"
+      [selectedHiringCase]="facade.selectedHiringCase()"
+      [hiringEvents]="facade.hiringEvents()"
+      [isLoadingHiringEvents]="facade.isLoadingHiringEvents()"
+      [hiringEventsErrorMessage]="facade.hiringEventsErrorMessage()"
+      (save)="facade.submitPostulacion()"
+      (cancelEdit)="facade.resetPostulacionForm()"
+      (applyFilters)="facade.applyFilters()"
+      (clearFilters)="facade.clearFilters()"
+      (reload)="facade.loadPostulaciones()"
+      (pageChange)="facade.loadPostulaciones($event)"
+      (edit)="facade.editPostulacion($event)"
+      (reloadReadyCases)="facade.loadHiringReadyCases()"
+      (readyCasePageChange)="facade.loadHiringReadyCases($event)"
+      (selectHiringCase)="facade.selectHiringCase($event)"
+      (openEmployeeRegistration)="facade.openEmployeeRegistrationFromHiring()"
+    />
+
     <app-rrhh-employee-panel
       [employeeCreateForm]="facade.employeeCreateForm"
       [employeeFilterForm]="facade.employeeFilterForm"
@@ -148,15 +249,14 @@
       (reloadEmployees)="facade.loadEmployees()"
       (employeesPageChange)="facade.loadEmployees($event)"
       (selectEmployee)="facade.selectEmployee($event)"
+      (openEmployeeEvents)="facade.openEmployeeEvents($event)"
       (submitPersonalUpdate)="facade.submitPersonalUpdate()"
       (submitContactUpdate)="facade.submitContactUpdate()"
       (submitFinancialUpdate)="facade.submitFinancialUpdate()"
       (submitCorporateUpdate)="facade.submitCorporateUpdate()"
       (markBlacklist)="facade.markSelectedEmployeeAsBlacklist()"
     />
-  }
 
-  @if (facade.section() === 'contratos') {
     <app-rrhh-contract-panel
       [contractForm]="facade.contractForm"
       [closeContractForm]="facade.closeContractForm"
@@ -189,154 +289,148 @@
     />
   }
 
-  @if (facade.section() === 'horarios') {
-    <app-rrhh-operations-panel
-      mode="horarios"
-      [horarioForm]="facade.horarioForm"
-      [finalizeScheduleForm]="facade.finalizeScheduleForm"
-      [exceptionForm]="facade.exceptionForm"
-      [paymentForm]="facade.paymentForm"
-      [paymentFilterForm]="facade.paymentFilterForm"
-      [complianceForm]="facade.complianceForm"
-      [currentSchedule]="facade.currentSchedule()"
-      [scheduleHistory]="facade.scheduleHistory()"
-      [payments]="facade.payments()"
-      [complianceResumen]="facade.complianceResumen()"
-      [complianceDetalle]="facade.complianceDetalle()"
-      [monitorEstados]="facade.monitorEstados()"
-      [diasSemanaOptions]="facade.diasSemanaOptions"
-      [isLoadingSchedules]="facade.isLoadingSchedules()"
-      [isUpdatingSchedule]="facade.isUpdatingSchedule()"
-      [isSavingException]="facade.isSavingException()"
-      [isDeletingException]="facade.isDeletingException()"
-      [isRegisteringPayment]="facade.isRegisteringPayment()"
-      [isLoadingPayments]="facade.isLoadingPayments()"
-      [isLoadingCompliance]="facade.isLoadingCompliance()"
-      [scheduleErrorMessage]="facade.scheduleErrorMessage()"
-      [scheduleSuccessMessage]="facade.scheduleSuccessMessage()"
-      [paymentErrorMessage]="facade.paymentErrorMessage()"
-      [paymentSuccessMessage]="facade.paymentSuccessMessage()"
-      [complianceErrorMessage]="facade.complianceErrorMessage()"
-      [currentScheduleHistoryPage]="facade.currentScheduleHistoryPage()"
-      [totalScheduleHistoryPages]="facade.totalScheduleHistoryPages()"
-      [currentPaymentsPage]="facade.currentPaymentsPage()"
-      [totalPaymentsPages]="facade.totalPaymentsPages()"
-      (reloadCurrentSchedule)="facade.loadCurrentSchedule()"
-      (reloadScheduleHistory)="facade.loadScheduleHistory($event)"
-      (replaceCurrentSchedule)="facade.replaceCurrentSchedule()"
-      (finalizeCurrentSchedule)="facade.finalizeCurrentSchedule()"
-      (saveException)="facade.saveException()"
-      (editException)="facade.editException($event)"
-      (deleteException)="facade.deleteException($event)"
-      (resetExceptionForm)="facade.resetExceptionForm()"
-      (registerPayment)="facade.registerPayment()"
-      (loadPayments)="facade.loadPayments($event)"
-      (queryCompliance)="facade.queryCompliance()"
-    />
-  }
-
   @if (facade.section() === 'pagos') {
-    <app-rrhh-operations-panel
-      mode="pagos"
-      [horarioForm]="facade.horarioForm"
-      [finalizeScheduleForm]="facade.finalizeScheduleForm"
-      [exceptionForm]="facade.exceptionForm"
-      [paymentForm]="facade.paymentForm"
-      [paymentFilterForm]="facade.paymentFilterForm"
-      [complianceForm]="facade.complianceForm"
-      [currentSchedule]="facade.currentSchedule()"
-      [scheduleHistory]="facade.scheduleHistory()"
-      [payments]="facade.payments()"
-      [complianceResumen]="facade.complianceResumen()"
-      [complianceDetalle]="facade.complianceDetalle()"
-      [monitorEstados]="facade.monitorEstados()"
-      [diasSemanaOptions]="facade.diasSemanaOptions"
-      [isLoadingSchedules]="facade.isLoadingSchedules()"
-      [isUpdatingSchedule]="facade.isUpdatingSchedule()"
-      [isSavingException]="facade.isSavingException()"
-      [isDeletingException]="facade.isDeletingException()"
-      [isRegisteringPayment]="facade.isRegisteringPayment()"
-      [isLoadingPayments]="facade.isLoadingPayments()"
-      [isLoadingCompliance]="facade.isLoadingCompliance()"
-      [scheduleErrorMessage]="facade.scheduleErrorMessage()"
-      [scheduleSuccessMessage]="facade.scheduleSuccessMessage()"
-      [paymentErrorMessage]="facade.paymentErrorMessage()"
-      [paymentSuccessMessage]="facade.paymentSuccessMessage()"
-      [complianceErrorMessage]="facade.complianceErrorMessage()"
-      [currentScheduleHistoryPage]="facade.currentScheduleHistoryPage()"
-      [totalScheduleHistoryPages]="facade.totalScheduleHistoryPages()"
-      [currentPaymentsPage]="facade.currentPaymentsPage()"
-      [totalPaymentsPages]="facade.totalPaymentsPages()"
-      (reloadCurrentSchedule)="facade.loadCurrentSchedule()"
-      (reloadScheduleHistory)="facade.loadScheduleHistory($event)"
-      (replaceCurrentSchedule)="facade.replaceCurrentSchedule()"
-      (finalizeCurrentSchedule)="facade.finalizeCurrentSchedule()"
-      (saveException)="facade.saveException()"
-      (editException)="facade.editException($event)"
-      (deleteException)="facade.deleteException($event)"
-      (resetExceptionForm)="facade.resetExceptionForm()"
-      (registerPayment)="facade.registerPayment()"
-      (loadPayments)="facade.loadPayments($event)"
-      (queryCompliance)="facade.queryCompliance()"
-    />
+    <div class="payment-grid">
+      <section class="panel">
+        <div class="panel__header panel__header--wrap">
+          <div>
+            <span class="panel__eyebrow">Empleados activos</span>
+            <h3>Registrar pagos</h3>
+          </div>
+          <button type="button" class="ghost-button" (click)="facade.loadPaymentEmployees(facade.currentEmployeesPage())">
+            Recargar
+          </button>
+        </div>
+
+        @if (facade.employeeListErrorMessage()) {
+          <p class="form-message form-message--error">{{ facade.employeeListErrorMessage() }}</p>
+        }
+
+        @if (facade.isLoadingEmployees()) {
+          <p class="helper-text">Cargando empleados...</p>
+        } @else if (facade.employees().length) {
+          <div class="card-list">
+            @for (employee of facade.employees(); track employee.id) {
+              <article class="payment-employee-card" [class.payment-employee-card--selected]="facade.selectedEmployee()?.id === employee.id">
+                <div>
+                  <h4>{{ employee.nombres }} {{ employee.apellidos }}</h4>
+                  <p>{{ employee.tipoDocumento }} {{ employee.numeroDocumento }} · {{ employee.celularPersonal }}</p>
+                </div>
+                <button type="button" class="primary-button" (click)="facade.preparePaymentForEmployee(employee)">
+                  <i class="ti ti-currency-dollar" aria-hidden="true"></i>
+                  <span>Registrar pago</span>
+                </button>
+              </article>
+            }
+          </div>
+
+          <div class="pagination">
+            <button
+              type="button"
+              class="ghost-button"
+              [disabled]="facade.currentEmployeesPage() === 0"
+              (click)="facade.loadPaymentEmployees(facade.currentEmployeesPage() - 1)"
+            >
+              Anterior
+            </button>
+            <span>Página {{ facade.currentEmployeesPage() + 1 }} de {{ facade.totalEmployeesPages() }}</span>
+            <button
+              type="button"
+              class="ghost-button"
+              [disabled]="facade.currentEmployeesPage() + 1 >= facade.totalEmployeesPages()"
+              (click)="facade.loadPaymentEmployees(facade.currentEmployeesPage() + 1)"
+            >
+              Siguiente
+            </button>
+          </div>
+        } @else {
+          <p class="helper-text">No hay empleados activos para pagos.</p>
+        }
+      </section>
+
+      <section class="payment-detail">
+        @if (facade.selectedEmployee(); as employee) {
+          <div class="selected-payment">
+            <h3>{{ employee.nombres }} {{ employee.apellidos }}</h3>
+            <p>{{ employee.tipoDocumento }} {{ employee.numeroDocumento }}</p>
+          </div>
+
+          <app-rrhh-operations-panel
+            mode="pagos"
+            [horarioForm]="facade.horarioForm"
+            [finalizeScheduleForm]="facade.finalizeScheduleForm"
+            [exceptionForm]="facade.exceptionForm"
+            [paymentForm]="facade.paymentForm"
+            [paymentFilterForm]="facade.paymentFilterForm"
+            [complianceForm]="facade.complianceForm"
+            [currentSchedule]="facade.currentSchedule()"
+            [scheduleHistory]="facade.scheduleHistory()"
+            [payments]="facade.payments()"
+            [complianceResumen]="facade.complianceResumen()"
+            [complianceDetalle]="facade.complianceDetalle()"
+            [monitorEstados]="facade.monitorEstados()"
+            [diasSemanaOptions]="facade.diasSemanaOptions"
+            [isLoadingSchedules]="facade.isLoadingSchedules()"
+            [isUpdatingSchedule]="facade.isUpdatingSchedule()"
+            [isSavingException]="facade.isSavingException()"
+            [isDeletingException]="facade.isDeletingException()"
+            [isRegisteringPayment]="facade.isRegisteringPayment()"
+            [isLoadingPayments]="facade.isLoadingPayments()"
+            [isLoadingCompliance]="facade.isLoadingCompliance()"
+            [scheduleErrorMessage]="facade.scheduleErrorMessage()"
+            [scheduleSuccessMessage]="facade.scheduleSuccessMessage()"
+            [paymentErrorMessage]="facade.paymentErrorMessage()"
+            [paymentSuccessMessage]="facade.paymentSuccessMessage()"
+            [complianceErrorMessage]="facade.complianceErrorMessage()"
+            [currentScheduleHistoryPage]="facade.currentScheduleHistoryPage()"
+            [totalScheduleHistoryPages]="facade.totalScheduleHistoryPages()"
+            [currentPaymentsPage]="facade.currentPaymentsPage()"
+            [totalPaymentsPages]="facade.totalPaymentsPages()"
+            (reloadCurrentSchedule)="facade.loadCurrentSchedule()"
+            (reloadScheduleHistory)="facade.loadScheduleHistory($event)"
+            (replaceCurrentSchedule)="facade.replaceCurrentSchedule()"
+            (finalizeCurrentSchedule)="facade.finalizeCurrentSchedule()"
+            (saveException)="facade.saveException()"
+            (editException)="facade.editException($event)"
+            (deleteException)="facade.deleteException($event)"
+            (resetExceptionForm)="facade.resetExceptionForm()"
+            (registerPayment)="facade.registerPayment()"
+            (loadPayments)="facade.loadPayments($event)"
+            (queryCompliance)="facade.queryCompliance()"
+          />
+        } @else {
+          <section class="panel empty-state">
+            <i class="ti ti-currency-dollar" aria-hidden="true"></i>
+            <h3>Selecciona un empleado</h3>
+            <p>El contrato vigente se usará internamente para registrar el pago.</p>
+          </section>
+        }
+      </section>
+    </div>
   }
 
-  @if (facade.section() === 'cumplimiento') {
-    <app-rrhh-operations-panel
-      mode="cumplimiento"
-      [horarioForm]="facade.horarioForm"
-      [finalizeScheduleForm]="facade.finalizeScheduleForm"
-      [exceptionForm]="facade.exceptionForm"
-      [paymentForm]="facade.paymentForm"
-      [paymentFilterForm]="facade.paymentFilterForm"
-      [complianceForm]="facade.complianceForm"
-      [currentSchedule]="facade.currentSchedule()"
-      [scheduleHistory]="facade.scheduleHistory()"
-      [payments]="facade.payments()"
-      [complianceResumen]="facade.complianceResumen()"
-      [complianceDetalle]="facade.complianceDetalle()"
-      [monitorEstados]="facade.monitorEstados()"
-      [diasSemanaOptions]="facade.diasSemanaOptions"
-      [isLoadingSchedules]="facade.isLoadingSchedules()"
-      [isUpdatingSchedule]="facade.isUpdatingSchedule()"
-      [isSavingException]="facade.isSavingException()"
-      [isDeletingException]="facade.isDeletingException()"
-      [isRegisteringPayment]="facade.isRegisteringPayment()"
-      [isLoadingPayments]="facade.isLoadingPayments()"
-      [isLoadingCompliance]="facade.isLoadingCompliance()"
-      [scheduleErrorMessage]="facade.scheduleErrorMessage()"
-      [scheduleSuccessMessage]="facade.scheduleSuccessMessage()"
-      [paymentErrorMessage]="facade.paymentErrorMessage()"
-      [paymentSuccessMessage]="facade.paymentSuccessMessage()"
-      [complianceErrorMessage]="facade.complianceErrorMessage()"
-      [currentScheduleHistoryPage]="facade.currentScheduleHistoryPage()"
-      [totalScheduleHistoryPages]="facade.totalScheduleHistoryPages()"
-      [currentPaymentsPage]="facade.currentPaymentsPage()"
-      [totalPaymentsPages]="facade.totalPaymentsPages()"
-      (reloadCurrentSchedule)="facade.loadCurrentSchedule()"
-      (reloadScheduleHistory)="facade.loadScheduleHistory($event)"
-      (replaceCurrentSchedule)="facade.replaceCurrentSchedule()"
-      (finalizeCurrentSchedule)="facade.finalizeCurrentSchedule()"
-      (saveException)="facade.saveException()"
-      (editException)="facade.editException($event)"
-      (deleteException)="facade.deleteException($event)"
-      (resetExceptionForm)="facade.resetExceptionForm()"
-      (registerPayment)="facade.registerPayment()"
-      (loadPayments)="facade.loadPayments($event)"
-      (queryCompliance)="facade.queryCompliance()"
-    />
-  }
-
-  @if (facade.section() === 'eventos') {
-    <app-rrhh-events-panel
-      [selectedEmployee]="facade.selectedEmployee()"
-      [events]="facade.employeeEvents()"
-      [isLoading]="facade.isLoadingEmployeeEvents()"
-      [errorMessage]="facade.employeeEventsErrorMessage()"
-      [currentPage]="facade.currentEmployeeEventsPage()"
-      [totalPages]="facade.totalEmployeeEventsPages()"
-      (reload)="facade.loadEmployeeEvents()"
-      (pageChange)="facade.loadEmployeeEvents($event)"
-    />
+  @if (facade.employeeEventsPanelOpen()) {
+    <div class="events-drawer__backdrop" (click)="facade.closeEmployeeEvents()"></div>
+    <aside class="events-drawer" aria-label="Historial de eventos del empleado">
+      <div class="events-drawer__header">
+        <div>
+          <span class="events-drawer__eyebrow">Historial</span>
+          <h3>Eventos del empleado</h3>
+        </div>
+        <button type="button" class="events-drawer__close" aria-label="Cerrar historial" (click)="facade.closeEmployeeEvents()">
+          <i class="ti ti-x" aria-hidden="true"></i>
+        </button>
+      </div>
+      <app-rrhh-events-panel
+        [selectedEmployee]="facade.selectedEmployee()"
+        [events]="facade.employeeEvents()"
+        [isLoading]="facade.isLoadingEmployeeEvents()"
+        [errorMessage]="facade.employeeEventsErrorMessage()"
+        [currentPage]="facade.currentEmployeeEventsPage()"
+        [totalPages]="facade.totalEmployeeEventsPages()"
+        (reload)="facade.loadEmployeeEvents()"
+        (pageChange)="facade.loadEmployeeEvents($event)"
+      />
+    </aside>
   }
 </section>

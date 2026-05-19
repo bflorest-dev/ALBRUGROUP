@@ -58,6 +58,61 @@
   overflow-x: auto;
 }
 
+.role-groups {
+  display: grid;
+  gap: 1rem;
+}
+
+.role-group {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #e6ebf2;
+  border-radius: 1rem;
+  background: #f8fafc;
+}
+
+.role-group__head,
+.employee-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.role-group__head h4 {
+  margin: 0;
+}
+
+.role-group__head span,
+.employee-card span {
+  color: #5a6c7e;
+}
+
+.employee-cards {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.employee-card {
+  padding: 0.85rem;
+  border: 1px solid #e6ebf2;
+  border-radius: 0.9rem;
+  background: #ffffff;
+}
+
+.employee-card div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.access-card--inline {
+  padding: 0.85rem;
+  border: 1px solid #e6ebf2;
+  border-radius: 0.9rem;
+  background: #ffffff;
+}
+
 .employee-table {
   width: 100%;
   border-collapse: collapse;
@@ -126,7 +181,9 @@
 
 @media (max-width: 760px) {
   .pagination,
-  .panel__header {
+  .panel__header,
+  .role-group__head,
+  .employee-card {
     flex-direction: column;
     align-items: stretch;
   }

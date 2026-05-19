@@ -1,14 +1,32 @@
 <section class="admin-page">
   <header class="hero">
     <span class="hero__eyebrow">Administrador</span>
-    <h2>Alta de personal y consulta de accesos</h2>
-    <p>
-      Esta vista resuelve el flujo directo `empleado -> contrato -> usuario auth` y permite revisar
-      el acceso de los empleados activos.
-    </p>
+    @if (mode === 'inicio') {
+      <h2>Empleados activos</h2>
+      <p>Personal con contrato vigente agrupado por rol operativo.</p>
+    } @else {
+      <h2>Alta de personal</h2>
+      <p>Flujo directo `empleado -> contrato -> usuario auth`.</p>
+    }
   </header>
 
-  <div class="admin-grid">
+  @if (mode === 'inicio') {
+    <app-employee-access-panel
+      [employees]="[]"
+      [activeGroups]="facade.activeEmployeeGroups()"
+      [currentPage]="0"
+      [totalPages]="1"
+      [isLoading]="facade.isLoadingActiveEmployees()"
+      [errorMessage]="facade.activeEmployeeListErrorMessage()"
+      [accessByEmployeeId]="facade.accessByEmployeeId()"
+      [accessErrorByEmployeeId]="facade.accessErrorByEmployeeId()"
+      [accessLoadingByEmployeeId]="facade.accessLoadingByEmployeeId()"
+      (reload)="facade.loadActiveEmployees()"
+      (pageChange)="facade.loadActiveEmployees()"
+      (toggleAccess)="facade.toggleUserAccess($event)"
+    />
+  } @else {
+  <div class="admin-grid admin-grid--single">
     <app-personal-registration-panel
       [empleadoForm]="facade.empleadoForm"
       [contratoForm]="facade.contratoForm"
@@ -39,18 +57,6 @@
       (resetFlow)="facade.resetFlow()"
     />
 
-    <app-employee-access-panel
-      [employees]="facade.employeeRows()"
-      [currentPage]="facade.currentPage()"
-      [totalPages]="facade.totalPages()"
-      [isLoading]="facade.isLoadingEmployees()"
-      [errorMessage]="facade.employeeListErrorMessage()"
-      [accessByEmployeeId]="facade.accessByEmployeeId()"
-      [accessErrorByEmployeeId]="facade.accessErrorByEmployeeId()"
-      [accessLoadingByEmployeeId]="facade.accessLoadingByEmployeeId()"
-      (reload)="facade.loadEmployees()"
-      (pageChange)="facade.loadEmployees($event)"
-      (toggleAccess)="facade.toggleUserAccess($event)"
-    />
   </div>
+  }
 </section>

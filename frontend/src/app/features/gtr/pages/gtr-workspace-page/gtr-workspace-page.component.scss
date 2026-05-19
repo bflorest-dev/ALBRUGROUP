@@ -279,6 +279,7 @@ button:disabled {
 .advisor-drawer {
   display: grid;
   gap: 1rem;
+  grid-template-rows: auto 1fr;
   inset: 0 0 0 auto;
   max-width: min(24rem, calc(100vw - 1rem));
   position: fixed;
@@ -287,17 +288,25 @@ button:disabled {
 }
 
 .advisor-list {
+  align-content: start;
   display: grid;
   gap: 0.75rem;
+  grid-auto-rows: max-content;
   overflow: auto;
 }
 
 .advisor {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
   gap: 0.65rem;
+  min-height: 3.4rem;
+  padding: 0.75rem;
 }
 
 .advisor div {
   display: grid;
+  gap: 0.12rem;
   min-width: 0;
 }
 

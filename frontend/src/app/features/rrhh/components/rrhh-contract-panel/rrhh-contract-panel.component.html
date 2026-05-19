@@ -2,13 +2,13 @@
   <section class="panel">
     <div class="panel__header panel__header--wrap">
       <div>
-        <span class="panel__eyebrow">RRHH-12</span>
+        <span class="panel__eyebrow">Alta contractual</span>
         <h3>Registrar contrato</h3>
       </div>
 
       @if (selectedEmployee; as employee) {
         <div class="header-chip">
-          {{ employee.nombres }} {{ employee.apellidos }} · ID {{ employee.id }}
+          {{ employee.nombres }} {{ employee.apellidos }}
         </div>
       }
     </div>
@@ -79,7 +79,20 @@
         </label>
 
         <app-date-field label="Fecha de inicio" formControlName="fechaInicio" />
-        <app-date-field label="Fecha de fin" formControlName="fechaFin" />
+        <label class="switch-field">
+          <span>Contrato con fecha de fin</span>
+          <button
+            type="button"
+            class="switch-button"
+            [class.switch-button--on]="hasContractEndDate()"
+            (click)="setContractEndDate(!hasContractEndDate())"
+          >
+            {{ hasContractEndDate() ? 'Si' : 'No' }}
+          </button>
+        </label>
+        @if (hasContractEndDate()) {
+          <app-date-field label="Fecha de fin" formControlName="fechaFin" />
+        }
       </form>
 
       @if (contractErrorMessage) {
@@ -107,7 +120,7 @@
     <section class="panel">
       <div class="panel__header">
         <div>
-          <span class="panel__eyebrow">RRHH-14 · RRHH-15</span>
+          <span class="panel__eyebrow">Contrato actual</span>
           <h3>Contrato vigente</h3>
         </div>
 
@@ -149,7 +162,7 @@
     <section class="panel">
       <div class="panel__header">
         <div>
-          <span class="panel__eyebrow">RRHH-13</span>
+          <span class="panel__eyebrow">Historial contractual</span>
           <h3>Histórico contractual</h3>
         </div>
       </div>
@@ -159,7 +172,6 @@
           @for (contract of contractHistory; track contract.id) {
             <article class="contract-card">
               <div class="meta-grid">
-                <span><strong>ID:</strong> {{ contract.id }}</span>
                 <span><strong>Puesto:</strong> {{ toLabel(contract.puestoTrabajo) }}</span>
                 <span><strong>Modalidad:</strong> {{ toLabel(contract.modalidad) }}</span>
                 <span><strong>Sueldo:</strong> {{ toMoney(contract.sueldoBase) }}</span>
@@ -198,7 +210,7 @@
   <section class="panel">
     <div class="panel__header">
       <div>
-        <span class="panel__eyebrow">SCH-09</span>
+        <span class="panel__eyebrow">Horario inicial</span>
         <h3>Registrar horario inicial</h3>
       </div>
     </div>
@@ -223,6 +235,49 @@
           </select>
         </label>
 
+        @if (!isAdvancedSchedule()) {
+          <div class="schedule-simple field--wide">
+            <div class="schedule-simple__times">
+              <label>
+                <span>Entrada</span>
+                <input type="time" formControlName="horaEntrada" (change)="applySimpleSchedule()" />
+              </label>
+              <label>
+                <span>Salida</span>
+                <input type="time" formControlName="horaSalida" (change)="applySimpleSchedule()" />
+              </label>
+              <label>
+                <span>Inicio almuerzo</span>
+                <input type="time" formControlName="inicioAlmuerzo" (change)="applySimpleSchedule()" />
+              </label>
+              <label>
+                <span>Fin almuerzo</span>
+                <input type="time" formControlName="finAlmuerzo" (change)="applySimpleSchedule()" />
+              </label>
+            </div>
+
+            <div class="day-strip">
+              @for (day of diasSemanaOptions; track day) {
+                <button
+                  type="button"
+                  class="day-pill"
+                  [class.day-pill--rest]="isRestDay(day)"
+                  (click)="selectRestDay(day)"
+                >
+                  {{ toLabel(day).slice(0, 3) }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+
+        <div class="field--wide schedule-mode-action">
+          <button type="button" class="icon-only-button" title="Configuracion avanzada" (click)="setAdvancedSchedule(!isAdvancedSchedule())">
+            <i class="ti ti-settings"></i>
+          </button>
+        </div>
+
+        @if (isAdvancedSchedule()) {
         <div class="schedule-grid field--wide" formArrayName="detalles">
           @for (detalle of getScheduleRows(); track $index) {
             <div class="schedule-card" [formGroupName]="$index">
@@ -261,6 +316,7 @@
             </div>
           }
         </div>
+        }
       </form>
 
       @if (scheduleErrorMessage) {

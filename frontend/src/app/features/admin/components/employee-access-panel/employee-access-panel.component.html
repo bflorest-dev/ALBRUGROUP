@@ -13,6 +13,55 @@
 
   @if (isLoading) {
     <p class="helper-text">Cargando empleados...</p>
+  } @else if (activeGroups.length) {
+    <div class="role-groups">
+      @for (group of activeGroups; track group.role) {
+        <section class="role-group">
+          <div class="role-group__head">
+            <h4>{{ toLabel(group.role) }}</h4>
+            <span>{{ group.employees.length }} activos</span>
+          </div>
+
+          <div class="employee-cards">
+            @for (employee of group.employees; track employee.idEmpleado) {
+              <article class="employee-card">
+                <div>
+                  <strong>{{ employee.nombres }} {{ employee.apellidos }}</strong>
+                  <span>{{ employee.numeroDocumento }} · {{ employee.celularPersonal }}</span>
+                </div>
+                <button
+                  type="button"
+                  class="icon-button"
+                  [disabled]="isAccessLoading(employee.idEmpleado)"
+                  (click)="toggleAccess.emit(employee.idEmpleado)"
+                  aria-label="Ver acceso"
+                >
+                  &#128065;
+                </button>
+              </article>
+              @if (hasAccessLoaded(employee.idEmpleado)) {
+                <div class="access-card access-card--inline">
+                  @if (getAccessError(employee.idEmpleado)) {
+                    <p class="form-message form-message--error">
+                      {{ getAccessError(employee.idEmpleado) }}
+                    </p>
+                  } @else if (getAccess(employee.idEmpleado); as access) {
+                    <span><strong>Username:</strong> {{ access.username }}</span>
+                    <span><strong>Email:</strong> {{ access.email }}</span>
+                    <span><strong>Rol:</strong> {{ toLabel(access.roles[0]) }}</span>
+                    <span><strong>Activo:</strong> {{ access.activo ? 'Si' : 'No' }}</span>
+                    <span>
+                      <strong>Password inicializada:</strong>
+                      {{ access.passwordInicializada ? 'Si' : 'No' }}
+                    </span>
+                  }
+                </div>
+              }
+            }
+          </div>
+        </section>
+      }
+    </div>
   } @else if (employees.length) {
     <div class="table-scroll">
       <table class="employee-table">

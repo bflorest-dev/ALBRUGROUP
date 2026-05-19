@@ -1,6 +1,13 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { UsuarioResponse } from '../../../../shared/models/auth/usuario-response';
 import { EmpleadoResponse } from '../../../../shared/models/rrhh/empleado-response';
+import { EmpleadoRolResponse } from '../../../../shared/models/rrhh/empleado-rol-response';
+import { formatLabel } from '../../../../shared/utils/display-label';
+
+export type ActiveEmployeeGroup = {
+  role: string;
+  employees: EmpleadoRolResponse[];
+};
 
 @Component({
   selector: 'app-employee-access-panel',
@@ -10,6 +17,7 @@ import { EmpleadoResponse } from '../../../../shared/models/rrhh/empleado-respon
 })
 export class EmployeeAccessPanelComponent {
   @Input({ required: true }) employees: EmpleadoResponse[] = [];
+  @Input() activeGroups: ActiveEmployeeGroup[] = [];
   @Input({ required: true }) currentPage = 0;
   @Input({ required: true }) totalPages = 1;
   @Input({ required: true }) isLoading = false;
@@ -39,14 +47,6 @@ export class EmployeeAccessPanelComponent {
   }
 
   protected toLabel(value: string | null | undefined): string {
-    if (!value) {
-      return '-';
-    }
-
-    return value
-      .toLowerCase()
-      .split('_')
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' ');
+    return formatLabel(value);
   }
 }

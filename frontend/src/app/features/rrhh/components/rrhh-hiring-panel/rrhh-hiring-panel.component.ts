@@ -3,6 +3,7 @@ import { FormGroup } from '@angular/forms';
 import { EventoResponse } from '../../../../shared/models/recruitment/evento-response';
 import { OfertaLaboralResponse } from '../../../../shared/models/recruitment/oferta-laboral-response';
 import { PostulacionResponse } from '../../../../shared/models/recruitment/postulacion-response';
+import { formatLabel } from '../../../../shared/utils/display-label';
 import { PostulanteFormPanelComponent } from '../postulante-form-panel/postulante-form-panel.component';
 import { PostulantesListPanelComponent } from '../postulantes-list-panel/postulantes-list-panel.component';
 
@@ -14,6 +15,7 @@ import { PostulantesListPanelComponent } from '../postulantes-list-panel/postula
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RrhhHiringPanelComponent {
+  @Input() mode: 'empleabilidad' | 'contrataciones' = 'empleabilidad';
   @Input({ required: true }) postulanteForm!: FormGroup;
   @Input({ required: true }) filterForm!: FormGroup;
   @Input({ required: true }) activeOffers: OfertaLaboralResponse[] = [];
@@ -56,15 +58,7 @@ export class RrhhHiringPanelComponent {
   @Output() readonly openEmployeeRegistration = new EventEmitter<void>();
 
   protected toLabel(value: string | null | undefined): string {
-    if (!value) {
-      return '-';
-    }
-
-    return value
-      .toLowerCase()
-      .split('_')
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' ');
+    return formatLabel(value);
   }
 
   protected toDate(value: string | null | undefined): string {

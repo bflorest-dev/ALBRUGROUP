@@ -57,9 +57,31 @@
 }
 
 .card-list,
+.offer-list,
 .timeline {
   display: grid;
   gap: 1rem;
+}
+
+.offer-list {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.offer-card {
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem;
+  border: 1px solid rgba(31, 111, 85, 0.12);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(244, 250, 247, 0.95), rgba(255, 255, 255, 0.98));
+}
+
+.offer-card strong {
+  color: var(--role-panel-text);
+}
+
+.offer-card span {
+  color: var(--role-muted);
 }
 
 .candidate-card,
