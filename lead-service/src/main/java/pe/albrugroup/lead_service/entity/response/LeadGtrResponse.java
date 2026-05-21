@@ -24,6 +24,7 @@ public class LeadGtrResponse {
     private Base base;
     private String nombreTitular;
     private String numeroDocumentoTitularServicio;
+    private String direccionSnapshot;
     private String primeraCodigoTipificacion;
     private String primeraCodigoSubtipificacion;
     private String codigoTipificacion;

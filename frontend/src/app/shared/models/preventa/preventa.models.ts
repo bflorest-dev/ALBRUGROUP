@@ -29,6 +29,7 @@ export interface LeadGtrResponse {
   base?: BaseLead | string | null;
   nombreTitular?: string | null;
   numeroDocumentoTitularServicio?: string | null;
+  direccionSnapshot?: string | null;
   primeraCodigoTipificacion?: string | null;
   primeraCodigoSubtipificacion?: string | null;
   codigoTipificacion?: string | null;

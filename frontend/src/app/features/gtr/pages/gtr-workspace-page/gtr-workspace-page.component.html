@@ -1,286 +1,358 @@
 <section class="gtr-page">
-  <header class="topbar">
-    <div>
-      <p class="eyebrow">GTR</p>
-      <h1>Bandeja diaria de preventa</h1>
-      <span>{{ facade.today }} &middot; orden lastEntryAt desc</span>
-    </div>
-    <div class="topbar-actions">
-      <button
-        type="button"
-        class="icon-button secondary-button"
-        title="Asesores disponibles"
-        (click)="facade.toggleAdvisorsPanel()"
-      >
-        <i class="ti ti-users"></i>
-      </button>
-      <button type="button" class="primary-button" (click)="facade.openNewLead()">
-        <i class="ti ti-plus"></i>
-        Nuevo Lead
-      </button>
-      <button
-        type="button"
-        class="icon-button secondary-button"
-        title="Actualizar"
-        [disabled]="facade.isLoading()"
-        (click)="facade.initialize()"
-      >
-        <i class="ti ti-refresh"></i>
-      </button>
-    </div>
-  </header>
+  <p-card styleClass="gtr-hero">
+    <div class="gtr-hero__content">
+      <div>
+        <span class="gtr-hero__eyebrow">PREVENTA</span>
+        <h1>Gestion de Leads</h1>
+        <p>{{ facade.todayLabel }}</p>
+      </div>
 
-  <section class="metrics">
+      <div class="gtr-hero__actions">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-users"
+          label="Asesores"
+          severity="secondary"
+          (click)="facade.toggleAdvisorsPanel()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-plus"
+          label="Nuevo Lead"
+          (click)="facade.openNewLead()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          severity="secondary"
+          [loading]="facade.isLoading()"
+          (click)="facade.initialize()"
+        ></button>
+      </div>
+    </div>
+  </p-card>
+
+  <section class="metric-grid" aria-label="Metricas GTR">
     @for (metric of facade.metricCards(); track metric.label) {
-      <article class="metric" [class]="'metric metric--' + metric.tone">
+      <p-card styleClass="gtr-metric gtr-metric--{{ metric.tone }}">
         <span>{{ metric.label }}</span>
         <strong>{{ metric.value }}</strong>
-      </article>
+      </p-card>
     }
   </section>
 
   @if (facade.successMessage()) {
-    <p class="alert alert--success">{{ facade.successMessage() }}</p>
+    <p-message severity="success" [text]="facade.successMessage() ?? ''" />
   }
   @if (facade.errorMessage()) {
-    <p class="alert alert--error">{{ facade.errorMessage() }}</p>
+    <p-message severity="error" [text]="facade.errorMessage() ?? ''" />
   }
 
-  <section class="panel board">
-    <div class="board-head">
-      <div>
-        <h2>Bandeja diaria</h2>
-        <span>{{ facade.isReconciling() ? 'Sincronizando en segundo plano' : facade.totalElements() + ' leads del dia' }}</span>
-      </div>
-      <div class="board-actions">
-        <button
-          type="button"
-          class="secondary-button"
-          [disabled]="facade.isSaving() || facade.selectedCount() === 0"
-          (click)="facade.openAssignment()"
-        >
-          <i class="ti ti-user-plus"></i>
-          Asignar seleccion ({{ facade.selectedCount() }})
-        </button>
-        <div class="pager">
-          <button
-            type="button"
-            class="icon-button secondary-button"
-            title="Anterior"
-            [disabled]="facade.pageNumber() === 0"
-            (click)="facade.previousPage()"
-          >
-            <i class="ti ti-chevron-left"></i>
-          </button>
-          <strong>{{ facade.pageNumber() + 1 }} / {{ facade.totalPages() || 1 }}</strong>
-          <button
-            type="button"
-            class="icon-button secondary-button"
-            title="Siguiente"
-            [disabled]="facade.pageNumber() + 1 >= facade.totalPages()"
-            (click)="facade.nextPage()"
-          >
-            <i class="ti ti-chevron-right"></i>
-          </button>
-        </div>
-      </div>
+  <p-card styleClass="gtr-board">
+    <ng-template #title>Bandeja diaria</ng-template>
+    <ng-template #subtitle>
+      {{ facade.isReconciling() ? 'Sincronizando en segundo plano' : facade.totalElements() + ' leads del dia' }}
+    </ng-template>
+
+    <div class="board-toolbar">
+      <button
+        pButton
+        type="button"
+        icon="pi pi-user-plus"
+        [label]="'Asignar seleccion (' + facade.selectedCount() + ')'"
+        severity="secondary"
+        [disabled]="facade.isSaving() || facade.selectedCount() === 0"
+        (click)="facade.openAssignment()"
+      ></button>
+
+      @if (facade.isReconciling()) {
+        <p-tag severity="secondary" value="Realtime activo" />
+      }
     </div>
 
-    <div class="table">
-      <div class="row row--head">
-        <span></span>
-        <span>Lead</span>
-        <span>Proveedor</span>
-        <span>Canal</span>
-        <span>Base</span>
-        <span>Documento</span>
-        <span>Primera tipificacion</span>
-        <span>Ultima tipificacion</span>
-        <span>Plan ofrecido</span>
-        <span>Estado</span>
-        <span>Asesor</span>
-        <span>Ingreso</span>
-        <span>Acciones</span>
-      </div>
-      @for (row of facade.rows(); track row.id) {
-        <div class="row" [class.row--new]="row.isNew">
-          <label class="check">
+    <p-table
+      [value]="facade.rows()"
+      dataKey="id"
+      [loading]="facade.isLoading()"
+      [rowHover]="true"
+      [scrollable]="true"
+      scrollHeight="flex"
+      [tableStyle]="{ 'min-width': '1360px' }"
+      styleClass="p-datatable-sm gtr-table"
+    >
+      <ng-template #header>
+        <tr>
+          <th class="col-check"></th>
+          <th>Lead</th>
+          <th>Proveedor</th>
+          <th>Canal</th>
+          <th>Base</th>
+          <th>Documento</th>
+          <th>Primera tipificacion</th>
+          <th>Ultima tipificacion</th>
+          <th>Plan ofrecido</th>
+          <th>Estado</th>
+          <th>Asesor</th>
+          <th>Ingreso</th>
+          <th class="col-actions">Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-row>
+        <tr [class.row-new]="row.isNew">
+          <td class="col-check">
             <input
               type="checkbox"
               [checked]="facade.isSelected(row.id)"
               (change)="facade.toggleSelection(row.id, $any($event.target).checked)"
             />
-          </label>
-          <strong>{{ row.prefijo }} {{ row.lead }}</strong>
-          <span class="cell cell--stack">
-            <strong>{{ facade.display(row.nombreProveedorCampana) }}</strong>
-            <small>{{ facade.display(row.nombreCampana) }}</small>
-          </span>
-          <span>{{ facade.display(row.numeroWhatsappEmpresa) }}</span>
-          <span>{{ facade.display(row.base) }}</span>
-          <span>{{ facade.display(row.numeroDocumentoTitularServicio) }}</span>
-          <span>{{ facade.tipificacionLabel(row.primeraCodigoTipificacion, row.primeraCodigoSubtipificacion) }}</span>
-          <span>{{ facade.tipificacionLabel(row.codigoTipificacion, row.codigoSubtipificacion) }}</span>
-          <span>{{ facade.display(row.nombrePlanOfrecido) }}</span>
-          <span class="badge">{{ facade.display(row.estadoSeguimiento) }}</span>
-          <span>{{ facade.display(row.nombreAsesorAsignado) }}</span>
-          <span>{{ row.createdAt | date: 'HH:mm' }}</span>
-          <div class="row-actions">
-            <button type="button" class="mini-button secondary-button" title="Llamar" disabled>
-              <i class="ti ti-phone"></i>
-              Llamar
-            </button>
-            <button type="button" class="mini-button secondary-button" title="Chat" disabled>
-              <i class="ti ti-brand-whatsapp"></i>
-              Chat
-            </button>
-            <button type="button" class="mini-button" title="Asignar" [disabled]="facade.isSaving()" (click)="facade.openAssignment(row)">
-              <i class="ti ti-user-plus"></i>
-              Asignar
-            </button>
-            <button type="button" class="mini-button secondary-button" title="Gestionar" (click)="facade.openSnapshot(row)">
-              <i class="ti ti-settings"></i>
-              Gestionar
-            </button>
+          </td>
+          <td>
+            <strong>{{ facade.leadPrefixLabel(row.prefijo) }} {{ row.lead }}</strong>
+            <small>ID {{ row.id }}</small>
+          </td>
+          <td>{{ facade.display(row.nombreProveedorCampana) }}</td>
+          <td>{{ facade.display(row.numeroWhatsappEmpresa) }}</td>
+          <td>{{ facade.display(row.base) }}</td>
+          <td>{{ facade.display(row.numeroDocumentoTitularServicio) }}</td>
+          <td>{{ facade.tipificacionLabel(row.primeraCodigoTipificacion, row.primeraCodigoSubtipificacion) }}</td>
+          <td>{{ facade.tipificacionLabel(row.codigoTipificacion, row.codigoSubtipificacion) }}</td>
+          <td>{{ facade.display(row.nombrePlanOfrecido) }}</td>
+          <td>
+            <p-tag
+              [severity]="estadoSeverity(row.estadoSeguimiento)"
+              [value]="facade.display(row.estadoSeguimiento)"
+            />
+          </td>
+          <td>{{ facade.display(row.nombreAsesorAsignado) }}</td>
+          <td>{{ row.createdAt | date: 'hh:mm a' }}</td>
+          <td>
+            <div class="row-actions">
+              <button
+                pButton
+                type="button"
+                icon="pi pi-phone"
+                label="Llamar"
+                size="small"
+                severity="secondary"
+                disabled
+              ></button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-whatsapp"
+                label="Chat"
+                size="small"
+                severity="secondary"
+                disabled
+              ></button>
+              <div class="assignment-action">
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-user-plus"
+                  label="Asignar"
+                  size="small"
+                  [disabled]="facade.isSaving()"
+                  (click)="facade.openAssignment(row)"
+                ></button>
+                <p-tag
+                  severity="info"
+                  [value]="facade.display(row.reasignaciones ?? 0)"
+                  title="Asignaciones del dia"
+                />
+              </div>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-cog"
+                label="Gestionar"
+                size="small"
+                severity="secondary"
+                (click)="facade.openSnapshot(row)"
+              ></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="13">{{ facade.isLoading() ? 'Cargando bandeja...' : 'No hay leads para hoy.' }}</td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <p-paginator
+      [first]="facade.pageNumber() * facade.pageSize"
+      [rows]="facade.pageSize"
+      [totalRecords]="facade.totalElements()"
+      (onPageChange)="facade.changePage($event.page ?? 0)"
+    />
+  </p-card>
+
+  <p-drawer
+    [visible]="facade.advisorsPanelOpen()"
+    (visibleChange)="!$event && facade.closeAdvisorsPanel()"
+    position="right"
+    header="Asesores disponibles"
+    styleClass="gtr-advisors-drawer"
+  >
+    <div class="drawer-toolbar">
+      <button
+        pButton
+        type="button"
+        icon="pi pi-refresh"
+        label="Actualizar"
+        severity="secondary"
+        (click)="facade.refreshAdvisors()"
+      ></button>
+    </div>
+
+    <div class="advisor-list">
+      @for (advisor of facade.advisors(); track advisor.empleadoId) {
+        <article class="advisor-card">
+          <span class="advisor-card__dot {{ facade.advisorDotClass(advisor) }}"></span>
+          <div>
+            <strong>{{ advisor.nombreCompleto }}</strong>
+            <div class="advisor-card__tags">
+              <p-tag
+                [severity]="advisorSeverity(advisor.estadoSchedule)"
+                [value]="facade.display(advisor.estadoSchedule)"
+              />
+              <p-tag
+                [severity]="advisorSeverity(advisor.disponibilidad)"
+                [value]="facade.display(advisor.disponibilidad)"
+              />
+            </div>
+            <small>{{ advisor.esperadoHoy ? 'Esperado hoy' : 'Sin horario esperado' }}</small>
           </div>
-        </div>
+        </article>
       } @empty {
-        <p class="empty">{{ facade.isLoading() ? 'Cargando bandeja...' : 'No hay leads para hoy.' }}</p>
+        <p class="empty-state">No hay asesores activos.</p>
       }
     </div>
-  </section>
+  </p-drawer>
 
-  @if (facade.advisorsPanelOpen()) {
-    <div class="drawer-backdrop" (click)="facade.closeAdvisorsPanel()"></div>
-    <aside class="advisor-drawer">
-      <div class="drawer-head">
-        <div>
-          <p class="eyebrow">ASESORES</p>
-          <h2>Disponibles</h2>
-        </div>
-        <div class="drawer-actions">
-          <button type="button" class="icon-button secondary-button" title="Actualizar asesores" (click)="facade.refreshAdvisors()">
-            <i class="ti ti-refresh"></i>
-          </button>
-          <button type="button" class="icon-button secondary-button" title="Cerrar" (click)="facade.closeAdvisorsPanel()">
-            <i class="ti ti-x"></i>
-          </button>
-        </div>
-      </div>
-
-      <div class="advisor-list">
-        @for (advisor of facade.advisors(); track advisor.empleadoId) {
-          <article class="advisor">
-            <span
-              class="dot"
-              [class.dot--available]="advisor.disponibilidad === 'DISPONIBLE'"
-              [class.dot--working]="advisor.disponibilidad === 'GESTIONANDO'"
-              [class.dot--busy]="advisor.disponibilidad === 'OCUPADO'"
-              [class.dot--saturated]="advisor.disponibilidad === 'SATURADO'"
-              [class.dot--connected]="advisor.connected && !advisor.disponibilidad"
-            ></span>
-            <div>
-              <strong>{{ advisor.nombreCompleto }}</strong>
-              <small>{{ facade.display(advisor.estadoSchedule) }}</small>
-              <small>{{ facade.display(advisor.disponibilidad) }}</small>
+  <p-dialog
+    header="Nuevo Lead"
+    [visible]="facade.activeDialog() === 'lead'"
+    (visibleChange)="!$event && facade.closeDialog()"
+    [modal]="true"
+    [draggable]="false"
+    styleClass="gtr-dialog"
+  >
+    <form class="form-grid" [formGroup]="facade.intakeForm" (ngSubmit)="facade.submitIntake()">
+      <label>
+        <span>Prefijo</span>
+        <input pInputText type="text" formControlName="prefijo" />
+      </label>
+      <label>
+        <span>Numero</span>
+        <input pInputText type="text" formControlName="lead" />
+      </label>
+      <label class="wide">
+        <span>Campana</span>
+        <p-select
+          formControlName="idCampana"
+          [options]="facade.campanas()"
+          optionLabel="nombre"
+          optionValue="id"
+          placeholder="Seleccionar"
+          appendTo="body"
+        >
+          <ng-template #item let-campana>
+            <div class="select-item">
+              <strong>{{ campana.nombre }}</strong>
+              <small>{{ facade.display(campana.nombreProveedor) }}</small>
             </div>
-          </article>
-        } @empty {
-          <p class="helper">No hay asesores activos.</p>
-        }
+          </ng-template>
+        </p-select>
+      </label>
+      <label class="wide">
+        <span>Base</span>
+        <p-select formControlName="base" [options]="facade.baseOptions" appendTo="body" />
+      </label>
+
+      <div class="dialog-actions">
+        <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeDialog()"></button>
+        <button pButton type="submit" label="Registrar" [loading]="facade.isSaving()"></button>
       </div>
-    </aside>
-  }
+    </form>
+  </p-dialog>
 
-  @if (facade.activeDialog(); as dialog) {
-    <div class="modal-backdrop" (click)="facade.closeDialog()"></div>
-    <section class="modal">
-      @if (dialog === 'lead') {
-        <form class="modal-panel form-grid" [formGroup]="facade.intakeForm" (ngSubmit)="facade.submitIntake()">
-          <div class="modal-head">
-            <h2>Nuevo Lead</h2>
-            <button type="button" class="icon-button secondary-button" title="Cerrar" (click)="facade.closeDialog()">
-              <i class="ti ti-x"></i>
-            </button>
-          </div>
-          <label><span>Prefijo</span><input type="text" formControlName="prefijo" /></label>
-          <label><span>Numero</span><input type="text" formControlName="lead" /></label>
-          <label class="wide">
-            <span>Campana</span>
-            <select formControlName="idCampana">
-              <option [ngValue]="0">Seleccionar</option>
-              @for (campana of facade.campanas(); track campana.id) {
-                <option [ngValue]="campana.id">
-                  {{ campana.nombre }} &middot; {{ facade.display(campana.nombreProveedor) }}
-                </option>
-              }
-            </select>
-          </label>
-          <label class="wide">
-            <span>Base</span>
-            <select formControlName="base">
-              <option value="WHATSAPP">WHATSAPP</option>
-              <option value="MESSENGER">MESSENGER</option>
-              <option value="RECONTACTO">RECONTACTO</option>
-              <option value="PREDICTIVO">PREDICTIVO</option>
-              <option value="REFERIDO">REFERIDO</option>
-              <option value="MASIVO">MASIVO</option>
-            </select>
-          </label>
-          <button type="submit" [disabled]="facade.isSaving()">Registrar</button>
-        </form>
+  <p-dialog
+    header="Gestionar Lead"
+    [visible]="facade.activeDialog() === 'snapshot'"
+    (visibleChange)="!$event && facade.closeDialog()"
+    [modal]="true"
+    [draggable]="false"
+    styleClass="gtr-dialog"
+  >
+    <form class="form-grid" [formGroup]="facade.snapshotForm" (ngSubmit)="facade.saveSnapshot()">
+      @if (facade.selectedSnapshotLead(); as lead) {
+        <p class="wide helper">Lead {{ facade.leadPrefixLabel(lead.prefijo) }} {{ lead.lead }}</p>
+      }
+      <label class="wide">
+        <span>Documento titular</span>
+        <input pInputText type="text" formControlName="numeroDocumentoTitularServicio" />
+      </label>
+      <label class="wide">
+        <span>Direccion detectada</span>
+        <input pInputText type="text" formControlName="direccion" />
+      </label>
+
+      <div class="dialog-actions">
+        <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeDialog()"></button>
+        <button pButton type="submit" label="Guardar" [loading]="facade.isSavingSnapshot()"></button>
+      </div>
+    </form>
+  </p-dialog>
+
+  <p-dialog
+    header="Asignar Lead"
+    [visible]="facade.activeDialog() === 'assign'"
+    (visibleChange)="!$event && facade.closeDialog()"
+    [modal]="true"
+    [draggable]="false"
+    styleClass="gtr-dialog"
+  >
+    <form class="form-grid" [formGroup]="facade.assignmentForm" (ngSubmit)="facade.submitAssignment()">
+      @if (facade.activeAssignmentLead(); as lead) {
+        <p class="wide helper">Lead {{ facade.leadPrefixLabel(lead.prefijo) }} {{ lead.lead }}</p>
+      } @else {
+        <p class="wide helper">{{ facade.selectedCount() }} leads seleccionados</p>
       }
 
-      @if (dialog === 'snapshot') {
-        <form class="modal-panel form-grid" [formGroup]="facade.snapshotForm" (ngSubmit)="facade.saveSnapshot()">
-          <div class="modal-head">
-            <h2>Gestionar Lead</h2>
-            <button type="button" class="icon-button secondary-button" title="Cerrar" (click)="facade.closeDialog()">
-              <i class="ti ti-x"></i>
-            </button>
-          </div>
-          @if (facade.selectedSnapshotLead(); as lead) {
-            <p class="wide helper">Lead {{ lead.prefijo }} {{ lead.lead }}</p>
-          }
-          <label class="wide">
-            <span>Documento titular</span>
-            <input type="text" formControlName="numeroDocumentoTitularServicio" />
-          </label>
-          <label class="wide">
-            <span>Direccion detectada</span>
-            <input type="text" formControlName="direccion" />
-          </label>
-          <button type="submit" [disabled]="facade.isSavingSnapshot()">Guardar</button>
-        </form>
-      }
+      <label class="wide">
+        <span>Asesor ventas</span>
+        <p-select
+          formControlName="idAsesorAsignado"
+          [options]="facade.advisors()"
+          optionLabel="nombreCompleto"
+          optionValue="empleadoId"
+          placeholder="Seleccionar asesor"
+          appendTo="body"
+        >
+          <ng-template #item let-advisor>
+            <div class="select-item select-item--advisor">
+              <strong>{{ advisor.nombreCompleto }}</strong>
+              <p-tag
+                [severity]="advisorSeverity(advisor.disponibilidad)"
+                [value]="facade.display(advisor.disponibilidad)"
+              />
+            </div>
+          </ng-template>
+        </p-select>
+      </label>
 
-      @if (dialog === 'assign') {
-        <form class="modal-panel form-grid" [formGroup]="facade.assignmentForm" (ngSubmit)="facade.submitAssignment()">
-          <div class="modal-head">
-            <h2>Asignar Lead</h2>
-            <button type="button" class="icon-button secondary-button" title="Cerrar" (click)="facade.closeDialog()">
-              <i class="ti ti-x"></i>
-            </button>
-          </div>
-          @if (facade.activeAssignmentLead(); as lead) {
-            <p class="wide helper">Lead {{ lead.prefijo }} {{ lead.lead }}</p>
-          } @else {
-            <p class="wide helper">{{ facade.selectedCount() }} leads seleccionados</p>
-          }
-          <label class="wide">
-            <span>Asesor ventas</span>
-            <select formControlName="idAsesorAsignado">
-              <option [ngValue]="0">Seleccionar asesor</option>
-              @for (advisor of facade.advisors(); track advisor.empleadoId) {
-                <option [ngValue]="advisor.empleadoId">
-                  {{ advisor.nombreCompleto }} &middot; {{ facade.display(advisor.disponibilidad) }}
-                </option>
-              }
-            </select>
-          </label>
-          <button type="submit" [disabled]="facade.isSaving()">Asignar</button>
-        </form>
-      }
-    </section>
-  }
+      <div class="dialog-actions">
+        <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeDialog()"></button>
+        <button pButton type="submit" label="Asignar" [loading]="facade.isSaving()"></button>
+      </div>
+    </form>
+  </p-dialog>
 </section>

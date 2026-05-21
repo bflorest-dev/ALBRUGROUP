@@ -53,7 +53,9 @@ export class GtrWorkspaceFacade {
   private readonly newRowTimers = new Map<number, number>();
   private attendanceRefreshId: number | null = null;
 
+  readonly pageSize = 12;
   readonly today = this.formatLocalDate(new Date());
+  readonly todayLabel = this.formatReadableDate(new Date());
   readonly isLoading = signal(false);
   readonly isReconciling = signal(false);
   readonly isSaving = signal(false);
@@ -76,6 +78,7 @@ export class GtrWorkspaceFacade {
   readonly activeDialog = signal<GtrDialog>(null);
   readonly activeAssignmentLead = signal<LeadGtrResponse | null>(null);
   readonly advisorsPanelOpen = signal(false);
+  readonly baseOptions = ['WHATSAPP', 'MESSENGER', 'RECONTACTO', 'PREDICTIVO', 'REFERIDO', 'MASIVO'];
 
   readonly intakeForm = this.fb.group({
     prefijo: ['+51', [Validators.required, Validators.pattern(/^\+\d{2,3}$/)]],
@@ -181,7 +184,7 @@ export class GtrWorkspaceFacade {
     this.snapshotForm.reset({
       idLead: row.id,
       numeroDocumentoTitularServicio: row.numeroDocumentoTitularServicio ?? '',
-      direccion: ''
+      direccion: row.direccionSnapshot ?? ''
     });
   }
 
@@ -389,6 +392,14 @@ export class GtrWorkspaceFacade {
     await this.refreshPage(false);
   }
 
+  async changePage(pageNumber: number): Promise<void> {
+    if (pageNumber === this.pageNumber()) {
+      return;
+    }
+    this.pageNumber.set(pageNumber);
+    await this.refreshPage(false);
+  }
+
   toggleSelection(idLead: number, checked: boolean): void {
     const next = new Set(this.selectedIds());
     if (checked) {
@@ -423,6 +434,13 @@ export class GtrWorkspaceFacade {
       return codigoDisplay;
     }
     return `${codigoDisplay} / ${subcodigoDisplay}`;
+  }
+
+  leadPrefixLabel(prefijo?: string | null): string {
+    if (prefijo === '+51') {
+      return '🇵🇪';
+    }
+    return this.display(prefijo);
   }
 
   advisorDotClass(advisor: AdvisorOption): string {
@@ -665,6 +683,25 @@ export class GtrWorkspaceFacade {
     const month = `${date.getMonth() + 1}`.padStart(2, '0');
     const day = `${date.getDate()}`.padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  private formatReadableDate(date: Date): string {
+    const days = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+    const months = [
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre'
+    ];
+    return `${days[date.getDay()]}, ${date.getDate()} de ${months[date.getMonth()]} ${date.getFullYear()}`;
   }
 
   private applyPresenceRealtimeEvent(event: PresenceRealtimeEvent): void {
