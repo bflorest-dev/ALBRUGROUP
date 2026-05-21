@@ -9,7 +9,9 @@ import {
   PresenceService
 } from '../../../core/services/presence.service';
 import { AttendanceRealtimeService } from '../../../core/services/attendance-realtime.service';
+import { PresenceRealtimeService } from '../../../core/services/presence-realtime.service';
 import { UsuarioResponse } from '../../../shared/models/auth/usuario-response';
+import { PresenceRealtimeEvent } from '../../../shared/models/gateway/presence-realtime-event';
 import {
   CampanaResponse,
   LeadGtrResponse,
@@ -46,9 +48,9 @@ export class GtrWorkspaceFacade {
   private readonly realtimeService = inject(LeadRealtimeService);
   private readonly attendanceRealtimeService = inject(AttendanceRealtimeService);
   private readonly presenceService = inject(PresenceService);
+  private readonly presenceRealtimeService = inject(PresenceRealtimeService);
   private readonly realtimeSubscription = new Subscription();
   private readonly newRowTimers = new Map<number, number>();
-  private presencePollingId: number | null = null;
   private attendanceRefreshId: number | null = null;
 
   readonly today = this.formatLocalDate(new Date());
@@ -117,13 +119,11 @@ export class GtrWorkspaceFacade {
   start(): void {
     void this.initialize();
     this.startRealtime();
-    this.startPresencePolling();
     this.document.defaultView?.addEventListener('visibilitychange', this.handleVisibilityChange);
   }
 
   stop(): void {
     this.realtimeSubscription.unsubscribe();
-    this.stopPresencePolling();
     this.stopAttendanceRefresh();
     this.document.defaultView?.removeEventListener('visibilitychange', this.handleVisibilityChange);
 
@@ -497,28 +497,15 @@ export class GtrWorkspaceFacade {
         error: () => undefined
       })
     );
-  }
 
-  private startPresencePolling(): void {
-    const windowRef = this.document.defaultView;
-    if (!windowRef || this.presencePollingId !== null) {
-      return;
-    }
-
-    this.presencePollingId = windowRef.setInterval(() => {
-      if (this.document.visibilityState === 'hidden') {
-        return;
-      }
-      void this.refreshAdvisors().catch(() => undefined);
-    }, 30000);
-  }
-
-  private stopPresencePolling(): void {
-    const windowRef = this.document.defaultView;
-    if (windowRef && this.presencePollingId !== null) {
-      windowRef.clearInterval(this.presencePollingId);
-      this.presencePollingId = null;
-    }
+    this.realtimeSubscription.add(
+      this.presenceRealtimeService.watchAll().subscribe({
+        next: (event) => {
+          this.applyPresenceRealtimeEvent(event);
+        },
+        error: () => undefined
+      })
+    );
   }
 
   private readonly handleVisibilityChange = (): void => {
@@ -663,5 +650,45 @@ export class GtrWorkspaceFacade {
     const month = `${date.getMonth() + 1}`.padStart(2, '0');
     const day = `${date.getDate()}`.padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  private applyPresenceRealtimeEvent(event: PresenceRealtimeEvent): void {
+    this.advisors.update((advisors) => {
+      if (!advisors.some((advisor) => advisor.empleadoId === event.empleadoId)) {
+        return advisors;
+      }
+
+      const updated = advisors.map((advisor) => {
+        if (advisor.empleadoId !== event.empleadoId) {
+          return advisor;
+        }
+
+        if (event.tipo === 'PRESENCE_OFFLINE' || event.tipo === 'PRESENCE_EXPIRED') {
+          return {
+            ...advisor,
+            connected: false,
+            operativo: false,
+            disponibilidad: 'SIN_PRESENCIA',
+            estadoSchedule: 'OFFLINE',
+            lastSeen: event.lastSeen ?? event.occurredAt ?? advisor.lastSeen ?? null
+          };
+        }
+
+        return {
+          ...advisor,
+          nombreCompleto: event.nombreCompleto || advisor.nombreCompleto,
+          connected: event.online,
+          disponibilidad: event.disponibilidad ?? advisor.disponibilidad ?? null,
+          lastSeen: event.lastSeen ?? event.occurredAt ?? advisor.lastSeen ?? null
+        };
+      });
+
+      return [...updated].sort(
+        (left, right) =>
+          Number(right.operativo) - Number(left.operativo) ||
+          Number(right.connected) - Number(left.connected) ||
+          left.nombreCompleto.localeCompare(right.nombreCompleto)
+      );
+    });
   }
 }

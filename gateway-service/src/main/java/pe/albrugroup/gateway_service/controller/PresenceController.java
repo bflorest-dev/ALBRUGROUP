@@ -41,7 +41,7 @@ public class PresenceController {
     @PostMapping("/heartbeat")
     @Operation(summary = "Renovar heartbeat", description = "Renueva el TTL de las claves de presencia del empleado autenticado.")
     public Mono<ResponseEntity<Void>> heartbeat(@AuthenticationPrincipal AuthenticatedUser user) {
-        return presenceService.registrarEmpleadoOnline(user)
+        return presenceService.renovarHeartbeat(user)
                 .thenReturn(ResponseEntity.ok().build());
     }
 

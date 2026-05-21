@@ -4,10 +4,12 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Observable, Subscription, catchError, firstValueFrom, of, timeout } from 'rxjs';
 import { AttendanceRealtimeService } from '../../../core/services/attendance-realtime.service';
+import { PresenceRealtimeService } from '../../../core/services/presence-realtime.service';
 import { RecruitmentRealtimeService } from '../../../core/services/recruitment-realtime.service';
 import { ConnectedUserResponse, PresenceService } from '../../../core/services/presence.service';
 import { ApiErrorResponse } from '../../../shared/models/api/api-error-response';
 import { PageResponse } from '../../../shared/models/common/page-response';
+import { PresenceRealtimeEvent } from '../../../shared/models/gateway/presence-realtime-event';
 import { AttendanceRealtimeEvent } from '../../../shared/models/schedule/attendance-realtime-event';
 import { EventoResponse } from '../../../shared/models/recruitment/evento-response';
 import { OfertaLaboralResponse } from '../../../shared/models/recruitment/oferta-laboral-response';
@@ -66,6 +68,7 @@ export class RrhhWorkspaceFacade {
   private readonly attendanceRealtimeService = inject(AttendanceRealtimeService);
   private readonly recruitmentRealtimeService = inject(RecruitmentRealtimeService);
   private readonly presenceService = inject(PresenceService);
+  private readonly presenceRealtimeService = inject(PresenceRealtimeService);
   private readonly realtimeSubscription = new Subscription();
   private realtimeStarted = false;
   private attendanceRefreshId: number | null = null;
@@ -748,6 +751,15 @@ export class RrhhWorkspaceFacade {
         error: () => undefined
       })
     );
+
+    this.realtimeSubscription.add(
+      this.presenceRealtimeService.watchAll().subscribe({
+        next: (event) => {
+          this.handlePresenceRealtimeEvent(event);
+        },
+        error: () => undefined
+      })
+    );
   }
 
   private applyAttendanceRealtimeEvent(event: AttendanceRealtimeEvent): void {
@@ -891,6 +903,48 @@ export class RrhhWorkspaceFacade {
       default:
         return null;
     }
+  }
+
+  private handlePresenceRealtimeEvent(event: PresenceRealtimeEvent): void {
+    if (this.section() !== 'asistencia') {
+      return;
+    }
+
+    const employeeIsVisible = this.employeesPage().content.some((employee) => employee.id === event.empleadoId);
+    if (!employeeIsVisible) {
+      return;
+    }
+
+    this.markAttendanceRowUpdated(event.empleadoId);
+    this.connectedUsers.update((users) => {
+      if (event.tipo === 'PRESENCE_OFFLINE' || event.tipo === 'PRESENCE_EXPIRED') {
+        return users.filter((user) => user.empleadoId !== event.empleadoId);
+      }
+
+      const current = users.find((user) => user.empleadoId === event.empleadoId);
+      const employee = this.employeesPage().content.find((item) => item.id === event.empleadoId);
+      const nextUser: ConnectedUserResponse = {
+        empleadoId: event.empleadoId,
+        nombreCompleto: event.nombreCompleto || current?.nombreCompleto || this.resolveEmployeeFullName(employee),
+        roles: event.roles?.length ? event.roles : current?.roles ?? [],
+        status: 'ONLINE',
+        disponibilidad: event.disponibilidad ?? current?.disponibilidad ?? null,
+        lastSeen: event.lastSeen ?? event.occurredAt ?? current?.lastSeen ?? null
+      };
+
+      if (!current) {
+        return [...users, nextUser];
+      }
+
+      return users.map((user) =>
+        user.empleadoId === event.empleadoId
+          ? {
+              ...user,
+              ...nextUser
+            }
+          : user
+      );
+    });
   }
 
   private handleRecruitmentRealtimeEvent(event: PostulacionRealtimeEvent): void {
@@ -2154,5 +2208,9 @@ export class RrhhWorkspaceFacade {
 
   private getToday(): string {
     return new Date().toISOString().slice(0, 10);
+  }
+
+  private resolveEmployeeFullName(employee: EmpleadoResponse | undefined): string {
+    return employee ? `${employee.nombres} ${employee.apellidos}` : '';
   }
 }

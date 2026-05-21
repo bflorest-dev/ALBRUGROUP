@@ -16,4 +16,8 @@ public final class PresenceKeys {
     public static String roleIndexKey(String role) {
         return "presence:role:" + role + ":employees";
     }
+
+    public static String employeeShadowKey(Long empleadoId) {
+        return "presence:shadow:" + empleadoId;
+    }
 }
