@@ -1,98 +1,227 @@
 .layout-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 292px 1fr;
   color: var(--app-text);
   background: linear-gradient(180deg, var(--app-bg) 0%, var(--app-bg-raised) 100%);
 }
 
 .sidebar {
+  --layout-sidebar-bg: #0f3d31;
+  --layout-sidebar-bg-deep: #08251f;
+  --layout-sidebar-text: #f8fafc;
+  --layout-sidebar-muted: #b8d4ca;
+  --layout-sidebar-hover: rgba(255, 255, 255, 0.11);
+  --layout-sidebar-active: rgba(255, 255, 255, 0.17);
+
   position: sticky;
   top: 0;
   height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 2rem;
+  gap: 1.15rem;
+  padding: 1.25rem;
   overflow-y: auto;
-  color: var(--sidebar-text);
-  background: var(--sidebar-bg);
+  color: var(--layout-sidebar-text);
+  background:
+    radial-gradient(circle at 15% 0%, rgba(55, 162, 111, 0.35), transparent 34%),
+    linear-gradient(180deg, var(--layout-sidebar-bg) 0%, var(--layout-sidebar-bg-deep) 100%);
 }
 
-.sidebar__top {
+.sidebar__brand,
+.menu__item,
+.profile-button,
+.profile-menu__item {
+  display: flex;
+  align-items: center;
+}
+
+.sidebar__brand {
+  gap: 0.85rem;
+  padding: 0.65rem 0.55rem 1rem;
+}
+
+.brand__logo,
+.profile-button__avatar {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 999px;
+}
+
+.brand__logo {
+  width: 2.75rem;
+  height: 2.75rem;
+  color: #ffffff;
+  background: var(--role-accent);
+  box-shadow: 0 16px 34px color-mix(in srgb, var(--role-accent) 28%, transparent 72%);
+}
+
+.brand__copy,
+.profile-button__copy {
+  min-width: 0;
   display: grid;
-  gap: 1.5rem;
 }
 
-.brand__eyebrow {
-  display: inline-block;
-  margin-bottom: 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.2em;
+.brand__eyebrow,
+.menu__section,
+.profile-button__copy small {
+  color: var(--layout-sidebar-muted);
+}
+
+.brand__eyebrow,
+.menu__section {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .brand__title {
-  margin: 0;
-  font-size: 1.6rem;
+  color: var(--layout-sidebar-text);
+  font-size: 1.08rem;
+  letter-spacing: -0.02em;
 }
 
 .menu {
   display: grid;
+  gap: 0.35rem;
+}
+
+.menu__section {
+  padding: 0 0.75rem 0.45rem;
+}
+
+.menu__item {
+  justify-content: space-between;
   gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-.menu a {
-  padding: 0.85rem 1rem;
-  border-radius: 0.9rem;
-  color: inherit;
+  min-height: 2.75rem;
+  padding: 0.72rem 0.82rem;
+  border-radius: 0.42rem;
+  color: var(--layout-sidebar-muted);
   text-decoration: none;
-  background: var(--sidebar-link-bg);
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease;
 }
 
-.menu a.is-active {
-  background: var(--sidebar-link-active-bg);
+.menu__item:hover {
+  color: var(--layout-sidebar-text);
+  background: var(--layout-sidebar-hover);
+}
+
+.menu__item.is-active {
+  color: var(--layout-sidebar-text);
+  background: var(--layout-sidebar-active);
+  box-shadow:
+    inset 4px 0 0 var(--role-accent),
+    0 10px 28px color-mix(in srgb, #000000 12%, transparent 88%);
+}
+
+.menu__item-main {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.menu__item-main i {
+  width: 1.1rem;
+  color: #8ee0b7;
+  font-size: 1rem;
+}
+
+.menu__item-main span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sidebar__bottom {
   position: sticky;
   bottom: 0;
-  display: flex;
-  justify-content: flex-start;
+  display: grid;
+  gap: 0.55rem;
   margin-top: auto;
-  padding-top: 1.5rem;
-  padding-bottom: 0.25rem;
-  background: var(--sidebar-bottom-bg);
+  padding-top: 1rem;
+  background: linear-gradient(180deg, transparent 0%, var(--layout-sidebar-bg-deep) 24%);
 }
 
-.logout-button {
-  width: 3rem;
-  height: 3rem;
-  display: inline-grid;
-  place-items: center;
+.profile-menu {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.55rem;
+  background: rgba(6, 32, 27, 0.96);
+  box-shadow: 0 -12px 32px color-mix(in srgb, #000000 18%, transparent 82%);
+}
+
+.profile-menu__item,
+.profile-button {
+  width: 100%;
   border: 0;
-  border-radius: 999px;
   color: inherit;
-  background: var(--sidebar-link-bg);
+  font: inherit;
+  text-align: left;
   cursor: pointer;
-  transition:
-    background-color 0.2s ease,
-    transform 0.2s ease;
 }
 
-.logout-button:hover {
-  background: var(--sidebar-link-active-bg);
-  transform: translateY(-1px);
+.profile-menu__item {
+  gap: 0.75rem;
+  padding: 0.72rem 0.85rem;
+  border-radius: 0.38rem;
+  background: transparent;
 }
 
-.logout-button svg {
-  width: 1.2rem;
-  height: 1.2rem;
-  fill: currentColor;
+.profile-menu__item:hover {
+  background: var(--layout-sidebar-hover);
+}
+
+.profile-button {
+  gap: 0.75rem;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border-radius: 0.55rem;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.profile-button:hover {
+  background: var(--layout-sidebar-active);
+}
+
+.profile-button__avatar {
+  width: 2.25rem;
+  height: 2.25rem;
+  color: var(--role-accent);
+  background: color-mix(in srgb, var(--role-accent) 16%, #ffffff 84%);
+}
+
+.profile-button__copy {
+  flex: 1 1 auto;
+}
+
+.profile-button__copy strong,
+.profile-button__copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-button__copy strong {
+  color: var(--layout-sidebar-text);
+  font-size: 0.92rem;
+}
+
+.profile-button__copy small {
+  font-size: 0.76rem;
 }
 
 .content {
   padding: 2rem;
+  display: grid;
+  align-content: start;
+  gap: 0.55rem;
 }
 
 @media (max-width: 900px) {
@@ -103,14 +232,15 @@
   .sidebar {
     position: static;
     height: auto;
-    padding-bottom: 1rem;
     overflow: visible;
   }
 
   .sidebar__bottom {
-    position: static;
-    margin-top: 1.5rem;
-    padding-bottom: 0;
+    position: relative;
     background: none;
+  }
+
+  .content {
+    padding: 1rem;
   }
 }

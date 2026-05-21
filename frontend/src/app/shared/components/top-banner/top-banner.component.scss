@@ -1,0 +1,49 @@
+:host {
+  display: block;
+  position: relative;
+  z-index: 80;
+}
+
+.top-banner {
+  min-height: 2.45rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.35rem 0.45rem 0.35rem 0.85rem;
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, var(--role-accent) 8%, transparent 92%);
+}
+
+.top-banner__main {
+  min-width: 0;
+}
+
+.top-banner__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+::ng-deep .development-banner-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--app-text-muted);
+  font-size: 0.9rem;
+}
+
+::ng-deep .development-banner-copy i {
+  color: var(--role-accent);
+}
+
+@media (max-width: 900px) {
+  .top-banner {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
+
+  .top-banner__actions {
+    width: 100%;
+  }
+}

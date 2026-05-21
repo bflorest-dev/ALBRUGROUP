@@ -101,6 +101,25 @@ td small,
   --p-table-row-background: rgba(31, 111, 85, 0.1);
 }
 
+.row-updated {
+  --p-table-row-background: rgba(31, 111, 85, 0.16);
+  animation: attendance-row-pulse 1.8s ease-out;
+}
+
+.row-updated td:first-child {
+  box-shadow: inset 4px 0 0 rgba(31, 111, 85, 0.8);
+}
+
+@keyframes attendance-row-pulse {
+  0% {
+    --p-table-row-background: rgba(31, 111, 85, 0.24);
+  }
+
+  100% {
+    --p-table-row-background: rgba(31, 111, 85, 0.08);
+  }
+}
+
 :host ::ng-deep .rrhh-card,
 :host ::ng-deep .rrhh-hero {
   border: 1px solid var(--app-border-soft);

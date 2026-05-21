@@ -23,6 +23,12 @@ spring:
                 - Path=/schedule/ws/**
               filters:
                 - StripPrefix=1
+            - id: recruitment-service-websocket
+              uri: ${RECRUITMENT_SERVICE_WS_URI:ws://recruitment-service:8084}
+              predicates:
+                - Path=/recruitment/ws/**
+              filters:
+                - StripPrefix=1
             - id: auth-service
               uri: ${AUTH_SERVICE_URI:http://auth-service:8081}
               predicates:

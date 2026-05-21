@@ -4,12 +4,14 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, Validators } from '@angular/forms';
 import { Observable, Subscription, catchError, firstValueFrom, of, timeout } from 'rxjs';
 import { AttendanceRealtimeService } from '../../../core/services/attendance-realtime.service';
+import { RecruitmentRealtimeService } from '../../../core/services/recruitment-realtime.service';
 import { ConnectedUserResponse, PresenceService } from '../../../core/services/presence.service';
 import { ApiErrorResponse } from '../../../shared/models/api/api-error-response';
 import { PageResponse } from '../../../shared/models/common/page-response';
 import { AttendanceRealtimeEvent } from '../../../shared/models/schedule/attendance-realtime-event';
 import { EventoResponse } from '../../../shared/models/recruitment/evento-response';
 import { OfertaLaboralResponse } from '../../../shared/models/recruitment/oferta-laboral-response';
+import { PostulacionRealtimeEvent } from '../../../shared/models/recruitment/postulacion-realtime-event';
 import { PostulacionRequest } from '../../../shared/models/recruitment/postulacion-request';
 import { PostulacionResponse } from '../../../shared/models/recruitment/postulacion-response';
 import { CerrarContratoRequest } from '../../../shared/models/rrhh/cerrar-contrato-request';
@@ -49,17 +51,27 @@ export interface RrhhAttendanceRow {
   shouldBeOnline: boolean;
 }
 
+interface AttendanceOverviewLoadOptions {
+  silent?: boolean;
+  refreshEmployees?: boolean;
+}
+
 @Injectable()
 export class RrhhWorkspaceFacade {
   private readonly requestTimeoutMs = 15000;
+  private readonly attendanceHighlightDurationMs = 1800;
   private readonly formBuilder = inject(FormBuilder);
   private readonly recruitmentService = inject(RrhhRecruitmentService);
   private readonly rrhhService = inject(RrhhOperationsService);
   private readonly attendanceRealtimeService = inject(AttendanceRealtimeService);
+  private readonly recruitmentRealtimeService = inject(RecruitmentRealtimeService);
   private readonly presenceService = inject(PresenceService);
   private readonly realtimeSubscription = new Subscription();
   private realtimeStarted = false;
   private attendanceRefreshId: number | null = null;
+  private recruitmentRefreshId: number | null = null;
+  private readonly attendanceHighlightTimeouts = new Map<number, number>();
+  private reloadHiringEventsAfterRecruitmentRefresh = false;
 
   readonly section = signal<RrhhSection>('asistencia');
 
@@ -363,6 +375,7 @@ export class RrhhWorkspaceFacade {
   readonly isLoadingCompliance = signal(false);
   readonly isLoadingEmployeeEvents = signal(false);
   readonly isLoadingAttendanceOverview = signal(false);
+  readonly isReconcilingAttendanceOverview = signal(false);
 
   readonly editingPostulacionId = signal<number | null>(null);
 
@@ -388,6 +401,7 @@ export class RrhhWorkspaceFacade {
   readonly complianceResumen = signal<CumplimientoResumenResponse | null>(null);
   readonly complianceDetalle = signal<CumplimientoDetalleResponse | null>(null);
   readonly monitorEstados = signal<EstadoMonitorResponse[]>([]);
+  readonly updatedAttendanceEmployeeIds = signal<ReadonlySet<number>>(new Set<number>());
 
   readonly activeOffers = computed(() => this.activeOffersState());
   readonly empresasContratistas = computed(() => this.empresasContratistasState());
@@ -433,6 +447,10 @@ export class RrhhWorkspaceFacade {
   readonly attendanceOnlineRows = computed(() => this.attendanceRows().filter((row) => row.isOnline));
   readonly attendanceOfflineRows = computed(() => this.attendanceRows().filter((row) => !row.isOnline));
 
+  isAttendanceRowUpdated(employeeId: number): boolean {
+    return this.updatedAttendanceEmployeeIds().has(employeeId);
+  }
+
   async initialize(section = this.section()): Promise<void> {
     this.section.set(section);
     this.startRealtime();
@@ -460,6 +478,8 @@ export class RrhhWorkspaceFacade {
   destroy(): void {
     this.realtimeSubscription.unsubscribe();
     this.stopAttendanceRefresh();
+    this.stopAttendanceHighlights();
+    this.stopRecruitmentRefresh();
     this.realtimeStarted = false;
   }
 
@@ -564,10 +584,12 @@ export class RrhhWorkspaceFacade {
     this.hiringReadyErrorMessage.set('');
 
     try {
+      const selectedHiringCaseId = this.selectedHiringCase()?.id ?? null;
       const page = await this.withTimeout(
         this.recruitmentService.listarBandejaContratacion(pageNumber)
       );
       this.hiringReadyPage.set(page);
+      this.syncSelectedHiringCase(page.content, selectedHiringCaseId);
     } catch (error) {
       this.hiringReadyErrorMessage.set(
         this.getErrorMessage(error, 'No fue posible cargar la bandeja de contratación.')
@@ -639,15 +661,26 @@ export class RrhhWorkspaceFacade {
     }
   }
 
-  async loadAttendanceOverview(pageNumber = 0): Promise<void> {
-    this.isLoadingAttendanceOverview.set(true);
-    this.attendanceOverviewErrorMessage.set('');
+  async loadAttendanceOverview(pageNumber = 0, options: AttendanceOverviewLoadOptions = {}): Promise<void> {
+    const isSilent = options.silent === true;
+    const shouldRefreshEmployees = options.refreshEmployees ?? !isSilent;
+
+    if (isSilent) {
+      this.isReconcilingAttendanceOverview.set(true);
+    } else {
+      this.isLoadingAttendanceOverview.set(true);
+      this.attendanceOverviewErrorMessage.set('');
+    }
 
     try {
-      const employeesPage = await this.withTimeout(
-        this.rrhhService.listarEmpleados(this.buildActiveEmployeeFilters(), pageNumber, 12)
-      );
-      this.employeesPage.set(employeesPage);
+      let employeesPage = this.employeesPage();
+
+      if (shouldRefreshEmployees || employeesPage.content.length === 0 || employeesPage.page !== pageNumber) {
+        employeesPage = await this.withTimeout(
+          this.rrhhService.listarEmpleados(this.buildActiveEmployeeFilters(), pageNumber, 12)
+        );
+        this.employeesPage.set(employeesPage);
+      }
 
       const employeeIds = employeesPage.content.map((employee) => employee.id);
       const [connectedUsers, monitorStates] = await Promise.all([
@@ -665,11 +698,17 @@ export class RrhhWorkspaceFacade {
       this.connectedUsers.set(connectedUsers);
       this.monitorEstados.set(monitorStates);
     } catch (error) {
-      this.attendanceOverviewErrorMessage.set(
-        this.getErrorMessage(error, 'No fue posible cargar asistencia.')
-      );
+      if (!isSilent) {
+        this.attendanceOverviewErrorMessage.set(
+          this.getErrorMessage(error, 'No fue posible cargar asistencia.')
+        );
+      }
     } finally {
-      this.isLoadingAttendanceOverview.set(false);
+      if (isSilent) {
+        this.isReconcilingAttendanceOverview.set(false);
+      } else {
+        this.isLoadingAttendanceOverview.set(false);
+      }
     }
   }
 
@@ -700,6 +739,15 @@ export class RrhhWorkspaceFacade {
         error: () => undefined
       })
     );
+
+    this.realtimeSubscription.add(
+      this.recruitmentRealtimeService.watchTopic('/topic/postulaciones').subscribe({
+        next: (event) => {
+          this.handleRecruitmentRealtimeEvent(event);
+        },
+        error: () => undefined
+      })
+    );
   }
 
   private applyAttendanceRealtimeEvent(event: AttendanceRealtimeEvent): void {
@@ -708,6 +756,9 @@ export class RrhhWorkspaceFacade {
     if (!employeeIsVisible) {
       return;
     }
+
+    this.markAttendanceRowUpdated(event.idEmpleado);
+    this.syncPresenceFromAttendanceEvent(event);
 
     this.monitorEstados.update((states) => {
       const nextState: EstadoMonitorResponse = {
@@ -746,7 +797,10 @@ export class RrhhWorkspaceFacade {
 
     this.attendanceRefreshId = window.setTimeout(() => {
       this.attendanceRefreshId = null;
-      void this.loadAttendanceOverview(this.currentEmployeesPage());
+      void this.loadAttendanceOverview(this.currentEmployeesPage(), {
+        silent: true,
+        refreshEmployees: false
+      });
     }, 500);
   }
 
@@ -755,6 +809,177 @@ export class RrhhWorkspaceFacade {
       window.clearTimeout(this.attendanceRefreshId);
       this.attendanceRefreshId = null;
     }
+  }
+
+  private markAttendanceRowUpdated(employeeId: number): void {
+    const currentTimeout = this.attendanceHighlightTimeouts.get(employeeId);
+
+    if (currentTimeout !== undefined) {
+      window.clearTimeout(currentTimeout);
+    }
+
+    this.updatedAttendanceEmployeeIds.update((ids) => new Set(ids).add(employeeId));
+
+    const timeoutId = window.setTimeout(() => {
+      this.attendanceHighlightTimeouts.delete(employeeId);
+      this.updatedAttendanceEmployeeIds.update((ids) => {
+        const next = new Set(ids);
+        next.delete(employeeId);
+        return next;
+      });
+    }, this.attendanceHighlightDurationMs);
+
+    this.attendanceHighlightTimeouts.set(employeeId, timeoutId);
+  }
+
+  private stopAttendanceHighlights(): void {
+    for (const timeoutId of this.attendanceHighlightTimeouts.values()) {
+      window.clearTimeout(timeoutId);
+    }
+
+    this.attendanceHighlightTimeouts.clear();
+    this.updatedAttendanceEmployeeIds.set(new Set<number>());
+  }
+
+  private syncPresenceFromAttendanceEvent(event: AttendanceRealtimeEvent): void {
+    const estadoActual = event.estadoActual ?? null;
+
+    if (!estadoActual || estadoActual === 'OFFLINE') {
+      this.connectedUsers.update((users) => users.filter((user) => user.empleadoId !== event.idEmpleado));
+      return;
+    }
+
+    const employee = this.employeesPage().content.find((item) => item.id === event.idEmpleado);
+    const fullName = employee ? `${employee.nombres} ${employee.apellidos}` : '';
+    const lastSeen = event.occurredAt ?? event.desde ?? new Date().toISOString();
+    const disponibilidad = this.resolveDisponibilidadFromAttendance(estadoActual);
+
+    this.connectedUsers.update((users) => {
+      const current = users.find((user) => user.empleadoId === event.idEmpleado);
+      const nextUser: ConnectedUserResponse = {
+        empleadoId: event.idEmpleado,
+        nombreCompleto: current?.nombreCompleto || fullName,
+        roles: current?.roles ?? [],
+        status: 'ONLINE',
+        disponibilidad: disponibilidad ?? current?.disponibilidad ?? null,
+        lastSeen
+      };
+
+      if (!current) {
+        return [...users, nextUser];
+      }
+
+      return users.map((user) =>
+        user.empleadoId === event.idEmpleado
+          ? {
+              ...user,
+              ...nextUser
+            }
+          : user
+      );
+    });
+  }
+
+  private resolveDisponibilidadFromAttendance(status: string): string | null {
+    switch (status) {
+      case 'ONLINE':
+        return 'DISPONIBLE';
+      case 'ALMUERZO':
+      case 'SERVICIOS':
+      case 'CAPACITACION':
+        return 'OCUPADO';
+      default:
+        return null;
+    }
+  }
+
+  private handleRecruitmentRealtimeEvent(event: PostulacionRealtimeEvent): void {
+    if (this.section() === 'empleabilidad') {
+      this.scheduleRecruitmentRefresh(false);
+      return;
+    }
+
+    if (this.section() !== 'contrataciones') {
+      return;
+    }
+
+    if (!this.affectsHiringReady(event)) {
+      return;
+    }
+
+    if (this.selectedHiringCase()?.id === event.idPostulacion) {
+      this.reloadHiringEventsAfterRecruitmentRefresh = true;
+    }
+
+    this.scheduleRecruitmentRefresh(this.reloadHiringEventsAfterRecruitmentRefresh);
+  }
+
+  private affectsHiringReady(event: PostulacionRealtimeEvent): boolean {
+    return (
+      event.etapa === 'CONTRATACION' ||
+      event.etapaAnterior === 'CONTRATACION' ||
+      event.tipo === 'CONFIRMACION_CONTRATACION' ||
+      event.tipo === 'ACTUALIZACION_DETALLE_CAPACITACION'
+    );
+  }
+
+  private scheduleRecruitmentRefresh(reloadHiringEvents: boolean): void {
+    if (reloadHiringEvents) {
+      this.reloadHiringEventsAfterRecruitmentRefresh = true;
+    }
+
+    if (this.recruitmentRefreshId !== null) {
+      return;
+    }
+
+    this.recruitmentRefreshId = window.setTimeout(() => {
+      this.recruitmentRefreshId = null;
+      const shouldReloadHiringEvents = this.reloadHiringEventsAfterRecruitmentRefresh;
+      this.reloadHiringEventsAfterRecruitmentRefresh = false;
+      void this.runRecruitmentRefresh(shouldReloadHiringEvents);
+    }, 500);
+  }
+
+  private async runRecruitmentRefresh(reloadHiringEvents: boolean): Promise<void> {
+    if (this.section() === 'empleabilidad') {
+      await this.loadPostulaciones(this.currentPostulacionesPage());
+      return;
+    }
+
+    if (this.section() !== 'contrataciones') {
+      return;
+    }
+
+    await this.loadHiringReadyCases(this.currentHiringReadyPage());
+    if (reloadHiringEvents && this.selectedHiringCase()) {
+      await this.loadHiringEvents(this.hiringEventsPage().page);
+    }
+  }
+
+  private stopRecruitmentRefresh(): void {
+    if (this.recruitmentRefreshId !== null) {
+      window.clearTimeout(this.recruitmentRefreshId);
+      this.recruitmentRefreshId = null;
+    }
+    this.reloadHiringEventsAfterRecruitmentRefresh = false;
+  }
+
+  private syncSelectedHiringCase(postulaciones: PostulacionResponse[], selectedHiringCaseId: number | null): void {
+    if (!selectedHiringCaseId) {
+      return;
+    }
+
+    const nextSelectedHiringCase =
+      postulaciones.find((postulacion) => postulacion.id === selectedHiringCaseId) ?? null;
+
+    this.selectedHiringCase.set(nextSelectedHiringCase);
+    if (nextSelectedHiringCase) {
+      this.linkedPostulacionId.set(nextSelectedHiringCase.id);
+      return;
+    }
+
+    this.linkedPostulacionId.set(null);
+    this.hiringEventsPage.set(this.emptyPage<EventoResponse>());
   }
 
   async loadPaymentEmployees(pageNumber = 0): Promise<void> {

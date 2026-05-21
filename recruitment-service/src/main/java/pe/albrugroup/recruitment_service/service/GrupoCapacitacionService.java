@@ -8,8 +8,10 @@ import pe.albrugroup.recruitment_service.entity.GrupoCapacitacion;
 import pe.albrugroup.recruitment_service.entity.GrupoCapacitacionDetalle;
 import pe.albrugroup.recruitment_service.entity.Postulacion;
 import pe.albrugroup.recruitment_service.entity.enums.Accion;
+import pe.albrugroup.recruitment_service.entity.enums.EstadoBandejaPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoCapacitacionPostulante;
 import pe.albrugroup.recruitment_service.entity.enums.EstadoGrupoCapacitacion;
+import pe.albrugroup.recruitment_service.entity.enums.EstadoPostulacion;
 import pe.albrugroup.recruitment_service.entity.enums.Etapa;
 import pe.albrugroup.recruitment_service.entity.enums.PuestoObjetivo;
 import pe.albrugroup.recruitment_service.entity.request.ActualizarDetalleGrupoCapacitacionRequest;
@@ -45,6 +47,7 @@ public class GrupoCapacitacionService {
     private final GrupoCapacitacionMapper grupoCapacitacionMapper;
     private final EventoService eventoService;
     private final PaginationService paginationService;
+    private final PostulacionRealtimeNotifier postulacionRealtimeNotifier;
 
     public GrupoCapacitacionResponse crearGrupo(GrupoCapacitacionRequest request) {
         validarCodigoGrupoUnico(request.getCodigo());
@@ -82,6 +85,9 @@ public class GrupoCapacitacionService {
     ) {
         GrupoCapacitacion grupo = obtenerGrupoConDetalles(idGrupoCapacitacion);
         Postulacion postulacion = obtenerPostulacion(request.getIdPostulacion());
+        Etapa etapaAnterior = postulacion.getEtapa();
+        EstadoPostulacion estadoAnterior = postulacion.getEstado();
+        EstadoBandejaPostulacion estadoBandejaAnterior = postulacion.getEstadoBandeja();
 
         validarGrupoDisponible(grupo);
         validarPostulacionAptaParaCapacitacion(postulacion);
@@ -106,6 +112,17 @@ public class GrupoCapacitacionService {
                 "Asignado al grupo de capacitacion " + grupo.getCodigo()
         );
 
+        postulacionRealtimeNotifier.publishAfterCommit(
+                "ASIGNACION_GRUPO_CAPACITACION",
+                "CAPACITACION",
+                postulacion,
+                etapaAnterior,
+                estadoAnterior,
+                estadoBandejaAnterior,
+                grupo.getId(),
+                postulacion.getOfertaLaboral().getPuestoObjetivo()
+        );
+
         return grupoCapacitacionMapper.toResponse(detalleGuardado);
     }
 
@@ -118,6 +135,10 @@ public class GrupoCapacitacionService {
                 .orElseThrow(() -> new NotFoundException(
                         "No existe un detalle de capacitacion para la postulacion indicada en el grupo enviado"
                 ));
+        Postulacion postulacion = detalle.getPostulacion();
+        Etapa etapaAnterior = postulacion.getEtapa();
+        EstadoPostulacion estadoAnterior = postulacion.getEstado();
+        EstadoBandejaPostulacion estadoBandejaAnterior = postulacion.getEstadoBandeja();
 
         validarActualizacionDetalle(request);
 
@@ -142,6 +163,16 @@ public class GrupoCapacitacionService {
 
         GrupoCapacitacionDetalle detalleGuardado = detalleRepository.save(detalle);
         registrarEventoResultadoCapacitacion(detalleGuardado);
+        postulacionRealtimeNotifier.publishAfterCommit(
+                "ACTUALIZACION_DETALLE_CAPACITACION",
+                "CAPACITACION",
+                postulacion,
+                etapaAnterior,
+                estadoAnterior,
+                estadoBandejaAnterior,
+                detalleGuardado.getGrupoCapacitacion().getId(),
+                postulacion.getOfertaLaboral().getPuestoObjetivo()
+        );
         return grupoCapacitacionMapper.toResponse(detalleGuardado);
     }
 

@@ -1,65 +1,69 @@
-<section class="attendance-box">
-  <span class="attendance-box__eyebrow">Estado de asistencia</span>
-
+<section class="attendance-status">
   <button
     type="button"
-    class="attendance-box__trigger"
+    class="attendance-status__trigger"
     [class.is-open]="isOpen()"
-    [class.is-loading]="isLoading"
+    [disabled]="isLoading"
     [attr.aria-expanded]="isOpen()"
     (click)="toggleOpen()"
   >
-    <span class="attendance-box__status">
-      <span class="attendance-box__dot" [style.background]="statusColor"></span>
-      <span>{{ statusLabel }}</span>
-    </span>
-    <span class="attendance-box__caret">{{ isOpen() ? '▴' : '▾' }}</span>
+    <p-tag [value]="statusLabel" [style]="statusTagStyle()" />
+    @if (isLoading) {
+      <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+    } @else {
+      <i [class]="isOpen() ? 'pi pi-angle-up' : 'pi pi-angle-down'" aria-hidden="true"></i>
+    }
   </button>
 
   @if (isOpen()) {
-    <div class="attendance-box__menu">
+    <div class="attendance-status__menu">
       @if (actions.length) {
         @for (action of actions; track action.id) {
-          <button type="button" class="attendance-box__option" (click)="selectAction(action)">
-            <span class="attendance-box__option-main">
-              <span class="attendance-box__dot" [style.background]="getOptionColor(action)"></span>
-              <span>{{ action.label }}</span>
-            </span>
-            <span class="attendance-box__option-helper">{{ action.helperText }}</span>
+          <button type="button" class="attendance-status__option" (click)="selectAction(action)">
+            <p-tag [value]="action.label" [style]="statusTagStyle(getOptionColor(action))" />
           </button>
         }
       } @else {
-        <p class="attendance-box__empty">No hay acciones disponibles para este estado.</p>
+        <span class="attendance-status__empty">Sin acciones</span>
+      }
+
+      @if (errorMessage) {
+        <button type="button" class="attendance-status__retry" (click)="retry.emit()">
+          <i class="pi pi-refresh" aria-hidden="true"></i>
+          <span>Reintentar</span>
+        </button>
       }
     </div>
   }
 
-  @if (pendingConfirmation(); as action) {
-    <div class="attendance-box__confirm">
-      <p class="attendance-box__confirm-title">Confirmar cambio a {{ action.label }}</p>
-      <p class="attendance-box__confirm-text">
-        Vas a cerrar tu jornada de hoy. Despues de marcar salida no podras volver a ONLINE
-        en esta fecha.
-      </p>
-      <div class="attendance-box__confirm-actions">
-        <button type="button" class="attendance-box__confirm-cancel" (click)="cancelPendingAction()">
-          Cancelar
-        </button>
-        <button type="button" class="attendance-box__confirm-submit" (click)="confirmPendingAction()">
-          Confirmar salida
-        </button>
+  <p-dialog
+    header="Confirmar salida"
+    [visible]="pendingConfirmation() !== null"
+    (visibleChange)="!$event && cancelPendingAction()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    styleClass="attendance-confirm-dialog"
+  >
+    @if (pendingConfirmation()) {
+      <p>Vas a cerrar tu jornada de hoy. Despues de marcar salida no podras volver a ONLINE en esta fecha.</p>
+      <div class="attendance-status__confirm-actions">
+        <button
+          pButton
+          type="button"
+          severity="secondary"
+          [outlined]="true"
+          label="Cancelar"
+          (click)="cancelPendingAction()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          severity="danger"
+          label="Confirmar salida"
+          (click)="confirmPendingAction()"
+        ></button>
       </div>
-    </div>
-  }
-
-  @if (isLoading) {
-    <p class="attendance-box__hint">Actualizando estado...</p>
-  }
-
-  @if (errorMessage) {
-    <div class="attendance-box__error">
-      <p>{{ errorMessage }}</p>
-      <button type="button" (click)="retry.emit()">Reintentar</button>
-    </div>
-  }
+    }
+  </p-dialog>
 </section>

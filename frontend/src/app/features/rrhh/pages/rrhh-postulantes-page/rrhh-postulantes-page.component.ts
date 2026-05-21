@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DrawerModule } from 'primeng/drawer';
@@ -7,7 +7,6 @@ import { MessageModule } from 'primeng/message';
 import { PaginatorModule } from 'primeng/paginator';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TableModule } from 'primeng/table';
-import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import { PhoneActionButtonComponent } from '../../../../shared/components/phone-action-button/phone-action-button.component';
 import { formatLabel } from '../../../../shared/utils/display-label';
@@ -34,7 +33,6 @@ import { RrhhSection, RrhhWorkspaceFacade } from '../../facades/rrhh-workspace.f
     PaginatorModule,
     ProgressSpinnerModule,
     TableModule,
-    TabsModule,
     TagModule
   ],
   providers: [RrhhWorkspaceFacade],
@@ -45,7 +43,6 @@ import { RrhhSection, RrhhWorkspaceFacade } from '../../facades/rrhh-workspace.f
 export class RrhhPostulantesPageComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(RrhhWorkspaceFacade);
   private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
 
   ngOnInit(): void {
     const section = (this.route.snapshot.data['section'] ?? 'asistencia') as RrhhSection;
@@ -83,15 +80,5 @@ export class RrhhPostulantesPageComponent implements OnInit, OnDestroy {
       default:
         return 'info';
     }
-  }
-
-  protected async changeSection(value: string | number | undefined): Promise<void> {
-    if (!value) {
-      return;
-    }
-
-    const section = String(value) as RrhhSection;
-    await this.router.navigate(['/app/rrhh', section]);
-    await this.facade.initialize(section);
   }
 }

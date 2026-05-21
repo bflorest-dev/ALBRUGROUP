@@ -1,4 +1,7 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
+import { TagModule } from 'primeng/tag';
 import {
   ATTENDANCE_STATUS_META,
   AttendanceActionId,
@@ -7,6 +10,7 @@ import {
 
 @Component({
   selector: 'app-attendance-status-picker',
+  imports: [ButtonModule, DialogModule, TagModule],
   templateUrl: './attendance-status-picker.component.html',
   styleUrl: './attendance-status-picker.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -60,6 +64,14 @@ export class AttendanceStatusPickerComponent {
 
   protected getOptionColor(action: AttendanceActionOption): string {
     return ATTENDANCE_STATUS_META[action.targetStatus].color;
+  }
+
+  protected statusTagStyle(color = this.statusColor): Record<string, string> {
+    return {
+      color: '#ffffff',
+      background: color,
+      borderColor: color
+    };
   }
 
   private confirmAction(actionId: AttendanceActionId): void {

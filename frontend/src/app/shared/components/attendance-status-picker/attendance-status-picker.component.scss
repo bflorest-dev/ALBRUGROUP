@@ -1,159 +1,105 @@
-.attendance-box {
-  display: grid;
-  gap: 0.75rem;
-  padding: 1rem;
-  border-radius: 1rem;
-  background: color-mix(in srgb, var(--sidebar-link-bg) 78%, white 22%);
+:host {
+  display: block;
 }
 
-.attendance-box__eyebrow {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  opacity: 0.8;
-  text-transform: uppercase;
+.attendance-status {
+  position: relative;
+  z-index: 90;
 }
 
-.attendance-box__trigger {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.9rem 1rem;
-  border: 0;
-  border-radius: 0.9rem;
-  color: inherit;
-  background: color-mix(in srgb, var(--sidebar-link-active-bg) 72%, transparent 28%);
-  cursor: pointer;
-}
-
-.attendance-box__trigger.is-loading {
-  cursor: wait;
-  opacity: 0.85;
-}
-
-.attendance-box__status {
+.attendance-status__trigger,
+.attendance-status__option,
+.attendance-status__retry {
   display: inline-flex;
   align-items: center;
-  gap: 0.7rem;
-  font-weight: 700;
-}
-
-.attendance-box__dot {
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: 999px;
-  box-shadow: 0 0 0 0.2rem color-mix(in srgb, currentColor 12%, transparent 88%);
-}
-
-.attendance-box__caret {
-  font-size: 0.85rem;
-  opacity: 0.8;
-}
-
-.attendance-box__menu {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.attendance-box__option {
-  width: 100%;
-  display: grid;
-  gap: 0.3rem;
-  padding: 0.75rem 0.9rem;
   border: 0;
-  border-radius: 0.85rem;
-  color: inherit;
-  text-align: left;
-  background: color-mix(in srgb, var(--sidebar-link-bg) 88%, white 12%);
-  cursor: pointer;
-}
-
-.attendance-box__option:hover {
-  background: color-mix(in srgb, var(--sidebar-link-active-bg) 78%, transparent 22%);
-}
-
-.attendance-box__option-main {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.7rem;
-  font-weight: 700;
-}
-
-.attendance-box__option-helper {
-  font-size: 0.78rem;
-  opacity: 0.72;
-}
-
-.attendance-box__empty,
-.attendance-box__hint,
-.attendance-box__confirm-title,
-.attendance-box__confirm-text,
-.attendance-box__error p {
-  margin: 0;
-  font-size: 0.88rem;
-}
-
-.attendance-box__hint {
-  opacity: 0.8;
-}
-
-.attendance-box__error {
-  display: grid;
-  gap: 0.55rem;
-  padding: 0.85rem 0.9rem;
-  border-radius: 0.85rem;
-  background: rgba(184, 67, 54, 0.22);
-}
-
-.attendance-box__error button {
-  width: fit-content;
-  padding: 0.5rem 0.8rem;
-  border: 0;
-  border-radius: 999px;
-  color: inherit;
-  background: rgba(255, 255, 255, 0.16);
-  cursor: pointer;
-}
-
-.attendance-box__confirm {
-  display: grid;
-  gap: 0.7rem;
-  padding: 0.95rem;
-  border-radius: 0.95rem;
-  background: rgba(255, 155, 84, 0.18);
-}
-
-.attendance-box__confirm-title {
-  font-weight: 700;
-}
-
-.attendance-box__confirm-text {
-  opacity: 0.86;
-}
-
-.attendance-box__confirm-actions {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.attendance-box__confirm-cancel,
-.attendance-box__confirm-submit {
-  border: 0;
-  border-radius: 999px;
-  padding: 0.6rem 0.9rem;
   font: inherit;
   cursor: pointer;
 }
 
-.attendance-box__confirm-cancel {
-  color: inherit;
-  background: rgba(255, 255, 255, 0.24);
+.attendance-status__trigger {
+  gap: 0.45rem;
+  justify-content: center;
+  width: 10.4rem;
+  min-height: 2.35rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 0.55rem;
+  background: var(--app-surface-raised);
+  box-shadow: var(--app-shadow-soft);
 }
 
-.attendance-box__confirm-submit {
-  color: #fff;
-  background: #bd4f31;
+.attendance-status__trigger:hover,
+.attendance-status__trigger.is-open {
+  background: var(--app-surface);
+}
+
+.attendance-status__trigger:disabled {
+  cursor: wait;
+  opacity: 0.8;
+}
+
+.attendance-status__trigger i {
+  color: var(--app-text-muted);
+  font-size: 0.8rem;
+}
+
+.attendance-status__menu {
+  position: absolute;
+  z-index: 100;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  width: 10.4rem;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.45rem;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.65rem;
+  background: var(--app-surface-raised);
+  box-shadow: var(--app-shadow-popover);
+}
+
+.attendance-status__option,
+.attendance-status__retry,
+.attendance-status__empty {
+  justify-content: center;
+  width: 100%;
+  min-height: 2.15rem;
+  padding: 0.25rem 0.35rem;
+  border-radius: 0.42rem;
+  background: transparent;
+}
+
+.attendance-status__option:hover,
+.attendance-status__retry:hover {
+  background: var(--app-surface-soft);
+}
+
+.attendance-status__retry {
+  gap: 0.45rem;
+  color: var(--app-danger);
+}
+
+:host ::ng-deep .attendance-status .p-tag {
+  width: 8.25rem;
+  justify-content: center;
+}
+
+:host ::ng-deep .attendance-status .p-tag-label {
+  width: 100%;
+  text-align: center;
+}
+
+.attendance-status__empty {
+  display: inline-flex;
+  align-items: center;
+  color: var(--app-text-muted);
+  font-size: 0.85rem;
+}
+
+.attendance-status__confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin-top: 1.25rem;
 }

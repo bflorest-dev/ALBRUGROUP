@@ -61,6 +61,7 @@ public class PostulacionService {
     private final GrupoCapacitacionService grupoCapacitacionService;
     private final CurrentUser currentUser;
     private final PaginationService paginationService;
+    private final PostulacionRealtimeNotifier postulacionRealtimeNotifier;
 
     public PostulacionResponse registrarPostulacion(PostulacionRequest request) {
         OfertaLaboral ofertaLaboral = obtenerOfertaActiva(request.getIdOfertaLaboral());
@@ -88,11 +89,25 @@ public class PostulacionService {
                 null
         );
 
+        postulacionRealtimeNotifier.publishAfterCommit(
+                "REGISTRO_POSTULACION",
+                "POSTULACION",
+                postulacionGuardada,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
         return postulacionMapper.toResponse(postulacionGuardada);
     }
 
     public PostulacionResponse tipificarPostulacion(Long idPostulacion, TipificarPostulacionRequest request) {
         TipificacionContext context = prepararTipificacion(idPostulacion, request.getIdTipificacion(), request.getIdSubtipificacion());
+        Etapa etapaAnterior = context.postulacion().getEtapa();
+        EstadoPostulacion estadoAnterior = context.postulacion().getEstado();
+        EstadoBandejaPostulacion estadoBandejaAnterior = context.postulacion().getEstadoBandeja();
         boolean requiereAsignacionGrupo = requiereAsignacionGrupoEnTipificacionEspecial(
                 context.postulacion(),
                 context.subtipificacion()
@@ -111,6 +126,17 @@ public class PostulacionService {
                 request.getObservacion()
         );
 
+        postulacionRealtimeNotifier.publishAfterCommit(
+                "TIPIFICACION",
+                "TIPIFICACION",
+                postulacionGuardada,
+                etapaAnterior,
+                estadoAnterior,
+                estadoBandejaAnterior,
+                null,
+                context.postulacion().getOfertaLaboral().getPuestoObjetivo()
+        );
+
         if (requiereAsignacionGrupo) {
             grupoCapacitacionService.agregarPostulacion(
                     request.getIdGrupoCapacitacion(),
@@ -126,6 +152,7 @@ public class PostulacionService {
     public PostulacionResponse editarPostulacion(Long idPostulacion, PostulacionRequest request) {
         Postulacion postulacion = postulacionRepository.findById(idPostulacion)
                 .orElseThrow(() -> new NotFoundException(Postulacion.class, idPostulacion));
+        PuestoObjetivo puestoObjetivoAnterior = postulacion.getOfertaLaboral().getPuestoObjetivo();
 
         OfertaLaboral ofertaLaboral = obtenerOfertaActiva(request.getIdOfertaLaboral());
         Postulante postulante = postulanteService.crearOActualizar(request.getPostulante());
@@ -144,6 +171,17 @@ public class PostulacionService {
                 null,
                 null,
                 null
+        );
+
+        postulacionRealtimeNotifier.publishAfterCommit(
+                "ACTUALIZACION_POSTULACION",
+                "POSTULACION",
+                postulacionGuardada,
+                postulacionGuardada.getEtapa(),
+                postulacionGuardada.getEstado(),
+                postulacionGuardada.getEstadoBandeja(),
+                null,
+                puestoObjetivoAnterior
         );
 
         return postulacionMapper.toResponse(postulacionGuardada);
@@ -222,6 +260,9 @@ public class PostulacionService {
     public PostulacionResponse confirmarContratacion(Long idPostulacion, ConfirmarContratacionRequest request) {
         Postulacion postulacion = postulacionRepository.findById(idPostulacion)
                 .orElseThrow(() -> new NotFoundException(Postulacion.class, idPostulacion));
+        Etapa etapaAnterior = postulacion.getEtapa();
+        EstadoPostulacion estadoAnterior = postulacion.getEstado();
+        EstadoBandejaPostulacion estadoBandejaAnterior = postulacion.getEstadoBandeja();
 
         var detalle = grupoCapacitacionDetalleRepository.findByPostulacionId(idPostulacion)
                 .orElseThrow(() -> new BadRequestException("La postulacion no tiene un detalle de grupo de capacitacion asociado"));
@@ -247,6 +288,17 @@ public class PostulacionService {
                 null,
                 null,
                 "Contratacion confirmada con idEmpleado " + request.getIdEmpleadoContratado()
+        );
+
+        postulacionRealtimeNotifier.publishAfterCommit(
+                "CONFIRMACION_CONTRATACION",
+                "CONTRATACION",
+                postulacionGuardada,
+                etapaAnterior,
+                estadoAnterior,
+                estadoBandejaAnterior,
+                detalle.getGrupoCapacitacion().getId(),
+                postulacionGuardada.getOfertaLaboral().getPuestoObjetivo()
         );
 
         return mapearPostulacionResponse(postulacionGuardada);
