@@ -25,10 +25,15 @@ export interface LeadGtrResponse {
   lead: string;
   nombreCampana?: string | null;
   nombreProveedorCampana?: string | null;
+  numeroWhatsappEmpresa?: string | null;
   base?: BaseLead | string | null;
   nombreTitular?: string | null;
+  numeroDocumentoTitularServicio?: string | null;
+  primeraCodigoTipificacion?: string | null;
+  primeraCodigoSubtipificacion?: string | null;
   codigoTipificacion?: string | null;
   codigoSubtipificacion?: string | null;
+  nombrePlanOfrecido?: string | null;
   nombreAsesorAsignado?: string | null;
   estadoSeguimiento?: EstadoSeguimiento | string | null;
   reasignaciones: number;

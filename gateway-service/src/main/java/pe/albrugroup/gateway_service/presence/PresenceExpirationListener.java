@@ -2,6 +2,7 @@ package pe.albrugroup.gateway_service.presence;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
 import org.springframework.data.redis.connection.ReactiveSubscription;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.Disposable;
 
 @Component
+@Slf4j
 public class PresenceExpirationListener {
 
     private final ReactiveRedisMessageListenerContainer listenerContainer;
@@ -35,8 +37,7 @@ public class PresenceExpirationListener {
                 .map(buffer -> new String(buffer))
                 .filter(message -> message.startsWith("presence:employee:"))
                 .flatMap(presenceService::handlePresenceExpiration)
-                .onErrorContinue((error, ignored) -> {
-                })
+                .onErrorContinue((error, ignored) -> log.warn("Error procesando expiracion de presencia Redis", error))
                 .subscribe();
     }
 

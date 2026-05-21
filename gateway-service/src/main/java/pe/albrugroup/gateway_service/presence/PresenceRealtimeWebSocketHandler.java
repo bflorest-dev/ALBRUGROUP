@@ -2,18 +2,18 @@ package pe.albrugroup.gateway_service.presence;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.CloseStatus;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketSession;
+import org.springframework.web.util.UriComponentsBuilder;
 import pe.albrugroup.gateway_service.security.JwtUtil;
 import reactor.core.publisher.Mono;
 
 @Component
 public class PresenceRealtimeWebSocketHandler implements WebSocketHandler {
 
-    private static final CloseStatus UNAUTHORIZED_CLOSE_STATUS = new CloseStatus(HttpStatus.UNAUTHORIZED.value(), "Unauthorized");
+    private static final CloseStatus UNAUTHORIZED_CLOSE_STATUS = CloseStatus.POLICY_VIOLATION;
 
     private final PresenceRealtimeBroadcaster broadcaster;
     private final JwtUtil jwtUtil;
@@ -31,14 +31,16 @@ public class PresenceRealtimeWebSocketHandler implements WebSocketHandler {
 
     @Override
     public Mono<Void> handle(WebSocketSession session) {
-        String token = session.getHandshakeInfo().getUri().getQuery();
+        String token = UriComponentsBuilder.fromUri(session.getHandshakeInfo().getUri())
+                .build()
+                .getQueryParams()
+                .getFirst("access_token");
 
-        if (token == null || !token.startsWith("access_token=")) {
+        if (token == null || token.isBlank()) {
             return session.close(UNAUTHORIZED_CLOSE_STATUS);
         }
 
-        String accessToken = token.substring("access_token=".length());
-        if (!jwtUtil.validateToken(accessToken)) {
+        if (!jwtUtil.validateToken(token)) {
             return session.close(UNAUTHORIZED_CLOSE_STATUS);
         }
 

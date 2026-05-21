@@ -20,10 +20,15 @@ public class LeadGtrResponse {
     private String lead;
     private String nombreCampana;
     private String nombreProveedorCampana;
+    private String numeroWhatsappEmpresa;
     private Base base;
     private String nombreTitular;
+    private String numeroDocumentoTitularServicio;
+    private String primeraCodigoTipificacion;
+    private String primeraCodigoSubtipificacion;
     private String codigoTipificacion;
     private String codigoSubtipificacion;
+    private String nombrePlanOfrecido;
     private String nombreAsesorAsignado;
     private EstadoSeguimiento estadoSeguimiento;
     private long reasignaciones;

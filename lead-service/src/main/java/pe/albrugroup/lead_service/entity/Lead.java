@@ -57,6 +57,9 @@ public class Lead {
     private Long idSubtipificacion;
     private String codigoSubtipificacion;
 
+    private String primeraCodigoTipificacion;
+    private String primeraCodigoSubtipificacion;
+
     private String numeroDocumentoTitularServicioSnapshot;
     private String direccionSnapshot;
 

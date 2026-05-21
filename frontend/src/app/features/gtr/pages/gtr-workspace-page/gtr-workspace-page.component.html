@@ -90,7 +90,13 @@
       <div class="row row--head">
         <span></span>
         <span>Lead</span>
-        <span>Campana</span>
+        <span>Proveedor</span>
+        <span>Canal</span>
+        <span>Base</span>
+        <span>Documento</span>
+        <span>Primera tipificacion</span>
+        <span>Ultima tipificacion</span>
+        <span>Plan ofrecido</span>
         <span>Estado</span>
         <span>Asesor</span>
         <span>Ingreso</span>
@@ -106,7 +112,16 @@
             />
           </label>
           <strong>{{ row.prefijo }} {{ row.lead }}</strong>
-          <span>{{ facade.display(row.nombreCampana) }}</span>
+          <span class="cell cell--stack">
+            <strong>{{ facade.display(row.nombreProveedorCampana) }}</strong>
+            <small>{{ facade.display(row.nombreCampana) }}</small>
+          </span>
+          <span>{{ facade.display(row.numeroWhatsappEmpresa) }}</span>
+          <span>{{ facade.display(row.base) }}</span>
+          <span>{{ facade.display(row.numeroDocumentoTitularServicio) }}</span>
+          <span>{{ facade.tipificacionLabel(row.primeraCodigoTipificacion, row.primeraCodigoSubtipificacion) }}</span>
+          <span>{{ facade.tipificacionLabel(row.codigoTipificacion, row.codigoSubtipificacion) }}</span>
+          <span>{{ facade.display(row.nombrePlanOfrecido) }}</span>
           <span class="badge">{{ facade.display(row.estadoSeguimiento) }}</span>
           <span>{{ facade.display(row.nombreAsesorAsignado) }}</span>
           <span>{{ row.createdAt | date: 'HH:mm' }}</span>

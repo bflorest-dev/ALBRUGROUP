@@ -39,10 +39,15 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.lead,
                 c.nombre,
                 p.nombre,
+                c.numeroWhatsappEmpresa,
                 l.base,
-                dp.nombreTitularServicio,
+                null,
+                l.numeroDocumentoTitularServicioSnapshot,
+                l.primeraCodigoTipificacion,
+                l.primeraCodigoSubtipificacion,
                 l.codigoTipificacion,
                 l.codigoSubtipificacion,
+                l.nombrePlanSnapshot,
                 l.nombreAsesorAsignado,
                 l.estado,
                 (
@@ -57,7 +62,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             FROM Lead l
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
-            LEFT JOIN l.datosPreventa dp
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
@@ -331,10 +335,15 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.lead,
                 c.nombre,
                 p.nombre,
+                c.numeroWhatsappEmpresa,
                 l.base,
-                dp.nombreTitularServicio,
+                null,
+                l.numeroDocumentoTitularServicioSnapshot,
+                l.primeraCodigoTipificacion,
+                l.primeraCodigoSubtipificacion,
                 l.codigoTipificacion,
                 l.codigoSubtipificacion,
+                l.nombrePlanSnapshot,
                 l.nombreAsesorAsignado,
                 l.estado,
                 0
@@ -342,7 +351,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             FROM Lead l
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
-            LEFT JOIN l.datosPreventa dp
             WHERE (:idProveedor IS NULL OR p.id = :idProveedor)
               AND (:etapa IS NULL OR l.etapa = :etapa)
               AND (l.codigoTipificacion IS NULL OR l.codigoTipificacion NOT IN :codigosTipificacionExcluidos)

@@ -466,6 +466,7 @@ public class LeadService {
 
         validarHoraProgramada(tipificacion.getCodigo(), request.getHoraProgramada());
         Etapa etapaDestino = subtipificacion.getEtapaCambio();
+        registrarPrimeraTipificacionSiFalta(lead, tipificacion.getCodigo(), subtipificacion.getCodigo());
         if (etapaDestino != null && etapaDestino != etapaActual) {
             if (etapaActual == Etapa.PREVENTA && etapaDestino == Etapa.VENTA) {
                 validarPreventaCompleta(lead);
@@ -518,6 +519,7 @@ public class LeadService {
                 .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getCodigoSubtipificacion()));
 
         Etapa etapaDestino = subtipificacion.getEtapaCambio();
+        registrarPrimeraTipificacionSiFalta(lead, tipificacion.getCodigo(), subtipificacion.getCodigo());
 
         if (etapaDestino != null && etapaDestino != etapaActual) {
             aplicarDatosPostventaSiCorresponde(lead, etapaDestino, request.getFechaInstalacion());
@@ -581,6 +583,7 @@ public class LeadService {
 
         Etapa etapaDestino = subtipificacion.getEtapaCambio();
         EstadoPostventa estadoDestino = resolverEstadoPostventaDestino(etapaActual, etapaDestino, subtipificacion);
+        registrarPrimeraTipificacionSiFalta(lead, tipificacion.getCodigo(), subtipificacion.getCodigo());
 
         if (estadoDestino != null) {
             lead.setEstadoPostventa(estadoDestino);
@@ -1322,6 +1325,32 @@ public class LeadService {
 
     private LeadGtrResponse normalizarLeadGtr(LeadGtrResponse response) {
         return response;
+    }
+
+    private void registrarPrimeraTipificacionSiFalta(
+            Lead lead,
+            String codigoTipificacionEntrante,
+            String codigoSubtipificacionEntrante
+    ) {
+        String primeraTipificacion = leadMapper.trimToNull(lead.getPrimeraCodigoTipificacion());
+        String primeraSubtipificacion = leadMapper.trimToNull(lead.getPrimeraCodigoSubtipificacion());
+        if (primeraTipificacion != null && primeraSubtipificacion != null) {
+            return;
+        }
+
+        String codigoTipificacionActual = leadMapper.trimToNull(lead.getCodigoTipificacion());
+        String codigoSubtipificacionActual = leadMapper.trimToNull(lead.getCodigoSubtipificacion());
+
+        if (primeraTipificacion == null) {
+            lead.setPrimeraCodigoTipificacion(
+                    codigoTipificacionActual == null ? codigoTipificacionEntrante : codigoTipificacionActual
+            );
+        }
+        if (primeraSubtipificacion == null) {
+            lead.setPrimeraCodigoSubtipificacion(
+                    codigoSubtipificacionActual == null ? codigoSubtipificacionEntrante : codigoSubtipificacionActual
+            );
+        }
     }
 
     private Long obtenerIdPlanOfrecido(Lead lead, String codigoTipificacion, String codigoSubtipificacion) {

@@ -140,6 +140,8 @@ small {
 .table {
   display: grid;
   gap: 0.45rem;
+  overflow-x: auto;
+  padding-bottom: 0.1rem;
 }
 
 .row {
@@ -148,8 +150,9 @@ small {
   border-radius: 8px;
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: 2rem minmax(8rem, 1fr) minmax(8rem, 1fr) 7rem minmax(8rem, 1fr) 4rem minmax(24rem, auto);
+  grid-template-columns: 2rem minmax(7rem, 0.7fr) minmax(10rem, 1fr) 7.5rem 6rem 8.5rem minmax(10rem, 1fr) minmax(10rem, 1fr) minmax(10rem, 1fr) 7rem minmax(8rem, 0.8fr) 4.5rem minmax(17rem, auto);
   min-height: 3.2rem;
+  min-width: 1280px;
   padding: 0.55rem;
   transition:
     background 280ms ease,
@@ -163,6 +166,23 @@ small {
   font-size: 0.78rem;
   font-weight: 800;
   min-height: auto;
+}
+
+.row > span,
+.row > strong,
+.cell {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.cell--stack {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.cell--stack strong {
+  color: #17233a;
+  font-size: 0.88rem;
 }
 
 .row--new {
@@ -378,14 +398,7 @@ button:disabled {
 
 @media (max-width: 1200px) {
   .row {
-    grid-template-columns: 2rem minmax(8rem, 1fr) minmax(7rem, 0.9fr) 7rem minmax(16rem, auto);
-  }
-
-  .row span:nth-child(5),
-  .row span:nth-child(6),
-  .row--head span:nth-child(5),
-  .row--head span:nth-child(6) {
-    display: none;
+    min-width: 1180px;
   }
 }
 
@@ -405,17 +418,7 @@ button:disabled {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .row {
-    grid-template-columns: 2rem 1fr;
-  }
-
-  .row span,
-  .row--head {
-    display: none;
-  }
-
   .row-actions {
-    grid-column: 1 / -1;
     justify-content: flex-start;
   }
 

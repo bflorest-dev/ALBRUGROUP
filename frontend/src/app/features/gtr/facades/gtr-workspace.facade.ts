@@ -180,7 +180,7 @@ export class GtrWorkspaceFacade {
   beginSnapshot(row: LeadGtrResponse): void {
     this.snapshotForm.reset({
       idLead: row.id,
-      numeroDocumentoTitularServicio: '',
+      numeroDocumentoTitularServicio: row.numeroDocumentoTitularServicio ?? '',
       direccion: ''
     });
   }
@@ -408,6 +408,21 @@ export class GtrWorkspaceFacade {
       return '-';
     }
     return String(value);
+  }
+
+  tipificacionLabel(codigo?: string | null, subcodigo?: string | null): string {
+    const codigoDisplay = this.display(codigo);
+    const subcodigoDisplay = this.display(subcodigo);
+    if (codigoDisplay === '-' && subcodigoDisplay === '-') {
+      return '-';
+    }
+    if (codigoDisplay === '-') {
+      return subcodigoDisplay;
+    }
+    if (subcodigoDisplay === '-') {
+      return codigoDisplay;
+    }
+    return `${codigoDisplay} / ${subcodigoDisplay}`;
   }
 
   advisorDotClass(advisor: AdvisorOption): string {
