@@ -11,6 +11,7 @@ Documento tecnico de endpoints propios del gateway. No repite rutas proxy hacia 
 - `GATE-07`, `GATE-08` y `GATE-09` enriquecen presencia Redis con estados de asistencia desde `schedule-service`.
 - Los endpoints de monitoreo aceptan `fecha` opcional. Si no se envia, el calculo queda a criterio del backend integrado.
 - El gateway tambien expone el WebSocket realtime de leads en `/leads/ws/leads`; el contrato funcional esta documentado en `/(docs)/lead-service-realtime`.
+- El gateway tambien expone el WebSocket realtime de asistencia en `/schedule/ws/asistencia`; el contrato funcional esta documentado en `/(docs)/schedule-service-realtime`.
 
 ## GATE-01 registrarEmpleadosOnline
 
@@ -108,3 +109,14 @@ Documento tecnico de endpoints propios del gateway. No repite rutas proxy hacia 
 - Topics principales: `/topic/leads`, `/topic/leads/etapa/{ETAPA}`, `/topic/leads/asesor/{idAsesor}`.
 - Regla: el frontend debe usar el evento como senal de invalidacion y volver a consultar la bandeja o detalle afectado.
 - Contrato completo: ver `/(docs)/lead-service-realtime`.
+
+## GATE-11 attendanceRealtimeWebSocket
+
+- Protocolo/ruta: `WebSocket STOMP /schedule/ws/asistencia`.
+- Permiso: handshake publico en gateway; autenticacion real en el frame STOMP `CONNECT` con `Authorization: Bearer <token>`.
+- Destino interno: `/ws/asistencia` en `schedule-service`.
+- Variable de destino: `SCHEDULE_SERVICE_WS_URI`, default `ws://schedule-service:8085`.
+- Uso backend/infraestructura: exponer hacia clientes el canal realtime de asistencia sin mover la logica de calculo fuera de `schedule-service`.
+- Topics principales: `/topic/asistencia/monitor` y `/topic/asistencia/empleado/{idEmpleado}`.
+- Regla: el evento debe usarse para invalidar vistas de monitoreo y luego reconsultar `SCH-20`, `GATE-07`, `GATE-08` o `GATE-09` segun corresponda.
+- Contrato completo: ver `/(docs)/schedule-service-realtime`.

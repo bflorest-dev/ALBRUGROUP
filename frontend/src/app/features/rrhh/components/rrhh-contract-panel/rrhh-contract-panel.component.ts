@@ -1,6 +1,14 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
-import { AbstractControl, FormArray, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
+import { AbstractControl, FormArray, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
+import { CheckboxModule } from 'primeng/checkbox';
+import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
+import { PaginatorModule } from 'primeng/paginator';
+import { SelectModule } from 'primeng/select';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
 import { PostulacionResponse } from '../../../../shared/models/recruitment/postulacion-response';
 import { ContratoResponse } from '../../../../shared/models/rrhh/contrato-response';
 import { EmpleadoResponse } from '../../../../shared/models/rrhh/empleado-response';
@@ -8,7 +16,19 @@ import { formatLabel } from '../../../../shared/utils/display-label';
 
 @Component({
   selector: 'app-rrhh-contract-panel',
-  imports: [ReactiveFormsModule, DateFieldComponent],
+  imports: [
+    FormsModule,
+    ReactiveFormsModule,
+    ButtonModule,
+    CardModule,
+    CheckboxModule,
+    InputTextModule,
+    MessageModule,
+    PaginatorModule,
+    SelectModule,
+    TableModule,
+    TagModule
+  ],
   templateUrl: './rrhh-contract-panel.component.html',
   styleUrl: './rrhh-contract-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

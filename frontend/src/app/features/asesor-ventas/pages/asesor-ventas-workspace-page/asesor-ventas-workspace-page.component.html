@@ -168,8 +168,8 @@
             </label>
             <label>
               <span>Subtipificacion</span>
-              <select formControlName="codigoSubtipificacion">
-                <option value="">Seleccionar</option>
+              <select formControlName="codigoSubtipificacion" [disabled]="!selectedTipificacionCode() || !subtipificaciones().length">
+                <option value="">{{ selectedTipificacionCode() ? 'Seleccionar' : 'Selecciona una tipificacion' }}</option>
                 @for (subtipificacion of subtipificaciones(); track subtipificacion.codigo) {
                   <option [value]="subtipificacion.codigo">{{ subtipificacion.codigo }} &middot; {{ subtipificacion.descripcion }}</option>
                 }

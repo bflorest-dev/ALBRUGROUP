@@ -1,267 +1,209 @@
-@if (mode === 'asistencia') {
-  <section class="panel">
-    <div class="panel__header">
-      <div>
-        <span class="panel__eyebrow">Administración de horarios</span>
-        <h3>Asistencia y horarios</h3>
-      </div>
-      <button type="button" class="ghost-button" (click)="reloadCurrentSchedule.emit()">Recargar</button>
-    </div>
-
-    @if (scheduleErrorMessage) {
-      <p class="form-message form-message--error">{{ scheduleErrorMessage }}</p>
-    }
-    @if (scheduleSuccessMessage) {
-      <p class="form-message form-message--success">{{ scheduleSuccessMessage }}</p>
-    }
-
-    @if (currentSchedule; as schedule) {
-      <div class="summary-card">
-        <div class="meta-grid">
-          <span><strong>Modalidad:</strong> {{ toLabel(schedule.modalidad) }}</span>
-          <span><strong>Inicio:</strong> {{ schedule.fechaInicio }}</span>
-          <span><strong>Fin:</strong> {{ schedule.fechaFin || 'Vigente' }}</span>
-          <span><strong>Horas semana:</strong> {{ schedule.horasObjetivoSemanal }}</span>
-          <span><strong>Compensable:</strong> {{ schedule.compensable ? 'Si' : 'No' }}</span>
-        </div>
-      </div>
-
-      <form [formGroup]="horarioForm" class="form-grid">
-        <app-date-field label="Nueva fecha de inicio" formControlName="fechaInicio" />
-        <label>
-          <span>Compensable</span>
-          <select formControlName="compensable">
-            <option value="true">Si</option>
-            <option value="false">No</option>
-          </select>
-        </label>
-
-        <div class="schedule-grid field-wide" formArrayName="detalles">
-          @for (detalle of getScheduleRows(); track $index) {
-            <div class="schedule-card" [formGroupName]="$index">
-              <div class="schedule-card__header">
-                <strong>{{ toLabel(diasSemanaOptions[$index]) }}</strong>
-                <select formControlName="laborable">
-                  <option value="true">Laborable</option>
-                  <option value="false">No laborable</option>
-                </select>
-              </div>
-              <div class="schedule-card__grid">
-                <label><span>Entrada</span><input type="time" formControlName="horaEntrada" /></label>
-                <label><span>Salida</span><input type="time" formControlName="horaSalida" /></label>
-                <label><span>Inicio almuerzo</span><input type="time" formControlName="inicioAlmuerzo" /></label>
-                <label><span>Fin almuerzo</span><input type="time" formControlName="finAlmuerzo" /></label>
-              </div>
-            </div>
-          }
-        </div>
-      </form>
-
-      <div class="actions">
-        <button type="button" class="primary-button" [disabled]="isUpdatingSchedule" (click)="replaceCurrentSchedule.emit()">
-          Reemplazar horario
-        </button>
-      </div>
-
-      <form [formGroup]="finalizeScheduleForm" class="inline-form">
-        <app-date-field label="Fecha fin" formControlName="fechaFin" />
-        <button type="button" class="danger-button" [disabled]="isUpdatingSchedule" (click)="finalizeCurrentSchedule.emit()">
-          Finalizar horario
-        </button>
-      </form>
-
-      <section class="subpanel">
-        <h4>Excepciones</h4>
-        <form [formGroup]="exceptionForm" class="form-grid">
-          <input type="hidden" formControlName="idExcepcion" />
-          <app-date-field label="Fecha" formControlName="fecha" />
-          <label>
-            <span>Tipo</span>
-            <select formControlName="tipo">
-              <option value="CAMBIO_TURNO">Cambio turno</option>
-              <option value="DESCANSO">Descanso</option>
-              <option value="FERIADO">Feriado</option>
-              <option value="NO_LABORABLE">No laborable</option>
-            </select>
-          </label>
-          <label><span>Entrada</span><input type="time" formControlName="horaEntrada" /></label>
-          <label><span>Salida</span><input type="time" formControlName="horaSalida" /></label>
-          <label><span>Inicio almuerzo</span><input type="time" formControlName="inicioAlmuerzo" /></label>
-          <label><span>Fin almuerzo</span><input type="time" formControlName="finAlmuerzo" /></label>
-          <label>
-            <span>Laborable</span>
-            <select formControlName="laborable">
-              <option value="true">Si</option>
-              <option value="false">No</option>
-            </select>
-          </label>
-          <label class="field-wide"><span>Motivo</span><input type="text" formControlName="motivo" /></label>
-        </form>
-        <div class="actions">
-          <button type="button" class="ghost-button" (click)="resetExceptionForm.emit()">Limpiar</button>
-          <button type="button" class="primary-button" [disabled]="isSavingException" (click)="saveException.emit()">
-            Guardar excepcion
-          </button>
-        </div>
-
-        @if (schedule.excepciones.length) {
-          <div class="card-list">
-            @for (excepcion of schedule.excepciones; track asRecord(excepcion)['id']) {
-              <article class="summary-card">
-                <div class="meta-grid">
-                  <span><strong>Fecha:</strong> {{ asRecord(excepcion)['fecha'] }}</span>
-                  <span><strong>Tipo:</strong> {{ toLabel(asRecord(excepcion)['tipo'] + '') }}</span>
-                  <span><strong>Motivo:</strong> {{ asRecord(excepcion)['motivo'] }}</span>
-                </div>
-                <div class="actions">
-                  <button type="button" class="ghost-button" (click)="editException.emit(asRecord(excepcion))">Editar</button>
-                  <button type="button" class="danger-button" [disabled]="isDeletingException" (click)="deleteException.emit(+(asRecord(excepcion)['id'] || 0))">
-                    Eliminar
-                  </button>
-                </div>
-              </article>
-            }
-          </div>
-        }
-      </section>
-    } @else {
-      <p class="helper-text">Selecciona un empleado con horario vigente para administrar horarios.</p>
-    }
-
-    <section class="subpanel">
-      <div class="panel__header">
-        <h4>Historico de horarios</h4>
-        <button type="button" class="ghost-button" (click)="reloadScheduleHistory.emit(0)">Recargar</button>
-      </div>
-      @if (scheduleHistory.length) {
-        @for (schedule of scheduleHistory; track schedule.id) {
-          <article class="summary-card">
-            <div class="meta-grid">
-              <span><strong>Inicio:</strong> {{ schedule.fechaInicio }}</span>
-              <span><strong>Fin:</strong> {{ schedule.fechaFin || 'Vigente' }}</span>
-              <span><strong>Modalidad:</strong> {{ toLabel(schedule.modalidad) }}</span>
-            </div>
-          </article>
-        }
-      } @else {
-        <p class="helper-text">Sin historico para mostrar.</p>
-      }
-    </section>
-
-    <section class="subpanel">
-      <div class="panel__header">
-        <div>
-          <span class="panel__eyebrow">Cumplimiento</span>
-          <h4>Cumplimiento y tardanzas</h4>
-        </div>
-      </div>
-
-      <form [formGroup]="complianceForm" class="form-grid">
-        <label class="field-wide"><span>Empleados a consultar</span><input type="text" formControlName="empleadoIds" /></label>
-        <app-date-field label="Desde" formControlName="desde" />
-        <app-date-field label="Hasta" formControlName="hasta" />
-        <app-date-field label="Fecha monitor" formControlName="fechaMonitor" />
-      </form>
-
-      @if (complianceErrorMessage) {
-        <p class="form-message form-message--error">{{ complianceErrorMessage }}</p>
-      }
-
-      <div class="actions">
-        <button type="button" class="primary-button" [disabled]="isLoadingCompliance" (click)="queryCompliance.emit()">
-          Consultar cumplimiento
-        </button>
-      </div>
-
-      @if (monitorEstados.length) {
-        <section class="subpanel">
-          <h4>Monitor operativo</h4>
-          <div class="card-list">
-            @for (estado of monitorEstados; track estado.idEmpleado) {
-              <article class="summary-card">
-                <div class="meta-grid">
-                  <span><strong>Estado:</strong> {{ toLabel(estado.estadoActual || '-') }}</span>
-                  <span><strong>Horario:</strong> {{ estado.tieneHorarioVigente ? 'Si' : 'No' }}</span>
-                  <span><strong>Operativo:</strong> {{ estado.operativo ? 'Si' : 'No' }}</span>
-                </div>
-              </article>
-            }
-          </div>
-        </section>
-      }
-
-      @if (complianceResumen) {
-        <section class="subpanel">
-          <h4>Resumen</h4>
-          <pre>{{ complianceResumen | json }}</pre>
-        </section>
-      }
-
-      @if (complianceDetalle) {
-        <section class="subpanel">
-          <h4>Detalle</h4>
-          <pre>{{ complianceDetalle | json }}</pre>
-        </section>
-      }
-    </section>
-  </section>
-}
-
-@if (mode === 'pagos') {
-  <section class="panel">
-    <div class="panel__header">
-      <div>
-        <span class="panel__eyebrow">Registro de pago</span>
-        <h3>Pagos</h3>
-      </div>
-      <button type="button" class="ghost-button" (click)="loadPayments.emit(0)">Recargar</button>
-    </div>
+<div class="operations-layout">
+  <p-card styleClass="rrhh-panel-card">
+    <ng-template #title>Registrar pago</ng-template>
+    <ng-template #subtitle>El contrato vigente del empleado seleccionado define el contexto del pago.</ng-template>
 
     @if (paymentErrorMessage) {
-      <p class="form-message form-message--error">{{ paymentErrorMessage }}</p>
+      <p-message severity="error" [text]="paymentErrorMessage" />
     }
     @if (paymentSuccessMessage) {
-      <p class="form-message form-message--success">{{ paymentSuccessMessage }}</p>
+      <p-message severity="success" [text]="paymentSuccessMessage" />
     }
 
-    <form [formGroup]="paymentForm" class="form-grid">
-      <app-date-field label="Fecha inicio" formControlName="fechaInicio" />
-      <app-date-field label="Fecha fin" formControlName="fechaFin" />
-      <label><span>Asignacion familiar</span><input type="number" min="0.01" step="0.01" formControlName="asignacionFamiliar" /></label>
-      <label><span>Bono puntualidad</span><input type="number" min="0.01" step="0.01" formControlName="bonoPuntualidad" /></label>
-      <label><span>Comision semanal</span><input type="number" min="0.01" step="0.01" formControlName="comisionSemanal" /></label>
-      <label><span>Comision mensual</span><input type="number" min="0.01" step="0.01" formControlName="comisionMensual" /></label>
-      <label><span>Bono extra</span><input type="number" min="0.01" step="0.01" formControlName="bonoExtra" /></label>
-    </form>
+    <form class="form-grid" [formGroup]="paymentForm" (ngSubmit)="registerPayment.emit()">
+      <label><span>Desde</span><input pInputText type="date" formControlName="fechaInicio" /></label>
+      <label><span>Hasta</span><input pInputText type="date" formControlName="fechaFin" /></label>
+      <label><span>Asignacion familiar</span><input pInputText type="number" formControlName="asignacionFamiliar" /></label>
+      <label><span>Bono puntualidad</span><input pInputText type="number" formControlName="bonoPuntualidad" /></label>
+      <label><span>Comision semanal</span><input pInputText type="number" formControlName="comisionSemanal" /></label>
+      <label><span>Comision mensual</span><input pInputText type="number" formControlName="comisionMensual" /></label>
+      <label><span>Bono extra</span><input pInputText type="number" formControlName="bonoExtra" /></label>
 
-    <div class="actions">
-      <button type="button" class="primary-button" [disabled]="isRegisteringPayment" (click)="registerPayment.emit()">
-        Registrar pago
-      </button>
-    </div>
-
-    <form [formGroup]="paymentFilterForm" class="form-grid subpanel">
-      <app-date-field label="Desde" formControlName="desde" />
-      <app-date-field label="Hasta" formControlName="hasta" />
-      <button type="button" class="ghost-button" (click)="loadPayments.emit(0)">Filtrar pagos</button>
-    </form>
-
-    @if (isLoadingPayments) {
-      <p class="helper-text">Cargando pagos...</p>
-    } @else if (payments.length) {
-      <div class="card-list">
-        @for (payment of payments; track payment.id) {
-          <article class="summary-card">
-            <div class="meta-grid">
-              <span><strong>Periodo:</strong> {{ payment.fechaInicio }} / {{ payment.fechaFin }}</span>
-              <span><strong>Sueldo base:</strong> {{ toMoney(payment.sueldoBase) }}</span>
-              <span><strong>Total:</strong> {{ toMoney(payment.sueldoTotal) }}</span>
-            </div>
-          </article>
-        }
+      <div class="form-actions">
+        <button pButton type="submit" icon="pi pi-wallet" label="Registrar pago" [loading]="isRegisteringPayment"></button>
       </div>
-    } @else {
-      <p class="helper-text">No hay pagos para mostrar.</p>
+    </form>
+  </p-card>
+
+  <p-card styleClass="rrhh-panel-card">
+    <ng-template #title>Pagos registrados</ng-template>
+    <ng-template #subtitle>Consulta y pagina pagos por empleado o contrato.</ng-template>
+
+    <form class="filters" [formGroup]="paymentFilterForm" (ngSubmit)="loadPayments.emit(0)">
+      <input pInputText formControlName="contrato" placeholder="Contrato" />
+      <input pInputText formControlName="empleado" placeholder="Empleado" />
+      <input pInputText type="date" formControlName="desde" />
+      <input pInputText type="date" formControlName="hasta" />
+      <button pButton type="submit" icon="pi pi-search" label="Consultar"></button>
+    </form>
+
+    <p-table [value]="payments" [loading]="isLoadingPayments" styleClass="p-datatable-sm">
+      <ng-template #header>
+        <tr>
+          <th>Periodo</th>
+          <th>Sueldo base</th>
+          <th>Bonos</th>
+          <th>Total</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-payment>
+        <tr>
+          <td>{{ payment.fechaInicio }} - {{ payment.fechaFin }}</td>
+          <td>{{ toMoney(payment.sueldoBase) }}</td>
+          <td>{{ toMoney((payment.bonoPuntualidad || 0) + (payment.comisionSemanal || 0) + (payment.comisionMensual || 0) + (payment.bonoExtra || 0)) }}</td>
+          <td><strong>{{ toMoney(payment.sueldoTotal) }}</strong></td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="4">No hay pagos registrados.</td></tr>
+      </ng-template>
+    </p-table>
+
+    <p-paginator
+      [first]="currentPaymentsPage * 8"
+      [rows]="8"
+      [totalRecords]="totalPaymentsPages * 8"
+      (onPageChange)="loadPayments.emit($event.page ?? 0)"
+    />
+  </p-card>
+
+  <p-card styleClass="rrhh-panel-card">
+    <ng-template #title>Horario y cumplimiento</ng-template>
+    <ng-template #subtitle>Resumen operativo para validar el periodo de pago.</ng-template>
+
+    @if (scheduleErrorMessage) {
+      <p-message severity="error" [text]="scheduleErrorMessage" />
     }
-  </section>
-}
+    @if (complianceErrorMessage) {
+      <p-message severity="error" [text]="complianceErrorMessage" />
+    }
+
+    @if (currentSchedule) {
+      <div class="schedule-summary">
+        <p-tag severity="success" value="Horario vigente" />
+        <span>{{ toLabel(currentSchedule.modalidad) }}</span>
+        <span>{{ currentSchedule.fechaInicio }} - {{ currentSchedule.fechaFin || 'Actual' }}</span>
+      </div>
+
+      <p-table [value]="currentSchedule.detalles" styleClass="p-datatable-sm">
+        <ng-template #header>
+          <tr>
+            <th>Dia</th>
+            <th>Entrada</th>
+            <th>Salida</th>
+            <th>Laborable</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-detail>
+          <tr>
+            <td>{{ toLabel(detail.dia) }}</td>
+            <td>{{ detail.horaEntrada }}</td>
+            <td>{{ detail.horaSalida }}</td>
+            <td><p-tag [severity]="detail.laborable ? 'success' : 'secondary'" [value]="detail.laborable ? 'Si' : 'No'" /></td>
+          </tr>
+        </ng-template>
+      </p-table>
+
+      <form class="form-grid compact" [formGroup]="horarioForm" (ngSubmit)="replaceCurrentSchedule.emit()">
+        <label><span>Fecha inicio</span><input pInputText type="date" formControlName="fechaInicio" /></label>
+        <label><span>Entrada</span><input pInputText type="time" formControlName="horaEntrada" /></label>
+        <label><span>Salida</span><input pInputText type="time" formControlName="horaSalida" /></label>
+        <label><span>Inicio almuerzo</span><input pInputText type="time" formControlName="inicioAlmuerzo" /></label>
+        <label><span>Fin almuerzo</span><input pInputText type="time" formControlName="finAlmuerzo" /></label>
+        <div class="form-actions">
+          <button pButton type="button" severity="secondary" icon="pi pi-refresh" label="Recargar horario" (click)="reloadCurrentSchedule.emit()"></button>
+          <button pButton type="submit" icon="pi pi-sync" label="Reemplazar horario" [loading]="isUpdatingSchedule"></button>
+        </div>
+      </form>
+
+      <form class="inline-actions" [formGroup]="finalizeScheduleForm" (ngSubmit)="finalizeCurrentSchedule.emit()">
+        <input pInputText type="date" formControlName="fechaFin" />
+        <button pButton type="submit" severity="danger" label="Finalizar horario" [loading]="isUpdatingSchedule"></button>
+      </form>
+
+      <form class="form-grid compact" [formGroup]="exceptionForm" (ngSubmit)="saveException.emit()">
+        <label><span>Fecha excepcion</span><input pInputText type="date" formControlName="fecha" /></label>
+        <label><span>Tipo</span><input pInputText formControlName="tipo" /></label>
+        <label><span>Entrada</span><input pInputText type="time" formControlName="horaEntrada" /></label>
+        <label><span>Salida</span><input pInputText type="time" formControlName="horaSalida" /></label>
+        <label class="wide"><span>Motivo</span><input pInputText formControlName="motivo" /></label>
+        <div class="form-actions">
+          <button pButton type="button" severity="secondary" label="Limpiar excepcion" (click)="resetExceptionForm.emit()"></button>
+          <button pButton type="submit" icon="pi pi-save" label="Guardar excepcion" [loading]="isSavingException"></button>
+        </div>
+      </form>
+
+      <p-table [value]="currentSchedule.excepciones" styleClass="p-datatable-sm">
+        <ng-template #header>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Motivo</th>
+            <th>Acciones</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-exception>
+          @let item = asRecord(exception);
+          <tr>
+            <td>{{ item['fecha'] || '-' }}</td>
+            <td>{{ toLabel(item['tipo'] + '') }}</td>
+            <td>{{ item['motivo'] || '-' }}</td>
+            <td class="table-actions">
+              <button pButton type="button" size="small" severity="secondary" icon="pi pi-pencil" (click)="editException.emit(item)"></button>
+              <button
+                pButton
+                type="button"
+                size="small"
+                severity="danger"
+                icon="pi pi-trash"
+                [loading]="isDeletingException"
+                (click)="deleteException.emit(+(item['id'] || item['idExcepcion'] || 0))"
+              ></button>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr><td colspan="4">Sin excepciones registradas.</td></tr>
+        </ng-template>
+      </p-table>
+    } @else {
+      <p-message severity="warn" text="El empleado no tiene horario vigente cargado." />
+    }
+
+    <p-table [value]="scheduleHistory" [loading]="isLoadingSchedules" styleClass="p-datatable-sm">
+      <ng-template #header>
+        <tr>
+          <th>Periodo</th>
+          <th>Modalidad</th>
+          <th>Horas objetivo</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-schedule>
+        <tr>
+          <td>{{ schedule.fechaInicio }} - {{ schedule.fechaFin || 'Actual' }}</td>
+          <td>{{ toLabel(schedule.modalidad) }}</td>
+          <td>{{ schedule.horasObjetivoSemanal }} sem. / {{ schedule.horasObjetivoMensual }} mes</td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <p-paginator
+      [first]="currentScheduleHistoryPage * 8"
+      [rows]="8"
+      [totalRecords]="totalScheduleHistoryPages * 8"
+      (onPageChange)="reloadScheduleHistory.emit($event.page ?? 0)"
+    />
+
+    <form class="filters" [formGroup]="complianceForm" (ngSubmit)="queryCompliance.emit()">
+      <input pInputText formControlName="empleadoIds" placeholder="Empleado IDs" />
+      <input pInputText type="date" formControlName="desde" />
+      <input pInputText type="date" formControlName="hasta" />
+      <input pInputText type="date" formControlName="fechaMonitor" />
+      <button pButton type="submit" icon="pi pi-chart-line" label="Consultar" [loading]="isLoadingCompliance"></button>
+    </form>
+
+    @if (complianceResumen) {
+      <pre>{{ complianceResumen | json }}</pre>
+    }
+  </p-card>
+</div>

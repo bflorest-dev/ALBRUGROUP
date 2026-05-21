@@ -96,11 +96,13 @@ Reglas operativas:
 - `GATE-08` no reemplaza el resumen comercial de `LEAD-44`; lo complementa con presencia y asistencia.
 - `operativo=false` o `excedioServicios=true` son senales para revisar antes de asignar mas carga o exigir gestion.
 - El resultado depende de que los asesores mantengan presencia activa con `GATE-01` y `GATE-02`.
+- Si existe una vista abierta de monitoreo de asesores, un evento en `/topic/asistencia/monitor` debe invalidar `GATE-08`.
 
 Documentacion tecnica:
 
 - Ver `/(docs)/gateway-service`.
 - Ver `/(docs)/lead-service`.
+- Ver `/(docs)/schedule-service-realtime`.
 
 ## Flujo 4: asesores esperados no conectados
 
@@ -117,11 +119,13 @@ Reglas operativas:
 - `GATE-09` filtra asesores activos por rol que son esperados hoy y no estan conectados.
 - No debe tratarse como baja definitiva: puede deberse a falta de heartbeat, cierre inesperado del frontend o ausencia real.
 - Si `tieneRegistroHoy=true` pero `conectado=false`, el problema puede ser presencia online, no asistencia.
+- Cambios de horario o excepciones tambien pueden invalidar esta vista aunque el empleado no cambie su presencia Redis.
 
 Documentacion tecnica:
 
 - Ver `/(docs)/gateway-service`.
 - Ver `/(docs)/schedule-service`.
+- Ver `/(docs)/schedule-service-realtime`.
 
 ## Flujo 5: gestion directa como asesor
 

@@ -26,23 +26,17 @@ public class HorarioDetalle {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "horario_id", nullable = false)
     private Horario horario;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private Dia dia;
-
     @Column(nullable = false)
     private LocalTime horaEntrada;
-
     @Column(nullable = false)
     private LocalTime horaSalida;
-
     @Column(nullable = false)
     private LocalTime inicioAlmuerzo;
-
     @Column(nullable = false)
     private LocalTime finAlmuerzo;
-
     @Builder.Default
     @Column(nullable = false)
     private Boolean laborable = Boolean.TRUE;

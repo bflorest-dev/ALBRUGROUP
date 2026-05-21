@@ -1,507 +1,209 @@
-<div class="workspace-stack">
-  @if (selectedHiringCase; as hiringCase) {
-    <section class="context-banner">
-      <div>
-        <span class="context-banner__eyebrow">Caso preparado desde contratación</span>
-        <strong>{{ hiringCase.postulante.nombres }} {{ hiringCase.postulante.apellidos }}</strong>
-        <p>
-          La ficha se prellenó con datos de la postulación {{ hiringCase.id }} y luego podrá
-          usarse en el contrato.
-        </p>
+<div class="employee-layout">
+  <p-card styleClass="rrhh-panel-card">
+    <ng-template #title>Empleado</ng-template>
+    <ng-template #subtitle>
+      {{ selectedHiringCase ? 'Registro prellenado desde postulacion' : 'Registro manual o busqueda de empleados' }}
+    </ng-template>
+
+    @if (employeeActionErrorMessage) {
+      <p-message severity="error" [text]="employeeActionErrorMessage" />
+    }
+    @if (employeeActionSuccessMessage) {
+      <p-message severity="success" [text]="employeeActionSuccessMessage" />
+    }
+
+    <form class="form-grid" [formGroup]="employeeCreateForm" (ngSubmit)="registerEmployee.emit()">
+      <label>
+        <span>Nombres</span>
+        <input pInputText formControlName="nombres" />
+      </label>
+      <label>
+        <span>Apellidos</span>
+        <input pInputText formControlName="apellidos" />
+      </label>
+      <label>
+        <span>Tipo documento</span>
+        <p-select formControlName="tipoDocumento" [options]="documentoOptions" appendTo="body" />
+      </label>
+      <label>
+        <span>Documento</span>
+        <input pInputText formControlName="numeroDocumento" />
+      </label>
+      <label>
+        <span>Nacionalidad</span>
+        <p-select formControlName="nacionalidad" [options]="nacionalidadOptions" appendTo="body" />
+      </label>
+      <label>
+        <span>Fecha nacimiento</span>
+        <input pInputText type="date" formControlName="fechaNacimiento" />
+      </label>
+      <label>
+        <span>Celular</span>
+        <input pInputText formControlName="celularPersonal" />
+      </label>
+      <label>
+        <span>Correo</span>
+        <input pInputText formControlName="correoPersonal" />
+      </label>
+      <label>
+        <span>Distrito</span>
+        <p-select formControlName="distrito" [options]="distritoOptions" appendTo="body" />
+      </label>
+      <label>
+        <span>Banco</span>
+        <p-select formControlName="banco" [options]="bancoOptions" appendTo="body" />
+      </label>
+      <label class="wide">
+        <span>Direccion</span>
+        <input pInputText formControlName="direccion" />
+      </label>
+
+      <div class="form-actions">
+        <button pButton type="button" label="Nuevo" severity="secondary" (click)="prepareBlankEmployee.emit()"></button>
+        <button pButton type="submit" icon="pi pi-user-plus" label="Registrar" [loading]="isCreatingEmployee"></button>
       </div>
-      <button type="button" class="secondary-button" (click)="prepareBlankEmployee.emit()">
-        Nuevo registro directo
-      </button>
-    </section>
-  }
+    </form>
+  </p-card>
 
-  <div class="workspace-grid">
-    <section class="panel">
-      <div class="panel__header">
-        <div>
-          <span class="panel__eyebrow">Nuevo empleado</span>
-          <h3>Registrar empleado</h3>
-        </div>
-      </div>
+  <p-card styleClass="rrhh-panel-card">
+    <ng-template #title>Buscar empleados</ng-template>
+    <ng-template #subtitle>Filtra, selecciona y abre el historial operativo.</ng-template>
 
-      <form [formGroup]="employeeCreateForm" class="form-grid">
-        <label class="field--wide">
-          <span>Empresa contratista</span>
-          <select formControlName="idEmpresaContratista">
-            <option value="">No aplica</option>
-            @for (empresa of empresasContratistas; track empresa.id) {
-              <option [value]="empresa.id">{{ empresa.nombre }}</option>
-            }
-          </select>
-        </label>
+    <form class="filters" [formGroup]="employeeFilterForm" (ngSubmit)="applyEmployeeFilters.emit()">
+      <input pInputText formControlName="q" placeholder="Nombre o apellido" />
+      <input pInputText formControlName="dni" placeholder="DNI" />
+      <p-select formControlName="estado" [options]="estadoOperativoOptions" placeholder="Estado" appendTo="body" />
+      <button pButton type="submit" icon="pi pi-filter" label="Filtrar"></button>
+      <button pButton type="button" severity="secondary" label="Limpiar" (click)="clearEmployeeFilters.emit()"></button>
+    </form>
 
-        <label>
-          <span>Nombres</span>
-          <input type="text" formControlName="nombres" />
-        </label>
+    <form class="filters filters--search" [formGroup]="employeeFilterForm">
+      <input pInputText formControlName="universalSearch" placeholder="Busqueda universal" />
+      <button pButton type="button" label="Buscar" icon="pi pi-search" (click)="searchEmployeeUniversal.emit()"></button>
+      <input pInputText formControlName="documentoExacto" placeholder="Documento exacto" />
+      <button pButton type="button" label="Documento" severity="secondary" (click)="searchEmployeeByDocument.emit()"></button>
+    </form>
 
-        <label>
-          <span>Apellidos</span>
-          <input type="text" formControlName="apellidos" />
-        </label>
+    @if (employeeListErrorMessage) {
+      <p-message severity="error" [text]="employeeListErrorMessage" />
+    }
 
-        <label>
-          <span>Tipo de documento</span>
-          <select formControlName="tipoDocumento">
-            @for (option of documentoOptions; track option) {
-              <option [value]="option">{{ option }}</option>
-            }
-          </select>
-        </label>
+    <p-table [value]="employees" [loading]="isLoadingEmployees" [rowHover]="true" styleClass="p-datatable-sm">
+      <ng-template #header>
+        <tr>
+          <th>Empleado</th>
+          <th>Documento</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-employee>
+        <tr [class.row-selected]="selectedEmployee?.id === employee.id">
+          <td>
+            <strong>{{ employee.nombres }} {{ employee.apellidos }}</strong>
+            <small>{{ employee.celularPersonal }}</small>
+          </td>
+          <td>{{ employee.tipoDocumento }} {{ employee.numeroDocumento }}</td>
+          <td><p-tag [severity]="employee.estadoOperativo === 'ACTIVO' ? 'success' : 'danger'" [value]="toLabel(employee.estadoOperativo)" /></td>
+          <td class="actions">
+            <button pButton type="button" size="small" label="Seleccionar" (click)="selectEmployee.emit(employee)"></button>
+            <button
+              pButton
+              type="button"
+              size="small"
+              severity="secondary"
+              icon="pi pi-clock"
+              (click)="openEmployeeEvents.emit(employee)"
+            ></button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="4">No hay empleados para mostrar.</td>
+        </tr>
+      </ng-template>
+    </p-table>
 
-        <label>
-          <span>Número de documento</span>
-          <input type="text" formControlName="numeroDocumento" />
-        </label>
-
-        <label>
-          <span>Nacionalidad</span>
-          <select formControlName="nacionalidad">
-            @for (option of nacionalidadOptions; track option) {
-              <option [value]="option">{{ toLabel(option) }}</option>
-            }
-          </select>
-        </label>
-
-        <app-date-field label="Fecha de nacimiento" formControlName="fechaNacimiento" />
-
-        <label>
-          <span>Estado civil</span>
-          <select formControlName="estadoCivil">
-            @for (option of estadoCivilOptions; track option) {
-              <option [value]="option">{{ toLabel(option) }}</option>
-            }
-          </select>
-        </label>
-
-        <label>
-          <span>Tiene hijos</span>
-          <select formControlName="tieneHijos">
-            <option value="false">No</option>
-            <option value="true">Sí</option>
-          </select>
-        </label>
-
-        <label>
-          <span>Celular personal</span>
-          <input type="text" formControlName="celularPersonal" />
-        </label>
-
-        <label>
-          <span>Correo personal</span>
-          <input type="email" formControlName="correoPersonal" />
-        </label>
-
-        <label>
-          <span>Origen</span>
-          <select formControlName="origen">
-            @for (option of origenOptions; track option) {
-              <option [value]="option">{{ toLabel(option) }}</option>
-            }
-          </select>
-        </label>
-
-        <label>
-          <span>Distrito</span>
-          <select formControlName="distrito">
-            @for (option of distritoOptions; track option) {
-              <option [value]="option">{{ toLabel(option) }}</option>
-            }
-          </select>
-        </label>
-
-        <label class="field--wide">
-          <span>Dirección</span>
-          <input type="text" formControlName="direccion" />
-        </label>
-
-        <label>
-          <span>Banco</span>
-          <select formControlName="banco">
-            @for (option of bancoOptions; track option) {
-              <option [value]="option">{{ toLabel(option) }}</option>
-            }
-          </select>
-        </label>
-
-        <label>
-          <span>Cuenta bancaria</span>
-          <input type="text" formControlName="cuentaBancaria" />
-        </label>
-
-        <label>
-          <span>Cuenta interbancaria</span>
-          <input type="text" formControlName="cuentaInterbancaria" />
-        </label>
-
-        <label>
-          <span>Cuenta propia</span>
-          <select formControlName="cuentaPropia">
-            <option value="true">Sí</option>
-            <option value="false">No</option>
-          </select>
-        </label>
-
-        @if (!isOwnAccount(employeeCreateForm)) {
-          <label>
-            <span>Parentesco</span>
-            <select formControlName="parentesco">
-              <option value="">No aplica</option>
-              @for (option of parentescoOptions; track option) {
-                <option [value]="option">{{ toLabel(option) }}</option>
-              }
-            </select>
-          </label>
-
-          <label>
-            <span>Celular transferencia</span>
-            <input type="text" formControlName="celularTransferencia" />
-          </label>
-        }
-      </form>
-
-      @if (employeeActionErrorMessage) {
-        <p class="form-message form-message--error">{{ employeeActionErrorMessage }}</p>
-      }
-
-      @if (employeeActionSuccessMessage) {
-        <p class="form-message form-message--success">{{ employeeActionSuccessMessage }}</p>
-      }
-
-      <div class="actions">
-        <button type="button" class="secondary-button" (click)="prepareBlankEmployee.emit()">
-          Limpiar
-        </button>
-        <button
-          type="button"
-          class="primary-button"
-          [disabled]="isCreatingEmployee"
-          (click)="registerEmployee.emit()"
-        >
-          {{ isCreatingEmployee ? 'Registrando...' : 'Registrar empleado' }}
-        </button>
-      </div>
-    </section>
-
-    <section class="panel">
-      <div class="panel__header panel__header--wrap">
-        <div>
-          <span class="panel__eyebrow">Directorio</span>
-          <h3>Buscar y seleccionar empleados</h3>
-        </div>
-
-        <button type="button" class="ghost-button" (click)="reloadEmployees.emit()">Recargar</button>
-      </div>
-
-      <form [formGroup]="employeeFilterForm" class="filters">
-        <label>
-          <span>Texto libre</span>
-          <input type="text" formControlName="q" />
-        </label>
-
-        <label>
-          <span>DNI / Documento</span>
-          <input type="text" formControlName="dni" />
-        </label>
-
-        <label>
-          <span>Celular</span>
-          <input type="text" formControlName="celular" />
-        </label>
-
-        <label>
-          <span>Distrito</span>
-          <select formControlName="distrito">
-            <option value="">Todos</option>
-            @for (option of distritoOptions; track option) {
-              <option [value]="option">{{ toLabel(option) }}</option>
-            }
-          </select>
-        </label>
-
-        <label>
-          <span>Banco</span>
-          <select formControlName="banco">
-            <option value="">Todos</option>
-            @for (option of bancoOptions; track option) {
-              <option [value]="option">{{ toLabel(option) }}</option>
-            }
-          </select>
-        </label>
-
-        <label>
-          <span>Origen</span>
-          <select formControlName="origen">
-            <option value="">Todos</option>
-            @for (option of origenOptions; track option) {
-              <option [value]="option">{{ toLabel(option) }}</option>
-            }
-          </select>
-        </label>
-
-        <label>
-          <span>Estado</span>
-          <select formControlName="estado">
-            <option value="">Todos</option>
-            @for (option of estadoOperativoOptions; track option) {
-              <option [value]="option">{{ toLabel(option) }}</option>
-            }
-          </select>
-        </label>
-
-        <div class="filters__actions field--wide">
-          <button type="button" class="secondary-button" (click)="clearEmployeeFilters.emit()">
-            Limpiar
-          </button>
-          <button type="button" class="primary-button" (click)="applyEmployeeFilters.emit()">
-            Aplicar filtros
-          </button>
-        </div>
-      </form>
-
-      <div class="quick-searches" [formGroup]="employeeFilterForm">
-        <label>
-          <span>Búsqueda universal</span>
-          <input type="text" formControlName="universalSearch" />
-          <button type="button" class="secondary-button" (click)="searchEmployeeUniversal.emit()">
-            Buscar
-          </button>
-        </label>
-
-        <label>
-          <span>Búsqueda exacta por documento</span>
-          <input type="text" formControlName="documentoExacto" />
-          <button type="button" class="secondary-button" (click)="searchEmployeeByDocument.emit()">
-            Ir al empleado
-          </button>
-        </label>
-      </div>
-
-      @if (employeeListErrorMessage) {
-        <p class="form-message form-message--error">{{ employeeListErrorMessage }}</p>
-      }
-
-      @if (isLoadingEmployees) {
-        <p class="helper-text">Cargando empleados...</p>
-      } @else if (employees.length) {
-        <div class="card-list">
-          @for (employee of employees; track employee.id) {
-            <article
-              class="employee-card"
-              [class.employee-card--selected]="selectedEmployee?.id === employee.id"
-            >
-              <div>
-                <h4>{{ employee.nombres }} {{ employee.apellidos }}</h4>
-                <p>{{ employee.tipoDocumento }} {{ employee.numeroDocumento }} · {{ employee.celularPersonal }}</p>
-              </div>
-
-              <div class="meta-grid">
-                <span><strong>Estado:</strong> {{ toLabel(employee.estadoOperativo) }}</span>
-                <span><strong>Origen:</strong> {{ toLabel(employee.origen) }}</span>
-                <span><strong>Banco:</strong> {{ toLabel(employee.banco) }}</span>
-                <span><strong>Lista negra:</strong> {{ employee.listaNegra ? 'Sí' : 'No' }}</span>
-              </div>
-
-              <div class="card-actions">
-                <button
-                  type="button"
-                  class="icon-text-button"
-                  aria-label="Ver historial de eventos"
-                  title="Historial de eventos"
-                  (click)="openEmployeeEvents.emit(employee)"
-                >
-                  <i class="ti ti-file-time" aria-hidden="true"></i>
-                  <span>Historial</span>
-                </button>
-                <button type="button" class="primary-button" (click)="selectEmployee.emit(employee)">
-                  {{ selectedEmployee?.id === employee.id ? 'Recargar ficha' : 'Seleccionar' }}
-                </button>
-              </div>
-            </article>
-          }
-        </div>
-
-        <div class="pagination">
-          <button
-            type="button"
-            class="ghost-button"
-            [disabled]="currentPage === 0"
-            (click)="employeesPageChange.emit(currentPage - 1)"
-          >
-            Anterior
-          </button>
-          <span>Página {{ currentPage + 1 }} de {{ totalPages }}</span>
-          <button
-            type="button"
-            class="ghost-button"
-            [disabled]="currentPage + 1 >= totalPages"
-            (click)="employeesPageChange.emit(currentPage + 1)"
-          >
-            Siguiente
-          </button>
-        </div>
-      } @else {
-        <p class="helper-text">No hay empleados para mostrar.</p>
-      }
-    </section>
-  </div>
-
-  @if (selectedEmployee; as employee) {
-    <section class="panel panel--summary">
-      <div class="panel__header panel__header--wrap">
-        <div>
-          <span class="panel__eyebrow">Ficha administrativa</span>
-          <h3>Ficha administrativa de {{ employee.nombres }} {{ employee.apellidos }}</h3>
-        </div>
-
-        <div class="header-actions">
-          <button
-            type="button"
-            class="icon-text-button"
-            aria-label="Ver historial de eventos"
-            title="Historial de eventos"
-            (click)="openEmployeeEvents.emit(employee)"
-          >
-            <i class="ti ti-file-time" aria-hidden="true"></i>
-            <span>Historial</span>
-          </button>
-          <button
-            type="button"
-            class="danger-button"
-            [disabled]="isUpdatingEmployee || employee.listaNegra"
-            (click)="markBlacklist.emit()"
-          >
-          {{ employee.listaNegra ? 'Ya está en lista negra' : 'Marcar lista negra' }}
-          </button>
-        </div>
-      </div>
-
-      <div class="summary-grid">
-        <span><strong>Estado:</strong> {{ toLabel(employee.estadoOperativo) }}</span>
-        <span><strong>Compañía:</strong> {{ employee.compania || '-' }}</span>
-        <span><strong>Correo corporativo:</strong> {{ employee.correoCorporativo || '-' }}</span>
-      </div>
-
-      <div class="edit-grid">
-        <form [formGroup]="personalForm" class="edit-card">
-          <h4>Datos personales</h4>
-          <label><span>Nombres</span><input type="text" formControlName="nombres" /></label>
-          <label><span>Apellidos</span><input type="text" formControlName="apellidos" /></label>
-          <label>
-            <span>Tipo documento</span>
-            <select formControlName="tipoDocumento">
-              @for (option of documentoOptions; track option) {
-                <option [value]="option">{{ option }}</option>
-              }
-            </select>
-          </label>
-          <label><span>Número documento</span><input type="text" formControlName="numeroDocumento" /></label>
-          <label>
-            <span>Nacionalidad</span>
-            <select formControlName="nacionalidad">
-              @for (option of nacionalidadOptions; track option) {
-                <option [value]="option">{{ toLabel(option) }}</option>
-              }
-            </select>
-          </label>
-          <app-date-field label="Fecha de nacimiento" formControlName="fechaNacimiento" />
-          <label>
-            <span>Estado civil</span>
-            <select formControlName="estadoCivil">
-              @for (option of estadoCivilOptions; track option) {
-                <option [value]="option">{{ toLabel(option) }}</option>
-              }
-            </select>
-          </label>
-          <label>
-            <span>Tiene hijos</span>
-            <select formControlName="tieneHijos">
-              <option value="false">No</option>
-              <option value="true">Sí</option>
-            </select>
-          </label>
-          <button type="button" class="primary-button" [disabled]="isUpdatingEmployee" (click)="submitPersonalUpdate.emit()">
-            Guardar personales
-          </button>
-        </form>
-
-        <form [formGroup]="contactForm" class="edit-card">
-          <h4>Contacto y ubicación</h4>
-          <label><span>Celular personal</span><input type="text" formControlName="celularPersonal" /></label>
-          <label><span>Correo personal</span><input type="email" formControlName="correoPersonal" /></label>
-          <label>
-            <span>Distrito</span>
-            <select formControlName="distrito">
-              @for (option of distritoOptions; track option) {
-                <option [value]="option">{{ toLabel(option) }}</option>
-              }
-            </select>
-          </label>
-          <label><span>Dirección</span><input type="text" formControlName="direccion" /></label>
-          <button type="button" class="primary-button" [disabled]="isUpdatingEmployee" (click)="submitContactUpdate.emit()">
-            Guardar contacto
-          </button>
-        </form>
-
-        <form [formGroup]="financialForm" class="edit-card">
-          <h4>Datos financieros</h4>
-          <label>
-            <span>Banco</span>
-            <select formControlName="banco">
-              @for (option of bancoOptions; track option) {
-                <option [value]="option">{{ toLabel(option) }}</option>
-              }
-            </select>
-          </label>
-          <label><span>Cuenta bancaria</span><input type="text" formControlName="cuentaBancaria" /></label>
-          <label><span>Cuenta interbancaria</span><input type="text" formControlName="cuentaInterbancaria" /></label>
-          <label>
-            <span>Cuenta propia</span>
-            <select formControlName="cuentaPropia">
-              <option value="true">Sí</option>
-              <option value="false">No</option>
-            </select>
-          </label>
-          @if (!isOwnAccount(financialForm)) {
-            <label>
-              <span>Parentesco</span>
-              <select formControlName="parentesco">
-                <option value="">No aplica</option>
-                @for (option of parentescoOptions; track option) {
-                  <option [value]="option">{{ toLabel(option) }}</option>
-                }
-              </select>
-            </label>
-            <label><span>Celular transferencia</span><input type="text" formControlName="celularTransferencia" /></label>
-          }
-          <label class="field--wide">
-            <span>Empresa contratista</span>
-            <select formControlName="idEmpresaContratista">
-              <option value="">No aplica</option>
-              @for (empresa of empresasContratistas; track empresa.id) {
-                <option [value]="empresa.id">{{ empresa.nombre }}</option>
-              }
-            </select>
-          </label>
-          <button type="button" class="primary-button" [disabled]="isUpdatingEmployee" (click)="submitFinancialUpdate.emit()">
-            Guardar financieros
-          </button>
-        </form>
-
-        <form [formGroup]="corporateForm" class="edit-card">
-          <h4>Datos corporativos</h4>
-          <label><span>Celular corporativo</span><input type="text" formControlName="celularCorporativo" /></label>
-          <label><span>Correo corporativo</span><input type="email" formControlName="correoCorporativo" /></label>
-          <button type="button" class="primary-button" [disabled]="isUpdatingEmployee" (click)="submitCorporateUpdate.emit()">
-            Guardar corporativos
-          </button>
-        </form>
-      </div>
-    </section>
-  }
+    <p-paginator
+      [first]="currentPage * 8"
+      [rows]="8"
+      [totalRecords]="totalPages * 8"
+      (onPageChange)="employeesPageChange.emit($event.page ?? 0)"
+    />
+  </p-card>
 </div>
+
+<p-drawer
+  [visible]="selectedEmployee !== null"
+  (visibleChange)="!$event && closeEmployeeDetail.emit()"
+  position="right"
+  [modal]="false"
+  [dismissible]="false"
+  [closable]="true"
+  styleClass="employee-drawer"
+>
+  @if (selectedEmployee; as employee) {
+    <div class="drawer-header">
+      <div>
+        <span>Empleado seleccionado</span>
+        <h3>{{ employee.nombres }} {{ employee.apellidos }}</h3>
+        <p>{{ employee.tipoDocumento }} {{ employee.numeroDocumento }}</p>
+      </div>
+      <button pButton type="button" severity="danger" label="Lista negra" [loading]="isUpdatingEmployee" (click)="markBlacklist.emit()"></button>
+    </div>
+
+    <p-steps [model]="employeeSteps" [readonly]="true" />
+
+    <section class="drawer-section">
+      <h4>Datos personales</h4>
+      <form class="form-grid" [formGroup]="personalForm" (ngSubmit)="submitPersonalUpdate.emit()">
+        <label><span>Nombres</span><input pInputText formControlName="nombres" /></label>
+        <label><span>Apellidos</span><input pInputText formControlName="apellidos" /></label>
+        <label><span>Tipo documento</span><p-select formControlName="tipoDocumento" [options]="documentoOptions" appendTo="body" /></label>
+        <label><span>Documento</span><input pInputText formControlName="numeroDocumento" /></label>
+        <label><span>Nacionalidad</span><p-select formControlName="nacionalidad" [options]="nacionalidadOptions" appendTo="body" /></label>
+        <label><span>Estado civil</span><p-select formControlName="estadoCivil" [options]="estadoCivilOptions" appendTo="body" /></label>
+        <label><span>Fecha nacimiento</span><input pInputText type="date" formControlName="fechaNacimiento" /></label>
+        <label><span>Tiene hijos</span><p-select formControlName="tieneHijos" [options]="['true', 'false']" appendTo="body" /></label>
+        <div class="form-actions"><button pButton type="submit" label="Guardar personal" [loading]="isUpdatingEmployee"></button></div>
+      </form>
+    </section>
+
+    <section class="drawer-section">
+      <h4>Contacto y ubicacion</h4>
+      <form class="form-grid" [formGroup]="contactForm" (ngSubmit)="submitContactUpdate.emit()">
+        <label><span>Celular</span><input pInputText formControlName="celularPersonal" /></label>
+        <label><span>Correo</span><input pInputText formControlName="correoPersonal" /></label>
+        <label><span>Distrito</span><p-select formControlName="distrito" [options]="distritoOptions" appendTo="body" /></label>
+        <label class="wide"><span>Direccion</span><input pInputText formControlName="direccion" /></label>
+        <div class="form-actions"><button pButton type="submit" label="Guardar contacto" [loading]="isUpdatingEmployee"></button></div>
+      </form>
+    </section>
+
+    <section class="drawer-section">
+      <h4>Datos financieros</h4>
+      <form class="form-grid" [formGroup]="financialForm" (ngSubmit)="submitFinancialUpdate.emit()">
+        <label><span>Banco</span><p-select formControlName="banco" [options]="bancoOptions" appendTo="body" /></label>
+        <label><span>Cuenta bancaria</span><input pInputText formControlName="cuentaBancaria" /></label>
+        <label><span>CCI</span><input pInputText formControlName="cuentaInterbancaria" /></label>
+        <label><span>Cuenta propia</span><p-select formControlName="cuentaPropia" [options]="['true', 'false']" appendTo="body" /></label>
+        @if (!isOwnAccount(financialForm)) {
+          <label><span>Parentesco</span><p-select formControlName="parentesco" [options]="parentescoOptions" appendTo="body" /></label>
+          <label><span>Celular transferencia</span><input pInputText formControlName="celularTransferencia" /></label>
+        }
+        <label><span>Contratista</span><p-select formControlName="idEmpresaContratista" [options]="empresasContratistas" optionLabel="nombre" optionValue="id" appendTo="body" /></label>
+        <div class="form-actions"><button pButton type="submit" label="Guardar finanzas" [loading]="isUpdatingEmployee"></button></div>
+      </form>
+    </section>
+
+    <section class="drawer-section">
+      <h4>Contacto corporativo</h4>
+      <form class="form-grid" [formGroup]="corporateForm" (ngSubmit)="submitCorporateUpdate.emit()">
+        <label><span>Celular corporativo</span><input pInputText formControlName="celularCorporativo" /></label>
+        <label><span>Correo corporativo</span><input pInputText formControlName="correoCorporativo" /></label>
+        <div class="form-actions"><button pButton type="submit" label="Guardar corporativo" [loading]="isUpdatingEmployee"></button></div>
+      </form>
+    </section>
+  }
+</p-drawer>

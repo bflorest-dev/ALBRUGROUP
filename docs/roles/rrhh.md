@@ -135,10 +135,12 @@ Reglas operativas:
 - Sin horario vigente, las marcaciones y revisiones pueden quedar bloqueadas o incompletas.
 - Las excepciones solo aplican dentro de la vigencia del horario.
 - No se deben repetir dias en los detalles del horario.
+- Los cambios de horario y excepciones ahora invalidan monitoreo realtime porque alteran `esperadoHoy`, `laborableHoy` o el contexto operativo del empleado.
 
 Documentacion tecnica:
 
 - Ver `/(docs)/schedule-service`.
+- Ver `/(docs)/schedule-service-realtime`.
 
 ## Flujo 5: pagos
 

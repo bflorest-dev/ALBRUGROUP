@@ -1,7 +1,13 @@
 import { JsonPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
+import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
+import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
+import { PaginatorModule } from 'primeng/paginator';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
 import { PagoResponse } from '../../../../shared/models/rrhh/pago-response';
 import {
   CumplimientoDetalleResponse,
@@ -13,7 +19,17 @@ import { formatLabel } from '../../../../shared/utils/display-label';
 
 @Component({
   selector: 'app-rrhh-operations-panel',
-  imports: [ReactiveFormsModule, DateFieldComponent, JsonPipe],
+  imports: [
+    ReactiveFormsModule,
+    JsonPipe,
+    ButtonModule,
+    CardModule,
+    InputTextModule,
+    MessageModule,
+    PaginatorModule,
+    TableModule,
+    TagModule
+  ],
   templateUrl: './rrhh-operations-panel.component.html',
   styleUrl: './rrhh-operations-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

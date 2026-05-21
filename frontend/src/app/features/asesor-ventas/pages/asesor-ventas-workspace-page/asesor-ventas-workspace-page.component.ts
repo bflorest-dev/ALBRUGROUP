@@ -50,6 +50,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly totalPages = signal(0);
   protected readonly pageNumber = signal(0);
   protected readonly catalogo = signal<CatalogoResponse | null>(null);
+  protected readonly selectedTipificacionCode = signal('');
   protected readonly planes = signal<PlanResponse[]>([]);
   protected readonly promociones = signal<PromocionComercialResponse[]>([]);
   protected readonly adicionales = signal<AdicionalResponse[]>([]);
@@ -103,8 +104,11 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly subtipificaciones = computed(() => {
-    const codigo = this.tipificacionForm.controls.codigoTipificacion.value;
-    return this.catalogo()?.tipificaciones.find((tipificacion) => tipificacion.codigo === codigo)?.subtipificaciones ?? [];
+    const codigo = this.selectedTipificacionCode();
+    const subtipificaciones =
+      this.catalogo()?.tipificaciones.find((tipificacion) => tipificacion.codigo === codigo)?.subtipificaciones ?? [];
+
+    return [...subtipificaciones].sort((left, right) => left.orden - right.orden);
   });
 
   constructor() {
@@ -117,6 +121,13 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.realtimeSubscription.add(
+      this.tipificacionForm.controls.codigoTipificacion.valueChanges.subscribe((codigo) => {
+        this.selectedTipificacionCode.set(codigo);
+        this.tipificacionForm.controls.codigoSubtipificacion.setValue('');
+      })
+    );
+
     void this.initialize();
     const empleadoId = this.sessionService.getSession()?.empleadoId;
     if (empleadoId) {
@@ -396,6 +407,13 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       idPromocionInterna: detail.idPromocionInterna ?? 0,
       adicionales: ''
     });
+    this.tipificacionForm.reset({
+      codigoTipificacion: '',
+      codigoSubtipificacion: '',
+      comentario: '',
+      horaProgramada: ''
+    });
+    this.selectedTipificacionCode.set('');
   }
 
   private mergeVisualRows(previous: VisualLeadAsesor[], incoming: LeadAsesorVentasResponse[], animateNew: boolean): VisualLeadAsesor[] {

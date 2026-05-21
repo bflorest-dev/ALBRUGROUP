@@ -1,186 +1,36 @@
-.workspace-stack {
+.hiring-layout {
   display: grid;
-  gap: 1.5rem;
+  grid-template-columns: minmax(320px, 0.7fr) minmax(0, 1.3fr);
+  gap: 1rem;
 }
 
-.workspace-grid {
-  display: grid;
-  gap: 1.5rem;
-  grid-template-columns: minmax(320px, 0.85fr) minmax(0, 1.15fr);
-}
-
-.workspace-grid--secondary {
+.hiring-layout--contracting {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.panel {
-  padding: 1.5rem;
-  border: 1px solid var(--app-border-soft);
-  border-radius: 1.35rem;
-  background: var(--app-surface-raised);
-  box-shadow: var(--app-shadow-soft);
-}
-
-.panel__header,
-.panel__header--wrap,
-.card-actions,
-.pagination,
-.timeline__title {
+.toolbar-row {
   display: flex;
-  gap: 1rem;
-}
-
-.panel__header,
-.panel__header--wrap {
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.25rem;
-}
-
-.panel__header--wrap {
-  flex-wrap: wrap;
-}
-
-.panel__eyebrow {
-  color: var(--role-accent);
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.panel h3,
-.candidate-card h4,
-.detail-card h4 {
-  margin: 0.35rem 0 0;
-  color: var(--role-panel-text);
-}
-
-.card-list,
-.offer-list,
-.timeline {
-  display: grid;
-  gap: 1rem;
-}
-
-.offer-list {
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-}
-
-.offer-card {
-  display: grid;
-  gap: 0.25rem;
-  padding: 1rem;
-  border: 1px solid rgba(31, 111, 85, 0.12);
-  border-radius: 1rem;
-  background: linear-gradient(180deg, rgba(244, 250, 247, 0.95), rgba(255, 255, 255, 0.98));
-}
-
-.offer-card strong {
-  color: var(--role-panel-text);
-}
-
-.offer-card span {
-  color: var(--role-muted);
-}
-
-.candidate-card,
-.detail-card,
-.timeline__item {
-  padding: 1rem;
-  border: 1px solid rgba(31, 111, 85, 0.12);
-  border-radius: 1rem;
-  background: linear-gradient(180deg, rgba(244, 250, 247, 0.95), rgba(255, 255, 255, 0.98));
-}
-
-.candidate-card--selected {
-  border-color: rgba(31, 111, 85, 0.45);
-}
-
-.candidate-card p,
-.detail-card p,
-.timeline__item p {
-  margin: 0.25rem 0 0;
-  color: var(--role-muted);
-}
-
-.meta-grid {
-  display: grid;
-  gap: 0.6rem 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  margin-top: 0.85rem;
-  color: var(--role-panel-text);
-}
-
-.card-actions {
   justify-content: flex-end;
-  margin-top: 1rem;
+  margin-bottom: 1rem;
 }
 
-.pagination {
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 1rem;
+td strong,
+td small {
+  display: block;
 }
 
-.timeline__title {
-  justify-content: space-between;
+td small {
+  color: var(--app-text-muted);
+  font-size: 0.82rem;
 }
 
-.timeline__note {
-  font-style: italic;
+.row-selected {
+  --p-table-row-background: rgba(31, 111, 85, 0.1);
 }
 
-.primary-button,
-.secondary-button,
-.ghost-button {
-  padding: 0.8rem 1rem;
-  border: 0;
-  border-radius: 0.9rem;
-  cursor: pointer;
-  font: inherit;
-  font-weight: 800;
-}
-
-.primary-button {
-  color: #fff;
-  background: var(--role-button-bg);
-}
-
-.secondary-button,
-.ghost-button {
-  color: var(--role-button-alt-text);
-  background: var(--role-button-alt-bg);
-}
-
-.helper-text,
-.form-message {
-  margin: 0;
-}
-
-.form-message--error {
-  color: var(--app-danger);
-}
-
-button:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-@media (max-width: 1180px) {
-  .workspace-grid,
-  .workspace-grid--secondary {
+@media (max-width: 1080px) {
+  .hiring-layout,
+  .hiring-layout--contracting {
     grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 760px) {
-  .panel__header,
-  .panel__header--wrap,
-  .card-actions,
-  .pagination,
-  .timeline__title {
-    align-items: stretch;
-    flex-direction: column;
   }
 }

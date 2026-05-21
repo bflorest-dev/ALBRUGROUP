@@ -5,6 +5,9 @@ import {
 } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
+import { providePrimeNG } from 'primeng/config';
+import Aura from '@primeuix/themes/aura';
 
 import { routes } from './app.routes';
 import { authTokenInterceptor } from './core/interceptors/auth-token.interceptor';
@@ -17,7 +20,19 @@ function initializeBrowserSession(browserSessionService: BrowserSessionService):
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
+    provideAnimationsAsync(),
     provideHttpClient(withInterceptors([authTokenInterceptor])),
+    providePrimeNG({
+      ripple: true,
+      inputVariant: 'filled',
+      theme: {
+        preset: Aura,
+        options: {
+          darkModeSelector: false,
+          cssLayer: false
+        }
+      }
+    }),
     provideRouter(routes),
     {
       provide: APP_INITIALIZER,

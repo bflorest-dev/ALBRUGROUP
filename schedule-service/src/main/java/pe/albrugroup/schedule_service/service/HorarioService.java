@@ -42,6 +42,7 @@ public class HorarioService implements IHorario {
     private final PaginationService paginationService;
     private final HorarioMapper mapper;
     private final CurrentUser currentUser;
+    private final AttendanceRealtimeNotifier attendanceRealtimeNotifier;
 
     @Override
     @Transactional
@@ -55,7 +56,15 @@ public class HorarioService implements IHorario {
         horario.setDetalles(request.getDetalles().stream().map(mapper::toDetalle).toList());
         horario.getDetalles().forEach(detalle -> detalle.setHorario(horario));
 
-        return mapper.toResponse(horarioRepository.save(horario));
+        Horario savedHorario = horarioRepository.save(horario);
+        attendanceRealtimeNotifier.publishAfterCommit(
+                "HORARIO_AFECTADO",
+                "HORARIO",
+                savedHorario.getIdEmpleado(),
+                savedHorario.getFechaInicio(),
+                null
+        );
+        return mapper.toResponse(savedHorario);
     }
 
     @Override
@@ -83,7 +92,15 @@ public class HorarioService implements IHorario {
         nuevo.setDetalles(request.getDetalles().stream().map(mapper::toDetalle).toList());
         nuevo.getDetalles().forEach(detalle -> detalle.setHorario(nuevo));
 
-        return mapper.toResponse(horarioRepository.save(nuevo));
+        Horario savedHorario = horarioRepository.save(nuevo);
+        attendanceRealtimeNotifier.publishAfterCommit(
+                "HORARIO_AFECTADO",
+                "HORARIO",
+                savedHorario.getIdEmpleado(),
+                savedHorario.getFechaInicio(),
+                null
+        );
+        return mapper.toResponse(savedHorario);
     }
 
     @Override
@@ -94,7 +111,15 @@ public class HorarioService implements IHorario {
             throw new BadRequestException("fechaFin no puede ser anterior a fechaInicio");
         }
         horario.setFechaFin(request.getFechaFin());
-        return mapper.toResponse(horarioRepository.save(horario));
+        Horario savedHorario = horarioRepository.save(horario);
+        attendanceRealtimeNotifier.publishAfterCommit(
+                "HORARIO_AFECTADO",
+                "HORARIO",
+                savedHorario.getIdEmpleado(),
+                request.getFechaFin(),
+                null
+        );
+        return mapper.toResponse(savedHorario);
     }
 
     @Override
@@ -109,7 +134,15 @@ public class HorarioService implements IHorario {
 
         ExcepcionHorario excepcion = mapper.toExcepcion(request);
         excepcion.setHorario(horario);
-        return mapper.toResponse(excepcionHorarioRepository.save(excepcion));
+        ExcepcionHorario savedExcepcion = excepcionHorarioRepository.save(excepcion);
+        attendanceRealtimeNotifier.publishAfterCommit(
+                "EXCEPCION_HORARIO_AFECTADA",
+                "EXCEPCION",
+                horario.getIdEmpleado(),
+                savedExcepcion.getFecha(),
+                null
+        );
+        return mapper.toResponse(savedExcepcion);
     }
 
     @Override
@@ -126,13 +159,31 @@ public class HorarioService implements IHorario {
                 });
 
         mapper.updateExcepcion(request, excepcion);
-        return mapper.toResponse(excepcionHorarioRepository.save(excepcion));
+        ExcepcionHorario savedExcepcion = excepcionHorarioRepository.save(excepcion);
+        attendanceRealtimeNotifier.publishAfterCommit(
+                "EXCEPCION_HORARIO_AFECTADA",
+                "EXCEPCION",
+                horario.getIdEmpleado(),
+                savedExcepcion.getFecha(),
+                null
+        );
+        return mapper.toResponse(savedExcepcion);
     }
 
     @Override
     @Transactional
     public void eliminarExcepcion(Long idHorario, Long idExcepcion) {
-        excepcionHorarioRepository.delete(getExcepcionById(idHorario, idExcepcion));
+        ExcepcionHorario excepcion = getExcepcionById(idHorario, idExcepcion);
+        Long idEmpleado = excepcion.getHorario().getIdEmpleado();
+        LocalDate fecha = excepcion.getFecha();
+        excepcionHorarioRepository.delete(excepcion);
+        attendanceRealtimeNotifier.publishAfterCommit(
+                "EXCEPCION_HORARIO_AFECTADA",
+                "EXCEPCION",
+                idEmpleado,
+                fecha,
+                null
+        );
     }
 
     @Override

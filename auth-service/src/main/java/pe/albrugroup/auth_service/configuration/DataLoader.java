@@ -113,6 +113,7 @@ public class DataLoader {
         // SCHEDULE-SERVICE - HORARIOS Y ASISTENCIAS
         savePermiso("CREATE_HORARIOS", "Puede registrar horarios", "HORARIO", "CREATE");
         savePermiso("READ_HORARIOS", "Puede listar y consultar horarios", "HORARIO", "READ");
+        savePermiso("READ_HORARIOS_SELF", "Puede consultar su propia informacion de horarios", "HORARIO", "READ_SELF");
         savePermiso("UPDATE_HORARIOS", "Puede actualizar horarios y sus excepciones", "HORARIO", "UPDATE");
         savePermiso("READ_ASISTENCIAS_SELF", "Puede consultar su propia informacion de asistencia", "ASISTENCIA", "READ_SELF");
         savePermiso("READ_ASISTENCIAS", "Puede consultar asistencia de cualquier empleado autorizado", "ASISTENCIA", "READ");
@@ -239,6 +240,7 @@ public class DataLoader {
                 getPermiso("READ_EVENTOS"),
                 getPermiso("CREATE_HORARIOS"),
                 getPermiso("READ_HORARIOS"),
+                getPermiso("READ_HORARIOS_SELF"),
                 getPermiso("UPDATE_HORARIOS"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("READ_ASISTENCIAS"),

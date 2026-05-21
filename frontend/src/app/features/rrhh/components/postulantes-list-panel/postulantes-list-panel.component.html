@@ -1,104 +1,55 @@
-<section class="panel">
-  <div class="panel__header panel__header--wrap">
-    <div>
-      <span class="panel__eyebrow">Bandeja</span>
-      <h3>Postulantes</h3>
-    </div>
+<p-card styleClass="rrhh-panel-card">
+  <ng-template #title>Postulaciones</ng-template>
+  <ng-template #subtitle>Filtra y edita la bandeja de postulantes.</ng-template>
 
-    <button type="button" class="ghost-button" (click)="reload.emit()">Recargar</button>
-  </div>
-
-  <form [formGroup]="filterForm" class="filters">
-    <label>
-      <span>Etapa</span>
-      <select formControlName="etapa">
-        <option value="">Todas</option>
-        @for (option of etapaOptions; track option) {
-          <option [value]="option">{{ toLabel(option) }}</option>
-        }
-      </select>
-    </label>
-
-    <label>
-      <span>Estado</span>
-      <select formControlName="estado">
-        <option value="">Todos</option>
-        @for (option of estadoOptions; track option) {
-          <option [value]="option">{{ toLabel(option) }}</option>
-        }
-      </select>
-    </label>
-
-    <label>
-      <span>Estado bandeja</span>
-      <select formControlName="estadoBandeja">
-        <option value="">Todos</option>
-        @for (option of estadoBandejaOptions; track option) {
-          <option [value]="option">{{ toLabel(option) }}</option>
-        }
-      </select>
-    </label>
-
-    <div class="filters__actions">
-      <button type="button" class="secondary-button" (click)="clearFilters.emit()">Limpiar</button>
-      <button type="button" class="primary-button" (click)="applyFilters.emit()">Aplicar</button>
-    </div>
+  <form class="filters" [formGroup]="filterForm" (ngSubmit)="applyFilters.emit()">
+    <p-select formControlName="etapa" [options]="etapaOptions" placeholder="Etapa" appendTo="body" />
+    <p-select formControlName="estado" [options]="estadoOptions" placeholder="Estado" appendTo="body" />
+    <p-select formControlName="estadoBandeja" [options]="estadoBandejaOptions" placeholder="Bandeja" appendTo="body" />
+    <button pButton type="submit" icon="pi pi-filter" label="Filtrar"></button>
+    <button pButton type="button" severity="secondary" label="Limpiar" (click)="clearFilters.emit()"></button>
+    <button pButton type="button" severity="secondary" icon="pi pi-refresh" (click)="reload.emit()"></button>
   </form>
 
   @if (errorMessage) {
-    <p class="form-message form-message--error">{{ errorMessage }}</p>
+    <p-message severity="error" [text]="errorMessage" />
   }
 
-  @if (isLoading) {
-    <p class="helper-text">Cargando postulantes...</p>
-  } @else if (postulaciones.length) {
-    <div class="postulacion-list">
-      @for (postulacion of postulaciones; track postulacion.id) {
-        <article class="postulacion-card" animate.enter="row-enter">
-          <div>
-            <h4>{{ postulacion.postulante.nombres }} {{ postulacion.postulante.apellidos }}</h4>
-            <p>
-              {{ postulacion.postulante.tipoDocumento }} {{ postulacion.postulante.documento }} ·
-              {{ postulacion.postulante.celular }}
-            </p>
-          </div>
+  <p-table [value]="postulaciones" [loading]="isLoading" [rowHover]="true" styleClass="p-datatable-sm">
+    <ng-template #header>
+      <tr>
+        <th>Postulante</th>
+        <th>Oferta</th>
+        <th>Etapa</th>
+        <th>Estado</th>
+        <th>Accion</th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-row>
+      <tr>
+        <td>
+          <strong>{{ row.postulante.nombres }} {{ row.postulante.apellidos }}</strong>
+          <small>{{ row.postulante.tipoDocumento }} {{ row.postulante.documento }}</small>
+        </td>
+        <td>{{ row.ofertaLaboral.titulo }}</td>
+        <td><p-tag severity="info" [value]="toLabel(row.etapa)" /></td>
+        <td><p-tag severity="secondary" [value]="toLabel(row.estadoBandeja || row.estado)" /></td>
+        <td>
+          <button pButton type="button" size="small" label="Editar" icon="pi pi-pencil" (click)="edit.emit(row)"></button>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="5">No hay postulaciones con los filtros actuales.</td>
+      </tr>
+    </ng-template>
+  </p-table>
 
-          <div class="meta-grid">
-            <span><strong>Oferta:</strong> {{ postulacion.ofertaLaboral.codigo }}</span>
-            <span><strong>Puesto:</strong> {{ toLabel(postulacion.ofertaLaboral.puestoObjetivo) }}</span>
-            <span><strong>Origen:</strong> {{ toLabel(postulacion.origen) }}</span>
-            <span><strong>Etapa:</strong> {{ toLabel(postulacion.etapa) }}</span>
-            <span><strong>Estado:</strong> {{ toLabel(postulacion.estado) }}</span>
-            <span><strong>Bandeja:</strong> {{ toLabel(postulacion.estadoBandeja) }}</span>
-          </div>
-
-          <div class="card-actions">
-            <button type="button" class="secondary-button" (click)="edit.emit(postulacion)">Editar</button>
-          </div>
-        </article>
-      }
-    </div>
-
-    <div class="pagination">
-      <button
-        type="button"
-        class="ghost-button"
-        [disabled]="currentPage === 0"
-        (click)="pageChange.emit(currentPage - 1)"
-      >
-        Anterior
-      </button>
-      <span>Pagina {{ currentPage + 1 }} de {{ totalPages }}</span>
-      <button
-        type="button"
-        class="ghost-button"
-        [disabled]="currentPage + 1 >= totalPages"
-        (click)="pageChange.emit(currentPage + 1)"
-      >
-        Siguiente
-      </button>
-    </div>
-  } @else {
-    <p class="helper-text">No hay postulantes para mostrar.</p>
-  }
-</section>
+  <p-paginator
+    [first]="currentPage * 8"
+    [rows]="8"
+    [totalRecords]="totalPages * 8"
+    (onPageChange)="pageChange.emit($event.page ?? 0)"
+  />
+</p-card>

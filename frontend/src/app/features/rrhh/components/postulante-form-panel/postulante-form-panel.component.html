@@ -1,85 +1,77 @@
-<section class="panel">
-  <div class="panel__header">
-    <div>
-      <span class="panel__eyebrow">Registro</span>
-      <h3>{{ isEditing ? 'Editar postulante' : 'Registrar postulante' }}</h3>
-    </div>
-  </div>
+<p-card styleClass="rrhh-panel-card">
+  <ng-template #title>{{ isEditing ? 'Editar postulante' : 'Registrar postulante' }}</ng-template>
+  <ng-template #subtitle>Origen, oferta y datos basicos para crear la postulacion.</ng-template>
 
   @if (activeOffersErrorMessage) {
-    <p class="form-message form-message--error">{{ activeOffersErrorMessage }}</p>
+    <p-message severity="error" [text]="activeOffersErrorMessage" />
+  }
+  @if (saveErrorMessage) {
+    <p-message severity="error" [text]="saveErrorMessage" />
+  }
+  @if (saveSuccessMessage) {
+    <p-message severity="success" [text]="saveSuccessMessage" />
   }
 
-  <form [formGroup]="postulanteForm" class="form-grid">
-    <label class="field--wide">
-      <span>Oferta laboral activa</span>
-      <select formControlName="idOfertaLaboral">
-        <option [value]="0">
-          {{ isLoadingActiveOffers ? 'Cargando ofertas...' : 'Seleccionar oferta' }}
-        </option>
-        @for (offer of activeOffers; track offer.id) {
-          <option [value]="offer.id">
-            {{ offer.codigo }} - {{ toLabel(offer.negocio) }} / {{ toLabel(offer.puestoObjetivo) }}
-          </option>
-        }
-      </select>
+  <form class="form-grid" [formGroup]="postulanteForm" (ngSubmit)="save.emit()">
+    <label>
+      <span>Oferta laboral</span>
+      <p-select
+        formControlName="idOfertaLaboral"
+        [options]="activeOffers"
+        optionLabel="titulo"
+        optionValue="id"
+        placeholder="Selecciona oferta"
+        [loading]="isLoadingActiveOffers"
+        appendTo="body"
+      />
     </label>
 
     <label>
       <span>Origen</span>
-      <select formControlName="origen">
-        @for (option of origenOptions; track option) {
-          <option [value]="option">{{ toLabel(option) }}</option>
-        }
-      </select>
-    </label>
-
-    <label>
-      <span>Tipo documento</span>
-      <select formControlName="tipoDocumento">
-        @for (option of documentoOptions; track option) {
-          <option [value]="option">{{ option }}</option>
-        }
-      </select>
-    </label>
-
-    <label>
-      <span>Documento</span>
-      <input type="text" formControlName="documento" />
-    </label>
-
-    <label>
-      <span>Celular</span>
-      <input type="text" formControlName="celular" />
+      <p-select formControlName="origen" [options]="origenOptions" placeholder="Origen" appendTo="body" />
     </label>
 
     <label>
       <span>Nombres</span>
-      <input type="text" formControlName="nombres" />
+      <input pInputText formControlName="nombres" />
     </label>
 
     <label>
       <span>Apellidos</span>
-      <input type="text" formControlName="apellidos" />
+      <input pInputText formControlName="apellidos" />
     </label>
 
-    <app-date-field label="Fecha nacimiento" formControlName="fechaNacimiento" />
+    <label>
+      <span>Tipo documento</span>
+      <p-select formControlName="tipoDocumento" [options]="documentoOptions" appendTo="body" />
+    </label>
+
+    <label>
+      <span>Documento</span>
+      <input pInputText formControlName="documento" />
+    </label>
+
+    <label>
+      <span>Celular</span>
+      <input pInputText formControlName="celular" />
+    </label>
+
+    <label>
+      <span>Fecha nacimiento</span>
+      <input pInputText type="date" formControlName="fechaNacimiento" />
+    </label>
+
+    <div class="form-actions">
+      @if (isEditing) {
+        <button pButton type="button" label="Cancelar" severity="secondary" (click)="cancelEdit.emit()"></button>
+      }
+      <button
+        pButton
+        type="submit"
+        [label]="isEditing ? 'Guardar cambios' : 'Registrar'"
+        icon="pi pi-save"
+        [loading]="isSaving"
+      ></button>
+    </div>
   </form>
-
-  @if (saveErrorMessage) {
-    <p class="form-message form-message--error">{{ saveErrorMessage }}</p>
-  }
-
-  @if (saveSuccessMessage) {
-    <p class="form-message form-message--success">{{ saveSuccessMessage }}</p>
-  }
-
-  <div class="actions">
-    @if (isEditing) {
-      <button type="button" class="secondary-button" (click)="cancelEdit.emit()">Cancelar edicion</button>
-    }
-    <button type="button" class="primary-button" [disabled]="isSaving" (click)="save.emit()">
-      {{ isSaving ? 'Guardando...' : isEditing ? 'Actualizar postulante' : 'Registrar postulante' }}
-    </button>
-  </div>
-</section>
+</p-card>

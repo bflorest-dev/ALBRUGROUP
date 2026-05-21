@@ -8,6 +8,7 @@ import {
   ConnectedUserResponse,
   PresenceService
 } from '../../../core/services/presence.service';
+import { AttendanceRealtimeService } from '../../../core/services/attendance-realtime.service';
 import { UsuarioResponse } from '../../../shared/models/auth/usuario-response';
 import {
   CampanaResponse,
@@ -43,10 +44,12 @@ export class GtrWorkspaceFacade {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly preventaService = inject(PreventaLeadService);
   private readonly realtimeService = inject(LeadRealtimeService);
+  private readonly attendanceRealtimeService = inject(AttendanceRealtimeService);
   private readonly presenceService = inject(PresenceService);
   private readonly realtimeSubscription = new Subscription();
   private readonly newRowTimers = new Map<number, number>();
   private presencePollingId: number | null = null;
+  private attendanceRefreshId: number | null = null;
 
   readonly today = this.formatLocalDate(new Date());
   readonly isLoading = signal(false);
@@ -121,6 +124,7 @@ export class GtrWorkspaceFacade {
   stop(): void {
     this.realtimeSubscription.unsubscribe();
     this.stopPresencePolling();
+    this.stopAttendanceRefresh();
     this.document.defaultView?.removeEventListener('visibilitychange', this.handleVisibilityChange);
 
     for (const timerId of this.newRowTimers.values()) {
@@ -484,6 +488,15 @@ export class GtrWorkspaceFacade {
         }
       })
     );
+
+    this.realtimeSubscription.add(
+      this.attendanceRealtimeService.watchTopic('/topic/asistencia/monitor').subscribe({
+        next: () => {
+          this.scheduleAttendanceRefresh();
+        },
+        error: () => undefined
+      })
+    );
   }
 
   private startPresencePolling(): void {
@@ -513,6 +526,28 @@ export class GtrWorkspaceFacade {
       void this.refreshAdvisors().catch(() => undefined);
     }
   };
+
+  private scheduleAttendanceRefresh(): void {
+    if (this.document.visibilityState === 'hidden') {
+      return;
+    }
+
+    if (this.attendanceRefreshId !== null) {
+      return;
+    }
+
+    this.attendanceRefreshId = window.setTimeout(() => {
+      this.attendanceRefreshId = null;
+      void this.refreshAdvisors().catch(() => undefined);
+    }, 500);
+  }
+
+  private stopAttendanceRefresh(): void {
+    if (this.attendanceRefreshId !== null) {
+      window.clearTimeout(this.attendanceRefreshId);
+      this.attendanceRefreshId = null;
+    }
+  }
 
   private async reconcile(): Promise<void> {
     if (this.isReconciling()) {

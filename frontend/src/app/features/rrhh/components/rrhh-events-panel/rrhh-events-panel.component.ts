@@ -1,9 +1,15 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { ButtonModule } from 'primeng/button';
+import { MessageModule } from 'primeng/message';
+import { PaginatorModule } from 'primeng/paginator';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
 import { EmpleadoResponse } from '../../../../shared/models/rrhh/empleado-response';
 import { EventoEmpleadoResponse } from '../../../../shared/models/rrhh/evento-empleado-response';
 
 @Component({
   selector: 'app-rrhh-events-panel',
+  imports: [ButtonModule, MessageModule, PaginatorModule, TableModule, TagModule],
   templateUrl: './rrhh-events-panel.component.html',
   styleUrl: './rrhh-events-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

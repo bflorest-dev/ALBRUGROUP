@@ -9,6 +9,8 @@ Servicio responsable de asistencia, horarios, excepciones y cumplimiento.
 - Los endpoints de historico paginado usan la paginacion comun.
 - Los endpoints de asistencia `SCH-01` a `SCH-07` responden `DetalleAsistenciaResponse` e incluyen `estadoActual`.
 - Valores de `estadoActual`: `OFFLINE`, `ONLINE`, `ALMUERZO`, `SERVICIOS`, `CAPACITACION`.
+- `schedule-service` tambien expone WebSocket/STOMP en `/ws/asistencia` para invalidar lecturas de monitoreo y asistencia.
+- El contrato realtime completo esta documentado en `/(docs)/schedule-service-realtime`.
 
 ## SCH-01 registrarIngreso
 
@@ -18,6 +20,7 @@ Servicio responsable de asistencia, horarios, excepciones y cumplimiento.
 - Uso frontend: abrir jornada del dia.
 - Reglas: no permite doble ingreso; requiere horario vigente; la fecha debe ser laborable.
 - Efecto: crea asistencia del dia si no existia y deja estado `ONLINE`.
+- Realtime: publica `ASISTENCIA_REGISTRO_CREADO` con origen `INGRESO`.
 
 ## SCH-02 registrarSalida
 
@@ -27,6 +30,7 @@ Servicio responsable de asistencia, horarios, excepciones y cumplimiento.
 - Uso frontend: cerrar jornada.
 - Reglas: requiere ingreso previo; no permite doble salida; no permite cerrar con almuerzo o servicios activos.
 - Efecto: calcula minutos trabajados y balance del dia; deja estado `OFFLINE`.
+- Realtime: publica `ASISTENCIA_ESTADO_CAMBIADO` con origen `SALIDA`.
 
 ## SCH-03 iniciarAlmuerzo
 
@@ -36,6 +40,7 @@ Servicio responsable de asistencia, horarios, excepciones y cumplimiento.
 - Uso frontend: iniciar pausa de almuerzo.
 - Reglas: empleado debe estar `ONLINE`; no puede existir almuerzo iniciado previamente.
 - Efecto: deja estado `ALMUERZO`.
+- Realtime: publica `ASISTENCIA_ESTADO_CAMBIADO` con origen `ALMUERZO_INICIO`.
 
 ## SCH-04 finalizarAlmuerzo
 
@@ -45,6 +50,7 @@ Servicio responsable de asistencia, horarios, excepciones y cumplimiento.
 - Uso frontend: cerrar pausa de almuerzo.
 - Reglas: debe existir almuerzo activo.
 - Efecto: calcula minutos de almuerzo y vuelve a `ONLINE`.
+- Realtime: publica `ASISTENCIA_ESTADO_CAMBIADO` con origen `ALMUERZO_FIN`.
 
 ## SCH-05 iniciarServicios
 
@@ -54,6 +60,7 @@ Servicio responsable de asistencia, horarios, excepciones y cumplimiento.
 - Uso frontend: iniciar pausa de servicios.
 - Reglas: empleado debe estar `ONLINE`; no puede existir otro bloque de servicios en curso.
 - Efecto: deja estado `SERVICIOS`.
+- Realtime: publica `ASISTENCIA_ESTADO_CAMBIADO` con origen `SERVICIOS_INICIO`.
 
 ## SCH-06 finalizarServicios
 
@@ -63,6 +70,7 @@ Servicio responsable de asistencia, horarios, excepciones y cumplimiento.
 - Uso frontend: cerrar pausa de servicios.
 - Reglas: debe existir bloque de servicios activo.
 - Efecto: acumula minutos de servicios y vuelve a `ONLINE`.
+- Realtime: publica `ASISTENCIA_ESTADO_CAMBIADO` con origen `SERVICIOS_FIN`.
 
 ## SCH-07 getAsistenciaDia
 
@@ -89,6 +97,7 @@ Servicio responsable de asistencia, horarios, excepciones y cumplimiento.
 - `detalles`: lista de `dia`, `horaEntrada`, `horaSalida`, `inicioAlmuerzo`, `finAlmuerzo`, `laborable`.
 - Uso frontend: asignar horario inicial a un empleado contratado.
 - Reglas: no repetir dias; no solapar vigencias de horario; `detalles` no puede estar vacio.
+- Realtime: publica `HORARIO_AFECTADO` para el empleado y la fecha operativa de inicio.
 
 ## SCH-10 reemplazarHorario
 
@@ -98,6 +107,7 @@ Servicio responsable de asistencia, horarios, excepciones y cumplimiento.
 - Body: `modalidad`, `fechaInicio`, `compensable`, `detalles`.
 - Uso frontend: reemplazar una vigencia por otra.
 - Reglas: nueva `fechaInicio` debe ser posterior a la actual; cierra el horario anterior en `fechaInicio - 1 dia`; no repetir dias ni solapar vigencias.
+- Realtime: publica `HORARIO_AFECTADO` para la nueva fecha operativa.
 
 ## SCH-11 finalizarHorario
 
@@ -106,6 +116,7 @@ Servicio responsable de asistencia, horarios, excepciones y cumplimiento.
 - Body: `fechaFin`.
 - Uso frontend: cerrar una vigencia sin crear reemplazo inmediato.
 - Regla: `fechaFin` no puede ser anterior a `fechaInicio`.
+- Realtime: publica `HORARIO_AFECTADO` para la fecha de cierre enviada.
 
 ## SCH-12 registrarExcepcion
 
@@ -114,6 +125,7 @@ Servicio responsable de asistencia, horarios, excepciones y cumplimiento.
 - Body: `fecha`, `tipo`, `horaEntrada`, `horaSalida`, `inicioAlmuerzo`, `finAlmuerzo`, `laborable`, `motivo`.
 - Uso frontend: registrar modificacion puntual de un dia.
 - Reglas: fecha dentro de vigencia; no puede existir otra excepcion para la misma fecha.
+- Realtime: publica `EXCEPCION_HORARIO_AFECTADA` para la fecha de la excepcion.
 
 ## SCH-13 actualizarExcepcion
 
@@ -122,6 +134,7 @@ Servicio responsable de asistencia, horarios, excepciones y cumplimiento.
 - Body: igual que `SCH-12`.
 - Uso frontend: corregir una excepcion existente.
 - Reglas: mantiene validaciones de fecha y duplicidad.
+- Realtime: publica `EXCEPCION_HORARIO_AFECTADA` para la fecha resultante.
 
 ## SCH-14 eliminarExcepcion
 
@@ -129,6 +142,7 @@ Servicio responsable de asistencia, horarios, excepciones y cumplimiento.
 - Permiso: `UPDATE_HORARIOS`.
 - Uso frontend: eliminar una excepcion puntual.
 - Response: `204 No Content`.
+- Realtime: publica `EXCEPCION_HORARIO_AFECTADA` para la fecha eliminada.
 
 ## SCH-15 getHorarioMes
 
@@ -174,3 +188,13 @@ Servicio responsable de asistencia, horarios, excepciones y cumplimiento.
 - Permiso: `READ_ASISTENCIAS_MONITOR`.
 - Body: `empleadoIds`, `fecha`.
 - Uso frontend: monitoreo operativo de estados de asistencia.
+- Regla: sigue siendo la fuente REST de lectura para reconstruir estados despues de un evento realtime.
+
+## SCH-21 attendanceRealtimeWebSocket
+
+- Protocolo/ruta: `WebSocket STOMP /ws/asistencia`.
+- Permiso: handshake HTTP permitido por infraestructura; autenticacion real en el frame STOMP `CONNECT` con `Authorization: Bearer <token>`.
+- Topics principales: `/topic/asistencia/monitor` y `/topic/asistencia/empleado/{idEmpleado}`.
+- Regla: backend publica solo despues de commit exitoso.
+- Regla: el evento realtime debe usarse como senal de invalidacion y no como reemplazo de `SCH-20`.
+- Contrato completo: ver `/(docs)/schedule-service-realtime`.

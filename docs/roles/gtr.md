@@ -67,6 +67,7 @@ Reglas operativas:
 - `LEAD-26` permite entender estados operativos como `AGENDADO`.
 - `AUTH-09` es la fuente recomendada para seleccionar asesores activos por rol.
 - `GATE-07` es la fuente recomendada para saber que asesores estan conectados y operativos en tiempo real.
+- Si existe una vista abierta de asesores conectados, conviene invalidarla con `/topic/asistencia/monitor` y reconstruirla via `GATE-07`.
 - Si el frontend usa otro catalogo de empleados activos, debe garantizar que solo se asignen asesores validos.
 - Conectado no reemplaza activo: para asignar con confianza, el asesor debe existir como usuario activo y tambien aparecer operativo si la decision depende de disponibilidad inmediata.
 
@@ -75,6 +76,7 @@ Documentacion tecnica:
 - Ver `/(docs)/lead-service`.
 - Ver `/(docs)/auth-service`.
 - Ver `/(docs)/gateway-service`.
+- Ver `/(docs)/schedule-service-realtime`.
 
 ## Flujo 2: asesores conectados para asignacion
 
@@ -93,11 +95,13 @@ Reglas operativas:
 - Si un asesor no aparece conectado, puede seguir siendo usuario activo, pero no conviene priorizarlo para demanda inmediata.
 - Si `operativo=false`, revisar el estado de asistencia antes de asignarle carga urgente.
 - El resultado depende de que el asesor tenga presencia online activa mediante `GATE-01` y `GATE-02`.
+- Un cambio realtime de asistencia debe invalidar el listado y forzar nueva lectura de `GATE-07` si la vista sigue abierta.
 
 Documentacion tecnica:
 
 - Ver `/(docs)/gateway-service`.
 - Ver `/(docs)/lead-service`.
+- Ver `/(docs)/schedule-service-realtime`.
 
 ## Flujo 3: crear o reingresar lead
 

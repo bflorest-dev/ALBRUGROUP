@@ -40,16 +40,19 @@ Reglas operativas:
 - La respuesta incluye contexto de horario y asistencia, no solo el estado actual.
 - Campos utiles para UI operativa: `tieneHorarioVigente`, `laborableHoy`, `tieneRegistroHoy`, `estadoActual`, `desde`, `minutosServiciosAcumulados`, `excedioServicios`, `operativo`.
 - Este endpoint es de lectura; no modifica asistencia ni horario.
+- Si se usa realtime, debe tratarse como senal para reconsultar `SCH-20`, no como DTO final de la vista.
 
 Documentacion tecnica:
 
 - Ver `/(docs)/schedule-service`, endpoint `SCH-20`.
+- Ver `/(docs)/schedule-service-realtime`.
 
 ## Orden operativo sugerido
 
 1. Seleccionar empleados a monitorear.
 2. Ejecutar `SCH-20`.
-3. Refrescar periodicamente segun necesidad del negocio.
+3. Si existe una suscripcion a `/topic/asistencia/monitor`, reconsultar `SCH-20` al recibir eventos cuya `fecha` coincida con el corte visible.
+4. Mantener refresh periodico solo como respaldo si la vista lo necesita.
 
 ## Limites del rol
 

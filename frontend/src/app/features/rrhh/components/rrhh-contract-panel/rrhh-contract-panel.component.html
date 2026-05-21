@@ -1,342 +1,164 @@
-<div class="workspace-stack">
-  <section class="panel">
-    <div class="panel__header panel__header--wrap">
-      <div>
-        <span class="panel__eyebrow">Alta contractual</span>
-        <h3>Registrar contrato</h3>
-      </div>
+<div class="contract-layout">
+  <p-card styleClass="rrhh-panel-card">
+    <ng-template #title>Contrato vigente</ng-template>
+    <ng-template #subtitle>
+      {{ selectedEmployee ? selectedEmployee.nombres + ' ' + selectedEmployee.apellidos : 'Selecciona un empleado' }}
+    </ng-template>
 
-      @if (selectedEmployee; as employee) {
-        <div class="header-chip">
-          {{ employee.nombres }} {{ employee.apellidos }}
-        </div>
-      }
-    </div>
-
-    @if (selectedHiringCase; as hiringCase) {
-      <p class="helper-text">
-        El contrato se asociará a la postulación {{ hiringCase.id }} y permitirá confirmar la
-        contratación desde recruitment.
-      </p>
+    @if (contractErrorMessage) {
+      <p-message severity="error" [text]="contractErrorMessage" />
+    }
+    @if (contractSuccessMessage) {
+      <p-message severity="success" [text]="contractSuccessMessage" />
     }
 
-    @if (!selectedEmployee) {
-      <p class="helper-text">
-        Primero selecciona o registra un empleado en el bloque de empleados.
-      </p>
-    } @else {
-      <form [formGroup]="contractForm" class="form-grid">
-        <label>
-          <span>Puesto de trabajo</span>
-          <select formControlName="puestoTrabajo">
-            @for (option of puestoTrabajoOptions; track option) {
-              <option [value]="option">{{ toLabel(option) }}</option>
-            }
-          </select>
-        </label>
+    @if (currentContract) {
+      <div class="summary-card">
+        <p-tag severity="success" value="Vigente" />
+        <h3>{{ toLabel(currentContract.puestoTrabajo) }}</h3>
+        <p>{{ toLabel(currentContract.regimen) }} · {{ toLabel(currentContract.modalidad) }}</p>
+        <strong>{{ toMoney(currentContract.sueldoBase) }}</strong>
+      </div>
 
+      <form class="inline-form" [formGroup]="closeContractForm" (ngSubmit)="closeCurrentContract.emit()">
         <label>
-          <span>Régimen</span>
-          <select formControlName="regimen">
-            @for (option of regimenOptions; track option) {
-              <option [value]="option">{{ toLabel(option) }}</option>
-            }
-          </select>
+          <span>Fecha fin</span>
+          <input pInputText type="date" formControlName="fechaFin" />
         </label>
-
-        <label>
-          <span>Modalidad</span>
-          <select formControlName="modalidad">
-            @for (option of modalidadOptions; track option) {
-              <option [value]="option">{{ toLabel(option) }}</option>
-            }
-          </select>
-        </label>
-
-        <label>
-          <span>Seguro de salud</span>
-          <select formControlName="seguroSalud">
-            <option value="">No aplica</option>
-            @for (option of seguroSaludOptions; track option) {
-              <option [value]="option">{{ toLabel(option) }}</option>
-            }
-          </select>
-        </label>
-
-        <label>
-          <span>Sistema de pensiones</span>
-          <select formControlName="sistemaPensiones">
-            <option value="">No aplica</option>
-            @for (option of sistemaPensionesOptions; track option) {
-              <option [value]="option">{{ toLabel(option) }}</option>
-            }
-          </select>
-        </label>
-
-        <label>
-          <span>Sueldo base</span>
-          <input type="number" min="0.01" step="0.01" formControlName="sueldoBase" />
-        </label>
-
-        <app-date-field label="Fecha de inicio" formControlName="fechaInicio" />
-        <label class="switch-field">
-          <span>Contrato con fecha de fin</span>
-          <button
-            type="button"
-            class="switch-button"
-            [class.switch-button--on]="hasContractEndDate()"
-            (click)="setContractEndDate(!hasContractEndDate())"
-          >
-            {{ hasContractEndDate() ? 'Si' : 'No' }}
-          </button>
-        </label>
-        @if (hasContractEndDate()) {
-          <app-date-field label="Fecha de fin" formControlName="fechaFin" />
-        }
+        <button pButton type="submit" severity="danger" label="Finalizar" [loading]="isClosingContract"></button>
       </form>
-
-      @if (contractErrorMessage) {
-        <p class="form-message form-message--error">{{ contractErrorMessage }}</p>
-      }
-
-      @if (contractSuccessMessage) {
-        <p class="form-message form-message--success">{{ contractSuccessMessage }}</p>
-      }
-
-      <div class="actions">
-        <button
-          type="button"
-          class="primary-button"
-          [disabled]="isRegisteringContract"
-          (click)="registerContract.emit()"
-        >
-          {{ isRegisteringContract ? 'Registrando...' : 'Registrar contrato' }}
-        </button>
-      </div>
-    }
-  </section>
-
-  <div class="workspace-grid">
-    <section class="panel">
-      <div class="panel__header">
-        <div>
-          <span class="panel__eyebrow">Contrato actual</span>
-          <h3>Contrato vigente</h3>
-        </div>
-
-        <button type="button" class="ghost-button" (click)="reloadCurrentContract.emit()">
-          Recargar
-        </button>
-      </div>
-
-      @if (isLoadingContracts) {
-        <p class="helper-text">Consultando contrato vigente...</p>
-      } @else if (currentContract; as contract) {
-        <article class="contract-card">
-          <div class="meta-grid">
-            <span><strong>Puesto:</strong> {{ toLabel(contract.puestoTrabajo) }}</span>
-            <span><strong>Régimen:</strong> {{ toLabel(contract.regimen) }}</span>
-            <span><strong>Modalidad:</strong> {{ toLabel(contract.modalidad) }}</span>
-            <span><strong>Sueldo:</strong> {{ toMoney(contract.sueldoBase) }}</span>
-            <span><strong>Inicio:</strong> {{ contract.fechaInicio }}</span>
-            <span><strong>Fin:</strong> {{ contract.fechaFin || 'Vigente' }}</span>
-          </div>
-        </article>
-
-        <form [formGroup]="closeContractForm" class="close-form">
-          <app-date-field label="Fecha de cese" formControlName="fechaFin" />
-          <button
-            type="button"
-            class="danger-button"
-            [disabled]="isClosingContract"
-            (click)="closeCurrentContract.emit()"
-          >
-            {{ isClosingContract ? 'Cerrando...' : 'Finalizar contrato' }}
-          </button>
-        </form>
-      } @else {
-        <p class="helper-text">No hay contrato vigente para el empleado seleccionado.</p>
-      }
-    </section>
-
-    <section class="panel">
-      <div class="panel__header">
-        <div>
-          <span class="panel__eyebrow">Historial contractual</span>
-          <h3>Histórico contractual</h3>
-        </div>
-      </div>
-
-      @if (contractHistory.length) {
-        <div class="card-list">
-          @for (contract of contractHistory; track contract.id) {
-            <article class="contract-card">
-              <div class="meta-grid">
-                <span><strong>Puesto:</strong> {{ toLabel(contract.puestoTrabajo) }}</span>
-                <span><strong>Modalidad:</strong> {{ toLabel(contract.modalidad) }}</span>
-                <span><strong>Sueldo:</strong> {{ toMoney(contract.sueldoBase) }}</span>
-                <span><strong>Inicio:</strong> {{ contract.fechaInicio }}</span>
-                <span><strong>Fin:</strong> {{ contract.fechaFin || 'Vigente' }}</span>
-              </div>
-            </article>
-          }
-        </div>
-
-        <div class="pagination">
-          <button
-            type="button"
-            class="ghost-button"
-            [disabled]="currentHistoryPage === 0"
-            (click)="historyPageChange.emit(currentHistoryPage - 1)"
-          >
-            Anterior
-          </button>
-          <span>Página {{ currentHistoryPage + 1 }} de {{ totalHistoryPages }}</span>
-          <button
-            type="button"
-            class="ghost-button"
-            [disabled]="currentHistoryPage + 1 >= totalHistoryPages"
-            (click)="historyPageChange.emit(currentHistoryPage + 1)"
-          >
-            Siguiente
-          </button>
-        </div>
-      } @else {
-        <p class="helper-text">No hay contratos registrados todavía.</p>
-      }
-    </section>
-  </div>
-
-  <section class="panel">
-    <div class="panel__header">
-      <div>
-        <span class="panel__eyebrow">Horario inicial</span>
-        <h3>Registrar horario inicial</h3>
-      </div>
-    </div>
-
-    @if (!selectedEmployee || !currentContract) {
-      <p class="helper-text">
-        El horario se habilita cuando el empleado ya tiene un contrato vigente.
-      </p>
     } @else {
-      <p class="helper-text">
-        Después del contrato, asigna la programación semanal base para habilitar la operación de asistencia.
-      </p>
-
-      <form [formGroup]="horarioForm" class="form-grid">
-        <app-date-field label="Fecha de inicio del horario" formControlName="fechaInicio" />
-
-        <label>
-          <span>Compensable</span>
-          <select formControlName="compensable">
-            <option value="true">Sí</option>
-            <option value="false">No</option>
-          </select>
-        </label>
-
-        @if (!isAdvancedSchedule()) {
-          <div class="schedule-simple field--wide">
-            <div class="schedule-simple__times">
-              <label>
-                <span>Entrada</span>
-                <input type="time" formControlName="horaEntrada" (change)="applySimpleSchedule()" />
-              </label>
-              <label>
-                <span>Salida</span>
-                <input type="time" formControlName="horaSalida" (change)="applySimpleSchedule()" />
-              </label>
-              <label>
-                <span>Inicio almuerzo</span>
-                <input type="time" formControlName="inicioAlmuerzo" (change)="applySimpleSchedule()" />
-              </label>
-              <label>
-                <span>Fin almuerzo</span>
-                <input type="time" formControlName="finAlmuerzo" (change)="applySimpleSchedule()" />
-              </label>
-            </div>
-
-            <div class="day-strip">
-              @for (day of diasSemanaOptions; track day) {
-                <button
-                  type="button"
-                  class="day-pill"
-                  [class.day-pill--rest]="isRestDay(day)"
-                  (click)="selectRestDay(day)"
-                >
-                  {{ toLabel(day).slice(0, 3) }}
-                </button>
-              }
-            </div>
-          </div>
-        }
-
-        <div class="field--wide schedule-mode-action">
-          <button type="button" class="icon-only-button" title="Configuracion avanzada" (click)="setAdvancedSchedule(!isAdvancedSchedule())">
-            <i class="ti ti-settings"></i>
-          </button>
-        </div>
-
-        @if (isAdvancedSchedule()) {
-        <div class="schedule-grid field--wide" formArrayName="detalles">
-          @for (detalle of getScheduleRows(); track $index) {
-            <div class="schedule-card" [formGroupName]="$index">
-              <div class="schedule-card__header">
-                <strong>{{ toLabel(diasSemanaOptions[$index]) }}</strong>
-                <label class="schedule-card__toggle">
-                  <span>Laborable</span>
-                  <select formControlName="laborable">
-                    <option value="true">Sí</option>
-                    <option value="false">No</option>
-                  </select>
-                </label>
-              </div>
-
-              <div class="schedule-card__grid">
-                <label>
-                  <span>Entrada</span>
-                  <input type="time" formControlName="horaEntrada" />
-                </label>
-
-                <label>
-                  <span>Salida</span>
-                  <input type="time" formControlName="horaSalida" />
-                </label>
-
-                <label>
-                  <span>Inicio almuerzo</span>
-                  <input type="time" formControlName="inicioAlmuerzo" />
-                </label>
-
-                <label>
-                  <span>Fin almuerzo</span>
-                  <input type="time" formControlName="finAlmuerzo" />
-                </label>
-              </div>
-            </div>
-          }
-        </div>
-        }
-      </form>
-
-      @if (scheduleErrorMessage) {
-        <p class="form-message form-message--error">{{ scheduleErrorMessage }}</p>
-      }
-
-      @if (scheduleSuccessMessage) {
-        <p class="form-message form-message--success">{{ scheduleSuccessMessage }}</p>
-      }
-
-      <div class="actions">
-        <button
-          type="button"
-          class="primary-button"
-          [disabled]="isRegisteringSchedule"
-          (click)="registerSchedule.emit()"
-        >
-          {{ isRegisteringSchedule ? 'Registrando...' : 'Registrar horario' }}
-        </button>
-      </div>
+      <p-message severity="warn" text="No hay contrato vigente para el empleado seleccionado." />
     }
-  </section>
+  </p-card>
+
+  <p-card styleClass="rrhh-panel-card">
+    <ng-template #title>Registrar contrato</ng-template>
+    <ng-template #subtitle>El contrato habilita el registro de horario y pagos.</ng-template>
+
+    <form class="form-grid" [formGroup]="contractForm" (ngSubmit)="registerContract.emit()">
+      <label><span>Puesto</span><p-select formControlName="puestoTrabajo" [options]="puestoTrabajoOptions" appendTo="body" /></label>
+      <label><span>Regimen</span><p-select formControlName="regimen" [options]="regimenOptions" appendTo="body" /></label>
+      <label><span>Modalidad</span><p-select formControlName="modalidad" [options]="modalidadOptions" appendTo="body" /></label>
+      <label><span>Seguro salud</span><p-select formControlName="seguroSalud" [options]="seguroSaludOptions" appendTo="body" /></label>
+      <label><span>Sistema pensiones</span><p-select formControlName="sistemaPensiones" [options]="sistemaPensionesOptions" appendTo="body" /></label>
+      <label><span>Sueldo base</span><input pInputText type="number" formControlName="sueldoBase" /></label>
+      <label><span>Fecha inicio</span><input pInputText type="date" formControlName="fechaInicio" /></label>
+      <label>
+        <span>Fecha fin opcional</span>
+        <input pInputText type="date" formControlName="fechaFin" [disabled]="!hasContractEndDate()" />
+      </label>
+
+      <div class="check-row">
+        <p-checkbox
+          [binary]="true"
+          [ngModel]="hasContractEndDate()"
+          [ngModelOptions]="{ standalone: true }"
+          (ngModelChange)="setContractEndDate($event)"
+          inputId="contractEndDate"
+        />
+        <label for="contractEndDate">Contrato con fecha fin</label>
+      </div>
+
+      <div class="form-actions">
+        <button pButton type="button" severity="secondary" icon="pi pi-refresh" label="Contrato actual" (click)="reloadCurrentContract.emit()"></button>
+        <button pButton type="submit" icon="pi pi-file-plus" label="Registrar contrato" [loading]="isRegisteringContract"></button>
+      </div>
+    </form>
+  </p-card>
+
+  <p-card styleClass="rrhh-panel-card">
+    <ng-template #title>Horario</ng-template>
+    <ng-template #subtitle>Primero registra o carga un contrato vigente.</ng-template>
+
+    @if (scheduleErrorMessage) {
+      <p-message severity="error" [text]="scheduleErrorMessage" />
+    }
+    @if (scheduleSuccessMessage) {
+      <p-message severity="success" [text]="scheduleSuccessMessage" />
+    }
+
+    <form class="form-grid" [formGroup]="horarioForm" (ngSubmit)="registerSchedule.emit()">
+      <label><span>Fecha inicio</span><input pInputText type="date" formControlName="fechaInicio" /></label>
+      <label><span>Entrada</span><input pInputText type="time" formControlName="horaEntrada" (change)="applySimpleSchedule()" /></label>
+      <label><span>Salida</span><input pInputText type="time" formControlName="horaSalida" (change)="applySimpleSchedule()" /></label>
+      <label><span>Inicio almuerzo</span><input pInputText type="time" formControlName="inicioAlmuerzo" (change)="applySimpleSchedule()" /></label>
+      <label><span>Fin almuerzo</span><input pInputText type="time" formControlName="finAlmuerzo" (change)="applySimpleSchedule()" /></label>
+      <label><span>Dia descanso</span><p-select formControlName="diaDescanso" [options]="diasSemanaOptions" appendTo="body" (onChange)="selectRestDay($event.value)" /></label>
+
+      <div class="check-row wide">
+        <p-checkbox
+          [binary]="true"
+          [ngModel]="isAdvancedSchedule()"
+          [ngModelOptions]="{ standalone: true }"
+          (ngModelChange)="setAdvancedSchedule($event)"
+          inputId="advancedSchedule"
+        />
+        <label for="advancedSchedule">Editar horario por dia</label>
+      </div>
+
+      @if (isAdvancedSchedule()) {
+        <p-table class="wide" [value]="getScheduleRows()" styleClass="p-datatable-sm">
+          <ng-template #header>
+            <tr>
+              <th>Dia</th>
+              <th>Entrada</th>
+              <th>Salida</th>
+              <th>Almuerzo</th>
+              <th>Laborable</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-row>
+            <tr [formGroup]="row">
+              <td>{{ toLabel(row.get('dia')?.value) }}</td>
+              <td><input pInputText type="time" formControlName="horaEntrada" /></td>
+              <td><input pInputText type="time" formControlName="horaSalida" /></td>
+              <td class="time-pair">
+                <input pInputText type="time" formControlName="inicioAlmuerzo" />
+                <input pInputText type="time" formControlName="finAlmuerzo" />
+              </td>
+              <td>
+                <p-select formControlName="laborable" [options]="['true', 'false']" appendTo="body" />
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      }
+
+      <div class="form-actions">
+        <button pButton type="submit" icon="pi pi-calendar-plus" label="Registrar horario" [loading]="isRegisteringSchedule"></button>
+      </div>
+    </form>
+  </p-card>
+
+  <p-card styleClass="rrhh-panel-card">
+    <ng-template #title>Historico de contratos</ng-template>
+    <p-table [value]="contractHistory" [loading]="isLoadingContracts" styleClass="p-datatable-sm">
+      <ng-template #header>
+        <tr>
+          <th>Puesto</th>
+          <th>Periodo</th>
+          <th>Sueldo</th>
+          <th>Estado</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-contract>
+        <tr>
+          <td>{{ toLabel(contract.puestoTrabajo) }}</td>
+          <td>{{ contract.fechaInicio }} - {{ contract.fechaFin || 'Actual' }}</td>
+          <td>{{ toMoney(contract.sueldoBase) }}</td>
+          <td><p-tag [severity]="contract.fechaFin ? 'secondary' : 'success'" [value]="contract.fechaFin ? 'Finalizado' : 'Vigente'" /></td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="4">Sin historico de contratos.</td></tr>
+      </ng-template>
+    </p-table>
+    <p-paginator
+      [first]="currentHistoryPage * 8"
+      [rows]="8"
+      [totalRecords]="totalHistoryPages * 8"
+      (onPageChange)="historyPageChange.emit($event.page ?? 0)"
+    />
+  </p-card>
 </div>

@@ -1,5 +1,11 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormGroup } from '@angular/forms';
+import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
+import { MessageModule } from 'primeng/message';
+import { PaginatorModule } from 'primeng/paginator';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
 import { EventoResponse } from '../../../../shared/models/recruitment/evento-response';
 import { OfertaLaboralResponse } from '../../../../shared/models/recruitment/oferta-laboral-response';
 import { PostulacionResponse } from '../../../../shared/models/recruitment/postulacion-response';
@@ -9,7 +15,16 @@ import { PostulantesListPanelComponent } from '../postulantes-list-panel/postula
 
 @Component({
   selector: 'app-rrhh-hiring-panel',
-  imports: [PostulanteFormPanelComponent, PostulantesListPanelComponent],
+  imports: [
+    PostulanteFormPanelComponent,
+    PostulantesListPanelComponent,
+    ButtonModule,
+    CardModule,
+    MessageModule,
+    PaginatorModule,
+    TableModule,
+    TagModule
+  ],
   templateUrl: './rrhh-hiring-panel.component.html',
   styleUrl: './rrhh-hiring-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

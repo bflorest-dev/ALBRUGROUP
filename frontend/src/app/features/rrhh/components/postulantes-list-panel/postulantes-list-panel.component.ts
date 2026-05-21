@@ -1,11 +1,27 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
+import { MessageModule } from 'primeng/message';
+import { PaginatorModule } from 'primeng/paginator';
+import { SelectModule } from 'primeng/select';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
 import { PostulacionResponse } from '../../../../shared/models/recruitment/postulacion-response';
 import { formatLabel } from '../../../../shared/utils/display-label';
 
 @Component({
   selector: 'app-postulantes-list-panel',
-  imports: [ReactiveFormsModule],
+  imports: [
+    ReactiveFormsModule,
+    ButtonModule,
+    CardModule,
+    MessageModule,
+    PaginatorModule,
+    SelectModule,
+    TableModule,
+    TagModule
+  ],
   templateUrl: './postulantes-list-panel.component.html',
   styleUrl: './postulantes-list-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

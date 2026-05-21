@@ -1,61 +1,40 @@
-<section class="panel">
-  <div class="panel__header panel__header--wrap">
-    <div>
-      <span class="panel__eyebrow">Historial</span>
-      <h3>Eventos administrativos del empleado</h3>
+<div class="events-panel">
+  @if (selectedEmployee) {
+    <div class="events-header">
+      <div>
+        <h3>{{ selectedEmployee.nombres }} {{ selectedEmployee.apellidos }}</h3>
+        <p>{{ selectedEmployee.tipoDocumento }} {{ selectedEmployee.numeroDocumento }}</p>
+      </div>
+      <button pButton type="button" severity="secondary" icon="pi pi-refresh" (click)="reload.emit()"></button>
     </div>
-
-    <button type="button" class="ghost-button" (click)="reload.emit()">Recargar</button>
-  </div>
-
-  @if (selectedEmployee; as employee) {
-    <p class="helper-text">
-      Historial de {{ employee.nombres }} {{ employee.apellidos }} · {{ employee.tipoDocumento }}
-      {{ employee.numeroDocumento }}
-    </p>
-
-    @if (errorMessage) {
-      <p class="form-message form-message--error">{{ errorMessage }}</p>
-    }
-
-    @if (isLoading) {
-      <p class="helper-text">Cargando eventos...</p>
-    } @else if (events.length) {
-      <div class="timeline">
-        @for (event of events; track event.id) {
-          <article class="timeline__item">
-            <div class="timeline__title">
-              <strong>{{ toLabel(event.evento) }}</strong>
-              <span>{{ toDate(event.fechaEvento) }}</span>
-            </div>
-            <p>Responsable {{ event.responsableId }} · Creado {{ toDate(event.createdAt) }}</p>
-          </article>
-        }
-      </div>
-
-      <div class="pagination">
-        <button
-          type="button"
-          class="ghost-button"
-          [disabled]="currentPage === 0"
-          (click)="pageChange.emit(currentPage - 1)"
-        >
-          Anterior
-        </button>
-        <span>Página {{ currentPage + 1 }} de {{ totalPages }}</span>
-        <button
-          type="button"
-          class="ghost-button"
-          [disabled]="currentPage + 1 >= totalPages"
-          (click)="pageChange.emit(currentPage + 1)"
-        >
-          Siguiente
-        </button>
-      </div>
-    } @else {
-      <p class="helper-text">No hay eventos administrativos para este empleado.</p>
-    }
-  } @else {
-    <p class="helper-text">Selecciona un empleado para consultar sus eventos administrativos.</p>
   }
-</section>
+
+  @if (errorMessage) {
+    <p-message severity="error" [text]="errorMessage" />
+  }
+
+  <p-table [value]="events" [loading]="isLoading" styleClass="p-datatable-sm">
+    <ng-template #header>
+      <tr>
+        <th>Evento</th>
+        <th>Fecha</th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-event>
+      <tr>
+        <td><p-tag severity="info" [value]="toLabel(event.evento)" /></td>
+        <td>{{ toDate(event.fechaEvento || event.createdAt) }}</td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr><td colspan="2">No hay eventos para este empleado.</td></tr>
+    </ng-template>
+  </p-table>
+
+  <p-paginator
+    [first]="currentPage * 8"
+    [rows]="8"
+    [totalRecords]="totalPages * 8"
+    (onPageChange)="pageChange.emit($event.page ?? 0)"
+  />
+</div>

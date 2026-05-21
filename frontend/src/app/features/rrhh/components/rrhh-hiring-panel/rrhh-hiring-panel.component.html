@@ -1,166 +1,132 @@
-<div class="workspace-stack">
+<div class="hiring-layout" [class.hiring-layout--contracting]="mode === 'contrataciones'">
   @if (mode === 'empleabilidad') {
-    <section class="panel">
-      <div class="panel__header panel__header--wrap">
-        <div>
-          <span class="panel__eyebrow">Ofertas activas</span>
-          <h3>Ofertas laborales disponibles</h3>
-        </div>
+    <app-postulante-form-panel
+      [postulanteForm]="postulanteForm"
+      [activeOffers]="activeOffers"
+      [documentoOptions]="documentoOptions"
+      [origenOptions]="origenOptions"
+      [isLoadingActiveOffers]="isLoadingActiveOffers"
+      [activeOffersErrorMessage]="activeOffersErrorMessage"
+      [isSaving]="isSaving"
+      [isEditing]="isEditing"
+      [saveErrorMessage]="saveErrorMessage"
+      [saveSuccessMessage]="saveSuccessMessage"
+      (save)="save.emit()"
+      (cancelEdit)="cancelEdit.emit()"
+    />
+
+    <app-postulantes-list-panel
+      [filterForm]="filterForm"
+      [postulaciones]="postulaciones"
+      [etapaOptions]="etapaOptions"
+      [estadoOptions]="estadoOptions"
+      [estadoBandejaOptions]="estadoBandejaOptions"
+      [currentPage]="currentPage"
+      [totalPages]="totalPages"
+      [isLoading]="isLoadingPostulaciones"
+      [errorMessage]="listErrorMessage"
+      (applyFilters)="applyFilters.emit()"
+      (clearFilters)="clearFilters.emit()"
+      (reload)="reload.emit()"
+      (pageChange)="pageChange.emit($event)"
+      (edit)="edit.emit($event)"
+    />
+  } @else {
+    <p-card styleClass="rrhh-panel-card">
+      <ng-template #title>Bandeja lista para contratacion</ng-template>
+      <ng-template #subtitle>Selecciona un caso para crear empleado, contrato y horario.</ng-template>
+
+      <div class="toolbar-row">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          label="Recargar"
+          severity="secondary"
+          [loading]="isLoadingReadyCases"
+          (click)="reloadReadyCases.emit()"
+        ></button>
       </div>
 
-      @if (activeOffers.length) {
-        <div class="offer-list">
-          @for (offer of activeOffers; track offer.id) {
-            <article class="offer-card">
-              <strong>{{ offer.codigo }}</strong>
-              <span>{{ toLabel(offer.negocio) }} / {{ toLabel(offer.puestoObjetivo) }}</span>
-            </article>
-          }
-        </div>
-      } @else {
-        <p class="helper-text">No hay ofertas activas para mostrar.</p>
+      @if (readyCasesErrorMessage) {
+        <p-message severity="error" [text]="readyCasesErrorMessage" />
       }
-    </section>
 
-    <div class="workspace-grid">
-      <app-postulante-form-panel
-        [postulanteForm]="postulanteForm"
-        [activeOffers]="activeOffers"
-        [documentoOptions]="documentoOptions"
-        [origenOptions]="origenOptions"
-        [isLoadingActiveOffers]="isLoadingActiveOffers"
-        [activeOffersErrorMessage]="activeOffersErrorMessage"
-        [isSaving]="isSaving"
-        [isEditing]="isEditing"
-        [saveErrorMessage]="saveErrorMessage"
-        [saveSuccessMessage]="saveSuccessMessage"
-        (save)="save.emit()"
-        (cancelEdit)="cancelEdit.emit()"
+      <p-table [value]="readyCases" [loading]="isLoadingReadyCases" [rowHover]="true" styleClass="p-datatable-sm">
+        <ng-template #header>
+          <tr>
+            <th>Postulante</th>
+            <th>Oferta</th>
+            <th>Estado</th>
+            <th>Accion</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-row>
+          <tr [class.row-selected]="selectedHiringCase?.id === row.id">
+            <td>
+              <strong>{{ row.postulante.nombres }} {{ row.postulante.apellidos }}</strong>
+              <small>{{ row.postulante.tipoDocumento }} {{ row.postulante.documento }}</small>
+            </td>
+            <td>{{ row.ofertaLaboral.titulo }}</td>
+            <td><p-tag severity="success" [value]="toLabel(row.estadoBandeja || row.estado)" /></td>
+            <td>
+              <button
+                pButton
+                type="button"
+                size="small"
+                icon="pi pi-user-plus"
+                label="Tomar"
+                (click)="selectHiringCase.emit(row); openEmployeeRegistration.emit()"
+              ></button>
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="4">No hay casos listos para contratacion.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+
+      <p-paginator
+        [first]="currentReadyPage * 8"
+        [rows]="8"
+        [totalRecords]="totalReadyPages * 8"
+        (onPageChange)="readyCasePageChange.emit($event.page ?? 0)"
       />
+    </p-card>
 
-      <app-postulantes-list-panel
-        [filterForm]="filterForm"
-        [postulaciones]="postulaciones"
-        [etapaOptions]="etapaOptions"
-        [estadoOptions]="estadoOptions"
-        [estadoBandejaOptions]="estadoBandejaOptions"
-        [currentPage]="currentPage"
-        [totalPages]="totalPages"
-        [isLoading]="isLoadingPostulaciones"
-        [errorMessage]="listErrorMessage"
-        (applyFilters)="applyFilters.emit()"
-        (clearFilters)="clearFilters.emit()"
-        (reload)="reload.emit()"
-        (pageChange)="pageChange.emit($event)"
-        (edit)="edit.emit($event)"
-      />
-    </div>
-  }
+    <p-card styleClass="rrhh-panel-card">
+      <ng-template #title>Eventos de postulacion</ng-template>
+      <ng-template #subtitle>
+        {{ selectedHiringCase ? selectedHiringCase.postulante.nombres + ' ' + selectedHiringCase.postulante.apellidos : 'Selecciona un caso' }}
+      </ng-template>
 
-  @if (mode === 'contrataciones') {
-    <div class="workspace-grid workspace-grid--secondary">
-      <section class="panel">
-        <div class="panel__header panel__header--wrap">
-          <div>
-            <span class="panel__eyebrow">Casos preparados</span>
-            <h3>Bandeja lista para contratación</h3>
-          </div>
+      @if (hiringEventsErrorMessage) {
+        <p-message severity="error" [text]="hiringEventsErrorMessage" />
+      }
 
-          <button type="button" class="ghost-button" (click)="reloadReadyCases.emit()">Recargar</button>
-        </div>
-
-        @if (readyCasesErrorMessage) {
-          <p class="form-message form-message--error">{{ readyCasesErrorMessage }}</p>
-        }
-
-        @if (isLoadingReadyCases) {
-          <p class="helper-text">Cargando casos listos para RRHH...</p>
-        } @else if (readyCases.length) {
-          <div class="card-list">
-            @for (postulacion of readyCases; track postulacion.id) {
-              <article
-                class="candidate-card"
-                [class.candidate-card--selected]="selectedHiringCase?.id === postulacion.id"
-              >
-                <div>
-                  <h4>{{ postulacion.postulante.nombres }} {{ postulacion.postulante.apellidos }}</h4>
-                  <p>
-                    {{ postulacion.postulante.tipoDocumento }} {{ postulacion.postulante.documento }} ·
-                    {{ postulacion.postulante.celular }}
-                  </p>
-                </div>
-
-                <div class="meta-grid">
-                  <span><strong>Oferta:</strong> {{ postulacion.ofertaLaboral.codigo }}</span>
-                  <span><strong>Puesto:</strong> {{ toLabel(postulacion.ofertaLaboral.puestoObjetivo) }}</span>
-                  <span><strong>Origen:</strong> {{ toLabel(postulacion.origen) }}</span>
-                  <span><strong>Estado:</strong> {{ toLabel(postulacion.estado) }}</span>
-                </div>
-
-                <div class="card-actions">
-                  <button type="button" class="secondary-button" (click)="selectHiringCase.emit(postulacion)">
-                    {{ selectedHiringCase?.id === postulacion.id ? 'Recargar detalle' : 'Ver caso' }}
-                  </button>
-                  @if (selectedHiringCase?.id === postulacion.id) {
-                    <button type="button" class="primary-button" (click)="openEmployeeRegistration.emit()">
-                      Preparar ficha de empleado
-                    </button>
-                  }
-                </div>
-              </article>
-            }
-          </div>
-
-          <div class="pagination">
-            <button
-              type="button"
-              class="ghost-button"
-              [disabled]="currentReadyPage === 0"
-              (click)="readyCasePageChange.emit(currentReadyPage - 1)"
-            >
-              Anterior
-            </button>
-            <span>Página {{ currentReadyPage + 1 }} de {{ totalReadyPages }}</span>
-            <button
-              type="button"
-              class="ghost-button"
-              [disabled]="currentReadyPage + 1 >= totalReadyPages"
-              (click)="readyCasePageChange.emit(currentReadyPage + 1)"
-            >
-              Siguiente
-            </button>
-          </div>
-        } @else {
-          <p class="helper-text">No hay postulaciones listas para contratación.</p>
-        }
-      </section>
-
-      <section class="panel">
-        <div class="panel__header">
-          <div>
-            <span class="panel__eyebrow">Caso seleccionado</span>
-            <h3>Detalle del caso</h3>
-          </div>
-        </div>
-
-        @if (selectedHiringCase; as hiringCase) {
-          <div class="detail-card">
-            <div class="detail-card__summary">
-              <h4>{{ hiringCase.postulante.nombres }} {{ hiringCase.postulante.apellidos }}</h4>
-              <p>{{ hiringCase.ofertaLaboral.codigo }} · {{ toLabel(hiringCase.ofertaLaboral.puestoObjetivo) }}</p>
-            </div>
-
-            <div class="meta-grid">
-              <span><strong>Etapa:</strong> {{ toLabel(hiringCase.etapa) }}</span>
-              <span><strong>Bandeja:</strong> {{ toLabel(hiringCase.estadoBandeja) }}</span>
-              <span><strong>Creado:</strong> {{ toDate(hiringCase.createdAt) }}</span>
-              <span><strong>Actualizado:</strong> {{ toDate(hiringCase.updatedAt) }}</span>
-            </div>
-          </div>
-        } @else {
-          <p class="helper-text">Selecciona un caso de la bandeja para preparar el alta de empleado.</p>
-        }
-      </section>
-    </div>
+      <p-table [value]="hiringEvents" [loading]="isLoadingHiringEvents" styleClass="p-datatable-sm">
+        <ng-template #header>
+          <tr>
+            <th>Evento</th>
+            <th>Fecha</th>
+            <th>Comentario</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-event>
+          <tr>
+            <td><p-tag severity="info" [value]="toLabel(event.accion)" /></td>
+            <td>{{ toDate(event.createdAt) }}</td>
+            <td>{{ event.observacion || event.tipificacion || '-' }}</td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="3">No hay eventos cargados.</td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
   }
 </div>

@@ -1,308 +1,124 @@
 .rrhh-page {
   display: grid;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
-.hero {
-  position: relative;
-  overflow: hidden;
-  padding: 1.75rem;
-  border-radius: 1.5rem;
-  color: var(--role-hero-text);
-  background: var(--role-hero-bg);
+.rrhh-hero__content,
+.toolbar-row,
+.metric-strip {
+  display: flex;
+  align-items: center;
 }
 
-.hero__eyebrow,
-.panel__eyebrow,
-.events-drawer__eyebrow {
+.rrhh-hero__content,
+.toolbar-row {
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.rrhh-hero__eyebrow {
+  color: var(--role-accent);
   font-size: 0.78rem;
   font-weight: 800;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
-.hero h2 {
-  margin: 0.65rem 0;
+.rrhh-hero h2 {
+  margin: 0.15rem 0;
+  color: var(--role-primary);
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
 }
 
-.hero p {
-  max-width: 760px;
+.rrhh-hero p {
   margin: 0;
-  color: var(--role-hero-muted);
+  color: var(--app-text-muted);
 }
 
-.panel,
-.selected-payment {
-  padding: 1.5rem;
-  border: 1px solid var(--app-border-soft);
-  border-radius: 1.35rem;
-  background: var(--app-surface-raised);
-  box-shadow: var(--app-shadow-soft);
-}
-
-.panel__header,
-.panel__header--wrap,
-.pagination,
-.attendance-card__top,
-.column-title,
-.payment-employee-card {
-  display: flex;
+.rrhh-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
 }
 
-.panel__header,
-.panel__header--wrap,
-.pagination,
-.attendance-card__top,
-.payment-employee-card {
-  align-items: center;
-  justify-content: space-between;
+.rrhh-grid--payments {
+  grid-template-columns: minmax(320px, 0.8fr) minmax(0, 1.2fr);
 }
 
-.panel__header,
-.panel__header--wrap {
-  margin-bottom: 1.25rem;
-}
-
-.panel__header--wrap {
+.metric-strip {
   flex-wrap: wrap;
+  gap: 0.65rem;
 }
 
-.panel__eyebrow,
-.events-drawer__eyebrow {
-  color: var(--role-accent);
-}
-
-.panel h3,
-.attendance-card h4,
-.payment-employee-card h4,
-.selected-payment h3,
-.empty-state h3,
-.events-drawer h3 {
-  margin: 0.35rem 0 0;
-  color: var(--role-panel-text);
-}
-
-.attendance-grid,
-.payment-grid {
-  display: grid;
-  gap: 1.5rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.attendance-column,
-.card-list,
-.payment-detail {
-  display: grid;
-  gap: 1rem;
-}
-
-.column-title {
+.metric-pill {
+  display: inline-flex;
+  gap: 0.5rem;
   align-items: center;
-  justify-content: flex-start;
-  padding: 0.25rem 0.1rem;
-}
-
-.column-title h4,
-.column-title strong {
-  margin: 0;
-}
-
-.status-dot {
-  width: 0.75rem;
-  height: 0.75rem;
   border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+  color: var(--app-text);
+  background: var(--app-surface-soft);
 }
 
-.status-dot--online {
-  background: #16a34a;
+.metric-pill--online {
+  background: rgba(22, 163, 74, 0.12);
 }
 
-.status-dot--offline {
-  background: #94a3b8;
+.metric-pill--offline {
+  background: rgba(220, 38, 38, 0.11);
 }
 
-.attendance-card,
-.payment-employee-card {
-  padding: 1rem;
-  border: 1px solid rgba(31, 111, 85, 0.12);
-  border-radius: 1rem;
-  background: linear-gradient(180deg, rgba(244, 250, 247, 0.95), rgba(255, 255, 255, 0.98));
-}
-
-.attendance-card--warning {
-  border-color: rgba(234, 179, 8, 0.48);
-  background: linear-gradient(180deg, rgba(254, 249, 195, 0.75), rgba(255, 255, 255, 0.98));
-}
-
-.payment-employee-card--selected {
-  border-color: rgba(31, 111, 85, 0.45);
-}
-
-.attendance-card p,
-.payment-employee-card p,
-.selected-payment p,
-.helper-text,
-.form-message,
-.empty-state p {
-  margin: 0;
-  color: var(--role-muted);
-}
-
-.meta-grid {
-  display: grid;
-  gap: 0.6rem 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  margin-top: 0.9rem;
-  color: var(--role-panel-text);
-}
-
-.offline-action {
-  display: grid;
-  min-width: 2.35rem;
-}
-
-.warning-pill,
-.warning-call {
-  grid-area: 1 / 1;
-}
-
-.warning-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  min-height: 2.35rem;
-  padding: 0.55rem 0.75rem;
-  border-radius: 0.75rem;
-  color: #854d0e;
-  background: #fef3c7;
-  font-weight: 800;
-}
-
-.warning-call {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.offline-action:hover .warning-pill {
-  opacity: 0;
-}
-
-.offline-action:hover .warning-call {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.primary-button,
-.ghost-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  padding: 0.8rem 1rem;
-  border: 0;
-  border-radius: 0.9rem;
-  cursor: pointer;
-  font: inherit;
-  font-weight: 800;
-}
-
-.primary-button {
-  color: #fff;
-  background: var(--role-button-bg);
-}
-
-.ghost-button {
-  color: var(--role-button-alt-text);
-  background: var(--role-button-alt-bg);
-}
-
-.pagination {
-  margin-top: 1rem;
-}
-
+.loading-state,
 .empty-state {
   display: grid;
   place-items: center;
-  min-height: 260px;
+  min-height: 220px;
   text-align: center;
+  color: var(--app-text-muted);
 }
 
 .empty-state i {
-  font-size: 2rem;
   color: var(--role-accent);
+  font-size: 2rem;
 }
 
-.events-drawer__backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 30;
-  background: rgba(15, 23, 42, 0.32);
+td strong,
+td small {
+  display: block;
 }
 
-.events-drawer {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 31;
-  width: min(520px, 100vw);
-  display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 1rem;
-  padding: 1.25rem;
-  overflow: auto;
-  background: var(--app-surface);
-  box-shadow: -18px 0 44px rgba(15, 23, 42, 0.16);
+td small,
+.muted {
+  color: var(--app-text-muted);
+  font-size: 0.82rem;
 }
 
-.events-drawer__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+.row-warning {
+  --p-table-row-background: rgba(245, 158, 11, 0.08);
 }
 
-.events-drawer__close {
-  width: 2.5rem;
-  height: 2.5rem;
-  display: inline-grid;
-  place-items: center;
-  border: 0;
-  border-radius: 0.75rem;
-  color: var(--role-button-alt-text);
-  background: var(--role-button-alt-bg);
-  cursor: pointer;
+.row-selected {
+  --p-table-row-background: rgba(31, 111, 85, 0.1);
 }
 
-.form-message--error {
-  color: var(--app-danger);
+:host ::ng-deep .rrhh-card,
+:host ::ng-deep .rrhh-hero {
+  border: 1px solid var(--app-border-soft);
+  box-shadow: var(--app-shadow-soft);
 }
 
-button:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
+:host ::ng-deep .rrhh-events-drawer {
+  width: min(560px, 100vw);
 }
 
-@media (max-width: 1180px) {
-  .attendance-grid,
-  .payment-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 760px) {
-  .panel__header,
-  .panel__header--wrap,
-  .pagination,
-  .attendance-card__top,
-  .payment-employee-card {
-    align-items: stretch;
+@media (max-width: 900px) {
+  .rrhh-hero__content,
+  .toolbar-row {
+    align-items: flex-start;
     flex-direction: column;
   }
 
-  .events-drawer {
-    width: 100vw;
+  .rrhh-grid--payments {
+    grid-template-columns: 1fr;
   }
 }

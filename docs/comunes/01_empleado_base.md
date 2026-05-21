@@ -95,6 +95,8 @@ Reglas para frontend:
 - El ingreso crea la asistencia del dia si existe horario vigente y el dia es laborable.
 - `SCH-07` no crea asistencia; solo consulta una asistencia existente.
 - Para `SCH-08`, `anio` y `mes` se envian juntos o no se envian.
+- `schedule-service` publica eventos realtime al cambiar asistencia o programacion operativa; el contrato esta en `/(docs)/schedule-service-realtime`.
+- La presencia online y la asistencia siguen siendo conceptos distintos: los eventos de asistencia invalidan monitoreo, pero no reemplazan `GATE-01` a `GATE-04`.
 
 Responsabilidad del rol:
 

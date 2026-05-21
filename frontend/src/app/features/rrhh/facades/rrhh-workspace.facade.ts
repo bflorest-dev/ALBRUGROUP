@@ -2,10 +2,12 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, Validators } from '@angular/forms';
-import { Observable, catchError, firstValueFrom, of, timeout } from 'rxjs';
+import { Observable, Subscription, catchError, firstValueFrom, of, timeout } from 'rxjs';
+import { AttendanceRealtimeService } from '../../../core/services/attendance-realtime.service';
 import { ConnectedUserResponse, PresenceService } from '../../../core/services/presence.service';
 import { ApiErrorResponse } from '../../../shared/models/api/api-error-response';
 import { PageResponse } from '../../../shared/models/common/page-response';
+import { AttendanceRealtimeEvent } from '../../../shared/models/schedule/attendance-realtime-event';
 import { EventoResponse } from '../../../shared/models/recruitment/evento-response';
 import { OfertaLaboralResponse } from '../../../shared/models/recruitment/oferta-laboral-response';
 import { PostulacionRequest } from '../../../shared/models/recruitment/postulacion-request';
@@ -53,7 +55,11 @@ export class RrhhWorkspaceFacade {
   private readonly formBuilder = inject(FormBuilder);
   private readonly recruitmentService = inject(RrhhRecruitmentService);
   private readonly rrhhService = inject(RrhhOperationsService);
+  private readonly attendanceRealtimeService = inject(AttendanceRealtimeService);
   private readonly presenceService = inject(PresenceService);
+  private readonly realtimeSubscription = new Subscription();
+  private realtimeStarted = false;
+  private attendanceRefreshId: number | null = null;
 
   readonly section = signal<RrhhSection>('asistencia');
 
@@ -429,6 +435,7 @@ export class RrhhWorkspaceFacade {
 
   async initialize(section = this.section()): Promise<void> {
     this.section.set(section);
+    this.startRealtime();
 
     switch (section) {
       case 'asistencia':
@@ -448,6 +455,12 @@ export class RrhhWorkspaceFacade {
 
   setSection(section: RrhhSection): void {
     this.section.set(section);
+  }
+
+  destroy(): void {
+    this.realtimeSubscription.unsubscribe();
+    this.stopAttendanceRefresh();
+    this.realtimeStarted = false;
   }
 
   async loadPostulaciones(pageNumber = 0): Promise<void> {
@@ -660,6 +673,90 @@ export class RrhhWorkspaceFacade {
     }
   }
 
+  private startRealtime(): void {
+    if (this.realtimeStarted) {
+      return;
+    }
+
+    this.realtimeStarted = true;
+    this.realtimeSubscription.add(
+      this.attendanceRealtimeService.watchTopic('/topic/asistencia/monitor').subscribe({
+        next: (event) => {
+          if (this.section() !== 'asistencia') {
+            return;
+          }
+
+          if (event.fecha !== this.getToday()) {
+            return;
+          }
+
+          if (this.employeesPage().content.length === 0) {
+            return;
+          }
+
+          this.applyAttendanceRealtimeEvent(event);
+          this.scheduleAttendanceOverviewRefresh();
+        },
+        error: () => undefined
+      })
+    );
+  }
+
+  private applyAttendanceRealtimeEvent(event: AttendanceRealtimeEvent): void {
+    const employeeIsVisible = this.employeesPage().content.some((employee) => employee.id === event.idEmpleado);
+
+    if (!employeeIsVisible) {
+      return;
+    }
+
+    this.monitorEstados.update((states) => {
+      const nextState: EstadoMonitorResponse = {
+        idEmpleado: event.idEmpleado,
+        fecha: event.fecha,
+        tieneHorarioVigente: event.tieneHorarioVigente ?? false,
+        laborableHoy: event.laborableHoy ?? false,
+        esperadoHoy: event.esperadoHoy ?? false,
+        tieneRegistroHoy: event.estadoActual !== null && event.estadoActual !== undefined,
+        estadoActual: event.estadoActual ?? null,
+        operativo: event.operativo ?? false,
+        desde: event.desde ?? null
+      };
+
+      const exists = states.some((state) => state.idEmpleado === event.idEmpleado);
+
+      if (!exists) {
+        return [...states, nextState];
+      }
+
+      return states.map((state) =>
+        state.idEmpleado === event.idEmpleado
+          ? {
+              ...state,
+              ...nextState
+            }
+          : state
+      );
+    });
+  }
+
+  private scheduleAttendanceOverviewRefresh(): void {
+    if (this.attendanceRefreshId !== null) {
+      return;
+    }
+
+    this.attendanceRefreshId = window.setTimeout(() => {
+      this.attendanceRefreshId = null;
+      void this.loadAttendanceOverview(this.currentEmployeesPage());
+    }, 500);
+  }
+
+  private stopAttendanceRefresh(): void {
+    if (this.attendanceRefreshId !== null) {
+      window.clearTimeout(this.attendanceRefreshId);
+      this.attendanceRefreshId = null;
+    }
+  }
+
   async loadPaymentEmployees(pageNumber = 0): Promise<void> {
     this.isLoadingEmployees.set(true);
     this.employeeListErrorMessage.set('');
@@ -811,6 +908,15 @@ export class RrhhWorkspaceFacade {
 
   closeEmployeeEvents(): void {
     this.employeeEventsPanelOpen.set(false);
+  }
+
+  clearSelectedEmployee(): void {
+    this.selectedEmployee.set(null);
+    this.currentContract.set(null);
+    this.currentSchedule.set(null);
+    this.contractHistoryPage.set(this.emptyPage<ContratoResponse>());
+    this.employeeEventsPage.set(this.emptyPage<EventoEmpleadoResponse>());
+    this.scheduleHistoryPage.set(this.emptyPage<HorarioResponse>());
   }
 
   async submitPersonalUpdate(): Promise<void> {
