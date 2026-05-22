@@ -32,5 +32,5 @@ public class LeadGtrResponse {
     private String nombrePlanOfrecido;
     private String nombreAsesorAsignado;
     private EstadoSeguimiento estadoSeguimiento;
-    private long reasignaciones;
+    private long totalAsignaciones;
 }

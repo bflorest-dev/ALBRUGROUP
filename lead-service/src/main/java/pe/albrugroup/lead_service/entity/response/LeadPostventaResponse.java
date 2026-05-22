@@ -28,4 +28,5 @@ public class LeadPostventaResponse {
     private LocalDate fechaInstalacion;
     private Integer diaCorteFacturacion;
     private EstadoPostventa estadoPostventa;
+    private long totalAsignaciones;
 }

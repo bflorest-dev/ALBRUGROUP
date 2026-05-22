@@ -74,4 +74,5 @@ public class LeadDetalleResponse {
     private LeadPlanDetalleResponse plan;
     private LeadPromocionDetalleResponse promocionInterna;
     private List<LeadAdicionalDetalleResponse> adicionales;
+    private long totalAsignaciones;
 }

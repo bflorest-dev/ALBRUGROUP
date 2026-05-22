@@ -55,6 +55,18 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     );
 
     @Query("""
+            SELECT e.idLead, COUNT(e.id)
+            FROM Evento e
+            WHERE e.idLead IN :leadIds
+              AND e.accion = :accion
+            GROUP BY e.idLead
+            """)
+    List<Object[]> contarPorLeadIdsYAccion(
+            @Param("leadIds") Collection<Long> leadIds,
+            @Param("accion") Accion accion
+    );
+
+    @Query("""
             SELECT e.idLead, e.nombreActor
             FROM Evento e
             WHERE e.idLead IN :leadIds

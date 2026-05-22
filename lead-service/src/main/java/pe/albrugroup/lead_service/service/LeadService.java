@@ -92,6 +92,7 @@ public class LeadService {
     private final PaginationService paginationService;
     private final TransactionTemplate transactionTemplate;
     private final LeadRealtimeNotifier leadRealtimeNotifier;
+    private final LeadAsignacionCounterService leadAsignacionCounterService;
 
     private static final String TIPIFICACION_AGENDADO = "AGENDADO";
     private static final String TIPIFICACION_SCORE_PREVENTA = "SCORE_PREVENTA";
@@ -119,11 +120,11 @@ public class LeadService {
 
         Page<LeadGtrResponse> leads = leadRepository.listarBandejaGtr(
                 Etapa.PREVENTA,
-                Accion.ASIGNACION,
                 inicioDia,
                 finDia,
                 paginationService.toPageable(pageRequest, LEAD_GTR_SORT_FIELDS)
-        ).map(this::normalizarLeadGtr);
+        );
+        aplicarTotalesAsignacion(leads.getContent(), LeadGtrResponse::getId, this::setTotalesAsignacion);
         return PageResponse.from(leads);
     }
 
@@ -167,9 +168,9 @@ public class LeadService {
                 Etapa.PREVENTA,
                 TIPIFICACION_AGENDADO,
                 Accion.TIPIFICACION,
-                Accion.ASIGNACION,
                 paginationService.toPageable(pageRequest, LEAD_AGENDADO_SORT_FIELDS)
         );
+        aplicarTotalesAsignacion(leads.getContent(), LeadAgendadoGtrResponse::getId, this::setTotalesAsignacion);
         return PageResponse.from(leads);
     }
 
@@ -178,6 +179,7 @@ public class LeadService {
                 Etapa.VENTA,
                 paginationService.toPageable(pageRequest, LEAD_GTR_SORT_FIELDS)
         );
+        aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);
         return PageResponse.from(leads);
     }
 
@@ -187,6 +189,7 @@ public class LeadService {
                 currentUser.empleadoID(),
                 paginationService.toPageable(pageRequest, LEAD_ASESOR_SORT_FIELDS)
         );
+        aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);
         return PageResponse.from(leads);
     }
 
@@ -319,7 +322,7 @@ public class LeadService {
                 .map(Evento::getCreatedAt)
                 .orElse(null);
 
-        return toDetalleResponse(lead, fechaAsignacion);
+        return toDetalleResponse(lead, fechaAsignacion, obtenerTotalAsignaciones(lead.getId()));
     }
 
     @Transactional
@@ -1068,7 +1071,12 @@ public class LeadService {
 
     private PageResponse<LeadAsesorVentasResponse> mapearBandejaAsesorVentas(Page<Lead> leads) {
         Map<Long, Instant> fechasAsignacion = obtenerFechasAsignacion(leads.getContent());
-        Page<LeadAsesorVentasResponse> responsePage = leads.map(lead -> toAsesorResponse(lead, fechasAsignacion.get(lead.getId())));
+        Map<Long, Long> totalesAsignacion = obtenerTotalesAsignacion(leads.getContent(), Lead::getId);
+        Page<LeadAsesorVentasResponse> responsePage = leads.map(lead -> toAsesorResponse(
+                lead,
+                fechasAsignacion.get(lead.getId()),
+                totalesAsignacion.getOrDefault(lead.getId(), 0L)
+        ));
         return PageResponse.from(responsePage);
     }
 
@@ -1081,12 +1089,14 @@ public class LeadService {
         );
         Map<Long, LocalDate> fechasInstalacion = obtenerFechasInstalacionVenta(content);
         Map<String, String> departamentosPorUbigeo = obtenerDepartamentosPorUbigeo(content);
+        Map<Long, Long> totalesAsignacion = obtenerTotalesAsignacion(content, Lead::getId);
 
         Page<LeadPostventaResponse> responsePage = leads.map(lead -> toPostventaResponse(
                 lead,
                 asesoresPreventa.get(lead.getId()),
                 fechasInstalacion.get(lead.getId()),
-                obtenerDepartamentoLead(lead, departamentosPorUbigeo)
+                obtenerDepartamentoLead(lead, departamentosPorUbigeo),
+                totalesAsignacion.getOrDefault(lead.getId(), 0L)
         ));
         return PageResponse.from(responsePage);
     }
@@ -1095,7 +1105,8 @@ public class LeadService {
             Lead lead,
             String asesorPreventa,
             LocalDate fechaInstalacion,
-            String departamento
+            String departamento,
+            long totalAsignaciones
     ) {
         DatosPreventa datosPreventa = lead.getDatosPreventa();
         return new LeadPostventaResponse(
@@ -1109,7 +1120,8 @@ public class LeadService {
                 departamento,
                 fechaInstalacion,
                 lead.getDiaCorteFacturacion(),
-                lead.getEstadoPostventa()
+                lead.getEstadoPostventa(),
+                totalAsignaciones
         );
     }
 
@@ -1166,7 +1178,7 @@ public class LeadService {
         return departamentosPorUbigeo.get(direccion.getUbigeoDomicilio());
     }
 
-    private LeadAsesorVentasResponse toAsesorResponse(Lead lead, Instant fechaAsignacion) {
+    private LeadAsesorVentasResponse toAsesorResponse(Lead lead, Instant fechaAsignacion, long totalAsignaciones) {
         DatosPreventa datosPreventa = lead.getDatosPreventa();
 
         return new LeadAsesorVentasResponse(
@@ -1176,11 +1188,12 @@ public class LeadService {
                 lead.getLead(),
                 datosPreventa == null ? null : datosPreventa.getNombreTitularServicio(),
                 datosPreventa == null ? null : datosPreventa.getCorreo(),
-                lead.getEstado()
+                lead.getEstado(),
+                totalAsignaciones
         );
     }
 
-    private LeadDetalleResponse toDetalleResponse(Lead lead, Instant fechaAsignacion) {
+    private LeadDetalleResponse toDetalleResponse(Lead lead, Instant fechaAsignacion, long totalAsignaciones) {
         DatosPreventa datosPreventa = lead.getDatosPreventa();
         Direccion direccion = lead.getDireccion();
         List<LeadAdicionalDetalleResponse> adicionales = lead.getAdicionales().stream()
@@ -1251,7 +1264,8 @@ public class LeadService {
                 lead.getMesesPermanenciaSnapshot(),
                 plan,
                 promocionInterna,
-                adicionales
+                adicionales,
+                totalAsignaciones
         );
     }
 
@@ -1323,8 +1337,39 @@ public class LeadService {
         );
     }
 
-    private LeadGtrResponse normalizarLeadGtr(LeadGtrResponse response) {
-        return response;
+    private <T> void aplicarTotalesAsignacion(
+            List<T> items,
+            java.util.function.Function<T, Long> idExtractor,
+            java.util.function.ObjLongConsumer<T> totalSetter
+    ) {
+        Map<Long, Long> totales = obtenerTotalesAsignacion(items, idExtractor);
+        for (T item : items) {
+            totalSetter.accept(item, totales.getOrDefault(idExtractor.apply(item), 0L));
+        }
+    }
+
+    private <T> Map<Long, Long> obtenerTotalesAsignacion(
+            List<T> items,
+            java.util.function.Function<T, Long> idExtractor
+    ) {
+        List<Long> ids = items.stream()
+                .map(idExtractor)
+                .filter(id -> id != null && id > 0)
+                .toList();
+        return leadAsignacionCounterService.contarAsignacionesPorLeadIds(ids);
+    }
+
+    private long obtenerTotalAsignaciones(Long idLead) {
+        return leadAsignacionCounterService.contarAsignacionesPorLeadIds(List.of(idLead))
+                .getOrDefault(idLead, 0L);
+    }
+
+    private void setTotalesAsignacion(LeadGtrResponse response, long totalAsignaciones) {
+        response.setTotalAsignaciones(totalAsignaciones);
+    }
+
+    private void setTotalesAsignacion(LeadAgendadoGtrResponse response, long totalAsignaciones) {
+        response.setTotalAsignaciones(totalAsignaciones);
     }
 
     private void registrarPrimeraTipificacionSiFalta(

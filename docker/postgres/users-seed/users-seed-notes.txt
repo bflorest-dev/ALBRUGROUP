@@ -1,0 +1,73 @@
+Usuarios de prueba del users-seeder
+Password inicial: pendiente de reset/inicialización
+
+admin@albru.admin.pe
+albruadminpe
+
+
+[RRHH]
+- Alicia Rojas | empleadoId=1001 | dni=71000001 | correo=alicia@gmail.com | username=A71000001R@albru.rrhh.pe
+
+[RECLUTADOR]
+- Bruno Salas | empleadoId=1002 | dni=71000002 | correo=bruno@gmail.com | username=B71000002S@albru.recruiter.pe
+
+[CAPACITADOR]
+- Carla Mendez | empleadoId=1003 | dni=71000003 | correo=carla@gmail.com | username=C71000003M@albru.trainer.pe
+
+[COMMUNITY]
+D71000004P@albru.community.pe
+diego@gmail.com 
+71000004
+rJrj&*XDRz
+
+[GTR]
+E71000005T@albru.gtr.pe
+elena@gmail.com
+71000005
+$kR-u2HNBv
+
+- Fabian Castro | empleadoId=1006 | dni=71000006 | correo=fabian@gmail.com | username=F71000006C@albru.gtr.pe
+
+[SUPERVISOR_GTR]
+- Gabriela Flores | empleadoId=1007 | dni=71000007 | correo=gabriela@gmail.com | username=G71000007F@albru.supgtr.pe
+
+[ASESOR_VENTAS]
+
+H71000008R@albru.sales.pe
+hector@gmail.com
+71000008
+_J$xBCSVmU
+
+- Ines Vargas | empleadoId=1009 | dni=71000009 | correo=ines@gmail.com | username=I71000009V@albru.sales.pe
+- Javier Leon | empleadoId=1010 | dni=71000010 | correo=javier@gmail.com | username=J71000010L@albru.sales.pe
+- Karla Medina | empleadoId=1011 | dni=71000011 | correo=karla@gmail.com | username=K71000011M@albru.sales.pe
+- Luis Soto | empleadoId=1012 | dni=71000012 | correo=luis@gmail.com | username=L71000012S@albru.sales.pe
+
+[SUPERVISOR_VENTAS]
+- Monica Diaz | empleadoId=1013 | dni=71000013 | correo=monica@gmail.com | username=M71000013D@albru.supsales.pe
+
+[MONITOR]
+- Nestor Ortiz | empleadoId=1014 | dni=71000014 | correo=nestor@gmail.com | username=N71000014O@albru.monitor.pe
+
+[ASESOR_BACKOFFICE]
+- Olga Reyes | empleadoId=1015 | dni=71000015 | correo=olga@gmail.com | username=O71000015R@albru.back.pe
+- Pablo Navarro | empleadoId=1016 | dni=71000016 | correo=pablo@gmail.com | username=P71000016N@albru.back.pe
+
+[SUPERVISOR_BACKOFFICE]
+- Renzo Campos | empleadoId=1017 | dni=71000017 | correo=renzo@gmail.com | username=R71000017C@albru.supback.pe
+
+[ASESOR_POSTVENTA]
+- Sonia Herrera | empleadoId=1018 | dni=71000018 | correo=sonia@gmail.com | username=S71000018H@albru.post.pe
+- Tomas Vega | empleadoId=1019 | dni=71000019 | correo=tomas@gmail.com | username=T71000019V@albru.post.pe
+
+[SUPERVISOR_POSTVENTA]
+- Ursula Gil | empleadoId=1020 | dni=71000020 | correo=ursula@gmail.com | username=U71000020G@albru.suppost.pe
+
+[ASESOR_COBRANZA]
+- Valeria Perez | empleadoId=1021 | dni=71000021 | correo=valeria@gmail.com | username=V71000021P@albru.collection.pe
+
+[DESARROLLADOR]
+- Walter Nunez | empleadoId=1022 | dni=71000022 | correo=walter@gmail.com | username=W71000022N@albru.developer.pe
+
+[CONTADOR]
+- Ximena Lozano | empleadoId=1023 | dni=71000023 | correo=ximena@gmail.com | username=X71000023L@albru.accountant.pe

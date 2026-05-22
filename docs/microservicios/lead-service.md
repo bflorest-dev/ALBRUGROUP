@@ -82,13 +82,13 @@ Servicio responsable del flujo comercial de leads y de los catalogos operativos 
 - Uso frontend: actualizar el numero WhatsApp operativo de una campana activa.
 - Regla: solo actualiza campanas activas.
 
-## LEAD-10 desactivarCampana
+## LEAD-10 alternarEstadoCampana
 
-- Metodo/ruta: `DELETE /campanas/{idCampana}`
-- Permiso: `DELETE_CAMPANA`.
+- Metodo/ruta: `PATCH /campanas/{idCampana}/estado`
+- Permiso: `UPDATE_CAMPANA`.
 - Path params: `idCampana`.
-- Uso frontend: desactivar campana.
-- Regla: solo opera sobre campanas activas.
+- Uso frontend: activar o desactivar campana desde mantenimiento.
+- Reglas: si la campana esta activa la desactiva; si esta inactiva la activa solo cuando el proveedor y la cuenta publicitaria asociados siguen activos.
 
 ## LEAD-11 listarCampanas
 

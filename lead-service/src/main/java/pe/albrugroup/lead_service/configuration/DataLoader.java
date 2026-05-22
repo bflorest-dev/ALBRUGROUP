@@ -37,6 +37,7 @@ import pe.albrugroup.lead_service.repository.TipificacionRepository;
 import pe.albrugroup.lead_service.service.mapper.TipificacionMapper;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
@@ -209,10 +210,10 @@ public class DataLoader {
     }
 
     private void crearCatalogoComercialBase() {
-        Proveedor win = saveProveedor("WIN", Set.of(1, 2), 3);
-        Proveedor claro = saveProveedor("CLARO", Set.of(1, 2), 5);
-        Proveedor mifibra = saveProveedor("MIFIBRA",  Set.of(1, 2), 3);
-        Proveedor perufibra = saveProveedor("PERUFIBRA", Set.of(1, 2), 3);
+        Proveedor win = saveProveedor("WIN", Set.of(1, 2, 15, 25), 3);
+        Proveedor claro = saveProveedor("CLARO", Set.of(1, 2, 15, 25), 5);
+        Proveedor mifibra = saveProveedor("MIFIBRA",  Set.of(1, 2, 15, 25), 3);
+        Proveedor perufibra = saveProveedor("PERUFIBRA", Set.of(1, 2, 15, 25), 3);
 
         CuentaPublicitaria runa = saveCuentaPublicitaria("1822236612034217", "Runa Contact Center");
         CuentaPublicitaria fibra = saveCuentaPublicitaria("1030035362376438", "Internet Fibra Optica");
@@ -248,11 +249,11 @@ public class DataLoader {
                 .filter(proveedor -> proveedor.getNombre().equalsIgnoreCase(nombre))
                 .findFirst()
                 .map(proveedor -> {
-                    if (!cortesFacturacion.isEmpty()) {
-                        proveedor.setCortesFacturacion(new HashSet<>(cortesFacturacion));
-                    }
-                    if (mesesPermanencia != null) {
-                        proveedor.setMesesPermanencia(mesesPermanencia);
+                    proveedor.setActivo(Boolean.TRUE);
+                    proveedor.setCortesFacturacion(new HashSet<>(cortesFacturacion));
+                    proveedor.setMesesPermanencia(mesesPermanencia);
+                    if (proveedor.getCreatedAt() == null) {
+                        proveedor.setCreatedAt(Instant.now());
                     }
                     return proveedorRepository.save(proveedor);
                 })

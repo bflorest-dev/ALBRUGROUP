@@ -76,14 +76,15 @@ Secuencia:
 2. Cargar cuentas activas con `LEAD-06`.
 3. Registrar campana con `LEAD-08`.
 4. Actualizar WhatsApp de campana con `LEAD-09`.
-5. Desactivar campana con `LEAD-10`.
+5. Activar o desactivar campana con `LEAD-10`.
 6. Listar campanas con `LEAD-11`.
 
 Reglas operativas:
 
 - Una campana requiere proveedor activo y cuenta publicitaria activa.
 - La actualizacion actual de campana esta limitada al numero `numeroWhatsappEmpresa`.
-- Desactivar campana debe tratarse como accion sensible porque puede afectar captacion de leads.
+- Alternar el estado de una campana debe tratarse como accion sensible porque puede afectar captacion de leads.
+- Para reactivar una campana, su proveedor y su cuenta publicitaria deben seguir activos.
 
 Documentacion tecnica:
 

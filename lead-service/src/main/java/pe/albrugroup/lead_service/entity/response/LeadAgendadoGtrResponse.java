@@ -30,7 +30,7 @@ public class LeadAgendadoGtrResponse {
     private String codigoSubtipificacion;
     private String nombreAsesorAsignado;
     private EstadoSeguimiento estadoSeguimiento;
-    private long reasignaciones;
+    private long totalAsignaciones;
     private Instant fechaAgendamiento;
     private String comentario;
     private LocalTime horaProgramada;

@@ -44,4 +44,5 @@ Thumbs.db
 
 # Local docs and agent instructions
 /AGENTS.md
+/FRONTEND_ARCHITECTURE.md
 /docs

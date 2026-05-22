@@ -1,0 +1,71 @@
+services:
+  db-seeder:
+    image: postgres:17-alpine
+    environment:
+      PGPASSWORD: postgres
+      PGUSER: postgres
+      PGPORT: 5432
+      PGHOST: postgres-core
+      LEAD_PGHOST: postgres-lead
+    depends_on:
+      postgres-core:
+        condition: service_healthy
+      postgres-lead:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      rrhh-service:
+        condition: service_healthy
+      lead-service:
+        condition: service_healthy
+      recruitment-service:
+        condition: service_healthy
+      schedule-service:
+        condition: service_healthy
+    volumes:
+      - ./docker/postgres/seeds:/seeds:ro
+      - ./lead-service/src/main/resources/ubigeo:/seed-data/ubigeo:ro
+    command: ["sh", "/seeds/run-seeds.sh"]
+    networks:
+      - albru-network
+
+  users-seeder:
+    image: postgres:17-alpine
+    environment:
+      PGPASSWORD: postgres
+      PGUSER: postgres
+      PGPORT: 5432
+      PGHOST: postgres-core
+    depends_on:
+      postgres-core:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      rrhh-service:
+        condition: service_healthy
+      schedule-service:
+        condition: service_healthy
+    volumes:
+      - ./docker/postgres/users-seed:/seeds:ro
+    command: ["sh", "/seeds/run-users-seed.sh"]
+    networks:
+      - albru-network
+
+  lead-migration:
+    image: postgres:17-alpine
+    environment:
+      PGPASSWORD: postgres
+      PGUSER: postgres
+      PGPORT: 5432
+      PGHOST: postgres-lead
+    depends_on:
+      postgres-lead:
+        condition: service_healthy
+      lead-service:
+        condition: service_healthy
+    volumes:
+      - ./docker/postgres/seeds:/seeds:ro
+      - ./docker/postgres/seeds/legacy:/seed-data/legacy:ro
+    command: ["sh", "/seeds/run-lead-migration.sh"]
+    networks:
+      - albru-network

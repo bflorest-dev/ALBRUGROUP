@@ -12,6 +12,7 @@ import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.request.CampanaRequest;
 import pe.albrugroup.lead_service.entity.request.CampanaWhatsappRequest;
 import pe.albrugroup.lead_service.entity.response.CampanaResponse;
+import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
 import pe.albrugroup.lead_service.repository.CuentaPublicitariaRepository;
@@ -53,12 +54,31 @@ public class CampanaService {
     }
 
     @CacheEvict(value = CacheNames.CAMPANAS, allEntries = true)
-    public CampanaResponse desactivarCampana(Long idCampana) {
-        Campana campana = repository.findByIdAndActivoTrue(idCampana)
+    public CampanaResponse alternarEstadoCampana(Long idCampana) {
+        Campana campana = repository.findById(idCampana)
                 .orElseThrow(() -> new NotFoundException(Campana.class, idCampana));
-        campana.setActivo(Boolean.FALSE);
+
+        boolean activar = !Boolean.TRUE.equals(campana.getActivo());
+        if (activar) {
+            validarDependenciasActivas(campana);
+        }
+
+        campana.setActivo(activar);
         campana.setUpdatedAt(Instant.now());
         return mapper.toResponse(repository.save(campana));
+    }
+
+    private void validarDependenciasActivas(Campana campana) {
+        if (campana.getProveedor() == null || !Boolean.TRUE.equals(campana.getProveedor().getActivo())) {
+            throw new BadRequestException("No se puede activar la campana porque el proveedor asociado esta inactivo",
+                    campana.getId(),
+                    campana.getProveedor() == null ? null : campana.getProveedor().getId());
+        }
+        if (campana.getCuentaPublicitaria() == null || !Boolean.TRUE.equals(campana.getCuentaPublicitaria().getActivo())) {
+            throw new BadRequestException("No se puede activar la campana porque la cuenta publicitaria asociada esta inactiva",
+                    campana.getId(),
+                    campana.getCuentaPublicitaria() == null ? null : campana.getCuentaPublicitaria().getId());
+        }
     }
 
     @Transactional(readOnly = true)

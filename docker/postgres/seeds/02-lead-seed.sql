@@ -138,23 +138,43 @@ SET descripcion = EXCLUDED.descripcion,
 
 CREATE TEMP TABLE seed_proveedor (
     nombre TEXT,
+    cortes_facturacion INTEGER[],
+    meses_permanencia INTEGER,
     activo BOOLEAN
 );
 
-INSERT INTO seed_proveedor (nombre, activo) VALUES
-('WIN', TRUE),
-('CLARO', TRUE),
-('MIFIBRA', TRUE),
-('PERUFIBRA', TRUE);
+INSERT INTO seed_proveedor (nombre, cortes_facturacion, meses_permanencia, activo) VALUES
+('WIN', ARRAY[1, 2, 15, 25], 3, TRUE),
+('CLARO', ARRAY[1, 2, 15, 25], 5, TRUE),
+('MIFIBRA', ARRAY[1, 2, 15, 25], 3, TRUE),
+('PERUFIBRA', ARRAY[1, 2, 15, 25], 3, TRUE);
 
-INSERT INTO proveedor (nombre, activo)
-SELECT s.nombre, s.activo
+UPDATE proveedor p
+SET meses_permanencia = s.meses_permanencia,
+    activo = s.activo,
+    created_at = COALESCE(p.created_at, CURRENT_TIMESTAMP)
+FROM seed_proveedor s
+WHERE UPPER(TRIM(p.nombre)) = UPPER(TRIM(s.nombre));
+
+INSERT INTO proveedor (nombre, meses_permanencia, activo, created_at)
+SELECT s.nombre, s.meses_permanencia, s.activo, CURRENT_TIMESTAMP
 FROM seed_proveedor s
 WHERE NOT EXISTS (
     SELECT 1
     FROM proveedor p
     WHERE UPPER(TRIM(p.nombre)) = UPPER(TRIM(s.nombre))
 );
+
+DELETE FROM proveedor_corte_facturacion pcf
+USING proveedor p, seed_proveedor s
+WHERE pcf.id_proveedor = p.id
+  AND UPPER(TRIM(p.nombre)) = UPPER(TRIM(s.nombre));
+
+INSERT INTO proveedor_corte_facturacion (id_proveedor, dia_corte)
+SELECT p.id, corte.dia_corte
+FROM seed_proveedor s
+JOIN proveedor p ON UPPER(TRIM(p.nombre)) = UPPER(TRIM(s.nombre))
+CROSS JOIN LATERAL unnest(COALESCE(s.cortes_facturacion, ARRAY[]::INTEGER[])) AS corte(dia_corte);
 
 CREATE TEMP TABLE seed_cuenta_publicitaria (
     numero_cuenta TEXT,

@@ -29,6 +29,7 @@ public class MasivoService {
 
     private final LeadRepository leadRepository;
     private final PaginationService paginationService;
+    private final LeadAsignacionCounterService leadAsignacionCounterService;
 
     private static final Set<String> MASIVO_SORT_FIELDS = Set.of(
             "lastEntryAt", "createdAt", "id", "lead", "nombreAsesorAsignado", "estado"
@@ -59,6 +60,13 @@ public class MasivoService {
                 rangoFechas.fin(),
                 paginationService.toPageable(pageRequest, MASIVO_SORT_FIELDS)
         );
+        var totales = leadAsignacionCounterService.contarAsignacionesPorLeadIds(
+                leads.getContent().stream().map(LeadGtrResponse::getId).toList()
+        );
+        leads.getContent().forEach(lead -> {
+            long totalAsignaciones = totales.getOrDefault(lead.getId(), 0L);
+            lead.setTotalAsignaciones(totalAsignaciones);
+        });
         return PageResponse.from(leads);
     }
 

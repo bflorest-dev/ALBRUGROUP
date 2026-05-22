@@ -23,4 +23,5 @@ public class LeadAsesorVentasResponse {
     private String nombreTitular;
     private String correo;
     private EstadoSeguimiento estadoSeguimiento;
+    private long totalAsignaciones;
 }

@@ -38,11 +38,11 @@ public class CampanaController {
         return ResponseEntity.status(HttpStatus.OK).body(campana);
     }
 
-    @DeleteMapping("/{idCampana}")
-    @PreAuthorize("hasAuthority('DELETE_CAMPANA')")
-    public ResponseEntity<CampanaResponse> desactivarCampana(@PathVariable Long idCampana)
+    @PatchMapping("/{idCampana}/estado")
+    @PreAuthorize("hasAuthority('UPDATE_CAMPANA')")
+    public ResponseEntity<CampanaResponse> alternarEstadoCampana(@PathVariable Long idCampana)
     {
-        var campana = campanaService.desactivarCampana(idCampana);
+        var campana = campanaService.alternarEstadoCampana(idCampana);
         return ResponseEntity.status(HttpStatus.OK).body(campana);
     }
 

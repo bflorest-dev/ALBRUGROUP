@@ -42,4 +42,5 @@ public class LeadResponse {
     private Instant createdAt;
     private Instant lastEntryAt;
     private Instant updatedAt;
+    private long totalAsignaciones;
 }

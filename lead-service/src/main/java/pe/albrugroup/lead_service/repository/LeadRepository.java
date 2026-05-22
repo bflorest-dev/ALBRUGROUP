@@ -51,14 +51,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.nombrePlanSnapshot,
                 l.nombreAsesorAsignado,
                 l.estado,
-                (
-                    SELECT COUNT(e.id)
-                    FROM Evento e
-                    WHERE e.idLead = l.id
-                      AND e.accion = :accionAsignacion
-                      AND e.createdAt >= :inicioDia
-                      AND e.createdAt < :finDia
-                )
+                0
             )
             FROM Lead l
             LEFT JOIN l.campana c
@@ -70,7 +63,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             """)
     Page<LeadGtrResponse> listarBandejaGtr(
             @Param("etapa") Etapa etapa,
-            @Param("accionAsignacion") Accion accionAsignacion,
             @Param("inicioDia") Instant inicioDia,
             @Param("finDia") Instant finDia,
             Pageable pageable
@@ -133,12 +125,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.codigoSubtipificacion,
                 l.nombreAsesorAsignado,
                 l.estado,
-                (
-                    SELECT COUNT(ea.id)
-                    FROM Evento ea
-                    WHERE ea.idLead = l.id
-                      AND ea.accion = :accionAsignacion
-                ),
+                0,
                 e.createdAt,
                 e.comentario,
                 e.horaProgramada
@@ -165,7 +152,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("etapa") Etapa etapa,
             @Param("codigoAgendado") String codigoAgendado,
             @Param("accionTipificacion") Accion accionTipificacion,
-            @Param("accionAsignacion") Accion accionAsignacion,
             Pageable pageable
     );
 
@@ -193,7 +179,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.mesesPermanenciaSnapshot,
                 l.createdAt,
                 l.lastEntryAt,
-                l.updatedAt
+                l.updatedAt,
+                0
             )
             FROM Lead l
             WHERE l.etapa = :etapa
@@ -234,7 +221,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.mesesPermanenciaSnapshot,
                 l.createdAt,
                 l.lastEntryAt,
-                l.updatedAt
+                l.updatedAt,
+                0
             )
             FROM Lead l
             WHERE l.etapa = :etapa
