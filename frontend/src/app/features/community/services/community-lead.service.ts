@@ -34,6 +34,30 @@ export type AdicionalResponse = LeadEntity & {
   nombreProveedor?: string;
 };
 
+export type InternetResponse = {
+  velocidad?: number;
+  unidad?: string;
+  tecnologia?: string;
+};
+
+export type TelevisionResponse = {
+  nombre?: string;
+  cantidadCanales?: number;
+};
+
+export type TelefonoResponse = {
+  minutos?: number;
+  descripcion?: string;
+};
+
+export type PlanAdicionalResponse = {
+  idAdicional: number;
+  nombreAdicional?: string;
+  cantidadIncluida?: number;
+  permiteCompraAdicional?: boolean;
+  cantidadMaximaAdicional?: number;
+};
+
 export type PlanResponse = LeadEntity & {
   precio?: number;
   precioPromocional?: number;
@@ -42,14 +66,14 @@ export type PlanResponse = LeadEntity & {
   vigenciaHasta?: string;
   idProveedor?: number;
   nombreProveedor?: string;
-  internet?: unknown;
-  television?: unknown;
-  telefono?: unknown;
+  internet?: InternetResponse;
+  television?: TelevisionResponse;
+  telefono?: TelefonoResponse;
   velocidadPromocional?: number;
   mesesPromocionVelocidad?: number;
   idZona?: number;
   nombreZona?: string;
-  adicionales?: unknown[];
+  adicionales?: PlanAdicionalResponse[];
 };
 
 export type PromocionComercialResponse = LeadEntity & {
@@ -138,8 +162,8 @@ export class CommunityLeadService {
     return this.http.put<CampanaResponse>(`${this.leadUrl}/campanas/${idCampana}`, { numeroWhatsappEmpresa });
   }
 
-  desactivarCampana(idCampana: number): Observable<void> {
-    return this.http.delete<void>(`${this.leadUrl}/campanas/${idCampana}`);
+  alternarCampana(idCampana: number): Observable<CampanaResponse> {
+    return this.http.patch<CampanaResponse>(`${this.leadUrl}/campanas/${idCampana}/estado`, {});
   }
 
   registrarAdicional(request: unknown): Observable<AdicionalResponse> {

@@ -21,6 +21,13 @@ export type CommunitySection = 'proveedores' | 'cuentas' | 'campanas' | 'zonas' 
 
 type ZoneDialogMode = 'create' | 'edit';
 type ZoneRuleDraft = ZonaReglaResponse & { label: string };
+type PlanAdditionalDraft = {
+  idAdicional: number;
+  nombre: string;
+  cantidadIncluida: number;
+  permiteCompraAdicional: boolean;
+  cantidadMaximaAdicional: number;
+};
 
 @Injectable()
 export class CommunityWorkspaceFacade {
@@ -66,6 +73,18 @@ export class CommunityWorkspaceFacade {
   readonly departamentos = signal<UbigeoItem[]>([]);
   readonly provincias = signal<UbigeoItem[]>([]);
   readonly distritos = signal<UbigeoItem[]>([]);
+  readonly additionalDialogOpen = signal(false);
+  readonly createPlanDialogOpen = signal(false);
+  readonly editPlanDialogOpen = signal(false);
+  readonly activePlanId = signal<number | null>(null);
+  readonly selectedPlanProviderId = signal(0);
+  readonly selectedPlanAdditionals = signal<PlanAdditionalDraft[]>([]);
+  readonly availablePlanAdditionals = computed(() => {
+    const idProveedor = this.selectedPlanProviderId();
+    return this.adicionalesActivos().filter((adicional) => adicional.idProveedor === idProveedor);
+  });
+  readonly planNamePlaceholder = computed(() => this.planes()[0]?.nombre ?? 'Plan Fibra 200');
+  readonly additionalNamePlaceholder = computed(() => this.adicionales()[0]?.nombre ?? 'Mesh WiFi');
 
   readonly providerForm = this.fb.group({
     nombre: ['', [Validators.required]],
@@ -98,8 +117,7 @@ export class CommunityWorkspaceFacade {
     precioUnitario: [0, [Validators.required, Validators.min(0.01)]]
   });
 
-  readonly planForm = this.fb.group({
-    idPlan: [0],
+  readonly createPlanForm = this.fb.group({
     idProveedor: [0, [Validators.required, Validators.min(1)]],
     nombre: ['', [Validators.required]],
     precio: [0, [Validators.required, Validators.min(0.01)]],
@@ -116,8 +134,19 @@ export class CommunityWorkspaceFacade {
     telefonoDescripcion: [''],
     velocidadPromocional: [0],
     mesesPromocionVelocidad: [0],
-    idZona: [0],
-    adicionales: ['']
+    idZona: [0]
+  });
+
+  readonly editPlanForm = this.fb.group({
+    nombre: ['', [Validators.required]],
+    precio: [0, [Validators.required, Validators.min(0.01)]],
+    precioPromocional: [0],
+    mesesPromocionPrecio: [0],
+    vigenciaDesde: [''],
+    vigenciaHasta: [''],
+    velocidadPromocional: [0],
+    mesesPromocionVelocidad: [0],
+    idZona: [0]
   });
 
   readonly providerServicesForm = this.fb.group({
@@ -283,8 +312,8 @@ export class CommunityWorkspaceFacade {
     );
   }
 
-  async deactivateCampaign(idCampana: number): Promise<void> {
-    await this.saveAction(() => this.leadService.desactivarCampana(idCampana), 'Campaña desactivada.', () =>
+  async toggleCampaign(idCampana: number): Promise<void> {
+    await this.saveAction(() => this.leadService.alternarCampana(idCampana), 'Estado de campaña actualizado.', () =>
       this.refreshCampaigns()
     );
   }
@@ -295,32 +324,150 @@ export class CommunityWorkspaceFacade {
       return;
     }
 
-    await this.saveAction(() => this.leadService.registrarAdicional(this.additionalForm.getRawValue()), 'Adicional registrado.', () =>
-      this.refreshPlansData()
+    await this.saveAction(() => this.leadService.registrarAdicional(this.additionalForm.getRawValue()), 'Adicional registrado.', async () => {
+      await this.refreshPlansData();
+      this.closeAdditionalDialog();
+    });
+  }
+
+  openAdditionalDialog(): void {
+    this.additionalForm.reset({ idProveedor: 0, nombre: '', precioUnitario: 0 });
+    this.additionalDialogOpen.set(true);
+    this.clearMessages();
+  }
+
+  closeAdditionalDialog(): void {
+    this.additionalDialogOpen.set(false);
+  }
+
+  openCreatePlanDialog(): void {
+    this.createPlanForm.reset({
+      idProveedor: 0,
+      nombre: '',
+      precio: 0,
+      precioPromocional: 0,
+      mesesPromocionPrecio: 0,
+      vigenciaDesde: '',
+      vigenciaHasta: '',
+      internetVelocidad: 0,
+      internetUnidad: 'MBPS',
+      internetTecnologia: 'FTTH',
+      televisionNombre: '',
+      televisionCanales: 0,
+      telefonoMinutos: 0,
+      telefonoDescripcion: '',
+      velocidadPromocional: 0,
+      mesesPromocionVelocidad: 0,
+      idZona: 0
+    });
+    this.selectedPlanProviderId.set(0);
+    this.selectedPlanAdditionals.set([]);
+    this.createPlanDialogOpen.set(true);
+    this.clearMessages();
+  }
+
+  closeCreatePlanDialog(): void {
+    this.createPlanDialogOpen.set(false);
+    this.selectedPlanProviderId.set(0);
+    this.selectedPlanAdditionals.set([]);
+  }
+
+  openEditPlanDialog(plan: PlanResponse): void {
+    this.activePlanId.set(plan.id);
+    this.editPlanForm.reset({
+      nombre: plan.nombre ?? '',
+      precio: plan.precio ?? 0,
+      precioPromocional: plan.precioPromocional ?? 0,
+      mesesPromocionPrecio: plan.mesesPromocionPrecio ?? 0,
+      vigenciaDesde: this.toDateInputValue(plan.vigenciaDesde),
+      vigenciaHasta: this.toDateInputValue(plan.vigenciaHasta),
+      velocidadPromocional: plan.velocidadPromocional ?? 0,
+      mesesPromocionVelocidad: plan.mesesPromocionVelocidad ?? 0,
+      idZona: plan.idZona ?? 0
+    });
+    this.editPlanDialogOpen.set(true);
+    this.clearMessages();
+  }
+
+  closeEditPlanDialog(): void {
+    this.editPlanDialogOpen.set(false);
+    this.activePlanId.set(null);
+  }
+
+  onCreatePlanProviderChanged(): void {
+    this.selectedPlanProviderId.set(this.createPlanForm.controls.idProveedor.value);
+    this.selectedPlanAdditionals.set([]);
+  }
+
+  addPlanAdditional(idAdicional: number): void {
+    if (!idAdicional) {
+      return;
+    }
+
+    if (this.selectedPlanAdditionals().some((adicional) => adicional.idAdicional === idAdicional)) {
+      this.errorMessage.set('Este adicional ya fue agregado al plan.');
+      return;
+    }
+
+    const adicional = this.availablePlanAdditionals().find((item) => item.id === idAdicional);
+    if (!adicional) {
+      this.errorMessage.set('Selecciona un adicional disponible para el proveedor.');
+      return;
+    }
+
+    this.selectedPlanAdditionals.update((items) => [
+      ...items,
+      {
+        idAdicional,
+        nombre: adicional.nombre ?? `Adicional ${idAdicional}`,
+        cantidadIncluida: 1,
+        permiteCompraAdicional: true,
+        cantidadMaximaAdicional: 0
+      }
+    ]);
+    this.clearMessages();
+  }
+
+  removePlanAdditional(idAdicional: number): void {
+    this.selectedPlanAdditionals.update((items) => items.filter((item) => item.idAdicional !== idAdicional));
+  }
+
+  updatePlanAdditionalQuantity(idAdicional: number, field: 'cantidadIncluida' | 'cantidadMaximaAdicional', value: string): void {
+    const numericValue = Math.max(0, Number(value) || 0);
+    this.selectedPlanAdditionals.update((items) =>
+      items.map((item) => (item.idAdicional === idAdicional ? { ...item, [field]: numericValue } : item))
+    );
+  }
+
+  updatePlanAdditionalPurchase(idAdicional: number, checked: boolean): void {
+    this.selectedPlanAdditionals.update((items) =>
+      items.map((item) => (item.idAdicional === idAdicional ? { ...item, permiteCompraAdicional: checked } : item))
     );
   }
 
   async submitPlan(): Promise<void> {
-    if (this.planForm.invalid) {
+    if (this.createPlanForm.invalid) {
       this.errorMessage.set('Completa los datos obligatorios del plan.');
       return;
     }
 
-    await this.saveAction(() => this.leadService.registrarPlan(this.buildPlanRequest()), 'Plan registrado.', () =>
-      this.refreshPlansData()
-    );
+    await this.saveAction(() => this.leadService.registrarPlan(this.buildPlanRequest()), 'Plan registrado.', async () => {
+      await this.refreshPlansData();
+      this.closeCreatePlanDialog();
+    });
   }
 
   async updatePlan(): Promise<void> {
-    const raw = this.planForm.getRawValue();
-    if (!raw.idPlan || this.planForm.controls.nombre.invalid || this.planForm.controls.precio.invalid) {
-      this.errorMessage.set('Indica el ID del plan, nombre y precio para actualizar.');
+    const idPlan = this.activePlanId();
+    if (!idPlan || this.editPlanForm.invalid) {
+      this.errorMessage.set('Indica el plan, nombre y precio para actualizar.');
       return;
     }
 
-    await this.saveAction(() => this.leadService.actualizarPlan(raw.idPlan, this.buildPlanUpdateRequest()), 'Plan actualizado.', () =>
-      this.refreshPlansData()
-    );
+    await this.saveAction(() => this.leadService.actualizarPlan(idPlan, this.buildPlanUpdateRequest()), 'Plan actualizado.', async () => {
+      await this.refreshPlansData();
+      this.closeEditPlanDialog();
+    });
   }
 
   async deactivatePlan(idPlan: number): Promise<void> {
@@ -636,7 +783,7 @@ export class CommunityWorkspaceFacade {
   }
 
   private buildPlanRequest(): Record<string, unknown> {
-    const raw = this.planForm.getRawValue();
+    const raw = this.createPlanForm.getRawValue();
 
     return this.cleanObject({
       idProveedor: raw.idProveedor,
@@ -668,12 +815,19 @@ export class CommunityWorkspaceFacade {
       velocidadPromocional: raw.velocidadPromocional || null,
       mesesPromocionVelocidad: raw.mesesPromocionVelocidad || null,
       idZona: raw.idZona || null,
-      adicionales: this.parsePlanAdditionals(raw.adicionales)
+      adicionales: this.selectedPlanAdditionals().length
+        ? this.selectedPlanAdditionals().map((adicional) => ({
+            idAdicional: adicional.idAdicional,
+            cantidadIncluida: adicional.cantidadIncluida,
+            permiteCompraAdicional: adicional.permiteCompraAdicional,
+            cantidadMaximaAdicional: adicional.cantidadMaximaAdicional || null
+          }))
+        : null
     });
   }
 
   private buildPlanUpdateRequest(): Record<string, unknown> {
-    const raw = this.planForm.getRawValue();
+    const raw = this.editPlanForm.getRawValue();
 
     return this.cleanObject({
       nombre: raw.nombre,
@@ -700,24 +854,6 @@ export class CommunityWorkspaceFacade {
     };
   }
 
-  private parsePlanAdditionals(value: string): unknown[] | null {
-    const additionals = value
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean)
-      .map((item) => {
-        const [idAdicional, cantidadIncluida = '1', permiteCompraAdicional = 'true', cantidadMaximaAdicional = '0'] = item.split(':');
-        return {
-          idAdicional: Number(idAdicional),
-          cantidadIncluida: Number(cantidadIncluida),
-          permiteCompraAdicional: permiteCompraAdicional.toLowerCase() === 'true',
-          cantidadMaximaAdicional: Number(cantidadMaximaAdicional) || null
-        };
-      });
-
-    return additionals.length ? additionals : null;
-  }
-
   private parseNumberList(value: string): number[] {
     return value
       .split(',')
@@ -727,6 +863,10 @@ export class CommunityWorkspaceFacade {
 
   private cleanObject<T extends Record<string, unknown>>(value: T): T {
     return Object.fromEntries(Object.entries(value).filter(([, entryValue]) => entryValue !== undefined)) as T;
+  }
+
+  private toDateInputValue(value: string | undefined): string {
+    return value ? value.slice(0, 10) : '';
   }
 
   private async saveAction<T>(

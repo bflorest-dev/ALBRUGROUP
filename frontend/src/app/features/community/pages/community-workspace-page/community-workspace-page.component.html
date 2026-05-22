@@ -275,20 +275,16 @@
                     </td>
                     <td><p-tag [severity]="statusSeverity(campana.activo)" [value]="statusLabel(campana.activo)" /></td>
                     <td>
-                      @if (campana.activo !== false) {
-                        <button
-                          pButton
-                          type="button"
-                          size="small"
-                          icon="pi pi-ban"
-                          label="Desactivar"
-                          severity="secondary"
-                          [loading]="facade.isSaving()"
-                          (click)="facade.deactivateCampaign(campana.id)"
-                        ></button>
-                      } @else {
-                        <span class="helper">Sin acción disponible</span>
-                      }
+                      <button
+                        pButton
+                        type="button"
+                        size="small"
+                        [icon]="campana.activo === false ? 'pi pi-check' : 'pi pi-ban'"
+                        [label]="campana.activo === false ? 'Activar' : 'Desactivar'"
+                        severity="secondary"
+                        [loading]="facade.isSaving()"
+                        (click)="facade.toggleCampaign(campana.id)"
+                      ></button>
                     </td>
                   </tr>
                 </ng-template>
@@ -358,170 +354,17 @@
         </p-tabpanel>
 
         <p-tabpanel value="planes">
-          <section class="plans-layout">
-            <div class="stack">
-              <p-card styleClass="community-form-card">
-                <ng-template #title>Registrar adicional</ng-template>
-                <form class="form-grid" [formGroup]="facade.additionalForm" (ngSubmit)="facade.submitAdditional()">
-                  <label>
-                    <span>Proveedor</span>
-                    <p-select
-                      formControlName="idProveedor"
-                      [options]="facade.proveedoresActivos()"
-                      optionLabel="nombre"
-                      optionValue="id"
-                      placeholder="Seleccionar proveedor"
-                      appendTo="body"
-                    />
-                  </label>
-                  <label>
-                    <span>Nombre</span>
-                    <input pInputText type="text" formControlName="nombre" />
-                  </label>
-                  <label>
-                    <span>Precio unitario</span>
-                    <input pInputText type="number" min="0.01" step="0.01" formControlName="precioUnitario" />
-                  </label>
-                  <button pButton type="submit" icon="pi pi-plus" label="Registrar adicional" [loading]="facade.isSaving()"></button>
-                </form>
-              </p-card>
-
-              <p-card styleClass="community-form-card">
-                <ng-template #title>Servicios por proveedor</ng-template>
-                <form class="form-grid" [formGroup]="facade.providerServicesForm" (ngSubmit)="facade.loadProviderServices()">
-                  <label>
-                    <span>Proveedor</span>
-                    <p-select
-                      formControlName="idProveedor"
-                      [options]="facade.proveedoresActivos()"
-                      optionLabel="nombre"
-                      optionValue="id"
-                      placeholder="Seleccionar proveedor"
-                      appendTo="body"
-                    />
-                  </label>
-                  <button pButton type="submit" icon="pi pi-search" label="Consultar servicios" severity="secondary"></button>
-                </form>
-                @if (facade.serviciosProveedor(); as servicios) {
-                  <div class="service-summary">
-                    <p-tag severity="info" [value]="'Internet: ' + listCount(servicios.internets)" />
-                    <p-tag severity="info" [value]="'TV: ' + listCount(servicios.televisiones)" />
-                    <p-tag severity="info" [value]="'Telefono: ' + listCount(servicios.telefonos)" />
+          <section class="stack">
+            <p-card styleClass="community-table-card">
+              <ng-template #title>
+                <div class="card-title-row">
+                  <span>Planes</span>
+                  <div class="inline-action">
+                    <button pButton type="button" icon="pi pi-plus" label="Agregar adicional" severity="secondary" (click)="facade.openAdditionalDialog()"></button>
+                    <button pButton type="button" icon="pi pi-plus" label="Agregar plan" (click)="facade.openCreatePlanDialog()"></button>
                   </div>
-                }
-              </p-card>
-            </div>
-
-            <p-card styleClass="community-form-card plan-editor">
-              <ng-template #title>Registrar o actualizar plan</ng-template>
-              <form class="form-grid form-grid--three" [formGroup]="facade.planForm" (ngSubmit)="facade.submitPlan()">
-                <label>
-                  <span>ID plan para actualizar</span>
-                  <input pInputText type="number" min="0" formControlName="idPlan" />
-                </label>
-                <label>
-                  <span>Proveedor</span>
-                  <p-select
-                    formControlName="idProveedor"
-                    [options]="facade.proveedoresActivos()"
-                    optionLabel="nombre"
-                    optionValue="id"
-                    placeholder="Seleccionar proveedor"
-                    appendTo="body"
-                  />
-                </label>
-                <label>
-                  <span>Zona</span>
-                  <p-select
-                    formControlName="idZona"
-                    [options]="facade.zonasActivas()"
-                    optionLabel="nombre"
-                    optionValue="id"
-                    placeholder="Sin zona"
-                    appendTo="body"
-                  />
-                </label>
-                <label>
-                  <span>Nombre plan</span>
-                  <input pInputText type="text" formControlName="nombre" />
-                </label>
-                <label>
-                  <span>Precio</span>
-                  <input pInputText type="number" min="0.01" step="0.01" formControlName="precio" />
-                </label>
-                <label>
-                  <span>Precio promocional</span>
-                  <input pInputText type="number" min="0" step="0.01" formControlName="precioPromocional" />
-                </label>
-                <label>
-                  <span>Meses promo precio</span>
-                  <input pInputText type="number" min="0" formControlName="mesesPromocionPrecio" />
-                </label>
-                <label>
-                  <span>Vigencia desde</span>
-                  <input pInputText type="date" formControlName="vigenciaDesde" />
-                </label>
-                <label>
-                  <span>Vigencia hasta</span>
-                  <input pInputText type="date" formControlName="vigenciaHasta" />
-                </label>
-                <label>
-                  <span>Internet velocidad</span>
-                  <input pInputText type="number" min="0" formControlName="internetVelocidad" />
-                </label>
-                <label>
-                  <span>Unidad</span>
-                  <p-select formControlName="internetUnidad" [options]="['MBPS', 'GBPS']" appendTo="body" />
-                </label>
-                <label>
-                  <span>Tecnologia</span>
-                  <p-select formControlName="internetTecnologia" [options]="['FTTH', 'HFC', 'HIBRIDA']" appendTo="body" />
-                </label>
-                <label>
-                  <span>TV nombre</span>
-                  <input pInputText type="text" formControlName="televisionNombre" />
-                </label>
-                <label>
-                  <span>TV canales</span>
-                  <input pInputText type="number" min="0" formControlName="televisionCanales" />
-                </label>
-                <label>
-                  <span>Telefono minutos</span>
-                  <input pInputText type="number" min="0" formControlName="telefonoMinutos" />
-                </label>
-                <label>
-                  <span>Telefono descripcion</span>
-                  <input pInputText type="text" formControlName="telefonoDescripcion" />
-                </label>
-                <label>
-                  <span>Velocidad promocional</span>
-                  <input pInputText type="number" min="0" formControlName="velocidadPromocional" />
-                </label>
-                <label>
-                  <span>Meses promo velocidad</span>
-                  <input pInputText type="number" min="0" formControlName="mesesPromocionVelocidad" />
-                </label>
-                <label class="wide">
-                  <span>Adicionales id:cantidad:permite:max separados por coma</span>
-                  <input pInputText type="text" formControlName="adicionales" placeholder="1:1:true:2, 2:0:true:5" />
-                </label>
-                <div class="form-actions wide">
-                  <button pButton type="submit" icon="pi pi-plus" label="Registrar plan" [loading]="facade.isSaving()"></button>
-                  <button
-                    pButton
-                    type="button"
-                    icon="pi pi-save"
-                    label="Actualizar plan"
-                    severity="secondary"
-                    [loading]="facade.isSaving()"
-                    (click)="facade.updatePlan()"
-                  ></button>
                 </div>
-              </form>
-            </p-card>
-
-            <p-card styleClass="community-table-card full-row">
-              <ng-template #title>Planes</ng-template>
+              </ng-template>
               <p-table [value]="facade.planes()" [paginator]="true" [rows]="8" [rowHover]="true" styleClass="p-datatable-sm">
                 <ng-template #header>
                   <tr>
@@ -543,6 +386,16 @@
                     <td>{{ money(plan.precioPromocional) }}</td>
                     <td><p-tag [severity]="statusSeverity(plan.activo)" [value]="statusLabel(plan.activo)" /></td>
                     <td>
+                      <div class="inline-action">
+                        <button
+                          pButton
+                          type="button"
+                          size="small"
+                          icon="pi pi-pencil"
+                          label="Editar"
+                          severity="secondary"
+                          (click)="facade.openEditPlanDialog(plan)"
+                        ></button>
                       @if (plan.activo !== false) {
                         <button
                           pButton
@@ -555,6 +408,7 @@
                           (click)="facade.deactivatePlan(plan.id)"
                         ></button>
                       }
+                      </div>
                     </td>
                   </tr>
                 </ng-template>
@@ -564,7 +418,7 @@
               </p-table>
             </p-card>
 
-            <p-card styleClass="community-table-card full-row">
+            <p-card styleClass="community-table-card">
               <ng-template #title>Adicionales</ng-template>
               <p-table [value]="facade.adicionales()" [paginator]="true" [rows]="8" [rowHover]="true" styleClass="p-datatable-sm">
                 <ng-template #header>
@@ -700,6 +554,254 @@
       </p-card>
     </section>
   }
+
+  <p-dialog
+    header="Registrar adicional"
+    [visible]="facade.additionalDialogOpen()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    styleClass="compact-dialog"
+    (onHide)="facade.closeAdditionalDialog()"
+  >
+    <form class="form-grid" [formGroup]="facade.additionalForm" (ngSubmit)="facade.submitAdditional()">
+      <label class="wide">
+        <span>Proveedor</span>
+        <p-select
+          formControlName="idProveedor"
+          [options]="facade.proveedoresActivos()"
+          optionLabel="nombre"
+          optionValue="id"
+          placeholder="Seleccionar proveedor"
+          appendTo="body"
+        />
+      </label>
+      <label class="wide">
+        <span>Nombre</span>
+        <input pInputText type="text" formControlName="nombre" [placeholder]="facade.additionalNamePlaceholder()" />
+      </label>
+      <label class="wide">
+        <span>Precio unitario</span>
+        <div class="input-prefix">
+          <span>S/</span>
+          <input pInputText type="number" min="0.01" step="0.01" formControlName="precioUnitario" placeholder="15.00" />
+        </div>
+      </label>
+      <div class="form-actions wide">
+        <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeAdditionalDialog()"></button>
+        <button pButton type="submit" icon="pi pi-save" label="Guardar" [loading]="facade.isSaving()"></button>
+      </div>
+    </form>
+  </p-dialog>
+
+  <p-dialog
+    header="Registrar plan"
+    [visible]="facade.createPlanDialogOpen()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    styleClass="plan-dialog"
+    (onHide)="facade.closeCreatePlanDialog()"
+  >
+    <form class="form-grid form-grid--three" [formGroup]="facade.createPlanForm" (ngSubmit)="facade.submitPlan()">
+      <label>
+        <span>Proveedor</span>
+        <p-select
+          formControlName="idProveedor"
+          [options]="facade.proveedoresActivos()"
+          optionLabel="nombre"
+          optionValue="id"
+          placeholder="Seleccionar proveedor"
+          appendTo="body"
+          (onChange)="facade.onCreatePlanProviderChanged()"
+        />
+      </label>
+      <label>
+        <span>Zona</span>
+        <p-select formControlName="idZona" [options]="facade.zonasActivas()" optionLabel="nombre" optionValue="id" placeholder="Sin zona" appendTo="body" />
+      </label>
+      <label>
+        <span>Nombre plan</span>
+        <input pInputText type="text" formControlName="nombre" [placeholder]="facade.planNamePlaceholder()" />
+      </label>
+      <label>
+        <span>Precio</span>
+        <div class="input-prefix">
+          <span>S/</span>
+          <input pInputText type="number" min="0.01" step="0.01" formControlName="precio" placeholder="79.90" />
+        </div>
+      </label>
+      <label>
+        <span>Precio promocional</span>
+        <div class="input-prefix">
+          <span>S/</span>
+          <input pInputText type="number" min="0" step="0.01" formControlName="precioPromocional" placeholder="59.90" />
+        </div>
+      </label>
+      <label>
+        <span>Meses promo precio</span>
+        <input pInputText type="number" min="0" formControlName="mesesPromocionPrecio" placeholder="3" />
+      </label>
+      <label>
+        <span>Vigencia desde</span>
+        <input pInputText type="date" formControlName="vigenciaDesde" />
+      </label>
+      <label>
+        <span>Vigencia hasta</span>
+        <input pInputText type="date" formControlName="vigenciaHasta" />
+      </label>
+      <label>
+        <span>Internet velocidad</span>
+        <input pInputText type="number" min="0" formControlName="internetVelocidad" placeholder="200" />
+      </label>
+      <label>
+        <span>Unidad</span>
+        <p-select formControlName="internetUnidad" [options]="['MBPS', 'GBPS']" appendTo="body" />
+      </label>
+      <label>
+        <span>Tecnologia</span>
+        <p-select formControlName="internetTecnologia" [options]="['FTTH', 'HFC', 'HIBRIDA']" appendTo="body" />
+      </label>
+      <label>
+        <span>TV nombre</span>
+        <input pInputText type="text" formControlName="televisionNombre" placeholder="TV Full HD" />
+      </label>
+      <label>
+        <span>TV canales</span>
+        <input pInputText type="number" min="0" formControlName="televisionCanales" placeholder="80" />
+      </label>
+      <label>
+        <span>Telefono minutos</span>
+        <input pInputText type="number" min="0" formControlName="telefonoMinutos" placeholder="1000" />
+      </label>
+      <label>
+        <span>Telefono descripcion</span>
+        <input pInputText type="text" formControlName="telefonoDescripcion" placeholder="Fijo ilimitado nacional" />
+      </label>
+      <label>
+        <span>Velocidad promocional</span>
+        <input pInputText type="number" min="0" formControlName="velocidadPromocional" placeholder="400" />
+      </label>
+      <label>
+        <span>Meses promo velocidad</span>
+        <input pInputText type="number" min="0" formControlName="mesesPromocionVelocidad" placeholder="3" />
+      </label>
+      <div class="plan-additionals wide">
+        <label>
+          <span>Adicionales disponibles</span>
+          <p-select
+            [options]="facade.availablePlanAdditionals()"
+            optionLabel="nombre"
+            optionValue="id"
+            placeholder="Seleccionar adicional del proveedor"
+            appendTo="body"
+            (onChange)="facade.addPlanAdditional($any($event.value))"
+          />
+        </label>
+        <div class="plan-additionals__list">
+          @for (adicional of facade.selectedPlanAdditionals(); track adicional.idAdicional) {
+            <div class="plan-additional-item">
+              <strong>{{ adicional.nombre }}</strong>
+              <label>
+                <span>Incluido</span>
+                <input
+                  pInputText
+                  type="number"
+                  min="0"
+                  [value]="adicional.cantidadIncluida"
+                  (input)="facade.updatePlanAdditionalQuantity(adicional.idAdicional, 'cantidadIncluida', $any($event.target).value)"
+                />
+              </label>
+              <label class="checkbox-row">
+                <input
+                  type="checkbox"
+                  [checked]="adicional.permiteCompraAdicional"
+                  (change)="facade.updatePlanAdditionalPurchase(adicional.idAdicional, $any($event.target).checked)"
+                />
+                <span>Permite compra</span>
+              </label>
+              <label>
+                <span>Maximo compra</span>
+                <input
+                  pInputText
+                  type="number"
+                  min="0"
+                  [value]="adicional.cantidadMaximaAdicional"
+                  (input)="facade.updatePlanAdditionalQuantity(adicional.idAdicional, 'cantidadMaximaAdicional', $any($event.target).value)"
+                />
+              </label>
+              <button pButton type="button" icon="pi pi-times" severity="secondary" size="small" text (click)="facade.removePlanAdditional(adicional.idAdicional)"></button>
+            </div>
+          } @empty {
+            <p class="helper">Selecciona un proveedor para ver sus adicionales disponibles.</p>
+          }
+        </div>
+      </div>
+      <div class="form-actions wide">
+        <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeCreatePlanDialog()"></button>
+        <button pButton type="submit" icon="pi pi-save" label="Guardar plan" [loading]="facade.isSaving()"></button>
+      </div>
+    </form>
+  </p-dialog>
+
+  <p-dialog
+    header="Editar plan"
+    [visible]="facade.editPlanDialogOpen()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    styleClass="plan-dialog"
+    (onHide)="facade.closeEditPlanDialog()"
+  >
+    <form class="form-grid form-grid--three" [formGroup]="facade.editPlanForm" (ngSubmit)="facade.updatePlan()">
+      <label>
+        <span>Nombre plan</span>
+        <input pInputText type="text" formControlName="nombre" [placeholder]="facade.planNamePlaceholder()" />
+      </label>
+      <label>
+        <span>Zona</span>
+        <p-select formControlName="idZona" [options]="facade.zonasActivas()" optionLabel="nombre" optionValue="id" placeholder="Sin zona" appendTo="body" />
+      </label>
+      <label>
+        <span>Precio</span>
+        <div class="input-prefix">
+          <span>S/</span>
+          <input pInputText type="number" min="0.01" step="0.01" formControlName="precio" placeholder="79.90" />
+        </div>
+      </label>
+      <label>
+        <span>Precio promocional</span>
+        <div class="input-prefix">
+          <span>S/</span>
+          <input pInputText type="number" min="0" step="0.01" formControlName="precioPromocional" placeholder="59.90" />
+        </div>
+      </label>
+      <label>
+        <span>Meses promo precio</span>
+        <input pInputText type="number" min="0" formControlName="mesesPromocionPrecio" placeholder="3" />
+      </label>
+      <label>
+        <span>Vigencia desde</span>
+        <input pInputText type="date" formControlName="vigenciaDesde" />
+      </label>
+      <label>
+        <span>Vigencia hasta</span>
+        <input pInputText type="date" formControlName="vigenciaHasta" />
+      </label>
+      <label>
+        <span>Velocidad promocional</span>
+        <input pInputText type="number" min="0" formControlName="velocidadPromocional" placeholder="400" />
+      </label>
+      <label>
+        <span>Meses promo velocidad</span>
+        <input pInputText type="number" min="0" formControlName="mesesPromocionVelocidad" placeholder="3" />
+      </label>
+      <div class="form-actions wide">
+        <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeEditPlanDialog()"></button>
+        <button pButton type="submit" icon="pi pi-save" label="Guardar cambios" [loading]="facade.isSaving()"></button>
+      </div>
+    </form>
+  </p-dialog>
 
   <p-dialog
     header="Editar WhatsApp"
