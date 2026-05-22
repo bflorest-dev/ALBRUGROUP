@@ -50,6 +50,33 @@ export interface LeadAsesorVentasResponse {
   estadoSeguimiento?: EstadoSeguimiento | string | null;
 }
 
+export interface LeadVentaResponse {
+  id: number;
+  prefijo: string;
+  lead: string;
+  etapa?: Etapa | string | null;
+  estadoSeguimiento?: EstadoSeguimiento | string | null;
+  idAsesorAsignado?: number | null;
+  nombreAsesorAsignado?: string | null;
+  base?: BaseLead | string | null;
+  idTipificacion?: number | null;
+  codigoTipificacion?: string | null;
+  idSubtipificacion?: number | null;
+  codigoSubtipificacion?: string | null;
+  nombrePlanSnapshot?: string | null;
+  nombreProveedorSnapshot?: string | null;
+  precioPlanSnapshot?: number | null;
+  nombrePromocionInternaSnapshot?: string | null;
+  precioAdicionalesSnapshot?: number | null;
+  precioFinal?: number | null;
+  diaCorteFacturacion?: number | null;
+  mesesPermanenciaSnapshot?: number | null;
+  createdAt?: string | null;
+  lastEntryAt?: string | null;
+  updatedAt?: string | null;
+  totalAsignaciones?: number | null;
+}
+
 export interface LeadGtrMetricasResponse {
   nuevos: number;
   sinGestionar: number;
@@ -198,6 +225,33 @@ export interface LeadTipificacionRequest {
   codigoSubtipificacion: string;
   comentario?: string | null;
   horaProgramada?: string | null;
+}
+
+export interface LeadTipificacionVentaRequest {
+  codigoTipificacion: string;
+  codigoSubtipificacion: string;
+  comentario?: string | null;
+  fechaInstalacion?: string | null;
+}
+
+export interface EventoResponse {
+  id: number;
+  idLead: number;
+  idCampana?: number | null;
+  idActor?: number | null;
+  nombreActor?: string | null;
+  rolActor?: string | null;
+  idAsesorAsignado?: number | null;
+  nombreAsesorAsignado?: string | null;
+  idPlanOfrecido?: number | null;
+  accion?: string | null;
+  etapa?: Etapa | string | null;
+  tipificacion?: string | null;
+  subtipificacion?: string | null;
+  fechaInstalacion?: string | null;
+  comentario?: string | null;
+  horaProgramada?: string | null;
+  createdAt?: string | null;
 }
 
 export interface CatalogoResponse {

@@ -139,10 +139,12 @@ Secuencia:
 
 Reglas operativas:
 
-- La promocion requiere `idProveedor`, `idZona` e `idsPlanes`.
-- Todos los planes de una promocion deben estar activos y pertenecer al mismo proveedor.
-- No se pueden repetir planes dentro de la promocion.
-- No puede existir otra promocion activa con la misma regla comercial para el mismo proveedor y zona.
+- La promocion solo requiere regla comercial; proveedor, zona y planes son filtros opcionales de alcance.
+- Si no se envia proveedor, zona ni planes, la promocion aplica globalmente.
+- Si se envian planes, deben estar activos y no pueden repetirse.
+- Si se envia proveedor junto con planes, todos los planes deben pertenecer a ese proveedor.
+- Si se envia zona, al usar la promocion se validara el ubigeo del lead contra inclusiones y exclusiones de la zona.
+- No puede existir otra promocion activa con la misma regla comercial y el mismo alcance.
 - Las promociones listadas son activas; desactivar una promocion la retira del uso comercial.
 
 Documentacion tecnica:

@@ -8,6 +8,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.entity.*;
 import pe.albrugroup.lead_service.entity.enums.Accion;
+import pe.albrugroup.lead_service.entity.enums.CriterioZona;
 import pe.albrugroup.lead_service.entity.enums.EstadoPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
@@ -57,6 +58,7 @@ import pe.albrugroup.lead_service.repository.PlanRepository;
 import pe.albrugroup.lead_service.repository.PromocionComercialRepository;
 import pe.albrugroup.lead_service.repository.SubtipificacionRepository;
 import pe.albrugroup.lead_service.repository.TipificacionRepository;
+import pe.albrugroup.lead_service.repository.ZonaReglaRepository;
 import pe.albrugroup.lead_service.service.mapper.LeadMapper;
 
 import java.math.BigDecimal;
@@ -89,6 +91,7 @@ public class LeadService {
     private final SubtipificacionRepository subtipificacionRepository;
     private final LeadMapper leadMapper;
     private final DistritoRepository distritoRepository;
+    private final ZonaReglaRepository zonaReglaRepository;
     private final PaginationService paginationService;
     private final TransactionTemplate transactionTemplate;
     private final LeadRealtimeNotifier leadRealtimeNotifier;
@@ -435,7 +438,7 @@ public class LeadService {
     private Lead actualizarOfertaComercialInterno(Lead lead, LeadOfertaComercialRequest request) {
         Plan plan = request.getIdPlan() == null ? null : obtenerPlanVigente(request.getIdPlan());
         PromocionComercial promocionInterna = request.getIdPromocionInterna() == null ? null
-                : obtenerPromocionInternaActiva(request.getIdPromocionInterna(), plan);
+                : obtenerPromocionInternaActiva(request.getIdPromocionInterna(), plan, lead);
 
         lead.setPlan(plan);
         lead.setNombrePlanSnapshot(plan == null ? null : plan.getNombre());
@@ -1487,16 +1490,14 @@ public class LeadService {
         return plan;
     }
 
-    private PromocionComercial obtenerPromocionInternaActiva(Long idPromocion, Plan plan) {
+    private PromocionComercial obtenerPromocionInternaActiva(Long idPromocion, Plan plan, Lead lead) {
         PromocionComercial promocion = promocionComercialRepository.findByIdAndActivoTrue(idPromocion)
                 .orElseThrow(() -> new NotFoundException(PromocionComercial.class, idPromocion));
 
         if (plan == null) {
             throw new BadRequestException("No se puede seleccionar una promocion interna sin plan");
         }
-        boolean aplicaAlPlan = promocion.getPlanes().stream()
-                .anyMatch(item -> item.getId().equals(plan.getId()));
-        if (!aplicaAlPlan) {
+        if (!promocion.getPlanes().isEmpty() && promocion.getPlanes().stream().noneMatch(item -> item.getId().equals(plan.getId()))) {
             throw new BadRequestException(
                     "La promocion interna no aplica al plan seleccionado",
                     null,
@@ -1506,20 +1507,71 @@ public class LeadService {
                     )
             );
         }
-        if (promocion.getProveedor() != null && plan.getProveedor() != null
-                && !promocion.getProveedor().getId().equals(plan.getProveedor().getId())) {
+        if (promocion.getProveedor() != null && (plan.getProveedor() == null
+                || !promocion.getProveedor().getId().equals(plan.getProveedor().getId()))) {
+            Map<String, Object> details = new HashMap<>();
+            details.put("idPromocion", idPromocion);
+            details.put("idPlan", plan.getId());
+            details.put("idProveedorPlan", plan.getProveedor() == null ? null : plan.getProveedor().getId());
+            details.put("idProveedorPromocion", promocion.getProveedor().getId());
             throw new BadRequestException(
                     "La promocion interna no pertenece al proveedor del plan",
                     null,
-                    Map.of(
-                            "idPromocion", idPromocion,
-                            "idPlan", plan.getId(),
-                            "idProveedorPlan", plan.getProveedor().getId(),
-                            "idProveedorPromocion", promocion.getProveedor().getId()
-                    )
+                    details
             );
         }
+        validarPromocionAplicaAZonaLead(promocion, lead);
         return promocion;
+    }
+
+    private void validarPromocionAplicaAZonaLead(PromocionComercial promocion, Lead lead) {
+        if (promocion.getZona() == null) {
+            return;
+        }
+        if (lead.getDireccion() == null || leadMapper.trimToNull(lead.getDireccion().getUbigeoDomicilio()) == null) {
+            throw new BadRequestException(
+                    "La promocion interna requiere ubigeo de domicilio del lead",
+                    null,
+                    Map.of("idPromocion", promocion.getId())
+            );
+        }
+
+        Distrito distrito = distritoRepository.findByCodigo(lead.getDireccion().getUbigeoDomicilio())
+                .orElseThrow(() -> new BadRequestException(
+                        "El ubigeo de domicilio del lead no existe",
+                        null,
+                        Map.of("ubigeoDomicilio", lead.getDireccion().getUbigeoDomicilio())
+                ));
+        List<ZonaRegla> reglas = zonaReglaRepository.findByZonaIdAndZonaActivoTrue(promocion.getZona().getId());
+        boolean tieneInclusiones = reglas.stream().anyMatch(regla -> regla.getCriterio() == CriterioZona.INCLUIR);
+        boolean coincideExclusion = reglas.stream()
+                .anyMatch(regla -> regla.getCriterio() == CriterioZona.EXCLUIR && coincideReglaZona(regla, distrito));
+        if (coincideExclusion) {
+            throw new BadRequestException(
+                    "La promocion interna no aplica porque el ubigeo del lead esta excluido de la zona",
+                    null,
+                    Map.of("idPromocion", promocion.getId(), "ubigeoDomicilio", distrito.getCodigo())
+            );
+        }
+        boolean coincideInclusion = reglas.stream()
+                .anyMatch(regla -> regla.getCriterio() == CriterioZona.INCLUIR && coincideReglaZona(regla, distrito));
+        if (tieneInclusiones && !coincideInclusion) {
+            throw new BadRequestException(
+                    "La promocion interna no aplica porque el ubigeo del lead no esta incluido en la zona",
+                    null,
+                    Map.of("idPromocion", promocion.getId(), "ubigeoDomicilio", distrito.getCodigo())
+            );
+        }
+    }
+
+    private boolean coincideReglaZona(ZonaRegla regla, Distrito distrito) {
+        return switch (regla.getNivelGeografico()) {
+            case DEPARTAMENTO -> distrito.getDepartamento() != null
+                    && regla.getGeoId().equals(distrito.getDepartamento().getId());
+            case PROVINCIA -> distrito.getProvincia() != null
+                    && regla.getGeoId().equals(distrito.getProvincia().getId());
+            case DISTRITO -> regla.getGeoId().equals(distrito.getId());
+        };
     }
 
     private void validarPreventaCompleta(Lead lead) {

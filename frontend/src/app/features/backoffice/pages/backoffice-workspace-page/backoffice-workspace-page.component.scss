@@ -1,0 +1,241 @@
+.backoffice-page,
+.lead-workspace,
+.skeleton-table,
+.dialog-skeleton {
+  display: grid;
+  gap: 1rem;
+}
+
+.hero-row,
+.hero-actions,
+.board-title,
+.lead-head,
+.lead-tags,
+.dialog-actions {
+  align-items: center;
+  display: flex;
+}
+
+.hero-row,
+.lead-head {
+  justify-content: space-between;
+}
+
+.hero-actions,
+.lead-tags,
+.dialog-actions {
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.eyebrow,
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--role-accent);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+h1 {
+  color: var(--role-primary);
+  font-size: clamp(1.45rem, 2vw, 1.9rem);
+}
+
+h2 {
+  color: var(--role-primary);
+  font-size: 1.3rem;
+}
+
+p,
+.select-item small {
+  color: var(--role-muted);
+}
+
+.board-title {
+  gap: 0.55rem;
+}
+
+.col-actions {
+  min-width: 10rem;
+}
+
+.row-new {
+  animation: row-enter 440ms ease-out;
+}
+
+.row-new td {
+  background: color-mix(in srgb, var(--role-accent) 12%, #ffffff 88%);
+}
+
+.skeleton-row {
+  align-items: center;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 8rem 6rem 10rem 12rem 9rem 6rem 9rem 8rem;
+  min-width: 900px;
+}
+
+.empty-state {
+  color: var(--role-muted);
+  font-weight: 700;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.lead-head,
+.tipification-bar {
+  background: color-mix(in srgb, var(--role-accent) 6%, #ffffff 94%);
+  border: 1px solid color-mix(in srgb, var(--role-accent) 18%, #ffffff 82%);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.tipification-bar {
+  align-items: end;
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: auto minmax(12rem, 1fr) minmax(12rem, 1fr) minmax(10rem, auto) auto auto;
+}
+
+.comment-field,
+.wide {
+  grid-column: 1 / -1;
+}
+
+.form-grid {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding-top: 1rem;
+}
+
+label,
+.select-item {
+  display: grid;
+  gap: 0.35rem;
+}
+
+label {
+  color: #425466;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.chips,
+.dialog-actions {
+  display: flex;
+}
+
+.chips {
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.chips span {
+  background: color-mix(in srgb, var(--role-accent) 9%, #ffffff 91%);
+  border: 1px solid color-mix(in srgb, var(--role-accent) 20%, #ffffff 80%);
+  border-radius: 999px;
+  color: var(--role-primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 0.4rem 0.65rem;
+}
+
+.dialog-actions {
+  justify-content: flex-end;
+  padding-top: 0.25rem;
+}
+
+:host ::ng-deep {
+  .backoffice-hero,
+  .backoffice-board {
+    border: 1px solid color-mix(in srgb, var(--role-accent) 18%, #ffffff 82%);
+    border-radius: 14px;
+    box-shadow: 0 14px 36px rgba(15, 31, 51, 0.06);
+  }
+
+  .backoffice-hero .p-card-body,
+  .backoffice-board .p-card-body {
+    padding: 1rem;
+  }
+
+  .backoffice-table .p-datatable-thead > tr > th,
+  .event-table .p-datatable-thead > tr > th {
+    background: color-mix(in srgb, var(--role-accent) 7%, #ffffff 93%);
+    color: var(--role-primary);
+    font-size: 0.76rem;
+    text-transform: uppercase;
+  }
+
+  .backoffice-table .p-datatable-tbody > tr > td {
+    vertical-align: middle;
+  }
+
+  .backoffice-dialog {
+    width: min(76rem, 94vw);
+  }
+
+  .backoffice-dialog .p-dialog-content {
+    overflow: visible;
+  }
+
+  .tipification-bar .p-select,
+  .form-grid .p-select,
+  .form-grid .p-inputtext,
+  .form-grid .p-textarea,
+  .comment-field .p-textarea {
+    width: 100%;
+  }
+
+  .p-tabpanels {
+    padding: 0;
+  }
+}
+
+@keyframes row-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@media (max-width: 1100px) {
+  .hero-row,
+  .lead-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tipification-bar,
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .comment-field,
+  .wide {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .tipification-bar,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-actions,
+  .dialog-actions {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .hero-actions button,
+  .dialog-actions button {
+    width: 100%;
+  }
+}

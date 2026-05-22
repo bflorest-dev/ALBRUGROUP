@@ -3,6 +3,7 @@ import { roleGuard } from '../../core/guards/role.guard';
 import { AdminDashboardPageComponent } from '../admin/pages/admin-dashboard-page/admin-dashboard-page.component';
 import { AdminEmployabilityPageComponent } from '../admin/pages/admin-employability-page/admin-employability-page.component';
 import { AsesorVentasWorkspacePageComponent } from '../asesor-ventas/pages/asesor-ventas-workspace-page/asesor-ventas-workspace-page.component';
+import { BackofficeWorkspacePageComponent } from '../backoffice/pages/backoffice-workspace-page/backoffice-workspace-page.component';
 import { CommunityWorkspacePageComponent } from '../community/pages/community-workspace-page/community-workspace-page.component';
 import { GtrWorkspacePageComponent } from '../gtr/pages/gtr-workspace-page/gtr-workspace-page.component';
 import { PostulantesBoardPageComponent } from '../recruiter/pages/postulantes-board-page/postulantes-board-page.component';
@@ -145,11 +146,25 @@ export const PLATFORM_ROUTES: Routes = [
   },
   {
     path: 'backoffice',
-    component: RolePlatformPageComponent,
+    pathMatch: 'full',
+    redirectTo: 'backoffice/plataforma'
+  },
+  {
+    path: 'backoffice/plataforma',
+    component: BackofficeWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE'],
-      title: 'BACKOFFICE Platform'
+      section: 'plataforma'
+    }
+  },
+  {
+    path: 'backoffice/gestion',
+    component: BackofficeWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE'],
+      section: 'gestion'
     }
   },
   {

@@ -55,7 +55,6 @@ p {
 .community-hero__eyebrow {
   color: var(--role-accent);
   font-size: 0.76rem;
-  letter-spacing: 0.14em;
 }
 
 h1 {
@@ -113,7 +112,6 @@ p,
 }
 
 .wide,
-.full-row,
 .form-grid button[type='submit'] {
   grid-column: 1 / -1;
 }
@@ -125,10 +123,6 @@ label,
   font-size: 0.78rem;
   font-weight: 800;
   gap: 0.35rem;
-}
-
-.billing-cuts__selector p-select {
-  min-width: 9rem;
 }
 
 .billing-cut-chip,
@@ -167,15 +161,6 @@ label,
   align-self: center;
 }
 
-.zone-rule-item div {
-  display: grid;
-  gap: 0.15rem;
-}
-
-.zone-rule-item span {
-  font-size: 0.76rem;
-}
-
 .dialog-actions {
   justify-content: flex-end;
   margin-top: 1rem;
@@ -183,16 +168,6 @@ label,
 
 .criterion-toggle__button--active {
   box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.16);
-}
-
-.metrics-empty {
-  display: grid;
-  min-height: 20rem;
-  place-items: center;
-}
-
-.metrics-empty__content {
-  max-width: 760px;
 }
 
 :host ::ng-deep {
@@ -217,7 +192,7 @@ label,
 
   .community-form-card .p-inputtext,
   .community-form-card .p-select,
-  .community-form-card .p-textarea,
+  .community-form-card .p-multiselect,
   .compact-dialog .p-inputtext,
   .plan-dialog .p-inputtext,
   .plan-dialog .p-select,
@@ -225,6 +200,25 @@ label,
   .zone-dialog .p-select,
   .filter-grid .p-inputtext {
     width: 100%;
+  }
+
+  .scope-select {
+    .p-togglebutton {
+      background: transparent;
+      border: 0;
+      flex: 1;
+      padding: 0;
+    }
+
+    .p-togglebutton-content,
+    .p-tag {
+      width: 100%;
+    }
+
+    .p-togglebutton-content {
+      background: transparent;
+      padding: 0;
+    }
   }
 
   .zone-dialog {
@@ -238,7 +232,6 @@ label,
 
 @media (max-width: 760px) {
   .community-hero__content,
-  .metrics-empty__content,
   .card-title-row,
   .dialog-actions,
   .billing-cuts__selector {

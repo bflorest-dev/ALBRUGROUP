@@ -7,11 +7,12 @@ import { CardModule } from 'primeng/card';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { SelectModule } from 'primeng/select';
+import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
-import { TextareaModule } from 'primeng/textarea';
 import { CommunitySection, CommunityWorkspaceFacade } from '../../facades/community-workspace.facade';
 
 @Component({
@@ -23,11 +24,12 @@ import { CommunitySection, CommunityWorkspaceFacade } from '../../facades/commun
     DialogModule,
     InputTextModule,
     MessageModule,
+    MultiSelectModule,
     SelectModule,
+    SelectButtonModule,
     TableModule,
     TabsModule,
-    TagModule,
-    TextareaModule
+    TagModule
   ],
   providers: [CommunityWorkspaceFacade],
   templateUrl: './community-workspace-page.component.html',
@@ -88,5 +90,19 @@ export class CommunityWorkspacePageComponent implements OnInit {
       return '-';
     }
     return `S/ ${value}`;
+  }
+
+  protected scopeLabel(value: unknown, fallback: string): string {
+    return value === null || value === undefined || value === '' ? fallback : String(value);
+  }
+
+  protected planScopeLabel(names: unknown, ids: unknown): string {
+    if (Array.isArray(names) && names.length) {
+      return names.join(', ');
+    }
+    if (Array.isArray(ids) && ids.length) {
+      return ids.join(', ');
+    }
+    return 'Todos';
   }
 }

@@ -1,6 +1,5 @@
 package pe.albrugroup.lead_service.entity.request;
 
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
@@ -16,5 +15,5 @@ public class PromocionComercialRequest {
     @NotBlank private String reglaComercial;
     private Long idProveedor;
     private Long idZona;
-    @NotEmpty private List<Long> idsPlanes;
+    private List<Long> idsPlanes;
 }

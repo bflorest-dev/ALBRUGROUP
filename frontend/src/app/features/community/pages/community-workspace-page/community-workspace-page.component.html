@@ -452,34 +452,82 @@
               <form class="form-grid" [formGroup]="facade.promotionForm" (ngSubmit)="facade.submitPromotion()">
                 <label class="wide">
                   <span>Regla comercial</span>
-                  <textarea pTextarea rows="4" formControlName="reglaComercial"></textarea>
+                  <input pInputText type="text" formControlName="reglaComercial" />
                 </label>
-                <label>
-                  <span>Proveedor</span>
-                  <p-select
-                    formControlName="idProveedor"
-                    [options]="facade.proveedoresActivos()"
-                    optionLabel="nombre"
-                    optionValue="id"
-                    placeholder="Seleccionar proveedor"
-                    appendTo="body"
-                  />
-                </label>
-                <label>
-                  <span>Zona</span>
-                  <p-select
-                    formControlName="idZona"
-                    [options]="facade.zonasActivas()"
-                    optionLabel="nombre"
-                    optionValue="id"
-                    placeholder="Sin zona"
-                    appendTo="body"
-                  />
-                </label>
-                <label class="wide">
-                  <span>IDs planes separados por coma</span>
-                  <input pInputText type="text" formControlName="idsPlanes" />
-                </label>
+                <div class="wide">
+                  <label>
+                    <span>Alcance</span>
+                    <p-selectbutton
+                      formControlName="scopes"
+                      [options]="facade.promotionScopeOptions"
+                      optionLabel="label"
+                      optionValue="value"
+                      [multiple]="true"
+                      [allowEmpty]="true"
+                      [fluid]="true"
+                      styleClass="scope-select"
+                      (onChange)="facade.onPromotionScopesChanged($any($event.value))"
+                    >
+                      <ng-template #item let-scope>
+                        <p-tag
+                          [severity]="facade.hasPromotionScope(scope.value) ? scope.severity : 'secondary'"
+                          [value]="scope.label"
+                          [icon]="scope.icon"
+                          [rounded]="true"
+                        />
+                      </ng-template>
+                    </p-selectbutton>
+                  </label>
+                </div>
+                @if (facade.hasPromotionScope('proveedor')) {
+                  <div class="promotion-scope wide">
+                    <label>
+                      <span>Proveedor</span>
+                      <p-select
+                        formControlName="idProveedor"
+                        [options]="facade.proveedoresActivos()"
+                        optionLabel="nombre"
+                        optionValue="id"
+                        placeholder="Seleccionar proveedor"
+                        appendTo="body"
+                        (onChange)="facade.onPromotionProviderChanged()"
+                      />
+                    </label>
+                  </div>
+                }
+                @if (facade.hasPromotionScope('zona')) {
+                  <div class="promotion-scope wide">
+                    <label>
+                      <span>Zona</span>
+                      <p-select
+                        formControlName="idZona"
+                        [options]="facade.zonasActivas()"
+                        optionLabel="nombre"
+                        optionValue="id"
+                        placeholder="Seleccionar zona"
+                        appendTo="body"
+                      />
+                    </label>
+                  </div>
+                }
+                @if (facade.hasPromotionScope('planes')) {
+                  <div class="promotion-scope wide">
+                    <label>
+                      <span>Planes</span>
+                      <p-multiselect
+                        formControlName="idsPlanes"
+                        [options]="facade.availablePromotionPlans()"
+                        optionLabel="promotionOptionLabel"
+                        optionValue="id"
+                        placeholder="Seleccionar planes"
+                        display="chip"
+                        [filter]="true"
+                        appendTo="body"
+                      />
+                    </label>
+                    <p class="helper">Sin seleccion aplica a todos los planes.</p>
+                  </div>
+                }
                 <button pButton type="submit" icon="pi pi-plus" label="Registrar promocion" [loading]="facade.isSaving()"></button>
               </form>
             </p-card>
@@ -507,9 +555,9 @@
                 <ng-template #body let-promocion>
                   <tr>
                     <td><strong>{{ promocion.reglaComercial }}</strong></td>
-                    <td>{{ display(promocion.nombreProveedor) }}</td>
-                    <td>{{ display(promocion.nombreZona) }}</td>
-                    <td>{{ promocion.nombresPlanes || promocion.idsPlanes || '-' }}</td>
+                    <td>{{ scopeLabel(promocion.nombreProveedor, 'Todos') }}</td>
+                    <td>{{ scopeLabel(promocion.nombreZona, 'Todas') }}</td>
+                    <td>{{ planScopeLabel(promocion.nombresPlanes, promocion.idsPlanes) }}</td>
                     <td><p-tag [severity]="statusSeverity(promocion.activo)" [value]="statusLabel(promocion.activo)" /></td>
                     <td>
                       @if (promocion.activo !== false) {

@@ -21,6 +21,7 @@ import pe.albrugroup.lead_service.repository.ZonaRepository;
 import pe.albrugroup.lead_service.service.mapper.PromocionComercialMapper;
 
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,7 +47,7 @@ public class PromocionComercialService {
 
         Zona zona = null;
         if (request.getIdZona() != null) {
-            zona = zonaRepository.findById(request.getIdZona())
+            zona = zonaRepository.findByIdAndActivoTrue(request.getIdZona())
                     .orElseThrow(() -> new NotFoundException(Zona.class, request.getIdZona()));
         }
 
@@ -80,6 +81,10 @@ public class PromocionComercialService {
     }
 
     private Set<Plan> resolverPlanes(List<Long> idsPlanes) {
+        if (idsPlanes == null || idsPlanes.isEmpty()) {
+            return Set.of();
+        }
+
         Set<Long> idsUnicos = new HashSet<>(idsPlanes);
         if (idsUnicos.size() != idsPlanes.size()) {
             throw new BadRequestException(
@@ -101,14 +106,6 @@ public class PromocionComercialService {
     }
 
     private void validarConsistencia(PromocionComercialRequest request, Proveedor proveedor, Set<Plan> planes) {
-        if (request.getIdZona() == null) {
-            throw new BadRequestException(
-                    "La promocion interna debe indicar una zona",
-                    null,
-                    null
-            );
-        }
-
         Set<Long> proveedoresDePlanes = new HashSet<>();
         for (Plan plan : planes) {
             if (!Boolean.TRUE.equals(plan.getActivo())) {
@@ -118,7 +115,9 @@ public class PromocionComercialService {
                         Map.of("idPlan", plan.getId())
                 );
             }
-            proveedoresDePlanes.add(plan.getProveedor().getId());
+            if (plan.getProveedor() != null) {
+                proveedoresDePlanes.add(plan.getProveedor().getId());
+            }
         }
 
         if (proveedoresDePlanes.size() > 1) {
@@ -129,18 +128,10 @@ public class PromocionComercialService {
                 );
         }
 
-        Long proveedorDePlanes = proveedoresDePlanes.iterator().next();
-        if (proveedor == null) {
+        if (proveedor != null && !proveedoresDePlanes.isEmpty() && !proveedor.getId().equals(proveedoresDePlanes.iterator().next())) {
             throw new BadRequestException(
-                    "La promocion interna debe indicar un proveedor",
-                    null,
-                    null
-            );
-        }
-        if (!proveedor.getId().equals(proveedorDePlanes)) {
-            throw new BadRequestException(
-                    "Los planes no pertenecen al proveedor de la promocion",
-                    null,
+                "Los planes no pertenecen al proveedor de la promocion",
+                null,
                     Map.of(
                             "idProveedor", proveedor.getId(),
                             "idsPlanes", request.getIdsPlanes()
@@ -148,19 +139,35 @@ public class PromocionComercialService {
             );
         }
 
-        boolean existeReglaActiva = repository.listarActivas(proveedor.getId(), request.getIdZona(), null).stream()
-                .anyMatch(promocion -> promocion.getReglaComercial().equalsIgnoreCase(request.getReglaComercial()));
+        Set<Long> idsPlanes = planes.stream().map(Plan::getId).collect(java.util.stream.Collectors.toSet());
+        boolean existeReglaActiva = repository.listarActivas(null, null, null).stream()
+                .anyMatch(promocion -> esMismoAlcance(promocion, proveedor, request.getIdZona(), idsPlanes)
+                        && promocion.getReglaComercial().equalsIgnoreCase(request.getReglaComercial()));
         if (existeReglaActiva) {
+            Map<String, Object> details = new HashMap<>();
+            details.put("reglaComercial", request.getReglaComercial());
+            details.put("idProveedor", proveedor == null ? null : proveedor.getId());
+            details.put("idZona", request.getIdZona());
+            details.put("idsPlanes", request.getIdsPlanes() == null ? List.of() : request.getIdsPlanes());
             throw new BadRequestException(
-                    "Ya existe una promocion interna activa con la misma regla comercial para ese proveedor y zona",
+                    "Ya existe una promocion interna activa con la misma regla comercial y alcance",
                     null,
-                    Map.of(
-                            "reglaComercial", request.getReglaComercial(),
-                            "idProveedor", proveedor.getId(),
-                            "idZona", request.getIdZona()
-                    )
+                    details
             );
         }
+    }
+
+    private boolean esMismoAlcance(PromocionComercial promocion, Proveedor proveedor, Long idZona, Set<Long> idsPlanes) {
+        Long proveedorActual = promocion.getProveedor() == null ? null : promocion.getProveedor().getId();
+        Long proveedorNuevo = proveedor == null ? null : proveedor.getId();
+        Long zonaActual = promocion.getZona() == null ? null : promocion.getZona().getId();
+        Set<Long> planesActuales = promocion.getPlanes().stream()
+                .map(Plan::getId)
+                .collect(java.util.stream.Collectors.toSet());
+
+        return java.util.Objects.equals(proveedorActual, proveedorNuevo)
+                && java.util.Objects.equals(zonaActual, idZona)
+                && planesActuales.equals(idsPlanes);
     }
 
     private PromocionComercialResponse toResponse(PromocionComercial entity) {

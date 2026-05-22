@@ -445,6 +445,7 @@ public class DataLoader {
                 getPermiso("READ_LEADS_ASESOR"),
                 getPermiso("UPDATE_LEADS_ASESOR"),
                 getPermiso("TYPIFY_LEADS"),
+                getPermiso("READ_TIPIFICACIONES_VENTA"),
                 getPermiso("CONTACT_LEADS"),
                 getPermiso("READ_EVENTOS_LEADS"),
                 getPermiso("READ_PLANES"),

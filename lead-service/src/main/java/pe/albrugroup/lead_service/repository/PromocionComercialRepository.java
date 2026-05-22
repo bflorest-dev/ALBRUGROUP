@@ -17,9 +17,9 @@ public interface PromocionComercialRepository extends JpaRepository<PromocionCom
             from PromocionComercial p
             left join p.planes plan
             where p.activo = true
-              and (:idProveedor is null or (p.proveedor is not null and p.proveedor.id = :idProveedor))
-              and (:idZona is null or (p.zona is not null and p.zona.id = :idZona))
-              and (:idPlan is null or plan.id = :idPlan)
+              and (:idProveedor is null or p.proveedor is null or p.proveedor.id = :idProveedor)
+              and (:idZona is null or p.zona is null or p.zona.id = :idZona)
+              and (:idPlan is null or plan.id is null or plan.id = :idPlan)
             order by p.reglaComercial asc
             """)
     List<PromocionComercial> listarActivas(

@@ -63,7 +63,7 @@ Reglas operativas:
 
 - Para tipificar, frontend debe usar el catalogo de `PREVENTA`.
 - Para oferta comercial, conviene usar planes vigentes y promociones activas.
-- La promocion interna siempre depende de un plan seleccionado.
+- La promocion interna requiere un plan seleccionado, pero puede aplicar a todos los planes si no tiene planes asociados.
 
 Documentacion tecnica:
 
@@ -126,7 +126,7 @@ Reglas operativas:
 
 - El plan debe estar activo y vigente.
 - No se puede seleccionar promocion interna sin plan.
-- La promocion debe aplicar al plan seleccionado y pertenecer al mismo proveedor.
+- La promocion debe cumplir su alcance: plan si tiene planes asociados, proveedor si tiene proveedor asociado y zona si tiene zona asociada.
 - Los adicionales se envian como `idAdicional` y `cantidad`.
 
 Documentacion tecnica:

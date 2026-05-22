@@ -109,7 +109,7 @@ Reglas operativas:
 
 - En el ciclo actual de `VENTA`, la oferta comercial solo puede actualizarse una vez.
 - Un segundo intento responde conflicto.
-- La promocion interna requiere plan y debe aplicar al plan seleccionado.
+- La promocion interna requiere plan y debe cumplir su alcance: plan si tiene planes asociados, proveedor si tiene proveedor asociado y zona si tiene zona asociada.
 - Si el detalle o historial del lead estan abiertos, conviene refrescarlos tambien ante `OFERTA_COMERCIAL_ACTUALIZADA`.
 
 Documentacion tecnica:

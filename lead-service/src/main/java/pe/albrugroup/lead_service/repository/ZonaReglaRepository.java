@@ -14,6 +14,7 @@ public interface ZonaReglaRepository extends JpaRepository<ZonaRegla, Long> {
 
     List<ZonaRegla> findByZonaId(Long zonaId);
     List<ZonaRegla> findByZonaIdIn(List<Long> zonaIds);
+    List<ZonaRegla> findByZonaIdAndZonaActivoTrue(Long zonaId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from ZonaRegla z where z.zona.id = :zonaId")

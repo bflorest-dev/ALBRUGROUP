@@ -28,6 +28,14 @@ type PlanAdditionalDraft = {
   permiteCompraAdicional: boolean;
   cantidadMaximaAdicional: number;
 };
+type PromotionPlanOption = PlanResponse & { promotionOptionLabel: string };
+type PromotionScope = 'proveedor' | 'zona' | 'planes';
+type PromotionScopeOption = {
+  label: string;
+  value: PromotionScope;
+  icon: string;
+  severity: 'info' | 'success' | 'warn';
+};
 
 @Injectable()
 export class CommunityWorkspaceFacade {
@@ -60,6 +68,11 @@ export class CommunityWorkspaceFacade {
   readonly serviciosProveedor = signal<ServiciosProveedorResponse | null>(null);
 
   readonly billingDayOptions = Array.from({ length: 31 }, (_, index) => index + 1);
+  readonly promotionScopeOptions: PromotionScopeOption[] = [
+    { label: 'Proveedor', value: 'proveedor', icon: 'pi pi-building', severity: 'info' },
+    { label: 'Zona', value: 'zona', icon: 'pi pi-map-marker', severity: 'success' },
+    { label: 'Planes', value: 'planes', icon: 'pi pi-wifi', severity: 'warn' }
+  ];
   readonly selectedBillingCuts = signal<number[]>([1, 15]);
   readonly selectedCampaign = signal<CampanaResponse | null>(null);
   readonly whatsappDialogOpen = signal(false);
@@ -79,9 +92,16 @@ export class CommunityWorkspaceFacade {
   readonly activePlanId = signal<number | null>(null);
   readonly selectedPlanProviderId = signal(0);
   readonly selectedPlanAdditionals = signal<PlanAdditionalDraft[]>([]);
+  readonly selectedPromotionProviderId = signal(0);
   readonly availablePlanAdditionals = computed(() => {
     const idProveedor = this.selectedPlanProviderId();
     return this.adicionalesActivos().filter((adicional) => adicional.idProveedor === idProveedor);
+  });
+  readonly availablePromotionPlans = computed<PromotionPlanOption[]>(() => {
+    const idProveedor = this.selectedPromotionProviderId();
+    return this.planesActivos()
+      .filter((plan) => !idProveedor || plan.idProveedor === idProveedor)
+      .map((plan) => ({ ...plan, promotionOptionLabel: this.buildPromotionPlanLabel(plan) }));
   });
   readonly planNamePlaceholder = computed(() => this.planes()[0]?.nombre ?? 'Plan Fibra 200');
   readonly additionalNamePlaceholder = computed(() => this.adicionales()[0]?.nombre ?? 'Mesh WiFi');
@@ -155,9 +175,10 @@ export class CommunityWorkspaceFacade {
 
   readonly promotionForm = this.fb.group({
     reglaComercial: ['', [Validators.required]],
-    idProveedor: [0, [Validators.required, Validators.min(1)]],
+    scopes: [[] as PromotionScope[]],
+    idProveedor: [0],
     idZona: [0],
-    idsPlanes: ['', [Validators.required]]
+    idsPlanes: [[] as number[]]
   });
 
   readonly promotionFiltersForm = this.fb.group({
@@ -498,18 +519,35 @@ export class CommunityWorkspaceFacade {
       return;
     }
 
-    const raw = this.promotionForm.getRawValue();
     await this.saveAction(
-      () =>
-        this.leadService.registrarPromocion({
-          reglaComercial: raw.reglaComercial,
-          idProveedor: raw.idProveedor,
-          idZona: raw.idZona || null,
-          idsPlanes: this.parseNumberList(raw.idsPlanes)
-        }),
+      () => this.leadService.registrarPromocion(this.buildPromotionRequest()),
       'Promocion registrada.',
       () => this.refreshPromotions()
     );
+  }
+
+  hasPromotionScope(scope: PromotionScope): boolean {
+    return this.promotionForm.controls.scopes.value.includes(scope);
+  }
+
+  onPromotionScopesChanged(scopes: PromotionScope[]): void {
+    const selectedScopes = scopes ?? [];
+    if (!selectedScopes.includes('proveedor')) {
+      this.promotionForm.patchValue({ idProveedor: 0 });
+      this.selectedPromotionProviderId.set(0);
+    }
+    if (!selectedScopes.includes('zona')) {
+      this.promotionForm.patchValue({ idZona: 0 });
+    }
+    if (!selectedScopes.includes('planes')) {
+      this.promotionForm.patchValue({ idsPlanes: [] });
+    }
+    this.syncPromotionPlansWithProvider();
+  }
+
+  onPromotionProviderChanged(): void {
+    this.selectedPromotionProviderId.set(this.promotionForm.controls.idProveedor.value);
+    this.syncPromotionPlansWithProvider();
   }
 
   async filterPromotions(): Promise<void> {
@@ -842,6 +880,17 @@ export class CommunityWorkspaceFacade {
     });
   }
 
+  private buildPromotionRequest(): Record<string, unknown> {
+    const raw = this.promotionForm.getRawValue();
+    const scopes = raw.scopes;
+    return {
+      reglaComercial: raw.reglaComercial,
+      idProveedor: scopes.includes('proveedor') ? raw.idProveedor || null : null,
+      idZona: scopes.includes('zona') ? raw.idZona || null : null,
+      idsPlanes: scopes.includes('planes') && raw.idsPlanes.length ? raw.idsPlanes : null
+    };
+  }
+
   private buildZoneRequest(): Record<string, unknown> {
     const raw = this.zoneForm.getRawValue();
     return {
@@ -854,15 +903,30 @@ export class CommunityWorkspaceFacade {
     };
   }
 
-  private parseNumberList(value: string): number[] {
-    return value
-      .split(',')
-      .map((part) => Number(part.trim()))
-      .filter((valueNumber) => Number.isFinite(valueNumber) && valueNumber > 0);
-  }
-
   private cleanObject<T extends Record<string, unknown>>(value: T): T {
     return Object.fromEntries(Object.entries(value).filter(([, entryValue]) => entryValue !== undefined)) as T;
+  }
+
+  private syncPromotionPlansWithProvider(): void {
+    const raw = this.promotionForm.getRawValue();
+    if (!raw.scopes.includes('proveedor') || !raw.idProveedor || !raw.scopes.includes('planes') || !raw.idsPlanes.length) {
+      return;
+    }
+
+    const allowedPlanIds = new Set(this.availablePromotionPlans().map((plan) => plan.id));
+    const selectedPlanIds = raw.idsPlanes.filter((idPlan) => allowedPlanIds.has(idPlan));
+    if (selectedPlanIds.length !== raw.idsPlanes.length) {
+      this.promotionForm.patchValue({ idsPlanes: selectedPlanIds });
+    }
+  }
+
+  private buildPromotionPlanLabel(plan: PlanResponse): string {
+    const details = [
+      plan.internet?.velocidad ? `${plan.internet.velocidad} ${plan.internet.unidad ?? 'MBPS'}` : null,
+      plan.precioPromocional ? `Promo S/ ${plan.precioPromocional}` : plan.precio ? `S/ ${plan.precio}` : null
+    ].filter(Boolean);
+
+    return details.length ? `${plan.nombre} - ${details.join(' - ')}` : String(plan.nombre);
   }
 
   private toDateInputValue(value: string | undefined): string {

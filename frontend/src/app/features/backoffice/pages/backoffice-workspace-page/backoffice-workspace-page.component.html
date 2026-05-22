@@ -1,0 +1,335 @@
+<section class="backoffice-page">
+  <p-card styleClass="backoffice-hero">
+    <div class="hero-row">
+      <div>
+        <span class="eyebrow">VENTA</span>
+        <h1>{{ section() === 'plataforma' ? 'Plataforma Backoffice' : 'Gestion Backoffice' }}</h1>
+        <p>{{ isReconciling() ? 'Sincronizando cambios en tiempo real' : 'Bandeja operativa de leads en venta' }}</p>
+      </div>
+
+      <div class="hero-actions">
+        @if (hasUnsavedDataChanges()) {
+          <p-tag severity="warn" value="Cambios pendientes" />
+        }
+        <button pButton type="button" icon="pi pi-refresh" label="Actualizar" severity="secondary" [loading]="isLoading()" (click)="initialize()"></button>
+      </div>
+    </div>
+  </p-card>
+
+  @if (successMessage()) {
+    <p-message severity="success" [text]="successMessage() ?? ''" />
+  }
+  @if (errorMessage()) {
+    <p-message severity="error" [text]="errorMessage() ?? ''" />
+  }
+
+  <p-card styleClass="backoffice-board">
+    <ng-template #title>
+      <span class="board-title">
+        {{ section() === 'plataforma' ? 'Leads disponibles' : 'Mis leads en gestion' }}
+        <p-tag severity="info" [value]="display(section() === 'plataforma' ? totalPlataforma() : totalGestion())" />
+      </span>
+    </ng-template>
+    <ng-template #subtitle>
+      {{ section() === 'plataforma' ? 'Toma leads disponibles para iniciar gestion.' : 'Gestiona, edita, tipifica y revisa historial.' }}
+    </ng-template>
+
+    <p-table
+      [value]="section() === 'plataforma' ? plataformaRows() : gestionRows()"
+      dataKey="id"
+      [loading]="isLoading()"
+      [rowHover]="true"
+      [scrollable]="true"
+      scrollHeight="flex"
+      [tableStyle]="{ 'min-width': '1120px' }"
+      styleClass="p-datatable-sm backoffice-table"
+    >
+      <ng-template #header>
+        <tr>
+          <th>Lead</th>
+          <th>Estado</th>
+          <th>Asignado</th>
+          <th>Plan</th>
+          <th>Proveedor</th>
+          <th>Precio final</th>
+          <th>Tipificacion</th>
+          <th>Ultima entrada</th>
+          <th>Asignaciones</th>
+          <th class="col-actions">Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-row>
+        <tr [class.row-new]="row.isNew">
+          <td><strong>{{ leadPhone(row) }}</strong></td>
+          <td><p-tag [severity]="estadoSeverity(row.estadoSeguimiento)" [value]="display(row.estadoSeguimiento)" /></td>
+          <td>{{ display(row.nombreAsesorAsignado) }}</td>
+          <td>{{ display(row.nombrePlanSnapshot) }}</td>
+          <td>{{ display(row.nombreProveedorSnapshot) }}</td>
+          <td>{{ money(row.precioFinal || row.precioPlanSnapshot) }}</td>
+          <td>{{ display(row.codigoTipificacion || row.codigoSubtipificacion) }}</td>
+          <td>{{ row.lastEntryAt | date: 'dd/MM HH:mm' }}</td>
+          <td><p-tag severity="secondary" [value]="display(row.totalAsignaciones ?? 0)" /></td>
+          <td>
+            @if (section() === 'plataforma') {
+              <button
+                pButton
+                type="button"
+                icon="pi pi-user-plus"
+                label="Asignarmelo"
+                size="small"
+                [disabled]="!!row.idAsesorAsignado || isSaving()"
+                [loading]="isSaving()"
+                (click)="tomarLead(row)"
+              ></button>
+            } @else {
+              <button
+                pButton
+                type="button"
+                icon="pi pi-briefcase"
+                label="Gestionar"
+                size="small"
+                [disabled]="isSaving()"
+                (click)="openDetail(row.id)"
+              ></button>
+            }
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="10">
+            @if (isLoading()) {
+              <div class="skeleton-table">
+                @for (_ of skeletonRows; track $index) {
+                  <div class="skeleton-row">
+                    <p-skeleton width="8rem" height="1.1rem" />
+                    <p-skeleton width="6rem" height="1.6rem" borderRadius="999px" />
+                    <p-skeleton width="10rem" height="1.1rem" />
+                    <p-skeleton width="12rem" height="1.1rem" />
+                    <p-skeleton width="9rem" height="1.1rem" />
+                    <p-skeleton width="6rem" height="1.1rem" />
+                    <p-skeleton width="9rem" height="1.1rem" />
+                    <p-skeleton width="8rem" height="1.1rem" />
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-state">
+                @if (section() === 'plataforma') {
+                  No hay leads disponibles en VENTA.
+                } @else {
+                  No tienes leads asignados en gestion.
+                }
+              </div>
+            }
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    <p-paginator
+      [first]="(section() === 'plataforma' ? pagePlataforma() : pageGestion()) * pageSize"
+      [rows]="pageSize"
+      [totalRecords]="section() === 'plataforma' ? totalPlataforma() : totalGestion()"
+      (onPageChange)="changePage($event.page ?? 0)"
+    />
+  </p-card>
+
+  <p-dialog
+    header="Gestion de Lead"
+    [visible]="detailDialogOpen()"
+    (visibleChange)="!$event && requestCloseDetail()"
+    [modal]="true"
+    [draggable]="false"
+    [breakpoints]="{ '1200px': '92vw', '720px': '96vw' }"
+    styleClass="backoffice-dialog"
+  >
+    @if (detail(); as lead) {
+      <section class="lead-workspace">
+        <header class="lead-head">
+          <div>
+            <span class="eyebrow">Lead {{ lead.id }}</span>
+            <h2>{{ leadPhone(lead) }}</h2>
+            <p>{{ display(lead.nombreTitular) }} - {{ display(lead.nombreCampana) }}</p>
+          </div>
+
+          <div class="lead-tags">
+            <p-tag [severity]="estadoSeverity(lead.estadoSeguimiento)" [value]="display(lead.estadoSeguimiento)" />
+            @if (hasUnsavedDataChanges()) {
+              <p-tag severity="warn" value="Datos sin guardar" />
+            }
+          </div>
+        </header>
+
+        <form class="tipification-bar" [formGroup]="tipificacionForm" (ngSubmit)="tipificar()">
+          <button
+            pButton
+            type="button"
+            icon="pi pi-phone"
+            label="Contacto"
+            severity="secondary"
+            [loading]="isSaving()"
+            (click)="registrarContacto()"
+          ></button>
+
+          <label>
+            <span>Tipificacion</span>
+            <p-select formControlName="codigoTipificacion" [options]="tipificaciones()" optionLabel="codigo" optionValue="codigo" placeholder="Seleccionar" appendTo="body">
+              <ng-template #item let-tipificacion>
+                <div class="select-item">
+                  <strong>{{ tipificacion.codigo }}</strong>
+                  <small>{{ tipificacion.descripcion }}</small>
+                </div>
+              </ng-template>
+            </p-select>
+          </label>
+
+          <label>
+            <span>Subtipificacion</span>
+            <p-select
+              formControlName="codigoSubtipificacion"
+              [options]="subtipificaciones()"
+              optionLabel="codigo"
+              optionValue="codigo"
+              placeholder="Seleccionar"
+              appendTo="body"
+              [disabled]="!selectedTipificacionCode() || !subtipificaciones().length"
+            >
+              <ng-template #item let-subtipificacion>
+                <div class="select-item">
+                  <strong>{{ subtipificacion.codigo }}</strong>
+                  <small>{{ subtipificacion.descripcion }}</small>
+                </div>
+              </ng-template>
+            </p-select>
+          </label>
+
+          @if (requiresInstallDate()) {
+            <label>
+              <span>Fecha instalacion</span>
+              <input pInputText type="date" formControlName="fechaInstalacion" />
+            </label>
+          }
+
+          <button pButton type="button" icon="pi pi-comment" [label]="showComment() ? 'Ocultar comentario' : 'Comentario'" severity="secondary" (click)="toggleComment()"></button>
+          <button pButton type="submit" icon="pi pi-check" label="Tipificar" [loading]="isSaving()"></button>
+
+          @if (showComment()) {
+            <label class="comment-field">
+              <span>Comentario opcional</span>
+              <textarea pTextarea rows="3" formControlName="comentario"></textarea>
+            </label>
+          }
+        </form>
+
+        <p-tabs [value]="activeDataTab()" (valueChange)="activeDataTab.set($any($event))">
+          <p-tablist>
+            <p-tab value="datos">Datos Preventa</p-tab>
+            <p-tab value="direccion">Direccion</p-tab>
+            <p-tab value="oferta">Oferta Comercial</p-tab>
+            <p-tab value="historial">Historial</p-tab>
+          </p-tablist>
+
+          <p-tabpanels>
+            <p-tabpanel value="datos">
+              <form class="form-grid" [formGroup]="datosForm">
+                <label><span>Documento</span><p-select formControlName="tipoDocumento" [options]="tipoDocumentoOptions" appendTo="body" /></label>
+                <label><span>Numero documento</span><input pInputText type="text" formControlName="numeroDocumentoTitularServicio" /></label>
+                <label><span>Nombre titular</span><input pInputText type="text" formControlName="nombreTitularServicio" /></label>
+                <label><span>Celular registro</span><input pInputText type="text" formControlName="celularRegistro" /></label>
+                <label><span>Celular referencia</span><input pInputText type="text" formControlName="celularReferencia" /></label>
+                <label><span>Correo</span><input pInputText type="email" formControlName="correo" /></label>
+                <label><span>Ubigeo nacimiento</span><input pInputText type="text" formControlName="ubigeoNacimiento" /></label>
+                <label><span>Madre</span><input pInputText type="text" formControlName="nombreMadre" /></label>
+                <label><span>Padre</span><input pInputText type="text" formControlName="nombrePadre" /></label>
+                <label><span>Documento titular celular</span><input pInputText type="text" formControlName="numeroDocumentoTitularCelularRegistro" /></label>
+                <label class="wide"><span>Nombre titular celular</span><input pInputText type="text" formControlName="nombreTitularCelularRegistro" /></label>
+              </form>
+            </p-tabpanel>
+
+            <p-tabpanel value="direccion">
+              <form class="form-grid" [formGroup]="direccionForm">
+                <label><span>Ubigeo domicilio</span><input pInputText type="text" formControlName="ubigeoDomicilio" /></label>
+                <label><span>Tipo domicilio</span><p-select formControlName="tipoDomicilio" [options]="tipoDomicilioOptions" appendTo="body" /></label>
+                <label><span>Tipo via</span><p-select formControlName="tipoVia" [options]="tipoViaOptions" appendTo="body" /></label>
+                <label><span>Nombre via</span><input pInputText type="text" formControlName="via" /></label>
+                <label class="wide"><span>Direccion</span><input pInputText type="text" formControlName="direccion" /></label>
+                <label><span>Latitud</span><input pInputText type="number" step="0.000001" formControlName="latitud" /></label>
+                <label><span>Longitud</span><input pInputText type="number" step="0.000001" formControlName="longitud" /></label>
+                <label class="wide"><span>Referencia</span><input pInputText type="text" formControlName="referencia" /></label>
+                <label><span>Urbanizacion</span><input pInputText type="text" formControlName="urbanizacion" /></label>
+                <label><span>Numero</span><input pInputText type="text" formControlName="numero" /></label>
+                <label><span>Manzana</span><input pInputText type="text" formControlName="manzana" /></label>
+                <label><span>Lote</span><input pInputText type="text" formControlName="lote" /></label>
+                <label><span>Edificio</span><input pInputText type="text" formControlName="nombreEdificio" /></label>
+                <label><span>Condominio</span><input pInputText type="text" formControlName="nombreCondominio" /></label>
+                <label><span>Plano</span><input pInputText type="text" formControlName="plano" /></label>
+                <label><span>Piso</span><input pInputText type="text" formControlName="piso" /></label>
+                <label><span>Interior</span><input pInputText type="text" formControlName="interior" /></label>
+              </form>
+            </p-tabpanel>
+
+            <p-tabpanel value="oferta">
+              <form class="form-grid" [formGroup]="ofertaForm">
+                <label class="wide">
+                  <span>Plan</span>
+                  <p-select formControlName="idPlan" [options]="planOptions()" optionLabel="nombre" optionValue="id" appendTo="body" (onChange)="onPlanChanged()">
+                    <ng-template #item let-plan>
+                      <div class="select-item">
+                        <strong>{{ plan.nombre }}</strong>
+                        @if (plan.id) {
+                          <small>S/ {{ display(plan.precioPromocional || plan.precio) }}</small>
+                        }
+                      </div>
+                    </ng-template>
+                  </p-select>
+                </label>
+                <label class="wide"><span>Promocion</span><p-select formControlName="idPromocionInterna" [options]="promocionOptions()" optionLabel="reglaComercial" optionValue="id" appendTo="body" /></label>
+                <label class="wide"><span>Adicionales id:cantidad</span><input pInputText type="text" formControlName="adicionales" placeholder="1:1, 2:2" /></label>
+                <div class="chips wide">
+                  @for (adicional of adicionales(); track adicional.id) {
+                    <span>{{ adicional.id }} - {{ adicional.nombre }} - S/ {{ display(adicional.precioUnitario) }}</span>
+                  } @empty {
+                    <span>Selecciona un plan para ver adicionales.</span>
+                  }
+                </div>
+              </form>
+            </p-tabpanel>
+
+            <p-tabpanel value="historial">
+              <p-table [value]="eventos()" [rowHover]="true" styleClass="p-datatable-sm event-table">
+                <ng-template #header>
+                  <tr><th>Fecha</th><th>Accion</th><th>Actor</th><th>Tipificacion</th><th>Comentario</th></tr>
+                </ng-template>
+                <ng-template #body let-evento>
+                  <tr>
+                    <td>{{ evento.createdAt | date: 'dd/MM HH:mm' }}</td>
+                    <td>{{ display(evento.accion) }}</td>
+                    <td>{{ display(evento.nombreActor) }}</td>
+                    <td>{{ display(evento.tipificacion || evento.subtipificacion) }}</td>
+                    <td>{{ display(evento.comentario || evento.fechaInstalacion) }}</td>
+                  </tr>
+                </ng-template>
+                <ng-template #emptymessage>
+                  <tr><td colspan="5">No hay eventos para este lead.</td></tr>
+                </ng-template>
+              </p-table>
+            </p-tabpanel>
+          </p-tabpanels>
+        </p-tabs>
+
+        <footer class="dialog-actions">
+          <button pButton type="button" icon="pi pi-save" label="Guardar datos" [disabled]="!hasUnsavedDataChanges()" [loading]="isSaving()" (click)="guardarCambiosLead()"></button>
+          <button pButton type="button" label="Cerrar" severity="secondary" (click)="requestCloseDetail()"></button>
+        </footer>
+      </section>
+    } @else {
+      <div class="dialog-skeleton">
+        <p-skeleton width="18rem" height="2rem" />
+        <p-skeleton width="100%" height="16rem" />
+      </div>
+    }
+  </p-dialog>
+</section>

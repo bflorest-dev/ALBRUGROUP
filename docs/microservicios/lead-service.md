@@ -161,14 +161,14 @@ Servicio responsable del flujo comercial de leads y de los catalogos operativos 
 - Permiso: `CREATE_PROMOCIONES`.
 - Body: `reglaComercial`, `idProveedor`, `idZona`, `idsPlanes`.
 - Uso frontend: crear promocion comercial interna.
-- Reglas: `idZona` obligatorio; `idProveedor` obligatorio; `idsPlanes` no puede estar vacio ni repetir planes; todos los planes deben existir, estar activos y pertenecer al mismo proveedor; no puede existir otra promocion activa con la misma regla para proveedor y zona.
+- Reglas: solo `reglaComercial` es obligatorio; `idProveedor`, `idZona` e `idsPlanes` acotan el alcance si se envian. Sin esos campos, la promocion aplica globalmente. Si se envian planes, no pueden repetirse y deben existir y estar activos. Si se envia proveedor junto con planes, todos los planes deben pertenecer a ese proveedor. No puede existir otra promocion activa con la misma regla y el mismo alcance.
 
 ## LEAD-20 listarPromociones
 
 - Metodo/ruta: `GET /promociones`
 - Permiso: `READ_PROMOCIONES`.
 - Query params: `idProveedor`, `idZona`, `idPlan` opcionales.
-- Uso frontend: consultar promociones activas filtrables.
+- Uso frontend: consultar promociones activas filtrables. Los filtros incluyen promociones globales cuyo alcance no restringe proveedor, zona o plan.
 - Cache: lectura cacheada por combinacion de filtros.
 
 ## LEAD-21 desactivarPromocion
@@ -318,7 +318,7 @@ Servicio responsable del flujo comercial de leads y de los catalogos operativos 
 - Body: `idPlan`, `idPromocionInterna`, `adicionales`.
 - `adicionales`: lista de `idAdicional`, `cantidad`.
 - Uso frontend: seleccionar plan, promocion y adicionales ofrecidos.
-- Reglas: el plan debe estar activo y vigente; no se puede seleccionar promocion sin plan; la promocion debe aplicar al plan y pertenecer al mismo proveedor.
+- Reglas: el plan debe estar activo y vigente; no se puede seleccionar promocion sin plan; la promocion debe aplicar al plan si tiene planes asociados; si tiene proveedor, debe coincidir con el proveedor del plan; si tiene zona, el ubigeo de domicilio del lead debe cumplir las inclusiones y exclusiones de la zona.
 
 ## LEAD-39 tipificarLead
 
