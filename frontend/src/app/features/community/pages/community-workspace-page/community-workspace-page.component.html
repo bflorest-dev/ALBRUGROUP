@@ -24,20 +24,28 @@
 
   <section class="metric-grid" aria-label="Resumen Community">
     <p-card styleClass="community-metric">
-      <span>Campanas activas</span>
-      <strong>{{ facade.campanasActivas().length }}</strong>
+      <div class="metric-content">
+        <span>Campañas activas</span>
+        <p-tag severity="info" [value]="display(facade.campanasActivas().length)" />
+      </div>
     </p-card>
     <p-card styleClass="community-metric">
-      <span>Planes activos</span>
-      <strong>{{ facade.planesActivos().length }}</strong>
+      <div class="metric-content">
+        <span>Planes activos</span>
+        <p-tag severity="info" [value]="display(facade.planesActivos().length)" />
+      </div>
     </p-card>
     <p-card styleClass="community-metric">
-      <span>Promociones activas</span>
-      <strong>{{ facade.promocionesActivas().length }}</strong>
+      <div class="metric-content">
+        <span>Promociones activas</span>
+        <p-tag severity="info" [value]="display(facade.promocionesActivas().length)" />
+      </div>
     </p-card>
     <p-card styleClass="community-metric">
-      <span>Zonas activas</span>
-      <strong>{{ facade.zonasActivas().length }}</strong>
+      <div class="metric-content">
+        <span>Zonas activas</span>
+        <p-tag severity="info" [value]="display(facade.zonasActivas().length)" />
+      </div>
     </p-card>
   </section>
 
@@ -80,7 +88,7 @@
                   <span>Cortes facturacion</span>
                   <div class="billing-cuts__selector">
                     <p-select formControlName="day" [options]="facade.billingDayOptions" appendTo="body" />
-                    <button pButton type="button" icon="pi pi-plus" label="Agregar corte" severity="secondary" (click)="facade.addBillingCut()"></button>
+                    <button pButton type="button" icon="pi pi-plus" label="Agregar" severity="secondary" (click)="facade.addBillingCut()"></button>
                   </div>
                   <div class="billing-cuts__chips">
                     @for (day of facade.selectedBillingCuts(); track day) {
@@ -196,7 +204,7 @@
           <section class="section-grid">
             <div class="stack">
               <p-card styleClass="community-form-card">
-                <ng-template #title>Registrar campana</ng-template>
+                <ng-template #title>Registrar campaña</ng-template>
                 <form class="form-grid" [formGroup]="facade.campaignForm" (ngSubmit)="facade.submitCampaign()">
                   <label>
                     <span>Nombre</span>
@@ -228,17 +236,17 @@
                       appendTo="body"
                     />
                   </label>
-                  <button pButton type="submit" icon="pi pi-plus" label="Registrar campana" [loading]="facade.isSaving()"></button>
+                  <button pButton type="submit" icon="pi pi-plus" label="Registrar campaña" [loading]="facade.isSaving()"></button>
                 </form>
               </p-card>
             </div>
 
             <p-card styleClass="community-table-card">
-              <ng-template #title>Campanas</ng-template>
+              <ng-template #title>Campañas</ng-template>
               <p-table [value]="facade.campanas()" [paginator]="true" [rows]="8" [rowHover]="true" styleClass="p-datatable-sm">
                 <ng-template #header>
                   <tr>
-                    <th>Campana</th>
+                    <th>Campaña</th>
                     <th>Proveedor</th>
                     <th>Cuenta</th>
                     <th>WhatsApp</th>
@@ -278,12 +286,14 @@
                           [loading]="facade.isSaving()"
                           (click)="facade.deactivateCampaign(campana.id)"
                         ></button>
+                      } @else {
+                        <span class="helper">Sin acción disponible</span>
                       }
                     </td>
                   </tr>
                 </ng-template>
                 <ng-template #emptymessage>
-                  <tr><td colspan="6">No hay campanas registradas.</td></tr>
+                  <tr><td colspan="6">No hay campañas registradas.</td></tr>
                 </ng-template>
               </p-table>
             </p-card>
@@ -683,7 +693,7 @@
             <h2>Metricas de efectividad pendientes de endpoint</h2>
             <p>
               La vista puede reservar este flujo, pero actualmente el frontend solo tiene endpoints CRUD y metricas
-              GTR diarias generales. Para efectividad por campana se necesita un endpoint nuevo por fecha/campana.
+              GTR diarias generales. Para efectividad por campaña se necesita un endpoint nuevo por fecha/campaña.
             </p>
           </div>
         </div>
@@ -702,7 +712,7 @@
   >
     <form class="form-grid" [formGroup]="facade.campaignWhatsappForm" (ngSubmit)="facade.saveCampaignWhatsapp()">
       <label class="wide">
-        <span>Campana</span>
+        <span>Campaña</span>
         <input pInputText type="text" [value]="display(facade.selectedCampaign()?.nombre)" disabled />
       </label>
       <label class="wide">
@@ -725,96 +735,103 @@
     styleClass="zone-dialog"
     (onHide)="facade.closeZoneDialog()"
   >
-    <form class="form-grid" [formGroup]="facade.zoneForm" (ngSubmit)="facade.saveZone()">
-      <label class="wide">
-        <span>Nombre</span>
-        <input pInputText type="text" formControlName="nombre" />
-      </label>
-    </form>
+    <div class="zone-dialog-grid">
+      <section class="zone-dialog-panel">
+        <form class="form-grid" [formGroup]="facade.zoneForm" (ngSubmit)="facade.saveZone()">
+          <label class="wide">
+            <span>Nombre</span>
+            <input pInputText type="text" formControlName="nombre" />
+          </label>
+        </form>
 
-    <div class="zone-rule-builder" [formGroup]="facade.zoneRuleForm">
-      <label>
-        <span>Nivel</span>
-        <p-select
-          formControlName="nivelGeografico"
-          [options]="facade.levelOptions"
-          appendTo="body"
-          (onChange)="facade.onZoneLevelChanged()"
-        />
-      </label>
-      <label>
-        <span>Departamento</span>
-        <p-select
-          formControlName="idDepartamento"
-          [options]="facade.departamentos()"
-          optionLabel="nombre"
-          optionValue="id"
-          placeholder="Seleccionar"
-          appendTo="body"
-          (onChange)="facade.onZoneDepartmentChanged()"
-        />
-      </label>
-      @if (facade.zoneRuleForm.controls.nivelGeografico.value !== 'DEPARTAMENTO') {
-        <label>
-          <span>Provincia</span>
-          <p-select
-            formControlName="idProvincia"
-            [options]="facade.provincias()"
-            optionLabel="nombre"
-            optionValue="id"
-            placeholder="Seleccionar"
-            appendTo="body"
-            (onChange)="facade.onZoneProvinceChanged()"
-          />
-        </label>
-      }
-      @if (facade.zoneRuleForm.controls.nivelGeografico.value === 'DISTRITO') {
-        <label>
-          <span>Distrito</span>
-          <p-select
-            formControlName="geoId"
-            [options]="facade.distritos()"
-            optionLabel="nombre"
-            optionValue="id"
-            placeholder="Seleccionar"
-            appendTo="body"
-          />
-        </label>
-      }
-      <div class="criterion-toggle">
-        <button
-          pButton
-          type="button"
-          label="Incluir"
-          severity="success"
-          [outlined]="facade.selectedZoneCriterion() !== 'INCLUIR'"
-          (click)="facade.setZoneCriterion('INCLUIR')"
-        ></button>
-        <button
-          pButton
-          type="button"
-          label="Excluir"
-          severity="danger"
-          [outlined]="facade.selectedZoneCriterion() !== 'EXCLUIR'"
-          (click)="facade.setZoneCriterion('EXCLUIR')"
-        ></button>
-      </div>
-      <button pButton type="button" icon="pi pi-plus" label="Agregar regla" severity="secondary" (click)="facade.addZoneRule()"></button>
-    </div>
-
-    <div class="zone-rules-list">
-      @for (rule of facade.zoneRules(); track $index) {
-        <div class="zone-rule-item">
-          <div>
-            <strong>{{ rule.label }}</strong>
-            <span>{{ rule.nivelGeografico }}</span>
+        <div class="zone-rule-builder" [formGroup]="facade.zoneRuleForm">
+          <label>
+            <span>Nivel</span>
+            <p-select
+              formControlName="nivelGeografico"
+              [options]="facade.levelOptions"
+              appendTo="body"
+              (onChange)="facade.onZoneLevelChanged()"
+            />
+          </label>
+          <label>
+            <span>Departamento</span>
+            <p-select
+              formControlName="idDepartamento"
+              [options]="facade.departamentos()"
+              optionLabel="nombre"
+              optionValue="id"
+              placeholder="Seleccionar"
+              appendTo="body"
+              (onChange)="facade.onZoneDepartmentChanged()"
+            />
+          </label>
+          @if (facade.zoneRuleForm.controls.nivelGeografico.value !== 'DEPARTAMENTO') {
+            <label>
+              <span>Provincia</span>
+              <p-select
+                formControlName="idProvincia"
+                [options]="facade.provincias()"
+                optionLabel="nombre"
+                optionValue="id"
+                placeholder="Seleccionar"
+                appendTo="body"
+                (onChange)="facade.onZoneProvinceChanged()"
+              />
+            </label>
+          }
+          @if (facade.zoneRuleForm.controls.nivelGeografico.value === 'DISTRITO') {
+            <label>
+              <span>Distrito</span>
+              <p-select
+                formControlName="geoId"
+                [options]="facade.distritos()"
+                optionLabel="nombre"
+                optionValue="id"
+                placeholder="Seleccionar"
+                appendTo="body"
+              />
+            </label>
+          }
+          <div class="criterion-toggle">
+            <button
+              pButton
+              type="button"
+              label="Incluir"
+              severity="success"
+              [class.criterion-toggle__button--active]="facade.selectedZoneCriterion() === 'INCLUIR'"
+              (click)="facade.setZoneCriterion('INCLUIR')"
+            ></button>
+            <button
+              pButton
+              type="button"
+              label="Excluir"
+              severity="danger"
+              [class.criterion-toggle__button--active]="facade.selectedZoneCriterion() === 'EXCLUIR'"
+              (click)="facade.setZoneCriterion('EXCLUIR')"
+            ></button>
           </div>
-          <p-tag [severity]="criterionSeverity(rule.criterio)" [value]="rule.criterio" />
-          <button pButton type="button" icon="pi pi-times" severity="secondary" size="small" text (click)="facade.removeZoneRule($index)"></button>
+          <button pButton type="button" icon="pi pi-plus" label="Agregar regla" severity="secondary" (click)="facade.addZoneRule()"></button>
         </div>
-      } @empty {
-        <p class="helper">Agrega al menos una regla geografica para guardar la zona.</p>
-      }
+      </section>
+
+      <section class="zone-dialog-panel">
+        <h3>Reglas configuradas</h3>
+        <div class="zone-rules-list">
+          @for (rule of facade.zoneRules(); track $index) {
+            <div class="zone-rule-item">
+              <div>
+                <strong>{{ rule.label }}</strong>
+                <span>{{ rule.nivelGeografico }}</span>
+              </div>
+              <p-tag [severity]="criterionSeverity(rule.criterio)" [value]="rule.criterio" />
+              <button pButton type="button" icon="pi pi-times" severity="secondary" size="small" text (click)="facade.removeZoneRule($index)"></button>
+            </div>
+          } @empty {
+            <p class="helper">Agrega al menos una regla geografica para guardar la zona.</p>
+          }
+        </div>
+      </section>
     </div>
 
     <div class="dialog-actions">

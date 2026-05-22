@@ -10,6 +10,7 @@
 .community-hero__actions,
 .tab-label,
 .form-actions,
+.metric-content,
 .inline-action,
 .billing-cuts__selector,
 .billing-cuts__chips,
@@ -26,6 +27,7 @@
 }
 
 .community-hero__content,
+.metric-content,
 .card-title-row,
 .zone-rule-item {
   justify-content: space-between;
@@ -69,6 +71,7 @@ p,
 .plans-layout,
 .form-grid,
 .filter-grid,
+.zone-dialog-grid,
 .zone-rule-builder {
   display: grid;
   gap: 0.85rem;
@@ -108,6 +111,11 @@ p,
   margin-top: 1rem;
 }
 
+.zone-dialog-grid {
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.9fr);
+}
+
 .wide,
 .full-row,
 .form-grid button[type='submit'] {
@@ -135,10 +143,6 @@ label,
   padding: 0.55rem;
 }
 
-.billing-cut-chip {
-  padding: 0.2rem 0.35rem 0.2rem 0.65rem;
-}
-
 .zone-rule-item div {
   display: grid;
   gap: 0.15rem;
@@ -153,6 +157,10 @@ label,
   margin-top: 1rem;
 }
 
+.criterion-toggle__button--active {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--role-accent) 24%, transparent 76%);
+}
+
 .metrics-empty {
   display: grid;
   min-height: 20rem;
@@ -161,10 +169,6 @@ label,
 
 .metrics-empty__content {
   max-width: 760px;
-}
-
-.metrics-empty__content > i {
-  font-size: 2.2rem;
 }
 
 :host ::ng-deep {
@@ -186,8 +190,7 @@ label,
   }
 
   .community-metric .p-card-body {
-    display: grid;
-    gap: 0.25rem;
+    padding-block: 0.85rem;
   }
 
   .community-workspace .p-tabpanels {
@@ -211,21 +214,8 @@ label,
     width: 100%;
   }
 
-  .compact-dialog {
-    width: min(28rem, 92vw);
-  }
-
   .zone-dialog {
-    width: min(48rem, 94vw);
-  }
-}
-
-@media (max-width: 1180px) {
-  .metric-grid,
-  .section-grid,
-  .plans-layout,
-  .form-grid--three {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: min(56rem, 94vw);
   }
 }
 
@@ -245,6 +235,7 @@ label,
   .form-grid,
   .form-grid--three,
   .filter-grid,
+  .zone-dialog-grid,
   .zone-rule-builder {
     grid-template-columns: 1fr;
   }

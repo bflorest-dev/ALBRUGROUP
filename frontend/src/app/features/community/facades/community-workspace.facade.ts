@@ -244,11 +244,11 @@ export class CommunityWorkspaceFacade {
 
   async submitCampaign(): Promise<void> {
     if (this.campaignForm.invalid) {
-      this.errorMessage.set('Completa los datos de la campana.');
+      this.errorMessage.set('Completa los datos de la campaña.');
       return;
     }
 
-    await this.saveAction(() => this.leadService.registrarCampana(this.campaignForm.getRawValue()), 'Campana registrada.', () =>
+    await this.saveAction(() => this.leadService.registrarCampana(this.campaignForm.getRawValue()), 'Campaña registrada.', () =>
       this.refreshCampaigns()
     );
   }
@@ -268,14 +268,14 @@ export class CommunityWorkspaceFacade {
   async saveCampaignWhatsapp(): Promise<void> {
     const campana = this.selectedCampaign();
     if (!campana || this.campaignWhatsappForm.invalid) {
-      this.errorMessage.set('Indica la campana y el nuevo WhatsApp.');
+      this.errorMessage.set('Indica la campaña y el nuevo WhatsApp.');
       return;
     }
 
     const raw = this.campaignWhatsappForm.getRawValue();
     await this.saveAction(
       () => this.leadService.actualizarWhatsappCampana(campana.id, raw.numeroWhatsappEmpresa),
-      'WhatsApp de campana actualizado.',
+      'WhatsApp de campaña actualizado.',
       async () => {
         await this.refreshCampaigns();
         this.closeWhatsappDialog();
@@ -284,7 +284,7 @@ export class CommunityWorkspaceFacade {
   }
 
   async deactivateCampaign(idCampana: number): Promise<void> {
-    await this.saveAction(() => this.leadService.desactivarCampana(idCampana), 'Campana desactivada.', () =>
+    await this.saveAction(() => this.leadService.desactivarCampana(idCampana), 'Campaña desactivada.', () =>
       this.refreshCampaigns()
     );
   }
