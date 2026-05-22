@@ -6,7 +6,11 @@ albruadminpe
 
 
 [RRHH]
-- Alicia Rojas | empleadoId=1001 | dni=71000001 | correo=alicia@gmail.com | username=A71000001R@albru.rrhh.pe
+
+A71000001R@albru.rrhh.pe
+alicia@gmail.com
+71000001
+$ppnKu-xYp
 
 [RECLUTADOR]
 - Bruno Salas | empleadoId=1002 | dni=71000002 | correo=bruno@gmail.com | username=B71000002S@albru.recruiter.pe

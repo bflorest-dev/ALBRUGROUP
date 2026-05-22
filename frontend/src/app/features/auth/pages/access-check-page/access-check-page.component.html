@@ -1,22 +1,28 @@
 <section class="auth-page">
-  <div class="auth-card">
-    <span class="auth-card__eyebrow">Ingreso</span>
-    <h1>Valida tu acceso</h1>
-    <p>Ingresa tu username para verificar si tu cuenta puede entrar al sistema.</p>
+  <div class="auth-glow auth-glow--primary"></div>
+  <div class="auth-glow auth-glow--secondary"></div>
+  <div class="auth-glow auth-glow--tertiary"></div>
+
+  <p-card styleClass="auth-card">
+    <div class="auth-card__header">
+      <span class="auth-card__eyebrow">Ingreso operativo</span>
+      <h1>Valida tu acceso</h1>
+      <p>Ingresa tu username para verificar si tu cuenta puede entrar al sistema.</p>
+    </div>
 
     <form [formGroup]="accessForm" (ngSubmit)="submit()" class="auth-form">
-      <label>
+      <label class="auth-field">
         <span>Username</span>
-        <input type="text" formControlName="username" placeholder="Ingresa tu username" />
+        <input pInputText type="text" formControlName="username" placeholder="Ingresa tu username" autocomplete="username" />
       </label>
 
       @if (errorMessage()) {
-        <p class="form-message form-message--error">{{ errorMessage() }}</p>
+        <p-message severity="error" [text]="errorMessage()" />
       }
 
-      <button type="submit" [disabled]="isSubmitting()">
-        {{ isSubmitting() ? 'Validando...' : 'Continuar' }}
+      <button pButton type="submit" icon="pi pi-arrow-right" iconPos="right" [loading]="isSubmitting()" [disabled]="isSubmitting()">
+        <span pButtonLabel>{{ isSubmitting() ? 'Validando...' : 'Continuar' }}</span>
       </button>
     </form>
-  </div>
+  </p-card>
 </section>

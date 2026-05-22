@@ -11,6 +11,10 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { catchError, filter, map, of, startWith, switchMap } from 'rxjs';
+import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
+import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
 import { ApiErrorResponse } from '../../../../shared/models/api/api-error-response';
 import { EstadoAccesoResponse } from '../../../../shared/models/auth/estado-acceso-response';
 import { AuthService } from '../../services/auth.service';
@@ -29,7 +33,7 @@ type AccessCheckState =
 
 @Component({
   selector: 'app-access-check-page',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, ButtonModule, CardModule, InputTextModule, MessageModule],
   templateUrl: './access-check-page.component.html',
   styleUrl: './access-check-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

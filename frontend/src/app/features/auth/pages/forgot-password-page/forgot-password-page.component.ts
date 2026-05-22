@@ -4,6 +4,10 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, filter, map, of, startWith, switchMap } from 'rxjs';
+import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
+import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
 import { ApiErrorResponse } from '../../../../shared/models/api/api-error-response';
 import { CredencialesResponse } from '../../../../shared/models/auth/credenciales-response';
 import { ForgotPasswordRequest } from '../../../../shared/models/auth/forgot-password-request';
@@ -22,7 +26,7 @@ type ForgotPasswordState =
 
 @Component({
   selector: 'app-forgot-password-page',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, ButtonModule, CardModule, InputTextModule, MessageModule],
   templateUrl: './forgot-password-page.component.html',
   styleUrl: './forgot-password-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
