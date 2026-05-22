@@ -52,9 +52,14 @@
   }
 
   <p-card styleClass="gtr-board">
-    <ng-template #title>Bandeja diaria</ng-template>
+    <ng-template #title>
+      <span class="board-title">
+        Bandeja diaria
+        <p-tag severity="info" [value]="facade.display(facade.totalElements())" />
+      </span>
+    </ng-template>
     <ng-template #subtitle>
-      {{ facade.isReconciling() ? 'Sincronizando en segundo plano' : facade.totalElements() + ' leads del dia' }}
+      {{ facade.isReconciling() ? 'Sincronizando en segundo plano' : 'Leads del dia' }}
     </ng-template>
 
     <div class="board-toolbar">
@@ -112,9 +117,16 @@
           </td>
           <td>
             <strong>{{ facade.leadPrefixLabel(row.prefijo) }} {{ row.lead }}</strong>
-            <small>ID {{ row.id }}</small>
           </td>
-          <td>{{ facade.display(row.nombreProveedorCampana) }}</td>
+          <td>
+            @if (facade.providerLogo(row.nombreProveedorCampana); as logo) {
+              <div class="provider-cell">
+                <img [src]="logo" [alt]="facade.display(row.nombreProveedorCampana)" />
+              </div>
+            } @else {
+              {{ facade.display(row.nombreProveedorCampana) }}
+            }
+          </td>
           <td>{{ facade.display(row.numeroWhatsappEmpresa) }}</td>
           <td>{{ facade.display(row.base) }}</td>
           <td>{{ facade.display(row.numeroDocumentoTitularServicio) }}</td>

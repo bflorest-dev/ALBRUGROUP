@@ -20,17 +20,17 @@ const ROLE_THEME_CLASS: Record<string, string> = {
   ADMINISTRADOR: 'theme-admin',
   RRHH: 'theme-rrhh',
   RECLUTADOR: 'theme-recruiter',
-  CAPACITADOR: 'theme-recruiter',
-  ASESOR_GTR: 'theme-admin',
-  SUPERVISOR_GTR: 'theme-admin',
-  ASESOR_VENTAS: 'theme-admin',
-  SUPERVISOR_VENTAS: 'theme-admin',
-  ASESOR_BACKOFFICE: 'theme-admin',
-  SUPERVISOR_BACKOFFICE: 'theme-admin',
-  ASESOR_POSTVENTA: 'theme-admin',
-  SUPERVISOR_POSTVENTA: 'theme-admin',
-  COMMUNITY: 'theme-admin',
-  MONITOR: 'theme-admin'
+  CAPACITADOR: 'theme-trainer',
+  ASESOR_GTR: 'theme-gtr',
+  SUPERVISOR_GTR: 'theme-gtr',
+  ASESOR_VENTAS: 'theme-sales',
+  SUPERVISOR_VENTAS: 'theme-sales',
+  ASESOR_BACKOFFICE: 'theme-backoffice',
+  SUPERVISOR_BACKOFFICE: 'theme-backoffice',
+  ASESOR_POSTVENTA: 'theme-postventa',
+  SUPERVISOR_POSTVENTA: 'theme-postventa',
+  COMMUNITY: 'theme-community',
+  MONITOR: 'theme-monitor'
 };
 
 @Component({

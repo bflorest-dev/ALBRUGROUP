@@ -7,8 +7,6 @@
 }
 
 .sidebar {
-  --layout-sidebar-bg: #0f3d31;
-  --layout-sidebar-bg-deep: #08251f;
   --layout-sidebar-text: #f8fafc;
   --layout-sidebar-muted: #b8d4ca;
   --layout-sidebar-hover: rgba(255, 255, 255, 0.11);
@@ -24,7 +22,7 @@
   overflow-y: auto;
   color: var(--layout-sidebar-text);
   background:
-    radial-gradient(circle at 15% 0%, rgba(55, 162, 111, 0.35), transparent 34%),
+    radial-gradient(circle at 15% 0%, var(--layout-sidebar-glow), transparent 34%),
     linear-gradient(180deg, var(--layout-sidebar-bg) 0%, var(--layout-sidebar-bg-deep) 100%);
 }
 
@@ -127,7 +125,7 @@
 
 .menu__item-main i {
   width: 1.1rem;
-  color: #8ee0b7;
+  color: var(--layout-sidebar-icon);
   font-size: 1rem;
 }
 

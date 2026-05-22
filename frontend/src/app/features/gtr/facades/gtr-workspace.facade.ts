@@ -443,6 +443,14 @@ export class GtrWorkspaceFacade {
     return this.display(prefijo);
   }
 
+  providerLogo(nombreProveedor?: string | null): string | null {
+    const normalized = this.display(nombreProveedor).toUpperCase();
+    if (normalized === 'WIN') {
+      return '/provider-logos/WIN.png';
+    }
+    return null;
+  }
+
   advisorDotClass(advisor: AdvisorOption): string {
     switch (advisor.disponibilidad) {
       case 'DISPONIBLE':

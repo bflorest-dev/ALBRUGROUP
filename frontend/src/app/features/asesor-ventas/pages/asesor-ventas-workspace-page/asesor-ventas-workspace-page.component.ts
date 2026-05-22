@@ -2,6 +2,18 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription, firstValueFrom } from 'rxjs';
+import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
+import { PaginatorModule } from 'primeng/paginator';
+import { SelectModule } from 'primeng/select';
+import { SkeletonModule } from 'primeng/skeleton';
+import { TableModule } from 'primeng/table';
+import { TabsModule } from 'primeng/tabs';
+import { TagModule } from 'primeng/tag';
+import { TextareaModule } from 'primeng/textarea';
 import { AttendanceFacade } from '../../../../core/facades/attendance.facade';
 import { DisponibilidadOperativa, PresenceService } from '../../../../core/services/presence.service';
 import { SessionService } from '../../../../core/services/session.service';
@@ -22,7 +34,22 @@ type VisualLeadAsesor = LeadAsesorVentasResponse & { isNew?: boolean };
 
 @Component({
   selector: 'app-asesor-ventas-workspace-page',
-  imports: [ReactiveFormsModule, DatePipe],
+  imports: [
+    ReactiveFormsModule,
+    DatePipe,
+    ButtonModule,
+    CardModule,
+    DialogModule,
+    InputTextModule,
+    MessageModule,
+    PaginatorModule,
+    SelectModule,
+    SkeletonModule,
+    TableModule,
+    TabsModule,
+    TagModule,
+    TextareaModule
+  ],
   templateUrl: './asesor-ventas-workspace-page.component.html',
   styleUrl: './asesor-ventas-workspace-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -37,7 +64,10 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   private readonly realtimeSubscription = new Subscription();
   private readonly newRowTimers = new Map<number, number>();
   private readonly saturationThreshold = 10;
+  private initialized = false;
+  private lastNotificationAt = 0;
 
+  protected readonly pageSize = 12;
   protected readonly isLoading = signal(false);
   protected readonly isReconciling = signal(false);
   protected readonly isSaving = signal(false);
@@ -55,6 +85,13 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly promociones = signal<PromocionComercialResponse[]>([]);
   protected readonly adicionales = signal<AdicionalResponse[]>([]);
   protected readonly isManagingLead = signal(false);
+  protected readonly detailDialogOpen = signal(false);
+  protected readonly activeDataTab = signal('datos');
+  protected readonly showComment = signal(false);
+  protected readonly skeletonRows = Array.from({ length: 8 });
+  protected readonly tipoDocumentoOptions = ['DNI', 'CE', 'PASAPORTE'];
+  protected readonly tipoDomicilioOptions = ['CASA', 'DEPARTAMENTO', 'NEGOCIO'];
+  protected readonly tipoViaOptions = ['CALLE', 'AVENIDA', 'JIRON'];
 
   protected readonly datosForm = this.fb.group({
     tipoDocumento: ['DNI', [Validators.required]],
@@ -110,6 +147,18 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
 
     return [...subtipificaciones].sort((left, right) => left.orden - right.orden);
   });
+  protected readonly tipificaciones = computed(() => {
+    return [...(this.catalogo()?.tipificaciones ?? [])].sort((left, right) => left.orden - right.orden);
+  });
+  protected readonly planOptions = computed(() => [{ id: 0, nombre: 'Sin plan' }, ...this.planes()]);
+  protected readonly promocionOptions = computed(() => [
+    { id: 0, reglaComercial: 'Sin promocion' },
+    ...this.promociones()
+  ]);
+  protected readonly requiresScheduledTime = computed(() => this.selectedTipificacionCode() === 'AGENDADO');
+  protected readonly hasUnsavedDataChanges = computed(
+    () => this.datosForm.dirty || this.direccionForm.dirty || this.ofertaForm.dirty
+  );
 
   constructor() {
     effect(() => {
@@ -125,6 +174,9 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       this.tipificacionForm.controls.codigoTipificacion.valueChanges.subscribe((codigo) => {
         this.selectedTipificacionCode.set(codigo);
         this.tipificacionForm.controls.codigoSubtipificacion.setValue('');
+        if (codigo !== 'AGENDADO') {
+          this.tipificacionForm.controls.horaProgramada.setValue('');
+        }
       })
     );
 
@@ -168,6 +220,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     this.clearMessages();
     try {
       await Promise.all([this.refreshPage(false), this.refreshCatalogs()]);
+      this.initialized = true;
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar la operacion de asesor.'));
     } finally {
@@ -176,6 +229,10 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected async openDetail(idLead: number): Promise<void> {
+    if (this.hasUnsavedDataChanges() && this.selectedLeadId() !== idLead) {
+      this.errorMessage.set('Guarda los datos pendientes o limpia los cambios antes de gestionar otro lead.');
+      return;
+    }
     this.selectedLeadId.set(idLead);
     this.clearMessages();
     try {
@@ -183,9 +240,28 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       this.detail.set(detail);
       this.patchForms(detail);
       await this.refreshOfferCatalogs(detail.idPlan ?? 0);
+      this.detailDialogOpen.set(true);
+      this.isManagingLead.set(true);
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo abrir el detalle.'));
     }
+  }
+
+  protected requestCloseDetail(): void {
+    if (this.hasUnsavedDataChanges()) {
+      this.errorMessage.set('Hay datos sin guardar. Guarda los cambios o limpia lo ultimo ingresado antes de cerrar.');
+      this.detailDialogOpen.set(true);
+      return;
+    }
+    this.closeDetail();
+  }
+
+  private closeDetail(): void {
+    this.detailDialogOpen.set(false);
+    this.detail.set(null);
+    this.selectedLeadId.set(null);
+    this.isManagingLead.set(false);
+    this.showComment.set(false);
   }
 
   protected async registrarLlamada(): Promise<void> {
@@ -255,10 +331,104 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     );
   }
 
+  protected async guardarCambiosLead(): Promise<void> {
+    const detail = this.detail();
+    if (!detail) {
+      return;
+    }
+
+    const tasks: { label: string; action: () => Promise<void>; form: { markAsPristine: () => void } }[] = [];
+
+    if (this.datosForm.dirty) {
+      if (this.datosForm.invalid) {
+        this.errorMessage.set('Datos Preventa esta incompleto: tipo y numero documento son obligatorios.');
+        return;
+      }
+      tasks.push({
+        label: 'Datos Preventa',
+        form: this.datosForm,
+        action: () =>
+          firstValueFrom(
+            this.preventaService.actualizarDatosPreventa(detail.id, this.cleanObject(this.datosForm.getRawValue()))
+          )
+      });
+    }
+
+    if (this.direccionForm.dirty) {
+      if (this.direccionForm.invalid) {
+        this.errorMessage.set('Direccion esta incompleta: ubigeo, direccion, latitud y longitud son obligatorios.');
+        return;
+      }
+      tasks.push({
+        label: 'Direccion',
+        form: this.direccionForm,
+        action: () =>
+          firstValueFrom(
+            this.preventaService.actualizarDireccion(detail.id, this.cleanObject(this.direccionForm.getRawValue()))
+          )
+      });
+    }
+
+    if (this.ofertaForm.dirty) {
+      const raw = this.ofertaForm.getRawValue();
+      tasks.push({
+        label: 'Oferta Comercial',
+        form: this.ofertaForm,
+        action: () =>
+          firstValueFrom(
+            this.preventaService.actualizarOfertaComercial(detail.id, {
+              idPlan: raw.idPlan || null,
+              idPromocionInterna: raw.idPromocionInterna || null,
+              adicionales: this.parseAdditionals(raw.adicionales)
+            })
+          )
+      });
+    }
+
+    if (!tasks.length) {
+      this.successMessage.set('No hay cambios pendientes por guardar.');
+      return;
+    }
+
+    this.isSaving.set(true);
+    this.clearMessages();
+    const saved: string[] = [];
+    const failed: string[] = [];
+    try {
+      for (const task of tasks) {
+        try {
+          await task.action();
+          task.form.markAsPristine();
+          saved.push(task.label);
+        } catch (error) {
+          failed.push(`${task.label}: ${this.getErrorMessage(error, 'No se pudo guardar')}`);
+        }
+      }
+
+      if (failed.length) {
+        this.errorMessage.set(`Guardado parcial. OK: ${saved.join(', ') || 'ninguno'}. Fallo: ${failed.join(' | ')}`);
+        return;
+      }
+
+      this.successMessage.set(`Guardado: ${saved.join(', ')}.`);
+      await this.reconcile(detail.id);
+    } finally {
+      this.isSaving.set(false);
+    }
+  }
+
   protected async tipificar(): Promise<void> {
+    if (this.hasUnsavedDataChanges()) {
+      this.errorMessage.set('Hay datos sin guardar. Guarda los cambios o limpia lo ultimo ingresado antes de tipificar.');
+      return;
+    }
     const detail = this.detail();
     if (!detail || this.tipificacionForm.invalid) {
       this.errorMessage.set('Selecciona tipificacion y subtipificacion.');
+      return;
+    }
+    if (this.requiresScheduledTime() && !this.tipificacionForm.controls.horaProgramada.value) {
+      this.errorMessage.set('La hora programada es obligatoria para AGENDADO.');
       return;
     }
     const raw = this.tipificacionForm.getRawValue();
@@ -267,12 +437,12 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
         this.preventaService.tipificarLead(detail.id, {
           codigoTipificacion: raw.codigoTipificacion,
           codigoSubtipificacion: raw.codigoSubtipificacion,
-          comentario: raw.comentario || null,
-          horaProgramada: raw.horaProgramada || null
+          comentario: this.showComment() ? raw.comentario || null : null,
+          horaProgramada: this.requiresScheduledTime() ? raw.horaProgramada || null : null
         }),
       'Lead tipificado.',
       async () => {
-        this.isManagingLead.set(false);
+        this.closeDetail();
         await this.reconcile(detail.id);
       }
     );
@@ -280,6 +450,14 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
 
   protected async onPlanChanged(): Promise<void> {
     await this.refreshOfferCatalogs(this.ofertaForm.controls.idPlan.value);
+  }
+
+  protected async changePage(pageNumber: number): Promise<void> {
+    if (pageNumber === this.pageNumber()) {
+      return;
+    }
+    this.pageNumber.set(pageNumber);
+    await this.refreshPage(false);
   }
 
   protected async nextPage(): Promise<void> {
@@ -305,6 +483,30 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     return String(value);
   }
 
+  protected leadPhone(row: LeadAsesorVentasResponse | LeadDetalleResponse): string {
+    return `${row.prefijo} ${row.lead}`.trim();
+  }
+
+  protected estadoSeverity(estado: string | null | undefined): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
+    if (estado === 'GESTIONADO') {
+      return 'success';
+    }
+    if (estado === 'EN_GESTION') {
+      return 'warn';
+    }
+    if (estado === 'AGENDADO') {
+      return 'info';
+    }
+    if (estado === 'NUEVO') {
+      return 'secondary';
+    }
+    return 'info';
+  }
+
+  protected toggleComment(): void {
+    this.showComment.update((value) => !value);
+  }
+
   private async reconcile(changedLeadId?: number): Promise<void> {
     if (this.isReconciling()) {
       return;
@@ -325,7 +527,9 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     try {
       const detail = await firstValueFrom(this.preventaService.obtenerDetalleAsesor(idLead));
       this.detail.set(detail);
-      this.patchForms(detail);
+      if (!this.hasUnsavedDataChanges()) {
+        this.patchForms(detail);
+      }
     } catch {
       this.detail.set(null);
       this.selectedLeadId.set(null);
@@ -414,6 +618,9 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       horaProgramada: ''
     });
     this.selectedTipificacionCode.set('');
+    this.showComment.set(false);
+    this.activeDataTab.set('datos');
+    this.markFormsPristine();
   }
 
   private mergeVisualRows(previous: VisualLeadAsesor[], incoming: LeadAsesorVentasResponse[], animateNew: boolean): VisualLeadAsesor[] {
@@ -428,6 +635,9 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       return { ...row, isNew: isNew || previousRow?.isNew };
     });
     this.scheduleNewRowReset(newIds);
+    if (animateNew && this.initialized && newIds.length) {
+      this.playAssignmentSound();
+    }
     return rows;
   }
 
@@ -442,6 +652,44 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
         this.newRowTimers.delete(id);
       }, 3500);
       this.newRowTimers.set(id, timerId);
+    }
+  }
+
+  private markFormsPristine(): void {
+    this.datosForm.markAsPristine();
+    this.direccionForm.markAsPristine();
+    this.ofertaForm.markAsPristine();
+    this.tipificacionForm.markAsPristine();
+  }
+
+  private playAssignmentSound(): void {
+    const now = Date.now();
+    if (now - this.lastNotificationAt < 1200) {
+      return;
+    }
+    this.lastNotificationAt = now;
+
+    try {
+      const AudioContextConstructor = window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextConstructor) {
+        return;
+      }
+      const context = new AudioContextConstructor();
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, context.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(660, context.currentTime + 0.16);
+      gain.gain.setValueAtTime(0.001, context.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.16, context.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.22);
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start();
+      oscillator.stop(context.currentTime + 0.24);
+      oscillator.onended = () => void context.close();
+    } catch {
+      // Algunos navegadores bloquean audio si el usuario aun no interactuo con la pagina.
     }
   }
 

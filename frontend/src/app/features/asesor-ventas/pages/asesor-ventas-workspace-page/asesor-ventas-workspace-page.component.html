@@ -1,192 +1,429 @@
 <section class="asesor-page">
-  <header class="topbar">
-    <div>
-      <p class="eyebrow">ASESOR VENTAS</p>
-      <h1>Mis leads de preventa</h1>
-      <span>{{ isReconciling() ? 'Sincronizando en segundo plano' : 'REST como fuente de verdad' }}</span>
+  <p-card styleClass="asesor-hero">
+    <div class="asesor-hero__content">
+      <div>
+        <span class="asesor-hero__eyebrow">PREVENTA</span>
+        <h1>Mis Leads Asignados</h1>
+        <p>{{ isReconciling() ? 'Sincronizando en segundo plano' : 'Bandeja operativa en tiempo real' }}</p>
+      </div>
+
+      <div class="asesor-hero__actions">
+        @if (hasUnsavedDataChanges()) {
+          <p-tag severity="warn" value="Cambios pendientes" />
+        }
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          label="Actualizar"
+          severity="secondary"
+          [loading]="isLoading()"
+          (click)="initialize()"
+        ></button>
+      </div>
     </div>
-    <button type="button" class="icon-button" title="Actualizar" [disabled]="isLoading()" (click)="initialize()">
-      <i class="ti ti-refresh"></i>
-    </button>
-  </header>
+  </p-card>
 
   @if (successMessage()) {
-    <p class="alert alert--success">{{ successMessage() }}</p>
+    <p-message severity="success" [text]="successMessage() ?? ''" />
   }
   @if (errorMessage()) {
-    <p class="alert alert--error">{{ errorMessage() }}</p>
+    <p-message severity="error" [text]="errorMessage() ?? ''" />
   }
 
-  <section class="workspace">
-    <section class="panel inbox">
-      <div class="panel-head">
-        <div>
-          <h2>Bandeja personal</h2>
-          <span>{{ totalElements() }} leads asignados</span>
-        </div>
-        <div class="pager">
-          <button type="button" class="icon-button" title="Anterior" [disabled]="pageNumber() === 0" (click)="previousPage()">
-            <i class="ti ti-chevron-left"></i>
-          </button>
-          <strong>{{ pageNumber() + 1 }} / {{ totalPages() || 1 }}</strong>
-          <button
-            type="button"
-            class="icon-button"
-            title="Siguiente"
-            [disabled]="pageNumber() + 1 >= totalPages()"
-            (click)="nextPage()"
-          >
-            <i class="ti ti-chevron-right"></i>
-          </button>
-        </div>
-      </div>
+  <p-card styleClass="asesor-board">
+    <ng-template #title>
+      <span class="board-title">
+        Bandeja personal
+        <p-tag severity="info" [value]="display(totalElements())" />
+      </span>
+    </ng-template>
+    <ng-template #subtitle>
+      {{ isReconciling() ? 'Validando cambios del realtime' : 'Leads listos para gestion' }}
+    </ng-template>
 
-      <div class="lead-list">
-        @for (row of rows(); track row.id) {
-          <button type="button" class="lead-row" [class.lead-row--active]="selectedLeadId() === row.id" [class.lead-row--new]="row.isNew" (click)="openDetail(row.id)">
-            <strong>{{ row.prefijo }} {{ row.lead }}</strong>
-            <span>{{ display(row.nombreTitular) }}</span>
-            <span class="badge">{{ display(row.estadoSeguimiento) }}</span>
-            <small>{{ row.fechaAsignacion | date: 'dd/MM HH:mm' }}</small>
-          </button>
-        } @empty {
-          <p class="empty">{{ isLoading() ? 'Cargando bandeja...' : 'No tienes leads asignados.' }}</p>
-        }
-      </div>
-    </section>
+    <p-table
+      [value]="rows()"
+      dataKey="id"
+      [loading]="isLoading()"
+      [rowHover]="true"
+      [scrollable]="true"
+      scrollHeight="flex"
+      [tableStyle]="{ 'min-width': '980px' }"
+      styleClass="p-datatable-sm asesor-table"
+    >
+      <ng-template #header>
+        <tr>
+          <th>Lead</th>
+          <th>Titular</th>
+          <th>Correo</th>
+          <th>Estado</th>
+          <th>Asignacion</th>
+          <th class="col-actions">Acciones</th>
+        </tr>
+      </ng-template>
 
-    <section class="detail">
-      @if (detail(); as lead) {
-        <section class="panel detail-head">
-          <div>
-            <p class="eyebrow">LEAD {{ lead.id }}</p>
-            <h2>{{ lead.prefijo }} {{ lead.lead }}</h2>
-            <span>{{ display(lead.nombreTitular) }} &middot; {{ display(lead.nombreCampana) }} &middot; {{ display(lead.estadoSeguimiento) }}</span>
-          </div>
-          <div class="detail-actions">
-            <button type="button" [disabled]="isSaving()" (click)="registrarLlamada()">
-              <i class="ti ti-phone-call"></i>
-              Llamar
-            </button>
-            <button type="button" [disabled]="isSaving()" (click)="registrarChat()">
-              <i class="ti ti-brand-whatsapp"></i>
-              Chat
-            </button>
-          </div>
-        </section>
+      <ng-template #body let-row>
+        <tr [class.row-new]="row.isNew">
+          <td>
+            <strong>{{ leadPhone(row) }}</strong>
+          </td>
+          <td>{{ display(row.nombreTitular) }}</td>
+          <td>{{ display(row.correo) }}</td>
+          <td>
+            <p-tag [severity]="estadoSeverity(row.estadoSeguimiento)" [value]="display(row.estadoSeguimiento)" />
+          </td>
+          <td>{{ row.fechaAsignacion | date: 'dd/MM hh:mm a' }}</td>
+          <td>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-briefcase"
+              label="Gestionar"
+              size="small"
+              [disabled]="isSaving()"
+              (click)="openDetail(row.id)"
+            ></button>
+          </td>
+        </tr>
+      </ng-template>
 
-        <section class="forms">
-          <form class="panel form-grid" [formGroup]="datosForm" (ngSubmit)="guardarDatos()">
-            <h2>Datos preventa</h2>
-            <label>
-              <span>Documento</span>
-              <select formControlName="tipoDocumento">
-                <option value="DNI">DNI</option>
-                <option value="CE">CE</option>
-                <option value="PASAPORTE">PASAPORTE</option>
-              </select>
-            </label>
-            <label><span>Numero documento</span><input type="text" formControlName="numeroDocumentoTitularServicio" /></label>
-            <label><span>Nombre titular</span><input type="text" formControlName="nombreTitularServicio" /></label>
-            <label><span>Celular registro</span><input type="text" formControlName="celularRegistro" /></label>
-            <label><span>Celular referencia</span><input type="text" formControlName="celularReferencia" /></label>
-            <label><span>Correo</span><input type="email" formControlName="correo" /></label>
-            <label><span>Ubigeo nacimiento</span><input type="text" formControlName="ubigeoNacimiento" /></label>
-            <label><span>Madre</span><input type="text" formControlName="nombreMadre" /></label>
-            <label><span>Padre</span><input type="text" formControlName="nombrePadre" /></label>
-            <button type="submit" [disabled]="isSaving()">Guardar datos</button>
-          </form>
-
-          <form class="panel form-grid" [formGroup]="direccionForm" (ngSubmit)="guardarDireccion()">
-            <h2>Direccion</h2>
-            <label><span>Ubigeo domicilio</span><input type="text" formControlName="ubigeoDomicilio" /></label>
-            <label>
-              <span>Domicilio</span>
-              <select formControlName="tipoDomicilio">
-                <option value="CASA">CASA</option>
-                <option value="DEPARTAMENTO">DEPARTAMENTO</option>
-                <option value="NEGOCIO">NEGOCIO</option>
-              </select>
-            </label>
-            <label>
-              <span>Via</span>
-              <select formControlName="tipoVia">
-                <option value="CALLE">CALLE</option>
-                <option value="AVENIDA">AVENIDA</option>
-                <option value="JIRON">JIRON</option>
-              </select>
-            </label>
-            <label><span>Nombre via</span><input type="text" formControlName="via" /></label>
-            <label class="wide"><span>Direccion</span><input type="text" formControlName="direccion" /></label>
-            <label><span>Latitud</span><input type="number" step="0.000001" formControlName="latitud" /></label>
-            <label><span>Longitud</span><input type="number" step="0.000001" formControlName="longitud" /></label>
-            <label class="wide"><span>Referencia</span><input type="text" formControlName="referencia" /></label>
-            <button type="submit" [disabled]="isSaving()">Guardar direccion</button>
-          </form>
-
-          <form class="panel form-grid" [formGroup]="ofertaForm" (ngSubmit)="guardarOferta()">
-            <h2>Oferta comercial</h2>
-            <label class="wide">
-              <span>Plan</span>
-              <select formControlName="idPlan" (change)="onPlanChanged()">
-                <option [ngValue]="0">Sin plan</option>
-                @for (plan of planes(); track plan.id) {
-                  <option [ngValue]="plan.id">{{ plan.nombre }} &middot; S/ {{ display(plan.precioPromocional || plan.precio) }}</option>
-                }
-              </select>
-            </label>
-            <label class="wide">
-              <span>Promocion</span>
-              <select formControlName="idPromocionInterna">
-                <option [ngValue]="0">Sin promocion</option>
-                @for (promocion of promociones(); track promocion.id) {
-                  <option [ngValue]="promocion.id">{{ promocion.reglaComercial }}</option>
-                }
-              </select>
-            </label>
-            <label class="wide"><span>Adicionales id:cantidad</span><input type="text" formControlName="adicionales" placeholder="1:1, 2:2" /></label>
-            <div class="chips wide">
-              @for (adicional of adicionales(); track adicional.id) {
-                <span>{{ adicional.id }} &middot; {{ adicional.nombre }} &middot; S/ {{ display(adicional.precioUnitario) }}</span>
-              } @empty {
-                <span>Selecciona un plan para ver adicionales.</span>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="6">
+            <div class="skeleton-table" aria-label="Esperando asignaciones">
+              @for (_ of skeletonRows; track $index) {
+                <div class="skeleton-row">
+                  <p-skeleton width="8rem" height="1.1rem" />
+                  <p-skeleton width="14rem" height="1.1rem" />
+                  <p-skeleton width="11rem" height="1.1rem" />
+                  <p-skeleton width="6rem" height="1.6rem" borderRadius="999px" />
+                  <p-skeleton width="8rem" height="1.1rem" />
+                  <p-skeleton width="7rem" height="2rem" borderRadius="8px" />
+                </div>
               }
             </div>
-            <button type="submit" [disabled]="isSaving()">Guardar oferta</button>
-          </form>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
 
-          <form class="panel form-grid" [formGroup]="tipificacionForm" (ngSubmit)="tipificar()">
-            <h2>Tipificacion</h2>
-            <label>
-              <span>Tipificacion</span>
-              <select formControlName="codigoTipificacion">
-                <option value="">Seleccionar</option>
-                @for (tipificacion of catalogo()?.tipificaciones ?? []; track tipificacion.codigo) {
-                  <option [value]="tipificacion.codigo">{{ tipificacion.codigo }} &middot; {{ tipificacion.descripcion }}</option>
-                }
-              </select>
+    <p-paginator
+      [first]="pageNumber() * pageSize"
+      [rows]="pageSize"
+      [totalRecords]="totalElements()"
+      (onPageChange)="changePage($event.page ?? 0)"
+    />
+  </p-card>
+
+  <p-dialog
+    header="Gestion de Lead"
+    [visible]="detailDialogOpen()"
+    (visibleChange)="!$event && requestCloseDetail()"
+    [modal]="true"
+    [draggable]="false"
+    [breakpoints]="{ '1200px': '92vw', '720px': '96vw' }"
+    styleClass="asesor-dialog"
+  >
+    @if (detail(); as lead) {
+      <section class="lead-workspace">
+        <header class="lead-workspace__head">
+          <div>
+            <span class="lead-workspace__eyebrow">Lead {{ lead.id }}</span>
+            <h2>{{ leadPhone(lead) }}</h2>
+            <p>{{ display(lead.nombreTitular) }} · {{ display(lead.nombreCampana) }}</p>
+          </div>
+
+          <div class="lead-workspace__tags">
+            <p-tag [severity]="estadoSeverity(lead.estadoSeguimiento)" [value]="display(lead.estadoSeguimiento)" />
+            @if (hasUnsavedDataChanges()) {
+              <p-tag severity="warn" value="Datos sin guardar" />
+            }
+          </div>
+        </header>
+
+        <form class="tipification-bar" [formGroup]="tipificacionForm" (ngSubmit)="tipificar()">
+          <div class="contact-actions">
+            <button
+              pButton
+              type="button"
+              icon="pi pi-phone"
+              label="Llamar"
+              severity="secondary"
+              [loading]="isSaving()"
+              (click)="registrarLlamada()"
+            ></button>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-whatsapp"
+              label="Chat"
+              severity="secondary"
+              [loading]="isSaving()"
+              (click)="registrarChat()"
+            ></button>
+          </div>
+
+          <label>
+            <span>Tipificacion</span>
+            <p-select
+              formControlName="codigoTipificacion"
+              [options]="tipificaciones()"
+              optionLabel="codigo"
+              optionValue="codigo"
+              placeholder="Seleccionar"
+              appendTo="body"
+            >
+              <ng-template #item let-tipificacion>
+                <div class="select-item">
+                  <strong>{{ tipificacion.codigo }}</strong>
+                  <small>{{ tipificacion.descripcion }}</small>
+                </div>
+              </ng-template>
+            </p-select>
+          </label>
+
+          <label>
+            <span>Subtipificacion</span>
+            <p-select
+              formControlName="codigoSubtipificacion"
+              [options]="subtipificaciones()"
+              optionLabel="codigo"
+              optionValue="codigo"
+              placeholder="Seleccionar"
+              appendTo="body"
+              [disabled]="!selectedTipificacionCode() || !subtipificaciones().length"
+            >
+              <ng-template #item let-subtipificacion>
+                <div class="select-item">
+                  <strong>{{ subtipificacion.codigo }}</strong>
+                  <small>{{ subtipificacion.descripcion }}</small>
+                </div>
+              </ng-template>
+            </p-select>
+          </label>
+
+          @if (requiresScheduledTime()) {
+            <label class="scheduled-field">
+              <span>Hora programada</span>
+              <input pInputText type="time" formControlName="horaProgramada" />
             </label>
-            <label>
-              <span>Subtipificacion</span>
-              <select formControlName="codigoSubtipificacion" [disabled]="!selectedTipificacionCode() || !subtipificaciones().length">
-                <option value="">{{ selectedTipificacionCode() ? 'Seleccionar' : 'Selecciona una tipificacion' }}</option>
-                @for (subtipificacion of subtipificaciones(); track subtipificacion.codigo) {
-                  <option [value]="subtipificacion.codigo">{{ subtipificacion.codigo }} &middot; {{ subtipificacion.descripcion }}</option>
-                }
-              </select>
+          }
+
+          <button
+            pButton
+            type="button"
+            icon="pi pi-comment"
+            [label]="showComment() ? 'Ocultar comentario' : 'Comentario'"
+            severity="secondary"
+            (click)="toggleComment()"
+          ></button>
+          <button pButton type="submit" icon="pi pi-check" label="Tipificar" [loading]="isSaving()"></button>
+
+          @if (showComment()) {
+            <label class="comment-field">
+              <span>Comentario opcional</span>
+              <textarea pTextarea rows="3" formControlName="comentario"></textarea>
             </label>
-            <label><span>Hora programada</span><input type="time" formControlName="horaProgramada" /></label>
-            <label class="wide"><span>Comentario</span><textarea rows="3" formControlName="comentario"></textarea></label>
-            <button type="submit" [disabled]="isSaving()">Tipificar lead</button>
-          </form>
-        </section>
-      } @else {
-        <section class="panel empty-detail">
-          <i class="ti ti-list-details"></i>
-          <h2>Selecciona un lead</h2>
-          <p>El detalle operativo se mantiene sincronizado si llega un evento realtime del lead abierto.</p>
-        </section>
-      }
-    </section>
-  </section>
+          }
+        </form>
+
+        <p-tabs [value]="activeDataTab()" (valueChange)="activeDataTab.set($any($event))">
+          <p-tablist>
+            <p-tab value="datos">Datos Preventa</p-tab>
+            <p-tab value="direccion">Direccion</p-tab>
+            <p-tab value="oferta">Oferta Comercial</p-tab>
+          </p-tablist>
+
+          <p-tabpanels>
+            <p-tabpanel value="datos">
+              <form class="form-grid" [formGroup]="datosForm">
+                <label>
+                  <span>Documento</span>
+                  <p-select formControlName="tipoDocumento" [options]="tipoDocumentoOptions" appendTo="body" />
+                </label>
+                <label>
+                  <span>Numero documento</span>
+                  <input pInputText type="text" formControlName="numeroDocumentoTitularServicio" />
+                </label>
+                <label>
+                  <span>Nombre titular</span>
+                  <input pInputText type="text" formControlName="nombreTitularServicio" />
+                </label>
+                <label>
+                  <span>Celular registro</span>
+                  <input pInputText type="text" formControlName="celularRegistro" />
+                </label>
+                <label>
+                  <span>Celular referencia</span>
+                  <input pInputText type="text" formControlName="celularReferencia" />
+                </label>
+                <label>
+                  <span>Correo</span>
+                  <input pInputText type="email" formControlName="correo" />
+                </label>
+                <label>
+                  <span>Ubigeo nacimiento</span>
+                  <input pInputText type="text" formControlName="ubigeoNacimiento" />
+                </label>
+                <label>
+                  <span>Madre</span>
+                  <input pInputText type="text" formControlName="nombreMadre" />
+                </label>
+                <label>
+                  <span>Padre</span>
+                  <input pInputText type="text" formControlName="nombrePadre" />
+                </label>
+                <label>
+                  <span>Documento titular celular</span>
+                  <input pInputText type="text" formControlName="numeroDocumentoTitularCelularRegistro" />
+                </label>
+                <label class="wide">
+                  <span>Nombre titular celular</span>
+                  <input pInputText type="text" formControlName="nombreTitularCelularRegistro" />
+                </label>
+              </form>
+            </p-tabpanel>
+
+            <p-tabpanel value="direccion">
+              <form class="form-grid" [formGroup]="direccionForm">
+                <label>
+                  <span>Ubigeo domicilio</span>
+                  <input pInputText type="text" formControlName="ubigeoDomicilio" />
+                </label>
+                <label>
+                  <span>Tipo domicilio</span>
+                  <p-select formControlName="tipoDomicilio" [options]="tipoDomicilioOptions" appendTo="body" />
+                </label>
+                <label>
+                  <span>Tipo via</span>
+                  <p-select formControlName="tipoVia" [options]="tipoViaOptions" appendTo="body" />
+                </label>
+                <label>
+                  <span>Nombre via</span>
+                  <input pInputText type="text" formControlName="via" />
+                </label>
+                <label class="wide">
+                  <span>Direccion</span>
+                  <input pInputText type="text" formControlName="direccion" />
+                </label>
+                <label>
+                  <span>Latitud</span>
+                  <input pInputText type="number" step="0.000001" formControlName="latitud" />
+                </label>
+                <label>
+                  <span>Longitud</span>
+                  <input pInputText type="number" step="0.000001" formControlName="longitud" />
+                </label>
+                <label class="wide">
+                  <span>Referencia</span>
+                  <input pInputText type="text" formControlName="referencia" />
+                </label>
+                <label>
+                  <span>Urbanizacion</span>
+                  <input pInputText type="text" formControlName="urbanizacion" />
+                </label>
+                <label>
+                  <span>Numero</span>
+                  <input pInputText type="text" formControlName="numero" />
+                </label>
+                <label>
+                  <span>Manzana</span>
+                  <input pInputText type="text" formControlName="manzana" />
+                </label>
+                <label>
+                  <span>Lote</span>
+                  <input pInputText type="text" formControlName="lote" />
+                </label>
+                <label>
+                  <span>Edificio</span>
+                  <input pInputText type="text" formControlName="nombreEdificio" />
+                </label>
+                <label>
+                  <span>Condominio</span>
+                  <input pInputText type="text" formControlName="nombreCondominio" />
+                </label>
+                <label>
+                  <span>Plano</span>
+                  <input pInputText type="text" formControlName="plano" />
+                </label>
+                <label>
+                  <span>Piso</span>
+                  <input pInputText type="text" formControlName="piso" />
+                </label>
+                <label>
+                  <span>Interior</span>
+                  <input pInputText type="text" formControlName="interior" />
+                </label>
+              </form>
+            </p-tabpanel>
+
+            <p-tabpanel value="oferta">
+              <form class="form-grid" [formGroup]="ofertaForm">
+                <label class="wide">
+                  <span>Plan</span>
+                  <p-select
+                    formControlName="idPlan"
+                    [options]="planOptions()"
+                    optionLabel="nombre"
+                    optionValue="id"
+                    appendTo="body"
+                    (onChange)="onPlanChanged()"
+                  >
+                    <ng-template #item let-plan>
+                      <div class="select-item">
+                        <strong>{{ plan.nombre }}</strong>
+                        @if (plan.id) {
+                          <small>S/ {{ display(plan.precioPromocional || plan.precio) }}</small>
+                        }
+                      </div>
+                    </ng-template>
+                  </p-select>
+                </label>
+                <label class="wide">
+                  <span>Promocion</span>
+                  <p-select
+                    formControlName="idPromocionInterna"
+                    [options]="promocionOptions()"
+                    optionLabel="reglaComercial"
+                    optionValue="id"
+                    appendTo="body"
+                  />
+                </label>
+                <label class="wide">
+                  <span>Adicionales id:cantidad</span>
+                  <input pInputText type="text" formControlName="adicionales" placeholder="1:1, 2:2" />
+                </label>
+                <div class="chips wide">
+                  @for (adicional of adicionales(); track adicional.id) {
+                    <span>{{ adicional.id }} · {{ adicional.nombre }} · S/ {{ display(adicional.precioUnitario) }}</span>
+                  } @empty {
+                    <span>Selecciona un plan para ver adicionales.</span>
+                  }
+                </div>
+              </form>
+            </p-tabpanel>
+          </p-tabpanels>
+        </p-tabs>
+
+        <footer class="dialog-actions">
+          <button
+            pButton
+            type="button"
+            icon="pi pi-save"
+            label="Guardar datos"
+            [disabled]="!hasUnsavedDataChanges()"
+            [loading]="isSaving()"
+            (click)="guardarCambiosLead()"
+          ></button>
+          <button pButton type="button" label="Cerrar" severity="secondary" (click)="requestCloseDetail()"></button>
+        </footer>
+      </section>
+    } @else {
+      <div class="dialog-skeleton">
+        <p-skeleton width="18rem" height="2rem" />
+        <p-skeleton width="100%" height="16rem" />
+      </div>
+    }
+  </p-dialog>
 </section>

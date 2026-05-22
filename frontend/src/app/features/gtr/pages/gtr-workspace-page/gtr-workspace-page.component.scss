@@ -119,6 +119,12 @@ td small,
   margin-bottom: 0.9rem;
 }
 
+.board-title {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
 .row-actions {
   flex-wrap: wrap;
 }
@@ -127,6 +133,22 @@ td small,
   align-items: center;
   display: inline-flex;
   gap: 0.35rem;
+}
+
+.provider-cell {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  min-width: 0;
+  width: 100%;
+}
+
+.provider-cell img {
+  border-radius: 0.35rem;
+  display: block;
+  max-height: 2.2rem;
+  max-width: 8rem;
+  object-fit: contain;
 }
 
 .col-check {

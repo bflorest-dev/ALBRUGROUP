@@ -55,6 +55,10 @@
   --role-button-bg: linear-gradient(135deg, #bd4f31 0%, #d97745 100%);
   --role-button-alt-bg: #e8eef5;
   --role-button-alt-text: #1c3f63;
+  --layout-sidebar-bg: #103528;
+  --layout-sidebar-bg-deep: #071c17;
+  --layout-sidebar-glow: rgba(61, 175, 119, 0.35);
+  --layout-sidebar-icon: #8ee0b7;
 
   font-family:
     var(--app-font-family);
@@ -82,6 +86,10 @@
   --role-button-bg: linear-gradient(135deg, #bd4f31 0%, #d97745 100%);
   --role-button-alt-bg: #e8eef5;
   --role-button-alt-text: #1c3f63;
+  --layout-sidebar-bg: #103528;
+  --layout-sidebar-bg-deep: #071c17;
+  --layout-sidebar-glow: rgba(61, 175, 119, 0.35);
+  --layout-sidebar-icon: #8ee0b7;
 }
 
 .theme-rrhh {
@@ -100,6 +108,10 @@
   --role-button-bg: linear-gradient(135deg, #1f6f55 0%, #37a26f 100%);
   --role-button-alt-bg: rgba(31, 111, 85, 0.12);
   --role-button-alt-text: #1f4d40;
+  --layout-sidebar-bg: #0f3d31;
+  --layout-sidebar-bg-deep: #08251f;
+  --layout-sidebar-glow: rgba(55, 162, 111, 0.35);
+  --layout-sidebar-icon: #8ee0b7;
 }
 
 .theme-recruiter {
@@ -118,6 +130,150 @@
   --role-button-bg: linear-gradient(135deg, #0f766e 0%, #14b8a6 100%);
   --role-button-alt-bg: rgba(15, 118, 110, 0.1);
   --role-button-alt-text: #164e4a;
+  --layout-sidebar-bg: #713f12;
+  --layout-sidebar-bg-deep: #2b1707;
+  --layout-sidebar-glow: rgba(251, 191, 36, 0.34);
+  --layout-sidebar-icon: #fde68a;
+}
+
+.theme-trainer {
+  --role-primary: #134e4a;
+  --role-secondary: #0f766e;
+  --role-accent: #14b8a6;
+  --role-accent-2: #2dd4bf;
+  --role-accent-soft: rgba(20, 184, 166, 0.12);
+  --role-panel-text: #102a2a;
+  --role-muted: #526b6b;
+  --role-hero-text: #ffffff;
+  --role-hero-muted: rgba(255, 255, 255, 0.88);
+  --role-hero-bg: linear-gradient(135deg, #134e4a 0%, #0f766e 100%);
+  --role-button-bg: linear-gradient(135deg, #0f766e 0%, #2dd4bf 100%);
+  --role-button-alt-bg: rgba(20, 184, 166, 0.12);
+  --role-button-alt-text: #134e4a;
+  --layout-sidebar-bg: #134e4a;
+  --layout-sidebar-bg-deep: #082f2e;
+  --layout-sidebar-glow: rgba(45, 212, 191, 0.32);
+  --layout-sidebar-icon: #99f6e4;
+}
+
+.theme-gtr {
+  --role-primary: #153e75;
+  --role-secondary: #2563eb;
+  --role-accent: #2563eb;
+  --role-accent-2: #60a5fa;
+  --role-accent-soft: rgba(37, 99, 235, 0.1);
+  --role-panel-text: #10233f;
+  --role-muted: #5b6f8a;
+  --role-hero-text: #ffffff;
+  --role-hero-muted: rgba(255, 255, 255, 0.88);
+  --role-hero-bg: linear-gradient(135deg, #153e75 0%, #2563eb 100%);
+  --role-button-bg: linear-gradient(135deg, #1d4ed8 0%, #60a5fa 100%);
+  --role-button-alt-bg: rgba(37, 99, 235, 0.1);
+  --role-button-alt-text: #1e3a8a;
+  --layout-sidebar-bg: #153e75;
+  --layout-sidebar-bg-deep: #0a2345;
+  --layout-sidebar-glow: rgba(96, 165, 250, 0.34);
+  --layout-sidebar-icon: #bfdbfe;
+}
+
+.theme-sales {
+  --role-primary: #7c2d12;
+  --role-secondary: #ea580c;
+  --role-accent: #f97316;
+  --role-accent-2: #fb923c;
+  --role-accent-soft: rgba(249, 115, 22, 0.12);
+  --role-panel-text: #321406;
+  --role-muted: #7a5c49;
+  --role-hero-text: #ffffff;
+  --role-hero-muted: rgba(255, 255, 255, 0.88);
+  --role-hero-bg: linear-gradient(135deg, #7c2d12 0%, #ea580c 100%);
+  --role-button-bg: linear-gradient(135deg, #ea580c 0%, #fb923c 100%);
+  --role-button-alt-bg: rgba(249, 115, 22, 0.12);
+  --role-button-alt-text: #7c2d12;
+  --layout-sidebar-bg: #7c2d12;
+  --layout-sidebar-bg-deep: #351306;
+  --layout-sidebar-glow: rgba(251, 146, 60, 0.34);
+  --layout-sidebar-icon: #fed7aa;
+}
+
+.theme-backoffice {
+  --role-primary: #3b0764;
+  --role-secondary: #7e22ce;
+  --role-accent: #9333ea;
+  --role-accent-2: #c084fc;
+  --role-accent-soft: rgba(147, 51, 234, 0.11);
+  --role-panel-text: #2d1240;
+  --role-muted: #6d5a7d;
+  --role-hero-text: #ffffff;
+  --role-hero-muted: rgba(255, 255, 255, 0.88);
+  --role-hero-bg: linear-gradient(135deg, #3b0764 0%, #7e22ce 100%);
+  --role-button-bg: linear-gradient(135deg, #7e22ce 0%, #c084fc 100%);
+  --role-button-alt-bg: rgba(147, 51, 234, 0.11);
+  --role-button-alt-text: #581c87;
+  --layout-sidebar-bg: #3b0764;
+  --layout-sidebar-bg-deep: #1f0338;
+  --layout-sidebar-glow: rgba(192, 132, 252, 0.32);
+  --layout-sidebar-icon: #e9d5ff;
+}
+
+.theme-postventa {
+  --role-primary: #164e63;
+  --role-secondary: #0891b2;
+  --role-accent: #06b6d4;
+  --role-accent-2: #67e8f9;
+  --role-accent-soft: rgba(6, 182, 212, 0.11);
+  --role-panel-text: #12313c;
+  --role-muted: #526f78;
+  --role-hero-text: #ffffff;
+  --role-hero-muted: rgba(255, 255, 255, 0.88);
+  --role-hero-bg: linear-gradient(135deg, #164e63 0%, #0891b2 100%);
+  --role-button-bg: linear-gradient(135deg, #0891b2 0%, #67e8f9 100%);
+  --role-button-alt-bg: rgba(6, 182, 212, 0.11);
+  --role-button-alt-text: #155e75;
+  --layout-sidebar-bg: #164e63;
+  --layout-sidebar-bg-deep: #082f49;
+  --layout-sidebar-glow: rgba(34, 211, 238, 0.3);
+  --layout-sidebar-icon: #a5f3fc;
+}
+
+.theme-community {
+  --role-primary: #881337;
+  --role-secondary: #e11d48;
+  --role-accent: #e11d48;
+  --role-accent-2: #fb7185;
+  --role-accent-soft: rgba(225, 29, 72, 0.11);
+  --role-panel-text: #3f0719;
+  --role-muted: #765460;
+  --role-hero-text: #ffffff;
+  --role-hero-muted: rgba(255, 255, 255, 0.88);
+  --role-hero-bg: linear-gradient(135deg, #881337 0%, #e11d48 100%);
+  --role-button-bg: linear-gradient(135deg, #be123c 0%, #fb7185 100%);
+  --role-button-alt-bg: rgba(225, 29, 72, 0.11);
+  --role-button-alt-text: #881337;
+  --layout-sidebar-bg: #881337;
+  --layout-sidebar-bg-deep: #3f0719;
+  --layout-sidebar-glow: rgba(251, 113, 133, 0.32);
+  --layout-sidebar-icon: #fecdd3;
+}
+
+.theme-monitor {
+  --role-primary: #334155;
+  --role-secondary: #64748b;
+  --role-accent: #64748b;
+  --role-accent-2: #94a3b8;
+  --role-accent-soft: rgba(100, 116, 139, 0.12);
+  --role-panel-text: #1e293b;
+  --role-muted: #64748b;
+  --role-hero-text: #ffffff;
+  --role-hero-muted: rgba(255, 255, 255, 0.88);
+  --role-hero-bg: linear-gradient(135deg, #334155 0%, #64748b 100%);
+  --role-button-bg: linear-gradient(135deg, #475569 0%, #94a3b8 100%);
+  --role-button-alt-bg: rgba(100, 116, 139, 0.12);
+  --role-button-alt-text: #334155;
+  --layout-sidebar-bg: #334155;
+  --layout-sidebar-bg-deep: #0f172a;
+  --layout-sidebar-glow: rgba(148, 163, 184, 0.28);
+  --layout-sidebar-icon: #cbd5e1;
 }
 
 [data-theme='dark'] {
