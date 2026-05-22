@@ -94,6 +94,13 @@ export class PrivateLayoutComponent {
       ];
     }
 
+    if (session.primaryRole === 'COMMUNITY') {
+      return [
+        { label: 'Mantenimiento', route: '/app/community/mantenimiento', icon: 'pi pi-database', exact: true },
+        { label: 'Metricas', route: '/app/community/metricas', icon: 'pi pi-chart-line', exact: true }
+      ];
+    }
+
     return [{ label: 'Inicio', route: session.homeRoute, icon: 'pi pi-home', exact: true }];
   });
 

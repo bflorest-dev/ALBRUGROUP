@@ -163,10 +163,25 @@ export const PLATFORM_ROUTES: Routes = [
   },
   {
     path: 'community',
+    pathMatch: 'full',
+    redirectTo: 'community/mantenimiento'
+  },
+  {
+    path: 'community/mantenimiento',
     component: CommunityWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['COMMUNITY']
+      roles: ['COMMUNITY'],
+      section: 'mantenimiento'
+    }
+  },
+  {
+    path: 'community/metricas',
+    component: CommunityWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['COMMUNITY'],
+      section: 'metricas'
     }
   },
   {

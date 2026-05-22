@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+﻿import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_CONSTANTS } from '../../../core/constants/api.constants';
@@ -62,8 +62,18 @@ export type PromocionComercialResponse = LeadEntity & {
   nombresPlanes?: string[];
 };
 
+export type NivelGeografico = 'DEPARTAMENTO' | 'PROVINCIA' | 'DISTRITO';
+export type CriterioZona = 'INCLUIR' | 'EXCLUIR';
+
+export type ZonaReglaResponse = {
+  id?: number;
+  nivelGeografico: NivelGeografico;
+  geoId: number;
+  criterio: CriterioZona;
+};
+
 export type ZonaResponse = LeadEntity & {
-  reglas?: unknown[];
+  reglas?: ZonaReglaResponse[];
 };
 
 export type ServiciosProveedorResponse = {
@@ -74,10 +84,16 @@ export type ServiciosProveedorResponse = {
   telefonos: unknown[];
 };
 
+export type UbigeoItem = {
+  id: number;
+  nombre: string;
+  codigo?: string;
+};
+
 @Injectable({ providedIn: 'root' })
 export class CommunityLeadService {
   private readonly http = inject(HttpClient);
-  private readonly leadUrl = `${API_CONSTANTS.gatewayBaseUrl}/lead`;
+  private readonly leadUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads`;
 
   registrarProveedor(request: unknown): Observable<ProveedorResponse> {
     return this.http.post<ProveedorResponse>(`${this.leadUrl}/proveedores`, request);
@@ -204,6 +220,18 @@ export class CommunityLeadService {
 
   actualizarZona(idZona: number, request: unknown): Observable<ZonaResponse> {
     return this.http.put<ZonaResponse>(`${this.leadUrl}/zonas/${idZona}`, request);
+  }
+
+  listarDepartamentos(): Observable<UbigeoItem[]> {
+    return this.http.get<UbigeoItem[]>(`${this.leadUrl}/ubigeo/departamentos`);
+  }
+
+  listarProvincias(idDepartamento: number): Observable<UbigeoItem[]> {
+    return this.http.get<UbigeoItem[]>(`${this.leadUrl}/ubigeo/departamentos/${idDepartamento}/provincias`);
+  }
+
+  listarDistritos(idProvincia: number): Observable<UbigeoItem[]> {
+    return this.http.get<UbigeoItem[]>(`${this.leadUrl}/ubigeo/provincias/${idProvincia}/distritos`);
   }
 
   private optionalActivoParam(activo?: boolean): HttpParams {

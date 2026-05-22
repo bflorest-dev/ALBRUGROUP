@@ -1,11 +1,34 @@
-import { JsonPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
-import { CommunityWorkspaceFacade } from '../../facades/community-workspace.facade';
+import { ActivatedRoute } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
+import { SelectModule } from 'primeng/select';
+import { TableModule } from 'primeng/table';
+import { TabsModule } from 'primeng/tabs';
+import { TagModule } from 'primeng/tag';
+import { TextareaModule } from 'primeng/textarea';
+import { CommunitySection, CommunityWorkspaceFacade } from '../../facades/community-workspace.facade';
 
 @Component({
   selector: 'app-community-workspace-page',
-  imports: [ReactiveFormsModule, JsonPipe],
+  imports: [
+    ReactiveFormsModule,
+    ButtonModule,
+    CardModule,
+    DialogModule,
+    InputTextModule,
+    MessageModule,
+    SelectModule,
+    TableModule,
+    TabsModule,
+    TagModule,
+    TextareaModule
+  ],
   providers: [CommunityWorkspaceFacade],
   templateUrl: './community-workspace-page.component.html',
   styleUrl: './community-workspace-page.component.scss',
@@ -13,16 +36,22 @@ import { CommunityWorkspaceFacade } from '../../facades/community-workspace.faca
 })
 export class CommunityWorkspacePageComponent implements OnInit {
   protected readonly facade = inject(CommunityWorkspaceFacade);
-  protected readonly sections = [
-    { id: 'proveedores', label: 'Proveedores' },
-    { id: 'cuentas', label: 'Cuentas' },
-    { id: 'campanas', label: 'Campanas' },
-    { id: 'planes', label: 'Planes' },
-    { id: 'promociones', label: 'Promociones' },
-    { id: 'zonas', label: 'Zonas' }
-  ] as const;
+  private readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
+  protected readonly pageMode = signal<'mantenimiento' | 'metricas'>('mantenimiento');
+  protected readonly sections: { id: CommunitySection; label: string; icon: string; disabled?: boolean }[] = [
+    { id: 'proveedores', label: 'Proveedores', icon: 'pi pi-building' },
+    { id: 'cuentas', label: 'Cuentas', icon: 'pi pi-credit-card' },
+    { id: 'campanas', label: 'Campañas', icon: 'pi pi-megaphone' },
+    { id: 'zonas', label: 'Zonas', icon: 'pi pi-map-marker' },
+    { id: 'planes', label: 'Planes', icon: 'pi pi-wifi' },
+    { id: 'promociones', label: 'Promociones', icon: 'pi pi-tags' }
+  ];
 
   ngOnInit(): void {
+    this.route.data.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data) => {
+      this.pageMode.set(data['section'] === 'metricas' ? 'metricas' : 'mantenimiento');
+    });
     void this.facade.initialize();
   }
 
@@ -32,5 +61,32 @@ export class CommunityWorkspacePageComponent implements OnInit {
     }
 
     return String(value);
+  }
+
+  protected statusLabel(active: boolean | undefined): string {
+    return active === false ? 'Inactivo' : 'Activo';
+  }
+
+  protected statusSeverity(active: boolean | undefined): 'success' | 'danger' {
+    return active === false ? 'danger' : 'success';
+  }
+
+  protected criterionSeverity(criterion: string): 'success' | 'danger' {
+    return criterion === 'INCLUIR' ? 'success' : 'danger';
+  }
+
+  protected zoneDialogTitle(): string {
+    return this.facade.zoneDialogMode() === 'edit' ? 'Editar zona' : 'Agregar zona';
+  }
+
+  protected listCount(value: unknown): number {
+    return Array.isArray(value) ? value.length : 0;
+  }
+
+  protected money(value: unknown): string {
+    if (value === null || value === undefined || value === '') {
+      return '-';
+    }
+    return `S/ ${value}`;
   }
 }
