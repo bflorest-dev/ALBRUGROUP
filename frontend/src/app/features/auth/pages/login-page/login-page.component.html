@@ -36,8 +36,16 @@
         <span pButtonLabel>Olvide mi password</span>
       </button>
 
-      <button pButton type="submit" icon="pi pi-sign-in" iconPos="right" [loading]="isSubmitting()" [disabled]="isSubmitting()">
-        <span pButtonLabel>{{ isSubmitting() ? 'Validando...' : 'Ingresar' }}</span>
+      <button
+        pButton
+        type="submit"
+        class="auth-submit"
+        icon="pi pi-sign-in"
+        iconPos="right"
+        [loading]="isSubmitting()"
+        [disabled]="isSubmitting()"
+      >
+        <span pButtonLabel>Ingresar</span>
       </button>
     </form>
   </p-card>

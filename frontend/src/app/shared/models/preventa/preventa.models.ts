@@ -21,6 +21,7 @@ export interface PageQuery {
 export interface LeadGtrResponse {
   id: number;
   createdAt: string;
+  lastEntryAt?: string | null;
   prefijo: string;
   lead: string;
   nombreCampana?: string | null;
@@ -37,7 +38,7 @@ export interface LeadGtrResponse {
   nombrePlanOfrecido?: string | null;
   nombreAsesorAsignado?: string | null;
   estadoSeguimiento?: EstadoSeguimiento | string | null;
-  reasignaciones: number;
+  totalAsignaciones: number;
 }
 
 export interface LeadAsesorVentasResponse {

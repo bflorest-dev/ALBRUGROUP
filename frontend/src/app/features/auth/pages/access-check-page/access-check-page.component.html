@@ -20,8 +20,16 @@
         <p-message severity="error" [text]="errorMessage()" />
       }
 
-      <button pButton type="submit" icon="pi pi-arrow-right" iconPos="right" [loading]="isSubmitting()" [disabled]="isSubmitting()">
-        <span pButtonLabel>{{ isSubmitting() ? 'Validando...' : 'Continuar' }}</span>
+      <button
+        pButton
+        type="submit"
+        class="auth-submit"
+        icon="pi pi-arrow-right"
+        iconPos="right"
+        [loading]="isSubmitting()"
+        [disabled]="isSubmitting()"
+      >
+        <span pButtonLabel>Continuar</span>
       </button>
     </form>
   </p-card>

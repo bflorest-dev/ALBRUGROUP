@@ -140,7 +140,7 @@
             />
           </td>
           <td>{{ facade.display(row.nombreAsesorAsignado) }}</td>
-          <td>{{ row.createdAt | date: 'hh:mm a' }}</td>
+          <td>{{ (row.lastEntryAt ?? row.createdAt) | date: 'hh:mm a' }}</td>
           <td>
             <div class="row-actions">
               <button
@@ -173,7 +173,7 @@
                 ></button>
                 <p-tag
                   severity="info"
-                  [value]="facade.display(row.reasignaciones ?? 0)"
+                  [value]="facade.display(row.totalAsignaciones ?? 0)"
                   title="Asignaciones del dia"
                 />
               </div>
@@ -264,7 +264,15 @@
       </label>
       <label>
         <span>Numero</span>
-        <input pInputText type="text" formControlName="lead" />
+        <input
+          pInputText
+          type="text"
+          formControlName="lead"
+          inputmode="numeric"
+          maxlength="9"
+          autocomplete="off"
+          (input)="facade.normalizeLeadNumber($any($event.target).value)"
+        />
       </label>
       <label class="wide">
         <span>Campana</span>

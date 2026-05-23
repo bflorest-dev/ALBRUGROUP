@@ -9,6 +9,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { PaginatorModule } from 'primeng/paginator';
 import { SelectModule } from 'primeng/select';
+import { SelectButtonModule } from 'primeng/selectbutton';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
@@ -22,15 +23,26 @@ import {
   AdicionalResponse,
   CatalogoResponse,
   LeadAsesorVentasResponse,
+  LeadDireccionRequest,
   LeadDetalleResponse,
+  LeadOfertaComercialRequest,
   PageQuery,
   PlanResponse,
-  PromocionComercialResponse
+  PromocionComercialResponse,
+  UbigeoItem
 } from '../../../../shared/models/preventa/preventa.models';
 import { LeadRealtimeService } from '../../../preventa/services/lead-realtime.service';
 import { PreventaLeadService } from '../../../preventa/services/preventa-lead.service';
 
 type VisualLeadAsesor = LeadAsesorVentasResponse & { isNew?: boolean };
+type ActiveDataTab = 'datos' | 'direccion' | 'oferta';
+type OfertaProviderOption = { id: number; nombre: string };
+type OfertaAdditionalSelection = {
+  idAdicional: number;
+  nombre: string;
+  precioUnitario?: number;
+  cantidad: number;
+};
 
 @Component({
   selector: 'app-asesor-ventas-workspace-page',
@@ -44,6 +56,7 @@ type VisualLeadAsesor = LeadAsesorVentasResponse & { isNew?: boolean };
     MessageModule,
     PaginatorModule,
     SelectModule,
+    SelectButtonModule,
     SkeletonModule,
     TableModule,
     TabsModule,
@@ -84,14 +97,19 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly planes = signal<PlanResponse[]>([]);
   protected readonly promociones = signal<PromocionComercialResponse[]>([]);
   protected readonly adicionales = signal<AdicionalResponse[]>([]);
+  protected readonly selectedOfertaProviderId = signal<number | null>(null);
+  protected readonly selectedOfertaAdditionals = signal<OfertaAdditionalSelection[]>([]);
+  protected readonly departamentos = signal<UbigeoItem[]>([]);
+  protected readonly provinciasDomicilio = signal<UbigeoItem[]>([]);
+  protected readonly distritosDomicilio = signal<UbigeoItem[]>([]);
   protected readonly isManagingLead = signal(false);
   protected readonly detailDialogOpen = signal(false);
-  protected readonly activeDataTab = signal('datos');
+  protected readonly activeDataTab = signal<ActiveDataTab>('datos');
   protected readonly showComment = signal(false);
   protected readonly skeletonRows = Array.from({ length: 8 });
   protected readonly tipoDocumentoOptions = ['DNI', 'CE', 'PASAPORTE'];
-  protected readonly tipoDomicilioOptions = ['CASA', 'DEPARTAMENTO', 'NEGOCIO'];
-  protected readonly tipoViaOptions = ['CALLE', 'AVENIDA', 'JIRON'];
+  protected readonly tipoDomicilioOptions = ['MULTIFAMILIAR', 'JURIDICA'];
+  protected readonly tipoViaOptions = ['CALLE', 'JIRON'];
 
   protected readonly datosForm = this.fb.group({
     tipoDocumento: ['DNI', [Validators.required]],
@@ -108,8 +126,11 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly direccionForm = this.fb.group({
+    idDepartamentoDomicilio: [0, [Validators.required, Validators.min(1)]],
+    idProvinciaDomicilio: [0, [Validators.required, Validators.min(1)]],
+    idDistritoDomicilio: [0, [Validators.required, Validators.min(1)]],
     ubigeoDomicilio: ['', [Validators.required]],
-    tipoDomicilio: ['CASA'],
+    tipoDomicilio: ['MULTIFAMILIAR'],
     tipoVia: ['CALLE'],
     via: [''],
     direccion: ['', [Validators.required]],
@@ -128,9 +149,9 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly ofertaForm = this.fb.group({
+    idProveedor: [0],
     idPlan: [0],
-    idPromocionInterna: [0],
-    adicionales: ['']
+    idPromocionInterna: [0]
   });
 
   protected readonly tipificacionForm = this.fb.group({
@@ -150,15 +171,45 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly tipificaciones = computed(() => {
     return [...(this.catalogo()?.tipificaciones ?? [])].sort((left, right) => left.orden - right.orden);
   });
-  protected readonly planOptions = computed(() => [{ id: 0, nombre: 'Sin plan' }, ...this.planes()]);
+  protected readonly ofertaProviderOptions = computed<OfertaProviderOption[]>(() => {
+    const providersById = new Map<number, OfertaProviderOption>();
+    for (const plan of this.planes()) {
+      if (plan.idProveedor) {
+        providersById.set(plan.idProveedor, {
+          id: plan.idProveedor,
+          nombre: plan.nombreProveedor ?? `Proveedor ${plan.idProveedor}`
+        });
+      }
+    }
+    return [...providersById.values()].sort((left, right) => left.nombre.localeCompare(right.nombre));
+  });
+  protected readonly planOptions = computed(() => {
+    const idProveedor = this.selectedOfertaProviderId();
+    const providerPlans = idProveedor ? this.planes().filter((plan) => plan.idProveedor === idProveedor) : [];
+    return [{ id: 0, nombre: 'Sin plan' }, ...providerPlans];
+  });
   protected readonly promocionOptions = computed(() => [
     { id: 0, reglaComercial: 'Sin promocion' },
     ...this.promociones()
   ]);
+  protected readonly ofertaAdditionalsTotal = computed(() =>
+    this.selectedOfertaAdditionals().reduce((total, adicional) => total + (adicional.precioUnitario ?? 0) * adicional.cantidad, 0)
+  );
   protected readonly requiresScheduledTime = computed(() => this.selectedTipificacionCode() === 'AGENDADO');
   protected readonly hasUnsavedDataChanges = computed(
     () => this.datosForm.dirty || this.direccionForm.dirty || this.ofertaForm.dirty
   );
+  protected readonly hasUnsavedModalChanges = computed(() => this.hasUnsavedDataChanges() || this.tipificacionForm.dirty);
+  protected readonly activeDataTabHasChanges = computed(() => {
+    switch (this.activeDataTab()) {
+      case 'datos':
+        return this.datosForm.dirty;
+      case 'direccion':
+        return this.direccionForm.dirty;
+      case 'oferta':
+        return this.ofertaForm.dirty;
+    }
+  });
 
   constructor() {
     effect(() => {
@@ -229,7 +280,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected async openDetail(idLead: number): Promise<void> {
-    if (this.hasUnsavedDataChanges() && this.selectedLeadId() !== idLead) {
+    if (this.hasUnsavedModalChanges() && this.selectedLeadId() !== idLead) {
       this.errorMessage.set('Guarda los datos pendientes o limpia los cambios antes de gestionar otro lead.');
       return;
     }
@@ -261,7 +312,15 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     this.detail.set(null);
     this.selectedLeadId.set(null);
     this.isManagingLead.set(false);
+    this.tipificacionForm.reset({
+      codigoTipificacion: '',
+      codigoSubtipificacion: '',
+      comentario: '',
+      horaProgramada: ''
+    });
+    this.selectedTipificacionCode.set('');
     this.showComment.set(false);
+    this.activeDataTab.set('datos');
   }
 
   protected async registrarLlamada(): Promise<void> {
@@ -282,7 +341,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       successMessage,
       async () => {
         this.isManagingLead.set(true);
-        await this.reconcile(detail.id);
+        await this.refreshPage(true);
       }
     );
   }
@@ -303,11 +362,11 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   protected async guardarDireccion(): Promise<void> {
     const detail = this.detail();
     if (!detail || this.direccionForm.invalid) {
-      this.errorMessage.set('Completa ubigeo, direccion y coordenadas.');
+      this.errorMessage.set(this.getDireccionValidationMessage());
       return;
     }
     await this.saveAction(
-      () => this.preventaService.actualizarDireccion(detail.id, this.cleanObject(this.direccionForm.getRawValue())),
+      () => this.preventaService.actualizarDireccion(detail.id, this.getDireccionRequest()),
       'Direccion actualizada.',
       () => this.reconcile(detail.id)
     );
@@ -318,14 +377,8 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     if (!detail) {
       return;
     }
-    const raw = this.ofertaForm.getRawValue();
     await this.saveAction(
-      () =>
-        this.preventaService.actualizarOfertaComercial(detail.id, {
-          idPlan: raw.idPlan || null,
-          idPromocionInterna: raw.idPromocionInterna || null,
-          adicionales: this.parseAdditionals(raw.adicionales)
-        }),
+      () => this.preventaService.actualizarOfertaComercial(detail.id, this.getOfertaRequest()),
       'Oferta comercial actualizada.',
       () => this.reconcile(detail.id)
     );
@@ -337,6 +390,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.clearMessages();
     const tasks: { label: string; action: () => Promise<void>; form: { markAsPristine: () => void } }[] = [];
 
     if (this.datosForm.dirty) {
@@ -356,7 +410,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
 
     if (this.direccionForm.dirty) {
       if (this.direccionForm.invalid) {
-        this.errorMessage.set('Direccion esta incompleta: ubigeo, direccion, latitud y longitud son obligatorios.');
+        this.errorMessage.set(this.getDireccionValidationMessage());
         return;
       }
       tasks.push({
@@ -364,24 +418,17 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
         form: this.direccionForm,
         action: () =>
           firstValueFrom(
-            this.preventaService.actualizarDireccion(detail.id, this.cleanObject(this.direccionForm.getRawValue()))
+            this.preventaService.actualizarDireccion(detail.id, this.getDireccionRequest())
           )
       });
     }
 
     if (this.ofertaForm.dirty) {
-      const raw = this.ofertaForm.getRawValue();
       tasks.push({
         label: 'Oferta Comercial',
         form: this.ofertaForm,
         action: () =>
-          firstValueFrom(
-            this.preventaService.actualizarOfertaComercial(detail.id, {
-              idPlan: raw.idPlan || null,
-              idPromocionInterna: raw.idPromocionInterna || null,
-              adicionales: this.parseAdditionals(raw.adicionales)
-            })
-          )
+          firstValueFrom(this.preventaService.actualizarOfertaComercial(detail.id, this.getOfertaRequest()))
       });
     }
 
@@ -391,7 +438,6 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     }
 
     this.isSaving.set(true);
-    this.clearMessages();
     const saved: string[] = [];
     const failed: string[] = [];
     try {
@@ -449,7 +495,124 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected async onPlanChanged(): Promise<void> {
-    await this.refreshOfferCatalogs(this.ofertaForm.controls.idPlan.value);
+    const idPlan = this.ofertaForm.controls.idPlan.value;
+    this.ofertaForm.controls.idPromocionInterna.setValue(0);
+    await this.refreshPlanPromotions(idPlan);
+  }
+
+  protected async onOfertaProviderChanged(idProveedor: number): Promise<void> {
+    this.selectedOfertaProviderId.set(idProveedor || null);
+    this.ofertaForm.patchValue({
+      idProveedor: idProveedor || 0,
+      idPlan: 0,
+      idPromocionInterna: 0
+    });
+    this.selectedOfertaAdditionals.set([]);
+    this.promociones.set([]);
+    this.adicionales.set([]);
+    this.ofertaForm.markAsDirty();
+    if (idProveedor) {
+      await this.refreshProviderAdditionals(idProveedor);
+    }
+  }
+
+  protected adicionalCantidad(idAdicional: number): number {
+    return this.selectedOfertaAdditionals().find((item) => item.idAdicional === idAdicional)?.cantidad ?? 0;
+  }
+
+  protected incrementarAdicional(adicional: AdicionalResponse): void {
+    const current = this.selectedOfertaAdditionals();
+    const existing = current.find((item) => item.idAdicional === adicional.id);
+    const updated = existing
+      ? current.map((item) =>
+          item.idAdicional === adicional.id ? { ...item, cantidad: item.cantidad + 1 } : item
+        )
+      : [
+          ...current,
+          {
+            idAdicional: adicional.id,
+            nombre: adicional.nombre,
+            precioUnitario: adicional.precioUnitario,
+            cantidad: 1
+          }
+        ];
+    this.selectedOfertaAdditionals.set(updated);
+    this.ofertaForm.markAsDirty();
+  }
+
+  protected disminuirAdicional(adicional: AdicionalResponse): void {
+    const updated = this.selectedOfertaAdditionals()
+      .map((item) => (item.idAdicional === adicional.id ? { ...item, cantidad: item.cantidad - 1 } : item))
+      .filter((item) => item.cantidad > 0);
+    this.selectedOfertaAdditionals.set(updated);
+    this.ofertaForm.markAsDirty();
+  }
+
+  protected async onDepartamentoDomicilioChanged(): Promise<void> {
+    const idDepartamento = this.direccionForm.controls.idDepartamentoDomicilio.value;
+    this.direccionForm.patchValue({
+      idProvinciaDomicilio: 0,
+      idDistritoDomicilio: 0,
+      ubigeoDomicilio: ''
+    });
+    this.provinciasDomicilio.set([]);
+    this.distritosDomicilio.set([]);
+    if (idDepartamento > 0) {
+      await this.loadProvinciasDomicilio(idDepartamento);
+    }
+  }
+
+  protected async onProvinciaDomicilioChanged(): Promise<void> {
+    const idProvincia = this.direccionForm.controls.idProvinciaDomicilio.value;
+    this.direccionForm.patchValue({
+      idDistritoDomicilio: 0,
+      ubigeoDomicilio: ''
+    });
+    this.distritosDomicilio.set([]);
+    if (idProvincia > 0) {
+      await this.loadDistritosDomicilio(idProvincia);
+    }
+  }
+
+  protected onDistritoDomicilioChanged(): void {
+    const idDistrito = this.direccionForm.controls.idDistritoDomicilio.value;
+    const distrito = this.distritosDomicilio().find((item) => item.id === idDistrito);
+    this.direccionForm.controls.ubigeoDomicilio.setValue(distrito?.codigo ?? '');
+    this.direccionForm.controls.ubigeoDomicilio.markAsDirty();
+  }
+
+  protected setActiveDataTab(value: string | number | undefined): void {
+    if (value === 'datos' || value === 'direccion' || value === 'oferta') {
+      this.activeDataTab.set(value);
+    }
+  }
+
+  protected async limpiarTabActiva(): Promise<void> {
+    const detail = this.detail();
+    if (!detail) {
+      return;
+    }
+
+    this.clearMessages();
+    switch (this.activeDataTab()) {
+      case 'datos':
+        this.patchDatosForm(detail);
+        this.datosForm.markAsPristine();
+        this.successMessage.set('Cambios de Datos Preventa limpiados.');
+        return;
+      case 'direccion':
+        this.patchDireccionForm(detail);
+        this.direccionForm.markAsPristine();
+        void this.resolveDomicilioSelection(detail.ubigeoDomicilio ?? null);
+        this.successMessage.set('Cambios de Direccion limpiados.');
+        return;
+      case 'oferta':
+        this.patchOfertaForm(detail);
+        this.ofertaForm.markAsPristine();
+        await this.refreshOfferCatalogs(detail.idPlan ?? 0);
+        this.successMessage.set('Cambios de Oferta Comercial limpiados.');
+        return;
+    }
   }
 
   protected async changePage(pageNumber: number): Promise<void> {
@@ -527,7 +690,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     try {
       const detail = await firstValueFrom(this.preventaService.obtenerDetalleAsesor(idLead));
       this.detail.set(detail);
-      if (!this.hasUnsavedDataChanges()) {
+      if (!this.hasUnsavedModalChanges()) {
         this.patchForms(detail);
       }
     } catch {
@@ -545,23 +708,41 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private async refreshCatalogs(): Promise<void> {
-    const [catalogo, planes] = await Promise.all([
+    const [catalogo, planes, departamentos] = await Promise.all([
       firstValueFrom(this.preventaService.getCatalogoTipificaciones('PREVENTA')),
-      firstValueFrom(this.preventaService.listarPlanes(undefined, true))
+      firstValueFrom(this.preventaService.listarPlanes(undefined, true)),
+      firstValueFrom(this.preventaService.listarDepartamentos())
     ]);
     this.catalogo.set(catalogo);
     this.planes.set(planes);
+    this.departamentos.set(departamentos);
   }
 
   private async refreshOfferCatalogs(idPlan: number): Promise<void> {
     const plan = this.planes().find((item) => item.id === idPlan);
-    const idProveedor = plan?.idProveedor;
+    const idProveedor = plan?.idProveedor ?? null;
+    this.selectedOfertaProviderId.set(idProveedor);
+    this.ofertaForm.controls.idProveedor.setValue(idProveedor ?? 0);
     const [promociones, adicionales] = await Promise.all([
       firstValueFrom(this.preventaService.listarPromociones(idPlan ? { idPlan } : {})),
       idProveedor ? firstValueFrom(this.preventaService.listarAdicionales(idProveedor)) : Promise.resolve([])
     ]);
     this.promociones.set(promociones);
     this.adicionales.set(adicionales);
+  }
+
+  private async refreshPlanPromotions(idPlan: number): Promise<void> {
+    const idProveedor = this.selectedOfertaProviderId() ?? undefined;
+    this.promociones.set(
+      await firstValueFrom(this.preventaService.listarPromociones({
+        idProveedor,
+        ...(idPlan ? { idPlan } : {})
+      }))
+    );
+  }
+
+  private async refreshProviderAdditionals(idProveedor: number): Promise<void> {
+    this.adicionales.set(await firstValueFrom(this.preventaService.listarAdicionales(idProveedor)));
   }
 
   private currentQuery(): PageQuery {
@@ -574,6 +755,22 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private patchForms(detail: LeadDetalleResponse): void {
+    this.patchDatosForm(detail);
+    this.patchDireccionForm(detail);
+    this.patchOfertaForm(detail);
+    this.tipificacionForm.reset({
+      codigoTipificacion: '',
+      codigoSubtipificacion: '',
+      comentario: '',
+      horaProgramada: ''
+    });
+    this.selectedTipificacionCode.set('');
+    this.showComment.set(false);
+    this.activeDataTab.set('datos');
+    this.markFormsPristine();
+  }
+
+  private patchDatosForm(detail: LeadDetalleResponse): void {
     this.datosForm.patchValue({
       tipoDocumento: detail.tipoDocumento ?? 'DNI',
       numeroDocumentoTitularServicio: detail.numeroDocumentoTitularServicio ?? '',
@@ -587,9 +784,15 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       numeroDocumentoTitularCelularRegistro: detail.numeroDocumentoTitularCelularRegistro ?? '',
       nombreTitularCelularRegistro: detail.nombreTitularCelularRegistro ?? ''
     });
+  }
+
+  private patchDireccionForm(detail: LeadDetalleResponse): void {
     this.direccionForm.patchValue({
+      idDepartamentoDomicilio: 0,
+      idProvinciaDomicilio: 0,
+      idDistritoDomicilio: 0,
       ubigeoDomicilio: detail.ubigeoDomicilio ?? '',
-      tipoDomicilio: detail.tipoDomicilio ?? 'CASA',
+      tipoDomicilio: detail.tipoDomicilio ?? 'MULTIFAMILIAR',
       tipoVia: detail.tipoVia ?? 'CALLE',
       via: detail.via ?? '',
       direccion: detail.direccion ?? '',
@@ -606,21 +809,19 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       piso: detail.piso ?? '',
       interior: detail.interior ?? ''
     });
+    void this.resolveDomicilioSelection(detail.ubigeoDomicilio ?? null);
+  }
+
+  private patchOfertaForm(detail: LeadDetalleResponse): void {
+    const idPlan = detail.idPlan ?? 0;
+    const idProveedor = this.planes().find((plan) => plan.id === idPlan)?.idProveedor ?? null;
+    this.selectedOfertaProviderId.set(idProveedor);
+    this.selectedOfertaAdditionals.set([]);
     this.ofertaForm.patchValue({
-      idPlan: detail.idPlan ?? 0,
-      idPromocionInterna: detail.idPromocionInterna ?? 0,
-      adicionales: ''
+      idProveedor: idProveedor ?? 0,
+      idPlan,
+      idPromocionInterna: detail.idPromocionInterna ?? 0
     });
-    this.tipificacionForm.reset({
-      codigoTipificacion: '',
-      codigoSubtipificacion: '',
-      comentario: '',
-      horaProgramada: ''
-    });
-    this.selectedTipificacionCode.set('');
-    this.showComment.set(false);
-    this.activeDataTab.set('datos');
-    this.markFormsPristine();
   }
 
   private mergeVisualRows(previous: VisualLeadAsesor[], incoming: LeadAsesorVentasResponse[], animateNew: boolean): VisualLeadAsesor[] {
@@ -746,25 +947,132 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     return status === 'ALMUERZO' || status === 'SERVICIOS' || status === 'CAPACITACION';
   }
 
-  private parseAdditionals(value: string): { idAdicional: number; cantidad: number }[] | null {
-    const additionals = value
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean)
-      .map((item) => {
-        const [idAdicional, cantidad = '1'] = item.split(':');
-        return {
-          idAdicional: Number(idAdicional),
-          cantidad: Number(cantidad)
-        };
-      })
-      .filter((item) => Number.isFinite(item.idAdicional) && item.idAdicional > 0 && Number.isFinite(item.cantidad) && item.cantidad > 0);
-
-    return additionals.length ? additionals : null;
-  }
-
   private cleanObject<T extends Record<string, unknown>>(value: T): T {
     return Object.fromEntries(Object.entries(value).map(([key, entryValue]) => [key, entryValue === '' ? null : entryValue])) as T;
+  }
+
+  private getOfertaRequest(): LeadOfertaComercialRequest {
+    const raw = this.ofertaForm.getRawValue();
+    const adicionales = this.selectedOfertaAdditionals()
+      .filter((item) => item.cantidad > 0)
+      .map((item) => ({
+        idAdicional: item.idAdicional,
+        cantidad: item.cantidad
+      }));
+
+    return {
+      idPlan: raw.idPlan || null,
+      idPromocionInterna: raw.idPromocionInterna || null,
+      adicionales: adicionales.length ? adicionales : null
+    };
+  }
+
+  private getDireccionRequest(): LeadDireccionRequest {
+    const raw = this.direccionForm.getRawValue();
+    return this.cleanObject({
+      ubigeoDomicilio: raw.ubigeoDomicilio,
+      tipoDomicilio: raw.tipoDomicilio,
+      tipoVia: raw.tipoVia,
+      via: raw.via,
+      direccion: raw.direccion,
+      referencia: raw.referencia,
+      latitud: raw.latitud,
+      longitud: raw.longitud,
+      urbanizacion: raw.urbanizacion,
+      numero: raw.numero,
+      manzana: raw.manzana,
+      lote: raw.lote,
+      nombreEdificio: raw.nombreEdificio,
+      nombreCondominio: raw.nombreCondominio,
+      plano: raw.plano,
+      piso: raw.piso,
+      interior: raw.interior
+    });
+  }
+
+  private getDireccionValidationMessage(): string {
+    const missing: string[] = [];
+    if (this.direccionForm.controls.idDepartamentoDomicilio.invalid) {
+      missing.push('departamento');
+    }
+    if (this.direccionForm.controls.idProvinciaDomicilio.invalid) {
+      missing.push('provincia');
+    }
+    if (this.direccionForm.controls.idDistritoDomicilio.invalid) {
+      missing.push('distrito');
+    }
+    if (this.direccionForm.controls.direccion.invalid) {
+      missing.push('direccion');
+    }
+    if (this.direccionForm.controls.latitud.invalid) {
+      missing.push('latitud');
+    }
+    if (this.direccionForm.controls.longitud.invalid) {
+      missing.push('longitud');
+    }
+    return missing.length ? `Direccion incompleta. Revisa: ${missing.join(', ')}.` : 'Direccion incompleta.';
+  }
+
+  private async resolveDomicilioSelection(ubigeoDomicilio: string | null): Promise<void> {
+    if (!ubigeoDomicilio) {
+      this.provinciasDomicilio.set([]);
+      this.distritosDomicilio.set([]);
+      this.direccionForm.patchValue({
+        idDepartamentoDomicilio: 0,
+        idProvinciaDomicilio: 0,
+        idDistritoDomicilio: 0
+      });
+      this.direccionForm.markAsPristine();
+      return;
+    }
+
+    try {
+      const departamentos = this.departamentos().length
+        ? this.departamentos()
+        : await firstValueFrom(this.preventaService.listarDepartamentos());
+      if (!this.departamentos().length) {
+        this.departamentos.set(departamentos);
+      }
+
+      for (const departamento of departamentos) {
+        const provincias = await firstValueFrom(this.preventaService.listarProvincias(departamento.id));
+        for (const provincia of provincias) {
+          const distritos = await firstValueFrom(this.preventaService.listarDistritos(provincia.id));
+          const distrito = distritos.find((item) => item.codigo === ubigeoDomicilio);
+          if (distrito) {
+            this.provinciasDomicilio.set(provincias);
+            this.distritosDomicilio.set(distritos);
+            this.direccionForm.patchValue({
+              idDepartamentoDomicilio: departamento.id,
+              idProvinciaDomicilio: provincia.id,
+              idDistritoDomicilio: distrito.id,
+              ubigeoDomicilio
+            });
+            this.direccionForm.markAsPristine();
+            return;
+          }
+        }
+      }
+    } catch {
+      this.provinciasDomicilio.set([]);
+      this.distritosDomicilio.set([]);
+    }
+  }
+
+  private async loadProvinciasDomicilio(idDepartamento: number): Promise<void> {
+    try {
+      this.provinciasDomicilio.set(await firstValueFrom(this.preventaService.listarProvincias(idDepartamento)));
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudieron cargar las provincias.'));
+    }
+  }
+
+  private async loadDistritosDomicilio(idProvincia: number): Promise<void> {
+    try {
+      this.distritosDomicilio.set(await firstValueFrom(this.preventaService.listarDistritos(idProvincia)));
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudieron cargar los distritos.'));
+    }
   }
 
   private clearMessages(): void {
@@ -774,8 +1082,20 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
 
   private getErrorMessage(error: unknown, fallback: string): string {
     if (typeof error === 'object' && error !== null && 'error' in error) {
-      const responseError = (error as { error?: { message?: string; error?: string } }).error;
-      return responseError?.message ?? responseError?.error ?? fallback;
+      const responseError = (error as { error?: { message?: unknown; details?: unknown } }).error;
+      if (
+        typeof responseError === 'object' &&
+        responseError !== null &&
+        'message' in responseError &&
+        typeof responseError.message === 'string' &&
+        responseError.message.trim()
+      ) {
+        const details = 'details' in responseError ? responseError.details : null;
+        if (Array.isArray(details) && details.length) {
+          return `${responseError.message}: ${details.map((item) => String(item)).join(', ')}`;
+        }
+        return responseError.message;
+      }
     }
     return fallback;
   }

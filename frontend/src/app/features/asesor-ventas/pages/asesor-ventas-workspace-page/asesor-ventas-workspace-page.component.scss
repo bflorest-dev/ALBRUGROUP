@@ -150,20 +150,36 @@ label {
   color: #64748b;
 }
 
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
+.offer-additionals,
+.offer-additionals__list {
+  display: grid;
+  gap: 0.6rem;
 }
 
-.chips span {
-  background: #edf7f3;
-  border: 1px solid #cbe5d9;
-  border-radius: 999px;
-  color: #285143;
-  font-size: 0.78rem;
+.offer-additionals {
+  border: 1px solid #dce8e3;
+  border-radius: 12px;
+  padding: 0.75rem;
+}
+
+.offer-additionals__head,
+.offer-additional-item,
+.quantity-control {
+  align-items: center;
+  display: flex;
+  gap: 0.6rem;
+  justify-content: space-between;
+}
+
+.offer-additionals__head,
+.quantity-control span {
+  color: #425466;
   font-weight: 800;
-  padding: 0.4rem 0.65rem;
+}
+
+.quantity-control span {
+  min-width: 2rem;
+  text-align: center;
 }
 
 .dialog-actions {
@@ -216,9 +232,23 @@ label {
 
   .tipification-bar .p-select,
   .form-grid .p-select,
+  .form-grid .p-selectbutton,
   .form-grid .p-inputtext,
   .form-grid .p-textarea,
   .comment-field .p-textarea {
+    width: 100%;
+  }
+
+  .scope-select .p-togglebutton {
+    background: transparent;
+    border: 0;
+    flex: 1;
+    padding: 0;
+  }
+
+  .scope-select .p-togglebutton-content {
+    background: transparent;
+    padding: 0;
     width: 100%;
   }
 
@@ -247,10 +277,12 @@ label {
   }
 
   .contact-actions,
+  .offer-additional-item,
   .comment-field,
   .wide {
     grid-column: 1 / -1;
   }
+
 }
 
 @media (max-width: 720px) {

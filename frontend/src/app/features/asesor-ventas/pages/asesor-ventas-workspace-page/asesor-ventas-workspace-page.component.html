@@ -24,10 +24,10 @@
     </div>
   </p-card>
 
-  @if (successMessage()) {
+  @if (!detailDialogOpen() && successMessage()) {
     <p-message severity="success" [text]="successMessage() ?? ''" />
   }
-  @if (errorMessage()) {
+  @if (!detailDialogOpen() && errorMessage()) {
     <p-message severity="error" [text]="errorMessage() ?? ''" />
   }
 
@@ -136,11 +136,18 @@
 
           <div class="lead-workspace__tags">
             <p-tag [severity]="estadoSeverity(lead.estadoSeguimiento)" [value]="display(lead.estadoSeguimiento)" />
-            @if (hasUnsavedDataChanges()) {
-              <p-tag severity="warn" value="Datos sin guardar" />
+            @if (hasUnsavedModalChanges()) {
+              <p-tag severity="warn" value="Cambios sin guardar" />
             }
           </div>
         </header>
+
+        @if (successMessage()) {
+          <p-message severity="success" [text]="successMessage() ?? ''" />
+        }
+        @if (errorMessage()) {
+          <p-message severity="error" [text]="errorMessage() ?? ''" />
+        }
 
         <form class="tipification-bar" [formGroup]="tipificacionForm" (ngSubmit)="tipificar()">
           <div class="contact-actions">
@@ -228,7 +235,7 @@
           }
         </form>
 
-        <p-tabs [value]="activeDataTab()" (valueChange)="activeDataTab.set($any($event))">
+        <p-tabs [value]="activeDataTab()" (valueChange)="setActiveDataTab($event)">
           <p-tablist>
             <p-tab value="datos">Datos Preventa</p-tab>
             <p-tab value="direccion">Direccion</p-tab>
@@ -288,8 +295,42 @@
             <p-tabpanel value="direccion">
               <form class="form-grid" [formGroup]="direccionForm">
                 <label>
-                  <span>Ubigeo domicilio</span>
-                  <input pInputText type="text" formControlName="ubigeoDomicilio" />
+                  <span>Departamento</span>
+                  <p-select
+                    formControlName="idDepartamentoDomicilio"
+                    [options]="departamentos()"
+                    optionLabel="nombre"
+                    optionValue="id"
+                    placeholder="Seleccionar"
+                    appendTo="body"
+                    (onChange)="onDepartamentoDomicilioChanged()"
+                  />
+                </label>
+                <label>
+                  <span>Provincia</span>
+                  <p-select
+                    formControlName="idProvinciaDomicilio"
+                    [options]="provinciasDomicilio()"
+                    optionLabel="nombre"
+                    optionValue="id"
+                    placeholder="Seleccionar"
+                    appendTo="body"
+                    [disabled]="!provinciasDomicilio().length"
+                    (onChange)="onProvinciaDomicilioChanged()"
+                  />
+                </label>
+                <label>
+                  <span>Distrito</span>
+                  <p-select
+                    formControlName="idDistritoDomicilio"
+                    [options]="distritosDomicilio()"
+                    optionLabel="nombre"
+                    optionValue="id"
+                    placeholder="Seleccionar"
+                    appendTo="body"
+                    [disabled]="!distritosDomicilio().length"
+                    (onChange)="onDistritoDomicilioChanged()"
+                  />
                 </label>
                 <label>
                   <span>Tipo domicilio</span>
@@ -360,6 +401,34 @@
 
             <p-tabpanel value="oferta">
               <form class="form-grid" [formGroup]="ofertaForm">
+                <div class="offer-provider wide">
+                  <label>
+                    <span>Proveedor</span>
+                    @if (ofertaProviderOptions().length) {
+                      <p-selectbutton
+                        formControlName="idProveedor"
+                        [options]="ofertaProviderOptions()"
+                        optionLabel="nombre"
+                        optionValue="id"
+                        [allowEmpty]="false"
+                        styleClass="scope-select offer-provider-select"
+                        (onChange)="onOfertaProviderChanged($any($event.value))"
+                      >
+                        <ng-template #item let-proveedor>
+                          <p-tag
+                            [severity]="selectedOfertaProviderId() === proveedor.id ? 'info' : 'secondary'"
+                            [value]="proveedor.nombre"
+                            icon="pi pi-building"
+                            [rounded]="true"
+                          />
+                        </ng-template>
+                      </p-selectbutton>
+                    } @else {
+                      <p class="helper">No hay proveedores con planes vigentes.</p>
+                    }
+                  </label>
+                </div>
+
                 <label class="wide">
                   <span>Plan</span>
                   <p-select
@@ -367,7 +436,9 @@
                     [options]="planOptions()"
                     optionLabel="nombre"
                     optionValue="id"
+                    placeholder="Seleccionar plan"
                     appendTo="body"
+                    [disabled]="!selectedOfertaProviderId()"
                     (onChange)="onPlanChanged()"
                   >
                     <ng-template #item let-plan>
@@ -390,16 +461,46 @@
                     appendTo="body"
                   />
                 </label>
-                <label class="wide">
-                  <span>Adicionales id:cantidad</span>
-                  <input pInputText type="text" formControlName="adicionales" placeholder="1:1, 2:2" />
-                </label>
-                <div class="chips wide">
-                  @for (adicional of adicionales(); track adicional.id) {
-                    <span>{{ adicional.id }} · {{ adicional.nombre }} · S/ {{ display(adicional.precioUnitario) }}</span>
-                  } @empty {
-                    <span>Selecciona un plan para ver adicionales.</span>
-                  }
+                <div class="offer-additionals wide">
+                  <div class="offer-additionals__head">
+                    <span>Adicionales</span>
+                    @if (selectedOfertaAdditionals().length) {
+                      <p-tag severity="info" [value]="'S/ ' + display(ofertaAdditionalsTotal())" />
+                    }
+                  </div>
+
+                  <div class="offer-additionals__list">
+                    @for (adicional of adicionales(); track adicional.id) {
+                      <article class="offer-additional-item">
+                        <div>
+                          <strong>{{ adicional.nombre }}</strong>
+                          <small>S/ {{ display(adicional.precioUnitario) }}</small>
+                        </div>
+
+                        <div class="quantity-control" [attr.aria-label]="'Cantidad de ' + adicional.nombre">
+                          <button
+                            pButton
+                            type="button"
+                            icon="pi pi-minus"
+                            severity="secondary"
+                            size="small"
+                            [disabled]="adicionalCantidad(adicional.id) === 0"
+                            (click)="disminuirAdicional(adicional)"
+                          ></button>
+                          <span>{{ adicionalCantidad(adicional.id) }}</span>
+                          <button
+                            pButton
+                            type="button"
+                            icon="pi pi-plus"
+                            size="small"
+                            (click)="incrementarAdicional(adicional)"
+                          ></button>
+                        </div>
+                      </article>
+                    } @empty {
+                      <p class="helper">Selecciona un proveedor para ver sus adicionales disponibles.</p>
+                    }
+                  </div>
                 </div>
               </form>
             </p-tabpanel>
@@ -410,9 +511,19 @@
           <button
             pButton
             type="button"
+            icon="pi pi-eraser"
+            label="Limpiar tab"
+            severity="secondary"
+            [disabled]="!activeDataTabHasChanges() || isSaving()"
+            title="Limpiar cambios de la tab actual"
+            (click)="limpiarTabActiva()"
+          ></button>
+          <button
+            pButton
+            type="button"
             icon="pi pi-save"
             label="Guardar datos"
-            [disabled]="!hasUnsavedDataChanges()"
+            [disabled]="isSaving()"
             [loading]="isSaving()"
             (click)="guardarCambiosLead()"
           ></button>

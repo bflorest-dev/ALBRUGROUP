@@ -82,7 +82,7 @@ export class GtrWorkspaceFacade {
 
   readonly intakeForm = this.fb.group({
     prefijo: ['+51', [Validators.required, Validators.pattern(/^\+\d{2,3}$/)]],
-    lead: ['', [Validators.required, Validators.pattern(/^\d{6,15}$/)]],
+    lead: ['', [Validators.required, Validators.pattern(/^\d{9}$/)]],
     idCampana: [0, [Validators.required, Validators.min(1)]],
     base: ['WHATSAPP', [Validators.required]]
   });
@@ -161,7 +161,7 @@ export class GtrWorkspaceFacade {
 
   async submitIntake(): Promise<void> {
     if (this.intakeForm.invalid) {
-      this.errorMessage.set('Completa prefijo, numero, campana y base.');
+      this.errorMessage.set('Completa prefijo, numero de 9 digitos, campana y base.');
       return;
     }
 
@@ -190,6 +190,13 @@ export class GtrWorkspaceFacade {
 
   openNewLead(): void {
     this.activeDialog.set('lead');
+  }
+
+  normalizeLeadNumber(value: string): void {
+    const normalized = value.replace(/\D/g, '').slice(0, 9);
+    if (this.intakeForm.controls.lead.value !== normalized) {
+      this.intakeForm.controls.lead.setValue(normalized);
+    }
   }
 
   openSnapshot(row: LeadGtrResponse): void {

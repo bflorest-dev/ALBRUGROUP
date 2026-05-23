@@ -163,6 +163,25 @@ p {
     background: linear-gradient(135deg, #bd4f31 0%, #d97745 100%);
   }
 
+  .auth-form .auth-submit.p-button {
+    justify-content: center;
+    min-height: 2.75rem;
+    position: relative;
+    width: 100%;
+  }
+
+  .auth-form .auth-submit.p-button.p-button-loading .p-button-icon,
+  .auth-form .auth-submit.p-button.p-button-loading .p-button-label {
+    visibility: hidden;
+  }
+
+  .auth-form .auth-submit.p-button.p-button-loading .p-button-loading-icon {
+    inset-inline-start: 50%;
+    margin: 0;
+    position: absolute;
+    transform: translateX(-50%);
+  }
+
   .auth-form .p-button-text {
     padding-left: 0;
     color: #1c5fa8;

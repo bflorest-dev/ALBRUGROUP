@@ -102,6 +102,7 @@ public class LeadService {
     private static final String TIPIFICACION_PREVENTA_COMPLETA = "PREVENTA_COMPLETA";
     private static final String SUBTIPIFICACION_PREVENTA = "PREVENTA";
     private static final String SUBTIPIFICACION_VENTA_CERRADA = "VENTA_CERRADA";
+    private static final ZoneId ZONA_OPERATIVA = ZoneId.of("America/Lima");
     private static final List<Accion> ACCIONES_GESTION_LEAD = List.of(Accion.CONTACTO, Accion.TIPIFICACION);
     private static final Set<String> LEAD_GTR_SORT_FIELDS = Set.of(
             "lastEntryAt", "createdAt", "lead", "nombreAsesorAsignado", "estado"
@@ -117,9 +118,9 @@ public class LeadService {
     );
 
     public PageResponse<LeadGtrResponse> listarBandejaGtr(LocalDate fecha, PageRequest pageRequest) {
-        LocalDate fechaTrabajo = fecha == null ? LocalDate.now(ZoneId.systemDefault()) : fecha;
-        Instant inicioDia = fechaTrabajo.atStartOfDay(ZoneId.systemDefault()).toInstant();
-        Instant finDia = fechaTrabajo.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        LocalDate fechaTrabajo = fecha == null ? LocalDate.now(ZONA_OPERATIVA) : fecha;
+        Instant inicioDia = fechaTrabajo.atStartOfDay(ZONA_OPERATIVA).toInstant();
+        Instant finDia = fechaTrabajo.plusDays(1).atStartOfDay(ZONA_OPERATIVA).toInstant();
 
         Page<LeadGtrResponse> leads = leadRepository.listarBandejaGtr(
                 Etapa.PREVENTA,
@@ -132,9 +133,9 @@ public class LeadService {
     }
 
     public LeadGtrMetricasResponse obtenerMetricasGtr(LocalDate fecha) {
-        LocalDate fechaTrabajo = fecha == null ? LocalDate.now(ZoneId.systemDefault()) : fecha;
-        Instant inicioDia = fechaTrabajo.atStartOfDay(ZoneId.systemDefault()).toInstant();
-        Instant finDia = fechaTrabajo.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        LocalDate fechaTrabajo = fecha == null ? LocalDate.now(ZONA_OPERATIVA) : fecha;
+        Instant inicioDia = fechaTrabajo.atStartOfDay(ZONA_OPERATIVA).toInstant();
+        Instant finDia = fechaTrabajo.plusDays(1).atStartOfDay(ZONA_OPERATIVA).toInstant();
 
         long nuevos = leadRepository.countByEtapaAndEstadoAndLastEntryAtGreaterThanEqualAndLastEntryAtLessThan(
                 Etapa.PREVENTA,

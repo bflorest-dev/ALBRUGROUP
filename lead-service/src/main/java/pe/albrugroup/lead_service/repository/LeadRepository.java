@@ -35,6 +35,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             SELECT new pe.albrugroup.lead_service.entity.response.LeadGtrResponse(
                 l.id,
                 l.createdAt,
+                l.lastEntryAt,
                 l.prefijo,
                 l.lead,
                 c.nombre,
@@ -51,7 +52,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.nombrePlanSnapshot,
                 l.nombreAsesorAsignado,
                 l.estado,
-                0
+                0L
             )
             FROM Lead l
             LEFT JOIN l.campana c
@@ -125,7 +126,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.codigoSubtipificacion,
                 l.nombreAsesorAsignado,
                 l.estado,
-                0,
+                0L,
                 e.createdAt,
                 e.comentario,
                 e.horaProgramada
@@ -180,7 +181,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.createdAt,
                 l.lastEntryAt,
                 l.updatedAt,
-                0
+                0L
             )
             FROM Lead l
             WHERE l.etapa = :etapa
@@ -222,7 +223,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.createdAt,
                 l.lastEntryAt,
                 l.updatedAt,
-                0
+                0L
             )
             FROM Lead l
             WHERE l.etapa = :etapa
@@ -320,6 +321,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             SELECT new pe.albrugroup.lead_service.entity.response.LeadGtrResponse(
                 l.id,
                 l.createdAt,
+                l.lastEntryAt,
                 l.prefijo,
                 l.lead,
                 c.nombre,
@@ -336,7 +338,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.nombrePlanSnapshot,
                 l.nombreAsesorAsignado,
                 l.estado,
-                0
+                0L
             )
             FROM Lead l
             LEFT JOIN l.campana c
