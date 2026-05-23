@@ -1165,11 +1165,11 @@
               "response": []
             },
             {
-              "name": "Desactivar Campana",
+              "name": "Alternar Estado Campana",
               "request": {
-                "method": "DELETE",
+                "method": "PATCH",
                 "header": [],
-                "url": "{{path}}/leads/campanas/1",
+                "url": "{{path}}/leads/campanas/1/estado",
                 "auth": {
                   "type": "bearer",
                   "bearer": [
@@ -1180,7 +1180,7 @@
                     }
                   ]
                 },
-                "description": "Request DELETE {{path}}/leads/campanas/1"
+                "description": "Request PATCH {{path}}/leads/campanas/1/estado"
               },
               "response": []
             },
@@ -2155,6 +2155,26 @@
               "response": []
             },
             {
+              "name": "Obtener Metricas Gtr",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/preventa/gtr/metricas?fecha=2026-04-25",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/preventa/gtr/metricas?fecha=2026-04-25"
+              },
+              "response": []
+            },
+            {
               "name": "Asignar Lead",
               "request": {
                 "method": "PATCH",
@@ -2393,7 +2413,7 @@
                 "url": "{{path}}/leads/preventa/1/direccion",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"ubigeoDomicilio\": \"150101\",\n  \"tipoDomicilio\": \"MULTIFAMILIAR\",\n  \"tipoVia\": \"JIRON\",\n  \"via\": \"demo\",\n  \"direccion\": \"Av Primavera 123\",\n  \"referencia\": \"Referencia demo\",\n  \"latitud\": 99.9,\n  \"longitud\": 99.9,\n  \"urbanizacion\": \"demo\",\n  \"numero\": \"demo\",\n  \"manzana\": \"demo\",\n  \"lote\": \"demo\",\n  \"nombreEdificio\": \"Demo\",\n  \"nombreCondominio\": \"Demo\",\n  \"plano\": \"demo\",\n  \"piso\": \"demo\",\n  \"interior\": \"demo\"\n}",
+                  "raw": "{\n  \"ubigeoDomicilio\": \"150101\",\n  \"tipoDomicilio\": \"HOGAR\",\n  \"tipoVia\": \"AVENIDA\",\n  \"via\": \"demo\",\n  \"direccion\": \"Av Primavera 123\",\n  \"referencia\": \"Referencia demo\",\n  \"latitud\": 99.9,\n  \"longitud\": 99.9,\n  \"urbanizacion\": \"demo\",\n  \"numero\": \"demo\",\n  \"manzana\": \"demo\",\n  \"lote\": \"demo\",\n  \"nombreEdificio\": \"Demo\",\n  \"nombreCondominio\": \"Demo\",\n  \"plano\": \"demo\",\n  \"piso\": \"demo\",\n  \"interior\": \"demo\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -2978,7 +2998,7 @@
                 "url": "{{path}}/leads/venta/1/direccion",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"ubigeoDomicilio\": \"150101\",\n  \"tipoDomicilio\": \"MULTIFAMILIAR\",\n  \"tipoVia\": \"JIRON\",\n  \"via\": \"demo\",\n  \"direccion\": \"Av Primavera 123\",\n  \"referencia\": \"Referencia demo\",\n  \"latitud\": 99.9,\n  \"longitud\": 99.9,\n  \"urbanizacion\": \"demo\",\n  \"numero\": \"demo\",\n  \"manzana\": \"demo\",\n  \"lote\": \"demo\",\n  \"nombreEdificio\": \"Demo\",\n  \"nombreCondominio\": \"Demo\",\n  \"plano\": \"demo\",\n  \"piso\": \"demo\",\n  \"interior\": \"demo\"\n}",
+                  "raw": "{\n  \"ubigeoDomicilio\": \"150101\",\n  \"tipoDomicilio\": \"HOGAR\",\n  \"tipoVia\": \"AVENIDA\",\n  \"via\": \"demo\",\n  \"direccion\": \"Av Primavera 123\",\n  \"referencia\": \"Referencia demo\",\n  \"latitud\": 99.9,\n  \"longitud\": 99.9,\n  \"urbanizacion\": \"demo\",\n  \"numero\": \"demo\",\n  \"manzana\": \"demo\",\n  \"lote\": \"demo\",\n  \"nombreEdificio\": \"Demo\",\n  \"nombreCondominio\": \"Demo\",\n  \"plano\": \"demo\",\n  \"piso\": \"demo\",\n  \"interior\": \"demo\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"

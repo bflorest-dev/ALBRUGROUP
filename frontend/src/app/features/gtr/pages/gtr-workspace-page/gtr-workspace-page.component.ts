@@ -1,12 +1,15 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DialogModule } from 'primeng/dialog';
 import { DrawerModule } from 'primeng/drawer';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { PaginatorModule } from 'primeng/paginator';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { SelectModule } from 'primeng/select';
@@ -25,6 +28,7 @@ import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
     DrawerModule,
     InputTextModule,
     MessageModule,
+    MultiSelectModule,
     PaginatorModule,
     ProgressSpinnerModule,
     SelectModule,
@@ -38,12 +42,23 @@ import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
 })
 export class GtrWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(GtrWorkspaceFacade);
+  private readonly route = inject(ActivatedRoute);
+  private readonly routeSubscription = new Subscription();
 
   ngOnInit(): void {
+    this.routeSubscription.add(
+      this.route.data.subscribe((data) => {
+        const section = data['section'];
+        if (section === 'plataforma' || section === 'agendados' || section === 'historicos') {
+          this.facade.setSection(section);
+        }
+      })
+    );
     this.facade.start();
   }
 
   ngOnDestroy(): void {
+    this.routeSubscription.unsubscribe();
     this.facade.stop();
   }
 

@@ -168,14 +168,49 @@ public class LeadService {
     }
 
     public PageResponse<LeadAgendadoGtrResponse> listarAgendadosGtr(PageRequest pageRequest) {
-        Page<LeadAgendadoGtrResponse> leads = leadRepository.listarLeadsAgendadosGtr(
+        Page<LeadAgendadoGtrResponse> leads;
+        if ("horaProgramada".equals(pageRequest.getSortBy())) {
+            leads = listarAgendadosGtrOrdenadosPorHora(pageRequest);
+        } else {
+            leads = leadRepository.listarLeadsAgendadosGtr(
+                    Etapa.PREVENTA,
+                    TIPIFICACION_AGENDADO,
+                    Accion.TIPIFICACION,
+                    paginationService.toPageable(pageRequest, LEAD_AGENDADO_SORT_FIELDS)
+            );
+        }
+        aplicarTotalesAsignacion(leads.getContent(), LeadAgendadoGtrResponse::getId, this::setTotalesAsignacion);
+        return PageResponse.from(leads);
+    }
+
+    private Page<LeadAgendadoGtrResponse> listarAgendadosGtrOrdenadosPorHora(PageRequest pageRequest) {
+        validarDirection(pageRequest.getDirection());
+        var pageable = org.springframework.data.domain.PageRequest.of(
+                pageRequest.getPageNumber(),
+                pageRequest.getPageSize()
+        );
+
+        if ("desc".equalsIgnoreCase(pageRequest.getDirection())) {
+            return leadRepository.listarLeadsAgendadosGtrPorHoraDesc(
+                    Etapa.PREVENTA,
+                    TIPIFICACION_AGENDADO,
+                    Accion.TIPIFICACION,
+                    pageable
+            );
+        }
+
+        return leadRepository.listarLeadsAgendadosGtrPorHoraAsc(
                 Etapa.PREVENTA,
                 TIPIFICACION_AGENDADO,
                 Accion.TIPIFICACION,
-                paginationService.toPageable(pageRequest, LEAD_AGENDADO_SORT_FIELDS)
+                pageable
         );
-        aplicarTotalesAsignacion(leads.getContent(), LeadAgendadoGtrResponse::getId, this::setTotalesAsignacion);
-        return PageResponse.from(leads);
+    }
+
+    private void validarDirection(String direction) {
+        if (!direction.equalsIgnoreCase("asc") && !direction.equalsIgnoreCase("desc")) {
+            throw new BadRequestException("direction debe ser asc o desc");
+        }
     }
 
     public PageResponse<LeadResponse> listarBandejaVenta(PageRequest pageRequest) {

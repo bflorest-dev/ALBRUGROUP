@@ -149,6 +149,93 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               )
             ORDER BY e.horaProgramada ASC, e.createdAt ASC
             """)
+    Page<LeadAgendadoGtrResponse> listarLeadsAgendadosGtrPorHoraAsc(
+            @Param("etapa") Etapa etapa,
+            @Param("codigoAgendado") String codigoAgendado,
+            @Param("accionTipificacion") Accion accionTipificacion,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse(
+                l.id,
+                l.createdAt,
+                l.prefijo,
+                l.lead,
+                c.nombre,
+                p.nombre,
+                l.base,
+                dp.nombreTitularServicio,
+                l.codigoTipificacion,
+                l.codigoSubtipificacion,
+                l.nombreAsesorAsignado,
+                l.estado,
+                0L,
+                e.createdAt,
+                e.comentario,
+                e.horaProgramada
+            )
+            FROM Lead l
+            JOIN Evento e ON e.idLead = l.id
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor p
+            LEFT JOIN l.datosPreventa dp
+            WHERE l.etapa = :etapa
+              AND l.codigoTipificacion = :codigoAgendado
+              AND e.accion = :accionTipificacion
+              AND e.tipificacion = :codigoAgendado
+              AND e.createdAt = (
+                  SELECT MAX(es.createdAt)
+                  FROM Evento es
+                  WHERE es.idLead = l.id
+                    AND es.accion = :accionTipificacion
+                    AND es.tipificacion = :codigoAgendado
+              )
+            ORDER BY e.horaProgramada DESC, e.createdAt DESC
+            """)
+    Page<LeadAgendadoGtrResponse> listarLeadsAgendadosGtrPorHoraDesc(
+            @Param("etapa") Etapa etapa,
+            @Param("codigoAgendado") String codigoAgendado,
+            @Param("accionTipificacion") Accion accionTipificacion,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse(
+                l.id,
+                l.createdAt,
+                l.prefijo,
+                l.lead,
+                c.nombre,
+                p.nombre,
+                l.base,
+                dp.nombreTitularServicio,
+                l.codigoTipificacion,
+                l.codigoSubtipificacion,
+                l.nombreAsesorAsignado,
+                l.estado,
+                0L,
+                e.createdAt,
+                e.comentario,
+                e.horaProgramada
+            )
+            FROM Lead l
+            JOIN Evento e ON e.idLead = l.id
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor p
+            LEFT JOIN l.datosPreventa dp
+            WHERE l.etapa = :etapa
+              AND l.codigoTipificacion = :codigoAgendado
+              AND e.accion = :accionTipificacion
+              AND e.tipificacion = :codigoAgendado
+              AND e.createdAt = (
+                  SELECT MAX(es.createdAt)
+                  FROM Evento es
+                  WHERE es.idLead = l.id
+                    AND es.accion = :accionTipificacion
+                    AND es.tipificacion = :codigoAgendado
+              )
+            """)
     Page<LeadAgendadoGtrResponse> listarLeadsAgendadosGtr(
             @Param("etapa") Etapa etapa,
             @Param("codigoAgendado") String codigoAgendado,

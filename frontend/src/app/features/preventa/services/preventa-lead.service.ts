@@ -10,6 +10,7 @@ import {
   LeadAsignacionMasivaRequest,
   LeadAsignacionMasivaResponse,
   LeadAsignacionRequest,
+  LeadAgendadoGtrResponse,
   LeadAsesorVentasResponse,
   LeadDatosPreventaRequest,
   LeadDetalleResponse,
@@ -17,6 +18,7 @@ import {
   LeadGtrResponse,
   LeadGtrMetricasResponse,
   LeadIntakeRequest,
+  MasivoLeadFilters,
   LeadSnapshotsRequest,
   LeadOfertaComercialRequest,
   LeadPage,
@@ -43,6 +45,18 @@ export class PreventaLeadService {
   obtenerMetricasGtr(fecha: string): Observable<LeadGtrMetricasResponse> {
     return this.http.get<LeadGtrMetricasResponse>(`${this.leadUrl}/preventa/gtr/metricas`, {
       params: new HttpParams().set('fecha', fecha)
+    });
+  }
+
+  listarAgendadosGtr(query: PageQuery): Observable<LeadPage<LeadAgendadoGtrResponse>> {
+    return this.http.get<LeadPage<LeadAgendadoGtrResponse>>(`${this.leadUrl}/preventa/gtr/agendados`, {
+      params: this.pageParams(query)
+    });
+  }
+
+  listarLeadsMasivo(filters: MasivoLeadFilters, query: PageQuery): Observable<LeadPage<LeadGtrResponse>> {
+    return this.http.get<LeadPage<LeadGtrResponse>>(`${this.leadUrl}/masivo/leads`, {
+      params: this.masivoParams(filters, query)
     });
   }
 
@@ -158,5 +172,28 @@ export class PreventaLeadService {
       .set('pageSize', query.pageSize)
       .set('sortBy', query.sortBy)
       .set('direction', query.direction);
+  }
+
+  private masivoParams(filters: MasivoLeadFilters, query: PageQuery): HttpParams {
+    let params = this.pageParams(query);
+    if (filters.idProveedor) {
+      params = params.set('idProveedor', filters.idProveedor);
+    }
+    if (filters.etapa) {
+      params = params.set('etapa', filters.etapa);
+    }
+    for (const id of filters.tipificaciones ?? []) {
+      params = params.append('tipificaciones', id);
+    }
+    for (const id of filters.subtipificaciones ?? []) {
+      params = params.append('subtipificaciones', id);
+    }
+    if (filters.fechaDesde) {
+      params = params.set('fechaDesde', filters.fechaDesde);
+    }
+    if (filters.fechaHasta) {
+      params = params.set('fechaHasta', filters.fechaHasta);
+    }
+    return params;
   }
 }

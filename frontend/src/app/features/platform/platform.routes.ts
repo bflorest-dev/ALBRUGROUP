@@ -130,10 +130,34 @@ export const PLATFORM_ROUTES: Routes = [
   },
   {
     path: 'gtr',
+    pathMatch: 'full',
+    redirectTo: 'gtr/plataforma'
+  },
+  {
+    path: 'gtr/plataforma',
     component: GtrWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ASESOR_GTR', 'SUPERVISOR_GTR']
+      roles: ['ASESOR_GTR', 'SUPERVISOR_GTR'],
+      section: 'plataforma'
+    }
+  },
+  {
+    path: 'gtr/agendados',
+    component: GtrWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ASESOR_GTR', 'SUPERVISOR_GTR'],
+      section: 'agendados'
+    }
+  },
+  {
+    path: 'gtr/historicos',
+    component: GtrWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ASESOR_GTR', 'SUPERVISOR_GTR'],
+      section: 'historicos'
     }
   },
   {

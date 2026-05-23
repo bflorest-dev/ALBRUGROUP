@@ -125,6 +125,58 @@ td small,
   gap: 0.5rem;
 }
 
+.tip-stack {
+  align-items: flex-start;
+  display: inline-grid;
+  gap: 0.18rem;
+  min-width: 7.5rem;
+}
+
+.tip-stack__line {
+  background: var(--app-border-soft);
+  height: 1px;
+  width: 100%;
+}
+
+:host ::ng-deep .gtr-tip-tag {
+  background: var(--tip-bg, #64748b);
+  border-radius: 0.35rem;
+  color: var(--tip-fg, #f8fafc);
+  font-size: 0.68rem;
+  font-weight: 800;
+  justify-content: flex-start;
+  white-space: normal;
+}
+
+:host ::ng-deep .gtr-tip-tag--subtipificacion {
+  font-weight: 700;
+  opacity: 0.88;
+}
+
+:host ::ng-deep .gtr-tip-tag--sin-contacto {
+  --tip-bg: #334155;
+}
+
+:host ::ng-deep .gtr-tip-tag--contacto {
+  --tip-bg: #1d4ed8;
+  --tip-fg: #eff6ff;
+}
+
+:host ::ng-deep .gtr-tip-tag--interesado {
+  --tip-bg: #15803d;
+  --tip-fg: #f0fdf4;
+}
+
+:host ::ng-deep .gtr-tip-tag--no-interesado {
+  --tip-bg: #b91c1c;
+  --tip-fg: #fef2f2;
+}
+
+:host ::ng-deep .gtr-tip-tag--agendado {
+  --tip-bg: #b45309;
+  --tip-fg: #fffbeb;
+}
+
 .row-actions {
   flex-wrap: wrap;
 }
@@ -280,6 +332,7 @@ label {
 }
 
 :host ::ng-deep .p-select,
+:host ::ng-deep .p-multiselect,
 :host ::ng-deep .p-inputtext {
   width: 100%;
 }
@@ -309,4 +362,5 @@ label {
   .form-grid {
     grid-template-columns: 1fr;
   }
+
 }

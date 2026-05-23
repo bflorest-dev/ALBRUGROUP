@@ -41,6 +41,34 @@ export interface LeadGtrResponse {
   totalAsignaciones: number;
 }
 
+export interface LeadAgendadoGtrResponse {
+  id: number;
+  createdAt: string;
+  prefijo: string;
+  lead: string;
+  nombreCampana?: string | null;
+  nombreProveedorCampana?: string | null;
+  base?: BaseLead | string | null;
+  nombreTitular?: string | null;
+  codigoTipificacion?: string | null;
+  codigoSubtipificacion?: string | null;
+  nombreAsesorAsignado?: string | null;
+  estadoSeguimiento?: EstadoSeguimiento | string | null;
+  totalAsignaciones: number;
+  fechaAgendamiento?: string | null;
+  comentario?: string | null;
+  horaProgramada?: string | null;
+}
+
+export interface MasivoLeadFilters {
+  idProveedor?: number;
+  etapa?: Etapa | string;
+  tipificaciones?: number[];
+  subtipificaciones?: number[];
+  fechaDesde?: string;
+  fechaHasta?: string;
+}
+
 export interface LeadAsesorVentasResponse {
   id: number;
   fechaAsignacion?: string | null;

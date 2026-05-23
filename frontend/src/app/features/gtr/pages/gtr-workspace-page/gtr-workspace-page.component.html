@@ -3,8 +3,8 @@
     <div class="gtr-hero__content">
       <div>
         <span class="gtr-hero__eyebrow">PREVENTA</span>
-        <h1>Gestion de Leads</h1>
-        <p>{{ facade.todayLabel }}</p>
+        <h1>{{ facade.sectionTitle() }}</h1>
+        <p>{{ facade.sectionSubtitle() }}</p>
       </div>
 
       <div class="gtr-hero__actions">
@@ -16,13 +16,15 @@
           severity="secondary"
           (click)="facade.toggleAdvisorsPanel()"
         ></button>
-        <button
-          pButton
-          type="button"
-          icon="pi pi-plus"
-          label="Nuevo Lead"
-          (click)="facade.openNewLead()"
-        ></button>
+        @if (facade.section() === 'plataforma') {
+          <button
+            pButton
+            type="button"
+            icon="pi pi-plus"
+            label="Nuevo Lead"
+            (click)="facade.openNewLead()"
+          ></button>
+        }
         <button
           pButton
           type="button"
@@ -35,14 +37,16 @@
     </div>
   </p-card>
 
-  <section class="metric-grid" aria-label="Metricas GTR">
-    @for (metric of facade.metricCards(); track metric.label) {
-      <p-card styleClass="gtr-metric gtr-metric--{{ metric.tone }}">
-        <span>{{ metric.label }}</span>
-        <strong>{{ metric.value }}</strong>
-      </p-card>
-    }
-  </section>
+  @if (facade.section() === 'plataforma') {
+    <section class="metric-grid" aria-label="Metricas GTR">
+      @for (metric of facade.metricCards(); track metric.label) {
+        <p-card styleClass="gtr-metric gtr-metric--{{ metric.tone }}">
+          <span>{{ metric.label }}</span>
+          <strong>{{ metric.value }}</strong>
+        </p-card>
+      }
+    </section>
+  }
 
   @if (facade.successMessage()) {
     <p-message severity="success" [text]="facade.successMessage() ?? ''" />
@@ -51,7 +55,8 @@
     <p-message severity="error" [text]="facade.errorMessage() ?? ''" />
   }
 
-  <p-card styleClass="gtr-board">
+  @if (facade.section() === 'plataforma') {
+    <p-card styleClass="gtr-board">
     <ng-template #title>
       <span class="board-title">
         Bandeja diaria
@@ -85,7 +90,7 @@
       [rowHover]="true"
       [scrollable]="true"
       scrollHeight="flex"
-      [tableStyle]="{ 'min-width': '1360px' }"
+      [tableStyle]="{ 'min-width': '1260px' }"
       styleClass="p-datatable-sm gtr-table"
     >
       <ng-template #header>
@@ -130,8 +135,30 @@
           <td>{{ facade.display(row.numeroWhatsappEmpresa) }}</td>
           <td>{{ facade.display(row.base) }}</td>
           <td>{{ facade.display(row.numeroDocumentoTitularServicio) }}</td>
-          <td>{{ facade.tipificacionLabel(row.primeraCodigoTipificacion, row.primeraCodigoSubtipificacion) }}</td>
-          <td>{{ facade.tipificacionLabel(row.codigoTipificacion, row.codigoSubtipificacion) }}</td>
+          <td>
+            @if (facade.tipificacionParts(row.primeraCodigoTipificacion, row.primeraCodigoSubtipificacion); as tip) {
+              <div class="tip-stack">
+                <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion)" />
+                <span class="tip-stack__line"></span>
+                <p-tag
+                  [value]="tip.subtipificacion"
+                  [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion')"
+                />
+              </div>
+            }
+          </td>
+          <td>
+            @if (facade.tipificacionParts(row.codigoTipificacion, row.codigoSubtipificacion); as tip) {
+              <div class="tip-stack">
+                <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion)" />
+                <span class="tip-stack__line"></span>
+                <p-tag
+                  [value]="tip.subtipificacion"
+                  [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion')"
+                />
+              </div>
+            }
+          </td>
           <td>{{ facade.display(row.nombrePlanOfrecido) }}</td>
           <td>
             <p-tag
@@ -204,7 +231,288 @@
       [totalRecords]="facade.totalElements()"
       (onPageChange)="facade.changePage($event.page ?? 0)"
     />
-  </p-card>
+    </p-card>
+  }
+
+  @if (facade.section() === 'agendados') {
+    <p-card styleClass="gtr-board gtr-board--agendados">
+      <ng-template #title>
+        <span class="board-title">
+          Leads agendados
+          <p-tag severity="info" [value]="facade.display(facade.agendadosTotalElements())" />
+        </span>
+      </ng-template>
+      <ng-template #subtitle>
+        Separados por hora programada para priorizar llamadas.
+      </ng-template>
+
+      @if (facade.isLoadingAgendados()) {
+        <div class="loading-state">
+          <p-progress-spinner ariaLabel="Cargando agendados" />
+          <span>Cargando agendados...</span>
+        </div>
+      } @else {
+        <div class="schedule-list">
+          @for (group of facade.agendadoGroups(); track group.key) {
+            <section class="schedule-group">
+              <header class="schedule-group__header">
+                <strong>{{ group.label }}</strong>
+                <p-tag severity="secondary" [value]="facade.display(group.rows.length)" />
+              </header>
+
+              <p-table
+                [value]="group.rows"
+                dataKey="id"
+                [rowHover]="true"
+                [tableStyle]="{ 'min-width': '1080px' }"
+                styleClass="p-datatable-sm gtr-table"
+              >
+                <ng-template #header>
+                  <tr>
+                    <th>Hora</th>
+                    <th>Lead</th>
+                    <th>Titular</th>
+                    <th>Proveedor</th>
+                    <th>Base</th>
+                    <th>Tipificacion</th>
+                    <th>Asesor</th>
+                    <th>Comentario</th>
+                    <th>Estado</th>
+                    <th class="col-actions">Acciones</th>
+                  </tr>
+                </ng-template>
+
+                <ng-template #body let-row>
+                  <tr>
+                    <td>
+                      <strong>{{ facade.display(row.horaProgramada) }}</strong>
+                      <small>{{ facade.display(row.fechaAgendamiento) }}</small>
+                    </td>
+                    <td><strong>{{ facade.leadPrefixLabel(row.prefijo) }} {{ row.lead }}</strong></td>
+                    <td>{{ facade.display(row.nombreTitular) }}</td>
+                    <td>{{ facade.display(row.nombreProveedorCampana) }}</td>
+                    <td>{{ facade.display(row.base) }}</td>
+                    <td>
+                      @if (facade.tipificacionParts(row.codigoTipificacion, row.codigoSubtipificacion); as tip) {
+                        <div class="tip-stack">
+                          <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion)" />
+                          <span class="tip-stack__line"></span>
+                          <p-tag
+                            [value]="tip.subtipificacion"
+                            [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion')"
+                          />
+                        </div>
+                      }
+                    </td>
+                    <td>{{ facade.display(row.nombreAsesorAsignado) }}</td>
+                    <td>{{ facade.display(row.comentario) }}</td>
+                    <td>
+                      <p-tag
+                        [severity]="estadoSeverity(row.estadoSeguimiento)"
+                        [value]="facade.display(row.estadoSeguimiento)"
+                      />
+                    </td>
+                    <td>
+                      <div class="row-actions">
+                        <button
+                          pButton
+                          type="button"
+                          icon="pi pi-user-plus"
+                          label="Asignar"
+                          size="small"
+                          [disabled]="facade.isSaving()"
+                          (click)="facade.openAgendadoAssignment(row)"
+                        ></button>
+                        <p-tag
+                          severity="info"
+                          [value]="facade.display(row.totalAsignaciones ?? 0)"
+                          title="Asignaciones"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            </section>
+          } @empty {
+            <p class="empty-state">No hay leads agendados.</p>
+          }
+        </div>
+      }
+
+      <p-paginator
+        [first]="facade.agendadosPageNumber() * facade.pageSize"
+        [rows]="facade.pageSize"
+        [totalRecords]="facade.agendadosTotalElements()"
+        (onPageChange)="facade.changeAgendadosPage($event.page ?? 0)"
+      />
+    </p-card>
+  }
+
+  @if (facade.section() === 'historicos') {
+    <p-card styleClass="gtr-board">
+      <ng-template #title>
+        <span class="board-title">
+          Leads masivos
+          <p-tag severity="info" [value]="facade.display(facade.masivoTotalElements())" />
+        </span>
+      </ng-template>
+      <ng-template #subtitle>Consulta por parametros operativos.</ng-template>
+
+      <form class="form-grid" [formGroup]="facade.masivoFiltersForm" (ngSubmit)="facade.buscarMasivos()">
+        <label>
+          <span>Proveedor</span>
+          <p-select
+            formControlName="idProveedor"
+            [options]="facade.providerOptions()"
+            optionLabel="label"
+            optionValue="value"
+            appendTo="body"
+          />
+        </label>
+        <label>
+          <span>Etapa</span>
+          <p-select
+            formControlName="etapa"
+            [options]="facade.etapaOptions"
+            optionLabel="label"
+            optionValue="value"
+            appendTo="body"
+          />
+        </label>
+        <label>
+          <span>Tipificaciones</span>
+          <p-multiselect
+            formControlName="tipificaciones"
+            [options]="facade.catalogoTipificaciones()"
+            optionLabel="label"
+            optionValue="value"
+            display="chip"
+            [filter]="true"
+            appendTo="body"
+            (onChange)="facade.onMasivoTipificacionesChange()"
+          />
+        </label>
+        <label>
+          <span>Subtipificaciones</span>
+          <p-multiselect
+            formControlName="subtipificaciones"
+            [options]="facade.availableSubtipificaciones()"
+            optionLabel="label"
+            optionValue="value"
+            display="chip"
+            [filter]="true"
+            appendTo="body"
+          />
+        </label>
+        <label>
+          <span>Fecha desde</span>
+          <input pInputText type="date" formControlName="fechaDesde" />
+        </label>
+        <label>
+          <span>Fecha hasta</span>
+          <input pInputText type="date" formControlName="fechaHasta" />
+        </label>
+        <div class="dialog-actions">
+          <button pButton type="button" label="Limpiar" severity="secondary" (click)="facade.clearMasivoFilters()"></button>
+          <button pButton type="submit" label="Buscar" icon="pi pi-search" [loading]="facade.isLoadingMasivos()"></button>
+        </div>
+      </form>
+
+      <p-table
+        [value]="facade.masivoRows()"
+        dataKey="id"
+        [loading]="facade.isLoadingMasivos()"
+        [rowHover]="true"
+        [scrollable]="true"
+        scrollHeight="flex"
+        [tableStyle]="{ 'min-width': '1180px' }"
+        styleClass="p-datatable-sm gtr-table"
+      >
+        <ng-template #header>
+          <tr>
+            <th>Lead</th>
+            <th>Proveedor</th>
+            <th>Base</th>
+            <th>Documento</th>
+            <th>Ultima tipificacion</th>
+            <th>Plan ofrecido</th>
+            <th>Estado</th>
+            <th>Asesor</th>
+            <th>Ingreso</th>
+            <th class="col-actions">Acciones</th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-row>
+          <tr>
+            <td><strong>{{ facade.leadPrefixLabel(row.prefijo) }} {{ row.lead }}</strong></td>
+            <td>{{ facade.display(row.nombreProveedorCampana) }}</td>
+            <td>{{ facade.display(row.base) }}</td>
+            <td>{{ facade.display(row.numeroDocumentoTitularServicio) }}</td>
+            <td>
+              @if (facade.tipificacionParts(row.codigoTipificacion, row.codigoSubtipificacion); as tip) {
+                <div class="tip-stack">
+                  <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion)" />
+                  <span class="tip-stack__line"></span>
+                  <p-tag
+                    [value]="tip.subtipificacion"
+                    [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion')"
+                  />
+                </div>
+              }
+            </td>
+            <td>{{ facade.display(row.nombrePlanOfrecido) }}</td>
+            <td>
+              <p-tag
+                [severity]="estadoSeverity(row.estadoSeguimiento)"
+                [value]="facade.display(row.estadoSeguimiento)"
+              />
+            </td>
+            <td>{{ facade.display(row.nombreAsesorAsignado) }}</td>
+            <td>{{ (row.lastEntryAt ?? row.createdAt) | date: 'dd/MM hh:mm a' }}</td>
+            <td>
+              <div class="row-actions">
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-user-plus"
+                  label="Asignar"
+                  size="small"
+                  [disabled]="facade.isSaving()"
+                  (click)="facade.openAssignment(row)"
+                ></button>
+                <p-tag
+                  severity="info"
+                  [value]="facade.display(row.totalAsignaciones ?? 0)"
+                  title="Asignaciones"
+                />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="10">
+              {{
+                facade.masivoSearched()
+                  ? 'No se encontraron leads con esos filtros.'
+                  : 'Indica filtros y ejecuta la busqueda.'
+              }}
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+
+      <p-paginator
+        [first]="facade.masivoPageNumber() * facade.pageSize"
+        [rows]="facade.pageSize"
+        [totalRecords]="facade.masivoTotalElements()"
+        (onPageChange)="facade.changeMasivoPage($event.page ?? 0)"
+      />
+    </p-card>
+  }
 
   <p-drawer
     [visible]="facade.advisorsPanelOpen()"

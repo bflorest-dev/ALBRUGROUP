@@ -101,6 +101,14 @@ export class PrivateLayoutComponent {
       ];
     }
 
+    if (session.primaryRole === 'ASESOR_GTR' || session.primaryRole === 'SUPERVISOR_GTR') {
+      return [
+        { label: 'Plataforma', route: '/app/gtr/plataforma', icon: 'pi pi-desktop', exact: true },
+        { label: 'Agendados', route: '/app/gtr/agendados', icon: 'pi pi-calendar', exact: true },
+        { label: 'Historicos', route: '/app/gtr/historicos', icon: 'pi pi-history', exact: true }
+      ];
+    }
+
     if (session.primaryRole === 'ASESOR_BACKOFFICE' || session.primaryRole === 'SUPERVISOR_BACKOFFICE') {
       return [
         { label: 'Plataforma', route: '/app/backoffice/plataforma', icon: 'pi pi-desktop', exact: true },
