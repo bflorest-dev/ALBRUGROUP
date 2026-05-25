@@ -30,6 +30,58 @@ export type CampanaResponse = LeadEntity & {
   nombreProveedor?: string;
 };
 
+export type CampanaGastoRequest = {
+  leads: number;
+  costoTotal: number;
+};
+
+export type CampanaGastoResponse = {
+  id: number;
+  idCampana: number;
+  nombreCampana: string;
+  leads: number;
+  leadsReales: number;
+  ventasCerradas: number;
+  costoTotal: number;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type CampanaGastoCampanaResumenResponse = {
+  idCampana: number;
+  nombreCampana: string;
+  leads: number;
+  leadsReales: number;
+  ventasCerradas: number;
+  costoTotal: number;
+  ultimoRegistroAt?: string | null;
+};
+
+export type CampanaGastoResumenDiarioResponse = {
+  idCampana?: number | null;
+  nombreCampana?: string | null;
+  fecha: string;
+  leads: number;
+  leadsReales: number;
+  ventasCerradas: number;
+  costoTotal: number;
+  ultimoRegistroAt?: string | null;
+  campanas?: CampanaGastoCampanaResumenResponse[] | null;
+};
+
+export type CampanaGastoResumenMensualResponse = {
+  idCampana?: number | null;
+  nombreCampana?: string | null;
+  anio: number;
+  mes: number;
+  leads: number;
+  leadsReales: number;
+  ventasCerradas: number;
+  costoTotal: number;
+  ultimoRegistroAt?: string | null;
+  campanas?: CampanaGastoCampanaResumenResponse[] | null;
+};
+
 export type AdicionalResponse = LeadEntity & {
   precioUnitario?: number;
   idProveedor?: number;
@@ -171,6 +223,32 @@ export class CommunityLeadService {
     return this.http.patch<CampanaResponse>(`${this.leadUrl}/campanas/${idCampana}/estado`, {});
   }
 
+  registrarGastoCampana(idCampana: number, request: CampanaGastoRequest): Observable<CampanaGastoResponse> {
+    return this.http.post<CampanaGastoResponse>(`${this.leadUrl}/campanas/${idCampana}/gastos`, request);
+  }
+
+  listarGastosCampanaDia(idCampana: number, fecha?: string): Observable<CampanaGastoResponse[]> {
+    return this.http.get<CampanaGastoResponse[]>(`${this.leadUrl}/campanas/${idCampana}/gastos`, {
+      params: this.optionalDateParam('fecha', fecha)
+    });
+  }
+
+  obtenerResumenGastosDiario(fecha?: string): Observable<CampanaGastoResumenDiarioResponse> {
+    return this.http.get<CampanaGastoResumenDiarioResponse>(`${this.leadUrl}/campanas/gastos/resumen-diario`, {
+      params: this.optionalDateParam('fecha', fecha)
+    });
+  }
+
+  obtenerResumenGastosMensual(anio?: number, mes?: number): Observable<CampanaGastoResumenMensualResponse> {
+    let params = new HttpParams();
+    if (anio && mes) {
+      params = params.set('anio', anio).set('mes', mes);
+    }
+    return this.http.get<CampanaGastoResumenMensualResponse>(`${this.leadUrl}/campanas/gastos/resumen-mensual`, {
+      params
+    });
+  }
+
   registrarAdicional(request: unknown): Observable<AdicionalResponse> {
     return this.http.post<AdicionalResponse>(`${this.leadUrl}/planes/adicionales`, request);
   }
@@ -267,6 +345,14 @@ export class CommunityLeadService {
     let params = new HttpParams();
     if (activo !== undefined) {
       params = params.set('activo', activo);
+    }
+    return params;
+  }
+
+  private optionalDateParam(name: string, value?: string): HttpParams {
+    let params = new HttpParams();
+    if (value) {
+      params = params.set(name, value);
     }
     return params;
   }

@@ -8,13 +8,14 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { MultiSelectModule } from 'primeng/multiselect';
+import { DrawerModule } from 'primeng/drawer';
 import { SelectModule } from 'primeng/select';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-number-field/phone-number-field.component';
-import { CommunitySection, CommunityWorkspaceFacade } from '../../facades/community-workspace.facade';
+import { CommunityPageMode, CommunitySection, CommunityWorkspaceFacade } from '../../facades/community-workspace.facade';
 
 @Component({
   selector: 'app-community-workspace-page',
@@ -23,6 +24,7 @@ import { CommunitySection, CommunityWorkspaceFacade } from '../../facades/commun
     ButtonModule,
     CardModule,
     DialogModule,
+    DrawerModule,
     InputTextModule,
     MessageModule,
     MultiSelectModule,
@@ -42,7 +44,7 @@ export class CommunityWorkspacePageComponent implements OnInit {
   protected readonly facade = inject(CommunityWorkspaceFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly destroyRef = inject(DestroyRef);
-  protected readonly pageMode = signal<'mantenimiento' | 'metricas'>('mantenimiento');
+  protected readonly pageMode = signal<CommunityPageMode>('mantenimiento');
   protected readonly sections: { id: CommunitySection; label: string; icon: string; disabled?: boolean }[] = [
     { id: 'proveedores', label: 'Proveedores', icon: 'pi pi-building' },
     { id: 'cuentas', label: 'Cuentas', icon: 'pi pi-credit-card' },
@@ -54,9 +56,11 @@ export class CommunityWorkspacePageComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.data.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data) => {
-      this.pageMode.set(data['section'] === 'metricas' ? 'metricas' : 'mantenimiento');
+      const mode: CommunityPageMode =
+        data['section'] === 'finanzas' ? 'finanzas' : data['section'] === 'metricas' ? 'metricas' : 'mantenimiento';
+      this.pageMode.set(mode);
+      void this.facade.initialize(mode);
     });
-    void this.facade.initialize();
   }
 
   protected display(value: unknown): string {

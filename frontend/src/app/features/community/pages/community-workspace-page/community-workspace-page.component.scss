@@ -1,5 +1,6 @@
 .community-page,
 .stack,
+.finance-page,
 .billing-cuts,
 .plan-additionals,
 .plan-additionals__list,
@@ -13,6 +14,8 @@
 .tab-label,
 .form-actions,
 .metric-content,
+.finance-toolbar,
+.finance-toolbar__actions,
 .inline-action,
 .billing-cuts__selector,
 .billing-cuts__chips,
@@ -31,6 +34,7 @@
 
 .community-hero__content,
 .metric-content,
+.finance-toolbar,
 .card-title-row,
 .zone-rule-item {
   justify-content: space-between;
@@ -38,6 +42,7 @@
 
 .community-hero__actions,
 .form-actions,
+.finance-toolbar__actions,
 .inline-action,
 .billing-cuts__chips,
 .criterion-toggle,
@@ -68,6 +73,8 @@ p,
 }
 
 .metric-grid,
+.finance-summary-grid,
+.finance-kpi-grid,
 .section-grid,
 .form-grid,
 .filter-grid,
@@ -79,6 +86,63 @@ p,
 
 .metric-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.finance-summary-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.finance-kpi-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.finance-toolbar__actions {
+  justify-content: flex-end;
+}
+
+.finance-toolbar__actions label {
+  min-width: 9rem;
+}
+
+.finance-kpi {
+  background: color-mix(in srgb, var(--finance-tone, #64748b) 8%, #ffffff 92%);
+  border: 1px solid color-mix(in srgb, var(--finance-tone, #64748b) 20%, #ffffff 80%);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.25rem;
+  min-height: 4.4rem;
+  padding: 0.7rem;
+}
+
+.finance-kpi span {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.finance-kpi strong {
+  color: var(--finance-tone, #334155);
+  font-size: 1.05rem;
+}
+
+.finance-kpi--blue {
+  --finance-tone: #2563eb;
+}
+
+.finance-kpi--green {
+  --finance-tone: #16a34a;
+}
+
+.finance-kpi--amber {
+  --finance-tone: #b45309;
+}
+
+.finance-kpi--violet {
+  --finance-tone: #7c3aed;
+}
+
+.finance-kpi--slate {
+  --finance-tone: #475569;
 }
 
 .section-grid {
@@ -202,6 +266,17 @@ label,
     width: 100%;
   }
 
+  .finance-toolbar-card .p-card-content {
+    padding: 0;
+  }
+
+  .finance-table .p-datatable-thead > tr > th {
+    background: color-mix(in srgb, var(--role-accent) 7%, #ffffff 93%);
+    color: var(--role-primary);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+  }
+
   .scope-select {
     .p-togglebutton {
       background: transparent;
@@ -228,6 +303,10 @@ label,
   .plan-dialog {
     width: min(72rem, 96vw);
   }
+
+  .finance-snapshots-drawer {
+    width: min(760px, 100vw);
+  }
 }
 
 @media (max-width: 760px) {
@@ -240,6 +319,8 @@ label,
   }
 
   .metric-grid,
+  .finance-summary-grid,
+  .finance-kpi-grid,
   .section-grid,
   .form-grid,
   .form-grid--three,

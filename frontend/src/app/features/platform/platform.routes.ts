@@ -224,6 +224,15 @@ export const PLATFORM_ROUTES: Routes = [
     }
   },
   {
+    path: 'community/finanzas',
+    component: CommunityWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['COMMUNITY'],
+      section: 'finanzas'
+    }
+  },
+  {
     path: 'monitor',
     component: RolePlatformPageComponent,
     canActivate: [roleGuard],

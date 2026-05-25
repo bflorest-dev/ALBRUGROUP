@@ -3,6 +3,10 @@ import { NonNullableFormBuilder, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import {
   AdicionalResponse,
+  CampanaGastoCampanaResumenResponse,
+  CampanaGastoResponse,
+  CampanaGastoResumenDiarioResponse,
+  CampanaGastoResumenMensualResponse,
   CampanaResponse,
   CommunityLeadService,
   CriterioZona,
@@ -18,6 +22,7 @@ import {
 } from '../services/community-lead.service';
 
 export type CommunitySection = 'proveedores' | 'cuentas' | 'campanas' | 'zonas' | 'planes' | 'promociones';
+export type CommunityPageMode = 'mantenimiento' | 'metricas' | 'finanzas';
 
 type ZoneDialogMode = 'create' | 'edit';
 type ZoneRuleDraft = ZonaReglaResponse & { label: string };
@@ -36,6 +41,18 @@ type PromotionScopeOption = {
   icon: string;
   severity: 'info' | 'success' | 'warn';
 };
+type FinanceMetricCard = {
+  label: string;
+  value: string;
+  tone: 'blue' | 'green' | 'amber' | 'violet' | 'slate';
+};
+type FinanceRow = CampanaGastoCampanaResumenResponse & {
+  costoPorLead: string;
+  costoPorLeadReal: string;
+  costoPorVenta: string;
+  conversionLeads: string;
+  conversionLeadsReales: string;
+};
 
 @Injectable()
 export class CommunityWorkspaceFacade {
@@ -48,6 +65,8 @@ export class CommunityWorkspaceFacade {
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
   readonly isLoadingUbigeo = signal(false);
+  readonly isLoadingFinance = signal(false);
+  readonly isLoadingFinanceSnapshots = signal(false);
   readonly successMessage = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
 
@@ -66,6 +85,14 @@ export class CommunityWorkspaceFacade {
   readonly zonas = signal<ZonaResponse[]>([]);
   readonly zonasActivas = computed(() => this.zonas().filter((zona) => zona.activo !== false));
   readonly serviciosProveedor = signal<ServiciosProveedorResponse | null>(null);
+  readonly dailyExpenseSummary = signal<CampanaGastoResumenDiarioResponse | null>(null);
+  readonly monthlyExpenseSummary = signal<CampanaGastoResumenMensualResponse | null>(null);
+  readonly campaignExpenseSnapshots = signal<CampanaGastoResponse[]>([]);
+  readonly selectedExpenseCampaign = signal<FinanceRow | null>(null);
+  readonly expenseDialogOpen = signal(false);
+  readonly expenseSnapshotsOpen = signal(false);
+  readonly financeDate = signal(this.toDateInputValue(new Date().toISOString()));
+  readonly financeMonth = signal(this.currentMonthValue());
 
   readonly billingDayOptions = Array.from({ length: 31 }, (_, index) => index + 1);
   readonly promotionScopeOptions: PromotionScopeOption[] = [
@@ -105,6 +132,12 @@ export class CommunityWorkspaceFacade {
   });
   readonly planNamePlaceholder = computed(() => this.planes()[0]?.nombre ?? 'Plan Fibra 200');
   readonly additionalNamePlaceholder = computed(() => this.adicionales()[0]?.nombre ?? 'Mesh WiFi');
+  readonly dailyFinanceCards = computed(() => this.buildFinanceCards(this.dailyExpenseSummary()));
+  readonly monthlyFinanceCards = computed(() => this.buildFinanceCards(this.monthlyExpenseSummary()));
+  readonly dailyFinanceRows = computed<FinanceRow[]>(() =>
+    (this.dailyExpenseSummary()?.campanas ?? []).map((campana) => this.toFinanceRow(campana))
+  );
+  readonly snapshotRows = computed<FinanceRow[]>(() => this.campaignExpenseSnapshots().map((snapshot) => this.toFinanceRow(snapshot)));
 
   readonly providerForm = this.fb.group({
     nombre: ['', [Validators.required]],
@@ -118,6 +151,12 @@ export class CommunityWorkspaceFacade {
   readonly accountForm = this.fb.group({
     numeroCuenta: ['', [Validators.required]],
     nombreCuenta: ['', [Validators.required]]
+  });
+
+  readonly expenseForm = this.fb.group({
+    idCampana: [0, [Validators.required, Validators.min(1)]],
+    leads: [0, [Validators.required, Validators.min(0)]],
+    costoTotal: [0, [Validators.required, Validators.min(0)]]
   });
 
   readonly campaignForm = this.fb.group({
@@ -200,8 +239,11 @@ export class CommunityWorkspaceFacade {
     geoId: [0, [Validators.required, Validators.min(1)]]
   });
 
-  async initialize(): Promise<void> {
+  async initialize(mode: CommunityPageMode = 'mantenimiento'): Promise<void> {
     await this.loadAll();
+    if (mode === 'finanzas') {
+      await this.loadFinanceDashboard();
+    }
   }
 
   setSection(section: CommunitySection): void {
@@ -239,6 +281,88 @@ export class CommunityWorkspaceFacade {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  async loadFinanceDashboard(): Promise<void> {
+    this.isLoadingFinance.set(true);
+    this.clearMessages();
+    try {
+      const [daily, monthly] = await Promise.all([
+        firstValueFrom(this.leadService.obtenerResumenGastosDiario(this.financeDate())),
+        firstValueFrom(
+          this.leadService.obtenerResumenGastosMensual(this.financeMonthYear(this.financeMonth()), this.financeMonthMonth(this.financeMonth()))
+        )
+      ]);
+      this.dailyExpenseSummary.set(daily);
+      this.monthlyExpenseSummary.set(monthly);
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar finanzas de campañas.'));
+    } finally {
+      this.isLoadingFinance.set(false);
+    }
+  }
+
+  openExpenseDialog(): void {
+    this.expenseForm.reset({ idCampana: 0, leads: 0, costoTotal: 0 });
+    this.expenseDialogOpen.set(true);
+    this.clearMessages();
+  }
+
+  closeExpenseDialog(): void {
+    this.expenseDialogOpen.set(false);
+  }
+
+  async submitExpense(): Promise<void> {
+    if (this.expenseForm.invalid) {
+      this.errorMessage.set('Selecciona una campaña e indica leads y costo acumulado.');
+      return;
+    }
+
+    const raw = this.expenseForm.getRawValue();
+    await this.saveAction(
+      () =>
+        this.leadService.registrarGastoCampana(raw.idCampana, {
+          leads: raw.leads,
+          costoTotal: raw.costoTotal
+        }),
+      'Gasto de campaña registrado.',
+      async () => {
+        this.closeExpenseDialog();
+        await this.loadFinanceDashboard();
+      }
+    );
+  }
+
+  async openExpenseSnapshots(row: FinanceRow): Promise<void> {
+    this.selectedExpenseCampaign.set(row);
+    this.campaignExpenseSnapshots.set([]);
+    this.expenseSnapshotsOpen.set(true);
+    this.isLoadingFinanceSnapshots.set(true);
+    this.clearMessages();
+    try {
+      const snapshots = await firstValueFrom(this.leadService.listarGastosCampanaDia(row.idCampana, this.financeDate()));
+      this.campaignExpenseSnapshots.set(snapshots);
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar el detalle de gastos de la campaña.'));
+    } finally {
+      this.isLoadingFinanceSnapshots.set(false);
+    }
+  }
+
+  closeExpenseSnapshots(): void {
+    this.expenseSnapshotsOpen.set(false);
+    this.selectedExpenseCampaign.set(null);
+    this.campaignExpenseSnapshots.set([]);
+  }
+
+  async onFinanceDateChanged(value: string): Promise<void> {
+    this.financeDate.set(value || this.toDateInputValue(new Date().toISOString()));
+    await this.loadFinanceDashboard();
+  }
+
+  async onFinanceMonthChanged(value: string): Promise<void> {
+    this.financeMonth.set(value || this.currentMonthValue());
+    await this.loadFinanceDashboard();
   }
 
   addBillingCut(): void {
@@ -345,6 +469,37 @@ export class CommunityWorkspaceFacade {
     }
 
     return campana.prefijo ? `${campana.prefijo} ${number}` : number;
+  }
+
+  money(value: unknown): string {
+    const amount = Number(value ?? 0);
+    return `S/ ${amount.toFixed(2)}`;
+  }
+
+  percentage(numerator: number | null | undefined, denominator: number | null | undefined): string {
+    if (!denominator) {
+      return '-';
+    }
+    return `${(((numerator ?? 0) / denominator) * 100).toFixed(1)}%`;
+  }
+
+  costPerResult(costoTotal: number | null | undefined, denominator: number | null | undefined): string {
+    if (!denominator) {
+      return '-';
+    }
+    return this.money((costoTotal ?? 0) / denominator);
+  }
+
+  dateTime(value: string | null | undefined): string {
+    if (!value) {
+      return '-';
+    }
+    return new Intl.DateTimeFormat('es-PE', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(new Date(value));
   }
 
   async toggleCampaign(idCampana: number): Promise<void> {
@@ -941,6 +1096,46 @@ export class CommunityWorkspaceFacade {
     ].filter(Boolean);
 
     return details.length ? `${plan.nombre} - ${details.join(' - ')}` : String(plan.nombre);
+  }
+
+  private buildFinanceCards(
+    summary: CampanaGastoResumenDiarioResponse | CampanaGastoResumenMensualResponse | null
+  ): FinanceMetricCard[] {
+    return [
+      { label: 'Leads', value: String(summary?.leads ?? 0), tone: 'blue' },
+      { label: 'Leads reales', value: String(summary?.leadsReales ?? 0), tone: 'green' },
+      { label: 'Ventas cerradas', value: String(summary?.ventasCerradas ?? 0), tone: 'violet' },
+      { label: 'Costo total', value: this.money(summary?.costoTotal ?? 0), tone: 'amber' },
+      { label: 'Ultimo registro', value: this.dateTime(summary?.ultimoRegistroAt), tone: 'slate' }
+    ];
+  }
+
+  private toFinanceRow(row: CampanaGastoCampanaResumenResponse | CampanaGastoResponse): FinanceRow {
+    const ultimoRegistroAt =
+      (row as CampanaGastoResponse).createdAt ?? (row as CampanaGastoCampanaResumenResponse).ultimoRegistroAt;
+    return {
+      ...row,
+      ultimoRegistroAt,
+      costoPorLead: this.costPerResult(row.costoTotal, row.leads),
+      costoPorLeadReal: this.costPerResult(row.costoTotal, row.leadsReales),
+      costoPorVenta: this.costPerResult(row.costoTotal, row.ventasCerradas),
+      conversionLeads: this.percentage(row.ventasCerradas, row.leads),
+      conversionLeadsReales: this.percentage(row.ventasCerradas, row.leadsReales)
+    };
+  }
+
+  private currentMonthValue(): string {
+    const now = new Date();
+    const month = `${now.getMonth() + 1}`.padStart(2, '0');
+    return `${now.getFullYear()}-${month}`;
+  }
+
+  private financeMonthYear(value: string): number {
+    return Number(value.slice(0, 4)) || new Date().getFullYear();
+  }
+
+  private financeMonthMonth(value: string): number {
+    return Number(value.slice(5, 7)) || new Date().getMonth() + 1;
   }
 
   private toDateInputValue(value: string | undefined): string {

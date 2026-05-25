@@ -97,6 +97,7 @@ export class PrivateLayoutComponent {
     if (session.primaryRole === 'COMMUNITY') {
       return [
         { label: 'Mantenimiento', route: '/app/community/mantenimiento', icon: 'pi pi-database', exact: true },
+        { label: 'Finanzas', route: '/app/community/finanzas', icon: 'pi pi-wallet', exact: true },
         { label: 'Metricas', route: '/app/community/metricas', icon: 'pi pi-chart-line', exact: true }
       ];
     }
