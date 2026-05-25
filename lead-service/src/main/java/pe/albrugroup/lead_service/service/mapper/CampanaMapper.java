@@ -11,12 +11,14 @@ import pe.albrugroup.lead_service.entity.response.CampanaResponse;
 @Mapper(componentModel = "spring")
 public interface CampanaMapper {
 
-    @Mapping(target = "numeroWhatsappEmpresa", source = "numeroWhatsappEmpresa")
+    @Mapping(target = "prefijo", source = "prefijo")
+    @Mapping(target = "numeroWhatsApp", source = "numeroWhatsApp")
     @Mapping(target = "cuentaPublicitaria", ignore = true)
     @Mapping(target = "proveedor", ignore = true)
     @Mapping(target = "activo", ignore = true)
     Campana toEntity(CampanaRequest request);
 
+    @Mapping(target = "numeroWhatsappEmpresa", source = "numeroWhatsApp")
     @Mapping(target = "idCuentaPublicitaria", source = "cuentaPublicitaria.id")
     @Mapping(target = "numeroCuenta", source = "cuentaPublicitaria.numeroCuenta")
     @Mapping(target = "nombreCuenta", source = "cuentaPublicitaria.nombreCuenta")
@@ -24,6 +26,7 @@ public interface CampanaMapper {
     @Mapping(target = "nombreProveedor", source = "proveedor.nombre")
     CampanaResponse toResponse(Campana entity);
 
-    @Mapping(target = "numeroWhatsappEmpresa", source = "numeroWhatsappEmpresa")
+    @Mapping(target = "prefijo", source = "prefijo")
+    @Mapping(target = "numeroWhatsApp", source = "numeroWhatsApp")
     void updateNumeroWhatsappCampana(CampanaWhatsappRequest request, @MappingTarget Campana entity);
 }

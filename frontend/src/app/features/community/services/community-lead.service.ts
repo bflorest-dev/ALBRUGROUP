@@ -20,7 +20,9 @@ export type CuentaPublicitariaResponse = LeadEntity & {
 };
 
 export type CampanaResponse = LeadEntity & {
+  prefijo?: string;
   numeroWhatsappEmpresa?: string;
+  numeroWhatsApp?: string;
   idCuentaPublicitaria?: number;
   numeroCuenta?: string;
   nombreCuenta?: string;
@@ -158,8 +160,11 @@ export class CommunityLeadService {
     return this.http.get<CampanaResponse[]>(`${this.leadUrl}/campanas`, { params });
   }
 
-  actualizarWhatsappCampana(idCampana: number, numeroWhatsappEmpresa: string): Observable<CampanaResponse> {
-    return this.http.put<CampanaResponse>(`${this.leadUrl}/campanas/${idCampana}`, { numeroWhatsappEmpresa });
+  actualizarWhatsappCampana(
+    idCampana: number,
+    request: { prefijo: string; numeroWhatsApp: string }
+  ): Observable<CampanaResponse> {
+    return this.http.put<CampanaResponse>(`${this.leadUrl}/campanas/${idCampana}`, request);
   }
 
   alternarCampana(idCampana: number): Observable<CampanaResponse> {

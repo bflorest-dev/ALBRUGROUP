@@ -199,24 +199,26 @@ WHERE NOT EXISTS (
 
 CREATE TEMP TABLE seed_campana (
     nombre TEXT,
-    numero_whatsapp_empresa TEXT,
+    prefijo TEXT,
+    numero_whats_app TEXT,
     numero_cuenta TEXT,
     proveedor_nombre TEXT,
     activo BOOLEAN
 );
 
-INSERT INTO seed_campana (nombre, numero_whatsapp_empresa, numero_cuenta, proveedor_nombre, activo) VALUES
-('Win4 - 100% Fibra Optica', '51905749473', '1822236612034217', 'WIN', TRUE),
-('Win1 - Satisfaccion al cliente', '51905749473', '1822236612034217', 'WIN', FALSE),
-('Win6 - Internet Winners', '51905749473', '1822236612034217', 'WIN', FALSE),
-('Win2 - Internet Hogar', '51905749473', '1030035362376438', 'WIN', FALSE),
-('Prueba Ventas Win9 - Win10', '51905749473', '708788522032129', 'WIN', FALSE),
-('CLARO12 - CAMPANA CLARO', '51987654321', '1587625665850135', 'CLARO', FALSE);
+INSERT INTO seed_campana (nombre, prefijo, numero_whats_app, numero_cuenta, proveedor_nombre, activo) VALUES
+('Win4 - 100% Fibra Optica', '+51', '905749473', '1822236612034217', 'WIN', TRUE),
+('Win1 - Satisfaccion al cliente', '+51', '905749473', '1822236612034217', 'WIN', FALSE),
+('Win6 - Internet Winners', '+51', '905749473', '1822236612034217', 'WIN', FALSE),
+('Win2 - Internet Hogar', '+51', '905749473', '1030035362376438', 'WIN', FALSE),
+('Prueba Ventas Win9 - Win10', '+51', '905749473', '708788522032129', 'WIN', FALSE),
+('CLARO12 - CAMPANA CLARO', '+51', '987654321', '1587625665850135', 'CLARO', FALSE);
 
-INSERT INTO campana (nombre, numero_whatsapp_empresa, id_cuenta_publicitaria, id_proveedor, activo)
+INSERT INTO campana (nombre, prefijo, numero_whats_app, id_cuenta_publicitaria, id_proveedor, activo)
 SELECT
     s.nombre,
-    s.numero_whatsapp_empresa,
+    s.prefijo,
+    s.numero_whats_app,
     cp.id,
     p.id,
     s.activo

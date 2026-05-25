@@ -220,12 +220,12 @@ public class DataLoader {
         CuentaPublicitaria distribuidor = saveCuentaPublicitaria("708788522032129", "DISTRIBUIDOR AUTORIZADO");
         CuentaPublicitaria albru = saveCuentaPublicitaria("1587625665850135", "ALBRU 2");
 
-        saveCampana("Win4 - 100% Fibra Optica", "51905749473", runa, win, Boolean.TRUE);
-        saveCampana("Win1 - Satisfaccion al cliente", "51905749473", runa, win, Boolean.FALSE);
-        saveCampana("Win6 - Internet Winners", "51905749473", runa, win, Boolean.FALSE);
-        saveCampana("Win2 - Internet Hogar", "51905749473", fibra, win, Boolean.FALSE);
-        saveCampana("Prueba Ventas Win9 - Win10", "51905749473", distribuidor, win, Boolean.FALSE);
-        saveCampana("CLARO12 - CAMPANA CLARO", "51987654321", albru, claro, Boolean.FALSE);
+        saveCampana("Win4 - 100% Fibra Optica", "+51", "905749473", runa, win, Boolean.TRUE);
+        saveCampana("Win1 - Satisfaccion al cliente", "+51", "905749473", runa, win, Boolean.FALSE);
+        saveCampana("Win6 - Internet Winners", "+51", "905749473", runa, win, Boolean.FALSE);
+        saveCampana("Win2 - Internet Hogar", "+51", "905749473", fibra, win, Boolean.FALSE);
+        saveCampana("Prueba Ventas Win9 - Win10", "+51", "905749473", distribuidor, win, Boolean.FALSE);
+        saveCampana("CLARO12 - CAMPANA CLARO", "+51", "987654321", albru, claro, Boolean.FALSE);
 
         saveAdicional("Wifi Mesh", new BigDecimal("9.90"), win);
         saveAdicional("WinBox", new BigDecimal("15.00"), win);
@@ -278,7 +278,8 @@ public class DataLoader {
 
     private Campana saveCampana(
             String nombre,
-            String numeroWhatsappEmpresa,
+            String prefijo,
+            String numeroWhatsApp,
             CuentaPublicitaria cuentaPublicitaria,
             Proveedor proveedor,
             Boolean activo
@@ -286,7 +287,8 @@ public class DataLoader {
         return campanaRepository.findByNombre(nombre)
                 .orElseGet(() -> campanaRepository.save(Campana.builder()
                         .nombre(nombre)
-                        .numeroWhatsappEmpresa(numeroWhatsappEmpresa)
+                        .prefijo(prefijo)
+                        .numeroWhatsApp(numeroWhatsApp)
                         .cuentaPublicitaria(cuentaPublicitaria)
                         .proveedor(proveedor)
                         .activo(activo)

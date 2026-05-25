@@ -15,7 +15,8 @@ public class Campana {
     private Long id;
 
     private String nombre;
-    private String numeroWhatsappEmpresa;
+    private String prefijo;
+    private String numeroWhatsApp;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_cuenta_publicitaria")

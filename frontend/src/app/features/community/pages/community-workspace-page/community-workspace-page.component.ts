@@ -13,6 +13,7 @@ import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
+import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-number-field/phone-number-field.component';
 import { CommunitySection, CommunityWorkspaceFacade } from '../../facades/community-workspace.facade';
 
 @Component({
@@ -29,7 +30,8 @@ import { CommunitySection, CommunityWorkspaceFacade } from '../../facades/commun
     SelectButtonModule,
     TableModule,
     TabsModule,
-    TagModule
+    TagModule,
+    PhoneNumberFieldComponent
   ],
   providers: [CommunityWorkspaceFacade],
   templateUrl: './community-workspace-page.component.html',

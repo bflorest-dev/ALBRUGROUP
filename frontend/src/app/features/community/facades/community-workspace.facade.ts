@@ -122,13 +122,15 @@ export class CommunityWorkspaceFacade {
 
   readonly campaignForm = this.fb.group({
     nombre: ['', [Validators.required]],
-    numeroWhatsappEmpresa: ['', [Validators.required]],
+    prefijo: ['+51', [Validators.required, Validators.pattern(/^\+\d{2,3}$/)]],
+    numeroWhatsApp: ['', [Validators.required, Validators.pattern(/^\d{6,15}$/)]],
     idCuentaPublicitaria: [0, [Validators.required, Validators.min(1)]],
     idProveedor: [0, [Validators.required, Validators.min(1)]]
   });
 
   readonly campaignWhatsappForm = this.fb.group({
-    numeroWhatsappEmpresa: ['', [Validators.required]]
+    prefijo: ['+51', [Validators.required, Validators.pattern(/^\+\d{2,3}$/)]],
+    numeroWhatsApp: ['', [Validators.required, Validators.pattern(/^\d{6,15}$/)]]
   });
 
   readonly additionalForm = this.fb.group({
@@ -305,7 +307,10 @@ export class CommunityWorkspaceFacade {
 
   openWhatsappDialog(campana: CampanaResponse): void {
     this.selectedCampaign.set(campana);
-    this.campaignWhatsappForm.reset({ numeroWhatsappEmpresa: campana.numeroWhatsappEmpresa ?? '' });
+    this.campaignWhatsappForm.reset({
+      prefijo: campana.prefijo ?? '+51',
+      numeroWhatsApp: campana.numeroWhatsApp ?? campana.numeroWhatsappEmpresa ?? ''
+    });
     this.whatsappDialogOpen.set(true);
     this.clearMessages();
   }
@@ -324,13 +329,22 @@ export class CommunityWorkspaceFacade {
 
     const raw = this.campaignWhatsappForm.getRawValue();
     await this.saveAction(
-      () => this.leadService.actualizarWhatsappCampana(campana.id, raw.numeroWhatsappEmpresa),
+      () => this.leadService.actualizarWhatsappCampana(campana.id, raw),
       'WhatsApp de campaña actualizado.',
       async () => {
         await this.refreshCampaigns();
         this.closeWhatsappDialog();
       }
     );
+  }
+
+  campaignWhatsappLabel(campana: CampanaResponse): string {
+    const number = campana.numeroWhatsApp ?? campana.numeroWhatsappEmpresa;
+    if (!number) {
+      return '-';
+    }
+
+    return campana.prefijo ? `${campana.prefijo} ${number}` : number;
   }
 
   async toggleCampaign(idCampana: number): Promise<void> {

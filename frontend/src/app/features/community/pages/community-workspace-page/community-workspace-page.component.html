@@ -210,10 +210,13 @@
                     <span>Nombre</span>
                     <input pInputText type="text" formControlName="nombre" />
                   </label>
-                  <label>
-                    <span>WhatsApp empresa</span>
-                    <input pInputText type="text" formControlName="numeroWhatsappEmpresa" />
-                  </label>
+                  <app-phone-number-field
+                    label="WhatsApp empresa"
+                    [prefixControl]="facade.campaignForm.controls.prefijo"
+                    [numberControl]="facade.campaignForm.controls.numeroWhatsApp"
+                    [numberMaxLength]="15"
+                    numberPlaceholder="Numero WhatsApp"
+                  />
                   <label>
                     <span>Cuenta activa</span>
                     <p-select
@@ -261,7 +264,7 @@
                     <td>{{ display(campana.nombreCuenta) }}</td>
                     <td>
                       <div class="inline-action">
-                        <span>{{ display(campana.numeroWhatsappEmpresa) }}</span>
+                        <span>{{ facade.campaignWhatsappLabel(campana) }}</span>
                         <button
                           pButton
                           type="button"
@@ -865,10 +868,14 @@
         <span>Campaña</span>
         <input pInputText type="text" [value]="display(facade.selectedCampaign()?.nombre)" disabled />
       </label>
-      <label class="wide">
-        <span>WhatsApp empresa</span>
-        <input pInputText type="text" formControlName="numeroWhatsappEmpresa" />
-      </label>
+      <app-phone-number-field
+        class="wide"
+        label="WhatsApp empresa"
+        [prefixControl]="facade.campaignWhatsappForm.controls.prefijo"
+        [numberControl]="facade.campaignWhatsappForm.controls.numeroWhatsApp"
+        [numberMaxLength]="15"
+        numberPlaceholder="Numero WhatsApp"
+      />
       <div class="form-actions wide">
         <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeWhatsappDialog()"></button>
         <button pButton type="submit" icon="pi pi-save" label="Guardar" [loading]="facade.isSaving()"></button>
