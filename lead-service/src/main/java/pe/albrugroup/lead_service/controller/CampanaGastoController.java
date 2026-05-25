@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import pe.albrugroup.lead_service.entity.request.CampanaGastoRegistroRequest;
-import pe.albrugroup.lead_service.entity.response.CampanaGastoRegistroResponse;
+import pe.albrugroup.lead_service.entity.request.CampanaGastoRequest;
+import pe.albrugroup.lead_service.entity.response.CampanaGastoResponse;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResumenDiarioResponse;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResumenMensualResponse;
 import pe.albrugroup.lead_service.service.CampanaGastoService;
@@ -32,9 +32,9 @@ public class CampanaGastoController {
 
     @PostMapping("/{idCampana}/gastos")
     @PreAuthorize("hasAuthority('UPDATE_CAMPANA')")
-    public ResponseEntity<CampanaGastoRegistroResponse> registrarGasto(
+    public ResponseEntity<CampanaGastoResponse> registrarGasto(
             @PathVariable Long idCampana,
-            @Valid @RequestBody CampanaGastoRegistroRequest request
+            @Valid @RequestBody CampanaGastoRequest request
     ) {
         var registro = campanaGastoService.registrarGasto(idCampana, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(registro);
@@ -42,7 +42,7 @@ public class CampanaGastoController {
 
     @GetMapping("/{idCampana}/gastos")
     @PreAuthorize("hasAuthority('READ_CAMPANA')")
-    public ResponseEntity<List<CampanaGastoRegistroResponse>> listarRegistrosDia(
+    public ResponseEntity<List<CampanaGastoResponse>> listarRegistrosDia(
             @PathVariable Long idCampana,
             @RequestParam(required = false) LocalDate fecha
     ) {

@@ -41,7 +41,7 @@ Indices:
 
 ## Request
 
-DTO: `CampanaGastoRegistroRequest`
+DTO: `CampanaGastoRequest`
 
 ```json
 {
@@ -61,7 +61,7 @@ El cliente no envia `leadsReales`, `ventasCerradas`, `createdAt` ni `updatedAt`.
 
 ## Responses
 
-### CampanaGastoRegistroResponse
+### CampanaGastoResponse
 
 Usado al registrar un gasto y al listar los registros de un dia.
 
@@ -212,7 +212,7 @@ Body:
 }
 ```
 
-Response: `201 Created` con `CampanaGastoRegistroResponse`.
+Response: `201 Created` con `CampanaGastoResponse`.
 
 Comportamiento:
 
@@ -238,7 +238,7 @@ Query params:
 | --- | --- | --- | --- | --- |
 | `fecha` | `LocalDate` (`YYYY-MM-DD`) | No | Fecha actual en `America/Lima` | Dia a consultar. |
 
-Response: `200 OK` con `List<CampanaGastoRegistroResponse>`.
+Response: `200 OK` con `List<CampanaGastoResponse>`.
 
 Orden: `createdAt ASC`.
 

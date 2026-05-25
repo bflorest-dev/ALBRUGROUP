@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 
 @Getter
 @Setter
-public class CampanaGastoRegistroRequest {
+public class CampanaGastoRequest {
 
     @NotNull(message = "leads es obligatorio")
     @Min(value = 0, message = "leads debe ser mayor o igual a 0")

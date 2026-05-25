@@ -19,6 +19,7 @@ public interface CampanaMapper {
     Campana toEntity(CampanaRequest request);
 
     @Mapping(target = "numeroWhatsappEmpresa", source = "numeroWhatsApp")
+    @Mapping(target = "prefijo", source = "prefijo")
     @Mapping(target = "idCuentaPublicitaria", source = "cuentaPublicitaria.id")
     @Mapping(target = "numeroCuenta", source = "cuentaPublicitaria.numeroCuenta")
     @Mapping(target = "nombreCuenta", source = "cuentaPublicitaria.nombreCuenta")

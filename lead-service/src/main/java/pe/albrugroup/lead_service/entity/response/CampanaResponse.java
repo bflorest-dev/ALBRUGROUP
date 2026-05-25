@@ -10,6 +10,7 @@ public class CampanaResponse {
 
     private Long id;
     private String nombre;
+    private String prefijo;
     private String numeroWhatsappEmpresa;
     private Boolean activo;
     private Long idCuentaPublicitaria;

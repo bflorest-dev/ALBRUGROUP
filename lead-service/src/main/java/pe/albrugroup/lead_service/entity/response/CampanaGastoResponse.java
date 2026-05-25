@@ -14,7 +14,7 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CampanaGastoRegistroResponse {
+public class CampanaGastoResponse {
 
     private Long id;
     private Long idCampana;

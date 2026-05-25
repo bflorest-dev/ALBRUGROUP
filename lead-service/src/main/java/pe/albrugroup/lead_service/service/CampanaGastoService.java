@@ -6,9 +6,9 @@ import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.entity.Campana;
 import pe.albrugroup.lead_service.entity.CampanaGastoRegistro;
 import pe.albrugroup.lead_service.entity.enums.Accion;
-import pe.albrugroup.lead_service.entity.request.CampanaGastoRegistroRequest;
+import pe.albrugroup.lead_service.entity.request.CampanaGastoRequest;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoCampanaResumenResponse;
-import pe.albrugroup.lead_service.entity.response.CampanaGastoRegistroResponse;
+import pe.albrugroup.lead_service.entity.response.CampanaGastoResponse;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResumenDiarioResponse;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResumenMensualResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
@@ -44,7 +44,7 @@ public class CampanaGastoService {
     private final EventoRepository eventoRepository;
 
     @Transactional
-    public CampanaGastoRegistroResponse registrarGasto(Long idCampana, CampanaGastoRegistroRequest request) {
+    public CampanaGastoResponse registrarGasto(Long idCampana, CampanaGastoRequest request) {
         Campana campana = obtenerCampanaActiva(idCampana);
         CampanaGastoRegistro registro = CampanaGastoRegistro.builder()
                 .campana(campana)
@@ -58,7 +58,7 @@ public class CampanaGastoService {
         return toRegistroResponse(registroRepository.save(savedRegistro));
     }
 
-    public List<CampanaGastoRegistroResponse> listarRegistrosDia(Long idCampana, LocalDate fecha) {
+    public List<CampanaGastoResponse> listarRegistrosDia(Long idCampana, LocalDate fecha) {
         obtenerCampanaActiva(idCampana);
         RangoFechas rango = rangoDia(resolverFecha(fecha));
         return registroRepository
@@ -180,9 +180,9 @@ public class CampanaGastoService {
                 .orElseThrow(() -> new NotFoundException(Campana.class, idCampana));
     }
 
-    private CampanaGastoRegistroResponse toRegistroResponse(CampanaGastoRegistro registro) {
+    private CampanaGastoResponse toRegistroResponse(CampanaGastoRegistro registro) {
         Campana campana = registro.getCampana();
-        return CampanaGastoRegistroResponse.builder()
+        return CampanaGastoResponse.builder()
                 .id(registro.getId())
                 .idCampana(campana == null ? null : campana.getId())
                 .nombreCampana(campana == null ? null : campana.getNombre())
