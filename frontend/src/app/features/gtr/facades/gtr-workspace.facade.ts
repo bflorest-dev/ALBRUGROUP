@@ -15,6 +15,7 @@ import { PresenceRealtimeEvent } from '../../../shared/models/gateway/presence-r
 import {
   CampanaResponse,
   Etapa,
+  EventoResponse,
   LeadAgendadoGtrResponse,
   LeadGtrResponse,
   LeadGtrMetricasResponse,
@@ -37,6 +38,11 @@ type SubtipificacionSelectOption = SelectOption<number> & {
   idTipificacion: number;
 };
 
+type TipificacionVisualMeta = {
+  orden: number;
+  paletteIndex: number;
+};
+
 type AgendadoGroup = {
   key: string;
   label: string;
@@ -54,7 +60,8 @@ type AdvisorOption = {
   lastSeen?: string | null;
 };
 
-type GtrDialog = 'lead' | 'snapshot' | 'assign' | null;
+type GtrDialog = 'lead' | 'snapshot' | 'assign' | 'events' | null;
+type EventAnomalyFilter = 'multiple-records' | 'same-campaign' | null;
 
 type LoadError = {
   label: string;
@@ -84,11 +91,14 @@ export class GtrWorkspaceFacade {
   readonly isSavingSnapshot = signal(false);
   readonly isLoadingAgendados = signal(false);
   readonly isLoadingMasivos = signal(false);
+  readonly isLoadingEvents = signal(false);
   readonly successMessage = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
   readonly rows = signal<VisualLeadGtr[]>([]);
   readonly agendadosRows = signal<VisualLeadAgendadoGtr[]>([]);
   readonly masivoRows = signal<VisualLeadGtr[]>([]);
+  readonly eventRows = signal<EventoResponse[]>([]);
+  readonly selectedEventAnomalyFilter = signal<EventAnomalyFilter>(null);
   readonly metrics = signal<LeadGtrMetricasResponse>({
     nuevos: 0,
     sinGestionar: 0,
@@ -112,6 +122,7 @@ export class GtrWorkspaceFacade {
   readonly catalogoSubtipificaciones = signal<SubtipificacionSelectOption[]>([]);
   readonly activeDialog = signal<GtrDialog>(null);
   readonly activeAssignmentLead = signal<LeadGtrResponse | null>(null);
+  readonly activeEventsLead = signal<LeadGtrResponse | null>(null);
   readonly advisorsPanelOpen = signal(false);
   readonly baseOptions = ['WHATSAPP', 'MESSENGER', 'RECONTACTO', 'PREDICTIVO', 'REFERIDO', 'MASIVO'];
 
@@ -162,6 +173,62 @@ export class GtrWorkspaceFacade {
         .map(([value, label]) => ({ label, value }))
         .sort((left, right) => left.label.localeCompare(right.label))
     ];
+  });
+  readonly tipificacionVisualMetaByCode = computed(() => {
+    const meta = new Map<string, TipificacionVisualMeta>();
+    for (const option of this.catalogoTipificaciones()) {
+      if (!('codigo' in option) || !('orden' in option)) {
+        continue;
+      }
+      const codigo = String(option.codigo).toUpperCase();
+      const orden = Number(option.orden);
+      meta.set(codigo, {
+        orden,
+        paletteIndex: this.tipificacionPaletteIndex(orden)
+      });
+    }
+    return meta;
+  });
+  readonly filteredEventRows = computed(() => {
+    const rows = this.eventRows();
+    const filter = this.selectedEventAnomalyFilter();
+
+    if (!filter) {
+      return rows;
+    }
+
+    const registroRows = rows.filter((evento) => evento.accion === 'REGISTRO');
+    if (filter === 'multiple-records') {
+      return registroRows;
+    }
+
+    const countsByCampaign = new Map<number, number>();
+
+    for (const evento of registroRows) {
+      if (!evento.idCampana) {
+        continue;
+      }
+      countsByCampaign.set(evento.idCampana, (countsByCampaign.get(evento.idCampana) ?? 0) + 1);
+    }
+
+    return registroRows
+      .filter((evento) => !!evento.idCampana && (countsByCampaign.get(evento.idCampana) ?? 0) > 1)
+      .sort((left, right) => {
+        const rightCount = right.idCampana ? (countsByCampaign.get(right.idCampana) ?? 0) : 0;
+        const leftCount = left.idCampana ? (countsByCampaign.get(left.idCampana) ?? 0) : 0;
+        if (rightCount !== leftCount) {
+          return rightCount - leftCount;
+        }
+
+        const leftCampaign = this.eventCampaignLabel(left) ?? '';
+        const rightCampaign = this.eventCampaignLabel(right) ?? '';
+        const campaignSort = leftCampaign.localeCompare(rightCampaign);
+        if (campaignSort !== 0) {
+          return campaignSort;
+        }
+
+        return this.eventTimestamp(right) - this.eventTimestamp(left);
+      });
   });
 
   readonly agendadoGroups = computed<AgendadoGroup[]>(() => this.groupAgendados(this.agendadosRows()));
@@ -263,9 +330,7 @@ export class GtrWorkspaceFacade {
       sectionLoads.push(['agendados', () => this.refreshAgendados(false)]);
     }
 
-    if (section === 'historicos') {
-      sectionLoads.push(['catalogo de tipificaciones', () => this.refreshCatalogoTipificaciones()]);
-    }
+    sectionLoads.push(['catalogo de tipificaciones', () => this.refreshCatalogoTipificaciones()]);
 
     try {
       await Promise.all([
@@ -334,6 +399,30 @@ export class GtrWorkspaceFacade {
     this.activeDialog.set('assign');
   }
 
+  async openEventHistory(row: LeadGtrResponse): Promise<void> {
+    this.activeEventsLead.set(row);
+    this.eventRows.set([]);
+    this.selectedEventAnomalyFilter.set(null);
+    this.activeDialog.set('events');
+    this.isLoadingEvents.set(true);
+    this.clearMessages();
+    try {
+      const page = await firstValueFrom(
+        this.preventaService.listarEventosLead(row.id, this.today, {
+          pageNumber: 0,
+          pageSize: 100,
+          sortBy: 'createdAt',
+          direction: 'desc'
+        })
+      );
+      this.eventRows.set(page.content);
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar el historial de eventos.'));
+    } finally {
+      this.isLoadingEvents.set(false);
+    }
+  }
+
   openAgendadoAssignment(row: LeadAgendadoGtrResponse): void {
     this.openAssignment(this.mapAgendadoToLead(row));
   }
@@ -341,6 +430,9 @@ export class GtrWorkspaceFacade {
   closeDialog(): void {
     this.activeDialog.set(null);
     this.activeAssignmentLead.set(null);
+    this.activeEventsLead.set(null);
+    this.eventRows.set([]);
+    this.selectedEventAnomalyFilter.set(null);
   }
 
   toggleAdvisorsPanel(): void {
@@ -610,6 +702,49 @@ export class GtrWorkspaceFacade {
     return String(value);
   }
 
+  warningTitle(row: LeadGtrResponse): string {
+    const reasons: string[] = [];
+    if (row.tieneMultiplesRegistrosDia) {
+      reasons.push('multiples registros');
+    }
+    if (row.tieneRegistrosMismaCampanaDia) {
+      reasons.push('registros con la misma campana');
+    }
+    return reasons.length ? `Alerta: ${reasons.join(' y ')}` : 'Sin alertas';
+  }
+
+  toggleEventAnomalyFilter(filter: Exclude<EventAnomalyFilter, null>): void {
+    this.selectedEventAnomalyFilter.update((current) => (current === filter ? null : filter));
+  }
+
+  eventAnomalyTagClass(filter: Exclude<EventAnomalyFilter, null>, tone: 'danger' | 'violet'): string {
+    const selected = this.selectedEventAnomalyFilter() === filter ? ' event-alert-tag--selected' : '';
+    return `event-alert-tag event-alert-tag--${tone}${selected}`;
+  }
+
+  eventSummary(evento: EventoResponse): string {
+    const parts = [
+      evento.tipificacion,
+      evento.subtipificacion,
+      evento.comentario,
+      this.eventCampaignLabel(evento)
+    ].filter(Boolean);
+    return parts.length ? parts.join(' / ') : '-';
+  }
+
+  private eventCampaignLabel(evento: EventoResponse): string | null {
+    if (!evento.idCampana) {
+      return null;
+    }
+
+    const campana = this.campanas().find((item) => item.id === evento.idCampana);
+    return campana?.nombre ?? `Campana ${evento.idCampana}`;
+  }
+
+  private eventTimestamp(evento: EventoResponse): number {
+    return evento.createdAt ? new Date(evento.createdAt).getTime() : 0;
+  }
+
   tipificacionLabel(codigo?: string | null, subcodigo?: string | null): string {
     const codigoDisplay = this.display(codigo);
     const subcodigoDisplay = this.display(subcodigo);
@@ -635,7 +770,8 @@ export class GtrWorkspaceFacade {
   tipificacionTagClass(codigo?: string | null, kind: 'tipificacion' | 'subtipificacion' = 'tipificacion'): string {
     const normalized = this.display(codigo).toUpperCase();
     const base = 'gtr-tip-tag';
-    const tone = this.tipificacionTone(normalized);
+    const meta = this.tipificacionVisualMetaByCode().get(normalized);
+    const tone = meta ? `palette-${meta.paletteIndex}` : 'neutral';
     return `${base} ${base}--${tone} ${base}--${kind}`;
   }
 
@@ -652,25 +788,6 @@ export class GtrWorkspaceFacade {
       return '/provider-logos/WIN.png';
     }
     return null;
-  }
-
-  private tipificacionTone(codigo: string): string {
-    if (codigo.includes('SIN_CONTACTO')) {
-      return 'sin-contacto';
-    }
-    if (codigo.includes('NO_INTERESADO')) {
-      return 'no-interesado';
-    }
-    if (codigo.includes('INTERESADO')) {
-      return 'interesado';
-    }
-    if (codigo.includes('AGENDADO')) {
-      return 'agendado';
-    }
-    if (codigo.includes('CONTACTO')) {
-      return 'contacto';
-    }
-    return 'neutral';
   }
 
   advisorDotClass(advisor: AdvisorOption): string {
@@ -881,7 +998,9 @@ export class GtrWorkspaceFacade {
     this.catalogoTipificaciones.set(
       catalogo.tipificaciones
         .map((tipificacion) => ({
+          codigo: tipificacion.codigo,
           label: `${tipificacion.codigo} - ${tipificacion.descripcion}`,
+          orden: tipificacion.orden,
           value: tipificacion.id
         }))
         .sort((left, right) => left.label.localeCompare(right.label))
@@ -890,13 +1009,23 @@ export class GtrWorkspaceFacade {
       catalogo.tipificaciones
         .flatMap((tipificacion) =>
           tipificacion.subtipificaciones.map((subtipificacion) => ({
+            codigo: subtipificacion.codigo,
             idTipificacion: tipificacion.id,
             label: `${tipificacion.codigo}: ${subtipificacion.codigo} - ${subtipificacion.descripcion}`,
+            orden: subtipificacion.orden,
             value: subtipificacion.id
           }))
         )
         .sort((left, right) => left.label.localeCompare(right.label))
     );
+  }
+
+  private tipificacionPaletteIndex(orden: number): number {
+    const totalPalettes = 8;
+    if (!Number.isFinite(orden) || orden <= 0) {
+      return 0;
+    }
+    return (orden - 1) % totalPalettes;
   }
 
   private currentQuery(pageSize: number): PageQuery {
@@ -965,7 +1094,10 @@ export class GtrWorkspaceFacade {
       codigoSubtipificacion: row.codigoSubtipificacion,
       nombreAsesorAsignado: row.nombreAsesorAsignado,
       estadoSeguimiento: row.estadoSeguimiento,
-      totalAsignaciones: row.totalAsignaciones
+      totalAsignaciones: row.totalAsignaciones,
+      tieneAlertaRegistrosDia: false,
+      tieneMultiplesRegistrosDia: false,
+      tieneRegistrosMismaCampanaDia: false
     };
   }
 

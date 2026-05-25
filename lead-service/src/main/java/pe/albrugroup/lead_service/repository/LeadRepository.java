@@ -52,7 +52,10 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.nombrePlanSnapshot,
                 l.nombreAsesorAsignado,
                 l.estado,
-                0L
+                0L,
+                false,
+                false,
+                false
             )
             FROM Lead l
             LEFT JOIN l.campana c
@@ -425,7 +428,10 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.nombrePlanSnapshot,
                 l.nombreAsesorAsignado,
                 l.estado,
-                0L
+                0L,
+                false,
+                false,
+                false
             )
             FROM Lead l
             LEFT JOIN l.campana c

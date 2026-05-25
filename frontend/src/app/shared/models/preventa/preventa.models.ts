@@ -39,6 +39,9 @@ export interface LeadGtrResponse {
   nombreAsesorAsignado?: string | null;
   estadoSeguimiento?: EstadoSeguimiento | string | null;
   totalAsignaciones: number;
+  tieneAlertaRegistrosDia?: boolean;
+  tieneMultiplesRegistrosDia?: boolean;
+  tieneRegistrosMismaCampanaDia?: boolean;
 }
 
 export interface LeadAgendadoGtrResponse {

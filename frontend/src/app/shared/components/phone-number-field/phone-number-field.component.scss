@@ -1,0 +1,83 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.phone-field {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.phone-field__label {
+  color: inherit;
+  font-weight: inherit;
+}
+
+.phone-field__control {
+  align-items: center;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.45rem;
+  color: var(--app-text);
+  display: flex;
+  min-height: 2.75rem;
+  overflow: hidden;
+  padding: 0 0.8rem;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+  width: 100%;
+}
+
+.phone-field__control:focus-within {
+  border-color: var(--app-focus);
+  box-shadow: 0 0 0 3px var(--app-focus-ring);
+}
+
+.phone-field__plus {
+  color: var(--app-text-muted);
+  flex: 0 0 auto;
+  font-weight: 900;
+  padding-right: 0.12rem;
+}
+
+.phone-field__prefix,
+.phone-field__number {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  min-width: 0;
+  outline: 0;
+  padding: 0.72rem 0;
+}
+
+.phone-field__prefix {
+  flex: 0 0 2.7rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.phone-field__number {
+  flex: 1 1 auto;
+  padding-left: 0.85rem;
+}
+
+.phone-field__prefix::placeholder,
+.phone-field__number::placeholder {
+  color: var(--app-text-muted);
+}
+
+.phone-field__separator {
+  align-self: stretch;
+  background: var(--app-border-soft);
+  flex: 0 0 1px;
+  margin: 0.65rem 0;
+}
+
+.phone-field__prefix:disabled,
+.phone-field__number:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}

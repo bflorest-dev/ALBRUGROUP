@@ -21,20 +21,72 @@ import java.util.Optional;
 public interface EventoRepository extends JpaRepository<Evento, Long> {
 
     Page<Evento> findByIdLeadOrderByCreatedAtDesc(Long idLead, Pageable pageable);
+    Page<Evento> findByIdLeadAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
+            Long idLead,
+            Instant fechaDesde,
+            Instant fechaHasta,
+            Pageable pageable
+    );
+    Page<Evento> findByIdLeadAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(
+            Long idLead,
+            Instant fechaDesde,
+            Pageable pageable
+    );
+    Page<Evento> findByIdLeadAndCreatedAtLessThanOrderByCreatedAtDesc(
+            Long idLead,
+            Instant fechaHasta,
+            Pageable pageable
+    );
     List<Evento> findAllByIdLeadOrderByCreatedAtDesc(Long idLead);
 
     @Query("""
-            SELECT e
+            SELECT e.idLead, COUNT(e.id)
             FROM Evento e
-            WHERE e.idActor = :idActor
-              AND (:fechaDesde IS NULL OR e.createdAt >= :fechaDesde)
-              AND (:fechaHasta IS NULL OR e.createdAt < :fechaHasta)
-            ORDER BY e.createdAt DESC
+            WHERE e.idLead IN :leadIds
+              AND e.accion = :accion
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt < :fechaHasta
+            GROUP BY e.idLead
             """)
-    Page<Evento> listarPorActorYFechas(
-            @Param("idActor") Long idActor,
+    List<Object[]> contarPorLeadIdsYAccionYFechas(
+            @Param("leadIds") Collection<Long> leadIds,
+            @Param("accion") Accion accion,
             @Param("fechaDesde") Instant fechaDesde,
-            @Param("fechaHasta") Instant fechaHasta,
+            @Param("fechaHasta") Instant fechaHasta
+    );
+
+    @Query("""
+            SELECT e.idLead, e.idCampana, COUNT(e.id)
+            FROM Evento e
+            WHERE e.idLead IN :leadIds
+              AND e.accion = :accion
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt < :fechaHasta
+            GROUP BY e.idLead, e.idCampana
+            HAVING COUNT(e.id) > 1
+            """)
+    List<Object[]> listarCampanasDuplicadasPorLeadIdsYAccionYFechas(
+            @Param("leadIds") Collection<Long> leadIds,
+            @Param("accion") Accion accion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta
+    );
+
+    Page<Evento> findByIdActorOrderByCreatedAtDesc(Long idActor, Pageable pageable);
+    Page<Evento> findByIdActorAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
+            Long idActor,
+            Instant fechaDesde,
+            Instant fechaHasta,
+            Pageable pageable
+    );
+    Page<Evento> findByIdActorAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(
+            Long idActor,
+            Instant fechaDesde,
+            Pageable pageable
+    );
+    Page<Evento> findByIdActorAndCreatedAtLessThanOrderByCreatedAtDesc(
+            Long idActor,
+            Instant fechaHasta,
             Pageable pageable
     );
 

@@ -34,6 +34,7 @@ public class EventoService {
     private final PaginationService paginationService;
 
     private static final Set<String> EVENTO_SORT_FIELDS = Set.of("createdAt", "accion", "etapa", "tipificacion", "subtipificacion");
+    private static final ZoneId ZONA_OPERATIVA = ZoneId.of("America/Lima");
 
     @Transactional
     public EventoResponse registrarEvento(RegistrarEventoRequest request) {
@@ -62,16 +63,23 @@ public class EventoService {
         return eventoMapper.toResponse(eventoRepository.save(evento));
     }
 
-    public PageResponse<EventoResponse> listarPorLead(Long idLead, PageRequest pageRequest) {
+    public PageResponse<EventoResponse> listarPorLead(
+            Long idLead,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            PageRequest pageRequest
+    ) {
         if (!leadRepository.existsById(idLead)) {
             throw new NotFoundException(Lead.class, idLead);
         }
 
-        var eventos = eventoRepository.findByIdLeadOrderByCreatedAtDesc(
-                idLead,
-                paginationService.toPageable(pageRequest, EVENTO_SORT_FIELDS)
-        ).map(eventoMapper::toResponse);
-        return PageResponse.from(eventos);
+        Instant fechaDesdeInstant = inicioDia(fechaDesde);
+        Instant fechaHastaInstant = finDiaInclusivo(fechaHasta);
+
+        var pageable = paginationService.toPageable(pageRequest, EVENTO_SORT_FIELDS);
+        var eventos = listarEventosLeadPorRango(idLead, fechaDesdeInstant, fechaHastaInstant, pageable);
+        var response = eventos.map(eventoMapper::toResponse);
+        return PageResponse.from(response);
     }
 
     public PageResponse<EventoResponse> listarPorLeadAsignado(Long idLead, Etapa etapa, PageRequest pageRequest) {
@@ -92,19 +100,85 @@ public class EventoService {
             LocalDate fechaHasta,
             PageRequest pageRequest
     ) {
-        Instant fechaDesdeInstant = fechaDesde == null
-                ? null
-                : fechaDesde.atStartOfDay(ZoneId.systemDefault()).toInstant();
-        Instant fechaHastaInstant = fechaHasta == null
-                ? null
-                : fechaHasta.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        Instant fechaDesdeInstant = inicioDia(fechaDesde);
+        Instant fechaHastaInstant = finDiaInclusivo(fechaHasta);
 
-        var eventos = eventoRepository.listarPorActorYFechas(
+        var eventos = listarEventosActorPorRango(
                 idEmpleado,
                 fechaDesdeInstant,
                 fechaHastaInstant,
                 paginationService.toPageable(pageRequest, EVENTO_SORT_FIELDS)
         ).map(eventoMapper::toResponse);
         return PageResponse.from(eventos);
+    }
+
+    private Instant inicioDia(LocalDate fecha) {
+        return fecha == null ? null : fecha.atStartOfDay(ZONA_OPERATIVA).toInstant();
+    }
+
+    private Instant finDiaInclusivo(LocalDate fecha) {
+        return fecha == null ? null : fecha.plusDays(1).atStartOfDay(ZONA_OPERATIVA).toInstant();
+    }
+
+    private org.springframework.data.domain.Page<Evento> listarEventosLeadPorRango(
+            Long idLead,
+            Instant fechaDesde,
+            Instant fechaHasta,
+            org.springframework.data.domain.Pageable pageable
+    ) {
+        if (fechaDesde != null && fechaHasta != null) {
+            return eventoRepository.findByIdLeadAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
+                    idLead,
+                    fechaDesde,
+                    fechaHasta,
+                    pageable
+            );
+        }
+        if (fechaDesde != null) {
+            return eventoRepository.findByIdLeadAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(
+                    idLead,
+                    fechaDesde,
+                    pageable
+            );
+        }
+        if (fechaHasta != null) {
+            return eventoRepository.findByIdLeadAndCreatedAtLessThanOrderByCreatedAtDesc(
+                    idLead,
+                    fechaHasta,
+                    pageable
+            );
+        }
+        return eventoRepository.findByIdLeadOrderByCreatedAtDesc(idLead, pageable);
+    }
+
+    private org.springframework.data.domain.Page<Evento> listarEventosActorPorRango(
+            Long idActor,
+            Instant fechaDesde,
+            Instant fechaHasta,
+            org.springframework.data.domain.Pageable pageable
+    ) {
+        if (fechaDesde != null && fechaHasta != null) {
+            return eventoRepository.findByIdActorAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
+                    idActor,
+                    fechaDesde,
+                    fechaHasta,
+                    pageable
+            );
+        }
+        if (fechaDesde != null) {
+            return eventoRepository.findByIdActorAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(
+                    idActor,
+                    fechaDesde,
+                    pageable
+            );
+        }
+        if (fechaHasta != null) {
+            return eventoRepository.findByIdActorAndCreatedAtLessThanOrderByCreatedAtDesc(
+                    idActor,
+                    fechaHasta,
+                    pageable
+            );
+        }
+        return eventoRepository.findByIdActorOrderByCreatedAtDesc(idActor, pageable);
     }
 }

@@ -34,4 +34,7 @@ public class LeadGtrResponse {
     private String nombreAsesorAsignado;
     private EstadoSeguimiento estadoSeguimiento;
     private long totalAsignaciones;
+    private boolean tieneAlertaRegistrosDia;
+    private boolean tieneMultiplesRegistrosDia;
+    private boolean tieneRegistrosMismaCampanaDia;
 }

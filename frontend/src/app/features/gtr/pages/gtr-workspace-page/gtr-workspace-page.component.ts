@@ -13,8 +13,10 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { PaginatorModule } from 'primeng/paginator';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { SelectModule } from 'primeng/select';
+import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-number-field/phone-number-field.component';
 import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
 
 @Component({
@@ -32,8 +34,10 @@ import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
     PaginatorModule,
     ProgressSpinnerModule,
     SelectModule,
+    SkeletonModule,
     TableModule,
-    TagModule
+    TagModule,
+    PhoneNumberFieldComponent
   ],
   providers: [GtrWorkspaceFacade],
   templateUrl: './gtr-workspace-page.component.html',

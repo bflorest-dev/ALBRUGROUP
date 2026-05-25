@@ -30,9 +30,11 @@ public class EventoController {
     @GetMapping("/lead/{idLead}") @PreAuthorize("hasAuthority('READ_EVENTOS_LEADS')")
     public ResponseEntity<PageResponse<EventoResponse>> listarEventosPorLead(
             @PathVariable Long idLead,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var eventos = eventoService.listarPorLead(idLead, pageRequest);
+        var eventos = eventoService.listarPorLead(idLead, fechaDesde, fechaHasta, pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(eventos);
     }
 

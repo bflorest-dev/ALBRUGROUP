@@ -213,6 +213,24 @@
                 severity="secondary"
                 (click)="facade.openSnapshot(row)"
               ></button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-history"
+                size="small"
+                severity="secondary"
+                [disabled]="facade.isLoadingEvents()"
+                title="Ver historial del dia"
+                aria-label="Ver historial del dia"
+                (click)="facade.openEventHistory(row)"
+              ></button>
+              @if (row.tieneAlertaRegistrosDia) {
+                <span class="lead-warning" [title]="facade.warningTitle(row)" aria-label="Alerta de registros">
+                  <span class="lead-warning__triangle" aria-hidden="true">
+                    <span>!</span>
+                  </span>
+                </span>
+              }
             </div>
           </td>
         </tr>
@@ -566,22 +584,13 @@
     styleClass="gtr-dialog"
   >
     <form class="form-grid" [formGroup]="facade.intakeForm" (ngSubmit)="facade.submitIntake()">
-      <label>
-        <span>Prefijo</span>
-        <input pInputText type="text" formControlName="prefijo" />
-      </label>
-      <label>
-        <span>Numero</span>
-        <input
-          pInputText
-          type="text"
-          formControlName="lead"
-          inputmode="numeric"
-          maxlength="9"
-          autocomplete="off"
-          (input)="facade.normalizeLeadNumber($any($event.target).value)"
-        />
-      </label>
+      <app-phone-number-field
+        class="wide"
+        label="Numero"
+        [prefixControl]="facade.intakeForm.controls.prefijo"
+        [numberControl]="facade.intakeForm.controls.lead"
+        numberPlaceholder="Numero de lead"
+      />
       <label class="wide">
         <span>Campana</span>
         <p-select
@@ -682,5 +691,89 @@
         <button pButton type="submit" label="Asignar" [loading]="facade.isSaving()"></button>
       </div>
     </form>
+  </p-dialog>
+
+  <p-dialog
+    [visible]="facade.activeDialog() === 'events'"
+    (visibleChange)="!$event && facade.closeDialog()"
+    [modal]="true"
+    [draggable]="false"
+    styleClass="gtr-dialog gtr-dialog--events"
+  >
+    <ng-template #header>
+      <span class="events-dialog-title">
+        Historial del dia
+        @if (facade.activeEventsLead(); as lead) {
+          @if (lead.tieneMultiplesRegistrosDia) {
+            <button
+              type="button"
+              class="event-alert-button"
+              [class.event-alert-button--selected]="facade.selectedEventAnomalyFilter() === 'multiple-records'"
+              (click)="facade.toggleEventAnomalyFilter('multiple-records')"
+            >
+              <p-tag value="Multiples registros" [styleClass]="facade.eventAnomalyTagClass('multiple-records', 'danger')" />
+            </button>
+          }
+          @if (lead.tieneRegistrosMismaCampanaDia) {
+            <button
+              type="button"
+              class="event-alert-button"
+              [class.event-alert-button--selected]="facade.selectedEventAnomalyFilter() === 'same-campaign'"
+              (click)="facade.toggleEventAnomalyFilter('same-campaign')"
+            >
+              <p-tag value="Misma campaña" [styleClass]="facade.eventAnomalyTagClass('same-campaign', 'violet')" />
+            </button>
+          }
+        }
+      </span>
+    </ng-template>
+
+    @if (facade.activeEventsLead(); as lead) {
+      <p class="wide helper">Lead {{ facade.leadPrefixLabel(lead.prefijo) }} {{ lead.lead }}</p>
+    }
+
+    <p-table
+      [value]="facade.filteredEventRows()"
+      [rowHover]="true"
+      [tableStyle]="{ 'min-width': '680px' }"
+      styleClass="p-datatable-sm gtr-table"
+    >
+      <ng-template #header>
+        <tr>
+          <th>Hora</th>
+          <th>Accion</th>
+          <th>Actor</th>
+          <th>Detalle</th>
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-evento>
+        @if (!facade.isLoadingEvents()) {
+          <tr>
+            <td>{{ evento.createdAt | date: 'hh:mm a' }}</td>
+            <td><p-tag [value]="facade.display(evento.accion)" severity="secondary" /></td>
+            <td>{{ facade.display(evento.nombreActor) }}</td>
+            <td>{{ facade.eventSummary(evento) }}</td>
+          </tr>
+        }
+      </ng-template>
+
+      <ng-template #emptymessage>
+        @if (facade.isLoadingEvents()) {
+          @for (row of [1, 2, 3, 4]; track row) {
+            <tr>
+              <td><p-skeleton width="4.25rem" height="1rem" /></td>
+              <td><p-skeleton width="6.5rem" height="1.5rem" borderRadius="999px" /></td>
+              <td><p-skeleton width="8rem" height="1rem" /></td>
+              <td><p-skeleton width="100%" height="1rem" /></td>
+            </tr>
+          }
+        } @else {
+          <tr>
+            <td colspan="4">No hay eventos para el dia.</td>
+          </tr>
+        }
+      </ng-template>
+    </p-table>
   </p-dialog>
 </section>

@@ -15,6 +15,7 @@ import {
   LeadDatosPreventaRequest,
   LeadDetalleResponse,
   LeadDireccionRequest,
+  EventoResponse,
   LeadGtrResponse,
   LeadGtrMetricasResponse,
   LeadIntakeRequest,
@@ -51,6 +52,12 @@ export class PreventaLeadService {
   listarAgendadosGtr(query: PageQuery): Observable<LeadPage<LeadAgendadoGtrResponse>> {
     return this.http.get<LeadPage<LeadAgendadoGtrResponse>>(`${this.leadUrl}/preventa/gtr/agendados`, {
       params: this.pageParams(query)
+    });
+  }
+
+  listarEventosLead(idLead: number, fecha: string, query: PageQuery): Observable<LeadPage<EventoResponse>> {
+    return this.http.get<LeadPage<EventoResponse>>(`${this.leadUrl}/eventos/lead/${idLead}`, {
+      params: this.pageParams(query).set('fechaDesde', fecha).set('fechaHasta', fecha)
     });
   }
 

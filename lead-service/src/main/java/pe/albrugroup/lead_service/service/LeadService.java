@@ -129,6 +129,7 @@ public class LeadService {
                 paginationService.toPageable(pageRequest, LEAD_GTR_SORT_FIELDS)
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadGtrResponse::getId, this::setTotalesAsignacion);
+        aplicarAlertasRegistrosDia(leads.getContent(), inicioDia, finDia);
         return PageResponse.from(leads);
     }
 
@@ -1409,6 +1410,54 @@ public class LeadService {
 
     private void setTotalesAsignacion(LeadAgendadoGtrResponse response, long totalAsignaciones) {
         response.setTotalAsignaciones(totalAsignaciones);
+    }
+
+    private void aplicarAlertasRegistrosDia(List<LeadGtrResponse> leads, Instant inicioDia, Instant finDia) {
+        List<Long> leadIds = leads.stream()
+                .map(LeadGtrResponse::getId)
+                .filter(id -> id != null && id > 0)
+                .distinct()
+                .toList();
+        if (leadIds.isEmpty()) {
+            return;
+        }
+
+        Map<Long, Long> totalRegistrosPorLead = new HashMap<>();
+        for (Object[] row : eventoRepository.contarPorLeadIdsYAccionYFechas(
+                leadIds,
+                Accion.REGISTRO,
+                inicioDia,
+                finDia
+        )) {
+            totalRegistrosPorLead.put((Long) row[0], (Long) row[1]);
+        }
+
+        List<Long> leadsConMultiplesRegistros = totalRegistrosPorLead.entrySet().stream()
+                .filter(entry -> entry.getValue() > 1)
+                .map(Map.Entry::getKey)
+                .toList();
+        if (leadsConMultiplesRegistros.isEmpty()) {
+            return;
+        }
+
+        Set<Long> leadsConCampanaDuplicada = new HashSet<>();
+        for (Object[] row : eventoRepository.listarCampanasDuplicadasPorLeadIdsYAccionYFechas(
+                leadsConMultiplesRegistros,
+                Accion.REGISTRO,
+                inicioDia,
+                finDia
+        )) {
+            leadsConCampanaDuplicada.add((Long) row[0]);
+        }
+
+        Set<Long> leadsConMultiplesRegistrosSet = new HashSet<>(leadsConMultiplesRegistros);
+        for (LeadGtrResponse lead : leads) {
+            boolean multiplesRegistros = leadsConMultiplesRegistrosSet.contains(lead.getId());
+            boolean mismaCampana = leadsConCampanaDuplicada.contains(lead.getId());
+            lead.setTieneMultiplesRegistrosDia(multiplesRegistros);
+            lead.setTieneRegistrosMismaCampanaDia(mismaCampana);
+            lead.setTieneAlertaRegistrosDia(multiplesRegistros || mismaCampana);
+        }
     }
 
     private void registrarPrimeraTipificacionSiFalta(
