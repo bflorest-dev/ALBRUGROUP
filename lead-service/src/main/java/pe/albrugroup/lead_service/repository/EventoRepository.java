@@ -234,6 +234,25 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     );
 
     @Query("""
+            SELECT COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            WHERE e.idCampana = :idCampana
+              AND e.accion = :accion
+              AND e.tipificacion = :tipificacion
+              AND e.subtipificacion = :subtipificacion
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt <= :fechaHasta
+            """)
+    long contarVentasCerradasPorCampanaYRango(
+            @Param("idCampana") Long idCampana,
+            @Param("accion") Accion accion,
+            @Param("tipificacion") String tipificacion,
+            @Param("subtipificacion") String subtipificacion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta
+    );
+
+    @Query("""
             SELECT e.idActor AS idAsesor,
                    e.nombreActor AS nombreAsesor,
                    p.id AS idProveedor,

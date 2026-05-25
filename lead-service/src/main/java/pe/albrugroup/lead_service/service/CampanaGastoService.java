@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.entity.Campana;
 import pe.albrugroup.lead_service.entity.CampanaGastoRegistro;
+import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.request.CampanaGastoRegistroRequest;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoCampanaResumenResponse;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoRegistroResponse;
@@ -14,6 +15,8 @@ import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.CampanaGastoRegistroRepository;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
+import pe.albrugroup.lead_service.repository.EventoRepository;
+import pe.albrugroup.lead_service.repository.LeadRepository;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -32,9 +35,13 @@ import java.util.Objects;
 public class CampanaGastoService {
 
     private static final ZoneId ZONA_OPERATIVA = ZoneId.of("America/Lima");
+    private static final String TIPIFICACION_PREVENTA_COMPLETA = "PREVENTA_COMPLETA";
+    private static final String SUBTIPIFICACION_VENTA_CERRADA = "VENTA_CERRADA";
 
     private final CampanaGastoRegistroRepository registroRepository;
     private final CampanaRepository campanaRepository;
+    private final LeadRepository leadRepository;
+    private final EventoRepository eventoRepository;
 
     @Transactional
     public CampanaGastoRegistroResponse registrarGasto(Long idCampana, CampanaGastoRegistroRequest request) {
@@ -42,9 +49,13 @@ public class CampanaGastoService {
         CampanaGastoRegistro registro = CampanaGastoRegistro.builder()
                 .campana(campana)
                 .leads(request.getLeads())
+                .leadsReales(0)
+                .ventasCerradas(0)
                 .costoTotal(request.getCostoTotal())
                 .build();
-        return toRegistroResponse(registroRepository.save(registro));
+        CampanaGastoRegistro savedRegistro = registroRepository.saveAndFlush(registro);
+        aplicarMetricasReales(savedRegistro);
+        return toRegistroResponse(registroRepository.save(savedRegistro));
     }
 
     public List<CampanaGastoRegistroResponse> listarRegistrosDia(Long idCampana, LocalDate fecha) {
@@ -77,6 +88,8 @@ public class CampanaGastoService {
                 .nombreCampana(campana.getNombre())
                 .fecha(fechaTrabajo)
                 .leads(resumen.getLeads())
+                .leadsReales(resumen.getLeadsReales())
+                .ventasCerradas(resumen.getVentasCerradas())
                 .costoTotal(resumen.getCostoTotal())
                 .ultimoRegistroAt(resumen.getUltimoRegistroAt())
                 .build();
@@ -94,6 +107,8 @@ public class CampanaGastoService {
         return CampanaGastoResumenDiarioResponse.builder()
                 .fecha(fechaTrabajo)
                 .leads(totalLeads(campanas))
+                .leadsReales(totalLeadsReales(campanas))
+                .ventasCerradas(totalVentasCerradas(campanas))
                 .costoTotal(totalCosto(campanas))
                 .ultimoRegistroAt(ultimoRegistroAt(campanas))
                 .campanas(campanas)
@@ -117,6 +132,8 @@ public class CampanaGastoService {
                 .anio(periodo.getYear())
                 .mes(periodo.getMonthValue())
                 .leads(resumen.getLeads())
+                .leadsReales(resumen.getLeadsReales())
+                .ventasCerradas(resumen.getVentasCerradas())
                 .costoTotal(resumen.getCostoTotal())
                 .ultimoRegistroAt(resumen.getUltimoRegistroAt())
                 .build();
@@ -135,10 +152,27 @@ public class CampanaGastoService {
                 .anio(periodo.getYear())
                 .mes(periodo.getMonthValue())
                 .leads(totalLeads(campanas))
+                .leadsReales(totalLeadsReales(campanas))
+                .ventasCerradas(totalVentasCerradas(campanas))
                 .costoTotal(totalCosto(campanas))
                 .ultimoRegistroAt(ultimoRegistroAt(campanas))
                 .campanas(campanas)
                 .build();
+    }
+
+    private void aplicarMetricasReales(CampanaGastoRegistro registro) {
+        Instant createdAt = registro.getCreatedAt();
+        Instant inicioDia = createdAt.atZone(ZONA_OPERATIVA).toLocalDate().atStartOfDay(ZONA_OPERATIVA).toInstant();
+        Long idCampana = registro.getCampana().getId();
+        registro.setLeadsReales((int) leadRepository.contarLeadsRealesPorCampanaYRango(idCampana, inicioDia, createdAt));
+        registro.setVentasCerradas((int) eventoRepository.contarVentasCerradasPorCampanaYRango(
+                idCampana,
+                Accion.TIPIFICACION,
+                TIPIFICACION_PREVENTA_COMPLETA,
+                SUBTIPIFICACION_VENTA_CERRADA,
+                inicioDia,
+                createdAt
+        ));
     }
 
     private Campana obtenerCampanaActiva(Long idCampana) {
@@ -153,6 +187,8 @@ public class CampanaGastoService {
                 .idCampana(campana == null ? null : campana.getId())
                 .nombreCampana(campana == null ? null : campana.getNombre())
                 .leads(registro.getLeads())
+                .leadsReales(registro.getLeadsReales())
+                .ventasCerradas(registro.getVentasCerradas())
                 .costoTotal(registro.getCostoTotal())
                 .createdAt(registro.getCreatedAt())
                 .updatedAt(registro.getUpdatedAt())
@@ -168,6 +204,8 @@ public class CampanaGastoService {
                 .idCampana(campana.getId())
                 .nombreCampana(campana.getNombre())
                 .leads(registro == null ? 0 : registro.getLeads())
+                .leadsReales(registro == null ? 0 : registro.getLeadsReales())
+                .ventasCerradas(registro == null ? 0 : registro.getVentasCerradas())
                 .costoTotal(registro == null ? BigDecimal.ZERO : registro.getCostoTotal())
                 .ultimoRegistroAt(registro == null ? null : registro.getCreatedAt())
                 .build();
@@ -180,6 +218,14 @@ public class CampanaGastoService {
                 .nombreCampana(campana.getNombre())
                 .leads(cierresDiarios.stream()
                         .map(CampanaGastoRegistro::getLeads)
+                        .filter(Objects::nonNull)
+                        .reduce(0, Integer::sum))
+                .leadsReales(cierresDiarios.stream()
+                        .map(CampanaGastoRegistro::getLeadsReales)
+                        .filter(Objects::nonNull)
+                        .reduce(0, Integer::sum))
+                .ventasCerradas(cierresDiarios.stream()
+                        .map(CampanaGastoRegistro::getVentasCerradas)
                         .filter(Objects::nonNull)
                         .reduce(0, Integer::sum))
                 .costoTotal(cierresDiarios.stream()
@@ -230,6 +276,20 @@ public class CampanaGastoService {
                 .map(CampanaGastoCampanaResumenResponse::getCostoTotal)
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private Integer totalLeadsReales(List<CampanaGastoCampanaResumenResponse> campanas) {
+        return campanas.stream()
+                .map(CampanaGastoCampanaResumenResponse::getLeadsReales)
+                .filter(Objects::nonNull)
+                .reduce(0, Integer::sum);
+    }
+
+    private Integer totalVentasCerradas(List<CampanaGastoCampanaResumenResponse> campanas) {
+        return campanas.stream()
+                .map(CampanaGastoCampanaResumenResponse::getVentasCerradas)
+                .filter(Objects::nonNull)
+                .reduce(0, Integer::sum);
     }
 
     private Instant ultimoRegistroAt(List<CampanaGastoCampanaResumenResponse> campanas) {

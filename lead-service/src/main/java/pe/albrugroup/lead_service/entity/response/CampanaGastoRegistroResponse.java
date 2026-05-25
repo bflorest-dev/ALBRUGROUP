@@ -20,6 +20,8 @@ public class CampanaGastoRegistroResponse {
     private Long idCampana;
     private String nombreCampana;
     private Integer leads;
+    private Integer leadsReales;
+    private Integer ventasCerradas;
     private BigDecimal costoTotal;
     private Instant createdAt;
     private Instant updatedAt;

@@ -44,6 +44,12 @@ public class CampanaGastoRegistro {
     @Column(nullable = false)
     private Integer leads;
 
+    @Column(nullable = false)
+    private Integer leadsReales;
+
+    @Column(nullable = false)
+    private Integer ventasCerradas;
+
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal costoTotal;
 

@@ -22,6 +22,8 @@ public class CampanaGastoResumenDiarioResponse {
     private String nombreCampana;
     private LocalDate fecha;
     private Integer leads;
+    private Integer leadsReales;
+    private Integer ventasCerradas;
     private BigDecimal costoTotal;
     private Instant ultimoRegistroAt;
     private List<CampanaGastoCampanaResumenResponse> campanas;

@@ -22,6 +22,8 @@ public class CampanaGastoResumenMensualResponse {
     private Integer anio;
     private Integer mes;
     private Integer leads;
+    private Integer leadsReales;
+    private Integer ventasCerradas;
     private BigDecimal costoTotal;
     private Instant ultimoRegistroAt;
     private List<CampanaGastoCampanaResumenResponse> campanas;

@@ -80,6 +80,19 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     );
 
     @Query("""
+            SELECT COUNT(DISTINCT l.id)
+            FROM Lead l
+            WHERE l.campana.id = :idCampana
+              AND l.lastEntryAt >= :fechaDesde
+              AND l.lastEntryAt <= :fechaHasta
+            """)
+    long contarLeadsRealesPorCampanaYRango(
+            @Param("idCampana") Long idCampana,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta
+    );
+
+    @Query("""
             SELECT l
             FROM Lead l
             LEFT JOIN FETCH l.datosPreventa
