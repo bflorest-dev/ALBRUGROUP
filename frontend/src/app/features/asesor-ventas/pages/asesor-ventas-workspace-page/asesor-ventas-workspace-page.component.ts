@@ -107,9 +107,14 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly activeDataTab = signal<ActiveDataTab>('datos');
   protected readonly showComment = signal(false);
   protected readonly skeletonRows = Array.from({ length: 8 });
-  protected readonly tipoDocumentoOptions = ['DNI', 'CE', 'PASAPORTE'];
-  protected readonly tipoDomicilioOptions = ['MULTIFAMILIAR', 'JURIDICA'];
-  protected readonly tipoViaOptions = ['CALLE', 'JIRON'];
+  protected readonly tipoDocumentoOptions = ['DNI', 'CE', 'RUC'];
+  protected readonly tipoDomicilioOptions = [
+    'HOGAR',
+    'MULTIFAMILIAR',
+    'CONDOMINIO_EDIFICIO',
+    'CONDOMINIO_EDIFICIO_NO_HABILITADO'
+  ];
+  protected readonly tipoViaOptions = ['AVENIDA', 'JIRON', 'CALLE', 'PASAJE', 'PROLONGACION'];
 
   protected readonly datosForm = this.fb.group({
     tipoDocumento: ['DNI', [Validators.required]],

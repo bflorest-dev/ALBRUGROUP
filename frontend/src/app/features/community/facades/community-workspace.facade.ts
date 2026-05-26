@@ -53,6 +53,10 @@ type FinanceRow = CampanaGastoCampanaResumenResponse & {
   conversionLeads: string;
   conversionLeadsReales: string;
 };
+type SnapshotFinanceRow = FinanceRow & {
+  deltaLeads: number | null;
+  deltaLeadsReales: number | null;
+};
 
 @Injectable()
 export class CommunityWorkspaceFacade {
@@ -137,7 +141,14 @@ export class CommunityWorkspaceFacade {
   readonly dailyFinanceRows = computed<FinanceRow[]>(() =>
     (this.dailyExpenseSummary()?.campanas ?? []).map((campana) => this.toFinanceRow(campana))
   );
-  readonly snapshotRows = computed<FinanceRow[]>(() => this.campaignExpenseSnapshots().map((snapshot) => this.toFinanceRow(snapshot)));
+  readonly snapshotRows = computed<SnapshotFinanceRow[]>(() => {
+    const rows = this.campaignExpenseSnapshots().map((snapshot) => this.toFinanceRow(snapshot));
+    return rows.map((row, index) => ({
+      ...row,
+      deltaLeads: index === 0 ? null : row.leads - (rows[index - 1]?.leads ?? 0),
+      deltaLeadsReales: index === 0 ? null : row.leadsReales - (rows[index - 1]?.leadsReales ?? 0)
+    }));
+  });
 
   readonly providerForm = this.fb.group({
     nombre: ['', [Validators.required]],
@@ -488,6 +499,13 @@ export class CommunityWorkspaceFacade {
       return '-';
     }
     return this.money((costoTotal ?? 0) / denominator);
+  }
+
+  deltaBadge(value: number | null | undefined): string | null {
+    if (value === null || value === undefined || value === 0) {
+      return null;
+    }
+    return value > 0 ? `+${value}` : String(value);
   }
 
   dateTime(value: string | null | undefined): string {

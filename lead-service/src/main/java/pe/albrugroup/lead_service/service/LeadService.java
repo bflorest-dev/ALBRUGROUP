@@ -510,12 +510,15 @@ public class LeadService {
             lead.setEstado(EstadoSeguimiento.GESTIONADO);
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
-        }
-        lead.setIdTipificacion(tipificacion.getId());
-        lead.setCodigoTipificacion(tipificacion.getCodigo());
-        lead.setIdSubtipificacion(subtipificacion.getId());
-        lead.setCodigoSubtipificacion(subtipificacion.getCodigo());
-        if (etapaDestino == null || etapaDestino == etapaActual) {
+            lead.setIdTipificacion(null);
+            lead.setCodigoTipificacion(null);
+            lead.setIdSubtipificacion(null);
+            lead.setCodigoSubtipificacion(null);
+        } else {
+            lead.setIdTipificacion(tipificacion.getId());
+            lead.setCodigoTipificacion(tipificacion.getCodigo());
+            lead.setIdSubtipificacion(subtipificacion.getId());
+            lead.setCodigoSubtipificacion(subtipificacion.getCodigo());
             lead.setEstado(EstadoSeguimiento.GESTIONADO);
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
