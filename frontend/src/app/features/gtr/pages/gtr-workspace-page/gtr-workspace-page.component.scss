@@ -241,10 +241,32 @@ td small,
   flex-wrap: wrap;
 }
 
-.assignment-action {
+.gtr-assign-button {
+  gap: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.gtr-assign-button__action,
+.gtr-assign-button__count {
   align-items: center;
   display: inline-flex;
-  gap: 0.35rem;
+  min-height: 2rem;
+}
+
+.gtr-assign-button__action {
+  gap: .45rem;
+  padding: 0 .75rem;
+}
+
+.gtr-assign-button__count {
+  background: rgba(255, 255, 255, 0.16);
+  border-left: 1px solid rgba(255, 255, 255, 0.22);
+  font-size: .72rem;
+  font-weight: 900;
+  justify-content: center;
+  min-width: 2rem;
+  padding: 0 .6rem;
 }
 
 .lead-warning {
@@ -532,5 +554,4 @@ label {
   .form-grid {
     grid-template-columns: 1fr;
   }
-
 }

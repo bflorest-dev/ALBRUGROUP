@@ -189,22 +189,21 @@
                 [disabled]="!row.lead"
                 (click)="facade.openWhatsAppChat(row)"
               ></button>
-              <div class="assignment-action">
-                <button
-                  pButton
-                  type="button"
-                  icon="pi pi-user-plus"
-                  label="Asignar"
-                  size="small"
-                  [disabled]="facade.isSaving()"
-                  (click)="facade.openAssignment(row)"
-                ></button>
-                <p-tag
-                  severity="info"
-                  [value]="facade.display(row.totalAsignaciones ?? 0)"
-                  title="Asignaciones del dia"
-                />
-              </div>
+              <button
+                pButton
+                type="button"
+                size="small"
+                class="gtr-assign-button"
+                [disabled]="facade.isSaving()"
+                title="Asignaciones del dia"
+                (click)="facade.openAssignment(row)"
+              >
+                <span class="gtr-assign-button__action">
+                  <i class="pi pi-user-plus" aria-hidden="true"></i>
+                  <span>Asignar</span>
+                </span>
+                <span class="gtr-assign-button__count">{{ facade.display(row.totalAsignaciones ?? 0) }}</span>
+              </button>
               <button
                 pButton
                 type="button"
@@ -336,17 +335,18 @@
                         <button
                           pButton
                           type="button"
-                          icon="pi pi-user-plus"
-                          label="Asignar"
                           size="small"
+                          class="gtr-assign-button"
                           [disabled]="facade.isSaving()"
-                          (click)="facade.openAgendadoAssignment(row)"
-                        ></button>
-                        <p-tag
-                          severity="info"
-                          [value]="facade.display(row.totalAsignaciones ?? 0)"
                           title="Asignaciones"
-                        />
+                          (click)="facade.openAgendadoAssignment(row)"
+                        >
+                          <span class="gtr-assign-button__action">
+                            <i class="pi pi-user-plus" aria-hidden="true"></i>
+                            <span>Asignar</span>
+                          </span>
+                          <span class="gtr-assign-button__count">{{ facade.display(row.totalAsignaciones ?? 0) }}</span>
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -489,17 +489,18 @@
                 <button
                   pButton
                   type="button"
-                  icon="pi pi-user-plus"
-                  label="Asignar"
                   size="small"
+                  class="gtr-assign-button"
                   [disabled]="facade.isSaving()"
-                  (click)="facade.openAssignment(row)"
-                ></button>
-                <p-tag
-                  severity="info"
-                  [value]="facade.display(row.totalAsignaciones ?? 0)"
                   title="Asignaciones"
-                />
+                  (click)="facade.openAssignment(row)"
+                >
+                  <span class="gtr-assign-button__action">
+                    <i class="pi pi-user-plus" aria-hidden="true"></i>
+                    <span>Asignar</span>
+                  </span>
+                  <span class="gtr-assign-button__count">{{ facade.display(row.totalAsignaciones ?? 0) }}</span>
+                </button>
               </div>
             </td>
           </tr>
