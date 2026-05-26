@@ -43,6 +43,21 @@
   font-size: 0.8rem;
 }
 
+.attendance-status__error {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  width: min(18rem, 86vw);
+  border: 1px solid rgba(214, 62, 62, 0.2);
+  border-radius: 0.55rem;
+  background: #fff4f4;
+  color: var(--app-danger);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.45rem 0.55rem;
+  box-shadow: var(--app-shadow-popover);
+}
+
 .attendance-status__menu {
   position: absolute;
   z-index: 100;

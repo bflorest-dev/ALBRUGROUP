@@ -20,4 +20,6 @@ public class LeadAsignacionMasivaRequest {
 
     @NotBlank(message = "El nombre del asesor es obligatorio")
     private String nombreAsesorAsignado;
+
+    private Boolean confirmarReasignacion = false;
 }

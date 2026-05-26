@@ -15,6 +15,10 @@
     }
   </button>
 
+  @if (errorMessage) {
+    <span class="attendance-status__error">{{ errorMessage }}</span>
+  }
+
   @if (isOpen()) {
     <div class="attendance-status__menu">
       @if (actions.length) {

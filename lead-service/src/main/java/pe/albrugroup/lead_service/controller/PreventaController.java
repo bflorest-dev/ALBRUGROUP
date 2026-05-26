@@ -121,6 +121,12 @@ public class PreventaController {
         var leads = leadService.listarBandejaAsesorVentas(pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
+    // 1.1. Marcar el Lead como EN_GESTION antes de abrir el flujo operativo
+    @PatchMapping("/{idLead}/gestion") @PreAuthorize("hasAuthority('UPDATE_LEADS_ASESOR')")
+    public ResponseEntity<Void> iniciarGestionLead(@PathVariable Long idLead) {
+        leadService.iniciarGestionPreventa(idLead);
+        return ResponseEntity.noContent().build();
+    }
     // 2. Registrar evento de contacto con el Lead
     @PostMapping("/{idLead}/contacto") @PreAuthorize("hasAuthority('CONTACT_LEADS')")
     public ResponseEntity<Void> registrarContactoLead(@PathVariable Long idLead) {

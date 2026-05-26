@@ -17,6 +17,7 @@
           icon="pi pi-refresh"
           label="Actualizar"
           severity="secondary"
+          [disabled]="!canOperate()"
           [loading]="isLoading()"
           (click)="initialize()"
         ></button>
@@ -39,13 +40,29 @@
       </span>
     </ng-template>
     <ng-template #subtitle>
-      {{ isReconciling() ? 'Validando cambios del realtime' : 'Leads listos para gestion' }}
+      {{
+        !canOperate()
+          ? 'Marca ONLINE para recibir leads'
+          : isReconciling()
+            ? 'Validando cambios del realtime'
+            : 'Leads listos para gestion'
+      }}
     </ng-template>
+
+    @if (!canOperate()) {
+      <div class="offline-state">
+        <i class="pi pi-power-off" aria-hidden="true"></i>
+        <div>
+          <strong>Estas OFFLINE</strong>
+          <p>Marca ONLINE para activar tu presencia y cargar tu bandeja de Leads.</p>
+        </div>
+      </div>
+    }
 
     <p-table
       [value]="rows()"
       dataKey="id"
-      [loading]="isLoading()"
+      [loading]="canOperate() && isLoading()"
       [rowHover]="true"
       [scrollable]="true"
       scrollHeight="flex"
@@ -81,7 +98,8 @@
               icon="pi pi-briefcase"
               label="Gestionar"
               size="small"
-              [disabled]="isSaving()"
+              [disabled]="isManageActionDisabled(row.id)"
+              [title]="isManagingLead() && selectedLeadId() !== row.id ? 'Tipifica el Lead actual antes de gestionar otro.' : ''"
               (click)="openDetail(row.id)"
             ></button>
           </td>
@@ -91,18 +109,22 @@
       <ng-template #emptymessage>
         <tr>
           <td colspan="6">
-            <div class="skeleton-table" aria-label="Esperando asignaciones">
-              @for (_ of skeletonRows; track $index) {
-                <div class="skeleton-row">
-                  <p-skeleton width="8rem" height="1.1rem" />
-                  <p-skeleton width="14rem" height="1.1rem" />
-                  <p-skeleton width="11rem" height="1.1rem" />
-                  <p-skeleton width="6rem" height="1.6rem" borderRadius="999px" />
-                  <p-skeleton width="8rem" height="1.1rem" />
-                  <p-skeleton width="7rem" height="2rem" borderRadius="8px" />
-                </div>
-              }
-            </div>
+            @if (canOperate()) {
+              <div class="skeleton-table" aria-label="Esperando asignaciones">
+                @for (_ of skeletonRows; track $index) {
+                  <div class="skeleton-row">
+                    <p-skeleton width="8rem" height="1.1rem" />
+                    <p-skeleton width="14rem" height="1.1rem" />
+                    <p-skeleton width="11rem" height="1.1rem" />
+                    <p-skeleton width="6rem" height="1.6rem" borderRadius="999px" />
+                    <p-skeleton width="8rem" height="1.1rem" />
+                    <p-skeleton width="7rem" height="2rem" borderRadius="8px" />
+                  </div>
+                }
+              </div>
+            } @else {
+              <span class="helper">La bandeja se activara al marcar ONLINE.</span>
+            }
           </td>
         </tr>
       </ng-template>
@@ -122,6 +144,9 @@
     (visibleChange)="!$event && requestCloseDetail()"
     [modal]="true"
     [draggable]="false"
+    [closable]="false"
+    [closeOnEscape]="false"
+    [dismissableMask]="false"
     [breakpoints]="{ '1200px': '92vw', '720px': '96vw' }"
     styleClass="asesor-dialog"
   >
@@ -131,7 +156,7 @@
           <div>
             <span class="lead-workspace__eyebrow">Lead {{ lead.id }}</span>
             <h2>{{ leadPhone(lead) }}</h2>
-            <p>{{ display(lead.nombreTitular) }} · {{ display(lead.nombreCampana) }}</p>
+            <p>{{ display(lead.nombreTitular) }} - {{ display(lead.nombreCampana) }}</p>
           </div>
 
           <div class="lead-workspace__tags">
@@ -527,7 +552,14 @@
             [loading]="isSaving()"
             (click)="guardarCambiosLead()"
           ></button>
-          <button pButton type="button" label="Cerrar" severity="secondary" (click)="requestCloseDetail()"></button>
+          <button
+            pButton
+            type="button"
+            label="Cerrar"
+            severity="secondary"
+            title="Debes tipificar el Lead antes de cerrar esta gestion."
+            (click)="requestCloseDetail()"
+          ></button>
         </footer>
       </section>
     } @else {

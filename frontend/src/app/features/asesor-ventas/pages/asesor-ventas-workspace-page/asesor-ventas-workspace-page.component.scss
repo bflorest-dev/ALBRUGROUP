@@ -88,6 +88,33 @@ p {
   min-width: 900px;
 }
 
+.offline-state {
+  align-items: center;
+  background: linear-gradient(135deg, rgba(28, 125, 98, 0.1), rgba(15, 31, 51, 0.04));
+  border: 1px dashed #b8c9c1;
+  border-radius: 14px;
+  color: #425466;
+  display: flex;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+.offline-state i {
+  align-items: center;
+  background: #ffffff;
+  border-radius: 999px;
+  color: #1c7d62;
+  display: inline-flex;
+  height: 2.5rem;
+  justify-content: center;
+  width: 2.5rem;
+}
+
+.offline-state strong {
+  color: #0f1f33;
+}
+
 .lead-workspace {
   display: grid;
   gap: 1rem;

@@ -60,7 +60,22 @@ type AdvisorOption = {
   lastSeen?: string | null;
 };
 
-type GtrDialog = 'lead' | 'snapshot' | 'assign' | 'events' | null;
+type PendingReassignment = {
+  row: LeadGtrResponse;
+  advisor: AdvisorOption;
+  currentAdvisorName: string;
+  requiresReassignment: boolean;
+  requiresPreviousManagement: boolean;
+};
+
+type AssignmentConflictDetails = {
+  tipo?: string;
+  nombreAsesorActual?: string | null;
+  requiereConfirmarReasignacion?: boolean;
+  requiereConfirmarGestionPrevia?: boolean;
+};
+
+type GtrDialog = 'lead' | 'snapshot' | 'assign' | 'reassign-confirm' | 'events' | null;
 type EventAnomalyFilter = 'multiple-records' | 'same-campaign' | null;
 
 type LoadError = {
@@ -123,6 +138,7 @@ export class GtrWorkspaceFacade {
   readonly activeDialog = signal<GtrDialog>(null);
   readonly activeAssignmentLead = signal<LeadGtrResponse | null>(null);
   readonly activeEventsLead = signal<LeadGtrResponse | null>(null);
+  readonly pendingReassignment = signal<PendingReassignment | null>(null);
   readonly advisorsPanelOpen = signal(false);
   readonly baseOptions = ['WHATSAPP', 'MESSENGER', 'RECONTACTO', 'PREDICTIVO', 'REFERIDO', 'MASIVO'];
 
@@ -441,6 +457,7 @@ export class GtrWorkspaceFacade {
     this.activeDialog.set(null);
     this.activeAssignmentLead.set(null);
     this.activeEventsLead.set(null);
+    this.pendingReassignment.set(null);
     this.eventRows.set([]);
     this.selectedEventAnomalyFilter.set(null);
   }
@@ -491,7 +508,11 @@ export class GtrWorkspaceFacade {
     }
   }
 
-  async assignOne(row: LeadGtrResponse): Promise<void> {
+  async assignOne(
+    row: LeadGtrResponse,
+    confirmarReasignacion = false,
+    confirmarGestionPrevia = false
+  ): Promise<void> {
     const advisor = this.selectedAdvisor();
     if (!advisor) {
       this.errorMessage.set('Selecciona un asesor.');
@@ -502,23 +523,47 @@ export class GtrWorkspaceFacade {
       return;
     }
 
+    if (!confirmarReasignacion && this.preventAssignmentFromCurrentRow(row, advisor)) {
+      return;
+    }
+
     this.isSaving.set(true);
     this.clearMessages();
     try {
       await firstValueFrom(
         this.preventaService.asignarLead(row.id, {
           idAsesorAsignado: advisor.empleadoId,
-          nombreAsesorAsignado: advisor.nombreCompleto
+          nombreAsesorAsignado: advisor.nombreCompleto,
+          confirmarReasignacion,
+          confirmarGestionPrevia
         })
       );
       this.successMessage.set(`Lead ${row.lead} asignado a ${advisor.nombreCompleto}.`);
       this.closeDialog();
       await this.reconcile();
     } catch (error) {
+      if (this.openReassignmentConfirmation(error, row, advisor)) {
+        return;
+      }
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo asignar el lead.'));
     } finally {
       this.isSaving.set(false);
     }
+  }
+
+  async confirmReassignment(): Promise<void> {
+    const pending = this.pendingReassignment();
+    if (!pending) {
+      return;
+    }
+
+    this.assignmentForm.controls.idAsesorAsignado.setValue(pending.advisor.empleadoId);
+    await this.assignOne(pending.row, pending.requiresReassignment, pending.requiresPreviousManagement);
+  }
+
+  cancelReassignment(): void {
+    this.pendingReassignment.set(null);
+    this.activeDialog.set('assign');
   }
 
   async assignSelected(): Promise<void> {
@@ -855,6 +900,82 @@ export class GtrWorkspaceFacade {
     );
   }
 
+  private preventAssignmentFromCurrentRow(row: LeadGtrResponse, advisor: AdvisorOption): boolean {
+    const currentAdvisorName = row.nombreAsesorAsignado?.trim();
+    if (!currentAdvisorName) {
+      return false;
+    }
+
+    this.clearMessages();
+
+    if (this.normalizeLookup(row.estadoSeguimiento) === 'EN_GESTION') {
+      this.errorMessage.set(`El Lead ya esta en gestion con ${currentAdvisorName} y no puede reasignarse.`);
+      return true;
+    }
+
+    if (this.sameAdvisorName(currentAdvisorName, advisor.nombreCompleto)) {
+      this.errorMessage.set(`El Lead ya esta asignado a ${advisor.nombreCompleto}.`);
+      return true;
+    }
+
+    return false;
+  }
+
+  private openReassignmentConfirmation(error: unknown, row: LeadGtrResponse, advisor: AdvisorOption): boolean {
+    if (!(error instanceof HttpErrorResponse) || error.status !== 409) {
+      return false;
+    }
+
+    const details = (error.error as { details?: AssignmentConflictDetails } | null)?.details;
+    const requiresReassignment =
+      Boolean(details?.requiereConfirmarReasignacion) ||
+      details?.tipo === 'LEAD_YA_ASIGNADO' ||
+      details?.tipo === 'CONFIRMACION_ASIGNACION_REQUERIDA';
+    const requiresPreviousManagement =
+      Boolean(details?.requiereConfirmarGestionPrevia) ||
+      details?.tipo === 'ASESOR_YA_GESTIONO_LEAD' ||
+      details?.tipo === 'CONFIRMACION_ASIGNACION_REQUERIDA';
+
+    if (!requiresReassignment && !requiresPreviousManagement) {
+      return false;
+    }
+
+    this.showReassignmentConfirmation(
+      row,
+      advisor,
+      details?.nombreAsesorActual || 'otro asesor',
+      requiresReassignment,
+      requiresPreviousManagement
+    );
+    return true;
+  }
+
+  private showReassignmentConfirmation(
+    row: LeadGtrResponse,
+    advisor: AdvisorOption,
+    currentAdvisorName: string,
+    requiresReassignment: boolean,
+    requiresPreviousManagement: boolean
+  ): void {
+    this.errorMessage.set(null);
+    this.pendingReassignment.set({
+      row,
+      advisor,
+      currentAdvisorName,
+      requiresReassignment,
+      requiresPreviousManagement
+    });
+    this.activeDialog.set('reassign-confirm');
+  }
+
+  private sameAdvisorName(currentAdvisorName: string, targetAdvisorName: string): boolean {
+    return this.normalizeLookup(currentAdvisorName) === this.normalizeLookup(targetAdvisorName);
+  }
+
+  private normalizeLookup(value?: string | null): string {
+    return (value ?? '').trim().toUpperCase();
+  }
+
   private startRealtime(): void {
     this.realtimeSubscription.add(
       this.realtimeService.watchTopic('/topic/leads/etapa/PREVENTA').subscribe({
@@ -864,6 +985,7 @@ export class GtrWorkspaceFacade {
               'REGISTRO',
               'ASIGNACION',
               'CONTACTO',
+              'GESTION_INICIADA',
               'SNAPSHOTS_ACTUALIZADOS',
               'DATOS_PREVENTA_ACTUALIZADOS',
               'DIRECCION_ACTUALIZADA',

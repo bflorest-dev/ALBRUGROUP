@@ -73,8 +73,8 @@
         [statusColor]="attendanceFacade.currentStatusMeta().color"
         [actions]="attendanceFacade.availableActions()"
         [isLoading]="attendanceFacade.isLoading()"
-        [errorMessage]="attendanceFacade.errorMessage()"
-        (actionSelected)="attendanceFacade.submitAction($event)"
+        [errorMessage]="attendancePickerErrorMessage()"
+        (actionSelected)="submitAttendanceAction($event)"
         (retry)="attendanceFacade.reload()"
       />
     </app-top-banner>

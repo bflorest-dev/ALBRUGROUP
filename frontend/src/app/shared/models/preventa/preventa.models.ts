@@ -187,10 +187,15 @@ export interface LeadSnapshotsRequest {
 export interface LeadAsignacionRequest {
   idAsesorAsignado: number;
   nombreAsesorAsignado: string;
+  confirmarReasignacion?: boolean;
+  confirmarGestionPrevia?: boolean;
 }
 
-export interface LeadAsignacionMasivaRequest extends LeadAsignacionRequest {
+export interface LeadAsignacionMasivaRequest {
   idsLead: number[];
+  idAsesorAsignado: number;
+  nombreAsesorAsignado: string;
+  confirmarReasignacion?: boolean;
 }
 
 export interface LeadAsignacionResultadoResponse {

@@ -7,6 +7,8 @@ import { SessionService } from '../../services/session.service';
 import { AttendanceStatusPickerComponent } from '../../../shared/components/attendance-status-picker/attendance-status-picker.component';
 import { TopBannerComponent } from '../../../shared/components/top-banner/top-banner.component';
 import { formatLabel } from '../../../shared/utils/display-label';
+import { AttendanceActionId } from '../../../shared/models/schedule/estado-asistencia';
+import { AsesorVentasWorkspaceStateService } from '../../services/asesor-ventas-workspace-state.service';
 
 type SidebarItem = {
   label: string;
@@ -50,8 +52,10 @@ const ROLE_THEME_CLASS: Record<string, string> = {
 export class PrivateLayoutComponent {
   protected readonly attendanceFacade = inject(AttendanceFacade);
   private readonly authSessionService = inject(AuthSessionService);
+  private readonly asesorVentasState = inject(AsesorVentasWorkspaceStateService);
   private readonly sessionService = inject(SessionService);
   protected readonly profileMenuOpen = signal(false);
+  protected readonly attendanceErrorMessage = signal('');
   protected readonly session = this.sessionService.session;
   protected readonly themeClass = computed(() => {
     const primaryRole = this.session()?.primaryRole;
@@ -122,6 +126,29 @@ export class PrivateLayoutComponent {
 
   constructor() {
     this.attendanceFacade.initialize();
+  }
+
+  protected submitAttendanceAction(actionId: AttendanceActionId): void {
+    this.attendanceErrorMessage.set('');
+    if (
+      actionId === 'REGISTRAR_SALIDA' &&
+      this.session()?.primaryRole === 'ASESOR_VENTAS' &&
+      this.asesorVentasState.assignedLeadCount() > 0
+    ) {
+      this.attendanceErrorMessage.set('No puedes marcar OFFLINE mientras tengas Leads en tu bandeja.');
+      return;
+    }
+
+    this.attendanceFacade.submitAction(actionId);
+  }
+
+  protected attendancePickerErrorMessage(): string {
+    const blockedExitMessage = this.attendanceErrorMessage();
+    if (blockedExitMessage && this.asesorVentasState.assignedLeadCount() > 0) {
+      return blockedExitMessage;
+    }
+
+    return this.attendanceFacade.errorMessage();
   }
 
   protected toggleProfileMenu(): void {

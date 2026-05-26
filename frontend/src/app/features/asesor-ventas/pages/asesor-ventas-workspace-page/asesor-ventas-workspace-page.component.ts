@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { DOCUMENT, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription, firstValueFrom } from 'rxjs';
@@ -16,6 +16,7 @@ import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { AttendanceFacade } from '../../../../core/facades/attendance.facade';
+import { AsesorVentasWorkspaceStateService } from '../../../../core/services/asesor-ventas-workspace-state.service';
 import { DisponibilidadOperativa, PresenceService } from '../../../../core/services/presence.service';
 import { SessionService } from '../../../../core/services/session.service';
 import { EstadoAsistencia } from '../../../../shared/models/schedule/estado-asistencia';
@@ -69,15 +70,18 @@ type OfertaAdditionalSelection = {
 })
 export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   private readonly fb = inject(NonNullableFormBuilder);
+  private readonly document = inject(DOCUMENT);
   private readonly attendanceFacade = inject(AttendanceFacade);
   private readonly presenceService = inject(PresenceService);
   private readonly sessionService = inject(SessionService);
+  private readonly workspaceState = inject(AsesorVentasWorkspaceStateService);
   private readonly preventaService = inject(PreventaLeadService);
   private readonly realtimeService = inject(LeadRealtimeService);
   private readonly realtimeSubscription = new Subscription();
   private readonly newRowTimers = new Map<number, number>();
   private readonly saturationThreshold = 10;
   private initialized = false;
+  private initializeInFlight = false;
   private lastNotificationAt = 0;
 
   protected readonly pageSize = 12;
@@ -205,6 +209,8 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     () => this.datosForm.dirty || this.direccionForm.dirty || this.ofertaForm.dirty
   );
   protected readonly hasUnsavedModalChanges = computed(() => this.hasUnsavedDataChanges() || this.tipificacionForm.dirty);
+  protected readonly currentAttendanceStatus = computed(() => this.attendanceFacade.currentStatus());
+  protected readonly canOperate = computed(() => this.currentAttendanceStatus() !== 'OFFLINE');
   protected readonly activeDataTabHasChanges = computed(() => {
     switch (this.activeDataTab()) {
       case 'datos':
@@ -218,10 +224,17 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
 
   constructor() {
     effect(() => {
-      this.attendanceFacade.currentStatus();
+      const status = this.attendanceFacade.currentStatus();
       this.totalElements();
       this.isManagingLead();
       void this.syncDisponibilidadOperativa();
+      if (status === 'OFFLINE') {
+        this.clearBoardForOffline();
+        return;
+      }
+      if (!this.initialized && !this.initializeInFlight) {
+        void this.initialize();
+      }
     });
   }
 
@@ -236,7 +249,6 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       })
     );
 
-    void this.initialize();
     const empleadoId = this.sessionService.getSession()?.empleadoId;
     if (empleadoId) {
       this.realtimeSubscription.add(
@@ -249,6 +261,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
                 'DATOS_PREVENTA_ACTUALIZADOS',
                 'DIRECCION_ACTUALIZADA',
                 'OFERTA_COMERCIAL_ACTUALIZADA',
+                'GESTION_INICIADA',
                 'TIPIFICACION'
               ].includes(event.tipo)
             ) {
@@ -261,10 +274,13 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
         })
       );
     }
+    this.document.defaultView?.addEventListener('beforeunload', this.handleBeforeUnload);
   }
 
   ngOnDestroy(): void {
     this.realtimeSubscription.unsubscribe();
+    this.document.defaultView?.removeEventListener('beforeunload', this.handleBeforeUnload);
+    this.workspaceState.clear();
     for (const timerId of this.newRowTimers.values()) {
       window.clearTimeout(timerId);
     }
@@ -272,6 +288,11 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected async initialize(): Promise<void> {
+    if (!this.canOperate() || this.initializeInFlight) {
+      return;
+    }
+
+    this.initializeInFlight = true;
     this.isLoading.set(true);
     this.clearMessages();
     try {
@@ -280,30 +301,50 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar la operacion de asesor.'));
     } finally {
+      this.initializeInFlight = false;
       this.isLoading.set(false);
     }
   }
 
   protected async openDetail(idLead: number): Promise<void> {
+    if (!this.canOperate()) {
+      this.errorMessage.set('Marca ONLINE para gestionar Leads.');
+      return;
+    }
+    if (this.isManagingLead() && this.selectedLeadId() !== idLead) {
+      this.errorMessage.set('Ya tienes un Lead en gestion. Debes tipificarlo antes de abrir otro.');
+      return;
+    }
     if (this.hasUnsavedModalChanges() && this.selectedLeadId() !== idLead) {
       this.errorMessage.set('Guarda los datos pendientes o limpia los cambios antes de gestionar otro lead.');
       return;
     }
     this.selectedLeadId.set(idLead);
     this.clearMessages();
+    this.isSaving.set(true);
     try {
+      await firstValueFrom(this.preventaService.iniciarGestionLead(idLead));
       const detail = await firstValueFrom(this.preventaService.obtenerDetalleAsesor(idLead));
       this.detail.set(detail);
       this.patchForms(detail);
       await this.refreshOfferCatalogs(detail.idPlan ?? 0);
       this.detailDialogOpen.set(true);
       this.isManagingLead.set(true);
+      await this.refreshPage(true);
     } catch (error) {
+      this.selectedLeadId.set(null);
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo abrir el detalle.'));
+    } finally {
+      this.isSaving.set(false);
     }
   }
 
   protected requestCloseDetail(): void {
+    if (this.isManagingLead()) {
+      this.errorMessage.set('Debes tipificar el Lead antes de cerrar esta gestion.');
+      this.detailDialogOpen.set(true);
+      return;
+    }
     if (this.hasUnsavedDataChanges()) {
       this.errorMessage.set('Hay datos sin guardar. Guarda los cambios o limpia lo ultimo ingresado antes de cerrar.');
       this.detailDialogOpen.set(true);
@@ -621,6 +662,9 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected async changePage(pageNumber: number): Promise<void> {
+    if (!this.canOperate()) {
+      return;
+    }
     if (pageNumber === this.pageNumber()) {
       return;
     }
@@ -629,6 +673,9 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected async nextPage(): Promise<void> {
+    if (!this.canOperate()) {
+      return;
+    }
     if (this.pageNumber() + 1 >= this.totalPages()) {
       return;
     }
@@ -637,6 +684,9 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected async previousPage(): Promise<void> {
+    if (!this.canOperate()) {
+      return;
+    }
     if (this.pageNumber() === 0) {
       return;
     }
@@ -675,6 +725,10 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     this.showComment.update((value) => !value);
   }
 
+  protected isManageActionDisabled(idLead: number): boolean {
+    return this.isSaving() || !this.canOperate() || (this.isManagingLead() && this.selectedLeadId() !== idLead);
+  }
+
   private async reconcile(changedLeadId?: number): Promise<void> {
     if (this.isReconciling()) {
       return;
@@ -709,6 +763,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     const page = await firstValueFrom(this.preventaService.listarBandejaAsesorVentas(this.currentQuery()));
     this.totalElements.set(page.totalElements);
     this.totalPages.set(page.totalPages);
+    this.workspaceState.setAssignedLeadCount(page.totalElements);
     this.rows.set(this.mergeVisualRows(previous, page.content, silent));
   }
 
@@ -1084,6 +1139,32 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     this.successMessage.set(null);
     this.errorMessage.set(null);
   }
+
+  private clearBoardForOffline(): void {
+    this.initialized = false;
+    this.rows.set([]);
+    this.detail.set(null);
+    this.selectedLeadId.set(null);
+    this.totalElements.set(0);
+    this.totalPages.set(0);
+    this.pageNumber.set(0);
+    this.isLoading.set(false);
+    this.isReconciling.set(false);
+    this.isSaving.set(false);
+    this.detailDialogOpen.set(false);
+    this.isManagingLead.set(false);
+    this.workspaceState.clear();
+  }
+
+  private readonly handleBeforeUnload = (event: BeforeUnloadEvent): string | void => {
+    if (this.attendanceFacade.currentStatus() === 'OFFLINE') {
+      return;
+    }
+
+    event.preventDefault();
+    event.returnValue = '';
+    return '';
+  };
 
   private getErrorMessage(error: unknown, fallback: string): string {
     if (typeof error === 'object' && error !== null && 'error' in error) {

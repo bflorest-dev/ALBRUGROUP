@@ -38,7 +38,10 @@ export class BrowserSessionService {
     }
 
     this.startHeartbeat();
-    void this.presenceService.start();
+    const session = this.sessionService.getSession();
+    if (session && session.primaryRole !== 'ASESOR_VENTAS') {
+      void this.presenceService.start();
+    }
 
     window.addEventListener('beforeunload', this.handleTabClose);
     window.addEventListener('pagehide', this.handleTabClose);

@@ -690,6 +690,46 @@
   </p-dialog>
 
   <p-dialog
+    header="Confirmar asignacion"
+    [visible]="facade.activeDialog() === 'reassign-confirm'"
+    (visibleChange)="!$event && facade.closeDialog()"
+    [modal]="true"
+    [draggable]="false"
+    styleClass="gtr-dialog"
+  >
+    @if (facade.pendingReassignment(); as pending) {
+      <div class="reassign-confirmation">
+        @if (pending.requiresReassignment) {
+          <p class="helper">
+            El lead {{ facade.leadPrefixLabel(pending.row.prefijo) }} {{ pending.row.lead }}
+            ya esta asignado a {{ pending.currentAdvisorName }}.
+          </p>
+        }
+        @if (pending.requiresPreviousManagement) {
+          <p class="helper">
+            {{ pending.advisor.nombreCompleto }} ya gestiono o tipifico este Lead anteriormente.
+          </p>
+        }
+        <p class="helper">
+          Confirma si deseas asignarlo a {{ pending.advisor.nombreCompleto }}.
+        </p>
+      </div>
+    }
+
+    <div class="dialog-actions">
+      <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.cancelReassignment()"></button>
+      <button
+        pButton
+        type="button"
+        label="Confirmar asignacion"
+        icon="pi pi-check"
+        [loading]="facade.isSaving()"
+        (click)="facade.confirmReassignment()"
+      ></button>
+    </div>
+  </p-dialog>
+
+  <p-dialog
     [visible]="facade.activeDialog() === 'events'"
     (visibleChange)="!$event && facade.closeDialog()"
     [modal]="true"

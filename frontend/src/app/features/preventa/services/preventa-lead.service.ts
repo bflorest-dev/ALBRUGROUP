@@ -93,6 +93,10 @@ export class PreventaLeadService {
     return this.http.get<LeadDetalleResponse>(`${this.leadUrl}/preventa/${idLead}/detalle-asesor`);
   }
 
+  iniciarGestionLead(idLead: number): Observable<void> {
+    return this.http.patch<void>(`${this.leadUrl}/preventa/${idLead}/gestion`, {});
+  }
+
   registrarContacto(idLead: number): Observable<void> {
     return this.http.post<void>(`${this.leadUrl}/preventa/${idLead}/contacto`, {});
   }
