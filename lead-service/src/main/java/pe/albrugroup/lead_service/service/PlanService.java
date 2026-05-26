@@ -6,6 +6,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.CacheNames;
+import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.*;
 import pe.albrugroup.lead_service.entity.request.AdicionalRequest;
 import pe.albrugroup.lead_service.entity.request.PlanAdicionalRequest;
@@ -64,7 +65,7 @@ public class PlanService {
     @CacheEvict(value = CacheNames.PLANES, allEntries = true)
     public PlanResponse registrarPlan(PlanRequest request) {
         Proveedor proveedor = buscarProveedorActivo(request.getIdProveedor());
-        LocalDate fechaActual = LocalDate.now();
+        LocalDate fechaActual = OperationalDateTime.today();
 
         Plan plan = mapper.toEntity(request);
         plan.setProveedor(proveedor);
@@ -109,7 +110,7 @@ public class PlanService {
     @Transactional(readOnly = true)
     @Cacheable(value = CacheNames.PLANES, key = "(#idProveedor == null ? 'all' : #idProveedor) + ':' + #soloVigentes")
     public List<PlanResponse> listarPlanes(Long idProveedor, boolean soloVigentes) {
-        return planRepository.listarActivos(idProveedor, soloVigentes, LocalDate.now()).stream()
+        return planRepository.listarActivos(idProveedor, soloVigentes, OperationalDateTime.today()).stream()
                 .map(this::toPlanResponse)
                 .toList();
     }
@@ -131,7 +132,7 @@ public class PlanService {
         mapper.updatePlan(request, plan);
         plan.setZona(resolverZona(request.getIdZona()));
         validarPromocionesPlan(plan);
-        normalizarVigencias(plan, LocalDate.now());
+        normalizarVigencias(plan, OperationalDateTime.today());
         return toPlanResponse(planRepository.save(plan));
     }
 

@@ -3,6 +3,7 @@ package pe.albrugroup.lead_service.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
@@ -12,7 +13,6 @@ import pe.albrugroup.lead_service.repository.LeadRepository;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -91,7 +91,7 @@ public class MasivoService {
             );
         }
 
-        LocalDate fechaHastaResuelta = fechaHasta == null ? LocalDate.now(ZoneId.systemDefault()) : fechaHasta;
+        LocalDate fechaHastaResuelta = fechaHasta == null ? OperationalDateTime.today() : fechaHasta;
         if (fechaDesde.isAfter(fechaHastaResuelta)) {
             throw new BadRequestException(
                     "Periodo invalido: fechaDesde no puede ser mayor que fechaHasta",
@@ -103,9 +103,8 @@ public class MasivoService {
             );
         }
 
-        ZoneId zoneId = ZoneId.systemDefault();
-        Instant inicio = fechaDesde.atStartOfDay(zoneId).toInstant();
-        Instant fin = fechaHastaResuelta.plusDays(1).atStartOfDay(zoneId).toInstant();
+        Instant inicio = OperationalDateTime.startOfDay(fechaDesde);
+        Instant fin = OperationalDateTime.endExclusiveOfDay(fechaHastaResuelta);
         return new RangoFechas(inicio, fin);
     }
 

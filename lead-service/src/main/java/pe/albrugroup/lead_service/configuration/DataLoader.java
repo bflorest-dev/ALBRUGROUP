@@ -37,7 +37,6 @@ import pe.albrugroup.lead_service.repository.TipificacionRepository;
 import pe.albrugroup.lead_service.service.mapper.TipificacionMapper;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
@@ -253,7 +252,7 @@ public class DataLoader {
                     proveedor.setCortesFacturacion(new HashSet<>(cortesFacturacion));
                     proveedor.setMesesPermanencia(mesesPermanencia);
                     if (proveedor.getCreatedAt() == null) {
-                        proveedor.setCreatedAt(Instant.now());
+                        proveedor.setCreatedAt(OperationalDateTime.now());
                     }
                     return proveedorRepository.save(proveedor);
                 })
@@ -409,7 +408,7 @@ public class DataLoader {
             Boolean permiteCompraAdicional,
             Integer cantidadMaximaAdicional
     ) {
-        Plan existente = planRepository.listarActivos(proveedor.getId(), false, LocalDate.now()).stream()
+        Plan existente = planRepository.listarActivos(proveedor.getId(), false, OperationalDateTime.today()).stream()
                 .filter(plan -> plan.getNombre().equalsIgnoreCase(nombre))
                 .filter(plan -> Objects.equals(plan.getPrecio(), precio))
                 .filter(plan -> Objects.equals(obtenerVelocidadInternet(plan.getInternet()), obtenerVelocidadInternet(internet)))

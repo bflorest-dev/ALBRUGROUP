@@ -17,6 +17,11 @@ import java.time.Instant;
 public interface LeadMapper {
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "prefijo", source = "prefijo")
+    @Mapping(target = "lead", source = "lead")
+    @Mapping(target = "base", source = "base")
+    @Mapping(target = "campana", source = "campana")
+    @Mapping(target = "lastEntryAt", source = "lastEntryAt")
     @Mapping(target = "etapa", constant = "PREVENTA")
     @Mapping(target = "estado", constant = "NUEVO")
     @Mapping(target = "idAsesorAsignado", ignore = true)

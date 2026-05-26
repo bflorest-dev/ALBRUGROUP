@@ -669,12 +669,12 @@
           <ng-template #header>
             <tr>
               <th>Campana</th>
-              <th>Leads</th>
-              <th>Costo lead</th>
-              <th>Conversion leads</th>
-              <th>Leads reales</th>
-              <th>Costo real</th>
-              <th>Conversion real</th>
+              <th class="finance-col finance-col--reported">Leads</th>
+              <th class="finance-col finance-col--reported">Costo lead</th>
+              <th class="finance-col finance-col--reported">Conversion leads</th>
+              <th class="finance-col finance-col--real">Leads reales</th>
+              <th class="finance-col finance-col--real">Costo real</th>
+              <th class="finance-col finance-col--real">Conversion real</th>
               <th>Ventas cerradas</th>
               <th>Costo total</th>
               <th>Costo por venta</th>
@@ -685,12 +685,12 @@
           <ng-template #body let-row>
             <tr>
               <td><strong>{{ row.nombreCampana }}</strong></td>
-              <td>{{ display(row.leads) }}</td>
-              <td>{{ row.costoPorLead }}</td>
-              <td><p-tag severity="info" [value]="row.conversionLeads" /></td>
-              <td>{{ display(row.leadsReales) }}</td>
-              <td>{{ row.costoPorLeadReal }}</td>
-              <td><p-tag severity="success" [value]="row.conversionLeadsReales" /></td>
+              <td class="finance-col finance-col--reported">{{ display(row.leads) }}</td>
+              <td class="finance-col finance-col--reported">{{ row.costoPorLead }}</td>
+              <td class="finance-col finance-col--reported"><p-tag severity="info" [value]="row.conversionLeads" /></td>
+              <td class="finance-col finance-col--real">{{ display(row.leadsReales) }}</td>
+              <td class="finance-col finance-col--real">{{ row.costoPorLeadReal }}</td>
+              <td class="finance-col finance-col--real"><p-tag severity="warn" [value]="row.conversionLeadsReales" /></td>
               <td>{{ display(row.ventasCerradas) }}</td>
               <td>{{ facade.money(row.costoTotal) }}</td>
               <td>{{ row.costoPorVenta }}</td>

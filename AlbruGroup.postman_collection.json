@@ -1108,7 +1108,7 @@
                 "url": "{{path}}/leads/campanas",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Plan Demo\",\n  \"numeroWhatsappEmpresa\": \"987654321\",\n  \"idCuentaPublicitaria\": 1,\n  \"idProveedor\": 1\n}",
+                  "raw": "{\n  \"nombre\": \"Plan Demo\",\n  \"prefijo\": \"AG\",\n  \"numeroWhatsApp\": \"987654321\",\n  \"idCuentaPublicitaria\": 1,\n  \"idProveedor\": 1\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1143,7 +1143,7 @@
                 "url": "{{path}}/leads/campanas/1",
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"numeroWhatsappEmpresa\": \"987654321\"\n}",
+                  "raw": "{\n  \"prefijo\": \"AG\",\n  \"numeroWhatsApp\": \"987654321\"\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1201,6 +1201,146 @@
                   ]
                 },
                 "description": "Request GET {{path}}/leads/campanas?activo=true"
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Campana Gasto",
+          "item": [
+            {
+              "name": "Registrar Gasto",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "url": "{{path}}/leads/campanas/1/gastos",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"leads\": 1,\n  \"costoTotal\": 99.9\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request POST {{path}}/leads/campanas/1/gastos"
+              },
+              "response": []
+            },
+            {
+              "name": "Listar Registros Dia",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/campanas/1/gastos?fecha=2026-04-25",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/campanas/1/gastos?fecha=2026-04-25"
+              },
+              "response": []
+            },
+            {
+              "name": "Obtener Resumen Diario Campana",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/campanas/1/gastos/resumen-diario?fecha=2026-04-25",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/campanas/1/gastos/resumen-diario?fecha=2026-04-25"
+              },
+              "response": []
+            },
+            {
+              "name": "Obtener Resumen Diario Global",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/campanas/gastos/resumen-diario?fecha=2026-04-25",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/campanas/gastos/resumen-diario?fecha=2026-04-25"
+              },
+              "response": []
+            },
+            {
+              "name": "Obtener Resumen Mensual Campana",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/campanas/1/gastos/resumen-mensual?anio=2026&mes=4",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/campanas/1/gastos/resumen-mensual?anio=2026&mes=4"
+              },
+              "response": []
+            },
+            {
+              "name": "Obtener Resumen Mensual Global",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": "{{path}}/leads/campanas/gastos/resumen-mensual?anio=2026&mes=4",
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "description": "Request GET {{path}}/leads/campanas/gastos/resumen-mensual?anio=2026&mes=4"
               },
               "response": []
             }
@@ -1474,7 +1614,7 @@
               "request": {
                 "method": "GET",
                 "header": [],
-                "url": "{{path}}/leads/eventos/lead/1?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
+                "url": "{{path}}/leads/eventos/lead/1?fechaDesde=2026-04-01&fechaHasta=2026-04-30&pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc",
                 "auth": {
                   "type": "bearer",
                   "bearer": [
@@ -1485,7 +1625,7 @@
                     }
                   ]
                 },
-                "description": "Request GET {{path}}/leads/eventos/lead/1?pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
+                "description": "Request GET {{path}}/leads/eventos/lead/1?fechaDesde=2026-04-01&fechaHasta=2026-04-30&pageNumber=0&pageSize=8&sortBy=createdAt&direction=asc"
               },
               "response": []
             },

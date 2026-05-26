@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
+import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.PagoPostventa;
 import pe.albrugroup.lead_service.entity.enums.AportantePago;
@@ -89,7 +90,7 @@ public class PagoPostventaService {
         if (pago.getFechaCompromisoPago() != null) {
             return EstadoPagoPostventa.COMPROMETIDO;
         }
-        if (pago.getFechaVencimiento() != null && pago.getFechaVencimiento().isBefore(LocalDate.now())) {
+        if (pago.getFechaVencimiento() != null && pago.getFechaVencimiento().isBefore(OperationalDateTime.today())) {
             return EstadoPagoPostventa.VENCIDO;
         }
         return EstadoPagoPostventa.PENDIENTE;

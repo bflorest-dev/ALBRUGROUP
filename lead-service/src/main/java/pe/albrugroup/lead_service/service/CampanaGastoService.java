@@ -3,6 +3,7 @@ package pe.albrugroup.lead_service.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.Campana;
 import pe.albrugroup.lead_service.entity.CampanaGastoRegistro;
 import pe.albrugroup.lead_service.entity.enums.Accion;
@@ -22,7 +23,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,7 +34,6 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class CampanaGastoService {
 
-    private static final ZoneId ZONA_OPERATIVA = ZoneId.of("America/Lima");
     private static final String TIPIFICACION_PREVENTA_COMPLETA = "PREVENTA_COMPLETA";
     private static final String SUBTIPIFICACION_VENTA_CERRADA = "VENTA_CERRADA";
 
@@ -46,6 +45,7 @@ public class CampanaGastoService {
     @Transactional
     public CampanaGastoResponse registrarGasto(Long idCampana, CampanaGastoRequest request) {
         Campana campana = obtenerCampanaActiva(idCampana);
+        validarLeadsContraUltimoRegistroDia(idCampana, request.getLeads());
         CampanaGastoRegistro registro = CampanaGastoRegistro.builder()
                 .campana(campana)
                 .leads(request.getLeads())
@@ -162,7 +162,7 @@ public class CampanaGastoService {
 
     private void aplicarMetricasReales(CampanaGastoRegistro registro) {
         Instant createdAt = registro.getCreatedAt();
-        Instant inicioDia = createdAt.atZone(ZONA_OPERATIVA).toLocalDate().atStartOfDay(ZONA_OPERATIVA).toInstant();
+        Instant inicioDia = OperationalDateTime.startOfDay(OperationalDateTime.toOperationalDate(createdAt));
         Long idCampana = registro.getCampana().getId();
         registro.setLeadsReales((int) leadRepository.contarLeadsRealesPorCampanaYRango(idCampana, inicioDia, createdAt));
         registro.setVentasCerradas((int) eventoRepository.contarVentasCerradasPorCampanaYRango(
@@ -173,6 +173,24 @@ public class CampanaGastoService {
                 inicioDia,
                 createdAt
         ));
+    }
+
+    private void validarLeadsContraUltimoRegistroDia(Long idCampana, Integer leads) {
+        OperationalDateTime.InstantRange rango = OperationalDateTime.dayRange(OperationalDateTime.today());
+        registroRepository
+                .findTopByCampanaIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
+                        idCampana,
+                        rango.inicio(),
+                        rango.fin()
+                )
+                .ifPresent(ultimoRegistro -> {
+                    Integer leadsPrevios = ultimoRegistro.getLeads();
+                    if (leadsPrevios != null && leads != null && leads < leadsPrevios) {
+                        throw new BadRequestException(
+                                "leads no puede ser menor al ultimo registro del dia. Valor previo: " + leadsPrevios
+                        );
+                    }
+                });
     }
 
     private Campana obtenerCampanaActiva(Long idCampana) {
@@ -256,7 +274,7 @@ public class CampanaGastoService {
 
     private Map<LocalDate, CampanaGastoRegistro> ultimosPorDia(List<CampanaGastoRegistro> registros) {
         Map<LocalDate, CampanaGastoRegistro> ultimos = new LinkedHashMap<>();
-        registros.forEach(registro -> ultimos.put(registro.getCreatedAt().atZone(ZONA_OPERATIVA).toLocalDate(), registro));
+        registros.forEach(registro -> ultimos.put(OperationalDateTime.toOperationalDate(registro.getCreatedAt()), registro));
         return ultimos;
     }
 
@@ -301,12 +319,12 @@ public class CampanaGastoService {
     }
 
     private LocalDate resolverFecha(LocalDate fecha) {
-        return fecha == null ? LocalDate.now(ZONA_OPERATIVA) : fecha;
+        return OperationalDateTime.resolveDate(fecha);
     }
 
     private YearMonth resolverPeriodo(Integer anio, Integer mes) {
         if (anio == null && mes == null) {
-            return YearMonth.now(ZONA_OPERATIVA);
+            return OperationalDateTime.currentMonth();
         }
         if (anio == null || mes == null) {
             throw new BadRequestException("anio y mes deben enviarse juntos");
@@ -318,17 +336,15 @@ public class CampanaGastoService {
     }
 
     private RangoFechas rangoDia(LocalDate fecha) {
-        return new RangoFechas(
-                fecha.atStartOfDay(ZONA_OPERATIVA).toInstant(),
-                fecha.plusDays(1).atStartOfDay(ZONA_OPERATIVA).toInstant()
-        );
+        return toLocalRange(OperationalDateTime.dayRange(fecha));
     }
 
     private RangoFechas rangoMes(YearMonth periodo) {
-        return new RangoFechas(
-                periodo.atDay(1).atStartOfDay(ZONA_OPERATIVA).toInstant(),
-                periodo.plusMonths(1).atDay(1).atStartOfDay(ZONA_OPERATIVA).toInstant()
-        );
+        return toLocalRange(OperationalDateTime.monthRange(periodo));
+    }
+
+    private RangoFechas toLocalRange(OperationalDateTime.InstantRange range) {
+        return new RangoFechas(range.inicio(), range.fin());
     }
 
     private record RangoFechas(Instant inicio, Instant fin) {

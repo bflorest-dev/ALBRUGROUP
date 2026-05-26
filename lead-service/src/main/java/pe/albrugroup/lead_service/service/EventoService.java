@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
+import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.Evento;
 import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
@@ -18,7 +19,6 @@ import pe.albrugroup.lead_service.service.mapper.EventoMapper;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
 
@@ -34,7 +34,6 @@ public class EventoService {
     private final PaginationService paginationService;
 
     private static final Set<String> EVENTO_SORT_FIELDS = Set.of("createdAt", "accion", "etapa", "tipificacion", "subtipificacion");
-    private static final ZoneId ZONA_OPERATIVA = ZoneId.of("America/Lima");
 
     @Transactional
     public EventoResponse registrarEvento(RegistrarEventoRequest request) {
@@ -113,11 +112,11 @@ public class EventoService {
     }
 
     private Instant inicioDia(LocalDate fecha) {
-        return fecha == null ? null : fecha.atStartOfDay(ZONA_OPERATIVA).toInstant();
+        return fecha == null ? null : OperationalDateTime.startOfDay(fecha);
     }
 
     private Instant finDiaInclusivo(LocalDate fecha) {
-        return fecha == null ? null : fecha.plusDays(1).atStartOfDay(ZONA_OPERATIVA).toInstant();
+        return fecha == null ? null : OperationalDateTime.endExclusiveOfDay(fecha);
     }
 
     private org.springframework.data.domain.Page<Evento> listarEventosLeadPorRango(

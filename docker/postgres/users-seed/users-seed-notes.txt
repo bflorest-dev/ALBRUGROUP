@@ -40,15 +40,16 @@ carla@gmail.com
 D71000004P@albru.community.pe
 diego@gmail.com 
 71000004
-%i&E7@HZH&
+Jg9k5%AAvB
 ----------------------------------------------------------------------------
 [GTR]
 
 E71000005T@albru.gtr.pe
 elena@gmail.com
 71000005
-N9&UmZbzY@
+3ncQtBUs-A
 
+--------------
 F71000006C@albru.gtr.pe
 fabian@gmail.com
 71000006
@@ -56,7 +57,10 @@ fabian@gmail.com
 
 ----------------------------------------------------------------------------
 [SUPERVISOR_GTR]
-- Gabriela Flores | empleadoId=1007 | dni=71000007 | correo=gabriela@gmail.com | username=G71000007F@albru.supgtr.pe
+
+G71000007F@albru.supgtr.pe
+gabriela@gmail.com
+71000007
 
 ----------------------------------------------------------------------------
 [ASESOR_VENTAS]
@@ -64,28 +68,40 @@ fabian@gmail.com
 H71000008R@albru.sales.pe
 hector@gmail.com
 71000008
-aJeswedcSB
-
+tL6ByBXKow
+--------------
 I71000009V@albru.sales.pe
 ines@gmail.com
 71000009
-#$RVooUNV5
-
+9k3bYy8Agm
+--------------
 J71000010L@albru.sales.pe
 javier@gmail.com
 71000010
 Y-kfc9LNHd
+--------------
+K71000011M@albru.sales.pe
+karla@gmail.com
+71000011
 
-- Karla Medina | empleadoId=1011 | dni=71000011 | correo=karla@gmail.com | username=K71000011M@albru.sales.pe
-- Luis Soto | empleadoId=1012 | dni=71000012 | correo=luis@gmail.com | username=L71000012S@albru.sales.pe
+--------------
+L71000012S@albru.sales.pe
+luis@gmail.com
+71000012
 
 ----------------------------------------------------------------------------
 [SUPERVISOR_VENTAS]
-- Monica Diaz | empleadoId=1013 | dni=71000013 | correo=monica@gmail.com | username=M71000013D@albru.supsales.pe
+
+M71000013D@albru.supsales.pe
+monica@gmail.com
+71000013
 
 ----------------------------------------------------------------------------
 [MONITOR]
-- Nestor Ortiz | empleadoId=1014 | dni=71000014 | correo=nestor@gmail.com | username=N71000014O@albru.monitor.pe
+
+N71000014O@albru.monitor.pe
+nestor@gmail.com
+71000014
 
 ----------------------------------------------------------------------------
 [BACKOFFICE]
@@ -94,8 +110,10 @@ O71000015R@albru.back.pe
 olga@gmail.com
 71000015
 BjSj9YtEC5
-
-- Pablo Navarro | empleadoId=1016 | dni=71000016 | correo=pablo@gmail.com | username=P71000016N@albru.back.pe
+--------------
+P71000016N@albru.back.pe
+pablo@gmail.com
+71000016
 
 ----------------------------------------------------------------------------
 [SUPERVISOR_BACKOFFICE]
@@ -103,19 +121,25 @@ BjSj9YtEC5
 
 ----------------------------------------------------------------------------
 [ASESOR_POSTVENTA]
-- Sonia Herrera | empleadoId=1018 | dni=71000018 | correo=sonia@gmail.com | username=S71000018H@albru.post.pe
 
+S71000018H@albru.post.pe
+sonia@gmail.com
+71000018
 
-
-- Tomas Vega | empleadoId=1019 | dni=71000019 | correo=tomas@gmail.com | username=T71000019V@albru.post.pe
-
+--------------
+T71000019V@albru.post.pe
+tomas@gmail.com
+71000019
 ----------------------------------------------------------------------------
 [SUPERVISOR_POSTVENTA]
 - Ursula Gil | empleadoId=1020 | dni=71000020 | correo=ursula@gmail.com | username=U71000020G@albru.suppost.pe
 
 ----------------------------------------------------------------------------
 [ASESOR_COBRANZA]
-- Valeria Perez | empleadoId=1021 | dni=71000021 | correo=valeria@gmail.com | username=V71000021P@albru.collection.pe
+
+V71000021P@albru.collection.pe
+valeria@gmail.com
+71000021
 
 ----------------------------------------------------------------------------
 [DESARROLLADOR]

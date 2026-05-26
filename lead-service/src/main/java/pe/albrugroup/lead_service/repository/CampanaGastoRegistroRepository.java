@@ -6,6 +6,7 @@ import pe.albrugroup.lead_service.entity.CampanaGastoRegistro;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CampanaGastoRegistroRepository extends JpaRepository<CampanaGastoRegistro, Long> {
@@ -17,6 +18,12 @@ public interface CampanaGastoRegistroRepository extends JpaRepository<CampanaGas
     );
 
     List<CampanaGastoRegistro> findByCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
+            Instant inicio,
+            Instant fin
+    );
+
+    Optional<CampanaGastoRegistro> findTopByCampanaIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
+            Long idCampana,
             Instant inicio,
             Instant fin
     );

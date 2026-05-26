@@ -6,6 +6,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.CacheNames;
+import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.Campana;
 import pe.albrugroup.lead_service.entity.CuentaPublicitaria;
 import pe.albrugroup.lead_service.entity.Proveedor;
@@ -19,7 +20,6 @@ import pe.albrugroup.lead_service.repository.CuentaPublicitariaRepository;
 import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.service.mapper.CampanaMapper;
 
-import java.time.Instant;
 import java.util.List;
 
 @Service @Transactional
@@ -49,7 +49,7 @@ public class CampanaService {
         Campana campana = repository.findByIdAndActivoTrue(idCampana)
                 .orElseThrow(() -> new NotFoundException(Campana.class, idCampana));
         mapper.updateNumeroWhatsappCampana(request, campana);
-        campana.setUpdatedAt(Instant.now());
+        campana.setUpdatedAt(OperationalDateTime.now());
         return mapper.toResponse(repository.save(campana));
     }
 
@@ -64,7 +64,7 @@ public class CampanaService {
         }
 
         campana.setActivo(activar);
-        campana.setUpdatedAt(Instant.now());
+        campana.setUpdatedAt(OperationalDateTime.now());
         return mapper.toResponse(repository.save(campana));
     }
 

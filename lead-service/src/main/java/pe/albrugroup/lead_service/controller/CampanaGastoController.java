@@ -2,6 +2,7 @@ package pe.albrugroup.lead_service.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -44,7 +45,7 @@ public class CampanaGastoController {
     @PreAuthorize("hasAuthority('READ_CAMPANA')")
     public ResponseEntity<List<CampanaGastoResponse>> listarRegistrosDia(
             @PathVariable Long idCampana,
-            @RequestParam(required = false) LocalDate fecha
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
     ) {
         var registros = campanaGastoService.listarRegistrosDia(idCampana, fecha);
         return ResponseEntity.status(HttpStatus.OK).body(registros);
@@ -54,7 +55,7 @@ public class CampanaGastoController {
     @PreAuthorize("hasAuthority('READ_CAMPANA')")
     public ResponseEntity<CampanaGastoResumenDiarioResponse> obtenerResumenDiarioCampana(
             @PathVariable Long idCampana,
-            @RequestParam(required = false) LocalDate fecha
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
     ) {
         var resumen = campanaGastoService.obtenerResumenDiarioCampana(idCampana, fecha);
         return ResponseEntity.status(HttpStatus.OK).body(resumen);
@@ -63,7 +64,7 @@ public class CampanaGastoController {
     @GetMapping("/gastos/resumen-diario")
     @PreAuthorize("hasAuthority('READ_CAMPANA')")
     public ResponseEntity<CampanaGastoResumenDiarioResponse> obtenerResumenDiarioGlobal(
-            @RequestParam(required = false) LocalDate fecha
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
     ) {
         var resumen = campanaGastoService.obtenerResumenDiarioGlobal(fecha);
         return ResponseEntity.status(HttpStatus.OK).body(resumen);

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
+import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.*;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.CriterioZona;
@@ -64,7 +65,7 @@ import pe.albrugroup.lead_service.service.mapper.LeadMapper;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -102,7 +103,6 @@ public class LeadService {
     private static final String TIPIFICACION_PREVENTA_COMPLETA = "PREVENTA_COMPLETA";
     private static final String SUBTIPIFICACION_PREVENTA = "PREVENTA";
     private static final String SUBTIPIFICACION_VENTA_CERRADA = "VENTA_CERRADA";
-    private static final ZoneId ZONA_OPERATIVA = ZoneId.of("America/Lima");
     private static final List<Accion> ACCIONES_GESTION_LEAD = List.of(Accion.CONTACTO, Accion.TIPIFICACION);
     private static final Set<String> LEAD_GTR_SORT_FIELDS = Set.of(
             "lastEntryAt", "createdAt", "lead", "nombreAsesorAsignado", "estado"
@@ -118,51 +118,47 @@ public class LeadService {
     );
 
     public PageResponse<LeadGtrResponse> listarBandejaGtr(LocalDate fecha, PageRequest pageRequest) {
-        LocalDate fechaTrabajo = fecha == null ? LocalDate.now(ZONA_OPERATIVA) : fecha;
-        Instant inicioDia = fechaTrabajo.atStartOfDay(ZONA_OPERATIVA).toInstant();
-        Instant finDia = fechaTrabajo.plusDays(1).atStartOfDay(ZONA_OPERATIVA).toInstant();
+        OperationalDateTime.InstantRange rangoDia = OperationalDateTime.dayRange(fecha);
 
         Page<LeadGtrResponse> leads = leadRepository.listarBandejaGtr(
                 Etapa.PREVENTA,
-                inicioDia,
-                finDia,
+                rangoDia.inicio(),
+                rangoDia.fin(),
                 paginationService.toPageable(pageRequest, LEAD_GTR_SORT_FIELDS)
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadGtrResponse::getId, this::setTotalesAsignacion);
-        aplicarAlertasRegistrosDia(leads.getContent(), inicioDia, finDia);
+        aplicarAlertasRegistrosDia(leads.getContent(), rangoDia.inicio(), rangoDia.fin());
         return PageResponse.from(leads);
     }
 
     public LeadGtrMetricasResponse obtenerMetricasGtr(LocalDate fecha) {
-        LocalDate fechaTrabajo = fecha == null ? LocalDate.now(ZONA_OPERATIVA) : fecha;
-        Instant inicioDia = fechaTrabajo.atStartOfDay(ZONA_OPERATIVA).toInstant();
-        Instant finDia = fechaTrabajo.plusDays(1).atStartOfDay(ZONA_OPERATIVA).toInstant();
+        OperationalDateTime.InstantRange rangoDia = OperationalDateTime.dayRange(fecha);
 
         long nuevos = leadRepository.countByEtapaAndEstadoAndLastEntryAtGreaterThanEqualAndLastEntryAtLessThan(
                 Etapa.PREVENTA,
                 EstadoSeguimiento.NUEVO,
-                inicioDia,
-                finDia
+                rangoDia.inicio(),
+                rangoDia.fin()
         );
         long sinGestionar = leadRepository.countByEtapaAndEstadoAndLastEntryAtGreaterThanEqualAndLastEntryAtLessThan(
                 Etapa.PREVENTA,
                 EstadoSeguimiento.ASIGNADO,
-                inicioDia,
-                finDia
+                rangoDia.inicio(),
+                rangoDia.fin()
         );
         long gestionados = eventoRepository.contarGestionadosGtr(
                 Etapa.PREVENTA,
                 ACCIONES_GESTION_LEAD,
                 TIPIFICACION_PREVENTA_COMPLETA,
-                inicioDia,
-                finDia
+                rangoDia.inicio(),
+                rangoDia.fin()
         );
         long preventas = eventoRepository.contarPreventasGtr(
                 Accion.TIPIFICACION,
                 TIPIFICACION_PREVENTA_COMPLETA,
                 SUBTIPIFICACION_VENTA_CERRADA,
-                inicioDia,
-                finDia
+                rangoDia.inicio(),
+                rangoDia.fin()
         );
 
         return new LeadGtrMetricasResponse(nuevos, sinGestionar, gestionados, preventas);
@@ -277,13 +273,9 @@ public class LeadService {
     }
 
     public List<SupervisorVentasResumenResponse> listarResumenSupervisorVentas(List<Long> idsAsesor) {
-        ZoneId zoneId = ZoneId.systemDefault();
-        LocalDate hoy = LocalDate.now(zoneId);
-        Instant inicioHoy = hoy.atStartOfDay(zoneId).toInstant();
-        Instant finHoy = hoy.plusDays(1).atStartOfDay(zoneId).toInstant();
-        LocalDate inicioMesLocal = hoy.withDayOfMonth(1);
-        Instant inicioMes = inicioMesLocal.atStartOfDay(zoneId).toInstant();
-        Instant finMes = inicioMesLocal.plusMonths(1).atStartOfDay(zoneId).toInstant();
+        LocalDate hoy = OperationalDateTime.today();
+        OperationalDateTime.InstantRange rangoHoy = OperationalDateTime.dayRange(hoy);
+        OperationalDateTime.InstantRange rangoMes = OperationalDateTime.monthRange(YearMonth.from(hoy));
 
         List<Long> asesorIds = idsAsesor == null ? List.of() : idsAsesor.stream().distinct().toList();
         boolean filtrarAsesores = !asesorIds.isEmpty();
@@ -303,8 +295,8 @@ public class LeadService {
 
         eventoRepository.resumirTipificacionesPorAsesor(
                         Accion.TIPIFICACION,
-                        inicioHoy,
-                        finHoy,
+                        rangoHoy.inicio(),
+                        rangoHoy.fin(),
                         filtrarAsesores,
                         asesorIds
                 )
@@ -317,8 +309,8 @@ public class LeadService {
                         Accion.TIPIFICACION,
                         TIPIFICACION_SCORE_PREVENTA,
                         SUBTIPIFICACION_PREVENTA,
-                        inicioHoy,
-                        finHoy,
+                        rangoHoy.inicio(),
+                        rangoHoy.fin(),
                         filtrarAsesores,
                         asesorIds
                 )
@@ -331,8 +323,8 @@ public class LeadService {
                         Accion.TIPIFICACION,
                         TIPIFICACION_SCORE_PREVENTA,
                         SUBTIPIFICACION_PREVENTA,
-                        inicioMes,
-                        finMes,
+                        rangoMes.inicio(),
+                        rangoMes.fin(),
                         filtrarAsesores,
                         asesorIds
                 )
@@ -854,7 +846,7 @@ public class LeadService {
         lead.setIdSubtipificacion(null);
         lead.setCodigoSubtipificacion(null);
         lead.setEstado(EstadoSeguimiento.ASIGNADO);
-        lead.setLastEntryAt(Instant.now());
+        lead.setLastEntryAt(OperationalDateTime.now());
 
         Lead savedLead = leadRepository.save(lead);
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
@@ -925,7 +917,7 @@ public class LeadService {
     }
 
     private void registrarLeadNuevo(String prefijo, String numeroLead, LeadIntakeRequest request, Campana campana) {
-        Lead lead = leadMapper.toNuevoLead(prefijo, numeroLead, request.getBase(), campana, Instant.now());
+        Lead lead = leadMapper.toNuevoLead(prefijo, numeroLead, request.getBase(), campana, OperationalDateTime.now());
 
         Lead savedLead = leadRepository.save(lead);
         registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa());
@@ -939,7 +931,7 @@ public class LeadService {
         lead.setLead(normalizarLead(request.getLead()));
         lead.setCampana(campana);
         lead.setBase(request.getBase());
-        lead.setLastEntryAt(Instant.now());
+        lead.setLastEntryAt(OperationalDateTime.now());
 
         if (lead.getEtapa() == Etapa.PREVENTA) {
             lead.setIdAsesorAsignado(null);
@@ -1565,7 +1557,7 @@ public class LeadService {
         Plan plan = planRepository.findByIdAndActivoTrue(idPlan)
                 .orElseThrow(() -> new NotFoundException(Plan.class, idPlan));
 
-        LocalDate fechaActual = LocalDate.now(ZoneId.systemDefault());
+        LocalDate fechaActual = OperationalDateTime.today();
         boolean vigente = (plan.getVigenciaDesde() == null || !plan.getVigenciaDesde().isAfter(fechaActual))
                 && (plan.getVigenciaHasta() == null || !plan.getVigenciaHasta().isBefore(fechaActual));
 
@@ -1713,7 +1705,7 @@ public class LeadService {
                 .idAsesorAnterior(idAsesorAnterior)
                 .codigoTipificacion(lead.getCodigoTipificacion())
                 .codigoSubtipificacion(lead.getCodigoSubtipificacion())
-                .occurredAt(Instant.now())
+                .occurredAt(OperationalDateTime.now())
                 .build());
     }
 

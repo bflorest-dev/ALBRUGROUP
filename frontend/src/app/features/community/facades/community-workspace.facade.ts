@@ -91,7 +91,7 @@ export class CommunityWorkspaceFacade {
   readonly selectedExpenseCampaign = signal<FinanceRow | null>(null);
   readonly expenseDialogOpen = signal(false);
   readonly expenseSnapshotsOpen = signal(false);
-  readonly financeDate = signal(this.toDateInputValue(new Date().toISOString()));
+  readonly financeDate = signal(this.currentDateValue());
   readonly financeMonth = signal(this.currentMonthValue());
 
   readonly billingDayOptions = Array.from({ length: 31 }, (_, index) => index + 1);
@@ -356,7 +356,7 @@ export class CommunityWorkspaceFacade {
   }
 
   async onFinanceDateChanged(value: string): Promise<void> {
-    this.financeDate.set(value || this.toDateInputValue(new Date().toISOString()));
+    this.financeDate.set(value || this.currentDateValue());
     await this.loadFinanceDashboard();
   }
 
@@ -1128,6 +1128,13 @@ export class CommunityWorkspaceFacade {
     const now = new Date();
     const month = `${now.getMonth() + 1}`.padStart(2, '0');
     return `${now.getFullYear()}-${month}`;
+  }
+
+  private currentDateValue(): string {
+    const now = new Date();
+    const month = `${now.getMonth() + 1}`.padStart(2, '0');
+    const day = `${now.getDate()}`.padStart(2, '0');
+    return `${now.getFullYear()}-${month}-${day}`;
   }
 
   private financeMonthYear(value: string): number {

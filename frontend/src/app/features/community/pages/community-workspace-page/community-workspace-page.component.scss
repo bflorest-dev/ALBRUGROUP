@@ -145,6 +145,33 @@ p,
   --finance-tone: #475569;
 }
 
+:host ::ng-deep .finance-table {
+  .finance-col {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    font-weight: 700;
+  }
+
+  th.finance-col--reported {
+    background: #dbeafe;
+    color: #1d4ed8;
+  }
+
+  td.finance-col--reported {
+    background: #eff6ff;
+    color: #1e3a8a;
+  }
+
+  th.finance-col--real {
+    background: #ffedd5;
+    color: #c2410c;
+  }
+
+  td.finance-col--real {
+    background: #fff7ed;
+    color: #7c2d12;
+  }
+}
+
 .section-grid {
   align-items: start;
   grid-template-columns: minmax(280px, 0.75fr) minmax(420px, 1.25fr);
