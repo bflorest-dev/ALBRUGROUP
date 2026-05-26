@@ -186,7 +186,8 @@
                 label="Chat"
                 size="small"
                 severity="secondary"
-                disabled
+                [disabled]="!row.lead"
+                (click)="facade.openWhatsAppChat(row)"
               ></button>
               <div class="assignment-action">
                 <button
@@ -423,14 +424,8 @@
             appendTo="body"
           />
         </label>
-        <label>
-          <span>Fecha desde</span>
-          <input pInputText type="date" formControlName="fechaDesde" />
-        </label>
-        <label>
-          <span>Fecha hasta</span>
-          <input pInputText type="date" formControlName="fechaHasta" />
-        </label>
+        <app-date-field label="Fecha desde" formControlName="fechaDesde" />
+        <app-date-field label="Fecha hasta" formControlName="fechaHasta" />
         <div class="dialog-actions">
           <button pButton type="button" label="Limpiar" severity="secondary" (click)="facade.clearMasivoFilters()"></button>
           <button pButton type="submit" label="Buscar" icon="pi pi-search" [loading]="facade.isLoadingMasivos()"></button>

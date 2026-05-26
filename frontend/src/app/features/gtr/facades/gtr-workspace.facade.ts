@@ -394,6 +394,16 @@ export class GtrWorkspaceFacade {
     this.activeDialog.set('snapshot');
   }
 
+  openWhatsAppChat(row: Pick<LeadGtrResponse, 'prefijo' | 'lead'>): void {
+    const url = this.whatsAppUrl(row.prefijo, row.lead);
+    if (!url) {
+      this.errorMessage.set('El lead no tiene un numero valido para abrir WhatsApp.');
+      return;
+    }
+
+    this.document.defaultView?.open(url, '_blank', 'noopener,noreferrer');
+  }
+
   openAssignment(row?: LeadGtrResponse): void {
     this.activeAssignmentLead.set(row ?? null);
     this.activeDialog.set('assign');
@@ -1207,6 +1217,17 @@ export class GtrWorkspaceFacade {
       return responseError?.message ?? responseError?.error ?? fallback;
     }
     return fallback;
+  }
+
+  private whatsAppUrl(prefijo?: string | null, lead?: string | null): string | null {
+    const phone = this.normalizePhoneNumber(prefijo, lead);
+    return phone ? `https://wa.me/${phone}` : null;
+  }
+
+  private normalizePhoneNumber(prefijo?: string | null, lead?: string | null): string {
+    const prefixDigits = (prefijo ?? '').replace(/\D/g, '');
+    const leadDigits = (lead ?? '').replace(/\D/g, '');
+    return `${prefixDigits}${leadDigits}`.trim();
   }
 
   private formatLocalDate(date: Date): string {

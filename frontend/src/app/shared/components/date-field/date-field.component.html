@@ -1,86 +1,24 @@
-<div class="date-field" [class.date-field--disabled]="isDisabled()">
-  <span class="date-field__label">{{ label }}</span>
-
-  <div class="date-field__control">
-    <input
-      type="text"
-      inputmode="numeric"
-      class="date-field__input"
-      maxlength="10"
-      [value]="dateText()"
-      [placeholder]="placeholder"
-      [disabled]="isDisabled()"
-      (input)="onDateTextInput($event)"
-      (blur)="onDateTextBlur()"
-    />
-
-    @if (selectedValue()) {
-      <button
-        type="button"
-        class="date-field__clear"
-        aria-label="Limpiar fecha"
-        [disabled]="isDisabled()"
-        (click)="clearDate($event)"
-      >
-        <i class="ti ti-x"></i>
-      </button>
-    }
-
-    <button
-      type="button"
-      class="date-field__calendar-button"
-      aria-label="Abrir calendario"
-      [attr.aria-expanded]="isOpen()"
-      [disabled]="isDisabled()"
-      (click)="toggleCalendar()"
-    >
-      <i class="ti ti-calendar"></i>
-    </button>
-  </div>
-
-  @if (isOpen()) {
-    <div class="date-field__popover">
-      <div class="date-field__month-bar">
-        <button type="button" class="date-field__nav" aria-label="Año anterior" (click)="moveYear(-1)">
-          <i class="ti ti-chevrons-left"></i>
-        </button>
-
-        <button type="button" class="date-field__nav" aria-label="Mes anterior" (click)="moveMonth(-1)">
-          <i class="ti ti-chevron-left"></i>
-        </button>
-
-        <strong>{{ activeMonthLabel() }}</strong>
-
-        <button type="button" class="date-field__nav" aria-label="Mes siguiente" (click)="moveMonth(1)">
-          <i class="ti ti-chevron-right"></i>
-        </button>
-
-        <button type="button" class="date-field__nav" aria-label="Año siguiente" (click)="moveYear(1)">
-          <i class="ti ti-chevrons-right"></i>
-        </button>
-      </div>
-
-      <div class="date-field__weekdays">
-        @for (weekday of weekdays; track $index) {
-          <span>{{ weekday }}</span>
-        }
-      </div>
-
-      <div class="date-field__days">
-        @for (day of calendarDays(); track day.iso) {
-          <button
-            type="button"
-            class="date-field__day"
-            [class.date-field__day--muted]="!day.isCurrentMonth"
-            [class.date-field__day--today]="day.isToday"
-            [class.date-field__day--selected]="day.isSelected"
-            [disabled]="day.isDisabled"
-            (click)="selectDate(day)"
-          >
-            {{ day.dayNumber }}
-          </button>
-        }
-      </div>
-    </div>
+<div class="date-field" [class.date-field--disabled]="isDisabled">
+  @if (label) {
+    <label class="date-field__label" [attr.for]="inputId">{{ label }}</label>
   }
+
+  <p-datepicker
+    [inputId]="inputId"
+    [ngModel]="selectedDate"
+    (ngModelChange)="onDateSelected($event)"
+    [placeholder]="placeholder"
+    [minDate]="parsedMinDate"
+    [maxDate]="parsedMaxDate"
+    [showIcon]="true"
+    iconDisplay="input"
+    [showButtonBar]="true"
+    [readonlyInput]="true"
+    [disabled]="isDisabled"
+    dateFormat="dd/mm/yy"
+    appendTo="body"
+    inputStyleClass="date-field__input"
+    panelStyleClass="date-field__panel"
+    (onBlur)="onInputBlur()"
+  />
 </div>

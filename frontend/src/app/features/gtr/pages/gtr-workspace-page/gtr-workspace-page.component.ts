@@ -16,6 +16,7 @@ import { SelectModule } from 'primeng/select';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-number-field/phone-number-field.component';
 import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
 
@@ -37,6 +38,7 @@ import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
     SkeletonModule,
     TableModule,
     TagModule,
+    DateFieldComponent,
     PhoneNumberFieldComponent
   ],
   providers: [GtrWorkspaceFacade],
