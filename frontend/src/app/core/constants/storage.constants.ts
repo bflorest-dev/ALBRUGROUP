@@ -3,5 +3,6 @@ export const STORAGE_KEYS = {
   refreshToken: 'albru_refresh_token',
   session: 'albru_session',
   activeTabs: 'albru_active_tabs',
-  tabId: 'albru_tab_id'
+  tabId: 'albru_tab_id',
+  lastActivityAt: 'albru_last_activity_at'
 } as const;

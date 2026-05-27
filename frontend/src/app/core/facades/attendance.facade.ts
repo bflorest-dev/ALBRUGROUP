@@ -118,8 +118,13 @@ export class AttendanceFacade {
   );
 
   readonly attendanceDetail = signal<DetalleAsistenciaResponse | null>(null);
-  readonly currentStatus = computed<EstadoAsistencia>(
+  readonly rawStatus = computed<EstadoAsistencia>(
     () => this.attendanceDetail()?.estadoActual ?? 'OFFLINE'
+  );
+  readonly isWithinSchedule = computed(() => Boolean(this.attendanceDetail()?.dentroHorario));
+  readonly isOperational = computed(() => Boolean(this.attendanceDetail()?.operativo));
+  readonly currentStatus = computed<EstadoAsistencia>(
+    () => this.rawStatus() === 'ONLINE' && !this.isOperational() ? 'OFFLINE' : this.rawStatus()
   );
   readonly isLoading = signal(false);
   readonly errorMessage = signal('');
@@ -142,7 +147,7 @@ export class AttendanceFacade {
         this.attendanceDetail.set(state.detail);
         this.isLoading.set(false);
         this.errorMessage.set('');
-        void this.syncPresence(state.detail?.estadoActual ?? 'OFFLINE');
+        void this.syncPresence(state.detail);
         return;
       }
 
@@ -165,7 +170,7 @@ export class AttendanceFacade {
         this.attendanceDetail.set(state.detail);
         this.isLoading.set(false);
         this.errorMessage.set('');
-        void this.syncPresence(state.detail.estadoActual);
+        void this.syncPresence(state.detail);
         return;
       }
 
@@ -221,18 +226,18 @@ export class AttendanceFacade {
     };
   }
 
-  private async syncPresence(status: EstadoAsistencia): Promise<void> {
-    if (this.shouldHavePresence(status)) {
+  private async syncPresence(detail: DetalleAsistenciaResponse | null): Promise<void> {
+    if (this.shouldHavePresence(detail)) {
       await this.presenceService.start();
-      await this.syncSalesAdvisorDisponibilidad(status);
+      await this.syncSalesAdvisorDisponibilidad(detail?.estadoActual ?? 'OFFLINE');
       return;
     }
 
     await this.presenceService.offline();
   }
 
-  private shouldHavePresence(status: EstadoAsistencia): boolean {
-    return status !== 'OFFLINE';
+  private shouldHavePresence(detail: DetalleAsistenciaResponse | null): boolean {
+    return Boolean(detail?.operativo);
   }
 
   private async syncSalesAdvisorDisponibilidad(status: EstadoAsistencia): Promise<void> {
@@ -277,6 +282,10 @@ export class AttendanceFacade {
   }
 
   private resolveAvailableActions(status: EstadoAsistencia): AttendanceActionOption[] {
+    if (!this.isWithinSchedule()) {
+      return [];
+    }
+
     switch (status) {
       case 'OFFLINE':
         return [

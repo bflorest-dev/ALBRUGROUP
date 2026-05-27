@@ -76,6 +76,10 @@ export class AuthSessionService {
     }
   }
 
+  expireIdleSession(): void {
+    void this.presenceService.offline().finally(() => this.clearSessionAndRedirect());
+  }
+
   clearSessionAndRedirect(): void {
     this.sessionService.clearSession();
     void this.router.navigate(['/auth/access']);

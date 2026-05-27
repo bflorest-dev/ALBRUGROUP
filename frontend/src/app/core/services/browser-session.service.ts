@@ -1,7 +1,8 @@
 import { DOCUMENT } from '@angular/common';
 import { Inject, Injectable } from '@angular/core';
 import { STORAGE_KEYS } from '../constants/storage.constants';
-import { PresenceService } from './presence.service';
+import { IdleSessionService } from './idle-session.service';
+import { OperationalGateService } from './operational-gate.service';
 import { SessionService } from './session.service';
 
 type ActiveTabsRegistry = Record<string, number>;
@@ -17,7 +18,8 @@ export class BrowserSessionService {
 
   constructor(
     @Inject(DOCUMENT) private readonly document: Document,
-    private readonly presenceService: PresenceService,
+    private readonly idleSessionService: IdleSessionService,
+    private readonly operationalGateService: OperationalGateService,
     private readonly sessionService: SessionService
   ) {}
 
@@ -38,14 +40,21 @@ export class BrowserSessionService {
     }
 
     this.startHeartbeat();
-    const session = this.sessionService.getSession();
-    if (session && session.primaryRole !== 'ASESOR_VENTAS') {
-      void this.presenceService.start();
-    }
+    this.idleSessionService.initialize();
 
-    window.addEventListener('beforeunload', this.handleTabClose);
+    window.addEventListener('beforeunload', this.handleBeforeUnload);
     window.addEventListener('pagehide', this.handleTabClose);
   }
+
+  private readonly handleBeforeUnload = (event: BeforeUnloadEvent): string | void => {
+    if (!this.operationalGateService.shouldWarnBeforeUnload()) {
+      return;
+    }
+
+    event.preventDefault();
+    event.returnValue = '';
+    return '';
+  };
 
   private readonly handleTabClose = (): void => {
     this.stopHeartbeat();

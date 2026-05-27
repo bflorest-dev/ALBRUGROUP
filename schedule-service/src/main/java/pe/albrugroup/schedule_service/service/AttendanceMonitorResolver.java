@@ -3,6 +3,7 @@ package pe.albrugroup.schedule_service.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.albrugroup.schedule_service.configuration.OperationalDateTime;
 import pe.albrugroup.schedule_service.entity.Asistencia;
 import pe.albrugroup.schedule_service.entity.ExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.Horario;
@@ -37,7 +38,7 @@ public class AttendanceMonitorResolver {
 
     @Transactional(readOnly = true)
     public List<EstadoMonitorResponse> getEstadosMonitor(ConsultaMonitoreoRequest request) {
-        LocalDate consulta = request.getFecha() != null ? request.getFecha() : LocalDate.now();
+        LocalDate consulta = OperationalDateTime.resolveDate(request.getFecha());
         List<Long> empleadoIds = request.getEmpleadoIds().stream()
                 .filter(Objects::nonNull)
                 .distinct()
@@ -58,7 +59,7 @@ public class AttendanceMonitorResolver {
 
     @Transactional(readOnly = true)
     public EstadoMonitorResponse resolveEstadoMonitor(Long idEmpleado, LocalDate fecha) {
-        LocalDate consulta = fecha != null ? fecha : LocalDate.now();
+        LocalDate consulta = OperationalDateTime.resolveDate(fecha);
         Asistencia asistencia = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, consulta).orElse(null);
         return buildEstadoMonitor(idEmpleado, consulta, asistencia);
     }
@@ -79,9 +80,9 @@ public class AttendanceMonitorResolver {
                     .desde(getDesdeEstado(asistencia))
                     .minutosServiciosPermitidos(asistencia.getMinutosServiciosPermitidos())
                     .minutosServiciosAcumulados(asistencia.getMinutosServiciosAcumulados())
-                    .minutosServiciosEnCurso(calcularMinutosServiciosEnCurso(asistencia, LocalDateTime.now()))
+                    .minutosServiciosEnCurso(calcularMinutosServiciosEnCurso(asistencia, OperationalDateTime.nowLocalDateTime()))
                     .excedioServicios(asistencia.getExcedioServicios())
-                    .operativo(esOperativo(asistencia.getEstadoActual()))
+                    .operativo(esOperativo(idEmpleado, fecha, asistencia.getEstadoActual()))
                     .build();
         }
 
@@ -185,8 +186,29 @@ public class AttendanceMonitorResolver {
         };
     }
 
-    private boolean esOperativo(EstadoAsistencia estado) {
-        return estado == EstadoAsistencia.ONLINE;
+    private boolean esOperativo(Long idEmpleado, LocalDate fecha, EstadoAsistencia estado) {
+        if (estado != EstadoAsistencia.ONLINE) {
+            return false;
+        }
+
+        LocalDateTime ahora = OperationalDateTime.nowLocalDateTime();
+        if (!fecha.equals(ahora.toLocalDate())) {
+            return false;
+        }
+
+        try {
+            Horario horario = horarioRepository.findHorarioVigente(idEmpleado, fecha)
+                    .orElseThrow(() -> new NotFoundException("Horario vigente no encontrado", idEmpleado));
+            ProgramacionDiaria programacion = resolverProgramacion(horario, fecha);
+            if (!programacion.laborable() || programacion.horaEntrada() == null || programacion.horaSalida() == null) {
+                return false;
+            }
+
+            LocalTime horaOperacion = ahora.toLocalTime();
+            return !horaOperacion.isBefore(programacion.horaEntrada()) && !horaOperacion.isAfter(programacion.horaSalida());
+        } catch (NotFoundException e) {
+            return false;
+        }
     }
 
     @lombok.Builder

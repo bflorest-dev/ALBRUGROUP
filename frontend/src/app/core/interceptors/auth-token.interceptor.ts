@@ -2,6 +2,7 @@ import { HttpContextToken, HttpErrorResponse, HttpInterceptorFn } from '@angular
 import { inject } from '@angular/core';
 import { catchError, switchMap, throwError } from 'rxjs';
 import { AuthSessionService } from '../services/auth-session.service';
+import { IdleSessionService } from '../services/idle-session.service';
 import { TokenService } from '../services/token.service';
 
 const HAS_REFRESH_RETRY = new HttpContextToken<boolean>(() => false);
@@ -14,6 +15,10 @@ function isPublicAuthRequest(url: string): boolean {
     url.includes('/auth/autorizacion/refresh') ||
     url.includes('/auth/autorizacion/logout')
   );
+}
+
+function isSessionTeardownRequest(url: string): boolean {
+  return url.includes('/presence/offline');
 }
 
 function withAuthorizationHeader<T extends { clone: (update: object) => T }>(request: T, token: string): T {
@@ -29,6 +34,12 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
   const authSessionService = inject(AuthSessionService);
   const token = tokenService.getAccessToken();
   const isPublicRequest = isPublicAuthRequest(req.url);
+  const isTeardownRequest = isSessionTeardownRequest(req.url);
+  if (token && !isPublicRequest && !isTeardownRequest && IdleSessionService.isStoredSessionExpired()) {
+    authSessionService.expireIdleSession();
+    return throwError(() => new Error('Session expired due to inactivity.'));
+  }
+
   const request = !token || isPublicRequest ? req : withAuthorizationHeader(req, token);
 
   return next(request).pipe(
@@ -37,6 +48,7 @@ export const authTokenInterceptor: HttpInterceptorFn = (req, next) => {
         !(error instanceof HttpErrorResponse) ||
         error.status !== 401 ||
         isPublicRequest ||
+        isTeardownRequest ||
         request.context.get(HAS_REFRESH_RETRY)
       ) {
         return throwError(() => error);

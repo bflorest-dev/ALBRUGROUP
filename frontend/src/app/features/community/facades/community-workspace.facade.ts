@@ -57,6 +57,10 @@ type SnapshotFinanceRow = FinanceRow & {
   deltaLeads: number | null;
   deltaLeadsReales: number | null;
 };
+type PlanCatalogProviderFilter = ProveedorResponse & {
+  planesCount: number;
+  adicionalesCount: number;
+};
 
 @Injectable()
 export class CommunityWorkspaceFacade {
@@ -84,6 +88,24 @@ export class CommunityWorkspaceFacade {
   readonly adicionalesActivos = computed(() => this.adicionales().filter((adicional) => adicional.activo !== false));
   readonly planes = signal<PlanResponse[]>([]);
   readonly planesActivos = computed(() => this.planes().filter((plan) => plan.activo !== false));
+  readonly selectedPlanCatalogProviderId = signal(0);
+  readonly planCatalogProviderFilters = computed<PlanCatalogProviderFilter[]>(() =>
+    this.proveedores()
+      .map((proveedor) => ({
+        ...proveedor,
+        planesCount: this.planes().filter((plan) => plan.idProveedor === proveedor.id).length,
+        adicionalesCount: this.adicionales().filter((adicional) => adicional.idProveedor === proveedor.id).length
+      }))
+      .filter((proveedor) => proveedor.activo !== false || proveedor.planesCount || proveedor.adicionalesCount)
+  );
+  readonly filteredPlanes = computed(() => {
+    const idProveedor = this.selectedPlanCatalogProviderId();
+    return idProveedor ? this.planes().filter((plan) => plan.idProveedor === idProveedor) : this.planes();
+  });
+  readonly filteredAdicionales = computed(() => {
+    const idProveedor = this.selectedPlanCatalogProviderId();
+    return idProveedor ? this.adicionales().filter((adicional) => adicional.idProveedor === idProveedor) : this.adicionales();
+  });
   readonly promociones = signal<PromocionComercialResponse[]>([]);
   readonly promocionesActivas = computed(() => this.promociones().filter((promocion) => promocion.activo !== false));
   readonly zonas = signal<ZonaResponse[]>([]);
@@ -524,6 +546,10 @@ export class CommunityWorkspaceFacade {
     await this.saveAction(() => this.leadService.alternarCampana(idCampana), 'Estado de campaña actualizado.', () =>
       this.refreshCampaigns()
     );
+  }
+
+  selectPlanCatalogProvider(idProveedor: number): void {
+    this.selectedPlanCatalogProviderId.set(idProveedor);
   }
 
   async submitAdditional(): Promise<void> {

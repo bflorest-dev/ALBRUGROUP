@@ -52,6 +52,7 @@ export class SessionService {
   clearSession(): void {
     this.tokenService.clearTokens();
     this.sessionState.set(null);
+    localStorage.removeItem(STORAGE_KEYS.lastActivityAt);
   }
 
   private readStoredSession(): UserSession | null {

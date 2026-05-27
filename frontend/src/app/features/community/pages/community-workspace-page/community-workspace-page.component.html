@@ -368,7 +368,33 @@
                   </div>
                 </div>
               </ng-template>
-              <p-table [value]="facade.planes()" [paginator]="true" [rows]="8" [rowHover]="true" styleClass="p-datatable-sm">
+              <div class="provider-filter-bar" aria-label="Filtrar planes por proveedor">
+                <span class="provider-filter-bar__label">Filtrar proveedor</span>
+                <div class="provider-filter-bar__tags">
+                  <button
+                    type="button"
+                    class="provider-filter-chip"
+                    [class.provider-filter-chip--active]="facade.selectedPlanCatalogProviderId() === 0"
+                    (click)="facade.selectPlanCatalogProvider(0)"
+                  >
+                    <p-tag severity="info" [value]="'Todos (' + (facade.planes().length + facade.adicionales().length) + ')'" />
+                  </button>
+                  @for (proveedor of facade.planCatalogProviderFilters(); track proveedor.id) {
+                    <button
+                      type="button"
+                      class="provider-filter-chip"
+                      [class.provider-filter-chip--active]="facade.selectedPlanCatalogProviderId() === proveedor.id"
+                      (click)="facade.selectPlanCatalogProvider(proveedor.id)"
+                    >
+                      <p-tag
+                        [severity]="proveedor.activo === false ? 'danger' : 'success'"
+                        [value]="proveedor.nombre + ' (' + (proveedor.planesCount + proveedor.adicionalesCount) + ')'"
+                      />
+                    </button>
+                  }
+                </div>
+              </div>
+              <p-table [value]="facade.filteredPlanes()" [paginator]="true" [rows]="8" [rowHover]="true" styleClass="p-datatable-sm">
                 <ng-template #header>
                   <tr>
                     <th>Plan</th>
@@ -416,14 +442,14 @@
                   </tr>
                 </ng-template>
                 <ng-template #emptymessage>
-                  <tr><td colspan="7">No hay planes registrados.</td></tr>
+                  <tr><td colspan="7">No hay planes para el proveedor seleccionado.</td></tr>
                 </ng-template>
               </p-table>
             </p-card>
 
             <p-card styleClass="community-table-card">
               <ng-template #title>Adicionales</ng-template>
-              <p-table [value]="facade.adicionales()" [paginator]="true" [rows]="8" [rowHover]="true" styleClass="p-datatable-sm">
+              <p-table [value]="facade.filteredAdicionales()" [paginator]="true" [rows]="8" [rowHover]="true" styleClass="p-datatable-sm">
                 <ng-template #header>
                   <tr>
                     <th>Adicional</th>
@@ -441,7 +467,7 @@
                   </tr>
                 </ng-template>
                 <ng-template #emptymessage>
-                  <tr><td colspan="4">No hay adicionales registrados.</td></tr>
+                  <tr><td colspan="4">No hay adicionales para el proveedor seleccionado.</td></tr>
                 </ng-template>
               </p-table>
             </p-card>

@@ -21,4 +21,6 @@ export interface DetalleAsistenciaResponse {
   minutosServiciosAcumulados: number | null;
   excedioServicios: boolean | null;
   jornadaCerrada: boolean;
+  dentroHorario?: boolean | null;
+  operativo?: boolean | null;
 }

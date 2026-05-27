@@ -17,6 +17,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { PasswordModule } from 'primeng/password';
 import { ROLE_HOME_ROUTES } from '../../../../core/constants/role.constants';
+import { IdleSessionService } from '../../../../core/services/idle-session.service';
 import { SessionService } from '../../../../core/services/session.service';
 import { TokenService } from '../../../../core/services/token.service';
 import { ApiErrorResponse } from '../../../../shared/models/api/api-error-response';
@@ -47,6 +48,7 @@ export class LoginPageComponent {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
+  private readonly idleSessionService = inject(IdleSessionService);
   private readonly tokenService = inject(TokenService);
   private readonly sessionService = inject(SessionService);
   private nextRequestId = 1;
@@ -145,6 +147,7 @@ export class LoginPageComponent {
       primaryRole,
       homeRoute
     });
+    this.idleSessionService.markActivity();
 
     void this.router.navigate([homeRoute]);
   }

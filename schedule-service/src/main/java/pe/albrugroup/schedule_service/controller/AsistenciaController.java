@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import pe.albrugroup.schedule_service.configuration.OperationalDateTime;
 import pe.albrugroup.schedule_service.entity.request.asistencia.MovimientoAsistenciaRequest;
 import pe.albrugroup.schedule_service.entity.response.asistencia.AsistenciaMesResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleAsistenciaResponse;
@@ -62,7 +63,7 @@ public class AsistenciaController {
     @GetMapping("/dia")
     @PreAuthorize("hasAuthority('READ_ASISTENCIAS_SELF')")
     public ResponseEntity<DetalleAsistenciaResponse> getAsistenciaDia(@RequestParam(required = false) LocalDate fecha) {
-        return ResponseEntity.ok(asistenciaService.getAsistenciaDia(fecha != null ? fecha : LocalDate.now()));
+        return ResponseEntity.ok(asistenciaService.getAsistenciaDia(OperationalDateTime.resolveDate(fecha)));
     }
 
     @GetMapping("/mes")

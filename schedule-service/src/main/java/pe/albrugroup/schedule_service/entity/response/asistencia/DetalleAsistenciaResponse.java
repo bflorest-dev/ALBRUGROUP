@@ -34,4 +34,6 @@ public class DetalleAsistenciaResponse {
     private Integer minutosServiciosAcumulados;
     private Boolean excedioServicios;
     private Boolean jornadaCerrada;
+    private Boolean dentroHorario;
+    private Boolean operativo;
 }

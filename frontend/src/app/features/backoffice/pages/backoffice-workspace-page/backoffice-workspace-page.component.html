@@ -11,7 +11,16 @@
         @if (hasUnsavedDataChanges()) {
           <p-tag severity="warn" value="Cambios pendientes" />
         }
-        <button pButton type="button" icon="pi pi-refresh" label="Actualizar" severity="secondary" [loading]="isLoading()" (click)="initialize()"></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          label="Actualizar"
+          severity="secondary"
+          [disabled]="!canDisplayOperationalData()"
+          [loading]="isLoading()"
+          (click)="initialize()"
+        ></button>
       </div>
     </div>
   </p-card>
@@ -37,7 +46,7 @@
     <p-table
       [value]="section() === 'plataforma' ? plataformaRows() : gestionRows()"
       dataKey="id"
-      [loading]="isLoading()"
+      [loading]="canDisplayOperationalData() && isLoading()"
       [rowHover]="true"
       [scrollable]="true"
       scrollHeight="flex"
@@ -78,7 +87,7 @@
                 icon="pi pi-user-plus"
                 label="Asignarmelo"
                 size="small"
-                [disabled]="!!row.idAsesorAsignado || isSaving()"
+                [disabled]="!!row.idAsesorAsignado || isSaving() || !canMutateOperationalData()"
                 [loading]="isSaving()"
                 (click)="tomarLead(row)"
               ></button>
@@ -89,7 +98,7 @@
                 icon="pi pi-briefcase"
                 label="Gestionar"
                 size="small"
-                [disabled]="isSaving()"
+                [disabled]="isSaving() || !canMutateOperationalData()"
                 (click)="openDetail(row.id)"
               ></button>
             }
@@ -100,7 +109,9 @@
       <ng-template #emptymessage>
         <tr>
           <td colspan="10">
-            @if (isLoading()) {
+            @if (!canDisplayOperationalData()) {
+              <div class="empty-state">Marca ONLINE para activar esta bandeja.</div>
+            } @else if (isLoading()) {
               <div class="skeleton-table">
                 @for (_ of skeletonRows; track $index) {
                   <div class="skeleton-row">
@@ -170,6 +181,7 @@
             icon="pi pi-phone"
             label="Contacto"
             severity="secondary"
+            [disabled]="!canMutateOperationalData()"
             [loading]="isSaving()"
             (click)="registrarContacto()"
           ></button>
@@ -214,7 +226,14 @@
           }
 
           <button pButton type="button" icon="pi pi-comment" [label]="showComment() ? 'Ocultar comentario' : 'Comentario'" severity="secondary" (click)="toggleComment()"></button>
-          <button pButton type="submit" icon="pi pi-check" label="Tipificar" [loading]="isSaving()"></button>
+          <button
+            pButton
+            type="submit"
+            icon="pi pi-check"
+            label="Tipificar"
+            [disabled]="!canMutateOperationalData()"
+            [loading]="isSaving()"
+          ></button>
 
           @if (showComment()) {
             <label class="comment-field">
@@ -321,7 +340,15 @@
         </p-tabs>
 
         <footer class="dialog-actions">
-          <button pButton type="button" icon="pi pi-save" label="Guardar datos" [disabled]="!hasUnsavedDataChanges()" [loading]="isSaving()" (click)="guardarCambiosLead()"></button>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-save"
+            label="Guardar datos"
+            [disabled]="!hasUnsavedDataChanges() || !canMutateOperationalData()"
+            [loading]="isSaving()"
+            (click)="guardarCambiosLead()"
+          ></button>
           <button pButton type="button" label="Cerrar" severity="secondary" (click)="requestCloseDetail()"></button>
         </footer>
       </section>

@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.schedule_service.configuration.CurrentUser;
+import pe.albrugroup.schedule_service.configuration.OperationalDateTime;
 import pe.albrugroup.schedule_service.entity.Asistencia;
 import pe.albrugroup.schedule_service.entity.ExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.Horario;
@@ -58,12 +59,14 @@ public class AsistenciaService implements IAsistencia {
     @Override
     @Transactional
     public DetalleAsistenciaResponse registrarIngreso(MovimientoAsistenciaRequest request) {
-        Asistencia asistencia = getOrCreateAsistencia(currentUser.empleadoID(), request.getFechaHora());
+        LocalDateTime fechaHoraOperativa = OperationalDateTime.nowLocalDateTime();
+        validarMovimientoDentroDeHorario(currentUser.empleadoID(), fechaHoraOperativa);
+        Asistencia asistencia = getOrCreateAsistencia(currentUser.empleadoID(), fechaHoraOperativa);
         EstadoAsistencia estadoAnterior = asistencia.getEstadoActual();
         if (asistencia.getFechaHoraIngreso() != null) {
             throw new BadRequestException("El ingreso ya fue registrado para la fecha");
         }
-        asistencia.setFechaHoraIngreso(request.getFechaHora());
+        asistencia.setFechaHoraIngreso(fechaHoraOperativa);
         asistencia.setEstadoActual(EstadoAsistencia.ONLINE);
         Asistencia savedAsistencia = asistenciaRepository.save(asistencia);
         attendanceRealtimeNotifier.publishAfterCommit(
@@ -73,13 +76,15 @@ public class AsistenciaService implements IAsistencia {
                 savedAsistencia.getFecha(),
                 estadoAnterior
         );
-        return mapper.toDetalleResponse(savedAsistencia);
+        return toDetalleOperativoResponse(savedAsistencia);
     }
 
     @Override
     @Transactional
     public DetalleAsistenciaResponse registrarSalida(MovimientoAsistenciaRequest request) {
-        Asistencia asistencia = getAsistenciaOperativa(currentUser.empleadoID(), request.getFechaHora().toLocalDate());
+        LocalDateTime fechaHoraOperativa = OperationalDateTime.nowLocalDateTime();
+        validarMovimientoDentroDeHorario(currentUser.empleadoID(), fechaHoraOperativa);
+        Asistencia asistencia = getAsistenciaOperativa(currentUser.empleadoID(), fechaHoraOperativa.toLocalDate());
         EstadoAsistencia estadoAnterior = asistencia.getEstadoActual();
         if (asistencia.getFechaHoraIngreso() == null) {
             throw new BadRequestException("No existe ingreso registrado para la fecha");
@@ -91,7 +96,7 @@ public class AsistenciaService implements IAsistencia {
             throw new BadRequestException("No se puede registrar salida con una pausa activa");
         }
 
-        asistencia.setFechaHoraSalida(request.getFechaHora());
+        asistencia.setFechaHoraSalida(fechaHoraOperativa);
         asistencia.setEstadoActual(EstadoAsistencia.OFFLINE);
         recalcularMinutos(asistencia);
         Asistencia savedAsistencia = asistenciaRepository.save(asistencia);
@@ -102,19 +107,21 @@ public class AsistenciaService implements IAsistencia {
                 savedAsistencia.getFecha(),
                 estadoAnterior
         );
-        return mapper.toDetalleResponse(savedAsistencia);
+        return toDetalleOperativoResponse(savedAsistencia);
     }
 
     @Override
     @Transactional
     public DetalleAsistenciaResponse iniciarAlmuerzo(MovimientoAsistenciaRequest request) {
-        Asistencia asistencia = getAsistenciaOperativa(currentUser.empleadoID(), request.getFechaHora().toLocalDate());
+        LocalDateTime fechaHoraOperativa = OperationalDateTime.nowLocalDateTime();
+        validarMovimientoDentroDeHorario(currentUser.empleadoID(), fechaHoraOperativa);
+        Asistencia asistencia = getAsistenciaOperativa(currentUser.empleadoID(), fechaHoraOperativa.toLocalDate());
         EstadoAsistencia estadoAnterior = asistencia.getEstadoActual();
         validarEstadoOnline(asistencia);
         if (asistencia.getFechaHoraInicioAlmuerzo() != null) {
             throw new BadRequestException("El almuerzo ya fue iniciado para la fecha");
         }
-        asistencia.setFechaHoraInicioAlmuerzo(request.getFechaHora());
+        asistencia.setFechaHoraInicioAlmuerzo(fechaHoraOperativa);
         asistencia.setEstadoActual(EstadoAsistencia.ALMUERZO);
         Asistencia savedAsistencia = asistenciaRepository.save(asistencia);
         attendanceRealtimeNotifier.publishAfterCommit(
@@ -124,18 +131,20 @@ public class AsistenciaService implements IAsistencia {
                 savedAsistencia.getFecha(),
                 estadoAnterior
         );
-        return mapper.toDetalleResponse(savedAsistencia);
+        return toDetalleOperativoResponse(savedAsistencia);
     }
 
     @Override
     @Transactional
     public DetalleAsistenciaResponse finalizarAlmuerzo(MovimientoAsistenciaRequest request) {
-        Asistencia asistencia = getAsistenciaOperativa(currentUser.empleadoID(), request.getFechaHora().toLocalDate());
+        LocalDateTime fechaHoraOperativa = OperationalDateTime.nowLocalDateTime();
+        validarMovimientoDentroDeHorario(currentUser.empleadoID(), fechaHoraOperativa);
+        Asistencia asistencia = getAsistenciaOperativa(currentUser.empleadoID(), fechaHoraOperativa.toLocalDate());
         EstadoAsistencia estadoAnterior = asistencia.getEstadoActual();
         if (asistencia.getEstadoActual() != EstadoAsistencia.ALMUERZO || asistencia.getFechaHoraInicioAlmuerzo() == null) {
             throw new BadRequestException("No existe un almuerzo activo");
         }
-        asistencia.setFechaHoraFinAlmuerzo(request.getFechaHora());
+        asistencia.setFechaHoraFinAlmuerzo(fechaHoraOperativa);
         asistencia.setMinutosAlmuerzoTomados((int) Duration.between(
                 asistencia.getFechaHoraInicioAlmuerzo(),
                 asistencia.getFechaHoraFinAlmuerzo()
@@ -149,19 +158,21 @@ public class AsistenciaService implements IAsistencia {
                 savedAsistencia.getFecha(),
                 estadoAnterior
         );
-        return mapper.toDetalleResponse(savedAsistencia);
+        return toDetalleOperativoResponse(savedAsistencia);
     }
 
     @Override
     @Transactional
     public DetalleAsistenciaResponse iniciarServicios(MovimientoAsistenciaRequest request) {
-        Asistencia asistencia = getAsistenciaOperativa(currentUser.empleadoID(), request.getFechaHora().toLocalDate());
+        LocalDateTime fechaHoraOperativa = OperationalDateTime.nowLocalDateTime();
+        validarMovimientoDentroDeHorario(currentUser.empleadoID(), fechaHoraOperativa);
+        Asistencia asistencia = getAsistenciaOperativa(currentUser.empleadoID(), fechaHoraOperativa.toLocalDate());
         EstadoAsistencia estadoAnterior = asistencia.getEstadoActual();
         validarEstadoOnline(asistencia);
         if (asistencia.getFechaHoraInicioServiciosActual() != null) {
             throw new BadRequestException("Ya existe un tiempo de servicios en curso");
         }
-        asistencia.setFechaHoraInicioServiciosActual(request.getFechaHora());
+        asistencia.setFechaHoraInicioServiciosActual(fechaHoraOperativa);
         asistencia.setEstadoActual(EstadoAsistencia.SERVICIOS);
         Asistencia savedAsistencia = asistenciaRepository.save(asistencia);
         attendanceRealtimeNotifier.publishAfterCommit(
@@ -171,18 +182,20 @@ public class AsistenciaService implements IAsistencia {
                 savedAsistencia.getFecha(),
                 estadoAnterior
         );
-        return mapper.toDetalleResponse(savedAsistencia);
+        return toDetalleOperativoResponse(savedAsistencia);
     }
 
     @Override
     @Transactional
     public DetalleAsistenciaResponse finalizarServicios(MovimientoAsistenciaRequest request) {
-        Asistencia asistencia = getAsistenciaOperativa(currentUser.empleadoID(), request.getFechaHora().toLocalDate());
+        LocalDateTime fechaHoraOperativa = OperationalDateTime.nowLocalDateTime();
+        validarMovimientoDentroDeHorario(currentUser.empleadoID(), fechaHoraOperativa);
+        Asistencia asistencia = getAsistenciaOperativa(currentUser.empleadoID(), fechaHoraOperativa.toLocalDate());
         EstadoAsistencia estadoAnterior = asistencia.getEstadoActual();
         if (asistencia.getEstadoActual() != EstadoAsistencia.SERVICIOS || asistencia.getFechaHoraInicioServiciosActual() == null) {
             throw new BadRequestException("No existe un tiempo de servicios en curso");
         }
-        int minutos = (int) Duration.between(asistencia.getFechaHoraInicioServiciosActual(), request.getFechaHora()).toMinutes();
+        int minutos = (int) Duration.between(asistencia.getFechaHoraInicioServiciosActual(), fechaHoraOperativa).toMinutes();
         asistencia.setMinutosServiciosAcumulados(asistencia.getMinutosServiciosAcumulados() + Math.max(minutos, 0));
         asistencia.setFechaHoraInicioServiciosActual(null);
         asistencia.setExcedioServicios(asistencia.getMinutosServiciosAcumulados() > asistencia.getMinutosServiciosPermitidos());
@@ -195,7 +208,7 @@ public class AsistenciaService implements IAsistencia {
                 savedAsistencia.getFecha(),
                 estadoAnterior
         );
-        return mapper.toDetalleResponse(savedAsistencia);
+        return toDetalleOperativoResponse(savedAsistencia);
     }
 
     @Override
@@ -207,7 +220,7 @@ public class AsistenciaService implements IAsistencia {
     @Transactional(readOnly = true)
     private AsistenciaMesResponse getAsistenciaMesByEmpleado(Long idEmpleado, Integer anio, Integer mes) {
         YearMonth yearMonth = resolvePeriodoMensual(anio, mes);
-        LocalDate hoy = LocalDate.now();
+        LocalDate hoy = OperationalDateTime.today();
         if (yearMonth.isAfter(YearMonth.from(hoy))) {
             return AsistenciaMesResponse.builder()
                     .idEmpleado(idEmpleado)
@@ -245,7 +258,9 @@ public class AsistenciaService implements IAsistencia {
 
     @Transactional(readOnly = true)
     private DetalleAsistenciaResponse getAsistenciaDiaByEmpleado(Long idEmpleado, LocalDate fecha) {
-        return mapper.toDetalleResponse(getAsistenciaOperativa(idEmpleado, fecha));
+        return asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, fecha)
+                .map(this::toDetalleOperativoResponse)
+                .orElseGet(() -> construirDetalleSinAsistencia(idEmpleado, fecha));
     }
 
     @Override
@@ -554,9 +569,99 @@ public class AsistenciaService implements IAsistencia {
                 && fechaHoraIngreso.toLocalTime().isAfter(horaEntradaEstablecida);
     }
 
+    private DetalleAsistenciaResponse toDetalleOperativoResponse(Asistencia asistencia) {
+        DetalleAsistenciaResponse response = mapper.toDetalleResponse(asistencia);
+        boolean dentroHorario = estaDentroHorarioActualizado(asistencia.getIdEmpleado(), asistencia.getFecha());
+        response.setDentroHorario(dentroHorario);
+        response.setOperativo(asistencia.getEstadoActual() == EstadoAsistencia.ONLINE && dentroHorario);
+        return response;
+    }
+
+    private DetalleAsistenciaResponse construirDetalleSinAsistencia(Long idEmpleado, LocalDate fecha) {
+        try {
+            Horario horario = horarioService.getHorarioById(horarioService.getHorarioVigente(idEmpleado, fecha).getId());
+            ProgramacionDiaria programacion = resolverProgramacion(horario, fecha);
+            boolean dentroHorario = estaDentroHorarioActualizado(idEmpleado, fecha);
+
+            return DetalleAsistenciaResponse.builder()
+                    .idEmpleado(idEmpleado)
+                    .idHorario(horario.getId())
+                    .fecha(fecha)
+                    .estadoActual(EstadoAsistencia.OFFLINE)
+                    .entradaProgramada(programacion.horaEntrada())
+                    .salidaProgramada(programacion.horaSalida())
+                    .inicioAlmuerzoProgramado(programacion.inicioAlmuerzo())
+                    .finAlmuerzoProgramado(programacion.finAlmuerzo())
+                    .minutosObjetivoDia(programacion.minutosObjetivo())
+                    .minutosTrabajados(0)
+                    .minutosBalance(0)
+                    .minutosAlmuerzoTomados(0)
+                    .minutosServiciosPermitidos(horario.getMinutosServicios())
+                    .minutosServiciosAcumulados(0)
+                    .excedioServicios(Boolean.FALSE)
+                    .jornadaCerrada(Boolean.FALSE)
+                    .dentroHorario(dentroHorario)
+                    .operativo(Boolean.FALSE)
+                    .build();
+        } catch (NotFoundException e) {
+            return DetalleAsistenciaResponse.builder()
+                    .idEmpleado(idEmpleado)
+                    .fecha(fecha)
+                    .estadoActual(EstadoAsistencia.OFFLINE)
+                    .minutosTrabajados(0)
+                    .minutosBalance(0)
+                    .minutosAlmuerzoTomados(0)
+                    .minutosServiciosAcumulados(0)
+                    .excedioServicios(Boolean.FALSE)
+                    .jornadaCerrada(Boolean.FALSE)
+                    .dentroHorario(Boolean.FALSE)
+                    .operativo(Boolean.FALSE)
+                    .build();
+        }
+    }
+
+    private boolean estaDentroHorarioActualizado(Long idEmpleado, LocalDate fecha) {
+        LocalDateTime ahora = OperationalDateTime.nowLocalDateTime();
+        if (!fecha.equals(ahora.toLocalDate())) {
+            return false;
+        }
+
+        try {
+            ProgramacionDiaria programacion = resolverProgramacionActualizada(idEmpleado, fecha);
+            if (!programacion.laborable() || programacion.horaEntrada() == null || programacion.horaSalida() == null) {
+                return false;
+            }
+
+            LocalTime horaOperacion = ahora.toLocalTime();
+            return !horaOperacion.isBefore(programacion.horaEntrada()) && !horaOperacion.isAfter(programacion.horaSalida());
+        } catch (NotFoundException e) {
+            return false;
+        }
+    }
+
+    private void validarMovimientoDentroDeHorario(Long idEmpleado, LocalDateTime fechaHora) {
+        ProgramacionDiaria programacion = resolverProgramacionActualizada(idEmpleado, fechaHora.toLocalDate());
+        if (!programacion.laborable()) {
+            throw new BadRequestException("No se puede actualizar asistencia en un dia no laborable");
+        }
+        if (programacion.horaEntrada() == null || programacion.horaSalida() == null) {
+            throw new BadRequestException("El horario del dia no tiene hora de entrada o salida configurada");
+        }
+
+        LocalTime horaOperacion = fechaHora.toLocalTime();
+        if (horaOperacion.isBefore(programacion.horaEntrada()) || horaOperacion.isAfter(programacion.horaSalida())) {
+            throw new BadRequestException("No se puede actualizar asistencia fuera del horario programado del dia");
+        }
+    }
+
+    private ProgramacionDiaria resolverProgramacionActualizada(Long idEmpleado, LocalDate fecha) {
+        Horario horario = horarioService.getHorarioById(horarioService.getHorarioVigente(idEmpleado, fecha).getId());
+        return resolverProgramacion(horario, fecha);
+    }
+
     private YearMonth resolvePeriodoMensual(Integer anio, Integer mes) {
         if (anio == null && mes == null) {
-            return YearMonth.now();
+            return OperationalDateTime.currentMonth();
         }
         if (anio == null || mes == null) {
             throw new BadRequestException("anio y mes deben enviarse juntos");

@@ -5,11 +5,11 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import pe.albrugroup.schedule_service.configuration.OperationalDateTime;
 import pe.albrugroup.schedule_service.entity.enums.EstadoAsistencia;
 import pe.albrugroup.schedule_service.entity.response.asistencia.AttendanceRealtimeEvent;
 import pe.albrugroup.schedule_service.entity.response.asistencia.EstadoMonitorResponse;
 
-import java.time.Instant;
 import java.time.LocalDate;
 
 @Service
@@ -63,7 +63,7 @@ public class AttendanceRealtimeNotifier {
                 .laborableHoy(estadoMonitor.getLaborableHoy())
                 .esperadoHoy(estadoMonitor.getEsperadoHoy())
                 .operativo(estadoMonitor.getOperativo())
-                .occurredAt(Instant.now())
+                .occurredAt(OperationalDateTime.now())
                 .build();
 
         messagingTemplate.convertAndSend(TOPIC_MONITOR, event);

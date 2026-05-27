@@ -17,7 +17,7 @@
           icon="pi pi-refresh"
           label="Actualizar"
           severity="secondary"
-          [disabled]="!canOperate()"
+          [disabled]="!canDisplayOperationalData()"
           [loading]="isLoading()"
           (click)="initialize()"
         ></button>
@@ -41,7 +41,7 @@
     </ng-template>
     <ng-template #subtitle>
       {{
-        !canOperate()
+        !canDisplayOperationalData()
           ? 'Marca ONLINE para recibir leads'
           : isReconciling()
             ? 'Validando cambios del realtime'
@@ -49,7 +49,7 @@
       }}
     </ng-template>
 
-    @if (!canOperate()) {
+    @if (!canDisplayOperationalData()) {
       <div class="offline-state">
         <i class="pi pi-power-off" aria-hidden="true"></i>
         <div>
@@ -62,7 +62,7 @@
     <p-table
       [value]="rows()"
       dataKey="id"
-      [loading]="canOperate() && isLoading()"
+      [loading]="canDisplayOperationalData() && isLoading()"
       [rowHover]="true"
       [scrollable]="true"
       scrollHeight="flex"
@@ -109,7 +109,7 @@
       <ng-template #emptymessage>
         <tr>
           <td colspan="6">
-            @if (canOperate()) {
+            @if (canDisplayOperationalData()) {
               <div class="skeleton-table" aria-label="Esperando asignaciones">
                 @for (_ of skeletonRows; track $index) {
                   <div class="skeleton-row">
@@ -182,6 +182,7 @@
               icon="pi pi-phone"
               label="Llamar"
               severity="secondary"
+              [disabled]="!canMutateOperationalData()"
               [loading]="isSaving()"
               (click)="registrarLlamada()"
             ></button>
@@ -250,7 +251,14 @@
             severity="secondary"
             (click)="toggleComment()"
           ></button>
-          <button pButton type="submit" icon="pi pi-check" label="Tipificar" [loading]="isSaving()"></button>
+          <button
+            pButton
+            type="submit"
+            icon="pi pi-check"
+            label="Tipificar"
+            [disabled]="!canMutateOperationalData()"
+            [loading]="isSaving()"
+          ></button>
 
           @if (showComment()) {
             <label class="comment-field">
@@ -539,7 +547,7 @@
             icon="pi pi-eraser"
             label="Limpiar tab"
             severity="secondary"
-            [disabled]="!activeDataTabHasChanges() || isSaving()"
+            [disabled]="!activeDataTabHasChanges() || isSaving() || !canMutateOperationalData()"
             title="Limpiar cambios de la tab actual"
             (click)="limpiarTabActiva()"
           ></button>
@@ -548,7 +556,7 @@
             type="button"
             icon="pi pi-save"
             label="Guardar datos"
-            [disabled]="isSaving()"
+            [disabled]="isSaving() || !canMutateOperationalData()"
             [loading]="isSaving()"
             (click)="guardarCambiosLead()"
           ></button>

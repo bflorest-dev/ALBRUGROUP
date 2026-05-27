@@ -763,7 +763,8 @@ public class LeadService {
                 request.getIdAsesorAsignado(),
                 request.getNombreAsesorAsignado(),
                 Boolean.TRUE.equals(request.getConfirmarReasignacion()),
-                Boolean.TRUE.equals(request.getConfirmarGestionPrevia())
+                Boolean.TRUE.equals(request.getConfirmarGestionPrevia()),
+                true
         );
     }
 
@@ -858,7 +859,7 @@ public class LeadService {
         TransactionTemplate transaction = new TransactionTemplate(transactionTemplate.getTransactionManager());
         transaction.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
         transaction.executeWithoutResult(
-                status -> asignarLeadInterno(idLead, idAsesorAsignado, nombreAsesorAsignado, confirmarReasignacion, false)
+                status -> asignarLeadInterno(idLead, idAsesorAsignado, nombreAsesorAsignado, confirmarReasignacion, false, false)
         );
     }
 
@@ -875,13 +876,20 @@ public class LeadService {
             Long idAsesorAsignado,
             String nombreAsesorAsignado,
             boolean confirmarReasignacion,
-            boolean confirmarGestionPrevia
+            boolean confirmarGestionPrevia,
+            boolean permitirConfirmarLeadEnGestion
     ) {
         Lead lead = leadRepository.findById(idLead)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
 
-        validarAsignacionPermitida(lead, idAsesorAsignado, confirmarReasignacion, confirmarGestionPrevia);
+        validarAsignacionPermitida(
+                lead,
+                idAsesorAsignado,
+                confirmarReasignacion,
+                confirmarGestionPrevia,
+                permitirConfirmarLeadEnGestion
+        );
 
         lead.setIdAsesorAsignado(idAsesorAsignado);
         lead.setNombreAsesorAsignado(nombreAsesorAsignado.trim());
@@ -908,17 +916,10 @@ public class LeadService {
             Lead lead,
             Long idAsesorAsignado,
             boolean confirmarReasignacion,
-            boolean confirmarGestionPrevia
+            boolean confirmarGestionPrevia,
+            boolean permitirConfirmarLeadEnGestion
     ) {
         Long idAsesorActual = lead.getIdAsesorAsignado();
-        if (idAsesorActual != null && lead.getEstado() == EstadoSeguimiento.EN_GESTION) {
-            throw new ConflictException(
-                    "El Lead ya esta en gestion y no puede reasignarse",
-                    lead.getId(),
-                    detalleConflictoAsignacion("LEAD_EN_GESTION", idAsesorActual, lead.getNombreAsesorAsignado())
-            );
-        }
-
         if (idAsesorActual != null && idAsesorActual.equals(idAsesorAsignado)) {
             throw new ConflictException(
                     "El Lead ya esta asignado a este asesor",
@@ -931,21 +932,31 @@ public class LeadService {
             );
         }
 
+        boolean leadEnGestion = idAsesorActual != null && lead.getEstado() == EstadoSeguimiento.EN_GESTION;
+        if (leadEnGestion && !permitirConfirmarLeadEnGestion) {
+            throw new ConflictException(
+                    "El Lead ya esta en gestion y no puede reasignarse en asignacion masiva",
+                    lead.getId(),
+                    detalleConflictoAsignacion("LEAD_EN_GESTION", idAsesorActual, lead.getNombreAsesorAsignado())
+            );
+        }
+
         boolean requiereConfirmarReasignacion = idAsesorActual != null && !confirmarReasignacion;
         boolean asesorYaGestiono = asesorGestionoLead(lead.getId(), idAsesorAsignado);
         boolean requiereConfirmarGestionPrevia = asesorYaGestiono && !confirmarGestionPrevia;
 
         if (requiereConfirmarReasignacion || requiereConfirmarGestionPrevia) {
-            String tipo = tipoConfirmacionAsignacion(requiereConfirmarReasignacion, requiereConfirmarGestionPrevia);
+            String tipo = tipoConfirmacionAsignacion(leadEnGestion, requiereConfirmarReasignacion, requiereConfirmarGestionPrevia);
             throw new ConflictException(
-                    mensajeConfirmacionAsignacion(requiereConfirmarReasignacion, requiereConfirmarGestionPrevia),
+                    mensajeConfirmacionAsignacion(leadEnGestion, requiereConfirmarReasignacion, requiereConfirmarGestionPrevia),
                     lead.getId(),
                     detalleConfirmacionAsignacion(
                             tipo,
                             idAsesorActual,
                             lead.getNombreAsesorAsignado(),
                             requiereConfirmarReasignacion,
-                            requiereConfirmarGestionPrevia
+                            requiereConfirmarGestionPrevia,
+                            leadEnGestion
                     )
             );
         }
@@ -964,20 +975,26 @@ public class LeadService {
             Long idAsesor,
             String nombreAsesor,
             boolean requiereConfirmarReasignacion,
-            boolean requiereConfirmarGestionPrevia
+            boolean requiereConfirmarGestionPrevia,
+            boolean requiereConfirmarLeadEnGestion
     ) {
         Map<String, Object> details = detalleConflictoAsignacion(tipo, idAsesor, nombreAsesor);
         details.put("requiereConfirmarReasignacion", requiereConfirmarReasignacion);
         details.put("requiereConfirmarGestionPrevia", requiereConfirmarGestionPrevia);
+        details.put("requiereConfirmarLeadEnGestion", requiereConfirmarLeadEnGestion);
         return details;
     }
 
     private String tipoConfirmacionAsignacion(
+            boolean leadEnGestion,
             boolean requiereConfirmarReasignacion,
             boolean requiereConfirmarGestionPrevia
     ) {
         if (requiereConfirmarReasignacion && requiereConfirmarGestionPrevia) {
             return "CONFIRMACION_ASIGNACION_REQUERIDA";
+        }
+        if (leadEnGestion) {
+            return "LEAD_EN_GESTION";
         }
         if (requiereConfirmarGestionPrevia) {
             return "ASESOR_YA_GESTIONO_LEAD";
@@ -986,9 +1003,16 @@ public class LeadService {
     }
 
     private String mensajeConfirmacionAsignacion(
+            boolean leadEnGestion,
             boolean requiereConfirmarReasignacion,
             boolean requiereConfirmarGestionPrevia
     ) {
+        if (leadEnGestion && requiereConfirmarGestionPrevia) {
+            return "El Lead esta en gestion y el asesor seleccionado ya lo gestiono anteriormente. Confirma para continuar";
+        }
+        if (leadEnGestion) {
+            return "El Lead esta en gestion. Confirma la reasignacion para continuar";
+        }
         if (requiereConfirmarReasignacion && requiereConfirmarGestionPrevia) {
             return "El Lead ya esta asignado y el asesor seleccionado ya lo gestiono anteriormente. Confirma para continuar";
         }

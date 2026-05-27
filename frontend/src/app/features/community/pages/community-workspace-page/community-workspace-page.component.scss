@@ -4,6 +4,7 @@
 .billing-cuts,
 .plan-additionals,
 .plan-additionals__list,
+.provider-filter-bar,
 .zone-rules-list {
   display: grid;
   gap: 1rem;
@@ -25,6 +26,7 @@
 .dialog-actions,
 .input-prefix,
 .checkbox-row,
+.provider-filter-bar__tags,
 .zone-rule-item,
 .metrics-empty__content {
   align-items: center;
@@ -283,6 +285,48 @@ label,
 
 .checkbox-row {
   align-self: center;
+}
+
+.provider-filter-bar {
+  background: color-mix(in srgb, var(--role-accent) 5%, #ffffff 95%);
+  border: 1px solid color-mix(in srgb, var(--role-accent) 14%, #ffffff 86%);
+  border-radius: 10px;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+  padding: 0.75rem;
+}
+
+.provider-filter-bar__label {
+  color: var(--role-primary);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.provider-filter-bar__tags {
+  flex-wrap: wrap;
+}
+
+.provider-filter-chip {
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  opacity: 0.72;
+  padding: 0;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.provider-filter-chip:hover,
+.provider-filter-chip--active {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.provider-filter-chip--active {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--role-accent) 24%, transparent);
 }
 
 .dialog-actions {

@@ -1,6 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Inject, Injectable, computed, inject, signal } from '@angular/core';
+import { Inject, Injectable, computed, effect, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, Validators } from '@angular/forms';
 import { Subscription, firstValueFrom } from 'rxjs';
 import {
@@ -8,6 +8,8 @@ import {
   ConnectedUserResponse,
   PresenceService
 } from '../../../core/services/presence.service';
+import { OperationalGateService } from '../../../core/services/operational-gate.service';
+import { EstadoAsistencia } from '../../../shared/models/schedule/estado-asistencia';
 import { AttendanceRealtimeService } from '../../../core/services/attendance-realtime.service';
 import { PresenceRealtimeService } from '../../../core/services/presence-realtime.service';
 import { UsuarioResponse } from '../../../shared/models/auth/usuario-response';
@@ -64,6 +66,7 @@ type PendingReassignment = {
   row: LeadGtrResponse;
   advisor: AdvisorOption;
   currentAdvisorName: string;
+  requiresInManagement: boolean;
   requiresReassignment: boolean;
   requiresPreviousManagement: boolean;
 };
@@ -71,6 +74,7 @@ type PendingReassignment = {
 type AssignmentConflictDetails = {
   tipo?: string;
   nombreAsesorActual?: string | null;
+  requiereConfirmarLeadEnGestion?: boolean;
   requiereConfirmarReasignacion?: boolean;
   requiereConfirmarGestionPrevia?: boolean;
 };
@@ -89,12 +93,17 @@ export class GtrWorkspaceFacade {
   private readonly preventaService = inject(PreventaLeadService);
   private readonly realtimeService = inject(LeadRealtimeService);
   private readonly attendanceRealtimeService = inject(AttendanceRealtimeService);
+  private readonly operationalGateService = inject(OperationalGateService);
   private readonly presenceService = inject(PresenceService);
   private readonly presenceRealtimeService = inject(PresenceRealtimeService);
   private readonly realtimeSubscription = new Subscription();
   private readonly newRowTimers = new Map<number, number>();
   private attendanceRefreshId: number | null = null;
   private started = false;
+  private realtimeStarted = false;
+  private initializeInFlight = false;
+  private lastAttendanceStatus: EstadoAsistencia | null = null;
+  private readonly operationalGate = this.operationalGateService.createGate('gtr-workspace');
 
   readonly pageSize = 12;
   readonly today = this.formatLocalDate(new Date());
@@ -141,6 +150,8 @@ export class GtrWorkspaceFacade {
   readonly pendingReassignment = signal<PendingReassignment | null>(null);
   readonly advisorsPanelOpen = signal(false);
   readonly baseOptions = ['WHATSAPP', 'MESSENGER', 'RECONTACTO', 'PREDICTIVO', 'REFERIDO', 'MASIVO'];
+  readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
+  readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
 
   readonly intakeForm = this.fb.group({
     prefijo: ['+51', [Validators.required, Validators.pattern(/^\+\d{2,3}$/)]],
@@ -298,7 +309,34 @@ export class GtrWorkspaceFacade {
     return this.rows().find((row) => row.id === idLead) ?? null;
   });
 
-  constructor(@Inject(DOCUMENT) private readonly document: Document) {}
+  constructor(@Inject(DOCUMENT) private readonly document: Document) {
+    effect(() => {
+      const status = this.operationalGateService.currentStatus();
+
+      if (!this.started) {
+        this.lastAttendanceStatus = status;
+        return;
+      }
+
+      if (status === 'OFFLINE') {
+        this.clearOperationalData();
+        this.lastAttendanceStatus = status;
+        return;
+      }
+
+      if (this.canDisplayOperationalData()) {
+        this.startRealtime();
+      }
+
+      if (this.operationalGate.canActivateOperationalData() && !this.startedInitialLoad()) {
+        void this.initialize();
+      } else if (this.operationalGate.canActivateOperationalData() && this.lastAttendanceStatus !== 'ONLINE') {
+        void this.reconcile();
+      }
+
+      this.lastAttendanceStatus = status;
+    });
+  }
 
   setSection(section: GtrSection): void {
     if (this.section() === section) {
@@ -313,14 +351,19 @@ export class GtrWorkspaceFacade {
 
   start(): void {
     this.started = true;
-    void this.initialize();
-    this.startRealtime();
+    if (this.operationalGate.canActivateOperationalData()) {
+      void this.initialize();
+    }
+    if (this.canDisplayOperationalData()) {
+      this.startRealtime();
+    }
     this.document.defaultView?.addEventListener('visibilitychange', this.handleVisibilityChange);
   }
 
   stop(): void {
     this.started = false;
     this.realtimeSubscription.unsubscribe();
+    this.realtimeStarted = false;
     this.stopAttendanceRefresh();
     this.document.defaultView?.removeEventListener('visibilitychange', this.handleVisibilityChange);
 
@@ -331,6 +374,11 @@ export class GtrWorkspaceFacade {
   }
 
   async initialize(): Promise<void> {
+    if (!this.operationalGate.canActivateOperationalData() || this.initializeInFlight) {
+      return;
+    }
+
+    this.initializeInFlight = true;
     this.isLoading.set(true);
     this.clearMessages();
     const errors: LoadError[] = [];
@@ -360,12 +408,17 @@ export class GtrWorkspaceFacade {
           `No se pudo cargar: ${errors.map((error) => `${error.label} (${error.message})`).join(', ')}.`
         );
       }
+      this.operationalGate.markActivated();
     } finally {
+      this.initializeInFlight = false;
       this.isLoading.set(false);
     }
   }
 
   async submitIntake(): Promise<void> {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
     if (this.intakeForm.invalid) {
       this.errorMessage.set('Completa prefijo, numero de 9 digitos, campana y base.');
       return;
@@ -395,6 +448,9 @@ export class GtrWorkspaceFacade {
   }
 
   openNewLead(): void {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
     this.activeDialog.set('lead');
   }
 
@@ -406,6 +462,9 @@ export class GtrWorkspaceFacade {
   }
 
   openSnapshot(row: LeadGtrResponse): void {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
     this.beginSnapshot(row);
     this.activeDialog.set('snapshot');
   }
@@ -421,6 +480,9 @@ export class GtrWorkspaceFacade {
   }
 
   openAssignment(row?: LeadGtrResponse): void {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
     this.activeAssignmentLead.set(row ?? null);
     this.activeDialog.set('assign');
   }
@@ -450,6 +512,9 @@ export class GtrWorkspaceFacade {
   }
 
   openAgendadoAssignment(row: LeadAgendadoGtrResponse): void {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
     this.openAssignment(this.mapAgendadoToLead(row));
   }
 
@@ -479,6 +544,9 @@ export class GtrWorkspaceFacade {
   }
 
   async saveSnapshot(): Promise<void> {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
     const raw = this.snapshotForm.getRawValue();
     const numeroDocumentoTitularServicio = raw.numeroDocumentoTitularServicio.trim();
     const direccion = raw.direccion.trim();
@@ -513,6 +581,9 @@ export class GtrWorkspaceFacade {
     confirmarReasignacion = false,
     confirmarGestionPrevia = false
   ): Promise<void> {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
     const advisor = this.selectedAdvisor();
     if (!advisor) {
       this.errorMessage.set('Selecciona un asesor.');
@@ -552,6 +623,9 @@ export class GtrWorkspaceFacade {
   }
 
   async confirmReassignment(): Promise<void> {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
     const pending = this.pendingReassignment();
     if (!pending) {
       return;
@@ -567,6 +641,9 @@ export class GtrWorkspaceFacade {
   }
 
   async assignSelected(): Promise<void> {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
     const advisor = this.selectedAdvisor();
     const idsLead = [...this.selectedIds()];
 
@@ -603,6 +680,10 @@ export class GtrWorkspaceFacade {
   }
 
   async refreshAdvisors(): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
+
     let activeUsers: UsuarioResponse[] = [];
     try {
       activeUsers = await firstValueFrom(this.preventaService.listarUsuariosActivosPorRol('ASESOR_VENTAS'));
@@ -676,6 +757,9 @@ export class GtrWorkspaceFacade {
   }
 
   async changePage(pageNumber: number): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
     if (pageNumber === this.pageNumber()) {
       return;
     }
@@ -684,6 +768,9 @@ export class GtrWorkspaceFacade {
   }
 
   async changeAgendadosPage(pageNumber: number): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
     if (pageNumber === this.agendadosPageNumber()) {
       return;
     }
@@ -692,6 +779,10 @@ export class GtrWorkspaceFacade {
   }
 
   async buscarMasivos(): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.errorMessage.set('Marca ONLINE para activar esta bandeja.');
+      return;
+    }
     this.clearMessages();
     this.masivoSearched.set(true);
     this.masivoPageNumber.set(0);
@@ -699,6 +790,9 @@ export class GtrWorkspaceFacade {
   }
 
   async changeMasivoPage(pageNumber: number): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
     if (pageNumber === this.masivoPageNumber()) {
       return;
     }
@@ -707,6 +801,10 @@ export class GtrWorkspaceFacade {
   }
 
   clearMasivoFilters(): void {
+    if (!this.canMutateOperationalData()) {
+      this.errorMessage.set('Marca ONLINE para modificar filtros operativos.');
+      return;
+    }
     this.masivoFiltersForm.reset({
       idProveedor: 0,
       etapa: '',
@@ -737,6 +835,10 @@ export class GtrWorkspaceFacade {
   }
 
   toggleSelection(idLead: number, checked: boolean): void {
+    if (!this.canMutateOperationalData()) {
+      this.errorMessage.set('Marca ONLINE para seleccionar leads.');
+      return;
+    }
     const next = new Set(this.selectedIds());
     if (checked) {
       next.add(idLead);
@@ -908,11 +1010,6 @@ export class GtrWorkspaceFacade {
 
     this.clearMessages();
 
-    if (this.normalizeLookup(row.estadoSeguimiento) === 'EN_GESTION') {
-      this.errorMessage.set(`El Lead ya esta en gestion con ${currentAdvisorName} y no puede reasignarse.`);
-      return true;
-    }
-
     if (this.sameAdvisorName(currentAdvisorName, advisor.nombreCompleto)) {
       this.errorMessage.set(`El Lead ya esta asignado a ${advisor.nombreCompleto}.`);
       return true;
@@ -927,7 +1024,11 @@ export class GtrWorkspaceFacade {
     }
 
     const details = (error.error as { details?: AssignmentConflictDetails } | null)?.details;
+    const requiresInManagement =
+      Boolean(details?.requiereConfirmarLeadEnGestion) ||
+      details?.tipo === 'LEAD_EN_GESTION';
     const requiresReassignment =
+      requiresInManagement ||
       Boolean(details?.requiereConfirmarReasignacion) ||
       details?.tipo === 'LEAD_YA_ASIGNADO' ||
       details?.tipo === 'CONFIRMACION_ASIGNACION_REQUERIDA';
@@ -944,6 +1045,7 @@ export class GtrWorkspaceFacade {
       row,
       advisor,
       details?.nombreAsesorActual || 'otro asesor',
+      requiresInManagement,
       requiresReassignment,
       requiresPreviousManagement
     );
@@ -954,6 +1056,7 @@ export class GtrWorkspaceFacade {
     row: LeadGtrResponse,
     advisor: AdvisorOption,
     currentAdvisorName: string,
+    requiresInManagement: boolean,
     requiresReassignment: boolean,
     requiresPreviousManagement: boolean
   ): void {
@@ -962,6 +1065,7 @@ export class GtrWorkspaceFacade {
       row,
       advisor,
       currentAdvisorName,
+      requiresInManagement,
       requiresReassignment,
       requiresPreviousManagement
     });
@@ -977,6 +1081,11 @@ export class GtrWorkspaceFacade {
   }
 
   private startRealtime(): void {
+    if (this.realtimeStarted) {
+      return;
+    }
+
+    this.realtimeStarted = true;
     this.realtimeSubscription.add(
       this.realtimeService.watchTopic('/topic/leads/etapa/PREVENTA').subscribe({
         next: (event) => {
@@ -1021,13 +1130,13 @@ export class GtrWorkspaceFacade {
   }
 
   private readonly handleVisibilityChange = (): void => {
-    if (this.document.visibilityState === 'visible') {
+    if (this.document.visibilityState === 'visible' && this.canDisplayOperationalData()) {
       void this.refreshAdvisors().catch(() => undefined);
     }
   };
 
   private scheduleAttendanceRefresh(): void {
-    if (this.document.visibilityState === 'hidden') {
+    if (this.document.visibilityState === 'hidden' || !this.canDisplayOperationalData()) {
       return;
     }
 
@@ -1049,7 +1158,7 @@ export class GtrWorkspaceFacade {
   }
 
   private async reconcile(): Promise<void> {
-    if (this.isReconciling()) {
+    if (this.isReconciling() || !this.canDisplayOperationalData()) {
       return;
     }
 
@@ -1069,6 +1178,9 @@ export class GtrWorkspaceFacade {
   }
 
   private async refreshPage(silent: boolean): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
     const previous = this.rows();
     const page = await firstValueFrom(this.preventaService.listarBandejaGtr(this.today, this.currentQuery(12)));
     this.totalElements.set(page.totalElements);
@@ -1077,6 +1189,9 @@ export class GtrWorkspaceFacade {
   }
 
   private async refreshAgendados(silent: boolean): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
     this.isLoadingAgendados.set(!silent);
     try {
       const previous = this.agendadosRows();
@@ -1097,6 +1212,9 @@ export class GtrWorkspaceFacade {
   }
 
   private async refreshMasivos(): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
     this.isLoadingMasivos.set(true);
     try {
       const page = await firstValueFrom(
@@ -1118,6 +1236,9 @@ export class GtrWorkspaceFacade {
   }
 
   private async refreshMetrics(): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
     this.metrics.set(await firstValueFrom(this.preventaService.obtenerMetricasGtr(this.today)));
   }
 
@@ -1321,6 +1442,58 @@ export class GtrWorkspaceFacade {
         message: this.getErrorMessage(error, 'error')
       });
     }
+  }
+
+  private startedInitialLoad(): boolean {
+    return this.operationalGate.hasActivatedOperationalData() || this.initializeInFlight;
+  }
+
+  private ensureCanMutate(): boolean {
+    if (this.canMutateOperationalData()) {
+      return true;
+    }
+
+    this.errorMessage.set('Marca ONLINE para realizar esta accion.');
+    return false;
+  }
+
+  private clearOperationalData(): void {
+    this.operationalGate.clearActivation();
+    this.initializeInFlight = false;
+    this.isLoading.set(false);
+    this.isReconciling.set(false);
+    this.isSaving.set(false);
+    this.isSavingSnapshot.set(false);
+    this.isLoadingAgendados.set(false);
+    this.isLoadingMasivos.set(false);
+    this.isLoadingEvents.set(false);
+    this.rows.set([]);
+    this.agendadosRows.set([]);
+    this.masivoRows.set([]);
+    this.eventRows.set([]);
+    this.metrics.set({
+      nuevos: 0,
+      sinGestionar: 0,
+      gestionados: 0,
+      preventas: 0
+    });
+    this.totalElements.set(0);
+    this.totalPages.set(0);
+    this.pageNumber.set(0);
+    this.agendadosTotalElements.set(0);
+    this.agendadosTotalPages.set(0);
+    this.agendadosPageNumber.set(0);
+    this.masivoTotalElements.set(0);
+    this.masivoTotalPages.set(0);
+    this.masivoPageNumber.set(0);
+    this.masivoSearched.set(false);
+    this.selectedIds.set(new Set());
+    this.activeDialog.set(null);
+    this.activeAssignmentLead.set(null);
+    this.activeEventsLead.set(null);
+    this.pendingReassignment.set(null);
+    this.eventRows.set([]);
+    this.selectedEventAnomalyFilter.set(null);
   }
 
   private getErrorMessage(error: unknown, fallback: string): string {

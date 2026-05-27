@@ -14,6 +14,7 @@
           icon="pi pi-users"
           label="Asesores"
           severity="secondary"
+          [disabled]="!facade.canDisplayOperationalData()"
           (click)="facade.toggleAdvisorsPanel()"
         ></button>
         @if (facade.section() === 'plataforma') {
@@ -22,6 +23,7 @@
             type="button"
             icon="pi pi-plus"
             label="Nuevo Lead"
+            [disabled]="!facade.canMutateOperationalData()"
             (click)="facade.openNewLead()"
           ></button>
         }
@@ -30,6 +32,7 @@
           type="button"
           icon="pi pi-refresh"
           severity="secondary"
+          [disabled]="!facade.canDisplayOperationalData()"
           [loading]="facade.isLoading()"
           (click)="facade.initialize()"
         ></button>
@@ -74,7 +77,7 @@
         icon="pi pi-user-plus"
         [label]="'Asignar seleccion (' + facade.selectedCount() + ')'"
         severity="secondary"
-        [disabled]="facade.isSaving() || facade.selectedCount() === 0"
+        [disabled]="facade.isSaving() || facade.selectedCount() === 0 || !facade.canMutateOperationalData()"
         (click)="facade.openAssignment()"
       ></button>
 
@@ -86,7 +89,7 @@
     <p-table
       [value]="facade.rows()"
       dataKey="id"
-      [loading]="facade.isLoading()"
+      [loading]="facade.canDisplayOperationalData() && facade.isLoading()"
       [rowHover]="true"
       [scrollable]="true"
       scrollHeight="flex"
@@ -117,6 +120,7 @@
             <input
               type="checkbox"
               [checked]="facade.isSelected(row.id)"
+              [disabled]="!facade.canMutateOperationalData()"
               (change)="facade.toggleSelection(row.id, $any($event.target).checked)"
             />
           </td>
@@ -186,7 +190,7 @@
                 label="Chat"
                 size="small"
                 severity="secondary"
-                [disabled]="!row.lead"
+                [disabled]="!row.lead || !facade.canMutateOperationalData()"
                 (click)="facade.openWhatsAppChat(row)"
               ></button>
               <button
@@ -194,7 +198,7 @@
                 type="button"
                 size="small"
                 class="gtr-assign-button"
-                [disabled]="facade.isSaving()"
+                [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
                 title="Asignaciones del dia"
                 (click)="facade.openAssignment(row)"
               >
@@ -211,6 +215,7 @@
                 label="Gestionar"
                 size="small"
                 severity="secondary"
+                [disabled]="!facade.canMutateOperationalData()"
                 (click)="facade.openSnapshot(row)"
               ></button>
               <button
@@ -238,7 +243,15 @@
 
       <ng-template #emptymessage>
         <tr>
-          <td colspan="13">{{ facade.isLoading() ? 'Cargando bandeja...' : 'No hay leads para hoy.' }}</td>
+            <td colspan="13">
+              {{
+                !facade.canDisplayOperationalData()
+                  ? 'Marca ONLINE para activar esta bandeja.'
+                  : facade.isLoading()
+                    ? 'Cargando bandeja...'
+                    : 'No hay leads para hoy.'
+              }}
+            </td>
         </tr>
       </ng-template>
     </p-table>
@@ -264,7 +277,9 @@
         Separados por hora programada para priorizar llamadas.
       </ng-template>
 
-      @if (facade.isLoadingAgendados()) {
+      @if (!facade.canDisplayOperationalData()) {
+        <p class="empty-state">Marca ONLINE para activar esta bandeja.</p>
+      } @else if (facade.isLoadingAgendados()) {
         <div class="loading-state">
           <p-progress-spinner ariaLabel="Cargando agendados" />
           <span>Cargando agendados...</span>
@@ -337,7 +352,7 @@
                           type="button"
                           size="small"
                           class="gtr-assign-button"
-                          [disabled]="facade.isSaving()"
+                          [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
                           title="Asignaciones"
                           (click)="facade.openAgendadoAssignment(row)"
                         >
@@ -427,15 +442,29 @@
         <app-date-field label="Fecha desde" formControlName="fechaDesde" />
         <app-date-field label="Fecha hasta" formControlName="fechaHasta" />
         <div class="dialog-actions">
-          <button pButton type="button" label="Limpiar" severity="secondary" (click)="facade.clearMasivoFilters()"></button>
-          <button pButton type="submit" label="Buscar" icon="pi pi-search" [loading]="facade.isLoadingMasivos()"></button>
+          <button
+            pButton
+            type="button"
+            label="Limpiar"
+            severity="secondary"
+            [disabled]="!facade.canMutateOperationalData()"
+            (click)="facade.clearMasivoFilters()"
+          ></button>
+          <button
+            pButton
+            type="submit"
+            label="Buscar"
+            icon="pi pi-search"
+            [disabled]="!facade.canDisplayOperationalData()"
+            [loading]="facade.isLoadingMasivos()"
+          ></button>
         </div>
       </form>
 
       <p-table
         [value]="facade.masivoRows()"
         dataKey="id"
-        [loading]="facade.isLoadingMasivos()"
+        [loading]="facade.canDisplayOperationalData() && facade.isLoadingMasivos()"
         [rowHover]="true"
         [scrollable]="true"
         scrollHeight="flex"
@@ -491,7 +520,7 @@
                   type="button"
                   size="small"
                   class="gtr-assign-button"
-                  [disabled]="facade.isSaving()"
+                  [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
                   title="Asignaciones"
                   (click)="facade.openAssignment(row)"
                 >
@@ -510,7 +539,9 @@
           <tr>
             <td colspan="10">
               {{
-                facade.masivoSearched()
+                !facade.canDisplayOperationalData()
+                  ? 'Marca ONLINE para activar esta bandeja.'
+                  : facade.masivoSearched()
                   ? 'No se encontraron leads con esos filtros.'
                   : 'Indica filtros y ejecuta la busqueda.'
               }}
@@ -542,6 +573,7 @@
         icon="pi pi-refresh"
         label="Actualizar"
         severity="secondary"
+        [disabled]="!facade.canDisplayOperationalData()"
         (click)="facade.refreshAdvisors()"
       ></button>
     </div>
@@ -612,7 +644,13 @@
 
       <div class="dialog-actions">
         <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeDialog()"></button>
-        <button pButton type="submit" label="Registrar" [loading]="facade.isSaving()"></button>
+        <button
+          pButton
+          type="submit"
+          label="Registrar"
+          [disabled]="!facade.canMutateOperationalData()"
+          [loading]="facade.isSaving()"
+        ></button>
       </div>
     </form>
   </p-dialog>
@@ -640,7 +678,13 @@
 
       <div class="dialog-actions">
         <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeDialog()"></button>
-        <button pButton type="submit" label="Guardar" [loading]="facade.isSavingSnapshot()"></button>
+        <button
+          pButton
+          type="submit"
+          label="Guardar"
+          [disabled]="!facade.canMutateOperationalData()"
+          [loading]="facade.isSavingSnapshot()"
+        ></button>
       </div>
     </form>
   </p-dialog>
@@ -684,7 +728,13 @@
 
       <div class="dialog-actions">
         <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeDialog()"></button>
-        <button pButton type="submit" label="Asignar" [loading]="facade.isSaving()"></button>
+        <button
+          pButton
+          type="submit"
+          label="Asignar"
+          [disabled]="!facade.canMutateOperationalData()"
+          [loading]="facade.isSaving()"
+        ></button>
       </div>
     </form>
   </p-dialog>
@@ -699,7 +749,12 @@
   >
     @if (facade.pendingReassignment(); as pending) {
       <div class="reassign-confirmation">
-        @if (pending.requiresReassignment) {
+        @if (pending.requiresInManagement) {
+          <p class="helper">
+            El lead {{ facade.leadPrefixLabel(pending.row.prefijo) }} {{ pending.row.lead }}
+            esta actualmente en gestion con {{ pending.currentAdvisorName }}.
+          </p>
+        } @else if (pending.requiresReassignment) {
           <p class="helper">
             El lead {{ facade.leadPrefixLabel(pending.row.prefijo) }} {{ pending.row.lead }}
             ya esta asignado a {{ pending.currentAdvisorName }}.
@@ -723,6 +778,7 @@
         type="button"
         label="Confirmar asignacion"
         icon="pi pi-check"
+        [disabled]="!facade.canMutateOperationalData()"
         [loading]="facade.isSaving()"
         (click)="facade.confirmReassignment()"
       ></button>

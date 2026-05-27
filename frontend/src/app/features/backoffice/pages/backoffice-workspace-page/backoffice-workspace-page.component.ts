@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -17,6 +17,8 @@ import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { SessionService } from '../../../../core/services/session.service';
+import { OperationalGateService } from '../../../../core/services/operational-gate.service';
+import { EstadoAsistencia } from '../../../../shared/models/schedule/estado-asistencia';
 import {
   AdicionalResponse,
   CatalogoResponse,
@@ -60,12 +62,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly operationalGateService = inject(OperationalGateService);
   private readonly sessionService = inject(SessionService);
   private readonly leadService = inject(BackofficeLeadService);
   private readonly realtimeService = inject(LeadRealtimeService);
   private readonly realtimeSubscription = new Subscription();
   private readonly newRowTimers = new Map<number, number>();
   private initialized = false;
+  private initializeInFlight = false;
+  private lastAttendanceStatus: EstadoAsistencia | null = null;
+  private readonly operationalGate = this.operationalGateService.createGate('backoffice-workspace');
 
   protected readonly pageSize = 12;
   protected readonly section = signal<BackofficeSection>('plataforma');
@@ -91,6 +97,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly detailDialogOpen = signal(false);
   protected readonly activeDataTab = signal('datos');
   protected readonly showComment = signal(false);
+  protected readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
+  protected readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
   protected readonly skeletonRows = Array.from({ length: 8 });
   protected readonly tipoDocumentoOptions = ['DNI', 'CE', 'PASAPORTE'];
   protected readonly tipoDomicilioOptions = ['CASA', 'DEPARTAMENTO', 'NEGOCIO'];
@@ -161,6 +169,26 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     () => this.datosForm.dirty || this.direccionForm.dirty || this.ofertaForm.dirty
   );
 
+  constructor() {
+    effect(() => {
+      const status = this.operationalGateService.currentStatus();
+
+      if (status === 'OFFLINE') {
+        this.clearOperationalData();
+        this.lastAttendanceStatus = status;
+        return;
+      }
+
+      if (this.operationalGate.canActivateOperationalData() && !this.initialized && !this.initializeInFlight) {
+        void this.initialize();
+      } else if (this.operationalGate.canActivateOperationalData() && this.lastAttendanceStatus !== 'ONLINE') {
+        void this.reconcile();
+      }
+
+      this.lastAttendanceStatus = status;
+    });
+  }
+
   ngOnInit(): void {
     this.route.data.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data) => {
       this.section.set(data['section'] === 'gestion' ? 'gestion' : 'plataforma');
@@ -174,7 +202,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       })
     );
 
-    void this.initialize();
+    if (this.operationalGate.canActivateOperationalData()) {
+      void this.initialize();
+    }
     this.startRealtime();
   }
 
@@ -187,19 +217,29 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected async initialize(): Promise<void> {
+    if (!this.operationalGate.canActivateOperationalData() || this.initializeInFlight) {
+      return;
+    }
+
+    this.initializeInFlight = true;
     this.isLoading.set(true);
     this.clearMessages();
     try {
       await Promise.all([this.refreshPlanes(), this.refreshPlataforma(false), this.refreshGestion(false)]);
       this.initialized = true;
+      this.operationalGate.markActivated();
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar BACKOFFICE.'));
     } finally {
+      this.initializeInFlight = false;
       this.isLoading.set(false);
     }
   }
 
   protected async tomarLead(row: LeadVentaResponse): Promise<void> {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
     await this.saveAction(
       () => this.leadService.tomarLead(row.id),
       'Lead asignado a tu gestion.',
@@ -211,6 +251,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected async openDetail(idLead: number): Promise<void> {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
     if (this.hasUnsavedDataChanges() && this.selectedLeadId() !== idLead) {
       this.errorMessage.set('Guarda los cambios pendientes antes de gestionar otro lead.');
       return;
@@ -251,6 +294,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected async guardarCambiosLead(): Promise<void> {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
     const detail = this.detail();
     if (!detail) {
       return;
@@ -325,6 +371,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected async tipificar(): Promise<void> {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
     if (this.hasUnsavedDataChanges()) {
       this.errorMessage.set('Guarda los cambios pendientes antes de tipificar.');
       return;
@@ -360,10 +409,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected async onPlanChanged(): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
     await this.refreshOfferCatalogs(this.ofertaForm.controls.idPlan.value);
   }
 
   protected async changePage(pageNumber: number): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
     if (this.section() === 'plataforma') {
       this.pagePlataforma.set(pageNumber);
       await this.refreshPlataforma(false);
@@ -442,7 +497,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private async reconcile(changedLeadId?: number): Promise<void> {
-    if (this.isReconciling()) {
+    if (this.isReconciling() || !this.canDisplayOperationalData()) {
       return;
     }
     this.isReconciling.set(true);
@@ -457,7 +512,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private async refreshCurrent(silent: boolean): Promise<void> {
-    if (!this.initialized) {
+    if (!this.initialized || !this.canDisplayOperationalData()) {
       return;
     }
     if (this.section() === 'plataforma') {
@@ -468,6 +523,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private async refreshPlataforma(silent: boolean): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
     const previous = this.plataformaRows();
     const page = await firstValueFrom(this.leadService.listarPlataforma(this.currentQuery(this.pagePlataforma())));
     this.totalPlataforma.set(page.totalElements);
@@ -475,6 +533,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private async refreshGestion(silent: boolean): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
     const previous = this.gestionRows();
     const page = await firstValueFrom(this.leadService.listarGestion(this.currentQuery(this.pageGestion())));
     this.totalGestion.set(page.totalElements);
@@ -612,6 +673,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private async saveAction(action: () => import('rxjs').Observable<void>, successMessage: string, afterSuccess: () => Promise<void>): Promise<void> {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
+
     this.isSaving.set(true);
     this.clearMessages();
     try {
@@ -646,6 +711,35 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private clearMessages(): void {
     this.successMessage.set(null);
     this.errorMessage.set(null);
+  }
+
+  private ensureCanMutate(): boolean {
+    if (this.canMutateOperationalData()) {
+      return true;
+    }
+
+    this.errorMessage.set('Marca ONLINE para realizar esta accion.');
+    return false;
+  }
+
+  private clearOperationalData(): void {
+    this.operationalGate.clearActivation();
+    this.initialized = false;
+    this.initializeInFlight = false;
+    this.isLoading.set(false);
+    this.isReconciling.set(false);
+    this.isSaving.set(false);
+    this.plataformaRows.set([]);
+    this.gestionRows.set([]);
+    this.detail.set(null);
+    this.eventos.set([]);
+    this.selectedLeadId.set(null);
+    this.totalPlataforma.set(0);
+    this.totalGestion.set(0);
+    this.pagePlataforma.set(0);
+    this.pageGestion.set(0);
+    this.detailDialogOpen.set(false);
+    this.showComment.set(false);
   }
 
   private getErrorMessage(error: unknown, fallback: string): string {

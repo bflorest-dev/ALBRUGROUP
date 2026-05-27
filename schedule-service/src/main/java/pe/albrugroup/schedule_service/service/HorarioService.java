@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.schedule_service.configuration.CurrentUser;
+import pe.albrugroup.schedule_service.configuration.OperationalDateTime;
 import pe.albrugroup.schedule_service.entity.ExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.Horario;
 import pe.albrugroup.schedule_service.entity.PoliticaModalidad;
@@ -227,7 +228,7 @@ public class HorarioService implements IHorario {
     @Override
     @Transactional(readOnly = true)
     public HorarioResponse getHorarioVigente(Long idEmpleado, LocalDate fecha) {
-        LocalDate consulta = fecha != null ? fecha : LocalDate.now();
+        LocalDate consulta = OperationalDateTime.resolveDate(fecha);
         return mapper.toResponse(horarioRepository.findHorarioVigente(idEmpleado, consulta)
                 .orElseThrow(() -> new NotFoundException("Horario vigente no encontrado", idEmpleado)));
     }
@@ -271,7 +272,7 @@ public class HorarioService implements IHorario {
 
     private YearMonth resolvePeriodoMensual(Integer anio, Integer mes) {
         if (anio == null && mes == null) {
-            return YearMonth.now();
+            return OperationalDateTime.currentMonth();
         }
         if (anio == null || mes == null) {
             throw new BadRequestException("anio y mes deben enviarse juntos");

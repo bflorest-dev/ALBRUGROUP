@@ -29,6 +29,8 @@ public interface AsistenciaMapper {
                 .minutosServiciosAcumulados(entity.getMinutosServiciosAcumulados())
                 .excedioServicios(entity.getExcedioServicios())
                 .jornadaCerrada(entity.getFechaHoraSalida() != null)
+                .dentroHorario(false)
+                .operativo(false)
                 .build();
     }
 }
