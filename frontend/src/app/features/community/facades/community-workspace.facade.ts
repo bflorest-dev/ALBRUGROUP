@@ -552,6 +552,11 @@ export class CommunityWorkspaceFacade {
     this.selectedPlanCatalogProviderId.set(idProveedor);
   }
 
+  planCatalogTagClass(idProveedor: number, tone: 'info' | 'success' | 'danger'): string {
+    const selected = this.selectedPlanCatalogProviderId() === idProveedor ? ' plan-catalog-tag--selected' : '';
+    return `plan-catalog-tag plan-catalog-tag--${tone}${selected}`;
+  }
+
   async submitAdditional(): Promise<void> {
     if (this.additionalForm.invalid) {
       this.errorMessage.set('Completa los datos del adicional.');

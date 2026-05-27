@@ -161,7 +161,7 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
 
 export interface LeadRealtimeEvent {
   tipo: string;
-  idLead: number;
+  idLead?: number;
   etapa?: Etapa | string | null;
   etapaAnterior?: Etapa | string | null;
   estado?: EstadoSeguimiento | string | null;
@@ -169,6 +169,9 @@ export interface LeadRealtimeEvent {
   idAsesorAnterior?: number | null;
   codigoTipificacion?: string | null;
   codigoSubtipificacion?: string | null;
+  totalProcesados?: number;
+  totalRegistrados?: number;
+  totalFallidos?: number;
   occurredAt?: string | null;
 }
 
@@ -210,6 +213,27 @@ export interface LeadAsignacionMasivaResponse {
   totalAsignados: number;
   totalFallidos: number;
   resultados: LeadAsignacionResultadoResponse[];
+}
+
+export interface LeadIntakeMasivoExcelResultadoResponse {
+  fila: number;
+  lead?: string | null;
+  idLead?: number | null;
+  registrado: boolean;
+  mensaje?: string | null;
+  advertencias?: string[] | null;
+  baseUsada?: BaseLead | string | null;
+  idCampanaUsada?: number | null;
+  campanaUsada?: string | null;
+  campanaInferida: boolean;
+}
+
+export interface LeadIntakeMasivoExcelResponse {
+  totalSolicitados: number;
+  totalProcesados: number;
+  totalRegistrados: number;
+  totalFallidos: number;
+  resultados: LeadIntakeMasivoExcelResultadoResponse[];
 }
 
 export interface LeadDatosPreventaRequest {

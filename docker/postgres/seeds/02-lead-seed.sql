@@ -207,6 +207,7 @@ CREATE TEMP TABLE seed_campana (
 );
 
 INSERT INTO seed_campana (nombre, prefijo, numero_whats_app, numero_cuenta, proveedor_nombre, activo) VALUES
+('BASE', '+51', '905749473', '1822236612034217', 'WIN', TRUE),
 ('Win4 - 100% Fibra Optica', '+51', '905749473', '1822236612034217', 'WIN', TRUE),
 ('Win1 - Satisfaccion al cliente', '+51', '905749473', '1822236612034217', 'WIN', FALSE),
 ('Win6 - Internet Winners', '+51', '905749473', '1822236612034217', 'WIN', FALSE),

@@ -90,6 +90,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly isReconciling = signal(false);
   protected readonly isSaving = signal(false);
   protected readonly successMessage = signal<string | null>(null);
+  protected readonly warningMessage = signal<string | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly rows = signal<VisualLeadAsesor[]>([]);
   protected readonly detail = signal<LeadDetalleResponse | null>(null);
@@ -112,6 +113,11 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly activeDataTab = signal<ActiveDataTab>('datos');
   protected readonly showComment = signal(false);
   protected readonly skeletonRows = Array.from({ length: 8 });
+  protected readonly todayLabel = new Intl.DateTimeFormat('es-PE', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long'
+  }).format(new Date());
   protected readonly tipoDocumentoOptions = ['DNI', 'CE', 'RUC'];
   protected readonly tipoDomicilioOptions = [
     'HOGAR',
@@ -283,7 +289,6 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.realtimeSubscription.unsubscribe();
-    this.workspaceState.clear();
     for (const timerId of this.newRowTimers.values()) {
       window.clearTimeout(timerId);
     }
@@ -300,6 +305,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     this.clearMessages();
     try {
       await Promise.all([this.refreshPage(false), this.refreshCatalogs()]);
+      await this.restoreManagingLeadAfterRefresh();
       this.initialized = true;
       this.operationalGate.markActivated();
     } catch (error) {
@@ -334,9 +340,11 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       await this.refreshOfferCatalogs(detail.idPlan ?? 0);
       this.detailDialogOpen.set(true);
       this.isManagingLead.set(true);
+      this.workspaceState.setManagingLeadState(idLead);
       await this.refreshPage(true);
     } catch (error) {
       this.selectedLeadId.set(null);
+      this.workspaceState.clearManagingLeadState();
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo abrir el detalle.'));
     } finally {
       this.isSaving.set(false);
@@ -362,6 +370,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     this.detail.set(null);
     this.selectedLeadId.set(null);
     this.isManagingLead.set(false);
+    this.workspaceState.clearManagingLeadState();
     this.tipificacionForm.reset({
       codigoTipificacion: '',
       codigoSubtipificacion: '',
@@ -737,6 +746,97 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     return this.isSaving() || !this.canMutateOperationalData() || (this.isManagingLead() && this.selectedLeadId() !== idLead);
   }
 
+  private async restoreManagingLeadAfterRefresh(): Promise<void> {
+    const workspaceSnapshot = this.workspaceState.snapshot();
+
+    if (workspaceSnapshot.isManagingLead && workspaceSnapshot.activeLeadId) {
+      const restored = await this.reopenManagedLead(
+        workspaceSnapshot.activeLeadId,
+        'Se restauro tu lead en gestion para que continues donde quedaste.'
+      );
+
+      if (restored) {
+        return;
+      }
+    }
+
+    const managingRows = this.rows().filter((row) => row.estadoSeguimiento === 'EN_GESTION');
+    if (!managingRows.length) {
+      this.workspaceState.clearManagingLeadState();
+      return;
+    }
+
+    const candidate = this.pickManagingLeadCandidate(managingRows);
+    if (!candidate) {
+      this.workspaceState.clearManagingLeadState();
+      return;
+    }
+
+    const restored = await this.reopenManagedLead(candidate.id);
+    if (!restored) {
+      this.workspaceState.clearManagingLeadState();
+      return;
+    }
+
+    if (managingRows.length > 1) {
+      this.warningMessage.set('Se detectaron varias gestiones abiertas. Se reabrio la mas reciente para que continues.');
+      return;
+    }
+
+    this.successMessage.set('Se restauro tu lead en gestion para que continues donde quedaste.');
+  }
+
+  private pickManagingLeadCandidate(rows: LeadAsesorVentasResponse[]): LeadAsesorVentasResponse | null {
+    if (!rows.length) {
+      return null;
+    }
+
+    return [...rows].sort((left, right) => this.leadRowSortTimestamp(right) - this.leadRowSortTimestamp(left))[0] ?? null;
+  }
+
+  private leadRowSortTimestamp(row: LeadAsesorVentasResponse): number {
+    const lastEntryAt =
+      'lastEntryAt' in row && typeof row.lastEntryAt === 'string' && row.lastEntryAt
+        ? new Date(row.lastEntryAt).getTime()
+        : Number.NaN;
+
+    if (Number.isFinite(lastEntryAt)) {
+      return lastEntryAt;
+    }
+
+    const fechaAsignacion = row.fechaAsignacion ? new Date(row.fechaAsignacion).getTime() : Number.NaN;
+    if (Number.isFinite(fechaAsignacion)) {
+      return fechaAsignacion;
+    }
+
+    return row.id;
+  }
+
+  private async reopenManagedLead(idLead: number, restoredMessage?: string): Promise<boolean> {
+    try {
+      const detail = await firstValueFrom(this.preventaService.obtenerDetalleAsesor(idLead));
+      if (detail.estadoSeguimiento !== 'EN_GESTION') {
+        return false;
+      }
+
+      this.selectedLeadId.set(idLead);
+      this.detail.set(detail);
+      this.patchForms(detail);
+      await this.refreshOfferCatalogs(detail.idPlan ?? 0);
+      this.detailDialogOpen.set(true);
+      this.isManagingLead.set(true);
+      this.workspaceState.setManagingLeadState(idLead);
+
+      if (restoredMessage) {
+        this.successMessage.set(restoredMessage);
+      }
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   private async reconcile(changedLeadId?: number): Promise<void> {
     if (this.isReconciling() || !this.canDisplayOperationalData()) {
       return;
@@ -763,6 +863,9 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     } catch {
       this.detail.set(null);
       this.selectedLeadId.set(null);
+      this.isManagingLead.set(false);
+      this.detailDialogOpen.set(false);
+      this.workspaceState.clearManagingLeadState();
     }
   }
 
@@ -1154,6 +1257,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
 
   private clearMessages(): void {
     this.successMessage.set(null);
+    this.warningMessage.set(null);
     this.errorMessage.set(null);
   }
 

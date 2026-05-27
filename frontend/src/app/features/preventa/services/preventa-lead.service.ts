@@ -19,6 +19,7 @@ import {
   LeadGtrResponse,
   LeadGtrMetricasResponse,
   LeadIntakeRequest,
+  LeadIntakeMasivoExcelResponse,
   MasivoLeadFilters,
   LeadSnapshotsRequest,
   LeadOfertaComercialRequest,
@@ -69,6 +70,15 @@ export class PreventaLeadService {
 
   registrarIngresoLead(request: LeadIntakeRequest): Observable<void> {
     return this.http.post<void>(`${this.leadUrl}/preventa/intake`, request);
+  }
+
+  registrarIngresoLeadsExcel(file: File): Observable<LeadIntakeMasivoExcelResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<LeadIntakeMasivoExcelResponse>(
+      `${this.leadUrl}/preventa/intake-masivo/excel`,
+      formData
+    );
   }
 
   actualizarSnapshotsLead(idLead: number, request: LeadSnapshotsRequest): Observable<void> {

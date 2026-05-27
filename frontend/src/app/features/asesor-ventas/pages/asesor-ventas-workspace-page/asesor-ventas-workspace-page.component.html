@@ -4,7 +4,7 @@
       <div>
         <span class="asesor-hero__eyebrow">PREVENTA</span>
         <h1>Mis Leads Asignados</h1>
-        <p>{{ isReconciling() ? 'Sincronizando en segundo plano' : 'Bandeja operativa en tiempo real' }}</p>
+        <p>{{ isReconciling() ? 'Sincronizando en segundo plano' : todayLabel }}</p>
       </div>
 
       <div class="asesor-hero__actions">
@@ -27,6 +27,9 @@
 
   @if (!detailDialogOpen() && successMessage()) {
     <p-message severity="success" [text]="successMessage() ?? ''" />
+  }
+  @if (!detailDialogOpen() && warningMessage()) {
+    <p-message severity="warn" [text]="warningMessage() ?? ''" />
   }
   @if (!detailDialogOpen() && errorMessage()) {
     <p-message severity="error" [text]="errorMessage() ?? ''" />
@@ -54,7 +57,11 @@
         <i class="pi pi-power-off" aria-hidden="true"></i>
         <div>
           <strong>Estas OFFLINE</strong>
-          <p>Marca ONLINE para activar tu presencia y cargar tu bandeja de Leads.</p>
+          <p class="offline-state__message">
+            Marca tu asistencia
+            <p-tag severity="success" value="ONLINE" />
+            para quedar operativo y listo para recibir y gestionar Leads.
+          </p>
         </div>
       </div>
     }
@@ -123,7 +130,7 @@
                 }
               </div>
             } @else {
-              <span class="helper">La bandeja se activara al marcar ONLINE.</span>
+              <span class="helper helper--centered">La bandeja se activara al marcar ONLINE.</span>
             }
           </td>
         </tr>
@@ -154,9 +161,8 @@
       <section class="lead-workspace">
         <header class="lead-workspace__head">
           <div>
-            <span class="lead-workspace__eyebrow">Lead {{ lead.id }}</span>
-            <h2>{{ leadPhone(lead) }}</h2>
-            <p>{{ display(lead.nombreTitular) }} - {{ display(lead.nombreCampana) }}</p>
+            <span class="lead-workspace__eyebrow">Gestion del Lead</span>
+            <h2 class="lead-workspace__summary">Lead | {{ leadPhone(lead) }} | Campana: {{ display(lead.nombreCampana) }}</h2>
           </div>
 
           <div class="lead-workspace__tags">
@@ -169,6 +175,9 @@
 
         @if (successMessage()) {
           <p-message severity="success" [text]="successMessage() ?? ''" />
+        }
+        @if (warningMessage()) {
+          <p-message severity="warn" [text]="warningMessage() ?? ''" />
         }
         @if (errorMessage()) {
           <p-message severity="error" [text]="errorMessage() ?? ''" />
@@ -318,7 +327,7 @@
                   <span>Documento titular celular</span>
                   <input pInputText type="text" formControlName="numeroDocumentoTitularCelularRegistro" />
                 </label>
-                <label class="wide">
+                <label>
                   <span>Nombre titular celular</span>
                   <input pInputText type="text" formControlName="nombreTitularCelularRegistro" />
                 </label>

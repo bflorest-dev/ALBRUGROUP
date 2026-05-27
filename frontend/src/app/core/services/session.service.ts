@@ -1,14 +1,16 @@
-import { Injectable, computed, effect, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { STORAGE_KEYS } from '../constants/storage.constants';
 import { ROLE_HOME_ROUTES } from '../constants/role.constants';
 import { UserSession } from '../../shared/models/auth/user-session';
 import { TokenService } from './token.service';
+import { AsesorVentasWorkspaceStateService } from './asesor-ventas-workspace-state.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SessionService {
   private readonly sessionState = signal<UserSession | null>(this.readStoredSession());
+  private readonly asesorVentasWorkspaceState = inject(AsesorVentasWorkspaceStateService);
   readonly session = this.sessionState.asReadonly();
   readonly primaryRole = computed(() => this.sessionState()?.primaryRole ?? null);
   readonly homeRoute = computed(() => {
@@ -52,6 +54,7 @@ export class SessionService {
   clearSession(): void {
     this.tokenService.clearTokens();
     this.sessionState.set(null);
+    this.asesorVentasWorkspaceState.clear();
     localStorage.removeItem(STORAGE_KEYS.lastActivityAt);
   }
 

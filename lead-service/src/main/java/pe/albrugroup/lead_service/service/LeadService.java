@@ -9,6 +9,7 @@ import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.*;
 import pe.albrugroup.lead_service.entity.enums.Accion;
+import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.CriterioZona;
 import pe.albrugroup.lead_service.entity.enums.EstadoPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
@@ -757,6 +758,42 @@ public class LeadService {
     }
 
     @Transactional
+    public Lead registrarIngresoLeadMasivo(
+            String prefijo,
+            String lead,
+            Base base,
+            String documentoSnapshot,
+            String direccionSnapshot,
+            Long idCampanaBaseMasivo,
+            List<String> advertencias
+    ) {
+        String prefijoNormalizado = normalizarPrefijo(prefijo);
+        String numeroLead = normalizarLead(lead);
+        return leadRepository.findByPrefijoAndLead(prefijoNormalizado, numeroLead)
+                .map(existingLead -> registrarIngresoLeadMasivoExistente(
+                        existingLead,
+                        prefijoNormalizado,
+                        numeroLead,
+                        base,
+                        documentoSnapshot,
+                        direccionSnapshot,
+                        idCampanaBaseMasivo,
+                        advertencias,
+                        false
+                ))
+                .orElseGet(() -> registrarLeadMasivoNuevo(
+                        prefijoNormalizado,
+                        numeroLead,
+                        base,
+                        documentoSnapshot,
+                        direccionSnapshot,
+                        idCampanaBaseMasivo,
+                        advertencias,
+                        false
+                ));
+    }
+
+    @Transactional
     public void asignarLead(Long idLead, LeadAsignacionRequest request) {
         asignarLeadInterno(
                 idLead,
@@ -1083,6 +1120,28 @@ public class LeadService {
         notificarCambioLead("REGISTRO", savedLead, null, null);
     }
 
+    private Lead registrarLeadMasivoNuevo(
+            String prefijo,
+            String numeroLead,
+            Base base,
+            String documentoSnapshot,
+            String direccionSnapshot,
+            Long idCampanaBaseMasivo,
+            List<String> advertencias,
+            boolean notificarRealtime
+    ) {
+        Campana campana = obtenerCampanaBaseMasivo(idCampanaBaseMasivo, advertencias);
+        Lead lead = leadMapper.toNuevoLead(prefijo, numeroLead, base, campana, OperationalDateTime.now());
+        aplicarSnapshotsMasivo(lead, documentoSnapshot, direccionSnapshot, advertencias);
+
+        Lead savedLead = leadRepository.save(lead);
+        registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa());
+        if (notificarRealtime) {
+            notificarCambioLead("REGISTRO", savedLead, null, null);
+        }
+        return savedLead;
+    }
+
     private void registrarIngresoLeadExistente(Lead lead, LeadIntakeRequest request, Campana campana) {
         Etapa etapaAnterior = lead.getEtapa();
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
@@ -1105,6 +1164,83 @@ public class LeadService {
         Lead savedLead = leadRepository.save(lead);
         registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa());
         notificarCambioLead("REGISTRO", savedLead, etapaAnterior, idAsesorAnterior);
+    }
+
+    private Lead registrarIngresoLeadMasivoExistente(
+            Lead lead,
+            String prefijo,
+            String numeroLead,
+            Base base,
+            String documentoSnapshot,
+            String direccionSnapshot,
+            Long idCampanaBaseMasivo,
+            List<String> advertencias,
+            boolean notificarRealtime
+    ) {
+        Etapa etapaAnterior = lead.getEtapa();
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
+        Campana campana = lead.getCampana();
+        if (campana == null) {
+            campana = obtenerCampanaBaseMasivo(idCampanaBaseMasivo, advertencias);
+        }
+
+        lead.setPrefijo(prefijo);
+        lead.setLead(numeroLead);
+        lead.setCampana(campana);
+        lead.setBase(base);
+        lead.setLastEntryAt(OperationalDateTime.now());
+        aplicarSnapshotsMasivo(lead, documentoSnapshot, direccionSnapshot, advertencias);
+
+        if (lead.getEtapa() == Etapa.PREVENTA) {
+            lead.setIdAsesorAsignado(null);
+            lead.setNombreAsesorAsignado(null);
+            lead.setIdTipificacion(null);
+            lead.setCodigoTipificacion(null);
+            lead.setIdSubtipificacion(null);
+            lead.setCodigoSubtipificacion(null);
+            lead.setEstado(EstadoSeguimiento.NUEVO);
+        }
+
+        Lead savedLead = leadRepository.save(lead);
+        registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa());
+        if (notificarRealtime) {
+            notificarCambioLead("REGISTRO", savedLead, etapaAnterior, idAsesorAnterior);
+        }
+        return savedLead;
+    }
+
+    private Campana obtenerCampanaBaseMasivo(Long idCampanaBaseMasivo, List<String> advertencias) {
+        if (idCampanaBaseMasivo == null) {
+            throw new BadRequestException("No esta configurada la campana BASE para carga masiva");
+        }
+        Campana campana = obtenerCampanaActiva(idCampanaBaseMasivo);
+        advertencias.add("Campana BASE aplicada");
+        return campana;
+    }
+
+    private void aplicarSnapshotsMasivo(
+            Lead lead,
+            String documentoSnapshot,
+            String direccionSnapshot,
+            List<String> advertencias
+    ) {
+        String documento = leadMapper.trimToNull(documentoSnapshot);
+        String direccion = leadMapper.trimToNull(direccionSnapshot);
+
+        if (documento != null) {
+            if (lead.getDatosPreventa() == null) {
+                lead.setNumeroDocumentoTitularServicioSnapshot(documento);
+            } else {
+                advertencias.add("Documento ignorado porque el Lead ya tiene datos de preventa");
+            }
+        }
+        if (direccion != null) {
+            if (lead.getDireccion() == null) {
+                lead.setDireccionSnapshot(direccion);
+            } else {
+                advertencias.add("Direccion ignorada porque el Lead ya tiene direccion");
+            }
+        }
     }
 
     private void registrarEventoRegistro(Long idLead, Long idCampana, Etapa etapa) {

@@ -219,6 +219,7 @@ public class DataLoader {
         CuentaPublicitaria distribuidor = saveCuentaPublicitaria("708788522032129", "DISTRIBUIDOR AUTORIZADO");
         CuentaPublicitaria albru = saveCuentaPublicitaria("1587625665850135", "ALBRU 2");
 
+        saveCampana("BASE", "+51", "905749473", runa, win, Boolean.TRUE);
         saveCampana("Win4 - 100% Fibra Optica", "+51", "905749473", runa, win, Boolean.TRUE);
         saveCampana("Win1 - Satisfaccion al cliente", "+51", "905749473", runa, win, Boolean.FALSE);
         saveCampana("Win6 - Internet Winners", "+51", "905749473", runa, win, Boolean.FALSE);

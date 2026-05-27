@@ -8,6 +8,13 @@
       </div>
 
       <div class="gtr-hero__actions">
+        <input
+          #masivoExcelInput
+          type="file"
+          accept=".xlsx"
+          hidden
+          (change)="facade.uploadMasivoExcel($event)"
+        />
         <button
           pButton
           type="button"
@@ -18,6 +25,19 @@
           (click)="facade.toggleAdvisorsPanel()"
         ></button>
         @if (facade.section() === 'plataforma') {
+          <button
+            pButton
+            type="button"
+            icon="pi pi-upload"
+            severity="secondary"
+            [rounded]="true"
+            [text]="true"
+            [disabled]="!facade.canMutateOperationalData() || facade.isUploadingMasivoExcel()"
+            [loading]="facade.isUploadingMasivoExcel()"
+            title="Cargar Excel"
+            aria-label="Cargar Excel"
+            (click)="$any(masivoExcelInput).click()"
+          ></button>
           <button
             pButton
             type="button"
@@ -243,7 +263,7 @@
 
       <ng-template #emptymessage>
         <tr>
-            <td colspan="13">
+            <td colspan="13" style="color: var(--app-text-muted); font-weight: 500; opacity: 0.72; padding: 2rem 1rem; text-align: center;">
               {{
                 !facade.canDisplayOperationalData()
                   ? 'Marca ONLINE para activar esta bandeja.'
@@ -369,7 +389,7 @@
               </p-table>
             </section>
           } @empty {
-            <p class="empty-state">No hay leads agendados.</p>
+            <p class="empty-state" style="opacity: 0.72; padding: 1.5rem 0; text-align: center;">No hay leads agendados.</p>
           }
         </div>
       }
@@ -393,7 +413,12 @@
       </ng-template>
       <ng-template #subtitle>Consulta por parametros operativos.</ng-template>
 
-      <form class="form-grid" [formGroup]="facade.masivoFiltersForm" (ngSubmit)="facade.buscarMasivos()">
+      <form
+        class="form-grid"
+        style="grid-template-columns: repeat(4, minmax(0, 1fr));"
+        [formGroup]="facade.masivoFiltersForm"
+        (ngSubmit)="facade.buscarMasivos()"
+      >
         <label>
           <span>Proveedor</span>
           <p-select
@@ -414,7 +439,9 @@
             appendTo="body"
           />
         </label>
-        <label>
+        <app-date-field label="Desde" formControlName="fechaDesde" />
+        <app-date-field label="Hasta" formControlName="fechaHasta" />
+        <label style="grid-column: span 2;">
           <span>Tipificaciones</span>
           <p-multiselect
             formControlName="tipificaciones"
@@ -427,7 +454,7 @@
             (onChange)="facade.onMasivoTipificacionesChange()"
           />
         </label>
-        <label>
+        <label style="grid-column: span 2;">
           <span>Subtipificaciones</span>
           <p-multiselect
             formControlName="subtipificaciones"
@@ -439,9 +466,7 @@
             appendTo="body"
           />
         </label>
-        <app-date-field label="Fecha desde" formControlName="fechaDesde" />
-        <app-date-field label="Fecha hasta" formControlName="fechaHasta" />
-        <div class="dialog-actions">
+        <div class="dialog-actions" style="grid-column: 1 / -1;">
           <button
             pButton
             type="button"
@@ -537,7 +562,7 @@
 
         <ng-template #emptymessage>
           <tr>
-            <td colspan="10">
+            <td colspan="10" style="color: var(--app-text-muted); font-weight: 500; opacity: 0.72; padding: 2rem 1rem; text-align: center;">
               {{
                 !facade.canDisplayOperationalData()
                   ? 'Marca ONLINE para activar esta bandeja.'
@@ -583,7 +608,10 @@
         <article class="advisor-card">
           <span class="advisor-card__dot {{ facade.advisorDotClass(advisor) }}"></span>
           <div>
-            <strong>{{ advisor.nombreCompleto }}</strong>
+            <div style="align-items: baseline; display: flex; flex-wrap: wrap; gap: 0.45rem; justify-content: space-between;">
+              <strong>{{ advisor.nombreCompleto }}</strong>
+              <small style="margin: 0;">En horario de Gestion</small>
+            </div>
             <div class="advisor-card__tags">
               <p-tag
                 [severity]="advisorSeverity(advisor.estadoSchedule)"
@@ -594,7 +622,6 @@
                 [value]="facade.display(advisor.disponibilidad)"
               />
             </div>
-            <small>{{ advisor.esperadoHoy ? 'Esperado hoy' : 'Sin horario esperado' }}</small>
           </div>
         </article>
       } @empty {
@@ -602,6 +629,106 @@
       }
     </div>
   </p-drawer>
+
+  <p-dialog
+    header="Resultado de carga masiva"
+    [visible]="facade.masivoExcelResultsDialogOpen()"
+    (visibleChange)="!$event && facade.closeMasivoExcelResultsDialog()"
+    [modal]="true"
+    [draggable]="false"
+  styleClass="gtr-dialog gtr-dialog--events"
+  >
+    @if (facade.masivoExcelImport(); as importacion) {
+      <section class="upload-results">
+        <div class="gtr-hero__actions">
+          <p-tag severity="info" [value]="'Solicitados ' + facade.display(importacion.totalSolicitados)" />
+          <p-tag severity="info" [value]="'Procesados ' + facade.display(importacion.totalProcesados)" />
+          <p-tag severity="success" [value]="'Registrados ' + facade.display(importacion.totalRegistrados)" />
+          <p-tag severity="danger" [value]="'Fallidos ' + facade.display(importacion.totalFallidos)" />
+        </div>
+
+        @if (facade.masivoExcelFailureResults().length) {
+          <p class="helper">Revisa y copia los fallos antes de cerrar esta vista.</p>
+          <div class="dialog-actions">
+            <button
+              pButton
+              type="button"
+              icon="pi pi-copy"
+              label="Copiar fallos"
+              severity="secondary"
+              (click)="facade.copyMasivoExcelFailures()"
+            ></button>
+          </div>
+
+          <p-table
+            [value]="facade.masivoExcelFailureResults()"
+            styleClass="p-datatable-sm gtr-table gtr-import-results"
+            [rows]="5"
+            [paginator]="facade.masivoExcelFailureResults().length > 5"
+          >
+            <ng-template #header>
+              <tr>
+                <th>Fila</th>
+                <th>Lead</th>
+                <th>Mensaje</th>
+                <th>Advertencias</th>
+              </tr>
+            </ng-template>
+            <ng-template #body let-row>
+              <tr>
+                <td>{{ row.fila }}</td>
+                <td>{{ row.lead || '-' }}</td>
+                <td>{{ row.mensaje || '-' }}</td>
+                <td>{{ row.advertencias?.length ? row.advertencias?.join(', ') : '-' }}</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        } @else {
+          <p-message severity="success" text="Todos los leads del Excel fueron procesados correctamente." />
+        }
+
+        @if (facade.masivoExcelResults().length) {
+          <div class="upload-results">
+            <span class="helper">Resultado completo del archivo</span>
+            <p-table
+              [value]="facade.masivoExcelResults()"
+              styleClass="p-datatable-sm gtr-table gtr-import-results"
+              [rows]="5"
+              [paginator]="facade.masivoExcelResults().length > 5"
+            >
+              <ng-template #header>
+                <tr>
+                  <th>Fila</th>
+                  <th>Lead</th>
+                  <th>Base</th>
+                  <th>Estado</th>
+                  <th>Campaña</th>
+                </tr>
+              </ng-template>
+              <ng-template #body let-row>
+                <tr>
+                  <td>{{ row.fila }}</td>
+                  <td>{{ row.lead || '-' }}</td>
+                  <td>{{ row.baseUsada || '-' }}</td>
+                  <td>
+                    <p-tag
+                      [severity]="row.registrado ? 'success' : 'danger'"
+                      [value]="row.registrado ? 'Registrado' : 'Fallido'"
+                    />
+                  </td>
+                  <td>{{ row.campanaUsada || '-' }}</td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        }
+
+        <div class="dialog-actions">
+          <button pButton type="button" label="Cerrar" severity="secondary" (click)="facade.closeMasivoExcelResultsDialog()"></button>
+        </div>
+      </section>
+    }
+  </p-dialog>
 
   <p-dialog
     header="Nuevo Lead"
@@ -690,28 +817,35 @@
   </p-dialog>
 
   <p-dialog
-    header="Asignar Lead"
     [visible]="facade.activeDialog() === 'assign'"
     (visibleChange)="!$event && facade.closeDialog()"
     [modal]="true"
     [draggable]="false"
     styleClass="gtr-dialog"
   >
-    <form class="form-grid" [formGroup]="facade.assignmentForm" (ngSubmit)="facade.submitAssignment()">
+    <ng-template #header>
       @if (facade.activeAssignmentLead(); as lead) {
-        <p class="wide helper">Lead {{ facade.leadPrefixLabel(lead.prefijo) }} {{ lead.lead }}</p>
+        <span><strong>Asignar Lead</strong> ({{ facade.leadPrefixLabel(lead.prefijo) }} {{ lead.lead }})</span>
       } @else {
+        <span><strong>Asignar Lead</strong></span>
+      }
+    </ng-template>
+
+    <form class="form-grid" [formGroup]="facade.assignmentForm" (ngSubmit)="facade.submitAssignment()">
+      @if (!facade.activeAssignmentLead()) {
         <p class="wide helper">{{ facade.selectedCount() }} leads seleccionados</p>
       }
+
+      <p class="wide helper">Elige al asesor de ventas disponible o requerido para gestionar el Lead.</p>
 
       <label class="wide">
         <span>Asesor ventas</span>
         <p-select
           formControlName="idAsesorAsignado"
-          [options]="facade.advisors()"
+          [options]="facade.availableAssignmentAdvisors()"
           optionLabel="nombreCompleto"
           optionValue="empleadoId"
-          placeholder="Seleccionar asesor"
+          [placeholder]="facade.availableAssignmentAdvisors().length ? 'Seleccionar asesor por disponibilidad' : 'No hay asesores con estado operativo'"
           appendTo="body"
         >
           <ng-template #item let-advisor>

@@ -21,6 +21,8 @@ import {
   LeadAgendadoGtrResponse,
   LeadGtrResponse,
   LeadGtrMetricasResponse,
+  LeadIntakeMasivoExcelResponse,
+  LeadIntakeMasivoExcelResultadoResponse,
   MasivoLeadFilters,
   PageQuery
 } from '../../../shared/models/preventa/preventa.models';
@@ -115,7 +117,9 @@ export class GtrWorkspaceFacade {
   readonly isSavingSnapshot = signal(false);
   readonly isLoadingAgendados = signal(false);
   readonly isLoadingMasivos = signal(false);
+  readonly isUploadingMasivoExcel = signal(false);
   readonly isLoadingEvents = signal(false);
+  readonly masivoExcelResultsDialogOpen = signal(false);
   readonly successMessage = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
   readonly rows = signal<VisualLeadGtr[]>([]);
@@ -139,6 +143,13 @@ export class GtrWorkspaceFacade {
   readonly masivoTotalPages = signal(0);
   readonly masivoPageNumber = signal(0);
   readonly masivoSearched = signal(false);
+  readonly masivoExcelImport = signal<LeadIntakeMasivoExcelResponse | null>(null);
+  readonly masivoExcelResults = computed<LeadIntakeMasivoExcelResultadoResponse[]>(
+    () => this.masivoExcelImport()?.resultados ?? []
+  );
+  readonly masivoExcelFailureResults = computed<LeadIntakeMasivoExcelResultadoResponse[]>(() =>
+    this.masivoExcelResults().filter((row) => !row.registrado)
+  );
   readonly selectedIds = signal<Set<number>>(new Set());
   readonly advisors = signal<AdvisorOption[]>([]);
   readonly campanas = signal<CampanaResponse[]>([]);
@@ -281,7 +292,7 @@ export class GtrWorkspaceFacade {
   readonly sectionSubtitle = computed(() => {
     switch (this.section()) {
       case 'agendados':
-        return 'Ordenados por hora programada';
+        return this.todayLabel;
       case 'historicos':
         return 'Busqueda de leads masivos';
       default:
@@ -300,6 +311,27 @@ export class GtrWorkspaceFacade {
   });
 
   readonly selectedCount = computed(() => this.selectedIds().size);
+  readonly availableAssignmentAdvisors = computed(() => {
+    const availabilityOrder = new Map<string, number>([
+      ['DISPONIBLE', 0],
+      ['GESTIONANDO', 1],
+      ['OCUPADO', 2],
+      ['SATURADO', 3]
+    ]);
+
+    return this.advisors()
+      .filter((advisor) => availabilityOrder.has(advisor.disponibilidad ?? ''))
+      .sort((left, right) => {
+        const leftOrder = availabilityOrder.get(left.disponibilidad ?? '') ?? Number.MAX_SAFE_INTEGER;
+        const rightOrder = availabilityOrder.get(right.disponibilidad ?? '') ?? Number.MAX_SAFE_INTEGER;
+
+        if (leftOrder !== rightOrder) {
+          return leftOrder - rightOrder;
+        }
+
+        return left.nombreCompleto.localeCompare(right.nombreCompleto);
+      });
+  });
   readonly selectedAdvisor = computed(() => {
     const advisorId = this.assignmentForm.controls.idAsesorAsignado.value;
     return this.advisors().find((advisor) => advisor.empleadoId === advisorId) ?? null;
@@ -439,6 +471,67 @@ export class GtrWorkspaceFacade {
     }
   }
 
+  async uploadMasivoExcel(event: Event): Promise<void> {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) {
+      return;
+    }
+    if (!file.name.toLowerCase().endsWith('.xlsx')) {
+      this.errorMessage.set('Selecciona un archivo .xlsx.');
+      return;
+    }
+
+    this.isUploadingMasivoExcel.set(true);
+    this.clearMessages();
+    try {
+      const response = await firstValueFrom(this.preventaService.registrarIngresoLeadsExcel(file));
+      this.masivoExcelImport.set(response);
+      this.masivoExcelResultsDialogOpen.set(true);
+      this.successMessage.set(
+        `Excel procesado: ${response.totalRegistrados} registrados y ${response.totalFallidos} fallidos.`
+      );
+      await Promise.all([
+        this.reconcile(),
+        this.masivoSearched() ? this.refreshMasivos() : Promise.resolve()
+      ]);
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo procesar el Excel.'));
+    } finally {
+      this.isUploadingMasivoExcel.set(false);
+    }
+  }
+
+  closeMasivoExcelResultsDialog(): void {
+    this.masivoExcelResultsDialogOpen.set(false);
+    this.masivoExcelImport.set(null);
+  }
+
+  async copyMasivoExcelFailures(): Promise<void> {
+    const failureRows = this.masivoExcelFailureResults();
+    if (!failureRows.length) {
+      this.errorMessage.set('No hay fallos para copiar.');
+      return;
+    }
+
+    const clipboard = this.document.defaultView?.navigator?.clipboard;
+    if (!clipboard) {
+      this.errorMessage.set('No fue posible acceder al portapapeles.');
+      return;
+    }
+
+    try {
+      await clipboard.writeText(this.buildMasivoExcelFailuresText(failureRows));
+      this.successMessage.set('Fallos copiados al portapapeles.');
+    } catch {
+      this.errorMessage.set('No se pudieron copiar los fallos.');
+    }
+  }
+
   beginSnapshot(row: LeadGtrResponse): void {
     this.snapshotForm.reset({
       idLead: row.id,
@@ -483,6 +576,7 @@ export class GtrWorkspaceFacade {
     if (!this.ensureCanMutate()) {
       return;
     }
+    this.assignmentForm.reset({ idAsesorAsignado: 0 });
     this.activeAssignmentLead.set(row ?? null);
     this.activeDialog.set('assign');
   }
@@ -519,6 +613,7 @@ export class GtrWorkspaceFacade {
   }
 
   closeDialog(): void {
+    this.assignmentForm.reset({ idAsesorAsignado: 0 });
     this.activeDialog.set(null);
     this.activeAssignmentLead.set(null);
     this.activeEventsLead.set(null);
@@ -1080,6 +1175,21 @@ export class GtrWorkspaceFacade {
     return (value ?? '').trim().toUpperCase();
   }
 
+  private buildMasivoExcelFailuresText(rows: LeadIntakeMasivoExcelResultadoResponse[]): string {
+    return rows
+      .map((row) => {
+        const parts = [
+          `Fila ${row.fila}`,
+          row.lead ? `Lead ${row.lead}` : null,
+          row.mensaje ? `Motivo: ${row.mensaje}` : null,
+          row.advertencias?.length ? `Advertencias: ${row.advertencias.join(', ')}` : null
+        ].filter(Boolean);
+
+        return parts.join(' | ');
+      })
+      .join('\n');
+  }
+
   private startRealtime(): void {
     if (this.realtimeStarted) {
       return;
@@ -1092,6 +1202,7 @@ export class GtrWorkspaceFacade {
           if (
             [
               'REGISTRO',
+              'REGISTRO_MASIVO',
               'ASIGNACION',
               'CONTACTO',
               'GESTION_INICIADA',

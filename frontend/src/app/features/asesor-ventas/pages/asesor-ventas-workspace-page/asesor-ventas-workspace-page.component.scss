@@ -54,8 +54,20 @@ h2 {
   font-size: 1.3rem;
 }
 
+.lead-workspace__summary {
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
 p {
   color: #617187;
+}
+
+.helper--centered {
+  display: block;
+  opacity: 0.72;
+  padding: 1.5rem 0;
+  text-align: center;
 }
 
 .board-title {
@@ -113,6 +125,13 @@ p {
 
 .offline-state strong {
   color: #0f1f33;
+}
+
+.offline-state__message {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
 }
 
 .lead-workspace {

@@ -374,21 +374,22 @@
                   <button
                     type="button"
                     class="provider-filter-chip"
-                    [class.provider-filter-chip--active]="facade.selectedPlanCatalogProviderId() === 0"
                     (click)="facade.selectPlanCatalogProvider(0)"
                   >
-                    <p-tag severity="info" [value]="'Todos (' + (facade.planes().length + facade.adicionales().length) + ')'" />
+                    <p-tag
+                      [value]="'Todos (' + (facade.planes().length + facade.adicionales().length) + ')'"
+                      [styleClass]="facade.planCatalogTagClass(0, 'info')"
+                    />
                   </button>
                   @for (proveedor of facade.planCatalogProviderFilters(); track proveedor.id) {
                     <button
                       type="button"
                       class="provider-filter-chip"
-                      [class.provider-filter-chip--active]="facade.selectedPlanCatalogProviderId() === proveedor.id"
                       (click)="facade.selectPlanCatalogProvider(proveedor.id)"
                     >
                       <p-tag
-                        [severity]="proveedor.activo === false ? 'danger' : 'success'"
                         [value]="proveedor.nombre + ' (' + (proveedor.planesCount + proveedor.adicionalesCount) + ')'"
+                        [styleClass]="facade.planCatalogTagClass(proveedor.id, proveedor.activo === false ? 'danger' : 'success')"
                       />
                     </button>
                   }

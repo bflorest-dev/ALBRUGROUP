@@ -254,10 +254,7 @@ td small,
   min-height: 2rem;
 }
 
-.gtr-assign-button__action {
-  gap: .45rem;
-  padding: 0 .75rem;
-}
+.gtr-assign-button__action { gap:.45rem; padding:0 .75rem; }
 
 .gtr-assign-button__count {
   background: rgba(255, 255, 255, 0.16);
@@ -497,6 +494,8 @@ label {
   width: 100%;
 }
 
+.upload-results { display: grid; gap: 0.85rem; }
+
 :host ::ng-deep .gtr-dialog {
   width: min(34rem, calc(100vw - 1rem));
 }
@@ -554,4 +553,5 @@ label {
   .form-grid {
     grid-template-columns: 1fr;
   }
+
 }

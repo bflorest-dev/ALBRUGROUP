@@ -8,9 +8,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import pe.albrugroup.lead_service.entity.request.*;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.response.*;
+import pe.albrugroup.lead_service.service.LeadExcelIntakeService;
 import pe.albrugroup.lead_service.service.LeadService;
 
 import java.time.LocalDate;
@@ -22,6 +24,7 @@ import java.util.List;
 public class PreventaController {
 
     private final LeadService  leadService;
+    private final LeadExcelIntakeService leadExcelIntakeService;
 
     //GTR
 
@@ -32,6 +35,13 @@ public class PreventaController {
         return ResponseEntity.noContent().build();
     }
     // 1.1. Enriqueser un Lead solo con la información puntual que podria detectar si el Lead es válido para seguir en el proceso de recopilar información
+    @PostMapping(value = "/intake-masivo/excel", consumes = "multipart/form-data") @PreAuthorize("hasAuthority('CREATE_LEADS')")
+    public ResponseEntity<LeadIntakeMasivoExcelResponse> registrarIngresoLeadsExcel(
+            @RequestPart("file") MultipartFile file
+    ) {
+        var response = leadExcelIntakeService.registrarDesdeExcel(file);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
     @PatchMapping("/{idLead}/snapshots") @PreAuthorize("hasAuthority('CREATE_LEADS')")
     public ResponseEntity<Void> actualizarSnapshotsLead(
             @PathVariable Long idLead,
