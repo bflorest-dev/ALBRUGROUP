@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Softphone ALBRUGROUP - Fase 1</title>
+<style>
+  :root {
+    --bg: #1e1e2e;
+    --panel: #2a2a3a;
+    --border: #3a3a4a;
+    --text: #e4e4f4;
+    --muted: #8888a0;
+    --accent: #6db4ff;
+    --success: #5bd66f;
+    --danger: #ff6b6b;
+    --warn: #f3c969;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px;
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.4;
+  }
+  h1 { font-size: 20px; margin: 0 0 18px; }
+  h2 { font-size: 14px; color: var(--muted); margin: 18px 0 8px; text-transform: uppercase; letter-spacing: .5px; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  select, input, button {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 10px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  input { min-width: 140px; }
+  button {
+    cursor: pointer;
+    background: var(--accent);
+    color: #001428;
+    font-weight: 600;
+    border-color: transparent;
+  }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  button.danger { background: var(--danger); color: #2a0000; }
+  button.success { background: var(--success); color: #002a08; }
+  button.ghost { background: transparent; color: var(--text); border-color: var(--border); }
+  .pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .pill.off { background: #44445a; color: var(--muted); }
+  .pill.on  { background: var(--success); color: #002a08; }
+  .pill.warn{ background: var(--warn);    color: #2a1800; }
+  .pill.err { background: var(--danger);  color: #2a0000; }
+  #log {
+    background: #11111a;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    height: 220px;
+    overflow-y: auto;
+    font-family: "Cascadia Code", "Consolas", monospace;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .log-line.info  { color: #aac8ff; }
+  .log-line.ok    { color: #6fe082; }
+  .log-line.warn  { color: var(--warn); }
+  .log-line.err   { color: var(--danger); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<h1>📞 Softphone ALBRUGROUP <span style="color:var(--muted); font-weight:normal">— Fase 1 test</span></h1>
+
+<div class="grid">
+
+  <div class="panel">
+    <h2>Conexión</h2>
+    <div class="row">
+      <label>Asesor:</label>
+      <select id="ext">
+        <option value="1001">1001 (Asesor 1)</option>
+        <option value="1002">1002 (Asesor 2)</option>
+        <option value="1003">1003 (Asesor 3)</option>
+        <option value="9999">9999 (Cliente simulado)</option>
+      </select>
+      <button id="btn-register" class="success">Conectar</button>
+      <button id="btn-unregister" class="ghost" disabled>Desconectar</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      Estado: <span id="status-pill" class="pill off">Desconectado</span>
+    </div>
+    <div class="hint">
+      Server WS: <code id="ws-url">ws://localhost:8088/ws</code>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Llamada</h2>
+    <div class="row">
+      <label>Marcar:</label>
+      <input id="target" type="text" value="100" placeholder="ext. o número">
+      <button id="btn-call" disabled>Llamar</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button id="btn-answer" class="success" disabled>Contestar</button>
+      <button id="btn-hangup" class="danger" disabled>Colgar</button>
+    </div>
+    <div class="hint">
+      Sugerencias: <code>100</code> = entrar a cola-ventas, <code>9999</code> = cliente simulado, <code>1001-1003</code> = otra extensión.
+    </div>
+  </div>
+
+</div>
+
+<div class="panel">
+  <h2>Log</h2>
+  <div id="log"></div>
+</div>
+
+<audio id="remote-audio" autoplay></audio>
+
+<!-- JsSIP: bundle UMD estable servido localmente (en /lib/), expone window.JsSIP.
+     Evita dependencia de CDN externo. Si necesitas actualizarlo, descarga el .js
+     desde https://github.com/versatica/JsSIP/releases y reemplaza el archivo. -->
+<script src="/lib/jssip.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ---- Config -----------------------------------------------------------
+  // Las contraseñas matchean pjsip.conf (Fase 1, no es producción).
+  const PASSWORDS = {
+    '1001': 'asesor1001',
+    '1002': 'asesor1002',
+    '1003': 'asesor1003',
+    '9999': 'cliente9999'
+  };
+  const WS_URL = `ws://${location.hostname}:8088/ws`;
+  document.getElementById('ws-url').textContent = WS_URL;
+
+  // ---- DOM --------------------------------------------------------------
+  const $   = (id) => document.getElementById(id);
+  const extSel    = $('ext');
+  const btnReg    = $('btn-register');
+  const btnUnreg  = $('btn-unregister');
+  const btnCall   = $('btn-call');
+  const btnHang   = $('btn-hangup');
+  const btnAns    = $('btn-answer');
+  const target    = $('target');
+  const statusEl  = $('status-pill');
+  const remoteAud = $('remote-audio');
+  const logEl     = $('log');
+
+  function log(msg, kind = 'info') {
+    const t = new Date().toLocaleTimeString();
+    const line = document.createElement('div');
+    line.className = `log-line ${kind}`;
+    line.textContent = `[${t}] ${msg}`;
+    logEl.appendChild(line);
+    logEl.scrollTop = logEl.scrollHeight;
+    console.log(`[softphone] ${msg}`);
+  }
+  function setStatus(text, cls) {
+    statusEl.textContent = text;
+    statusEl.className = `pill ${cls}`;
+  }
+
+  if (typeof JsSIP === 'undefined') {
+    log('No se pudo cargar JsSIP desde el CDN. Verifica conexión a internet.', 'err');
+    setStatus('Sin librería', 'err');
+    btnReg.disabled = true;
+    return;
+  }
+  // Silenciamos el log interno de JsSIP por defecto. Para depurar tramas SIP:
+  //   JsSIP.debug.enable('JsSIP:*');
+  JsSIP.debug.disable();
+
+  // ---- SIP --------------------------------------------------------------
+  let ua = null;          // JsSIP UserAgent
+  let session = null;     // RTCSession activa (entrante o saliente)
+
+  function attachRemoteAudio(s) {
+    // Para llamadas SALIENTES, s.connection ya existe (lo crea JsSIP al hacer offer).
+    // Para llamadas ENTRANTES, s.connection es null hasta que se llama answer().
+    // Por eso nos suscribimos a 'peerconnection', que JsSIP dispara apenas exista.
+    const bindTrack = (pc) => {
+      pc.addEventListener('track', (e) => {
+        log('Track remoto recibido', 'ok');
+        remoteAud.srcObject = e.streams[0];
+      });
+    };
+    if (s.connection) {
+      bindTrack(s.connection);
+    } else {
+      s.on('peerconnection', (data) => {
+        log('PeerConnection lista', 'info');
+        bindTrack(data.peerconnection);
+      });
+    }
+  }
+
+  function bindSession(s) {
+    session = s;
+    try { attachRemoteAudio(s); }
+    catch (err) { log(`attachRemoteAudio falló: ${err.message}`, 'warn'); }
+    s.on('progress',  () => log('Ringing…'));
+    s.on('accepted',  () => { log('Llamada en curso', 'ok');
+                              btnAns.disabled = true;
+                              btnHang.disabled = false;
+                              btnCall.disabled = true; });
+    s.on('confirmed', () => log('Media establecido'));
+    s.on('ended',     (e) => { log(`Llamada terminada (${e.cause})`);
+                               cleanupAfterCall(); });
+    s.on('failed',    (e) => { log(`Llamada falló: ${e.cause}`, 'warn');
+                               cleanupAfterCall(); });
+  }
+
+  function cleanupAfterCall() {
+    session = null;
+    btnAns.disabled  = true;
+    btnHang.disabled = true;
+    btnCall.disabled = false;
+  }
+
+  function connect() {
+    const ext = extSel.value;
+    const pass = PASSWORDS[ext];
+    if (!pass) { log(`Sin password para ${ext}`, 'err'); return; }
+
+    btnReg.disabled = true;
+    setStatus('Conectando...', 'warn');
+    log(`Conectando como ${ext}@${location.hostname} via ${WS_URL}`);
+
+    const socket = new JsSIP.WebSocketInterface(WS_URL);
+
+    ua = new JsSIP.UA({
+      sockets:               [socket],
+      uri:                   `sip:${ext}@${location.hostname}`,
+      password:              pass,
+      register:              true,
+      session_timers:        false,
+      user_agent:            'AlbruGroupSoftphone/1.0'
+    });
+
+    ua.on('connecting', () => log('WebSocket conectando…'));
+    ua.on('connected',  () => log('WebSocket conectado'));
+    ua.on('disconnected', (e) => {
+      log(`WebSocket desconectado: ${e && e.reason || ''}`, 'warn');
+      setStatus('Desconectado', 'off');
+    });
+    ua.on('registered',   () => {
+      setStatus(`Registrado (${ext})`, 'on');
+      log(`Registrado como ${ext}`, 'ok');
+      btnUnreg.disabled = false;
+      btnCall.disabled  = false;
+    });
+    ua.on('unregistered', () => {
+      setStatus('Desconectado', 'off');
+      log('Desregistrado');
+      btnReg.disabled   = false;
+      btnUnreg.disabled = true;
+      btnCall.disabled  = true;
+    });
+    ua.on('registrationFailed', (e) => {
+      log(`Registro falló: ${e.cause}`, 'err');
+      setStatus('Error registro', 'err');
+      btnReg.disabled = false;
+    });
+
+    // Llamadas entrantes (y salientes también pasan por aquí con originator=local)
+    ua.on('newRTCSession', (data) => {
+      const s = data.session;
+      if (data.originator === 'remote') {
+        log(`Llamada entrante de ${s.remote_identity.uri.toString()}`, 'ok');
+        bindSession(s);
+        btnAns.disabled  = false;
+        btnHang.disabled = false;
+      } else {
+        // Originator local: ya tenemos referencia en 'session' desde makeCall
+        bindSession(s);
+      }
+    });
+
+    ua.start();
+  }
+
+  function disconnect() {
+    if (!ua) return;
+    try { ua.stop(); } catch (e) { log(`Error al desconectar: ${e.message}`, 'warn'); }
+    ua = null;
+  }
+
+  function makeCall() {
+    if (!ua) { log('No conectado', 'err'); return; }
+    const dest = target.value.trim();
+    if (!dest) return;
+    const uri = `sip:${dest}@${location.hostname}`;
+    log(`Llamando a ${uri}`);
+    btnCall.disabled = true;
+    btnHang.disabled = false;
+
+    const opts = {
+      mediaConstraints: { audio: true, video: false },
+      rtcOfferConstraints: { offerToReceiveAudio: 1, offerToReceiveVideo: 0 }
+    };
+    try {
+      ua.call(uri, opts);  // newRTCSession dispara bindSession
+    } catch (e) {
+      log(`Error en llamada: ${e.message}`, 'err');
+      cleanupAfterCall();
+    }
+  }
+
+  function answer() {
+    if (!session) return;
+    try {
+      session.answer({ mediaConstraints: { audio: true, video: false }});
+      btnAns.disabled  = true;
+      btnHang.disabled = false;
+    } catch (e) {
+      log(`Error contestando: ${e.message}`, 'err');
+    }
+  }
+
+  function hangup() {
+    if (!session) return;
+    try { session.terminate(); } catch (e) { log(`Error colgando: ${e.message}`, 'warn'); }
+  }
+
+  // ---- Bindings ---------------------------------------------------------
+  btnReg.addEventListener('click', connect);
+  btnUnreg.addEventListener('click', disconnect);
+  btnCall.addEventListener('click', makeCall);
+  btnHang.addEventListener('click', hangup);
+  btnAns.addEventListener('click', answer);
+
+  log('Página lista. Selecciona una extensión y presiona Conectar.');
+})();
+</script>
+
+</body>
+</html>

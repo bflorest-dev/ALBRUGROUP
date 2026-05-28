@@ -69,11 +69,12 @@
 
       <app-attendance-status-picker
         banner-actions
-        [statusLabel]="attendanceFacade.currentStatusMeta().label"
-        [statusColor]="attendanceFacade.currentStatusMeta().color"
-        [actions]="attendanceFacade.availableActions()"
-        [isLoading]="attendanceFacade.isLoading()"
+        [statusLabel]="attendanceStatusLabel()"
+        [statusColor]="attendanceStatusColor()"
+        [actions]="attendanceActions()"
+        [isLoading]="isAttendanceLoading()"
         [errorMessage]="attendancePickerErrorMessage()"
+        [disabled]="isAttendancePickerDisabled()"
         (actionSelected)="submitAttendanceAction($event)"
         (retry)="attendanceFacade.reload()"
       />

@@ -37,6 +37,74 @@ services:
     networks:
       - albru-network
 
+  postgres-call:
+    profiles: ["cellphone"]
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres-call-data:/var/lib/postgresql/data
+      - ./docker/postgres/call-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - albru-network
+
+  minio:
+    profiles: ["cellphone"]
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9001:9001"   # Consola web (admin)
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - albru-network
+
+  asterisk:
+    profiles: ["cellphone"]
+    build:
+      context: ./docker/asterisk
+      args:
+        ASTERISK_VERSION: 22.9.0
+    image: albrugroup/asterisk:22.9.0
+    hostname: asterisk
+    volumes:
+      - ./docker/asterisk/etc:/etc/asterisk:ro
+      - asterisk-recordings:/var/spool/asterisk/recording
+      - asterisk-logs:/var/log/asterisk
+    ports:
+      - "5060:5060/udp"          # SIP UDP
+      - "8088:8088"              # HTTP (ARI + WebSocket)
+      - "5038:5038"              # AMI
+      - "10000-10500:10000-10500/udp"  # RTP
+    healthcheck:
+      test: ["CMD-SHELL", "asterisk -rx 'core show uptime' | grep -q 'System uptime' || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - albru-network
+
   redis:
     image: redis:7-alpine
     command: ["redis-server", "--save", "", "--appendonly", "no", "--notify-keyspace-events", "Ex"]
@@ -51,6 +119,7 @@ services:
       - albru-network
 
   auth-service:
+    profiles: ["business"]
     build:
       context: ./auth-service
     environment:
@@ -61,9 +130,9 @@ services:
       AUTH_DB_PASSWORD: postgres
       JWT_PRIVATE_KEY_BASE64: ${JWT_PRIVATE_KEY_BASE64:?JWT_PRIVATE_KEY_BASE64 is required}
       JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
-      JWT_ISSUER: ${JWT_ISSUER:?JWT_ISSUER is required}
-      AUTH_DOCS_GATEWAY_URL: http://localhost:8080/auth
-      AUTH_DOCS_PUBLIC_URL: http://localhost:8080/auth
+      JWT_ISSUER: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/auth
+      AUTH_DOCS_GATEWAY_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/auth
+      AUTH_DOCS_PUBLIC_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/auth
     depends_on:
       postgres-core:
         condition: service_healthy
@@ -78,6 +147,7 @@ services:
       - albru-network
 
   rrhh-service:
+    profiles: ["business"]
     build:
       context: ./rrhh-service
     environment:
@@ -89,9 +159,9 @@ services:
       AUTH_SERVICE_URL: http://auth-service:8081
       RECRUITMENT_SERVICE_URL: http://recruitment-service:8084
       JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
-      JWT_ISSUER: ${JWT_ISSUER:?JWT_ISSUER is required}
-      RRHH_DOCS_GATEWAY_URL: http://localhost:8080/rrhh
-      RRHH_DOCS_PUBLIC_URL: http://localhost:8080/rrhh
+      JWT_ISSUER: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/auth
+      RRHH_DOCS_GATEWAY_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/rrhh
+      RRHH_DOCS_PUBLIC_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/rrhh
     depends_on:
       postgres-core:
         condition: service_healthy
@@ -110,6 +180,7 @@ services:
       - albru-network
 
   lead-service:
+    profiles: ["business"]
     build:
       context: ./lead-service
     environment:
@@ -121,9 +192,9 @@ services:
       LEAD_REDIS_HOST: redis
       LEAD_REDIS_PORT: 6379
       JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
-      JWT_ISSUER: ${JWT_ISSUER:?JWT_ISSUER is required}
-      LEAD_DOCS_GATEWAY_URL: http://localhost:8080/leads
-      LEAD_DOCS_PUBLIC_URL: http://localhost:8080/leads
+      JWT_ISSUER: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/auth
+      LEAD_DOCS_GATEWAY_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/leads
+      LEAD_DOCS_PUBLIC_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/leads
     depends_on:
       postgres-lead:
         condition: service_healthy
@@ -140,6 +211,7 @@ services:
       - albru-network
 
   recruitment-service:
+    profiles: ["business"]
     build:
       context: ./recruitment-service
     environment:
@@ -151,9 +223,9 @@ services:
       RECRUITMENT_REDIS_HOST: redis
       RECRUITMENT_REDIS_PORT: 6379
       JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
-      JWT_ISSUER: ${JWT_ISSUER:?JWT_ISSUER is required}
-      RECRUITMENT_DOCS_GATEWAY_URL: http://localhost:8080/recruitment
-      RECRUITMENT_DOCS_PUBLIC_URL: http://localhost:8080/recruitment
+      JWT_ISSUER: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/auth
+      RECRUITMENT_DOCS_GATEWAY_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/recruitment
+      RECRUITMENT_DOCS_PUBLIC_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/recruitment
     depends_on:
       postgres-core:
         condition: service_healthy
@@ -170,6 +242,7 @@ services:
       - albru-network
 
   schedule-service:
+    profiles: ["business"]
     build:
       context: ./schedule-service
     environment:
@@ -179,9 +252,9 @@ services:
       SCHEDULE_DB_USERNAME: postgres
       SCHEDULE_DB_PASSWORD: postgres
       JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
-      JWT_ISSUER: ${JWT_ISSUER:?JWT_ISSUER is required}
-      SCHEDULE_DOCS_GATEWAY_URL: http://localhost:8080/schedule
-      SCHEDULE_DOCS_PUBLIC_URL: http://localhost:8080/schedule
+      JWT_ISSUER: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/auth
+      SCHEDULE_DOCS_GATEWAY_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/schedule
+      SCHEDULE_DOCS_PUBLIC_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/schedule
     depends_on:
       postgres-core:
         condition: service_healthy
@@ -195,7 +268,61 @@ services:
     networks:
       - albru-network
 
+  call-service:
+    profiles: ["cellphone"]
+    build:
+      context: ./call-service
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_TOOL_OPTIONS: -Xms256m -Xmx512m
+      CALL_DB_URL: jdbc:postgresql://postgres-call:5432/call_db
+      CALL_DB_USERNAME: postgres
+      CALL_DB_PASSWORD: postgres
+      ASTERISK_ARI_BASE_URL: http://asterisk:8088
+      ASTERISK_ARI_WS_URL: ws://asterisk:8088/ari/events
+      ASTERISK_ARI_USERNAME: callservice
+      ASTERISK_ARI_PASSWORD: callservice_secret
+      ASTERISK_ARI_APP_NAME: albrugroup-stasis
+      ASTERISK_AMI_HOST: asterisk
+      ASTERISK_AMI_PORT: 5038
+      ASTERISK_AMI_USERNAME: callservice
+      ASTERISK_AMI_PASSWORD: callservice_secret
+      ASTERISK_RECORDING_DIR: /var/spool/asterisk/recording
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET_RECORDINGS: recordings
+      JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:-}
+      JWT_ISSUER: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/auth
+      CALL_DOCS_GATEWAY_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/calls
+      CALL_DOCS_PUBLIC_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/calls
+    ports:
+      # Fase 1: exponemos el puerto del call-service al host para poder hacer pruebas
+      # directas con curl/Postman sin pasar por el gateway. En Fase 2 esto deberia
+      # eliminarse (el acceso entra por el gateway-service en 8080).
+      - "8086:8086"
+    volumes:
+      # Compartimos las grabaciones para que call-service las pueda leer y subir a MinIO
+      - asterisk-recordings:/var/spool/asterisk/recording:ro
+    depends_on:
+      postgres-call:
+        condition: service_healthy
+      asterisk:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8086/actuator/health/readiness | grep '\"status\":\"UP\"' >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - albru-network
+
   gateway-service:
+    profiles: ["business"]
     build:
       context: ./gateway-service
     environment:
@@ -208,12 +335,13 @@ services:
       LEAD_SERVICE_URI: http://lead-service:8083
       RECRUITMENT_SERVICE_URI: http://recruitment-service:8084
       SCHEDULE_SERVICE_URI: http://schedule-service:8085
+      CALL_SERVICE_URI: http://call-service:8086
       AUTH_SERVICE_URL: http://auth-service:8081
       SCHEDULE_SERVICE_URL: http://schedule-service:8085
-      FRONTEND_URL: http://localhost:4200
-      CORS_ALLOWED_ORIGIN_PATTERNS: http://localhost:4200,http://localhost:4201,http://127.0.0.1:4200,http://127.0.0.1:4201
+      FRONTEND_URL: http://${PUBLIC_HOST:-localhost}:${FRONTEND_HOST_PORT:-4200}
+      CORS_ALLOWED_ORIGIN_PATTERNS: http://${PUBLIC_HOST:-localhost}:${FRONTEND_HOST_PORT:-4200},http://localhost:${FRONTEND_HOST_PORT:-4200},http://127.0.0.1:${FRONTEND_HOST_PORT:-4200}
       JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
-      JWT_ISSUER: ${JWT_ISSUER:?JWT_ISSUER is required}
+      JWT_ISSUER: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/auth
     depends_on:
       redis:
         condition: service_healthy
@@ -228,7 +356,7 @@ services:
       schedule-service:
         condition: service_healthy
     ports:
-      - "8080:8080"
+      - "${GATEWAY_HOST_PORT:-8080}:8080"
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O - http://localhost:8080/actuator/health/readiness | grep '\"status\":\"UP\"' >/dev/null || exit 1"]
       interval: 15s
@@ -240,13 +368,16 @@ services:
       - albru-network
 
   frontend:
+    profiles: ["business"]
     build:
       context: ./frontend
+      args:
+        GATEWAY_BASE_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}
     depends_on:
       gateway-service:
         condition: service_healthy
     ports:
-      - "4200:80"
+      - "${FRONTEND_HOST_PORT:-4200}:80"
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1/ >/dev/null || exit 1"]
       interval: 15s
@@ -260,6 +391,10 @@ services:
 volumes:
   postgres-core-data:
   postgres-lead-data:
+  postgres-call-data:
+  minio-data:
+  asterisk-recordings:
+  asterisk-logs:
 
 networks:
   albru-network:

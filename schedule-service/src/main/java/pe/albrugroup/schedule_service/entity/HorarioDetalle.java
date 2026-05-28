@@ -33,9 +33,9 @@ public class HorarioDetalle {
     private LocalTime horaEntrada;
     @Column(nullable = false)
     private LocalTime horaSalida;
-    @Column(nullable = false)
+    @Column
     private LocalTime inicioAlmuerzo;
-    @Column(nullable = false)
+    @Column
     private LocalTime finAlmuerzo;
     @Builder.Default
     @Column(nullable = false)

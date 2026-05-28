@@ -1,386 +1,744 @@
-<section class="panel panel--form">
-  <div class="panel__header">
+<section class="admin-panel">
+  <div class="admin-panel__header">
     <div>
-      <span class="panel__eyebrow">Bloque 1</span>
+      <p-tag value="Personal" severity="info" />
       <h3>Alta de personal</h3>
+      <p>Completa los datos, revisa el resumen y confirma el registro.</p>
     </div>
-    <span class="step-chip">Paso {{ currentStep }} de 4</span>
+    <p-tag [value]="'Paso ' + currentStep + ' de 4'" severity="secondary" />
   </div>
 
-  @if (currentStep === 1) {
-    <form [formGroup]="empleadoForm" class="form-grid">
-      <label class="field field--wide">
-        <span>Empresa contratista</span>
-        <select formControlName="idEmpresaContratista">
-          <option value="">No aplica</option>
-          @for (empresa of empresasContratistas; track empresa.id) {
-            <option [value]="empresa.id">{{ empresa.nombre }}</option>
-          }
-        </select>
-      </label>
+  <p-stepper [value]="currentStep" [linear]="true" styleClass="personal-stepper">
+    <p-step-item [value]="1">
+      <p-step>Datos personales</p-step>
+      <p-step-panel>
+        <ng-template #content>
+        <form [formGroup]="empleadoForm" class="form-grid">
+          <label class="field field--wide">
+            <span>Empresa contratista</span>
+            <p-select
+              formControlName="idEmpresaContratista"
+              [options]="empresaItems()"
+              optionLabel="label"
+              optionValue="value"
+              appendTo="body"
+            />
+          </label>
 
-      <label>
-        <span>Nombres</span>
-        <input type="text" formControlName="nombres" />
-      </label>
+          <label class="field">
+            <span>Nombres</span>
+            <input
+              pInputText
+              type="text"
+              formControlName="nombres"
+              [class.p-invalid]="isInvalid(empleadoForm, 'nombres')"
+              [attr.title]="isInvalid(empleadoForm, 'nombres') ? 'Campo obligatorio.' : null"
+            />
+          </label>
 
-      <label>
-        <span>Apellidos</span>
-        <input type="text" formControlName="apellidos" />
-      </label>
+          <label class="field">
+            <span>Apellidos</span>
+            <input
+              pInputText
+              type="text"
+              formControlName="apellidos"
+              [class.p-invalid]="isInvalid(empleadoForm, 'apellidos')"
+              [attr.title]="isInvalid(empleadoForm, 'apellidos') ? 'Campo obligatorio.' : null"
+            />
+          </label>
 
-      <label>
-        <span>Tipo de documento</span>
-        <select formControlName="tipoDocumento">
-          @for (option of documentoOptions; track option) {
-            <option [value]="option">{{ toLabel(option) }}</option>
-          }
-        </select>
-      </label>
+          <label class="field">
+            <span>Tipo de documento</span>
+            <p-select
+              formControlName="tipoDocumento"
+              [options]="optionItems(documentoOptions)"
+              optionLabel="label"
+              optionValue="value"
+              appendTo="body"
+            />
+          </label>
 
-      <label>
-        <span>Numero de documento</span>
-        <input type="text" formControlName="numeroDocumento" />
-      </label>
+          <label class="field">
+            <span>Numero de documento</span>
+            <input
+              pInputText
+              type="text"
+              formControlName="numeroDocumento"
+              [class.p-invalid]="isInvalid(empleadoForm, 'numeroDocumento')"
+              [attr.title]="isInvalid(empleadoForm, 'numeroDocumento') ? 'Campo obligatorio.' : null"
+            />
+          </label>
 
-      <label>
-        <span>Nacionalidad</span>
-        <select formControlName="nacionalidad">
-          @for (option of nacionalidadOptions; track option) {
-            <option [value]="option">{{ toLabel(option) }}</option>
-          }
-        </select>
-      </label>
+          <label class="field">
+            <span>Nacionalidad</span>
+            <p-select
+              formControlName="nacionalidad"
+              [options]="optionItems(nacionalidadOptions)"
+              optionLabel="label"
+              optionValue="value"
+              appendTo="body"
+            />
+          </label>
 
-      <app-date-field label="Fecha de nacimiento" formControlName="fechaNacimiento" />
+          <label class="field">
+            <span>Fecha de nacimiento</span>
+            <p-datepicker
+              [ngModel]="toPickerDate(empleadoForm.get('fechaNacimiento')?.value)"
+              [ngModelOptions]="{ standalone: true }"
+              dateFormat="dd/mm/yy"
+              [showIcon]="true"
+              [class.p-invalid]="isInvalid(empleadoForm, 'fechaNacimiento')"
+              [attr.title]="isInvalid(empleadoForm, 'fechaNacimiento') ? 'Campo obligatorio.' : null"
+              appendTo="body"
+              (ngModelChange)="setDateControl(empleadoForm, 'fechaNacimiento', $event)"
+            />
+          </label>
 
-      <label>
-        <span>Estado civil</span>
-        <select formControlName="estadoCivil">
-          @for (option of estadoCivilOptions; track option) {
-            <option [value]="option">{{ toLabel(option) }}</option>
-          }
-        </select>
-      </label>
+          <label class="field">
+            <span>Estado civil</span>
+            <p-select
+              formControlName="estadoCivil"
+              [options]="optionItems(estadoCivilOptions)"
+              optionLabel="label"
+              optionValue="value"
+              appendTo="body"
+            />
+          </label>
 
-      <label>
-        <span>Tiene hijos</span>
-        <select formControlName="tieneHijos">
-          <option value="false">No</option>
-          <option value="true">Si</option>
-        </select>
-      </label>
+          <label class="field">
+            <span>Tiene hijos</span>
+            <p-select
+              formControlName="tieneHijos"
+              [options]="noYesOptions"
+              optionLabel="label"
+              optionValue="value"
+              appendTo="body"
+            />
+          </label>
 
-      <label>
-        <span>Celular personal</span>
-        <input type="text" formControlName="celularPersonal" />
-      </label>
+          <label class="field">
+            <span>Celular personal</span>
+            <input
+              pInputText
+              type="text"
+              formControlName="celularPersonal"
+              [class.p-invalid]="isInvalid(empleadoForm, 'celularPersonal')"
+              [attr.title]="isInvalid(empleadoForm, 'celularPersonal') ? 'Campo obligatorio.' : null"
+            />
+          </label>
 
-      <label>
-        <span>Correo personal</span>
-        <input type="email" formControlName="correoPersonal" />
-      </label>
+          <label class="field">
+            <span>Correo personal</span>
+            <input
+              pInputText
+              type="email"
+              formControlName="correoPersonal"
+              [class.p-invalid]="isInvalid(empleadoForm, 'correoPersonal')"
+              [attr.title]="isInvalid(empleadoForm, 'correoPersonal') ? 'Ingresa un correo valido.' : null"
+            />
+          </label>
 
-      <label>
-        <span>Origen</span>
-        <select formControlName="origen">
-          @for (option of origenOptions; track option) {
-            <option [value]="option">{{ toLabel(option) }}</option>
-          }
-        </select>
-      </label>
+          <label class="field">
+            <span>Origen</span>
+            <p-select
+              formControlName="origen"
+              [options]="optionItems(origenOptions)"
+              optionLabel="label"
+              optionValue="value"
+              appendTo="body"
+            />
+          </label>
 
-      <label>
-        <span>Distrito</span>
-        <select formControlName="distrito">
-          @for (option of distritoOptions; track option) {
-            <option [value]="option">{{ toLabel(option) }}</option>
-          }
-        </select>
-      </label>
+          <label class="field">
+            <span>Distrito</span>
+            <p-select
+              formControlName="distrito"
+              [options]="optionItems(distritoOptions)"
+              optionLabel="label"
+              optionValue="value"
+              [filter]="true"
+              appendTo="body"
+            />
+          </label>
 
-      <label class="field field--wide">
-        <span>Direccion</span>
-        <input type="text" formControlName="direccion" />
-      </label>
+          <label class="field field--wide">
+            <span>Direccion</span>
+            <input
+              pInputText
+              type="text"
+              formControlName="direccion"
+              [class.p-invalid]="isInvalid(empleadoForm, 'direccion')"
+              [attr.title]="isInvalid(empleadoForm, 'direccion') ? 'Campo obligatorio.' : null"
+            />
+          </label>
 
-      <label>
-        <span>Banco</span>
-        <select formControlName="banco">
-          @for (option of bancoOptions; track option) {
-            <option [value]="option">{{ toLabel(option) }}</option>
-          }
-        </select>
-      </label>
+          <label class="field">
+            <span>Banco</span>
+            <p-select
+              formControlName="banco"
+              [options]="optionItems(bancoOptions)"
+              optionLabel="label"
+              optionValue="value"
+              appendTo="body"
+            />
+          </label>
 
-      <label>
-        <span>Cuenta bancaria</span>
-        <input type="text" formControlName="cuentaBancaria" />
-      </label>
+          <label class="field">
+            <span>Cuenta bancaria</span>
+            <input
+              pInputText
+              type="text"
+              formControlName="cuentaBancaria"
+              [class.p-invalid]="isInvalid(empleadoForm, 'cuentaBancaria')"
+              [attr.title]="isInvalid(empleadoForm, 'cuentaBancaria') ? 'Campo obligatorio.' : null"
+            />
+          </label>
 
-      <label>
-        <span>Cuenta interbancaria</span>
-        <input type="text" formControlName="cuentaInterbancaria" />
-      </label>
+          <label class="field">
+            <span>Cuenta interbancaria</span>
+            <input
+              pInputText
+              type="text"
+              formControlName="cuentaInterbancaria"
+              [class.p-invalid]="isInvalid(empleadoForm, 'cuentaInterbancaria')"
+              [attr.title]="isInvalid(empleadoForm, 'cuentaInterbancaria') ? 'Campo obligatorio.' : null"
+            />
+          </label>
 
-      <label>
-        <span>Cuenta propia</span>
-        <select formControlName="cuentaPropia">
-          <option value="true">Si</option>
-          <option value="false">No</option>
-        </select>
-      </label>
+          <label class="field">
+            <span>Cuenta propia</span>
+            <p-select
+              formControlName="cuentaPropia"
+              [options]="yesNoOptions"
+              optionLabel="label"
+              optionValue="value"
+              appendTo="body"
+            />
+          </label>
 
-      @if (!isOwnAccount()) {
-        <label>
-          <span>Parentesco</span>
-          <select formControlName="parentesco">
-            <option value="">No aplica</option>
-            @for (option of parentescoOptions; track option) {
-              <option [value]="option">{{ toLabel(option) }}</option>
-            }
-          </select>
-        </label>
-
-        <label>
-          <span>Celular transferencia</span>
-          <input type="text" formControlName="celularTransferencia" />
-        </label>
-      }
-    </form>
-
-    <div class="actions">
-      <button type="button" class="primary-button" (click)="continueToContract.emit()">
-        Continuar a contrato
-      </button>
-    </div>
-  }
-
-  @if (currentStep === 2) {
-    <form [formGroup]="contratoForm" class="form-grid">
-      <label>
-        <span>Puesto de trabajo</span>
-        <select formControlName="puestoTrabajo">
-          @for (option of puestoTrabajoOptions; track option) {
-            <option [value]="option">{{ toLabel(option) }}</option>
-          }
-        </select>
-      </label>
-
-      <label>
-        <span>Regimen</span>
-        <select formControlName="regimen">
-          @for (option of regimenOptions; track option) {
-            <option [value]="option">{{ toLabel(option) }}</option>
-          }
-        </select>
-      </label>
-
-      <label>
-        <span>Modalidad</span>
-        <select formControlName="modalidad">
-          @for (option of modalidadOptions; track option) {
-            <option [value]="option">{{ toLabel(option) }}</option>
-          }
-        </select>
-      </label>
-
-      <label>
-        <span>Seguro de salud</span>
-        <select formControlName="seguroSalud">
-          <option value="">No aplica</option>
-          @for (option of seguroSaludOptions; track option) {
-            <option [value]="option">{{ toLabel(option) }}</option>
-          }
-        </select>
-      </label>
-
-      <label>
-        <span>Sistema de pensiones</span>
-        <select formControlName="sistemaPensiones">
-          <option value="">No aplica</option>
-          @for (option of sistemaPensionesOptions; track option) {
-            <option [value]="option">{{ toLabel(option) }}</option>
-          }
-        </select>
-      </label>
-
-      <label>
-        <span>Sueldo base</span>
-        <input type="number" formControlName="sueldoBase" min="0.01" step="0.01" />
-      </label>
-
-      <app-date-field label="Fecha de inicio" formControlName="fechaInicio" />
-
-      <label class="switch-field">
-        <span>Contrato con fecha de fin</span>
-        <button
-          type="button"
-          class="switch-button"
-          [class.switch-button--on]="hasContractEndDate()"
-          (click)="setContractEndDate(!hasContractEndDate())"
-        >
-          {{ hasContractEndDate() ? 'Si' : 'No' }}
-        </button>
-      </label>
-
-      @if (hasContractEndDate()) {
-        <app-date-field label="Fecha de fin" formControlName="fechaFin" />
-      }
-    </form>
-
-    @if (submitErrorMessage) {
-      <p class="form-message form-message--error">{{ submitErrorMessage }}</p>
-    }
-
-    <div class="actions">
-      <button type="button" class="secondary-button" (click)="backToEmployee.emit()">Volver</button>
-      <button type="button" class="primary-button" (click)="continueToSchedule.emit()">
-        Continuar a horario
-      </button>
-    </div>
-  }
-
-  @if (currentStep === 3) {
-    <form [formGroup]="horarioForm" class="form-grid">
-      <app-date-field label="Fecha de inicio del horario" formControlName="fechaInicio" />
-
-      <label>
-        <span>Compensable</span>
-        <select formControlName="compensable">
-          <option value="true">Si</option>
-          <option value="false">No</option>
-        </select>
-      </label>
-
-      @if (!isAdvancedSchedule()) {
-        <div class="schedule-simple field--wide">
-          <div class="schedule-simple__times">
-            <label>
-              <span>Entrada</span>
-              <input type="time" formControlName="horaEntrada" (change)="applySimpleSchedule()" />
+          @if (!isOwnAccount()) {
+            <label class="field">
+              <span>Parentesco</span>
+              <p-select
+                formControlName="parentesco"
+                [options]="optionalOptionItems(parentescoOptions)"
+                optionLabel="label"
+                optionValue="value"
+                appendTo="body"
+              />
             </label>
-            <label>
-              <span>Salida</span>
-              <input type="time" formControlName="horaSalida" (change)="applySimpleSchedule()" />
-            </label>
-            <label>
-              <span>Inicio almuerzo</span>
-              <input type="time" formControlName="inicioAlmuerzo" (change)="applySimpleSchedule()" />
-            </label>
-            <label>
-              <span>Fin almuerzo</span>
-              <input type="time" formControlName="finAlmuerzo" (change)="applySimpleSchedule()" />
-            </label>
-          </div>
 
-          <div class="day-strip">
-            @for (day of diasSemanaOptions; track day) {
-              <button
-                type="button"
-                class="day-pill"
-                [class.day-pill--rest]="isRestDay(day)"
-                (click)="selectRestDay(day)"
-              >
-                {{ toLabel(day).slice(0, 3) }}
-              </button>
-            }
-          </div>
+            <label class="field">
+              <span>Celular transferencia</span>
+              <input pInputText type="text" formControlName="celularTransferencia" />
+            </label>
+          }
+        </form>
+
+        <div class="actions">
+          <button
+            pButton
+            type="button"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            label="Continuar al Contrato"
+            (click)="continueToContract.emit()"
+          ></button>
         </div>
-      }
+        </ng-template>
+      </p-step-panel>
+    </p-step-item>
 
-      <div class="field--wide schedule-mode-action">
-        <button type="button" class="icon-only-button" title="Configuracion avanzada" (click)="setAdvancedSchedule(!isAdvancedSchedule())">
-          <i class="ti ti-settings"></i>
-        </button>
-      </div>
+    <p-step-item [value]="2">
+      <p-step>Contrato</p-step>
+      <p-step-panel>
+        <ng-template #content>
+        <form [formGroup]="contratoForm" class="form-grid">
+          <label class="field">
+            <span>Puesto de trabajo</span>
+            <p-select
+              formControlName="puestoTrabajo"
+              [options]="optionItems(puestoTrabajoOptions)"
+              optionLabel="label"
+              optionValue="value"
+              [filter]="true"
+              [class.p-invalid]="isInvalid(contratoForm, 'puestoTrabajo')"
+              [attr.title]="isInvalid(contratoForm, 'puestoTrabajo') ? 'Campo obligatorio.' : null"
+              appendTo="body"
+            />
+          </label>
 
-      @if (isAdvancedSchedule()) {
-      <div class="schedule-grid field--wide" formArrayName="detalles">
-        @for (detalle of getScheduleRows(); track $index) {
-          <div class="schedule-card" [formGroupName]="$index">
-            <div class="schedule-card__header">
-              <strong>{{ toLabel(diasSemanaOptions[$index]) }}</strong>
-              <label class="schedule-card__toggle">
-                <span>Laborable</span>
-                <select formControlName="laborable">
-                  <option value="true">Si</option>
-                  <option value="false">No</option>
-                </select>
-              </label>
-            </div>
+          <label class="field">
+            <span>Regimen</span>
+            <p-select
+              formControlName="regimen"
+              [options]="optionItems(regimenOptions)"
+              optionLabel="label"
+              optionValue="value"
+              [class.p-invalid]="isInvalid(contratoForm, 'regimen')"
+              [attr.title]="isInvalid(contratoForm, 'regimen') ? 'Campo obligatorio.' : null"
+              appendTo="body"
+              (onChange)="setRegimen($event.value)"
+            />
+          </label>
 
-            <div class="schedule-card__grid">
-              <label>
-                <span>Entrada</span>
-                <input type="time" formControlName="horaEntrada" />
-              </label>
+          <label class="field">
+            <span>Modalidad</span>
+            <p-select
+              formControlName="modalidad"
+              [options]="optionItems(modalidadOptions)"
+              optionLabel="label"
+              optionValue="value"
+              [class.p-invalid]="isInvalid(contratoForm, 'modalidad')"
+              [attr.title]="isInvalid(contratoForm, 'modalidad') ? 'Campo obligatorio.' : null"
+              appendTo="body"
+              (onChange)="setModalidad($event.value)"
+            />
+          </label>
 
-              <label>
-                <span>Salida</span>
-                <input type="time" formControlName="horaSalida" />
-              </label>
+          @if (isPlanilla()) {
+            <label class="field">
+              <span>Seguro de salud</span>
+              <p-select
+                formControlName="seguroSalud"
+                [options]="optionItems(seguroSaludOptions)"
+                optionLabel="label"
+                optionValue="value"
+                appendTo="body"
+              />
+            </label>
 
-              <label>
-                <span>Inicio almuerzo</span>
-                <input type="time" formControlName="inicioAlmuerzo" />
-              </label>
+            <label class="field">
+              <span>Sistema de pensiones</span>
+              <p-select
+                formControlName="sistemaPensiones"
+                [options]="optionItems(sistemaPensionesOptions)"
+                optionLabel="label"
+                optionValue="value"
+                appendTo="body"
+              />
+            </label>
+          }
 
-              <label>
-                <span>Fin almuerzo</span>
-                <input type="time" formControlName="finAlmuerzo" />
-              </label>
-            </div>
-          </div>
+          <label class="field">
+            <span>Sueldo base</span>
+            <input
+              pInputText
+              type="number"
+              formControlName="sueldoBase"
+              min="0.01"
+              step="0.01"
+              [class.p-invalid]="isInvalid(contratoForm, 'sueldoBase')"
+              [attr.title]="isInvalid(contratoForm, 'sueldoBase') ? 'Ingresa un sueldo valido.' : null"
+            />
+          </label>
+
+          <label class="field">
+            <span>Fecha de inicio</span>
+            <p-datepicker
+              [ngModel]="toPickerDate(contratoForm.get('fechaInicio')?.value)"
+              [ngModelOptions]="{ standalone: true }"
+              dateFormat="dd/mm/yy"
+              [showIcon]="true"
+              [class.p-invalid]="isInvalid(contratoForm, 'fechaInicio')"
+              [attr.title]="isInvalid(contratoForm, 'fechaInicio') ? 'Campo obligatorio.' : null"
+              appendTo="body"
+              (ngModelChange)="setDateControl(contratoForm, 'fechaInicio', $event)"
+            />
+          </label>
+
+          <label class="field">
+            <span>Contrato con fecha de fin</span>
+            <p-togglebutton
+              [ngModel]="hasContractEndDate()"
+              [ngModelOptions]="{ standalone: true }"
+              onLabel="Con fecha de fin"
+              offLabel="Sin fecha de fin"
+              onIcon="pi pi-calendar"
+              offIcon="pi pi-infinity"
+              styleClass="contract-end-toggle"
+              (onChange)="setContractEndDate($event.checked)"
+            />
+          </label>
+
+          @if (hasContractEndDate()) {
+            <label class="field">
+              <span>Fecha de fin</span>
+              <p-datepicker
+                [ngModel]="toPickerDate(contratoForm.get('fechaFin')?.value)"
+                [ngModelOptions]="{ standalone: true }"
+                dateFormat="dd/mm/yy"
+                [showIcon]="true"
+                [class.p-invalid]="isInvalid(contratoForm, 'fechaFin')"
+                [attr.title]="isInvalid(contratoForm, 'fechaFin') ? 'Campo obligatorio.' : null"
+                appendTo="body"
+                (ngModelChange)="setDateControl(contratoForm, 'fechaFin', $event)"
+              />
+            </label>
+          }
+        </form>
+
+        @if (submitErrorMessage) {
+          <p-message severity="error" [text]="submitErrorMessage" />
         }
-      </div>
-      }
 
-      @if (submitErrorMessage) {
-        <p class="form-message form-message--error">{{ submitErrorMessage }}</p>
-      }
-    </form>
-
-    <div class="actions">
-      <button type="button" class="secondary-button" (click)="backToContract.emit()">Volver</button>
-      <button
-        type="button"
-        class="primary-button"
-        [disabled]="isSubmitting"
-        (click)="submitPersonalFlow.emit()"
-      >
-        {{ isSubmitting ? 'Registrando...' : 'Registrar empleado, contrato y horario' }}
-      </button>
-    </div>
-  }
-
-  @if (currentStep === 4 && creationResult; as result) {
-    <div class="result-card">
-      <span class="panel__eyebrow">Resultado</span>
-      <h3>Alta completada</h3>
-
-      <div class="result-grid">
-        <div>
-          <span class="result-label">Empleado ID</span>
-          <strong>{{ result.empleadoId }}</strong>
+        <div class="actions actions--split">
+          <button
+            pButton
+            type="button"
+            severity="secondary"
+            [outlined]="true"
+            icon="pi pi-arrow-left"
+            label="Volver"
+            (click)="backToEmployee.emit()"
+          ></button>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-arrow-right"
+            iconPos="right"
+            label="Continuar a horario"
+            (click)="continueToSchedule.emit()"
+          ></button>
         </div>
-        <div>
-          <span class="result-label">Username</span>
-          <strong>{{ result.username }}</strong>
-        </div>
-        <div>
-          <span class="result-label">Rol</span>
-          <strong>{{ toLabel(result.roles[0]) }}</strong>
-        </div>
-        <div>
-          <span class="result-label">Password inicializada</span>
-          <strong>{{ result.passwordInicializada ? 'Si' : 'No' }}</strong>
-        </div>
-      </div>
+        </ng-template>
+      </p-step-panel>
+    </p-step-item>
 
-      <div class="actions">
-        <button type="button" class="primary-button" (click)="resetFlow.emit()">Registrar otro</button>
-      </div>
-    </div>
-  }
+    <p-step-item [value]="3">
+      <p-step>Horario</p-step>
+      <p-step-panel>
+        <ng-template #content>
+        <form [formGroup]="horarioForm" class="form-grid">
+          <label class="field">
+            <span>Fecha de inicio del horario</span>
+            <p-datepicker
+              [ngModel]="toPickerDate(horarioForm.get('fechaInicio')?.value)"
+              [ngModelOptions]="{ standalone: true }"
+              dateFormat="dd/mm/yy"
+              [showIcon]="true"
+              appendTo="body"
+              (ngModelChange)="setDateControl(horarioForm, 'fechaInicio', $event)"
+            />
+          </label>
+
+          <label class="field">
+            <span>Compensable</span>
+            <p-togglebutton
+              [ngModel]="isCompensable()"
+              [ngModelOptions]="{ standalone: true }"
+              onLabel="SI"
+              offLabel="NO"
+              onIcon="pi pi-check"
+              offIcon="pi pi-times"
+              [styleClass]="isCompensable() ? 'compensable-toggle is-yes' : 'compensable-toggle is-no'"
+              (onChange)="setCompensable($event.checked)"
+            />
+          </label>
+
+          @if (!isAdvancedSchedule()) {
+            <div class="schedule-simple field--wide">
+              <div class="schedule-simple__times">
+                <label class="field field--time">
+                  <span>Entrada</span>
+                  <p-datepicker
+                    formControlName="horaEntrada"
+                    dataType="string"
+                    [timeOnly]="true"
+                    hourFormat="24"
+                    [stepMinute]="15"
+                    [showIcon]="true"
+                    icon="pi pi-clock"
+                    appendTo="body"
+                    (onSelect)="applySimpleSchedule()"
+                    (onInput)="applySimpleSchedule()"
+                  />
+                </label>
+                <label class="field field--time">
+                  <span>Salida</span>
+                  <p-datepicker
+                    formControlName="horaSalida"
+                    dataType="string"
+                    [timeOnly]="true"
+                    hourFormat="24"
+                    [stepMinute]="15"
+                    [showIcon]="true"
+                    icon="pi pi-clock"
+                    appendTo="body"
+                    (onSelect)="applySimpleSchedule()"
+                    (onInput)="applySimpleSchedule()"
+                  />
+                </label>
+                @if (usesLunchBreak()) {
+                  <label class="field field--time">
+                    <span>Inicio almuerzo</span>
+                    <p-datepicker
+                      formControlName="inicioAlmuerzo"
+                      dataType="string"
+                      [timeOnly]="true"
+                      hourFormat="24"
+                      [stepMinute]="15"
+                      [showIcon]="true"
+                      icon="pi pi-clock"
+                      appendTo="body"
+                      (onSelect)="applySimpleSchedule()"
+                      (onInput)="applySimpleSchedule()"
+                    />
+                  </label>
+                  <label class="field field--time">
+                    <span>Fin almuerzo</span>
+                    <p-datepicker
+                      formControlName="finAlmuerzo"
+                      dataType="string"
+                      [timeOnly]="true"
+                      hourFormat="24"
+                      [stepMinute]="15"
+                      [showIcon]="true"
+                      icon="pi pi-clock"
+                      appendTo="body"
+                      (onSelect)="applySimpleSchedule()"
+                      (onInput)="applySimpleSchedule()"
+                    />
+                  </label>
+                }
+              </div>
+
+              <div class="day-strip">
+                @for (day of diasSemanaOptions; track day) {
+                  <button
+                    type="button"
+                    class="day-toggle"
+                    [class.day-toggle--rest]="isRestDay(day)"
+                    (click)="selectRestDay(day)"
+                  >
+                    <p-tag
+                      [value]="toLabel(day).slice(0, 3)"
+                      [severity]="isRestDay(day) ? 'secondary' : 'success'"
+                    />
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          <div class="field--wide schedule-mode-action">
+            <button
+              pButton
+              type="button"
+              severity="secondary"
+              [outlined]="true"
+              icon="pi pi-cog"
+              [label]="isAdvancedSchedule() ? 'Usar horario simple' : 'Configuracion avanzada'"
+              (click)="setAdvancedSchedule(!isAdvancedSchedule())"
+            ></button>
+          </div>
+
+          @if (isAdvancedSchedule()) {
+            <div class="schedule-grid field--wide" formArrayName="detalles">
+              @for (detalle of getScheduleRows(); track $index) {
+                <section class="schedule-card" [formGroupName]="$index">
+                  <div class="schedule-card__header">
+                    <strong>{{ toLabel(diasSemanaOptions[$index]) }}</strong>
+                    <label class="field schedule-card__toggle">
+                      <span>Laborable</span>
+                      <p-select
+                        formControlName="laborable"
+                        [options]="yesNoOptions"
+                        optionLabel="label"
+                        optionValue="value"
+                        appendTo="body"
+                      />
+                    </label>
+                  </div>
+
+                  <div class="schedule-card__grid">
+                    <label class="field field--time">
+                      <span>Entrada</span>
+                      <p-datepicker
+                        formControlName="horaEntrada"
+                        dataType="string"
+                        [timeOnly]="true"
+                        hourFormat="24"
+                        [stepMinute]="15"
+                        [showIcon]="true"
+                        icon="pi pi-clock"
+                        appendTo="body"
+                      />
+                    </label>
+
+                    <label class="field field--time">
+                      <span>Salida</span>
+                      <p-datepicker
+                        formControlName="horaSalida"
+                        dataType="string"
+                        [timeOnly]="true"
+                        hourFormat="24"
+                        [stepMinute]="15"
+                        [showIcon]="true"
+                        icon="pi pi-clock"
+                        appendTo="body"
+                      />
+                    </label>
+
+                    @if (usesLunchBreak()) {
+                      <label class="field field--time">
+                        <span>Inicio almuerzo</span>
+                        <p-datepicker
+                          formControlName="inicioAlmuerzo"
+                          dataType="string"
+                          [timeOnly]="true"
+                          hourFormat="24"
+                          [stepMinute]="15"
+                          [showIcon]="true"
+                          icon="pi pi-clock"
+                          appendTo="body"
+                        />
+                      </label>
+
+                      <label class="field field--time">
+                        <span>Fin almuerzo</span>
+                        <p-datepicker
+                          formControlName="finAlmuerzo"
+                          dataType="string"
+                          [timeOnly]="true"
+                          hourFormat="24"
+                          [stepMinute]="15"
+                          [showIcon]="true"
+                          icon="pi pi-clock"
+                          appendTo="body"
+                        />
+                      </label>
+                    }
+                  </div>
+                </section>
+              }
+            </div>
+          }
+        </form>
+
+        @if (submitErrorMessage) {
+          <p-message severity="error" [text]="submitErrorMessage" />
+        }
+
+        <div class="actions actions--split">
+          <button
+            pButton
+            type="button"
+            severity="secondary"
+            [outlined]="true"
+            icon="pi pi-arrow-left"
+            label="Volver"
+            (click)="backToContract.emit()"
+          ></button>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-check"
+            label="Revisar y registrar"
+            [loading]="isSubmitting"
+            (click)="requestPersonalReview.emit()"
+          ></button>
+        </div>
+        </ng-template>
+      </p-step-panel>
+    </p-step-item>
+
+    <p-step-item [value]="4">
+      <p-step>Resultado</p-step>
+      <p-step-panel>
+        <ng-template #content>
+        @if (creationResult; as result) {
+          <div class="result-card">
+            <p-tag value="Alta completada" severity="success" />
+            <h3>Credenciales generadas</h3>
+
+            <dl class="review-grid">
+              <div>
+                <dt>Empleado ID</dt>
+                <dd>{{ result.empleadoId }}</dd>
+              </div>
+              <div>
+                <dt>Username</dt>
+                <dd>{{ result.username }}</dd>
+              </div>
+              <div>
+                <dt>Rol</dt>
+                <dd>{{ toLabel(result.roles[0]) }}</dd>
+              </div>
+              <div>
+                <dt>Password inicializada</dt>
+                <dd>{{ result.passwordInicializada ? 'Si' : 'No' }}</dd>
+              </div>
+            </dl>
+
+            <div class="actions">
+              <button
+                pButton
+                type="button"
+                icon="pi pi-plus"
+                label="Registrar otro"
+                (click)="resetFlow.emit()"
+              ></button>
+            </div>
+          </div>
+        } @else {
+          <p-message severity="info" text="Completa los pasos anteriores para generar el registro." />
+        }
+        </ng-template>
+      </p-step-panel>
+    </p-step-item>
+  </p-stepper>
 </section>
+
+<p-dialog
+  header="Confirmar alta de personal"
+  [visible]="isPersonalReviewVisible"
+  (visibleChange)="closePersonalReview($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  styleClass="personal-review-dialog"
+>
+  <dl class="review-grid review-grid--dialog">
+    <div>
+      <dt>Nombres y apellidos</dt>
+      <dd>{{ personalReviewSummary.nombreCompleto || '-' }}</dd>
+    </div>
+    <div>
+      <dt>Numero de documento</dt>
+      <dd>{{ personalReviewSummary.numeroDocumento || '-' }}</dd>
+    </div>
+    <div>
+      <dt>Correo personal</dt>
+      <dd>{{ personalReviewSummary.correoPersonal || '-' }}</dd>
+    </div>
+    <div>
+      <dt>Rol asignado</dt>
+      <dd>{{ toLabel(personalReviewSummary.rolAsignado) }}</dd>
+    </div>
+  </dl>
+
+  @if (submitErrorMessage) {
+    <p-message severity="error" [text]="submitErrorMessage" />
+  }
+
+  <div class="actions actions--end">
+    <button
+      pButton
+      type="button"
+      severity="secondary"
+      [outlined]="true"
+      label="Corregir"
+      icon="pi pi-pencil"
+      (click)="cancelPersonalReview.emit()"
+    ></button>
+    <button
+      pButton
+      type="button"
+      label="Confirmar registro"
+      icon="pi pi-check"
+      [loading]="isSubmitting"
+      (click)="confirmPersonalReview.emit()"
+    ></button>
+  </div>
+</p-dialog>

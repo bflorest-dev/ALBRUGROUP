@@ -3,7 +3,8 @@
     type="button"
     class="attendance-status__trigger"
     [class.is-open]="isOpen()"
-    [disabled]="isLoading"
+    [class.is-disabled]="disabled"
+    [disabled]="isLoading || disabled"
     [attr.aria-expanded]="isOpen()"
     (click)="toggleOpen()"
   >
@@ -15,11 +16,11 @@
     }
   </button>
 
-  @if (errorMessage) {
+  @if (errorMessage && !disabled) {
     <span class="attendance-status__error">{{ errorMessage }}</span>
   }
 
-  @if (isOpen()) {
+  @if (isOpen() && !disabled) {
     <div class="attendance-status__menu">
       @if (actions.length) {
         @for (action of actions; track action.id) {

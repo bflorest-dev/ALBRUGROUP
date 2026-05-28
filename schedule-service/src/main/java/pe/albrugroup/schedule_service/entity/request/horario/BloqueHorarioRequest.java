@@ -22,10 +22,8 @@ public class BloqueHorarioRequest {
     @NotNull(message = "horaSalida es obligatoria")
     private LocalTime horaSalida;
 
-    @NotNull(message = "inicioAlmuerzo es obligatorio")
     private LocalTime inicioAlmuerzo;
 
-    @NotNull(message = "finAlmuerzo es obligatorio")
     private LocalTime finAlmuerzo;
 
     @Builder.Default

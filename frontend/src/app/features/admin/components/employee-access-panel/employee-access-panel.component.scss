@@ -1,61 +1,44 @@
-.panel {
-  padding: 1.5rem;
-  border: 1px solid #d8e1eb;
-  border-radius: 1.5rem;
-  background: rgba(255, 255, 255, 0.94);
+:host {
+  display: block;
 }
 
-.panel__header {
+.admin-panel {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.5rem;
+  background: var(--app-surface-raised);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.admin-panel__header,
+.role-group__head,
+.pagination {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1.5rem;
 }
 
-.panel__eyebrow {
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+.admin-panel__header {
+  align-items: flex-start;
 }
 
-.panel h3 {
-  margin: 0.75rem 0;
+.admin-panel__header h3,
+.role-group__head h4 {
+  margin: 0.55rem 0 0.25rem;
+  color: var(--role-panel-text);
 }
 
-.ghost-button,
-.icon-button {
-  border: 0;
-  cursor: pointer;
-  font: inherit;
+.admin-panel__header p,
+.role-group__head span,
+td small {
+  color: var(--role-muted);
 }
 
-.ghost-button {
-  padding: 0.9rem 1rem;
-  border-radius: 0.9rem;
-  font-weight: 700;
-  color: #1c3f63;
-  background: #e8eef5;
-}
-
-.ghost-button:disabled,
-.icon-button:disabled {
-  opacity: 0.65;
-  cursor: wait;
-}
-
-.helper-text,
-.form-message {
+.admin-panel__header p {
   margin: 0;
-}
-
-.form-message--error {
-  color: #b42318;
-}
-
-.table-scroll {
-  overflow-x: auto;
 }
 
 .role-groups {
@@ -63,128 +46,100 @@
   gap: 1rem;
 }
 
+.role-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.role-filter__button {
+  padding: 0;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+.role-filter__button.is-active {
+  outline: 2px solid color-mix(in srgb, var(--role-accent) 55%, transparent 45%);
+  outline-offset: 2px;
+}
+
 .role-group {
   display: grid;
   gap: 0.75rem;
-  padding: 1rem;
-  border: 1px solid #e6ebf2;
-  border-radius: 1rem;
-  background: #f8fafc;
 }
 
-.role-group__head,
-.employee-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+.role-group__head {
+  justify-content: flex-start;
 }
 
-.role-group__head h4 {
-  margin: 0;
-}
-
-.role-group__head span,
-.employee-card span {
-  color: #5a6c7e;
-}
-
-.employee-cards {
+.loading-state {
+  min-height: 12rem;
   display: grid;
-  gap: 0.6rem;
-}
-
-.employee-card {
-  padding: 0.85rem;
-  border: 1px solid #e6ebf2;
-  border-radius: 0.9rem;
-  background: #ffffff;
-}
-
-.employee-card div {
-  display: grid;
-  gap: 0.25rem;
-}
-
-.access-card--inline {
-  padding: 0.85rem;
-  border: 1px solid #e6ebf2;
-  border-radius: 0.9rem;
-  background: #ffffff;
-}
-
-.employee-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.employee-table th,
-.employee-table td {
-  padding: 0.9rem 0.75rem;
-  text-align: left;
-  border-bottom: 1px solid #e6ebf2;
-  vertical-align: top;
-}
-
-.employee-table td span {
-  display: block;
-  margin-top: 0.25rem;
-  color: #5a6c7e;
-  font-size: 0.92rem;
-}
-
-.row-enter {
-  animation: row-slide-in 280ms ease-out;
+  place-items: center;
+  gap: 0.8rem;
+  color: var(--role-muted);
 }
 
 .actions-cell {
-  width: 5rem;
+  width: 6rem;
+  text-align: center;
 }
 
-.icon-button {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 999px;
-  background: #e8eef5;
+:host ::ng-deep .p-datatable table {
+  table-layout: fixed;
+}
+
+:host ::ng-deep .p-datatable th,
+:host ::ng-deep .p-datatable td {
+  vertical-align: middle;
+}
+
+:host ::ng-deep .p-datatable th:nth-child(1),
+:host ::ng-deep .p-datatable td:nth-child(1) {
+  width: 42%;
+}
+
+:host ::ng-deep .p-datatable th:nth-child(2),
+:host ::ng-deep .p-datatable td:nth-child(2),
+:host ::ng-deep .p-datatable th:nth-child(3),
+:host ::ng-deep .p-datatable td:nth-child(3) {
+  width: 22%;
 }
 
 .access-row td {
-  padding-top: 0;
-  background: #fafcfe;
+  background: var(--app-surface-soft);
 }
 
-.access-card {
+.access-grid {
   display: grid;
-  gap: 0.5rem;
-  padding: 0.85rem 0;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+td small {
+  display: block;
+  margin-top: 0.25rem;
 }
 
 .pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 1rem;
+  margin-top: 0.25rem;
 }
 
-@keyframes row-slide-in {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+:host ::ng-deep .p-progressspinner {
+  width: 2.5rem;
+  height: 2.5rem;
 }
 
 @media (max-width: 760px) {
-  .pagination,
-  .panel__header,
-  .role-group__head,
-  .employee-card {
-    flex-direction: column;
+  .admin-panel__header,
+  .pagination {
     align-items: stretch;
+    flex-direction: column;
+  }
+
+  .access-grid {
+    grid-template-columns: 1fr;
   }
 }

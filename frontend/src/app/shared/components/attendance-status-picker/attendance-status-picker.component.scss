@@ -38,6 +38,10 @@
   opacity: 0.8;
 }
 
+.attendance-status__trigger.is-disabled {
+  cursor: not-allowed;
+}
+
 .attendance-status__trigger i {
   color: var(--app-text-muted);
   font-size: 0.8rem;

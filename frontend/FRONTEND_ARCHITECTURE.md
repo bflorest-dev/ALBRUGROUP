@@ -172,6 +172,37 @@ Ejemplos de estado local:
 - animación activa
 - expansión visual temporal
 
+### Operational Gate
+
+En este proyecto existe una regla transversal para pantallas operativas como `GTR`, `ASESOR_VENTAS` y `BACKOFFICE`.
+
+Objetivo:
+- evitar que la UI permita ver o modificar datos operativos cuando el usuario aun no esta habilitado para ese flujo
+- centralizar esta decision en una sola capa reutilizable
+
+Reglas:
+- la decision no debe duplicarse manualmente en cada boton, tabla o formulario
+- la puerta de control debe vivir en `core` y exponerse a los features como una dependencia reutilizable
+- la pagina o facade consume la gate; no redefine la regla base
+
+Senales principales:
+- `canDisplayOperationalData`: controla si la pantalla puede mostrar bandejas, tablas o datos operativos
+- `canMutateOperationalData`: controla si la pantalla puede ejecutar acciones como asignar, guardar, tipificar o editar
+
+Interpretacion funcional:
+- `display` y `mutate` no siempre significan lo mismo
+- un flujo puede permitir mostrar datos antes de permitir modificaciones
+- las acciones operativas solo deben habilitarse cuando el usuario esta realmente operativo
+
+Regla de implementacion:
+- si una vista necesita bloquear acciones segun asistencia, presencia o estado operativo, debe consumir `OperationalGateService`
+- si el bloqueo afecta a todo el flujo, la decision debe concentrarse en el facade o en un servicio de `core`, no en condiciones dispersas dentro del HTML
+
+Beneficio esperado:
+- mantener consistencia visual y funcional entre vistas
+- evitar regresiones donde una pantalla deja editar aunque otra equivalente no lo permita
+- poder ajustar la regla operativa en un solo punto
+
 ## Modelos
 
 Separar cuando aporte claridad:

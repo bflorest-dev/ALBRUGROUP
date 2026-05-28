@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { BadgeModule } from 'primeng/badge';
 import { AttendanceFacade } from '../../facades/attendance.facade';
@@ -56,7 +56,22 @@ export class PrivateLayoutComponent {
   private readonly sessionService = inject(SessionService);
   protected readonly profileMenuOpen = signal(false);
   protected readonly attendanceErrorMessage = signal('');
+  private attendanceInitialized = false;
   protected readonly session = this.sessionService.session;
+  protected readonly isAdmin = computed(() => this.session()?.primaryRole === 'ADMINISTRADOR');
+  protected readonly attendanceStatusLabel = computed(() =>
+    this.isAdmin() ? 'ONLINE' : this.attendanceFacade.currentStatusMeta().label
+  );
+  protected readonly attendanceStatusColor = computed(() =>
+    this.isAdmin() ? '#37c676' : this.attendanceFacade.currentStatusMeta().color
+  );
+  protected readonly attendanceActions = computed(() =>
+    this.isAdmin() ? [] : this.attendanceFacade.availableActions()
+  );
+  protected readonly isAttendanceLoading = computed(() =>
+    this.isAdmin() ? false : this.attendanceFacade.isLoading()
+  );
+  protected readonly isAttendancePickerDisabled = computed(() => this.isAdmin());
   protected readonly themeClass = computed(() => {
     const primaryRole = this.session()?.primaryRole;
     return primaryRole ? ROLE_THEME_CLASS[primaryRole] ?? 'theme-admin' : 'theme-admin';
@@ -125,7 +140,16 @@ export class PrivateLayoutComponent {
   });
 
   constructor() {
-    this.attendanceFacade.initialize();
+    effect(() => {
+      const session = this.session();
+
+      if (!session || session.primaryRole === 'ADMINISTRADOR' || this.attendanceInitialized) {
+        return;
+      }
+
+      this.attendanceInitialized = true;
+      this.attendanceFacade.initialize();
+    });
   }
 
   protected submitAttendanceAction(actionId: AttendanceActionId): void {
@@ -143,6 +167,10 @@ export class PrivateLayoutComponent {
   }
 
   protected attendancePickerErrorMessage(): string {
+    if (this.isAdmin()) {
+      return '';
+    }
+
     const blockedExitMessage = this.attendanceErrorMessage();
     if (blockedExitMessage && this.asesorVentasState.assignedLeadCount() > 0) {
       return blockedExitMessage;

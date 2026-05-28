@@ -1,0 +1,29 @@
+services:
+  asterisk-lab:
+    build:
+      context: ./docker/asterisk-lab
+      args:
+        ASTERISK_VERSION: 22.9.0
+    image: albrugroup/asterisk-lab:22.9.0
+    container_name: albrugroup-asterisk-lab
+    hostname: asterisk-lab
+    volumes:
+      - ./docker/asterisk-lab/etc:/etc/asterisk:ro
+      - asterisk-lab-recordings:/var/spool/asterisk/recording
+      - asterisk-lab-logs:/var/log/asterisk
+    ports:
+      - "15060:5060/udp"
+      - "18088:8088"
+      - "15038:5038"
+      - "11000-11500:10000-10500/udp"
+    healthcheck:
+      test: ["CMD-SHELL", "asterisk -rx 'core show uptime' | grep -q 'System uptime' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    restart: "no"
+
+volumes:
+  asterisk-lab-recordings:
+  asterisk-lab-logs:

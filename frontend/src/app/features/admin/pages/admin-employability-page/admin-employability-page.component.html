@@ -1,23 +1,28 @@
 <section class="employability-page">
   <header class="hero">
-    <span class="hero__eyebrow">Administrador</span>
-    <div class="hero__row">
-      <div>
-        <h2>Empleabilidad</h2>
-        <p>Gestiona ofertas laborales, ampliaciones y estados desde recruitment.</p>
-      </div>
-      <button
-        type="button"
-        class="icon-action"
-        (click)="facade.toggleCreateForm()"
-        aria-label="Registrar oferta"
-      >
-        +
-      </button>
+    <div>
+      <p-tag value="Administrador" severity="info" />
+      <h2>Empleabilidad</h2>
+      <p>Gestiona ofertas laborales, ampliaciones y estados desde recruitment.</p>
     </div>
+    <button
+      pButton
+      type="button"
+      icon="pi pi-plus"
+      label="Nueva oferta"
+      (click)="facade.toggleCreateForm()"
+    ></button>
   </header>
 
-  @if (facade.showCreateForm()) {
+  <p-dialog
+    header="Registrar oferta laboral"
+    [visible]="facade.showCreateForm()"
+    (visibleChange)="!$event && facade.toggleCreateForm()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    [style]="{ width: 'min(52rem, 92vw)' }"
+  >
     <app-offer-registration-panel
       [createOfferForm]="facade.createOfferForm"
       [negocioOptions]="facade.negocioOptions"
@@ -29,7 +34,7 @@
       (cancel)="facade.toggleCreateForm()"
       (save)="facade.submitCreateOffer()"
     />
-  }
+  </p-dialog>
 
   <app-offer-list-panel
     [offers]="facade.offers()"

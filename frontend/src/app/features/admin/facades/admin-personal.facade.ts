@@ -57,12 +57,20 @@ type AccessLookupState =
   | { status: 'success'; requestId: number; empleadoId: number; usuario: UsuarioResponse }
   | { status: 'error'; requestId: number; empleadoId: number; message: string };
 
+export type PersonalReviewSummary = {
+  nombreCompleto: string;
+  numeroDocumento: string;
+  correoPersonal: string;
+  rolAsignado: string;
+};
+
 @Injectable()
 export class AdminPersonalFacade {
   private readonly requestTimeoutMs = 15000;
   private readonly formBuilder = inject(FormBuilder);
   private readonly adminRrhhService = inject(AdminRrhhService);
   private readonly authService = inject(AuthService);
+  private readonly modalidadesSinAlmuerzo = new Set(['PART_TIME', 'SEMI_FULL']);
   private nextRequestId = 1;
   private handledCreateFlowRequestId = 0;
 
@@ -325,6 +333,7 @@ export class AdminPersonalFacade {
   readonly currentStep = signal(1);
   readonly submitErrorMessage = signal('');
   readonly creationResult = signal<UsuarioResponse | null>(null);
+  readonly isPersonalReviewVisible = signal(false);
   readonly employeesPage = signal<PageResponse<EmpleadoResponse> | null>(null);
   readonly isLoadingEmployees = signal(false);
   readonly employeeListErrorMessage = signal('');
@@ -344,6 +353,17 @@ export class AdminPersonalFacade {
   );
 
   readonly isSubmitting = computed(() => this.createFlowState().status === 'loading');
+  readonly personalReviewSummary = computed<PersonalReviewSummary>(() => {
+    const empleado = this.empleadoForm.getRawValue();
+    const contrato = this.contratoForm.getRawValue();
+
+    return {
+      nombreCompleto: `${empleado.nombres.trim()} ${empleado.apellidos.trim()}`.trim(),
+      numeroDocumento: empleado.numeroDocumento.trim(),
+      correoPersonal: empleado.correoPersonal.trim(),
+      rolAsignado: contrato.puestoTrabajo
+    };
+  });
   readonly employeeRows = computed(() => this.employeesPage()?.content ?? []);
   readonly currentPage = computed(() => this.employeesPage()?.page ?? 0);
   readonly totalPages = computed(() => this.employeesPage()?.totalPages ?? 1);
@@ -403,6 +423,7 @@ export class AdminPersonalFacade {
         this.handledCreateFlowRequestId = state.requestId;
 
         untracked(() => {
+          this.isPersonalReviewVisible.set(false);
           this.creationResult.set(state.usuario);
           this.currentStep.set(4);
           this.loadEmployees(0, true);
@@ -484,6 +505,7 @@ export class AdminPersonalFacade {
     }
 
     this.horarioForm.controls.fechaInicio.setValue(this.contratoForm.controls.fechaInicio.getRawValue());
+    this.syncLunchBreakControls();
     this.currentStep.set(3);
   }
 
@@ -492,6 +514,28 @@ export class AdminPersonalFacade {
   }
 
   submitPersonalFlow(): void {
+    this.executePersonalFlow();
+  }
+
+  requestPersonalReview(): void {
+    if (!this.validatePersonalForms()) {
+      return;
+    }
+
+    this.submitErrorMessage.set('');
+    this.isPersonalReviewVisible.set(true);
+  }
+
+  cancelPersonalReview(): void {
+    this.isPersonalReviewVisible.set(false);
+  }
+
+  confirmPersonalReview(): void {
+    this.isPersonalReviewVisible.set(false);
+    this.executePersonalFlow();
+  }
+
+  private executePersonalFlow(): void {
     if (this.empleadoForm.invalid) {
       this.currentStep.set(1);
       this.empleadoForm.markAllAsTouched();
@@ -503,6 +547,8 @@ export class AdminPersonalFacade {
       this.contratoForm.markAllAsTouched();
       return;
     }
+
+    this.syncLunchBreakControls();
 
     if (this.horarioForm.invalid) {
       this.currentStep.set(3);
@@ -520,9 +566,34 @@ export class AdminPersonalFacade {
     });
   }
 
+  private validatePersonalForms(): boolean {
+    if (this.empleadoForm.invalid) {
+      this.currentStep.set(1);
+      this.empleadoForm.markAllAsTouched();
+      return false;
+    }
+
+    if (this.contratoForm.invalid) {
+      this.currentStep.set(2);
+      this.contratoForm.markAllAsTouched();
+      return false;
+    }
+
+    this.syncLunchBreakControls();
+
+    if (this.horarioForm.invalid) {
+      this.currentStep.set(3);
+      this.horarioForm.markAllAsTouched();
+      return false;
+    }
+
+    return true;
+  }
+
   resetFlow(): void {
     this.currentStep.set(1);
     this.creationResult.set(null);
+    this.isPersonalReviewVisible.set(false);
     this.submitErrorMessage.set('');
     this.empleadoForm.reset({
       nombres: '',
@@ -660,8 +731,8 @@ export class AdminPersonalFacade {
       puestoTrabajo: raw.puestoTrabajo,
       regimen: raw.regimen,
       modalidad: raw.modalidad,
-      seguroSalud: raw.seguroSalud ? raw.seguroSalud : null,
-      sistemaPensiones: raw.sistemaPensiones ? raw.sistemaPensiones : null,
+      seguroSalud: raw.regimen === 'PLANILLA' && raw.seguroSalud ? raw.seguroSalud : null,
+      sistemaPensiones: raw.regimen === 'PLANILLA' && raw.sistemaPensiones ? raw.sistemaPensiones : null,
       sueldoBase: Number(raw.sueldoBase),
       fechaInicio: raw.fechaInicio,
       fechaFin: raw.fechaFinHabilitada === 'true' && raw.fechaFin ? raw.fechaFin : null
@@ -669,19 +740,22 @@ export class AdminPersonalFacade {
   }
 
   private buildHorarioRequest(): Omit<RegistrarHorarioRequest, 'idEmpleado' | 'idContrato'> {
+    this.syncLunchBreakControls();
     this.syncSimpleScheduleRows();
     const raw = this.horarioForm.getRawValue();
+    const modalidad = this.contratoForm.controls.modalidad.getRawValue();
+    const requiereAlmuerzo = this.requiresLunchBreak(modalidad);
 
     return {
-      modalidad: this.contratoForm.controls.modalidad.getRawValue(),
+      modalidad,
       fechaInicio: raw.fechaInicio,
       compensable: raw.compensable === 'true',
       detalles: raw.detalles.map((detalle) => ({
         dia: detalle.dia,
         horaEntrada: detalle.horaEntrada,
         horaSalida: detalle.horaSalida,
-        inicioAlmuerzo: detalle.inicioAlmuerzo,
-        finAlmuerzo: detalle.finAlmuerzo,
+        inicioAlmuerzo: requiereAlmuerzo ? detalle.inicioAlmuerzo : null,
+        finAlmuerzo: requiereAlmuerzo ? detalle.finAlmuerzo : null,
         laborable: detalle.laborable === 'true'
       }))
     };
@@ -706,15 +780,70 @@ export class AdminPersonalFacade {
       return;
     }
 
+    const requiereAlmuerzo = this.requiresLunchBreak(this.contratoForm.controls.modalidad.getRawValue());
     for (const row of this.horarioForm.controls.detalles.controls) {
       row.patchValue({
         horaEntrada: raw.horaEntrada,
         horaSalida: raw.horaSalida,
-        inicioAlmuerzo: raw.inicioAlmuerzo,
-        finAlmuerzo: raw.finAlmuerzo,
+        inicioAlmuerzo: requiereAlmuerzo ? raw.inicioAlmuerzo : '',
+        finAlmuerzo: requiereAlmuerzo ? raw.finAlmuerzo : '',
         laborable: row.controls.dia.getRawValue() === raw.diaDescanso ? 'false' : 'true'
       });
     }
+  }
+
+  private syncLunchBreakControls(): void {
+    const requiereAlmuerzo = this.requiresLunchBreak(this.contratoForm.controls.modalidad.getRawValue());
+    const defaults = {
+      inicioAlmuerzo: '13:00',
+      finAlmuerzo: '14:00'
+    };
+
+    const controls = [
+      this.horarioForm.controls.inicioAlmuerzo,
+      this.horarioForm.controls.finAlmuerzo,
+      ...this.horarioForm.controls.detalles.controls.flatMap((row) => [
+        row.controls.inicioAlmuerzo,
+        row.controls.finAlmuerzo
+      ])
+    ];
+
+    for (const control of controls) {
+      control.setValidators(requiereAlmuerzo ? [Validators.required] : []);
+    }
+
+    if (requiereAlmuerzo) {
+      if (!this.horarioForm.controls.inicioAlmuerzo.getRawValue()) {
+        this.horarioForm.controls.inicioAlmuerzo.setValue(defaults.inicioAlmuerzo);
+      }
+
+      if (!this.horarioForm.controls.finAlmuerzo.getRawValue()) {
+        this.horarioForm.controls.finAlmuerzo.setValue(defaults.finAlmuerzo);
+      }
+
+      for (const row of this.horarioForm.controls.detalles.controls) {
+        if (!row.controls.inicioAlmuerzo.getRawValue()) {
+          row.controls.inicioAlmuerzo.setValue(defaults.inicioAlmuerzo);
+        }
+
+        if (!row.controls.finAlmuerzo.getRawValue()) {
+          row.controls.finAlmuerzo.setValue(defaults.finAlmuerzo);
+        }
+      }
+    } else {
+      this.horarioForm.controls.inicioAlmuerzo.setValue('');
+      this.horarioForm.controls.finAlmuerzo.setValue('');
+      for (const row of this.horarioForm.controls.detalles.controls) {
+        row.controls.inicioAlmuerzo.setValue('');
+        row.controls.finAlmuerzo.setValue('');
+      }
+    }
+
+    controls.forEach((control) => control.updateValueAndValidity({ emitEvent: false }));
+  }
+
+  private requiresLunchBreak(modalidad: string): boolean {
+    return !this.modalidadesSinAlmuerzo.has(modalidad);
   }
 
   private resetScheduleRows(): void {
@@ -734,6 +863,10 @@ export class AdminPersonalFacade {
   }
 
   private getToday(): string {
-    return new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const month = `${now.getMonth() + 1}`.padStart(2, '0');
+    const day = `${now.getDate()}`.padStart(2, '0');
+
+    return `${now.getFullYear()}-${month}-${day}`;
   }
 }

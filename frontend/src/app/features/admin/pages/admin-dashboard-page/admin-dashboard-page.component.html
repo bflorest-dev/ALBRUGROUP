@@ -1,6 +1,6 @@
 <section class="admin-page">
   <header class="hero">
-    <span class="hero__eyebrow">Administrador</span>
+    <p-tag value="Administrador" severity="info" />
     @if (mode === 'inicio') {
       <h2>Empleados activos</h2>
       <p>Personal con contrato vigente agrupado por rol operativo.</p>
@@ -35,6 +35,8 @@
       [isSubmitting]="facade.isSubmitting()"
       [submitErrorMessage]="facade.submitErrorMessage()"
       [creationResult]="facade.creationResult()"
+      [isPersonalReviewVisible]="facade.isPersonalReviewVisible()"
+      [personalReviewSummary]="facade.personalReviewSummary()"
       [empresasContratistas]="facade.empresasContratistas()"
       [documentoOptions]="facade.documentoOptions"
       [nacionalidadOptions]="facade.nacionalidadOptions"
@@ -54,6 +56,9 @@
       (backToEmployee)="facade.backToEmployee()"
       (backToContract)="facade.backToContract()"
       (submitPersonalFlow)="facade.submitPersonalFlow()"
+      (requestPersonalReview)="facade.requestPersonalReview()"
+      (cancelPersonalReview)="facade.cancelPersonalReview()"
+      (confirmPersonalReview)="facade.confirmPersonalReview()"
       (resetFlow)="facade.resetFlow()"
     />
 

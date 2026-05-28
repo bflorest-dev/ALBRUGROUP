@@ -1,13 +1,39 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
-import { AbstractControl, FormArray, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
+import { AbstractControl, FormArray, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { UsuarioResponse } from '../../../../shared/models/auth/usuario-response';
 import { EmpresaContratistaResponse } from '../../../../shared/models/rrhh/empresa-contratista-response';
 import { formatLabel } from '../../../../shared/utils/display-label';
+import { PersonalReviewSummary } from '../../facades/admin-personal.facade';
+import { ButtonModule } from 'primeng/button';
+import { DatePickerModule } from 'primeng/datepicker';
+import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
+import { SelectModule } from 'primeng/select';
+import { StepperModule } from 'primeng/stepper';
+import { TagModule } from 'primeng/tag';
+import { ToggleButtonModule } from 'primeng/togglebutton';
+
+type SelectOption = {
+  label: string;
+  value: string;
+};
 
 @Component({
   selector: 'app-personal-registration-panel',
-  imports: [ReactiveFormsModule, DateFieldComponent],
+  imports: [
+    ReactiveFormsModule,
+    FormsModule,
+    ButtonModule,
+    DatePickerModule,
+    DialogModule,
+    InputTextModule,
+    MessageModule,
+    SelectModule,
+    StepperModule,
+    TagModule,
+    ToggleButtonModule
+  ],
   templateUrl: './personal-registration-panel.component.html',
   styleUrl: './personal-registration-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -20,6 +46,8 @@ export class PersonalRegistrationPanelComponent {
   @Input({ required: true }) isSubmitting = false;
   @Input({ required: true }) submitErrorMessage = '';
   @Input({ required: true }) creationResult: UsuarioResponse | null = null;
+  @Input({ required: true }) isPersonalReviewVisible = false;
+  @Input({ required: true }) personalReviewSummary!: PersonalReviewSummary;
   @Input({ required: true }) empresasContratistas: EmpresaContratistaResponse[] = [];
   @Input({ required: true }) documentoOptions: string[] = [];
   @Input({ required: true }) nacionalidadOptions: string[] = [];
@@ -40,10 +68,85 @@ export class PersonalRegistrationPanelComponent {
   @Output() readonly backToEmployee = new EventEmitter<void>();
   @Output() readonly backToContract = new EventEmitter<void>();
   @Output() readonly submitPersonalFlow = new EventEmitter<void>();
+  @Output() readonly requestPersonalReview = new EventEmitter<void>();
+  @Output() readonly cancelPersonalReview = new EventEmitter<void>();
+  @Output() readonly confirmPersonalReview = new EventEmitter<void>();
   @Output() readonly resetFlow = new EventEmitter<void>();
 
+  protected readonly yesNoOptions: SelectOption[] = [
+    { label: 'Si', value: 'true' },
+    { label: 'No', value: 'false' }
+  ];
+  protected readonly noYesOptions: SelectOption[] = [
+    { label: 'No', value: 'false' },
+    { label: 'Si', value: 'true' }
+  ];
+
+  protected optionItems(options: string[]): SelectOption[] {
+    return options.map((option) => ({ label: this.toLabel(option), value: option }));
+  }
+
+  protected optionalOptionItems(options: string[]): SelectOption[] {
+    return [{ label: 'No aplica', value: '' }, ...this.optionItems(options)];
+  }
+
+  protected empresaItems(): SelectOption[] {
+    return [
+      { label: 'No aplica', value: '' },
+      ...this.empresasContratistas.map((empresa) => ({
+        label: empresa.nombre,
+        value: String(empresa.id)
+      }))
+    ];
+  }
+
   protected toLabel(value: string | null | undefined): string {
+    if (
+      value === 'BCP' ||
+      value === 'BBVA' ||
+      value === 'DNI' ||
+      value === 'CE' ||
+      value === 'SIS' ||
+      value === 'ESSALUD'
+    ) {
+      return value;
+    }
+
     return formatLabel(value);
+  }
+
+  protected isInvalid(form: FormGroup, controlName: string): boolean {
+    const control = form.get(controlName);
+    return Boolean(control?.invalid && (control.touched || control.dirty));
+  }
+
+  protected toPickerDate(value: unknown): Date | null {
+    if (value instanceof Date) {
+      return value;
+    }
+
+    if (typeof value !== 'string' || !value) {
+      return null;
+    }
+
+    const backendMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (backendMatch) {
+      return new Date(Number(backendMatch[1]), Number(backendMatch[2]) - 1, Number(backendMatch[3]));
+    }
+
+    const displayMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+    if (displayMatch) {
+      return new Date(Number(displayMatch[3]), Number(displayMatch[2]) - 1, Number(displayMatch[1]));
+    }
+
+    return null;
+  }
+
+  protected setDateControl(form: FormGroup, controlName: string, value: Date | string | null): void {
+    const control = form.get(controlName);
+    control?.setValue(this.toBackendDate(value));
+    control?.markAsDirty();
+    control?.markAsTouched();
   }
 
   protected getScheduleRows(): AbstractControl[] {
@@ -65,8 +168,50 @@ export class PersonalRegistrationPanelComponent {
     }
   }
 
+  protected isPlanilla(): boolean {
+    return this.contratoForm.get('regimen')?.value === 'PLANILLA';
+  }
+
+  protected setRegimen(regimen: string): void {
+    this.contratoForm.get('regimen')?.setValue(regimen);
+
+    if (regimen !== 'PLANILLA') {
+      this.contratoForm.patchValue({
+        seguroSalud: '',
+        sistemaPensiones: ''
+      });
+      return;
+    }
+
+    if (!this.contratoForm.get('seguroSalud')?.value) {
+      this.contratoForm.get('seguroSalud')?.setValue('SIS');
+    }
+
+    if (!this.contratoForm.get('sistemaPensiones')?.value) {
+      this.contratoForm.get('sistemaPensiones')?.setValue('ONP');
+    }
+  }
+
+  protected setModalidad(modalidad: string): void {
+    this.contratoForm.get('modalidad')?.setValue(modalidad);
+    this.syncLunchBreakByModalidad();
+    this.applySimpleSchedule();
+  }
+
+  protected usesLunchBreak(): boolean {
+    return this.usesLunchBreakFor(this.contratoForm.get('modalidad')?.value);
+  }
+
   protected isAdvancedSchedule(): boolean {
     return this.horarioForm.get('modoAvanzado')?.value === 'true';
+  }
+
+  protected isCompensable(): boolean {
+    return this.horarioForm.get('compensable')?.value === 'true';
+  }
+
+  protected setCompensable(enabled: boolean): void {
+    this.horarioForm.get('compensable')?.setValue(String(enabled));
   }
 
   protected setAdvancedSchedule(enabled: boolean): void {
@@ -85,8 +230,8 @@ export class PersonalRegistrationPanelComponent {
     const restDay = this.horarioForm.get('diaDescanso')?.value ?? 'DOMINGO';
     const horaEntrada = this.horarioForm.get('horaEntrada')?.value ?? '09:00';
     const horaSalida = this.horarioForm.get('horaSalida')?.value ?? '18:00';
-    const inicioAlmuerzo = this.horarioForm.get('inicioAlmuerzo')?.value ?? '13:00';
-    const finAlmuerzo = this.horarioForm.get('finAlmuerzo')?.value ?? '14:00';
+    const inicioAlmuerzo = this.usesLunchBreak() ? this.horarioForm.get('inicioAlmuerzo')?.value || '13:00' : '';
+    const finAlmuerzo = this.usesLunchBreak() ? this.horarioForm.get('finAlmuerzo')?.value || '14:00' : '';
 
     for (const row of this.getScheduleRows()) {
       row.patchValue({
@@ -101,5 +246,53 @@ export class PersonalRegistrationPanelComponent {
 
   protected isRestDay(day: string): boolean {
     return this.horarioForm.get('diaDescanso')?.value === day;
+  }
+
+  protected closePersonalReview(visible: boolean): void {
+    if (!visible) {
+      this.cancelPersonalReview.emit();
+    }
+  }
+
+  private toBackendDate(value: Date | string | null): string {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      const month = `${value.getMonth() + 1}`.padStart(2, '0');
+      const day = `${value.getDate()}`.padStart(2, '0');
+
+      return `${value.getFullYear()}-${month}-${day}`;
+    }
+
+    if (typeof value !== 'string' || !value) {
+      return '';
+    }
+
+    const displayMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+    if (displayMatch) {
+      return `${displayMatch[3]}-${displayMatch[2]}-${displayMatch[1]}`;
+    }
+
+    return value;
+  }
+
+  private syncLunchBreakByModalidad(): void {
+    if (!this.usesLunchBreak()) {
+      this.horarioForm.patchValue({
+        inicioAlmuerzo: '',
+        finAlmuerzo: ''
+      });
+      return;
+    }
+
+    if (!this.horarioForm.get('inicioAlmuerzo')?.value) {
+      this.horarioForm.get('inicioAlmuerzo')?.setValue('13:00');
+    }
+
+    if (!this.horarioForm.get('finAlmuerzo')?.value) {
+      this.horarioForm.get('finAlmuerzo')?.setValue('14:00');
+    }
+  }
+
+  private usesLunchBreakFor(modalidad: string | null | undefined): boolean {
+    return modalidad !== 'PART_TIME' && modalidad !== 'SEMI_FULL';
   }
 }

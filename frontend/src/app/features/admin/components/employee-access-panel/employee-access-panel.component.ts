@@ -1,4 +1,9 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { ButtonModule } from 'primeng/button';
+import { MessageModule } from 'primeng/message';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
 import { UsuarioResponse } from '../../../../shared/models/auth/usuario-response';
 import { EmpleadoResponse } from '../../../../shared/models/rrhh/empleado-response';
 import { EmpleadoRolResponse } from '../../../../shared/models/rrhh/empleado-rol-response';
@@ -11,6 +16,7 @@ export type ActiveEmployeeGroup = {
 
 @Component({
   selector: 'app-employee-access-panel',
+  imports: [ButtonModule, MessageModule, ProgressSpinnerModule, TableModule, TagModule],
   templateUrl: './employee-access-panel.component.html',
   styleUrl: './employee-access-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -29,6 +35,17 @@ export class EmployeeAccessPanelComponent {
   @Output() readonly reload = new EventEmitter<void>();
   @Output() readonly pageChange = new EventEmitter<number>();
   @Output() readonly toggleAccess = new EventEmitter<number>();
+
+  protected readonly selectedRole = signal('');
+
+  protected filteredGroups(): ActiveEmployeeGroup[] {
+    const role = this.selectedRole();
+    return role ? this.activeGroups.filter((group) => group.role === role) : this.activeGroups;
+  }
+
+  protected selectRole(role: string): void {
+    this.selectedRole.set(role);
+  }
 
   protected hasAccessLoaded(empleadoId: number): boolean {
     return empleadoId in this.accessByEmployeeId || !!this.accessErrorByEmployeeId[empleadoId];

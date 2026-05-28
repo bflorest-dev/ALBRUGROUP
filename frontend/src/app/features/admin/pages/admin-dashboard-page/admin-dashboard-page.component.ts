@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { TagModule } from 'primeng/tag';
 import { EmployeeAccessPanelComponent } from '../../components/employee-access-panel/employee-access-panel.component';
 import { PersonalRegistrationPanelComponent } from '../../components/personal-registration-panel/personal-registration-panel.component';
 import { AdminPersonalFacade } from '../../facades/admin-personal.facade';
 
 @Component({
   selector: 'app-admin-dashboard-page',
-  imports: [PersonalRegistrationPanelComponent, EmployeeAccessPanelComponent],
+  imports: [TagModule, PersonalRegistrationPanelComponent, EmployeeAccessPanelComponent],
   providers: [AdminPersonalFacade],
   templateUrl: './admin-dashboard-page.component.html',
   styleUrl: './admin-dashboard-page.component.scss',

@@ -1,69 +1,91 @@
-<section class="panel panel--form">
-  <div class="panel__header">
-    <div>
-      <span class="panel__eyebrow">Nueva oferta</span>
-      <h3>Registrar oferta laboral</h3>
-    </div>
-  </div>
+<form [formGroup]="createOfferForm" class="form-grid">
+  <label class="field">
+    <span>Codigo</span>
+    <input pInputText type="text" formControlName="codigo" />
+  </label>
 
-  <form [formGroup]="createOfferForm" class="form-grid">
-    <label>
-      <span>Codigo</span>
-      <input type="text" formControlName="codigo" />
-    </label>
+  <label class="field">
+    <span>Negocio</span>
+    <p-select
+      formControlName="negocio"
+      [options]="optionItems(negocioOptions)"
+      optionLabel="label"
+      optionValue="value"
+      appendTo="body"
+    />
+  </label>
 
-    <label>
-      <span>Negocio</span>
-      <select formControlName="negocio">
-        @for (option of negocioOptions; track option) {
-          <option [value]="option">{{ toLabel(option) }}</option>
-        }
-      </select>
-    </label>
+  <label class="field">
+    <span>Puesto objetivo</span>
+    <p-select
+      formControlName="puestoObjetivo"
+      [options]="optionItems(puestoObjetivoOptions)"
+      optionLabel="label"
+      optionValue="value"
+      appendTo="body"
+    />
+  </label>
 
-    <label>
-      <span>Puesto objetivo</span>
-      <select formControlName="puestoObjetivo">
-        @for (option of puestoObjetivoOptions; track option) {
-          <option [value]="option">{{ toLabel(option) }}</option>
-        }
-      </select>
-    </label>
+  <label class="field">
+    <span>Modalidad</span>
+    <p-select
+      formControlName="modalidad"
+      [options]="optionItems(modalidadOptions)"
+      optionLabel="label"
+      optionValue="value"
+      appendTo="body"
+    />
+  </label>
 
-    <label>
-      <span>Modalidad</span>
-      <select formControlName="modalidad">
-        @for (option of modalidadOptions; track option) {
-          <option [value]="option">{{ toLabel(option) }}</option>
-        }
-      </select>
-    </label>
+  <label class="field">
+    <span>Horario</span>
+    <p-select
+      formControlName="horario"
+      [options]="optionItems(horarioOptions)"
+      optionLabel="label"
+      optionValue="value"
+      appendTo="body"
+    />
+  </label>
 
-    <label>
-      <span>Horario</span>
-      <select formControlName="horario">
-        @for (option of horarioOptions; track option) {
-          <option [value]="option">{{ toLabel(option) }}</option>
-        }
-      </select>
-    </label>
+  <label class="field">
+    <span>Cantidad inicial</span>
+    <input pInputText type="number" formControlName="cantidadInicial" min="1" />
+  </label>
 
-    <label>
-      <span>Cantidad inicial</span>
-      <input type="number" formControlName="cantidadInicial" min="1" />
-    </label>
+  <label class="field">
+    <span>Plazo inicial</span>
+    <p-datepicker
+      [ngModel]="toPickerDate(createOfferForm.get('plazoInicial')?.value)"
+      [ngModelOptions]="{ standalone: true }"
+      dateFormat="dd/mm/yy"
+      [showIcon]="true"
+      appendTo="body"
+      (ngModelChange)="setDateControl(createOfferForm, 'plazoInicial', $event)"
+    />
+  </label>
+</form>
 
-    <app-date-field label="Plazo inicial" formControlName="plazoInicial" />
-  </form>
+@if (createErrorMessage) {
+  <p-message severity="error" [text]="createErrorMessage" />
+}
 
-  @if (createErrorMessage) {
-    <p class="form-message form-message--error">{{ createErrorMessage }}</p>
-  }
-
-  <div class="actions">
-    <button type="button" class="secondary-button" (click)="cancel.emit()">Cancelar</button>
-    <button type="button" class="primary-button" [disabled]="isCreatingOffer" (click)="save.emit()">
-      {{ isCreatingOffer ? 'Registrando...' : 'Guardar oferta' }}
-    </button>
-  </div>
-</section>
+<div class="actions">
+  <button
+    pButton
+    type="button"
+    severity="secondary"
+    [outlined]="true"
+    icon="pi pi-times"
+    label="Cancelar"
+    (click)="cancel.emit()"
+  ></button>
+  <button
+    pButton
+    type="button"
+    icon="pi pi-save"
+    label="Guardar oferta"
+    [loading]="isCreatingOffer"
+    (click)="save.emit()"
+  ></button>
+</div>

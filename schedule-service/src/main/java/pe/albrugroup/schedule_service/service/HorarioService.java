@@ -10,10 +10,12 @@ import pe.albrugroup.schedule_service.entity.ExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.Horario;
 import pe.albrugroup.schedule_service.entity.PoliticaModalidad;
 import pe.albrugroup.schedule_service.entity.request.PageRequest;
+import pe.albrugroup.schedule_service.entity.request.horario.BloqueHorarioRequest;
 import pe.albrugroup.schedule_service.entity.request.horario.FinalizarHorarioRequest;
 import pe.albrugroup.schedule_service.entity.request.horario.RegistrarExcepcionHorarioRequest;
 import pe.albrugroup.schedule_service.entity.request.horario.RegistrarHorarioRequest;
 import pe.albrugroup.schedule_service.entity.request.horario.ReemplazarHorarioRequest;
+import pe.albrugroup.schedule_service.entity.enums.ModalidadContrato;
 import pe.albrugroup.schedule_service.entity.response.PageResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.ExcepcionHorarioResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.HorarioMesResponse;
@@ -49,6 +51,7 @@ public class HorarioService implements IHorario {
     @Transactional
     public HorarioResponse registrarHorario(RegistrarHorarioRequest request) {
         validarDiasDuplicados(request.getDetalles().stream().map(detalle -> detalle.getDia()).toList());
+        normalizarAlmuerzoPorModalidad(request.getModalidad(), request.getDetalles());
         validarSolapamiento(request.getIdEmpleado(), request.getFechaInicio(), null, null);
 
         Horario horario = mapper.toEntity(request);
@@ -81,6 +84,7 @@ public class HorarioService implements IHorario {
 
         validarSolapamiento(actual.getIdEmpleado(), request.getFechaInicio(), null, actual.getId());
         validarDiasDuplicados(request.getDetalles().stream().map(detalle -> detalle.getDia()).toList());
+        normalizarAlmuerzoPorModalidad(request.getModalidad(), request.getDetalles());
 
         Horario nuevo = Horario.builder()
                 .idEmpleado(actual.getIdEmpleado())
@@ -262,6 +266,33 @@ public class HorarioService implements IHorario {
         if (new HashSet<>(dias).size() != dias.size()) {
             throw new BadRequestException("No se puede repetir el dia en los detalles del horario");
         }
+    }
+
+    private void normalizarAlmuerzoPorModalidad(ModalidadContrato modalidad, List<BloqueHorarioRequest> detalles) {
+        if (!requiereAlmuerzo(modalidad)) {
+            detalles.forEach(detalle -> {
+                detalle.setInicioAlmuerzo(null);
+                detalle.setFinAlmuerzo(null);
+            });
+            return;
+        }
+
+        List<String> diasSinAlmuerzo = detalles.stream()
+                .filter(detalle -> detalle.getInicioAlmuerzo() == null || detalle.getFinAlmuerzo() == null)
+                .map(detalle -> detalle.getDia().name())
+                .toList();
+
+        if (!diasSinAlmuerzo.isEmpty()) {
+            throw new BadRequestException(
+                    "inicioAlmuerzo y finAlmuerzo son obligatorios para la modalidad " + modalidad,
+                    modalidad,
+                    diasSinAlmuerzo
+            );
+        }
+    }
+
+    private boolean requiereAlmuerzo(ModalidadContrato modalidad) {
+        return modalidad != ModalidadContrato.PART_TIME && modalidad != ModalidadContrato.SEMI_FULL;
     }
 
     private ExcepcionHorario getExcepcionById(Long idHorario, Long idExcepcion) {

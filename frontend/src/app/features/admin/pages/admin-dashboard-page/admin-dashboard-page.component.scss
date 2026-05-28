@@ -4,17 +4,11 @@
 }
 
 .hero {
-  padding: 1.75rem;
-  border-radius: 1.5rem;
-  color: var(--role-hero-text);
-  background: var(--role-hero-bg);
-}
-
-.hero__eyebrow {
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  padding: 1.25rem;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.5rem;
+  background: var(--app-surface-raised);
+  box-shadow: var(--app-shadow-soft);
 }
 
 .hero h2 {
@@ -23,7 +17,7 @@
 
 .hero p {
   margin-bottom: 0;
-  color: var(--role-hero-muted);
+  color: var(--role-muted);
 }
 
 .admin-grid {

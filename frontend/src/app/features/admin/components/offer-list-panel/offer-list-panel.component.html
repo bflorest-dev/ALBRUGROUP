@@ -1,152 +1,205 @@
-<section class="panel">
-  <div class="panel__header panel__header--wrap">
+<section class="admin-panel">
+  <div class="admin-panel__header">
     <div>
-      <span class="panel__eyebrow">Listado</span>
+      <p-tag value="Empleabilidad" severity="info" />
       <h3>Ofertas laborales</h3>
+      <p>Gestiona estados y ampliaciones de recruitment.</p>
     </div>
 
     <div class="toolbar">
-      <select (change)="emitEstadoFilter($event)">
-        <option value="">Todos los estados</option>
-        @for (option of estadoOptions; track option) {
-          <option [value]="option">{{ toLabel(option) }}</option>
-        }
-      </select>
-
-      <button type="button" class="ghost-button" (click)="reload.emit()">Recargar</button>
+      <p-select
+        [options]="estadoFilterItems()"
+        optionLabel="label"
+        optionValue="value"
+        appendTo="body"
+        (onChange)="emitEstadoFilterValue($event.value)"
+      />
+      <button
+        pButton
+        type="button"
+        severity="secondary"
+        [outlined]="true"
+        icon="pi pi-refresh"
+        label="Recargar"
+        (click)="reload.emit()"
+      ></button>
     </div>
   </div>
 
   @if (listErrorMessage) {
-    <p class="form-message form-message--error">{{ listErrorMessage }}</p>
+    <p-message severity="error" [text]="listErrorMessage" />
   }
 
   @if (isLoadingOffers) {
-    <p class="helper-text">Cargando ofertas laborales...</p>
-  } @else if (offers.length) {
-    <div class="offer-list">
-      @for (offer of offers; track offer.id) {
-        <article class="offer-card">
-          <div class="offer-card__header">
-            <div>
-              <h4>{{ offer.codigo }}</h4>
-              <p>{{ toLabel(offer.negocio) }} · {{ toLabel(offer.puestoObjetivo) }}</p>
-            </div>
-
-            <div class="offer-card__actions">
-              <button
-                type="button"
-                class="icon-button"
-                (click)="toggleExpansion.emit(offer.id)"
-                aria-label="Registrar ampliacion"
-              >
-                +
-              </button>
-            </div>
-          </div>
-
-          <div class="offer-card__meta">
-            <span><strong>Modalidad:</strong> {{ toLabel(offer.modalidad) }}</span>
-            <span><strong>Horario:</strong> {{ toLabel(offer.horario) }}</span>
-            <span><strong>Cantidad inicial:</strong> {{ offer.cantidadInicial }}</span>
-            <span><strong>Plazo inicial:</strong> {{ offer.plazoInicial }}</span>
-            <span><strong>Estado:</strong> {{ toLabel(offer.estado) }}</span>
-          </div>
-
-          <div class="offer-card__status">
-            <select [value]="getDraftEstado(offer)" (change)="emitStatusDraftChange(offer.id, $event)">
-              @for (option of estadoOptions; track option) {
-                <option [value]="option">{{ toLabel(option) }}</option>
-              }
-            </select>
-
-            <button
-              type="button"
-              class="secondary-button"
-              [disabled]="isStatusLoading(offer.id)"
-              (click)="updateEstado.emit(offer.id)"
-            >
-              {{ isStatusLoading(offer.id) ? 'Actualizando...' : 'Actualizar estado' }}
-            </button>
-          </div>
-
-          @if (getStatusError(offer.id)) {
-            <p class="form-message form-message--error">{{ getStatusError(offer.id) }}</p>
-          }
-
-          @if (isExpansionOpen(offer.id)) {
-            <div class="expansion-box">
-              <h5>Nueva ampliacion</h5>
-
-              <form [formGroup]="expansionForm" class="form-grid form-grid--compact">
-                <label>
-                  <span>Cantidad</span>
-                  <input type="number" formControlName="cantidad" min="1" />
-                </label>
-
-                <app-date-field label="Plazo" formControlName="plazo" />
-              </form>
-
-              @if (getExpansionError(offer.id)) {
-                <p class="form-message form-message--error">{{ getExpansionError(offer.id) }}</p>
-              }
-
-              <div class="actions">
-                <button type="button" class="secondary-button" (click)="toggleExpansion.emit(offer.id)">
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  class="primary-button"
-                  [disabled]="isExpansionLoading(offer.id)"
-                  (click)="submitExpansion.emit(offer.id)"
-                >
-                  {{ isExpansionLoading(offer.id) ? 'Guardando...' : 'Guardar ampliacion' }}
-                </button>
-              </div>
-            </div>
-          }
-
-          <div class="ampliaciones">
-            <span class="ampliaciones__title">Ampliaciones</span>
-
-            @if (offer.ampliaciones.length) {
-              <div class="ampliaciones__list">
-                @for (ampliacion of offer.ampliaciones; track ampliacion.createdAt) {
-                  <div class="ampliacion-chip">
-                    <span>Cantidad: {{ ampliacion.cantidad }}</span>
-                    <span>Plazo: {{ ampliacion.plazo }}</span>
-                  </div>
-                }
-              </div>
-            } @else {
-              <p class="helper-text">Sin ampliaciones registradas.</p>
-            }
-          </div>
-        </article>
-      }
+    <div class="loading-state">
+      <p-progress-spinner ariaLabel="Cargando ofertas" />
+      <span>Cargando ofertas laborales...</span>
     </div>
+  } @else if (offers.length) {
+    <p-table [value]="offers" dataKey="id" styleClass="p-datatable-sm" [rowHover]="true">
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Codigo</th>
+          <th>Negocio</th>
+          <th>Puesto</th>
+          <th>Modalidad</th>
+          <th>Cantidad</th>
+          <th>Plazo</th>
+          <th>Estado</th>
+          <th class="actions-cell">Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-offer>
+        <tr>
+          <td><strong>{{ offer.codigo }}</strong></td>
+          <td>{{ toLabel(offer.negocio) }}</td>
+          <td>{{ toLabel(offer.puestoObjetivo) }}</td>
+          <td>{{ toLabel(offer.modalidad) }}</td>
+          <td>{{ offer.cantidadInicial }}</td>
+          <td>{{ formatDate(offer.plazoInicial) }}</td>
+          <td><p-tag [value]="toLabel(offer.estado)" severity="secondary" /></td>
+          <td class="actions-cell">
+            <button
+              pButton
+              type="button"
+              severity="secondary"
+              [text]="true"
+              icon="pi pi-plus"
+              (click)="toggleExpansion.emit(offer.id)"
+              aria-label="Registrar ampliacion"
+            ></button>
+          </td>
+        </tr>
+
+        <tr class="detail-row">
+          <td colspan="8">
+            <div class="detail-grid">
+              <label class="field">
+                <span>Actualizar estado</span>
+                <p-select
+                  [ngModel]="getDraftEstado(offer)"
+                  [ngModelOptions]="{ standalone: true }"
+                  [options]="optionItems(estadoOptions)"
+                  optionLabel="label"
+                  optionValue="value"
+                  appendTo="body"
+                  (onChange)="emitStatusDraftValue(offer.id, $event.value)"
+                />
+              </label>
+
+              <div class="detail-actions">
+                <button
+                  pButton
+                  type="button"
+                  severity="secondary"
+                  [outlined]="true"
+                  icon="pi pi-check"
+                  label="Actualizar estado"
+                  [loading]="isStatusLoading(offer.id)"
+                  (click)="updateEstado.emit(offer.id)"
+                ></button>
+              </div>
+            </div>
+
+            @if (getStatusError(offer.id)) {
+              <p-message severity="error" [text]="getStatusError(offer.id)" />
+            }
+
+            @if (isExpansionOpen(offer.id)) {
+              <div class="expansion-box">
+                <h4>Nueva ampliacion</h4>
+
+                <form [formGroup]="expansionForm" class="form-grid form-grid--compact">
+                  <label class="field">
+                    <span>Cantidad</span>
+                    <input pInputText type="number" formControlName="cantidad" min="1" />
+                  </label>
+
+                  <label class="field">
+                    <span>Plazo</span>
+                    <p-datepicker
+                      [ngModel]="toPickerDate(expansionForm.get('plazo')?.value)"
+                      [ngModelOptions]="{ standalone: true }"
+                      dateFormat="dd/mm/yy"
+                      [showIcon]="true"
+                      appendTo="body"
+                      (ngModelChange)="setDateControl(expansionForm, 'plazo', $event)"
+                    />
+                  </label>
+                </form>
+
+                @if (getExpansionError(offer.id)) {
+                  <p-message severity="error" [text]="getExpansionError(offer.id)" />
+                }
+
+                <div class="actions actions--end">
+                  <button
+                    pButton
+                    type="button"
+                    severity="secondary"
+                    [outlined]="true"
+                    icon="pi pi-times"
+                    label="Cancelar"
+                    (click)="toggleExpansion.emit(offer.id)"
+                  ></button>
+                  <button
+                    pButton
+                    type="button"
+                    icon="pi pi-save"
+                    label="Guardar ampliacion"
+                    [loading]="isExpansionLoading(offer.id)"
+                    (click)="submitExpansion.emit(offer.id)"
+                  ></button>
+                </div>
+              </div>
+            }
+
+            <div class="ampliaciones">
+              <span class="ampliaciones__title">Ampliaciones</span>
+              @if (offer.ampliaciones.length) {
+                <div class="ampliaciones__list">
+                  @for (ampliacion of offer.ampliaciones; track ampliacion.createdAt) {
+                    <p-tag
+                      [value]="'Cantidad ' + ampliacion.cantidad + ' / Plazo ' + formatDate(ampliacion.plazo)"
+                      severity="secondary"
+                    />
+                  }
+                </div>
+              } @else {
+                <span class="muted-text">Sin ampliaciones registradas.</span>
+              }
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
 
     <div class="pagination">
       <button
+        pButton
         type="button"
-        class="ghost-button"
+        severity="secondary"
+        [outlined]="true"
+        icon="pi pi-angle-left"
+        label="Anterior"
         [disabled]="currentPage === 0"
         (click)="pageChange.emit(currentPage - 1)"
-      >
-        Anterior
-      </button>
+      ></button>
       <span>Pagina {{ currentPage + 1 }} de {{ totalPages }}</span>
       <button
+        pButton
         type="button"
-        class="ghost-button"
+        severity="secondary"
+        [outlined]="true"
+        icon="pi pi-angle-right"
+        iconPos="right"
+        label="Siguiente"
         [disabled]="currentPage + 1 >= totalPages"
         (click)="pageChange.emit(currentPage + 1)"
-      >
-        Siguiente
-      </button>
+      ></button>
     </div>
   } @else {
-    <p class="helper-text">No hay ofertas laborales para mostrar.</p>
+    <p-message severity="info" text="No hay ofertas laborales para mostrar." />
   }
 </section>

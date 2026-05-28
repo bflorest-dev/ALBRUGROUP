@@ -1,17 +1,40 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
+import { FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { OfertaLaboralResponse } from '../../../../shared/models/recruitment/oferta-laboral-response';
 import { formatLabel } from '../../../../shared/utils/display-label';
+import { ButtonModule } from 'primeng/button';
+import { DatePickerModule } from 'primeng/datepicker';
+import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { SelectModule } from 'primeng/select';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
 
 type StatusDraftChange = {
   offerId: number;
   estado: string;
 };
 
+type SelectOption = {
+  label: string;
+  value: string;
+};
+
 @Component({
   selector: 'app-offer-list-panel',
-  imports: [ReactiveFormsModule, DateFieldComponent],
+  imports: [
+    FormsModule,
+    ReactiveFormsModule,
+    ButtonModule,
+    DatePickerModule,
+    InputTextModule,
+    MessageModule,
+    ProgressSpinnerModule,
+    SelectModule,
+    TableModule,
+    TagModule
+  ],
   templateUrl: './offer-list-panel.component.html',
   styleUrl: './offer-list-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -43,6 +66,14 @@ export class OfferListPanelComponent {
     return this.draftEstadoByOfferId[offer.id] ?? offer.estado ?? 'ACTIVO';
   }
 
+  protected estadoFilterItems(): SelectOption[] {
+    return [{ label: 'Todos los estados', value: '' }, ...this.optionItems(this.estadoOptions)];
+  }
+
+  protected optionItems(options: string[]): SelectOption[] {
+    return options.map((option) => ({ label: formatLabel(option), value: option }));
+  }
+
   protected isExpansionLoading(offerId: number): boolean {
     return !!this.expansionLoadingByOfferId[offerId];
   }
@@ -68,11 +99,67 @@ export class OfferListPanelComponent {
     this.statusDraftChange.emit({ offerId, estado });
   }
 
+  protected emitStatusDraftValue(offerId: number, estado: string): void {
+    this.statusDraftChange.emit({ offerId, estado });
+  }
+
   protected emitEstadoFilter(event: Event): void {
     this.estadoFilter.emit((event.target as HTMLSelectElement).value);
   }
 
+  protected emitEstadoFilterValue(estado: string): void {
+    this.estadoFilter.emit(estado);
+  }
+
   protected toLabel(value: string | null | undefined): string {
     return formatLabel(value);
+  }
+
+  protected formatDate(value: string | null | undefined): string {
+    if (!value) {
+      return '-';
+    }
+
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (!match) {
+      return value;
+    }
+
+    return `${match[3]}/${match[2]}/${match[1]}`;
+  }
+
+  protected toPickerDate(value: unknown): Date | null {
+    if (value instanceof Date) {
+      return value;
+    }
+
+    if (typeof value !== 'string' || !value) {
+      return null;
+    }
+
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (!match) {
+      return null;
+    }
+
+    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  }
+
+  protected setDateControl(form: FormGroup, controlName: string, value: Date | string | null): void {
+    const control = form.get(controlName);
+    control?.setValue(this.toBackendDate(value));
+    control?.markAsDirty();
+    control?.markAsTouched();
+  }
+
+  private toBackendDate(value: Date | string | null): string {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      const month = `${value.getMonth() + 1}`.padStart(2, '0');
+      const day = `${value.getDate()}`.padStart(2, '0');
+
+      return `${value.getFullYear()}-${month}-${day}`;
+    }
+
+    return typeof value === 'string' ? value : '';
   }
 }

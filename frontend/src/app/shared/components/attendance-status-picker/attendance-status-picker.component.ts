@@ -21,6 +21,7 @@ export class AttendanceStatusPickerComponent {
   @Input({ required: true }) actions: AttendanceActionOption[] = [];
   @Input({ required: true }) isLoading = false;
   @Input({ required: true }) errorMessage = '';
+  @Input() disabled = false;
 
   @Output() readonly actionSelected = new EventEmitter<AttendanceActionId>();
   @Output() readonly retry = new EventEmitter<void>();
@@ -29,7 +30,7 @@ export class AttendanceStatusPickerComponent {
   protected readonly pendingConfirmation = signal<AttendanceActionOption | null>(null);
 
   protected toggleOpen(): void {
-    if (!this.isLoading) {
+    if (!this.isLoading && !this.disabled) {
       this.isOpen.update((value) => !value);
     }
   }
@@ -40,6 +41,10 @@ export class AttendanceStatusPickerComponent {
   }
 
   protected selectAction(action: AttendanceActionOption): void {
+    if (this.disabled) {
+      return;
+    }
+
     if (action.id === 'REGISTRAR_SALIDA') {
       this.pendingConfirmation.set(action);
       return;
@@ -75,6 +80,10 @@ export class AttendanceStatusPickerComponent {
   }
 
   private confirmAction(actionId: AttendanceActionId): void {
+    if (this.disabled) {
+      return;
+    }
+
     this.pendingConfirmation.set(null);
     this.isOpen.set(false);
     this.actionSelected.emit(actionId);

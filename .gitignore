@@ -3,5 +3,8 @@ FrontendTest/
 HORARIOS.txt
 BACKUP/
 scripts/
-docs/*.txt
+docs/
 ADD/
+.claude/
+AlbruGroup.postman_collection.json
+ImplementacionAsteriskFases.md

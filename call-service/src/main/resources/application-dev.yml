@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: ${CALL_DB_URL:jdbc:postgresql://localhost:5432/call_db}
+    username: ${CALL_DB_USERNAME:postgres}
+    password: ${CALL_DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+logging:
+  level:
+    org.springframework.web: INFO
+    org.hibernate.sql: INFO
+    org.asteriskjava: INFO
+    pe.albrugroup.call_service: DEBUG
