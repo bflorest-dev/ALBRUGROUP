@@ -21,6 +21,8 @@ type SelectOption = {
   value: string;
 };
 
+type StringArrayCache = { source: readonly string[]; items: SelectOption[] };
+
 @Component({
   selector: 'app-offer-list-panel',
   imports: [
@@ -62,16 +64,29 @@ export class OfferListPanelComponent {
   @Output() readonly statusDraftChange = new EventEmitter<StatusDraftChange>();
   @Output() readonly updateEstado = new EventEmitter<number>();
 
+  private readonly optionItemsCache = new WeakMap<readonly string[], SelectOption[]>();
+  private estadoFilterItemsCache: StringArrayCache | null = null;
+
   protected getDraftEstado(offer: OfertaLaboralResponse): string {
     return this.draftEstadoByOfferId[offer.id] ?? offer.estado ?? 'ACTIVO';
   }
 
   protected estadoFilterItems(): SelectOption[] {
-    return [{ label: 'Todos los estados', value: '' }, ...this.optionItems(this.estadoOptions)];
+    if (this.estadoFilterItemsCache?.source === this.estadoOptions) {
+      return this.estadoFilterItemsCache.items;
+    }
+    const items: SelectOption[] = [{ label: 'Todos los estados', value: '' }, ...this.optionItems(this.estadoOptions)];
+    this.estadoFilterItemsCache = { source: this.estadoOptions, items };
+    return items;
   }
 
   protected optionItems(options: string[]): SelectOption[] {
-    return options.map((option) => ({ label: formatLabel(option), value: option }));
+    let cached = this.optionItemsCache.get(options);
+    if (!cached) {
+      cached = options.map((option) => ({ label: formatLabel(option), value: option }));
+      this.optionItemsCache.set(options, cached);
+    }
+    return cached;
   }
 
   protected isExpansionLoading(offerId: number): boolean {
@@ -128,6 +143,8 @@ export class OfferListPanelComponent {
     return `${match[3]}/${match[2]}/${match[1]}`;
   }
 
+  private readonly pickerDateCache = new Map<string, Date | null>();
+
   protected toPickerDate(value: unknown): Date | null {
     if (value instanceof Date) {
       return value;
@@ -137,12 +154,19 @@ export class OfferListPanelComponent {
       return null;
     }
 
-    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-    if (!match) {
-      return null;
+    const cached = this.pickerDateCache.get(value);
+    if (cached !== undefined) {
+      return cached;
     }
 
-    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    let parsed: Date | null = null;
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (match) {
+      parsed = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    }
+
+    this.pickerDateCache.set(value, parsed);
+    return parsed;
   }
 
   protected setDateControl(form: FormGroup, controlName: string, value: Date | string | null): void {

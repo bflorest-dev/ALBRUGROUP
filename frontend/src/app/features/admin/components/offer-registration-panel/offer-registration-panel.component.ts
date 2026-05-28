@@ -31,13 +31,22 @@ export class OfferRegistrationPanelComponent {
   @Output() readonly cancel = new EventEmitter<void>();
   @Output() readonly save = new EventEmitter<void>();
 
+  private readonly optionItemsCache = new WeakMap<readonly string[], SelectOption[]>();
+
   protected optionItems(options: string[]): SelectOption[] {
-    return options.map((option) => ({ label: formatLabel(option), value: option }));
+    let cached = this.optionItemsCache.get(options);
+    if (!cached) {
+      cached = options.map((option) => ({ label: formatLabel(option), value: option }));
+      this.optionItemsCache.set(options, cached);
+    }
+    return cached;
   }
 
   protected toLabel(value: string | null | undefined): string {
     return formatLabel(value);
   }
+
+  private readonly pickerDateCache = new Map<string, Date | null>();
 
   protected toPickerDate(value: unknown): Date | null {
     if (value instanceof Date) {
@@ -48,12 +57,19 @@ export class OfferRegistrationPanelComponent {
       return null;
     }
 
-    const backendMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-    if (backendMatch) {
-      return new Date(Number(backendMatch[1]), Number(backendMatch[2]) - 1, Number(backendMatch[3]));
+    const cached = this.pickerDateCache.get(value);
+    if (cached !== undefined) {
+      return cached;
     }
 
-    return null;
+    let parsed: Date | null = null;
+    const backendMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (backendMatch) {
+      parsed = new Date(Number(backendMatch[1]), Number(backendMatch[2]) - 1, Number(backendMatch[3]));
+    }
+
+    this.pickerDateCache.set(value, parsed);
+    return parsed;
   }
 
   protected setDateControl(form: FormGroup, controlName: string, value: Date | string | null): void {

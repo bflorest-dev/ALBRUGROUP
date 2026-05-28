@@ -82,22 +82,42 @@ export class PersonalRegistrationPanelComponent {
     { label: 'Si', value: 'true' }
   ];
 
+  private readonly optionItemsCache = new WeakMap<readonly string[], SelectOption[]>();
+  private readonly optionalOptionItemsCache = new WeakMap<readonly string[], SelectOption[]>();
+  private empresaItemsCache: { source: readonly EmpresaContratistaResponse[]; items: SelectOption[] } | null = null;
+
   protected optionItems(options: string[]): SelectOption[] {
-    return options.map((option) => ({ label: this.toLabel(option), value: option }));
+    let cached = this.optionItemsCache.get(options);
+    if (!cached) {
+      cached = options.map((option) => ({ label: this.toLabel(option), value: option }));
+      this.optionItemsCache.set(options, cached);
+    }
+    return cached;
   }
 
   protected optionalOptionItems(options: string[]): SelectOption[] {
-    return [{ label: 'No aplica', value: '' }, ...this.optionItems(options)];
+    let cached = this.optionalOptionItemsCache.get(options);
+    if (!cached) {
+      cached = [{ label: 'No aplica', value: '' }, ...this.optionItems(options)];
+      this.optionalOptionItemsCache.set(options, cached);
+    }
+    return cached;
   }
 
   protected empresaItems(): SelectOption[] {
-    return [
+    if (this.empresaItemsCache?.source === this.empresasContratistas) {
+      return this.empresaItemsCache.items;
+    }
+
+    const items: SelectOption[] = [
       { label: 'No aplica', value: '' },
       ...this.empresasContratistas.map((empresa) => ({
         label: empresa.nombre,
         value: String(empresa.id)
       }))
     ];
+    this.empresaItemsCache = { source: this.empresasContratistas, items };
+    return items;
   }
 
   protected toLabel(value: string | null | undefined): string {
@@ -120,6 +140,8 @@ export class PersonalRegistrationPanelComponent {
     return Boolean(control?.invalid && (control.touched || control.dirty));
   }
 
+  private readonly pickerDateCache = new Map<string, Date | null>();
+
   protected toPickerDate(value: unknown): Date | null {
     if (value instanceof Date) {
       return value;
@@ -129,17 +151,25 @@ export class PersonalRegistrationPanelComponent {
       return null;
     }
 
+    const cached = this.pickerDateCache.get(value);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    let parsed: Date | null = null;
+
     const backendMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
     if (backendMatch) {
-      return new Date(Number(backendMatch[1]), Number(backendMatch[2]) - 1, Number(backendMatch[3]));
+      parsed = new Date(Number(backendMatch[1]), Number(backendMatch[2]) - 1, Number(backendMatch[3]));
+    } else {
+      const displayMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+      if (displayMatch) {
+        parsed = new Date(Number(displayMatch[3]), Number(displayMatch[2]) - 1, Number(displayMatch[1]));
+      }
     }
 
-    const displayMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
-    if (displayMatch) {
-      return new Date(Number(displayMatch[3]), Number(displayMatch[2]) - 1, Number(displayMatch[1]));
-    }
-
-    return null;
+    this.pickerDateCache.set(value, parsed);
+    return parsed;
   }
 
   protected setDateControl(form: FormGroup, controlName: string, value: Date | string | null): void {
