@@ -55,9 +55,10 @@ public class PreventaController {
     public ResponseEntity<PageResponse<LeadGtrResponse>> listarBandejaGtr(
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+            @RequestParam(required = false) String lead,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var leads = leadService.listarBandejaGtr(fecha, pageRequest);
+        var leads = leadService.listarBandejaGtr(fecha, lead, pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
     // 2.1. Metricas acumuladas del dia para la operacion GTR

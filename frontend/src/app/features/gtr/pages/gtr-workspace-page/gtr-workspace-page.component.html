@@ -101,6 +101,16 @@
         (click)="facade.openAssignment()"
       ></button>
 
+      <button
+        pButton
+        type="button"
+        icon="pi pi-search"
+        label="Buscar Lead"
+        severity="secondary"
+        [disabled]="!facade.canDisplayOperationalData()"
+        (click)="facade.openSearchDialog()"
+      ></button>
+
       @if (facade.isReconciling()) {
         <p-tag severity="secondary" value="Realtime activo" />
       }
@@ -190,7 +200,7 @@
               [value]="facade.display(row.estadoSeguimiento)"
             />
           </td>
-          <td>{{ facade.display(row.nombreAsesorAsignado) }}</td>
+          <td>{{ facade.display(row.nombreAsesorAsignado) | uppercase }}</td>
           <td>{{ (row.lastEntryAt ?? row.createdAt) | date: 'hh:mm a' }}</td>
           <td>
             <div class="row-actions">
@@ -338,8 +348,8 @@
                 <ng-template #body let-row>
                   <tr>
                     <td>
-                      <strong>{{ facade.display(row.horaProgramada) }}</strong>
-                      <small>{{ facade.display(row.fechaAgendamiento) }}</small>
+                      <strong>{{ facade.formatHoraProgramada(row.horaProgramada) }}</strong>
+                      <small>{{ facade.formatFechaAgendamiento(row.fechaAgendamiento) }}</small>
                     </td>
                     <td><strong>{{ facade.leadPrefixLabel(row.prefijo) }} {{ row.lead }}</strong></td>
                     <td>{{ facade.display(row.nombreTitular) }}</td>
@@ -357,7 +367,7 @@
                         </div>
                       }
                     </td>
-                    <td>{{ facade.display(row.nombreAsesorAsignado) }}</td>
+                    <td>{{ facade.display(row.nombreAsesorTipifico ?? row.nombreAsesorAsignado) | uppercase }}</td>
                     <td>{{ facade.display(row.comentario) }}</td>
                     <td>
                       <p-tag
@@ -536,7 +546,7 @@
                 [value]="facade.display(row.estadoSeguimiento)"
               />
             </td>
-            <td>{{ facade.display(row.nombreAsesorAsignado) }}</td>
+            <td>{{ facade.display(row.nombreAsesorAsignado) | uppercase }}</td>
             <td>{{ (row.lastEntryAt ?? row.createdAt) | date: 'dd/MM hh:mm a' }}</td>
             <td>
               <div class="row-actions">
@@ -609,7 +619,7 @@
           <span class="advisor-card__dot {{ facade.advisorDotClass(advisor) }}"></span>
           <div>
             <div style="align-items: baseline; display: flex; flex-wrap: wrap; gap: 0.45rem; justify-content: space-between;">
-              <strong>{{ advisor.nombreCompleto }}</strong>
+              <strong>{{ advisor.nombreCompleto | uppercase }}</strong>
               <small style="margin: 0;">En horario de Gestion</small>
             </div>
             <div class="advisor-card__tags">
@@ -848,9 +858,14 @@
           [placeholder]="facade.availableAssignmentAdvisors().length ? 'Seleccionar asesor por disponibilidad' : 'No hay asesores con estado operativo'"
           appendTo="body"
         >
+          <ng-template #selectedItem let-advisor>
+            @if (advisor) {
+              <span>{{ advisor.nombreCompleto | uppercase }}</span>
+            }
+          </ng-template>
           <ng-template #item let-advisor>
             <div class="select-item select-item--advisor">
-              <strong>{{ advisor.nombreCompleto }}</strong>
+              <strong>{{ advisor.nombreCompleto | uppercase }}</strong>
               <p-tag
                 [severity]="advisorSeverity(advisor.disponibilidad)"
                 [value]="facade.display(advisor.disponibilidad)"
@@ -884,28 +899,37 @@
     @if (facade.pendingReassignment(); as pending) {
       <div class="reassign-confirmation">
         @if (pending.requiresInManagement) {
-          <p class="helper">
-            El lead {{ facade.leadPrefixLabel(pending.row.prefijo) }} {{ pending.row.lead }}
-            esta actualmente en gestion con {{ pending.currentAdvisorName }}.
+          <p class="reassign-problem">
+            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+            <span>
+              El lead {{ facade.leadPrefixLabel(pending.row.prefijo) }} {{ pending.row.lead }}
+              esta actualmente en gestion con {{ pending.currentAdvisorName | uppercase }}.
+            </span>
           </p>
         } @else if (pending.requiresReassignment) {
-          <p class="helper">
-            El lead {{ facade.leadPrefixLabel(pending.row.prefijo) }} {{ pending.row.lead }}
-            ya esta asignado a {{ pending.currentAdvisorName }}.
+          <p class="reassign-problem">
+            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+            <span>
+              El lead {{ facade.leadPrefixLabel(pending.row.prefijo) }} {{ pending.row.lead }}
+              ya esta asignado a {{ pending.currentAdvisorName | uppercase }}.
+            </span>
           </p>
         }
         @if (pending.requiresPreviousManagement) {
-          <p class="helper">
-            {{ pending.advisor.nombreCompleto }} ya gestiono o tipifico este Lead anteriormente.
+          <p class="reassign-problem">
+            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+            <span>
+              {{ pending.advisor.nombreCompleto | uppercase }} ya gestiono o tipifico este Lead anteriormente.
+            </span>
           </p>
         }
-        <p class="helper">
-          Confirma si deseas asignarlo a {{ pending.advisor.nombreCompleto }}.
+        <p class="reassign-confirmation__final">
+          Confirma si deseas asignarlo a {{ pending.advisor.nombreCompleto | uppercase }}.
         </p>
       </div>
     }
 
-    <div class="dialog-actions">
+    <div class="dialog-actions reassign-confirmation__actions">
       <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.cancelReassignment()"></button>
       <button
         pButton
@@ -978,8 +1002,27 @@
           <tr>
             <td>{{ evento.createdAt | date: 'hh:mm a' }}</td>
             <td><p-tag [value]="facade.display(evento.accion)" severity="secondary" /></td>
-            <td>{{ facade.display(evento.nombreActor) }}</td>
-            <td>{{ facade.eventSummary(evento) }}</td>
+            <td>{{ facade.display(evento.nombreActor) | uppercase }}</td>
+            <td>
+              <div class="event-detail">
+                <span class="event-detail__summary">{{ facade.eventSummary(evento) }}</span>
+                @if (facade.eventComentario(evento)) {
+                  <button
+                    pButton
+                    type="button"
+                    icon="pi pi-comment"
+                    size="small"
+                    severity="secondary"
+                    [text]="true"
+                    [rounded]="true"
+                    class="event-detail__comment-btn"
+                    title="Ver comentario"
+                    aria-label="Ver comentario"
+                    (click)="facade.showEventComment(evento); commentPopover.toggle($event)"
+                  ></button>
+                }
+              </div>
+            </td>
           </tr>
         }
       </ng-template>
@@ -1001,5 +1044,164 @@
         }
       </ng-template>
     </p-table>
+
   </p-dialog>
+
+  <p-dialog
+    header="Buscar Lead"
+    [visible]="facade.activeDialog() === 'search'"
+    (visibleChange)="!$event && facade.closeDialog()"
+    [modal]="true"
+    [draggable]="false"
+    styleClass="gtr-dialog gtr-dialog--events"
+  >
+    <div class="search-form">
+      <label class="wide">
+        <span>Numero de Lead</span>
+        <input
+          pInputText
+          type="text"
+          inputmode="numeric"
+          maxlength="9"
+          placeholder="Ej: 987654321"
+          [value]="facade.searchQuery()"
+          (input)="facade.setSearchQuery($any($event.target).value)"
+          (keydown.enter)="facade.executeSearch()"
+        />
+      </label>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-search"
+        label="Buscar"
+        [disabled]="!facade.canDisplayOperationalData() || !facade.searchQuery()"
+        [loading]="facade.isSearching()"
+        (click)="facade.executeSearch()"
+      ></button>
+    </div>
+
+    <p-table
+      [value]="facade.searchResults()"
+      dataKey="id"
+      [loading]="facade.isSearching()"
+      [rowHover]="true"
+      [tableStyle]="{ 'min-width': '880px' }"
+      styleClass="p-datatable-sm gtr-table"
+    >
+      <ng-template #header>
+        <tr>
+          <th>Lead</th>
+          <th>Proveedor</th>
+          <th>Base</th>
+          <th>Ultima tipificacion</th>
+          <th>Estado</th>
+          <th>Asesor</th>
+          <th>Ingreso</th>
+          <th class="col-actions">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-row>
+        <tr>
+          <td><strong>{{ facade.leadPrefixLabel(row.prefijo) }} {{ row.lead }}</strong></td>
+          <td>{{ facade.display(row.nombreProveedorCampana) }}</td>
+          <td>{{ facade.display(row.base) }}</td>
+          <td>
+            @if (facade.tipificacionParts(row.codigoTipificacion, row.codigoSubtipificacion); as tip) {
+              <div class="tip-stack">
+                <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion)" />
+                <span class="tip-stack__line"></span>
+                <p-tag
+                  [value]="tip.subtipificacion"
+                  [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion')"
+                />
+              </div>
+            }
+          </td>
+          <td>
+            <p-tag
+              [severity]="estadoSeverity(row.estadoSeguimiento)"
+              [value]="facade.display(row.estadoSeguimiento)"
+            />
+          </td>
+          <td>{{ facade.display(row.nombreAsesorAsignado) | uppercase }}</td>
+          <td>{{ (row.lastEntryAt ?? row.createdAt) | date: 'dd/MM hh:mm a' }}</td>
+          <td>
+            <div class="row-actions">
+              <button
+                pButton
+                type="button"
+                icon="pi pi-whatsapp"
+                size="small"
+                severity="secondary"
+                title="Chat"
+                aria-label="Chat WhatsApp"
+                [disabled]="!row.lead || !facade.canMutateOperationalData()"
+                (click)="facade.openWhatsAppChat(row)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                size="small"
+                class="gtr-assign-button"
+                [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
+                title="Asignar"
+                (click)="facade.openAssignment(row)"
+              >
+                <span class="gtr-assign-button__action">
+                  <i class="pi pi-user-plus" aria-hidden="true"></i>
+                  <span>Asignar</span>
+                </span>
+                <span class="gtr-assign-button__count">{{ facade.display(row.totalAsignaciones ?? 0) }}</span>
+              </button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-cog"
+                size="small"
+                severity="secondary"
+                title="Gestionar"
+                aria-label="Gestionar"
+                [disabled]="!facade.canMutateOperationalData()"
+                (click)="facade.openSnapshot(row)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-history"
+                size="small"
+                severity="secondary"
+                title="Historial del dia"
+                aria-label="Historial"
+                [disabled]="facade.isLoadingEvents()"
+                (click)="facade.openEventHistory(row)"
+              ></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="8" style="color: var(--app-text-muted); opacity: 0.72; padding: 1.5rem 1rem; text-align: center;">
+            {{ facade.searchExecuted() ? 'No se encontraron leads.' : 'Ingresa el numero y pulsa Buscar.' }}
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    @if (facade.searchTotalElements() > facade.pageSize) {
+      <p-paginator
+        [first]="facade.searchPageNumber() * facade.pageSize"
+        [rows]="facade.pageSize"
+        [totalRecords]="facade.searchTotalElements()"
+        (onPageChange)="facade.changeSearchPage($event.page ?? 0)"
+      />
+    }
+  </p-dialog>
+
+  <p-popover #commentPopover styleClass="gtr-comment-popover">
+    <div class="comment-popover">
+      <span class="comment-popover__title">Comentario</span>
+      <p class="comment-popover__body">{{ facade.activeEventComment() || '-' }}</p>
+    </div>
+  </p-popover>
 </section>

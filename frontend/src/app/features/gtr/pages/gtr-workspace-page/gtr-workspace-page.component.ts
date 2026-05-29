@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, UpperCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -11,6 +11,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { PaginatorModule } from 'primeng/paginator';
+import { PopoverModule } from 'primeng/popover';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { SelectModule } from 'primeng/select';
 import { SkeletonModule } from 'primeng/skeleton';
@@ -25,6 +26,7 @@ import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
   imports: [
     ReactiveFormsModule,
     DatePipe,
+    UpperCasePipe,
     ButtonModule,
     CardModule,
     DialogModule,
@@ -33,6 +35,7 @@ import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
     MessageModule,
     MultiSelectModule,
     PaginatorModule,
+    PopoverModule,
     ProgressSpinnerModule,
     SelectModule,
     SkeletonModule,

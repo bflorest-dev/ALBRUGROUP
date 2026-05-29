@@ -56,6 +56,7 @@ export interface LeadAgendadoGtrResponse {
   codigoTipificacion?: string | null;
   codigoSubtipificacion?: string | null;
   nombreAsesorAsignado?: string | null;
+  nombreAsesorTipifico?: string | null;
   estadoSeguimiento?: EstadoSeguimiento | string | null;
   totalAsignaciones: number;
   fechaAgendamiento?: string | null;

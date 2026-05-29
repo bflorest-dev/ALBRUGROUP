@@ -81,7 +81,7 @@ type AssignmentConflictDetails = {
   requiereConfirmarGestionPrevia?: boolean;
 };
 
-type GtrDialog = 'lead' | 'snapshot' | 'assign' | 'reassign-confirm' | 'events' | null;
+type GtrDialog = 'lead' | 'snapshot' | 'assign' | 'reassign-confirm' | 'events' | 'search' | null;
 type EventAnomalyFilter = 'multiple-records' | 'same-campaign' | null;
 
 type LoadError = {
@@ -127,6 +127,14 @@ export class GtrWorkspaceFacade {
   readonly masivoRows = signal<VisualLeadGtr[]>([]);
   readonly eventRows = signal<EventoResponse[]>([]);
   readonly selectedEventAnomalyFilter = signal<EventAnomalyFilter>(null);
+  readonly activeEventComment = signal<string | null>(null);
+  readonly searchQuery = signal('');
+  readonly searchResults = signal<LeadGtrResponse[]>([]);
+  readonly searchTotalElements = signal(0);
+  readonly searchTotalPages = signal(0);
+  readonly searchPageNumber = signal(0);
+  readonly isSearching = signal(false);
+  readonly searchExecuted = signal(false);
   readonly metrics = signal<LeadGtrMetricasResponse>({
     nuevos: 0,
     sinGestionar: 0,
@@ -605,6 +613,73 @@ export class GtrWorkspaceFacade {
     }
   }
 
+  openSearchDialog(): void {
+    if (!this.canDisplayOperationalData()) {
+      this.errorMessage.set('Marca ONLINE para activar la busqueda.');
+      return;
+    }
+    this.searchQuery.set('');
+    this.searchResults.set([]);
+    this.searchTotalElements.set(0);
+    this.searchTotalPages.set(0);
+    this.searchPageNumber.set(0);
+    this.searchExecuted.set(false);
+    this.activeDialog.set('search');
+  }
+
+  setSearchQuery(value: string): void {
+    const normalized = (value ?? '').replace(/\D/g, '').slice(0, 9);
+    this.searchQuery.set(normalized);
+  }
+
+  async executeSearch(): Promise<void> {
+    const value = this.searchQuery().trim();
+    if (!value) {
+      this.errorMessage.set('Ingresa el numero del lead a buscar.');
+      return;
+    }
+    this.searchPageNumber.set(0);
+    await this.runSearch();
+  }
+
+  async changeSearchPage(pageNumber: number): Promise<void> {
+    if (pageNumber === this.searchPageNumber()) {
+      return;
+    }
+    this.searchPageNumber.set(pageNumber);
+    await this.runSearch();
+  }
+
+  private async runSearch(): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
+    const value = this.searchQuery().trim();
+    if (!value) {
+      return;
+    }
+    this.isSearching.set(true);
+    this.clearMessages();
+    try {
+      const page = await firstValueFrom(
+        this.preventaService.buscarLeadGtr(value, {
+          pageNumber: this.searchPageNumber(),
+          pageSize: this.pageSize,
+          sortBy: 'lastEntryAt',
+          direction: 'desc'
+        })
+      );
+      this.searchResults.set(page.content);
+      this.searchTotalElements.set(page.totalElements);
+      this.searchTotalPages.set(page.totalPages);
+      this.searchExecuted.set(true);
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo buscar el lead.'));
+    } finally {
+      this.isSearching.set(false);
+    }
+  }
+
   openAgendadoAssignment(row: LeadAgendadoGtrResponse): void {
     if (!this.ensureCanMutate()) {
       return;
@@ -620,6 +695,12 @@ export class GtrWorkspaceFacade {
     this.pendingReassignment.set(null);
     this.eventRows.set([]);
     this.selectedEventAnomalyFilter.set(null);
+    this.searchQuery.set('');
+    this.searchResults.set([]);
+    this.searchTotalElements.set(0);
+    this.searchTotalPages.set(0);
+    this.searchPageNumber.set(0);
+    this.searchExecuted.set(false);
   }
 
   toggleAdvisorsPanel(): void {
@@ -975,13 +1056,32 @@ export class GtrWorkspaceFacade {
   }
 
   eventSummary(evento: EventoResponse): string {
-    const parts = [
-      evento.tipificacion,
-      evento.subtipificacion,
-      evento.comentario,
-      this.eventCampaignLabel(evento)
-    ].filter(Boolean);
-    return parts.length ? parts.join(' / ') : '-';
+    const accion = (evento.accion ?? '').toUpperCase();
+    const tipificacion = evento.tipificacion?.trim() || null;
+    const subtipificacion = evento.subtipificacion?.trim() || null;
+    const tipParts = [tipificacion, subtipificacion].filter(Boolean);
+
+    if (accion === 'TIPIFICACION') {
+      return tipParts.length ? tipParts.join(' / ') : '-';
+    }
+
+    if (accion === 'REGISTRO' || accion === 'REGISTRO_MASIVO') {
+      return this.eventCampaignLabel(evento) ?? '-';
+    }
+
+    if (tipParts.length) {
+      return tipParts.join(' / ');
+    }
+    return this.eventCampaignLabel(evento) ?? '-';
+  }
+
+  eventComentario(evento: EventoResponse): string | null {
+    const comentario = evento.comentario?.trim();
+    return comentario ? comentario : null;
+  }
+
+  showEventComment(evento: EventoResponse): void {
+    this.activeEventComment.set(this.eventComentario(evento));
   }
 
   private eventCampaignLabel(evento: EventoResponse): string | null {
@@ -1513,12 +1613,39 @@ export class GtrWorkspaceFacade {
     return this.getScheduledDate(row)?.getTime() ?? Number.MAX_SAFE_INTEGER;
   }
 
+  formatHoraProgramada(horaProgramada?: string | null): string {
+    if (!horaProgramada) {
+      return '-';
+    }
+    // LocalTime llega como "HH:mm:ss" — mostrar solo "HH:mm"
+    return String(horaProgramada).substring(0, 5);
+  }
+
+  formatFechaAgendamiento(fechaAgendamiento?: string | null): string {
+    if (!fechaAgendamiento) {
+      return '-';
+    }
+    const d = new Date(fechaAgendamiento);
+    return isNaN(d.getTime()) ? '-' : this.formatReadableShortDate(d);
+  }
+
   private getScheduledDate(row: LeadAgendadoGtrResponse): Date | null {
     if (!row.horaProgramada) {
       return null;
     }
-    const date = row.fechaAgendamiento || this.today;
-    return new Date(`${date}T${row.horaProgramada}`);
+    // fechaAgendamiento es un Instant ISO (p.ej. "2026-05-29T18:02:38.782953Z"):
+    // extraer solo la parte de fecha local antes de combinar con horaProgramada.
+    let dateStr = this.today;
+    if (row.fechaAgendamiento) {
+      const d = new Date(row.fechaAgendamiento);
+      if (!isNaN(d.getTime())) {
+        dateStr = this.formatLocalDate(d);
+      }
+    }
+    // Normalizar hora a "HH:mm:ss" (recortar nanosegundos si los hubiera)
+    const timeStr = String(row.horaProgramada).substring(0, 8);
+    const scheduled = new Date(`${dateStr}T${timeStr}`);
+    return isNaN(scheduled.getTime()) ? null : scheduled;
   }
 
   private scheduleNewRowReset(ids: number[]): void {

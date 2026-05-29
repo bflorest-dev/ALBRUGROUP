@@ -118,17 +118,24 @@ public class LeadService {
             "horaProgramada", "createdAt", "lead", "nombreAsesorAsignado", "estado"
     );
 
-    public PageResponse<LeadGtrResponse> listarBandejaGtr(LocalDate fecha, PageRequest pageRequest) {
-        OperationalDateTime.InstantRange rangoDia = OperationalDateTime.dayRange(fecha);
+    public PageResponse<LeadGtrResponse> listarBandejaGtr(LocalDate fecha, String lead, PageRequest pageRequest) {
+        boolean buscandoPorLead = lead != null && !lead.isBlank();
+        String leadPattern = (buscandoPorLead ? lead.trim() : "") + "%";
+        OperationalDateTime.InstantRange rangoDia = buscandoPorLead
+                ? new OperationalDateTime.InstantRange(Instant.EPOCH, Instant.ofEpochSecond(253402300799L))
+                : OperationalDateTime.dayRange(fecha);
 
         Page<LeadGtrResponse> leads = leadRepository.listarBandejaGtr(
                 Etapa.PREVENTA,
+                leadPattern,
                 rangoDia.inicio(),
                 rangoDia.fin(),
                 paginationService.toPageable(pageRequest, LEAD_GTR_SORT_FIELDS)
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadGtrResponse::getId, this::setTotalesAsignacion);
-        aplicarAlertasRegistrosDia(leads.getContent(), rangoDia.inicio(), rangoDia.fin());
+        if (!buscandoPorLead) {
+            aplicarAlertasRegistrosDia(leads.getContent(), rangoDia.inicio(), rangoDia.fin());
+        }
         return PageResponse.from(leads);
     }
 

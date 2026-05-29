@@ -63,10 +63,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
+              AND l.lead LIKE :leadPattern
             ORDER BY l.lastEntryAt DESC
             """)
     Page<LeadGtrResponse> listarBandejaGtr(
             @Param("etapa") Etapa etapa,
+            @Param("leadPattern") String leadPattern,
             @Param("inicioDia") Instant inicioDia,
             @Param("finDia") Instant finDia,
             Pageable pageable
@@ -141,6 +143,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.codigoTipificacion,
                 l.codigoSubtipificacion,
                 l.nombreAsesorAsignado,
+                e.nombreActor,
                 l.estado,
                 0L,
                 e.createdAt,
@@ -185,6 +188,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.codigoTipificacion,
                 l.codigoSubtipificacion,
                 l.nombreAsesorAsignado,
+                e.nombreActor,
                 l.estado,
                 0L,
                 e.createdAt,
@@ -229,6 +233,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.codigoTipificacion,
                 l.codigoSubtipificacion,
                 l.nombreAsesorAsignado,
+                e.nombreActor,
                 l.estado,
                 0L,
                 e.createdAt,
@@ -449,24 +454,28 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             FROM Lead l
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
-            WHERE (:idProveedor IS NULL OR p.id = :idProveedor)
-              AND (:etapa IS NULL OR l.etapa = :etapa)
+            WHERE (:filtrarProveedor = false OR p.id = :idProveedor)
+              AND (:filtrarEtapa = false OR l.etapa = :etapa)
               AND (l.codigoTipificacion IS NULL OR l.codigoTipificacion NOT IN :codigosTipificacionExcluidos)
               AND (:filtrarTipificaciones = false OR l.idTipificacion IN :tipificacionIds)
               AND (:filtrarSubtipificaciones = false OR l.idSubtipificacion IN :subtipificacionIds)
-              AND (:fechaDesde IS NULL OR l.lastEntryAt >= :fechaDesde)
-              AND (:fechaHasta IS NULL OR l.lastEntryAt < :fechaHasta)
+              AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
+              AND (:filtrarFechaHasta = false OR l.lastEntryAt < :fechaHasta)
             ORDER BY l.lastEntryAt DESC, l.id DESC
             """)
     Page<LeadGtrResponse> listarLeadsMasivo(
+            @Param("filtrarProveedor") boolean filtrarProveedor,
             @Param("idProveedor") Long idProveedor,
+            @Param("filtrarEtapa") boolean filtrarEtapa,
             @Param("etapa") Etapa etapa,
             @Param("filtrarTipificaciones") boolean filtrarTipificaciones,
             @Param("tipificacionIds") Collection<Long> tipificacionIds,
             @Param("filtrarSubtipificaciones") boolean filtrarSubtipificaciones,
             @Param("subtipificacionIds") Collection<Long> subtipificacionIds,
             @Param("codigosTipificacionExcluidos") Collection<String> codigosTipificacionExcluidos,
+            @Param("filtrarFechaDesde") boolean filtrarFechaDesde,
             @Param("fechaDesde") Instant fechaDesde,
+            @Param("filtrarFechaHasta") boolean filtrarFechaHasta,
             @Param("fechaHasta") Instant fechaHasta,
             Pageable pageable
     );

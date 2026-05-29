@@ -48,16 +48,25 @@ public class MasivoService {
         List<Long> subtipificacionesFiltro = normalizarIds(subtipificaciones);
         RangoFechas rangoFechas = resolverRangoFechas(fechaDesde, fechaHasta);
 
+        boolean filtrarProveedor = idProveedor != null;
+        boolean filtrarEtapa = etapa != null;
+        boolean filtrarFechaDesde = rangoFechas.inicio() != null;
+        boolean filtrarFechaHasta = rangoFechas.fin() != null;
+
         var leads = leadRepository.listarLeadsMasivo(
-                idProveedor,
-                etapa,
+                filtrarProveedor,
+                filtrarProveedor ? idProveedor : -1L,
+                filtrarEtapa,
+                filtrarEtapa ? etapa : Etapa.PREVENTA,
                 !tipificacionesFiltro.isEmpty(),
                 tipificacionesFiltro.isEmpty() ? FILTRO_VACIO : tipificacionesFiltro,
                 !subtipificacionesFiltro.isEmpty(),
                 subtipificacionesFiltro.isEmpty() ? FILTRO_VACIO : subtipificacionesFiltro,
                 TIPIFICACIONES_EXCLUIDAS_MASIVO,
-                rangoFechas.inicio(),
-                rangoFechas.fin(),
+                filtrarFechaDesde,
+                filtrarFechaDesde ? rangoFechas.inicio() : Instant.EPOCH,
+                filtrarFechaHasta,
+                filtrarFechaHasta ? rangoFechas.fin() : Instant.EPOCH,
                 paginationService.toPageable(pageRequest, MASIVO_SORT_FIELDS)
         );
         var totales = leadAsignacionCounterService.contarAsignacionesPorLeadIds(
