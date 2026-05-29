@@ -18,12 +18,31 @@
       [totalPages]="1"
       [isLoading]="facade.isLoadingActiveEmployees()"
       [errorMessage]="facade.activeEmployeeListErrorMessage()"
+      [contractUpdateSuccessMessage]="facade.contractRenewalSuccessMessage()"
       [accessByEmployeeId]="facade.accessByEmployeeId()"
       [accessErrorByEmployeeId]="facade.accessErrorByEmployeeId()"
       [accessLoadingByEmployeeId]="facade.accessLoadingByEmployeeId()"
       (reload)="facade.loadActiveEmployees()"
       (pageChange)="facade.loadActiveEmployees()"
       (toggleAccess)="facade.toggleUserAccess($event)"
+      (renewContract)="facade.openContractRenewal($event)"
+    />
+
+    <app-contract-renewal-dialog
+      [visible]="facade.isContractRenewalVisible()"
+      [employee]="facade.selectedEmployeeForContractRenewal()"
+      [contractForm]="facade.contractRenewalForm"
+      [puestoTrabajoOptions]="facade.puestoTrabajoOptions"
+      [regimenOptions]="facade.regimenOptions"
+      [modalidadOptions]="facade.modalidadOptions"
+      [seguroSaludOptions]="facade.seguroSaludOptions"
+      [sistemaPensionesOptions]="facade.sistemaPensionesOptions"
+      [isLoadingCurrentContract]="facade.isLoadingContractRenewal()"
+      [isSubmitting]="facade.isSubmittingContractRenewal()"
+      [errorMessage]="facade.contractRenewalErrorMessage()"
+      [successMessage]="facade.contractRenewalSuccessMessage()"
+      (visibleChange)="!$event && facade.closeContractRenewal()"
+      (submit)="facade.submitContractRenewal()"
     />
   } @else {
   <div class="admin-grid admin-grid--single">

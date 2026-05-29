@@ -28,6 +28,7 @@ export class EmployeeAccessPanelComponent {
   @Input({ required: true }) totalPages = 1;
   @Input({ required: true }) isLoading = false;
   @Input({ required: true }) errorMessage = '';
+  @Input({ required: true }) contractUpdateSuccessMessage = '';
   @Input({ required: true }) accessByEmployeeId: Record<number, UsuarioResponse | null> = {};
   @Input({ required: true }) accessErrorByEmployeeId: Record<number, string> = {};
   @Input({ required: true }) accessLoadingByEmployeeId: Record<number, boolean> = {};
@@ -35,6 +36,7 @@ export class EmployeeAccessPanelComponent {
   @Output() readonly reload = new EventEmitter<void>();
   @Output() readonly pageChange = new EventEmitter<number>();
   @Output() readonly toggleAccess = new EventEmitter<number>();
+  @Output() readonly renewContract = new EventEmitter<EmpleadoRolResponse>();
 
   protected readonly selectedRole = signal('');
 

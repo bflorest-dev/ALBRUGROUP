@@ -20,6 +20,10 @@
     <p-message severity="error" [text]="errorMessage" />
   }
 
+  @if (contractUpdateSuccessMessage) {
+    <p-message severity="success" [text]="contractUpdateSuccessMessage" />
+  }
+
   @if (isLoading) {
     <div class="loading-state">
       <p-progress-spinner ariaLabel="Cargando empleados" />
@@ -79,6 +83,15 @@
                 <td>{{ employee.numeroDocumento }}</td>
                 <td>{{ employee.celularPersonal }}</td>
                 <td class="actions-cell">
+                  <button
+                    pButton
+                    type="button"
+                    severity="secondary"
+                    [text]="true"
+                    icon="pi pi-briefcase"
+                    (click)="renewContract.emit(employee)"
+                    aria-label="Registrar nuevo contrato"
+                  ></button>
                   <button
                     pButton
                     type="button"

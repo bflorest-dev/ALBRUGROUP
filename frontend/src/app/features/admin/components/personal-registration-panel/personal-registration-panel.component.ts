@@ -181,6 +181,14 @@ export class PersonalRegistrationPanelComponent {
     control?.markAsTouched();
   }
 
+  protected setNumericDigits(form: FormGroup, controlName: string, value: string, maxLength: number): void {
+    const control = form.get(controlName);
+    const normalized = value.replace(/\D/g, '').slice(0, maxLength);
+    if (control?.value !== normalized) {
+      control?.setValue(normalized);
+    }
+  }
+
   protected getScheduleRows(): AbstractControl[] {
     return (this.horarioForm.get('detalles') as FormArray).controls;
   }

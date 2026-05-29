@@ -83,8 +83,12 @@ td small {
 }
 
 .actions-cell {
-  width: 6rem;
+  width: 8rem;
   text-align: center;
+}
+
+:host ::ng-deep .actions-cell {
+  white-space: nowrap;
 }
 
 :host ::ng-deep .p-datatable table {

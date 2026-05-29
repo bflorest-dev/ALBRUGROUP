@@ -1,0 +1,176 @@
+<p-dialog
+  header="Nuevo contrato"
+  [visible]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  styleClass="contract-renewal-dialog"
+>
+  @if (employee; as selectedEmployee) {
+    <div class="dialog-head">
+      <div>
+        <p-tag value="Contrato" severity="info" />
+        <h3>{{ selectedEmployee.nombres }} {{ selectedEmployee.apellidos }}</h3>
+        <p>{{ selectedEmployee.numeroDocumento }} · {{ toLabel(selectedEmployee.puestoTrabajo) }}</p>
+      </div>
+    </div>
+
+    @if (errorMessage) {
+      <p-message severity="error" [text]="errorMessage" />
+    }
+
+    @if (successMessage) {
+      <p-message severity="success" [text]="successMessage" />
+    }
+
+    @if (isLoadingCurrentContract) {
+      <p-message severity="info" text="Cargando contrato vigente..." />
+    } @else {
+      <form [formGroup]="contractForm" class="form-grid">
+        <label class="field">
+          <span>Puesto de trabajo</span>
+          <p-select
+            formControlName="puestoTrabajo"
+            [options]="optionItems(puestoTrabajoOptions)"
+            optionLabel="label"
+            optionValue="value"
+            [filter]="true"
+            [class.p-invalid]="isInvalid('puestoTrabajo')"
+            [attr.title]="isInvalid('puestoTrabajo') ? 'Campo obligatorio.' : null"
+            appendTo="body"
+          />
+        </label>
+
+        <label class="field">
+          <span>Regimen</span>
+          <p-select
+            formControlName="regimen"
+            [options]="optionItems(regimenOptions)"
+            optionLabel="label"
+            optionValue="value"
+            [class.p-invalid]="isInvalid('regimen')"
+            [attr.title]="isInvalid('regimen') ? 'Campo obligatorio.' : null"
+            appendTo="body"
+            (onChange)="setRegimen($event.value)"
+          />
+        </label>
+
+        <label class="field">
+          <span>Modalidad</span>
+          <p-select
+            formControlName="modalidad"
+            [options]="optionItems(modalidadOptions)"
+            optionLabel="label"
+            optionValue="value"
+            [class.p-invalid]="isInvalid('modalidad')"
+            [attr.title]="isInvalid('modalidad') ? 'Campo obligatorio.' : null"
+            appendTo="body"
+          />
+        </label>
+
+        @if (isPlanilla()) {
+          <label class="field">
+            <span>Seguro de salud</span>
+            <p-select
+              formControlName="seguroSalud"
+              [options]="optionItems(seguroSaludOptions)"
+              optionLabel="label"
+              optionValue="value"
+              appendTo="body"
+            />
+          </label>
+
+          <label class="field">
+            <span>Sistema de pensiones</span>
+            <p-select
+              formControlName="sistemaPensiones"
+              [options]="optionItems(sistemaPensionesOptions)"
+              optionLabel="label"
+              optionValue="value"
+              appendTo="body"
+            />
+          </label>
+        }
+
+        <label class="field">
+          <span>Sueldo base</span>
+          <input
+            pInputText
+            type="number"
+            formControlName="sueldoBase"
+            min="0.01"
+            step="0.01"
+            [class.p-invalid]="isInvalid('sueldoBase')"
+            [attr.title]="isInvalid('sueldoBase') ? 'Ingresa un sueldo valido.' : null"
+          />
+        </label>
+
+        <label class="field">
+          <span>Fecha de inicio</span>
+          <p-datepicker
+            [ngModel]="toPickerDate(contractForm.get('fechaInicio')?.value)"
+            [ngModelOptions]="{ standalone: true }"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            [class.p-invalid]="isInvalid('fechaInicio')"
+            [attr.title]="isInvalid('fechaInicio') ? 'Campo obligatorio.' : null"
+            appendTo="body"
+            (ngModelChange)="setDateControl('fechaInicio', $event)"
+          />
+        </label>
+
+        <label class="field">
+          <span>Contrato con fecha de fin</span>
+          <p-togglebutton
+            [ngModel]="hasContractEndDate()"
+            [ngModelOptions]="{ standalone: true }"
+            onLabel="Con fecha de fin"
+            offLabel="Sin fecha de fin"
+            onIcon="pi pi-calendar"
+            offIcon="pi pi-infinity"
+            styleClass="contract-end-toggle"
+            (onChange)="setContractEndDate($event.checked)"
+          />
+        </label>
+
+        @if (hasContractEndDate()) {
+          <label class="field">
+            <span>Fecha de fin</span>
+            <p-datepicker
+              [ngModel]="toPickerDate(contractForm.get('fechaFin')?.value)"
+              [ngModelOptions]="{ standalone: true }"
+              dateFormat="dd/mm/yy"
+              [showIcon]="true"
+              [class.p-invalid]="isInvalid('fechaFin')"
+              [attr.title]="isInvalid('fechaFin') ? 'Campo obligatorio.' : null"
+              appendTo="body"
+              (ngModelChange)="setDateControl('fechaFin', $event)"
+            />
+          </label>
+        }
+      </form>
+    }
+
+    <div class="actions actions--end">
+      <button
+        pButton
+        type="button"
+        severity="secondary"
+        [outlined]="true"
+        label="Cerrar"
+        icon="pi pi-times"
+        (click)="visibleChange.emit(false)"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Registrar nuevo contrato"
+        icon="pi pi-briefcase"
+        [loading]="isSubmitting"
+        [disabled]="isLoadingCurrentContract"
+        (click)="submit.emit()"
+      ></button>
+    </div>
+  }
+</p-dialog>

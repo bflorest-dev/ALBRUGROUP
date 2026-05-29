@@ -34,6 +34,10 @@ export class AdminRrhhService {
     return this.http.post<ContratoResponse>(`${this.contratosUrl}/${empleadoId}/registrar`, request);
   }
 
+  getContratoVigente(empleadoId: number): Observable<ContratoResponse> {
+    return this.http.get<ContratoResponse>(`${this.contratosUrl}/${empleadoId}/vigente`);
+  }
+
   registrarHorario(request: RegistrarHorarioRequest): Observable<HorarioResponse> {
     return this.http.post<HorarioResponse>(this.horariosUrl, request);
   }

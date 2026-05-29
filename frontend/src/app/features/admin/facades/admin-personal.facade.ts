@@ -6,6 +6,7 @@ import { catchError, filter, firstValueFrom, map, of, startWith, switchMap, time
 import { ApiErrorResponse } from '../../../shared/models/api/api-error-response';
 import { UsuarioResponse } from '../../../shared/models/auth/usuario-response';
 import { PageResponse } from '../../../shared/models/common/page-response';
+import { ContratoResponse } from '../../../shared/models/rrhh/contrato-response';
 import { EmpleadoResponse } from '../../../shared/models/rrhh/empleado-response';
 import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
 import { EmpresaContratistaResponse } from '../../../shared/models/rrhh/empresa-contratista-response';
@@ -292,7 +293,7 @@ export class AdminPersonalFacade {
     fechaNacimiento: ['', [Validators.required]],
     estadoCivil: ['SOLTERO', [Validators.required]],
     tieneHijos: ['false', [Validators.required]],
-    celularPersonal: ['', [Validators.required]],
+    celularPersonal: ['', [Validators.required, Validators.pattern(/^\d{9}$/)]],
     correoPersonal: ['', [Validators.required, Validators.email]],
     origen: ['COMPUTRABAJO', [Validators.required]],
     distrito: ['SAN_MIGUEL', [Validators.required]],
@@ -303,10 +304,22 @@ export class AdminPersonalFacade {
     cuentaPropia: ['true', [Validators.required]],
     parentesco: [''],
     celularTransferencia: [''],
-    idEmpresaContratista: ['']
+    idEmpresaContratista: ['', [Validators.required]]
   });
 
   readonly contratoForm = this.formBuilder.nonNullable.group({
+    puestoTrabajo: ['RECLUTADOR', [Validators.required]],
+    regimen: ['PLANILLA', [Validators.required]],
+    modalidad: ['FULL_TIME', [Validators.required]],
+    seguroSalud: ['ESSALUD'],
+    sistemaPensiones: ['ONP'],
+    sueldoBase: [1130, [Validators.required, Validators.min(0.01)]],
+    fechaInicio: [this.getToday(), [Validators.required]],
+    fechaFin: [''],
+    fechaFinHabilitada: ['false']
+  });
+
+  readonly contractRenewalForm = this.formBuilder.nonNullable.group({
     puestoTrabajo: ['RECLUTADOR', [Validators.required]],
     regimen: ['PLANILLA', [Validators.required]],
     modalidad: ['FULL_TIME', [Validators.required]],
@@ -334,6 +347,7 @@ export class AdminPersonalFacade {
   readonly submitErrorMessage = signal('');
   readonly creationResult = signal<UsuarioResponse | null>(null);
   readonly isPersonalReviewVisible = signal(false);
+  readonly isContractRenewalVisible = signal(false);
   readonly employeesPage = signal<PageResponse<EmpleadoResponse> | null>(null);
   readonly isLoadingEmployees = signal(false);
   readonly employeeListErrorMessage = signal('');
@@ -343,6 +357,12 @@ export class AdminPersonalFacade {
   readonly accessByEmployeeId = signal<Record<number, UsuarioResponse | null>>({});
   readonly accessErrorByEmployeeId = signal<Record<number, string>>({});
   readonly accessLoadingByEmployeeId = signal<Record<number, boolean>>({});
+  readonly selectedEmployeeForContractRenewal = signal<EmpleadoRolResponse | null>(null);
+  readonly currentContractForRenewal = signal<ContratoResponse | null>(null);
+  readonly isLoadingContractRenewal = signal(false);
+  readonly isSubmittingContractRenewal = signal(false);
+  readonly contractRenewalErrorMessage = signal('');
+  readonly contractRenewalSuccessMessage = signal('');
 
   readonly empresasContratistas = toSignal(
     this.adminRrhhService.listarEmpresasContratistas().pipe(
@@ -351,17 +371,25 @@ export class AdminPersonalFacade {
     ),
     { initialValue: [] as EmpresaContratistaResponse[] }
   );
+  private readonly empleadoFormValue = toSignal(
+    this.empleadoForm.valueChanges.pipe(startWith(this.empleadoForm.getRawValue())),
+    { initialValue: this.empleadoForm.getRawValue() }
+  );
+  private readonly contratoFormValue = toSignal(
+    this.contratoForm.valueChanges.pipe(startWith(this.contratoForm.getRawValue())),
+    { initialValue: this.contratoForm.getRawValue() }
+  );
 
   readonly isSubmitting = computed(() => this.createFlowState().status === 'loading');
   readonly personalReviewSummary = computed<PersonalReviewSummary>(() => {
-    const empleado = this.empleadoForm.getRawValue();
-    const contrato = this.contratoForm.getRawValue();
+    const empleado = this.empleadoFormValue();
+    const contrato = this.contratoFormValue();
 
     return {
-      nombreCompleto: `${empleado.nombres.trim()} ${empleado.apellidos.trim()}`.trim(),
-      numeroDocumento: empleado.numeroDocumento.trim(),
-      correoPersonal: empleado.correoPersonal.trim(),
-      rolAsignado: contrato.puestoTrabajo
+      nombreCompleto: `${(empleado.nombres ?? '').trim()} ${(empleado.apellidos ?? '').trim()}`.trim(),
+      numeroDocumento: (empleado.numeroDocumento ?? '').trim(),
+      correoPersonal: (empleado.correoPersonal ?? '').trim(),
+      rolAsignado: contrato.puestoTrabajo ?? ''
     };
   });
   readonly employeeRows = computed(() => this.employeesPage()?.content ?? []);
@@ -504,7 +532,9 @@ export class AdminPersonalFacade {
       return;
     }
 
-    this.horarioForm.controls.fechaInicio.setValue(this.contratoForm.controls.fechaInicio.getRawValue());
+    if (!this.horarioForm.controls.fechaInicio.getRawValue()) {
+      this.horarioForm.controls.fechaInicio.setValue(this.getToday());
+    }
     this.syncLunchBreakControls();
     this.currentStep.set(3);
   }
@@ -692,6 +722,76 @@ export class AdminPersonalFacade {
     });
   }
 
+  async openContractRenewal(employee: EmpleadoRolResponse): Promise<void> {
+    this.selectedEmployeeForContractRenewal.set(employee);
+    this.currentContractForRenewal.set(null);
+    this.contractRenewalErrorMessage.set('');
+    this.contractRenewalSuccessMessage.set('');
+    this.isContractRenewalVisible.set(true);
+    this.isLoadingContractRenewal.set(true);
+    this.resetContractRenewalForm();
+
+    try {
+      const contrato = await firstValueFrom(
+        this.adminRrhhService.getContratoVigente(employee.idEmpleado).pipe(timeout(this.requestTimeoutMs))
+      );
+      this.currentContractForRenewal.set(contrato);
+      this.populateContractRenewalForm(contrato);
+    } catch (error) {
+      this.contractRenewalErrorMessage.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No fue posible cargar el contrato vigente.')
+      );
+    } finally {
+      this.isLoadingContractRenewal.set(false);
+    }
+  }
+
+  closeContractRenewal(): void {
+    this.isContractRenewalVisible.set(false);
+    this.isLoadingContractRenewal.set(false);
+    this.isSubmittingContractRenewal.set(false);
+    this.contractRenewalErrorMessage.set('');
+    this.selectedEmployeeForContractRenewal.set(null);
+    this.currentContractForRenewal.set(null);
+    this.resetContractRenewalForm();
+  }
+
+  async submitContractRenewal(): Promise<void> {
+    const employee = this.selectedEmployeeForContractRenewal();
+    if (!employee) {
+      return;
+    }
+
+    if (this.contractRenewalForm.invalid) {
+      this.contractRenewalForm.markAllAsTouched();
+      return;
+    }
+
+    this.contractRenewalErrorMessage.set('');
+    this.contractRenewalSuccessMessage.set('');
+    this.isSubmittingContractRenewal.set(true);
+
+    try {
+      const contrato = await firstValueFrom(
+        this.adminRrhhService
+          .registrarContrato(employee.idEmpleado, this.buildContratoRequestFromForm(this.contractRenewalForm))
+          .pipe(timeout(this.requestTimeoutMs))
+      );
+
+      this.currentContractForRenewal.set(contrato);
+      this.contractRenewalSuccessMessage.set('Nuevo contrato registrado. El acceso del usuario se sincronizo.');
+      this.isContractRenewalVisible.set(false);
+      void this.loadActiveEmployees();
+      this.refreshUserAccess(employee.idEmpleado);
+    } catch (error) {
+      this.contractRenewalErrorMessage.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No se pudo registrar el nuevo contrato.')
+      );
+    } finally {
+      this.isSubmittingContractRenewal.set(false);
+    }
+  }
+
   private hasAccessLoaded(empleadoId: number): boolean {
     return empleadoId in this.accessByEmployeeId() || !!this.accessErrorByEmployeeId()[empleadoId];
   }
@@ -725,18 +825,7 @@ export class AdminPersonalFacade {
   }
 
   private buildContratoRequest(): RegistrarContratoRequest {
-    const raw = this.contratoForm.getRawValue();
-
-    return {
-      puestoTrabajo: raw.puestoTrabajo,
-      regimen: raw.regimen,
-      modalidad: raw.modalidad,
-      seguroSalud: raw.regimen === 'PLANILLA' && raw.seguroSalud ? raw.seguroSalud : null,
-      sistemaPensiones: raw.regimen === 'PLANILLA' && raw.sistemaPensiones ? raw.sistemaPensiones : null,
-      sueldoBase: Number(raw.sueldoBase),
-      fechaInicio: raw.fechaInicio,
-      fechaFin: raw.fechaFinHabilitada === 'true' && raw.fechaFin ? raw.fechaFin : null
-    };
+    return this.buildContratoRequestFromForm(this.contratoForm);
   }
 
   private buildHorarioRequest(): Omit<RegistrarHorarioRequest, 'idEmpleado' | 'idContrato'> {
@@ -844,6 +933,60 @@ export class AdminPersonalFacade {
 
   private requiresLunchBreak(modalidad: string): boolean {
     return !this.modalidadesSinAlmuerzo.has(modalidad);
+  }
+
+  private buildContratoRequestFromForm(form: typeof this.contratoForm): RegistrarContratoRequest {
+    const raw = form.getRawValue();
+
+    return {
+      puestoTrabajo: raw.puestoTrabajo,
+      regimen: raw.regimen,
+      modalidad: raw.modalidad,
+      seguroSalud: raw.regimen === 'PLANILLA' && raw.seguroSalud ? raw.seguroSalud : null,
+      sistemaPensiones: raw.regimen === 'PLANILLA' && raw.sistemaPensiones ? raw.sistemaPensiones : null,
+      sueldoBase: Number(raw.sueldoBase),
+      fechaInicio: raw.fechaInicio,
+      fechaFin: raw.fechaFinHabilitada === 'true' && raw.fechaFin ? raw.fechaFin : null
+    };
+  }
+
+  private populateContractRenewalForm(contrato: ContratoResponse): void {
+    this.contractRenewalForm.reset({
+      puestoTrabajo: contrato.puestoTrabajo,
+      regimen: contrato.regimen,
+      modalidad: contrato.modalidad,
+      seguroSalud: contrato.seguroSalud ?? 'ESSALUD',
+      sistemaPensiones: contrato.sistemaPensiones ?? 'ONP',
+      sueldoBase: contrato.sueldoBase,
+      fechaInicio: this.getToday(),
+      fechaFin: '',
+      fechaFinHabilitada: 'false'
+    });
+  }
+
+  private resetContractRenewalForm(): void {
+    this.contractRenewalForm.reset({
+      puestoTrabajo: 'RECLUTADOR',
+      regimen: 'PLANILLA',
+      modalidad: 'FULL_TIME',
+      seguroSalud: 'ESSALUD',
+      sistemaPensiones: 'ONP',
+      sueldoBase: 1130,
+      fechaInicio: this.getToday(),
+      fechaFin: '',
+      fechaFinHabilitada: 'false'
+    });
+  }
+
+  private refreshUserAccess(empleadoId: number): void {
+    if (!(empleadoId in this.accessByEmployeeId()) && !this.accessErrorByEmployeeId()[empleadoId]) {
+      return;
+    }
+
+    this.accessLookupRequest.set({
+      requestId: this.nextRequestId++,
+      empleadoId
+    });
   }
 
   private resetScheduleRows(): void {

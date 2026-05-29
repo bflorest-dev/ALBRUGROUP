@@ -21,6 +21,8 @@
               [options]="empresaItems()"
               optionLabel="label"
               optionValue="value"
+              [class.p-invalid]="isInvalid(empleadoForm, 'idEmpresaContratista')"
+              [attr.title]="isInvalid(empleadoForm, 'idEmpresaContratista') ? 'Campo obligatorio.' : null"
               appendTo="body"
             />
           </label>
@@ -124,8 +126,11 @@
               pInputText
               type="text"
               formControlName="celularPersonal"
+              inputmode="numeric"
+              maxlength="9"
+              (input)="setNumericDigits(empleadoForm, 'celularPersonal', $any($event.target).value, 9)"
               [class.p-invalid]="isInvalid(empleadoForm, 'celularPersonal')"
-              [attr.title]="isInvalid(empleadoForm, 'celularPersonal') ? 'Campo obligatorio.' : null"
+              [attr.title]="isInvalid(empleadoForm, 'celularPersonal') ? 'Ingresa 9 digitos.' : null"
             />
           </label>
 

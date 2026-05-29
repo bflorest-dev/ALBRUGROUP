@@ -233,20 +233,48 @@
 :host ::ng-deep .compensable-toggle {
   width: 8rem;
   justify-content: center;
-  color: #fff;
 }
 
 :host ::ng-deep .compensable-toggle.is-yes {
   border-color: #15803d;
   background: #15803d;
+  color: #fff;
 }
 
 :host ::ng-deep .compensable-toggle.is-no {
   border-color: #b91c1c;
   background: #b91c1c;
+  color: #fff;
 }
 
-:host ::ng-deep .compensable-toggle * {
+:host ::ng-deep .compensable-toggle.is-yes.p-togglebutton,
+:host ::ng-deep .compensable-toggle.is-yes .p-togglebutton-content {
+  border-color: #15803d;
+  background: #15803d;
+  color: #fff;
+}
+
+:host ::ng-deep .compensable-toggle.is-no.p-togglebutton,
+:host ::ng-deep .compensable-toggle.is-no .p-togglebutton-content {
+  border-color: #b91c1c;
+  background: #b91c1c;
+  color: #fff;
+}
+
+:host ::ng-deep .compensable-toggle.is-yes.p-togglebutton:not(:disabled):hover,
+:host ::ng-deep .compensable-toggle.is-yes.p-togglebutton:not(:disabled):hover .p-togglebutton-content {
+  border-color: #166534;
+  background: #166534;
+}
+
+:host ::ng-deep .compensable-toggle.is-no.p-togglebutton:not(:disabled):hover,
+:host ::ng-deep .compensable-toggle.is-no.p-togglebutton:not(:disabled):hover .p-togglebutton-content {
+  border-color: #991b1b;
+  background: #991b1b;
+}
+
+:host ::ng-deep .compensable-toggle.is-yes *,
+:host ::ng-deep .compensable-toggle.is-no * {
   color: #fff;
 }
 
