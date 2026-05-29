@@ -211,7 +211,8 @@
                 label="Llamar"
                 size="small"
                 severity="secondary"
-                disabled
+                [disabled]="!row.lead || !facade.canMutateOperationalData()"
+                (click)="facade.openDialer(row)"
               ></button>
               <button
                 pButton

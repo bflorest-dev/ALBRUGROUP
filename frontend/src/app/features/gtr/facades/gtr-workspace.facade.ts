@@ -8,6 +8,7 @@ import {
   ConnectedUserResponse,
   PresenceService
 } from '../../../core/services/presence.service';
+import { BrowserSessionService } from '../../../core/services/browser-session.service';
 import { OperationalGateService } from '../../../core/services/operational-gate.service';
 import { EstadoAsistencia } from '../../../shared/models/schedule/estado-asistencia';
 import { AttendanceRealtimeService } from '../../../core/services/attendance-realtime.service';
@@ -26,6 +27,7 @@ import {
   MasivoLeadFilters,
   PageQuery
 } from '../../../shared/models/preventa/preventa.models';
+import { buildTelUrl, buildWhatsAppUrl } from '../../../shared/utils/phone-link';
 import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
 import { PreventaLeadService } from '../../preventa/services/preventa-lead.service';
 
@@ -96,6 +98,7 @@ export class GtrWorkspaceFacade {
   private readonly realtimeService = inject(LeadRealtimeService);
   private readonly attendanceRealtimeService = inject(AttendanceRealtimeService);
   private readonly operationalGateService = inject(OperationalGateService);
+  private readonly browserSessionService = inject(BrowserSessionService);
   private readonly presenceService = inject(PresenceService);
   private readonly presenceRealtimeService = inject(PresenceRealtimeService);
   private readonly realtimeSubscription = new Subscription();
@@ -578,6 +581,21 @@ export class GtrWorkspaceFacade {
     }
 
     this.document.defaultView?.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  openDialer(row: Pick<LeadGtrResponse, 'prefijo' | 'lead'>): void {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
+
+    const url = this.telUrl(row.prefijo, row.lead);
+    if (!url) {
+      this.errorMessage.set('El lead no tiene un numero valido para iniciar la llamada.');
+      return;
+    }
+
+    this.browserSessionService.allowExternalNavigation();
+    this.document.defaultView?.location.assign(url);
   }
 
   openAssignment(row?: LeadGtrResponse): void {
@@ -1753,14 +1771,11 @@ export class GtrWorkspaceFacade {
   }
 
   private whatsAppUrl(prefijo?: string | null, lead?: string | null): string | null {
-    const phone = this.normalizePhoneNumber(prefijo, lead);
-    return phone ? `https://wa.me/${phone}` : null;
+    return buildWhatsAppUrl(prefijo, lead);
   }
 
-  private normalizePhoneNumber(prefijo?: string | null, lead?: string | null): string {
-    const prefixDigits = (prefijo ?? '').replace(/\D/g, '');
-    const leadDigits = (lead ?? '').replace(/\D/g, '');
-    return `${prefixDigits}${leadDigits}`.trim();
+  private telUrl(prefijo?: string | null, lead?: string | null): string | null {
+    return buildTelUrl(prefijo, lead);
   }
 
   private formatLocalDate(date: Date): string {

@@ -16,6 +16,7 @@ import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { AsesorVentasWorkspaceStateService } from '../../../../core/services/asesor-ventas-workspace-state.service';
+import { BrowserSessionService } from '../../../../core/services/browser-session.service';
 import { OperationalGateService } from '../../../../core/services/operational-gate.service';
 import { DisponibilidadOperativa, PresenceService } from '../../../../core/services/presence.service';
 import { SessionService } from '../../../../core/services/session.service';
@@ -32,6 +33,7 @@ import {
   PromocionComercialResponse,
   UbigeoItem
 } from '../../../../shared/models/preventa/preventa.models';
+import { buildTelUrl } from '../../../../shared/utils/phone-link';
 import { LeadRealtimeService } from '../../../preventa/services/lead-realtime.service';
 import { PreventaLeadService } from '../../../preventa/services/preventa-lead.service';
 
@@ -69,6 +71,7 @@ type OfertaAdditionalSelection = {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
+  private readonly browserSessionService = inject(BrowserSessionService);
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly operationalGateService = inject(OperationalGateService);
   private readonly presenceService = inject(PresenceService);
@@ -383,6 +386,15 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected async registrarLlamada(): Promise<void> {
+    const detail = this.detail();
+    const telUrl = detail ? this.telUrl(detail) : null;
+    if (!telUrl) {
+      this.errorMessage.set('El lead no tiene un numero valido para iniciar la llamada.');
+      return;
+    }
+
+    this.browserSessionService.allowExternalNavigation();
+    window.location.assign(telUrl);
     await this.registrarContactoOperativo('Llamada registrada.');
   }
 
@@ -720,6 +732,10 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
 
   protected leadPhone(row: LeadAsesorVentasResponse | LeadDetalleResponse): string {
     return `${row.prefijo} ${row.lead}`.trim();
+  }
+
+  private telUrl(row: Pick<LeadAsesorVentasResponse, 'prefijo' | 'lead'>): string | null {
+    return buildTelUrl(row.prefijo, row.lead);
   }
 
   protected estadoSeverity(estado: string | null | undefined): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {

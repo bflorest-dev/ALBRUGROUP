@@ -13,8 +13,10 @@ type ActiveTabsRegistry = Record<string, number>;
 export class BrowserSessionService {
   private readonly heartbeatIntervalMs = 15000;
   private readonly staleTabThresholdMs = 30000;
+  private readonly externalNavigationBypassMs = 2000;
   private heartbeatTimerId: number | null = null;
   private tabId = '';
+  private suppressBeforeUnloadUntil = 0;
 
   constructor(
     @Inject(DOCUMENT) private readonly document: Document,
@@ -47,6 +49,10 @@ export class BrowserSessionService {
   }
 
   private readonly handleBeforeUnload = (event: BeforeUnloadEvent): string | void => {
+    if (Date.now() < this.suppressBeforeUnloadUntil) {
+      return;
+    }
+
     if (!this.operationalGateService.shouldWarnBeforeUnload()) {
       return;
     }
@@ -55,6 +61,10 @@ export class BrowserSessionService {
     event.returnValue = '';
     return '';
   };
+
+  allowExternalNavigation(): void {
+    this.suppressBeforeUnloadUntil = Date.now() + this.externalNavigationBypassMs;
+  }
 
   private readonly handleTabClose = (): void => {
     this.stopHeartbeat();
