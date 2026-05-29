@@ -5,11 +5,12 @@ import { CardModule } from 'primeng/card';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
+import { NormalizeTextDirective } from '../../../../shared/directives/normalize-text.directive';
 import { OfertaLaboralResponse } from '../../../../shared/models/recruitment/oferta-laboral-response';
 
 @Component({
   selector: 'app-postulante-form-panel',
-  imports: [ReactiveFormsModule, ButtonModule, CardModule, InputTextModule, MessageModule, SelectModule],
+  imports: [ReactiveFormsModule, ButtonModule, CardModule, InputTextModule, MessageModule, NormalizeTextDirective, SelectModule],
   templateUrl: './postulante-form-panel.component.html',
   styleUrl: './postulante-form-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

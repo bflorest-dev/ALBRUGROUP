@@ -15,11 +15,11 @@
     <form class="form-grid" [formGroup]="employeeCreateForm" (ngSubmit)="registerEmployee.emit()">
       <label>
         <span>Nombres</span>
-        <input pInputText formControlName="nombres" />
+        <input appNormalizeText="personName" pInputText formControlName="nombres" />
       </label>
       <label>
         <span>Apellidos</span>
-        <input pInputText formControlName="apellidos" />
+        <input appNormalizeText="personName" pInputText formControlName="apellidos" />
       </label>
       <label>
         <span>Tipo documento</span>
@@ -158,8 +158,8 @@
     <section class="drawer-section">
       <h4>Datos personales</h4>
       <form class="form-grid" [formGroup]="personalForm" (ngSubmit)="submitPersonalUpdate.emit()">
-        <label><span>Nombres</span><input pInputText formControlName="nombres" /></label>
-        <label><span>Apellidos</span><input pInputText formControlName="apellidos" /></label>
+        <label><span>Nombres</span><input appNormalizeText="personName" pInputText formControlName="nombres" /></label>
+        <label><span>Apellidos</span><input appNormalizeText="personName" pInputText formControlName="apellidos" /></label>
         <label><span>Tipo documento</span><p-select formControlName="tipoDocumento" [options]="documentoOptions" appendTo="body" /></label>
         <label><span>Documento</span><input pInputText formControlName="numeroDocumento" /></label>
         <label><span>Nacionalidad</span><p-select formControlName="nacionalidad" [options]="nacionalidadOptions" appendTo="body" /></label>

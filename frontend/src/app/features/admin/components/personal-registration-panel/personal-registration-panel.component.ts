@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
 import { AbstractControl, FormArray, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { UsuarioResponse } from '../../../../shared/models/auth/usuario-response';
 import { EmpresaContratistaResponse } from '../../../../shared/models/rrhh/empresa-contratista-response';
+import { NormalizeTextDirective } from '../../../../shared/directives/normalize-text.directive';
 import { formatLabel } from '../../../../shared/utils/display-label';
 import { PersonalReviewSummary } from '../../facades/admin-personal.facade';
 import { ButtonModule } from 'primeng/button';
@@ -29,6 +30,7 @@ type SelectOption = {
     DialogModule,
     InputTextModule,
     MessageModule,
+    NormalizeTextDirective,
     SelectModule,
     StepperModule,
     TagModule,

@@ -10,6 +10,7 @@ import { SelectModule } from 'primeng/select';
 import { StepsModule } from 'primeng/steps';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { NormalizeTextDirective } from '../../../../shared/directives/normalize-text.directive';
 import { EmpleadoResponse } from '../../../../shared/models/rrhh/empleado-response';
 import { EmpresaContratistaResponse } from '../../../../shared/models/rrhh/empresa-contratista-response';
 import { PostulacionResponse } from '../../../../shared/models/recruitment/postulacion-response';
@@ -24,6 +25,7 @@ import { formatLabel } from '../../../../shared/utils/display-label';
     DrawerModule,
     InputTextModule,
     MessageModule,
+    NormalizeTextDirective,
     PaginatorModule,
     SelectModule,
     StepsModule,
