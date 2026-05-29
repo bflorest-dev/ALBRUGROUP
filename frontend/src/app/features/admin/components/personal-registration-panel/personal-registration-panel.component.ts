@@ -20,6 +20,11 @@ type SelectOption = {
   value: string;
 };
 
+type ScheduleRule = {
+  durationLabel: string;
+  lunchLabel: string | null;
+};
+
 @Component({
   selector: 'app-personal-registration-panel',
   imports: [
@@ -87,6 +92,12 @@ export class PersonalRegistrationPanelComponent {
   private readonly optionItemsCache = new WeakMap<readonly string[], SelectOption[]>();
   private readonly optionalOptionItemsCache = new WeakMap<readonly string[], SelectOption[]>();
   private empresaItemsCache: { source: readonly EmpresaContratistaResponse[]; items: SelectOption[] } | null = null;
+  private readonly scheduleRules: Record<string, ScheduleRule> = {
+    PART_TIME: { durationLabel: '4 horas', lunchLabel: null },
+    SEMI_FULL: { durationLabel: '6 horas', lunchLabel: null },
+    FULL_TIME: { durationLabel: '9 horas', lunchLabel: '60 minutos de almuerzo' },
+    SUPER_FULL: { durationLabel: '10 horas', lunchLabel: '60 minutos de almuerzo' }
+  };
 
   protected optionItems(options: string[]): SelectOption[] {
     let cached = this.optionItemsCache.get(options);
@@ -286,6 +297,64 @@ export class PersonalRegistrationPanelComponent {
 
   protected isRestDay(day: string): boolean {
     return this.horarioForm.get('diaDescanso')?.value === day;
+  }
+
+  protected scheduleRuleHint(): string {
+    const modalidad = this.contratoForm.get('modalidad')?.value ?? 'FULL_TIME';
+    const rule = this.scheduleRules[modalidad] ?? this.scheduleRules['FULL_TIME'];
+
+    if (rule.lunchLabel) {
+      return `${this.toLabel(modalidad)}: ${rule.durationLabel} entre entrada y salida, con ${rule.lunchLabel}.`;
+    }
+
+    return `${this.toLabel(modalidad)}: ${rule.durationLabel} entre entrada y salida, sin almuerzo.`;
+  }
+
+  protected scheduleValidationMessage(): string | null {
+    const error = this.horarioForm.errors?.['scheduleRule'] as { message?: string } | undefined;
+    if (!error?.message) {
+      return null;
+    }
+
+    return this.horarioForm.touched || this.horarioForm.dirty ? error.message : null;
+  }
+
+  protected isSimpleScheduleFieldInvalid(controlName: string): boolean {
+    if (this.isInvalid(this.horarioForm, controlName)) {
+      return true;
+    }
+
+    if (this.isAdvancedSchedule()) {
+      return false;
+    }
+
+    const error = this.horarioForm.errors?.['scheduleRule'] as { simpleFields?: string[] } | undefined;
+    return Boolean(error?.simpleFields?.includes(controlName) && (this.horarioForm.touched || this.horarioForm.dirty));
+  }
+
+  protected isScheduleRowFieldInvalid(rowIndex: number, controlName: string): boolean {
+    const row = this.getScheduleRows()[rowIndex] as FormGroup | undefined;
+    if (row?.get(controlName)?.invalid && (row.get(controlName)?.touched || row.get(controlName)?.dirty)) {
+      return true;
+    }
+
+    if (!this.isAdvancedSchedule()) {
+      return false;
+    }
+
+    const error = this.horarioForm.errors?.['scheduleRule'] as
+      | { rowErrors?: Array<{ index: number; fields: string[] }> }
+      | undefined;
+    const rowError = error?.rowErrors?.find((item) => item.index === rowIndex);
+    return Boolean(rowError?.fields.includes(controlName) && (this.horarioForm.touched || this.horarioForm.dirty));
+  }
+
+  protected scheduleFieldTitle(controlName: string): string | null {
+    return this.isSimpleScheduleFieldInvalid(controlName) ? this.scheduleValidationMessage() : null;
+  }
+
+  protected scheduleRowFieldTitle(rowIndex: number, controlName: string): string | null {
+    return this.isScheduleRowFieldInvalid(rowIndex, controlName) ? this.scheduleValidationMessage() : null;
   }
 
   protected closePersonalReview(visible: boolean): void {

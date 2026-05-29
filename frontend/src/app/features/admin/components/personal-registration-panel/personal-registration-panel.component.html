@@ -443,6 +443,10 @@
             />
           </label>
 
+          <div class="field--wide">
+            <p-message severity="info" [text]="scheduleRuleHint()" />
+          </div>
+
           @if (!isAdvancedSchedule()) {
             <div class="schedule-simple field--wide">
               <div class="schedule-simple__times">
@@ -456,6 +460,8 @@
                     [stepMinute]="15"
                     [showIcon]="true"
                     icon="pi pi-clock"
+                    [class.p-invalid]="isSimpleScheduleFieldInvalid('horaEntrada')"
+                    [attr.title]="scheduleFieldTitle('horaEntrada')"
                     appendTo="body"
                     (onSelect)="applySimpleSchedule()"
                     (onInput)="applySimpleSchedule()"
@@ -471,6 +477,8 @@
                     [stepMinute]="15"
                     [showIcon]="true"
                     icon="pi pi-clock"
+                    [class.p-invalid]="isSimpleScheduleFieldInvalid('horaSalida')"
+                    [attr.title]="scheduleFieldTitle('horaSalida')"
                     appendTo="body"
                     (onSelect)="applySimpleSchedule()"
                     (onInput)="applySimpleSchedule()"
@@ -479,32 +487,36 @@
                 @if (usesLunchBreak()) {
                   <label class="field field--time">
                     <span>Inicio almuerzo</span>
-                    <p-datepicker
-                      formControlName="inicioAlmuerzo"
-                      dataType="string"
+                      <p-datepicker
+                        formControlName="inicioAlmuerzo"
+                        dataType="string"
                       [timeOnly]="true"
                       hourFormat="24"
-                      [stepMinute]="15"
-                      [showIcon]="true"
-                      icon="pi pi-clock"
-                      appendTo="body"
-                      (onSelect)="applySimpleSchedule()"
-                      (onInput)="applySimpleSchedule()"
+                        [stepMinute]="15"
+                        [showIcon]="true"
+                        icon="pi pi-clock"
+                        [class.p-invalid]="isSimpleScheduleFieldInvalid('inicioAlmuerzo')"
+                        [attr.title]="scheduleFieldTitle('inicioAlmuerzo')"
+                        appendTo="body"
+                        (onSelect)="applySimpleSchedule()"
+                        (onInput)="applySimpleSchedule()"
                     />
                   </label>
                   <label class="field field--time">
                     <span>Fin almuerzo</span>
-                    <p-datepicker
-                      formControlName="finAlmuerzo"
-                      dataType="string"
+                      <p-datepicker
+                        formControlName="finAlmuerzo"
+                        dataType="string"
                       [timeOnly]="true"
                       hourFormat="24"
-                      [stepMinute]="15"
-                      [showIcon]="true"
-                      icon="pi pi-clock"
-                      appendTo="body"
-                      (onSelect)="applySimpleSchedule()"
-                      (onInput)="applySimpleSchedule()"
+                        [stepMinute]="15"
+                        [showIcon]="true"
+                        icon="pi pi-clock"
+                        [class.p-invalid]="isSimpleScheduleFieldInvalid('finAlmuerzo')"
+                        [attr.title]="scheduleFieldTitle('finAlmuerzo')"
+                        appendTo="body"
+                        (onSelect)="applySimpleSchedule()"
+                        (onInput)="applySimpleSchedule()"
                     />
                   </label>
                 }
@@ -569,6 +581,8 @@
                         [stepMinute]="15"
                         [showIcon]="true"
                         icon="pi pi-clock"
+                        [class.p-invalid]="isScheduleRowFieldInvalid($index, 'horaEntrada')"
+                        [attr.title]="scheduleRowFieldTitle($index, 'horaEntrada')"
                         appendTo="body"
                       />
                     </label>
@@ -583,6 +597,8 @@
                         [stepMinute]="15"
                         [showIcon]="true"
                         icon="pi pi-clock"
+                        [class.p-invalid]="isScheduleRowFieldInvalid($index, 'horaSalida')"
+                        [attr.title]="scheduleRowFieldTitle($index, 'horaSalida')"
                         appendTo="body"
                       />
                     </label>
@@ -598,6 +614,8 @@
                           [stepMinute]="15"
                           [showIcon]="true"
                           icon="pi pi-clock"
+                          [class.p-invalid]="isScheduleRowFieldInvalid($index, 'inicioAlmuerzo')"
+                          [attr.title]="scheduleRowFieldTitle($index, 'inicioAlmuerzo')"
                           appendTo="body"
                         />
                       </label>
@@ -612,6 +630,8 @@
                           [stepMinute]="15"
                           [showIcon]="true"
                           icon="pi pi-clock"
+                          [class.p-invalid]="isScheduleRowFieldInvalid($index, 'finAlmuerzo')"
+                          [attr.title]="scheduleRowFieldTitle($index, 'finAlmuerzo')"
                           appendTo="body"
                         />
                       </label>
@@ -622,6 +642,10 @@
             </div>
           }
         </form>
+
+        @if (scheduleValidationMessage(); as scheduleMessage) {
+          <p-message severity="error" [text]="scheduleMessage" />
+        }
 
         @if (submitErrorMessage) {
           <p-message severity="error" [text]="submitErrorMessage" />

@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { FormBuilder, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { catchError, filter, firstValueFrom, map, of, startWith, switchMap, timeout } from 'rxjs';
 import { ApiErrorResponse } from '../../../shared/models/api/api-error-response';
 import { UsuarioResponse } from '../../../shared/models/auth/usuario-response';
@@ -58,6 +58,23 @@ type AccessLookupState =
   | { status: 'success'; requestId: number; empleadoId: number; usuario: UsuarioResponse }
   | { status: 'error'; requestId: number; empleadoId: number; message: string };
 
+type ScheduleRule = {
+  totalMinutes: number;
+  lunchMinutes: number;
+  requiresLunch: boolean;
+  defaultStart: string;
+  defaultEnd: string;
+  defaultLunchStart: string;
+  defaultLunchEnd: string;
+  durationLabel: string;
+};
+
+type ScheduleRuleError = {
+  message: string;
+  simpleFields?: string[];
+  rowErrors?: Array<{ index: number; fields: string[] }>;
+};
+
 export type PersonalReviewSummary = {
   nombreCompleto: string;
   numeroDocumento: string;
@@ -72,6 +89,48 @@ export class AdminPersonalFacade {
   private readonly adminRrhhService = inject(AdminRrhhService);
   private readonly authService = inject(AuthService);
   private readonly modalidadesSinAlmuerzo = new Set(['PART_TIME', 'SEMI_FULL']);
+  private readonly scheduleRules: Record<string, ScheduleRule> = {
+    PART_TIME: {
+      totalMinutes: 240,
+      lunchMinutes: 0,
+      requiresLunch: false,
+      defaultStart: '09:00',
+      defaultEnd: '13:00',
+      defaultLunchStart: '',
+      defaultLunchEnd: '',
+      durationLabel: '4 horas'
+    },
+    SEMI_FULL: {
+      totalMinutes: 360,
+      lunchMinutes: 0,
+      requiresLunch: false,
+      defaultStart: '09:00',
+      defaultEnd: '15:00',
+      defaultLunchStart: '',
+      defaultLunchEnd: '',
+      durationLabel: '6 horas'
+    },
+    FULL_TIME: {
+      totalMinutes: 540,
+      lunchMinutes: 60,
+      requiresLunch: true,
+      defaultStart: '09:00',
+      defaultEnd: '18:00',
+      defaultLunchStart: '13:00',
+      defaultLunchEnd: '14:00',
+      durationLabel: '9 horas'
+    },
+    SUPER_FULL: {
+      totalMinutes: 600,
+      lunchMinutes: 60,
+      requiresLunch: true,
+      defaultStart: '09:00',
+      defaultEnd: '19:00',
+      defaultLunchStart: '13:00',
+      defaultLunchEnd: '14:00',
+      durationLabel: '10 horas'
+    }
+  };
   private nextRequestId = 1;
   private handledCreateFlowRequestId = 0;
 
@@ -332,16 +391,20 @@ export class AdminPersonalFacade {
   });
 
   readonly horarioForm = this.formBuilder.nonNullable.group({
-    fechaInicio: [this.getToday(), [Validators.required]],
-    compensable: ['true', [Validators.required]],
-    horaEntrada: ['09:00', [Validators.required]],
-    horaSalida: ['18:00', [Validators.required]],
-    inicioAlmuerzo: ['13:00', [Validators.required]],
-    finAlmuerzo: ['14:00', [Validators.required]],
-    diaDescanso: ['DOMINGO', [Validators.required]],
-    modoAvanzado: ['false', [Validators.required]],
-    detalles: this.formBuilder.nonNullable.array(this.buildDefaultScheduleRows())
-  });
+      fechaInicio: [this.getToday(), [Validators.required]],
+      compensable: ['true', [Validators.required]],
+      horaEntrada: ['09:00', [Validators.required]],
+      horaSalida: ['18:00', [Validators.required]],
+      inicioAlmuerzo: ['13:00', [Validators.required]],
+      finAlmuerzo: ['14:00', [Validators.required]],
+      diaDescanso: ['DOMINGO', [Validators.required]],
+      modoAvanzado: ['false', [Validators.required]],
+      detalles: this.formBuilder.nonNullable.array(this.buildDefaultScheduleRows())
+    },
+    {
+      validators: [this.createHorarioValidator()]
+    }
+  );
 
   readonly currentStep = signal(1);
   readonly submitErrorMessage = signal('');
@@ -378,6 +441,10 @@ export class AdminPersonalFacade {
   private readonly contratoFormValue = toSignal(
     this.contratoForm.valueChanges.pipe(startWith(this.contratoForm.getRawValue())),
     { initialValue: this.contratoForm.getRawValue() }
+  );
+  private readonly modalidadValue = toSignal(
+    this.contratoForm.controls.modalidad.valueChanges.pipe(startWith(this.contratoForm.controls.modalidad.getRawValue())),
+    { initialValue: this.contratoForm.controls.modalidad.getRawValue() }
   );
 
   readonly isSubmitting = computed(() => this.createFlowState().status === 'loading');
@@ -438,6 +505,16 @@ export class AdminPersonalFacade {
         this.isLoadingEmployees.set(false);
         this.employeeListErrorMessage.set(state.message);
       }
+    });
+
+    effect(() => {
+      const modalidad = this.modalidadValue();
+
+      untracked(() => {
+        this.applySchedulePresetForModalidad(modalidad);
+        this.syncLunchBreakControls();
+        this.horarioForm.updateValueAndValidity({ emitEvent: false });
+      });
     });
 
     effect(() => {
@@ -669,6 +746,9 @@ export class AdminPersonalFacade {
       modoAvanzado: 'false'
     });
     this.resetScheduleRows();
+    this.applySchedulePresetForModalidad(this.contratoForm.controls.modalidad.getRawValue(), true);
+    this.syncLunchBreakControls();
+    this.horarioForm.updateValueAndValidity({ emitEvent: false });
   }
 
   loadEmployees(pageNumber = 0, silent = false): void {
@@ -851,13 +931,15 @@ export class AdminPersonalFacade {
   }
 
   private buildDefaultScheduleRows() {
+    const rule = this.resolveScheduleRule('FULL_TIME');
+
     return this.diasSemanaOptions.map((dia) =>
       this.formBuilder.nonNullable.group({
         dia: [dia, [Validators.required]],
-        horaEntrada: ['09:00', [Validators.required]],
-        horaSalida: ['18:00', [Validators.required]],
-        inicioAlmuerzo: ['13:00', [Validators.required]],
-        finAlmuerzo: ['14:00', [Validators.required]],
+        horaEntrada: [rule.defaultStart, [Validators.required]],
+        horaSalida: [rule.defaultEnd, [Validators.required]],
+        inicioAlmuerzo: [rule.defaultLunchStart, [Validators.required]],
+        finAlmuerzo: [rule.defaultLunchEnd, [Validators.required]],
         laborable: [dia === 'DOMINGO' ? 'false' : 'true', [Validators.required]]
       })
     );
@@ -882,10 +964,11 @@ export class AdminPersonalFacade {
   }
 
   private syncLunchBreakControls(): void {
-    const requiereAlmuerzo = this.requiresLunchBreak(this.contratoForm.controls.modalidad.getRawValue());
+    const rule = this.resolveScheduleRule(this.contratoForm.controls.modalidad.getRawValue());
+    const requiereAlmuerzo = rule.requiresLunch;
     const defaults = {
-      inicioAlmuerzo: '13:00',
-      finAlmuerzo: '14:00'
+      inicioAlmuerzo: rule.defaultLunchStart,
+      finAlmuerzo: rule.defaultLunchEnd
     };
 
     const controls = [
@@ -929,10 +1012,183 @@ export class AdminPersonalFacade {
     }
 
     controls.forEach((control) => control.updateValueAndValidity({ emitEvent: false }));
+    this.horarioForm.updateValueAndValidity({ emitEvent: false });
   }
 
   private requiresLunchBreak(modalidad: string): boolean {
     return !this.modalidadesSinAlmuerzo.has(modalidad);
+  }
+
+  private createHorarioValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const raw = control.getRawValue() as {
+        horaEntrada: string;
+        horaSalida: string;
+        inicioAlmuerzo: string;
+        finAlmuerzo: string;
+        modoAvanzado: string;
+        detalles: Array<{
+          horaEntrada: string;
+          horaSalida: string;
+          inicioAlmuerzo: string;
+          finAlmuerzo: string;
+          laborable: string;
+        }>;
+      };
+      const modalidad = this.contratoForm.controls.modalidad.getRawValue();
+      const rule = this.resolveScheduleRule(modalidad);
+
+      if (raw.modoAvanzado === 'true') {
+        const rowErrors = raw.detalles
+          .map((detalle, index) => {
+            if (detalle.laborable !== 'true') {
+              return null;
+            }
+
+            const fields = this.validateScheduleBlock(detalle, rule);
+            return fields ? { index, fields } : null;
+          })
+          .filter((value): value is { index: number; fields: string[] } => value !== null);
+
+        return rowErrors.length
+          ? {
+              scheduleRule: {
+                message: this.buildScheduleRuleMessage(modalidad, rule),
+                rowErrors
+              } satisfies ScheduleRuleError
+            }
+          : null;
+      }
+
+      const simpleFields = this.validateScheduleBlock(raw, rule);
+      return simpleFields
+        ? {
+            scheduleRule: {
+              message: this.buildScheduleRuleMessage(modalidad, rule),
+              simpleFields
+            } satisfies ScheduleRuleError
+          }
+        : null;
+    };
+  }
+
+  private validateScheduleBlock(
+    block: {
+      horaEntrada: string;
+      horaSalida: string;
+      inicioAlmuerzo: string;
+      finAlmuerzo: string;
+    },
+    rule: ScheduleRule
+  ): string[] | null {
+    const entrada = this.parseTimeToMinutes(block.horaEntrada);
+    const salida = this.parseTimeToMinutes(block.horaSalida);
+
+    if (entrada === null || salida === null) {
+      return null;
+    }
+
+    const fields = new Set<string>();
+
+    if (salida <= entrada || salida - entrada !== rule.totalMinutes) {
+      fields.add('horaEntrada');
+      fields.add('horaSalida');
+    }
+
+    if (!rule.requiresLunch) {
+      return fields.size ? [...fields] : null;
+    }
+
+    const inicioAlmuerzo = this.parseTimeToMinutes(block.inicioAlmuerzo);
+    const finAlmuerzo = this.parseTimeToMinutes(block.finAlmuerzo);
+
+    if (inicioAlmuerzo === null || finAlmuerzo === null) {
+      return fields.size ? [...fields] : null;
+    }
+
+    if (
+      finAlmuerzo <= inicioAlmuerzo ||
+      inicioAlmuerzo <= entrada ||
+      finAlmuerzo >= salida ||
+      finAlmuerzo - inicioAlmuerzo !== rule.lunchMinutes
+    ) {
+      fields.add('inicioAlmuerzo');
+      fields.add('finAlmuerzo');
+    }
+
+    return fields.size ? [...fields] : null;
+  }
+
+  private buildScheduleRuleMessage(modalidad: string, rule: ScheduleRule): string {
+    if (rule.requiresLunch) {
+      return `${modalidad} requiere ${rule.durationLabel} entre entrada y salida, con ${rule.lunchMinutes} minutos de almuerzo.`;
+    }
+
+    return `${modalidad} requiere ${rule.durationLabel} entre entrada y salida, sin almuerzo.`;
+  }
+
+  private parseTimeToMinutes(value: string | null | undefined): number | null {
+    if (!value) {
+      return null;
+    }
+
+    const match = /^(\d{2}):(\d{2})$/.exec(value);
+    if (!match) {
+      return null;
+    }
+
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    return hours * 60 + minutes;
+  }
+
+  private resolveScheduleRule(modalidad: string): ScheduleRule {
+    return this.scheduleRules[modalidad] ?? this.scheduleRules['FULL_TIME'];
+  }
+
+  private applySchedulePresetForModalidad(modalidad: string, force = false): void {
+    const rule = this.resolveScheduleRule(modalidad);
+    const current = this.horarioForm.getRawValue();
+
+    this.horarioForm.patchValue(
+      {
+        horaEntrada: rule.defaultStart,
+        horaSalida: rule.defaultEnd
+      },
+      { emitEvent: false }
+    );
+
+    if (rule.requiresLunch) {
+      this.horarioForm.patchValue(
+        {
+          inicioAlmuerzo: rule.defaultLunchStart,
+          finAlmuerzo: rule.defaultLunchEnd
+        },
+        { emitEvent: false }
+      );
+    } else {
+      this.horarioForm.patchValue(
+        {
+          inicioAlmuerzo: '',
+          finAlmuerzo: ''
+        },
+        { emitEvent: false }
+      );
+    }
+
+    if (current.modoAvanzado === 'true' || force) {
+      for (const row of this.horarioForm.controls.detalles.controls) {
+        row.patchValue(
+          {
+            horaEntrada: rule.defaultStart,
+            horaSalida: rule.defaultEnd,
+            inicioAlmuerzo: rule.defaultLunchStart,
+            finAlmuerzo: rule.defaultLunchEnd
+          },
+          { emitEvent: false }
+        );
+      }
+    }
   }
 
   private buildContratoRequestFromForm(form: typeof this.contratoForm): RegistrarContratoRequest {
