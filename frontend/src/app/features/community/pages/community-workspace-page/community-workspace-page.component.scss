@@ -360,6 +360,25 @@ label,
   margin-top: 1rem;
 }
 
+.plan-section-title {
+  align-items: center;
+  border-bottom: 1px solid color-mix(in srgb, var(--role-accent, #1c7d62) 18%, #e2e8f0 82%);
+  color: var(--role-primary, #0f1f33);
+  display: flex;
+  font-size: 0.72rem;
+  font-weight: 800;
+  gap: 0.4rem;
+  letter-spacing: 0.08em;
+  margin-top: 0.5rem;
+  padding-bottom: 0.4rem;
+  text-transform: uppercase;
+}
+
+.plan-section-title i {
+  color: var(--role-accent, #1c7d62);
+  font-size: 0.85rem;
+}
+
 .criterion-toggle__button--active {
   box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.16);
 }

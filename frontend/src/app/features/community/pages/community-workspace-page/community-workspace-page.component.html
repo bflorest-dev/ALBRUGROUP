@@ -395,14 +395,26 @@
                   }
                 </div>
               </div>
-              <p-table [value]="facade.filteredPlanes()" [paginator]="true" [rows]="8" [rowHover]="true" styleClass="p-datatable-sm">
+              <p-table
+                [value]="facade.filteredPlanes()"
+                [paginator]="true"
+                [rows]="8"
+                [rowHover]="true"
+                [scrollable]="true"
+                [tableStyle]="{ 'min-width': '1400px' }"
+                styleClass="p-datatable-sm"
+              >
                 <ng-template #header>
                   <tr>
                     <th>Plan</th>
                     <th>Proveedor</th>
                     <th>Zona</th>
                     <th>Precio</th>
-                    <th>Promo</th>
+                    <th>Precio Promocional</th>
+                    <th>Meses Promo</th>
+                    <th>Internet</th>
+                    <th>TV</th>
+                    <th>Telefonía</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                   </tr>
@@ -414,6 +426,10 @@
                     <td>{{ display(plan.nombreZona) }}</td>
                     <td>{{ money(plan.precio) }}</td>
                     <td>{{ money(plan.precioPromocional) }}</td>
+                    <td>{{ plan.mesesPromocionPrecio ? (plan.mesesPromocionPrecio + 'm') : '—' }}</td>
+                    <td>{{ plan.internetVelocidad ? (plan.internetVelocidad + ' ' + (plan.internetUnidad || 'MBPS')) : '—' }}</td>
+                    <td>{{ plan.televisionNombre || (plan.televisionCanales ? (plan.televisionCanales + ' ch') : '—') }}</td>
+                    <td>{{ plan.telefonoDescripcion || (plan.telefonoMinutos ? (plan.telefonoMinutos + ' min') : '—') }}</td>
                     <td><p-tag [severity]="statusSeverity(plan.activo)" [value]="statusLabel(plan.activo)" /></td>
                     <td>
                       <div class="inline-action">
@@ -426,24 +442,24 @@
                           severity="secondary"
                           (click)="facade.openEditPlanDialog(plan)"
                         ></button>
-                      @if (plan.activo !== false) {
-                        <button
-                          pButton
-                          type="button"
-                          size="small"
-                          icon="pi pi-ban"
-                          label="Desactivar"
-                          severity="secondary"
-                          [loading]="facade.isSaving()"
-                          (click)="facade.deactivatePlan(plan.id)"
-                        ></button>
-                      }
+                        @if (plan.activo !== false) {
+                          <button
+                            pButton
+                            type="button"
+                            size="small"
+                            icon="pi pi-ban"
+                            label="Desactivar"
+                            severity="secondary"
+                            [loading]="facade.isSaving()"
+                            (click)="facade.deactivatePlan(plan.id)"
+                          ></button>
+                        }
                       </div>
                     </td>
                   </tr>
                 </ng-template>
                 <ng-template #emptymessage>
-                  <tr><td colspan="7">No hay planes para el proveedor seleccionado.</td></tr>
+                  <tr><td colspan="11">No hay planes para el proveedor seleccionado.</td></tr>
                 </ng-template>
               </p-table>
             </p-card>
@@ -920,6 +936,7 @@
     (onHide)="facade.closeCreatePlanDialog()"
   >
     <form class="form-grid form-grid--three" [formGroup]="facade.createPlanForm" (ngSubmit)="facade.submitPlan()">
+      <!-- General -->
       <label>
         <span>Proveedor</span>
         <p-select
@@ -937,7 +954,7 @@
         <p-select formControlName="idZona" [options]="facade.zonasActivas()" optionLabel="nombre" optionValue="id" placeholder="Sin zona" appendTo="body" />
       </label>
       <label>
-        <span>Nombre plan</span>
+        <span>Nombre del Plan</span>
         <input pInputText type="text" formControlName="nombre" [placeholder]="facade.planNamePlaceholder()" />
       </label>
       <label>
@@ -948,26 +965,32 @@
         </div>
       </label>
       <label>
-        <span>Precio promocional</span>
+        <span>Precio Promocional</span>
         <div class="input-prefix">
           <span>S/</span>
           <input pInputText type="number" min="0" step="0.01" formControlName="precioPromocional" placeholder="59.90" />
         </div>
       </label>
       <label>
-        <span>Meses promo precio</span>
+        <span>Meses de Precio Promocional</span>
         <input pInputText type="number" min="0" formControlName="mesesPromocionPrecio" placeholder="3" />
       </label>
       <label>
-        <span>Vigencia desde</span>
+        <span>Vigencia Desde</span>
         <input pInputText type="date" formControlName="vigenciaDesde" />
       </label>
       <label>
-        <span>Vigencia hasta</span>
+        <span>Vigencia Hasta</span>
         <input pInputText type="date" formControlName="vigenciaHasta" />
       </label>
+
+      <!-- Seccion Internet -->
+      <div class="plan-section-title wide">
+        <i class="pi pi-wifi" aria-hidden="true"></i>
+        <span>Internet</span>
+      </div>
       <label>
-        <span>Internet velocidad</span>
+        <span>Velocidad del Internet</span>
         <input pInputText type="number" min="0" formControlName="internetVelocidad" placeholder="200" />
       </label>
       <label>
@@ -975,32 +998,44 @@
         <p-select formControlName="internetUnidad" [options]="['MBPS', 'GBPS']" appendTo="body" />
       </label>
       <label>
-        <span>Tecnologia</span>
+        <span>Tecnología</span>
         <p-select formControlName="internetTecnologia" [options]="['FTTH', 'HFC', 'HIBRIDA']" appendTo="body" />
       </label>
       <label>
-        <span>TV nombre</span>
-        <input pInputText type="text" formControlName="televisionNombre" placeholder="TV Full HD" />
-      </label>
-      <label>
-        <span>TV canales</span>
-        <input pInputText type="number" min="0" formControlName="televisionCanales" placeholder="80" />
-      </label>
-      <label>
-        <span>Telefono minutos</span>
-        <input pInputText type="number" min="0" formControlName="telefonoMinutos" placeholder="1000" />
-      </label>
-      <label>
-        <span>Telefono descripcion</span>
-        <input pInputText type="text" formControlName="telefonoDescripcion" placeholder="Fijo ilimitado nacional" />
-      </label>
-      <label>
-        <span>Velocidad promocional</span>
+        <span>Velocidad Promocional</span>
         <input pInputText type="number" min="0" formControlName="velocidadPromocional" placeholder="400" />
       </label>
       <label>
-        <span>Meses promo velocidad</span>
+        <span>Meses de Velocidad Promocional</span>
         <input pInputText type="number" min="0" formControlName="mesesPromocionVelocidad" placeholder="3" />
+      </label>
+
+      <!-- Seccion TV -->
+      <div class="plan-section-title wide">
+        <i class="pi pi-desktop" aria-hidden="true"></i>
+        <span>Televisión</span>
+      </div>
+      <label>
+        <span>Nombre del Paquete de TV</span>
+        <input pInputText type="text" formControlName="televisionNombre" placeholder="TV Full HD" />
+      </label>
+      <label>
+        <span>Cantidad de Canales</span>
+        <input pInputText type="number" min="0" formControlName="televisionCanales" placeholder="80" />
+      </label>
+
+      <!-- Seccion Telefonia -->
+      <div class="plan-section-title wide">
+        <i class="pi pi-phone" aria-hidden="true"></i>
+        <span>Telefonía</span>
+      </div>
+      <label>
+        <span>Nombre de la Telefonía</span>
+        <input pInputText type="text" formControlName="telefonoDescripcion" placeholder="Fijo ilimitado nacional" />
+      </label>
+      <label>
+        <span>Cantidad de Minutos</span>
+        <input pInputText type="number" min="0" formControlName="telefonoMinutos" placeholder="1000" />
       </label>
       <div class="plan-additionals wide">
         <label>
@@ -1071,7 +1106,7 @@
   >
     <form class="form-grid form-grid--three" [formGroup]="facade.editPlanForm" (ngSubmit)="facade.updatePlan()">
       <label>
-        <span>Nombre plan</span>
+        <span>Nombre del Plan</span>
         <input pInputText type="text" formControlName="nombre" [placeholder]="facade.planNamePlaceholder()" />
       </label>
       <label>
@@ -1086,30 +1121,30 @@
         </div>
       </label>
       <label>
-        <span>Precio promocional</span>
+        <span>Precio Promocional</span>
         <div class="input-prefix">
           <span>S/</span>
           <input pInputText type="number" min="0" step="0.01" formControlName="precioPromocional" placeholder="59.90" />
         </div>
       </label>
       <label>
-        <span>Meses promo precio</span>
+        <span>Meses de Precio Promocional</span>
         <input pInputText type="number" min="0" formControlName="mesesPromocionPrecio" placeholder="3" />
       </label>
       <label>
-        <span>Vigencia desde</span>
+        <span>Vigencia Desde</span>
         <input pInputText type="date" formControlName="vigenciaDesde" />
       </label>
       <label>
-        <span>Vigencia hasta</span>
+        <span>Vigencia Hasta</span>
         <input pInputText type="date" formControlName="vigenciaHasta" />
       </label>
       <label>
-        <span>Velocidad promocional</span>
+        <span>Velocidad Promocional</span>
         <input pInputText type="number" min="0" formControlName="velocidadPromocional" placeholder="400" />
       </label>
       <label>
-        <span>Meses promo velocidad</span>
+        <span>Meses de Velocidad Promocional</span>
         <input pInputText type="number" min="0" formControlName="mesesPromocionVelocidad" placeholder="3" />
       </label>
       <div class="form-actions wide">
