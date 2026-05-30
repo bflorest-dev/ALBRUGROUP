@@ -187,6 +187,14 @@ label {
   gap: 0.35rem;
 }
 
+.ubigeo-hint {
+  color: #7aa8c4;
+  cursor: help;
+  font-size: 0.72rem;
+  margin-left: 0.3rem;
+  vertical-align: middle;
+}
+
 .select-item {
   display: grid;
   gap: 0.15rem;
@@ -194,6 +202,57 @@ label {
 
 .select-item small {
   color: #64748b;
+}
+
+// Plan rich item (oferta tab)
+
+.plan-item {
+  display: grid;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.plan-item__top {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.plan-item__pricing {
+  align-items: baseline;
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.plan-price--promo {
+  color: #1c7d62;
+  font-weight: 700;
+}
+
+.plan-price--months {
+  color: #617187;
+  font-size: 0.72rem;
+}
+
+.plan-price--regular {
+  color: #a0aec0;
+  font-size: 0.8rem;
+  text-decoration: line-through;
+}
+
+.plan-price--base {
+  color: #425466;
+  font-weight: 600;
+}
+
+.plan-item__services {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
 }
 
 .offer-additionals,

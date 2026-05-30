@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
-import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription, firstValueFrom } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -15,6 +15,7 @@ import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
+import { TooltipModule } from 'primeng/tooltip';
 import { AsesorVentasWorkspaceStateService } from '../../../../core/services/asesor-ventas-workspace-state.service';
 import { BrowserSessionService } from '../../../../core/services/browser-session.service';
 import { OperationalGateService } from '../../../../core/services/operational-gate.service';
@@ -28,6 +29,7 @@ import {
   LeadDireccionRequest,
   LeadDetalleResponse,
   LeadOfertaComercialRequest,
+  LeadSnapshotsRequest,
   PageQuery,
   PlanResponse,
   PromocionComercialResponse,
@@ -64,7 +66,8 @@ type OfertaAdditionalSelection = {
     TableModule,
     TabsModule,
     TagModule,
-    TextareaModule
+    TextareaModule,
+    TooltipModule
   ],
   templateUrl: './asesor-ventas-workspace-page.component.html',
   styleUrl: './asesor-ventas-workspace-page.component.scss',
@@ -447,6 +450,10 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private async guardarAntesDeTipificar(detail: LeadDetalleResponse): Promise<boolean> {
+    if (this.isSnapshotOnly()) {
+      return this.saveSnapshotOnly(detail);
+    }
+
     const tasks: { label: string; action: () => Promise<void>; form: { markAsPristine: () => void } }[] = [];
 
     if (this.datosForm.dirty) {
@@ -509,6 +516,77 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     }
 
     return true;
+  }
+
+  /**
+   * Detecta si los unicos campos modificados son aquellos que corresponden
+   * al endpoint de snapshots (numeroDocumentoTitularServicio y/o direccion),
+   * opcionalmente acompanados por tipoDocumento que se ignora en el guardado.
+   * Si hay cualquier otro campo del formulario de datos, direccion u oferta
+   * modificado, se usa el flujo normal de 3 endpoints.
+   */
+  private isSnapshotOnly(): boolean {
+    const dc = this.datosForm.controls;
+    const datosExtrasDirty =
+      dc.ubigeoNacimiento.dirty ||
+      dc.nombreTitularServicio.dirty ||
+      dc.celularRegistro.dirty ||
+      dc.celularReferencia.dirty ||
+      dc.correo.dirty ||
+      dc.numeroDocumentoTitularCelularRegistro.dirty ||
+      dc.nombreTitularCelularRegistro.dirty;
+
+    const ic = this.direccionForm.controls;
+    const dirExtrasDirty =
+      ic.idDepartamentoDomicilio.dirty ||
+      ic.idProvinciaDomicilio.dirty ||
+      ic.idDistritoDomicilio.dirty ||
+      ic.ubigeoDomicilio.dirty ||
+      ic.tipoDomicilio.dirty ||
+      ic.tipoVia.dirty ||
+      ic.via.dirty ||
+      ic.referencia.dirty ||
+      ic.latitud.dirty ||
+      ic.longitud.dirty ||
+      ic.urbanizacion.dirty ||
+      ic.numero.dirty ||
+      ic.manzana.dirty ||
+      ic.lote.dirty ||
+      ic.nombreEdificio.dirty ||
+      ic.nombreCondominio.dirty ||
+      ic.piso.dirty ||
+      ic.interior.dirty;
+
+    const hasSnapshotChange =
+      dc.numeroDocumentoTitularServicio.dirty || ic.direccion.dirty;
+
+    return (
+      hasSnapshotChange &&
+      !datosExtrasDirty &&
+      !dirExtrasDirty &&
+      !this.ofertaForm.dirty
+    );
+  }
+
+  private async saveSnapshotOnly(detail: LeadDetalleResponse): Promise<boolean> {
+    const request: LeadSnapshotsRequest = {
+      numeroDocumentoTitularServicio:
+        this.datosForm.controls.numeroDocumentoTitularServicio.value || null,
+      direccion: this.direccionForm.controls.direccion.value || null
+    };
+
+    this.isSaving.set(true);
+    try {
+      await firstValueFrom(this.preventaService.actualizarSnapshotsLead(detail.id, request));
+      this.datosForm.markAsPristine();
+      this.direccionForm.markAsPristine();
+      return true;
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo guardar los datos de gestion.'));
+      return false;
+    } finally {
+      this.isSaving.set(false);
+    }
   }
 
   protected async onPlanChanged(): Promise<void> {
@@ -1080,6 +1158,15 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
 
   private isBusyAttendanceStatus(status: EstadoAsistencia): boolean {
     return status === 'ALMUERZO' || status === 'SERVICIOS' || status === 'CAPACITACION';
+  }
+
+  /** Elimina caracteres no numericos y limita la longitud del control de formulario. */
+  protected setNumericDigits(control: AbstractControl | null, value: string, maxLength: number): void {
+    if (!control) return;
+    const normalized = value.replace(/\D/g, '').slice(0, maxLength);
+    if (control.value !== normalized) {
+      control.setValue(normalized);
+    }
   }
 
   private cleanObject<T extends Record<string, unknown>>(value: T): T {

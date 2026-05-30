@@ -352,10 +352,27 @@ export interface PlanResponse {
   nombre: string;
   precio?: number;
   precioPromocional?: number | null;
+  mesesPromocionPrecio?: number | null;
   idProveedor?: number;
   nombreProveedor?: string;
   idZona?: number | null;
   nombreZona?: string | null;
+  activo?: boolean;
+  // Internet
+  internetVelocidad?: number | null;
+  internetUnidad?: string | null;
+  internetTecnologia?: string | null;
+  velocidadPromocional?: number | null;
+  mesesPromocionVelocidad?: number | null;
+  // Television
+  televisionNombre?: string | null;
+  televisionCanales?: number | null;
+  // Telefono
+  telefonoMinutos?: number | null;
+  telefonoDescripcion?: string | null;
+  // Vigencia
+  vigenciaDesde?: string | null;
+  vigenciaHasta?: string | null;
 }
 
 export interface PromocionComercialResponse {

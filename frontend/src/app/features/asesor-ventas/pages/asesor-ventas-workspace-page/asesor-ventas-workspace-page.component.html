@@ -292,35 +292,67 @@
                   <p-select formControlName="tipoDocumento" [options]="tipoDocumentoOptions" placeholder="Seleccionar" appendTo="body" />
                 </label>
                 <label>
-                  <span>Numero documento</span>
-                  <input pInputText type="text" formControlName="numeroDocumentoTitularServicio" />
+                  <span>Numero de Documento</span>
+                  <input
+                    pInputText
+                    type="text"
+                    inputmode="numeric"
+                    formControlName="numeroDocumentoTitularServicio"
+                    (input)="setNumericDigits(datosForm.controls.numeroDocumentoTitularServicio, $any($event.target).value, 15)"
+                  />
                 </label>
                 <label>
-                  <span>Nombre titular</span>
+                  <span>Titular del Servicio</span>
                   <input pInputText type="text" formControlName="nombreTitularServicio" />
                 </label>
                 <label>
-                  <span>Celular registro</span>
-                  <input pInputText type="text" formControlName="celularRegistro" />
+                  <span>Celular a registrar</span>
+                  <input
+                    pInputText
+                    type="text"
+                    inputmode="numeric"
+                    formControlName="celularRegistro"
+                    (input)="setNumericDigits(datosForm.controls.celularRegistro, $any($event.target).value, 9)"
+                  />
                 </label>
                 <label>
-                  <span>Celular referencia</span>
-                  <input pInputText type="text" formControlName="celularReferencia" />
+                  <span>Celular de referencia</span>
+                  <input
+                    pInputText
+                    type="text"
+                    inputmode="numeric"
+                    formControlName="celularReferencia"
+                    (input)="setNumericDigits(datosForm.controls.celularReferencia, $any($event.target).value, 9)"
+                  />
                 </label>
                 <label>
                   <span>Correo</span>
                   <input pInputText type="email" formControlName="correo" />
                 </label>
                 <label>
-                  <span>Ubigeo nacimiento</span>
+                  <span>
+                    Ubigeo de Nacimiento
+                    <i
+                      class="pi pi-info-circle ubigeo-hint"
+                      pTooltip="El numero de Ubigeo se encuentra en la parte posterior del DNI"
+                      tooltipPosition="top"
+                      aria-hidden="true"
+                    ></i>
+                  </span>
                   <input pInputText type="text" formControlName="ubigeoNacimiento" />
                 </label>
                 <label>
-                  <span>Documento titular celular</span>
-                  <input pInputText type="text" formControlName="numeroDocumentoTitularCelularRegistro" />
+                  <span>Numero de Documento del Titular del Celular</span>
+                  <input
+                    pInputText
+                    type="text"
+                    inputmode="numeric"
+                    formControlName="numeroDocumentoTitularCelularRegistro"
+                    (input)="setNumericDigits(datosForm.controls.numeroDocumentoTitularCelularRegistro, $any($event.target).value, 15)"
+                  />
                 </label>
                 <label>
-                  <span>Nombre titular celular</span>
+                  <span>Nombre del Titular del Celular</span>
                   <input pInputText type="text" formControlName="nombreTitularCelularRegistro" />
                 </label>
               </form>
@@ -367,15 +399,15 @@
                   />
                 </label>
                 <label>
-                  <span>Tipo domicilio</span>
+                  <span>Tipo de Domicilio</span>
                   <p-select formControlName="tipoDomicilio" [options]="tipoDomicilioOptions" placeholder="Seleccionar" appendTo="body" />
                 </label>
                 <label>
-                  <span>Tipo via</span>
+                  <span>Tipo de Via</span>
                   <p-select formControlName="tipoVia" [options]="tipoViaOptions" placeholder="Seleccionar" appendTo="body" />
                 </label>
                 <label>
-                  <span>Nombre via</span>
+                  <span>Nombre de la Via</span>
                   <input pInputText type="text" formControlName="via" />
                 </label>
                 <label class="wide">
@@ -400,7 +432,13 @@
                 </label>
                 <label>
                   <span>Numero</span>
-                  <input pInputText type="text" formControlName="numero" />
+                  <input
+                    pInputText
+                    type="text"
+                    inputmode="numeric"
+                    formControlName="numero"
+                    (input)="setNumericDigits(direccionForm.controls.numero, $any($event.target).value, 10)"
+                  />
                 </label>
                 <label>
                   <span>Manzana</span>
@@ -472,12 +510,44 @@
                     (onChange)="onPlanChanged()"
                   >
                     <ng-template #item let-plan>
-                      <div class="select-item">
-                        <strong>{{ plan.nombre }}</strong>
-                        @if (plan.id) {
-                          <small>S/ {{ display(plan.precioPromocional || plan.precio) }}</small>
-                        }
-                      </div>
+                      @if (!plan.id) {
+                        <span>Sin plan</span>
+                      } @else {
+                        <div class="plan-item">
+                          <div class="plan-item__top">
+                            <strong>{{ plan.nombre }}</strong>
+                            <div class="plan-item__pricing">
+                              @if (plan.precioPromocional) {
+                                <span class="plan-price--promo">S/ {{ plan.precioPromocional }}</span>
+                                @if (plan.mesesPromocionPrecio) {
+                                  <span class="plan-price--months">{{ plan.mesesPromocionPrecio }}m promo</span>
+                                }
+                                @if (plan.precio) {
+                                  <span class="plan-price--regular">S/ {{ plan.precio }}</span>
+                                }
+                              } @else if (plan.precio) {
+                                <span class="plan-price--base">S/ {{ plan.precio }}</span>
+                              }
+                            </div>
+                          </div>
+                          @if (plan.internetVelocidad || plan.televisionNombre || plan.televisionCanales || plan.telefonoDescripcion || plan.telefonoMinutos) {
+                            <div class="plan-item__services">
+                              @if (plan.internetVelocidad) {
+                                <p-tag severity="info" [value]="plan.internetVelocidad + ' ' + (plan.internetUnidad || 'MBPS')" />
+                              }
+                              @if (plan.velocidadPromocional && plan.mesesPromocionVelocidad) {
+                                <p-tag severity="warn" [value]="plan.velocidadPromocional + ' ' + (plan.internetUnidad || 'MBPS') + ' · ' + plan.mesesPromocionVelocidad + 'm'" />
+                              }
+                              @if (plan.televisionNombre || plan.televisionCanales) {
+                                <p-tag severity="secondary" [value]="(plan.televisionNombre || 'TV') + (plan.televisionCanales ? ' · ' + plan.televisionCanales + ' ch' : '')" />
+                              }
+                              @if (plan.telefonoDescripcion || plan.telefonoMinutos) {
+                                <p-tag severity="secondary" [value]="plan.telefonoDescripcion || (plan.telefonoMinutos + ' min')" />
+                              }
+                            </div>
+                          }
+                        </div>
+                      }
                     </ng-template>
                   </p-select>
                 </label>
