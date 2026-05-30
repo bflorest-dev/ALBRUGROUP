@@ -1,0 +1,223 @@
+<section class="horario-page">
+
+  <!-- Hero -->
+  <p-card styleClass="horario-hero">
+    <div class="horario-hero__content">
+      <div>
+        <span class="horario-hero__eyebrow">ASESOR VENTAS</span>
+        <h1>Mi horario</h1>
+        <p>Consulta tu horario vigente y el registro de asistencia del mes.</p>
+      </div>
+    </div>
+  </p-card>
+
+  <!-- KPIs del día -->
+  <section class="kpi-grid" aria-label="Resumen del dia de hoy">
+    <p-card styleClass="kpi-card">
+      <div class="kpi-content">
+        <span class="kpi-content__label">Estado actual</span>
+        @if (attendanceFacade.isInitializing()) {
+          <p-skeleton width="5rem" height="1.5rem" />
+        } @else {
+          <p-tag
+            [value]="attendanceFacade.currentStatusMeta().label"
+            [style]="todayStatusStyle()"
+          />
+        }
+      </div>
+    </p-card>
+
+    <p-card styleClass="kpi-card">
+      <div class="kpi-content">
+        <span class="kpi-content__label">Horas trabajadas hoy</span>
+        <strong>{{ todayHorasTrabajadas() }}</strong>
+      </div>
+    </p-card>
+
+    <p-card styleClass="kpi-card">
+      <div class="kpi-content">
+        <span class="kpi-content__label">Objetivo del dia</span>
+        <strong>{{ todayObjetivo() }}</strong>
+      </div>
+    </p-card>
+
+    <p-card styleClass="kpi-card">
+      <div class="kpi-content">
+        <span class="kpi-content__label">Balance</span>
+        <strong
+          [class.balance--pos]="todayBalancePositivo()"
+          [class.balance--neg]="!todayBalancePositivo()"
+        >{{ todayBalance() }}</strong>
+      </div>
+    </p-card>
+  </section>
+
+  <!-- Horario vigente semanal -->
+  <p-card>
+    <ng-template #title>
+      <div class="schedule-header">
+        <span>Horario vigente</span>
+        @if (facade.horarioVigente(); as h) {
+          <div class="schedule-header__meta">
+            <p-tag severity="secondary" [value]="h.modalidad" />
+            <span>{{ h.horasObjetivoSemanal }}h / semana</span>
+            <span>Almuerzo {{ h.minutosAlmuerzo }} min</span>
+          </div>
+        }
+      </div>
+    </ng-template>
+
+    @if (facade.isLoading()) {
+      <div class="schedule-days">
+        @for (i of [1,2,3,4,5,6,7]; track i) {
+          <p-skeleton width="5rem" height="5rem" />
+        }
+      </div>
+    } @else if (facade.horarioDias().length) {
+      <div class="schedule-days">
+        @for (day of facade.horarioDias(); track day.diaNorm) {
+          <article
+            class="schedule-day"
+            [class.schedule-day--today]="day.diaNorm === facade.todayDayKey()"
+            [class.schedule-day--free]="!day.laborable"
+          >
+            <span class="schedule-day__label">{{ day.diaLabel }}</span>
+            @if (day.laborable) {
+              <span class="schedule-day__time">{{ day.horaEntrada }}</span>
+              <span class="schedule-day__sep">—</span>
+              <span class="schedule-day__time">{{ day.horaSalida }}</span>
+            } @else {
+              <span class="schedule-day__free">—</span>
+            }
+          </article>
+        }
+      </div>
+    } @else {
+      <p class="helper--centered">Sin horario vigente para este mes.</p>
+    }
+  </p-card>
+
+  <!-- Historico mensual -->
+  <p-card>
+    <ng-template #title>
+      <div class="month-nav">
+        <span>Historico mensual</span>
+        <div class="month-nav__controls">
+          <button
+            pButton
+            type="button"
+            icon="pi pi-chevron-left"
+            severity="secondary"
+            text
+            (click)="facade.goToPrevMonth()"
+          ></button>
+          <span class="month-nav__label">{{ facade.selectedMonthLabel() }}</span>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-chevron-right"
+            severity="secondary"
+            text
+            [disabled]="!facade.canGoNext()"
+            (click)="facade.goToNextMonth()"
+          ></button>
+        </div>
+      </div>
+    </ng-template>
+
+    <!-- Mini KPIs del mes -->
+    <div class="month-kpi-grid">
+      <article class="month-kpi">
+        <span>Dias trabajados</span>
+        @if (facade.isLoading()) {
+          <p-skeleton width="2.5rem" height="1.75rem" />
+        } @else {
+          <strong>{{ facade.diasTrabajados() }}</strong>
+        }
+      </article>
+      <article class="month-kpi">
+        <span>Horas acumuladas</span>
+        @if (facade.isLoading()) {
+          <p-skeleton width="4rem" height="1.75rem" />
+        } @else {
+          <strong>{{ facade.horasAcumuladas() }}</strong>
+        }
+      </article>
+      <article class="month-kpi">
+        <span>Cumplimiento</span>
+        @if (facade.isLoading()) {
+          <p-skeleton width="3rem" height="1.75rem" />
+        } @else if (facade.porcentajeCumplimiento() !== null) {
+          <p-tag
+            [value]="facade.porcentajeCumplimiento() + '%'"
+            [severity]="cumplimientoSeverity()"
+          />
+        } @else {
+          <strong>—</strong>
+        }
+      </article>
+      <article class="month-kpi">
+        <span>Tardanzas</span>
+        @if (facade.isLoading()) {
+          <p-skeleton width="2rem" height="1.75rem" />
+        } @else {
+          <strong [class.tardanza-alert]="facade.tardanzas() > 0">
+            {{ facade.tardanzas() }}
+          </strong>
+        }
+      </article>
+    </div>
+
+    <!-- Tabla diaria -->
+    <p-table
+      [value]="facade.diasVm()"
+      [loading]="facade.isLoading()"
+      [rowHover]="true"
+      styleClass="p-datatable-sm history-table"
+    >
+      <ng-template #header>
+        <tr>
+          <th>Fecha</th>
+          <th>Entrada prog.</th>
+          <th>Entrada real</th>
+          <th>Tardanza</th>
+          <th>Horas trabajadas</th>
+          <th>Balance</th>
+          <th>Estado</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-dia>
+        <tr>
+          <td><strong>{{ dia.fechaDisplay }}</strong></td>
+          <td>{{ dia.entradaProgramada }}</td>
+          <td>{{ dia.entradaReal }}</td>
+          <td>
+            @if (dia.isTardanza) {
+              <p-tag severity="warn" [value]="dia.tardanzaLabel" />
+            } @else {
+              <span class="punctual">{{ dia.tardanzaLabel }}</span>
+            }
+          </td>
+          <td>{{ dia.horasTrabajadas }}</td>
+          <td>
+            <span
+              [class.balance--pos]="dia.balancePositivo === true"
+              [class.balance--neg]="dia.balancePositivo === false"
+            >{{ dia.balance }}</span>
+          </td>
+          <td>
+            <p-tag severity="secondary" [value]="dia.estadoActual" />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="7" class="helper--centered">
+            Sin registros de asistencia para este mes.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+
+</section>

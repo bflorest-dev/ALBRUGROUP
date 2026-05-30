@@ -59,18 +59,21 @@ export class PrivateLayoutComponent {
   private attendanceInitialized = false;
   protected readonly session = this.sessionService.session;
   protected readonly isAdmin = computed(() => this.session()?.primaryRole === 'ADMINISTRADOR');
-  protected readonly attendanceStatusLabel = computed(() =>
-    this.isAdmin() ? 'ONLINE' : this.attendanceFacade.currentStatusMeta().label
-  );
+  protected readonly attendanceStatusLabel = computed(() => {
+    if (this.isAdmin()) return 'ONLINE';
+    if (this.attendanceFacade.isInitializing()) return 'Verificando';
+    return this.attendanceFacade.currentStatusMeta().label;
+  });
   protected readonly attendanceStatusColor = computed(() =>
     this.isAdmin() ? '#37c676' : this.attendanceFacade.currentStatusMeta().color
   );
   protected readonly attendanceActions = computed(() =>
     this.isAdmin() ? [] : this.attendanceFacade.availableActions()
   );
-  protected readonly isAttendanceLoading = computed(() =>
-    this.isAdmin() ? false : this.attendanceFacade.isLoading()
-  );
+  protected readonly isAttendanceLoading = computed(() => {
+    if (this.isAdmin()) return false;
+    return this.attendanceFacade.isLoading() || this.attendanceFacade.isInitializing();
+  });
   protected readonly isAttendancePickerDisabled = computed(() => this.isAdmin());
   protected readonly themeClass = computed(() => {
     const primaryRole = this.session()?.primaryRole;
@@ -118,6 +121,14 @@ export class PrivateLayoutComponent {
         { label: 'Mantenimiento', route: '/app/community/mantenimiento', icon: 'pi pi-database', exact: true },
         { label: 'Finanzas', route: '/app/community/finanzas', icon: 'pi pi-wallet', exact: true },
         { label: 'Metricas', route: '/app/community/metricas', icon: 'pi pi-chart-line', exact: true }
+      ];
+    }
+
+    if (session.primaryRole === 'ASESOR_VENTAS') {
+      return [
+        { label: 'Plataforma', route: '/app/asesor-ventas/plataforma', icon: 'pi pi-desktop', exact: true },
+        { label: 'Horario', route: '/app/asesor-ventas/horario', icon: 'pi pi-calendar', exact: true },
+        { label: 'Metricas', route: '/app/asesor-ventas/metricas', icon: 'pi pi-chart-bar', exact: true }
       ];
     }
 

@@ -1,0 +1,244 @@
+.horario-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.horario-hero__content {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.horario-hero__eyebrow {
+  color: var(--p-primary-color, #1c7d62);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+h1,
+p {
+  margin: 0;
+}
+
+h1 {
+  color: #0f1f33;
+  font-size: clamp(1.45rem, 2vw, 1.9rem);
+  line-height: 1.08;
+}
+
+p {
+  color: #617187;
+}
+
+// KPI del dia
+
+.kpi-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.kpi-content {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  text-align: center;
+}
+
+.kpi-content__label {
+  color: #617187;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.kpi-content strong {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+// Balance colors
+
+.balance--pos {
+  color: #37c676;
+}
+
+.balance--neg {
+  color: #e74c3c;
+}
+
+// Horario semanal
+
+.schedule-header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.schedule-header__meta {
+  align-items: center;
+  color: #617187;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.82rem;
+  gap: 0.75rem;
+}
+
+.schedule-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.schedule-day {
+  align-items: center;
+  background: #f4f8f6;
+  border: 1px solid #dce8e3;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 5.5rem;
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+}
+
+.schedule-day--today {
+  background: color-mix(in srgb, var(--p-primary-color, #1c7d62) 10%, white);
+  border-color: var(--p-primary-color, #1c7d62);
+}
+
+.schedule-day--free {
+  opacity: 0.45;
+}
+
+.schedule-day__label {
+  color: #425466;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.schedule-day__time {
+  color: #0f1f33;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.schedule-day__sep {
+  color: #9aacb5;
+  font-size: 0.72rem;
+}
+
+.schedule-day__free {
+  color: #c0ccd4;
+  font-size: 1.1rem;
+}
+
+// Historico mensual
+
+.month-nav {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.month-nav__controls {
+  align-items: center;
+  display: flex;
+  gap: 0.25rem;
+}
+
+.month-nav__label {
+  color: #425466;
+  font-size: 0.9rem;
+  font-weight: 700;
+  min-width: 9rem;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.month-kpi-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 1.25rem;
+}
+
+.month-kpi {
+  align-items: center;
+  background: #f8fbfa;
+  border: 1px solid #dce8e3;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.month-kpi span {
+  color: #617187;
+  font-size: 0.76rem;
+}
+
+.month-kpi strong {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.tardanza-alert {
+  color: #e67e22;
+}
+
+.punctual {
+  color: #9aacb5;
+}
+
+.helper--centered {
+  color: #617187;
+  display: block;
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+:host ::ng-deep {
+  .kpi-card .p-card-body,
+  .horario-hero .p-card-body {
+    padding: 1rem;
+  }
+
+  .history-table .p-datatable-thead > tr > th {
+    background: #f4f8f6;
+    color: #304438;
+    font-size: 0.76rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+}
+
+@media (max-width: 1024px) {
+  .kpi-grid,
+  .month-kpi-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .kpi-grid,
+  .month-kpi-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .schedule-days {
+    justify-content: center;
+  }
+}

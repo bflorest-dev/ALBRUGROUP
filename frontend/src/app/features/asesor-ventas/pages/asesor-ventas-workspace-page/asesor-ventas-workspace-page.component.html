@@ -289,7 +289,7 @@
               <form class="form-grid" [formGroup]="datosForm">
                 <label>
                   <span>Documento</span>
-                  <p-select formControlName="tipoDocumento" [options]="tipoDocumentoOptions" appendTo="body" />
+                  <p-select formControlName="tipoDocumento" [options]="tipoDocumentoOptions" placeholder="Seleccionar" appendTo="body" />
                 </label>
                 <label>
                   <span>Numero documento</span>
@@ -314,14 +314,6 @@
                 <label>
                   <span>Ubigeo nacimiento</span>
                   <input pInputText type="text" formControlName="ubigeoNacimiento" />
-                </label>
-                <label>
-                  <span>Madre</span>
-                  <input pInputText type="text" formControlName="nombreMadre" />
-                </label>
-                <label>
-                  <span>Padre</span>
-                  <input pInputText type="text" formControlName="nombrePadre" />
                 </label>
                 <label>
                   <span>Documento titular celular</span>
@@ -376,11 +368,11 @@
                 </label>
                 <label>
                   <span>Tipo domicilio</span>
-                  <p-select formControlName="tipoDomicilio" [options]="tipoDomicilioOptions" appendTo="body" />
+                  <p-select formControlName="tipoDomicilio" [options]="tipoDomicilioOptions" placeholder="Seleccionar" appendTo="body" />
                 </label>
                 <label>
                   <span>Tipo via</span>
-                  <p-select formControlName="tipoVia" [options]="tipoViaOptions" appendTo="body" />
+                  <p-select formControlName="tipoVia" [options]="tipoViaOptions" placeholder="Seleccionar" appendTo="body" />
                 </label>
                 <label>
                   <span>Nombre via</span>
@@ -392,11 +384,11 @@
                 </label>
                 <label>
                   <span>Latitud</span>
-                  <input pInputText type="number" step="0.000001" formControlName="latitud" />
+                  <input pInputText type="number" step="0.000001" formControlName="latitud" placeholder="-12.046400" />
                 </label>
                 <label>
                   <span>Longitud</span>
-                  <input pInputText type="number" step="0.000001" formControlName="longitud" />
+                  <input pInputText type="number" step="0.000001" formControlName="longitud" placeholder="-77.042800" />
                 </label>
                 <label class="wide">
                   <span>Referencia</span>
@@ -425,10 +417,6 @@
                 <label>
                   <span>Condominio</span>
                   <input pInputText type="text" formControlName="nombreCondominio" />
-                </label>
-                <label>
-                  <span>Plano</span>
-                  <input pInputText type="text" formControlName="plano" />
                 </label>
                 <label>
                   <span>Piso</span>
@@ -556,26 +544,9 @@
             icon="pi pi-eraser"
             label="Limpiar tab"
             severity="secondary"
-            [disabled]="!activeDataTabHasChanges() || isSaving() || !canMutateOperationalData()"
-            title="Limpiar cambios de la tab actual"
-            (click)="limpiarTabActiva()"
-          ></button>
-          <button
-            pButton
-            type="button"
-            icon="pi pi-save"
-            label="Guardar datos"
             [disabled]="isSaving() || !canMutateOperationalData()"
-            [loading]="isSaving()"
-            (click)="guardarCambiosLead()"
-          ></button>
-          <button
-            pButton
-            type="button"
-            label="Cerrar"
-            severity="secondary"
-            title="Debes tipificar el Lead antes de cerrar esta gestion."
-            (click)="requestCloseDetail()"
+            title="Restaurar el tab al ultimo estado guardado"
+            (click)="limpiarTabActiva()"
           ></button>
         </footer>
       </section>

@@ -131,15 +131,13 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly tipoViaOptions = ['AVENIDA', 'JIRON', 'CALLE', 'PASAJE', 'PROLONGACION'];
 
   protected readonly datosForm = this.fb.group({
-    tipoDocumento: ['DNI', [Validators.required]],
+    tipoDocumento: ['', [Validators.required]],
     numeroDocumentoTitularServicio: ['', [Validators.required]],
     ubigeoNacimiento: [''],
     nombreTitularServicio: [''],
     celularRegistro: [''],
     celularReferencia: [''],
     correo: [''],
-    nombreMadre: [''],
-    nombrePadre: [''],
     numeroDocumentoTitularCelularRegistro: [''],
     nombreTitularCelularRegistro: ['']
   });
@@ -149,20 +147,19 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     idProvinciaDomicilio: [0, [Validators.required, Validators.min(1)]],
     idDistritoDomicilio: [0, [Validators.required, Validators.min(1)]],
     ubigeoDomicilio: ['', [Validators.required]],
-    tipoDomicilio: ['MULTIFAMILIAR'],
-    tipoVia: ['CALLE'],
+    tipoDomicilio: [''],
+    tipoVia: [''],
     via: [''],
     direccion: ['', [Validators.required]],
     referencia: [''],
-    latitud: [-12.0464, [Validators.required]],
-    longitud: [-77.0428, [Validators.required]],
+    latitud: [null as number | null, [Validators.required]],
+    longitud: [null as number | null, [Validators.required]],
     urbanizacion: [''],
     numero: [''],
     manzana: [''],
     lote: [''],
     nombreEdificio: [''],
     nombreCondominio: [''],
-    plano: [''],
     piso: [''],
     interior: ['']
   });
@@ -221,16 +218,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly hasUnsavedModalChanges = computed(() => this.hasUnsavedDataChanges() || this.tipificacionForm.dirty);
   protected readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   protected readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
-  protected readonly activeDataTabHasChanges = computed(() => {
-    switch (this.activeDataTab()) {
-      case 'datos':
-        return this.datosForm.dirty;
-      case 'direccion':
-        return this.direccionForm.dirty;
-      case 'oferta':
-        return this.ofertaForm.dirty;
-    }
-  });
+
 
   constructor() {
     effect(() => {
@@ -417,130 +405,9 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     );
   }
 
-  protected async guardarDatos(): Promise<void> {
-    const detail = this.detail();
-    if (!detail || this.datosForm.invalid) {
-      this.errorMessage.set('Completa tipo y documento del titular.');
-      return;
-    }
-    await this.saveAction(
-      () => this.preventaService.actualizarDatosPreventa(detail.id, this.cleanObject(this.datosForm.getRawValue())),
-      'Datos de preventa actualizados.',
-      () => this.reconcile(detail.id)
-    );
-  }
-
-  protected async guardarDireccion(): Promise<void> {
-    const detail = this.detail();
-    if (!detail || this.direccionForm.invalid) {
-      this.errorMessage.set(this.getDireccionValidationMessage());
-      return;
-    }
-    await this.saveAction(
-      () => this.preventaService.actualizarDireccion(detail.id, this.getDireccionRequest()),
-      'Direccion actualizada.',
-      () => this.reconcile(detail.id)
-    );
-  }
-
-  protected async guardarOferta(): Promise<void> {
-    const detail = this.detail();
-    if (!detail) {
-      return;
-    }
-    await this.saveAction(
-      () => this.preventaService.actualizarOfertaComercial(detail.id, this.getOfertaRequest()),
-      'Oferta comercial actualizada.',
-      () => this.reconcile(detail.id)
-    );
-  }
-
-  protected async guardarCambiosLead(): Promise<void> {
-    if (!this.canMutateOperationalData()) {
-      this.errorMessage.set('Marca ONLINE para guardar cambios.');
-      return;
-    }
-    const detail = this.detail();
-    if (!detail) {
-      return;
-    }
-
-    this.clearMessages();
-    const tasks: { label: string; action: () => Promise<void>; form: { markAsPristine: () => void } }[] = [];
-
-    if (this.datosForm.dirty) {
-      if (this.datosForm.invalid) {
-        this.errorMessage.set('Datos Preventa esta incompleto: tipo y numero documento son obligatorios.');
-        return;
-      }
-      tasks.push({
-        label: 'Datos Preventa',
-        form: this.datosForm,
-        action: () =>
-          firstValueFrom(
-            this.preventaService.actualizarDatosPreventa(detail.id, this.cleanObject(this.datosForm.getRawValue()))
-          )
-      });
-    }
-
-    if (this.direccionForm.dirty) {
-      if (this.direccionForm.invalid) {
-        this.errorMessage.set(this.getDireccionValidationMessage());
-        return;
-      }
-      tasks.push({
-        label: 'Direccion',
-        form: this.direccionForm,
-        action: () =>
-          firstValueFrom(
-            this.preventaService.actualizarDireccion(detail.id, this.getDireccionRequest())
-          )
-      });
-    }
-
-    if (this.ofertaForm.dirty) {
-      tasks.push({
-        label: 'Oferta Comercial',
-        form: this.ofertaForm,
-        action: () =>
-          firstValueFrom(this.preventaService.actualizarOfertaComercial(detail.id, this.getOfertaRequest()))
-      });
-    }
-
-    if (!tasks.length) {
-      this.successMessage.set('No hay cambios pendientes por guardar.');
-      return;
-    }
-
-    this.isSaving.set(true);
-    const saved: string[] = [];
-    const failed: string[] = [];
-    try {
-      for (const task of tasks) {
-        try {
-          await task.action();
-          task.form.markAsPristine();
-          saved.push(task.label);
-        } catch (error) {
-          failed.push(`${task.label}: ${this.getErrorMessage(error, 'No se pudo guardar')}`);
-        }
-      }
-
-      if (failed.length) {
-        this.errorMessage.set(`Guardado parcial. OK: ${saved.join(', ') || 'ninguno'}. Fallo: ${failed.join(' | ')}`);
-        return;
-      }
-
-      this.successMessage.set(`Guardado: ${saved.join(', ')}.`);
-      await this.reconcile(detail.id);
-    } finally {
-      this.isSaving.set(false);
-    }
-  }
-
   protected async tipificar(): Promise<void> {
-    if (this.hasUnsavedDataChanges()) {
-      this.errorMessage.set('Hay datos sin guardar. Guarda los cambios o limpia lo ultimo ingresado antes de tipificar.');
+    if (!this.canMutateOperationalData()) {
+      this.errorMessage.set('Marca ONLINE para realizar esta accion.');
       return;
     }
     const detail = this.detail();
@@ -552,6 +419,16 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       this.errorMessage.set('La hora programada es obligatoria para AGENDADO.');
       return;
     }
+
+    this.clearMessages();
+
+    if (this.hasUnsavedDataChanges()) {
+      const canProceed = await this.guardarAntesDeTipificar(detail);
+      if (!canProceed) {
+        return;
+      }
+    }
+
     const raw = this.tipificacionForm.getRawValue();
     await this.saveAction(
       () =>
@@ -567,6 +444,71 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
         await this.reconcile(detail.id);
       }
     );
+  }
+
+  private async guardarAntesDeTipificar(detail: LeadDetalleResponse): Promise<boolean> {
+    const tasks: { label: string; action: () => Promise<void>; form: { markAsPristine: () => void } }[] = [];
+
+    if (this.datosForm.dirty) {
+      if (this.datosForm.invalid) {
+        this.errorMessage.set('Datos Preventa incompleto: tipo y numero de documento son obligatorios.');
+        return false;
+      }
+      tasks.push({
+        label: 'Datos Preventa',
+        form: this.datosForm,
+        action: () =>
+          firstValueFrom(this.preventaService.actualizarDatosPreventa(detail.id, this.cleanObject(this.datosForm.getRawValue())))
+      });
+    }
+
+    if (this.direccionForm.dirty) {
+      if (this.direccionForm.invalid) {
+        this.errorMessage.set(this.getDireccionValidationMessage());
+        return false;
+      }
+      tasks.push({
+        label: 'Direccion',
+        form: this.direccionForm,
+        action: () =>
+          firstValueFrom(this.preventaService.actualizarDireccion(detail.id, this.getDireccionRequest()))
+      });
+    }
+
+    if (this.ofertaForm.dirty) {
+      tasks.push({
+        label: 'Oferta Comercial',
+        form: this.ofertaForm,
+        action: () =>
+          firstValueFrom(this.preventaService.actualizarOfertaComercial(detail.id, this.getOfertaRequest()))
+      });
+    }
+
+    this.isSaving.set(true);
+    const saved: string[] = [];
+    const failed: string[] = [];
+
+    try {
+      for (const task of tasks) {
+        try {
+          await task.action();
+          task.form.markAsPristine();
+          saved.push(task.label);
+        } catch (error) {
+          failed.push(`${task.label}: ${this.getErrorMessage(error, 'No se pudo guardar')}`);
+        }
+      }
+    } finally {
+      this.isSaving.set(false);
+    }
+
+    if (failed.length) {
+      const okMsg = saved.length ? `OK: ${saved.join(', ')}. ` : '';
+      this.errorMessage.set(`Guardado parcial. ${okMsg}Fallo: ${failed.join(' | ')}. Corrige e intenta tipificar de nuevo.`);
+      return false;
+    }
+
+    return true;
   }
 
   protected async onPlanChanged(): Promise<void> {
@@ -963,15 +905,13 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
 
   private patchDatosForm(detail: LeadDetalleResponse): void {
     this.datosForm.patchValue({
-      tipoDocumento: detail.tipoDocumento ?? 'DNI',
+      tipoDocumento: detail.tipoDocumento ?? '',
       numeroDocumentoTitularServicio: detail.numeroDocumentoTitularServicio ?? '',
       ubigeoNacimiento: detail.ubigeoNacimiento ?? '',
       nombreTitularServicio: detail.nombreTitular ?? '',
       celularRegistro: detail.celularRegistro ?? '',
       celularReferencia: detail.celularReferencia ?? '',
       correo: detail.correo ?? '',
-      nombreMadre: detail.nombreMadre ?? '',
-      nombrePadre: detail.nombrePadre ?? '',
       numeroDocumentoTitularCelularRegistro: detail.numeroDocumentoTitularCelularRegistro ?? '',
       nombreTitularCelularRegistro: detail.nombreTitularCelularRegistro ?? ''
     });
@@ -983,20 +923,19 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       idProvinciaDomicilio: 0,
       idDistritoDomicilio: 0,
       ubigeoDomicilio: detail.ubigeoDomicilio ?? '',
-      tipoDomicilio: detail.tipoDomicilio ?? 'MULTIFAMILIAR',
-      tipoVia: detail.tipoVia ?? 'CALLE',
+      tipoDomicilio: detail.tipoDomicilio ?? '',
+      tipoVia: detail.tipoVia ?? '',
       via: detail.via ?? '',
       direccion: detail.direccion ?? '',
       referencia: detail.referencia ?? '',
-      latitud: detail.latitud ?? -12.0464,
-      longitud: detail.longitud ?? -77.0428,
+      latitud: detail.latitud ?? null,
+      longitud: detail.longitud ?? null,
       urbanizacion: detail.urbanizacion ?? '',
       numero: detail.numero ?? '',
       manzana: detail.manzana ?? '',
       lote: detail.lote ?? '',
       nombreEdificio: detail.nombreEdificio ?? '',
       nombreCondominio: detail.nombreCondominio ?? '',
-      plano: detail.plano ?? '',
       piso: detail.piso ?? '',
       interior: detail.interior ?? ''
     });
@@ -1172,15 +1111,14 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       via: raw.via,
       direccion: raw.direccion,
       referencia: raw.referencia,
-      latitud: raw.latitud,
-      longitud: raw.longitud,
+      latitud: raw.latitud as number,
+      longitud: raw.longitud as number,
       urbanizacion: raw.urbanizacion,
       numero: raw.numero,
       manzana: raw.manzana,
       lote: raw.lote,
       nombreEdificio: raw.nombreEdificio,
       nombreCondominio: raw.nombreCondominio,
-      plano: raw.plano,
       piso: raw.piso,
       interior: raw.interior
     });

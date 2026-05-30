@@ -127,6 +127,10 @@ export class AttendanceFacade {
     () => this.rawStatus() === 'ONLINE' && !this.isOperational() ? 'OFFLINE' : this.rawStatus()
   );
   readonly isLoading = signal(false);
+  readonly isInitializing = computed(() => {
+    const state = this.loadState();
+    return state.status === 'idle' || state.status === 'loading';
+  });
   readonly errorMessage = signal('');
   readonly currentStatusMeta = computed(() => ATTENDANCE_STATUS_META[this.currentStatus()]);
   readonly availableActions = computed<AttendanceActionOption[]>(() =>

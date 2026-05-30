@@ -3,6 +3,8 @@ import { roleGuard } from '../../core/guards/role.guard';
 import { AdminDashboardPageComponent } from '../admin/pages/admin-dashboard-page/admin-dashboard-page.component';
 import { AdminEmployabilityPageComponent } from '../admin/pages/admin-employability-page/admin-employability-page.component';
 import { AsesorVentasWorkspacePageComponent } from '../asesor-ventas/pages/asesor-ventas-workspace-page/asesor-ventas-workspace-page.component';
+import { AsesorVentasHorarioPageComponent } from '../asesor-ventas/pages/asesor-ventas-horario-page/asesor-ventas-horario-page.component';
+import { AsesorVentasMetricasPageComponent } from '../asesor-ventas/pages/asesor-ventas-metricas-page/asesor-ventas-metricas-page.component';
 import { BackofficeWorkspacePageComponent } from '../backoffice/pages/backoffice-workspace-page/backoffice-workspace-page.component';
 import { CommunityWorkspacePageComponent } from '../community/pages/community-workspace-page/community-workspace-page.component';
 import { GtrWorkspacePageComponent } from '../gtr/pages/gtr-workspace-page/gtr-workspace-page.component';
@@ -162,11 +164,26 @@ export const PLATFORM_ROUTES: Routes = [
   },
   {
     path: 'asesor-ventas',
+    pathMatch: 'full',
+    redirectTo: 'asesor-ventas/plataforma'
+  },
+  {
+    path: 'asesor-ventas/plataforma',
     component: AsesorVentasWorkspacePageComponent,
     canActivate: [roleGuard],
-    data: {
-      roles: ['ASESOR_VENTAS']
-    }
+    data: { roles: ['ASESOR_VENTAS'] }
+  },
+  {
+    path: 'asesor-ventas/horario',
+    component: AsesorVentasHorarioPageComponent,
+    canActivate: [roleGuard],
+    data: { roles: ['ASESOR_VENTAS'] }
+  },
+  {
+    path: 'asesor-ventas/metricas',
+    component: AsesorVentasMetricasPageComponent,
+    canActivate: [roleGuard],
+    data: { roles: ['ASESOR_VENTAS'] }
   },
   {
     path: 'backoffice',

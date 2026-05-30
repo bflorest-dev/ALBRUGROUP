@@ -265,11 +265,13 @@ label {
   }
 
   .asesor-dialog {
+    max-height: 92vh;
     width: min(72rem, 94vw);
   }
 
   .asesor-dialog .p-dialog-content {
-    overflow: visible;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .asesor-dialog .p-dialog-header {
