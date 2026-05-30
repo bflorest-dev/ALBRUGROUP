@@ -46,6 +46,9 @@ export class AttendanceFacade {
   private readonly sessionService = inject(SessionService);
   private nextRequestId = 1;
   private initialized = false;
+  private autoCheckInTimer: ReturnType<typeof setTimeout> | null = null;
+  private autoCheckInRequestId: number | null = null;
+  private autoCheckInRetried = false;
 
   private readonly loadRequest = signal<LoadRequest | null>(null);
   private readonly actionRequest = signal<ActionRequest | null>(null);
@@ -152,6 +155,7 @@ export class AttendanceFacade {
         this.isLoading.set(false);
         this.errorMessage.set('');
         void this.syncPresence(state.detail);
+        this.scheduleAutoCheckIn(state.detail);
         return;
       }
 
@@ -181,6 +185,42 @@ export class AttendanceFacade {
       if (state.status === 'error') {
         this.isLoading.set(false);
         this.errorMessage.set(state.message);
+      }
+    });
+
+    // Auto check-in retry tracking
+    effect(() => {
+      const state = this.actionState();
+      const trackId = this.autoCheckInRequestId;
+
+      if (trackId === null) return;
+      if (state.status !== 'success' && state.status !== 'error') return;
+      if (state.requestId !== trackId) return;
+
+      if (state.status === 'success') {
+        this.autoCheckInRequestId = null;
+        this.autoCheckInRetried = false;
+        return;
+      }
+
+      // Error — retry once after 1 second
+      if (!this.autoCheckInRetried) {
+        this.autoCheckInRetried = true;
+        setTimeout(() => {
+          const detail = this.attendanceDetail();
+          if (!detail || detail.estadoActual !== 'OFFLINE' || detail.fechaHoraIngreso !== null) {
+            this.autoCheckInRequestId = null;
+            this.autoCheckInRetried = false;
+            return;
+          }
+          const retryId = this.nextRequestId;
+          this.submitAction('REGISTRAR_INGRESO');
+          this.autoCheckInRequestId = retryId;
+        }, 1000);
+      } else {
+        // Both attempts failed — give up silently
+        this.autoCheckInRequestId = null;
+        this.autoCheckInRetried = false;
       }
     });
   }
@@ -341,6 +381,52 @@ export class AttendanceFacade {
         ];
       case 'CAPACITACION':
         return [];
+    }
+  }
+
+  private scheduleAutoCheckIn(detail: DetalleAsistenciaResponse | null): void {
+    this.clearAutoCheckInTimer();
+
+    if (
+      !detail ||
+      detail.dentroHorario ||
+      detail.estadoActual !== 'OFFLINE' ||
+      detail.fechaHoraIngreso !== null ||
+      !detail.entradaProgramada
+    ) {
+      return;
+    }
+
+    const [h, m, s] = detail.entradaProgramada.split(':').map(Number);
+    const target = new Date();
+    target.setHours(h, m, s ?? 0, 0);
+    const ms = target.getTime() - Date.now();
+
+    // Only schedule if entry time is in the future and within the next 4 hours
+    if (ms <= 0 || ms > 4 * 60 * 60 * 1000) {
+      return;
+    }
+
+    this.autoCheckInTimer = setTimeout(() => {
+      this.autoCheckInTimer = null;
+
+      // Re-verify at fire time — user might have checked in manually
+      const current = this.attendanceDetail();
+      if (!current || current.estadoActual !== 'OFFLINE' || current.fechaHoraIngreso !== null) {
+        return;
+      }
+
+      this.autoCheckInRetried = false;
+      const capturedId = this.nextRequestId;
+      this.submitAction('REGISTRAR_INGRESO');
+      this.autoCheckInRequestId = capturedId;
+    }, ms);
+  }
+
+  private clearAutoCheckInTimer(): void {
+    if (this.autoCheckInTimer !== null) {
+      clearTimeout(this.autoCheckInTimer);
+      this.autoCheckInTimer = null;
     }
   }
 
