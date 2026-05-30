@@ -1,6 +1,7 @@
-﻿import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, effect, inject, signal } from '@angular/core';
+import { Location } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -43,6 +44,8 @@ import { CommunityPageMode, CommunitySection, CommunityWorkspaceFacade } from '.
 export class CommunityWorkspacePageComponent implements OnInit {
   protected readonly facade = inject(CommunityWorkspaceFacade);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly pageMode = signal<CommunityPageMode>('mantenimiento');
   protected readonly sections: { id: CommunitySection; label: string; icon: string; disabled?: boolean }[] = [
@@ -53,6 +56,26 @@ export class CommunityWorkspacePageComponent implements OnInit {
     { id: 'planes', label: 'Planes', icon: 'pi pi-wifi' },
     { id: 'promociones', label: 'Promociones', icon: 'pi pi-tags' }
   ];
+
+  constructor() {
+    // Restaurar la tab activa desde la URL al recargar (lectura sincrónica antes del primer effect)
+    const savedTab = this.route.snapshot.queryParams['tab'] as CommunitySection | undefined;
+    if (savedTab && this.sections.some((s) => s.id === savedTab)) {
+      this.facade.setSection(savedTab);
+    }
+
+    // Mantener la URL sincronizada cuando el usuario cambia de tab (sin disparar navegación)
+    effect(() => {
+      const section = this.facade.section();
+      if (this.pageMode() !== 'mantenimiento') return;
+      const urlTree = this.router.createUrlTree([], {
+        relativeTo: this.route,
+        queryParams: { tab: section },
+        queryParamsHandling: 'merge'
+      });
+      this.location.replaceState(this.router.serializeUrl(urlTree));
+    });
+  }
 
   ngOnInit(): void {
     this.route.data.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data) => {

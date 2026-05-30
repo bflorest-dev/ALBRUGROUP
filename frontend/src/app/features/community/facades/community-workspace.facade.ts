@@ -80,10 +80,19 @@ export class CommunityWorkspaceFacade {
 
   readonly proveedores = signal<ProveedorResponse[]>([]);
   readonly proveedoresActivos = computed(() => this.proveedores().filter((proveedor) => proveedor.activo !== false));
+  readonly proveedoresSorted = computed(() =>
+    [...this.proveedores()].sort((a, b) => (b.activo !== false ? 1 : 0) - (a.activo !== false ? 1 : 0))
+  );
   readonly cuentas = signal<CuentaPublicitariaResponse[]>([]);
   readonly cuentasActivas = signal<CuentaPublicitariaResponse[]>([]);
+  readonly cuentasSorted = computed(() =>
+    [...this.cuentas()].sort((a, b) => (b.activo !== false ? 1 : 0) - (a.activo !== false ? 1 : 0))
+  );
   readonly campanas = signal<CampanaResponse[]>([]);
   readonly campanasActivas = computed(() => this.campanas().filter((campana) => campana.activo !== false));
+  readonly campanasSorted = computed(() =>
+    [...this.campanas()].sort((a, b) => (b.activo !== false ? 1 : 0) - (a.activo !== false ? 1 : 0))
+  );
   readonly adicionales = signal<AdicionalResponse[]>([]);
   readonly adicionalesActivos = computed(() => this.adicionales().filter((adicional) => adicional.activo !== false));
   readonly planes = signal<PlanResponse[]>([]);

@@ -32,6 +32,15 @@ import { LeadRealtimeService } from '../../preventa/services/lead-realtime.servi
 import { PreventaLeadService } from '../../preventa/services/preventa-lead.service';
 
 type VisualLeadGtr = LeadGtrResponse & { isNew?: boolean };
+
+/** Tipo minimo aceptado por openEventHistory — compatible con LeadGtrResponse, LeadAgendadoGtrResponse y LeadVentaResponse. */
+export interface EventHistoryTarget {
+  id: number;
+  prefijo: string;
+  lead: string;
+  tieneMultiplesRegistrosDia?: boolean | null;
+  tieneRegistrosMismaCampanaDia?: boolean | null;
+}
 type VisualLeadAgendadoGtr = LeadAgendadoGtrResponse & { isNew?: boolean };
 export type GtrSection = 'plataforma' | 'agendados' | 'historicos';
 
@@ -168,7 +177,7 @@ export class GtrWorkspaceFacade {
   readonly catalogoSubtipificaciones = signal<SubtipificacionSelectOption[]>([]);
   readonly activeDialog = signal<GtrDialog>(null);
   readonly activeAssignmentLead = signal<LeadGtrResponse | null>(null);
-  readonly activeEventsLead = signal<LeadGtrResponse | null>(null);
+  readonly activeEventsLead = signal<EventHistoryTarget | null>(null);
   readonly pendingReassignment = signal<PendingReassignment | null>(null);
   readonly advisorsPanelOpen = signal(false);
   readonly baseOptions = ['WHATSAPP', 'MESSENGER', 'RECONTACTO', 'PREDICTIVO', 'REFERIDO', 'MASIVO'];
@@ -607,7 +616,7 @@ export class GtrWorkspaceFacade {
     this.activeDialog.set('assign');
   }
 
-  async openEventHistory(row: LeadGtrResponse): Promise<void> {
+  async openEventHistory(row: EventHistoryTarget): Promise<void> {
     this.activeEventsLead.set(row);
     this.eventRows.set([]);
     this.selectedEventAnomalyFilter.set(null);

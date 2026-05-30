@@ -393,6 +393,17 @@
                           </span>
                           <span class="gtr-assign-button__count">{{ facade.display(row.totalAsignaciones ?? 0) }}</span>
                         </button>
+                        <button
+                          pButton
+                          type="button"
+                          icon="pi pi-history"
+                          size="small"
+                          severity="secondary"
+                          [disabled]="facade.isLoadingEvents()"
+                          title="Ver historial del dia"
+                          aria-label="Ver historial del dia"
+                          (click)="facade.openEventHistory(row)"
+                        ></button>
                       </div>
                     </td>
                   </tr>
@@ -566,6 +577,17 @@
                   </span>
                   <span class="gtr-assign-button__count">{{ facade.display(row.totalAsignaciones ?? 0) }}</span>
                 </button>
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-history"
+                  size="small"
+                  severity="secondary"
+                  [disabled]="facade.isLoadingEvents()"
+                  title="Ver historial del dia"
+                  aria-label="Ver historial del dia"
+                  (click)="facade.openEventHistory(row)"
+                ></button>
               </div>
             </td>
           </tr>
@@ -1054,7 +1076,7 @@
     (visibleChange)="!$event && facade.closeDialog()"
     [modal]="true"
     [draggable]="false"
-    styleClass="gtr-dialog gtr-dialog--events"
+    styleClass="gtr-dialog gtr-dialog--search"
   >
     <div class="search-form">
       <label class="wide">

@@ -105,7 +105,7 @@
 
             <p-card styleClass="community-table-card">
               <ng-template #title>Proveedores</ng-template>
-              <p-table [value]="facade.proveedores()" [paginator]="true" [rows]="8" [rowHover]="true" styleClass="p-datatable-sm">
+              <p-table [value]="facade.proveedoresSorted()" [paginator]="true" [rows]="8" [rowHover]="true" styleClass="p-datatable-sm">
                 <ng-template #header>
                   <tr>
                     <th>Nombre</th>
@@ -162,7 +162,7 @@
 
             <p-card styleClass="community-table-card">
               <ng-template #title>Cuentas publicitarias</ng-template>
-              <p-table [value]="facade.cuentas()" [paginator]="true" [rows]="8" [rowHover]="true" styleClass="p-datatable-sm">
+              <p-table [value]="facade.cuentasSorted()" [paginator]="true" [rows]="8" [rowHover]="true" styleClass="p-datatable-sm">
                 <ng-template #header>
                   <tr>
                     <th>Cuenta</th>
@@ -246,7 +246,7 @@
 
             <p-card styleClass="community-table-card">
               <ng-template #title>Campañas</ng-template>
-              <p-table [value]="facade.campanas()" [paginator]="true" [rows]="8" [rowHover]="true" styleClass="p-datatable-sm">
+              <p-table [value]="facade.campanasSorted()" [paginator]="true" [rows]="8" [rowHover]="true" styleClass="p-datatable-sm">
                 <ng-template #header>
                   <tr>
                     <th>Campaña</th>

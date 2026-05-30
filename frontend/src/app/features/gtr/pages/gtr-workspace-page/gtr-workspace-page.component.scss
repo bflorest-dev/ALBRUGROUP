@@ -529,6 +529,10 @@ label {
   width: min(56rem, calc(100vw - 1rem));
 }
 
+:host ::ng-deep .gtr-dialog--search {
+  width: min(82rem, calc(100vw - 1rem));
+}
+
 :host ::ng-deep .p-select,
 :host ::ng-deep .p-multiselect,
 :host ::ng-deep .p-inputtext {
@@ -557,6 +561,11 @@ label {
   :host ::ng-deep .gtr-dialog--events {
     margin-left: 292px;
     width: min(56rem, calc(100vw - 292px - 2rem));
+  }
+
+  :host ::ng-deep .gtr-dialog--search {
+    margin-left: 292px;
+    width: min(82rem, calc(100vw - 292px - 2rem));
   }
 }
 
