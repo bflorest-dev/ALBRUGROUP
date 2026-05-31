@@ -1,0 +1,111 @@
+<p-dialog
+  header="Editar datos personales"
+  [visible]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  styleClass="edit-personal-dialog"
+>
+  @if (isLoading) {
+    <div class="edit-loading">
+      <p-progress-spinner ariaLabel="Cargando datos del empleado" />
+      <span>Cargando datos del empleado...</span>
+    </div>
+  } @else {
+    <form class="edit-grid" [formGroup]="form">
+
+      <label>
+        <span>Nombres</span>
+        <input pInputText type="text" formControlName="nombres" placeholder="Nombres del empleado" />
+      </label>
+
+      <label>
+        <span>Apellidos</span>
+        <input pInputText type="text" formControlName="apellidos" placeholder="Apellidos del empleado" />
+      </label>
+
+      <label>
+        <span>Tipo Documento</span>
+        <p-select
+          formControlName="tipoDocumento"
+          [options]="documentoOptions"
+          appendTo="body"
+        />
+      </label>
+
+      <label>
+        <span>Nro Documento</span>
+        <input
+          pInputText
+          type="text"
+          inputmode="numeric"
+          formControlName="numeroDocumento"
+          placeholder="Número de documento"
+          (input)="setNumericDigits(form.get('numeroDocumento'), $any($event.target).value, 15)"
+        />
+      </label>
+
+      <label>
+        <span>Fecha Nacimiento</span>
+        <input pInputText type="date" formControlName="fechaNacimiento" />
+      </label>
+
+      <label>
+        <span>Nacionalidad</span>
+        <p-select
+          formControlName="nacionalidad"
+          [options]="nacionalidadOptions"
+          appendTo="body"
+        />
+      </label>
+
+      <label>
+        <span>Estado Civil</span>
+        <p-select
+          formControlName="estadoCivil"
+          [options]="estadoCivilOptions"
+          appendTo="body"
+        />
+      </label>
+
+      <label>
+        <span>Tiene Hijos</span>
+        <p-select
+          formControlName="tieneHijos"
+          [options]="tieneHijosOptions"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+        />
+      </label>
+
+    </form>
+  }
+
+  @if (errorMessage) {
+    <p-message severity="error" [text]="errorMessage" styleClass="edit-error" />
+  }
+
+  <ng-template #footer>
+    <div class="edit-actions">
+      <button
+        pButton
+        type="button"
+        label="Cancelar"
+        severity="secondary"
+        [disabled]="isSubmitting"
+        (click)="visibleChange.emit(false)"
+      ></button>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-save"
+        label="Guardar cambios"
+        [loading]="isSubmitting"
+        [disabled]="isLoading"
+        (click)="submit.emit()"
+      ></button>
+    </div>
+  </ng-template>
+</p-dialog>

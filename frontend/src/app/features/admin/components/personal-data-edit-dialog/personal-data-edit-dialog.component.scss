@@ -1,0 +1,48 @@
+.edit-loading {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+.edit-grid {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-bottom: 0.5rem;
+}
+
+label {
+  color: #425466;
+  display: grid;
+  font-size: 0.78rem;
+  font-weight: 800;
+  gap: 0.35rem;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+
+.edit-error {
+  margin-top: 0.75rem;
+}
+
+:host ::ng-deep {
+  .edit-personal-dialog {
+    width: min(40rem, calc(100vw - 2rem));
+  }
+
+  .edit-personal-dialog .p-dialog-content {
+    overflow-y: auto;
+  }
+
+  .edit-grid .p-inputtext,
+  .edit-grid .p-select {
+    width: 100%;
+  }
+}

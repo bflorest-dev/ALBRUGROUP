@@ -138,6 +138,8 @@ export class CommunityWorkspaceFacade {
   readonly selectedBillingCuts = signal<number[]>([1, 15]);
   readonly selectedCampaign = signal<CampanaResponse | null>(null);
   readonly whatsappDialogOpen = signal(false);
+  readonly editAccountDialogOpen = signal(false);
+  readonly selectedAccountId = signal<number | null>(null);
 
   readonly zoneDialogOpen = signal(false);
   readonly zoneDialogMode = signal<ZoneDialogMode>('create');
@@ -212,6 +214,10 @@ export class CommunityWorkspaceFacade {
   readonly campaignWhatsappForm = this.fb.group({
     prefijo: ['+51', [Validators.required, Validators.pattern(/^\+\d{2,3}$/)]],
     numeroWhatsApp: ['', [Validators.required, Validators.pattern(/^\d{6,15}$/)]]
+  });
+
+  readonly editAccountForm = this.fb.group({
+    nombreCuenta: ['', [Validators.required]]
   });
 
   readonly additionalForm = this.fb.group({
@@ -469,6 +475,41 @@ export class CommunityWorkspaceFacade {
     await this.saveAction(() => this.leadService.registrarCampana(this.campaignForm.getRawValue()), 'Campaña registrada.', () =>
       this.refreshCampaigns()
     );
+  }
+
+  openEditAccountDialog(cuenta: CuentaPublicitariaResponse): void {
+    this.selectedAccountId.set(cuenta.id);
+    this.editAccountForm.reset({ nombreCuenta: cuenta.nombreCuenta as string });
+    this.editAccountDialogOpen.set(true);
+  }
+
+  closeEditAccountDialog(): void {
+    this.editAccountDialogOpen.set(false);
+    this.selectedAccountId.set(null);
+    this.editAccountForm.reset();
+  }
+
+  async saveEditAccount(): Promise<void> {
+    const id = this.selectedAccountId();
+    if (!id || this.editAccountForm.invalid) {
+      this.errorMessage.set('El nombre de la cuenta es obligatorio.');
+      return;
+    }
+    const raw = this.editAccountForm.getRawValue();
+    this.isSaving.set(true);
+    try {
+      await firstValueFrom(
+        this.leadService.actualizarNombreCuenta(id, { nombreCuenta: raw.nombreCuenta })
+      );
+      await this.loadList('cuentas', () => firstValueFrom(this.leadService.listarCuentas()));
+      this.clearMessages();
+      this.successMessage.set('Nombre de cuenta actualizado.');
+      this.closeEditAccountDialog();
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo actualizar el nombre de la cuenta.'));
+    } finally {
+      this.isSaving.set(false);
+    }
   }
 
   openWhatsappDialog(campana: CampanaResponse): void {

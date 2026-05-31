@@ -13,6 +13,8 @@ import { EmpresaContratistaResponse } from '../../../shared/models/rrhh/empresa-
 import { RegistrarContratoRequest } from '../../../shared/models/rrhh/registrar-contrato-request';
 import { RegistrarEmpleadoRequest } from '../../../shared/models/rrhh/registrar-empleado-request';
 import { RegistrarHorarioRequest } from '../../../shared/models/schedule/registrar-horario-request';
+import { ConnectedUserResponse, PresenceService } from '../../../core/services/presence.service';
+import { EstadoMonitorResponse } from '../../../shared/models/schedule/cumplimiento-response';
 import { AuthService } from '../../auth/services/auth.service';
 import { AdminRrhhService } from '../services/admin-rrhh.service';
 
@@ -88,6 +90,7 @@ export class AdminPersonalFacade {
   private readonly formBuilder = inject(FormBuilder);
   private readonly adminRrhhService = inject(AdminRrhhService);
   private readonly authService = inject(AuthService);
+  private readonly presenceService = inject(PresenceService);
   private readonly modalidadesSinAlmuerzo = new Set(['PART_TIME', 'SEMI_FULL']);
   private readonly scheduleRules: Record<string, ScheduleRule> = {
     PART_TIME: {
@@ -253,6 +256,11 @@ export class AdminPersonalFacade {
     { initialValue: { status: 'idle' } }
   );
 
+  readonly tieneHijosOptions = [
+    { label: 'No', value: 'false' },
+    { label: 'Sí', value: 'true' }
+  ];
+
   readonly documentoOptions = ['DNI', 'CE'];
   readonly nacionalidadOptions = ['PERUANO', 'EXTRANJERO'];
   readonly estadoCivilOptions = ['SOLTERO', 'CASADO', 'VIUDO', 'DIVORCIADO'];
@@ -405,6 +413,26 @@ export class AdminPersonalFacade {
       validators: [this.createHorarioValidator()]
     }
   );
+
+  readonly editDatosPersonalesForm = this.formBuilder.nonNullable.group({
+    nombres: ['', [Validators.required]],
+    apellidos: ['', [Validators.required]],
+    tipoDocumento: ['DNI', [Validators.required]],
+    numeroDocumento: ['', [Validators.required]],
+    nacionalidad: ['PERUANO', [Validators.required]],
+    fechaNacimiento: ['', [Validators.required]],
+    estadoCivil: ['SOLTERO', [Validators.required]],
+    tieneHijos: ['false', [Validators.required]]
+  });
+
+  readonly editDialogVisible = signal(false);
+  readonly editTargetEmpleadoId = signal<number | null>(null);
+  readonly isLoadingEditData = signal(false);
+  readonly isSubmittingEdit = signal(false);
+  readonly editErrorMessage = signal('');
+  readonly employeeStateById = signal<Record<number, EstadoMonitorResponse>>({});
+  readonly connectedUserById = signal<Record<number, ConnectedUserResponse>>({});
+  readonly isLoadingStates = signal(false);
 
   readonly currentStep = signal(1);
   readonly submitErrorMessage = signal('');
@@ -751,6 +779,95 @@ export class AdminPersonalFacade {
     this.horarioForm.updateValueAndValidity({ emitEvent: false });
   }
 
+  async openEditDialog(employee: EmpleadoRolResponse): Promise<void> {
+    this.editTargetEmpleadoId.set(employee.idEmpleado);
+    this.editErrorMessage.set('');
+    this.editDatosPersonalesForm.reset({
+      nombres: '',
+      apellidos: '',
+      tipoDocumento: 'DNI',
+      numeroDocumento: '',
+      nacionalidad: 'PERUANO',
+      fechaNacimiento: '',
+      estadoCivil: 'SOLTERO',
+      tieneHijos: 'false'
+    });
+    this.editDialogVisible.set(true);
+    this.isLoadingEditData.set(true);
+
+    try {
+      const empleado = await firstValueFrom(
+        this.adminRrhhService
+          .getEmpleadoPorDocumento(employee.numeroDocumento)
+          .pipe(timeout(this.requestTimeoutMs))
+      );
+      this.editDatosPersonalesForm.patchValue({
+        nombres: empleado.nombres,
+        apellidos: empleado.apellidos,
+        tipoDocumento: empleado.tipoDocumento,
+        numeroDocumento: empleado.numeroDocumento,
+        nacionalidad: empleado.nacionalidad,
+        fechaNacimiento: empleado.fechaNacimiento,
+        estadoCivil: empleado.estadoCivil,
+        tieneHijos: empleado.tieneHijos ? 'true' : 'false'
+      });
+    } catch (error) {
+      this.editErrorMessage.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No se pudo cargar los datos del empleado.')
+      );
+    } finally {
+      this.isLoadingEditData.set(false);
+    }
+  }
+
+  closeEditDialog(): void {
+    this.editDialogVisible.set(false);
+    this.editTargetEmpleadoId.set(null);
+    this.editErrorMessage.set('');
+    this.editDatosPersonalesForm.reset();
+  }
+
+  async submitDatosPersonales(): Promise<void> {
+    const empleadoId = this.editTargetEmpleadoId();
+    if (!empleadoId) return;
+
+    if (this.editDatosPersonalesForm.invalid) {
+      this.editDatosPersonalesForm.markAllAsTouched();
+      return;
+    }
+
+    const raw = this.editDatosPersonalesForm.getRawValue();
+    this.editErrorMessage.set('');
+    this.isSubmittingEdit.set(true);
+
+    try {
+      await firstValueFrom(
+        this.adminRrhhService
+          .actualizarDatosPersonales(empleadoId, {
+            nombres: raw.nombres.trim(),
+            apellidos: raw.apellidos.trim(),
+            tipoDocumento: raw.tipoDocumento,
+            numeroDocumento: raw.numeroDocumento.trim(),
+            nacionalidad: raw.nacionalidad,
+            fechaNacimiento: raw.fechaNacimiento,
+            estadoCivil: raw.estadoCivil,
+            tieneHijos: raw.tieneHijos === 'true'
+          })
+          .pipe(timeout(this.requestTimeoutMs))
+      );
+
+      this.closeEditDialog();
+      void this.loadActiveEmployees();
+      this.refreshUserAccess(empleadoId);
+    } catch (error) {
+      this.editErrorMessage.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No se pudo actualizar los datos personales.')
+      );
+    } finally {
+      this.isSubmittingEdit.set(false);
+    }
+  }
+
   loadEmployees(pageNumber = 0, silent = false): void {
     this.employeeListRequest.set({
       requestId: this.nextRequestId++,
@@ -767,12 +884,47 @@ export class AdminPersonalFacade {
       this.activeEmployees.set(
         await firstValueFrom(this.adminRrhhService.listarEmpleadosLight().pipe(timeout(this.requestTimeoutMs)))
       );
+      void this.loadEmployeeStates();
     } catch (error) {
       this.activeEmployeeListErrorMessage.set(
         this.getErrorMessage(error as HttpErrorResponse, 'No fue posible cargar empleados activos.')
       );
     } finally {
       this.isLoadingActiveEmployees.set(false);
+    }
+  }
+
+  async loadEmployeeStates(): Promise<void> {
+    const employees = this.activeEmployees();
+    if (!employees.length) return;
+
+    const ids = employees.map((e) => e.idEmpleado);
+    const today = this.getToday();
+
+    this.isLoadingStates.set(true);
+    try {
+      const [estados, connected] = await Promise.all([
+        firstValueFrom(
+          this.adminRrhhService.getEstadosMonitorEmpleados(ids, today).pipe(timeout(this.requestTimeoutMs))
+        ),
+        firstValueFrom(
+          this.presenceService
+            .listarUsuariosConectados()
+            .pipe(timeout(this.requestTimeoutMs), catchError(() => of([] as ConnectedUserResponse[])))
+        )
+      ]);
+
+      const stateMap: Record<number, EstadoMonitorResponse> = {};
+      for (const e of estados) stateMap[e.idEmpleado] = e;
+      this.employeeStateById.set(stateMap);
+
+      const connectedMap: Record<number, ConnectedUserResponse> = {};
+      for (const c of connected) connectedMap[c.empleadoId] = c;
+      this.connectedUserById.set(connectedMap);
+    } catch {
+      // falla silenciosa: los chips de estado aparecen como "Sin registro"
+    } finally {
+      this.isLoadingStates.set(false);
     }
   }
 

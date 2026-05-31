@@ -3,6 +3,8 @@ package pe.albrugroup.rrhh_service.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import pe.albrugroup.rrhh_service.entity.Empleado;
 import pe.albrugroup.rrhh_service.entity.EmpresaContratista;
 import pe.albrugroup.rrhh_service.entity.enums.Banco;
@@ -17,6 +19,8 @@ import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 import pe.albrugroup.rrhh_service.entity.response.PageResponse;
 import pe.albrugroup.rrhh_service.exception.NotFoundException;
 import pe.albrugroup.rrhh_service.exception.UnprocessableEntityException;
+import pe.albrugroup.rrhh_service.integration.auth.AuthServiceClient;
+import pe.albrugroup.rrhh_service.integration.auth.dto.RegistrarUsuarioRequest;
 import pe.albrugroup.rrhh_service.repository.ContratoRepository;
 import pe.albrugroup.rrhh_service.repository.EmpresaContratistaRepository;
 import pe.albrugroup.rrhh_service.service.mapper.EmpleadoRolMapper;
@@ -39,6 +43,7 @@ public class EmpleadoService implements IEmpleado {
     private final EmpleadoRolMapper empleadoRolMapper;
     private final EventoService eventoService;
     private final PaginationService paginationService;
+    private final AuthServiceClient authServiceClient;
 
     private static final Set<String> EMPLEADO_SORT_FIELDS = Set.of(
             "id",
@@ -104,11 +109,39 @@ public class EmpleadoService implements IEmpleado {
 
     @Override
     public EmpleadoResponse actualizarDatosPersonales(Long idEmpleado,
-                                                      DatosPersonalesRequest datosPersonales) {
+                                                      DatosPersonalesRequest datosPersonales,
+                                                      String authHeader) {
         Empleado empleado = repository.findById(idEmpleado)
                 .orElseThrow(() -> new NotFoundException(Empleado.class, idEmpleado));
         mapper.updateDatosPersonales(datosPersonales, empleado);
+        programarSyncDatosPersonalesPostCommit(empleado, authHeader);
         return mapper.toResponse(empleado);
+    }
+
+    private void programarSyncDatosPersonalesPostCommit(Empleado empleado, String authHeader) {
+        if (authHeader == null || authHeader.isBlank()) {
+            return;
+        }
+        contratoRepository.findContratoVigenteByEmpleadoId(empleado.getId(), LocalDate.now())
+                .ifPresent(contrato -> {
+                    String email = (empleado.getCorreoCorporativo() != null && !empleado.getCorreoCorporativo().isBlank())
+                            ? empleado.getCorreoCorporativo()
+                            : empleado.getCorreoPersonal();
+                    RegistrarUsuarioRequest request = RegistrarUsuarioRequest.builder()
+                            .empleadoId(empleado.getId())
+                            .nombres(empleado.getNombres())
+                            .apellidos(empleado.getApellidos())
+                            .dni(empleado.getNumeroDocumento())
+                            .email(email)
+                            .puestoTrabajo(contrato.getPuestoTrabajo())
+                            .build();
+                    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            authServiceClient.upsertUsuario(authHeader, request);
+                        }
+                    });
+                });
     }
     @Override
     public EmpleadoResponse actualizarContactoUbicacion(Long idEmpleado,

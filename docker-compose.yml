@@ -5,6 +5,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
+      LANG: C.UTF-8
     volumes:
       - postgres-core-data:/var/lib/postgresql/data
       - ./docker/postgres/core-init:/docker-entrypoint-initdb.d:ro
@@ -24,6 +26,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
+      LANG: C.UTF-8
     volumes:
       - postgres-lead-data:/var/lib/postgresql/data
       - ./docker/postgres/lead-init:/docker-entrypoint-initdb.d:ro

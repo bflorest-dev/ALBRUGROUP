@@ -143,8 +143,9 @@ public class EmpleadoController {
     @PreAuthorize("hasAuthority('UPDATE_EMPLEADOS')")
     public ResponseEntity<EmpleadoResponse> actulizarDatosPersonales(@RequestBody DatosPersonalesRequest request,
                                                                      @Parameter(description = "ID del empleado", example = "10")
-                                                                     @PathVariable @Positive Long id) {
-        var empleado = empleadoService.actualizarDatosPersonales(id, request);
+                                                                     @PathVariable @Positive Long id,
+                                                                     @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        var empleado = empleadoService.actualizarDatosPersonales(id, request, authHeader);
         return ResponseEntity.ok(empleado);
     }
 

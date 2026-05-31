@@ -8,6 +8,8 @@ import { EmpleadoResponse } from '../../../shared/models/rrhh/empleado-response'
 import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
 import { EmpresaContratistaResponse } from '../../../shared/models/rrhh/empresa-contratista-response';
 import { RegistrarContratoRequest } from '../../../shared/models/rrhh/registrar-contrato-request';
+import { ActualizarDatosPersonalesRequest } from '../../../shared/models/rrhh/actualizar-datos-personales-request';
+import { EstadoMonitorResponse } from '../../../shared/models/schedule/cumplimiento-response';
 import { RegistrarEmpleadoRequest } from '../../../shared/models/rrhh/registrar-empleado-request';
 import { HorarioResponse } from '../../../shared/models/schedule/horario-response';
 import { RegistrarHorarioRequest } from '../../../shared/models/schedule/registrar-horario-request';
@@ -20,11 +22,23 @@ export class AdminRrhhService {
   private readonly contratosUrl = `${API_CONSTANTS.gatewayBaseUrl}/rrhh/contratos`;
   private readonly empresasContratistasUrl = `${API_CONSTANTS.gatewayBaseUrl}/rrhh/empresas-contratistas`;
   private readonly horariosUrl = `${API_CONSTANTS.gatewayBaseUrl}/schedule/horarios`;
+  private readonly monitorUrl = `${API_CONSTANTS.gatewayBaseUrl}/schedule/revision/asistencia/monitor`;
 
   constructor(private readonly http: HttpClient) {}
 
   registrarEmpleado(request: RegistrarEmpleadoRequest): Observable<EmpleadoResponse> {
     return this.http.post<EmpleadoResponse>(this.empleadosUrl, request);
+  }
+
+  getEmpleadoPorDocumento(documento: string): Observable<EmpleadoResponse> {
+    return this.http.get<EmpleadoResponse>(`${this.empleadosUrl}/${documento}/numero-documento`);
+  }
+
+  actualizarDatosPersonales(
+    empleadoId: number,
+    request: ActualizarDatosPersonalesRequest
+  ): Observable<EmpleadoResponse> {
+    return this.http.patch<EmpleadoResponse>(`${this.empleadosUrl}/${empleadoId}/datos-personales`, request);
   }
 
   registrarContrato(
@@ -54,6 +68,10 @@ export class AdminRrhhService {
 
   listarEmpleadosLight(): Observable<EmpleadoRolResponse[]> {
     return this.http.get<EmpleadoRolResponse[]>(`${this.empleadosUrl}/light`);
+  }
+
+  getEstadosMonitorEmpleados(empleadoIds: number[], fecha: string): Observable<EstadoMonitorResponse[]> {
+    return this.http.post<EstadoMonitorResponse[]>(`${this.monitorUrl}/estados`, { empleadoIds, fecha });
   }
 
   listarEmpresasContratistas(activo = true): Observable<EmpresaContratistaResponse[]> {

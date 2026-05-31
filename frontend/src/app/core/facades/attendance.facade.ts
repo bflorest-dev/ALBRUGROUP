@@ -387,9 +387,9 @@ export class AttendanceFacade {
   private scheduleAutoCheckIn(detail: DetalleAsistenciaResponse | null): void {
     this.clearAutoCheckInTimer();
 
+    // Condiciones comunes: debe ser OFFLINE sin ingreso registrado y con horario definido
     if (
       !detail ||
-      detail.dentroHorario ||
       detail.estadoActual !== 'OFFLINE' ||
       detail.fechaHoraIngreso !== null ||
       !detail.entradaProgramada
@@ -397,12 +397,22 @@ export class AttendanceFacade {
       return;
     }
 
+    // Caso 1: ya está dentro del horario — marcar ONLINE de inmediato
+    if (detail.dentroHorario) {
+      this.autoCheckInRetried = false;
+      const capturedId = this.nextRequestId;
+      this.submitAction('REGISTRAR_INGRESO');
+      this.autoCheckInRequestId = capturedId;
+      return;
+    }
+
+    // Caso 2: antes del horario — programar timer para entradaProgramada
     const [h, m, s] = detail.entradaProgramada.split(':').map(Number);
     const target = new Date();
     target.setHours(h, m, s ?? 0, 0);
     const ms = target.getTime() - Date.now();
 
-    // Only schedule if entry time is in the future and within the next 4 hours
+    // Solo si la entrada es en el futuro y dentro de las próximas 4 horas
     if (ms <= 0 || ms > 4 * 60 * 60 * 1000) {
       return;
     }
@@ -410,7 +420,7 @@ export class AttendanceFacade {
     this.autoCheckInTimer = setTimeout(() => {
       this.autoCheckInTimer = null;
 
-      // Re-verify at fire time — user might have checked in manually
+      // Re-verificar al disparar: el empleado puede haber marcado manualmente
       const current = this.attendanceDetail();
       if (!current || current.estadoActual !== 'OFFLINE' || current.fechaHoraIngreso !== null) {
         return;

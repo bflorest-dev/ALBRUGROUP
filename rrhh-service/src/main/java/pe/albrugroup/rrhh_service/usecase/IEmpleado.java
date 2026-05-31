@@ -22,7 +22,7 @@ public interface IEmpleado {
     EmpleadoResponse getEmpleadoDocumento(String documento);
     EmpleadoResponse registrarEmpleado(RegistrarEmpleadoRequest nuevoEmpleado, Long responsableId);
     void registrarEmpleados(List<RegistrarEmpleadoRequest> nuevosEmpleados, Long responsableId);
-    EmpleadoResponse actualizarDatosPersonales(Long idEmpleado, DatosPersonalesRequest datosPersonales);
+    EmpleadoResponse actualizarDatosPersonales(Long idEmpleado, DatosPersonalesRequest datosPersonales, String authHeader);
     EmpleadoResponse actualizarContactoUbicacion(Long idEmpleado, DatosContactoUbicacionRequest datosContactoUbicacion);
     EmpleadoResponse actualizarDatosFinancieros(Long idEmpleado, DatosFinancierosRequest datosFinancieros);
     EmpleadoResponse actualizarContactoCorporativo(Long idEmpleado, DatosContactoCorporativoRequest datosCorporativos);

@@ -24,8 +24,13 @@
       [accessLoadingByEmployeeId]="facade.accessLoadingByEmployeeId()"
       (reload)="facade.loadActiveEmployees()"
       (pageChange)="facade.loadActiveEmployees()"
+      [employeeStateById]="facade.employeeStateById()"
+      [connectedUserById]="facade.connectedUserById()"
+      [isLoadingStates]="facade.isLoadingStates()"
       (toggleAccess)="facade.toggleUserAccess($event)"
       (renewContract)="facade.openContractRenewal($event)"
+      (editEmployee)="facade.openEditDialog($event)"
+      (refreshStates)="facade.loadEmployeeStates()"
     />
 
     <app-contract-renewal-dialog
@@ -44,6 +49,20 @@
       (visibleChange)="!$event && facade.closeContractRenewal()"
       (submit)="facade.submitContractRenewal()"
     />
+  <app-personal-data-edit-dialog
+    [visible]="facade.editDialogVisible()"
+    [form]="facade.editDatosPersonalesForm"
+    [isLoading]="facade.isLoadingEditData()"
+    [isSubmitting]="facade.isSubmittingEdit()"
+    [errorMessage]="facade.editErrorMessage()"
+    [documentoOptions]="facade.documentoOptions"
+    [nacionalidadOptions]="facade.nacionalidadOptions"
+    [estadoCivilOptions]="facade.estadoCivilOptions"
+    [tieneHijosOptions]="facade.tieneHijosOptions"
+    (visibleChange)="!$event && facade.closeEditDialog()"
+    (submit)="facade.submitDatosPersonales()"
+  />
+
   } @else {
   <div class="admin-grid admin-grid--single">
     <app-personal-registration-panel

@@ -86,6 +86,13 @@ export class CommunityWorkspacePageComponent implements OnInit {
     });
   }
 
+  /** Previene el ingreso de caracteres no enteros en campos type="number". */
+  protected preventNonInteger(event: KeyboardEvent): void {
+    const allowed = ['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+    if (allowed.includes(event.key) || event.ctrlKey || event.metaKey) return;
+    if (!/^\d$/.test(event.key)) event.preventDefault();
+  }
+
   protected display(value: unknown): string {
     if (value === null || value === undefined || value === '') {
       return '-';

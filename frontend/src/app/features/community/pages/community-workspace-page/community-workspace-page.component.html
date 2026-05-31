@@ -177,18 +177,29 @@
                     <td>{{ cuenta.numeroCuenta }}</td>
                     <td><p-tag [severity]="statusSeverity(cuenta.activo)" [value]="statusLabel(cuenta.activo)" /></td>
                     <td>
-                      @if (cuenta.activo !== false) {
+                      <div class="inline-action">
                         <button
                           pButton
                           type="button"
                           size="small"
-                          icon="pi pi-ban"
-                          label="Desactivar"
+                          icon="pi pi-pencil"
+                          label="Renombrar"
                           severity="secondary"
-                          [loading]="facade.isSaving()"
-                          (click)="facade.deactivateAccount(cuenta.id)"
+                          (click)="facade.openEditAccountDialog(cuenta)"
                         ></button>
-                      }
+                        @if (cuenta.activo !== false) {
+                          <button
+                            pButton
+                            type="button"
+                            size="small"
+                            icon="pi pi-ban"
+                            label="Desactivar"
+                            severity="secondary"
+                            [loading]="facade.isSaving()"
+                            (click)="facade.deactivateAccount(cuenta.id)"
+                          ></button>
+                        }
+                      </div>
                     </td>
                   </tr>
                 </ng-template>
@@ -973,7 +984,8 @@
       </label>
       <label>
         <span>Meses de Precio Promocional</span>
-        <input pInputText type="number" min="0" formControlName="mesesPromocionPrecio" placeholder="3" />
+        <input pInputText type="number" min="0" inputmode="numeric" formControlName="mesesPromocionPrecio" placeholder="3"
+               (keydown)="preventNonInteger($event)" />
       </label>
       <label>
         <span>Vigencia Desde</span>
@@ -991,7 +1003,8 @@
       </div>
       <label>
         <span>Velocidad del Internet</span>
-        <input pInputText type="number" min="0" formControlName="internetVelocidad" placeholder="200" />
+        <input pInputText type="number" min="0" inputmode="numeric" formControlName="internetVelocidad" placeholder="200"
+               (keydown)="preventNonInteger($event)" />
       </label>
       <label>
         <span>Unidad</span>
@@ -1003,11 +1016,13 @@
       </label>
       <label>
         <span>Velocidad Promocional</span>
-        <input pInputText type="number" min="0" formControlName="velocidadPromocional" placeholder="400" />
+        <input pInputText type="number" min="0" inputmode="numeric" formControlName="velocidadPromocional" placeholder="400"
+               (keydown)="preventNonInteger($event)" />
       </label>
       <label>
         <span>Meses de Velocidad Promocional</span>
-        <input pInputText type="number" min="0" formControlName="mesesPromocionVelocidad" placeholder="3" />
+        <input pInputText type="number" min="0" inputmode="numeric" formControlName="mesesPromocionVelocidad" placeholder="3"
+               (keydown)="preventNonInteger($event)" />
       </label>
 
       <!-- Seccion TV -->
@@ -1021,7 +1036,8 @@
       </label>
       <label>
         <span>Cantidad de Canales</span>
-        <input pInputText type="number" min="0" formControlName="televisionCanales" placeholder="80" />
+        <input pInputText type="number" min="0" inputmode="numeric" formControlName="televisionCanales" placeholder="80"
+               (keydown)="preventNonInteger($event)" />
       </label>
 
       <!-- Seccion Telefonia -->
@@ -1035,7 +1051,8 @@
       </label>
       <label>
         <span>Cantidad de Minutos</span>
-        <input pInputText type="number" min="0" formControlName="telefonoMinutos" placeholder="1000" />
+        <input pInputText type="number" min="0" inputmode="numeric" formControlName="telefonoMinutos" placeholder="1000"
+               (keydown)="preventNonInteger($event)" />
       </label>
       <div class="plan-additionals wide">
         <label>
@@ -1088,6 +1105,9 @@
           }
         </div>
       </div>
+      @if (facade.errorMessage()) {
+        <p-message class="wide" severity="error" [text]="facade.errorMessage() ?? ''" />
+      }
       <div class="form-actions wide">
         <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeCreatePlanDialog()"></button>
         <button pButton type="submit" icon="pi pi-save" label="Guardar plan" [loading]="facade.isSaving()"></button>
@@ -1129,7 +1149,8 @@
       </label>
       <label>
         <span>Meses de Precio Promocional</span>
-        <input pInputText type="number" min="0" formControlName="mesesPromocionPrecio" placeholder="3" />
+        <input pInputText type="number" min="0" inputmode="numeric" formControlName="mesesPromocionPrecio" placeholder="3"
+               (keydown)="preventNonInteger($event)" />
       </label>
       <label>
         <span>Vigencia Desde</span>
@@ -1141,15 +1162,42 @@
       </label>
       <label>
         <span>Velocidad Promocional</span>
-        <input pInputText type="number" min="0" formControlName="velocidadPromocional" placeholder="400" />
+        <input pInputText type="number" min="0" inputmode="numeric" formControlName="velocidadPromocional" placeholder="400"
+               (keydown)="preventNonInteger($event)" />
       </label>
       <label>
         <span>Meses de Velocidad Promocional</span>
-        <input pInputText type="number" min="0" formControlName="mesesPromocionVelocidad" placeholder="3" />
+        <input pInputText type="number" min="0" inputmode="numeric" formControlName="mesesPromocionVelocidad" placeholder="3"
+               (keydown)="preventNonInteger($event)" />
       </label>
+      @if (facade.errorMessage()) {
+        <p-message class="wide" severity="error" [text]="facade.errorMessage() ?? ''" />
+      }
       <div class="form-actions wide">
         <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeEditPlanDialog()"></button>
         <button pButton type="submit" icon="pi pi-save" label="Guardar cambios" [loading]="facade.isSaving()"></button>
+      </div>
+    </form>
+  </p-dialog>
+
+  <p-dialog
+    header="Renombrar cuenta publicitaria"
+    [visible]="facade.editAccountDialogOpen()"
+    (visibleChange)="!$event && facade.closeEditAccountDialog()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    styleClass="compact-dialog"
+    (onHide)="facade.closeEditAccountDialog()"
+  >
+    <form class="form-grid" [formGroup]="facade.editAccountForm" (ngSubmit)="facade.saveEditAccount()">
+      <label class="wide">
+        <span>Nombre de la cuenta</span>
+        <input pInputText type="text" formControlName="nombreCuenta" placeholder="Nombre de la cuenta publicitaria" />
+      </label>
+      <div class="form-actions wide">
+        <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeEditAccountDialog()"></button>
+        <button pButton type="submit" icon="pi pi-save" label="Guardar" [loading]="facade.isSaving()"></button>
       </div>
     </form>
   </p-dialog>

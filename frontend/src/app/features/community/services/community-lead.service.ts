@@ -199,6 +199,10 @@ export class CommunityLeadService {
     return this.http.get<CuentaPublicitariaResponse[]>(`${this.leadUrl}/cuentas-publicitarias/activas`);
   }
 
+  actualizarNombreCuenta(idCuenta: number, request: { nombreCuenta: string }): Observable<CuentaPublicitariaResponse> {
+    return this.http.patch<CuentaPublicitariaResponse>(`${this.leadUrl}/cuentas-publicitarias/${idCuenta}`, request);
+  }
+
   desactivarCuenta(idCuenta: number): Observable<void> {
     return this.http.delete<void>(`${this.leadUrl}/cuentas-publicitarias/${idCuenta}`);
   }

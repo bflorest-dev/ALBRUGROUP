@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import pe.albrugroup.lead_service.entity.request.ActualizarNombreCuentaRequest;
 import pe.albrugroup.lead_service.entity.request.CuentaPublicitariaRequest;
 import pe.albrugroup.lead_service.entity.response.CuentaPublicitariaResponse;
 import pe.albrugroup.lead_service.service.CuentaPublicitariaService;
@@ -41,6 +42,15 @@ public class CuentaPublicitariaController {
     {
         var cuentasPublicitarias = cuentaPublicitariaService.listarCuentasPublicitarias(Boolean.TRUE);
         return ResponseEntity.status(HttpStatus.OK).body(cuentasPublicitarias);
+    }
+
+    @PatchMapping("/{idCuentaPublicitaria}")
+    @PreAuthorize("hasAuthority('CREATE_CUENTA_PUBLICITARIA')")
+    public ResponseEntity<CuentaPublicitariaResponse> actualizarNombreCuentaPublicitaria(
+            @PathVariable Long idCuentaPublicitaria,
+            @Validated @RequestBody ActualizarNombreCuentaRequest request) {
+        var cuenta = cuentaPublicitariaService.actualizarNombreCuentaPublicitaria(idCuentaPublicitaria, request);
+        return ResponseEntity.ok(cuenta);
     }
 
     @DeleteMapping("/{idCuentaPublicitaria}")
