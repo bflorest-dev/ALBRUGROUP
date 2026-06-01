@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
+import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { SkeletonModule } from 'primeng/skeleton';
@@ -20,7 +21,7 @@ export type ActiveEmployeeGroup = {
 
 @Component({
   selector: 'app-employee-access-panel',
-  imports: [ButtonModule, MessageModule, ProgressSpinnerModule, SkeletonModule, TableModule, TagModule],
+  imports: [ButtonModule, DialogModule, MessageModule, ProgressSpinnerModule, SkeletonModule, TableModule, TagModule],
   templateUrl: './employee-access-panel.component.html',
   styleUrl: './employee-access-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -43,14 +44,45 @@ export class EmployeeAccessPanelComponent {
   @Input() connectedUserById: Record<number, ConnectedUserResponse> = {};
   @Input() isLoadingStates = false;
 
+  @Input() isDismissingEmployeeId: number | null = null;
+
   @Output() readonly reload = new EventEmitter<void>();
   @Output() readonly pageChange = new EventEmitter<number>();
   @Output() readonly toggleAccess = new EventEmitter<number>();
   @Output() readonly renewContract = new EventEmitter<EmpleadoRolResponse>();
   @Output() readonly editEmployee = new EventEmitter<EmpleadoRolResponse>();
   @Output() readonly refreshStates = new EventEmitter<void>();
+  @Output() readonly darDeBaja = new EventEmitter<EmpleadoRolResponse>();
 
   protected readonly selectedRole = signal('');
+  protected readonly bajaTarget = signal<EmpleadoRolResponse | null>(null);
+  protected readonly bajaStep = signal<0 | 1 | 2>(0);
+
+  protected openBajaDialog(employee: EmpleadoRolResponse): void {
+    this.bajaTarget.set(employee);
+    this.bajaStep.set(1);
+  }
+
+  protected avanzarBajaStep2(): void {
+    this.bajaStep.set(2);
+  }
+
+  protected cerrarBajaDialog(): void {
+    this.bajaStep.set(0);
+    this.bajaTarget.set(null);
+  }
+
+  protected confirmarBaja(): void {
+    const employee = this.bajaTarget();
+    if (!employee) return;
+    this.bajaStep.set(0);
+    this.bajaTarget.set(null);
+    this.darDeBaja.emit(employee);
+  }
+
+  protected isDismissing(empleadoId: number): boolean {
+    return this.isDismissingEmployeeId === empleadoId;
+  }
 
   protected filteredGroups(): ActiveEmployeeGroup[] {
     const role = this.selectedRole();

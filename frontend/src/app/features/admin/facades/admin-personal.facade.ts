@@ -503,6 +503,9 @@ export class AdminPersonalFacade {
   readonly isSubmittingContractRenewal = signal(false);
   readonly contractRenewalErrorMessage = signal('');
   readonly contractRenewalSuccessMessage = signal('');
+  readonly isDismissingEmployeeId = signal<number | null>(null);
+  readonly bajaErrorMessage = signal('');
+  readonly bajaSuccessMessage = signal('');
 
   readonly empresasContratistas = toSignal(
     this.adminRrhhService.listarEmpresasContratistas().pipe(
@@ -1063,6 +1066,26 @@ export class AdminPersonalFacade {
       requestId: this.nextRequestId++,
       empleadoId
     });
+  }
+
+  async darDeBajaEmpleado(employee: EmpleadoRolResponse): Promise<void> {
+    this.isDismissingEmployeeId.set(employee.idEmpleado);
+    this.bajaErrorMessage.set('');
+    this.bajaSuccessMessage.set('');
+
+    try {
+      await firstValueFrom(
+        this.adminRrhhService.darDeBaja(employee.idEmpleado).pipe(timeout(this.requestTimeoutMs))
+      );
+      this.bajaSuccessMessage.set(`${employee.nombres} ${employee.apellidos} ha sido dado de baja correctamente.`);
+      this.loadEmployees(0, true);
+    } catch (error) {
+      this.bajaErrorMessage.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No se pudo completar la baja. Intenta de nuevo.')
+      );
+    } finally {
+      this.isDismissingEmployeeId.set(null);
+    }
   }
 
   async openContractRenewal(employee: EmpleadoRolResponse): Promise<void> {

@@ -365,6 +365,7 @@ export class RrhhWorkspaceFacade {
   readonly isLoadingEmployees = signal(false);
   readonly isCreatingEmployee = signal(false);
   readonly isUpdatingEmployee = signal(false);
+  readonly isDismissingEmployee = signal(false);
   readonly isLoadingContracts = signal(false);
   readonly isRegisteringContract = signal(false);
   readonly isClosingContract = signal(false);
@@ -1268,6 +1269,30 @@ export class RrhhWorkspaceFacade {
       this.rrhhService.actualizarDatosCorporativos(employee.id, this.buildCorporateRequest()),
       'Datos corporativos actualizados.'
     );
+  }
+
+  async darDeBajaSelectedEmployee(): Promise<void> {
+    const employee = this.selectedEmployee();
+    if (!employee) {
+      return;
+    }
+
+    this.isDismissingEmployee.set(true);
+    this.employeeActionErrorMessage.set('');
+    this.employeeActionSuccessMessage.set('');
+
+    try {
+      await this.withTimeout(this.rrhhService.darDeBaja(employee.id));
+      this.employeeActionSuccessMessage.set(`${employee.nombres} ${employee.apellidos} ha sido dado de baja correctamente.`);
+      this.selectedEmployee.set(null);
+      await this.loadEmployees(this.currentEmployeesPage());
+    } catch (error) {
+      this.employeeActionErrorMessage.set(
+        this.getErrorMessage(error, 'No se pudo completar la baja. Intenta de nuevo.')
+      );
+    } finally {
+      this.isDismissingEmployee.set(false);
+    }
   }
 
   async markSelectedEmployeeAsBlacklist(): Promise<void> {

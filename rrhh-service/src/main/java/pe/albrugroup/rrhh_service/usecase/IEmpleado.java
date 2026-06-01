@@ -27,6 +27,7 @@ public interface IEmpleado {
     EmpleadoResponse actualizarDatosFinancieros(Long idEmpleado, DatosFinancierosRequest datosFinancieros);
     EmpleadoResponse actualizarContactoCorporativo(Long idEmpleado, DatosContactoCorporativoRequest datosCorporativos);
     EmpleadoResponse listaNegraEmpleado(Long idEmpleado, Long responsableId);
+    EmpleadoResponse darDeBajaEmpleado(Long idEmpleado, String authHeader);
     List<EmpleadoRolResponse> listarEmpleadosLight(List<PuestoTrabajo> puestosTrabajo);
     List<EmpleadoRolResponse> listarPersonalRecruitment();
 }

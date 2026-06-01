@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { BadgeModule } from 'primeng/badge';
 import { AttendanceFacade } from '../../facades/attendance.facade';
+import { AttendanceRealtimeService } from '../../services/attendance-realtime.service';
 import { AuthSessionService } from '../../services/auth-session.service';
 import { SessionService } from '../../services/session.service';
 import { AttendanceStatusPickerComponent } from '../../../shared/components/attendance-status-picker/attendance-status-picker.component';
@@ -52,6 +54,8 @@ const ROLE_THEME_CLASS: Record<string, string> = {
 export class PrivateLayoutComponent {
   protected readonly attendanceFacade = inject(AttendanceFacade);
   private readonly authSessionService = inject(AuthSessionService);
+  private readonly attendanceRealtimeService = inject(AttendanceRealtimeService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly asesorVentasState = inject(AsesorVentasWorkspaceStateService);
   private readonly sessionService = inject(SessionService);
   protected readonly profileMenuOpen = signal(false);
@@ -165,6 +169,12 @@ export class PrivateLayoutComponent {
 
       this.attendanceInitialized = true;
       this.attendanceFacade.initialize();
+      if (session.empleadoId) {
+        this.attendanceRealtimeService
+          .watchBajaEmpleado(session.empleadoId)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({ next: () => void this.authSessionService.logout() });
+      }
     });
   }
 

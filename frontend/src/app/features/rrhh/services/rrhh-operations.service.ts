@@ -109,6 +109,10 @@ export class RrhhOperationsService {
     return this.http.patch<EmpleadoResponse>(`${this.empleadosUrl}/${empleadoId}/lista-negra`, {});
   }
 
+  darDeBaja(empleadoId: number): Observable<EmpleadoResponse> {
+    return this.http.post<EmpleadoResponse>(`${this.empleadosUrl}/${empleadoId}/baja`, {});
+  }
+
   listarEmpleados(
     filters: EmpleadoFilters,
     pageNumber = 0,

@@ -234,6 +234,7 @@
             [isLoadingEmployees]="facade.isLoadingEmployees()"
             [isCreatingEmployee]="facade.isCreatingEmployee()"
             [isUpdatingEmployee]="facade.isUpdatingEmployee()"
+            [isDismissingEmployee]="facade.isDismissingEmployee()"
             [currentPage]="facade.currentEmployeesPage()"
             [totalPages]="facade.totalEmployeesPages()"
             [employeeListErrorMessage]="facade.employeeListErrorMessage()"
@@ -255,6 +256,7 @@
             (submitFinancialUpdate)="facade.submitFinancialUpdate()"
             (submitCorporateUpdate)="facade.submitCorporateUpdate()"
             (markBlacklist)="facade.markSelectedEmployeeAsBlacklist()"
+            (darDeBaja)="facade.darDeBajaSelectedEmployee()"
           />
 
           <app-rrhh-contract-panel

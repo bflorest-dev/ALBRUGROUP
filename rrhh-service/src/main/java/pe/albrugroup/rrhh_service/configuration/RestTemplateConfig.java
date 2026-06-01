@@ -27,4 +27,13 @@ public class RestTemplateConfig {
     ) {
         return builder.rootUri(baseUrl).build();
     }
+
+    @Bean
+    @Qualifier("scheduleRestTemplate")
+    public RestTemplate scheduleRestTemplate(
+            RestTemplateBuilder builder,
+            @Value("${services.schedule.base-url}") String baseUrl
+    ) {
+        return builder.rootUri(baseUrl).build();
+    }
 }

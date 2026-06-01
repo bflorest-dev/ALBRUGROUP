@@ -30,10 +30,12 @@
       [employeeStateById]="facade.employeeStateById()"
       [connectedUserById]="facade.connectedUserById()"
       [isLoadingStates]="facade.isLoadingStates()"
+      [isDismissingEmployeeId]="facade.isDismissingEmployeeId()"
       (toggleAccess)="facade.toggleUserAccess($event)"
       (renewContract)="facade.openContractRenewal($event)"
       (editEmployee)="facade.openEditDialog($event)"
       (refreshStates)="facade.loadEmployeeStates()"
+      (darDeBaja)="facade.darDeBajaEmpleado($event)"
     />
 
     <app-contract-renewal-dialog

@@ -16,6 +16,8 @@ services:
     base-url: ${AUTH_SERVICE_URL:http://auth-service:8081}
   recruitment:
     base-url: ${RECRUITMENT_SERVICE_URL:http://recruitment-service:8084}
+  schedule:
+    base-url: ${SCHEDULE_SERVICE_URL:http://schedule-service:8085}
 
 app:
   docs:

@@ -49,6 +49,16 @@ public class EmpleadoController {
         return ResponseEntity.ok(emplado);
     }
 
+    @PostMapping("/{id}/baja")
+    @PreAuthorize("hasAuthority('CANCEL_CONTRATOS')")
+    @Operation(summary = "Dar de baja a empleado", description = "Cierra contrato vigente, desactiva perfil, deshabilita acceso y notifica cierre de sesion activa.")
+    public ResponseEntity<EmpleadoResponse> darDeBaja(
+            @PathVariable @Positive Long id,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        var empleado = empleadoService.darDeBajaEmpleado(id, authHeader);
+        return ResponseEntity.ok(empleado);
+    }
+
     @Operation(summary = "Listado de Empleados",
             description = "Obtiene empleados con filtros opcionales por texto libre, documento, celular, distrito, banco, empresa contratista, " +
                     "estado operativo y paginacion.")

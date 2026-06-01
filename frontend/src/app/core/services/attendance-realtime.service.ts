@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Client, IMessage, StompSubscription } from '@stomp/stompjs';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { API_CONSTANTS } from '../constants/api.constants';
 import { TokenService } from './token.service';
 import { AttendanceRealtimeEvent } from '../../shared/models/schedule/attendance-realtime-event';
@@ -55,6 +55,10 @@ export class AttendanceRealtimeService {
         void client.deactivate();
       };
     });
+  }
+
+  watchBajaEmpleado(empleadoId: number): Observable<void> {
+    return this.watchTopic(`/topic/sesion/baja/${empleadoId}`).pipe(map(() => undefined));
   }
 
   private wsBaseUrl(): string {

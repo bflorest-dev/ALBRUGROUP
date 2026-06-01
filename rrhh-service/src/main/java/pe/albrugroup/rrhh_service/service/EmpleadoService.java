@@ -17,10 +17,12 @@ import pe.albrugroup.rrhh_service.entity.request.empleado.*;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoRolResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 import pe.albrugroup.rrhh_service.entity.response.PageResponse;
+import pe.albrugroup.rrhh_service.exception.EmpleadoInactivoException;
 import pe.albrugroup.rrhh_service.exception.NotFoundException;
 import pe.albrugroup.rrhh_service.exception.UnprocessableEntityException;
 import pe.albrugroup.rrhh_service.integration.auth.AuthServiceClient;
 import pe.albrugroup.rrhh_service.integration.auth.dto.RegistrarUsuarioRequest;
+import pe.albrugroup.rrhh_service.integration.schedule.ScheduleServiceClient;
 import pe.albrugroup.rrhh_service.repository.ContratoRepository;
 import pe.albrugroup.rrhh_service.repository.EmpresaContratistaRepository;
 import pe.albrugroup.rrhh_service.service.mapper.EmpleadoRolMapper;
@@ -44,6 +46,7 @@ public class EmpleadoService implements IEmpleado {
     private final EventoService eventoService;
     private final PaginationService paginationService;
     private final AuthServiceClient authServiceClient;
+    private final ScheduleServiceClient scheduleServiceClient;
 
     private static final Set<String> EMPLEADO_SORT_FIELDS = Set.of(
             "id",
@@ -56,6 +59,21 @@ public class EmpleadoService implements IEmpleado {
             "correoPersonal",
             "estadoOperativo"
     );
+
+    @Override
+    public EmpleadoResponse darDeBajaEmpleado(Long idEmpleado, String authHeader) {
+        Empleado empleado = repository.findById(idEmpleado)
+                .orElseThrow(() -> new NotFoundException(Empleado.class, idEmpleado));
+        if (empleado.getEstadoOperativo() == EstadoOperativo.INACTIVO) {
+            throw new EmpleadoInactivoException(idEmpleado);
+        }
+        LocalDate hoy = LocalDate.now();
+        contratoRepository.findContratoVigenteByEmpleadoId(idEmpleado, hoy)
+                .ifPresent(contrato -> contrato.setFechaFin(hoy));
+        empleado.setEstadoOperativo(EstadoOperativo.INACTIVO);
+        programarBajaPostCommit(authHeader, idEmpleado);
+        return mapper.toResponse(empleado);
+    }
 
     @Override
     public EmpleadoResponse listaNegraEmpleado(Long idEmpleado, Long responsableId) {
@@ -199,6 +217,16 @@ public class EmpleadoService implements IEmpleado {
                         puestosRecruitment
                 )
         );
+    }
+
+    private void programarBajaPostCommit(String authHeader, Long idEmpleado) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                authServiceClient.deshabilitarUsuario(authHeader, idEmpleado);
+                scheduleServiceClient.notificarBajaEmpleado(authHeader, idEmpleado);
+            }
+        });
     }
 
     private EmpresaContratista obtenerEmpresaContratista(Long idEmpresaContratista) {

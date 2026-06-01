@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { DialogModule } from 'primeng/dialog';
 import { DrawerModule } from 'primeng/drawer';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
@@ -22,6 +23,7 @@ import { formatLabel } from '../../../../shared/utils/display-label';
     ReactiveFormsModule,
     ButtonModule,
     CardModule,
+    DialogModule,
     DrawerModule,
     InputTextModule,
     MessageModule,
@@ -65,6 +67,7 @@ export class RrhhEmployeePanelComponent {
   @Input({ required: true }) isLoadingEmployees = false;
   @Input({ required: true }) isCreatingEmployee = false;
   @Input({ required: true }) isUpdatingEmployee = false;
+  @Input() isDismissingEmployee = false;
   @Input({ required: true }) currentPage = 0;
   @Input({ required: true }) totalPages = 1;
   @Input({ required: true }) employeeListErrorMessage = '';
@@ -87,6 +90,26 @@ export class RrhhEmployeePanelComponent {
   @Output() readonly submitFinancialUpdate = new EventEmitter<void>();
   @Output() readonly submitCorporateUpdate = new EventEmitter<void>();
   @Output() readonly markBlacklist = new EventEmitter<void>();
+  @Output() readonly darDeBaja = new EventEmitter<void>();
+
+  protected readonly bajaDialogStep = signal<0 | 1 | 2>(0);
+
+  protected openBajaDialog(): void {
+    this.bajaDialogStep.set(1);
+  }
+
+  protected avanzarBajaStep2(): void {
+    this.bajaDialogStep.set(2);
+  }
+
+  protected cerrarBajaDialog(): void {
+    this.bajaDialogStep.set(0);
+  }
+
+  protected confirmarBaja(): void {
+    this.bajaDialogStep.set(0);
+    this.darDeBaja.emit();
+  }
 
   protected toLabel(value: string | null | undefined): string {
     return formatLabel(value);

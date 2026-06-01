@@ -277,3 +277,37 @@
     grid-template-columns: 1fr;
   }
 }
+
+:host ::ng-deep .baja-dialog {
+  width: min(30rem, calc(100vw - 1rem));
+}
+
+.baja-dialog__warning {
+  align-items: flex-start;
+  background: rgba(220, 38, 38, 0.08);
+  border-left: 3px solid #dc2626;
+  border-radius: 0.4rem;
+  color: #b91c1c;
+  display: flex;
+  font-weight: 600;
+  gap: 0.6rem;
+  line-height: 1.5;
+  margin-bottom: 0;
+  padding: 0.7rem 0.9rem;
+
+  i { font-size: 1rem; margin-top: 0.15rem; flex-shrink: 0; }
+}
+
+.baja-dialog__final {
+  color: var(--app-text);
+  font-weight: 600;
+  line-height: 1.5;
+  margin-bottom: 0;
+}
+
+.baja-dialog__actions {
+  display: flex;
+  gap: 0.65rem;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}

@@ -159,6 +159,18 @@
                       aria-label="Ver acceso"
                       (click)="toggleAccess.emit(employee.idEmpleado)"
                     ></button>
+                    <button
+                      pButton
+                      type="button"
+                      severity="danger"
+                      size="small"
+                      [text]="true"
+                      icon="pi pi-user-minus"
+                      [loading]="isDismissing(employee.idEmpleado)"
+                      title="Dar de baja"
+                      aria-label="Dar de baja"
+                      (click)="openBajaDialog(employee)"
+                    ></button>
                   </div>
 
                   <!-- Credenciales expandibles -->
@@ -220,3 +232,50 @@
     <p-message severity="info" text="No hay empleados activos para mostrar." />
   }
 </section>
+
+<!-- Dialog baja — paso 1 -->
+<p-dialog
+  header="Dar de baja"
+  [visible]="bajaStep() === 1"
+  (visibleChange)="!$event && cerrarBajaDialog()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  appendTo="body"
+  styleClass="baja-dialog"
+>
+  @if (bajaTarget(); as employee) {
+    <p class="baja-dialog__warning">
+      <i class="pi pi-exclamation-triangle"></i>
+      Vas a dar de baja a <strong>{{ employee.nombres }} {{ employee.apellidos }}</strong>.
+      Esto cerrará su contrato activo, eliminará su acceso al sistema y cerrará su turno de hoy.
+    </p>
+    <div class="baja-dialog__actions">
+      <button pButton type="button" severity="secondary" [outlined]="true" label="Cancelar" (click)="cerrarBajaDialog()"></button>
+      <button pButton type="button" severity="danger" [outlined]="true" label="Continuar" (click)="avanzarBajaStep2()"></button>
+    </div>
+  }
+</p-dialog>
+
+<!-- Dialog baja — paso 2 (confirmación final) -->
+<p-dialog
+  header="Confirmación final"
+  [visible]="bajaStep() === 2"
+  (visibleChange)="!$event && cerrarBajaDialog()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  appendTo="body"
+  styleClass="baja-dialog"
+>
+  @if (bajaTarget(); as employee) {
+    <p class="baja-dialog__final">
+      Esta operación no se puede deshacer.
+      ¿Confirmas que quieres dar de baja a <strong>{{ employee.nombres }} {{ employee.apellidos }}</strong>?
+    </p>
+    <div class="baja-dialog__actions">
+      <button pButton type="button" severity="secondary" [outlined]="true" label="Cancelar" (click)="cerrarBajaDialog()"></button>
+      <button pButton type="button" severity="danger" label="Confirmar baja" [loading]="isDismissing(bajaTarget()?.idEmpleado ?? 0)" (click)="confirmarBaja()"></button>
+    </div>
+  }
+</p-dialog>

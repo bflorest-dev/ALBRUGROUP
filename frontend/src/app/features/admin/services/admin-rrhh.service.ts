@@ -86,4 +86,8 @@ export class AdminRrhhService {
     const params = new HttpParams().set('activo', activo);
     return this.http.get<EmpresaContratistaResponse[]>(this.empresasContratistasUrl, { params });
   }
+
+  darDeBaja(empleadoId: number): Observable<EmpleadoResponse> {
+    return this.http.post<EmpleadoResponse>(`${this.empleadosUrl}/${empleadoId}/baja`, {});
+  }
 }
