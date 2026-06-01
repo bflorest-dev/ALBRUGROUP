@@ -2,8 +2,7 @@ import { DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Inject, Injectable, computed, effect, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, Validators } from '@angular/forms';
-import { Subscription, catchError, filter, firstValueFrom, forkJoin, map, of, startWith, switchMap } from 'rxjs';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { Subscription, firstValueFrom } from 'rxjs';
 import {
   AsesorGtrPresenceResponse,
   ConnectedUserResponse,
@@ -20,8 +19,6 @@ import {
   CampanaResponse,
   Etapa,
   EventoResponse,
-  GtrRankingAsesorResponse,
-  GtrTipificacionCampanaResponse,
   LeadAgendadoGtrResponse,
   LeadGtrResponse,
   LeadGtrMetricasResponse,
@@ -46,14 +43,6 @@ export interface EventHistoryTarget {
 }
 type VisualLeadAgendadoGtr = LeadAgendadoGtrResponse & { isNew?: boolean };
 export type GtrSection = 'plataforma' | 'agendados' | 'historicos' | 'ranking';
-
-type RankingRequest = { requestId: number; desde: string; hasta: string; soloActivos: boolean; silent?: boolean };
-type RankingState =
-  | { status: 'idle' }
-  | { status: 'loading'; requestId: number }
-  | { status: 'refreshing'; requestId: number }
-  | { status: 'success'; requestId: number; ranking: GtrRankingAsesorResponse[]; tipificaciones: GtrTipificacionCampanaResponse[] }
-  | { status: 'error'; requestId: number; message: string };
 
 type SelectOption<T> = {
   label: string;
@@ -129,43 +118,6 @@ export class GtrWorkspaceFacade {
   private initializeInFlight = false;
   private lastAttendanceStatus: EstadoAsistencia | null = null;
   private readonly operationalGate = this.operationalGateService.createGate('gtr-workspace');
-  private rankingRequestId = 0;
-  private readonly rankingSignal = signal<RankingRequest | null>(null);
-
-  private readonly rankingState = toSignal(
-    toObservable(this.rankingSignal).pipe(
-      filter((req): req is RankingRequest => req !== null),
-      switchMap((req) =>
-        forkJoin({
-          ranking: this.preventaService.listarRankingGtr(req.desde, req.hasta, req.soloActivos),
-          tipificaciones: this.preventaService.listarTipificacionesCampanaGtr(req.desde, req.hasta, req.soloActivos)
-        }).pipe(
-          map((data): RankingState => ({
-            status: 'success', requestId: req.requestId,
-            ranking: data.ranking, tipificaciones: data.tipificaciones
-          })),
-          startWith<RankingState>({ status: req.silent ? 'refreshing' : 'loading', requestId: req.requestId }),
-          catchError((): import('rxjs').Observable<RankingState> =>
-            of({ status: 'error', requestId: req.requestId, message: 'No se pudo cargar el ranking.' })
-          )
-        )
-      )
-    ),
-    { initialValue: { status: 'idle' } as RankingState }
-  );
-
-  readonly rankingPeriod = signal<'dia' | 'mes'>('dia');
-  readonly rankingSoloActivos = signal(true);
-  readonly rankingRows = computed<GtrRankingAsesorResponse[]>(() => {
-    const s = this.rankingState();
-    return s.status === 'success' ? s.ranking : [];
-  });
-  readonly tipificacionesRows = computed<GtrTipificacionCampanaResponse[]>(() => {
-    const s = this.rankingState();
-    return s.status === 'success' ? s.tipificaciones : [];
-  });
-  readonly isLoadingRanking = computed(() => this.rankingState().status === 'loading');
-  readonly isRefreshingRanking = computed(() => this.rankingState().status === 'refreshing');
 
   readonly pageSize = 12;
   readonly today = this.formatLocalDate(new Date());
@@ -440,43 +392,14 @@ export class GtrWorkspaceFacade {
     }
     this.section.set(section);
     this.selectedIds.set(new Set());
-    if (this.started) {
-      if (section === 'ranking') {
-        this.cargarRanking();
-      } else {
-        void this.initialize();
-      }
+    if (this.started && section !== 'ranking') {
+      void this.initialize();
     }
-  }
-
-  cargarRanking(silent = false): void {
-    const hasta = this.today;
-    const desde = this.rankingPeriod() === 'mes'
-      ? `${hasta.substring(0, 8)}01`
-      : hasta;
-    this.rankingSignal.set({
-      requestId: ++this.rankingRequestId,
-      desde, hasta,
-      soloActivos: this.rankingSoloActivos(),
-      silent
-    });
-  }
-
-  setRankingPeriod(period: 'dia' | 'mes'): void {
-    this.rankingPeriod.set(period);
-    this.cargarRanking();
-  }
-
-  toggleRankingSoloActivos(): void {
-    this.rankingSoloActivos.update((v) => !v);
-    this.cargarRanking();
   }
 
   start(): void {
     this.started = true;
-    if (this.section() === 'ranking') {
-      this.cargarRanking();
-    } else if (this.operationalGate.canActivateOperationalData()) {
+    if (this.section() !== 'ranking' && this.operationalGate.canActivateOperationalData()) {
       void this.initialize();
     }
     if (this.canDisplayOperationalData()) {

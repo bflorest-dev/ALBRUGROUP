@@ -1,0 +1,175 @@
+<div class="ranking-view">
+  <div class="ranking-toolbar">
+    <div class="ranking-toolbar__left">
+      @if (periodMode === 'selector') {
+        <p-selectbutton
+          [options]="facade.periodOptions"
+          [ngModel]="facade.period()"
+          optionLabel="label"
+          optionValue="value"
+          (onChange)="onPeriodChange($any($event.value))"
+        />
+      }
+      <button
+        pButton
+        type="button"
+        [label]="facade.soloActivos() ? 'Solo activos' : 'Todos'"
+        [icon]="facade.soloActivos() ? 'pi pi-filter-fill' : 'pi pi-filter'"
+        severity="secondary"
+        [outlined]="!facade.soloActivos()"
+        size="small"
+        (click)="facade.toggleSoloActivos()"
+      ></button>
+    </div>
+    <button
+      pButton
+      type="button"
+      icon="pi pi-refresh"
+      label="Actualizar"
+      severity="secondary"
+      [loading]="facade.isRefreshing()"
+      (click)="facade.refresh(true)"
+    ></button>
+  </div>
+
+  @if (periodMode === 'selector' && facade.period() === 'personalizado') {
+    <div class="ranking-custom-range">
+      <app-date-field
+        label="Desde"
+        [ngModel]="facade.customDesde()"
+        (ngModelChange)="onCustomDesdeChange($any($event))"
+      />
+      <app-date-field
+        label="Hasta"
+        [ngModel]="facade.customHasta()"
+        (ngModelChange)="onCustomHastaChange($any($event))"
+      />
+      @if (facade.customRangeError()) {
+        <p-message severity="warn" [text]="facade.customRangeError()!" />
+      } @else if (!facade.customDesde() || !facade.customHasta()) {
+        <span class="ranking-custom-range__hint">Selecciona ambas fechas para ver el ranking.</span>
+      }
+    </div>
+  }
+
+  @if (facade.errorMessage()) {
+    <p-message severity="error" [text]="facade.errorMessage()!" />
+  }
+
+  <div class="ranking-grid">
+    <p-card styleClass="ranking-board">
+      <ng-template #title>
+        <span class="ranking-board__title">
+          Rendimiento de Asesores
+          <p-tag severity="info" [value]="facade.display(facade.rankingRows().length)" />
+        </span>
+      </ng-template>
+
+      @if (facade.isLoading()) {
+        <div class="ranking-loading">
+          <p-progress-spinner ariaLabel="Cargando ranking" />
+          <span>Cargando ranking...</span>
+        </div>
+      } @else {
+        <p-table
+          [value]="facade.rankingRows()"
+          [rowHover]="true"
+          [tableStyle]="{ 'min-width': '600px' }"
+          styleClass="p-datatable-sm ranking-table"
+        >
+          <ng-template #header>
+            <tr>
+              <th style="width:2.5rem">#</th>
+              <th>Asesor</th>
+              <th title="Leads del periodo que el asesor gestiono el mismo dia de ingreso">Nuevos</th>
+              <th>Gestionados</th>
+              <th>Preventas</th>
+              <th>Mes</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-row let-rowIndex="rowIndex">
+            <tr>
+              <td><strong>{{ rowIndex + 1 }}</strong></td>
+              <td>{{ facade.display(row.nombreAsesor) | uppercase }}</td>
+              <td>
+                <p-tag [value]="facade.display(row.nuevosGestionadosPeriodo)" severity="info" />
+              </td>
+              <td>{{ facade.display(row.gestionadosPeriodo) }}</td>
+              <td>
+                <p-tag
+                  [value]="facade.display(row.preventasPeriodo)"
+                  [severity]="row.preventasPeriodo > 0 ? 'success' : 'secondary'"
+                />
+              </td>
+              <td>{{ facade.display(row.preventasMes) }}</td>
+            </tr>
+          </ng-template>
+          <ng-template #emptymessage>
+            <tr>
+              <td colspan="6" class="ranking-empty">
+                Aun no hay datos para este periodo.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      }
+    </p-card>
+
+    <p-card styleClass="ranking-board">
+      <ng-template #title>
+        <span class="ranking-board__title">Tipificaciones por Campana</span>
+      </ng-template>
+
+      @if (facade.isLoading()) {
+        <div class="ranking-loading">
+          <p-progress-spinner ariaLabel="Cargando tipificaciones" />
+        </div>
+      } @else {
+        <p-table
+          [value]="facade.tipificacionesRows()"
+          [rowHover]="true"
+          [tableStyle]="{ 'min-width': '560px' }"
+          styleClass="p-datatable-sm ranking-table"
+        >
+          <ng-template #header>
+            <tr>
+              <th>Campana</th>
+              <th>Tipificacion</th>
+              <th>Subtipificacion</th>
+              <th style="width:4rem;text-align:right">Cant.</th>
+              <th style="width:9rem">%</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-row>
+            <tr>
+              <td>{{ facade.display(row.nombreCampana) }}</td>
+              <td>
+                <p-tag
+                  [value]="facade.display(row.codigoTipificacion)"
+                  [styleClass]="facade.tipificacionTagClass(row.codigoTipificacion)"
+                />
+              </td>
+              <td>
+                <p-tag
+                  [value]="facade.display(row.codigoSubtipificacion)"
+                  [styleClass]="facade.tipificacionTagClass(row.codigoTipificacion, 'subtipificacion')"
+                />
+              </td>
+              <td style="text-align:right"><strong>{{ facade.display(row.cantidad) }}</strong></td>
+              <td>
+                <p-progressbar [value]="row.porcentaje" [showValue]="true" styleClass="ranking-progress" />
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template #emptymessage>
+            <tr>
+              <td colspan="5" class="ranking-empty">
+                Aun no hay datos para este periodo.
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      }
+    </p-card>
+  </div>
+</div>

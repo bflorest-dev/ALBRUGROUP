@@ -12,15 +12,15 @@ import { MessageModule } from 'primeng/message';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { PaginatorModule } from 'primeng/paginator';
 import { PopoverModule } from 'primeng/popover';
-import { ProgressBarModule } from 'primeng/progressbar';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { SelectButtonModule } from 'primeng/selectbutton';
 import { SelectModule } from 'primeng/select';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-number-field/phone-number-field.component';
+import { RankingFacade } from '../../../ranking/facades/ranking.facade';
+import { RankingViewComponent } from '../../../ranking/components/ranking-view/ranking-view.component';
 import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
 
 @Component({
@@ -39,17 +39,16 @@ import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
     MultiSelectModule,
     PaginatorModule,
     PopoverModule,
-    ProgressBarModule,
     ProgressSpinnerModule,
-    SelectButtonModule,
     SelectModule,
     SkeletonModule,
     TableModule,
     TagModule,
     DateFieldComponent,
-    PhoneNumberFieldComponent
+    PhoneNumberFieldComponent,
+    RankingViewComponent
   ],
-  providers: [GtrWorkspaceFacade],
+  providers: [GtrWorkspaceFacade, RankingFacade],
   templateUrl: './gtr-workspace-page.component.html',
   styleUrl: './gtr-workspace-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

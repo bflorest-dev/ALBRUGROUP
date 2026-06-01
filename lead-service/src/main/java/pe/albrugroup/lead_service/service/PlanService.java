@@ -137,13 +137,13 @@ public class PlanService {
         plan.setZona(resolverZona(request.getIdZona()));
         validarPromocionesPlan(plan);
         normalizarVigencias(plan, OperationalDateTime.today());
-        plan.getAdicionales().clear();
         Set<PlanAdicional> adicionales = construirPlanAdicionales(
                 plan,
                 proveedor,
                 Objects.requireNonNullElse(request.getAdicionales(), List.of())
         );
-        plan.setAdicionales(adicionales);
+        plan.getAdicionales().clear();
+        plan.getAdicionales().addAll(adicionales);
         return toPlanResponse(planRepository.save(plan));
     }
 
