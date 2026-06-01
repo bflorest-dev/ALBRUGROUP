@@ -161,6 +161,26 @@ export class CommunityWorkspaceFacade {
     const idProveedor = this.selectedPlanProviderId();
     return this.adicionalesActivos().filter((adicional) => adicional.idProveedor === idProveedor);
   });
+  readonly availablePlanAdditionalOptions = computed(() => [
+    { id: 0, nombre: '(Ninguno)' },
+    ...this.availablePlanAdditionals()
+  ]);
+  readonly canSelectPlanAdditional = computed(() => this.selectedPlanProviderId() > 0);
+  readonly planAdditionalsHelperText = computed(() => {
+    if (this.selectedPlanProviderId() === 0) {
+      return 'Selecciona un proveedor para ver sus adicionales disponibles.';
+    }
+
+    if (!this.availablePlanAdditionals().length) {
+      return 'Este proveedor no tiene adicionales activos.';
+    }
+
+    if (!this.selectedPlanAdditionals().length) {
+      return 'Puedes agregar adicionales del proveedor si corresponde.';
+    }
+
+    return 'Los adicionales agregados quedaran incluidos en la configuracion del plan.';
+  });
   readonly availablePromotionPlans = computed<PromotionPlanOption[]>(() => {
     const idProveedor = this.selectedPromotionProviderId();
     return this.planesActivos()
@@ -1282,4 +1302,3 @@ export class CommunityWorkspaceFacade {
     return fallback;
   }
 }
-

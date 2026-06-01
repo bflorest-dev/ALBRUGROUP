@@ -1058,11 +1058,12 @@
         <label>
           <span>Adicionales disponibles</span>
           <p-select
-            [options]="facade.availablePlanAdditionals()"
+            [options]="facade.availablePlanAdditionalOptions()"
             optionLabel="nombre"
             optionValue="id"
-            placeholder="Seleccionar adicional del proveedor"
+            [placeholder]="facade.canSelectPlanAdditional() ? 'Seleccionar adicional del proveedor' : 'Sin adicionales para elegir'"
             appendTo="body"
+            [disabled]="!facade.canSelectPlanAdditional()"
             (onChange)="facade.addPlanAdditional($any($event.value))"
           />
         </label>
@@ -1101,7 +1102,7 @@
               <button pButton type="button" icon="pi pi-times" severity="secondary" size="small" text (click)="facade.removePlanAdditional(adicional.idAdicional)"></button>
             </div>
           } @empty {
-            <p class="helper">Selecciona un proveedor para ver sus adicionales disponibles.</p>
+            <p class="helper">{{ facade.planAdditionalsHelperText() }}</p>
           }
         </div>
       </div>
