@@ -248,7 +248,16 @@
           @if (requiresScheduledTime()) {
             <label class="scheduled-field tipification-bar__field">
               <span>Hora programada</span>
-              <input pInputText type="time" formControlName="horaProgramada" />
+              <p-datepicker
+                formControlName="horaProgramada"
+                dataType="string"
+                [timeOnly]="true"
+                hourFormat="24"
+                [stepMinute]="5"
+                [showIcon]="true"
+                icon="pi pi-clock"
+                appendTo="body"
+              />
             </label>
           }
 
@@ -574,7 +583,7 @@
                   <div class="offer-additionals__list">
                     @for (adicional of adicionales(); track adicional.id) {
                       <article class="offer-additional-item">
-                        <div>
+                        <div class="offer-additional-item__info">
                           <strong>{{ adicional.nombre }}</strong>
                           <small>S/ {{ display(adicional.precioUnitario) }}</small>
                         </div>

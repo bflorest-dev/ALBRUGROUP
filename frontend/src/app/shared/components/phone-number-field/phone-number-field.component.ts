@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, Input, ViewChild } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 @Component({
@@ -9,6 +9,8 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PhoneNumberFieldComponent {
+  @ViewChild('numberInput') private numberInputRef!: ElementRef<HTMLInputElement>;
+
   @Input({ required: true }) label = '';
   @Input({ required: true }) prefixControl!: FormControl<string>;
   @Input({ required: true }) numberControl!: FormControl<string>;
@@ -16,6 +18,10 @@ export class PhoneNumberFieldComponent {
   @Input() numberMaxLength = 9;
   @Input() prefixPlaceholder = '51';
   @Input() numberPlaceholder = 'Numero';
+
+  focusNumber(): void {
+    this.numberInputRef?.nativeElement.focus();
+  }
 
   protected get prefixDigits(): string {
     return this.prefixControl.value.replace(/\D/g, '').slice(0, this.prefixMaxLength);

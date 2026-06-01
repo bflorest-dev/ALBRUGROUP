@@ -8,12 +8,13 @@ Este seed toma el backup filtrado `clientes_campos_utiles_full.csv` y lo transfo
 - El arranque normal de `docker compose up` no ejecuta seeds automaticamente.
 - Para correr el seed base manualmente debes ejecutar `docker compose -f docker-compose.yml -f docker-compose.seed.yml run --rm db-seeder`.
 - Para correr la migracion legacy debes ejecutar `docker compose -f docker-compose.yml -f docker-compose.seed.yml run --rm lead-migration`.
+- Para probar la migracion sin persistir cambios debes ejecutar `docker compose --profile business -f docker-compose.yml -f docker-compose.seed.yml run --rm lead-migration sh /seeds/run-lead-migration-dry-run.sh`.
 - No hace falta mover el CSV a otra carpeta mientras el archivo siga llamandose `clientes_campos_utiles_full.csv`.
 
 ## Criterios de transformacion
 
 - Se usa `telefono` limpio como `lead.lead` y se fija `prefijo = +51`.
-- Si el CSV trae el mismo telefono varias veces, solo se toma una fila canonica.
+- Si el CSV trae el mismo telefono varias veces, solo se crea un `lead`; los duplicados sirven para detectar primera y ultima tipificacion.
 - La prioridad favorece:
   - filas con tipificacion reconocible
   - filas con mas datos utiles
@@ -31,9 +32,11 @@ Este seed toma el backup filtrado `clientes_campos_utiles_full.csv` y lo transfo
   - si no hay campana existente, el lead se migra sin `id_campana`
 - La migracion no crea catalogos: no inserta proveedores, cuentas publicitarias, campanas, planes ni adicionales.
 - Siempre se crea `evento.REGISTRO`.
-- Solo se crea `evento.TIPIFICACION` cuando la pareja `tipificacion/subtipificacion` existe en los catalogos actuales.
-- `id_plan` se intenta resolver contra los planes existentes por `proveedor + precio + velocidad`.
-- Si no hay match exacto de plan, igual se conservan `nombre_plan_snapshot`, `nombre_proveedor_snapshot` y `precio_plan_snapshot`.
+- Se crea como maximo dos eventos `TIPIFICACION`: la primera desde `tipificacion_original` y la ultima desde categoria/subcategoria legacy.
+- `id_plan` no se resuelve para evitar asociaciones dudosas.
+- Se conservan snapshots coherentes: documento, direccion, proveedor, nombre de plan legacy y precio legacy cuando el dato es valido.
+- Los telefonos de contacto solo se migran si cumplen formato celular peruano de 9 digitos iniciado en 9.
+- Los leads `PREVENTA_COMPLETA / VENTA_CERRADA` terminan en etapa `VENTA`; la tipificacion queda en eventos y la tipificacion actual del lead queda limpia, igual que en el flujo del servicio.
 
 ## Matriz principal de tipificacion
 
@@ -64,10 +67,16 @@ Este seed toma el backup filtrado `clientes_campos_utiles_full.csv` y lo transfo
 
 ## Alcance validado sobre el CSV
 
-- Filas totales: `24949`
-- Telefonos unicos detectados: `23105`
-- Telefonos con duplicados: `1598`
-- Filas involucradas en duplicados: `3442`
+- Filas totales del backup nuevo: `28030`
+- Filas validas por telefono: `27941`
+- Telefonos/leads unicos detectados: `25556`
+- Filas descartadas por telefono invalido: `89`
+- Leads que terminarian en PREVENTA: `21917`
+- Leads que terminarian en VENTA: `3639`
+- Leads con datos de preventa rescatables: `716`
+- Leads con direccion rescatable: `679`
+- Leads con tipificacion rescatable: `25457`
+- Leads con primera y ultima tipificacion distintas: `4083`
 - Proveedor dominante: `WIN`
 - Base dominante: `LEADS`, seguida por `MASIVO`
 

@@ -771,12 +771,14 @@
     header="Nuevo Lead"
     [visible]="facade.activeDialog() === 'lead'"
     (visibleChange)="!$event && facade.closeDialog()"
+    (onShow)="nuevoLeadPhone.focusNumber()"
     [modal]="true"
     [draggable]="false"
     styleClass="gtr-dialog"
   >
     <form class="form-grid" [formGroup]="facade.intakeForm" (ngSubmit)="facade.submitIntake()">
       <app-phone-number-field
+        #nuevoLeadPhone
         class="wide"
         label="Numero"
         [prefixControl]="facade.intakeForm.controls.prefijo"
@@ -1078,6 +1080,7 @@
     header="Buscar Lead"
     [visible]="facade.activeDialog() === 'search'"
     (visibleChange)="!$event && facade.closeDialog()"
+    (onShow)="searchInput.focus()"
     [modal]="true"
     [draggable]="false"
     styleClass="gtr-dialog gtr-dialog--search"
@@ -1086,13 +1089,13 @@
       <label class="wide">
         <span>Numero de Lead</span>
         <input
+          #searchInput
           pInputText
           type="text"
           inputmode="numeric"
-          maxlength="9"
           placeholder="Ej: 987654321"
           [value]="facade.searchQuery()"
-          (input)="facade.setSearchQuery($any($event.target).value)"
+          (input)="facade.setSearchQuery($any($event.target).value.replace(/\D/g, '').slice(0, 9))"
           (keydown.enter)="facade.executeSearch()"
         />
       </label>

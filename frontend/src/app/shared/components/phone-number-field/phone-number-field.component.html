@@ -8,7 +8,6 @@
       inputmode="numeric"
       class="phone-field__prefix"
       [value]="prefixDigits"
-      [attr.maxlength]="prefixMaxLength"
       [placeholder]="prefixPlaceholder"
       [disabled]="prefixControl.disabled"
       aria-label="Prefijo telefonico"
@@ -19,11 +18,11 @@
     <span class="phone-field__separator" aria-hidden="true"></span>
 
     <input
+      #numberInput
       type="text"
       inputmode="numeric"
       class="phone-field__number"
       [formControl]="numberControl"
-      [attr.maxlength]="numberMaxLength"
       [placeholder]="numberPlaceholder"
       autocomplete="off"
       aria-label="Numero telefonico"

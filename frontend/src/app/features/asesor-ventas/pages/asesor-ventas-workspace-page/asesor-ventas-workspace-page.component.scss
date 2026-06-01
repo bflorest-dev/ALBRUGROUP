@@ -293,6 +293,16 @@ label {
   justify-content: space-between;
 }
 
+.offer-additional-item__info {
+  align-items: baseline;
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: space-between;
+  min-width: 0;
+}
+
 .offer-additionals__head,
 .quantity-control span {
   color: #425466;
@@ -355,6 +365,11 @@ label {
   }
 
   .tipification-bar .p-select,
+  .tipification-bar .p-datepicker {
+    min-width: 0;
+    width: 100%;
+  }
+
   .form-grid .p-select,
   .form-grid .p-selectbutton,
   .form-grid .p-inputtext,

@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, effect
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription, firstValueFrom } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
+import { DatePickerModule } from 'primeng/datepicker';
 import { CardModule } from 'primeng/card';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
@@ -35,7 +36,7 @@ import {
   PromocionComercialResponse,
   UbigeoItem
 } from '../../../../shared/models/preventa/preventa.models';
-import { buildTelUrl } from '../../../../shared/utils/phone-link';
+import { buildTelUrl, buildWhatsAppUrl } from '../../../../shared/utils/phone-link';
 import { LeadRealtimeService } from '../../../preventa/services/lead-realtime.service';
 import { PreventaLeadService } from '../../../preventa/services/preventa-lead.service';
 
@@ -56,6 +57,7 @@ type OfertaAdditionalSelection = {
     DatePipe,
     ButtonModule,
     CardModule,
+    DatePickerModule,
     DialogModule,
     InputTextModule,
     MessageModule,
@@ -215,6 +217,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     this.selectedOfertaAdditionals().reduce((total, adicional) => total + (adicional.precioUnitario ?? 0) * adicional.cantidad, 0)
   );
   protected readonly requiresScheduledTime = computed(() => this.selectedTipificacionCode() === 'AGENDADO');
+  protected readonly requiresVentaCompleta = computed(() => this.selectedTipificacionCode() === 'PREVENTA_COMPLETA');
   protected readonly hasUnsavedDataChanges = computed(
     () => this.datosForm.dirty || this.direccionForm.dirty || this.ofertaForm.dirty
   );
@@ -390,6 +393,13 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected async registrarChat(): Promise<void> {
+    const detail = this.detail();
+    const url = detail ? buildWhatsAppUrl(detail.prefijo, detail.lead) : null;
+    if (!url) {
+      this.errorMessage.set('El lead no tiene un numero valido para abrir WhatsApp.');
+      return;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
     await this.registrarContactoOperativo('Chat registrado.');
   }
 
@@ -421,6 +431,14 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     if (this.requiresScheduledTime() && !this.tipificacionForm.controls.horaProgramada.value) {
       this.errorMessage.set('La hora programada es obligatoria para AGENDADO.');
       return;
+    }
+
+    if (this.requiresVentaCompleta()) {
+      const message = this.getVentaCompletaMissingMessage();
+      if (message) {
+        this.errorMessage.set(message);
+        return;
+      }
     }
 
     this.clearMessages();
@@ -1209,6 +1227,58 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       piso: raw.piso,
       interior: raw.interior
     });
+  }
+
+  /**
+   * Refleja la validacion del backend para cerrar una venta (PREVENTA_COMPLETA).
+   * Revisa de una sola vez todos los campos obligatorios, los agrupa por pestana
+   * en lenguaje de usuario y navega a la primera pestana con datos faltantes.
+   * Devuelve el mensaje a mostrar, o null si todo esta completo.
+   */
+  private getVentaCompletaMissingMessage(): string | null {
+    const blank = (value: string | null | undefined): boolean => !value || !value.trim();
+    const d = this.datosForm.controls;
+    const a = this.direccionForm.controls;
+
+    const faltantes: { tab: ActiveDataTab; campo: string }[] = [];
+
+    if (blank(d.tipoDocumento.value)) faltantes.push({ tab: 'datos', campo: 'Tipo de documento' });
+    if (blank(d.numeroDocumentoTitularServicio.value)) faltantes.push({ tab: 'datos', campo: 'Numero de documento del titular' });
+    if (blank(d.nombreTitularServicio.value)) faltantes.push({ tab: 'datos', campo: 'Nombre del titular del servicio' });
+    if (blank(d.celularRegistro.value)) faltantes.push({ tab: 'datos', campo: 'Celular de registro' });
+    if (blank(d.correo.value)) faltantes.push({ tab: 'datos', campo: 'Correo' });
+    if (blank(d.numeroDocumentoTitularCelularRegistro.value)) faltantes.push({ tab: 'datos', campo: 'Documento del titular del celular' });
+    if (blank(d.nombreTitularCelularRegistro.value)) faltantes.push({ tab: 'datos', campo: 'Nombre del titular del celular' });
+
+    if (blank(a.ubigeoDomicilio.value)) faltantes.push({ tab: 'direccion', campo: 'Distrito' });
+    if (blank(a.tipoDomicilio.value)) faltantes.push({ tab: 'direccion', campo: 'Tipo de domicilio' });
+    if (blank(a.tipoVia.value)) faltantes.push({ tab: 'direccion', campo: 'Tipo de via' });
+    if (blank(a.via.value)) faltantes.push({ tab: 'direccion', campo: 'Via' });
+    if (blank(a.direccion.value)) faltantes.push({ tab: 'direccion', campo: 'Direccion' });
+    if (blank(a.referencia.value)) faltantes.push({ tab: 'direccion', campo: 'Referencia' });
+
+    if (!this.ofertaForm.controls.idPlan.value) faltantes.push({ tab: 'oferta', campo: 'Plan' });
+
+    if (!faltantes.length) {
+      return null;
+    }
+
+    const tabsOrdenadas: { tab: ActiveDataTab; titulo: string }[] = [
+      { tab: 'datos', titulo: 'Datos' },
+      { tab: 'direccion', titulo: 'Direccion' },
+      { tab: 'oferta', titulo: 'Oferta comercial' }
+    ];
+
+    const grupos = tabsOrdenadas
+      .map(({ tab, titulo }) => {
+        const campos = faltantes.filter((item) => item.tab === tab).map((item) => item.campo);
+        return campos.length ? `${titulo}: ${campos.join(', ')}` : null;
+      })
+      .filter((grupo): grupo is string => grupo !== null);
+
+    this.activeDataTab.set(faltantes[0].tab);
+
+    return `Para cerrar la venta, completa estos datos. ${grupos.join('. ')}.`;
   }
 
   private getDireccionValidationMessage(): string {
