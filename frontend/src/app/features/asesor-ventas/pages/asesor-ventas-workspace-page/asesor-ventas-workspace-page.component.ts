@@ -443,8 +443,13 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
 
     this.clearMessages();
 
-    if (this.hasUnsavedDataChanges()) {
-      const canProceed = await this.guardarAntesDeTipificar(detail);
+    // Al cerrar una venta NO confiamos en el flag "dirty": forzamos el guardado de
+    // Datos, Direccion y Oferta para garantizar que el backend tenga la informacion
+    // antes de validar la preventa completa. El pre-chequeo ya verifico que esta todo.
+    const forceFullSave = this.requiresVentaCompleta();
+
+    if (forceFullSave || this.hasUnsavedDataChanges()) {
+      const canProceed = await this.guardarAntesDeTipificar(detail, forceFullSave);
       if (!canProceed) {
         return;
       }
@@ -467,14 +472,14 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     );
   }
 
-  private async guardarAntesDeTipificar(detail: LeadDetalleResponse): Promise<boolean> {
-    if (this.isSnapshotOnly()) {
+  private async guardarAntesDeTipificar(detail: LeadDetalleResponse, forceFullSave = false): Promise<boolean> {
+    if (!forceFullSave && this.isSnapshotOnly()) {
       return this.saveSnapshotOnly(detail);
     }
 
     const tasks: { label: string; action: () => Promise<void>; form: { markAsPristine: () => void } }[] = [];
 
-    if (this.datosForm.dirty) {
+    if (forceFullSave || this.datosForm.dirty) {
       if (this.datosForm.invalid) {
         this.errorMessage.set('Datos Preventa incompleto: tipo y numero de documento son obligatorios.');
         return false;
@@ -487,7 +492,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       });
     }
 
-    if (this.direccionForm.dirty) {
+    if (forceFullSave || this.direccionForm.dirty) {
       if (this.direccionForm.invalid) {
         this.errorMessage.set(this.getDireccionValidationMessage());
         return false;
@@ -500,7 +505,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       });
     }
 
-    if (this.ofertaForm.dirty) {
+    if (forceFullSave || this.ofertaForm.dirty) {
       tasks.push({
         label: 'Oferta Comercial',
         form: this.ofertaForm,
@@ -1242,18 +1247,18 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
 
     const faltantes: { tab: ActiveDataTab; campo: string }[] = [];
 
-    if (blank(d.tipoDocumento.value)) faltantes.push({ tab: 'datos', campo: 'Tipo de documento' });
-    if (blank(d.numeroDocumentoTitularServicio.value)) faltantes.push({ tab: 'datos', campo: 'Numero de documento del titular' });
-    if (blank(d.nombreTitularServicio.value)) faltantes.push({ tab: 'datos', campo: 'Nombre del titular del servicio' });
-    if (blank(d.celularRegistro.value)) faltantes.push({ tab: 'datos', campo: 'Celular de registro' });
+    if (blank(d.tipoDocumento.value)) faltantes.push({ tab: 'datos', campo: 'Documento' });
+    if (blank(d.numeroDocumentoTitularServicio.value)) faltantes.push({ tab: 'datos', campo: 'Numero de Documento' });
+    if (blank(d.nombreTitularServicio.value)) faltantes.push({ tab: 'datos', campo: 'Titular del Servicio' });
+    if (blank(d.celularRegistro.value)) faltantes.push({ tab: 'datos', campo: 'Celular a registrar' });
     if (blank(d.correo.value)) faltantes.push({ tab: 'datos', campo: 'Correo' });
-    if (blank(d.numeroDocumentoTitularCelularRegistro.value)) faltantes.push({ tab: 'datos', campo: 'Documento del titular del celular' });
-    if (blank(d.nombreTitularCelularRegistro.value)) faltantes.push({ tab: 'datos', campo: 'Nombre del titular del celular' });
+    if (blank(d.numeroDocumentoTitularCelularRegistro.value)) faltantes.push({ tab: 'datos', campo: 'Numero de Documento del Titular del Celular' });
+    if (blank(d.nombreTitularCelularRegistro.value)) faltantes.push({ tab: 'datos', campo: 'Nombre del Titular del Celular' });
 
     if (blank(a.ubigeoDomicilio.value)) faltantes.push({ tab: 'direccion', campo: 'Distrito' });
-    if (blank(a.tipoDomicilio.value)) faltantes.push({ tab: 'direccion', campo: 'Tipo de domicilio' });
-    if (blank(a.tipoVia.value)) faltantes.push({ tab: 'direccion', campo: 'Tipo de via' });
-    if (blank(a.via.value)) faltantes.push({ tab: 'direccion', campo: 'Via' });
+    if (blank(a.tipoDomicilio.value)) faltantes.push({ tab: 'direccion', campo: 'Tipo de Domicilio' });
+    if (blank(a.tipoVia.value)) faltantes.push({ tab: 'direccion', campo: 'Tipo de Via' });
+    if (blank(a.via.value)) faltantes.push({ tab: 'direccion', campo: 'Nombre de la Via' });
     if (blank(a.direccion.value)) faltantes.push({ tab: 'direccion', campo: 'Direccion' });
     if (blank(a.referencia.value)) faltantes.push({ tab: 'direccion', campo: 'Referencia' });
 

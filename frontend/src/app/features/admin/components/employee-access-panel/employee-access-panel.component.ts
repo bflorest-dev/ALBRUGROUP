@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, computed, input, signal } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
@@ -19,6 +19,8 @@ export type ActiveEmployeeGroup = {
   employees: EmpleadoRolResponse[];
 };
 
+export type EmployeeRow = EmpleadoRolResponse & { role: string };
+
 @Component({
   selector: 'app-employee-access-panel',
   imports: [ButtonModule, DialogModule, MessageModule, ProgressSpinnerModule, SkeletonModule, TableModule, TagModule],
@@ -28,7 +30,7 @@ export type ActiveEmployeeGroup = {
 })
 export class EmployeeAccessPanelComponent {
   @Input({ required: true }) employees: EmpleadoResponse[] = [];
-  @Input() activeGroups: ActiveEmployeeGroup[] = [];
+  readonly activeGroups = input<ActiveEmployeeGroup[]>([]);
   @Input({ required: true }) currentPage = 0;
   @Input({ required: true }) totalPages = 1;
   @Input({ required: true }) isLoading = false;
@@ -57,6 +59,30 @@ export class EmployeeAccessPanelComponent {
   protected readonly selectedRole = signal('');
   protected readonly bajaTarget = signal<EmpleadoRolResponse | null>(null);
   protected readonly bajaStep = signal<0 | 1 | 2>(0);
+  protected readonly detailTarget = signal<EmployeeRow | null>(null);
+
+  /**
+   * Filas planas de empleados filtradas por el rol seleccionado. Es un computed
+   * (referencia estable por ciclo de deteccion de cambios) para evitar el loop de
+   * PrimeNG + OnPush al enlazarlo en [value] de la p-table. Ver primeng-loop-fix.md.
+   */
+  protected readonly filteredRows = computed<EmployeeRow[]>(() => {
+    const role = this.selectedRole();
+    const groups = role ? this.activeGroups().filter((group) => group.role === role) : this.activeGroups();
+    return groups.flatMap((group) => group.employees.map((employee) => ({ ...employee, role: group.role })));
+  });
+
+  protected openDetail(employee: EmployeeRow): void {
+    this.detailTarget.set(employee);
+    // Carga perezosa solo si aun no esta en cache; al reabrir no se vuelve a pedir.
+    if (!this.hasAccessLoaded(employee.idEmpleado)) {
+      this.toggleAccess.emit(employee.idEmpleado);
+    }
+  }
+
+  protected closeDetail(): void {
+    this.detailTarget.set(null);
+  }
 
   protected openBajaDialog(employee: EmpleadoRolResponse): void {
     this.bajaTarget.set(employee);
@@ -82,11 +108,6 @@ export class EmployeeAccessPanelComponent {
 
   protected isDismissing(empleadoId: number): boolean {
     return this.isDismissingEmployeeId === empleadoId;
-  }
-
-  protected filteredGroups(): ActiveEmployeeGroup[] {
-    const role = this.selectedRole();
-    return role ? this.activeGroups.filter((group) => group.role === role) : this.activeGroups;
   }
 
   protected selectRole(role: string): void {

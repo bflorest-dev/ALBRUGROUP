@@ -41,7 +41,7 @@
       <p-progress-spinner ariaLabel="Cargando empleados" />
       <span>Cargando empleados...</span>
     </div>
-  } @else if (activeGroups.length) {
+  } @else if (activeGroups().length) {
 
     <!-- Filtro por rol -->
     <div class="role-filter" aria-label="Filtrar por rol">
@@ -54,7 +54,7 @@
         <p-tag value="Todos" severity="secondary" />
       </button>
 
-      @for (group of activeGroups; track group.role) {
+      @for (group of activeGroups(); track group.role) {
         <button
           type="button"
           class="role-filter__button"
@@ -66,172 +66,216 @@
       }
     </div>
 
-    <!-- Grupos por rol -->
-    <div class="role-groups">
-      @for (group of filteredGroups(); track group.role) {
-        <section class="role-group">
-          <div class="role-group__head">
-            <p-tag [value]="toLabel(group.role)" severity="secondary" />
-            <p-tag [value]="group.employees.length + ' activos'" severity="success" />
-          </div>
+    <!-- Separacion entre filtro y resultados -->
+    <hr class="panel-divider" />
 
-          <div class="employee-cards">
-            @for (employee of group.employees; track employee.idEmpleado) {
-              <article class="employee-card">
+    <!-- Lista de empleados -->
+    <p-table
+      [value]="filteredRows()"
+      dataKey="idEmpleado"
+      [rowHover]="true"
+      [scrollable]="true"
+      [tableStyle]="{ 'min-width': '900px' }"
+      styleClass="p-datatable-sm employee-table"
+    >
+      <ng-template #header>
+        <tr>
+          <th>Empleado</th>
+          <th>Documento</th>
+          <th>Celular</th>
+          <th>Correo</th>
+          <th>Rol</th>
+          <th>Estado</th>
+          <th class="col-actions">Acciones</th>
+        </tr>
+      </ng-template>
 
-                <!-- Dot de estado operativo -->
-                <span [class]="dotClass(employee.idEmpleado)" aria-hidden="true"></span>
+      <ng-template #body let-employee>
+        <tr>
+          <td>
+            <div class="employee-name-cell">
+              <span [class]="dotClass(employee.idEmpleado)" aria-hidden="true"></span>
+              <strong>{{ employee.nombres }} {{ employee.apellidos }}</strong>
+            </div>
+          </td>
+          <td>{{ employee.numeroDocumento }}</td>
+          <td>{{ employee.celularPersonal }}</td>
+          <td class="cell-email">{{ employee.correoPersonal }}</td>
+          <td><p-tag [value]="toLabel(employee.role)" severity="secondary" /></td>
+          <td>
+            <div class="employee-states">
+              @if (isLoadingStates) {
+                <p-skeleton width="4.5rem" height="1.4rem" />
+              } @else {
+                @if (getAttendanceState(employee.idEmpleado); as estado) {
+                  <p-tag [value]="estado" [severity]="stateSeverity(estado)" />
+                } @else {
+                  <p-tag value="Sin registro" severity="secondary" />
+                }
+                @if (getDisponibilidad(employee.idEmpleado); as disp) {
+                  <p-tag [value]="disp" [severity]="stateSeverity(disp)" />
+                }
+              }
+            </div>
+          </td>
+          <td class="col-actions">
+            <div class="row-actions">
+              <button
+                pButton
+                type="button"
+                severity="secondary"
+                size="small"
+                [text]="true"
+                icon="pi pi-pencil"
+                title="Editar datos personales"
+                aria-label="Editar datos personales"
+                (click)="editEmployee.emit(employee)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                severity="secondary"
+                size="small"
+                [text]="true"
+                icon="pi pi-briefcase"
+                title="Renovar contrato"
+                aria-label="Renovar contrato"
+                (click)="renewContract.emit(employee)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                severity="secondary"
+                size="small"
+                [outlined]="true"
+                icon="pi pi-eye"
+                label="Ver mas"
+                (click)="openDetail(employee)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                severity="danger"
+                size="small"
+                [text]="true"
+                icon="pi pi-user-minus"
+                [loading]="isDismissing(employee.idEmpleado)"
+                title="Dar de baja"
+                aria-label="Dar de baja"
+                (click)="openBajaDialog(employee)"
+              ></button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
 
-                <!-- Cuerpo de la tarjeta -->
-                <div class="employee-card__body">
-
-                  <!-- Fila superior: nombre + chips de estado -->
-                  <div class="employee-card__top">
-                    <strong class="employee-card__name">
-                      {{ employee.nombres }} {{ employee.apellidos }}
-                    </strong>
-                    <div class="employee-card__chips">
-                      @if (isLoadingStates) {
-                        <p-skeleton width="4.5rem" height="1.4rem" />
-                        <p-skeleton width="5rem" height="1.4rem" />
-                      } @else {
-                        @if (getAttendanceState(employee.idEmpleado); as estado) {
-                          <p-tag [value]="estado" [severity]="stateSeverity(estado)" />
-                        } @else {
-                          <p-tag value="Sin registro" severity="secondary" />
-                        }
-                        @if (getDisponibilidad(employee.idEmpleado); as disp) {
-                          <p-tag [value]="disp" [severity]="stateSeverity(disp)" />
-                        }
-                      }
-                    </div>
-                  </div>
-
-                  <!-- Datos del empleado -->
-                  <div class="employee-card__meta">
-                    <span>
-                      <i class="pi pi-id-card" aria-hidden="true"></i>
-                      {{ employee.numeroDocumento }}
-                    </span>
-                    <span>
-                      <i class="pi pi-phone" aria-hidden="true"></i>
-                      {{ employee.celularPersonal }}
-                    </span>
-                    <span>
-                      <i class="pi pi-envelope" aria-hidden="true"></i>
-                      {{ employee.correoPersonal }}
-                    </span>
-                  </div>
-
-                  <!-- Acciones -->
-                  <div class="employee-card__actions">
-                    <button
-                      pButton
-                      type="button"
-                      severity="secondary"
-                      size="small"
-                      [text]="true"
-                      icon="pi pi-pencil"
-                      title="Editar datos personales"
-                      aria-label="Editar datos personales"
-                      (click)="editEmployee.emit(employee)"
-                    ></button>
-                    <button
-                      pButton
-                      type="button"
-                      severity="secondary"
-                      size="small"
-                      [text]="true"
-                      icon="pi pi-briefcase"
-                      title="Renovar contrato"
-                      aria-label="Renovar contrato"
-                      (click)="renewContract.emit(employee)"
-                    ></button>
-                    <button
-                      pButton
-                      type="button"
-                      severity="secondary"
-                      size="small"
-                      [text]="true"
-                      icon="pi pi-eye"
-                      [loading]="isAccessLoading(employee.idEmpleado)"
-                      title="Ver credenciales de acceso"
-                      aria-label="Ver acceso"
-                      (click)="toggleAccess.emit(employee.idEmpleado)"
-                    ></button>
-                    <button
-                      pButton
-                      type="button"
-                      severity="danger"
-                      size="small"
-                      [text]="true"
-                      icon="pi pi-user-minus"
-                      [loading]="isDismissing(employee.idEmpleado)"
-                      title="Dar de baja"
-                      aria-label="Dar de baja"
-                      (click)="openBajaDialog(employee)"
-                    ></button>
-                  </div>
-
-                  <!-- Credenciales expandibles -->
-                  @if (hasAccessLoaded(employee.idEmpleado)) {
-                    <div class="employee-card__access">
-                      @if (getAccessError(employee.idEmpleado)) {
-                        <p-message severity="error" [text]="getAccessError(employee.idEmpleado)" />
-                      } @else if (getAccess(employee.idEmpleado); as access) {
-                        <div class="access-body">
-                          <div class="access-meta">
-                            <p-tag
-                              [value]="access.activo ? 'Activo' : 'Inactivo'"
-                              [icon]="access.activo ? 'pi pi-check-circle' : 'pi pi-ban'"
-                              [severity]="access.activo ? 'success' : 'contrast'"
-                            />
-                            <p-tag
-                              [value]="access.passwordInicializada ? 'Clave lista' : 'Clave pendiente'"
-                              [icon]="access.passwordInicializada ? 'pi pi-lock' : 'pi pi-lock-open'"
-                              [severity]="access.passwordInicializada ? 'success' : 'warn'"
-                            />
-                          </div>
-                          <div class="access-stack">
-                            <div class="access-row">
-                              <span class="access-item__label">Username</span>
-                              <span class="access-item__value">{{ access.username }}</span>
-                            </div>
-                            <div class="access-row">
-                              <span class="access-item__label">Email</span>
-                              <span class="access-item__value">{{ access.email }}</span>
-                            </div>
-                            <div class="access-row">
-                              <span class="access-item__label">Rol</span>
-                              <span class="access-item__value">{{ toLabel(access.roles[0]) }}</span>
-                            </div>
-                            <div class="access-row">
-                              <span class="access-item__label">Horario</span>
-                              <span class="access-item__value">
-                                {{ scheduleSummary(getSchedule(employee.idEmpleado)) }}
-                              </span>
-                              @if (getScheduleError(employee.idEmpleado)) {
-                                <small class="access-item__hint">{{ getScheduleError(employee.idEmpleado) }}</small>
-                              }
-                            </div>
-                          </div>
-                        </div>
-                      }
-                    </div>
-                  }
-
-                </div>
-              </article>
-            }
-          </div>
-        </section>
-      }
-    </div>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="7">
+            <p-message severity="info" text="No hay empleados para este rol." />
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
 
   } @else {
     <p-message severity="info" text="No hay empleados activos para mostrar." />
   }
 </section>
+
+<!-- Dialog detalle del empleado ("Ver mas") -->
+<p-dialog
+  [header]="detailTarget() ? detailTarget()!.nombres + ' ' + detailTarget()!.apellidos : 'Detalle del empleado'"
+  [visible]="detailTarget() !== null"
+  (visibleChange)="!$event && closeDetail()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  appendTo="body"
+  styleClass="employee-detail-dialog"
+>
+  @if (detailTarget(); as employee) {
+    <div class="employee-detail">
+      <!-- Estado operativo -->
+      <div class="employee-detail__states">
+        @if (isLoadingStates) {
+          <p-skeleton width="4.5rem" height="1.4rem" />
+        } @else {
+          @if (getAttendanceState(employee.idEmpleado); as estado) {
+            <p-tag [value]="estado" [severity]="stateSeverity(estado)" />
+          } @else {
+            <p-tag value="Sin registro" severity="secondary" />
+          }
+          @if (getDisponibilidad(employee.idEmpleado); as disp) {
+            <p-tag [value]="disp" [severity]="stateSeverity(disp)" />
+          }
+        }
+      </div>
+
+      <!-- Datos personales -->
+      <div class="access-stack">
+        <div class="access-row">
+          <span class="access-item__label">Documento</span>
+          <span class="access-item__value">{{ employee.numeroDocumento }}</span>
+        </div>
+        <div class="access-row">
+          <span class="access-item__label">Celular</span>
+          <span class="access-item__value">{{ employee.celularPersonal }}</span>
+        </div>
+        <div class="access-row">
+          <span class="access-item__label">Correo</span>
+          <span class="access-item__value">{{ employee.correoPersonal }}</span>
+        </div>
+      </div>
+
+      <!-- Credenciales de acceso (carga perezosa) -->
+      @if (isAccessLoading(employee.idEmpleado)) {
+        <div class="employee-detail__loading">
+          <p-progress-spinner ariaLabel="Cargando acceso" />
+          <span>Cargando acceso...</span>
+        </div>
+      } @else if (getAccessError(employee.idEmpleado)) {
+        <p-message severity="error" [text]="getAccessError(employee.idEmpleado)" />
+      } @else if (getAccess(employee.idEmpleado); as access) {
+        <div class="access-meta">
+          <p-tag
+            [value]="access.activo ? 'Activo' : 'Inactivo'"
+            [icon]="access.activo ? 'pi pi-check-circle' : 'pi pi-ban'"
+            [severity]="access.activo ? 'success' : 'contrast'"
+          />
+          <p-tag
+            [value]="access.passwordInicializada ? 'Clave lista' : 'Clave pendiente'"
+            [icon]="access.passwordInicializada ? 'pi pi-lock' : 'pi pi-lock-open'"
+            [severity]="access.passwordInicializada ? 'success' : 'warn'"
+          />
+        </div>
+        <div class="access-stack">
+          <div class="access-row">
+            <span class="access-item__label">Username</span>
+            <span class="access-item__value">{{ access.username }}</span>
+          </div>
+          <div class="access-row">
+            <span class="access-item__label">Email</span>
+            <span class="access-item__value">{{ access.email }}</span>
+          </div>
+          <div class="access-row">
+            <span class="access-item__label">Rol</span>
+            <span class="access-item__value">{{ toLabel(access.roles[0]) }}</span>
+          </div>
+          <div class="access-row">
+            <span class="access-item__label">Horario</span>
+            <span class="access-item__value">
+              {{ scheduleSummary(getSchedule(employee.idEmpleado)) }}
+            </span>
+            @if (getScheduleError(employee.idEmpleado)) {
+              <small class="access-item__hint">{{ getScheduleError(employee.idEmpleado) }}</small>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</p-dialog>
 
 <!-- Dialog baja — paso 1 -->
 <p-dialog
