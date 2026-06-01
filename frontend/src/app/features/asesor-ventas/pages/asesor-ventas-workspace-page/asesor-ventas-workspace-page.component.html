@@ -206,7 +206,7 @@
             ></button>
           </div>
 
-          <label>
+          <label class="tipification-bar__field tipification-bar__field--tipificacion">
             <span>Tipificacion</span>
             <p-select
               formControlName="codigoTipificacion"
@@ -225,7 +225,7 @@
             </p-select>
           </label>
 
-          <label>
+          <label class="tipification-bar__field tipification-bar__field--subtipificacion">
             <span>Subtipificacion</span>
             <p-select
               formControlName="codigoSubtipificacion"
@@ -246,7 +246,7 @@
           </label>
 
           @if (requiresScheduledTime()) {
-            <label class="scheduled-field">
+            <label class="scheduled-field tipification-bar__field">
               <span>Hora programada</span>
               <input pInputText type="time" formControlName="horaProgramada" />
             </label>
@@ -255,6 +255,7 @@
           <button
             pButton
             type="button"
+            class="tipification-bar__comment-toggle"
             icon="pi pi-comment"
             [label]="showComment() ? 'Ocultar comentario' : 'Comentario'"
             severity="secondary"
@@ -263,6 +264,7 @@
           <button
             pButton
             type="submit"
+            class="tipification-bar__submit"
             icon="pi pi-check"
             label="Tipificar"
             [disabled]="!canMutateOperationalData()"

@@ -437,6 +437,13 @@ label,
   font-size: 0.85rem;
 }
 
+.plan-field-hint {
+  color: var(--role-muted);
+  font-size: 0.76rem;
+  line-height: 1.35;
+  margin-top: -0.2rem;
+}
+
 .zone-rule-item {
   display: grid;
   grid-template-columns: 1fr auto auto;

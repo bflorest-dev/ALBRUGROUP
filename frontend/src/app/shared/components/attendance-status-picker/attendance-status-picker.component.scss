@@ -3,8 +3,14 @@
 }
 
 .attendance-status {
-  position: relative;
+  align-items: center;
+  display: inline-flex;
+  gap: 0.3rem;
   z-index: 90;
+}
+
+.attendance-status__trigger-wrap {
+  position: relative;
 }
 
 .attendance-status__trigger,
@@ -113,6 +119,25 @@
   align-items: center;
   color: var(--app-text-muted);
   font-size: 0.85rem;
+}
+
+.attendance-status__hint {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: #d97706;
+  cursor: default;
+  display: inline-flex;
+  font-size: 0.9rem;
+  justify-content: center;
+  opacity: 0.72;
+  padding: 0.1rem;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 1;
+  }
 }
 
 .attendance-status__confirm-actions {

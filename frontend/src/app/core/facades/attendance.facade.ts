@@ -140,6 +140,31 @@ export class AttendanceFacade {
     this.resolveAvailableActions(this.currentStatus())
   );
 
+  readonly scheduleHint = computed<string>(() => {
+    if (this.availableActions().length > 0) return '';
+    if (this.currentStatus() === 'CAPACITACION') return '';
+
+    const detail = this.attendanceDetail();
+    if (!detail) return '';
+
+    if (detail.jornadaCerrada) return 'Tu jornada de hoy ya está cerrada.';
+    if (!detail.idHorario) return 'No tienes turno programado para hoy.';
+
+    const entrada = detail.entradaProgramada?.substring(0, 5) ?? null;
+    const salida = detail.salidaProgramada?.substring(0, 5) ?? null;
+
+    if (entrada && salida) {
+      const now = new Date();
+      const nowStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      if (nowStr < entrada) return `Tu turno comienza a las ${entrada}.`;
+      if (nowStr > salida) return `Tu turno terminó a las ${salida}.`;
+    } else if (entrada) {
+      return `Tu turno comienza a las ${entrada}.`;
+    }
+
+    return 'Estás fuera de tu horario programado.';
+  });
+
   constructor() {
     effect(() => {
       const state = this.loadState();

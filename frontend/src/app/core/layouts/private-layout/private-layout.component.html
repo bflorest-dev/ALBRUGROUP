@@ -75,6 +75,7 @@
         [isLoading]="isAttendanceLoading()"
         [errorMessage]="attendancePickerErrorMessage()"
         [disabled]="isAttendancePickerDisabled()"
+        [hint]="attendanceHint()"
         (actionSelected)="submitAttendanceAction($event)"
         (retry)="attendanceFacade.reload()"
       />

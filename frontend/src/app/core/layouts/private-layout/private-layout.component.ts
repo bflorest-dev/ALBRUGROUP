@@ -75,6 +75,9 @@ export class PrivateLayoutComponent {
     return this.attendanceFacade.isLoading() || this.attendanceFacade.isInitializing();
   });
   protected readonly isAttendancePickerDisabled = computed(() => this.isAdmin());
+  protected readonly attendanceHint = computed(() =>
+    this.isAdmin() ? '' : this.attendanceFacade.scheduleHint()
+  );
   protected readonly themeClass = computed(() => {
     const primaryRole = this.session()?.primaryRole;
     return primaryRole ? ROLE_THEME_CLASS[primaryRole] ?? 'theme-admin' : 'theme-admin';

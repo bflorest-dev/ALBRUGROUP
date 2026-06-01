@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, signal
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
 import {
   ATTENDANCE_STATUS_META,
   AttendanceActionId,
@@ -10,7 +11,7 @@ import {
 
 @Component({
   selector: 'app-attendance-status-picker',
-  imports: [ButtonModule, DialogModule, TagModule],
+  imports: [ButtonModule, DialogModule, TagModule, TooltipModule],
   templateUrl: './attendance-status-picker.component.html',
   styleUrl: './attendance-status-picker.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -22,6 +23,7 @@ export class AttendanceStatusPickerComponent {
   @Input({ required: true }) isLoading = false;
   @Input({ required: true }) errorMessage = '';
   @Input() disabled = false;
+  @Input() hint = '';
 
   @Output() readonly actionSelected = new EventEmitter<AttendanceActionId>();
   @Output() readonly retry = new EventEmitter<void>();

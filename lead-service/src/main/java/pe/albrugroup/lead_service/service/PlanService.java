@@ -12,6 +12,7 @@ import pe.albrugroup.lead_service.entity.request.AdicionalRequest;
 import pe.albrugroup.lead_service.entity.request.PlanAdicionalRequest;
 import pe.albrugroup.lead_service.entity.request.PlanRequest;
 import pe.albrugroup.lead_service.entity.request.PlanUpdateRequest;
+import pe.albrugroup.lead_service.entity.request.TelevisionRequest;
 import pe.albrugroup.lead_service.entity.request.TelefonoRequest;
 import pe.albrugroup.lead_service.entity.response.AdicionalResponse;
 import pe.albrugroup.lead_service.entity.response.PlanAdicionalResponse;
@@ -132,7 +133,7 @@ public class PlanService {
 
         mapper.updatePlan(request, plan);
         plan.setInternet(resolverInternet(request, proveedor));
-        plan.setTelevision(resolverTelevision(request, proveedor));
+        plan.setTelevision(resolverTelevision(request, proveedor, plan.getTelevision()));
         plan.setTelefono(resolverTelefono(request, proveedor));
         plan.setZona(resolverZona(request.getIdZona()));
         validarPromocionesPlan(plan);
@@ -306,18 +307,28 @@ public class PlanService {
                 });
     }
 
-    private Television resolverTelevision(PlanUpdateRequest request, Proveedor proveedor) {
-        if (request.getTelevision() == null) {
+    private Television resolverTelevision(PlanUpdateRequest request, Proveedor proveedor, Television televisionActual) {
+        TelevisionRequest televisionRequest = request.getTelevision();
+        if (televisionRequest == null) {
             return null;
+        }
+
+        if (televisionActual != null
+                && televisionActual.getCantidadCanales() != null
+                && Objects.equals(televisionActual.getCantidadCanales(), televisionRequest.getCantidadCanales())
+                && televisionActual.getNombre() != null
+                && televisionActual.getNombre().equalsIgnoreCase(televisionRequest.getNombre())) {
+            televisionActual.setNombre(televisionRequest.getNombre());
+            return televisionRepository.save(televisionActual);
         }
 
         return televisionRepository.findByProveedorIdAndNombreIgnoreCaseAndCantidadCanalesAndActivoTrue(
                         proveedor.getId(),
-                        request.getTelevision().getNombre(),
-                        request.getTelevision().getCantidadCanales()
+                        televisionRequest.getNombre(),
+                        televisionRequest.getCantidadCanales()
                 )
                 .orElseGet(() -> {
-                    Television television = mapper.toEntity(request.getTelevision());
+                    Television television = mapper.toEntity(televisionRequest);
                     television.setProveedor(proveedor);
                     television.setActivo(Boolean.TRUE);
                     return televisionRepository.save(television);
