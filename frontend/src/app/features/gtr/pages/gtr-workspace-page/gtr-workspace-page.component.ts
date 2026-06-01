@@ -1,6 +1,6 @@
 import { DatePipe, UpperCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject } from '@angular/core';
-import { ReactiveFormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
@@ -12,7 +12,9 @@ import { MessageModule } from 'primeng/message';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { PaginatorModule } from 'primeng/paginator';
 import { PopoverModule } from 'primeng/popover';
+import { ProgressBarModule } from 'primeng/progressbar';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { SelectButtonModule } from 'primeng/selectbutton';
 import { SelectModule } from 'primeng/select';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
@@ -24,6 +26,7 @@ import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
 @Component({
   selector: 'app-gtr-workspace-page',
   imports: [
+    FormsModule,
     ReactiveFormsModule,
     DatePipe,
     UpperCasePipe,
@@ -36,7 +39,9 @@ import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
     MultiSelectModule,
     PaginatorModule,
     PopoverModule,
+    ProgressBarModule,
     ProgressSpinnerModule,
+    SelectButtonModule,
     SelectModule,
     SkeletonModule,
     TableModule,
@@ -58,7 +63,7 @@ export class GtrWorkspacePageComponent implements OnInit, OnDestroy {
     this.routeSubscription.add(
       this.route.data.subscribe((data) => {
         const section = data['section'];
-        if (section === 'plataforma' || section === 'agendados' || section === 'historicos') {
+        if (section === 'plataforma' || section === 'agendados' || section === 'historicos' || section === 'ranking') {
           this.facade.setSection(section);
         }
       })

@@ -136,7 +136,8 @@ export class PrivateLayoutComponent {
       return [
         { label: 'Plataforma', route: '/app/gtr/plataforma', icon: 'pi pi-desktop', exact: true },
         { label: 'Agendados', route: '/app/gtr/agendados', icon: 'pi pi-calendar', exact: true },
-        { label: 'Historicos', route: '/app/gtr/historicos', icon: 'pi pi-history', exact: true }
+        { label: 'Historicos', route: '/app/gtr/historicos', icon: 'pi pi-history', exact: true },
+        { label: 'Ranking', route: '/app/gtr/ranking', icon: 'pi pi-chart-bar', exact: true }
       ];
     }
 

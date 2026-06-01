@@ -11,6 +11,7 @@ import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.repository.projection.AsesorCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.AsesorProveedorCantidadProjection;
+import pe.albrugroup.lead_service.repository.projection.CampanaTipificacionCantidadProjection;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -277,5 +278,128 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("fechaHasta") Instant fechaHasta,
             @Param("filtrarAsesores") boolean filtrarAsesores,
             @Param("asesorIds") Collection<Long> asesorIds
+    );
+
+    // ── Queries específicos GTR (usan soloActivos con EXISTS para asesores) ────
+
+    @Query("""
+            SELECT e.idActor AS idAsesor,
+                   e.nombreActor AS nombreAsesor,
+                   COUNT(DISTINCT e.idLead) AS cantidad
+            FROM Evento e
+            WHERE e.accion = :accion
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt < :fechaHasta
+              AND (:soloActivos = false
+                   OR EXISTS (SELECT 1 FROM Lead la
+                              WHERE la.idAsesorAsignado = e.idActor
+                                AND la.etapa = 'PREVENTA'))
+            GROUP BY e.idActor, e.nombreActor
+            """)
+    List<AsesorCantidadProjection> resumirTipificacionesPorAsesorGtr(
+            @Param("accion") Accion accion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("soloActivos") boolean soloActivos
+    );
+
+    @Query("""
+            SELECT e.idActor AS idAsesor,
+                   e.nombreActor AS nombreAsesor,
+                   COUNT(DISTINCT e.idLead) AS cantidad
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.accion = :accion
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt < :fechaHasta
+              AND l.createdAt >= :fechaDesde
+              AND l.createdAt < :fechaHasta
+              AND (:soloActivos = false
+                   OR EXISTS (SELECT 1 FROM Lead la
+                              WHERE la.idAsesorAsignado = e.idActor
+                                AND la.etapa = 'PREVENTA'))
+            GROUP BY e.idActor, e.nombreActor
+            """)
+    List<AsesorCantidadProjection> resumirNuevosGestionadosPorAsesorGtr(
+            @Param("accion") Accion accion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("soloActivos") boolean soloActivos
+    );
+
+    @Query("""
+            SELECT e.idActor AS idAsesor,
+                   e.nombreActor AS nombreAsesor,
+                   COUNT(DISTINCT e.idLead) AS cantidad
+            FROM Evento e
+            WHERE e.accion = :accion
+              AND e.tipificacion = :tipificacion
+              AND e.subtipificacion = :subtipificacion
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt < :fechaHasta
+              AND (:soloActivos = false
+                   OR EXISTS (SELECT 1 FROM Lead la
+                              WHERE la.idAsesorAsignado = e.idActor
+                                AND la.etapa = 'PREVENTA'))
+            GROUP BY e.idActor, e.nombreActor
+            """)
+    List<AsesorCantidadProjection> resumirPreventasPorAsesorGtr(
+            @Param("accion") Accion accion,
+            @Param("tipificacion") String tipificacion,
+            @Param("subtipificacion") String subtipificacion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("soloActivos") boolean soloActivos
+    );
+
+    @Query("""
+            SELECT e.idActor AS idAsesor,
+                   e.nombreActor AS nombreAsesor,
+                   p.id AS idProveedor,
+                   p.nombre AS nombreProveedor,
+                   COUNT(e.id) AS cantidad
+            FROM Evento e
+            JOIN Plan pl ON pl.id = e.idPlanOfrecido
+            JOIN pl.proveedor p
+            WHERE e.accion = :accion
+              AND e.tipificacion = :tipificacion
+              AND e.subtipificacion = :subtipificacion
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt < :fechaHasta
+              AND (:soloActivos = false
+                   OR EXISTS (SELECT 1 FROM Lead la
+                              WHERE la.idAsesorAsignado = e.idActor
+                                AND la.etapa = 'PREVENTA'))
+            GROUP BY e.idActor, e.nombreActor, p.id, p.nombre
+            """)
+    List<AsesorProveedorCantidadProjection> resumirPreventasMensualesPorProveedorGtr(
+            @Param("accion") Accion accion,
+            @Param("tipificacion") String tipificacion,
+            @Param("subtipificacion") String subtipificacion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("soloActivos") boolean soloActivos
+    );
+
+    @Query("""
+            SELECT e.idCampana AS idCampana,
+                   c.nombre AS nombreCampana,
+                   e.tipificacion AS tipificacion,
+                   e.subtipificacion AS subtipificacion,
+                   COUNT(DISTINCT e.idLead) AS cantidad
+            FROM Evento e
+            JOIN Campana c ON c.id = e.idCampana
+            WHERE e.accion = :accion
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt < :fechaHasta
+              AND e.idCampana IS NOT NULL
+              AND (:soloActivos = false OR c.activo = true)
+            GROUP BY e.idCampana, c.nombre, e.tipificacion, e.subtipificacion
+            """)
+    List<CampanaTipificacionCantidadProjection> resumirTipificacionesPorCampanaGtr(
+            @Param("accion") Accion accion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("soloActivos") boolean soloActivos
     );
 }

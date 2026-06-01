@@ -43,8 +43,11 @@ import pe.albrugroup.lead_service.entity.response.LeadPostventaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadRealtimeEvent;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.entity.response.PlanAdicionalResponse;
+import pe.albrugroup.lead_service.entity.response.GtrRankingAsesorResponse;
+import pe.albrugroup.lead_service.entity.response.GtrTipificacionCampanaResponse;
 import pe.albrugroup.lead_service.entity.response.SupervisorVentasProveedorResumenResponse;
 import pe.albrugroup.lead_service.entity.response.SupervisorVentasResumenResponse;
+import pe.albrugroup.lead_service.repository.projection.CampanaTipificacionCantidadProjection;
 import pe.albrugroup.lead_service.entity.response.TelefonoResponse;
 import pe.albrugroup.lead_service.entity.response.TelevisionResponse;
 import pe.albrugroup.lead_service.exception.BusinessException;
@@ -2009,6 +2012,135 @@ public class LeadService {
                 .codigoSubtipificacion(lead.getCodigoSubtipificacion())
                 .occurredAt(OperationalDateTime.now())
                 .build());
+    }
+
+    // ── Ranking GTR ──────────────────────────────────────────────────────────
+
+    public List<GtrRankingAsesorResponse> listarRankingGtr(
+            LocalDate desde, LocalDate hasta, boolean soloActivos) {
+
+        LocalDate desdeResuelta = OperationalDateTime.resolveDate(desde);
+        LocalDate hastaResuelta = hasta == null ? OperationalDateTime.today() : hasta;
+
+        OperationalDateTime.InstantRange rangoPeriodo = new OperationalDateTime.InstantRange(
+                OperationalDateTime.dayRange(desdeResuelta).inicio(),
+                OperationalDateTime.dayRange(hastaResuelta).fin()
+        );
+        OperationalDateTime.InstantRange rangoMes =
+                OperationalDateTime.monthRange(YearMonth.from(desdeResuelta));
+
+        Map<Long, GtrRankingAccumulator> acumulados = new HashMap<>();
+
+        eventoRepository.resumirNuevosGestionadosPorAsesorGtr(
+                        Accion.TIPIFICACION, rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos)
+                .forEach(row -> {
+                    GtrRankingAccumulator item = obtenerAcumuladorGtr(acumulados, row.getIdAsesor(), row.getNombreAsesor());
+                    item.nuevosGestionadosPeriodo = row.getCantidad();
+                });
+
+        eventoRepository.resumirTipificacionesPorAsesorGtr(
+                        Accion.TIPIFICACION, rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos)
+                .forEach(row -> {
+                    GtrRankingAccumulator item = obtenerAcumuladorGtr(acumulados, row.getIdAsesor(), row.getNombreAsesor());
+                    item.gestionadosPeriodo = row.getCantidad();
+                });
+
+        eventoRepository.resumirPreventasPorAsesorGtr(
+                        Accion.TIPIFICACION, TIPIFICACION_SCORE_PREVENTA, SUBTIPIFICACION_PREVENTA,
+                        rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos)
+                .forEach(row -> {
+                    GtrRankingAccumulator item = obtenerAcumuladorGtr(acumulados, row.getIdAsesor(), row.getNombreAsesor());
+                    item.preventasPeriodo = row.getCantidad();
+                });
+
+        eventoRepository.resumirPreventasMensualesPorProveedorGtr(
+                        Accion.TIPIFICACION, TIPIFICACION_SCORE_PREVENTA, SUBTIPIFICACION_PREVENTA,
+                        rangoMes.inicio(), rangoMes.fin(), soloActivos)
+                .forEach(row -> {
+                    GtrRankingAccumulator item = obtenerAcumuladorGtr(acumulados, row.getIdAsesor(), row.getNombreAsesor());
+                    item.preventasMes += row.getCantidad();
+                    item.preventasMesPorProveedor.add(new SupervisorVentasProveedorResumenResponse(
+                            row.getIdProveedor(), row.getNombreProveedor(), row.getCantidad()));
+                });
+
+        return acumulados.values().stream()
+                .sorted(Comparator.comparingLong(GtrRankingAccumulator::gestionadosPeriodo).reversed()
+                        .thenComparing(GtrRankingAccumulator::nombreAsesorOrdenable))
+                .map(GtrRankingAccumulator::toResponse)
+                .toList();
+    }
+
+    public List<GtrTipificacionCampanaResponse> listarTipificacionesCampanaGtr(
+            LocalDate desde, LocalDate hasta, boolean soloActivos) {
+
+        LocalDate desdeResuelta = OperationalDateTime.resolveDate(desde);
+        LocalDate hastaResuelta = hasta == null ? OperationalDateTime.today() : hasta;
+
+        OperationalDateTime.InstantRange rangoPeriodo = new OperationalDateTime.InstantRange(
+                OperationalDateTime.dayRange(desdeResuelta).inicio(),
+                OperationalDateTime.dayRange(hastaResuelta).fin()
+        );
+
+        List<CampanaTipificacionCantidadProjection> rows =
+                eventoRepository.resumirTipificacionesPorCampanaGtr(
+                        Accion.TIPIFICACION, rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos);
+
+        Map<Long, Long> totalPorCampana = rows.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        CampanaTipificacionCantidadProjection::getIdCampana,
+                        java.util.stream.Collectors.summingLong(CampanaTipificacionCantidadProjection::getCantidad)
+                ));
+
+        return rows.stream()
+                .map(r -> {
+                    long total = totalPorCampana.getOrDefault(r.getIdCampana(), 1L);
+                    double pct = total > 0 ? Math.round((r.getCantidad() * 1000.0) / total) / 10.0 : 0.0;
+                    return new GtrTipificacionCampanaResponse(
+                            r.getIdCampana(), r.getNombreCampana(),
+                            r.getTipificacion(), r.getSubtipificacion(),
+                            r.getCantidad(), pct);
+                })
+                .sorted(Comparator.comparing(GtrTipificacionCampanaResponse::getNombreCampana,
+                                Comparator.nullsLast(String::compareToIgnoreCase))
+                        .thenComparingLong(r -> -r.getCantidad()))
+                .toList();
+    }
+
+    private GtrRankingAccumulator obtenerAcumuladorGtr(
+            Map<Long, GtrRankingAccumulator> acumulados, Long idAsesor, String nombreAsesor) {
+        GtrRankingAccumulator item = acumulados.computeIfAbsent(idAsesor, k -> new GtrRankingAccumulator(idAsesor));
+        if (item.nombreAsesor == null && nombreAsesor != null && !nombreAsesor.isBlank()) {
+            item.nombreAsesor = nombreAsesor;
+        }
+        return item;
+    }
+
+    private static final class GtrRankingAccumulator {
+        private final Long idAsesor;
+        private String nombreAsesor;
+        private long nuevosGestionadosPeriodo;
+        private long gestionadosPeriodo;
+        private long preventasPeriodo;
+        private long preventasMes;
+        private final List<SupervisorVentasProveedorResumenResponse> preventasMesPorProveedor = new ArrayList<>();
+
+        private GtrRankingAccumulator(Long idAsesor) {
+            this.idAsesor = idAsesor;
+        }
+
+        private long gestionadosPeriodo() { return gestionadosPeriodo; }
+        private String nombreAsesorOrdenable() { return nombreAsesor == null ? "" : nombreAsesor; }
+
+        private GtrRankingAsesorResponse toResponse() {
+            List<SupervisorVentasProveedorResumenResponse> proveedores = preventasMesPorProveedor.stream()
+                    .sorted(Comparator.comparing(SupervisorVentasProveedorResumenResponse::getNombreProveedor,
+                            Comparator.nullsLast(String::compareToIgnoreCase)))
+                    .toList();
+            return new GtrRankingAsesorResponse(
+                    idAsesor, nombreAsesor,
+                    nuevosGestionadosPeriodo, gestionadosPeriodo,
+                    preventasPeriodo, preventasMes, proveedores);
+        }
     }
 
     private ResumenSupervisorVentasAccumulator obtenerAcumulador(

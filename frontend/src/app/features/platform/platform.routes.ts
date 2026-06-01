@@ -163,6 +163,15 @@ export const PLATFORM_ROUTES: Routes = [
     }
   },
   {
+    path: 'gtr/ranking',
+    component: GtrWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ASESOR_GTR', 'SUPERVISOR_GTR'],
+      section: 'ranking'
+    }
+  },
+  {
     path: 'asesor-ventas',
     pathMatch: 'full',
     redirectTo: 'asesor-ventas/plataforma'

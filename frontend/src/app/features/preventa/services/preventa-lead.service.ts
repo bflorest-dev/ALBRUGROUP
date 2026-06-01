@@ -18,6 +18,8 @@ import {
   EventoResponse,
   LeadGtrResponse,
   LeadGtrMetricasResponse,
+  GtrRankingAsesorResponse,
+  GtrTipificacionCampanaResponse,
   LeadIntakeRequest,
   LeadIntakeMasivoExcelResponse,
   MasivoLeadFilters,
@@ -48,6 +50,18 @@ export class PreventaLeadService {
     return this.http.get<LeadPage<LeadGtrResponse>>(`${this.leadUrl}/preventa/gtr`, {
       params: this.pageParams(query).set('lead', lead)
     });
+  }
+
+  listarRankingGtr(desde: string, hasta?: string, soloActivos = true): Observable<GtrRankingAsesorResponse[]> {
+    let params = new HttpParams().set('desde', desde).set('soloActivos', soloActivos);
+    if (hasta) params = params.set('hasta', hasta);
+    return this.http.get<GtrRankingAsesorResponse[]>(`${this.leadUrl}/preventa/gtr/ranking`, { params });
+  }
+
+  listarTipificacionesCampanaGtr(desde: string, hasta?: string, soloActivos = true): Observable<GtrTipificacionCampanaResponse[]> {
+    let params = new HttpParams().set('desde', desde).set('soloActivos', soloActivos);
+    if (hasta) params = params.set('hasta', hasta);
+    return this.http.get<GtrTipificacionCampanaResponse[]>(`${this.leadUrl}/preventa/gtr/tipificaciones-campana`, { params });
   }
 
   obtenerMetricasGtr(fecha: string): Observable<LeadGtrMetricasResponse> {

@@ -617,6 +617,171 @@
     </p-card>
   }
 
+  @if (facade.section() === 'ranking') {
+    <!-- Controles de período y filtros -->
+    <div class="ranking-toolbar">
+      <div class="ranking-toolbar__left">
+        <p-selectbutton
+          [options]="[{ label: 'Hoy', value: 'dia' }, { label: 'Mes', value: 'mes' }]"
+          [ngModel]="facade.rankingPeriod()"
+          optionLabel="label"
+          optionValue="value"
+          (onChange)="facade.setRankingPeriod($any($event.value))"
+        />
+        <button
+          pButton
+          type="button"
+          [label]="facade.rankingSoloActivos() ? 'Solo activos' : 'Todos'"
+          [icon]="facade.rankingSoloActivos() ? 'pi pi-filter-fill' : 'pi pi-filter'"
+          severity="secondary"
+          [outlined]="!facade.rankingSoloActivos()"
+          size="small"
+          (click)="facade.toggleRankingSoloActivos()"
+        ></button>
+      </div>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-refresh"
+        label="Actualizar"
+        severity="secondary"
+        [loading]="facade.isRefreshingRanking()"
+        (click)="facade.cargarRanking(true)"
+      ></button>
+    </div>
+
+    <!-- Grid de dos paneles -->
+    <div class="ranking-grid">
+
+      <!-- Panel 1: Ranking de asesores -->
+      <p-card styleClass="gtr-board">
+        <ng-template #title>
+          <span class="board-title">
+            Rendimiento de Asesores
+            <p-tag severity="info" [value]="facade.display(facade.rankingRows().length)" />
+          </span>
+        </ng-template>
+
+        @if (facade.isLoadingRanking()) {
+          <div class="loading-state">
+            <p-progress-spinner ariaLabel="Cargando ranking" />
+            <span>Cargando ranking...</span>
+          </div>
+        } @else {
+          <p-table
+            [value]="facade.rankingRows()"
+            [rowHover]="true"
+            [tableStyle]="{ 'min-width': '600px' }"
+            styleClass="p-datatable-sm gtr-table"
+          >
+            <ng-template #header>
+              <tr>
+                <th style="width:2.5rem">#</th>
+                <th>Asesor</th>
+                <th title="Leads del período que el asesor gestionó el mismo día de ingreso">Nuevos</th>
+                <th>Gestionados</th>
+                <th>Preventas</th>
+                <th>Mes</th>
+              </tr>
+            </ng-template>
+            <ng-template #body let-row let-rowIndex="rowIndex">
+              <tr>
+                <td><strong>{{ rowIndex + 1 }}</strong></td>
+                <td>{{ facade.display(row.nombreAsesor) | uppercase }}</td>
+                <td>
+                  <p-tag
+                    [value]="facade.display(row.nuevosGestionadosPeriodo)"
+                    severity="info"
+                  />
+                </td>
+                <td>{{ facade.display(row.gestionadosPeriodo) }}</td>
+                <td>
+                  <p-tag
+                    [value]="facade.display(row.preventasPeriodo)"
+                    [severity]="row.preventasPeriodo > 0 ? 'success' : 'secondary'"
+                  />
+                </td>
+                <td>{{ facade.display(row.preventasMes) }}</td>
+              </tr>
+            </ng-template>
+            <ng-template #emptymessage>
+              <tr>
+                <td colspan="6" style="color:var(--app-text-muted);opacity:.72;padding:2rem 1rem;text-align:center;">
+                  Sin actividad registrada para el período seleccionado.
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        }
+      </p-card>
+
+      <!-- Panel 2: Tipificaciones por campaña -->
+      <p-card styleClass="gtr-board">
+        <ng-template #title>
+          <span class="board-title">
+            Tipificaciones por Campaña
+          </span>
+        </ng-template>
+
+        @if (facade.isLoadingRanking()) {
+          <div class="loading-state">
+            <p-progress-spinner ariaLabel="Cargando tipificaciones" />
+          </div>
+        } @else {
+          <p-table
+            [value]="facade.tipificacionesRows()"
+            [rowHover]="true"
+            [tableStyle]="{ 'min-width': '560px' }"
+            styleClass="p-datatable-sm gtr-table"
+          >
+            <ng-template #header>
+              <tr>
+                <th>Campaña</th>
+                <th>Tipificación</th>
+                <th>Subtipificación</th>
+                <th style="width:4rem;text-align:right">Cant.</th>
+                <th style="width:9rem">%</th>
+              </tr>
+            </ng-template>
+            <ng-template #body let-row>
+              <tr>
+                <td>{{ facade.display(row.nombreCampana) }}</td>
+                <td>
+                  <p-tag
+                    [value]="facade.display(row.codigoTipificacion)"
+                    [styleClass]="facade.tipificacionTagClass(row.codigoTipificacion)"
+                  />
+                </td>
+                <td>
+                  <p-tag
+                    [value]="facade.display(row.codigoSubtipificacion)"
+                    [styleClass]="facade.tipificacionTagClass(row.codigoTipificacion, 'subtipificacion')"
+                  />
+                </td>
+                <td style="text-align:right"><strong>{{ facade.display(row.cantidad) }}</strong></td>
+                <td>
+                  <p-progressbar
+                    [value]="row.porcentaje"
+                    [showValue]="true"
+                    styleClass="ranking-progress"
+                  />
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template #emptymessage>
+              <tr>
+                <td colspan="5" style="color:var(--app-text-muted);opacity:.72;padding:2rem 1rem;text-align:center;">
+                  Sin tipificaciones registradas para el período seleccionado.
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        }
+      </p-card>
+
+    </div>
+  }
+
   <p-drawer
     [visible]="facade.advisorsPanelOpen()"
     (visibleChange)="!$event && facade.closeAdvisorsPanel()"

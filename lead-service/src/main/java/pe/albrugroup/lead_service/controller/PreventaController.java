@@ -70,6 +70,28 @@ public class PreventaController {
         var metricas = leadService.obtenerMetricasGtr(fecha);
         return ResponseEntity.status(HttpStatus.OK).body(metricas);
     }
+    // 2.2. Ranking de asesores para la vista GTR
+    @GetMapping("/gtr/ranking") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
+    public ResponseEntity<List<GtrRankingAsesorResponse>> listarRankingGtr(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            @RequestParam(defaultValue = "true") boolean soloActivos
+    ) {
+        var ranking = leadService.listarRankingGtr(desde, hasta, soloActivos);
+        return ResponseEntity.ok(ranking);
+    }
+
+    // 2.3. Distribucion de tipificaciones por campana para la vista GTR
+    @GetMapping("/gtr/tipificaciones-campana") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
+    public ResponseEntity<List<GtrTipificacionCampanaResponse>> listarTipificacionesCampanaGtr(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            @RequestParam(defaultValue = "true") boolean soloActivos
+    ) {
+        var tipificaciones = leadService.listarTipificacionesCampanaGtr(desde, hasta, soloActivos);
+        return ResponseEntity.ok(tipificaciones);
+    }
+
     // 3. Asignar un Lead a un asesor de ventas
     @PatchMapping("/{idLead}/asignacion") @PreAuthorize("hasAuthority('ASSIGN_LEADS')")
     public ResponseEntity<Void> asignarLead(

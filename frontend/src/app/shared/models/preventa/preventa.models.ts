@@ -407,3 +407,22 @@ export interface UbigeoItem {
 }
 
 export type LeadPage<T> = PageResponse<T>;
+
+export interface GtrRankingAsesorResponse {
+  idAsesor: number;
+  nombreAsesor: string | null;
+  nuevosGestionadosPeriodo: number;
+  gestionadosPeriodo: number;
+  preventasPeriodo: number;
+  preventasMes: number;
+  preventasMesPorProveedor: { idProveedor: number; nombreProveedor: string; cantidad: number }[];
+}
+
+export interface GtrTipificacionCampanaResponse {
+  idCampana: number;
+  nombreCampana: string;
+  codigoTipificacion: string | null;
+  codigoSubtipificacion: string | null;
+  cantidad: number;
+  porcentaje: number;
+}
