@@ -1,6 +1,6 @@
 ﻿import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, effect, inject, signal } from '@angular/core';
 import { Location } from '@angular/common';
-import { ReactiveFormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonModule } from 'primeng/button';
@@ -21,6 +21,7 @@ import { CommunityPageMode, CommunitySection, CommunityWorkspaceFacade } from '.
 @Component({
   selector: 'app-community-workspace-page',
   imports: [
+    FormsModule,
     ReactiveFormsModule,
     ButtonModule,
     CardModule,

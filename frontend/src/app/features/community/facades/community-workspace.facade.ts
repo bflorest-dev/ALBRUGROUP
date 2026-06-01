@@ -46,6 +46,20 @@ type FinanceMetricCard = {
   value: string;
   tone: 'blue' | 'green' | 'amber' | 'violet' | 'slate';
 };
+type PlanCatalogSort = 'provider_name' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc';
+type PlanCatalogComposition =
+  | 'ALL'
+  | 'SOLO_INTERNET'
+  | 'INTERNET_TV'
+  | 'INTERNET_TELEFONIA'
+  | 'TRIPLE_PACK'
+  | 'SOLO_TV'
+  | 'SOLO_TELEFONIA'
+  | 'TV_TELEFONIA';
+type PlanCatalogOption<T> = {
+  label: string;
+  value: T;
+};
 type FinanceRow = CampanaGastoCampanaResumenResponse & {
   costoPorLead: string;
   costoPorLeadReal: string;
@@ -98,6 +112,8 @@ export class CommunityWorkspaceFacade {
   readonly planes = signal<PlanResponse[]>([]);
   readonly planesActivos = computed(() => this.planes().filter((plan) => plan.activo !== false));
   readonly selectedPlanCatalogProviderId = signal(0);
+  readonly selectedPlanCatalogSort = signal<PlanCatalogSort>('provider_name');
+  readonly selectedPlanCatalogComposition = signal<PlanCatalogComposition>('ALL');
   readonly planCatalogProviderFilters = computed<PlanCatalogProviderFilter[]>(() =>
     this.proveedores()
       .map((proveedor) => ({
@@ -107,9 +123,31 @@ export class CommunityWorkspaceFacade {
       }))
       .filter((proveedor) => proveedor.activo !== false || proveedor.planesCount || proveedor.adicionalesCount)
   );
+  readonly planCatalogSortOptions: PlanCatalogOption<PlanCatalogSort>[] = [
+    { label: 'Proveedor / Nombre', value: 'provider_name' },
+    { label: 'Precio menor a mayor', value: 'price_asc' },
+    { label: 'Precio mayor a menor', value: 'price_desc' },
+    { label: 'Nombre A-Z', value: 'name_asc' },
+    { label: 'Nombre Z-A', value: 'name_desc' }
+  ];
+  readonly planCatalogCompositionOptions: PlanCatalogOption<PlanCatalogComposition>[] = [
+    { label: 'Todos los combos', value: 'ALL' },
+    { label: 'Solo Internet', value: 'SOLO_INTERNET' },
+    { label: 'Internet + TV', value: 'INTERNET_TV' },
+    { label: 'Internet + Telefonia', value: 'INTERNET_TELEFONIA' },
+    { label: 'Triple pack', value: 'TRIPLE_PACK' },
+    { label: 'Solo TV', value: 'SOLO_TV' },
+    { label: 'Solo Telefonia', value: 'SOLO_TELEFONIA' },
+    { label: 'TV + Telefonia', value: 'TV_TELEFONIA' }
+  ];
   readonly filteredPlanes = computed(() => {
     const idProveedor = this.selectedPlanCatalogProviderId();
-    return idProveedor ? this.planes().filter((plan) => plan.idProveedor === idProveedor) : this.planes();
+    const composition = this.selectedPlanCatalogComposition();
+    const sort = this.selectedPlanCatalogSort();
+    const filtered = (idProveedor ? this.planes().filter((plan) => plan.idProveedor === idProveedor) : this.planes()).filter((plan) =>
+      this.matchesPlanCatalogComposition(plan, composition)
+    );
+    return [...filtered].sort((left, right) => this.comparePlanCatalogItems(left, right, sort));
   });
   readonly filteredAdicionales = computed(() => {
     const idProveedor = this.selectedPlanCatalogProviderId();
@@ -630,9 +668,39 @@ export class CommunityWorkspaceFacade {
     this.selectedPlanCatalogProviderId.set(idProveedor);
   }
 
+  selectPlanCatalogSort(sort: PlanCatalogSort): void {
+    this.selectedPlanCatalogSort.set(sort);
+  }
+
+  selectPlanCatalogComposition(composition: PlanCatalogComposition): void {
+    this.selectedPlanCatalogComposition.set(composition);
+  }
+
   planCatalogTagClass(idProveedor: number, tone: 'info' | 'success' | 'danger'): string {
     const selected = this.selectedPlanCatalogProviderId() === idProveedor ? ' plan-catalog-tag--selected' : '';
     return `plan-catalog-tag plan-catalog-tag--${tone}${selected}`;
+  }
+
+  planCatalogCompositionLabel(plan: PlanResponse): string {
+    return this.resolvePlanCatalogCompositionLabel(this.resolvePlanCatalogComposition(plan));
+  }
+
+  planCatalogCompositionSeverity(plan: PlanResponse): 'contrast' | 'info' | 'warn' | 'success' | 'danger' {
+    switch (this.resolvePlanCatalogComposition(plan)) {
+      case 'SOLO_INTERNET':
+        return 'info';
+      case 'INTERNET_TV':
+      case 'INTERNET_TELEFONIA':
+      case 'TV_TELEFONIA':
+        return 'warn';
+      case 'TRIPLE_PACK':
+        return 'success';
+      case 'SOLO_TV':
+      case 'SOLO_TELEFONIA':
+        return 'contrast';
+      default:
+        return 'contrast';
+    }
   }
 
   async submitAdditional(): Promise<void> {
@@ -1322,6 +1390,89 @@ export class CommunityWorkspaceFacade {
 
   private toDateInputValue(value: string | undefined): string {
     return value ? value.slice(0, 10) : '';
+  }
+
+  private comparePlanCatalogItems(left: PlanResponse, right: PlanResponse, sort: PlanCatalogSort): number {
+    switch (sort) {
+      case 'price_asc':
+        return (left.precio ?? Number.MAX_SAFE_INTEGER) - (right.precio ?? Number.MAX_SAFE_INTEGER) || this.compareText(left.nombre, right.nombre);
+      case 'price_desc':
+        return (right.precio ?? Number.MIN_SAFE_INTEGER) - (left.precio ?? Number.MIN_SAFE_INTEGER) || this.compareText(left.nombre, right.nombre);
+      case 'name_asc':
+        return this.compareText(left.nombre, right.nombre);
+      case 'name_desc':
+        return this.compareText(right.nombre, left.nombre);
+      case 'provider_name':
+      default:
+        return (
+          this.compareText(left.nombreProveedor, right.nombreProveedor) ||
+          this.compareText(left.nombre, right.nombre) ||
+          (left.precio ?? 0) - (right.precio ?? 0)
+        );
+    }
+  }
+
+  private matchesPlanCatalogComposition(plan: PlanResponse, composition: PlanCatalogComposition): boolean {
+    if (composition === 'ALL') {
+      return true;
+    }
+
+    return this.resolvePlanCatalogComposition(plan) === composition;
+  }
+
+  private resolvePlanCatalogComposition(plan: PlanResponse): PlanCatalogComposition {
+    const hasInternet = !!plan.internet?.velocidad;
+    const hasTelevision = !!plan.television?.nombre || !!plan.television?.cantidadCanales;
+    const hasTelefono = !!plan.telefono?.descripcion || !!plan.telefono?.minutos;
+
+    if (hasInternet && hasTelevision && hasTelefono) {
+      return 'TRIPLE_PACK';
+    }
+    if (hasInternet && hasTelevision) {
+      return 'INTERNET_TV';
+    }
+    if (hasInternet && hasTelefono) {
+      return 'INTERNET_TELEFONIA';
+    }
+    if (hasTelevision && hasTelefono) {
+      return 'TV_TELEFONIA';
+    }
+    if (hasInternet) {
+      return 'SOLO_INTERNET';
+    }
+    if (hasTelevision) {
+      return 'SOLO_TV';
+    }
+    if (hasTelefono) {
+      return 'SOLO_TELEFONIA';
+    }
+    return 'ALL';
+  }
+
+  private resolvePlanCatalogCompositionLabel(composition: PlanCatalogComposition): string {
+    switch (composition) {
+      case 'SOLO_INTERNET':
+        return 'Solo Internet';
+      case 'INTERNET_TV':
+        return 'Internet + TV';
+      case 'INTERNET_TELEFONIA':
+        return 'Internet + Telefonia';
+      case 'TRIPLE_PACK':
+        return 'Triple pack';
+      case 'SOLO_TV':
+        return 'Solo TV';
+      case 'SOLO_TELEFONIA':
+        return 'Solo Telefonia';
+      case 'TV_TELEFONIA':
+        return 'TV + Telefonia';
+      case 'ALL':
+      default:
+        return 'Sin servicios';
+    }
+  }
+
+  private compareText(left: unknown, right: unknown): number {
+    return String(left ?? '').localeCompare(String(right ?? ''), 'es', { sensitivity: 'base' });
   }
 
   private async saveAction<T>(

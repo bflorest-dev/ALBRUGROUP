@@ -406,6 +406,32 @@
                   }
                 </div>
               </div>
+              <div class="plan-catalog-toolbar" aria-label="Ordenar planes">
+                <label class="plan-catalog-toolbar__field">
+                  <span>Ordenar</span>
+                  <p-select
+                    [options]="facade.planCatalogSortOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    [ngModel]="facade.selectedPlanCatalogSort()"
+                    [ngModelOptions]="{ standalone: true }"
+                    appendTo="body"
+                    (ngModelChange)="facade.selectPlanCatalogSort($any($event))"
+                  />
+                </label>
+                <label class="plan-catalog-toolbar__field">
+                  <span>Tipo de plan</span>
+                  <p-select
+                    [options]="facade.planCatalogCompositionOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    [ngModel]="facade.selectedPlanCatalogComposition()"
+                    [ngModelOptions]="{ standalone: true }"
+                    appendTo="body"
+                    (ngModelChange)="facade.selectPlanCatalogComposition($any($event))"
+                  />
+                </label>
+              </div>
               <p-table
                 [value]="facade.filteredPlanes()"
                 [paginator]="true"
@@ -418,6 +444,7 @@
                 <ng-template #header>
                   <tr>
                     <th>Plan</th>
+                    <th>Combo</th>
                     <th>Proveedor</th>
                     <th>Zona</th>
                     <th>Precio</th>
@@ -433,14 +460,17 @@
                 <ng-template #body let-plan>
                   <tr>
                     <td><strong>{{ plan.nombre }}</strong></td>
+                    <td>
+                      <p-tag [severity]="facade.planCatalogCompositionSeverity(plan)" [value]="facade.planCatalogCompositionLabel(plan)" />
+                    </td>
                     <td>{{ display(plan.nombreProveedor) }}</td>
                     <td>{{ display(plan.nombreZona) }}</td>
                     <td>{{ money(plan.precio) }}</td>
                     <td>{{ money(plan.precioPromocional) }}</td>
                     <td>{{ plan.mesesPromocionPrecio ? (plan.mesesPromocionPrecio + 'm') : '—' }}</td>
-                    <td>{{ plan.internetVelocidad ? (plan.internetVelocidad + ' ' + (plan.internetUnidad || 'MBPS')) : '—' }}</td>
-                    <td>{{ plan.televisionNombre || (plan.televisionCanales ? (plan.televisionCanales + ' ch') : '—') }}</td>
-                    <td>{{ plan.telefonoDescripcion || (plan.telefonoMinutos ? (plan.telefonoMinutos + ' min') : '—') }}</td>
+                    <td>{{ plan.internet?.velocidad ? (plan.internet?.velocidad + ' ' + (plan.internet?.unidad || 'MBPS')) : '—' }}</td>
+                    <td>{{ plan.television?.nombre || (plan.television?.cantidadCanales ? (plan.television?.cantidadCanales + ' ch') : '—') }}</td>
+                    <td>{{ plan.telefono?.descripcion || (plan.telefono?.minutos ? (plan.telefono?.minutos + ' min') : '—') }}</td>
                     <td><p-tag [severity]="statusSeverity(plan.activo)" [value]="statusLabel(plan.activo)" /></td>
                     <td>
                       <div class="inline-action">
@@ -470,7 +500,7 @@
                   </tr>
                 </ng-template>
                 <ng-template #emptymessage>
-                  <tr><td colspan="11">No hay planes para el proveedor seleccionado.</td></tr>
+                  <tr><td colspan="12">No hay planes para el proveedor seleccionado.</td></tr>
                 </ng-template>
               </p-table>
             </p-card>
@@ -1070,35 +1100,39 @@
         <div class="plan-additionals__list">
           @for (adicional of facade.selectedPlanAdditionals(); track adicional.idAdicional) {
             <div class="plan-additional-item">
-              <strong>{{ adicional.nombre }}</strong>
-              <label>
-                <span>Incluido</span>
-                <input
-                  pInputText
-                  type="number"
-                  min="0"
-                  [value]="adicional.cantidadIncluida"
-                  (input)="facade.updatePlanAdditionalQuantity(adicional.idAdicional, 'cantidadIncluida', $any($event.target).value)"
-                />
-              </label>
-              <label class="checkbox-row">
-                <input
-                  type="checkbox"
-                  [checked]="adicional.permiteCompraAdicional"
-                  (change)="facade.updatePlanAdditionalPurchase(adicional.idAdicional, $any($event.target).checked)"
-                />
-                <span>Permite compra</span>
-              </label>
-              <label>
-                <span>Maximo compra</span>
-                <input
-                  pInputText
-                  type="number"
-                  min="0"
-                  [value]="adicional.cantidadMaximaAdicional"
-                  (input)="facade.updatePlanAdditionalQuantity(adicional.idAdicional, 'cantidadMaximaAdicional', $any($event.target).value)"
-                />
-              </label>
+              <div class="plan-additional-item__name">
+                <strong>{{ adicional.nombre }}</strong>
+              </div>
+              <div class="plan-additional-item__controls">
+                <label class="plan-additional-field">
+                  <span>Incluido</span>
+                  <input
+                    pInputText
+                    type="number"
+                    min="0"
+                    [value]="adicional.cantidadIncluida"
+                    (input)="facade.updatePlanAdditionalQuantity(adicional.idAdicional, 'cantidadIncluida', $any($event.target).value)"
+                  />
+                </label>
+                <label class="checkbox-row plan-additional-field plan-additional-field--toggle">
+                  <input
+                    type="checkbox"
+                    [checked]="adicional.permiteCompraAdicional"
+                    (change)="facade.updatePlanAdditionalPurchase(adicional.idAdicional, $any($event.target).checked)"
+                  />
+                  <span>Permite compra</span>
+                </label>
+                <label class="plan-additional-field">
+                  <span>Maximo compra</span>
+                  <input
+                    pInputText
+                    type="number"
+                    min="0"
+                    [value]="adicional.cantidadMaximaAdicional"
+                    (input)="facade.updatePlanAdditionalQuantity(adicional.idAdicional, 'cantidadMaximaAdicional', $any($event.target).value)"
+                  />
+                </label>
+              </div>
               <button pButton type="button" icon="pi pi-times" severity="secondary" size="small" text (click)="facade.removePlanAdditional(adicional.idAdicional)"></button>
             </div>
           } @empty {
@@ -1238,35 +1272,39 @@
         <div class="plan-additionals__list">
           @for (adicional of facade.selectedPlanAdditionals(); track adicional.idAdicional) {
             <div class="plan-additional-item">
-              <strong>{{ adicional.nombre }}</strong>
-              <label>
-                <span>Incluido</span>
-                <input
-                  pInputText
-                  type="number"
-                  min="0"
-                  [value]="adicional.cantidadIncluida"
-                  (input)="facade.updatePlanAdditionalQuantity(adicional.idAdicional, 'cantidadIncluida', $any($event.target).value)"
-                />
-              </label>
-              <label class="checkbox-row">
-                <input
-                  type="checkbox"
-                  [checked]="adicional.permiteCompraAdicional"
-                  (change)="facade.updatePlanAdditionalPurchase(adicional.idAdicional, $any($event.target).checked)"
-                />
-                <span>Permite compra</span>
-              </label>
-              <label>
-                <span>Maximo compra</span>
-                <input
-                  pInputText
-                  type="number"
-                  min="0"
-                  [value]="adicional.cantidadMaximaAdicional"
-                  (input)="facade.updatePlanAdditionalQuantity(adicional.idAdicional, 'cantidadMaximaAdicional', $any($event.target).value)"
-                />
-              </label>
+              <div class="plan-additional-item__name">
+                <strong>{{ adicional.nombre }}</strong>
+              </div>
+              <div class="plan-additional-item__controls">
+                <label class="plan-additional-field">
+                  <span>Incluido</span>
+                  <input
+                    pInputText
+                    type="number"
+                    min="0"
+                    [value]="adicional.cantidadIncluida"
+                    (input)="facade.updatePlanAdditionalQuantity(adicional.idAdicional, 'cantidadIncluida', $any($event.target).value)"
+                  />
+                </label>
+                <label class="checkbox-row plan-additional-field plan-additional-field--toggle">
+                  <input
+                    type="checkbox"
+                    [checked]="adicional.permiteCompraAdicional"
+                    (change)="facade.updatePlanAdditionalPurchase(adicional.idAdicional, $any($event.target).checked)"
+                  />
+                  <span>Permite compra</span>
+                </label>
+                <label class="plan-additional-field">
+                  <span>Maximo compra</span>
+                  <input
+                    pInputText
+                    type="number"
+                    min="0"
+                    [value]="adicional.cantidadMaximaAdicional"
+                    (input)="facade.updatePlanAdditionalQuantity(adicional.idAdicional, 'cantidadMaximaAdicional', $any($event.target).value)"
+                  />
+                </label>
+              </div>
               <button pButton type="button" icon="pi pi-times" severity="secondary" size="small" text (click)="facade.removePlanAdditional(adicional.idAdicional)"></button>
             </div>
           } @empty {

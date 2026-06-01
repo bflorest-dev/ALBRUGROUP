@@ -4,6 +4,7 @@
 .billing-cuts,
 .plan-additionals,
 .plan-additionals__list,
+.plan-catalog-toolbar,
 .provider-filter-bar,
 .zone-rules-list {
   display: grid;
@@ -277,10 +278,50 @@ label,
 }
 
 .plan-additional-item {
-  align-items: end;
+  align-items: center;
   display: grid;
-  gap: 0.65rem;
-  grid-template-columns: minmax(130px, 1fr) 90px 130px 110px auto;
+  gap: 0.85rem;
+  grid-template-columns: minmax(180px, 1fr) minmax(0, 2.2fr) auto;
+  padding: 0.8rem 0.9rem;
+}
+
+.plan-additional-item__name {
+  align-self: center;
+  min-width: 0;
+}
+
+.plan-additional-item__name strong {
+  color: var(--role-primary);
+  display: block;
+  line-height: 1.25;
+}
+
+.plan-additional-item__controls {
+  align-items: center;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.plan-additional-field {
+  align-items: center;
+  gap: 0.55rem;
+  grid-template-columns: max-content minmax(0, 1fr);
+}
+
+.plan-additional-field span {
+  color: #475569;
+  font-size: 0.74rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.plan-additional-field--toggle {
+  align-items: center;
+  display: inline-flex;
+  justify-content: flex-start;
+  min-height: 2.5rem;
+  padding-top: 1.15rem;
 }
 
 .checkbox-row {
@@ -297,6 +338,23 @@ label,
 }
 
 .provider-filter-bar__label {
+  color: var(--role-primary);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.plan-catalog-toolbar {
+  grid-template-columns: repeat(2, minmax(12rem, 16rem));
+  margin-bottom: 0.85rem;
+}
+
+.plan-catalog-toolbar__field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.plan-catalog-toolbar__field > span {
   color: var(--role-primary);
   font-size: 0.76rem;
   font-weight: 800;
@@ -506,9 +564,20 @@ label,
   .form-grid,
   .form-grid--three,
   .filter-grid,
+  .plan-catalog-toolbar,
   .plan-additional-item,
+  .plan-additional-item__controls,
   .zone-dialog-grid,
   .zone-rule-builder {
     grid-template-columns: 1fr;
+  }
+
+  .plan-additional-field {
+    grid-template-columns: 1fr;
+  }
+
+  .plan-additional-field--toggle {
+    min-height: auto;
+    padding-top: 0;
   }
 }
