@@ -179,9 +179,81 @@
 
 // ── Sección de credenciales expandible ───────────────────────
 .employee-card__access {
+  background: color-mix(in srgb, var(--role-accent, #1c7d62) 4%, #ffffff 96%);
   border-top: 1px solid var(--app-border-soft);
-  padding-top: 0.65rem;
   margin-top: 0.1rem;
+  padding: 0.8rem 0 0;
+  position: relative;
+}
+
+.employee-card__access::before {
+  border-style: solid;
+  border-width: 0 0.85rem 0.85rem 0;
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.employee-card__access--active::before {
+  border-color: transparent #16a34a transparent transparent;
+}
+
+.employee-card__access--inactive::before {
+  border-color: transparent #111827 transparent transparent;
+}
+
+.access-meta {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.65rem;
+}
+
+.access-password-badge {
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 700;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+}
+
+.access-password-badge i {
+  font-size: 0.72rem;
+}
+
+.access-password-badge--ready {
+  background: color-mix(in srgb, #16a34a 10%, #ffffff 90%);
+  border-color: color-mix(in srgb, #16a34a 24%, #ffffff 76%);
+  color: #166534;
+}
+
+.access-password-badge--pending {
+  background: color-mix(in srgb, #b45309 10%, #ffffff 90%);
+  border-color: color-mix(in srgb, #b45309 24%, #ffffff 76%);
+  color: #92400e;
+}
+
+.access-stack {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.access-row {
+  border: 1px solid color-mix(in srgb, var(--role-accent, #1c7d62) 14%, #e2e8f0 86%);
+  border-radius: 8px;
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.55rem 0.7rem;
+}
+
+.access-item__value {
+  color: var(--role-panel-text, #0f1f33);
+  font-size: 0.86rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .access-grid {
@@ -196,10 +268,10 @@
 }
 
 .access-item__label {
+  color: var(--role-muted, #617187);
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.05em;
-  color: var(--role-muted, #617187);
   text-transform: uppercase;
 }
 
@@ -227,12 +299,17 @@
     grid-template-columns: 1fr;
   }
 
-  .access-grid {
-    grid-template-columns: 1fr 1fr;
-  }
 }
 
 @media (max-width: 480px) {
+  .access-meta {
+    justify-content: flex-start;
+  }
+
+  .access-password-badge {
+    width: 100%;
+  }
+
   .access-grid {
     grid-template-columns: 1fr;
   }

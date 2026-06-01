@@ -167,29 +167,35 @@
                       @if (getAccessError(employee.idEmpleado)) {
                         <p-message severity="error" [text]="getAccessError(employee.idEmpleado)" />
                       } @else if (getAccess(employee.idEmpleado); as access) {
-                        <div class="access-grid">
-                          <div class="access-item">
-                            <span class="access-item__label">Username</span>
-                            <span>{{ access.username }}</span>
+                        <div
+                          class="access-body"
+                          [class.employee-card__access--active]="access.activo"
+                          [class.employee-card__access--inactive]="!access.activo"
+                        >
+                          <div class="access-meta">
+                            <span
+                              class="access-password-badge"
+                              [class.access-password-badge--ready]="access.passwordInicializada"
+                              [class.access-password-badge--pending]="!access.passwordInicializada"
+                              [title]="access.passwordInicializada ? 'Password inicializada' : 'Password pendiente'"
+                            >
+                              <i [class]="access.passwordInicializada ? 'pi pi-lock' : 'pi pi-lock-open'" aria-hidden="true"></i>
+                              <span>{{ access.passwordInicializada ? 'Clave lista' : 'Clave pendiente' }}</span>
+                            </span>
                           </div>
-                          <div class="access-item">
-                            <span class="access-item__label">Email</span>
-                            <span>{{ access.email }}</span>
-                          </div>
-                          <div class="access-item">
-                            <span class="access-item__label">Rol</span>
-                            <span>{{ toLabel(access.roles[0]) }}</span>
-                          </div>
-                          <div class="access-item">
-                            <span class="access-item__label">Estado</span>
-                            <p-tag
-                              [value]="access.activo ? 'Activo' : 'Inactivo'"
-                              [severity]="access.activo ? 'success' : 'danger'"
-                            />
-                          </div>
-                          <div class="access-item">
-                            <span class="access-item__label">Password</span>
-                            <span>{{ access.passwordInicializada ? 'Inicializada' : 'Pendiente' }}</span>
+                          <div class="access-stack">
+                            <div class="access-row">
+                              <span class="access-item__label">Username</span>
+                              <span class="access-item__value">{{ access.username }}</span>
+                            </div>
+                            <div class="access-row">
+                              <span class="access-item__label">Email</span>
+                              <span class="access-item__value">{{ access.email }}</span>
+                            </div>
+                            <div class="access-row">
+                              <span class="access-item__label">Rol</span>
+                              <span class="access-item__value">{{ toLabel(access.roles[0]) }}</span>
+                            </div>
                           </div>
                         </div>
                       }
