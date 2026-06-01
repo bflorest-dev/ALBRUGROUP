@@ -1131,6 +1131,10 @@
         <input pInputText type="text" formControlName="nombre" [placeholder]="facade.planNamePlaceholder()" />
       </label>
       <label>
+        <span>Proveedor</span>
+        <input pInputText type="text" [value]="facade.activePlanProviderName()" readonly />
+      </label>
+      <label>
         <span>Zona</span>
         <p-select formControlName="idZona" [options]="facade.zonasActivas()" optionLabel="nombre" optionValue="id" placeholder="Sin zona" appendTo="body" />
       </label>
@@ -1161,6 +1165,53 @@
         <span>Vigencia Hasta</span>
         <input pInputText type="date" formControlName="vigenciaHasta" />
       </label>
+
+      <div class="plan-section-title wide">
+        <i class="pi pi-wifi" aria-hidden="true"></i>
+        <span>Internet</span>
+      </div>
+      <label>
+        <span>Velocidad del Internet</span>
+        <input pInputText type="number" min="0" inputmode="numeric" formControlName="internetVelocidad" placeholder="200"
+               (keydown)="preventNonInteger($event)" />
+      </label>
+      <label>
+        <span>Unidad</span>
+        <p-select formControlName="internetUnidad" [options]="['MBPS', 'GBPS']" appendTo="body" />
+      </label>
+      <label>
+        <span>Tecnología</span>
+        <p-select formControlName="internetTecnologia" [options]="['FTTH', 'HFC', 'HIBRIDA']" appendTo="body" />
+      </label>
+
+      <div class="plan-section-title wide">
+        <i class="pi pi-desktop" aria-hidden="true"></i>
+        <span>Televisión</span>
+      </div>
+      <label>
+        <span>Nombre del Paquete de TV</span>
+        <input pInputText type="text" formControlName="televisionNombre" placeholder="TV Full HD" />
+      </label>
+      <label>
+        <span>Cantidad de Canales</span>
+        <input pInputText type="number" min="0" inputmode="numeric" formControlName="televisionCanales" placeholder="80"
+               (keydown)="preventNonInteger($event)" />
+      </label>
+
+      <div class="plan-section-title wide">
+        <i class="pi pi-phone" aria-hidden="true"></i>
+        <span>Telefonía</span>
+      </div>
+      <label>
+        <span>Nombre de la Telefonía</span>
+        <input pInputText type="text" formControlName="telefonoDescripcion" placeholder="Fijo ilimitado nacional" />
+      </label>
+      <label>
+        <span>Cantidad de Minutos</span>
+        <input pInputText type="number" min="0" inputmode="numeric" formControlName="telefonoMinutos" placeholder="1000"
+               (keydown)="preventNonInteger($event)" />
+      </label>
+
       <label>
         <span>Velocidad Promocional</span>
         <input pInputText type="number" min="0" inputmode="numeric" formControlName="velocidadPromocional" placeholder="400"
@@ -1171,6 +1222,58 @@
         <input pInputText type="number" min="0" inputmode="numeric" formControlName="mesesPromocionVelocidad" placeholder="3"
                (keydown)="preventNonInteger($event)" />
       </label>
+      <div class="plan-additionals wide">
+        <label>
+          <span>Adicionales disponibles</span>
+          <p-select
+            [options]="facade.availablePlanAdditionalOptions()"
+            optionLabel="nombre"
+            optionValue="id"
+            [placeholder]="facade.canSelectPlanAdditional() ? 'Seleccionar adicional del proveedor' : 'Sin adicionales para elegir'"
+            appendTo="body"
+            [disabled]="!facade.canSelectPlanAdditional()"
+            (onChange)="facade.addPlanAdditional($any($event.value))"
+          />
+        </label>
+        <div class="plan-additionals__list">
+          @for (adicional of facade.selectedPlanAdditionals(); track adicional.idAdicional) {
+            <div class="plan-additional-item">
+              <strong>{{ adicional.nombre }}</strong>
+              <label>
+                <span>Incluido</span>
+                <input
+                  pInputText
+                  type="number"
+                  min="0"
+                  [value]="adicional.cantidadIncluida"
+                  (input)="facade.updatePlanAdditionalQuantity(adicional.idAdicional, 'cantidadIncluida', $any($event.target).value)"
+                />
+              </label>
+              <label class="checkbox-row">
+                <input
+                  type="checkbox"
+                  [checked]="adicional.permiteCompraAdicional"
+                  (change)="facade.updatePlanAdditionalPurchase(adicional.idAdicional, $any($event.target).checked)"
+                />
+                <span>Permite compra</span>
+              </label>
+              <label>
+                <span>Maximo compra</span>
+                <input
+                  pInputText
+                  type="number"
+                  min="0"
+                  [value]="adicional.cantidadMaximaAdicional"
+                  (input)="facade.updatePlanAdditionalQuantity(adicional.idAdicional, 'cantidadMaximaAdicional', $any($event.target).value)"
+                />
+              </label>
+              <button pButton type="button" icon="pi pi-times" severity="secondary" size="small" text (click)="facade.removePlanAdditional(adicional.idAdicional)"></button>
+            </div>
+          } @empty {
+            <p class="helper">{{ facade.planAdditionalsHelperText() }}</p>
+          }
+        </div>
+      </div>
       @if (facade.errorMessage()) {
         <p-message class="wide" severity="error" [text]="facade.errorMessage() ?? ''" />
       }

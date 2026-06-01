@@ -154,6 +154,7 @@ export class CommunityWorkspaceFacade {
   readonly createPlanDialogOpen = signal(false);
   readonly editPlanDialogOpen = signal(false);
   readonly activePlanId = signal<number | null>(null);
+  readonly activePlanProviderName = signal('');
   readonly selectedPlanProviderId = signal(0);
   readonly selectedPlanAdditionals = signal<PlanAdditionalDraft[]>([]);
   readonly selectedPromotionProviderId = signal(0);
@@ -273,6 +274,13 @@ export class CommunityWorkspaceFacade {
     mesesPromocionPrecio: [0],
     vigenciaDesde: [''],
     vigenciaHasta: [''],
+    internetVelocidad: [0],
+    internetUnidad: ['MBPS'],
+    internetTecnologia: ['FTTH'],
+    televisionNombre: [''],
+    televisionCanales: [0],
+    telefonoMinutos: [0],
+    telefonoDescripcion: [''],
     velocidadPromocional: [0],
     mesesPromocionVelocidad: [0],
     idZona: [0]
@@ -683,6 +691,8 @@ export class CommunityWorkspaceFacade {
 
   openEditPlanDialog(plan: PlanResponse): void {
     this.activePlanId.set(plan.id);
+    this.activePlanProviderName.set(plan.nombreProveedor ?? '');
+    this.selectedPlanProviderId.set(plan.idProveedor ?? 0);
     this.editPlanForm.reset({
       nombre: plan.nombre ?? '',
       precio: plan.precio ?? 0,
@@ -690,10 +700,26 @@ export class CommunityWorkspaceFacade {
       mesesPromocionPrecio: plan.mesesPromocionPrecio ?? 0,
       vigenciaDesde: this.toDateInputValue(plan.vigenciaDesde),
       vigenciaHasta: this.toDateInputValue(plan.vigenciaHasta),
+      internetVelocidad: plan.internet?.velocidad ?? 0,
+      internetUnidad: plan.internet?.unidad ?? 'MBPS',
+      internetTecnologia: plan.internet?.tecnologia ?? 'FTTH',
+      televisionNombre: plan.television?.nombre ?? '',
+      televisionCanales: plan.television?.cantidadCanales ?? 0,
+      telefonoMinutos: plan.telefono?.minutos ?? 0,
+      telefonoDescripcion: plan.telefono?.descripcion ?? '',
       velocidadPromocional: plan.velocidadPromocional ?? 0,
       mesesPromocionVelocidad: plan.mesesPromocionVelocidad ?? 0,
       idZona: plan.idZona ?? 0
     });
+    this.selectedPlanAdditionals.set(
+      (plan.adicionales ?? []).map((adicional) => ({
+        idAdicional: adicional.idAdicional,
+        nombre: adicional.nombreAdicional ?? `Adicional ${adicional.idAdicional}`,
+        cantidadIncluida: adicional.cantidadIncluida ?? 0,
+        permiteCompraAdicional: adicional.permiteCompraAdicional ?? false,
+        cantidadMaximaAdicional: adicional.cantidadMaximaAdicional ?? 0
+      }))
+    );
     this.editPlanDialogOpen.set(true);
     this.clearMessages();
   }
@@ -701,6 +727,9 @@ export class CommunityWorkspaceFacade {
   closeEditPlanDialog(): void {
     this.editPlanDialogOpen.set(false);
     this.activePlanId.set(null);
+    this.activePlanProviderName.set('');
+    this.selectedPlanProviderId.set(0);
+    this.selectedPlanAdditionals.set([]);
   }
 
   onCreatePlanProviderChanged(): void {
@@ -1162,9 +1191,36 @@ export class CommunityWorkspaceFacade {
       mesesPromocionPrecio: raw.mesesPromocionPrecio || null,
       vigenciaDesde: raw.vigenciaDesde || null,
       vigenciaHasta: raw.vigenciaHasta || null,
+      internet: raw.internetVelocidad
+        ? {
+            velocidad: raw.internetVelocidad,
+            unidad: raw.internetUnidad,
+            tecnologia: raw.internetTecnologia
+          }
+        : null,
+      television: raw.televisionNombre
+        ? {
+            nombre: raw.televisionNombre,
+            cantidadCanales: raw.televisionCanales || 0
+          }
+        : null,
+      telefono: raw.telefonoDescripcion
+        ? {
+            minutos: raw.telefonoMinutos || 0,
+            descripcion: raw.telefonoDescripcion
+          }
+        : null,
       velocidadPromocional: raw.velocidadPromocional || null,
       mesesPromocionVelocidad: raw.mesesPromocionVelocidad || null,
-      idZona: raw.idZona || null
+      idZona: raw.idZona || null,
+      adicionales: this.selectedPlanAdditionals().length
+        ? this.selectedPlanAdditionals().map((adicional) => ({
+            idAdicional: adicional.idAdicional,
+            cantidadIncluida: adicional.cantidadIncluida,
+            permiteCompraAdicional: adicional.permiteCompraAdicional,
+            cantidadMaximaAdicional: adicional.cantidadMaximaAdicional || null
+          }))
+        : null
     });
   }
 

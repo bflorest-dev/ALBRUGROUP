@@ -128,11 +128,22 @@ public class PlanService {
     public PlanResponse actualizarPlan(Long idPlan, PlanUpdateRequest request) {
         Plan plan = planRepository.findById(idPlan)
                 .orElseThrow(() -> new NotFoundException(Plan.class, idPlan));
+        Proveedor proveedor = plan.getProveedor();
 
         mapper.updatePlan(request, plan);
+        plan.setInternet(resolverInternet(request, proveedor));
+        plan.setTelevision(resolverTelevision(request, proveedor));
+        plan.setTelefono(resolverTelefono(request, proveedor));
         plan.setZona(resolverZona(request.getIdZona()));
         validarPromocionesPlan(plan);
         normalizarVigencias(plan, OperationalDateTime.today());
+        plan.getAdicionales().clear();
+        Set<PlanAdicional> adicionales = construirPlanAdicionales(
+                plan,
+                proveedor,
+                Objects.requireNonNullElse(request.getAdicionales(), List.of())
+        );
+        plan.setAdicionales(adicionales);
         return toPlanResponse(planRepository.save(plan));
     }
 
@@ -258,6 +269,25 @@ public class PlanService {
                 });
     }
 
+    private Internet resolverInternet(PlanUpdateRequest request, Proveedor proveedor) {
+        if (request.getInternet() == null) {
+            return null;
+        }
+
+        return internetRepository.findByProveedorIdAndVelocidadAndUnidadAndTecnologiaAndActivoTrue(
+                        proveedor.getId(),
+                        request.getInternet().getVelocidad(),
+                        request.getInternet().getUnidad(),
+                        request.getInternet().getTecnologia()
+                )
+                .orElseGet(() -> {
+                    Internet internet = mapper.toEntity(request.getInternet());
+                    internet.setProveedor(proveedor);
+                    internet.setActivo(Boolean.TRUE);
+                    return internetRepository.save(internet);
+                });
+    }
+
     private Television resolverTelevision(PlanRequest request, Proveedor proveedor) {
         if (request.getTelevision() == null) {
             return null;
@@ -276,7 +306,44 @@ public class PlanService {
                 });
     }
 
+    private Television resolverTelevision(PlanUpdateRequest request, Proveedor proveedor) {
+        if (request.getTelevision() == null) {
+            return null;
+        }
+
+        return televisionRepository.findByProveedorIdAndNombreIgnoreCaseAndCantidadCanalesAndActivoTrue(
+                        proveedor.getId(),
+                        request.getTelevision().getNombre(),
+                        request.getTelevision().getCantidadCanales()
+                )
+                .orElseGet(() -> {
+                    Television television = mapper.toEntity(request.getTelevision());
+                    television.setProveedor(proveedor);
+                    television.setActivo(Boolean.TRUE);
+                    return televisionRepository.save(television);
+                });
+    }
+
     private Telefono resolverTelefono(PlanRequest request, Proveedor proveedor) {
+        TelefonoRequest telefonoRequest = request.getTelefono();
+        if (telefonoRequest == null) {
+            return null;
+        }
+
+        return telefonoRepository.findByProveedorIdAndMinutosAndDescripcionIgnoreCaseAndActivoTrue(
+                        proveedor.getId(),
+                        telefonoRequest.getMinutos(),
+                        telefonoRequest.getDescripcion()
+                )
+                .orElseGet(() -> {
+                    Telefono telefono = mapper.toEntity(telefonoRequest);
+                    telefono.setProveedor(proveedor);
+                    telefono.setActivo(Boolean.TRUE);
+                    return telefonoRepository.save(telefono);
+                });
+    }
+
+    private Telefono resolverTelefono(PlanUpdateRequest request, Proveedor proveedor) {
         TelefonoRequest telefonoRequest = request.getTelefono();
         if (telefonoRequest == null) {
             return null;

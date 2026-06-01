@@ -42,6 +42,13 @@ public interface PlanMapper {
     @Mapping(target = "activo", ignore = true)
     Plan toEntity(PlanRequest request);
 
+    @Mapping(target = "proveedor", ignore = true)
+    @Mapping(target = "internet", ignore = true)
+    @Mapping(target = "television", ignore = true)
+    @Mapping(target = "telefono", ignore = true)
+    @Mapping(target = "zona", ignore = true)
+    @Mapping(target = "adicionales", ignore = true)
+    @Mapping(target = "activo", ignore = true)
     void updatePlan(PlanUpdateRequest request, @MappingTarget Plan entity);
 
     @Mapping(target = "idProveedor", source = "proveedor.id")

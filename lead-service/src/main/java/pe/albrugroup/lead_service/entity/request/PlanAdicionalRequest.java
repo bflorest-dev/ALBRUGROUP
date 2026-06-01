@@ -10,14 +10,8 @@ import lombok.*;
 @NoArgsConstructor
 public class PlanAdicionalRequest {
 
-    @NotNull
-    private Long idAdicional;
-
-    @NotNull
-    private Integer cantidadIncluida;
-
-    @NotNull
-    private Boolean permiteCompraAdicional;
-
+    @NotNull private Long idAdicional;
+    @NotNull private Integer cantidadIncluida;
+    @NotNull private Boolean permiteCompraAdicional;
     private Integer cantidadMaximaAdicional;
 }
