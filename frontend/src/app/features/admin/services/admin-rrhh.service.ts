@@ -56,6 +56,14 @@ export class AdminRrhhService {
     return this.http.post<HorarioResponse>(this.horariosUrl, request);
   }
 
+  getHorarioVigente(empleadoId: number, fecha?: string): Observable<HorarioResponse> {
+    let params = new HttpParams();
+    if (fecha) {
+      params = params.set('fecha', fecha);
+    }
+    return this.http.get<HorarioResponse>(`${this.horariosUrl}/empleados/${empleadoId}/vigente`, { params });
+  }
+
   getEmpleados(pageNumber = 0, pageSize = 8): Observable<PageResponse<EmpleadoResponse>> {
     const params = new HttpParams()
       .set('pageNumber', pageNumber)

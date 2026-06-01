@@ -167,21 +167,18 @@
                       @if (getAccessError(employee.idEmpleado)) {
                         <p-message severity="error" [text]="getAccessError(employee.idEmpleado)" />
                       } @else if (getAccess(employee.idEmpleado); as access) {
-                        <div
-                          class="access-body"
-                          [class.employee-card__access--active]="access.activo"
-                          [class.employee-card__access--inactive]="!access.activo"
-                        >
+                        <div class="access-body">
                           <div class="access-meta">
-                            <span
-                              class="access-password-badge"
-                              [class.access-password-badge--ready]="access.passwordInicializada"
-                              [class.access-password-badge--pending]="!access.passwordInicializada"
-                              [title]="access.passwordInicializada ? 'Password inicializada' : 'Password pendiente'"
-                            >
-                              <i [class]="access.passwordInicializada ? 'pi pi-lock' : 'pi pi-lock-open'" aria-hidden="true"></i>
-                              <span>{{ access.passwordInicializada ? 'Clave lista' : 'Clave pendiente' }}</span>
-                            </span>
+                            <p-tag
+                              [value]="access.activo ? 'Activo' : 'Inactivo'"
+                              [icon]="access.activo ? 'pi pi-check-circle' : 'pi pi-ban'"
+                              [severity]="access.activo ? 'success' : 'contrast'"
+                            />
+                            <p-tag
+                              [value]="access.passwordInicializada ? 'Clave lista' : 'Clave pendiente'"
+                              [icon]="access.passwordInicializada ? 'pi pi-lock' : 'pi pi-lock-open'"
+                              [severity]="access.passwordInicializada ? 'success' : 'warn'"
+                            />
                           </div>
                           <div class="access-stack">
                             <div class="access-row">
@@ -195,6 +192,15 @@
                             <div class="access-row">
                               <span class="access-item__label">Rol</span>
                               <span class="access-item__value">{{ toLabel(access.roles[0]) }}</span>
+                            </div>
+                            <div class="access-row">
+                              <span class="access-item__label">Horario</span>
+                              <span class="access-item__value">
+                                {{ scheduleSummary(getSchedule(employee.idEmpleado)) }}
+                              </span>
+                              @if (getScheduleError(employee.idEmpleado)) {
+                                <small class="access-item__hint">{{ getScheduleError(employee.idEmpleado) }}</small>
+                              }
                             </div>
                           </div>
                         </div>

@@ -8,6 +8,7 @@ import { TagModule } from 'primeng/tag';
 import { ConnectedUserResponse } from '../../../../core/services/presence.service';
 import { UsuarioResponse } from '../../../../shared/models/auth/usuario-response';
 import { EstadoMonitorResponse } from '../../../../shared/models/schedule/cumplimiento-response';
+import { HorarioResponse } from '../../../../shared/models/schedule/horario-response';
 import { EmpleadoResponse } from '../../../../shared/models/rrhh/empleado-response';
 import { EmpleadoRolResponse } from '../../../../shared/models/rrhh/empleado-rol-response';
 import { formatLabel } from '../../../../shared/utils/display-label';
@@ -35,6 +36,9 @@ export class EmployeeAccessPanelComponent {
   @Input({ required: true }) accessByEmployeeId: Record<number, UsuarioResponse | null> = {};
   @Input({ required: true }) accessErrorByEmployeeId: Record<number, string> = {};
   @Input({ required: true }) accessLoadingByEmployeeId: Record<number, boolean> = {};
+  @Input({ required: true }) scheduleByEmployeeId: Record<number, HorarioResponse | null> = {};
+  @Input({ required: true }) scheduleErrorByEmployeeId: Record<number, string> = {};
+  @Input({ required: true }) scheduleLoadingByEmployeeId: Record<number, boolean> = {};
   @Input() employeeStateById: Record<number, EstadoMonitorResponse> = {};
   @Input() connectedUserById: Record<number, ConnectedUserResponse> = {};
   @Input() isLoadingStates = false;
@@ -70,7 +74,36 @@ export class EmployeeAccessPanelComponent {
   }
 
   protected isAccessLoading(empleadoId: number): boolean {
-    return !!this.accessLoadingByEmployeeId[empleadoId];
+    return !!this.accessLoadingByEmployeeId[empleadoId] || !!this.scheduleLoadingByEmployeeId[empleadoId];
+  }
+
+  protected getSchedule(empleadoId: number): HorarioResponse | null {
+    return this.scheduleByEmployeeId[empleadoId] ?? null;
+  }
+
+  protected getScheduleError(empleadoId: number): string {
+    return this.scheduleErrorByEmployeeId[empleadoId] ?? '';
+  }
+
+  protected scheduleSummary(horario: HorarioResponse | null): string {
+    if (!horario?.detalles?.length) {
+      return 'No disponible';
+    }
+
+    const laborables = horario.detalles.filter((detalle) => detalle.laborable);
+    if (!laborables.length) {
+      return 'Sin jornada laborable';
+    }
+
+    const descanso = horario.detalles.find((detalle) => !detalle.laborable)?.dia;
+    const rangos = [...new Set(laborables.map((detalle) => `${detalle.horaEntrada}-${detalle.horaSalida}`))];
+
+    if (rangos.length !== 1) {
+      return `Variable${descanso ? ` (${this.shortDay(descanso)})` : ''}`;
+    }
+
+    const [entrada, salida] = rangos[0].split('-');
+    return `${this.formatTime(entrada)} - ${this.formatTime(salida)}${descanso ? ` (${this.shortDay(descanso)})` : ''}`;
   }
 
   protected toLabel(value: string | null | undefined): string {
@@ -107,6 +140,36 @@ export class EmployeeAccessPanelComponent {
       case 'OCUPADO':      return 'warn';
       case 'SATURADO':     return 'danger';
       default:             return 'secondary';
+    }
+  }
+
+  private formatTime(value: string | null | undefined): string {
+    if (!value) {
+      return '--';
+    }
+
+    const [hoursRaw, minutesRaw] = value.split(':');
+    const hours = Number(hoursRaw);
+    const minutes = Number(minutesRaw);
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+      return value;
+    }
+
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const normalizedHours = hours % 12 || 12;
+    return `${normalizedHours}:${String(minutes).padStart(2, '0')} ${period}`;
+  }
+
+  private shortDay(value: string): string {
+    switch (value) {
+      case 'LUNES': return 'LUN';
+      case 'MARTES': return 'MAR';
+      case 'MIERCOLES': return 'MIE';
+      case 'JUEVES': return 'JUE';
+      case 'VIERNES': return 'VIE';
+      case 'SABADO': return 'SAB';
+      case 'DOMINGO': return 'DOM';
+      default: return value;
     }
   }
 }

@@ -183,57 +183,14 @@
   border-top: 1px solid var(--app-border-soft);
   margin-top: 0.1rem;
   padding: 0.8rem 0 0;
-  position: relative;
-}
-
-.employee-card__access::before {
-  border-style: solid;
-  border-width: 0 0.85rem 0.85rem 0;
-  content: '';
-  position: absolute;
-  right: 0;
-  top: 0;
-}
-
-.employee-card__access--active::before {
-  border-color: transparent #16a34a transparent transparent;
-}
-
-.employee-card__access--inactive::before {
-  border-color: transparent #111827 transparent transparent;
 }
 
 .access-meta {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
   justify-content: flex-end;
   margin-bottom: 0.65rem;
-}
-
-.access-password-badge {
-  align-items: center;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  display: inline-flex;
-  font-size: 0.72rem;
-  font-weight: 700;
-  gap: 0.35rem;
-  padding: 0.25rem 0.6rem;
-}
-
-.access-password-badge i {
-  font-size: 0.72rem;
-}
-
-.access-password-badge--ready {
-  background: color-mix(in srgb, #16a34a 10%, #ffffff 90%);
-  border-color: color-mix(in srgb, #16a34a 24%, #ffffff 76%);
-  color: #166534;
-}
-
-.access-password-badge--pending {
-  background: color-mix(in srgb, #b45309 10%, #ffffff 90%);
-  border-color: color-mix(in srgb, #b45309 24%, #ffffff 76%);
-  color: #92400e;
 }
 
 .access-stack {
@@ -254,6 +211,12 @@
   font-size: 0.86rem;
   font-weight: 600;
   overflow-wrap: anywhere;
+}
+
+.access-item__hint {
+  color: var(--role-muted, #617187);
+  font-size: 0.72rem;
+  line-height: 1.3;
 }
 
 .access-grid {

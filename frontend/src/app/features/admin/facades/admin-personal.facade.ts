@@ -12,6 +12,7 @@ import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-re
 import { EmpresaContratistaResponse } from '../../../shared/models/rrhh/empresa-contratista-response';
 import { RegistrarContratoRequest } from '../../../shared/models/rrhh/registrar-contrato-request';
 import { RegistrarEmpleadoRequest } from '../../../shared/models/rrhh/registrar-empleado-request';
+import { HorarioResponse } from '../../../shared/models/schedule/horario-response';
 import { RegistrarHorarioRequest } from '../../../shared/models/schedule/registrar-horario-request';
 import { ConnectedUserResponse, PresenceService } from '../../../core/services/presence.service';
 import { EstadoMonitorResponse } from '../../../shared/models/schedule/cumplimiento-response';
@@ -58,6 +59,17 @@ type AccessLookupState =
   | { status: 'idle' }
   | { status: 'loading'; requestId: number; empleadoId: number }
   | { status: 'success'; requestId: number; empleadoId: number; usuario: UsuarioResponse }
+  | { status: 'error'; requestId: number; empleadoId: number; message: string };
+
+type ScheduleLookupRequest = {
+  requestId: number;
+  empleadoId: number;
+};
+
+type ScheduleLookupState =
+  | { status: 'idle' }
+  | { status: 'loading'; requestId: number; empleadoId: number }
+  | { status: 'success'; requestId: number; empleadoId: number; horario: HorarioResponse }
   | { status: 'error'; requestId: number; empleadoId: number; message: string };
 
 type ScheduleRule = {
@@ -140,6 +152,7 @@ export class AdminPersonalFacade {
   private readonly employeeListRequest = signal<EmployeeListRequest | null>(null);
   private readonly createFlowRequest = signal<CreateFlowRequest | null>(null);
   private readonly accessLookupRequest = signal<AccessLookupRequest | null>(null);
+  private readonly scheduleLookupRequest = signal<ScheduleLookupRequest | null>(null);
 
   private readonly employeeListState = toSignal(
     toObservable(this.employeeListRequest).pipe(
@@ -248,6 +261,39 @@ export class AdminPersonalFacade {
               requestId: request.requestId,
               empleadoId: request.empleadoId,
               message: this.getErrorMessage(error, 'No se pudo consultar el acceso del empleado.')
+            })
+          )
+        )
+      )
+    ),
+    { initialValue: { status: 'idle' } }
+  );
+
+  private readonly scheduleLookupState = toSignal(
+    toObservable(this.scheduleLookupRequest).pipe(
+      filter((request): request is ScheduleLookupRequest => request !== null),
+      switchMap((request) =>
+        this.adminRrhhService.getHorarioVigente(request.empleadoId, this.getToday()).pipe(
+          timeout(this.requestTimeoutMs),
+          map(
+            (horario): ScheduleLookupState => ({
+              status: 'success',
+              requestId: request.requestId,
+              empleadoId: request.empleadoId,
+              horario
+            })
+          ),
+          startWith<ScheduleLookupState>({
+            status: 'loading',
+            requestId: request.requestId,
+            empleadoId: request.empleadoId
+          }),
+          catchError((error: HttpErrorResponse) =>
+            of<ScheduleLookupState>({
+              status: 'error',
+              requestId: request.requestId,
+              empleadoId: request.empleadoId,
+              message: this.getErrorMessage(error, 'No se pudo consultar el horario vigente del empleado.')
             })
           )
         )
@@ -448,6 +494,9 @@ export class AdminPersonalFacade {
   readonly accessByEmployeeId = signal<Record<number, UsuarioResponse | null>>({});
   readonly accessErrorByEmployeeId = signal<Record<number, string>>({});
   readonly accessLoadingByEmployeeId = signal<Record<number, boolean>>({});
+  readonly scheduleByEmployeeId = signal<Record<number, HorarioResponse | null>>({});
+  readonly scheduleErrorByEmployeeId = signal<Record<number, string>>({});
+  readonly scheduleLoadingByEmployeeId = signal<Record<number, boolean>>({});
   readonly selectedEmployeeForContractRenewal = signal<EmpleadoRolResponse | null>(null);
   readonly currentContractForRenewal = signal<ContratoResponse | null>(null);
   readonly isLoadingContractRenewal = signal(false);
@@ -606,6 +655,49 @@ export class AdminPersonalFacade {
           [state.empleadoId]: null
         }));
         this.accessErrorByEmployeeId.update((current) => ({
+          ...current,
+          [state.empleadoId]: state.message
+        }));
+      }
+    });
+
+    effect(() => {
+      const state = this.scheduleLookupState();
+
+      if (state.status === 'loading') {
+        this.scheduleLoadingByEmployeeId.update((current) => ({
+          ...current,
+          [state.empleadoId]: true
+        }));
+        this.scheduleErrorByEmployeeId.update((current) => ({
+          ...current,
+          [state.empleadoId]: ''
+        }));
+        return;
+      }
+
+      if (state.status === 'success') {
+        this.scheduleLoadingByEmployeeId.update((current) => ({
+          ...current,
+          [state.empleadoId]: false
+        }));
+        this.scheduleByEmployeeId.update((current) => ({
+          ...current,
+          [state.empleadoId]: state.horario
+        }));
+        return;
+      }
+
+      if (state.status === 'error') {
+        this.scheduleLoadingByEmployeeId.update((current) => ({
+          ...current,
+          [state.empleadoId]: false
+        }));
+        this.scheduleByEmployeeId.update((current) => ({
+          ...current,
+          [state.empleadoId]: null
+        }));
+        this.scheduleErrorByEmployeeId.update((current) => ({
           ...current,
           [state.empleadoId]: state.message
         }));
@@ -945,10 +1037,29 @@ export class AdminPersonalFacade {
         delete next[empleadoId];
         return next;
       });
+      this.scheduleByEmployeeId.update((current) => {
+        const next = { ...current };
+        delete next[empleadoId];
+        return next;
+      });
+      this.scheduleErrorByEmployeeId.update((current) => {
+        const next = { ...current };
+        delete next[empleadoId];
+        return next;
+      });
+      this.scheduleLoadingByEmployeeId.update((current) => {
+        const next = { ...current };
+        delete next[empleadoId];
+        return next;
+      });
       return;
     }
 
     this.accessLookupRequest.set({
+      requestId: this.nextRequestId++,
+      empleadoId
+    });
+    this.scheduleLookupRequest.set({
       requestId: this.nextRequestId++,
       empleadoId
     });
@@ -1388,13 +1499,24 @@ export class AdminPersonalFacade {
 
   private refreshUserAccess(empleadoId: number): void {
     if (!(empleadoId in this.accessByEmployeeId()) && !this.accessErrorByEmployeeId()[empleadoId]) {
-      return;
+      if (!(empleadoId in this.scheduleByEmployeeId()) && !this.scheduleErrorByEmployeeId()[empleadoId]) {
+        return;
+      }
     }
 
-    this.accessLookupRequest.set({
-      requestId: this.nextRequestId++,
-      empleadoId
-    });
+    if (empleadoId in this.accessByEmployeeId() || !!this.accessErrorByEmployeeId()[empleadoId]) {
+      this.accessLookupRequest.set({
+        requestId: this.nextRequestId++,
+        empleadoId
+      });
+    }
+
+    if (empleadoId in this.scheduleByEmployeeId() || !!this.scheduleErrorByEmployeeId()[empleadoId]) {
+      this.scheduleLookupRequest.set({
+        requestId: this.nextRequestId++,
+        empleadoId
+      });
+    }
   }
 
   private resetScheduleRows(): void {
