@@ -443,6 +443,17 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
 
     this.clearMessages();
 
+    // Capturamos la tipificacion ANTES de guardar: los guardados disparan
+    // notificaciones realtime que recargan el detalle y resetean este formulario.
+    // Si leyeramos los valores despues, llegarian vacios al backend.
+    const raw = this.tipificacionForm.getRawValue();
+    const tipificacionPayload = {
+      codigoTipificacion: raw.codigoTipificacion,
+      codigoSubtipificacion: raw.codigoSubtipificacion,
+      comentario: this.showComment() ? raw.comentario || null : null,
+      horaProgramada: this.requiresScheduledTime() ? raw.horaProgramada || null : null
+    };
+
     // Al cerrar una venta NO confiamos en el flag "dirty": forzamos el guardado de
     // Datos, Direccion y Oferta para garantizar que el backend tenga la informacion
     // antes de validar la preventa completa. El pre-chequeo ya verifico que esta todo.
@@ -455,15 +466,8 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       }
     }
 
-    const raw = this.tipificacionForm.getRawValue();
     await this.saveAction(
-      () =>
-        this.preventaService.tipificarLead(detail.id, {
-          codigoTipificacion: raw.codigoTipificacion,
-          codigoSubtipificacion: raw.codigoSubtipificacion,
-          comentario: this.showComment() ? raw.comentario || null : null,
-          horaProgramada: this.requiresScheduledTime() ? raw.horaProgramada || null : null
-        }),
+      () => this.preventaService.tipificarLead(detail.id, tipificacionPayload),
       'Lead tipificado.',
       async () => {
         this.closeDetail();
@@ -920,6 +924,15 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
         this.patchForms(detail);
       }
     } catch {
+      // Un fallo de sincronizacion en segundo plano (p. ej. red intermitente) NO debe
+      // cerrar el modal ni borrar el trabajo del asesor. Si tiene cambios sin guardar,
+      // conservamos detalle y formularios tal cual y solo avisamos; sigue donde estaba.
+      if (this.hasUnsavedModalChanges()) {
+        this.errorMessage.set(
+          'No pudimos sincronizar este lead en segundo plano. Tus datos siguen aqui; continua y guarda normalmente.'
+        );
+        return;
+      }
       this.detail.set(null);
       this.selectedLeadId.set(null);
       this.isManagingLead.set(false);
@@ -1184,6 +1197,22 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   /** Elimina caracteres no numericos y limita la longitud del control de formulario. */
+  /** Maxima cantidad de digitos del documento del titular del servicio segun su tipo. */
+  protected documentoServicioMaxLength(): number {
+    switch (this.datosForm.controls.tipoDocumento.value) {
+      case 'DNI': return 8;
+      case 'RUC': return 11;
+      case 'CE': return 12;
+      default: return 12;
+    }
+  }
+
+  /** Al cambiar el tipo de documento, recorta el numero al nuevo limite. */
+  protected onTipoDocumentoChanged(): void {
+    const control = this.datosForm.controls.numeroDocumentoTitularServicio;
+    this.setNumericDigits(control, control.value, this.documentoServicioMaxLength());
+  }
+
   protected setNumericDigits(control: AbstractControl | null, value: string, maxLength: number): void {
     if (!control) return;
     const normalized = value.replace(/\D/g, '').slice(0, maxLength);

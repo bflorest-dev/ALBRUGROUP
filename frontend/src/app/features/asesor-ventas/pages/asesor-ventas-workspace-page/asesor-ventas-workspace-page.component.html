@@ -300,7 +300,13 @@
               <form class="form-grid" [formGroup]="datosForm">
                 <label>
                   <span>Documento</span>
-                  <p-select formControlName="tipoDocumento" [options]="tipoDocumentoOptions" placeholder="Seleccionar" appendTo="body" />
+                  <p-select
+                    formControlName="tipoDocumento"
+                    [options]="tipoDocumentoOptions"
+                    placeholder="Seleccionar"
+                    appendTo="body"
+                    (onChange)="onTipoDocumentoChanged()"
+                  />
                 </label>
                 <label>
                   <span>Numero de Documento</span>
@@ -309,7 +315,7 @@
                     type="text"
                     inputmode="numeric"
                     formControlName="numeroDocumentoTitularServicio"
-                    (input)="setNumericDigits(datosForm.controls.numeroDocumentoTitularServicio, $any($event.target).value, 15)"
+                    (input)="setNumericDigits(datosForm.controls.numeroDocumentoTitularServicio, $any($event.target).value, documentoServicioMaxLength())"
                   />
                 </label>
                 <label>
@@ -350,7 +356,13 @@
                       aria-hidden="true"
                     ></i>
                   </span>
-                  <input pInputText type="text" formControlName="ubigeoNacimiento" />
+                  <input
+                    pInputText
+                    type="text"
+                    inputmode="numeric"
+                    formControlName="ubigeoNacimiento"
+                    (input)="setNumericDigits(datosForm.controls.ubigeoNacimiento, $any($event.target).value, 6)"
+                  />
                 </label>
                 <label>
                   <span>Numero de Documento del Titular del Celular</span>
@@ -359,7 +371,7 @@
                     type="text"
                     inputmode="numeric"
                     formControlName="numeroDocumentoTitularCelularRegistro"
-                    (input)="setNumericDigits(datosForm.controls.numeroDocumentoTitularCelularRegistro, $any($event.target).value, 15)"
+                    (input)="setNumericDigits(datosForm.controls.numeroDocumentoTitularCelularRegistro, $any($event.target).value, 8)"
                   />
                 </label>
                 <label>
