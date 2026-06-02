@@ -59,6 +59,7 @@ export class PrivateLayoutComponent {
   private readonly asesorVentasState = inject(AsesorVentasWorkspaceStateService);
   private readonly sessionService = inject(SessionService);
   protected readonly profileMenuOpen = signal(false);
+  protected readonly mobileMenuOpen = signal(false);
   protected readonly attendanceErrorMessage = signal('');
   private attendanceInitialized = false;
   protected readonly session = this.sessionService.session;
@@ -210,8 +211,17 @@ export class PrivateLayoutComponent {
     this.profileMenuOpen.update((value) => !value);
   }
 
+  protected toggleMobileMenu(): void {
+    this.mobileMenuOpen.update((value) => !value);
+  }
+
+  protected closeMobileMenu(): void {
+    this.mobileMenuOpen.set(false);
+  }
+
   protected async logout(): Promise<void> {
     this.profileMenuOpen.set(false);
+    this.mobileMenuOpen.set(false);
     await this.authSessionService.logout();
   }
 }

@@ -15,15 +15,27 @@
           hidden
           (change)="facade.uploadMasivoExcel($event)"
         />
-        <button
-          pButton
-          type="button"
-          icon="pi pi-users"
-          label="Asesores"
-          severity="secondary"
-          [disabled]="!facade.canDisplayOperationalData()"
-          (click)="facade.toggleAdvisorsPanel()"
-        ></button>
+        <span class="advisors-trigger">
+          @if (facade.abandonadosCount() > 0) {
+            <span
+              class="advisors-trigger__alert"
+              title="Hay leads sin atender de asesores desconectados"
+              aria-label="Leads sin atender"
+            >
+              <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+              {{ facade.abandonadosCount() }}
+            </span>
+          }
+          <button
+            pButton
+            type="button"
+            icon="pi pi-users"
+            label="Asesores"
+            [severity]="facade.abandonadosCount() > 0 ? 'warn' : 'secondary'"
+            [disabled]="!facade.canDisplayOperationalData()"
+            (click)="facade.toggleAdvisorsPanel()"
+          ></button>
+        </span>
         @if (facade.section() === 'plataforma') {
           <button
             pButton
@@ -641,13 +653,19 @@
     </div>
 
     <div class="advisor-list">
-      @for (advisor of facade.advisors(); track advisor.empleadoId) {
-        <article class="advisor-card">
+      @for (advisor of facade.advisorsView(); track advisor.empleadoId) {
+        <article class="advisor-card" [class.advisor-card--abandono]="advisor.esAbandonador">
           <span class="advisor-card__dot {{ facade.advisorDotClass(advisor) }}"></span>
-          <div>
-            <div style="align-items: baseline; display: flex; flex-wrap: wrap; gap: 0.45rem; justify-content: space-between;">
+          <div class="advisor-card__body">
+            <div class="advisor-card__name-row">
               <strong>{{ advisor.nombreCompleto | uppercase }}</strong>
-              <small style="margin: 0;">En horario de Gestion</small>
+              @if (advisor.esAbandonador) {
+                <p-tag
+                  severity="danger"
+                  icon="pi pi-exclamation-triangle"
+                  [value]="advisor.leadsPendientes + ' sin atender'"
+                />
+              }
             </div>
             <div class="advisor-card__tags">
               <p-tag
@@ -659,6 +677,19 @@
                 [value]="facade.display(advisor.disponibilidad)"
               />
             </div>
+            @if (advisor.esAbandonador) {
+              <p class="advisor-card__warning">Se desconectó dejando leads sin gestionar.</p>
+              <button
+                pButton
+                type="button"
+                size="small"
+                severity="danger"
+                [outlined]="true"
+                icon="pi pi-inbox"
+                label="Ver leads"
+                (click)="facade.openAbandonedLeads(advisor.empleadoId)"
+              ></button>
+            }
           </div>
         </article>
       } @empty {
@@ -666,6 +697,71 @@
       }
     </div>
   </p-drawer>
+
+  <p-dialog
+    [header]="facade.abandonedTargetGroup() ? 'Leads sin atender — ' + (facade.abandonedTargetGroup()!.nombreAsesor | uppercase) : 'Leads sin atender'"
+    [visible]="facade.abandonedTargetId() !== null"
+    (visibleChange)="!$event && facade.closeAbandonedLeads()"
+    [modal]="true"
+    [draggable]="false"
+    appendTo="body"
+    styleClass="gtr-dialog gtr-dialog--abandono"
+  >
+    @if (facade.abandonedTargetGroup(); as grupo) {
+      <div class="abandono-dialog">
+        <p class="helper">
+          Este asesor se desconectó con leads pendientes. Selecciona los leads y reasígnalos a un asesor disponible,
+          o cierra para esperar a que vuelva a conectarse.
+        </p>
+
+        <div class="abandono-list">
+          @for (lead of grupo.leads; track lead.id) {
+            <label class="abandono-item">
+              <input
+                type="checkbox"
+                [checked]="facade.isAbandonedLeadSelected(lead.id)"
+                (change)="facade.toggleAbandonedLead(lead.id, $any($event.target).checked)"
+              />
+              <strong>{{ lead.prefijo }} {{ lead.lead }}</strong>
+              <p-tag [severity]="estadoSeverity(lead.estadoSeguimiento)" [value]="facade.display(lead.estadoSeguimiento)" />
+            </label>
+          }
+        </div>
+
+        <label class="abandono-target">
+          <span>Reasignar a</span>
+          <p-select
+            [options]="facade.availableAdvisorsForReassign()"
+            optionLabel="nombreCompleto"
+            optionValue="empleadoId"
+            placeholder="Selecciona un asesor disponible"
+            appendTo="body"
+            [ngModel]="facade.abandonedReassignTargetId()"
+            (ngModelChange)="facade.abandonedReassignTargetId.set($event)"
+          />
+        </label>
+
+        <div class="dialog-actions">
+          <button
+            pButton
+            type="button"
+            severity="secondary"
+            [outlined]="true"
+            label="Cerrar"
+            (click)="facade.closeAbandonedLeads()"
+          ></button>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-send"
+            label="Reasignar"
+            [loading]="facade.isSaving()"
+            (click)="facade.reasignarAbandonados()"
+          ></button>
+        </div>
+      </div>
+    }
+  </p-dialog>
 
   <p-dialog
     header="Resultado de carga masiva"

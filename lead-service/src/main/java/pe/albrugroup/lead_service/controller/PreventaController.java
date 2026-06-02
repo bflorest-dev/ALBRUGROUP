@@ -61,6 +61,11 @@ public class PreventaController {
         var leads = leadService.listarBandejaGtr(fecha, lead, pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
+    // 2.0.1. Leads pendientes agrupados por asesor (para detectar abandonados cuando se desconectan)
+    @GetMapping("/gtr/leads-pendientes-asesor") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
+    public ResponseEntity<List<AsesorLeadsPendientesResponse>> listarLeadsPendientesPorAsesor() {
+        return ResponseEntity.status(HttpStatus.OK).body(leadService.listarLeadsPendientesPorAsesor());
+    }
     // 2.1. Metricas acumuladas del dia para la operacion GTR
     @GetMapping("/gtr/metricas") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
     public ResponseEntity<LeadGtrMetricasResponse> obtenerMetricasGtr(

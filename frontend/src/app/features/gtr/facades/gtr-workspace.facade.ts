@@ -16,6 +16,7 @@ import { PresenceRealtimeService } from '../../../core/services/presence-realtim
 import { UsuarioResponse } from '../../../shared/models/auth/usuario-response';
 import { PresenceRealtimeEvent } from '../../../shared/models/gateway/presence-realtime-event';
 import {
+  AsesorLeadsPendientesResponse,
   CampanaResponse,
   Etapa,
   EventoResponse,
@@ -73,6 +74,12 @@ type AdvisorOption = {
   estadoSchedule?: string | null;
   esperadoHoy?: boolean;
   lastSeen?: string | null;
+};
+
+/** Asesor enriquecido con sus leads pendientes y si dejó leads abandonados (desconectado con pendientes). */
+type AdvisorView = AdvisorOption & {
+  leadsPendientes: number;
+  esAbandonador: boolean;
 };
 
 type PendingReassignment = {
@@ -172,6 +179,14 @@ export class GtrWorkspaceFacade {
   );
   readonly selectedIds = signal<Set<number>>(new Set());
   readonly advisors = signal<AdvisorOption[]>([]);
+  /** Leads que siguen en manos de cada asesor (ASIGNADO/EN_GESTION en PREVENTA). */
+  readonly pendientesPorAsesor = signal<AsesorLeadsPendientesResponse[]>([]);
+  /** Modal de leads abandonados: id del asesor cuyo listado esta abierto. */
+  readonly abandonedTargetId = signal<number | null>(null);
+  /** Asesor destino elegido para reasignar los leads abandonados. */
+  readonly abandonedReassignTargetId = signal<number | null>(null);
+  /** Leads abandonados seleccionados para reasignar. */
+  readonly abandonedSelectedLeadIds = signal<Set<number>>(new Set());
   readonly campanas = signal<CampanaResponse[]>([]);
   readonly catalogoTipificaciones = signal<SelectOption<number>[]>([]);
   readonly catalogoSubtipificaciones = signal<SubtipificacionSelectOption[]>([]);
@@ -183,6 +198,41 @@ export class GtrWorkspaceFacade {
   readonly baseOptions = ['WHATSAPP', 'MESSENGER', 'RECONTACTO', 'PREDICTIVO', 'REFERIDO', 'MASIVO'];
   readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
+
+  /**
+   * Asesores enriquecidos con sus leads pendientes y ordenados con los "abandonadores"
+   * (desconectados con leads sin atender) arriba. Computed: referencia estable para PrimeNG/OnPush.
+   */
+  readonly advisorsView = computed<AdvisorView[]>(() => {
+    const pendientes = new Map(this.pendientesPorAsesor().map((grupo) => [grupo.idAsesor, grupo.total]));
+    return this.advisors()
+      .map((advisor) => {
+        const leadsPendientes = pendientes.get(advisor.empleadoId) ?? 0;
+        return { ...advisor, leadsPendientes, esAbandonador: !advisor.connected && leadsPendientes > 0 };
+      })
+      .sort(
+        (left, right) =>
+          Number(right.esAbandonador) - Number(left.esAbandonador) ||
+          Number(right.operativo) - Number(left.operativo) ||
+          Number(right.connected) - Number(left.connected) ||
+          left.nombreCompleto.localeCompare(right.nombreCompleto)
+      );
+  });
+  /** Total de leads abandonados (de asesores desconectados) — alimenta el aviso del boton Asesores. */
+  readonly abandonadosCount = computed(() =>
+    this.advisorsView()
+      .filter((advisor) => advisor.esAbandonador)
+      .reduce((total, advisor) => total + advisor.leadsPendientes, 0)
+  );
+  /** Grupo de leads del asesor cuyo modal de abandonados esta abierto. */
+  readonly abandonedTargetGroup = computed<AsesorLeadsPendientesResponse | null>(() => {
+    const id = this.abandonedTargetId();
+    return id === null ? null : this.pendientesPorAsesor().find((grupo) => grupo.idAsesor === id) ?? null;
+  });
+  /** Asesores disponibles (conectados) para recibir una reasignacion. */
+  readonly availableAdvisorsForReassign = computed(() =>
+    this.advisors().filter((advisor) => advisor.connected)
+  );
 
   readonly intakeForm = this.fb.group({
     prefijo: ['+51', [Validators.required, Validators.pattern(/^\+\d{2,3}$/)]],
@@ -447,6 +497,7 @@ export class GtrWorkspaceFacade {
     try {
       await Promise.all([
         this.runInitialLoad('asesores', () => this.refreshAdvisors(), errors),
+        this.runInitialLoad('leads pendientes', () => this.refreshPendientes(), errors),
         this.runInitialLoad('campanas', () => this.refreshCampanas(), errors),
         ...sectionLoads.map(([label, load]) => this.runInitialLoad(label, load, errors))
       ]);
@@ -876,6 +927,95 @@ export class GtrWorkspaceFacade {
     } finally {
       this.isSaving.set(false);
     }
+  }
+
+  async refreshPendientes(): Promise<void> {
+    const data = await firstValueFrom(this.preventaService.listarLeadsPendientesPorAsesor());
+    this.pendientesPorAsesor.set(data);
+  }
+
+  openAbandonedLeads(idAsesor: number): void {
+    this.abandonedTargetId.set(idAsesor);
+    const grupo = this.pendientesPorAsesor().find((item) => item.idAsesor === idAsesor);
+    this.abandonedSelectedLeadIds.set(new Set(grupo?.leads.map((lead) => lead.id) ?? []));
+    this.abandonedReassignTargetId.set(null);
+    this.clearMessages();
+  }
+
+  closeAbandonedLeads(): void {
+    this.abandonedTargetId.set(null);
+    this.abandonedSelectedLeadIds.set(new Set());
+    this.abandonedReassignTargetId.set(null);
+  }
+
+  isAbandonedLeadSelected(idLead: number): boolean {
+    return this.abandonedSelectedLeadIds().has(idLead);
+  }
+
+  toggleAbandonedLead(idLead: number, checked: boolean): void {
+    this.abandonedSelectedLeadIds.update((current) => {
+      const next = new Set(current);
+      if (checked) {
+        next.add(idLead);
+      } else {
+        next.delete(idLead);
+      }
+      return next;
+    });
+  }
+
+  /** Reasigna los leads abandonados seleccionados a un asesor disponible. */
+  async reasignarAbandonados(): Promise<void> {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
+    const grupo = this.abandonedTargetGroup();
+    const targetId = this.abandonedReassignTargetId();
+    const idsLead = [...this.abandonedSelectedLeadIds()];
+    if (!grupo || !targetId || idsLead.length === 0) {
+      this.errorMessage.set('Selecciona un asesor destino y al menos un lead.');
+      return;
+    }
+    const target = this.advisors().find((advisor) => advisor.empleadoId === targetId);
+    if (!target) {
+      this.errorMessage.set('El asesor destino ya no esta disponible.');
+      return;
+    }
+    if (!(await this.ensureAdvisorConnected(target))) {
+      return;
+    }
+
+    this.isSaving.set(true);
+    this.clearMessages();
+    let asignados = 0;
+    let fallidos = 0;
+    for (const idLead of idsLead) {
+      try {
+        await firstValueFrom(
+          this.preventaService.asignarLead(idLead, {
+            idAsesorAsignado: target.empleadoId,
+            nombreAsesorAsignado: target.nombreCompleto,
+            confirmarReasignacion: true,
+            confirmarGestionPrevia: true
+          })
+        );
+        asignados++;
+      } catch {
+        fallidos++;
+      }
+    }
+    this.isSaving.set(false);
+
+    if (asignados > 0) {
+      this.successMessage.set(
+        `Reasignados ${asignados} lead(s) a ${target.nombreCompleto}${fallidos ? `. ${fallidos} no se pudieron reasignar.` : '.'}`
+      );
+    } else {
+      this.errorMessage.set('No se pudo reasignar ningun lead. Intenta de nuevo.');
+    }
+    this.closeAbandonedLeads();
+    await this.refreshPendientes();
+    await this.reconcile();
   }
 
   async refreshAdvisors(): Promise<void> {
@@ -1404,7 +1544,8 @@ export class GtrWorkspaceFacade {
         section === 'plataforma' ? this.refreshMetrics() : Promise.resolve(),
         section === 'agendados' ? this.refreshAgendados(true) : Promise.resolve(),
         section === 'historicos' && this.masivoSearched() ? this.refreshMasivos() : Promise.resolve(),
-        this.refreshAdvisors()
+        this.refreshAdvisors(),
+        this.refreshPendientes()
       ]);
     } finally {
       this.isReconciling.set(false);

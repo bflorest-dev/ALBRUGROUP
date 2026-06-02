@@ -345,4 +345,26 @@
   :host ::ng-deep .personal-review-dialog {
     width: min(100vw - 1rem, 34rem);
   }
+
+  :host ::ng-deep {
+    .personal-stepper .p-stepper,
+    .personal-stepper .p-stepitem,
+    .personal-stepper .p-steppanel,
+    .personal-stepper .p-steppanel-content {
+      max-width: 100%;
+      min-width: 0;
+      overflow-x: hidden;
+    }
+
+    .personal-stepper .p-step-title {
+      white-space: normal;
+    }
+
+    .field--time .p-datepicker,
+    .field--time .p-inputtext,
+    .contract-end-toggle,
+    .compensable-toggle {
+      width: 100%;
+    }
+  }
 }

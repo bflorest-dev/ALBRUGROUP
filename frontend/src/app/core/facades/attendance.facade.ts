@@ -121,6 +121,11 @@ export class AttendanceFacade {
   );
 
   readonly attendanceDetail = signal<DetalleAsistenciaResponse | null>(null);
+  /**
+   * Indica que el asesor esta gestionando un lead. Mientras sea true se conserva la presencia
+   * aunque su horario haya terminado (gracia para terminar el lead en gestion antes de cerrar turno).
+   */
+  private readonly managingLeadActive = signal(false);
   readonly rawStatus = computed<EstadoAsistencia>(
     () => this.attendanceDetail()?.estadoActual ?? 'OFFLINE'
   );
@@ -306,7 +311,20 @@ export class AttendanceFacade {
   }
 
   private shouldHavePresence(detail: DetalleAsistenciaResponse | null): boolean {
-    return Boolean(detail?.operativo);
+    return Boolean(detail?.operativo) || this.managingLeadActive();
+  }
+
+  /**
+   * El workspace del asesor informa si esta gestionando un lead. Si lo activa estando fuera de
+   * horario, se reestablece la presencia para que pueda terminar; al desactivarlo se vuelve a
+   * sincronizar (se va OFFLINE si su horario ya termino).
+   */
+  setManagingLeadActive(active: boolean): void {
+    if (this.managingLeadActive() === active) {
+      return;
+    }
+    this.managingLeadActive.set(active);
+    void this.syncPresence(this.attendanceDetail());
   }
 
   private async syncSalesAdvisorDisponibilidad(status: EstadoAsistencia): Promise<void> {

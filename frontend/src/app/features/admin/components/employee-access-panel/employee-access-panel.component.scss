@@ -104,6 +104,10 @@
   justify-content: flex-end;
 }
 
+.employee-mobile-list {
+  display: none;
+}
+
 // ── Dot de estado ────────────────────────────────────────────
 .employee-dot {
   width: 10px;
@@ -130,6 +134,12 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+}
+
+.employee-detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .employee-detail__loading {
@@ -228,6 +238,38 @@
   .employee-detail-dialog {
     width: min(34rem, calc(100vw - 1rem));
   }
+
+  .baja-action-button.p-button {
+    background: #050505;
+    border-color: #050505;
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(5, 5, 5, 0.14);
+  }
+
+  .baja-action-button.p-button:not(:disabled):hover,
+  .baja-action-button.p-button:not(:disabled):focus-visible {
+    background: #171717;
+    border-color: #171717;
+    color: #ffffff;
+  }
+
+  .baja-action-button.p-button:disabled {
+    background: #262626;
+    border-color: #262626;
+    color: rgba(255, 255, 255, 0.78);
+  }
+
+  .baja-action-button.p-button .p-button-icon,
+  .baja-action-button.p-button .p-button-label,
+  .baja-action-button.p-button .p-button-loading-icon {
+    color: #ffffff;
+  }
+
+  .baja-action-button--icon.p-button {
+    height: 2rem;
+    padding: 0;
+    width: 2rem;
+  }
 }
 
 // ── Responsive ───────────────────────────────────────────────
@@ -251,6 +293,52 @@
 
   :host ::ng-deep .admin-panel__header-actions .p-button {
     flex: 1 1 12rem;
+  }
+
+  :host ::ng-deep .employee-desktop-table {
+    display: none;
+  }
+
+  .employee-mobile-list {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .employee-mobile-card {
+    background: #ffffff;
+    border: 1px solid color-mix(in srgb, var(--role-accent, #1c7d62) 14%, #e2e8f0 86%);
+    border-radius: 8px;
+    cursor: pointer;
+    display: grid;
+    gap: 0.7rem;
+    padding: 0.8rem;
+    position: relative;
+  }
+
+  .employee-mobile-card header {
+    align-items: flex-start;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    justify-content: space-between;
+    padding-right: 1.35rem;
+  }
+
+  .employee-mobile-actions {
+    justify-content: flex-start;
+  }
+
+  .employee-mobile-card__hint {
+    color: var(--role-muted, #617187);
+    position: absolute;
+    right: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .employee-detail__actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -281,6 +369,10 @@
 
   .baja-dialog__actions {
     flex-direction: column;
+  }
+
+  .employee-detail__actions {
+    grid-template-columns: 1fr;
   }
 }
 

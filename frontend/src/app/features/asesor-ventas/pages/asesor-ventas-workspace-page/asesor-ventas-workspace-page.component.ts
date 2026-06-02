@@ -17,6 +17,7 @@ import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { TooltipModule } from 'primeng/tooltip';
+import { AttendanceFacade } from '../../../../core/facades/attendance.facade';
 import { AsesorVentasWorkspaceStateService } from '../../../../core/services/asesor-ventas-workspace-state.service';
 import { BrowserSessionService } from '../../../../core/services/browser-session.service';
 import { OperationalGateService } from '../../../../core/services/operational-gate.service';
@@ -79,6 +80,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   private readonly browserSessionService = inject(BrowserSessionService);
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly operationalGateService = inject(OperationalGateService);
+  private readonly attendanceFacade = inject(AttendanceFacade);
   private readonly presenceService = inject(PresenceService);
   private readonly sessionService = inject(SessionService);
   private readonly workspaceState = inject(AsesorVentasWorkspaceStateService);
@@ -224,6 +226,14 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly hasUnsavedModalChanges = computed(() => this.hasUnsavedDataChanges() || this.tipificacionForm.dirty);
   protected readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   protected readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
+  /** El horario termino pero el asesor sigue con un lead en gestion: puede terminarlo (gracia de cierre). */
+  protected readonly wrapUpActive = computed(
+    () => this.operationalGateService.currentStatus() === 'OFFLINE' && this.isManagingLead()
+  );
+  /** Permite actuar sobre el lead que se esta gestionando aunque el horario haya terminado. */
+  protected readonly canFinishManagedLead = computed(
+    () => this.canMutateOperationalData() || this.isManagingLead()
+  );
 
 
   constructor() {
@@ -233,6 +243,12 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       this.isManagingLead();
       void this.syncDisponibilidadOperativa();
       if (status === 'OFFLINE') {
+        // Gracia de cierre: si su horario termino pero esta gestionando un lead, NO limpiar la
+        // bandeja ni cerrar el modal; debe poder terminar ese lead antes de cerrar su turno.
+        if (this.isManagingLead()) {
+          this.lastAttendanceStatus = status;
+          return;
+        }
         this.clearBoardForOffline();
         this.lastAttendanceStatus = status;
         return;
@@ -243,6 +259,12 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
         void this.refreshPage(true).catch(() => undefined);
       }
       this.lastAttendanceStatus = status;
+    });
+
+    // Mientras el asesor gestiona un lead, conservar su presencia aunque su horario termine,
+    // para que pueda terminarlo antes de cerrar turno (y el GTR no lo marque como abandonador aun).
+    effect(() => {
+      this.attendanceFacade.setManagingLeadActive(this.isManagingLead());
     });
   }
 
@@ -419,10 +441,13 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   protected async tipificar(): Promise<void> {
-    if (!this.canMutateOperationalData()) {
+    if (!this.canFinishManagedLead()) {
       this.errorMessage.set('Marca ONLINE para realizar esta accion.');
       return;
     }
+    // Si el horario ya termino y esta cerrando su ultimo lead en gestion, al terminar se
+    // registra su salida automaticamente (cierre de turno).
+    const wasWrapUp = this.wrapUpActive();
     const detail = this.detail();
     if (!detail || this.tipificacionForm.invalid) {
       this.errorMessage.set('Selecciona tipificacion y subtipificacion.');
@@ -471,6 +496,11 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       'Lead tipificado.',
       async () => {
         this.closeDetail();
+        if (wasWrapUp) {
+          // Termino su lead en gestion fuera de horario: cerrar turno (registrar salida).
+          this.attendanceFacade.submitAction('REGISTRAR_SALIDA');
+          this.successMessage.set('Lead tipificado. Registramos tu salida y cerramos tu turno.');
+        }
         await this.reconcile(detail.id);
       }
     );
@@ -1139,7 +1169,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private async saveAction(action: () => import('rxjs').Observable<void>, successMessage: string, afterSuccess: () => Promise<void>): Promise<void> {
-    if (!this.canMutateOperationalData()) {
+    if (!this.canFinishManagedLead()) {
       this.errorMessage.set('Marca ONLINE para realizar esta accion.');
       return;
     }

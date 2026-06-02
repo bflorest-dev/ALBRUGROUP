@@ -56,7 +56,7 @@
     </p-card>
   </section>
 
-  <p-card styleClass="community-table-card">
+  <p-card styleClass="community-table-card finance-desktop-table">
     <ng-template #title>Estado del dia por campana</ng-template>
     <p-table
       [value]="dailyRows()"
@@ -115,6 +115,45 @@
       </ng-template>
     </p-table>
   </p-card>
+
+  <p-card styleClass="community-table-card finance-mobile-card">
+    <ng-template #title>Estado del dia por campana</ng-template>
+    <div class="finance-mobile-list">
+      @for (row of dailyRows(); track row.idCampana) {
+        <article class="finance-mobile-item">
+          <header>
+            <strong>{{ row.nombreCampana }}</strong>
+            <p-tag severity="success" [value]="display(row.ventasCerradas) + ' ventas'" />
+          </header>
+          <div class="finance-mobile-stack">
+            <span>
+              <small>Gasto</small>
+              <b>{{ money(row.costoTotal) }}</b>
+            </span>
+            <span>
+              <small>Costo venta</small>
+              <b>{{ row.costoPorVenta }}</b>
+            </span>
+            <span>
+              <small>Leads</small>
+              <b>{{ display(row.leads) }}</b>
+            </span>
+            <span>
+              <small>Leads reales</small>
+              <b>{{ display(row.leadsReales) }}</b>
+            </span>
+            <span>
+              <small>Conversion</small>
+              <b>{{ row.conversionLeads }} / Real {{ row.conversionLeadsReales }}</b>
+            </span>
+          </div>
+          <button pButton type="button" icon="pi pi-list" label="Historico" size="small" severity="secondary" (click)="openSnapshots.emit(row)"></button>
+        </article>
+      } @empty {
+        <p>No hay registros financieros para el dia.</p>
+      }
+    </div>
+  </p-card>
 </section>
 
 @if (allowExpenseRegistration() && expenseForm()) {
@@ -166,7 +205,7 @@
     </div>
   </ng-template>
 
-  <div class="finance-snapshots-table-wrap">
+  <div class="finance-snapshots-table-wrap finance-desktop-table">
     <p-table
       [value]="snapshotRows()"
       [loading]="isLoadingSnapshots()"
@@ -222,5 +261,46 @@
         </tr>
       </ng-template>
     </p-table>
+  </div>
+
+  <div class="finance-mobile-list finance-mobile-snapshots">
+    @for (row of snapshotRows(); track row.ultimoRegistroAt) {
+      <article class="finance-mobile-item">
+        <header>
+          <strong>{{ dateTime(row.ultimoRegistroAt) }}</strong>
+          <p-tag severity="success" [value]="display(row.ventasCerradas) + ' ventas'" />
+        </header>
+        <div class="finance-mobile-stack">
+          <span>
+            <small>Gasto</small>
+            <b>{{ money(row.costoTotal) }}</b>
+          </span>
+          <span>
+            <small>Costo venta</small>
+            <b>{{ row.costoPorVenta }}</b>
+          </span>
+          <span>
+            <small>Leads</small>
+            <b>
+              {{ display(row.leads) }}
+              @if (deltaBadge(row.deltaLeads); as deltaLeads) {
+                <em>{{ deltaLeads }}</em>
+              }
+            </b>
+          </span>
+          <span>
+            <small>Reales</small>
+            <b>
+              {{ display(row.leadsReales) }}
+              @if (deltaBadge(row.deltaLeadsReales); as deltaLeadsReales) {
+                <em>{{ deltaLeadsReales }}</em>
+              }
+            </b>
+          </span>
+        </div>
+      </article>
+    } @empty {
+      <p>No hay historico de registros para la campaña seleccionada.</p>
+    }
   </div>
 </p-drawer>

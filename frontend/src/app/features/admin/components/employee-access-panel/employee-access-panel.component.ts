@@ -172,14 +172,7 @@ export class EmployeeAccessPanelComponent {
   }
 
   protected dotClass(empleadoId: number): string {
-    const state = this.getAttendanceState(empleadoId)?.toUpperCase();
-    switch (state) {
-      case 'ONLINE':       return 'employee-dot dot--online';
-      case 'ALMUERZO':     return 'employee-dot dot--almuerzo';
-      case 'SERVICIOS':    return 'employee-dot dot--servicios';
-      case 'CAPACITACION': return 'employee-dot dot--capacitacion';
-      default:             return 'employee-dot dot--offline';
-    }
+    return this.connectedUserById[empleadoId] ? 'employee-dot dot--online' : 'employee-dot dot--offline';
   }
 
   protected stateSeverity(value: string | null | undefined): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {

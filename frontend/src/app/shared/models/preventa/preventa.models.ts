@@ -18,6 +18,21 @@ export interface PageQuery {
   direction: Direction;
 }
 
+export interface LeadPendienteResponse {
+  id: number;
+  prefijo: string;
+  lead: string;
+  estadoSeguimiento?: EstadoSeguimiento | string | null;
+  lastEntryAt?: string | null;
+}
+
+export interface AsesorLeadsPendientesResponse {
+  idAsesor: number;
+  nombreAsesor: string;
+  total: number;
+  leads: LeadPendienteResponse[];
+}
+
 export interface LeadGtrResponse {
   id: number;
   createdAt: string;

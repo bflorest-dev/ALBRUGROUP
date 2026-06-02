@@ -27,6 +27,8 @@ import pe.albrugroup.lead_service.entity.request.LeadTipificacionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionVentaRequest;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
+import pe.albrugroup.lead_service.entity.response.AsesorLeadsPendientesResponse;
+import pe.albrugroup.lead_service.entity.response.LeadPendienteResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsignacionMasivaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsignacionResultadoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAdicionalDetalleResponse;
@@ -75,6 +77,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -140,6 +143,41 @@ public class LeadService {
             aplicarAlertasRegistrosDia(leads.getContent(), rangoDia.inicio(), rangoDia.fin());
         }
         return PageResponse.from(leads);
+    }
+
+    /**
+     * Lista, agrupados por asesor, los leads que siguen en manos de un asesor (ASIGNADO o
+     * EN_GESTION en PREVENTA). El GTR cruza este resultado con la presencia en vivo para
+     * detectar a los asesores ausentes que dejaron leads sin atender.
+     */
+    public List<AsesorLeadsPendientesResponse> listarLeadsPendientesPorAsesor() {
+        List<Lead> leads = leadRepository.findByEtapaAndEstadoInAndIdAsesorAsignadoIsNotNullOrderByIdAsesorAsignadoAscLastEntryAtDesc(
+                Etapa.PREVENTA,
+                List.of(EstadoSeguimiento.ASIGNADO, EstadoSeguimiento.EN_GESTION)
+        );
+
+        Map<Long, AsesorLeadsPendientesResponse> porAsesor = new LinkedHashMap<>();
+        for (Lead lead : leads) {
+            AsesorLeadsPendientesResponse grupo = porAsesor.computeIfAbsent(
+                    lead.getIdAsesorAsignado(),
+                    id -> AsesorLeadsPendientesResponse.builder()
+                            .idAsesor(id)
+                            .nombreAsesor(lead.getNombreAsesorAsignado())
+                            .total(0)
+                            .leads(new ArrayList<>())
+                            .build()
+            );
+            grupo.getLeads().add(LeadPendienteResponse.builder()
+                    .id(lead.getId())
+                    .prefijo(lead.getPrefijo())
+                    .lead(lead.getLead())
+                    .estadoSeguimiento(lead.getEstado())
+                    .lastEntryAt(lead.getLastEntryAt())
+                    .build());
+            grupo.setTotal(grupo.getTotal() + 1);
+        }
+
+        return new ArrayList<>(porAsesor.values());
     }
 
     public LeadGtrMetricasResponse obtenerMetricasGtr(LocalDate fecha) {

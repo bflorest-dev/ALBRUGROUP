@@ -74,6 +74,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             Pageable pageable
     );
 
+    List<Lead> findByEtapaAndEstadoInAndIdAsesorAsignadoIsNotNullOrderByIdAsesorAsignadoAscLastEntryAtDesc(
+            Etapa etapa,
+            Collection<EstadoSeguimiento> estados
+    );
+
     long countByEtapaAndEstadoAndLastEntryAtGreaterThanEqualAndLastEntryAtLessThan(
             Etapa etapa,
             EstadoSeguimiento estado,

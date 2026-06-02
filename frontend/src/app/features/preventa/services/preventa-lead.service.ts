@@ -18,6 +18,7 @@ import {
   EventoResponse,
   LeadGtrResponse,
   LeadGtrMetricasResponse,
+  AsesorLeadsPendientesResponse,
   GtrRankingAsesorResponse,
   GtrTipificacionCampanaResponse,
   LeadIntakeRequest,
@@ -44,6 +45,10 @@ export class PreventaLeadService {
     return this.http.get<LeadPage<LeadGtrResponse>>(`${this.leadUrl}/preventa/gtr`, {
       params: this.pageParams(query).set('fecha', fecha)
     });
+  }
+
+  listarLeadsPendientesPorAsesor(): Observable<AsesorLeadsPendientesResponse[]> {
+    return this.http.get<AsesorLeadsPendientesResponse[]>(`${this.leadUrl}/preventa/gtr/leads-pendientes-asesor`);
   }
 
   buscarLeadGtr(lead: string, query: PageQuery): Observable<LeadPage<LeadGtrResponse>> {

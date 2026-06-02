@@ -173,6 +173,12 @@
           </div>
         </header>
 
+        @if (wrapUpActive()) {
+          <p-message
+            severity="warn"
+            text="Tu horario terminó. Termina este lead para cerrar tu turno; los demás se liberarán para reasignación."
+          />
+        }
         @if (successMessage()) {
           <p-message severity="success" [text]="successMessage() ?? ''" />
         }

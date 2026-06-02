@@ -1,20 +1,24 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Injectable, OnDestroy, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormBuilder, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
-import { catchError, filter, firstValueFrom, map, of, startWith, switchMap, timeout } from 'rxjs';
+import { Subscription, catchError, filter, firstValueFrom, map, of, startWith, switchMap, timeout } from 'rxjs';
+import { AttendanceRealtimeService } from '../../../core/services/attendance-realtime.service';
 import { ApiErrorResponse } from '../../../shared/models/api/api-error-response';
 import { UsuarioResponse } from '../../../shared/models/auth/usuario-response';
 import { PageResponse } from '../../../shared/models/common/page-response';
+import { PresenceRealtimeEvent } from '../../../shared/models/gateway/presence-realtime-event';
 import { ContratoResponse } from '../../../shared/models/rrhh/contrato-response';
 import { EmpleadoResponse } from '../../../shared/models/rrhh/empleado-response';
 import { EmpleadoRolResponse } from '../../../shared/models/rrhh/empleado-rol-response';
 import { EmpresaContratistaResponse } from '../../../shared/models/rrhh/empresa-contratista-response';
 import { RegistrarContratoRequest } from '../../../shared/models/rrhh/registrar-contrato-request';
 import { RegistrarEmpleadoRequest } from '../../../shared/models/rrhh/registrar-empleado-request';
+import { AttendanceRealtimeEvent } from '../../../shared/models/schedule/attendance-realtime-event';
 import { HorarioResponse } from '../../../shared/models/schedule/horario-response';
 import { RegistrarHorarioRequest } from '../../../shared/models/schedule/registrar-horario-request';
 import { ConnectedUserResponse, PresenceService } from '../../../core/services/presence.service';
+import { PresenceRealtimeService } from '../../../core/services/presence-realtime.service';
 import { EstadoMonitorResponse } from '../../../shared/models/schedule/cumplimiento-response';
 import { AuthService } from '../../auth/services/auth.service';
 import { AdminRrhhService } from '../services/admin-rrhh.service';
@@ -97,12 +101,16 @@ export type PersonalReviewSummary = {
 };
 
 @Injectable()
-export class AdminPersonalFacade {
+export class AdminPersonalFacade implements OnDestroy {
   private readonly requestTimeoutMs = 15000;
   private readonly formBuilder = inject(FormBuilder);
   private readonly adminRrhhService = inject(AdminRrhhService);
   private readonly authService = inject(AuthService);
   private readonly presenceService = inject(PresenceService);
+  private readonly attendanceRealtimeService = inject(AttendanceRealtimeService);
+  private readonly presenceRealtimeService = inject(PresenceRealtimeService);
+  private readonly realtimeSubscription = new Subscription();
+  private realtimeStarted = false;
   private readonly modalidadesSinAlmuerzo = new Set(['PART_TIME', 'SEMI_FULL']);
   private readonly scheduleRules: Record<string, ScheduleRule> = {
     PART_TIME: {
@@ -711,6 +719,11 @@ export class AdminPersonalFacade {
   initialize(): void {
     this.loadEmployees();
     void this.loadActiveEmployees();
+    this.startRealtime();
+  }
+
+  ngOnDestroy(): void {
+    this.realtimeSubscription.unsubscribe();
   }
 
   continueToContract(): void {
@@ -1021,6 +1034,92 @@ export class AdminPersonalFacade {
     } finally {
       this.isLoadingStates.set(false);
     }
+  }
+
+  private startRealtime(): void {
+    if (this.realtimeStarted) {
+      return;
+    }
+
+    this.realtimeStarted = true;
+    this.realtimeSubscription.add(
+      this.attendanceRealtimeService.watchTopic('/topic/asistencia/monitor').subscribe({
+        next: (event) => this.applyAttendanceRealtimeEvent(event),
+        error: () => undefined
+      })
+    );
+
+    this.realtimeSubscription.add(
+      this.presenceRealtimeService.watchAll().subscribe({
+        next: (event) => this.applyPresenceRealtimeEvent(event),
+        error: () => undefined
+      })
+    );
+  }
+
+  private applyAttendanceRealtimeEvent(event: AttendanceRealtimeEvent): void {
+    if (event.fecha !== this.getToday() || !this.isActiveEmployeeVisible(event.idEmpleado)) {
+      return;
+    }
+
+    const nextState: EstadoMonitorResponse = {
+      idEmpleado: event.idEmpleado,
+      fecha: event.fecha,
+      tieneHorarioVigente: event.tieneHorarioVigente ?? false,
+      laborableHoy: event.laborableHoy ?? false,
+      esperadoHoy: event.esperadoHoy ?? false,
+      tieneRegistroHoy: event.estadoActual !== null && event.estadoActual !== undefined,
+      estadoActual: event.estadoActual ?? null,
+      operativo: event.operativo ?? false,
+      desde: event.desde ?? null
+    };
+
+    this.employeeStateById.update((current) => ({
+      ...current,
+      [event.idEmpleado]: nextState
+    }));
+  }
+
+  private applyPresenceRealtimeEvent(event: PresenceRealtimeEvent): void {
+    if (!this.isActiveEmployeeVisible(event.empleadoId)) {
+      return;
+    }
+
+    this.connectedUserById.update((current) => {
+      if (event.tipo === 'PRESENCE_OFFLINE' || event.tipo === 'PRESENCE_EXPIRED') {
+        const next = { ...current };
+        delete next[event.empleadoId];
+        return next;
+      }
+
+      const employee = this.activeEmployees().find((item) => item.idEmpleado === event.empleadoId);
+      const existing = current[event.empleadoId];
+      const nextUser: ConnectedUserResponse = {
+        empleadoId: event.empleadoId,
+        nombreCompleto: event.nombreCompleto || existing?.nombreCompleto || this.resolveEmployeeFullName(employee),
+        roles: event.roles?.length ? event.roles : existing?.roles ?? (employee ? [employee.puestoTrabajo] : []),
+        status: 'ONLINE',
+        disponibilidad: event.disponibilidad ?? existing?.disponibilidad ?? null,
+        lastSeen: event.lastSeen ?? event.occurredAt ?? existing?.lastSeen ?? null
+      };
+
+      return {
+        ...current,
+        [event.empleadoId]: nextUser
+      };
+    });
+  }
+
+  private isActiveEmployeeVisible(empleadoId: number): boolean {
+    return this.activeEmployees().some((employee) => employee.idEmpleado === empleadoId);
+  }
+
+  private resolveEmployeeFullName(employee: EmpleadoRolResponse | undefined): string {
+    if (!employee) {
+      return '';
+    }
+
+    return `${employee.nombres ?? ''} ${employee.apellidos ?? ''}`.trim();
   }
 
   toggleUserAccess(empleadoId: number): void {

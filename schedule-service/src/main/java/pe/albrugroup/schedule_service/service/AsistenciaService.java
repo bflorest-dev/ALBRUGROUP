@@ -83,7 +83,7 @@ public class AsistenciaService implements IAsistencia {
     @Transactional
     public DetalleAsistenciaResponse registrarSalida(MovimientoAsistenciaRequest request) {
         LocalDateTime fechaHoraOperativa = OperationalDateTime.nowLocalDateTime();
-        validarMovimientoDentroDeHorario(currentUser.empleadoID(), fechaHoraOperativa);
+        validarSalidaPermitida(currentUser.empleadoID(), fechaHoraOperativa);
         Asistencia asistencia = getAsistenciaOperativa(currentUser.empleadoID(), fechaHoraOperativa.toLocalDate());
         EstadoAsistencia estadoAnterior = asistencia.getEstadoActual();
         if (asistencia.getFechaHoraIngreso() == null) {
@@ -654,6 +654,25 @@ public class AsistenciaService implements IAsistencia {
         }
     }
 
+    /**
+     * Validacion para registrar SALIDA. A diferencia del resto de movimientos, se permite
+     * marcar la salida DESPUES de la hora de salida programada: el asesor puede cerrar su turno
+     * aunque su horario ya termino (por ejemplo, para terminar un lead que tenia en gestion).
+     * El tiempo trabajado se topa en la hora de salida programada (ver recalcularMinutos).
+     */
+    private void validarSalidaPermitida(Long idEmpleado, LocalDateTime fechaHora) {
+        ProgramacionDiaria programacion = resolverProgramacionActualizada(idEmpleado, fechaHora.toLocalDate());
+        if (!programacion.laborable()) {
+            throw new BadRequestException("No se puede registrar salida en un dia no laborable");
+        }
+        if (programacion.horaEntrada() == null || programacion.horaSalida() == null) {
+            throw new BadRequestException("El horario del dia no tiene hora de entrada o salida configurada");
+        }
+        if (fechaHora.toLocalTime().isBefore(programacion.horaEntrada())) {
+            throw new BadRequestException("No se puede registrar salida antes de la hora de entrada");
+        }
+    }
+
     private ProgramacionDiaria resolverProgramacionActualizada(Long idEmpleado, LocalDate fecha) {
         Horario horario = horarioService.getHorarioById(horarioService.getHorarioVigente(idEmpleado, fecha).getId());
         return resolverProgramacion(horario, fecha);
@@ -682,10 +701,31 @@ public class AsistenciaService implements IAsistencia {
     }
 
     private void recalcularMinutos(Asistencia asistencia) {
-        long minutosJornada = Duration.between(asistencia.getFechaHoraIngreso(), asistencia.getFechaHoraSalida()).toMinutes();
+        // El tiempo trabajado se topa en la hora de salida programada: si el asesor cierra su
+        // turno despues de su horario (gracia para terminar un lead en gestion), no se cuenta
+        // tiempo extra.
+        LocalDateTime salidaEfectiva = asistencia.getFechaHoraSalida();
+        LocalDateTime topeSalida = resolverTopeSalidaProgramada(asistencia.getIdEmpleado(), asistencia.getFecha());
+        if (topeSalida != null && salidaEfectiva.isAfter(topeSalida)) {
+            salidaEfectiva = topeSalida;
+        }
+
+        long minutosJornada = Duration.between(asistencia.getFechaHoraIngreso(), salidaEfectiva).toMinutes();
         int trabajados = (int) Math.max(minutosJornada - asistencia.getMinutosAlmuerzoTomados() - asistencia.getMinutosServiciosAcumulados(), 0);
         asistencia.setMinutosTrabajados(trabajados);
         asistencia.setMinutosBalance(trabajados - asistencia.getMinutosObjetivoDia());
+    }
+
+    private LocalDateTime resolverTopeSalidaProgramada(Long idEmpleado, LocalDate fecha) {
+        try {
+            ProgramacionDiaria programacion = resolverProgramacionActualizada(idEmpleado, fecha);
+            if (programacion.horaSalida() == null) {
+                return null;
+            }
+            return LocalDateTime.of(fecha, programacion.horaSalida());
+        } catch (NotFoundException e) {
+            return null;
+        }
     }
 
     private int calcularMinutosObjetivo(LocalTime entrada, LocalTime salida, LocalTime inicioAlmuerzo, LocalTime finAlmuerzo) {

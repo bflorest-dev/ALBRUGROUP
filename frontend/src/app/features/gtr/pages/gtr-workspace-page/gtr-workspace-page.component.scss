@@ -444,6 +444,76 @@ td small,
   width: 0.7rem;
 }
 
+// ── Aviso de leads abandonados ───────────────────────────────
+.advisors-trigger {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.4rem;
+}
+
+.advisors-trigger__alert {
+  align-items: center;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 999px;
+  color: #92400e;
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 800;
+  gap: 0.25rem;
+  padding: 0.1rem 0.5rem;
+}
+
+.advisor-card--abandono {
+  background: color-mix(in srgb, #dc2626 6%, var(--app-surface-soft) 94%);
+  border-color: color-mix(in srgb, #dc2626 40%, var(--app-border-soft) 60%);
+}
+
+.advisor-card__name-row {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: space-between;
+}
+
+.advisor-card__warning {
+  color: #b91c1c;
+  font-size: 0.76rem;
+  margin: 0;
+}
+
+// ── Modal de leads abandonados ───────────────────────────────
+.abandono-dialog {
+  display: grid;
+  gap: 0.9rem;
+  min-width: min(30rem, 84vw);
+}
+
+.abandono-list {
+  display: grid;
+  gap: 0.4rem;
+  max-height: 18rem;
+  overflow-y: auto;
+}
+
+.abandono-item {
+  align-items: center;
+  background: var(--app-surface-soft);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.5rem;
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.5rem 0.65rem;
+}
+
+.abandono-target {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
 .dot--available {
   background: #16a34a;
 }
