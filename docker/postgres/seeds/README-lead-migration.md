@@ -67,16 +67,16 @@ Este seed toma el backup filtrado `clientes_campos_utiles_full.csv` y lo transfo
 
 ## Alcance validado sobre el CSV
 
-- Filas totales del backup nuevo: `28030`
-- Filas validas por telefono: `27941`
-- Telefonos/leads unicos detectados: `25556`
+- Filas totales del backup nuevo: `28051`
+- Filas validas por telefono: `27962`
+- Telefonos/leads unicos detectados: `25574`
 - Filas descartadas por telefono invalido: `89`
-- Leads que terminarian en PREVENTA: `21917`
+- Leads que terminarian en PREVENTA: `21935`
 - Leads que terminarian en VENTA: `3639`
-- Leads con datos de preventa rescatables: `716`
-- Leads con direccion rescatable: `679`
-- Leads con tipificacion rescatable: `25457`
-- Leads con primera y ultima tipificacion distintas: `4083`
+- Leads con datos de preventa rescatables: `717`
+- Leads con direccion rescatable: `680`
+- Leads con tipificacion rescatable: `25478`
+- Leads con primera y ultima tipificacion distintas: `4085`
 - Proveedor dominante: `WIN`
 - Base dominante: `LEADS`, seguida por `MASIVO`
 
