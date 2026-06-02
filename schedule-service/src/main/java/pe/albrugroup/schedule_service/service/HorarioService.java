@@ -54,22 +54,11 @@ public class HorarioService implements IHorario {
     public HorarioResponse registrarHorario(RegistrarHorarioRequest request) {
         validarDiasDuplicados(request.getDetalles().stream().map(detalle -> detalle.getDia()).toList());
         normalizarAlmuerzoPorModalidad(request.getModalidad(), request.getDetalles());
-
-        Horario horarioVigente = horarioRepository
-                .findHorarioVigente(request.getIdEmpleado(), request.getFechaInicio())
-                .orElse(null);
-
-        if (horarioVigente != null && horarioVigente.getFechaInicio().isEqual(request.getFechaInicio())) {
-            return corregirHorarioBaseMismaFecha(horarioVigente, request);
+        HorarioResponse horarioCorregido = resolverSolapamientosParaRegistro(request);
+        if (horarioCorregido != null) {
+            return horarioCorregido;
         }
-
-        if (horarioVigente != null && horarioVigente.getFechaInicio().isBefore(request.getFechaInicio())) {
-            horarioVigente.setFechaFin(request.getFechaInicio().minusDays(1));
-            horarioRepository.save(horarioVigente);
-        }
-
-        Long excludeId = horarioVigente != null ? horarioVigente.getId() : null;
-        validarSolapamiento(request.getIdEmpleado(), request.getFechaInicio(), null, excludeId);
+        validarSolapamiento(request.getIdEmpleado(), request.getFechaInicio(), null, null);
 
         Horario horario = mapper.toEntity(request);
         PoliticaModalidad politica = politicaModalidadService.getPolitica(request.getModalidad());
@@ -88,14 +77,62 @@ public class HorarioService implements IHorario {
         return mapper.toResponse(savedHorario);
     }
 
+    private HorarioResponse resolverSolapamientosParaRegistro(RegistrarHorarioRequest request) {
+        List<Horario> solapados = horarioRepository.findSolapamientos(
+                request.getIdEmpleado(),
+                request.getFechaInicio(),
+                null,
+                null
+        );
+
+        if (solapados.isEmpty()) {
+            return null;
+        }
+
+        validarSinAsistenciaParaCorreccion(request.getIdEmpleado(), request.getFechaInicio());
+
+        List<Horario> mismaFechaInicio = solapados.stream()
+                .filter(horario -> horario.getFechaInicio().isEqual(request.getFechaInicio()))
+                .toList();
+
+        if (mismaFechaInicio.size() > 1) {
+            throw new ConflictException(
+                    "Existen varios horarios iniciados en la misma fecha. Requiere correccion administrativa",
+                    request.getFechaInicio()
+            );
+        }
+
+        if (mismaFechaInicio.size() == 1) {
+            Horario horarioBase = mismaFechaInicio.get(0);
+            cerrarHorariosAnterioresSolapados(solapados, horarioBase.getId(), request.getFechaInicio());
+            return corregirHorarioBaseMismaFecha(horarioBase, request);
+        }
+
+        cerrarHorariosAnterioresSolapados(solapados, null, request.getFechaInicio());
+        horarioRepository.flush();
+        return null;
+    }
+
+    private void cerrarHorariosAnterioresSolapados(List<Horario> horarios, Long excludeId, LocalDate fechaInicioNuevo) {
+        for (Horario horario : horarios) {
+            if (excludeId != null && horario.getId().equals(excludeId)) {
+                continue;
+            }
+
+            if (!horario.getFechaInicio().isBefore(fechaInicioNuevo)) {
+                throw new ConflictException(
+                        "Existe un horario solapado con fecha de inicio igual o posterior. Requiere correccion administrativa",
+                        horario.getId()
+                );
+            }
+
+            horario.setFechaFin(fechaInicioNuevo.minusDays(1));
+            horarioRepository.save(horario);
+        }
+    }
+
     private HorarioResponse corregirHorarioBaseMismaFecha(Horario horario, RegistrarHorarioRequest request) {
-        asistenciaRepository.findByIdEmpleadoAndFecha(request.getIdEmpleado(), request.getFechaInicio())
-                .ifPresent(asistencia -> {
-                    throw new ConflictException(
-                            "No se puede corregir el horario base porque ya existe asistencia para esa fecha",
-                            request.getFechaInicio()
-                    );
-                });
+        validarSinAsistenciaParaCorreccion(request.getIdEmpleado(), request.getFechaInicio());
 
         horario.setIdContrato(request.getIdContrato());
         horario.setFechaFin(null);
@@ -122,6 +159,16 @@ public class HorarioService implements IHorario {
                 null
         );
         return mapper.toResponse(savedHorario);
+    }
+
+    private void validarSinAsistenciaParaCorreccion(Long idEmpleado, LocalDate fecha) {
+        asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, fecha)
+                .ifPresent(asistencia -> {
+                    throw new ConflictException(
+                            "No se puede corregir el horario base porque ya existe asistencia para esa fecha",
+                            fecha
+                    );
+                });
     }
 
     @Override

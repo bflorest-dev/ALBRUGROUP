@@ -36,6 +36,19 @@ public interface HorarioRepository extends JpaRepository<Horario, Long> {
     @Query("""
             SELECT h FROM Horario h
             WHERE h.idEmpleado = :idEmpleado
+            AND (:excludeId IS NULL OR h.id <> :excludeId)
+            AND (:fechaFin IS NULL OR h.fechaInicio <= :fechaFin)
+            AND (h.fechaFin IS NULL OR h.fechaFin >= :fechaInicio)
+            ORDER BY h.fechaInicio ASC
+            """)
+    List<Horario> findSolapamientos(@Param("idEmpleado") Long idEmpleado,
+                                    @Param("fechaInicio") LocalDate fechaInicio,
+                                    @Param("fechaFin") LocalDate fechaFin,
+                                    @Param("excludeId") Long excludeId);
+
+    @Query("""
+            SELECT h FROM Horario h
+            WHERE h.idEmpleado = :idEmpleado
               AND h.fechaInicio <= :hasta
               AND (h.fechaFin IS NULL OR h.fechaFin >= :desde)
             ORDER BY h.fechaInicio ASC
