@@ -35,3 +35,18 @@ p {
   border: 1px solid var(--app-border-soft);
   box-shadow: var(--app-shadow-soft);
 }
+
+@media (max-width: 760px) {
+  .admin-ranking-page {
+    gap: 0.85rem;
+  }
+
+  :host ::ng-deep .admin-ranking-hero .p-card-body {
+    padding: 1rem;
+  }
+
+  h1 {
+    font-size: 1.45rem;
+    line-height: 1.12;
+  }
+}

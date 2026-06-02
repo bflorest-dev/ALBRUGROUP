@@ -674,132 +674,33 @@
     </p-tabs>
   </p-card>
   } @else if (pageMode() === 'finanzas') {
-    <section class="finance-page">
-      <p-card styleClass="community-table-card finance-toolbar-card">
-        <div class="finance-toolbar">
-          <div>
-            <h2>Finanzas de campanas</h2>
-            <p>{{ display(facade.dailyExpenseSummary()?.fecha) }}</p>
-          </div>
-          <div class="finance-toolbar__actions">
-            <label>
-              <span>Dia</span>
-              <input
-                pInputText
-                type="date"
-                [value]="facade.financeDate()"
-                (change)="facade.onFinanceDateChanged($any($event.target).value)"
-              />
-            </label>
-            <label>
-              <span>Mes</span>
-              <input
-                pInputText
-                type="month"
-                [value]="facade.financeMonth()"
-                (change)="facade.onFinanceMonthChanged($any($event.target).value)"
-              />
-            </label>
-            <button
-              pButton
-              type="button"
-              icon="pi pi-refresh"
-              label="Actualizar"
-              severity="secondary"
-              [loading]="facade.isLoadingFinance()"
-              (click)="facade.loadFinanceDashboard()"
-            ></button>
-            <button pButton type="button" icon="pi pi-plus" label="Agregar gasto" (click)="facade.openExpenseDialog()"></button>
-          </div>
-        </div>
-      </p-card>
-
-      <section class="finance-summary-grid">
-        <p-card styleClass="community-table-card">
-          <ng-template #title>Estado del dia</ng-template>
-          <div class="finance-kpi-grid">
-            @for (card of facade.dailyFinanceCards(); track card.label) {
-              <article class="finance-kpi finance-kpi--{{ card.tone }}">
-                <span>{{ card.label }}</span>
-                <strong>{{ card.value }}</strong>
-              </article>
-            }
-          </div>
-        </p-card>
-
-        <p-card styleClass="community-table-card">
-          <ng-template #title>Estado mensual</ng-template>
-          <div class="finance-kpi-grid">
-            @for (card of facade.monthlyFinanceCards(); track card.label) {
-              <article class="finance-kpi finance-kpi--{{ card.tone }}">
-                <span>{{ card.label }}</span>
-                <strong>{{ card.value }}</strong>
-              </article>
-            }
-          </div>
-        </p-card>
-      </section>
-
-      <p-card styleClass="community-table-card">
-        <ng-template #title>Estado del dia por campana</ng-template>
-        <p-table
-          [value]="facade.dailyFinanceRows()"
-          [loading]="facade.isLoadingFinance()"
-          [rowHover]="true"
-          [scrollable]="true"
-          [tableStyle]="{ 'min-width': '1180px' }"
-          styleClass="p-datatable-sm finance-table"
-        >
-          <ng-template #header>
-            <tr>
-              <th>Campana</th>
-              <th>Gasto Total</th>
-              <th>Costo por venta</th>
-              <th class="finance-col finance-col--reported">Leads</th>
-              <th class="finance-col finance-col--reported">Costo por Resultado</th>
-              <th class="finance-col finance-col--reported">Conversion</th>
-              <th class="finance-col finance-col--real">Leads</th>
-              <th class="finance-col finance-col--real">Costo por Resultado</th>
-              <th class="finance-col finance-col--real">Conversion</th>
-              <th>Ventas cerradas</th>
-              <th>Ultimo registro</th>
-              <th>Acciones</th>
-            </tr>
-          </ng-template>
-          <ng-template #body let-row>
-            <tr>
-              <td><strong>{{ row.nombreCampana }}</strong></td>
-              <td>{{ facade.money(row.costoTotal) }}</td>
-              <td>{{ row.costoPorVenta }}</td>
-              <td class="finance-col finance-col--reported">{{ display(row.leads) }}</td>
-              <td class="finance-col finance-col--reported">{{ row.costoPorLead }}</td>
-              <td class="finance-col finance-col--reported"><p-tag severity="info" [value]="row.conversionLeads" /></td>
-              <td class="finance-col finance-col--real">{{ display(row.leadsReales) }}</td>
-              <td class="finance-col finance-col--real">{{ row.costoPorLeadReal }}</td>
-              <td class="finance-col finance-col--real"><p-tag severity="warn" [value]="row.conversionLeadsReales" /></td>
-              <td>{{ display(row.ventasCerradas) }}</td>
-              <td>{{ facade.dateTime(row.ultimoRegistroAt) }}</td>
-              <td>
-                <button
-                  pButton
-                  type="button"
-                  icon="pi pi-list"
-                  label="Historico"
-                  size="small"
-                  severity="secondary"
-                  (click)="facade.openExpenseSnapshots(row)"
-                ></button>
-              </td>
-            </tr>
-          </ng-template>
-          <ng-template #emptymessage>
-            <tr>
-              <td colspan="12">No hay registros financieros para el dia.</td>
-            </tr>
-          </ng-template>
-        </p-table>
-      </p-card>
-    </section>
+    <app-campaign-finance-dashboard-panel
+      panelTitle="Finanzas de campanas"
+      [subtitle]="display(facade.dailyExpenseSummary()?.fecha)"
+      [financeDate]="facade.financeDate()"
+      [financeMonth]="facade.financeMonth()"
+      [isLoading]="facade.isLoadingFinance()"
+      [isLoadingSnapshots]="facade.isLoadingFinanceSnapshots()"
+      [dailyCards]="facade.dailyFinanceCards()"
+      [monthlyCards]="facade.monthlyFinanceCards()"
+      [dailyRows]="facade.dailyFinanceRows()"
+      [snapshotRows]="facade.snapshotRows()"
+      [selectedCampaign]="facade.selectedExpenseCampaign()"
+      [snapshotsVisible]="facade.expenseSnapshotsOpen()"
+      [allowExpenseRegistration]="true"
+      [expenseDialogVisible]="facade.expenseDialogOpen()"
+      [expenseForm]="facade.expenseForm"
+      [campaignOptions]="facade.campanasActivas()"
+      [isSavingExpense]="facade.isSaving()"
+      (financeDateChanged)="facade.onFinanceDateChanged($event)"
+      (financeMonthChanged)="facade.onFinanceMonthChanged($event)"
+      (reload)="facade.loadFinanceDashboard()"
+      (openExpenseDialog)="facade.openExpenseDialog()"
+      (closeExpenseDialog)="facade.closeExpenseDialog()"
+      (submitExpense)="facade.submitExpense()"
+      (openSnapshots)="facade.openExpenseSnapshots($event)"
+      (closeSnapshots)="facade.closeExpenseSnapshots()"
+    />
   } @else {
     <section class="metrics-empty">
       <p-card styleClass="community-info-card">
@@ -816,117 +717,6 @@
       </p-card>
     </section>
   }
-
-  <p-dialog
-    header="Agregar gasto de campana"
-    [visible]="facade.expenseDialogOpen()"
-    [modal]="true"
-    [draggable]="false"
-    [resizable]="false"
-    styleClass="compact-dialog"
-    (onHide)="facade.closeExpenseDialog()"
-  >
-    <form class="form-grid" [formGroup]="facade.expenseForm" (ngSubmit)="facade.submitExpense()">
-      <label class="wide">
-        <span>Campana</span>
-        <p-select
-          formControlName="idCampana"
-          [options]="facade.campanasActivas()"
-          optionLabel="nombre"
-          optionValue="id"
-          placeholder="Seleccionar campana"
-          appendTo="body"
-        />
-      </label>
-      <label>
-        <span>Leads reportados</span>
-        <input pInputText type="number" min="0" formControlName="leads" />
-      </label>
-      <label>
-        <span>Costo acumulado</span>
-        <div class="input-prefix">
-          <span>S/</span>
-          <input pInputText type="number" min="0" step="0.01" formControlName="costoTotal" />
-        </div>
-      </label>
-      <div class="form-actions wide">
-        <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeExpenseDialog()"></button>
-        <button pButton type="submit" icon="pi pi-save" label="Guardar gasto" [loading]="facade.isSaving()"></button>
-      </div>
-    </form>
-  </p-dialog>
-
-  <p-drawer
-    [visible]="facade.expenseSnapshotsOpen()"
-    (visibleChange)="!$event && facade.closeExpenseSnapshots()"
-    position="right"
-    styleClass="finance-snapshots-drawer"
-  >
-    <ng-template #header>
-      <div>
-        <strong>{{ display(facade.selectedExpenseCampaign()?.nombreCampana) }}</strong>
-        <p>{{ facade.financeDate() }}</p>
-      </div>
-    </ng-template>
-
-    <div class="finance-snapshots-table-wrap">
-      <p-table
-        [value]="facade.snapshotRows()"
-        [loading]="facade.isLoadingFinanceSnapshots()"
-        [rowHover]="true"
-        [tableStyle]="{ 'min-width': '1120px' }"
-        styleClass="p-datatable-sm finance-table"
-      >
-        <ng-template #header>
-          <tr>
-            <th>Hora</th>
-            <th>Gasto Total</th>
-            <th>Costo por venta</th>
-            <th class="finance-col finance-col--reported">Leads</th>
-            <th class="finance-col finance-col--reported">Costo por Resultado</th>
-            <th class="finance-col finance-col--reported">Conversion</th>
-            <th class="finance-col finance-col--real">Leads</th>
-            <th class="finance-col finance-col--real">Costo por Resultado</th>
-            <th class="finance-col finance-col--real">Conversion</th>
-            <th>Ventas cerradas</th>
-          </tr>
-        </ng-template>
-        <ng-template #body let-row>
-          <tr>
-            <td>{{ facade.dateTime(row.ultimoRegistroAt) }}</td>
-            <td>{{ facade.money(row.costoTotal) }}</td>
-            <td>{{ row.costoPorVenta }}</td>
-            <td class="finance-col finance-col--reported">
-              <div class="finance-value-cell">
-                <span>{{ display(row.leads) }}</span>
-                @if (facade.deltaBadge(row.deltaLeads); as deltaLeads) {
-                  <span class="finance-delta-badge finance-delta-badge--reported">{{ deltaLeads }}</span>
-                }
-              </div>
-            </td>
-            <td class="finance-col finance-col--reported">{{ row.costoPorLead }}</td>
-            <td class="finance-col finance-col--reported"><p-tag severity="info" [value]="row.conversionLeads" /></td>
-            <td class="finance-col finance-col--real">
-              <div class="finance-value-cell">
-                <span>{{ display(row.leadsReales) }}</span>
-                @if (facade.deltaBadge(row.deltaLeadsReales); as deltaLeadsReales) {
-                  <span class="finance-delta-badge finance-delta-badge--real">{{ deltaLeadsReales }}</span>
-                }
-              </div>
-            </td>
-            <td class="finance-col finance-col--real">{{ row.costoPorLeadReal }}</td>
-            <td class="finance-col finance-col--real"><p-tag severity="warn" [value]="row.conversionLeadsReales" /></td>
-            <td>{{ display(row.ventasCerradas) }}</td>
-          </tr>
-        </ng-template>
-        <ng-template #emptymessage>
-          <tr>
-            <td colspan="9">No hay snapshots para esta campana.</td>
-          </tr>
-        </ng-template>
-      </p-table>
-    </div>
-  </p-drawer>
 
   <p-dialog
     header="Registrar adicional"

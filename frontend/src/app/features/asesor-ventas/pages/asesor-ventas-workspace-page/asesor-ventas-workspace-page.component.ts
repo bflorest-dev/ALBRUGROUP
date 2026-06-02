@@ -1290,6 +1290,8 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     if (blank(a.via.value)) faltantes.push({ tab: 'direccion', campo: 'Nombre de la Via' });
     if (blank(a.direccion.value)) faltantes.push({ tab: 'direccion', campo: 'Direccion' });
     if (blank(a.referencia.value)) faltantes.push({ tab: 'direccion', campo: 'Referencia' });
+    if (blank(a.piso.value)) faltantes.push({ tab: 'direccion', campo: 'Piso' });
+    if (blank(a.interior.value)) faltantes.push({ tab: 'direccion', campo: 'Interior' });
 
     if (!this.ofertaForm.controls.idPlan.value) faltantes.push({ tab: 'oferta', campo: 'Plan' });
 

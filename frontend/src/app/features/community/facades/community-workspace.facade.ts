@@ -20,6 +20,20 @@ import {
   ZonaReglaResponse,
   ZonaResponse
 } from '../services/community-lead.service';
+import {
+  FinanceMetricCard,
+  FinanceRow,
+  SnapshotFinanceRow,
+  buildFinanceCards,
+  financeCurrentDateValue,
+  financeCurrentMonthValue,
+  financeMonthMonth,
+  financeMonthYear,
+  formatFinanceDateTime,
+  formatFinanceMoney,
+  toFinanceRow,
+  toSnapshotFinanceRows
+} from '../../../shared/utils/campaign-finance.utils';
 
 export type CommunitySection = 'proveedores' | 'cuentas' | 'campanas' | 'zonas' | 'planes' | 'promociones';
 export type CommunityPageMode = 'mantenimiento' | 'metricas' | 'finanzas';
@@ -41,11 +55,6 @@ type PromotionScopeOption = {
   icon: string;
   severity: 'info' | 'success' | 'warn';
 };
-type FinanceMetricCard = {
-  label: string;
-  value: string;
-  tone: 'blue' | 'green' | 'amber' | 'violet' | 'slate';
-};
 type PlanCatalogSort = 'provider_name' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc';
 type PlanCatalogComposition =
   | 'ALL'
@@ -59,17 +68,6 @@ type PlanCatalogComposition =
 type PlanCatalogOption<T> = {
   label: string;
   value: T;
-};
-type FinanceRow = CampanaGastoCampanaResumenResponse & {
-  costoPorLead: string;
-  costoPorLeadReal: string;
-  costoPorVenta: string;
-  conversionLeads: string;
-  conversionLeadsReales: string;
-};
-type SnapshotFinanceRow = FinanceRow & {
-  deltaLeads: number | null;
-  deltaLeadsReales: number | null;
 };
 type PlanCatalogProviderFilter = ProveedorResponse & {
   planesCount: number;
@@ -164,8 +162,8 @@ export class CommunityWorkspaceFacade {
   readonly selectedExpenseCampaign = signal<FinanceRow | null>(null);
   readonly expenseDialogOpen = signal(false);
   readonly expenseSnapshotsOpen = signal(false);
-  readonly financeDate = signal(this.currentDateValue());
-  readonly financeMonth = signal(this.currentMonthValue());
+  readonly financeDate = signal(financeCurrentDateValue());
+  readonly financeMonth = signal(financeCurrentMonthValue());
 
   readonly billingDayOptions = Array.from({ length: 31 }, (_, index) => index + 1);
   readonly promotionScopeOptions: PromotionScopeOption[] = [
@@ -228,19 +226,10 @@ export class CommunityWorkspaceFacade {
   });
   readonly planNamePlaceholder = computed(() => this.planes()[0]?.nombre ?? 'Plan Fibra 200');
   readonly additionalNamePlaceholder = computed(() => this.adicionales()[0]?.nombre ?? 'Mesh WiFi');
-  readonly dailyFinanceCards = computed(() => this.buildFinanceCards(this.dailyExpenseSummary()));
-  readonly monthlyFinanceCards = computed(() => this.buildFinanceCards(this.monthlyExpenseSummary()));
-  readonly dailyFinanceRows = computed<FinanceRow[]>(() =>
-    (this.dailyExpenseSummary()?.campanas ?? []).map((campana) => this.toFinanceRow(campana))
-  );
-  readonly snapshotRows = computed<SnapshotFinanceRow[]>(() => {
-    const rows = this.campaignExpenseSnapshots().map((snapshot) => this.toFinanceRow(snapshot));
-    return rows.map((row, index) => ({
-      ...row,
-      deltaLeads: index === 0 ? null : row.leads - (rows[index - 1]?.leads ?? 0),
-      deltaLeadsReales: index === 0 ? null : row.leadsReales - (rows[index - 1]?.leadsReales ?? 0)
-    }));
-  });
+  readonly dailyFinanceCards = computed(() => buildFinanceCards(this.dailyExpenseSummary()));
+  readonly monthlyFinanceCards = computed(() => buildFinanceCards(this.monthlyExpenseSummary()));
+  readonly dailyFinanceRows = computed<FinanceRow[]>(() => (this.dailyExpenseSummary()?.campanas ?? []).map((campana) => toFinanceRow(campana)));
+  readonly snapshotRows = computed<SnapshotFinanceRow[]>(() => toSnapshotFinanceRows(this.campaignExpenseSnapshots()));
 
   readonly providerForm = this.fb.group({
     nombre: ['', [Validators.required]],
@@ -403,9 +392,7 @@ export class CommunityWorkspaceFacade {
     try {
       const [daily, monthly] = await Promise.all([
         firstValueFrom(this.leadService.obtenerResumenGastosDiario(this.financeDate())),
-        firstValueFrom(
-          this.leadService.obtenerResumenGastosMensual(this.financeMonthYear(this.financeMonth()), this.financeMonthMonth(this.financeMonth()))
-        )
+        firstValueFrom(this.leadService.obtenerResumenGastosMensual(financeMonthYear(this.financeMonth()), financeMonthMonth(this.financeMonth())))
       ]);
       this.dailyExpenseSummary.set(daily);
       this.monthlyExpenseSummary.set(monthly);
@@ -470,12 +457,12 @@ export class CommunityWorkspaceFacade {
   }
 
   async onFinanceDateChanged(value: string): Promise<void> {
-    this.financeDate.set(value || this.currentDateValue());
+    this.financeDate.set(value || financeCurrentDateValue());
     await this.loadFinanceDashboard();
   }
 
   async onFinanceMonthChanged(value: string): Promise<void> {
-    this.financeMonth.set(value || this.currentMonthValue());
+    this.financeMonth.set(value || financeCurrentMonthValue());
     await this.loadFinanceDashboard();
   }
 
@@ -621,8 +608,7 @@ export class CommunityWorkspaceFacade {
   }
 
   money(value: unknown): string {
-    const amount = Number(value ?? 0);
-    return `S/ ${amount.toFixed(2)}`;
+    return formatFinanceMoney(Number(value ?? 0).toFixed(2));
   }
 
   percentage(numerator: number | null | undefined, denominator: number | null | undefined): string {
@@ -647,15 +633,7 @@ export class CommunityWorkspaceFacade {
   }
 
   dateTime(value: string | null | undefined): string {
-    if (!value) {
-      return '-';
-    }
-    return new Intl.DateTimeFormat('es-PE', {
-      day: '2-digit',
-      month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(new Date(value));
+    return formatFinanceDateTime(value);
   }
 
   async toggleCampaign(idCampana: number): Promise<void> {
@@ -1339,53 +1317,6 @@ export class CommunityWorkspaceFacade {
     ].filter(Boolean);
 
     return details.length ? `${plan.nombre} - ${details.join(' - ')}` : String(plan.nombre);
-  }
-
-  private buildFinanceCards(
-    summary: CampanaGastoResumenDiarioResponse | CampanaGastoResumenMensualResponse | null
-  ): FinanceMetricCard[] {
-    return [
-      { label: 'Leads', value: String(summary?.leads ?? 0), tone: 'blue' },
-      { label: 'Leads reales', value: String(summary?.leadsReales ?? 0), tone: 'green' },
-      { label: 'Ventas cerradas', value: String(summary?.ventasCerradas ?? 0), tone: 'violet' },
-      { label: 'Costo total', value: this.money(summary?.costoTotal ?? 0), tone: 'amber' },
-      { label: 'Ultimo registro', value: this.dateTime(summary?.ultimoRegistroAt), tone: 'slate' }
-    ];
-  }
-
-  private toFinanceRow(row: CampanaGastoCampanaResumenResponse | CampanaGastoResponse): FinanceRow {
-    const ultimoRegistroAt =
-      (row as CampanaGastoResponse).createdAt ?? (row as CampanaGastoCampanaResumenResponse).ultimoRegistroAt;
-    return {
-      ...row,
-      ultimoRegistroAt,
-      costoPorLead: this.costPerResult(row.costoTotal, row.leads),
-      costoPorLeadReal: this.costPerResult(row.costoTotal, row.leadsReales),
-      costoPorVenta: this.costPerResult(row.costoTotal, row.ventasCerradas),
-      conversionLeads: this.percentage(row.ventasCerradas, row.leads),
-      conversionLeadsReales: this.percentage(row.ventasCerradas, row.leadsReales)
-    };
-  }
-
-  private currentMonthValue(): string {
-    const now = new Date();
-    const month = `${now.getMonth() + 1}`.padStart(2, '0');
-    return `${now.getFullYear()}-${month}`;
-  }
-
-  private currentDateValue(): string {
-    const now = new Date();
-    const month = `${now.getMonth() + 1}`.padStart(2, '0');
-    const day = `${now.getDate()}`.padStart(2, '0');
-    return `${now.getFullYear()}-${month}-${day}`;
-  }
-
-  private financeMonthYear(value: string): number {
-    return Number(value.slice(0, 4)) || new Date().getFullYear();
-  }
-
-  private financeMonthMonth(value: string): number {
-    return Number(value.slice(5, 7)) || new Date().getMonth() + 1;
   }
 
   private toDateInputValue(value: string | undefined): string {

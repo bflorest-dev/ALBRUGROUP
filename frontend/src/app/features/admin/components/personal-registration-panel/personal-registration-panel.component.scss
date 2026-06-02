@@ -293,6 +293,21 @@
   }
 }
 
+@media (max-width: 900px) {
+  .admin-panel {
+    padding: 1rem;
+  }
+
+  .schedule-simple__times,
+  .schedule-card__grid {
+    grid-template-columns: repeat(2, minmax(0, max-content));
+  }
+
+  .day-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 760px) {
   .admin-panel__header,
   .actions,
@@ -316,5 +331,18 @@
 
   .schedule-mode-action {
     justify-content: stretch;
+  }
+
+  .admin-panel {
+    padding: 0.8rem;
+  }
+
+  .actions button,
+  .schedule-mode-action button {
+    width: 100%;
+  }
+
+  :host ::ng-deep .personal-review-dialog {
+    width: min(100vw - 1rem, 34rem);
   }
 }

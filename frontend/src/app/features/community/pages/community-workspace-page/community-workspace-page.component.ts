@@ -15,6 +15,7 @@ import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
+import { CampaignFinanceDashboardPanelComponent } from '../../../../shared/components/campaign-finance-dashboard-panel/campaign-finance-dashboard-panel.component';
 import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-number-field/phone-number-field.component';
 import { CommunityPageMode, CommunitySection, CommunityWorkspaceFacade } from '../../facades/community-workspace.facade';
 
@@ -35,6 +36,7 @@ import { CommunityPageMode, CommunitySection, CommunityWorkspaceFacade } from '.
     TableModule,
     TabsModule,
     TagModule,
+    CampaignFinanceDashboardPanelComponent,
     PhoneNumberFieldComponent
   ],
   providers: [CommunityWorkspaceFacade],

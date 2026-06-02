@@ -1,0 +1,32 @@
+<section class="admin-page">
+  <header class="hero">
+    <p-tag value="Administrador" severity="info" />
+    <h2>Finanzas de campanas</h2>
+    <p>Vista consolidada de lectura para revisar el estado diario y mensual de cada campana.</p>
+  </header>
+
+  @if (facade.errorMessage()) {
+    <p-message severity="error" [text]="facade.errorMessage() ?? ''" />
+  }
+
+  <app-campaign-finance-dashboard-panel
+    panelTitle="Finanzas de campanas"
+    [subtitle]="facade.dailyExpenseSummary()?.fecha ?? facade.financeDate()"
+    [financeDate]="facade.financeDate()"
+    [financeMonth]="facade.financeMonth()"
+    [isLoading]="facade.isLoadingFinance()"
+    [isLoadingSnapshots]="facade.isLoadingFinanceSnapshots()"
+    [dailyCards]="facade.dailyFinanceCards()"
+    [monthlyCards]="facade.monthlyFinanceCards()"
+    [dailyRows]="facade.dailyFinanceRows()"
+    [snapshotRows]="facade.snapshotRows()"
+    [selectedCampaign]="facade.selectedExpenseCampaign()"
+    [snapshotsVisible]="facade.expenseSnapshotsOpen()"
+    [allowExpenseRegistration]="false"
+    (financeDateChanged)="facade.onFinanceDateChanged($event)"
+    (financeMonthChanged)="facade.onFinanceMonthChanged($event)"
+    (reload)="facade.loadFinanceDashboard()"
+    (openSnapshots)="facade.openExpenseSnapshots($event)"
+    (closeSnapshots)="facade.closeExpenseSnapshots()"
+  />
+</section>

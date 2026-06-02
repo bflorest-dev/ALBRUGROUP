@@ -236,9 +236,37 @@
     align-items: stretch;
     flex-direction: column;
   }
+
+  .admin-panel {
+    padding: 1rem;
+  }
+
+  .admin-panel__header-actions {
+    width: 100%;
+  }
+
+  .role-filter {
+    gap: 0.4rem;
+  }
+
+  :host ::ng-deep .admin-panel__header-actions .p-button {
+    flex: 1 1 12rem;
+  }
 }
 
 @media (max-width: 480px) {
+  .admin-panel {
+    padding: 0.8rem;
+  }
+
+  .employee-name-cell {
+    align-items: flex-start;
+  }
+
+  .row-actions {
+    justify-content: flex-start;
+  }
+
   .access-meta {
     justify-content: flex-start;
   }
@@ -249,6 +277,10 @@
 
   .access-grid {
     grid-template-columns: 1fr;
+  }
+
+  .baja-dialog__actions {
+    flex-direction: column;
   }
 }
 

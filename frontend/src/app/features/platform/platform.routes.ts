@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { roleGuard } from '../../core/guards/role.guard';
 import { AdminDashboardPageComponent } from '../admin/pages/admin-dashboard-page/admin-dashboard-page.component';
 import { AdminEmployabilityPageComponent } from '../admin/pages/admin-employability-page/admin-employability-page.component';
+import { AdminFinancePageComponent } from '../admin/pages/admin-finance-page/admin-finance-page.component';
 import { AdminRankingPageComponent } from '../admin/pages/admin-ranking-page/admin-ranking-page.component';
 import { AsesorVentasWorkspacePageComponent } from '../asesor-ventas/pages/asesor-ventas-workspace-page/asesor-ventas-workspace-page.component';
 import { AsesorVentasHorarioPageComponent } from '../asesor-ventas/pages/asesor-ventas-horario-page/asesor-ventas-horario-page.component';
@@ -55,6 +56,14 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'admin/ranking',
     component: AdminRankingPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR']
+    }
+  },
+  {
+    path: 'admin/finanzas',
+    component: AdminFinancePageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR']

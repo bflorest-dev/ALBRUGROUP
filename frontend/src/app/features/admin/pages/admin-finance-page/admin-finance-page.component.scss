@@ -4,11 +4,11 @@
 }
 
 .hero {
-  padding: 1.25rem;
+  background: var(--app-surface-raised);
   border: 1px solid var(--app-border-soft);
   border-radius: 0.5rem;
-  background: var(--app-surface-raised);
   box-shadow: var(--app-shadow-soft);
+  padding: 1.25rem;
 }
 
 .hero h2 {
@@ -16,24 +16,8 @@
 }
 
 .hero p {
-  margin-bottom: 0;
   color: var(--role-muted);
-}
-
-.admin-grid {
-  display: grid;
-  gap: 1.5rem;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-}
-
-.admin-grid--single {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-@media (max-width: 1180px) {
-  .admin-grid {
-    grid-template-columns: 1fr;
-  }
+  margin-bottom: 0;
 }
 
 @media (max-width: 760px) {

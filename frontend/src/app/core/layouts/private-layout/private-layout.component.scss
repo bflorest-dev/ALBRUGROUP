@@ -231,6 +231,24 @@
     position: static;
     height: auto;
     overflow: visible;
+    padding: 0.9rem;
+  }
+
+  .sidebar__brand {
+    padding-bottom: 0.6rem;
+  }
+
+  .menu {
+    grid-template-columns: repeat(auto-fit, minmax(8.8rem, 1fr));
+  }
+
+  .menu__section {
+    grid-column: 1 / -1;
+  }
+
+  .menu__item {
+    min-height: 2.55rem;
+    padding: 0.65rem 0.7rem;
   }
 
   .sidebar__bottom {
@@ -240,5 +258,46 @@
 
   .content {
     padding: 1rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .sidebar__brand {
+    align-items: center;
+    padding-inline: 0.25rem;
+  }
+
+  .brand__logo {
+    height: 2.35rem;
+    width: 2.35rem;
+  }
+
+  .brand__title {
+    font-size: 0.98rem;
+  }
+
+  .menu {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .menu__item {
+    border-radius: 0.5rem;
+    justify-content: flex-start;
+  }
+
+  .menu__item-main {
+    gap: 0.55rem;
+  }
+
+  .menu__item-main span {
+    white-space: normal;
+  }
+
+  .profile-button {
+    padding: 0.65rem;
+  }
+
+  .content {
+    padding: 0.75rem;
   }
 }

@@ -1,0 +1,226 @@
+<section class="finance-page">
+  <p-card styleClass="community-table-card finance-toolbar-card">
+    <div class="finance-toolbar">
+      <div>
+        <h2>{{ panelTitle() }}</h2>
+        <p>{{ display(subtitle()) }}</p>
+      </div>
+      <div class="finance-toolbar__actions">
+        <label>
+          <span>Dia</span>
+          <input pInputText type="date" [value]="financeDate()" (change)="financeDateChanged.emit($any($event.target).value)" />
+        </label>
+        <label>
+          <span>Mes</span>
+          <input pInputText type="month" [value]="financeMonth()" (change)="financeMonthChanged.emit($any($event.target).value)" />
+        </label>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          label="Actualizar"
+          severity="secondary"
+          [loading]="isLoading()"
+          (click)="reload.emit()"
+        ></button>
+        @if (allowExpenseRegistration()) {
+          <button pButton type="button" icon="pi pi-plus" label="Agregar gasto" (click)="openExpenseDialog.emit()"></button>
+        }
+      </div>
+    </div>
+  </p-card>
+
+  <section class="finance-summary-grid">
+    <p-card styleClass="community-table-card">
+      <ng-template #title>Estado del dia</ng-template>
+      <div class="finance-kpi-grid">
+        @for (card of dailyCards(); track card.label) {
+          <article class="finance-kpi finance-kpi--{{ card.tone }}">
+            <span>{{ card.label }}</span>
+            <strong>{{ card.value }}</strong>
+          </article>
+        }
+      </div>
+    </p-card>
+
+    <p-card styleClass="community-table-card">
+      <ng-template #title>Estado mensual</ng-template>
+      <div class="finance-kpi-grid">
+        @for (card of monthlyCards(); track card.label) {
+          <article class="finance-kpi finance-kpi--{{ card.tone }}">
+            <span>{{ card.label }}</span>
+            <strong>{{ card.value }}</strong>
+          </article>
+        }
+      </div>
+    </p-card>
+  </section>
+
+  <p-card styleClass="community-table-card">
+    <ng-template #title>Estado del dia por campana</ng-template>
+    <p-table
+      [value]="dailyRows()"
+      [loading]="isLoading()"
+      [rowHover]="true"
+      [scrollable]="true"
+      [tableStyle]="{ 'min-width': '1180px' }"
+      styleClass="p-datatable-sm finance-table"
+    >
+      <ng-template #header>
+        <tr>
+          <th>Campana</th>
+          <th>Gasto Total</th>
+          <th>Costo por venta</th>
+          <th class="finance-col finance-col--reported">Leads</th>
+          <th class="finance-col finance-col--reported">Costo por Resultado</th>
+          <th class="finance-col finance-col--reported">Conversion</th>
+          <th class="finance-col finance-col--real">Leads</th>
+          <th class="finance-col finance-col--real">Costo por Resultado</th>
+          <th class="finance-col finance-col--real">Conversion</th>
+          <th>Ventas cerradas</th>
+          <th>Ultimo registro</th>
+          <th>Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-row>
+        <tr>
+          <td><strong>{{ row.nombreCampana }}</strong></td>
+          <td>{{ money(row.costoTotal) }}</td>
+          <td>{{ row.costoPorVenta }}</td>
+          <td class="finance-col finance-col--reported">{{ display(row.leads) }}</td>
+          <td class="finance-col finance-col--reported">{{ row.costoPorLead }}</td>
+          <td class="finance-col finance-col--reported"><p-tag severity="info" [value]="row.conversionLeads" /></td>
+          <td class="finance-col finance-col--real">{{ display(row.leadsReales) }}</td>
+          <td class="finance-col finance-col--real">{{ row.costoPorLeadReal }}</td>
+          <td class="finance-col finance-col--real"><p-tag severity="warn" [value]="row.conversionLeadsReales" /></td>
+          <td>{{ display(row.ventasCerradas) }}</td>
+          <td>{{ dateTime(row.ultimoRegistroAt) }}</td>
+          <td>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-list"
+              label="Historico"
+              size="small"
+              severity="secondary"
+              (click)="openSnapshots.emit(row)"
+            ></button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="12">No hay registros financieros para el dia.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+</section>
+
+@if (allowExpenseRegistration() && expenseForm()) {
+  <p-dialog
+    header="Agregar gasto de campana"
+    [visible]="expenseDialogVisible()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    styleClass="compact-dialog"
+    (onHide)="closeExpenseDialog.emit()"
+  >
+    <form class="form-grid" [formGroup]="expenseForm()" (ngSubmit)="submitExpense.emit()">
+      <label class="wide">
+        <span>Campana</span>
+        <p-select
+          formControlName="idCampana"
+          [options]="campaignOptions()"
+          optionLabel="nombre"
+          optionValue="id"
+          placeholder="Seleccionar campana"
+          appendTo="body"
+        />
+      </label>
+      <label>
+        <span>Leads reportados</span>
+        <input pInputText type="number" min="0" formControlName="leads" />
+      </label>
+      <label>
+        <span>Costo acumulado</span>
+        <div class="input-prefix">
+          <span>S/</span>
+          <input pInputText type="number" min="0" step="0.01" formControlName="costoTotal" />
+        </div>
+      </label>
+      <div class="form-actions wide">
+        <button pButton type="button" label="Cancelar" severity="secondary" (click)="closeExpenseDialog.emit()"></button>
+        <button pButton type="submit" icon="pi pi-save" label="Guardar gasto" [loading]="isSavingExpense()"></button>
+      </div>
+    </form>
+  </p-dialog>
+}
+
+<p-drawer [visible]="snapshotsVisible()" (visibleChange)="!$event && closeSnapshots.emit()" position="right" styleClass="finance-snapshots-drawer">
+  <ng-template #header>
+    <div>
+      <strong>{{ display(selectedCampaign()?.nombreCampana) }}</strong>
+      <p>{{ financeDate() }}</p>
+    </div>
+  </ng-template>
+
+  <div class="finance-snapshots-table-wrap">
+    <p-table
+      [value]="snapshotRows()"
+      [loading]="isLoadingSnapshots()"
+      [rowHover]="true"
+      [tableStyle]="{ 'min-width': '1120px' }"
+      styleClass="p-datatable-sm finance-table"
+    >
+      <ng-template #header>
+        <tr>
+          <th>Hora</th>
+          <th>Gasto Total</th>
+          <th>Costo por venta</th>
+          <th class="finance-col finance-col--reported">Leads</th>
+          <th class="finance-col finance-col--reported">Costo por Resultado</th>
+          <th class="finance-col finance-col--reported">Conversion</th>
+          <th class="finance-col finance-col--real">Leads</th>
+          <th class="finance-col finance-col--real">Costo por Resultado</th>
+          <th class="finance-col finance-col--real">Conversion</th>
+          <th>Ventas cerradas</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-row>
+        <tr>
+          <td>{{ dateTime(row.ultimoRegistroAt) }}</td>
+          <td>{{ money(row.costoTotal) }}</td>
+          <td>{{ row.costoPorVenta }}</td>
+          <td class="finance-col finance-col--reported">
+            <div class="finance-value-cell">
+              <span>{{ display(row.leads) }}</span>
+              @if (deltaBadge(row.deltaLeads); as deltaLeads) {
+                <span class="finance-delta-badge finance-delta-badge--reported">{{ deltaLeads }}</span>
+              }
+            </div>
+          </td>
+          <td class="finance-col finance-col--reported">{{ row.costoPorLead }}</td>
+          <td class="finance-col finance-col--reported"><p-tag severity="info" [value]="row.conversionLeads" /></td>
+          <td class="finance-col finance-col--real">
+            <div class="finance-value-cell">
+              <span>{{ display(row.leadsReales) }}</span>
+              @if (deltaBadge(row.deltaLeadsReales); as deltaLeadsReales) {
+                <span class="finance-delta-badge finance-delta-badge--real">{{ deltaLeadsReales }}</span>
+              }
+            </div>
+          </td>
+          <td class="finance-col finance-col--real">{{ row.costoPorLeadReal }}</td>
+          <td class="finance-col finance-col--real"><p-tag severity="warn" [value]="row.conversionLeadsReales" /></td>
+          <td>{{ display(row.ventasCerradas) }}</td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="10">No hay historico de registros para la campaña seleccionada.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</p-drawer>
