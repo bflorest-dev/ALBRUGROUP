@@ -66,6 +66,7 @@
             [class.p-invalid]="isInvalid('modalidad')"
             [attr.title]="isInvalid('modalidad') ? 'Campo obligatorio.' : null"
             appendTo="body"
+            (onChange)="setModalidad($event.value)"
           />
         </label>
 
@@ -150,6 +151,127 @@
           </label>
         }
       </form>
+
+      <section class="schedule-section">
+        <div class="section-title">
+          <p-tag value="Horario" severity="info" />
+          <span>El horario iniciara con la fecha del contrato.</span>
+        </div>
+
+        <form [formGroup]="horarioForm" class="form-grid">
+          <label class="field">
+            <span>Compensable</span>
+            <p-togglebutton
+              [ngModel]="isCompensable()"
+              [ngModelOptions]="{ standalone: true }"
+              onLabel="SI"
+              offLabel="NO"
+              onIcon="pi pi-check"
+              offIcon="pi pi-times"
+              [styleClass]="isCompensable() ? 'compensable-toggle is-yes' : 'compensable-toggle is-no'"
+              (onChange)="setCompensable($event.checked)"
+            />
+          </label>
+
+          <div class="field--wide">
+            <p-message severity="info" [text]="scheduleRuleHint()" />
+          </div>
+
+          <div class="schedule-simple field--wide">
+            <div class="schedule-simple__times">
+              <label class="field field--time">
+                <span>Entrada</span>
+                <p-datepicker
+                  formControlName="horaEntrada"
+                  dataType="string"
+                  [timeOnly]="true"
+                  hourFormat="24"
+                  [stepMinute]="15"
+                  [showIcon]="true"
+                  icon="pi pi-clock"
+                  [class.p-invalid]="isSimpleScheduleFieldInvalid('horaEntrada')"
+                  appendTo="body"
+                  (onSelect)="applySimpleSchedule()"
+                  (onInput)="applySimpleSchedule()"
+                />
+              </label>
+
+              <label class="field field--time">
+                <span>Salida</span>
+                <p-datepicker
+                  formControlName="horaSalida"
+                  dataType="string"
+                  [timeOnly]="true"
+                  hourFormat="24"
+                  [stepMinute]="15"
+                  [showIcon]="true"
+                  icon="pi pi-clock"
+                  [class.p-invalid]="isSimpleScheduleFieldInvalid('horaSalida')"
+                  appendTo="body"
+                  (onSelect)="applySimpleSchedule()"
+                  (onInput)="applySimpleSchedule()"
+                />
+              </label>
+
+              @if (usesLunchBreak()) {
+                <label class="field field--time">
+                  <span>Inicio almuerzo</span>
+                  <p-datepicker
+                    formControlName="inicioAlmuerzo"
+                    dataType="string"
+                    [timeOnly]="true"
+                    hourFormat="24"
+                    [stepMinute]="15"
+                    [showIcon]="true"
+                    icon="pi pi-clock"
+                    [class.p-invalid]="isSimpleScheduleFieldInvalid('inicioAlmuerzo')"
+                    appendTo="body"
+                    (onSelect)="applySimpleSchedule()"
+                    (onInput)="applySimpleSchedule()"
+                  />
+                </label>
+
+                <label class="field field--time">
+                  <span>Fin almuerzo</span>
+                  <p-datepicker
+                    formControlName="finAlmuerzo"
+                    dataType="string"
+                    [timeOnly]="true"
+                    hourFormat="24"
+                    [stepMinute]="15"
+                    [showIcon]="true"
+                    icon="pi pi-clock"
+                    [class.p-invalid]="isSimpleScheduleFieldInvalid('finAlmuerzo')"
+                    appendTo="body"
+                    (onSelect)="applySimpleSchedule()"
+                    (onInput)="applySimpleSchedule()"
+                  />
+                </label>
+              }
+            </div>
+
+            <div class="day-strip">
+              @for (day of diasSemanaOptions; track day) {
+                <button
+                  type="button"
+                  class="day-toggle"
+                  [class.day-toggle--rest]="isRestDay(day)"
+                  (click)="selectRestDay(day)"
+                >
+                  <p-tag
+                    [value]="toLabel(day).slice(0, 3)"
+                    [severity]="isRestDay(day) ? 'secondary' : 'success'"
+                  />
+                </button>
+              }
+            </div>
+          </div>
+        </form>
+
+        @if (scheduleValidationMessage(); as scheduleMessage) {
+          <p-message severity="error" [text]="scheduleMessage" />
+        }
+      </section>
     }
 
     <div class="actions actions--end">
@@ -165,7 +287,7 @@
       <button
         pButton
         type="button"
-        label="Registrar nuevo contrato"
+        label="Registrar contrato y horario"
         icon="pi pi-briefcase"
         [loading]="isSubmitting"
         [disabled]="isLoadingCurrentContract"

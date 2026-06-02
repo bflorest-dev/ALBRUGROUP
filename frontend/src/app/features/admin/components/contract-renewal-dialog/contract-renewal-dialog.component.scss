@@ -35,6 +35,56 @@
   font-weight: 700;
 }
 
+.field--wide {
+  grid-column: 1 / -1;
+}
+
+.schedule-section {
+  border-top: 1px solid var(--app-border-soft);
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1.1rem;
+  padding-top: 1rem;
+}
+
+.section-title {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.section-title span {
+  color: var(--role-muted);
+  font-size: 0.86rem;
+}
+
+.schedule-simple {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.schedule-simple__times {
+  align-items: end;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(4, minmax(8rem, 1fr));
+}
+
+.day-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.day-toggle {
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 0;
+}
+
 .field .p-invalid {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-danger) 15%, transparent 85%);
 }
@@ -52,12 +102,39 @@
 :host ::ng-deep .p-select,
 :host ::ng-deep .p-datepicker,
 :host ::ng-deep .p-inputtext,
-:host ::ng-deep .contract-end-toggle {
+:host ::ng-deep .contract-end-toggle,
+:host ::ng-deep .compensable-toggle {
   width: 100%;
+}
+
+:host ::ng-deep .day-toggle:not(.day-toggle--rest) .p-tag {
+  background: #15803d;
+  color: #ffffff;
+}
+
+:host ::ng-deep .compensable-toggle.is-yes.p-togglebutton {
+  background: #15803d;
+  border-color: #15803d;
+  color: #ffffff;
+}
+
+:host ::ng-deep .compensable-toggle.is-no.p-togglebutton {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+:host ::ng-deep .compensable-toggle .p-button-icon,
+:host ::ng-deep .compensable-toggle .p-button-label {
+  color: #ffffff;
 }
 
 @media (max-width: 760px) {
   .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-simple__times {
     grid-template-columns: 1fr;
   }
 

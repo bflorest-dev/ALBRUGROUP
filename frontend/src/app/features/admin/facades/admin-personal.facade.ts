@@ -496,6 +496,9 @@ export class AdminPersonalFacade implements OnDestroy {
   readonly employeesPage = signal<PageResponse<EmpleadoResponse> | null>(null);
   readonly isLoadingEmployees = signal(false);
   readonly employeeListErrorMessage = signal('');
+  readonly inactiveEmployeesPage = signal<PageResponse<EmpleadoResponse> | null>(null);
+  readonly isLoadingInactiveEmployees = signal(false);
+  readonly inactiveEmployeeListErrorMessage = signal('');
   readonly activeEmployees = signal<EmpleadoRolResponse[]>([]);
   readonly isLoadingActiveEmployees = signal(false);
   readonly activeEmployeeListErrorMessage = signal('');
@@ -533,6 +536,12 @@ export class AdminPersonalFacade implements OnDestroy {
   private readonly modalidadValue = toSignal(
     this.contratoForm.controls.modalidad.valueChanges.pipe(startWith(this.contratoForm.controls.modalidad.getRawValue())),
     { initialValue: this.contratoForm.controls.modalidad.getRawValue() }
+  );
+  private readonly contractRenewalModalidadValue = toSignal(
+    this.contractRenewalForm.controls.modalidad.valueChanges.pipe(
+      startWith(this.contractRenewalForm.controls.modalidad.getRawValue())
+    ),
+    { initialValue: this.contractRenewalForm.controls.modalidad.getRawValue() }
   );
 
   readonly isSubmitting = computed(() => this.createFlowState().status === 'loading');
@@ -597,6 +606,20 @@ export class AdminPersonalFacade implements OnDestroy {
 
     effect(() => {
       const modalidad = this.modalidadValue();
+
+      untracked(() => {
+        this.applySchedulePresetForModalidad(modalidad);
+        this.syncLunchBreakControls();
+        this.horarioForm.updateValueAndValidity({ emitEvent: false });
+      });
+    });
+
+    effect(() => {
+      const modalidad = this.contractRenewalModalidadValue();
+
+      if (!this.isContractRenewalVisible()) {
+        return;
+      }
 
       untracked(() => {
         this.applySchedulePresetForModalidad(modalidad);
@@ -719,6 +742,7 @@ export class AdminPersonalFacade implements OnDestroy {
   initialize(): void {
     this.loadEmployees();
     void this.loadActiveEmployees();
+    void this.loadInactiveEmployees();
     this.startRealtime();
   }
 
@@ -1002,6 +1026,24 @@ export class AdminPersonalFacade implements OnDestroy {
     }
   }
 
+  async loadInactiveEmployees(): Promise<void> {
+    this.isLoadingInactiveEmployees.set(true);
+    this.inactiveEmployeeListErrorMessage.set('');
+
+    try {
+      const page = await firstValueFrom(
+        this.adminRrhhService.getEmpleados(0, 8, 'INACTIVO').pipe(timeout(this.requestTimeoutMs))
+      );
+      this.inactiveEmployeesPage.set(page);
+    } catch (error) {
+      this.inactiveEmployeeListErrorMessage.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No fue posible cargar empleados inactivos.')
+      );
+    } finally {
+      this.isLoadingInactiveEmployees.set(false);
+    }
+  }
+
   async loadEmployeeStates(): Promise<void> {
     const employees = this.activeEmployees();
     if (!employees.length) return;
@@ -1178,6 +1220,8 @@ export class AdminPersonalFacade implements OnDestroy {
       );
       this.bajaSuccessMessage.set(`${employee.nombres} ${employee.apellidos} ha sido dado de baja correctamente.`);
       this.loadEmployees(0, true);
+      void this.loadInactiveEmployees();
+      void this.loadActiveEmployees();
     } catch (error) {
       this.bajaErrorMessage.set(
         this.getErrorMessage(error as HttpErrorResponse, 'No se pudo completar la baja. Intenta de nuevo.')
@@ -1187,14 +1231,19 @@ export class AdminPersonalFacade implements OnDestroy {
     }
   }
 
-  async openContractRenewal(employee: EmpleadoRolResponse): Promise<void> {
+  async openContractRenewal(employee: EmpleadoRolResponse, loadCurrentContract = true): Promise<void> {
     this.selectedEmployeeForContractRenewal.set(employee);
     this.currentContractForRenewal.set(null);
     this.contractRenewalErrorMessage.set('');
     this.contractRenewalSuccessMessage.set('');
     this.isContractRenewalVisible.set(true);
-    this.isLoadingContractRenewal.set(true);
+    this.isLoadingContractRenewal.set(loadCurrentContract);
     this.resetContractRenewalForm();
+    this.resetContractRenewalScheduleForm();
+
+    if (!loadCurrentContract) {
+      return;
+    }
 
     try {
       const contrato = await firstValueFrom(
@@ -1211,6 +1260,21 @@ export class AdminPersonalFacade implements OnDestroy {
     }
   }
 
+  async openContractRenewalFromInactive(employee: EmpleadoResponse): Promise<void> {
+    await this.openContractRenewal(
+      {
+        idEmpleado: employee.id,
+        nombres: employee.nombres,
+        apellidos: employee.apellidos,
+        numeroDocumento: employee.numeroDocumento,
+        celularPersonal: employee.celularPersonal,
+        correoPersonal: employee.correoPersonal,
+        puestoTrabajo: 'SIN_CONTRATO'
+      },
+      false
+    );
+  }
+
   closeContractRenewal(): void {
     this.isContractRenewalVisible.set(false);
     this.isLoadingContractRenewal.set(false);
@@ -1219,6 +1283,7 @@ export class AdminPersonalFacade implements OnDestroy {
     this.selectedEmployeeForContractRenewal.set(null);
     this.currentContractForRenewal.set(null);
     this.resetContractRenewalForm();
+    this.resetContractRenewalScheduleForm();
   }
 
   async submitContractRenewal(): Promise<void> {
@@ -1232,6 +1297,14 @@ export class AdminPersonalFacade implements OnDestroy {
       return;
     }
 
+    this.horarioForm.controls.fechaInicio.setValue(this.contractRenewalForm.controls.fechaInicio.getRawValue());
+    this.syncLunchBreakControls();
+    this.horarioForm.updateValueAndValidity({ emitEvent: false });
+    if (this.horarioForm.invalid) {
+      this.horarioForm.markAllAsTouched();
+      return;
+    }
+
     this.contractRenewalErrorMessage.set('');
     this.contractRenewalSuccessMessage.set('');
     this.isSubmittingContractRenewal.set(true);
@@ -1242,15 +1315,26 @@ export class AdminPersonalFacade implements OnDestroy {
           .registrarContrato(employee.idEmpleado, this.buildContratoRequestFromForm(this.contractRenewalForm))
           .pipe(timeout(this.requestTimeoutMs))
       );
+      const horarioRequest = this.buildHorarioRequestForModalidad(this.contractRenewalForm.controls.modalidad.getRawValue());
+      await firstValueFrom(
+        this.adminRrhhService
+          .registrarHorario({
+            idEmpleado: employee.idEmpleado,
+            idContrato: contrato.id,
+            ...horarioRequest
+          })
+          .pipe(timeout(this.requestTimeoutMs))
+      );
 
       this.currentContractForRenewal.set(contrato);
-      this.contractRenewalSuccessMessage.set('Nuevo contrato registrado. El acceso del usuario se sincronizo.');
+      this.contractRenewalSuccessMessage.set('Nuevo contrato y horario registrados. El acceso del usuario se sincronizo.');
       this.isContractRenewalVisible.set(false);
       void this.loadActiveEmployees();
+      void this.loadInactiveEmployees();
       this.refreshUserAccess(employee.idEmpleado);
     } catch (error) {
       this.contractRenewalErrorMessage.set(
-        this.getErrorMessage(error as HttpErrorResponse, 'No se pudo registrar el nuevo contrato.')
+        this.getErrorMessage(error as HttpErrorResponse, 'No se pudo registrar el nuevo contrato y horario.')
       );
     } finally {
       this.isSubmittingContractRenewal.set(false);
@@ -1294,10 +1378,13 @@ export class AdminPersonalFacade implements OnDestroy {
   }
 
   private buildHorarioRequest(): Omit<RegistrarHorarioRequest, 'idEmpleado' | 'idContrato'> {
+    return this.buildHorarioRequestForModalidad(this.contratoForm.controls.modalidad.getRawValue());
+  }
+
+  private buildHorarioRequestForModalidad(modalidad: string): Omit<RegistrarHorarioRequest, 'idEmpleado' | 'idContrato'> {
     this.syncLunchBreakControls();
-    this.syncSimpleScheduleRows();
+    this.syncSimpleScheduleRows(modalidad);
     const raw = this.horarioForm.getRawValue();
-    const modalidad = this.contratoForm.controls.modalidad.getRawValue();
     const requiereAlmuerzo = this.requiresLunchBreak(modalidad);
 
     return {
@@ -1330,13 +1417,13 @@ export class AdminPersonalFacade implements OnDestroy {
     );
   }
 
-  private syncSimpleScheduleRows(): void {
+  private syncSimpleScheduleRows(modalidad = this.currentScheduleModalidad()): void {
     const raw = this.horarioForm.getRawValue();
     if (raw.modoAvanzado === 'true') {
       return;
     }
 
-    const requiereAlmuerzo = this.requiresLunchBreak(this.contratoForm.controls.modalidad.getRawValue());
+    const requiereAlmuerzo = this.requiresLunchBreak(modalidad);
     for (const row of this.horarioForm.controls.detalles.controls) {
       row.patchValue({
         horaEntrada: raw.horaEntrada,
@@ -1349,7 +1436,7 @@ export class AdminPersonalFacade implements OnDestroy {
   }
 
   private syncLunchBreakControls(): void {
-    const rule = this.resolveScheduleRule(this.contratoForm.controls.modalidad.getRawValue());
+    const rule = this.resolveScheduleRule(this.currentScheduleModalidad());
     const requiereAlmuerzo = rule.requiresLunch;
     const defaults = {
       inicioAlmuerzo: rule.defaultLunchStart,
@@ -1420,7 +1507,7 @@ export class AdminPersonalFacade implements OnDestroy {
           laborable: string;
         }>;
       };
-      const modalidad = this.contratoForm.controls.modalidad.getRawValue();
+      const modalidad = this.currentScheduleModalidad();
       const rule = this.resolveScheduleRule(modalidad);
 
       if (raw.modoAvanzado === 'true') {
@@ -1531,6 +1618,15 @@ export class AdminPersonalFacade implements OnDestroy {
     return this.scheduleRules[modalidad] ?? this.scheduleRules['FULL_TIME'];
   }
 
+  private currentScheduleModalidad(): string {
+    const isRenewalVisible =
+      typeof this.isContractRenewalVisible === 'function' && this.isContractRenewalVisible();
+
+    return isRenewalVisible
+      ? this.contractRenewalForm.controls.modalidad.getRawValue()
+      : this.contratoForm.controls.modalidad.getRawValue();
+  }
+
   private applySchedulePresetForModalidad(modalidad: string, force = false): void {
     const rule = this.resolveScheduleRule(modalidad);
     const current = this.horarioForm.getRawValue();
@@ -1617,6 +1713,23 @@ export class AdminPersonalFacade implements OnDestroy {
       fechaFin: '',
       fechaFinHabilitada: 'false'
     });
+  }
+
+  private resetContractRenewalScheduleForm(): void {
+    this.horarioForm.reset({
+      fechaInicio: this.contractRenewalForm.controls.fechaInicio.getRawValue() || this.getToday(),
+      compensable: 'true',
+      horaEntrada: '09:00',
+      horaSalida: '18:00',
+      inicioAlmuerzo: '13:00',
+      finAlmuerzo: '14:00',
+      diaDescanso: 'DOMINGO',
+      modoAvanzado: 'false'
+    });
+    this.resetScheduleRows();
+    this.applySchedulePresetForModalidad(this.contractRenewalForm.controls.modalidad.getRawValue(), true);
+    this.syncLunchBreakControls();
+    this.horarioForm.updateValueAndValidity({ emitEvent: false });
   }
 
   private refreshUserAccess(empleadoId: number): void {

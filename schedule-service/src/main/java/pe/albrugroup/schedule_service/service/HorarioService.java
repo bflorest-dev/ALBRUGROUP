@@ -25,6 +25,7 @@ import pe.albrugroup.schedule_service.exception.BadRequestException;
 import pe.albrugroup.schedule_service.exception.ConflictException;
 import pe.albrugroup.schedule_service.exception.NotFoundException;
 import pe.albrugroup.schedule_service.repository.ExcepcionHorarioRepository;
+import pe.albrugroup.schedule_service.repository.AsistenciaRepository;
 import pe.albrugroup.schedule_service.repository.HorarioRepository;
 import pe.albrugroup.schedule_service.service.mapper.HorarioMapper;
 import pe.albrugroup.schedule_service.usecase.IHorario;
@@ -41,6 +42,7 @@ public class HorarioService implements IHorario {
 
     private final HorarioRepository horarioRepository;
     private final ExcepcionHorarioRepository excepcionHorarioRepository;
+    private final AsistenciaRepository asistenciaRepository;
     private final PoliticaModalidadService politicaModalidadService;
     private final PaginationService paginationService;
     private final HorarioMapper mapper;
@@ -52,7 +54,22 @@ public class HorarioService implements IHorario {
     public HorarioResponse registrarHorario(RegistrarHorarioRequest request) {
         validarDiasDuplicados(request.getDetalles().stream().map(detalle -> detalle.getDia()).toList());
         normalizarAlmuerzoPorModalidad(request.getModalidad(), request.getDetalles());
-        validarSolapamiento(request.getIdEmpleado(), request.getFechaInicio(), null, null);
+
+        Horario horarioVigente = horarioRepository
+                .findHorarioVigente(request.getIdEmpleado(), request.getFechaInicio())
+                .orElse(null);
+
+        if (horarioVigente != null && horarioVigente.getFechaInicio().isEqual(request.getFechaInicio())) {
+            return corregirHorarioBaseMismaFecha(horarioVigente, request);
+        }
+
+        if (horarioVigente != null && horarioVigente.getFechaInicio().isBefore(request.getFechaInicio())) {
+            horarioVigente.setFechaFin(request.getFechaInicio().minusDays(1));
+            horarioRepository.save(horarioVigente);
+        }
+
+        Long excludeId = horarioVigente != null ? horarioVigente.getId() : null;
+        validarSolapamiento(request.getIdEmpleado(), request.getFechaInicio(), null, excludeId);
 
         Horario horario = mapper.toEntity(request);
         PoliticaModalidad politica = politicaModalidadService.getPolitica(request.getModalidad());
@@ -63,6 +80,42 @@ public class HorarioService implements IHorario {
         Horario savedHorario = horarioRepository.save(horario);
         attendanceRealtimeNotifier.publishAfterCommit(
                 "HORARIO_AFECTADO",
+                "HORARIO",
+                savedHorario.getIdEmpleado(),
+                savedHorario.getFechaInicio(),
+                null
+        );
+        return mapper.toResponse(savedHorario);
+    }
+
+    private HorarioResponse corregirHorarioBaseMismaFecha(Horario horario, RegistrarHorarioRequest request) {
+        asistenciaRepository.findByIdEmpleadoAndFecha(request.getIdEmpleado(), request.getFechaInicio())
+                .ifPresent(asistencia -> {
+                    throw new ConflictException(
+                            "No se puede corregir el horario base porque ya existe asistencia para esa fecha",
+                            request.getFechaInicio()
+                    );
+                });
+
+        horario.setIdContrato(request.getIdContrato());
+        horario.setFechaFin(null);
+        horario.setCompensable(request.getCompensable());
+
+        PoliticaModalidad politica = politicaModalidadService.getPolitica(request.getModalidad());
+        politicaModalidadService.aplicarPolitica(horario, politica);
+
+        horario.getDetalles().clear();
+        horarioRepository.flush();
+        request.getDetalles().stream()
+                .map(mapper::toDetalle)
+                .forEach(detalle -> {
+                    detalle.setHorario(horario);
+                    horario.getDetalles().add(detalle);
+                });
+
+        Horario savedHorario = horarioRepository.save(horario);
+        attendanceRealtimeNotifier.publishAfterCommit(
+                "HORARIO_CORREGIDO",
                 "HORARIO",
                 savedHorario.getIdEmpleado(),
                 savedHorario.getFechaInicio(),

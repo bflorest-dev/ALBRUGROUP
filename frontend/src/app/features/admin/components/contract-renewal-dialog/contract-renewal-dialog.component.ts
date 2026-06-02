@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
-import { FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { AbstractControl, FormArray, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DatePickerModule } from 'primeng/datepicker';
 import { DialogModule } from 'primeng/dialog';
@@ -14,6 +14,11 @@ import { formatLabel } from '../../../../shared/utils/display-label';
 type SelectOption = {
   label: string;
   value: string;
+};
+
+type ScheduleRule = {
+  durationLabel: string;
+  lunchLabel: string | null;
 };
 
 @Component({
@@ -38,11 +43,13 @@ export class ContractRenewalDialogComponent {
   @Input({ required: true }) visible = false;
   @Input({ required: true }) employee: EmpleadoRolResponse | null = null;
   @Input({ required: true }) contractForm!: FormGroup;
+  @Input({ required: true }) horarioForm!: FormGroup;
   @Input({ required: true }) puestoTrabajoOptions: string[] = [];
   @Input({ required: true }) regimenOptions: string[] = [];
   @Input({ required: true }) modalidadOptions: string[] = [];
   @Input({ required: true }) seguroSaludOptions: string[] = [];
   @Input({ required: true }) sistemaPensionesOptions: string[] = [];
+  @Input({ required: true }) diasSemanaOptions: string[] = [];
   @Input({ required: true }) isLoadingCurrentContract = false;
   @Input({ required: true }) isSubmitting = false;
   @Input({ required: true }) errorMessage = '';
@@ -53,6 +60,12 @@ export class ContractRenewalDialogComponent {
 
   private readonly optionItemsCache = new WeakMap<readonly string[], SelectOption[]>();
   private readonly pickerDateCache = new Map<string, Date | null>();
+  private readonly scheduleRules: Record<string, ScheduleRule> = {
+    PART_TIME: { durationLabel: '4 horas', lunchLabel: null },
+    SEMI_FULL: { durationLabel: '6 horas', lunchLabel: null },
+    FULL_TIME: { durationLabel: '9 horas', lunchLabel: '60 minutos de almuerzo' },
+    SUPER_FULL: { durationLabel: '10 horas', lunchLabel: '60 minutos de almuerzo' }
+  };
 
   protected optionItems(options: string[]): SelectOption[] {
     let cached = this.optionItemsCache.get(options);
@@ -108,9 +121,14 @@ export class ContractRenewalDialogComponent {
 
   protected setDateControl(controlName: string, value: Date | string | null): void {
     const control = this.contractForm.get(controlName);
-    control?.setValue(this.toBackendDate(value));
+    const backendDate = this.toBackendDate(value);
+    control?.setValue(backendDate);
     control?.markAsDirty();
     control?.markAsTouched();
+
+    if (controlName === 'fechaInicio') {
+      this.horarioForm.get('fechaInicio')?.setValue(backendDate);
+    }
   }
 
   protected hasContractEndDate(): boolean {
@@ -148,6 +166,81 @@ export class ContractRenewalDialogComponent {
     }
   }
 
+  protected setModalidad(modalidad: string): void {
+    this.contractForm.get('modalidad')?.setValue(modalidad);
+    this.syncLunchBreakByModalidad();
+    this.applySimpleSchedule();
+  }
+
+  protected usesLunchBreak(): boolean {
+    return this.usesLunchBreakFor(this.contractForm.get('modalidad')?.value);
+  }
+
+  protected isCompensable(): boolean {
+    return this.horarioForm.get('compensable')?.value === 'true';
+  }
+
+  protected setCompensable(enabled: boolean): void {
+    this.horarioForm.get('compensable')?.setValue(String(enabled));
+  }
+
+  protected selectRestDay(day: string): void {
+    this.horarioForm.get('diaDescanso')?.setValue(day);
+    this.applySimpleSchedule();
+  }
+
+  protected isRestDay(day: string): boolean {
+    return this.horarioForm.get('diaDescanso')?.value === day;
+  }
+
+  protected applySimpleSchedule(): void {
+    const restDay = this.horarioForm.get('diaDescanso')?.value ?? 'DOMINGO';
+    const horaEntrada = this.horarioForm.get('horaEntrada')?.value ?? '09:00';
+    const horaSalida = this.horarioForm.get('horaSalida')?.value ?? '18:00';
+    const inicioAlmuerzo = this.usesLunchBreak() ? this.horarioForm.get('inicioAlmuerzo')?.value || '13:00' : '';
+    const finAlmuerzo = this.usesLunchBreak() ? this.horarioForm.get('finAlmuerzo')?.value || '14:00' : '';
+
+    for (const row of this.getScheduleRows()) {
+      row.patchValue({
+        horaEntrada,
+        horaSalida,
+        inicioAlmuerzo,
+        finAlmuerzo,
+        laborable: row.get('dia')?.value === restDay ? 'false' : 'true'
+      });
+    }
+  }
+
+  protected scheduleRuleHint(): string {
+    const modalidad = this.contractForm.get('modalidad')?.value ?? 'FULL_TIME';
+    const rule = this.scheduleRules[modalidad] ?? this.scheduleRules['FULL_TIME'];
+
+    if (rule.lunchLabel) {
+      return `${this.toLabel(modalidad)}: ${rule.durationLabel} entre entrada y salida, con ${rule.lunchLabel}.`;
+    }
+
+    return `${this.toLabel(modalidad)}: ${rule.durationLabel} entre entrada y salida, sin almuerzo.`;
+  }
+
+  protected scheduleValidationMessage(): string | null {
+    const error = this.horarioForm.errors?.['scheduleRule'] as { message?: string } | undefined;
+    if (!error?.message) {
+      return null;
+    }
+
+    return this.horarioForm.touched || this.horarioForm.dirty ? error.message : null;
+  }
+
+  protected isSimpleScheduleFieldInvalid(controlName: string): boolean {
+    const control = this.horarioForm.get(controlName);
+    if (control?.invalid && (control.touched || control.dirty)) {
+      return true;
+    }
+
+    const error = this.horarioForm.errors?.['scheduleRule'] as { simpleFields?: string[] } | undefined;
+    return Boolean(error?.simpleFields?.includes(controlName) && (this.horarioForm.touched || this.horarioForm.dirty));
+  }
+
   private toBackendDate(value: Date | string | null): string {
     if (value instanceof Date && !Number.isNaN(value.getTime())) {
       const month = `${value.getMonth() + 1}`.padStart(2, '0');
@@ -166,5 +259,31 @@ export class ContractRenewalDialogComponent {
     }
 
     return value;
+  }
+
+  private getScheduleRows(): AbstractControl[] {
+    return (this.horarioForm.get('detalles') as FormArray).controls;
+  }
+
+  private syncLunchBreakByModalidad(): void {
+    if (!this.usesLunchBreak()) {
+      this.horarioForm.patchValue({
+        inicioAlmuerzo: '',
+        finAlmuerzo: ''
+      });
+      return;
+    }
+
+    if (!this.horarioForm.get('inicioAlmuerzo')?.value) {
+      this.horarioForm.get('inicioAlmuerzo')?.setValue('13:00');
+    }
+
+    if (!this.horarioForm.get('finAlmuerzo')?.value) {
+      this.horarioForm.get('finAlmuerzo')?.setValue('14:00');
+    }
+  }
+
+  private usesLunchBreakFor(modalidad: string | null | undefined): boolean {
+    return modalidad !== 'PART_TIME' && modalidad !== 'SEMI_FULL';
   }
 }

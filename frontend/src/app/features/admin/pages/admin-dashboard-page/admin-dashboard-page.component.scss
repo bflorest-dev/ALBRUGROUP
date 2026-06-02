@@ -30,6 +30,55 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+.inactive-panel {
+  background: var(--app-surface-raised);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.5rem;
+  box-shadow: var(--app-shadow-soft);
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.inactive-panel__header {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.inactive-panel__header h3 {
+  margin: 0.55rem 0 0.25rem;
+}
+
+.inactive-panel__header p {
+  color: var(--role-muted);
+  margin: 0;
+}
+
+.cell-email {
+  overflow-wrap: anywhere;
+}
+
+:host ::ng-deep .inactive-table .p-datatable-thead > tr > th {
+  background: #f4f8f6;
+  color: #304438;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+:host ::ng-deep .inactive-table .p-datatable-tbody > tr > td {
+  font-size: 0.82rem;
+  vertical-align: middle;
+}
+
+:host ::ng-deep .inactive-table .col-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
 @media (max-width: 1180px) {
   .admin-grid {
     grid-template-columns: 1fr;
@@ -47,5 +96,54 @@
 
   .hero h2 {
     margin: 0.55rem 0;
+  }
+
+  .inactive-panel {
+    padding: 1rem;
+  }
+
+  .inactive-panel__header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  :host ::ng-deep .inactive-table .p-datatable-thead {
+    display: none;
+  }
+
+  :host ::ng-deep .inactive-table .p-datatable-tbody > tr {
+    border: 1px solid var(--app-border-soft);
+    border-radius: 8px;
+    display: grid;
+    margin-bottom: 0.75rem;
+    padding: 0.8rem;
+  }
+
+  :host ::ng-deep .inactive-table .p-datatable-tbody > tr > td {
+    border: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0.35rem 0;
+  }
+
+  :host ::ng-deep .inactive-table .p-datatable-tbody > tr > td:nth-child(1)::before { content: 'Empleado'; }
+  :host ::ng-deep .inactive-table .p-datatable-tbody > tr > td:nth-child(2)::before { content: 'Documento'; }
+  :host ::ng-deep .inactive-table .p-datatable-tbody > tr > td:nth-child(3)::before { content: 'Celular'; }
+  :host ::ng-deep .inactive-table .p-datatable-tbody > tr > td:nth-child(4)::before { content: 'Correo'; }
+  :host ::ng-deep .inactive-table .p-datatable-tbody > tr > td:nth-child(5)::before { content: 'Estado'; }
+
+  :host ::ng-deep .inactive-table .p-datatable-tbody > tr > td::before {
+    color: var(--role-muted);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  :host ::ng-deep .inactive-table .p-datatable-tbody > tr > td.col-actions {
+    justify-content: stretch;
+  }
+
+  :host ::ng-deep .inactive-table .col-actions .p-button {
+    width: 100%;
   }
 }

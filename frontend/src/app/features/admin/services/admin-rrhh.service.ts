@@ -64,14 +64,16 @@ export class AdminRrhhService {
     return this.http.get<HorarioResponse>(`${this.horariosUrl}/empleados/${empleadoId}/vigente`, { params });
   }
 
-  getEmpleados(pageNumber = 0, pageSize = 8): Observable<PageResponse<EmpleadoResponse>> {
+  getEmpleados(pageNumber = 0, pageSize = 8, estado?: string): Observable<PageResponse<EmpleadoResponse>> {
     const params = new HttpParams()
       .set('pageNumber', pageNumber)
       .set('pageSize', pageSize)
       .set('sortBy', 'createdAt')
       .set('direction', 'desc');
 
-    return this.http.get<PageResponse<EmpleadoResponse>>(this.empleadosUrl, { params });
+    return this.http.get<PageResponse<EmpleadoResponse>>(this.empleadosUrl, {
+      params: estado ? params.set('estado', estado) : params
+    });
   }
 
   listarEmpleadosLight(): Observable<EmpleadoRolResponse[]> {
