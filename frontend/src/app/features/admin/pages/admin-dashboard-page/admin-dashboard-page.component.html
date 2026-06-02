@@ -32,6 +32,7 @@
       [isDismissingEmployeeId]="facade.isDismissingEmployeeId()"
       (toggleAccess)="facade.toggleUserAccess($event)"
       (renewContract)="facade.openContractRenewal($event)"
+      (changeSchedule)="facade.openScheduleChange($event)"
       (editEmployee)="facade.openEditDialog($event)"
       (refreshStates)="facade.loadEmployeeStates()"
       (darDeBaja)="facade.darDeBajaEmpleado($event)"
@@ -121,6 +122,171 @@
       (visibleChange)="!$event && facade.closeContractRenewal()"
       (submit)="facade.submitContractRenewal()"
     />
+
+    <p-dialog
+      header="Cambiar horario"
+      [visible]="facade.isScheduleChangeVisible()"
+      (visibleChange)="!$event && facade.closeScheduleChange()"
+      [modal]="true"
+      [draggable]="false"
+      [resizable]="false"
+      appendTo="body"
+      styleClass="schedule-change-dialog"
+    >
+      @if (facade.selectedEmployeeForScheduleChange(); as employee) {
+        <div class="schedule-change-head">
+          <p-tag value="Nueva vigencia" severity="info" />
+          <h3>{{ employee.nombres }} {{ employee.apellidos }}</h3>
+          <p>El horario actual se cerrara el dia anterior a la nueva fecha de inicio.</p>
+        </div>
+
+        @if (facade.scheduleChangeErrorMessage()) {
+          <p-message severity="error" [text]="facade.scheduleChangeErrorMessage()" />
+        }
+
+        @if (facade.isLoadingScheduleChange()) {
+          <p-message severity="info" text="Cargando horario vigente..." />
+        } @else {
+          <form [formGroup]="facade.horarioForm" class="schedule-change-form">
+            <label class="field">
+              <span>Fecha de inicio</span>
+              <p-datepicker
+                [ngModel]="toPickerDate(facade.horarioForm.controls.fechaInicio.getRawValue())"
+                [ngModelOptions]="{ standalone: true }"
+                dateFormat="dd/mm/yy"
+                [showIcon]="true"
+                appendTo="body"
+                (ngModelChange)="setHorarioDate($event)"
+              />
+            </label>
+
+            <label class="field">
+              <span>Compensable</span>
+              <p-togglebutton
+                [ngModel]="isCompensable()"
+                [ngModelOptions]="{ standalone: true }"
+                onLabel="SI"
+                offLabel="NO"
+                onIcon="pi pi-check"
+                offIcon="pi pi-times"
+                [styleClass]="isCompensable() ? 'compensable-toggle is-yes' : 'compensable-toggle is-no'"
+                (onChange)="setCompensable($event.checked)"
+              />
+            </label>
+
+            <label class="field field--time">
+              <span>Entrada</span>
+              <p-datepicker
+                formControlName="horaEntrada"
+                dataType="string"
+                [timeOnly]="true"
+                hourFormat="24"
+                [stepMinute]="15"
+                [showIcon]="true"
+                icon="pi pi-clock"
+                appendTo="body"
+                (onSelect)="applySimpleSchedule()"
+                (onInput)="applySimpleSchedule()"
+              />
+            </label>
+
+            <label class="field field--time">
+              <span>Salida</span>
+              <p-datepicker
+                formControlName="horaSalida"
+                dataType="string"
+                [timeOnly]="true"
+                hourFormat="24"
+                [stepMinute]="15"
+                [showIcon]="true"
+                icon="pi pi-clock"
+                appendTo="body"
+                (onSelect)="applySimpleSchedule()"
+                (onInput)="applySimpleSchedule()"
+              />
+            </label>
+
+            @if (usesLunchBreak()) {
+              <label class="field field--time">
+                <span>Inicio almuerzo</span>
+                <p-datepicker
+                  formControlName="inicioAlmuerzo"
+                  dataType="string"
+                  [timeOnly]="true"
+                  hourFormat="24"
+                  [stepMinute]="15"
+                  [showIcon]="true"
+                  icon="pi pi-clock"
+                  appendTo="body"
+                  (onSelect)="applySimpleSchedule()"
+                  (onInput)="applySimpleSchedule()"
+                />
+              </label>
+
+              <label class="field field--time">
+                <span>Fin almuerzo</span>
+                <p-datepicker
+                  formControlName="finAlmuerzo"
+                  dataType="string"
+                  [timeOnly]="true"
+                  hourFormat="24"
+                  [stepMinute]="15"
+                  [showIcon]="true"
+                  icon="pi pi-clock"
+                  appendTo="body"
+                  (onSelect)="applySimpleSchedule()"
+                  (onInput)="applySimpleSchedule()"
+                />
+              </label>
+            }
+
+            <div class="field field--wide">
+              <span>Dia de descanso</span>
+              <div class="day-strip">
+                @for (day of facade.diasSemanaOptions; track day) {
+                  <button
+                    type="button"
+                    class="day-toggle"
+                    [class.day-toggle--rest]="isRestDay(day)"
+                    (click)="selectRestDay(day)"
+                  >
+                    <p-tag
+                      [value]="day.slice(0, 3)"
+                      [severity]="isRestDay(day) ? 'secondary' : 'success'"
+                    />
+                  </button>
+                }
+              </div>
+            </div>
+          </form>
+
+          @if (scheduleValidationMessage(); as scheduleMessage) {
+            <p-message severity="error" [text]="scheduleMessage" />
+          }
+        }
+
+        <div class="actions actions--end">
+          <button
+            pButton
+            type="button"
+            severity="secondary"
+            [outlined]="true"
+            icon="pi pi-times"
+            label="Cancelar"
+            (click)="facade.closeScheduleChange()"
+          ></button>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-save"
+            label="Guardar horario"
+            [loading]="facade.isSubmittingScheduleChange()"
+            [disabled]="facade.isLoadingScheduleChange()"
+            (click)="facade.submitScheduleChange()"
+          ></button>
+        </div>
+      }
+    </p-dialog>
   <app-personal-data-edit-dialog
     [visible]="facade.editDialogVisible()"
     [form]="facade.editDatosPersonalesForm"

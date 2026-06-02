@@ -60,6 +60,56 @@
   overflow-wrap: anywhere;
 }
 
+.schedule-change-head {
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+.schedule-change-head h3 {
+  margin: 0.2rem 0 0;
+}
+
+.schedule-change-head p {
+  color: var(--role-muted);
+  margin: 0;
+}
+
+.schedule-change-form {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.field {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.field span {
+  color: var(--role-panel-text);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.field--wide {
+  grid-column: 1 / -1;
+}
+
+.day-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.day-toggle {
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 0;
+}
+
 :host ::ng-deep .inactive-table .p-datatable-thead > tr > th {
   background: #f4f8f6;
   color: #304438;
@@ -77,6 +127,37 @@
 :host ::ng-deep .inactive-table .col-actions {
   text-align: right;
   white-space: nowrap;
+}
+
+:host ::ng-deep .schedule-change-dialog {
+  width: min(48rem, calc(100vw - 1rem));
+}
+
+:host ::ng-deep .schedule-change-dialog .p-datepicker,
+:host ::ng-deep .schedule-change-dialog .compensable-toggle {
+  width: 100%;
+}
+
+:host ::ng-deep .schedule-change-dialog .day-toggle:not(.day-toggle--rest) .p-tag {
+  background: #15803d;
+  color: #ffffff;
+}
+
+:host ::ng-deep .schedule-change-dialog .compensable-toggle.is-yes.p-togglebutton {
+  background: #15803d;
+  border-color: #15803d;
+  color: #ffffff;
+}
+
+:host ::ng-deep .schedule-change-dialog .compensable-toggle.is-no.p-togglebutton {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+:host ::ng-deep .schedule-change-dialog .compensable-toggle .p-button-icon,
+:host ::ng-deep .schedule-change-dialog .compensable-toggle .p-button-label {
+  color: #ffffff;
 }
 
 @media (max-width: 1180px) {
@@ -105,6 +186,10 @@
   .inactive-panel__header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .schedule-change-form {
+    grid-template-columns: 1fr;
   }
 
   :host ::ng-deep .inactive-table .p-datatable-thead {

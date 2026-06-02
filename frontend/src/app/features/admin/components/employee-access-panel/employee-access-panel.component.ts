@@ -52,6 +52,7 @@ export class EmployeeAccessPanelComponent {
   @Output() readonly pageChange = new EventEmitter<number>();
   @Output() readonly toggleAccess = new EventEmitter<number>();
   @Output() readonly renewContract = new EventEmitter<EmpleadoRolResponse>();
+  @Output() readonly changeSchedule = new EventEmitter<EmpleadoRolResponse>();
   @Output() readonly editEmployee = new EventEmitter<EmpleadoRolResponse>();
   @Output() readonly refreshStates = new EventEmitter<void>();
   @Output() readonly darDeBaja = new EventEmitter<EmpleadoRolResponse>();

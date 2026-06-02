@@ -13,6 +13,7 @@ import { EstadoMonitorResponse } from '../../../shared/models/schedule/cumplimie
 import { RegistrarEmpleadoRequest } from '../../../shared/models/rrhh/registrar-empleado-request';
 import { HorarioResponse } from '../../../shared/models/schedule/horario-response';
 import { RegistrarHorarioRequest } from '../../../shared/models/schedule/registrar-horario-request';
+import { ReemplazarHorarioRequest } from '../../../shared/models/schedule/reemplazar-horario-request';
 
 @Injectable({
   providedIn: 'root'
@@ -54,6 +55,10 @@ export class AdminRrhhService {
 
   registrarHorario(request: RegistrarHorarioRequest): Observable<HorarioResponse> {
     return this.http.post<HorarioResponse>(this.horariosUrl, request);
+  }
+
+  reemplazarHorario(idHorario: number, request: ReemplazarHorarioRequest): Observable<HorarioResponse> {
+    return this.http.put<HorarioResponse>(`${this.horariosUrl}/${idHorario}`, request);
   }
 
   getHorarioVigente(empleadoId: number, fecha?: string): Observable<HorarioResponse> {

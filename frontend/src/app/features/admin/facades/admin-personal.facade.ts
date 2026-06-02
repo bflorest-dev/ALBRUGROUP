@@ -514,6 +514,14 @@ export class AdminPersonalFacade implements OnDestroy {
   readonly isSubmittingContractRenewal = signal(false);
   readonly contractRenewalErrorMessage = signal('');
   readonly contractRenewalSuccessMessage = signal('');
+  readonly isScheduleChangeVisible = signal(false);
+  readonly selectedEmployeeForScheduleChange = signal<EmpleadoRolResponse | null>(null);
+  readonly currentScheduleForChange = signal<HorarioResponse | null>(null);
+  readonly currentContractForScheduleChange = signal<ContratoResponse | null>(null);
+  readonly isLoadingScheduleChange = signal(false);
+  readonly isSubmittingScheduleChange = signal(false);
+  readonly scheduleChangeErrorMessage = signal('');
+  readonly scheduleChangeSuccessMessage = signal('');
   readonly isDismissingEmployeeId = signal<number | null>(null);
   readonly bajaErrorMessage = signal('');
   readonly bajaSuccessMessage = signal('');
@@ -1275,6 +1283,85 @@ export class AdminPersonalFacade implements OnDestroy {
     );
   }
 
+  async openScheduleChange(employee: EmpleadoRolResponse): Promise<void> {
+    this.selectedEmployeeForScheduleChange.set(employee);
+    this.currentScheduleForChange.set(null);
+    this.currentContractForScheduleChange.set(null);
+    this.scheduleChangeErrorMessage.set('');
+    this.scheduleChangeSuccessMessage.set('');
+    this.isScheduleChangeVisible.set(true);
+    this.isLoadingScheduleChange.set(true);
+
+    try {
+      const [horario, contrato] = await Promise.all([
+        firstValueFrom(this.adminRrhhService.getHorarioVigente(employee.idEmpleado, this.getToday()).pipe(timeout(this.requestTimeoutMs))),
+        firstValueFrom(this.adminRrhhService.getContratoVigente(employee.idEmpleado).pipe(timeout(this.requestTimeoutMs)))
+      ]);
+
+      this.currentScheduleForChange.set(horario);
+      this.currentContractForScheduleChange.set(contrato);
+      this.populateScheduleChangeForm(horario, contrato.modalidad);
+    } catch (error) {
+      this.scheduleChangeErrorMessage.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No fue posible cargar el horario vigente.')
+      );
+    } finally {
+      this.isLoadingScheduleChange.set(false);
+    }
+  }
+
+  closeScheduleChange(): void {
+    this.isScheduleChangeVisible.set(false);
+    this.selectedEmployeeForScheduleChange.set(null);
+    this.currentScheduleForChange.set(null);
+    this.currentContractForScheduleChange.set(null);
+    this.isLoadingScheduleChange.set(false);
+    this.isSubmittingScheduleChange.set(false);
+    this.scheduleChangeErrorMessage.set('');
+  }
+
+  async submitScheduleChange(): Promise<void> {
+    const employee = this.selectedEmployeeForScheduleChange();
+    const horario = this.currentScheduleForChange();
+    const contrato = this.currentContractForScheduleChange();
+
+    if (!employee || !horario || !contrato) {
+      return;
+    }
+
+    this.syncLunchBreakControls();
+    this.horarioForm.updateValueAndValidity({ emitEvent: false });
+    if (this.horarioForm.invalid) {
+      this.horarioForm.markAllAsTouched();
+      return;
+    }
+
+    this.scheduleChangeErrorMessage.set('');
+    this.scheduleChangeSuccessMessage.set('');
+    this.isSubmittingScheduleChange.set(true);
+
+    try {
+      const request = this.buildHorarioRequestForModalidad(contrato.modalidad);
+      const nuevoHorario = await firstValueFrom(
+        this.adminRrhhService.reemplazarHorario(horario.id, request).pipe(timeout(this.requestTimeoutMs))
+      );
+
+      this.scheduleChangeSuccessMessage.set('Horario actualizado. La nueva vigencia iniciara en la fecha seleccionada.');
+      this.scheduleByEmployeeId.update((current) => ({
+        ...current,
+        [employee.idEmpleado]: nuevoHorario
+      }));
+      this.isScheduleChangeVisible.set(false);
+      void this.loadEmployeeStates();
+    } catch (error) {
+      this.scheduleChangeErrorMessage.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No se pudo cambiar el horario.')
+      );
+    } finally {
+      this.isSubmittingScheduleChange.set(false);
+    }
+  }
+
   closeContractRenewal(): void {
     this.isContractRenewalVisible.set(false);
     this.isLoadingContractRenewal.set(false);
@@ -1619,8 +1706,14 @@ export class AdminPersonalFacade implements OnDestroy {
   }
 
   private currentScheduleModalidad(): string {
+    const isScheduleChangeVisible =
+      typeof this.isScheduleChangeVisible === 'function' && this.isScheduleChangeVisible();
     const isRenewalVisible =
       typeof this.isContractRenewalVisible === 'function' && this.isContractRenewalVisible();
+
+    if (isScheduleChangeVisible) {
+      return this.currentContractForScheduleChange()?.modalidad ?? 'FULL_TIME';
+    }
 
     return isRenewalVisible
       ? this.contractRenewalForm.controls.modalidad.getRawValue()
@@ -1732,6 +1825,46 @@ export class AdminPersonalFacade implements OnDestroy {
     this.horarioForm.updateValueAndValidity({ emitEvent: false });
   }
 
+  private populateScheduleChangeForm(horario: HorarioResponse, modalidad: string): void {
+    const tomorrow = this.addDays(this.getToday(), 1);
+    const laborables = horario.detalles.filter((detalle) => detalle.laborable);
+    const descanso = horario.detalles.find((detalle) => !detalle.laborable)?.dia ?? 'DOMINGO';
+    const firstLaborable = laborables[0] ?? horario.detalles[0];
+
+    this.horarioForm.reset({
+      fechaInicio: tomorrow,
+      compensable: String(horario.compensable ?? true),
+      horaEntrada: firstLaborable?.horaEntrada?.slice(0, 5) ?? '09:00',
+      horaSalida: firstLaborable?.horaSalida?.slice(0, 5) ?? '18:00',
+      inicioAlmuerzo: this.requiresLunchBreak(modalidad) ? firstLaborable?.inicioAlmuerzo?.slice(0, 5) ?? '13:00' : '',
+      finAlmuerzo: this.requiresLunchBreak(modalidad) ? firstLaborable?.finAlmuerzo?.slice(0, 5) ?? '14:00' : '',
+      diaDescanso: descanso,
+      modoAvanzado: 'false'
+    });
+
+    this.resetScheduleRows();
+    for (const row of this.horarioForm.controls.detalles.controls) {
+      const detalle = horario.detalles.find((item) => item.dia === row.controls.dia.getRawValue());
+      if (!detalle) {
+        continue;
+      }
+
+      row.patchValue(
+        {
+          horaEntrada: detalle.horaEntrada?.slice(0, 5) ?? '09:00',
+          horaSalida: detalle.horaSalida?.slice(0, 5) ?? '18:00',
+          inicioAlmuerzo: detalle.inicioAlmuerzo?.slice(0, 5) ?? '',
+          finAlmuerzo: detalle.finAlmuerzo?.slice(0, 5) ?? '',
+          laborable: String(detalle.laborable)
+        },
+        { emitEvent: false }
+      );
+    }
+
+    this.syncLunchBreakControls();
+    this.horarioForm.updateValueAndValidity({ emitEvent: false });
+  }
+
   private refreshUserAccess(empleadoId: number): void {
     if (!(empleadoId in this.accessByEmployeeId()) && !this.accessErrorByEmployeeId()[empleadoId]) {
       if (!(empleadoId in this.scheduleByEmployeeId()) && !this.scheduleErrorByEmployeeId()[empleadoId]) {
@@ -1776,5 +1909,15 @@ export class AdminPersonalFacade implements OnDestroy {
     const day = `${now.getDate()}`.padStart(2, '0');
 
     return `${now.getFullYear()}-${month}-${day}`;
+  }
+
+  private addDays(value: string, days: number): string {
+    const [year, month, day] = value.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    date.setDate(date.getDate() + days);
+
+    const nextMonth = `${date.getMonth() + 1}`.padStart(2, '0');
+    const nextDay = `${date.getDate()}`.padStart(2, '0');
+    return `${date.getFullYear()}-${nextMonth}-${nextDay}`;
   }
 }

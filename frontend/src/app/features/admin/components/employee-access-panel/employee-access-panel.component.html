@@ -139,6 +139,17 @@
                 type="button"
                 severity="secondary"
                 size="small"
+                [text]="true"
+                icon="pi pi-calendar-clock"
+                title="Cambiar horario"
+                aria-label="Cambiar horario"
+                (click)="changeSchedule.emit(employee)"
+              ></button>
+              <button
+                pButton
+                type="button"
+                severity="secondary"
+                size="small"
                 [outlined]="true"
                 icon="pi pi-eye"
                 label="Ver mas"
@@ -270,6 +281,15 @@
           icon="pi pi-briefcase"
           label="Contrato"
           (click)="renewContract.emit(employee); closeDetail()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          severity="secondary"
+          [outlined]="true"
+          icon="pi pi-calendar-clock"
+          label="Horario"
+          (click)="changeSchedule.emit(employee); closeDetail()"
         ></button>
         <button
           pButton
