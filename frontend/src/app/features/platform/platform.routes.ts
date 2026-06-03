@@ -14,6 +14,7 @@ import { CommunityWorkspacePageComponent } from '../community/pages/community-wo
 import { GtrWorkspacePageComponent } from '../gtr/pages/gtr-workspace-page/gtr-workspace-page.component';
 import { PostulantesBoardPageComponent } from '../recruiter/pages/postulantes-board-page/postulantes-board-page.component';
 import { TrainingGroupsPageComponent } from '../recruiter/pages/training-groups-page/training-groups-page.component';
+import { RrhhPersonalPageComponent } from '../rrhh/pages/rrhh-personal-page/rrhh-personal-page.component';
 import { RrhhPostulantesPageComponent } from '../rrhh/pages/rrhh-postulantes-page/rrhh-postulantes-page.component';
 import { TrainerWorkspacePageComponent } from '../trainer/pages/trainer-workspace-page/trainer-workspace-page.component';
 import { RoleHomeRedirectComponent } from './pages/role-home-redirect/role-home-redirect.component';
@@ -83,6 +84,14 @@ export const PLATFORM_ROUTES: Routes = [
     data: {
       roles: ['RRHH'],
       section: 'asistencia'
+    }
+  },
+  {
+    path: 'rrhh/personal',
+    component: RrhhPersonalPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['RRHH']
     }
   },
   {

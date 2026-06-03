@@ -1,0 +1,375 @@
+<section class="rrhh-personal-page">
+  <p-card styleClass="rrhh-hero">
+    <div class="rrhh-hero__content">
+      <div>
+        <span class="rrhh-hero__eyebrow">RRHH</span>
+        <h2>Personal</h2>
+        <p>Gestiona altas directas, renovaciones, horarios y bajas desde una sola vista.</p>
+      </div>
+    </div>
+  </p-card>
+
+  <section class="section-switcher" aria-label="Vistas de personal">
+    <button
+      type="button"
+      class="section-switcher__item"
+      [class.is-active]="activeSection() === 'activos'"
+      (click)="activeSection.set('activos')"
+    >
+      <span class="section-switcher__icon">
+        <i class="pi pi-users" aria-hidden="true"></i>
+      </span>
+      <span class="section-switcher__copy">
+        <strong>Empleados activos</strong>
+        <small>Contratos, horarios y bajas</small>
+      </span>
+    </button>
+
+    <button
+      type="button"
+      class="section-switcher__item"
+      [class.is-active]="activeSection() === 'alta'"
+      (click)="activeSection.set('alta')"
+    >
+      <span class="section-switcher__icon">
+        <i class="pi pi-user-plus" aria-hidden="true"></i>
+      </span>
+      <span class="section-switcher__copy">
+        <strong>Alta directa</strong>
+        <small>Registro inmediato de personal</small>
+      </span>
+    </button>
+  </section>
+
+  @if (activeSection() === 'activos') {
+        <div class="page-stack">
+          <app-employee-access-panel
+            [employees]="[]"
+            [activeGroups]="facade.activeEmployeeGroups()"
+            [currentPage]="0"
+            [totalPages]="1"
+            [isLoading]="facade.isLoadingActiveEmployees()"
+            [errorMessage]="facade.activeEmployeeListErrorMessage()"
+            [contractUpdateSuccessMessage]="facade.contractRenewalSuccessMessage()"
+            [accessByEmployeeId]="facade.accessByEmployeeId()"
+            [accessErrorByEmployeeId]="facade.accessErrorByEmployeeId()"
+            [accessLoadingByEmployeeId]="facade.accessLoadingByEmployeeId()"
+            [scheduleByEmployeeId]="facade.scheduleByEmployeeId()"
+            [scheduleErrorByEmployeeId]="facade.scheduleErrorByEmployeeId()"
+            [scheduleLoadingByEmployeeId]="facade.scheduleLoadingByEmployeeId()"
+            [employeeStateById]="facade.employeeStateById()"
+            [connectedUserById]="facade.connectedUserById()"
+            [isLoadingStates]="facade.isLoadingStates()"
+            [isDismissingEmployeeId]="facade.isDismissingEmployeeId()"
+            (pageChange)="facade.loadActiveEmployees()"
+            (toggleAccess)="facade.toggleUserAccess($event)"
+            (renewContract)="facade.openContractRenewal($event)"
+            (changeSchedule)="facade.openScheduleChange($event)"
+            (editEmployee)="facade.openEditDialog($event)"
+            (refreshStates)="facade.loadEmployeeStates()"
+            (darDeBaja)="facade.darDeBajaEmpleado($event)"
+          />
+
+          <section class="inactive-panel">
+            <div class="inactive-panel__header">
+              <div>
+                <p-tag value="Reingreso" severity="secondary" />
+                <h3>Empleados inactivos</h3>
+                <p>Si una persona vuelve al equipo, puedes prepararle un nuevo contrato y horario desde aquí.</p>
+              </div>
+              <button
+                pButton
+                type="button"
+                severity="secondary"
+                [outlined]="true"
+                icon="pi pi-refresh"
+                label="Actualizar"
+                [loading]="facade.isLoadingInactiveEmployees()"
+                (click)="facade.loadInactiveEmployees()"
+              ></button>
+            </div>
+
+            @if (facade.inactiveEmployeeListErrorMessage()) {
+              <p-message severity="error" [text]="facade.inactiveEmployeeListErrorMessage()" />
+            }
+
+            @if (facade.inactiveEmployeesPage()?.content?.length) {
+              <p-table
+                [value]="facade.inactiveEmployeesPage()?.content ?? []"
+                dataKey="id"
+                [rowHover]="true"
+                styleClass="p-datatable-sm inactive-table"
+              >
+                <ng-template #header>
+                  <tr>
+                    <th>Empleado</th>
+                    <th>Documento</th>
+                    <th>Celular</th>
+                    <th>Correo</th>
+                    <th>Estado</th>
+                    <th class="col-actions">Acciones</th>
+                  </tr>
+                </ng-template>
+
+                <ng-template #body let-employee>
+                  <tr>
+                    <td><strong>{{ employee.nombres }} {{ employee.apellidos }}</strong></td>
+                    <td>{{ employee.numeroDocumento }}</td>
+                    <td>{{ employee.celularPersonal }}</td>
+                    <td class="cell-email">{{ employee.correoPersonal }}</td>
+                    <td><p-tag [value]="employee.estadoOperativo" severity="contrast" /></td>
+                    <td class="col-actions">
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-briefcase"
+                        label="Preparar contrato"
+                        size="small"
+                        (click)="facade.openContractRenewalFromInactive(employee)"
+                      ></button>
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            } @else if (!facade.isLoadingInactiveEmployees()) {
+              <p-message severity="info" text="No hay empleados inactivos pendientes de reingreso." />
+            }
+          </section>
+        </div>
+  } @else {
+        <div class="page-stack">
+          <app-personal-registration-panel
+            [empleadoForm]="facade.empleadoForm"
+            [contratoForm]="facade.contratoForm"
+            [horarioForm]="facade.horarioForm"
+            [currentStep]="facade.currentStep()"
+            [isSubmitting]="facade.isSubmitting()"
+            [submitErrorMessage]="facade.submitErrorMessage()"
+            [creationResult]="facade.creationResult()"
+            [isPersonalReviewVisible]="facade.isPersonalReviewVisible()"
+            [personalReviewSummary]="facade.personalReviewSummary()"
+            [empresasContratistas]="facade.empresasContratistas()"
+            [documentoOptions]="facade.documentoOptions"
+            [nacionalidadOptions]="facade.nacionalidadOptions"
+            [estadoCivilOptions]="facade.estadoCivilOptions"
+            [origenOptions]="facade.origenOptions"
+            [distritoOptions]="facade.distritoOptions"
+            [bancoOptions]="facade.bancoOptions"
+            [parentescoOptions]="facade.parentescoOptions"
+            [puestoTrabajoOptions]="facade.puestoTrabajoOptions"
+            [regimenOptions]="facade.regimenOptions"
+            [modalidadOptions]="facade.modalidadOptions"
+            [seguroSaludOptions]="facade.seguroSaludOptions"
+            [sistemaPensionesOptions]="facade.sistemaPensionesOptions"
+            [diasSemanaOptions]="facade.diasSemanaOptions"
+            (continueToContract)="facade.continueToContract()"
+            (continueToSchedule)="facade.continueToSchedule()"
+            (backToEmployee)="facade.backToEmployee()"
+            (backToContract)="facade.backToContract()"
+            (submitPersonalFlow)="facade.submitPersonalFlow()"
+            (requestPersonalReview)="facade.requestPersonalReview()"
+            (cancelPersonalReview)="facade.cancelPersonalReview()"
+            (confirmPersonalReview)="facade.confirmPersonalReview()"
+            (resetFlow)="facade.resetFlow()"
+          />
+        </div>
+  }
+
+  <app-contract-renewal-dialog
+    [visible]="facade.isContractRenewalVisible()"
+    [employee]="facade.selectedEmployeeForContractRenewal()"
+    [contractForm]="facade.contractRenewalForm"
+    [horarioForm]="facade.horarioForm"
+    [puestoTrabajoOptions]="facade.puestoTrabajoOptions"
+    [regimenOptions]="facade.regimenOptions"
+    [modalidadOptions]="facade.modalidadOptions"
+    [seguroSaludOptions]="facade.seguroSaludOptions"
+    [sistemaPensionesOptions]="facade.sistemaPensionesOptions"
+    [diasSemanaOptions]="facade.diasSemanaOptions"
+    [isLoadingCurrentContract]="facade.isLoadingContractRenewal()"
+    [isSubmitting]="facade.isSubmittingContractRenewal()"
+    [errorMessage]="facade.contractRenewalErrorMessage()"
+    [successMessage]="facade.contractRenewalSuccessMessage()"
+    (visibleChange)="!$event && facade.closeContractRenewal()"
+    (submit)="facade.submitContractRenewal()"
+  />
+
+  <p-dialog
+    header="Cambiar horario"
+    [visible]="facade.isScheduleChangeVisible()"
+    (visibleChange)="!$event && facade.closeScheduleChange()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    appendTo="body"
+    styleClass="schedule-change-dialog"
+  >
+    @if (facade.selectedEmployeeForScheduleChange(); as employee) {
+      <div class="schedule-change-head">
+        <p-tag value="Nueva vigencia" severity="info" />
+        <h3>{{ employee.nombres }} {{ employee.apellidos }}</h3>
+        <p>El horario actual se cerrará el día anterior a la nueva fecha de inicio.</p>
+      </div>
+
+      @if (facade.scheduleChangeErrorMessage()) {
+        <p-message severity="error" [text]="facade.scheduleChangeErrorMessage()" />
+      }
+
+      @if (facade.isLoadingScheduleChange()) {
+        <p-message severity="info" text="Cargando horario vigente..." />
+      } @else {
+        <form [formGroup]="facade.horarioForm" class="schedule-change-form">
+          <label class="field">
+            <span>Fecha de inicio</span>
+            <p-datepicker
+              [ngModel]="toPickerDate(facade.horarioForm.controls.fechaInicio.getRawValue())"
+              [ngModelOptions]="{ standalone: true }"
+              dateFormat="dd/mm/yy"
+              [showIcon]="true"
+              appendTo="body"
+              (ngModelChange)="setHorarioDate($event)"
+            />
+          </label>
+
+          <label class="field">
+            <span>Compensable</span>
+            <p-togglebutton
+              [ngModel]="isCompensable()"
+              [ngModelOptions]="{ standalone: true }"
+              onLabel="SI"
+              offLabel="NO"
+              onIcon="pi pi-check"
+              offIcon="pi pi-times"
+              [styleClass]="isCompensable() ? 'compensable-toggle is-yes' : 'compensable-toggle is-no'"
+              (onChange)="setCompensable($event.checked)"
+            />
+          </label>
+
+          <label class="field field--time">
+            <span>Entrada</span>
+            <p-datepicker
+              formControlName="horaEntrada"
+              dataType="string"
+              [timeOnly]="true"
+              hourFormat="24"
+              [stepMinute]="15"
+              [showIcon]="true"
+              icon="pi pi-clock"
+              appendTo="body"
+              (onSelect)="applySimpleSchedule()"
+              (onInput)="applySimpleSchedule()"
+            />
+          </label>
+
+          <label class="field field--time">
+            <span>Salida</span>
+            <p-datepicker
+              formControlName="horaSalida"
+              dataType="string"
+              [timeOnly]="true"
+              hourFormat="24"
+              [stepMinute]="15"
+              [showIcon]="true"
+              icon="pi pi-clock"
+              appendTo="body"
+              (onSelect)="applySimpleSchedule()"
+              (onInput)="applySimpleSchedule()"
+            />
+          </label>
+
+          @if (usesLunchBreak()) {
+            <label class="field field--time">
+              <span>Inicio almuerzo</span>
+              <p-datepicker
+                formControlName="inicioAlmuerzo"
+                dataType="string"
+                [timeOnly]="true"
+                hourFormat="24"
+                [stepMinute]="15"
+                [showIcon]="true"
+                icon="pi pi-clock"
+                appendTo="body"
+                (onSelect)="applySimpleSchedule()"
+                (onInput)="applySimpleSchedule()"
+              />
+            </label>
+
+            <label class="field field--time">
+              <span>Fin almuerzo</span>
+              <p-datepicker
+                formControlName="finAlmuerzo"
+                dataType="string"
+                [timeOnly]="true"
+                hourFormat="24"
+                [stepMinute]="15"
+                [showIcon]="true"
+                icon="pi pi-clock"
+                appendTo="body"
+                (onSelect)="applySimpleSchedule()"
+                (onInput)="applySimpleSchedule()"
+              />
+            </label>
+          }
+
+          <div class="field field--wide">
+            <span>Día de descanso</span>
+            <div class="day-strip">
+              @for (day of facade.diasSemanaOptions; track day) {
+                <button
+                  type="button"
+                  class="day-toggle"
+                  [class.day-toggle--rest]="isRestDay(day)"
+                  (click)="selectRestDay(day)"
+                >
+                  <p-tag
+                    [value]="day.slice(0, 3)"
+                    [severity]="isRestDay(day) ? 'secondary' : 'success'"
+                  />
+                </button>
+              }
+            </div>
+          </div>
+        </form>
+
+        @if (scheduleValidationMessage(); as scheduleMessage) {
+          <p-message severity="error" [text]="scheduleMessage" />
+        }
+      }
+
+      <div class="actions actions--end">
+        <button
+          pButton
+          type="button"
+          severity="secondary"
+          [outlined]="true"
+          icon="pi pi-times"
+          label="Cancelar"
+          (click)="facade.closeScheduleChange()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-save"
+          label="Guardar horario"
+          [loading]="facade.isSubmittingScheduleChange()"
+          [disabled]="facade.isLoadingScheduleChange()"
+          (click)="facade.submitScheduleChange()"
+        ></button>
+      </div>
+    }
+  </p-dialog>
+
+  <app-personal-data-edit-dialog
+    [visible]="facade.editDialogVisible()"
+    [form]="facade.editDatosPersonalesForm"
+    [isLoading]="facade.isLoadingEditData()"
+    [isSubmitting]="facade.isSubmittingEdit()"
+    [errorMessage]="facade.editErrorMessage()"
+    [documentoOptions]="facade.documentoOptions"
+    [nacionalidadOptions]="facade.nacionalidadOptions"
+    [estadoCivilOptions]="facade.estadoCivilOptions"
+    [tieneHijosOptions]="facade.tieneHijosOptions"
+    (visibleChange)="!$event && facade.closeEditDialog()"
+    (submit)="facade.submitDatosPersonales()"
+  />
+</section>

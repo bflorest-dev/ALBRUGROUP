@@ -113,6 +113,7 @@ export class PrivateLayoutComponent {
     if (session.primaryRole === 'RRHH') {
       return [
         { label: 'Asistencia', route: '/app/rrhh/asistencia', icon: 'pi pi-clock', exact: true },
+        { label: 'Personal', route: '/app/rrhh/personal', icon: 'pi pi-users', exact: true },
         { label: 'Empleabilidad', route: '/app/rrhh/empleabilidad', icon: 'pi pi-id-card', exact: true },
         { label: 'Contrataciones', route: '/app/rrhh/contrataciones', icon: 'pi pi-file-edit', exact: true },
         { label: 'Pagos', route: '/app/rrhh/pagos', icon: 'pi pi-wallet', exact: true }

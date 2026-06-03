@@ -1,0 +1,318 @@
+.rrhh-personal-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.rrhh-hero__content {
+  align-items: center;
+  display: flex;
+}
+
+.rrhh-hero__eyebrow {
+  color: var(--role-accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.rrhh-hero h2 {
+  margin: 0.15rem 0;
+  color: var(--role-primary);
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+}
+
+.rrhh-hero p {
+  margin: 0;
+  color: var(--app-text-muted);
+}
+
+.section-switcher {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.section-switcher__item {
+  align-items: center;
+  background: var(--app-surface-raised);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.75rem;
+  box-shadow: var(--app-shadow-soft);
+  cursor: pointer;
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 1rem 1.1rem;
+  text-align: left;
+  transition: border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.section-switcher__item:hover {
+  border-color: color-mix(in srgb, var(--role-accent) 30%, var(--app-border-soft));
+  transform: translateY(-1px);
+}
+
+.section-switcher__item.is-active {
+  background: color-mix(in srgb, var(--role-accent) 12%, var(--app-surface-raised));
+  border-color: color-mix(in srgb, var(--role-accent) 45%, var(--app-border-soft));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--role-accent) 18%, transparent), var(--app-shadow-soft);
+}
+
+.section-switcher__icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--role-accent) 10%, white);
+  border-radius: 0.7rem;
+  color: var(--role-accent);
+  display: inline-flex;
+  font-size: 1.1rem;
+  height: 2.75rem;
+  justify-content: center;
+  width: 2.75rem;
+}
+
+.section-switcher__item.is-active .section-switcher__icon {
+  background: var(--role-accent);
+  color: #ffffff;
+}
+
+.section-switcher__copy {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.section-switcher__copy strong {
+  color: var(--role-panel-text);
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.section-switcher__copy small {
+  color: var(--role-muted);
+  font-size: 0.82rem;
+}
+
+.page-stack {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.inactive-panel {
+  background: var(--app-surface-raised);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.5rem;
+  box-shadow: var(--app-shadow-soft);
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.inactive-panel__header {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.inactive-panel__header h3 {
+  margin: 0.55rem 0 0.25rem;
+}
+
+.inactive-panel__header p {
+  color: var(--role-muted);
+  margin: 0;
+}
+
+.cell-email {
+  overflow-wrap: anywhere;
+}
+
+.schedule-change-head {
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+.schedule-change-head h3 {
+  margin: 0.2rem 0 0;
+}
+
+.schedule-change-head p {
+  color: var(--role-muted);
+  margin: 0;
+}
+
+.schedule-change-form {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.field {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.field span {
+  color: var(--role-panel-text);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.field--wide {
+  grid-column: 1 / -1;
+}
+
+.day-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.day-toggle {
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 0;
+}
+
+:host ::ng-deep .p-tabs {
+  background: transparent;
+}
+
+:host ::ng-deep .rrhh-hero {
+  border: 1px solid var(--app-border-soft);
+  box-shadow: var(--app-shadow-soft);
+}
+
+:host ::ng-deep .p-tablist-tab-list {
+  gap: 0.5rem;
+}
+
+:host ::ng-deep .p-tab {
+  border-radius: 999px;
+}
+
+:host ::ng-deep .inactive-table .p-datatable-thead > tr > th {
+  background: #f4f8f6;
+  color: #304438;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+:host ::ng-deep .inactive-table .p-datatable-tbody > tr > td {
+  font-size: 0.82rem;
+  vertical-align: middle;
+}
+
+:host ::ng-deep .inactive-table .col-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+:host ::ng-deep .schedule-change-dialog {
+  width: min(48rem, calc(100vw - 1rem));
+}
+
+:host ::ng-deep .schedule-change-dialog .p-datepicker,
+:host ::ng-deep .schedule-change-dialog .compensable-toggle {
+  width: 100%;
+}
+
+:host ::ng-deep .schedule-change-dialog .day-toggle:not(.day-toggle--rest) .p-tag {
+  background: #15803d;
+  color: #ffffff;
+}
+
+:host ::ng-deep .schedule-change-dialog .compensable-toggle.is-yes.p-togglebutton {
+  background: #15803d;
+  border-color: #15803d;
+  color: #ffffff;
+}
+
+:host ::ng-deep .schedule-change-dialog .compensable-toggle.is-no.p-togglebutton {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+
+:host ::ng-deep .schedule-change-dialog .compensable-toggle .p-button-icon,
+:host ::ng-deep .schedule-change-dialog .compensable-toggle .p-button-label {
+  color: #ffffff;
+}
+
+@media (max-width: 760px) {
+  .rrhh-personal-page {
+    gap: 1rem;
+  }
+
+  .rrhh-hero__content {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .section-switcher {
+    grid-template-columns: 1fr;
+  }
+
+  .section-switcher__item {
+    padding: 0.95rem 1rem;
+  }
+
+  .inactive-panel {
+    padding: 1rem;
+  }
+
+  .inactive-panel__header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .schedule-change-form {
+    grid-template-columns: 1fr;
+  }
+
+  :host ::ng-deep .inactive-table .p-datatable-thead {
+    display: none;
+  }
+
+  :host ::ng-deep .inactive-table .p-datatable-tbody > tr {
+    border: 1px solid var(--app-border-soft);
+    border-radius: 8px;
+    display: grid;
+    margin-bottom: 0.75rem;
+    padding: 0.8rem;
+  }
+
+  :host ::ng-deep .inactive-table .p-datatable-tbody > tr > td {
+    border: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0.35rem 0;
+  }
+
+  :host ::ng-deep .inactive-table .p-datatable-tbody > tr > td:nth-child(1)::before { content: 'Empleado'; }
+  :host ::ng-deep .inactive-table .p-datatable-tbody > tr > td:nth-child(2)::before { content: 'Documento'; }
+  :host ::ng-deep .inactive-table .p-datatable-tbody > tr > td:nth-child(3)::before { content: 'Celular'; }
+  :host ::ng-deep .inactive-table .p-datatable-tbody > tr > td:nth-child(4)::before { content: 'Correo'; }
+  :host ::ng-deep .inactive-table .p-datatable-tbody > tr > td:nth-child(5)::before { content: 'Estado'; }
+
+  :host ::ng-deep .inactive-table .p-datatable-tbody > tr > td::before {
+    color: var(--role-muted);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  :host ::ng-deep .inactive-table .p-datatable-tbody > tr > td.col-actions {
+    justify-content: stretch;
+  }
+
+  :host ::ng-deep .inactive-table .col-actions .p-button {
+    width: 100%;
+  }
+}
