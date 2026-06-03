@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
@@ -32,6 +33,7 @@ type ForgotPasswordState =
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ForgotPasswordPageComponent {
+  private readonly document = inject(DOCUMENT);
   private readonly formBuilder = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -80,6 +82,8 @@ export class ForgotPasswordPageComponent {
     const state = this.forgotPasswordState();
     return state.status === 'success' ? state.credentials : null;
   });
+  protected readonly copyFeedbackMessage = signal('');
+  protected readonly copyFeedbackSeverity = signal<'success' | 'error'>('success');
 
   constructor() {
     const username = this.route.snapshot.queryParamMap.get('username')?.trim() ?? '';
@@ -114,7 +118,39 @@ export class ForgotPasswordPageComponent {
   }
 
   protected async copyPassword(password: string): Promise<void> {
-    await navigator.clipboard.writeText(password);
+    try {
+      const windowRef = this.document.defaultView;
+      if (windowRef?.navigator?.clipboard && windowRef.isSecureContext) {
+        await windowRef.navigator.clipboard.writeText(password);
+      } else if (!this.copyTextLegacy(password)) {
+        throw new Error('Clipboard API unavailable');
+      }
+
+      this.copyFeedbackSeverity.set('success');
+      this.copyFeedbackMessage.set('Password copiada.');
+    } catch {
+      this.copyFeedbackSeverity.set('error');
+      this.copyFeedbackMessage.set('No se pudo copiar automaticamente. Selecciona la clave y copiala manualmente.');
+    }
+  }
+
+  private copyTextLegacy(value: string): boolean {
+    const textarea = this.document.createElement('textarea');
+    textarea.value = value;
+    textarea.setAttribute('readonly', 'true');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    textarea.style.pointerEvents = 'none';
+    this.document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    textarea.setSelectionRange(0, value.length);
+
+    try {
+      return this.document.execCommand('copy');
+    } finally {
+      this.document.body.removeChild(textarea);
+    }
   }
 
   private getErrorMessage(error: HttpErrorResponse, fallbackMessage: string): string {
