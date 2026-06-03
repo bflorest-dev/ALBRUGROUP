@@ -120,7 +120,7 @@
 .report-layout {
   display: grid;
   gap: 1rem;
-  grid-template-columns: minmax(0, 1.75fr) minmax(18rem, 0.92fr);
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);
 }
 
 .report-side {
@@ -319,13 +319,13 @@
   color: #94a3b8;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1380px) {
   .report-layout {
     grid-template-columns: 1fr;
   }
 
   .report-side {
-    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    grid-template-columns: 1fr;
   }
 }
 

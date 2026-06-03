@@ -5,6 +5,16 @@ import {
   CampanaGastoResumenMensualResponse
 } from '../../features/community/services/community-lead.service';
 
+const FINANCE_MONEY_FORMATTER = new Intl.NumberFormat('es-PE', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+});
+
+const FINANCE_PERCENT_FORMATTER = new Intl.NumberFormat('es-PE', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+});
+
 export type FinanceMetricCard = {
   label: string;
   value: string;
@@ -64,7 +74,12 @@ export function formatFinanceMoney(value: unknown): string {
     return '-';
   }
 
-  return `S/ ${value}`;
+  const amount = Number(value);
+  if (Number.isNaN(amount)) {
+    return '-';
+  }
+
+  return `S/ ${FINANCE_MONEY_FORMATTER.format(amount)}`;
 }
 
 export function formatFinanceDateTime(value: string | null | undefined): string {
@@ -129,5 +144,5 @@ function formatPercentage(numerator: number | null | undefined, denominator: num
   }
 
   const value = ((numerator ?? 0) / denominator) * 100;
-  return `${value.toFixed(1)}%`;
+  return `${FINANCE_PERCENT_FORMATTER.format(value)}%`;
 }
