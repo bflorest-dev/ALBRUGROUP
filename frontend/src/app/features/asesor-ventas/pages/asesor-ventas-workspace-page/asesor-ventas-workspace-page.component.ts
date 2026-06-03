@@ -123,11 +123,13 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly activeDataTab = signal<ActiveDataTab>('datos');
   protected readonly showComment = signal(false);
   protected readonly skeletonRows = Array.from({ length: 8 });
-  protected readonly todayLabel = new Intl.DateTimeFormat('es-PE', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long'
-  }).format(new Date());
+  protected readonly todayLabel = this.capitalizeFirst(
+    new Intl.DateTimeFormat('es-PE', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long'
+    }).format(new Date())
+  );
   protected readonly tipoDocumentoOptions = ['DNI', 'CE', 'RUC'];
   protected readonly tipoDomicilioOptions = [
     'HOGAR',
@@ -1479,5 +1481,13 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       }
     }
     return fallback;
+  }
+
+  private capitalizeFirst(value: string): string {
+    if (!value) {
+      return value;
+    }
+
+    return value.charAt(0).toUpperCase() + value.slice(1);
   }
 }

@@ -96,6 +96,7 @@
   display: inline-flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+  justify-content: center;
 }
 
 .muted {
@@ -122,13 +123,23 @@
     color: #304438;
     font-size: 0.74rem;
     letter-spacing: 0.04em;
+    text-align: center;
     text-transform: uppercase;
     white-space: nowrap;
   }
 
+  .monitor-table .p-datatable-thead > tr > th:first-child {
+    text-align: left;
+  }
+
   .monitor-table .p-datatable-tbody > tr > td {
     font-size: 0.82rem;
+    text-align: center;
     vertical-align: middle;
+  }
+
+  .monitor-table .p-datatable-tbody > tr > td:first-child {
+    text-align: left;
   }
 
   // Columnas de tiempo (Tiempo disponible / Sin leads / Servicios): resaltadas en amarillo.
@@ -139,6 +150,11 @@
 
   .monitor-table .p-datatable-tbody > tr > td.col-time {
     background: #fffbeb;
+  }
+
+  .monitor-table .p-tag {
+    justify-content: center;
+    min-width: 5.8rem;
   }
 
   .monitor-table .row-alert > td {

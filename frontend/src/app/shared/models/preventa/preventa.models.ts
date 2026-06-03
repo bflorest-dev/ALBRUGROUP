@@ -54,6 +54,32 @@ export interface SupervisorVentasResumenResponse {
   preventasMesPorProveedor: SupervisorVentasProveedorResumenResponse[];
 }
 
+export interface SupervisorVentasReporteQuery {
+  fechaDesde: string;
+  fechaHasta: string;
+}
+
+export interface SupervisorVentasReporteProveedorCantidadResponse {
+  idProveedor: number;
+  nombreProveedor: string;
+  cantidad: number;
+}
+
+export interface SupervisorVentasReporteAsesorResponse {
+  idAsesor: number;
+  nombreAsesor: string;
+  preventasCompletas: number;
+  ventasInstaladas: number;
+  preventasPorProveedor: SupervisorVentasReporteProveedorCantidadResponse[];
+  ventasInstaladasPorProveedor: SupervisorVentasReporteProveedorCantidadResponse[];
+}
+
+export interface SupervisorVentasReporteResponse {
+  fechaDesde: string;
+  fechaHasta: string;
+  asesores: SupervisorVentasReporteAsesorResponse[];
+}
+
 export interface LeadGtrResponse {
   id: number;
   createdAt: string;

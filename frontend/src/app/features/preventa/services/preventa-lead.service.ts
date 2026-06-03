@@ -20,6 +20,8 @@ import {
   LeadGtrMetricasResponse,
   AsesorLeadsPendientesResponse,
   AsesorSinLeadsResponse,
+  SupervisorVentasReporteQuery,
+  SupervisorVentasReporteResponse,
   SupervisorVentasResumenResponse,
   GtrRankingAsesorResponse,
   GtrTipificacionCampanaResponse,
@@ -55,6 +57,15 @@ export class PreventaLeadService {
 
   obtenerResumenSupervisor(): Observable<SupervisorVentasResumenResponse[]> {
     return this.http.get<SupervisorVentasResumenResponse[]>(`${this.leadUrl}/preventa/supervisor-ventas/resumen`);
+  }
+
+  obtenerReporteVentasSupervisor(query: SupervisorVentasReporteQuery): Observable<SupervisorVentasReporteResponse> {
+    const params = new HttpParams()
+      .set('fechaDesde', query.fechaDesde)
+      .set('fechaHasta', query.fechaHasta);
+    return this.http.get<SupervisorVentasReporteResponse>(`${this.leadUrl}/preventa/supervisor-ventas/reporte-ventas`, {
+      params
+    });
   }
 
   listarSinLeadsDesde(idsAsesor: number[]): Observable<AsesorSinLeadsResponse[]> {
