@@ -144,6 +144,10 @@ public class PresenceService {
                 )))
                 .flatMap(existingPresence -> {
                     boolean changed = existingPresence.getDisponibilidad() != disponibilidad;
+                    // Solo se reinicia cuando la disponibilidad realmente cambia de valor.
+                    Instant disponibilidadDesde = changed || existingPresence.getDisponibilidadDesde() == null
+                            ? Instant.now()
+                            : existingPresence.getDisponibilidadDesde();
                     EmployeePresence updatedPresence = EmployeePresence.builder()
                             .empleadoId(existingPresence.getEmpleadoId())
                             .username(existingPresence.getUsername())
@@ -151,6 +155,7 @@ public class PresenceService {
                             .roles(existingPresence.getRoles())
                             .status(existingPresence.getStatus())
                             .disponibilidad(disponibilidad)
+                            .disponibilidadDesde(disponibilidadDesde)
                             .lastSeen(Instant.now())
                             .build();
 
@@ -216,6 +221,10 @@ public class PresenceService {
         Disponibilidad disponibilidad = existingPresence == null || existingPresence.getDisponibilidad() == null
                 ? Disponibilidad.DISPONIBLE
                 : existingPresence.getDisponibilidad();
+        // El heartbeat NO debe reiniciar el inicio de la disponibilidad: se conserva el existente.
+        Instant disponibilidadDesde = existingPresence == null || existingPresence.getDisponibilidadDesde() == null
+                ? Instant.now()
+                : existingPresence.getDisponibilidadDesde();
 
         EmployeePresence presence = EmployeePresence.builder()
                 .empleadoId(user.empleadoId())
@@ -224,6 +233,7 @@ public class PresenceService {
                 .roles(user.roles())
                 .status("ONLINE")
                 .disponibilidad(disponibilidad)
+                .disponibilidadDesde(disponibilidadDesde)
                 .lastSeen(Instant.now())
                 .build();
 
@@ -299,6 +309,7 @@ public class PresenceService {
                 .roles(presence.getRoles())
                 .status(presence.getStatus())
                 .disponibilidad(presence.getDisponibilidad())
+                .disponibilidadDesde(presence.getDisponibilidadDesde())
                 .lastSeen(presence.getLastSeen())
                 .build();
     }

@@ -13,7 +13,11 @@ CREATE TEMP TABLE seed_users (
     fecha_nacimiento DATE,
     direccion TEXT,
     cuenta_bancaria TEXT,
-    cuenta_interbancaria TEXT
+    cuenta_interbancaria TEXT,
+    hora_entrada TIME,
+    hora_salida TIME,
+    inicio_almuerzo TIME,
+    fin_almuerzo TIME
 );
 
 \copy seed_users FROM '/seeds/users-seed.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');

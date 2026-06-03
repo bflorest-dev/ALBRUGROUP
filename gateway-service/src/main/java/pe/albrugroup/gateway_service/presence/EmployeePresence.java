@@ -20,5 +20,7 @@ public class EmployeePresence {
     private List<String> roles;
     private String status;
     private Disponibilidad disponibilidad;
+    /** Momento en que empezó la disponibilidad actual (no se reinicia con el heartbeat). */
+    private Instant disponibilidadDesde;
     private Instant lastSeen;
 }

@@ -11,6 +11,7 @@ import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.repository.projection.AsesorCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.AsesorProveedorCantidadProjection;
+import pe.albrugroup.lead_service.repository.projection.AsesorUltimoEventoProjection;
 import pe.albrugroup.lead_service.repository.projection.CampanaTipificacionCantidadProjection;
 
 import java.time.Instant;
@@ -39,6 +40,17 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             Pageable pageable
     );
     List<Evento> findAllByIdLeadOrderByCreatedAtDesc(Long idLead);
+
+    @Query("""
+            SELECT e.idActor AS idAsesor, MAX(e.createdAt) AS ultimo
+            FROM Evento e
+            WHERE e.idActor IN :idsAsesor AND e.accion = :accion
+            GROUP BY e.idActor
+            """)
+    List<AsesorUltimoEventoProjection> ultimoEventoPorActorYAccion(
+            @Param("idsAsesor") Collection<Long> idsAsesor,
+            @Param("accion") Accion accion
+    );
 
     @Query("""
             SELECT e.idLead, COUNT(e.id)

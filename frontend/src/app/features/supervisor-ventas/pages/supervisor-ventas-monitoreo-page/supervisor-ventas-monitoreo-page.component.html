@@ -1,0 +1,158 @@
+<section class="monitor-page">
+
+  <p-card styleClass="monitor-hero">
+    <div class="monitor-hero__content">
+      <div>
+        <span class="monitor-hero__eyebrow">SUPERVISOR VENTAS</span>
+        <h1>Monitoreo del equipo</h1>
+        <p>Estado de tus asesores en tiempo real: presencia, horario, servicios y avance del día.</p>
+      </div>
+    </div>
+  </p-card>
+
+  @if (facade.errorMessage(); as error) {
+    <p-message severity="warn" [text]="error" />
+  }
+
+  <!-- KPIs del equipo -->
+  <section class="kpi-grid" aria-label="Resumen del equipo">
+    <p-card styleClass="kpi-card">
+      <span class="kpi-card__label">Conectados</span>
+      <strong class="kpi-card__value">{{ facade.kpis().conectados }}</strong>
+    </p-card>
+    <p-card styleClass="kpi-card">
+      <span class="kpi-card__label">Operativos</span>
+      <strong class="kpi-card__value kpi-card__value--ok">{{ facade.kpis().operativos }}</strong>
+    </p-card>
+    <p-card styleClass="kpi-card">
+      <span class="kpi-card__label">En pausa</span>
+      <strong class="kpi-card__value kpi-card__value--warn">{{ facade.kpis().enPausa }}</strong>
+    </p-card>
+    <p-card styleClass="kpi-card">
+      <span class="kpi-card__label">Ausentes esperados</span>
+      <strong class="kpi-card__value kpi-card__value--danger">{{ facade.kpis().ausentes }}</strong>
+    </p-card>
+    <p-card styleClass="kpi-card">
+      <span class="kpi-card__label">Preventas hoy</span>
+      <strong class="kpi-card__value">{{ facade.kpis().preventasHoy }}</strong>
+    </p-card>
+    <p-card styleClass="kpi-card">
+      <span class="kpi-card__label">Preventas mes</span>
+      <strong class="kpi-card__value">{{ facade.kpis().preventasMes }}</strong>
+    </p-card>
+  </section>
+
+  <!-- Tabla de asesores en vivo -->
+  <p-card>
+    <ng-template #title>Asesores en vivo</ng-template>
+
+    @if (facade.isLoading() && !facade.asesoresView().length) {
+      <div class="monitor-skeleton">
+        @for (i of [1,2,3,4,5]; track i) {
+          <p-skeleton height="2.2rem" />
+        }
+      </div>
+    } @else {
+      <p-table
+        [value]="facade.asesoresView()"
+        dataKey="empleadoId"
+        [rowHover]="true"
+        [scrollable]="true"
+        [tableStyle]="{ 'min-width': '960px' }"
+        styleClass="p-datatable-sm monitor-table"
+      >
+        <ng-template #header>
+          <tr>
+            <th>Asesor</th>
+            <th>Horario</th>
+            <th>Disponibilidad</th>
+            <th class="col-time">Tiempo disponible</th>
+            <th class="col-time">Sin leads</th>
+            <th class="col-time">Servicios</th>
+            <th>Leads (gestión / asignados)</th>
+            <th>Gestionados hoy</th>
+            <th>Preventas hoy / mes</th>
+          </tr>
+        </ng-template>
+
+        <ng-template #body let-asesor>
+          <tr [class.row-alert]="asesor.excedioServicios">
+            <td>
+              <div class="asesor-cell">
+                <span [class]="dotClass(asesor.operativo, asesor.estadoSchedule)" aria-hidden="true"></span>
+                <strong>{{ asesor.nombreCompleto }}</strong>
+              </div>
+            </td>
+            <td><p-tag [severity]="scheduleSeverity(asesor.estadoSchedule)" [value]="display(asesor.estadoSchedule)" /></td>
+            <td><p-tag [severity]="disponibilidadSeverity(asesor.disponibilidad)" [value]="display(asesor.disponibilidad)" /></td>
+            <td class="col-time">
+              @if (asesor.disponibleDesdeMs) {
+                <span class="timer">{{ formatElapsed(asesor.disponibleDesdeMs) }}</span>
+              } @else {
+                <span class="muted">-</span>
+              }
+            </td>
+            <td class="col-time">
+              @if (asesor.sinLeadsDesdeMs) {
+                <span class="timer" [class.timer--alert]="sinLeadsAlerta(asesor.sinLeadsDesdeMs)">
+                  {{ formatElapsed(asesor.sinLeadsDesdeMs) }}
+                </span>
+              } @else {
+                <span class="muted">-</span>
+              }
+            </td>
+            <td class="col-time">
+              <span class="servicios-cell">
+                {{ servicios(asesor.minutosServiciosEnCurso, asesor.minutosServiciosAcumulados) }}
+                @if (asesor.excedioServicios) {
+                  <p-tag severity="danger" icon="pi pi-exclamation-triangle" value="Excedió" />
+                }
+              </span>
+            </td>
+            <td>
+              <strong>{{ asesor.leadsPendientes }}</strong>
+              <small class="muted"> / {{ asesor.asignadosActuales }}</small>
+            </td>
+            <td>{{ asesor.gestionadosHoy }}</td>
+            <td>
+              <strong>{{ asesor.preventasHoy }}</strong>
+              <small class="muted"> / {{ asesor.preventasMes }}</small>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="9">
+              <p-message severity="info" text="No hay asesores conectados en este momento." />
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    }
+  </p-card>
+
+  <!-- Ausentes esperados -->
+  @if (facade.esperados().length) {
+    <p-card styleClass="monitor-absent">
+      <ng-template #title>
+        <span class="absent-title">
+          <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+          Ausentes esperados ({{ facade.esperados().length }})
+        </span>
+      </ng-template>
+      <div class="absent-list">
+        @for (empleado of facade.esperados(); track empleado.empleadoId) {
+          <article class="absent-item">
+            <strong>{{ empleado.nombreCompleto }}</strong>
+            @if (empleado.entradaProgramada) {
+              <small class="muted">Entrada {{ empleado.entradaProgramada }}</small>
+            }
+            <p-tag severity="secondary" [value]="display(empleado.estadoSchedule)" />
+          </article>
+        }
+      </div>
+    </p-card>
+  }
+
+</section>

@@ -28,6 +28,7 @@ import pe.albrugroup.lead_service.entity.request.LeadTipificacionVentaRequest;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.AsesorLeadsPendientesResponse;
+import pe.albrugroup.lead_service.entity.response.AsesorSinLeadsResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPendienteResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsignacionMasivaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsignacionResultadoResponse;
@@ -178,6 +179,42 @@ public class LeadService {
         }
 
         return new ArrayList<>(porAsesor.values());
+    }
+
+    /**
+     * Para cada asesor pedido, indica desde cuándo NO tiene leads para gestionar (0 leads
+     * ASIGNADO/EN_GESTION en PREVENTA): sinLeadsDesde = createdAt de su último evento de lead.
+     * Si actualmente tiene leads pendientes, sinLeadsDesde es null.
+     */
+    public List<AsesorSinLeadsResponse> listarSinLeadsDesde(List<Long> idsAsesor) {
+        if (idsAsesor == null || idsAsesor.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Long> conLeads = leadRepository.resumirAsignadosActualesPorAsesor(
+                        Etapa.PREVENTA,
+                        List.of(EstadoSeguimiento.ASIGNADO, EstadoSeguimiento.EN_GESTION),
+                        true,
+                        idsAsesor
+                ).stream()
+                .map(row -> row.getIdAsesor())
+                .collect(java.util.stream.Collectors.toSet());
+
+        // "Sin leads desde" = cuándo terminó (tipificó) su último lead, no cuándo se lo asignaron.
+        Map<Long, Instant> ultimoEvento = eventoRepository
+                .ultimoEventoPorActorYAccion(idsAsesor, Accion.TIPIFICACION).stream()
+                .filter(row -> row.getIdAsesor() != null && row.getUltimo() != null)
+                .collect(java.util.stream.Collectors.toMap(row -> row.getIdAsesor(), row -> row.getUltimo()));
+
+        List<AsesorSinLeadsResponse> resultado = new ArrayList<>();
+        for (Long idAsesor : idsAsesor) {
+            Instant sinLeadsDesde = conLeads.contains(idAsesor) ? null : ultimoEvento.get(idAsesor);
+            resultado.add(AsesorSinLeadsResponse.builder()
+                    .idAsesor(idAsesor)
+                    .sinLeadsDesde(sinLeadsDesde)
+                    .build());
+        }
+        return resultado;
     }
 
     public LeadGtrMetricasResponse obtenerMetricasGtr(LocalDate fecha) {

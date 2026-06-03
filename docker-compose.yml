@@ -260,6 +260,7 @@ services:
       SCHEDULE_DB_PASSWORD: postgres
       JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
       JWT_ISSUER: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/auth
+      INTERNAL_SHARED_SECRET: ${INTERNAL_SHARED_SECRET:?INTERNAL_SHARED_SECRET is required}
       SCHEDULE_DOCS_GATEWAY_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/schedule
       SCHEDULE_DOCS_PUBLIC_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/schedule
     depends_on:
@@ -349,6 +350,7 @@ services:
       CORS_ALLOWED_ORIGIN_PATTERNS: http://${PUBLIC_HOST:-localhost}:${FRONTEND_HOST_PORT:-4200},http://localhost:${FRONTEND_HOST_PORT:-4200},http://127.0.0.1:${FRONTEND_HOST_PORT:-4200}
       JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
       JWT_ISSUER: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/auth
+      INTERNAL_SHARED_SECRET: ${INTERNAL_SHARED_SECRET:?INTERNAL_SHARED_SECRET is required}
     depends_on:
       redis:
         condition: service_healthy

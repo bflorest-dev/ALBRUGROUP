@@ -1,0 +1,23 @@
+.reporte-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.reporte-hero__eyebrow {
+  color: #1c7d62;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.reporte-hero h1 {
+  color: #0f1f33;
+  font-size: clamp(1.45rem, 2vw, 1.9rem);
+  line-height: 1.08;
+  margin: 0.15rem 0;
+}
+
+.reporte-hero p {
+  color: #617187;
+  margin: 0;
+}

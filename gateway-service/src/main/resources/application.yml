@@ -96,6 +96,14 @@ services:
   schedule:
     base-url: ${SCHEDULE_SERVICE_URL:http://schedule-service:8085}
 
+internal:
+  shared-secret: ${INTERNAL_SHARED_SECRET:}
+
+attendance:
+  reconciliation:
+    interval-ms: ${ATTENDANCE_RECONCILIATION_INTERVAL_MS:1800000}
+    initial-delay-ms: ${ATTENDANCE_RECONCILIATION_INITIAL_DELAY_MS:120000}
+
 app:
   cors:
     allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:http://localhost:3000,http://localhost:5173,http://localhost:4200,http://localhost:4201,http://127.0.0.1:4200,http://127.0.0.1:4201}

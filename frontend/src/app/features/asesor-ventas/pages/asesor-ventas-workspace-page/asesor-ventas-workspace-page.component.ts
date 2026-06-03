@@ -228,7 +228,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
   /** El horario termino pero el asesor sigue con un lead en gestion: puede terminarlo (gracia de cierre). */
   protected readonly wrapUpActive = computed(
-    () => this.operationalGateService.currentStatus() === 'OFFLINE' && this.isManagingLead()
+    () => this.attendanceFacade.isPastSalida() && this.isManagingLead()
   );
   /** Permite actuar sobre el lead que se esta gestionando aunque el horario haya terminado. */
   protected readonly canFinishManagedLead = computed(
@@ -338,6 +338,12 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   protected async openDetail(idLead: number): Promise<void> {
     if (!this.canMutateOperationalData()) {
       this.errorMessage.set('Marca ONLINE para gestionar Leads.');
+      return;
+    }
+    // Despues de la salida solo se permite terminar el lead ya en gestion, no tomar nuevos.
+    const isReopeningManaged = this.isManagingLead() && this.selectedLeadId() === idLead;
+    if (this.attendanceFacade.isPastSalida() && !isReopeningManaged) {
+      this.errorMessage.set('Tu turno terminó. Solo puedes terminar el Lead que tienes en gestión.');
       return;
     }
     if (this.isManagingLead() && this.selectedLeadId() !== idLead) {

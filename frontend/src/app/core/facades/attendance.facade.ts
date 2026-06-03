@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { catchError, filter, map, of, startWith, switchMap, timeout } from 'rxjs';
+import { catchError, filter, firstValueFrom, map, of, startWith, switchMap, timeout } from 'rxjs';
 import { ApiErrorResponse } from '../../shared/models/api/api-error-response';
 import { DetalleAsistenciaResponse } from '../../shared/models/schedule/detalle-asistencia-response';
 import {
@@ -46,7 +46,8 @@ export class AttendanceFacade {
   private readonly sessionService = inject(SessionService);
   private nextRequestId = 1;
   private initialized = false;
-  private autoCheckInTimer: ReturnType<typeof setTimeout> | null = null;
+  private pollTimerId: ReturnType<typeof setInterval> | null = null;
+  private autoCheckInArmed = false;
   private autoCheckInRequestId: number | null = null;
   private autoCheckInRetried = false;
 
@@ -131,6 +132,23 @@ export class AttendanceFacade {
   );
   readonly isWithinSchedule = computed(() => Boolean(this.attendanceDetail()?.dentroHorario));
   readonly isOperational = computed(() => Boolean(this.attendanceDetail()?.operativo));
+  /**
+   * Jornada abierta (ONLINE) cuya hora de salida programada ya paso. Lo usan las vistas con cierre
+   * propio (ej. ASESOR_VENTAS) para saber que el turno termino aunque el empleado siga operativo.
+   * Heuristica con reloj local (patron permitido); solo aplica a turnos del mismo dia.
+   */
+  readonly isPastSalida = computed(() => {
+    const detail = this.attendanceDetail();
+    if (!detail || detail.jornadaCerrada || detail.estadoActual === 'OFFLINE') {
+      return false;
+    }
+    const salidaMin = this.toMinutes(detail.salidaProgramada);
+    const entradaMin = this.toMinutes(detail.entradaProgramada);
+    if (salidaMin === null || entradaMin === null || salidaMin <= entradaMin) {
+      return false;
+    }
+    return this.nowMinutes() > salidaMin;
+  });
   readonly currentStatus = computed<EstadoAsistencia>(
     () => this.rawStatus() === 'ONLINE' && !this.isOperational() ? 'OFFLINE' : this.rawStatus()
   );
@@ -185,13 +203,14 @@ export class AttendanceFacade {
         this.isLoading.set(false);
         this.errorMessage.set('');
         void this.syncPresence(state.detail);
-        this.scheduleAutoCheckIn(state.detail);
+        this.evaluateAttendanceAutomation(state.detail);
         return;
       }
 
       if (state.status === 'error') {
         this.isLoading.set(false);
         this.errorMessage.set(state.message);
+        this.clearPollTimer();
       }
     });
 
@@ -311,7 +330,13 @@ export class AttendanceFacade {
   }
 
   private shouldHavePresence(detail: DetalleAsistenciaResponse | null): boolean {
-    return Boolean(detail?.operativo) || this.managingLeadActive();
+    // Mantener presencia tambien en pausas dentro de horario (almuerzo/servicios/capacitacion):
+    // el asesor sigue conectado (disponibilidad OCUPADO) y debe seguir visible en el monitoreo.
+    const enPausa =
+      detail?.estadoActual === 'ALMUERZO' ||
+      detail?.estadoActual === 'SERVICIOS' ||
+      detail?.estadoActual === 'CAPACITACION';
+    return Boolean(detail?.operativo) || this.managingLeadActive() || enPausa;
   }
 
   /**
@@ -329,6 +354,13 @@ export class AttendanceFacade {
 
   private async syncSalesAdvisorDisponibilidad(status: EstadoAsistencia): Promise<void> {
     if (this.sessionService.getSession()?.primaryRole !== 'ASESOR_VENTAS') {
+      return;
+    }
+
+    // Mientras gestiona un lead, el workspace es la unica autoridad de la disponibilidad
+    // (decide GESTIONANDO / SATURADO). No la tocamos aqui para no pisar el GESTIONANDO con
+    // DISPONIBLE cuando setManagingLeadActive(true) dispara syncPresence al abrir el lead.
+    if (this.managingLeadActive()) {
       return;
     }
 
@@ -369,117 +401,177 @@ export class AttendanceFacade {
   }
 
   private resolveAvailableActions(status: EstadoAsistencia): AttendanceActionOption[] {
-    if (!this.isWithinSchedule()) {
-      return [];
-    }
+    const dentroHorario = this.isWithinSchedule();
 
     switch (status) {
       case 'OFFLINE':
-        return [
-          {
-            id: 'REGISTRAR_INGRESO',
-            targetStatus: 'ONLINE',
-            label: 'ONLINE',
-            helperText: 'Registrar ingreso'
-          }
-        ];
-      case 'ONLINE':
-        return [
-          {
-            id: 'INICIAR_ALMUERZO',
-            targetStatus: 'ALMUERZO',
-            label: 'ALMUERZO',
-            helperText: 'Iniciar almuerzo'
-          },
-          {
-            id: 'INICIAR_SERVICIOS',
-            targetStatus: 'SERVICIOS',
-            label: 'SERVICIOS',
-            helperText: 'Iniciar servicios'
-          },
-          {
-            id: 'REGISTRAR_SALIDA',
-            targetStatus: 'OFFLINE',
-            label: 'OFFLINE',
-            helperText: 'Registrar salida'
-          }
-        ];
+        // El ingreso solo se puede registrar dentro del horario (el backend no permite ingresar
+        // despues de la hora de salida).
+        return dentroHorario
+          ? [
+              {
+                id: 'REGISTRAR_INGRESO',
+                targetStatus: 'ONLINE',
+                label: 'ONLINE',
+                helperText: 'Registrar ingreso'
+              }
+            ]
+          : [];
+      case 'ONLINE': {
+        const actions: AttendanceActionOption[] = [];
+        if (dentroHorario) {
+          actions.push(
+            {
+              id: 'INICIAR_ALMUERZO',
+              targetStatus: 'ALMUERZO',
+              label: 'ALMUERZO',
+              helperText: 'Iniciar almuerzo'
+            },
+            {
+              id: 'INICIAR_SERVICIOS',
+              targetStatus: 'SERVICIOS',
+              label: 'SERVICIOS',
+              helperText: 'Iniciar servicios'
+            }
+          );
+        }
+        // OFFLINE siempre disponible mientras la jornada siga abierta, incluso despues de la salida,
+        // para que el empleado pueda cerrar su turno cuando termine.
+        actions.push({
+          id: 'REGISTRAR_SALIDA',
+          targetStatus: 'OFFLINE',
+          label: 'OFFLINE',
+          helperText: 'Registrar salida'
+        });
+        return actions;
+      }
       case 'ALMUERZO':
-        return [
-          {
-            id: 'FINALIZAR_ALMUERZO',
-            targetStatus: 'ONLINE',
-            label: 'ONLINE',
-            helperText: 'Finalizar almuerzo'
-          }
-        ];
+        return dentroHorario
+          ? [
+              {
+                id: 'FINALIZAR_ALMUERZO',
+                targetStatus: 'ONLINE',
+                label: 'ONLINE',
+                helperText: 'Finalizar almuerzo'
+              }
+            ]
+          : [];
       case 'SERVICIOS':
-        return [
-          {
-            id: 'FINALIZAR_SERVICIOS',
-            targetStatus: 'ONLINE',
-            label: 'ONLINE',
-            helperText: 'Finalizar servicios'
-          }
-        ];
+        return dentroHorario
+          ? [
+              {
+                id: 'FINALIZAR_SERVICIOS',
+                targetStatus: 'ONLINE',
+                label: 'ONLINE',
+                helperText: 'Finalizar servicios'
+              }
+            ]
+          : [];
       case 'CAPACITACION':
         return [];
     }
   }
 
-  private scheduleAutoCheckIn(detail: DetalleAsistenciaResponse | null): void {
-    this.clearAutoCheckInTimer();
+  /**
+   * Marcado automatico SOLO para el caso 1 (el empleado se conecta antes de su hora de entrada):
+   * mientras falte para la entrada se "arma" y se sondea el backend; cuando el backend confirma que
+   * ya esta dentro de horario, se marca ONLINE una sola vez. Si el empleado se conecta DESPUES de su
+   * entrada sin marcar (caso 2A), NO se auto-marca: debe marcar ONLINE manualmente.
+   */
+  private evaluateAttendanceAutomation(detail: DetalleAsistenciaResponse | null): void {
+    this.clearPollTimer();
 
-    // Condiciones comunes: debe ser OFFLINE sin ingreso registrado y con horario definido
     if (
       !detail ||
       detail.estadoActual !== 'OFFLINE' ||
       detail.fechaHoraIngreso !== null ||
-      !detail.entradaProgramada
+      !detail.entradaProgramada ||
+      detail.jornadaCerrada
     ) {
+      this.autoCheckInArmed = false;
       return;
     }
 
-    // Caso 1: ya está dentro del horario — marcar ONLINE de inmediato
     if (detail.dentroHorario) {
-      this.autoCheckInRetried = false;
-      const capturedId = this.nextRequestId;
-      this.submitAction('REGISTRAR_INGRESO');
-      this.autoCheckInRequestId = capturedId;
-      return;
-    }
-
-    // Caso 2: antes del horario — programar timer para entradaProgramada
-    const [h, m, s] = detail.entradaProgramada.split(':').map(Number);
-    const target = new Date();
-    target.setHours(h, m, s ?? 0, 0);
-    const ms = target.getTime() - Date.now();
-
-    // Solo si la entrada es en el futuro y dentro de las próximas 4 horas
-    if (ms <= 0 || ms > 4 * 60 * 60 * 1000) {
-      return;
-    }
-
-    this.autoCheckInTimer = setTimeout(() => {
-      this.autoCheckInTimer = null;
-
-      // Re-verificar al disparar: el empleado puede haber marcado manualmente
-      const current = this.attendanceDetail();
-      if (!current || current.estadoActual !== 'OFFLINE' || current.fechaHoraIngreso !== null) {
-        return;
+      // Ya dentro de horario y sin ingreso.
+      if (this.autoCheckInArmed) {
+        // Estabamos esperando que llegara su hora de entrada: marcar ONLINE automaticamente.
+        this.autoCheckInArmed = false;
+        this.autoCheckInRetried = false;
+        const capturedId = this.nextRequestId;
+        this.submitAction('REGISTRAR_INGRESO');
+        this.autoCheckInRequestId = capturedId;
       }
+      // Si no estaba armado, se conecto despues de su entrada: marcado manual, no hacemos nada.
+      return;
+    }
 
-      this.autoCheckInRetried = false;
-      const capturedId = this.nextRequestId;
-      this.submitAction('REGISTRAR_INGRESO');
-      this.autoCheckInRequestId = capturedId;
-    }, ms);
+    // Fuera de horario y sin ingreso: solo automatizar si aun no llega su entrada (nunca tras la salida).
+    if ((this.isBeforeEntrada(detail) || this.autoCheckInArmed) && !this.isAfterSalida(detail)) {
+      this.autoCheckInArmed = true;
+      this.startAttendancePoll();
+    } else {
+      this.autoCheckInArmed = false;
+    }
   }
 
-  private clearAutoCheckInTimer(): void {
-    if (this.autoCheckInTimer !== null) {
-      clearTimeout(this.autoCheckInTimer);
-      this.autoCheckInTimer = null;
+  private startAttendancePoll(): void {
+    if (this.pollTimerId !== null) {
+      return;
+    }
+    // El backend es la autoridad de "ya es tu hora": recargamos hasta que confirme dentroHorario.
+    this.pollTimerId = setInterval(() => this.reload(), 60000);
+  }
+
+  private clearPollTimer(): void {
+    if (this.pollTimerId !== null) {
+      clearInterval(this.pollTimerId);
+      this.pollTimerId = null;
+    }
+  }
+
+  private isBeforeEntrada(detail: DetalleAsistenciaResponse): boolean {
+    const entradaMin = this.toMinutes(detail.entradaProgramada);
+    return entradaMin !== null && this.nowMinutes() < entradaMin;
+  }
+
+  private isAfterSalida(detail: DetalleAsistenciaResponse): boolean {
+    const salidaMin = this.toMinutes(detail.salidaProgramada);
+    const entradaMin = this.toMinutes(detail.entradaProgramada);
+    if (salidaMin === null || entradaMin === null || salidaMin <= entradaMin) {
+      return false;
+    }
+    return this.nowMinutes() > salidaMin;
+  }
+
+  private toMinutes(time: string | null | undefined): number | null {
+    if (!time) {
+      return null;
+    }
+    const [hours, minutes] = time.split(':').map(Number);
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+      return null;
+    }
+    return hours * 60 + minutes;
+  }
+
+  private nowMinutes(): number {
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes();
+  }
+
+  /**
+   * Cierre best-effort de la jornada antes de un logout por inactividad. Lo usa IdleSessionService
+   * cuando el empleado queda inactivo con su turno ya terminado, para que igual quede su marca OFFLINE
+   * (el backend la estampa en la salida programada).
+   */
+  async closeShiftSilently(): Promise<void> {
+    try {
+      const detail = await firstValueFrom(this.attendanceService.registrarSalida(this.buildMovementRequest()));
+      this.attendanceDetail.set(detail);
+      void this.syncPresence(detail);
+    } catch {
+      // Silencioso: es un cierre best-effort previo al logout.
     }
   }
 

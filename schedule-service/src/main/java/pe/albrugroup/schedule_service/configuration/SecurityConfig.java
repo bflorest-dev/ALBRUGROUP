@@ -11,6 +11,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import pe.albrugroup.schedule_service.security.AuthenticationFilter;
+import pe.albrugroup.schedule_service.security.InternalAuthFilter;
 import pe.albrugroup.schedule_service.security.RestAccessDeniedHandler;
 import pe.albrugroup.schedule_service.security.RestAuthenticationEntryPoint;
 
@@ -21,6 +22,7 @@ import pe.albrugroup.schedule_service.security.RestAuthenticationEntryPoint;
 public class SecurityConfig {
 
     private final AuthenticationFilter authFilter;
+    private final InternalAuthFilter internalAuthFilter;
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
 
@@ -47,6 +49,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler)
                 )
+                .addFilterBefore(internalAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class)
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
         return http.build();

@@ -5,6 +5,8 @@ import { AdminEmployabilityPageComponent } from '../admin/pages/admin-employabil
 import { AdminFinancePageComponent } from '../admin/pages/admin-finance-page/admin-finance-page.component';
 import { AdminRankingPageComponent } from '../admin/pages/admin-ranking-page/admin-ranking-page.component';
 import { AsesorVentasWorkspacePageComponent } from '../asesor-ventas/pages/asesor-ventas-workspace-page/asesor-ventas-workspace-page.component';
+import { SupervisorVentasMonitoreoPageComponent } from '../supervisor-ventas/pages/supervisor-ventas-monitoreo-page/supervisor-ventas-monitoreo-page.component';
+import { SupervisorVentasReportePageComponent } from '../supervisor-ventas/pages/supervisor-ventas-reporte-page/supervisor-ventas-reporte-page.component';
 import { AsesorVentasHorarioPageComponent } from '../asesor-ventas/pages/asesor-ventas-horario-page/asesor-ventas-horario-page.component';
 import { AsesorVentasMetricasPageComponent } from '../asesor-ventas/pages/asesor-ventas-metricas-page/asesor-ventas-metricas-page.component';
 import { BackofficeWorkspacePageComponent } from '../backoffice/pages/backoffice-workspace-page/backoffice-workspace-page.component';
@@ -287,11 +289,25 @@ export const PLATFORM_ROUTES: Routes = [
   },
   {
     path: 'supervisor-ventas',
-    component: RolePlatformPageComponent,
+    pathMatch: 'full',
+    redirectTo: 'supervisor-ventas/monitoreo'
+  },
+  {
+    path: 'supervisor-ventas/monitoreo',
+    component: SupervisorVentasMonitoreoPageComponent,
     canActivate: [roleGuard],
-    data: {
-      roles: ['SUPERVISOR_VENTAS'],
-      title: 'SUPERVISOR VENTAS Platform'
-    }
+    data: { roles: ['SUPERVISOR_VENTAS'] }
+  },
+  {
+    path: 'supervisor-ventas/gestion',
+    component: AsesorVentasWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: { roles: ['SUPERVISOR_VENTAS'] }
+  },
+  {
+    path: 'supervisor-ventas/reporte',
+    component: SupervisorVentasReportePageComponent,
+    canActivate: [roleGuard],
+    data: { roles: ['SUPERVISOR_VENTAS'] }
   }
 ];

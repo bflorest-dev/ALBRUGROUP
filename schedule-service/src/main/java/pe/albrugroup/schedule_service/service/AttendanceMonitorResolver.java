@@ -186,29 +186,15 @@ public class AttendanceMonitorResolver {
         };
     }
 
+    /**
+     * Operativo = jornada de hoy abierta y en curso (ONLINE). Coherente con el gate del empleado:
+     * se mantiene true aunque ya haya pasado la hora de salida, hasta que marque OFFLINE o el cierre
+     * automatico cierre la jornada. Asi el monitoreo de supervisores/GTR refleja a quien sigue
+     * trabajando despues de su salida en vez de marcarlo como no operativo.
+     */
     private boolean esOperativo(Long idEmpleado, LocalDate fecha, EstadoAsistencia estado) {
-        if (estado != EstadoAsistencia.ONLINE) {
-            return false;
-        }
-
-        LocalDateTime ahora = OperationalDateTime.nowLocalDateTime();
-        if (!fecha.equals(ahora.toLocalDate())) {
-            return false;
-        }
-
-        try {
-            Horario horario = horarioRepository.findHorarioVigente(idEmpleado, fecha)
-                    .orElseThrow(() -> new NotFoundException("Horario vigente no encontrado", idEmpleado));
-            ProgramacionDiaria programacion = resolverProgramacion(horario, fecha);
-            if (!programacion.laborable() || programacion.horaEntrada() == null || programacion.horaSalida() == null) {
-                return false;
-            }
-
-            LocalTime horaOperacion = ahora.toLocalTime();
-            return !horaOperacion.isBefore(programacion.horaEntrada()) && !horaOperacion.isAfter(programacion.horaSalida());
-        } catch (NotFoundException e) {
-            return false;
-        }
+        return estado == EstadoAsistencia.ONLINE
+                && fecha.equals(OperationalDateTime.nowLocalDateTime().toLocalDate());
     }
 
     @lombok.Builder

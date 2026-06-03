@@ -114,6 +114,7 @@ public class MonitoringService {
                 .nombreCompleto(conectado.getNombreCompleto())
                 .roles(conectado.getRoles())
                 .disponibilidad(conectado.getDisponibilidad())
+                .disponibilidadDesde(conectado.getDisponibilidadDesde())
                 .lastSeen(conectado.getLastSeen())
                 .estadoSchedule(monitor.getEstadoActual())
                 .desde(monitor.getDesde())

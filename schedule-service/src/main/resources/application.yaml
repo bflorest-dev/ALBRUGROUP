@@ -11,6 +11,9 @@ jwt:
   public-key-base64: ${JWT_PUBLIC_KEY_BASE64}
   issuer: ${JWT_ISSUER}
 
+internal:
+  shared-secret: ${INTERNAL_SHARED_SECRET:}
+
 app:
   docs:
     gateway-url: ${SCHEDULE_DOCS_GATEWAY_URL:http://localhost:8080/schedule}

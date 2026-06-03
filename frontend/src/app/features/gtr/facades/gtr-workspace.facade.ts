@@ -1025,7 +1025,12 @@ export class GtrWorkspaceFacade {
 
     let activeUsers: UsuarioResponse[] = [];
     try {
-      activeUsers = await firstValueFrom(this.preventaService.listarUsuariosActivosPorRol('ASESOR_VENTAS'));
+      // Asesores de ventas y supervisores de ventas: ambos pueden recibir leads asignados.
+      const [asesores, supervisores] = await Promise.all([
+        firstValueFrom(this.preventaService.listarUsuariosActivosPorRol('ASESOR_VENTAS')),
+        firstValueFrom(this.preventaService.listarUsuariosActivosPorRol('SUPERVISOR_VENTAS'))
+      ]);
+      activeUsers = this.mergePorEmpleado(asesores, supervisores);
     } catch (error) {
       this.advisors.set([]);
       throw new Error(this.getErrorMessage(error, 'catalogo de asesores activos'));
@@ -1033,7 +1038,11 @@ export class GtrWorkspaceFacade {
 
     let connectedUsers: ConnectedUserResponse[] = [];
     try {
-      connectedUsers = await firstValueFrom(this.presenceService.listarUsuariosConectados('ASESOR_VENTAS'));
+      const [asesoresConectados, supervisoresConectados] = await Promise.all([
+        firstValueFrom(this.presenceService.listarUsuariosConectados('ASESOR_VENTAS')),
+        firstValueFrom(this.presenceService.listarUsuariosConectados('SUPERVISOR_VENTAS'))
+      ]);
+      connectedUsers = this.mergePorEmpleado(asesoresConectados, supervisoresConectados);
     } catch (error) {
       this.advisors.set(this.mapAdvisorOptions(activeUsers, []));
       throw new Error(this.getErrorMessage(error, 'presencia de asesores'));
@@ -1047,6 +1056,15 @@ export class GtrWorkspaceFacade {
     }
 
     this.advisors.set(this.mapAdvisorOptions(activeUsers, connectedUsers, monitorUsers));
+  }
+
+  /** Une dos listas de usuarios deduplicando por empleadoId (asesores + supervisores). */
+  private mergePorEmpleado<T extends { empleadoId: number }>(left: T[], right: T[]): T[] {
+    const porId = new Map<number, T>();
+    for (const item of [...left, ...right]) {
+      porId.set(item.empleadoId, item);
+    }
+    return [...porId.values()];
   }
 
   private mapAdvisorOptions(

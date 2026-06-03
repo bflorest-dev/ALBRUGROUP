@@ -33,6 +33,27 @@ export interface AsesorLeadsPendientesResponse {
   leads: LeadPendienteResponse[];
 }
 
+export interface AsesorSinLeadsResponse {
+  idAsesor: number;
+  sinLeadsDesde?: string | null;
+}
+
+export interface SupervisorVentasProveedorResumenResponse {
+  idProveedor: number;
+  nombreProveedor: string;
+  cantidad: number;
+}
+
+export interface SupervisorVentasResumenResponse {
+  idAsesor: number;
+  nombreAsesor: string;
+  asignadosActuales: number;
+  gestionadosHoy: number;
+  preventasHoy: number;
+  preventasMes: number;
+  preventasMesPorProveedor: SupervisorVentasProveedorResumenResponse[];
+}
+
 export interface LeadGtrResponse {
   id: number;
   createdAt: string;

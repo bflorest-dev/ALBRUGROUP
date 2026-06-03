@@ -13,7 +13,11 @@ CREATE TEMP TABLE seed_users (
     fecha_nacimiento DATE,
     direccion TEXT,
     cuenta_bancaria TEXT,
-    cuenta_interbancaria TEXT
+    cuenta_interbancaria TEXT,
+    hora_entrada TIME,
+    hora_salida TIME,
+    inicio_almuerzo TIME,
+    fin_almuerzo TIME
 );
 
 \copy seed_users FROM '/seeds/users-seed.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
@@ -84,10 +88,10 @@ INSERT INTO horario_detalle (
 SELECT
     su.horario_id,
     dias.dia,
-    TIME '09:00',
-    TIME '18:00',
-    TIME '13:00',
-    TIME '14:00',
+    su.hora_entrada,
+    su.hora_salida,
+    su.inicio_almuerzo,
+    su.fin_almuerzo,
     TRUE
 FROM seed_users su
 CROSS JOIN (

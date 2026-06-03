@@ -24,4 +24,6 @@ public interface IAsistencia {
     CumplimientoResumenResponse getCumplimientoResumen(ConsultaCumplimientoRequest request);
     CumplimientoDetalleResponse getCumplimientoDetalle(ConsultaCumplimientoRequest request);
     List<EstadoMonitorResponse> getEstadosMonitor(ConsultaMonitoreoRequest request);
+    List<Long> listarEmpleadosJornadaAbiertaVencida();
+    DetalleAsistenciaResponse autoCerrarJornada(Long idEmpleado);
 }

@@ -2,6 +2,7 @@ import { DOCUMENT } from '@angular/common';
 import { Inject, Injectable, NgZone } from '@angular/core';
 import { Router } from '@angular/router';
 import { STORAGE_KEYS } from '../constants/storage.constants';
+import { AttendanceFacade } from '../facades/attendance.facade';
 import { PresenceService } from './presence.service';
 import { SessionService } from './session.service';
 
@@ -20,7 +21,8 @@ export class IdleSessionService {
     private readonly ngZone: NgZone,
     private readonly presenceService: PresenceService,
     private readonly router: Router,
-    private readonly sessionService: SessionService
+    private readonly sessionService: SessionService,
+    private readonly attendanceFacade: AttendanceFacade
   ) {}
 
   initialize(): void {
@@ -69,12 +71,26 @@ export class IdleSessionService {
     }
 
     this.expiring = true;
-    void this.presenceService.offline().finally(() => {
-      localStorage.removeItem(STORAGE_KEYS.lastActivityAt);
-      this.sessionService.clearSession();
-      void this.router.navigate(['/auth/access']);
-      this.expiring = false;
+    void this.closeShiftIfNeeded().finally(() => {
+      void this.presenceService.offline().finally(() => {
+        localStorage.removeItem(STORAGE_KEYS.lastActivityAt);
+        this.sessionService.clearSession();
+        void this.router.navigate(['/auth/access']);
+        this.expiring = false;
+      });
     });
+  }
+
+  /**
+   * Si el empleado queda inactivo con su turno ya terminado pero sin marcar OFFLINE, cerramos su
+   * jornada antes del logout para que igual quede su marca (el backend la estampa en su salida).
+   * Si la inactividad ocurre dentro de su horario, NO cerramos: solo se cierra sesion y podra
+   * reanudar al volver a entrar.
+   */
+  private async closeShiftIfNeeded(): Promise<void> {
+    if (this.attendanceFacade.currentStatus() === 'ONLINE' && this.attendanceFacade.isPastSalida()) {
+      await this.attendanceFacade.closeShiftSilently();
+    }
   }
 
   private registerActivityListeners(): void {

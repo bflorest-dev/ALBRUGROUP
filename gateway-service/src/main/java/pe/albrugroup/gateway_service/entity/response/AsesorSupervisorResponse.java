@@ -17,6 +17,7 @@ public class AsesorSupervisorResponse {
     private String nombreCompleto;
     private List<String> roles;
     private Disponibilidad disponibilidad;
+    private Instant disponibilidadDesde;
     private Instant lastSeen;
     private String estadoSchedule;
     private LocalDateTime desde;

@@ -17,6 +17,39 @@ export interface AsesorGtrPresenceResponse {
   operativo: boolean;
 }
 
+export interface AsesorSupervisorResponse {
+  empleadoId: number;
+  nombreCompleto: string;
+  roles?: string[] | null;
+  disponibilidad?: string | null;
+  disponibilidadDesde?: string | null;
+  lastSeen?: string | null;
+  estadoSchedule?: string | null;
+  desde?: string | null;
+  entradaProgramada?: string | null;
+  esperadoHoy: boolean;
+  tieneRegistroHoy?: boolean;
+  operativo: boolean;
+  minutosServiciosEnCurso?: number | null;
+  minutosServiciosAcumulados?: number | null;
+  minutosServiciosPermitidos?: number | null;
+  excedioServicios?: boolean | null;
+}
+
+export interface EmpleadoEsperadoResponse {
+  empleadoId: number;
+  nombreCompleto: string;
+  roles?: string[] | null;
+  fecha?: string | null;
+  entradaProgramada?: string | null;
+  conectado: boolean;
+  tieneHorarioVigente?: boolean;
+  laborableHoy?: boolean;
+  esperadoHoy: boolean;
+  tieneRegistroHoy?: boolean;
+  estadoSchedule?: string | null;
+}
+
 export interface ConnectedUserResponse {
   empleadoId: number;
   nombreCompleto: string;
@@ -105,6 +138,22 @@ export class PresenceService {
     return this.http.get<AsesorGtrPresenceResponse[]>(`${this.baseUrl}/monitor/gtr/asesores-ventas/conectados`, {
       params
     });
+  }
+
+  listarAsesoresSupervisor(fecha?: string): import('rxjs').Observable<AsesorSupervisorResponse[]> {
+    const params = fecha ? new HttpParams().set('fecha', fecha) : undefined;
+    return this.http.get<AsesorSupervisorResponse[]>(
+      `${this.baseUrl}/monitor/supervisor-ventas/asesores-ventas/conectados`,
+      { params }
+    );
+  }
+
+  listarEsperadosNoConectados(fecha?: string): import('rxjs').Observable<EmpleadoEsperadoResponse[]> {
+    const params = fecha ? new HttpParams().set('fecha', fecha) : undefined;
+    return this.http.get<EmpleadoEsperadoResponse[]>(
+      `${this.baseUrl}/monitor/supervisor-ventas/asesores-ventas/esperados-no-conectados`,
+      { params }
+    );
   }
 
   listarUsuariosConectados(role?: string): import('rxjs').Observable<ConnectedUserResponse[]> {

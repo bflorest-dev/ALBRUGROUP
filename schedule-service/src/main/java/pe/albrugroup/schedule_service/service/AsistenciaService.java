@@ -96,7 +96,13 @@ public class AsistenciaService implements IAsistencia {
             throw new BadRequestException("No se puede registrar salida con una pausa activa");
         }
 
-        asistencia.setFechaHoraSalida(fechaHoraOperativa);
+        // La hora de salida registrada se topa en la salida programada: si marca OFFLINE despues de
+        // su horario (se le permite seguir trabajando), no se guarda tiempo extra que afecte calculos.
+        LocalDateTime topeSalida = resolverTopeSalidaProgramada(asistencia.getIdEmpleado(), asistencia.getFecha());
+        LocalDateTime salidaEfectiva = topeSalida != null && fechaHoraOperativa.isAfter(topeSalida)
+                ? topeSalida
+                : fechaHoraOperativa;
+        asistencia.setFechaHoraSalida(salidaEfectiva);
         asistencia.setEstadoActual(EstadoAsistencia.OFFLINE);
         recalcularMinutos(asistencia);
         Asistencia savedAsistencia = asistenciaRepository.save(asistencia);
@@ -311,6 +317,92 @@ public class AsistenciaService implements IAsistencia {
     @Transactional(readOnly = true)
     public List<EstadoMonitorResponse> getEstadosMonitor(ConsultaMonitoreoRequest request) {
         return attendanceMonitorResolver.getEstadosMonitor(request);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Long> listarEmpleadosJornadaAbiertaVencida() {
+        LocalDate hoy = OperationalDateTime.today();
+        LocalDateTime ahora = OperationalDateTime.nowLocalDateTime();
+        return asistenciaRepository
+                .findByFechaAndFechaHoraIngresoIsNotNullAndFechaHoraSalidaIsNull(hoy).stream()
+                .filter(asistencia -> asistencia.getEstadoActual() != EstadoAsistencia.OFFLINE)
+                .filter(asistencia -> {
+                    LocalDateTime topeSalida = resolverTopeSalidaProgramada(asistencia.getIdEmpleado(), asistencia.getFecha());
+                    return topeSalida != null && ahora.isAfter(topeSalida);
+                })
+                .map(Asistencia::getIdEmpleado)
+                .toList();
+    }
+
+    /**
+     * Cierre automatico de la jornada (safety net). Lo invoca el job de reconciliacion del gateway
+     * cuando el empleado ya no esta conectado y su horario termino, para garantizar que quede su
+     * marca OFFLINE aunque haya cerrado el navegador sin marcar. Es idempotente: si la jornada ya
+     * esta cerrada o aun no vence, no hace nada. La salida se estampa en la salida programada.
+     */
+    @Override
+    @Transactional
+    public DetalleAsistenciaResponse autoCerrarJornada(Long idEmpleado) {
+        LocalDate hoy = OperationalDateTime.today();
+        Asistencia asistencia = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, hoy).orElse(null);
+        if (asistencia == null
+                || asistencia.getFechaHoraIngreso() == null
+                || asistencia.getFechaHoraSalida() != null
+                || asistencia.getEstadoActual() == EstadoAsistencia.OFFLINE) {
+            return asistencia == null ? null : toDetalleOperativoResponse(asistencia);
+        }
+
+        LocalDateTime topeSalida = resolverTopeSalidaProgramada(idEmpleado, hoy);
+        LocalDateTime ahora = OperationalDateTime.nowLocalDateTime();
+        if (topeSalida == null || !ahora.isAfter(topeSalida)) {
+            // Aun dentro de su horario: no corresponde cerrar todavia.
+            return toDetalleOperativoResponse(asistencia);
+        }
+
+        EstadoAsistencia estadoAnterior = asistencia.getEstadoActual();
+        finalizarPausaPendiente(asistencia, topeSalida);
+        asistencia.setFechaHoraSalida(topeSalida);
+        asistencia.setEstadoActual(EstadoAsistencia.OFFLINE);
+        recalcularMinutos(asistencia);
+        Asistencia savedAsistencia = asistenciaRepository.save(asistencia);
+        attendanceRealtimeNotifier.publishAfterCommit(
+                "ASISTENCIA_ESTADO_CAMBIADO",
+                "AUTO_CIERRE",
+                savedAsistencia.getIdEmpleado(),
+                savedAsistencia.getFecha(),
+                estadoAnterior
+        );
+        return toDetalleOperativoResponse(savedAsistencia);
+    }
+
+    /**
+     * Si la jornada quedo abierta en una pausa (almuerzo/servicios) al momento del cierre automatico,
+     * la cerramos topada en la salida programada para no contar tiempo de pausa fuera de horario.
+     */
+    private void finalizarPausaPendiente(Asistencia asistencia, LocalDateTime topeSalida) {
+        if (asistencia.getEstadoActual() == EstadoAsistencia.ALMUERZO
+                && asistencia.getFechaHoraInicioAlmuerzo() != null
+                && asistencia.getFechaHoraFinAlmuerzo() == null) {
+            LocalDateTime fin = asistencia.getFechaHoraInicioAlmuerzo().isAfter(topeSalida)
+                    ? asistencia.getFechaHoraInicioAlmuerzo()
+                    : topeSalida;
+            asistencia.setFechaHoraFinAlmuerzo(fin);
+            asistencia.setMinutosAlmuerzoTomados((int) Math.max(
+                    Duration.between(asistencia.getFechaHoraInicioAlmuerzo(), fin).toMinutes(), 0));
+        }
+        if (asistencia.getEstadoActual() == EstadoAsistencia.SERVICIOS
+                && asistencia.getFechaHoraInicioServiciosActual() != null) {
+            LocalDateTime fin = asistencia.getFechaHoraInicioServiciosActual().isAfter(topeSalida)
+                    ? asistencia.getFechaHoraInicioServiciosActual()
+                    : topeSalida;
+            int minutos = (int) Math.max(
+                    Duration.between(asistencia.getFechaHoraInicioServiciosActual(), fin).toMinutes(), 0);
+            asistencia.setMinutosServiciosAcumulados(asistencia.getMinutosServiciosAcumulados() + minutos);
+            asistencia.setFechaHoraInicioServiciosActual(null);
+            asistencia.setExcedioServicios(
+                    asistencia.getMinutosServiciosAcumulados() > asistencia.getMinutosServiciosPermitidos());
+        }
     }
 
     private Asistencia getOrCreateAsistencia(Long idEmpleado, LocalDateTime fechaHora) {
@@ -573,8 +665,18 @@ public class AsistenciaService implements IAsistencia {
         DetalleAsistenciaResponse response = mapper.toDetalleResponse(asistencia);
         boolean dentroHorario = estaDentroHorarioActualizado(asistencia.getIdEmpleado(), asistencia.getFecha());
         response.setDentroHorario(dentroHorario);
-        response.setOperativo(asistencia.getEstadoActual() == EstadoAsistencia.ONLINE && dentroHorario);
+        response.setOperativo(esJornadaOperativaAbierta(asistencia));
         return response;
+    }
+
+    /**
+     * Operativo = jornada de hoy abierta y en curso (ONLINE). Se mantiene true aunque ya haya pasado
+     * la hora de salida, hasta que el empleado marque OFFLINE o el cierre automatico cierre la jornada.
+     * Asi el OperationalGate sigue habilitado mientras el empleado siga trabajando despues de su salida.
+     */
+    private boolean esJornadaOperativaAbierta(Asistencia asistencia) {
+        return asistencia.getEstadoActual() == EstadoAsistencia.ONLINE
+                && asistencia.getFecha().equals(OperationalDateTime.today());
     }
 
     private DetalleAsistenciaResponse construirDetalleSinAsistencia(Long idEmpleado, LocalDate fecha) {
@@ -722,7 +824,11 @@ public class AsistenciaService implements IAsistencia {
             if (programacion.horaSalida() == null) {
                 return null;
             }
-            return LocalDateTime.of(fecha, programacion.horaSalida());
+            LocalDateTime topeSalida = LocalDateTime.of(fecha, programacion.horaSalida());
+            if (programacion.horaEntrada() != null && !programacion.horaSalida().isAfter(programacion.horaEntrada())) {
+                topeSalida = topeSalida.plusDays(1);
+            }
+            return topeSalida;
         } catch (NotFoundException e) {
             return null;
         }
@@ -732,11 +838,16 @@ public class AsistenciaService implements IAsistencia {
         if (entrada == null || salida == null) {
             return 0;
         }
-        int minutosBase = (int) Duration.between(entrada, salida).toMinutes();
+        int minutosBase = calcularMinutosEntre(entrada, salida);
         int minutosAlmuerzo = inicioAlmuerzo != null && finAlmuerzo != null
-                ? (int) Duration.between(inicioAlmuerzo, finAlmuerzo).toMinutes()
+                ? calcularMinutosEntre(inicioAlmuerzo, finAlmuerzo)
                 : 0;
         return Math.max(minutosBase - minutosAlmuerzo, 0);
+    }
+
+    private int calcularMinutosEntre(LocalTime inicio, LocalTime fin) {
+        int minutos = (int) Duration.between(inicio, fin).toMinutes();
+        return minutos <= 0 ? minutos + 24 * 60 : minutos;
     }
 
     private Dia mapearDia(DayOfWeek dayOfWeek) {

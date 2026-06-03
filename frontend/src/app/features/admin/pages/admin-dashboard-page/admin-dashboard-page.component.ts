@@ -44,6 +44,12 @@ export class AdminDashboardPageComponent implements OnInit {
     this.facade.initialize();
   }
 
+  // Cache por clave string: misma fecha => misma instancia Date. Evita el loop de
+  // change detection de PrimeNG + OnPush (ver primeng-loop-fix.md): si toPickerDate
+  // devolviera una Date nueva en cada ciclo, el p-datepicker dispararia markForCheck
+  // infinitamente y colgaria la pagina.
+  private readonly pickerDateCache = new Map<string, Date | null>();
+
   protected toPickerDate(value: unknown): Date | null {
     if (value instanceof Date) {
       return value;
@@ -53,8 +59,15 @@ export class AdminDashboardPageComponent implements OnInit {
       return null;
     }
 
+    const cached = this.pickerDateCache.get(value);
+    if (cached !== undefined) {
+      return cached;
+    }
+
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-    return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : null;
+    const parsed = match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : null;
+    this.pickerDateCache.set(value, parsed);
+    return parsed;
   }
 
   protected setHorarioDate(value: Date | string | null): void {

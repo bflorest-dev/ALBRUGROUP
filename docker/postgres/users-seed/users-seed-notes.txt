@@ -1,190 +1,21 @@
-docker compose down -v --remove-orphans
-docker compose up -d --build
-
-docker compose -f docker-compose.yml -f docker-compose.seed.yml run --rm db-seeder
-docker compose -f docker-compose.yml -f docker-compose.seed.yml run --rm users-seeder
-docker compose -f docker-compose.yml -f docker-compose.seed.yml run --rm lead-migration
-
-----------------------------------------------------------------------------
-
 Usuarios de prueba del users-seeder
 Password inicial: pendiente de reset/inicialización
 
 admin@albru.admin.pe
 albruadminpe
 
-D72466061L@albru.community.pe
-diegojeampiere2003@gmail.com
-72466061
-mr8BYdD9kv
-
-
-A004985404P@albru.gtr.pe
-annyoselin@gmail.com
-004985404
-cdu_6QEds4
-
-
-A60573015A@albru.back.pe
-wMu%RTB8E@
+-------------------------------------------------------(NIGHT)
+M71000027D@albru.supsales.pe
 
 
 
+(MORNING)
 
+A71000040S@albru.gtr.pe
+C#DFnTu$Y*
 
+N71000028E@albru.sales.pe
+p#zDR_5vyX
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-----------------------------------------------------------------------------
-[RRHH]
-
-A71000001R@albru.rrhh.pe
-alicia@gmail.com
-71000001
-Fggs5Cxeuv
-----------------------------------------------------------------------------
-[RECLUTADOR]
-
-B71000002S@albru.recruiter.pe
-bruno@gmail.com
-71000002
-
-----------------------------------------------------------------------------
-[CAPACITADOR]
-
-C71000003M@albru.trainer.pe
-carla@gmail.com
-71000003
-
-----------------------------------------------------------------------------
-[COMMUNITY]
-
-D71000004P@albru.community.pe
-diego@gmail.com 
-71000004
-UDS6vovfo2
-----------------------------------------------------------------------------
-[GTR]
-
-E71000005T@albru.gtr.pe
-elena@gmail.com
-71000005
-#*vgbDKM@a
---------------
-F71000006C@albru.gtr.pe
-fabian@gmail.com
-71000006
-#KpP4JXkCL
-
-----------------------------------------------------------------------------
-[ASESOR_VENTAS]
-
-H71000008R@albru.sales.pe
-hector@gmail.com
-71000008
-6&6trxBd5V
---------------
-I71000009V@albru.sales.pe
-ines@gmail.com
-71000009
-jjuJsSXy7e
---------------
-J71000010L@albru.sales.pe
-javier@gmail.com
-71000010
-LC6epNFAfY
---------------
-K71000011M@albru.sales.pe
-karla@gmail.com
-71000011
-
---------------
-L71000012S@albru.sales.pe
-luis@gmail.com
-71000012
-
-----------------------------------------------------------------------------
-[SUPERVISOR_GTR]
-
-G71000007F@albru.supgtr.pe
-gabriela@gmail.com
-71000007
-
-----------------------------------------------------------------------------
-[SUPERVISOR_VENTAS]
-
-M71000013D@albru.supsales.pe
-monica@gmail.com
-71000013
-
-----------------------------------------------------------------------------
-[MONITOR]
-
-N71000014O@albru.monitor.pe
-nestor@gmail.com
-71000014
-
-----------------------------------------------------------------------------
-[BACKOFFICE]
-
-O71000015R@albru.back.pe
-olga@gmail.com
-71000015
-9%-Nsd4imA
---------------
-P71000016N@albru.back.pe
-pablo@gmail.com
-71000016
-
-----------------------------------------------------------------------------
-[SUPERVISOR_BACKOFFICE]
-- Renzo Campos | empleadoId=1017 | dni=71000017 | correo=renzo@gmail.com | username=R71000017C@albru.supback.pe
-
-----------------------------------------------------------------------------
-[ASESOR_POSTVENTA]
-
-S71000018H@albru.post.pe
-sonia@gmail.com
-71000018
-
---------------
-T71000019V@albru.post.pe
-tomas@gmail.com
-71000019
-----------------------------------------------------------------------------
-[SUPERVISOR_POSTVENTA]
-- Ursula Gil | empleadoId=1020 | dni=71000020 | correo=ursula@gmail.com | username=U71000020G@albru.suppost.pe
-
-----------------------------------------------------------------------------
-[ASESOR_COBRANZA]
-
-V71000021P@albru.collection.pe
-valeria@gmail.com
-71000021
-
-----------------------------------------------------------------------------
-[DESARROLLADOR]
-- Walter Nunez | empleadoId=1022 | dni=71000022 | correo=walter@gmail.com | username=W71000022N@albru.developer.pe
-
-----------------------------------------------------------------------------
-[CONTADOR]
-- Ximena Lozano | empleadoId=1023 | dni=71000023 | correo=ximena@gmail.com | username=X71000023L@albru.accountant.pe
+Y71000025B@albru.supsales.pe
+mR8sZ7qp%j
