@@ -164,7 +164,12 @@ public class CampanaGastoService {
         Instant createdAt = registro.getCreatedAt();
         Instant inicioDia = OperationalDateTime.startOfDay(OperationalDateTime.toOperationalDate(createdAt));
         Long idCampana = registro.getCampana().getId();
-        registro.setLeadsReales((int) leadRepository.contarLeadsRealesPorCampanaYRango(idCampana, inicioDia, createdAt));
+        registro.setLeadsReales((int) eventoRepository.contarRegistrosPorCampanaYRango(
+                idCampana,
+                Accion.REGISTRO,
+                inicioDia,
+                createdAt
+        ));
         registro.setVentasCerradas((int) eventoRepository.contarVentasCerradasPorCampanaYRango(
                 idCampana,
                 Accion.TIPIFICACION,

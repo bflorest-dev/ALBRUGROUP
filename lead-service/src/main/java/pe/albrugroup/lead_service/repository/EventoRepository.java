@@ -266,6 +266,21 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     );
 
     @Query("""
+            SELECT COUNT(e.id)
+            FROM Evento e
+            WHERE e.idCampana = :idCampana
+              AND e.accion = :accion
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt <= :fechaHasta
+            """)
+    long contarRegistrosPorCampanaYRango(
+            @Param("idCampana") Long idCampana,
+            @Param("accion") Accion accion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta
+    );
+
+    @Query("""
             SELECT e.idActor AS idAsesor,
                    e.nombreActor AS nombreAsesor,
                    p.id AS idProveedor,

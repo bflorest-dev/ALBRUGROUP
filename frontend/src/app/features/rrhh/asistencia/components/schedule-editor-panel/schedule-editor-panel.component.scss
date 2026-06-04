@@ -53,6 +53,10 @@
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--p-text-muted-color, #6b7280);
+    line-height: 1.1;
+    min-height: 1.8rem;
+    display: flex;
+    align-items: flex-end;
   }
 }
 

@@ -15,6 +15,13 @@
         <i class="pi pi-chart-bar" aria-hidden="true"></i>
         <span>Cumplimiento del equipo</span>
       </p-tab>
+      <p-tab value="hoy">
+        <i class="pi pi-bell" aria-hidden="true"></i>
+        <span>Hoy</span>
+        @if (facade.esperadosNoMarcados().length > 0) {
+          <p-tag [value]="facade.esperadosNoMarcados().length.toString()" severity="danger" />
+        }
+      </p-tab>
       <p-tab value="horarios">
         <i class="pi pi-calendar" aria-hidden="true"></i>
         <span>Horarios</span>
@@ -23,65 +30,6 @@
 
     <p-tabpanels>
       <p-tabpanel value="cumplimiento">
-        <!-- ── Sección Hoy ── -->
-        <section class="today-section">
-          @if (facade.esperadosNoMarcados().length === 0) {
-            <div class="today-empty">
-              <i class="pi pi-check-circle" aria-hidden="true"></i>
-              <span>Todos los esperados de hoy ya marcaron entrada.</span>
-            </div>
-          } @else {
-            <header class="today-section__head">
-              <div>
-                <h3>Hoy · sin marcar entrada</h3>
-                <p>
-                  {{ facade.esperadosNoMarcados().length }}
-                  @if (facade.esperadosNoMarcados().length === 1) { persona esperada } @else { personas esperadas }
-                  no han registrado ingreso.
-                </p>
-              </div>
-            </header>
-            <p-table
-              [value]="facade.esperadosNoMarcados()"
-              dataKey="idEmpleado"
-              [rowHover]="true"
-              styleClass="p-datatable-sm today-table"
-            >
-              <ng-template #header>
-                <tr>
-                  <th>Empleado</th>
-                  <th>Puesto</th>
-                  <th>Entrada prog.</th>
-                  <th class="col-num">Atraso</th>
-                  <th class="col-actions">Acciones</th>
-                </tr>
-              </ng-template>
-              <ng-template #body let-row>
-                <tr>
-                  <td><strong>{{ row.nombreCompleto }}</strong></td>
-                  <td>{{ formatPuesto(row.puestoTrabajo) }}</td>
-                  <td>{{ row.entradaProgramada ?? '—' }}</td>
-                  <td class="col-num">
-                    <p-tag [value]="atrasoLabel(row.atrasoMinutos)" [severity]="atrasoSeverity(row.atrasoMinutos)" />
-                  </td>
-                  <td class="col-actions">
-                    <button
-                      pButton
-                      type="button"
-                      size="small"
-                      severity="secondary"
-                      [outlined]="true"
-                      icon="pi pi-calendar"
-                      label="Ver horario"
-                      (click)="openDrawer(row)"
-                    ></button>
-                  </td>
-                </tr>
-              </ng-template>
-            </p-table>
-          }
-        </section>
-
         <div class="cumplimiento-section">
           <header class="cumplimiento-section__head">
             <div class="cumplimiento-section__title">
@@ -211,6 +159,66 @@
             </ng-template>
           </p-table>
         </div>
+      </p-tabpanel>
+
+      <p-tabpanel value="hoy">
+        <section class="today-section">
+          @if (facade.esperadosNoMarcados().length === 0) {
+            <div class="today-empty">
+              <i class="pi pi-check-circle" aria-hidden="true"></i>
+              <span>Por ahora no hay esperados sin marcar.</span>
+            </div>
+          } @else {
+            <header class="today-section__head">
+              <div>
+                <h3>Sin marcar entrada</h3>
+                <p>
+                  {{ facade.esperadosNoMarcados().length }}
+                  @if (facade.esperadosNoMarcados().length === 1) { persona } @else { personas }
+                  con turno iniciado y sin registrar ingreso.
+                </p>
+              </div>
+            </header>
+            <p-table
+              [value]="facade.esperadosNoMarcados()"
+              dataKey="idEmpleado"
+              [rowHover]="true"
+              styleClass="p-datatable-sm today-table"
+            >
+              <ng-template #header>
+                <tr>
+                  <th>Empleado</th>
+                  <th>Puesto</th>
+                  <th>Entrada prog.</th>
+                  <th class="col-num">Atraso</th>
+                  <th class="col-actions">Acciones</th>
+                </tr>
+              </ng-template>
+              <ng-template #body let-row>
+                <tr>
+                  <td><strong>{{ row.nombreCompleto }}</strong></td>
+                  <td>{{ formatPuesto(row.puestoTrabajo) }}</td>
+                  <td>{{ row.entradaProgramada }}</td>
+                  <td class="col-num">
+                    <p-tag [value]="atrasoLabel(row.atrasoMinutos)" [severity]="atrasoSeverity(row.atrasoMinutos)" />
+                  </td>
+                  <td class="col-actions">
+                    <button
+                      pButton
+                      type="button"
+                      size="small"
+                      severity="secondary"
+                      [outlined]="true"
+                      icon="pi pi-calendar"
+                      label="Ver horario"
+                      (click)="openDrawer(row)"
+                    ></button>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          }
+        </section>
       </p-tabpanel>
 
       <p-tabpanel value="horarios">

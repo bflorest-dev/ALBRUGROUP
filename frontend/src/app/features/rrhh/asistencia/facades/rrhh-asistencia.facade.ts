@@ -15,7 +15,7 @@ import { ReemplazarHorarioRequest } from '../../../../shared/models/schedule/ree
 import { RegistrarExcepcionHorarioRequest } from '../../../../shared/models/schedule/registrar-excepcion-horario-request';
 import { RrhhAsistenciaService } from '../services/rrhh-asistencia.service';
 
-export type RrhhAsistenciaSection = 'cumplimiento' | 'detalle' | 'horarios';
+export type RrhhAsistenciaSection = 'cumplimiento' | 'hoy' | 'horarios';
 export type DrawerTab = 'cumplimiento' | 'horario';
 
 export interface CumplimientoRow {
@@ -111,7 +111,10 @@ export class RrhhAsistenciaFacade {
       .sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto));
   });
 
-  /** Empleados con horario para hoy que aun no han marcado entrada. */
+  /**
+   * Empleados cuya entrada programada ya paso y aun no han marcado.
+   * Se excluyen los turnos cuya entrada todavia no llega (evita ruido visual).
+   */
   readonly esperadosNoMarcados = computed(() => {
     const estados = this.estadosHoyByEmpleadoId();
     const nowMinutes = this.currentMinutesOfDay();
@@ -121,16 +124,18 @@ export class RrhhAsistenciaFacade {
         if (!estado) return null;
         if (!estado.esperadoHoy || estado.tieneRegistroHoy) return null;
         const entradaProg = estado.entradaProgramada ?? null;
-        const atrasoMin = entradaProg ? Math.max(0, nowMinutes - this.timeStringToMinutes(entradaProg)) : 0;
+        if (!entradaProg) return null;
+        const entradaMin = this.timeStringToMinutes(entradaProg);
+        if (nowMinutes < entradaMin) return null; // turno aun no inicia
         return {
           idEmpleado: e.idEmpleado,
           nombreCompleto: `${e.nombres} ${e.apellidos}`.trim(),
           puestoTrabajo: e.puestoTrabajo,
           entradaProgramada: entradaProg,
-          atrasoMinutos: atrasoMin
+          atrasoMinutos: nowMinutes - entradaMin
         };
       })
-      .filter((x): x is { idEmpleado: number; nombreCompleto: string; puestoTrabajo: string; entradaProgramada: string | null; atrasoMinutos: number } => x !== null)
+      .filter((x): x is { idEmpleado: number; nombreCompleto: string; puestoTrabajo: string; entradaProgramada: string; atrasoMinutos: number } => x !== null)
       .sort((a, b) => b.atrasoMinutos - a.atrasoMinutos);
   });
 

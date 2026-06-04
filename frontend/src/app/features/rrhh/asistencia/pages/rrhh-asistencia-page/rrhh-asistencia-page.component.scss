@@ -3,6 +3,18 @@
   flex-direction: column;
   gap: 1.25rem;
   padding: 0 0.25rem;
+
+  // Espaciado entre icono y texto en todos los p-tab (los del nivel pagina
+  // y los del drawer). Tambien deja respiro al p-tag opcional (badge "Hoy").
+  ::ng-deep p-tab {
+    i.pi {
+      margin-right: 0.5rem;
+    }
+    span + p-tag,
+    .p-tag {
+      margin-left: 0.5rem;
+    }
+  }
 }
 
 .rrhh-hero {
@@ -182,7 +194,7 @@
 
 .employee-drawer {
   ::ng-deep .p-drawer {
-    width: min(720px, 95vw);
+    width: min(960px, 95vw);
   }
 }
 
