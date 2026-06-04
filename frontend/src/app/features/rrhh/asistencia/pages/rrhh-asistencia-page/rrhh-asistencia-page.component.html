@@ -1,0 +1,468 @@
+<section class="rrhh-asistencia-page">
+  <p-card styleClass="rrhh-hero">
+    <div class="rrhh-hero__content">
+      <div>
+        <span class="rrhh-hero__eyebrow">RRHH</span>
+        <h2>Asistencia</h2>
+        <p>Revisa cumplimiento del equipo, baja al detalle por empleado y gestiona horarios desde un solo lugar.</p>
+      </div>
+    </div>
+  </p-card>
+
+  <p-tabs [value]="facade.activeSection()" (valueChange)="onSectionChange($event)">
+    <p-tablist>
+      <p-tab value="cumplimiento">
+        <i class="pi pi-chart-bar" aria-hidden="true"></i>
+        <span>Cumplimiento del equipo</span>
+      </p-tab>
+      <p-tab value="horarios">
+        <i class="pi pi-calendar" aria-hidden="true"></i>
+        <span>Horarios</span>
+      </p-tab>
+    </p-tablist>
+
+    <p-tabpanels>
+      <p-tabpanel value="cumplimiento">
+        <!-- ── Sección Hoy ── -->
+        <section class="today-section">
+          @if (facade.esperadosNoMarcados().length === 0) {
+            <div class="today-empty">
+              <i class="pi pi-check-circle" aria-hidden="true"></i>
+              <span>Todos los esperados de hoy ya marcaron entrada.</span>
+            </div>
+          } @else {
+            <header class="today-section__head">
+              <div>
+                <h3>Hoy · sin marcar entrada</h3>
+                <p>
+                  {{ facade.esperadosNoMarcados().length }}
+                  @if (facade.esperadosNoMarcados().length === 1) { persona esperada } @else { personas esperadas }
+                  no han registrado ingreso.
+                </p>
+              </div>
+            </header>
+            <p-table
+              [value]="facade.esperadosNoMarcados()"
+              dataKey="idEmpleado"
+              [rowHover]="true"
+              styleClass="p-datatable-sm today-table"
+            >
+              <ng-template #header>
+                <tr>
+                  <th>Empleado</th>
+                  <th>Puesto</th>
+                  <th>Entrada prog.</th>
+                  <th class="col-num">Atraso</th>
+                  <th class="col-actions">Acciones</th>
+                </tr>
+              </ng-template>
+              <ng-template #body let-row>
+                <tr>
+                  <td><strong>{{ row.nombreCompleto }}</strong></td>
+                  <td>{{ formatPuesto(row.puestoTrabajo) }}</td>
+                  <td>{{ row.entradaProgramada ?? '—' }}</td>
+                  <td class="col-num">
+                    <p-tag [value]="atrasoLabel(row.atrasoMinutos)" [severity]="atrasoSeverity(row.atrasoMinutos)" />
+                  </td>
+                  <td class="col-actions">
+                    <button
+                      pButton
+                      type="button"
+                      size="small"
+                      severity="secondary"
+                      [outlined]="true"
+                      icon="pi pi-calendar"
+                      label="Ver horario"
+                      (click)="openDrawer(row)"
+                    ></button>
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          }
+        </section>
+
+        <div class="cumplimiento-section">
+          <header class="cumplimiento-section__head">
+            <div class="cumplimiento-section__title">
+              <h3>Cumplimiento del mes</h3>
+              <p>Faltas, tardanzas y balance de horas por empleado. Haz click en una fila para ver el detalle.</p>
+            </div>
+            <div class="cumplimiento-section__chip">
+              <p-tag [value]="monthStatusLabel()" [severity]="monthStatusSeverity()" />
+            </div>
+          </header>
+
+          <div class="cumplimiento-filters">
+            <label class="filter">
+              <span>Mes</span>
+              <p-select
+                [options]="monthSelectChoices()"
+                optionLabel="label"
+                optionValue="value"
+                [ngModel]="facade.selectedMonth()"
+                (ngModelChange)="onMonthChange($event)"
+                appendTo="body"
+              />
+            </label>
+
+            <label class="filter">
+              <span>Puesto</span>
+              <p-select
+                [options]="puestoSelectChoices()"
+                optionLabel="label"
+                optionValue="value"
+                [ngModel]="facade.puestoFilter()"
+                (ngModelChange)="onPuestoChange($event)"
+                appendTo="body"
+              />
+            </label>
+
+            <label class="filter filter--search">
+              <span>Buscar empleado</span>
+              <input
+                pInputText
+                type="text"
+                placeholder="Nombre o apellido"
+                [ngModel]="facade.searchTerm()"
+                (ngModelChange)="onSearchChange($event)"
+              />
+            </label>
+
+            <button
+              pButton
+              type="button"
+              severity="secondary"
+              [outlined]="true"
+              icon="pi pi-refresh"
+              label="Actualizar"
+              [loading]="facade.isLoading()"
+              (click)="facade.recargar()"
+            ></button>
+          </div>
+
+          <div class="cumplimiento-kpis">
+            <div class="kpi">
+              <span class="kpi__label">Empleados</span>
+              <span class="kpi__value">{{ facade.kpis().empleados }}</span>
+            </div>
+            <div class="kpi kpi--danger">
+              <span class="kpi__label">Faltas en el mes</span>
+              <span class="kpi__value">{{ facade.kpis().faltas }}</span>
+            </div>
+            <div class="kpi kpi--warn">
+              <span class="kpi__label">Tardanzas en el mes</span>
+              <span class="kpi__value">{{ facade.kpis().tardanzas }}</span>
+            </div>
+            <div class="kpi">
+              <span class="kpi__label">Con incidencias</span>
+              <span class="kpi__value">{{ facade.kpis().conIncidencias }}</span>
+            </div>
+          </div>
+
+          @if (facade.errorMessage()) {
+            <p-message severity="error" [text]="facade.errorMessage()" />
+          }
+
+          <p-table
+            [value]="facade.rows()"
+            dataKey="idEmpleado"
+            [rowHover]="true"
+            [loading]="facade.isLoading()"
+            styleClass="p-datatable-sm cumplimiento-table"
+          >
+            <ng-template #header>
+              <tr>
+                <th>Empleado</th>
+                <th>Puesto</th>
+                <th class="col-num">Días laborables</th>
+                <th class="col-num">Faltas</th>
+                <th class="col-num">Tardanzas</th>
+                <th class="col-num">Balance</th>
+              </tr>
+            </ng-template>
+
+            <ng-template #body let-row>
+              <tr class="row-clickable" (click)="openDrawer(row)">
+                <td><strong>{{ row.nombreCompleto }}</strong></td>
+                <td>{{ formatPuesto(row.puestoTrabajo) }}</td>
+                <td class="col-num">{{ row.diasLaborables }}</td>
+                <td class="col-num">
+                  <p-tag [value]="row.diasSinRegistro" [severity]="faltasSeverity(row.diasSinRegistro)" />
+                </td>
+                <td class="col-num">
+                  <p-tag [value]="row.cantidadTardanzas" [severity]="tardanzasSeverity(row.cantidadTardanzas)" />
+                </td>
+                <td class="col-num">
+                  <p-tag [value]="balanceLabel(row.minutosBalance)" [severity]="balanceSeverity(row.minutosBalance)" />
+                </td>
+              </tr>
+            </ng-template>
+
+            <ng-template #emptymessage>
+              <tr>
+                <td colspan="6">
+                  <p-message
+                    severity="info"
+                    [text]="facade.isLoading() ? 'Cargando cumplimiento del mes...' : 'Sin empleados que coincidan con los filtros.'"
+                  />
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+      </p-tabpanel>
+
+      <p-tabpanel value="horarios">
+        <div class="section-placeholder">
+          <p-tag value="Próxima fase" severity="info" />
+          <h3>Horarios</h3>
+          <p>
+            Vista dedicada para crear/buscar horarios sin pasar por cumplimiento. Por ahora,
+            puedes editar el horario de cualquier empleado desde la tabla de cumplimiento → drawer → tab Horario.
+          </p>
+        </div>
+      </p-tabpanel>
+    </p-tabpanels>
+  </p-tabs>
+
+  <!-- ───── Drawer del empleado ───── -->
+  <p-drawer
+    [visible]="facade.isDrawerVisible()"
+    (visibleChange)="!$event && facade.closeEmployeeDrawer()"
+    position="right"
+    [modal]="true"
+    [dismissible]="true"
+    styleClass="employee-drawer"
+  >
+    @if (facade.drawerEmpleado(); as empleado) {
+      <header class="employee-drawer__head">
+        <div>
+          <span class="rrhh-hero__eyebrow">Empleado</span>
+          <h3>{{ empleado.nombres }} {{ empleado.apellidos }}</h3>
+          <p>
+            {{ formatPuesto(empleado.puestoTrabajo) }}
+            @if (facade.drawerContrato(); as contrato) { · {{ formatPuesto(contrato.modalidad) }} }
+            @if (facade.drawerHorario()) { · {{ horarioVigenteSummary() }} }
+          </p>
+        </div>
+      </header>
+
+      @if (facade.drawerErrorMessage()) {
+        <p-message severity="error" [text]="facade.drawerErrorMessage()" />
+      }
+
+      @if (facade.isLoadingDrawer()) {
+        <div class="employee-drawer__loading">
+          <p-progressSpinner styleClass="spinner-sm" strokeWidth="3" />
+          <span>Cargando informacion...</span>
+        </div>
+      } @else {
+        <p-tabs [value]="facade.drawerTab()" (valueChange)="onDrawerTabChange($event)">
+          <p-tablist>
+            <p-tab value="cumplimiento">
+              <i class="pi pi-list" aria-hidden="true"></i>
+              <span>Cumplimiento</span>
+            </p-tab>
+            <p-tab value="horario">
+              <i class="pi pi-calendar" aria-hidden="true"></i>
+              <span>Horario</span>
+            </p-tab>
+          </p-tablist>
+
+          <p-tabpanels>
+            <!-- ── Cumplimiento del mes (día a día) ── -->
+            <p-tabpanel value="cumplimiento">
+              <div class="employee-month">
+                @if (facade.drawerDetalleDias().length === 0) {
+                  <p-message severity="info" text="Sin registros para este mes." />
+                } @else {
+                  <p-table
+                    [value]="facade.drawerDetalleDias()"
+                    dataKey="fecha"
+                    [rowHover]="true"
+                    styleClass="p-datatable-sm employee-month-table"
+                  >
+                    <ng-template #header>
+                      <tr>
+                        <th>Día</th>
+                        <th class="col-state">Estado</th>
+                        <th>Programado</th>
+                        <th>Real</th>
+                        <th class="col-num">Balance</th>
+                      </tr>
+                    </ng-template>
+                    <ng-template #body let-d>
+                      <tr>
+                        <td>{{ formatDate(d.fecha) }}</td>
+                        <td class="col-state">
+                          <p-tag [value]="dayStateLabel(d)" [severity]="dayStateSeverity(d)" />
+                        </td>
+                        <td>
+                          @if (d.laborable) {
+                            {{ formatTime(d.horaEntradaEstablecida) }} – {{ formatTime(d.horaSalidaEstablecida) }}
+                          } @else { — }
+                        </td>
+                        <td>
+                          @if (d.horaEntradaAsistencia) {
+                            {{ formatTime(d.horaEntradaAsistencia) }} – {{ formatTime(d.horaSalidaAsistencia) }}
+                          } @else { — }
+                        </td>
+                        <td class="col-num">
+                          <p-tag
+                            [value]="balanceLabel(d.minutosBalance)"
+                            [severity]="balanceSeverity(d.minutosBalance)"
+                          />
+                        </td>
+                      </tr>
+                    </ng-template>
+                  </p-table>
+                }
+              </div>
+            </p-tabpanel>
+
+            <!-- ── Editor de horario ── -->
+            <p-tabpanel value="horario">
+              <div class="employee-schedule">
+                @if (facade.scheduleChangeSuccessMessage()) {
+                  <p-message severity="success" [text]="facade.scheduleChangeSuccessMessage()" />
+                }
+                @if (facade.scheduleChangeErrorMessage()) {
+                  <p-message severity="error" [text]="facade.scheduleChangeErrorMessage()" />
+                }
+
+                <label class="field">
+                  <span>Fecha de inicio</span>
+                  <p-datepicker
+                    [ngModel]="toPickerDate(facade.horarioForm.controls.fechaInicio.getRawValue())"
+                    [ngModelOptions]="{ standalone: true }"
+                    dateFormat="dd/mm/yy"
+                    [showIcon]="true"
+                    appendTo="body"
+                    (ngModelChange)="setScheduleStartDate($event)"
+                  />
+                  <small class="hint">
+                    Si dejas la fecha actual, se corrige el horario vigente. Si la mueves a futuro, se cierra el
+                    actual y se aplica uno nuevo desde esa fecha.
+                  </small>
+                </label>
+
+                <app-schedule-editor-panel
+                  [horarioForm]="facade.horarioForm"
+                  [modalidad]="facade.drawerContrato()?.modalidad ?? 'FULL_TIME'"
+                  [diasSemanaOptions]="facade.diasSemanaOptions"
+                  (simpleChanged)="facade.applySimpleSchedule()"
+                />
+
+                <div class="actions actions--end">
+                  <button
+                    pButton
+                    type="button"
+                    icon="pi pi-save"
+                    label="Guardar horario"
+                    [loading]="facade.isSubmittingHorario()"
+                    (click)="facade.submitScheduleChange()"
+                  ></button>
+                </div>
+              </div>
+            </p-tabpanel>
+          </p-tabpanels>
+        </p-tabs>
+      }
+    }
+  </p-drawer>
+
+  <!-- ───── Sub-diálogo de decisión 409 ───── -->
+  <p-dialog
+    header="Este horario ya tiene marcaciones"
+    [visible]="facade.isCorrectionDecisionVisible()"
+    (visibleChange)="!$event && facade.closeCorrectionDecision()"
+    [modal]="true"
+    [draggable]="false"
+    [resizable]="false"
+    appendTo="body"
+    styleClass="correction-decision-dialog"
+  >
+    <div class="correction-decision-body">
+      <p>
+        No podemos corregir el horario en vigencia porque ya hay marcaciones reales registradas.
+        Elige cómo aplicar los cambios:
+      </p>
+
+      <label class="field">
+        <span>Motivo (queda en el historial)</span>
+        <input
+          pInputText
+          type="text"
+          [ngModel]="facade.correctionDecisionMotivo()"
+          (ngModelChange)="facade.setCorrectionDecisionMotivo($event)"
+          placeholder="Correccion administrativa"
+        />
+      </label>
+
+      <div class="decision-options">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-calendar"
+          label="Solo para hoy"
+          [outlined]="true"
+          [loading]="facade.isApplyingCorrectionDecision()"
+          (click)="facade.applyCorrectionOnlyToday()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-forward"
+          label="Desde manana en adelante"
+          [outlined]="true"
+          [loading]="facade.isApplyingCorrectionDecision()"
+          (click)="facade.applyCorrectionFromTomorrow()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-bolt"
+          label="Hoy + desde manana"
+          [loading]="facade.isApplyingCorrectionDecision()"
+          (click)="facade.applyCorrectionTodayAndTomorrow()"
+        ></button>
+      </div>
+
+      <div class="custom-date-row">
+        <label class="field">
+          <span>O elige una fecha de inicio especifica</span>
+          <p-datepicker
+            [ngModel]="toPickerDate(facade.correctionDecisionCustomDate())"
+            [ngModelOptions]="{ standalone: true }"
+            dateFormat="dd/mm/yy"
+            [showIcon]="true"
+            appendTo="body"
+            (ngModelChange)="setCorrectionCustomDate($event)"
+          />
+        </label>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-check"
+          label="Aplicar desde esa fecha"
+          [outlined]="true"
+          [loading]="facade.isApplyingCorrectionDecision()"
+          (click)="facade.applyCorrectionFromCustomDate()"
+        ></button>
+      </div>
+
+      <div class="actions actions--end">
+        <button
+          pButton
+          type="button"
+          severity="secondary"
+          [outlined]="true"
+          icon="pi pi-times"
+          label="Cancelar"
+          (click)="facade.closeCorrectionDecision()"
+        ></button>
+      </div>
+    </div>
+  </p-dialog>
+</section>

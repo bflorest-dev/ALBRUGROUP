@@ -1,20 +1,48 @@
+export interface CumplimientoResumenEmpleadoResponse {
+  idEmpleado: number;
+  diasLaborables: number;
+  diasConRegistro: number;
+  diasSinRegistro: number;
+  diasCerrados: number;
+  cantidadTardanzas: number;
+  minutosObjetivo: number;
+  minutosTrabajados: number;
+  minutosBalance: number;
+  minutosServiciosAcumulados: number;
+  cantidadDiasConExcesoServicios: number;
+}
+
 export interface CumplimientoResumenResponse {
   desde: string;
   hasta: string;
-  empleados: Array<{
-    idEmpleado: number;
-    [key: string]: unknown;
-  }>;
+  empleados: CumplimientoResumenEmpleadoResponse[];
+}
+
+export interface CumplimientoDetalleDiaResponse {
+  fecha: string;
+  laborable: boolean;
+  horaEntradaEstablecida: string | null;
+  horaEntradaAsistencia: string | null;
+  horaSalidaEstablecida: string | null;
+  horaSalidaAsistencia: string | null;
+  jornadaCerrada: boolean;
+  minutosObjetivoDia: number;
+  minutosTrabajados: number;
+  minutosBalance: number;
+  minutosServiciosAcumulados: number;
+  excedioServicios: boolean;
+  tardanza: boolean;
+}
+
+export interface CumplimientoDetalleEmpleadoResponse {
+  idEmpleado: number;
+  dias: CumplimientoDetalleDiaResponse[];
 }
 
 export interface CumplimientoDetalleResponse {
   desde: string;
   hasta: string;
-  empleados: Array<{
-    idEmpleado: number;
-    dias?: unknown[];
-    [key: string]: unknown;
-  }>;
+  empleados: CumplimientoDetalleEmpleadoResponse[];
 }
 
 export interface EstadoMonitorResponse {
@@ -27,5 +55,6 @@ export interface EstadoMonitorResponse {
   tieneRegistroHoy: boolean;
   estadoActual?: string | null;
   operativo: boolean;
+  entradaProgramada?: string | null;
   [key: string]: unknown;
 }
