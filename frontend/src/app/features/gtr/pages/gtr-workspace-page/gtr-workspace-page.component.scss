@@ -129,6 +129,7 @@ td small,
   align-items: flex-start;
   display: inline-grid;
   gap: 0.18rem;
+  margin-inline: auto;
   width: 10.85rem;
 }
 
@@ -239,6 +240,7 @@ td small,
 
 .row-actions {
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .gtr-assign-button {
@@ -386,6 +388,11 @@ td small,
   display: block;
 }
 
+td strong,
+td small {
+  text-align: center;
+}
+
 .row-new {
   --p-table-row-background: rgba(31, 111, 85, 0.14);
   animation: row-enter 420ms ease-out;
@@ -393,6 +400,7 @@ td small,
 
 :host ::ng-deep .gtr-table td,
 :host ::ng-deep .gtr-table th {
+  text-align: center;
   vertical-align: middle;
   white-space: normal;
 }
@@ -451,7 +459,29 @@ td small,
   gap: 0.4rem;
 }
 
-.advisors-trigger__alert {
+.advisors-trigger__warning {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  gap: 0.15rem;
+}
+
+.advisors-trigger__warning .lead-warning {
+  min-height: 2rem;
+  min-width: 2rem;
+}
+
+.advisors-trigger__warning .lead-warning__triangle {
+  height: 1.95rem;
+  width: 2.1rem;
+}
+
+.advisors-trigger__warning .lead-warning__triangle span {
+  font-size: 1.12rem;
+  margin-top: 0.3rem;
+}
+
+.advisors-trigger__count {
   align-items: center;
   background: #fef3c7;
   border: 1px solid #f59e0b;
@@ -459,9 +489,11 @@ td small,
   color: #92400e;
   display: inline-flex;
   font-size: 0.78rem;
-  font-weight: 800;
-  gap: 0.25rem;
-  padding: 0.1rem 0.5rem;
+  font-weight: 900;
+  justify-content: center;
+  min-height: 1.7rem;
+  min-width: 1.95rem;
+  padding: 0.1rem 0.52rem;
 }
 
 .advisor-card--abandono {
@@ -565,6 +597,25 @@ label {
 }
 
 .upload-results { display: grid; gap: 0.85rem; }
+
+.intake-confirmation { display: grid; gap: .8rem; margin-bottom: 1.1rem; }
+.intake-confirmation__warning {
+  align-items: flex-start;
+  background: rgba(245, 158, 11, 0.12);
+  border-left: 3px solid #f59e0b;
+  border-radius: .4rem;
+  color: #9a3412;
+  display: flex;
+  font-weight: 700;
+  gap: .55rem;
+  padding: .65rem .75rem;
+}
+.intake-confirmation__warning i { font-size: 1rem; margin-top: .1rem; }
+.intake-confirmation__followup {
+  color: var(--app-text);
+  font-weight: 600;
+  margin: 0;
+}
 
 .reassign-confirmation { display: grid; gap: .65rem; margin-bottom: 1.25rem; }
 .reassign-problem {

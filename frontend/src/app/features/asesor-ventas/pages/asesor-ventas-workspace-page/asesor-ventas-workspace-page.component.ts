@@ -320,7 +320,9 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
             }
           },
           error: () => {
-            this.errorMessage.set('Realtime no disponible. La bandeja sigue operando por REST.');
+            this.errorMessage.set(
+              'Se perdio conexion con el sistema. Si estamos en una actualizacion, recarga la pagina en unos segundos hasta que esta alerta desaparezca.'
+            );
           }
         })
       );

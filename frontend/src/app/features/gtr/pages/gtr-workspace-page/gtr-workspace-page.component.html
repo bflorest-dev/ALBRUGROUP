@@ -18,12 +18,16 @@
         <span class="advisors-trigger">
           @if (facade.abandonadosCount() > 0) {
             <span
-              class="advisors-trigger__alert"
+              class="advisors-trigger__warning"
               title="Hay leads sin atender de asesores desconectados"
               aria-label="Leads sin atender"
             >
-              <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-              {{ facade.abandonadosCount() }}
+              <span class="lead-warning" aria-hidden="true">
+                <span class="lead-warning__triangle">
+                  <span>!</span>
+                </span>
+              </span>
+              <span class="advisors-trigger__count">{{ facade.abandonadosCount() }}</span>
             </span>
           }
           <button
@@ -876,13 +880,13 @@
       <app-phone-number-field
         #nuevoLeadPhone
         class="wide"
-        label="Numero"
+        label="Numero Celular"
         [prefixControl]="facade.intakeForm.controls.prefijo"
         [numberControl]="facade.intakeForm.controls.lead"
         numberPlaceholder="Numero de lead"
       />
       <label class="wide">
-        <span>Campana</span>
+        <span>Campaña</span>
         <p-select
           formControlName="idCampana"
           [options]="facade.campanas()"
@@ -918,6 +922,43 @@
   </p-dialog>
 
   <p-dialog
+    header="Confirmar registro"
+    [visible]="facade.activeDialog() === 'intake-confirm'"
+    (visibleChange)="!$event && facade.cancelIntakeConfirmation()"
+    [modal]="true"
+    [draggable]="false"
+    styleClass="gtr-dialog"
+  >
+    <div class="intake-confirmation">
+      @if (facade.intakeForm.controls.lead.value; as leadNumber) {
+        <p class="wide helper">Lead {{ facade.intakeForm.controls.prefijo.value }} {{ leadNumber }}</p>
+      }
+
+      <p class="intake-confirmation__warning">
+        <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+        <span>{{ facade.intakeConfirmationMessage() }}</span>
+      </p>
+
+      @if (facade.intakeConfirmationFollowUp(); as intakeConfirmationFollowUp) {
+        <p class="intake-confirmation__followup">{{ intakeConfirmationFollowUp }}</p>
+      }
+    </div>
+
+    <div class="dialog-actions">
+      <button pButton type="button" label="Volver" severity="secondary" (click)="facade.cancelIntakeConfirmation()"></button>
+      <button
+        pButton
+        type="button"
+        label="Registrar de todos modos"
+        icon="pi pi-check"
+        [disabled]="!facade.canMutateOperationalData()"
+        [loading]="facade.isSaving()"
+        (click)="facade.confirmIntakeRegistration()"
+      ></button>
+    </div>
+  </p-dialog>
+
+  <p-dialog
     header="Gestionar Lead"
     [visible]="facade.activeDialog() === 'snapshot'"
     (visibleChange)="!$event && facade.closeDialog()"
@@ -930,11 +971,11 @@
         <p class="wide helper">Lead {{ facade.leadPrefixLabel(lead.prefijo) }} {{ lead.lead }}</p>
       }
       <label class="wide">
-        <span>Documento titular</span>
+        <span>Numero de documento</span>
         <input pInputText type="text" formControlName="numeroDocumentoTitularServicio" />
       </label>
       <label class="wide">
-        <span>Direccion detectada</span>
+        <span>Direccion</span>
         <input pInputText type="text" formControlName="direccion" />
       </label>
 
@@ -1077,7 +1118,7 @@
   >
     <ng-template #header>
       <span class="events-dialog-title">
-        Historial del dia
+        Historial de eventos del dia
         @if (facade.activeEventsLead(); as lead) {
           @if (lead.tieneMultiplesRegistrosDia) {
             <button
@@ -1116,8 +1157,8 @@
       <ng-template #header>
         <tr>
           <th>Hora</th>
-          <th>Accion</th>
-          <th>Actor</th>
+          <th>Evento</th>
+          <th>Responsable</th>
           <th>Detalle</th>
         </tr>
       </ng-template>

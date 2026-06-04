@@ -100,7 +100,7 @@ type AssignmentConflictDetails = {
   requiereConfirmarGestionPrevia?: boolean;
 };
 
-type GtrDialog = 'lead' | 'snapshot' | 'assign' | 'reassign-confirm' | 'events' | 'search' | null;
+type GtrDialog = 'lead' | 'intake-confirm' | 'snapshot' | 'assign' | 'reassign-confirm' | 'events' | 'search' | null;
 type EventAnomalyFilter = 'multiple-records' | 'same-campaign' | null;
 
 type LoadError = {
@@ -151,6 +151,7 @@ export class GtrWorkspaceFacade {
   readonly searchQuery = signal('');
   readonly searchResults = signal<LeadGtrResponse[]>([]);
   readonly searchLookup = signal<LeadGtrLookupResponse | null>(null);
+  readonly pendingIntakeLookup = signal<LeadGtrLookupResponse | null>(null);
   readonly searchTotalElements = signal(0);
   readonly searchTotalPages = signal(0);
   readonly searchPageNumber = signal(0);
@@ -517,6 +518,45 @@ export class GtrWorkspaceFacade {
   }
 
   async submitIntake(): Promise<void> {
+    await this.submitIntakeInternal(false);
+  }
+
+  async confirmIntakeRegistration(): Promise<void> {
+    await this.submitIntakeInternal(true);
+  }
+
+  cancelIntakeConfirmation(): void {
+    this.pendingIntakeLookup.set(null);
+    this.activeDialog.set('lead');
+  }
+
+  intakeConfirmationMessage(): string {
+    const lookup = this.pendingIntakeLookup();
+    if (!lookup?.existe) {
+      return '';
+    }
+
+    if (lookup.etapaActual === 'PREVENTA') {
+      return 'Este lead ya se encuentra registrado en el sistema. Registralo nuevamente solo si se ha vuelto a comunicar por un canal de nuestras campañas.';
+    }
+
+    return lookup.mensajeUsuario ?? 'Este lead ya se encuentra registrado en el sistema y no puede gestionarse desde GTR por el momento.';
+  }
+
+  intakeConfirmationFollowUp(): string {
+    const lookup = this.pendingIntakeLookup();
+    if (!lookup?.existe) {
+      return '';
+    }
+
+    if (lookup.etapaActual === 'PREVENTA') {
+      return '';
+    }
+
+    return 'Registralo nuevamente solo si se ha vuelto a comunicar por un canal de nuestras campañas.';
+  }
+
+  private async submitIntakeInternal(skipLookupConfirmation: boolean): Promise<void> {
     if (!this.ensureCanMutate()) {
       return;
     }
@@ -525,12 +565,29 @@ export class GtrWorkspaceFacade {
       return;
     }
 
+    const formValue = this.intakeForm.getRawValue();
+    if (!skipLookupConfirmation) {
+      this.clearMessages();
+      try {
+        const lookup = await firstValueFrom(this.preventaService.buscarContextoLeadGtr(formValue.lead));
+        if (lookup.existe) {
+          this.pendingIntakeLookup.set(lookup);
+          this.activeDialog.set('intake-confirm');
+          return;
+        }
+      } catch (error) {
+        this.errorMessage.set(this.getErrorMessage(error, 'No se pudo validar el lead antes del registro.'));
+        return;
+      }
+    }
+
     this.isSaving.set(true);
     this.clearMessages();
     try {
-      await firstValueFrom(this.preventaService.registrarIngresoLead(this.intakeForm.getRawValue()));
+      await firstValueFrom(this.preventaService.registrarIngresoLead(formValue));
       this.intakeForm.controls.lead.reset('');
-      this.successMessage.set('Lead ingresado. Completa snapshot desde la fila cuando aplique.');
+      this.pendingIntakeLookup.set(null);
+      this.successMessage.set('Lead registrado, puedes gestionarlo para anadir informacion basica de validacion.');
       this.activeDialog.set(null);
       await this.reconcile();
     } catch (error) {
@@ -613,11 +670,12 @@ export class GtrWorkspaceFacade {
     if (!this.ensureCanMutate()) {
       return;
     }
+    this.pendingIntakeLookup.set(null);
     this.activeDialog.set('lead');
   }
 
   normalizeLeadNumber(value: string): void {
-    const normalized = value.replace(/\D/g, '').slice(0, 9);
+    const normalized = this.normalizeLeadSearchInput(value);
     if (this.intakeForm.controls.lead.value !== normalized) {
       this.intakeForm.controls.lead.setValue(normalized);
     }
@@ -777,6 +835,7 @@ export class GtrWorkspaceFacade {
     this.pendingReassignment.set(null);
     this.eventRows.set([]);
     this.selectedEventAnomalyFilter.set(null);
+    this.pendingIntakeLookup.set(null);
     this.searchQuery.set('');
     this.searchResults.set([]);
     this.searchLookup.set(null);
@@ -1514,7 +1573,7 @@ export class GtrWorkspaceFacade {
           }
         },
         error: () => {
-          this.errorMessage.set('Realtime no disponible. La bandeja sigue operando por REST.');
+          this.errorMessage.set('Se perdio conexion con el sistema. Si estamos en una actualizacion, recarga la pagina en unos segundos hasta que esta alerta desaparezca.');
         }
       })
     );
