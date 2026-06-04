@@ -14,6 +14,9 @@ import { RegistrarEmpleadoRequest } from '../../../shared/models/rrhh/registrar-
 import { HorarioResponse } from '../../../shared/models/schedule/horario-response';
 import { RegistrarHorarioRequest } from '../../../shared/models/schedule/registrar-horario-request';
 import { ReemplazarHorarioRequest } from '../../../shared/models/schedule/reemplazar-horario-request';
+import { CorregirHorarioRequest } from '../../../shared/models/schedule/corregir-horario-request';
+import { RegistrarExcepcionHorarioRequest } from '../../../shared/models/schedule/registrar-excepcion-horario-request';
+import { ExcepcionHorarioResponse } from '../../../shared/models/schedule/excepcion-horario-response';
 
 @Injectable({
   providedIn: 'root'
@@ -59,6 +62,20 @@ export class AdminRrhhService {
 
   reemplazarHorario(idHorario: number, request: ReemplazarHorarioRequest): Observable<HorarioResponse> {
     return this.http.put<HorarioResponse>(`${this.horariosUrl}/${idHorario}`, request);
+  }
+
+  corregirHorario(idHorario: number, request: CorregirHorarioRequest): Observable<HorarioResponse> {
+    return this.http.patch<HorarioResponse>(`${this.horariosUrl}/${idHorario}`, request);
+  }
+
+  registrarExcepcionHorario(
+    idHorario: number,
+    request: RegistrarExcepcionHorarioRequest
+  ): Observable<ExcepcionHorarioResponse> {
+    return this.http.post<ExcepcionHorarioResponse>(
+      `${this.horariosUrl}/${idHorario}/excepciones`,
+      request
+    );
   }
 
   getHorarioVigente(empleadoId: number, fecha?: string): Observable<HorarioResponse> {

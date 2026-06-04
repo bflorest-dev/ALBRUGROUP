@@ -138,6 +138,10 @@
   width: 100%;
 }
 
+:host ::ng-deep .schedule-change-dialog .day-strip {
+  margin-bottom: 0.85rem;
+}
+
 :host ::ng-deep .schedule-change-dialog .day-toggle:not(.day-toggle--rest) .p-tag {
   background: #15803d;
   color: #ffffff;

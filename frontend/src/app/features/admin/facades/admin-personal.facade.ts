@@ -17,6 +17,9 @@ import { RegistrarEmpleadoRequest } from '../../../shared/models/rrhh/registrar-
 import { AttendanceRealtimeEvent } from '../../../shared/models/schedule/attendance-realtime-event';
 import { HorarioResponse } from '../../../shared/models/schedule/horario-response';
 import { RegistrarHorarioRequest } from '../../../shared/models/schedule/registrar-horario-request';
+import { ReemplazarHorarioRequest } from '../../../shared/models/schedule/reemplazar-horario-request';
+import { CorregirHorarioRequest } from '../../../shared/models/schedule/corregir-horario-request';
+import { RegistrarExcepcionHorarioRequest } from '../../../shared/models/schedule/registrar-excepcion-horario-request';
 import { ConnectedUserResponse, PresenceService } from '../../../core/services/presence.service';
 import { PresenceRealtimeService } from '../../../core/services/presence-realtime.service';
 import { EstadoMonitorResponse } from '../../../shared/models/schedule/cumplimiento-response';
@@ -522,6 +525,12 @@ export class AdminPersonalFacade implements OnDestroy {
   readonly isSubmittingScheduleChange = signal(false);
   readonly scheduleChangeErrorMessage = signal('');
   readonly scheduleChangeSuccessMessage = signal('');
+  /** Sub-dialogo que aparece cuando el horario ya tiene marcaciones reales y
+   *  el PATCH devuelve 409. Pregunta al admin como aplicar el cambio. */
+  readonly isCorrectionDecisionVisible = signal(false);
+  readonly correctionDecisionMotivo = signal('Correccion administrativa');
+  readonly correctionDecisionCustomDate = signal('');
+  readonly isApplyingCorrectionDecision = signal(false);
   readonly isDismissingEmployeeId = signal<number | null>(null);
   readonly bajaErrorMessage = signal('');
   readonly bajaSuccessMessage = signal('');
@@ -1336,31 +1345,244 @@ export class AdminPersonalFacade implements OnDestroy {
       return;
     }
 
+    const formFechaInicio = this.horarioForm.controls.fechaInicio.getRawValue();
+    if (formFechaInicio < horario.fechaInicio) {
+      this.scheduleChangeErrorMessage.set(
+        'La nueva fecha de inicio no puede ser anterior al inicio del horario actual.'
+      );
+      return;
+    }
+
     this.scheduleChangeErrorMessage.set('');
     this.scheduleChangeSuccessMessage.set('');
     this.isSubmittingScheduleChange.set(true);
 
     try {
-      const request = this.buildHorarioRequestForModalidad(contrato.modalidad);
-      const nuevoHorario = await firstValueFrom(
-        this.adminRrhhService.reemplazarHorario(horario.id, request).pipe(timeout(this.requestTimeoutMs))
+      const baseRequest = this.buildHorarioRequestForModalidad(contrato.modalidad);
+
+      if (formFechaInicio === horario.fechaInicio) {
+        // Misma vigencia → corregir in-situ (PATCH).
+        await this.runCorregirHorario(employee.idEmpleado, horario.id, baseRequest);
+      } else {
+        // Fecha futura → reemplazar (PUT). Comportamiento original.
+        await this.runReemplazarHorario(employee.idEmpleado, horario.id, baseRequest);
+      }
+    } finally {
+      this.isSubmittingScheduleChange.set(false);
+    }
+  }
+
+  private async runCorregirHorario(
+    empleadoId: number,
+    idHorario: number,
+    baseRequest: Omit<RegistrarHorarioRequest, 'idEmpleado' | 'idContrato'>
+  ): Promise<void> {
+    const patchRequest: CorregirHorarioRequest = {
+      modalidad: baseRequest.modalidad,
+      compensable: baseRequest.compensable,
+      detalles: baseRequest.detalles
+    };
+
+    try {
+      const horario = await firstValueFrom(
+        this.adminRrhhService.corregirHorario(idHorario, patchRequest).pipe(timeout(this.requestTimeoutMs))
+      );
+
+      this.scheduleChangeSuccessMessage.set('Horario corregido. Los cambios aplican desde la vigencia actual.');
+      this.scheduleByEmployeeId.update((current) => ({ ...current, [empleadoId]: horario }));
+      this.isScheduleChangeVisible.set(false);
+      void this.loadEmployeeStates();
+    } catch (error) {
+      const httpError = error as HttpErrorResponse;
+      if (httpError?.status === 409) {
+        // Backend detecto marcaciones reales; pedimos al admin como aplicarlo.
+        this.correctionDecisionMotivo.set('Correccion administrativa');
+        this.correctionDecisionCustomDate.set(this.addDays(this.getToday(), 1));
+        this.isCorrectionDecisionVisible.set(true);
+        return;
+      }
+      this.scheduleChangeErrorMessage.set(
+        this.getErrorMessage(httpError, 'No se pudo corregir el horario.')
+      );
+    }
+  }
+
+  private async runReemplazarHorario(
+    empleadoId: number,
+    idHorario: number,
+    baseRequest: Omit<RegistrarHorarioRequest, 'idEmpleado' | 'idContrato'>
+  ): Promise<void> {
+    const putRequest: ReemplazarHorarioRequest = {
+      modalidad: baseRequest.modalidad,
+      fechaInicio: baseRequest.fechaInicio,
+      compensable: baseRequest.compensable,
+      detalles: baseRequest.detalles
+    };
+
+    try {
+      const horario = await firstValueFrom(
+        this.adminRrhhService.reemplazarHorario(idHorario, putRequest).pipe(timeout(this.requestTimeoutMs))
       );
 
       this.scheduleChangeSuccessMessage.set('Horario actualizado. La nueva vigencia iniciara en la fecha seleccionada.');
-      this.scheduleByEmployeeId.update((current) => ({
-        ...current,
-        [employee.idEmpleado]: nuevoHorario
-      }));
+      this.scheduleByEmployeeId.update((current) => ({ ...current, [empleadoId]: horario }));
       this.isScheduleChangeVisible.set(false);
       void this.loadEmployeeStates();
     } catch (error) {
       this.scheduleChangeErrorMessage.set(
         this.getErrorMessage(error as HttpErrorResponse, 'No se pudo cambiar el horario.')
       );
-    } finally {
-      this.isSubmittingScheduleChange.set(false);
     }
   }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // Sub-dialogo de decision (caso 409: horario con marcaciones reales)
+  // ─────────────────────────────────────────────────────────────────────
+
+  closeCorrectionDecision(): void {
+    this.isCorrectionDecisionVisible.set(false);
+    this.isApplyingCorrectionDecision.set(false);
+  }
+
+  setCorrectionDecisionMotivo(value: string): void {
+    this.correctionDecisionMotivo.set(value);
+  }
+
+  setCorrectionDecisionCustomDate(value: string): void {
+    this.correctionDecisionCustomDate.set(value);
+  }
+
+  /** A. Solo para hoy: crea una ExcepcionHorario CAMBIO_COMPLETO para HOY. */
+  async applyCorrectionOnlyToday(): Promise<void> {
+    await this.runCorrectionDecision(async (empleadoId, horario, baseRequest) => {
+      await this.crearExcepcionDelDia(horario.id, this.getToday(), baseRequest);
+      this.scheduleChangeSuccessMessage.set('Excepcion registrada solo para hoy. El horario base se mantiene.');
+      void this.refreshScheduleAfterDecision(empleadoId, horario.id);
+    });
+  }
+
+  /** B. Desde manana en adelante: PUT reemplazar con fechaInicio = hoy+1. */
+  async applyCorrectionFromTomorrow(): Promise<void> {
+    await this.runCorrectionDecision(async (empleadoId, horario, baseRequest) => {
+      const fechaInicio = this.addDays(this.getToday(), 1);
+      await this.reemplazarConFecha(empleadoId, horario.id, baseRequest, fechaInicio);
+      this.scheduleChangeSuccessMessage.set('Nuevo horario aplicado desde manana. El actual se cierra hoy.');
+    });
+  }
+
+  /** C. Hoy + Desde manana: excepcion de hoy + reemplazo desde manana. */
+  async applyCorrectionTodayAndTomorrow(): Promise<void> {
+    await this.runCorrectionDecision(async (empleadoId, horario, baseRequest) => {
+      await this.crearExcepcionDelDia(horario.id, this.getToday(), baseRequest);
+      const fechaInicio = this.addDays(this.getToday(), 1);
+      await this.reemplazarConFecha(empleadoId, horario.id, baseRequest, fechaInicio);
+      this.scheduleChangeSuccessMessage.set('Excepcion creada para hoy y nuevo horario aplicado desde manana.');
+    });
+  }
+
+  /** D. Desde una fecha especifica elegida por el admin. */
+  async applyCorrectionFromCustomDate(): Promise<void> {
+    const customDate = this.correctionDecisionCustomDate();
+    const today = this.getToday();
+    if (!customDate || customDate <= today) {
+      this.scheduleChangeErrorMessage.set('La fecha debe ser posterior a hoy.');
+      return;
+    }
+    await this.runCorrectionDecision(async (empleadoId, horario, baseRequest) => {
+      await this.reemplazarConFecha(empleadoId, horario.id, baseRequest, customDate);
+      this.scheduleChangeSuccessMessage.set(`Nuevo horario aplicado desde ${customDate}. El actual se cierra el dia anterior.`);
+    });
+  }
+
+  private async runCorrectionDecision(
+    action: (
+      empleadoId: number,
+      horario: HorarioResponse,
+      baseRequest: Omit<RegistrarHorarioRequest, 'idEmpleado' | 'idContrato'>
+    ) => Promise<void>
+  ): Promise<void> {
+    const employee = this.selectedEmployeeForScheduleChange();
+    const horario = this.currentScheduleForChange();
+    const contrato = this.currentContractForScheduleChange();
+    if (!employee || !horario || !contrato) {
+      return;
+    }
+
+    this.scheduleChangeErrorMessage.set('');
+    this.isApplyingCorrectionDecision.set(true);
+    try {
+      const baseRequest = this.buildHorarioRequestForModalidad(contrato.modalidad);
+      await action(employee.idEmpleado, horario, baseRequest);
+      this.isCorrectionDecisionVisible.set(false);
+      this.isScheduleChangeVisible.set(false);
+      void this.loadEmployeeStates();
+    } catch (error) {
+      this.scheduleChangeErrorMessage.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No se pudo aplicar la correccion.')
+      );
+    } finally {
+      this.isApplyingCorrectionDecision.set(false);
+    }
+  }
+
+  private async crearExcepcionDelDia(
+    idHorario: number,
+    fecha: string,
+    baseRequest: Omit<RegistrarHorarioRequest, 'idEmpleado' | 'idContrato'>
+  ): Promise<void> {
+    // En "correcciones rapidas" el modal trabaja con horas globales (simple).
+    // Para la excepcion del dia tomamos esas horas y forzamos laborable=true:
+    // si el admin esta corrigiendo el horario, quiere que ese dia se aplique
+    // lo que escribio, no que sea "dia libre" (eso es otro flujo).
+    const raw = this.horarioForm.getRawValue();
+    const requiereAlmuerzo = this.requiresLunchBreak(baseRequest.modalidad);
+    const motivo = this.correctionDecisionMotivo().trim() || 'Correccion administrativa';
+
+    const excepcionRequest: RegistrarExcepcionHorarioRequest = {
+      fecha,
+      tipo: 'CAMBIO_COMPLETO',
+      horaEntrada: raw.horaEntrada,
+      horaSalida: raw.horaSalida,
+      inicioAlmuerzo: requiereAlmuerzo ? raw.inicioAlmuerzo : null,
+      finAlmuerzo: requiereAlmuerzo ? raw.finAlmuerzo : null,
+      laborable: true,
+      motivo
+    };
+
+    await firstValueFrom(
+      this.adminRrhhService.registrarExcepcionHorario(idHorario, excepcionRequest).pipe(timeout(this.requestTimeoutMs))
+    );
+  }
+
+  private async reemplazarConFecha(
+    empleadoId: number,
+    idHorario: number,
+    baseRequest: Omit<RegistrarHorarioRequest, 'idEmpleado' | 'idContrato'>,
+    fechaInicio: string
+  ): Promise<void> {
+    const putRequest: ReemplazarHorarioRequest = {
+      modalidad: baseRequest.modalidad,
+      fechaInicio,
+      compensable: baseRequest.compensable,
+      detalles: baseRequest.detalles
+    };
+    const horario = await firstValueFrom(
+      this.adminRrhhService.reemplazarHorario(idHorario, putRequest).pipe(timeout(this.requestTimeoutMs))
+    );
+    this.scheduleByEmployeeId.update((current) => ({ ...current, [empleadoId]: horario }));
+  }
+
+  private async refreshScheduleAfterDecision(empleadoId: number, idHorario: number): Promise<void> {
+    try {
+      const horario = await firstValueFrom(
+        this.adminRrhhService.getHorarioVigente(empleadoId, this.getToday()).pipe(timeout(this.requestTimeoutMs))
+      );
+      this.scheduleByEmployeeId.update((current) => ({ ...current, [empleadoId]: horario }));
+    } catch {
+      // silencioso: la lista igualmente se refrescara en loadEmployeeStates
+    }
+  }
+
 
   closeContractRenewal(): void {
     this.isContractRenewalVisible.set(false);

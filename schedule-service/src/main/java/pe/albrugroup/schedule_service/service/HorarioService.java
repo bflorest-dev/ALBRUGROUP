@@ -15,6 +15,7 @@ import pe.albrugroup.schedule_service.entity.request.horario.FinalizarHorarioReq
 import pe.albrugroup.schedule_service.entity.request.horario.RegistrarExcepcionHorarioRequest;
 import pe.albrugroup.schedule_service.entity.request.horario.RegistrarHorarioRequest;
 import pe.albrugroup.schedule_service.entity.request.horario.ReemplazarHorarioRequest;
+import pe.albrugroup.schedule_service.entity.request.horario.CorregirHorarioRequest;
 import pe.albrugroup.schedule_service.entity.enums.ModalidadContrato;
 import pe.albrugroup.schedule_service.entity.response.PageResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.ExcepcionHorarioResponse;
@@ -200,6 +201,45 @@ public class HorarioService implements IHorario {
         Horario savedHorario = horarioRepository.save(nuevo);
         attendanceRealtimeNotifier.publishAfterCommit(
                 "HORARIO_AFECTADO",
+                "HORARIO",
+                savedHorario.getIdEmpleado(),
+                savedHorario.getFechaInicio(),
+                null
+        );
+        return mapper.toResponse(savedHorario);
+    }
+
+    @Override
+    @Transactional
+    public HorarioResponse corregirHorario(Long idHorario, CorregirHorarioRequest request) {
+        Horario horario = getHorarioById(idHorario);
+
+        if (asistenciaRepository.existsByIdHorarioAndFechaHoraIngresoIsNotNull(idHorario)) {
+            throw new ConflictException(
+                    "El horario ya tiene marcaciones reales. Usa una excepcion puntual para un dia especifico o un reemplazo para un cambio estructural",
+                    idHorario
+            );
+        }
+
+        validarDiasDuplicados(request.getDetalles().stream().map(detalle -> detalle.getDia()).toList());
+        normalizarAlmuerzoPorModalidad(request.getModalidad(), request.getDetalles());
+
+        horario.setCompensable(request.getCompensable());
+        PoliticaModalidad politica = politicaModalidadService.getPolitica(request.getModalidad());
+        politicaModalidadService.aplicarPolitica(horario, politica);
+
+        horario.getDetalles().clear();
+        horarioRepository.flush();
+        request.getDetalles().stream()
+                .map(mapper::toDetalle)
+                .forEach(detalle -> {
+                    detalle.setHorario(horario);
+                    horario.getDetalles().add(detalle);
+                });
+
+        Horario savedHorario = horarioRepository.save(horario);
+        attendanceRealtimeNotifier.publishAfterCommit(
+                "HORARIO_CORREGIDO",
                 "HORARIO",
                 savedHorario.getIdEmpleado(),
                 savedHorario.getFechaInicio(),

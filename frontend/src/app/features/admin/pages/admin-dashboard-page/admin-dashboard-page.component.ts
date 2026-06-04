@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { DatePickerModule } from 'primeng/datepicker';
 import { DialogModule } from 'primeng/dialog';
+import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
@@ -22,6 +23,7 @@ import { AdminPersonalFacade } from '../../facades/admin-personal.facade';
     ButtonModule,
     DatePickerModule,
     DialogModule,
+    InputTextModule,
     MessageModule,
     TableModule,
     TagModule,
@@ -114,6 +116,10 @@ export class AdminDashboardPageComponent implements OnInit {
   protected scheduleValidationMessage(): string | null {
     const error = this.facade.horarioForm.errors?.['scheduleRule'] as { message?: string } | undefined;
     return error?.message && (this.facade.horarioForm.touched || this.facade.horarioForm.dirty) ? error.message : null;
+  }
+
+  protected setCorrectionCustomDate(value: Date | string | null): void {
+    this.facade.setCorrectionDecisionCustomDate(this.toBackendDate(value));
   }
 
   private toBackendDate(value: Date | string | null): string {

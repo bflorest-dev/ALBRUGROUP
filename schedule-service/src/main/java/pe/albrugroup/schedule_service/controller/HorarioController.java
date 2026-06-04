@@ -15,6 +15,7 @@ import pe.albrugroup.schedule_service.entity.request.horario.FinalizarHorarioReq
 import pe.albrugroup.schedule_service.entity.request.horario.RegistrarExcepcionHorarioRequest;
 import pe.albrugroup.schedule_service.entity.request.horario.RegistrarHorarioRequest;
 import pe.albrugroup.schedule_service.entity.request.horario.ReemplazarHorarioRequest;
+import pe.albrugroup.schedule_service.entity.request.horario.CorregirHorarioRequest;
 import pe.albrugroup.schedule_service.entity.response.PageResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.ExcepcionHorarioResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.HorarioMesResponse;
@@ -44,6 +45,13 @@ public class HorarioController {
         return ResponseEntity.ok(horarioService.reemplazarHorario(idHorario, request));
     }
 
+    @PatchMapping("/{idHorario}")
+    @PreAuthorize("hasAuthority('UPDATE_HORARIOS')")
+    public ResponseEntity<HorarioResponse> corregirHorario(@PathVariable @Positive Long idHorario,
+                                                           @Valid @RequestBody CorregirHorarioRequest request) {
+        return ResponseEntity.ok(horarioService.corregirHorario(idHorario, request));
+    }
+
     @PatchMapping("/{idHorario}/finalizar")
     @PreAuthorize("hasAuthority('UPDATE_HORARIOS')")
     public ResponseEntity<HorarioResponse> finalizarHorario(@PathVariable @Positive Long idHorario,
@@ -52,14 +60,14 @@ public class HorarioController {
     }
 
     @PostMapping("/{idHorario}/excepciones")
-    @PreAuthorize("hasAuthority('UPDATE_HORARIOS')")
+    @PreAuthorize("hasAnyAuthority('UPDATE_HORARIOS','EXTEND_HORARIO')")
     public ResponseEntity<ExcepcionHorarioResponse> registrarExcepcion(@PathVariable @Positive Long idHorario,
                                                                        @Valid @RequestBody RegistrarExcepcionHorarioRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(horarioService.registrarExcepcion(idHorario, request));
     }
 
     @PutMapping("/{idHorario}/excepciones/{idExcepcion}")
-    @PreAuthorize("hasAuthority('UPDATE_HORARIOS')")
+    @PreAuthorize("hasAnyAuthority('UPDATE_HORARIOS','EXTEND_HORARIO')")
     public ResponseEntity<ExcepcionHorarioResponse> actualizarExcepcion(@PathVariable @Positive Long idHorario,
                                                                          @PathVariable @Positive Long idExcepcion,
                                                                          @Valid @RequestBody RegistrarExcepcionHorarioRequest request) {
@@ -67,7 +75,7 @@ public class HorarioController {
     }
 
     @DeleteMapping("/{idHorario}/excepciones/{idExcepcion}")
-    @PreAuthorize("hasAuthority('UPDATE_HORARIOS')")
+    @PreAuthorize("hasAnyAuthority('UPDATE_HORARIOS','EXTEND_HORARIO')")
     public ResponseEntity<Void> eliminarExcepcion(@PathVariable @Positive Long idHorario,
                                                   @PathVariable @Positive Long idExcepcion) {
         horarioService.eliminarExcepcion(idHorario, idExcepcion);

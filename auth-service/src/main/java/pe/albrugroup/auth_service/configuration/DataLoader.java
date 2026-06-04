@@ -115,6 +115,7 @@ public class DataLoader {
         savePermiso("READ_HORARIOS", "Puede listar y consultar horarios", "HORARIO", "READ");
         savePermiso("READ_HORARIOS_SELF", "Puede consultar su propia informacion de horarios", "HORARIO", "READ_SELF");
         savePermiso("UPDATE_HORARIOS", "Puede actualizar horarios y sus excepciones", "HORARIO", "UPDATE");
+        savePermiso("EXTEND_HORARIO", "Puede gestionar excepciones y ampliaciones puntuales del horario", "HORARIO", "EXTEND");
         savePermiso("READ_ASISTENCIAS_SELF", "Puede consultar su propia informacion de asistencia", "ASISTENCIA", "READ_SELF");
         savePermiso("READ_ASISTENCIAS", "Puede consultar asistencia de cualquier empleado autorizado", "ASISTENCIA", "READ");
         savePermiso("READ_ASISTENCIAS_MONITOR", "Puede consultar estados de asistencia en tiempo real para monitoreo", "ASISTENCIA", "READ_MONITOR");
@@ -242,6 +243,7 @@ public class DataLoader {
                 getPermiso("READ_HORARIOS"),
                 getPermiso("READ_HORARIOS_SELF"),
                 getPermiso("UPDATE_HORARIOS"),
+                getPermiso("EXTEND_HORARIO"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("READ_ASISTENCIAS"),
                 getPermiso("READ_ASISTENCIAS_CUMPLIMIENTO"),
@@ -352,7 +354,8 @@ public class DataLoader {
                 getPermiso("READ_EVENTOS_LEADS"),
                 getPermiso("READ_ASISTENCIAS_MONITOR"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
-                getPermiso("UPDATE_ASISTENCIAS")
+                getPermiso("UPDATE_ASISTENCIAS"),
+                getPermiso("EXTEND_HORARIO")
         );
         saveRol("ASESOR_GTR", "GTR - Asignacion y seguimiento de leads", asesorGtrPermisos);
 
@@ -410,7 +413,8 @@ public class DataLoader {
                 getPermiso("READ_ASISTENCIAS_MONITOR"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("READ_ASISTENCIAS"),
-                getPermiso("UPDATE_ASISTENCIAS")
+                getPermiso("UPDATE_ASISTENCIAS"),
+                getPermiso("EXTEND_HORARIO")
         );
         saveRol("SUPERVISOR_VENTAS", "Ventas - Supervision de leads asignados", supervisorVentasPermisos);
 

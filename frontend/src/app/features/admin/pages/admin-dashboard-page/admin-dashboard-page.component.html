@@ -135,9 +135,12 @@
     >
       @if (facade.selectedEmployeeForScheduleChange(); as employee) {
         <div class="schedule-change-head">
-          <p-tag value="Nueva vigencia" severity="info" />
+          <p-tag value="Editar horario" severity="info" />
           <h3>{{ employee.nombres }} {{ employee.apellidos }}</h3>
-          <p>El horario actual se cerrara el dia anterior a la nueva fecha de inicio.</p>
+          <p>
+            Si dejas la fecha de inicio como esta, se corrige el horario en vigencia.
+            Si la mueves a una fecha futura, se cierra el actual y se aplica el nuevo desde esa fecha.
+          </p>
         </div>
 
         @if (facade.scheduleChangeErrorMessage()) {
@@ -287,6 +290,100 @@
         </div>
       }
     </p-dialog>
+
+    <p-dialog
+      header="Este horario ya tiene marcaciones"
+      [visible]="facade.isCorrectionDecisionVisible()"
+      (visibleChange)="!$event && facade.closeCorrectionDecision()"
+      [modal]="true"
+      [draggable]="false"
+      [resizable]="false"
+      appendTo="body"
+      styleClass="correction-decision-dialog"
+    >
+      <div class="correction-decision-body">
+        <p>
+          No podemos corregir el horario en vigencia porque ya hay marcaciones reales registradas.
+          Elige como aplicar los cambios:
+        </p>
+
+        <label class="field">
+          <span>Motivo (queda en el historial)</span>
+          <input
+            pInputText
+            type="text"
+            [ngModel]="facade.correctionDecisionMotivo()"
+            (ngModelChange)="facade.setCorrectionDecisionMotivo($event)"
+            placeholder="Correccion administrativa"
+          />
+        </label>
+
+        <div class="decision-options">
+          <button
+            pButton
+            type="button"
+            icon="pi pi-calendar"
+            label="Solo para hoy"
+            [outlined]="true"
+            [loading]="facade.isApplyingCorrectionDecision()"
+            (click)="facade.applyCorrectionOnlyToday()"
+          ></button>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-forward"
+            label="Desde manana en adelante"
+            [outlined]="true"
+            [loading]="facade.isApplyingCorrectionDecision()"
+            (click)="facade.applyCorrectionFromTomorrow()"
+          ></button>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-bolt"
+            label="Hoy + desde manana"
+            [loading]="facade.isApplyingCorrectionDecision()"
+            (click)="facade.applyCorrectionTodayAndTomorrow()"
+          ></button>
+        </div>
+
+        <div class="custom-date-row">
+          <label class="field">
+            <span>O elige una fecha de inicio especifica</span>
+            <p-datepicker
+              [ngModel]="toPickerDate(facade.correctionDecisionCustomDate())"
+              [ngModelOptions]="{ standalone: true }"
+              dateFormat="dd/mm/yy"
+              [showIcon]="true"
+              appendTo="body"
+              (ngModelChange)="setCorrectionCustomDate($event)"
+            />
+          </label>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-check"
+            label="Aplicar desde esa fecha"
+            [outlined]="true"
+            [loading]="facade.isApplyingCorrectionDecision()"
+            (click)="facade.applyCorrectionFromCustomDate()"
+          ></button>
+        </div>
+
+        <div class="actions actions--end">
+          <button
+            pButton
+            type="button"
+            severity="secondary"
+            [outlined]="true"
+            icon="pi pi-times"
+            label="Cancelar"
+            (click)="facade.closeCorrectionDecision()"
+          ></button>
+        </div>
+      </div>
+    </p-dialog>
+
   <app-personal-data-edit-dialog
     [visible]="facade.editDialogVisible()"
     [form]="facade.editDatosPersonalesForm"
