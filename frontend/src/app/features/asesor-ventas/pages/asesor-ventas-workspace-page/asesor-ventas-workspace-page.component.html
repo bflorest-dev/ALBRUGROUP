@@ -25,6 +25,12 @@
     </div>
   </p-card>
 
+  @if (!detailDialogOpen() && wrapUpActive()) {
+    <p-message
+      severity="warn"
+      text="Tu turno terminó. Puedes gestionar todos los leads de tu bandeja antes de cerrar. Al vaciarla, tu turno se cerrará solo."
+    />
+  }
   @if (!detailDialogOpen() && successMessage()) {
     <p-message severity="success" [text]="successMessage() ?? ''" />
   }
@@ -176,7 +182,7 @@
         @if (wrapUpActive()) {
           <p-message
             severity="warn"
-            text="Tu horario terminó. Termina este lead para cerrar tu turno; los demás se liberarán para reasignación."
+            text="Tu turno terminó. Tipifica este lead y luego continúa con los demás de tu bandeja."
           />
         }
         @if (successMessage()) {

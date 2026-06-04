@@ -92,6 +92,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   private initialized = false;
   private initializeInFlight = false;
   private lastAttendanceStatus: EstadoAsistencia | null = null;
+  private autoCloseArmed = false;
   private lastNotificationAt = 0;
   protected readonly operationalGate = this.operationalGateService.createGate('asesor-ventas-workspace');
 
@@ -229,9 +230,8 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   protected readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
   /** El horario termino pero el asesor sigue con un lead en gestion: puede terminarlo (gracia de cierre). */
-  protected readonly wrapUpActive = computed(
-    () => this.attendanceFacade.isPastSalida() && this.isManagingLead()
-  );
+  /** Turno terminado: se muestra siempre que la salida ya paso, gestionando o no. */
+  protected readonly wrapUpActive = computed(() => this.attendanceFacade.isPastSalida());
   /** Permite actuar sobre el lead que se esta gestionando aunque el horario haya terminado. */
   protected readonly canFinishManagedLead = computed(
     () => this.canMutateOperationalData() || this.isManagingLead()
@@ -267,6 +267,25 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     // para que pueda terminarlo antes de cerrar turno (y el GTR no lo marque como abandonador aun).
     effect(() => {
       this.attendanceFacade.setManagingLeadActive(this.isManagingLead());
+    });
+
+    // Opcion B: el asesor puede vaciar toda su bandeja despues de su salida. Cuando queda sin
+    // leads y sin lead en gestion, cerramos su turno automaticamente. El flag autoCloseArmed
+    // evita que el effect se dispare mas de una vez (se resetea en clearBoardForOffline).
+    effect(() => {
+      const pastSalida = this.attendanceFacade.isPastSalida();
+      const total = this.totalElements();
+      const managing = this.isManagingLead();
+
+      if (!pastSalida || managing || !this.initialized || this.autoCloseArmed) {
+        return;
+      }
+
+      if (total === 0) {
+        this.autoCloseArmed = true;
+        this.attendanceFacade.submitAction('REGISTRAR_SALIDA');
+        this.successMessage.set('Vaciaste tu bandeja. Cerramos tu turno automáticamente.');
+      }
     });
   }
 
@@ -340,12 +359,6 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
   protected async openDetail(idLead: number): Promise<void> {
     if (!this.canMutateOperationalData()) {
       this.errorMessage.set('Marca ONLINE para gestionar Leads.');
-      return;
-    }
-    // Despues de la salida solo se permite terminar el lead ya en gestion, no tomar nuevos.
-    const isReopeningManaged = this.isManagingLead() && this.selectedLeadId() === idLead;
-    if (this.attendanceFacade.isPastSalida() && !isReopeningManaged) {
-      this.errorMessage.set('Tu turno terminó. Solo puedes terminar el Lead que tienes en gestión.');
       return;
     }
     if (this.isManagingLead() && this.selectedLeadId() !== idLead) {
@@ -455,7 +468,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     }
     // Si el horario ya termino y esta cerrando su ultimo lead en gestion, al terminar se
     // registra su salida automaticamente (cierre de turno).
-    const wasWrapUp = this.wrapUpActive();
+    const wasLastManagedInWrapUp = this.wrapUpActive() && this.isManagingLead();
     const detail = this.detail();
     if (!detail || this.tipificacionForm.invalid) {
       this.errorMessage.set('Selecciona tipificacion y subtipificacion.');
@@ -504,10 +517,10 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       'Lead tipificado.',
       async () => {
         this.closeDetail();
-        if (wasWrapUp) {
-          // Termino su lead en gestion fuera de horario: cerrar turno (registrar salida).
-          this.attendanceFacade.submitAction('REGISTRAR_SALIDA');
-          this.successMessage.set('Lead tipificado. Registramos tu salida y cerramos tu turno.');
+        // El cierre del turno lo maneja el effect de auto-cierre (Opcion B): cuando la bandeja
+        // quede en 0 despues de reconciliar, dispara REGISTRAR_SALIDA automaticamente.
+        if (wasLastManagedInWrapUp) {
+          this.successMessage.set('Lead tipificado. Si era el último, cerramos tu turno en un momento.');
         }
         await this.reconcile(detail.id);
       }
@@ -1448,6 +1461,7 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
 
   private clearBoardForOffline(): void {
     this.initialized = false;
+    this.autoCloseArmed = false;
     this.rows.set([]);
     this.detail.set(null);
     this.selectedLeadId.set(null);
