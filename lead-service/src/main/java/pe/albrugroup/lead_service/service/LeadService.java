@@ -40,6 +40,7 @@ import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorVentasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrMetricasResponse;
+import pe.albrugroup.lead_service.entity.response.LeadContextoLookupResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrLookupResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 import pe.albrugroup.lead_service.entity.response.InternetResponse;
@@ -163,6 +164,29 @@ public class LeadService {
                         null,
                         null,
                         false,
+                        "No encontramos ese lead en el sistema."
+                ));
+    }
+
+    public LeadContextoLookupResponse buscarContextoLeadVenta(String lead) {
+        String numeroLead = normalizarLead(lead);
+        if (numeroLead == null || numeroLead.isBlank()) {
+            throw new BadRequestException("El numero del lead es obligatorio");
+        }
+
+        return leadRepository.findFirstByLeadOrderByLastEntryAtDescIdDesc(numeroLead)
+                .map(this::mapearContextoLeadVenta)
+                .orElseGet(() -> new LeadContextoLookupResponse(
+                        false,
+                        null,
+                        null,
+                        numeroLead,
+                        null,
+                        null,
+                        false,
+                        false,
+                        false,
+                        null,
                         "No encontramos ese lead en el sistema."
                 ));
     }
@@ -317,9 +341,20 @@ public class LeadService {
         }
     }
 
-    public PageResponse<LeadResponse> listarBandejaVenta(PageRequest pageRequest) {
+    public PageResponse<LeadResponse> listarBandejaVenta(String lead, PageRequest pageRequest) {
+        String numeroLead = normalizarLead(lead);
+        boolean buscandoPorLead = numeroLead != null && !numeroLead.isBlank();
+        String leadPattern = buscandoPorLead ? numeroLead + "%" : "%";
+        // Por defecto la Plataforma muestra solo el dia operativo de hoy (America/Lima).
+        // Al buscar un numero puntual se ignora el filtro de dia para poder ubicarlo en cualquier fecha.
+        OperationalDateTime.InstantRange rango = buscandoPorLead
+                ? new OperationalDateTime.InstantRange(Instant.EPOCH, Instant.ofEpochSecond(253402300799L))
+                : OperationalDateTime.dayRange(null);
         Page<LeadResponse> leads = leadRepository.listarLeadsDisponiblesPorEtapa(
                 Etapa.VENTA,
+                leadPattern,
+                rango.inicio(),
+                rango.fin(),
                 paginationService.toPageable(pageRequest, LEAD_GTR_SORT_FIELDS)
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);
@@ -327,10 +362,12 @@ public class LeadService {
     }
 
     public PageResponse<LeadResponse> listarLeadsVentaAsignados(PageRequest pageRequest) {
+        // El orden de Gestion lo define la consulta (sin tipificar primero, luego agrupado por
+        // tipificacion/subtipificacion), por eso se usa un Pageable sin sort.
         Page<LeadResponse> leads = leadRepository.listarLeadsAsignadosPorEtapaYAsesor(
                 Etapa.VENTA,
                 currentUser.empleadoID(),
-                paginationService.toPageable(pageRequest, LEAD_ASESOR_SORT_FIELDS)
+                org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);
         return PageResponse.from(leads);
@@ -614,6 +651,7 @@ public class LeadService {
                 validarPreventaCompleta(lead);
             }
             lead.setEtapa(etapaDestino);
+            lead.setLastEntryAt(OperationalDateTime.now());
             lead.setEstado(EstadoSeguimiento.GESTIONADO);
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
@@ -669,6 +707,7 @@ public class LeadService {
         if (etapaDestino != null && etapaDestino != etapaActual) {
             aplicarDatosPostventaSiCorresponde(lead, etapaDestino, request.getFechaInstalacion());
             lead.setEtapa(etapaDestino);
+            lead.setLastEntryAt(OperationalDateTime.now());
             lead.setEstado(EstadoSeguimiento.GESTIONADO);
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
@@ -736,6 +775,7 @@ public class LeadService {
 
         if (etapaDestino != null && etapaDestino != etapaActual) {
             lead.setEtapa(etapaDestino);
+            lead.setLastEntryAt(OperationalDateTime.now());
             lead.setEstado(EstadoSeguimiento.GESTIONADO);
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
@@ -1493,6 +1533,61 @@ public class LeadService {
                 puedeGestionarseEnGtr,
                 construirMensajeContextoGtr(etapaActual)
         );
+    }
+
+    private LeadContextoLookupResponse mapearContextoLeadVenta(Lead lead) {
+        Etapa etapaActual = lead.getEtapa();
+        boolean enVenta = etapaActual == Etapa.VENTA;
+        Long idAsesorAsignado = lead.getIdAsesorAsignado();
+        boolean disponibleParaTomar = enVenta && idAsesorAsignado == null;
+        boolean gestionadoPorMi = enVenta && idAsesorAsignado != null
+                && idAsesorAsignado.equals(currentUser.empleadoID());
+        boolean gestionadoPorOtroAsesor = enVenta && idAsesorAsignado != null && !gestionadoPorMi;
+
+        return new LeadContextoLookupResponse(
+                true,
+                lead.getId(),
+                lead.getPrefijo(),
+                lead.getLead(),
+                etapaActual,
+                lead.getEstado(),
+                enVenta,
+                disponibleParaTomar,
+                gestionadoPorOtroAsesor,
+                lead.getNombreAsesorAsignado(),
+                construirMensajeContextoVenta(etapaActual, disponibleParaTomar, gestionadoPorMi, lead.getNombreAsesorAsignado())
+        );
+    }
+
+    private String construirMensajeContextoVenta(
+            Etapa etapaActual,
+            boolean disponibleParaTomar,
+            boolean gestionadoPorMi,
+            String nombreAsesorAsignado
+    ) {
+        if (etapaActual == Etapa.VENTA) {
+            if (disponibleParaTomar) {
+                return null;
+            }
+            if (gestionadoPorMi) {
+                return "Ya tienes este lead en tu bandeja de Gestion.";
+            }
+            String asesor = (nombreAsesorAsignado == null || nombreAsesorAsignado.isBlank())
+                    ? "otro asesor"
+                    : nombreAsesorAsignado;
+            return "Ese lead ya lo esta gestionando " + asesor + ". No esta disponible para tomarlo.";
+        }
+
+        if (etapaActual == null) {
+            return "No pudimos identificar la etapa de ese lead.";
+        }
+
+        return switch (etapaActual) {
+            case PREVENTA -> "Ese lead todavia esta en gestion inicial y aun no llega a Venta.";
+            case POSTVENTA -> "Ese lead ya avanzo a Postventa.";
+            case COBRANZA -> "Ese lead ya avanzo a Cobranza.";
+            case VENTA -> null;
+        };
     }
 
     private String construirMensajeContextoGtr(Etapa etapaActual) {

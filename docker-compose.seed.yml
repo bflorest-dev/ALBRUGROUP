@@ -51,6 +51,28 @@ services:
     networks:
       - albru-network
 
+  ojt-users-seeder:
+    image: postgres:17-alpine
+    environment:
+      PGPASSWORD: postgres
+      PGUSER: postgres
+      PGPORT: 5432
+      PGHOST: postgres-core
+    depends_on:
+      postgres-core:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+      rrhh-service:
+        condition: service_healthy
+      schedule-service:
+        condition: service_healthy
+    volumes:
+      - ./docker/postgres/ojt-users-seed:/seeds:ro
+    command: ["sh", "/seeds/run-ojt-users-seed.sh"]
+    networks:
+      - albru-network
+
   lead-migration:
     image: postgres:17-alpine
     environment:

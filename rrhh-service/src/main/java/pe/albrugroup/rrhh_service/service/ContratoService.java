@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.rrhh_service.entity.Contrato;
 import pe.albrugroup.rrhh_service.entity.Empleado;
 import pe.albrugroup.rrhh_service.entity.enums.EstadoOperativo;
+import pe.albrugroup.rrhh_service.entity.enums.PuestoTrabajo;
 import pe.albrugroup.rrhh_service.entity.request.PageRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.CerrarContratoRequest;
 import pe.albrugroup.rrhh_service.entity.request.contrato.RegistrarContratoRequest;
@@ -69,6 +70,7 @@ public class ContratoService implements IContrato {
     @Override @Transactional
     public ContratoResponse registrarContrato(Long idEmpleado, RegistrarContratoRequest nuevoContrato, String authHeader, Long responsableId) {
         validarAuthorizationRequerida(authHeader);
+        validarPuestoContratable(nuevoContrato);
         Empleado empleado = empleadoRepository.findById(idEmpleado)
                 .orElseThrow(() -> new NotFoundException(Empleado.class, idEmpleado));
         validarDatosCompletosEmpleado(empleado);
@@ -89,6 +91,12 @@ public class ContratoService implements IContrato {
         eventoService.registrarEventoContratacion(empleado, responsableId);
         programarSincronizacionExternaPostCommit(empleado, nuevoContrato, authHeader);
         return contratoResponse;
+    }
+
+    private void validarPuestoContratable(RegistrarContratoRequest nuevoContrato) {
+        if (nuevoContrato.getPuestoTrabajo() == PuestoTrabajo.OJT) {
+            throw new BadRequestException("El puesto OJT solo puede crearse mediante el seeder operativo OJT");
+        }
     }
 
     private void validarNoHayConflictosDeContrato(Long idEmpleado, LocalDate fechaInicio, LocalDate fechaFin) {

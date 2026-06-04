@@ -4,46 +4,29 @@ WHERE NOT EXISTS (
     SELECT 1 FROM empresa_contratista WHERE LOWER(nombre) = LOWER('Albru')
 );
 
-CREATE TEMP TABLE seed_ojt_empleados (
+CREATE TEMP TABLE seed_ojt_users (
     empleado_id BIGINT,
+    usuario_id BIGINT,
     contrato_id BIGINT,
+    horario_id BIGINT,
     nombres TEXT,
     apellidos TEXT,
+    puesto_trabajo TEXT,
     numero_documento TEXT,
     correo_personal TEXT,
+    username TEXT,
     celular_personal TEXT,
     fecha_nacimiento DATE,
     direccion TEXT,
     cuenta_bancaria TEXT,
-    cuenta_interbancaria TEXT
+    cuenta_interbancaria TEXT,
+    hora_entrada TIME,
+    hora_salida TIME,
+    inicio_almuerzo TIME,
+    fin_almuerzo TIME
 );
 
-INSERT INTO seed_ojt_empleados (
-    empleado_id,
-    contrato_id,
-    nombres,
-    apellidos,
-    numero_documento,
-    correo_personal,
-    celular_personal,
-    fecha_nacimiento,
-    direccion,
-    cuenta_bancaria,
-    cuenta_interbancaria
-)
-SELECT
-    900000 + n,
-    920000 + n,
-    'OJT',
-    LPAD(n::TEXT, 2, '0'),
-    (70000000 + n)::TEXT,
-    'OJT' || LPAD(n::TEXT, 2, '0') || '@gmail.com',
-    (900000000 + n)::TEXT,
-    DATE '2000-01-01' + (n - 1),
-    'Direccion OJT ' || LPAD(n::TEXT, 2, '0'),
-    LPAD((12345900000 + n)::TEXT, 11, '0'),
-    '002' || LPAD((12345900000000000 + n)::TEXT, 17, '0')
-FROM generate_series(1, 40) AS gs(n);
+\copy seed_ojt_users FROM '/seeds/ojt-users-seed.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
 
 INSERT INTO empleados (
     id,
@@ -77,25 +60,25 @@ INSERT INTO empleados (
 )
 OVERRIDING SYSTEM VALUE
 SELECT
-    so.empleado_id,
-    so.nombres,
-    so.apellidos,
+    su.empleado_id,
+    su.nombres,
+    su.apellidos,
     'DNI',
-    so.numero_documento,
+    su.numero_documento,
     'PERUANO',
-    so.fecha_nacimiento,
+    su.fecha_nacimiento,
     'SOLTERO',
     FALSE,
-    so.celular_personal,
-    so.correo_personal,
+    su.celular_personal,
+    su.correo_personal,
     NULL,
     NULL,
     'COMPUTRABAJO',
     'CALLAO',
-    so.direccion,
+    su.direccion,
     'BCP',
-    so.cuenta_bancaria,
-    so.cuenta_interbancaria,
+    su.cuenta_bancaria,
+    su.cuenta_interbancaria,
     TRUE,
     NULL,
     NULL,
@@ -105,7 +88,7 @@ SELECT
     FALSE,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
-FROM seed_ojt_empleados so
+FROM seed_ojt_users su
 CROSS JOIN LATERAL (
     SELECT id
     FROM empresa_contratista
@@ -158,8 +141,8 @@ INSERT INTO contrato (
 )
 OVERRIDING SYSTEM VALUE
 SELECT
-    contrato_id,
-    empleado_id,
+    su.contrato_id,
+    su.empleado_id,
     'OJT',
     'PLANILLA',
     'FULL_TIME',
@@ -170,7 +153,7 @@ SELECT
     NULL,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
-FROM seed_ojt_empleados
+FROM seed_ojt_users su
 ON CONFLICT (id) DO UPDATE
 SET empleado_id = EXCLUDED.empleado_id,
     puesto_trabajo = EXCLUDED.puesto_trabajo,

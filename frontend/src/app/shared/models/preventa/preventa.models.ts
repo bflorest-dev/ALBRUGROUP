@@ -190,6 +190,20 @@ export interface LeadGtrLookupResponse {
   mensajeUsuario?: string | null;
 }
 
+export interface LeadContextoLookupResponse {
+  existe: boolean;
+  idLead?: number | null;
+  prefijo?: string | null;
+  lead?: string | null;
+  etapaActual?: Etapa | string | null;
+  estadoActual?: EstadoSeguimiento | string | null;
+  puedeGestionar: boolean;
+  disponibleParaTomar: boolean;
+  gestionadoPorOtroAsesor: boolean;
+  nombreAsesorAsignado?: string | null;
+  mensajeUsuario?: string | null;
+}
+
 export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   lastEntryAt?: string | null;
   nombreCampana?: string | null;
@@ -409,6 +423,28 @@ export interface SubtipificacionResponse {
   orden: number;
   etapaCambio?: string | null;
   estadoPostventaCambio?: string | null;
+}
+
+export interface SubtipificacionCatalogoRequest {
+  id?: number | null;
+  codigo: string;
+  descripcion: string;
+  orden: number;
+  etapaCambio?: string | null;
+  estadoPostventaCambio?: string | null;
+}
+
+export interface TipificacionCatalogoRequest {
+  id?: number | null;
+  codigo: string;
+  descripcion: string;
+  orden: number;
+  subtipificaciones: SubtipificacionCatalogoRequest[];
+}
+
+export interface CatalogoRequest {
+  etapa: string;
+  tipificaciones: TipificacionCatalogoRequest[];
 }
 
 export interface CampanaResponse {

@@ -106,6 +106,7 @@ export class PrivateLayoutComponent {
         { label: 'Inicio', route: '/app/admin/inicio', icon: 'pi pi-home', exact: true },
         { label: 'Personal', route: '/app/admin/personal', icon: 'pi pi-users', exact: true },
         { label: 'Empleabilidad', route: '/app/admin/empleabilidad', icon: 'pi pi-briefcase' },
+        { label: 'Tipificaciones', route: '/app/admin/tipificaciones', icon: 'pi pi-sitemap', exact: true },
         { label: 'Finanzas', route: '/app/admin/finanzas', icon: 'pi pi-wallet', exact: true },
         { label: 'Ranking', route: '/app/admin/ranking', icon: 'pi pi-chart-bar', exact: true }
       ];

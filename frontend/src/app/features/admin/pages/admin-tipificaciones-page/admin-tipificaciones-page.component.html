@@ -1,0 +1,113 @@
+<section class="tipificaciones-page">
+  <p-toast position="top-right" />
+
+  <p-card styleClass="tip-hero">
+    <div class="hero-row">
+      <div>
+        <span class="eyebrow">ADMINISTRACION</span>
+        <h1>Tipificaciones</h1>
+        <p>Define los resultados de cada etapa y a donde mueven al lead.</p>
+      </div>
+      <div class="hero-actions">
+        <p-select
+          [options]="facade.etapaOptions"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="facade.selectedEtapa()"
+          (ngModelChange)="onEtapaChange($event)"
+          [disabled]="facade.isLoading() || facade.isSaving()"
+        />
+        <button
+          pButton
+          type="button"
+          icon="pi pi-save"
+          label="Guardar catalogo"
+          [loading]="facade.isSaving()"
+          [disabled]="facade.isLoading()"
+          (click)="guardar()"
+        ></button>
+      </div>
+    </div>
+  </p-card>
+
+  @if (facade.isLoading()) {
+    <div class="tip-skeletons">
+      @for (_ of skeletonRows; track $index) {
+        <p-skeleton width="100%" height="7rem" />
+      }
+    </div>
+  } @else {
+    <div class="tip-list">
+      @for (tip of facade.drafts(); track tip.uid) {
+        <p-card styleClass="tip-card">
+          <div class="tip-head">
+            <label class="field grow">
+              <span>Codigo</span>
+              <input pInputText type="text" [ngModel]="tip.codigo" (ngModelChange)="facade.updateTipField(tip.uid, 'codigo', $event)" />
+            </label>
+            <label class="field grow-2">
+              <span>Descripcion</span>
+              <input pInputText type="text" [ngModel]="tip.descripcion" (ngModelChange)="facade.updateTipField(tip.uid, 'descripcion', $event)" />
+            </label>
+            <label class="field">
+              <span>Orden</span>
+              <p-inputNumber [ngModel]="tip.orden" (ngModelChange)="facade.updateTipField(tip.uid, 'orden', $event ?? 1)" [min]="1" [showButtons]="true" inputStyleClass="orden-input" />
+            </label>
+            <button pButton type="button" icon="pi pi-trash" severity="danger" text label="Quitar" (click)="facade.removeTipificacion(tip.uid)"></button>
+          </div>
+
+          <div class="subtip-list">
+            @for (sub of tip.subtipificaciones; track sub.uid) {
+              <div class="subtip-row">
+                <label class="field">
+                  <span>Sub-codigo</span>
+                  <input pInputText type="text" [ngModel]="sub.codigo" (ngModelChange)="facade.updateSubtipField(tip.uid, sub.uid, 'codigo', $event)" />
+                </label>
+                <label class="field grow-2">
+                  <span>Descripcion</span>
+                  <input pInputText type="text" [ngModel]="sub.descripcion" (ngModelChange)="facade.updateSubtipField(tip.uid, sub.uid, 'descripcion', $event)" />
+                </label>
+                <label class="field orden">
+                  <span>Orden</span>
+                  <p-inputNumber [ngModel]="sub.orden" (ngModelChange)="facade.updateSubtipField(tip.uid, sub.uid, 'orden', $event ?? 1)" [min]="1" [showButtons]="true" inputStyleClass="orden-input" />
+                </label>
+                <label class="field grow">
+                  <span>Resultado: el lead</span>
+                  <p-select
+                    [options]="facade.etapaCambioOptions()"
+                    optionLabel="label"
+                    optionValue="value"
+                    [ngModel]="sub.etapaCambio"
+                    (ngModelChange)="facade.updateSubtipField(tip.uid, sub.uid, 'etapaCambio', $event)"
+                    appendTo="body"
+                  />
+                </label>
+                @if (sub.etapaCambio === 'POSTVENTA') {
+                  <label class="field grow">
+                    <span>Estado postventa</span>
+                    <p-select
+                      [options]="facade.estadoPostventaOptions"
+                      [ngModel]="sub.estadoPostventaCambio"
+                      (ngModelChange)="facade.updateSubtipField(tip.uid, sub.uid, 'estadoPostventaCambio', $event)"
+                      placeholder="Elige un estado"
+                      appendTo="body"
+                    />
+                  </label>
+                }
+                <button pButton type="button" icon="pi pi-times" severity="secondary" text (click)="facade.removeSubtipificacion(tip.uid, sub.uid)"></button>
+              </div>
+            } @empty {
+              <span class="subtip-empty">Sin subtipificaciones. Agrega al menos una.</span>
+            }
+
+            <button pButton type="button" icon="pi pi-plus" label="Agregar subtipificacion" severity="secondary" text (click)="facade.addSubtipificacion(tip.uid)"></button>
+          </div>
+        </p-card>
+      } @empty {
+        <p-message severity="info" text="Esta etapa aun no tiene tipificaciones. Agrega la primera." />
+      }
+
+      <button pButton type="button" icon="pi pi-plus" label="Agregar tipificacion" (click)="facade.addTipificacion()"></button>
+    </div>
+  }
+</section>

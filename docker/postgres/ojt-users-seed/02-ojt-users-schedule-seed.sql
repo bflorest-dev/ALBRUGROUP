@@ -1,3 +1,27 @@
+CREATE TEMP TABLE seed_ojt_users (
+    empleado_id BIGINT,
+    usuario_id BIGINT,
+    contrato_id BIGINT,
+    horario_id BIGINT,
+    nombres TEXT,
+    apellidos TEXT,
+    puesto_trabajo TEXT,
+    numero_documento TEXT,
+    correo_personal TEXT,
+    username TEXT,
+    celular_personal TEXT,
+    fecha_nacimiento DATE,
+    direccion TEXT,
+    cuenta_bancaria TEXT,
+    cuenta_interbancaria TEXT,
+    hora_entrada TIME,
+    hora_salida TIME,
+    inicio_almuerzo TIME,
+    fin_almuerzo TIME
+);
+
+\copy seed_ojt_users FROM '/seeds/ojt-users-seed.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
+
 INSERT INTO politica_modalidad (
     modalidad,
     horas_objetivo_semanal,
@@ -11,19 +35,6 @@ SET horas_objetivo_semanal = EXCLUDED.horas_objetivo_semanal,
     horas_objetivo_mensual = EXCLUDED.horas_objetivo_mensual,
     minutos_almuerzo = EXCLUDED.minutos_almuerzo,
     minutos_servicios = EXCLUDED.minutos_servicios;
-
-CREATE TEMP TABLE seed_ojt_horarios (
-    empleado_id BIGINT,
-    contrato_id BIGINT,
-    horario_id BIGINT
-);
-
-INSERT INTO seed_ojt_horarios (empleado_id, contrato_id, horario_id)
-SELECT
-    900000 + n,
-    920000 + n,
-    930000 + n
-FROM generate_series(1, 40) AS gs(n);
 
 INSERT INTO horario (
     id,
@@ -43,9 +54,9 @@ INSERT INTO horario (
 )
 OVERRIDING SYSTEM VALUE
 SELECT
-    so.horario_id,
-    so.empleado_id,
-    so.contrato_id,
+    su.horario_id,
+    su.empleado_id,
+    su.contrato_id,
     pm.modalidad,
     pm.id,
     pm.horas_objetivo_semanal,
@@ -57,7 +68,7 @@ SELECT
     TRUE,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
-FROM seed_ojt_horarios so
+FROM seed_ojt_users su
 JOIN politica_modalidad pm ON pm.modalidad = 'FULL_TIME'
 ON CONFLICT (id) DO UPDATE
 SET id_empleado = EXCLUDED.id_empleado,
@@ -75,8 +86,9 @@ SET id_empleado = EXCLUDED.id_empleado,
     updated_at = CURRENT_TIMESTAMP;
 
 DELETE FROM horario_detalle hd
-USING seed_ojt_horarios so
-WHERE hd.horario_id = so.horario_id;
+USING horario h, seed_ojt_users su
+WHERE hd.horario_id = h.id
+  AND h.id = su.horario_id;
 
 INSERT INTO horario_detalle (
     horario_id,
@@ -88,14 +100,14 @@ INSERT INTO horario_detalle (
     laborable
 )
 SELECT
-    so.horario_id,
+    su.horario_id,
     dias.dia,
-    TIME '06:00',
-    TIME '22:00',
-    NULL,
-    NULL,
+    su.hora_entrada,
+    su.hora_salida,
+    su.inicio_almuerzo,
+    su.fin_almuerzo,
     TRUE
-FROM seed_ojt_horarios so
+FROM seed_ojt_users su
 CROSS JOIN (
     VALUES
         ('LUNES'),

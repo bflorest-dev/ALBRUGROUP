@@ -39,6 +39,46 @@
       {{ section() === 'plataforma' ? 'Toma leads disponibles para iniciar gestion.' : 'Gestiona, edita, tipifica y revisa historial.' }}
     </ng-template>
 
+    @if (section() === 'plataforma') {
+      <div class="lead-search">
+        <input
+          pInputText
+          type="text"
+          inputmode="numeric"
+          class="lead-search-input"
+          placeholder="Buscar lead por numero"
+          [ngModel]="searchInput()"
+          (ngModelChange)="setSearchInput($event)"
+          (keyup.enter)="buscarLead()"
+          [disabled]="!canDisplayOperationalData()"
+        />
+        <button
+          pButton
+          type="button"
+          icon="pi pi-search"
+          label="Buscar"
+          [loading]="isSearching()"
+          [disabled]="!canDisplayOperationalData()"
+          (click)="buscarLead()"
+        ></button>
+        @if (searchTermActive()) {
+          <button
+            pButton
+            type="button"
+            icon="pi pi-times"
+            label="Limpiar"
+            severity="secondary"
+            [disabled]="isSearching()"
+            (click)="limpiarBusqueda()"
+          ></button>
+        }
+      </div>
+
+      @if (searchLookup(); as lookup) {
+        <p-message severity="warn" styleClass="lead-search-note" [text]="lookup.mensajeUsuario ?? ''" />
+      }
+    }
+
     <p-table
       [value]="section() === 'plataforma' ? plataformaRows() : gestionRows()"
       dataKey="id"
@@ -48,6 +88,8 @@
       scrollHeight="flex"
       [tableStyle]="{ 'min-width': '1120px' }"
       styleClass="p-datatable-sm backoffice-table"
+      [rowGroupMode]="section() === 'gestion' ? 'subheader' : undefined"
+      groupRowsBy="codigoTipificacion"
     >
       <ng-template #header>
         <tr>
@@ -61,6 +103,20 @@
           <th>Ultima entrada</th>
           <th>Asignaciones</th>
           <th class="col-actions">Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template #groupheader let-row>
+        <tr class="group-row">
+          <td [attr.colspan]="10">
+            @if (row.codigoTipificacion) {
+              <span class="group-title">{{ row.codigoTipificacion }}</span>
+              <span class="group-hint">En seguimiento</span>
+            } @else {
+              <span class="group-title">Sin tipificar</span>
+              <span class="group-hint">Recien asignados</span>
+            }
+          </td>
         </tr>
       </ng-template>
 
@@ -125,7 +181,11 @@
             } @else {
               <div class="empty-state">
                 @if (section() === 'plataforma') {
-                  No hay leads disponibles en VENTA.
+                  @if (searchTermActive()) {
+                    Ese lead no esta disponible en tu Plataforma.
+                  } @else {
+                    No hay leads disponibles en VENTA.
+                  }
                 } @else {
                   No tienes leads asignados en gestion.
                 }

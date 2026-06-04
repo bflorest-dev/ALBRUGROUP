@@ -6,6 +6,7 @@ import {
   AdicionalResponse,
   CatalogoResponse,
   EventoResponse,
+  LeadContextoLookupResponse,
   LeadDatosPreventaRequest,
   LeadDetalleResponse,
   LeadDireccionRequest,
@@ -23,8 +24,18 @@ export class BackofficeLeadService {
   private readonly http = inject(HttpClient);
   private readonly leadUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads`;
 
-  listarPlataforma(query: PageQuery): Observable<LeadPage<LeadVentaResponse>> {
-    return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta`, { params: this.pageParams(query) });
+  listarPlataforma(query: PageQuery, lead?: string): Observable<LeadPage<LeadVentaResponse>> {
+    let params = this.pageParams(query);
+    if (lead) {
+      params = params.set('lead', lead);
+    }
+    return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta`, { params });
+  }
+
+  buscarContextoLead(lead: string): Observable<LeadContextoLookupResponse> {
+    return this.http.get<LeadContextoLookupResponse>(`${this.leadUrl}/venta/lookup`, {
+      params: new HttpParams().set('lead', lead)
+    });
   }
 
   listarGestion(query: PageQuery): Observable<LeadPage<LeadVentaResponse>> {

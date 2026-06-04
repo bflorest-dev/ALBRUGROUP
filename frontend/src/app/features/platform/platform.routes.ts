@@ -4,6 +4,7 @@ import { AdminDashboardPageComponent } from '../admin/pages/admin-dashboard-page
 import { AdminEmployabilityPageComponent } from '../admin/pages/admin-employability-page/admin-employability-page.component';
 import { AdminFinancePageComponent } from '../admin/pages/admin-finance-page/admin-finance-page.component';
 import { AdminRankingPageComponent } from '../admin/pages/admin-ranking-page/admin-ranking-page.component';
+import { AdminTipificacionesPageComponent } from '../admin/pages/admin-tipificaciones-page/admin-tipificaciones-page.component';
 import { AsesorVentasWorkspacePageComponent } from '../asesor-ventas/pages/asesor-ventas-workspace-page/asesor-ventas-workspace-page.component';
 import { SupervisorVentasMonitoreoPageComponent } from '../supervisor-ventas/pages/supervisor-ventas-monitoreo-page/supervisor-ventas-monitoreo-page.component';
 import { SupervisorVentasReportePageComponent } from '../supervisor-ventas/pages/supervisor-ventas-reporte-page/supervisor-ventas-reporte-page.component';
@@ -67,6 +68,14 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'admin/finanzas',
     component: AdminFinancePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR']
+    }
+  },
+  {
+    path: 'admin/tipificaciones',
+    component: AdminTipificacionesPageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR']

@@ -6,33 +6,18 @@ albruadminorg
 albruadminpe
 -------------------------------------------------------
 (00:00 - 8AM - MORNING)
-
-A71000040S@albru.gtr.pe
-hMqGxKA#Y-
-
-N71000028E@albru.sales.pe
-p#zDR_5vyX
-
-Y71000025B@albru.supsales.pe
-mR8sZ7qp%j
-
-D71000005T@albru.rrhh.pe
-Bwh5QqkzpP
-
 (8AM - 4PM - AFTERNOON)
 
-C71000042U@albru.gtr.pe
-jBkX&gJ6@#
+D71000005T@albru.rrhh.pe
+
+
+T71000020G@albru.community.pe
+
+U71000035M@albru.back.pe
+ozucS@@Dqr
+
 
 (4PM - 00:00 - NIGHT)
-
-C71000042U@albru.gtr.pe
-aJeRz&G&Zt
-
-M71000027D@albru.supsales.pe
-MJv8SvamNw
-
-
 
 
 

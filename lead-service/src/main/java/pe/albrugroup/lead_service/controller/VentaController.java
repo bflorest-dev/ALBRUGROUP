@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
@@ -20,6 +21,7 @@ import pe.albrugroup.lead_service.entity.request.LeadOfertaComercialRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionVentaRequest;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
+import pe.albrugroup.lead_service.entity.response.LeadContextoLookupResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
@@ -35,13 +37,23 @@ public class VentaController {
     private final EventoService eventoService;
 
     // BackOffice
-    // 1. Listar Leads que se encuentren en la etapa de Venta
+    // 1. Listar Leads que se encuentren en la etapa de Venta. Permite filtrar por numero de lead.
     @GetMapping @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
     public ResponseEntity<PageResponse<LeadResponse>> listarBandejaVenta(
+            @RequestParam(required = false) String lead,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var leads = leadService.listarBandejaVenta(pageRequest);
+        var leads = leadService.listarBandejaVenta(lead, pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
+    }
+    // 1.1. Buscar el contexto de un lead por numero: indica si esta en VENTA y disponible,
+    //      o por que no se puede visualizar (otra etapa o tomado por otro asesor).
+    @GetMapping("/lookup") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
+    public ResponseEntity<LeadContextoLookupResponse> buscarContextoLeadVenta(
+            @RequestParam String lead
+    ) {
+        var response = leadService.buscarContextoLeadVenta(lead);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
     // 2. Listar los Leads asignados al backoffice en la etapa Venta
     @GetMapping("/asignados") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")

@@ -27,6 +27,7 @@ import {
   AdicionalResponse,
   CatalogoResponse,
   EventoResponse,
+  LeadContextoLookupResponse,
   LeadDetalleResponse,
   LeadVentaResponse,
   PageQuery,
@@ -111,6 +112,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly detailDialogOpen = signal(false);
   protected readonly activeDataTab = signal('datos');
   protected readonly showComment = signal(false);
+  protected readonly searchInput = signal('');
+  protected readonly searchTermActive = signal('');
+  protected readonly isSearching = signal(false);
+  protected readonly searchLookup = signal<LeadContextoLookupResponse | null>(null);
   protected readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   protected readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
   protected readonly skeletonRows = Array.from({ length: 8 });
@@ -530,6 +535,46 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     await this.refreshGestion(false);
   }
 
+  protected setSearchInput(value: string): void {
+    this.searchInput.set(this.normalizeLeadNumber(value));
+  }
+
+  protected async buscarLead(): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
+    const term = this.normalizeLeadNumber(this.searchInput());
+    if (!term) {
+      this.notify('warn', 'Escribe el numero del lead que quieres buscar.');
+      return;
+    }
+
+    this.searchInput.set(term);
+    this.searchLookup.set(null);
+    this.searchTermActive.set(term);
+    this.pagePlataforma.set(0);
+    this.isSearching.set(true);
+    try {
+      await this.refreshPlataforma(false);
+      if (!this.plataformaRows().length) {
+        const lookup = await firstValueFrom(this.leadService.buscarContextoLead(term));
+        this.searchLookup.set(lookup.mensajeUsuario ? lookup : null);
+      }
+    } catch (error) {
+      this.notify('error', this.getErrorMessage(error, 'No se pudo buscar el lead.'));
+    } finally {
+      this.isSearching.set(false);
+    }
+  }
+
+  protected async limpiarBusqueda(): Promise<void> {
+    this.searchInput.set('');
+    this.searchTermActive.set('');
+    this.searchLookup.set(null);
+    this.pagePlataforma.set(0);
+    await this.refreshPlataforma(false);
+  }
+
   protected display(value: unknown): string {
     if (value === null || value === undefined || value === '') {
       return '-';
@@ -633,7 +678,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return;
     }
     const previous = this.plataformaRows();
-    const page = await firstValueFrom(this.leadService.listarPlataforma(this.currentQuery(this.pagePlataforma())));
+    const term = this.searchTermActive();
+    const page = await firstValueFrom(this.leadService.listarPlataforma(this.currentQuery(this.pagePlataforma()), term || undefined));
     this.totalPlataforma.set(page.totalElements);
     this.plataformaRows.set(this.mergeVisualRows(previous, page.content, silent));
   }
@@ -806,6 +852,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
   }
 
+  private normalizeLeadNumber(value?: string | null): string {
+    const digits = (value ?? '').replace(/\D/g, '');
+    if (!digits) {
+      return '';
+    }
+    return digits.length > 9 ? digits.slice(-9) : digits;
+  }
+
   private cleanObject<T extends Record<string, unknown>>(value: T): T {
     return Object.fromEntries(Object.entries(value).map(([key, entryValue]) => [key, entryValue === '' ? null : entryValue])) as T;
   }
@@ -850,6 +904,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.adicionalesSeleccionados.set([]);
     this.adicionalesDirty.set(false);
     this.nuevoAdicionalId.set(null);
+    this.searchInput.set('');
+    this.searchTermActive.set('');
+    this.searchLookup.set(null);
+    this.isSearching.set(false);
     this.messageService.clear();
   }
 

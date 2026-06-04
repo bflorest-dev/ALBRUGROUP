@@ -126,6 +126,41 @@ label {
   font-weight: 800;
 }
 
+.group-row td {
+  background: color-mix(in srgb, var(--role-accent) 12%, #ffffff 88%);
+  font-weight: 800;
+}
+
+.group-title {
+  color: var(--role-primary);
+  letter-spacing: 0.02em;
+}
+
+.group-hint {
+  color: var(--role-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-left: 0.6rem;
+}
+
+.lead-search {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.lead-search-input {
+  flex: 1 1 16rem;
+  max-width: 22rem;
+}
+
+.lead-search-note {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
 .oferta-note {
   display: block;
   margin-top: 1rem;

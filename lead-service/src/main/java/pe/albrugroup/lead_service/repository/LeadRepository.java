@@ -305,10 +305,16 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND l.codigoTipificacion IS NULL
               AND l.idSubtipificacion IS NULL
               AND l.codigoSubtipificacion IS NULL
+              AND l.lead LIKE :leadPattern
+              AND l.lastEntryAt >= :inicioDia
+              AND l.lastEntryAt < :finDia
             ORDER BY l.lastEntryAt DESC, l.id DESC
             """)
     Page<LeadResponse> listarLeadsDisponiblesPorEtapa(
             @Param("etapa") Etapa etapa,
+            @Param("leadPattern") String leadPattern,
+            @Param("inicioDia") Instant inicioDia,
+            @Param("finDia") Instant finDia,
             Pageable pageable
     );
 
@@ -342,7 +348,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             FROM Lead l
             WHERE l.etapa = :etapa
               AND l.idAsesorAsignado = :idAsesor
-            ORDER BY l.lastEntryAt DESC, l.id DESC
+            ORDER BY CASE WHEN l.codigoTipificacion IS NULL THEN 0 ELSE 1 END,
+                     l.codigoTipificacion,
+                     l.codigoSubtipificacion,
+                     l.lastEntryAt DESC,
+                     l.id DESC
             """)
     Page<LeadResponse> listarLeadsAsignadosPorEtapaYAsesor(
             @Param("etapa") Etapa etapa,
