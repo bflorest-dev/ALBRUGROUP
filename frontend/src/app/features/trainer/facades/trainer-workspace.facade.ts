@@ -4,7 +4,9 @@ import { FormBuilder, Validators } from '@angular/forms';
 import { Observable, firstValueFrom, timeout } from 'rxjs';
 import { SessionService } from '../../../core/services/session.service';
 import { ApiErrorResponse } from '../../../shared/models/api/api-error-response';
+import { UsuarioResponse } from '../../../shared/models/auth/usuario-response';
 import { PageResponse } from '../../../shared/models/common/page-response';
+import { EventoResponse as LeadEventoResponse } from '../../../shared/models/preventa/preventa.models';
 import { EventoResponse } from '../../../shared/models/recruitment/evento-response';
 import { GrupoCapacitacionDetalleResponse } from '../../../shared/models/recruitment/grupo-capacitacion-detalle-response';
 import { GrupoCapacitacionResponse } from '../../../shared/models/recruitment/grupo-capacitacion-response';
@@ -13,7 +15,7 @@ import { TipificacionResponse } from '../../../shared/models/recruitment/tipific
 import { TipificarPostulacionRequest } from '../../../shared/models/recruitment/tipificar-postulacion-request';
 import { TrainerRecruitmentService } from '../services/trainer-recruitment.service';
 
-type TrainerSection = 'grupos' | 'bandeja';
+type TrainerSection = 'grupos' | 'bandeja' | 'ojt';
 
 @Injectable()
 export class TrainerWorkspaceFacade {
@@ -31,6 +33,14 @@ export class TrainerWorkspaceFacade {
     modalidadContacto: [''],
     observacion: ['']
   });
+  readonly ojtFiltersForm = this.formBuilder.nonNullable.group({
+    idEmpleado: [0, [Validators.required, Validators.min(1)]],
+    fechaDesde: [this.currentWeek().desde, [Validators.required]],
+    fechaHasta: [this.currentWeek().hasta, [Validators.required]],
+    accion: ['TIPIFICACION'],
+    tipificacion: [''],
+    subtipificacion: ['']
+  });
 
   readonly sinGrupoFilter = signal<boolean | null>(null);
   readonly catalogo = signal<TipificacionResponse[]>([]);
@@ -40,12 +50,16 @@ export class TrainerWorkspaceFacade {
   readonly selectedDetail = signal<GrupoCapacitacionDetalleResponse | null>(null);
   readonly selectedPostulacion = signal<PostulacionResponse | null>(null);
   readonly eventos = signal<EventoResponse[]>([]);
+  readonly ojtUsers = signal<UsuarioResponse[]>([]);
+  readonly ojtEventos = signal<LeadEventoResponse[]>([]);
 
   readonly isLoadingCatalogo = signal(false);
   readonly isLoadingGroups = signal(false);
   readonly isLoadingTraining = signal(false);
   readonly isLoadingDetail = signal(false);
   readonly isLoadingEvents = signal(false);
+  readonly isLoadingOjtUsers = signal(false);
+  readonly isLoadingOjtEvents = signal(false);
   readonly isTypifying = signal(false);
 
   readonly catalogoErrorMessage = signal('');
@@ -53,6 +67,7 @@ export class TrainerWorkspaceFacade {
   readonly trainingErrorMessage = signal('');
   readonly detailErrorMessage = signal('');
   readonly eventsErrorMessage = signal('');
+  readonly ojtErrorMessage = signal('');
   readonly typifyErrorMessage = signal('');
   readonly typifySuccessMessage = signal('');
 
@@ -61,6 +76,41 @@ export class TrainerWorkspaceFacade {
     return this.groupsPage().content.filter((group) => group.idCapacitador === empleadoId);
   });
   readonly trainingRows = computed(() => this.trainingPage().content);
+  readonly ojtRows = computed(() =>
+    [...this.ojtUsers()].sort((left, right) => left.nombreCompleto.localeCompare(right.nombreCompleto))
+  );
+  readonly selectedOjtUser = computed(() => {
+    const idEmpleado = Number(this.ojtFiltersForm.controls.idEmpleado.getRawValue());
+    return this.ojtRows().find((user) => user.empleadoId === idEmpleado) ?? null;
+  });
+  readonly filteredOjtEventos = computed(() => {
+    const raw = this.ojtFiltersForm.getRawValue();
+    const accion = raw.accion.trim().toUpperCase();
+    const tipificacion = raw.tipificacion.trim().toUpperCase();
+    const subtipificacion = raw.subtipificacion.trim().toUpperCase();
+
+    return this.ojtEventos().filter((event) => {
+      const matchesAccion = !accion || (event.accion ?? '').toUpperCase() === accion;
+      const matchesTipificacion = !tipificacion || (event.tipificacion ?? '').toUpperCase().includes(tipificacion);
+      const matchesSubtipificacion =
+        !subtipificacion || (event.subtipificacion ?? '').toUpperCase().includes(subtipificacion);
+      return matchesAccion && matchesTipificacion && matchesSubtipificacion;
+    });
+  });
+  readonly ojtResumen = computed(() => {
+    const eventos = this.filteredOjtEventos();
+    const tipificaciones = eventos.filter((event) => event.accion === 'TIPIFICACION');
+    const preventas = tipificaciones.filter(
+      (event) => event.tipificacion === 'PREVENTA' || event.subtipificacion === 'PREVENTA_COMPLETA'
+    );
+
+    return {
+      eventos: eventos.length,
+      tipificaciones: tipificaciones.length,
+      preventas: preventas.length,
+      leads: new Set(eventos.map((event) => event.idLead).filter(Boolean)).size
+    };
+  });
   readonly currentTrainingPage = computed(() => this.trainingPage().page);
   readonly totalTrainingPages = computed(() => this.trainingPage().totalPages);
   readonly selectedTipificacion = computed(() => {
@@ -70,11 +120,14 @@ export class TrainerWorkspaceFacade {
   readonly selectedSubtipificaciones = computed(() => this.selectedTipificacion()?.subtipificaciones ?? []);
 
   async initialize(): Promise<void> {
-    await Promise.all([this.loadCatalogo(), this.loadGroups(), this.loadTrainingBoard()]);
+    await Promise.all([this.loadCatalogo(), this.loadGroups(), this.loadTrainingBoard(), this.loadOjtUsers()]);
   }
 
   setSection(section: TrainerSection): void {
     this.section.set(section);
+    if (section === 'ojt' && !this.ojtUsers().length) {
+      void this.loadOjtUsers();
+    }
   }
 
   async loadCatalogo(): Promise<void> {
@@ -187,6 +240,48 @@ export class TrainerWorkspaceFacade {
     }
   }
 
+  async loadOjtUsers(): Promise<void> {
+    this.isLoadingOjtUsers.set(true);
+    this.ojtErrorMessage.set('');
+
+    try {
+      const users = await this.withTimeout(this.recruitmentService.listarUsuariosOjt());
+      this.ojtUsers.set(users);
+      if (!this.ojtFiltersForm.controls.idEmpleado.value && users.length) {
+        this.ojtFiltersForm.controls.idEmpleado.setValue(users[0].empleadoId);
+      }
+      if (users.length) {
+        await this.loadOjtEvents();
+      }
+    } catch (error) {
+      this.ojtErrorMessage.set(this.getErrorMessage(error, 'No fue posible cargar usuarios OJT.'));
+    } finally {
+      this.isLoadingOjtUsers.set(false);
+    }
+  }
+
+  async loadOjtEvents(): Promise<void> {
+    if (this.ojtFiltersForm.controls.idEmpleado.invalid) {
+      this.ojtEventos.set([]);
+      return;
+    }
+
+    const raw = this.ojtFiltersForm.getRawValue();
+    this.isLoadingOjtEvents.set(true);
+    this.ojtErrorMessage.set('');
+
+    try {
+      const page = await this.withTimeout(
+        this.recruitmentService.listarEventosOjtEmpleado(raw.idEmpleado, raw.fechaDesde, raw.fechaHasta)
+      );
+      this.ojtEventos.set(page.content);
+    } catch (error) {
+      this.ojtErrorMessage.set(this.getErrorMessage(error, 'No fue posible cargar eventos OJT.'));
+    } finally {
+      this.isLoadingOjtEvents.set(false);
+    }
+  }
+
   resetSubtipificacion(): void {
     this.typifyForm.controls.idSubtipificacion.setValue(0);
   }
@@ -258,6 +353,27 @@ export class TrainerWorkspaceFacade {
       totalElements: 0,
       totalPages: 1
     };
+  }
+
+  private currentWeek(): { desde: string; hasta: string } {
+    const today = new Date();
+    const day = today.getDay() === 0 ? 7 : today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - day + 1);
+    const saturday = new Date(monday);
+    saturday.setDate(monday.getDate() + 5);
+
+    return {
+      desde: this.formatDate(monday),
+      hasta: this.formatDate(saturday)
+    };
+  }
+
+  private formatDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private async withTimeout<T>(observable: Observable<T>): Promise<T> {

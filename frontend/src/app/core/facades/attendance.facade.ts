@@ -353,7 +353,8 @@ export class AttendanceFacade {
   }
 
   private async syncSalesAdvisorDisponibilidad(status: EstadoAsistencia): Promise<void> {
-    if (this.sessionService.getSession()?.primaryRole !== 'ASESOR_VENTAS') {
+    const primaryRole = this.sessionService.getSession()?.primaryRole;
+    if (primaryRole !== 'ASESOR_VENTAS' && primaryRole !== 'OJT') {
       return;
     }
 

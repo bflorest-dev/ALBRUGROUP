@@ -28,6 +28,7 @@ const ROLE_THEME_CLASS: Record<string, string> = {
   ASESOR_GTR: 'theme-gtr',
   SUPERVISOR_GTR: 'theme-gtr',
   ASESOR_VENTAS: 'theme-sales',
+  OJT: 'theme-sales',
   SUPERVISOR_VENTAS: 'theme-sales',
   ASESOR_BACKOFFICE: 'theme-backoffice',
   SUPERVISOR_BACKOFFICE: 'theme-backoffice',
@@ -132,7 +133,7 @@ export class PrivateLayoutComponent {
       ];
     }
 
-    if (session.primaryRole === 'ASESOR_VENTAS') {
+    if (session.primaryRole === 'ASESOR_VENTAS' || session.primaryRole === 'OJT') {
       return [
         { label: 'Plataforma', route: '/app/asesor-ventas/plataforma', icon: 'pi pi-desktop', exact: true },
         { label: 'Horario', route: '/app/asesor-ventas/horario', icon: 'pi pi-calendar', exact: true },
@@ -190,7 +191,7 @@ export class PrivateLayoutComponent {
     this.attendanceErrorMessage.set('');
     if (
       actionId === 'REGISTRAR_SALIDA' &&
-      this.session()?.primaryRole === 'ASESOR_VENTAS' &&
+      (this.session()?.primaryRole === 'ASESOR_VENTAS' || this.session()?.primaryRole === 'OJT') &&
       this.asesorVentasState.assignedLeadCount() > 0
     ) {
       this.attendanceErrorMessage.set('No puedes marcar OFFLINE mientras tengas Leads en tu bandeja.');

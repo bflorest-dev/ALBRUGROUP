@@ -125,6 +125,34 @@
   margin-top: 0.8rem;
 }
 
+.ojt-summary {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 1rem;
+}
+
+.ojt-summary article {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.85rem;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.65rem;
+  background: var(--app-surface);
+}
+
+.ojt-summary span {
+  color: var(--role-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.ojt-summary strong {
+  color: var(--role-panel-text);
+  font-size: 1.35rem;
+}
+
 .card-actions,
 .pagination {
   justify-content: flex-end;
@@ -196,7 +224,8 @@ button:disabled {
 
 @media (max-width: 1180px) {
   .workspace-grid,
-  .form-grid {
+  .form-grid,
+  .ojt-summary {
     grid-template-columns: 1fr;
   }
 }

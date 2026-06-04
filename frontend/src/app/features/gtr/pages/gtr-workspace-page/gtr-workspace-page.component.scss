@@ -501,6 +501,11 @@ td small {
   border-color: color-mix(in srgb, #dc2626 40%, var(--app-border-soft) 60%);
 }
 
+.advisor-card--ojt {
+  background: color-mix(in srgb, #0ea5e9 7%, var(--app-surface-soft) 93%);
+  border-color: color-mix(in srgb, #0ea5e9 42%, var(--app-border-soft) 58%);
+}
+
 .advisor-card__name-row {
   align-items: baseline;
   display: flex;
@@ -513,6 +518,14 @@ td small {
   color: #b91c1c;
   font-size: 0.76rem;
   margin: 0;
+}
+
+.select-item__tags {
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
 }
 
 // ── Modal de leads abandonados ───────────────────────────────

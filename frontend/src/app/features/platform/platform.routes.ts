@@ -181,19 +181,19 @@ export const PLATFORM_ROUTES: Routes = [
     path: 'asesor-ventas/plataforma',
     component: AsesorVentasWorkspacePageComponent,
     canActivate: [roleGuard],
-    data: { roles: ['ASESOR_VENTAS'] }
+    data: { roles: ['ASESOR_VENTAS', 'OJT'] }
   },
   {
     path: 'asesor-ventas/horario',
     component: AsesorVentasHorarioPageComponent,
     canActivate: [roleGuard],
-    data: { roles: ['ASESOR_VENTAS'] }
+    data: { roles: ['ASESOR_VENTAS', 'OJT'] }
   },
   {
     path: 'asesor-ventas/metricas',
     component: AsesorVentasMetricasPageComponent,
     canActivate: [roleGuard],
-    data: { roles: ['ASESOR_VENTAS'] }
+    data: { roles: ['ASESOR_VENTAS', 'OJT'] }
   },
   {
     path: 'backoffice',

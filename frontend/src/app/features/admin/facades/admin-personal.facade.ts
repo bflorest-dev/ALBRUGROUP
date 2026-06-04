@@ -387,6 +387,7 @@ export class AdminPersonalFacade implements OnDestroy {
     'MONITOR',
     'SUPERVISOR_VENTAS',
     'ASESOR_VENTAS',
+    'OJT',
     'SUPERVISOR_BACKOFFICE',
     'ASESOR_BACKOFFICE',
     'SUPERVISOR_GTR',

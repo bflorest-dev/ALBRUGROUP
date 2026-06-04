@@ -22,6 +22,14 @@
     >
       Bandeja capacitacion
     </button>
+    <button
+      type="button"
+      class="workspace-tab"
+      [class.workspace-tab--active]="facade.section() === 'ojt'"
+      (click)="facade.setSection('ojt')"
+    >
+      Seguimiento OJT
+    </button>
   </nav>
 
   <div class="workspace-grid">
@@ -138,6 +146,81 @@
           <p class="helper-text">No hay postulantes en capacitacion.</p>
         }
       }
+
+      @if (facade.section() === 'ojt') {
+        <div class="panel__header">
+          <div>
+            <span class="panel__eyebrow">OJT</span>
+            <h3>Cuentas de entrenamiento</h3>
+          </div>
+          <button type="button" class="ghost-button" (click)="facade.loadOjtUsers()">Recargar</button>
+        </div>
+
+        @if (facade.ojtErrorMessage()) {
+          <p class="form-message form-message--error">{{ facade.ojtErrorMessage() }}</p>
+        }
+
+        <form [formGroup]="facade.ojtFiltersForm" class="form-grid">
+          <label class="field-wide">
+            <span>Cuenta OJT</span>
+            <select formControlName="idEmpleado" (change)="facade.loadOjtEvents()">
+              <option [value]="0">
+                {{ facade.isLoadingOjtUsers() ? 'Cargando OJT...' : 'Seleccionar OJT' }}
+              </option>
+              @for (ojt of facade.ojtRows(); track ojt.empleadoId) {
+                <option [value]="ojt.empleadoId">{{ ojt.nombreCompleto }} - {{ ojt.dni }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            <span>Desde</span>
+            <input type="date" formControlName="fechaDesde" />
+          </label>
+          <label>
+            <span>Hasta</span>
+            <input type="date" formControlName="fechaHasta" />
+          </label>
+          <label>
+            <span>Evento</span>
+            <select formControlName="accion">
+              <option value="TIPIFICACION">TIPIFICACION</option>
+              <option value="">Todos</option>
+              <option value="ASIGNACION">ASIGNACION</option>
+              <option value="CONTACTO">CONTACTO</option>
+              <option value="GESTION_INICIADA">GESTION_INICIADA</option>
+            </select>
+          </label>
+          <label>
+            <span>Tipificacion</span>
+            <input type="text" formControlName="tipificacion" placeholder="Ej: PREVENTA" />
+          </label>
+          <label>
+            <span>Subtipificacion</span>
+            <input type="text" formControlName="subtipificacion" placeholder="Ej: COMPLETA" />
+          </label>
+        </form>
+
+        <div class="card-actions">
+          <button
+            type="button"
+            class="primary-button"
+            [disabled]="facade.isLoadingOjtEvents() || !facade.selectedOjtUser()"
+            (click)="facade.loadOjtEvents()"
+          >
+            {{ facade.isLoadingOjtEvents() ? 'Buscando...' : 'Buscar eventos' }}
+          </button>
+        </div>
+
+        @if (facade.selectedOjtUser(); as ojt) {
+          <div class="detail-summary">
+            <h4>{{ ojt.nombreCompleto }}</h4>
+            <p>{{ ojt.username }} - {{ ojt.email }}</p>
+          </div>
+        } @else {
+          <p class="helper-text">Selecciona una cuenta OJT para revisar su semana.</p>
+        }
+      }
     </section>
 
     <section class="panel">
@@ -148,6 +231,52 @@
         </div>
       </div>
 
+      @if (facade.section() === 'ojt') {
+        <div class="ojt-summary">
+          <article>
+            <span>Eventos</span>
+            <strong>{{ facade.ojtResumen().eventos }}</strong>
+          </article>
+          <article>
+            <span>Tipificaciones</span>
+            <strong>{{ facade.ojtResumen().tipificaciones }}</strong>
+          </article>
+          <article>
+            <span>Preventas</span>
+            <strong>{{ facade.ojtResumen().preventas }}</strong>
+          </article>
+          <article>
+            <span>Leads</span>
+            <strong>{{ facade.ojtResumen().leads }}</strong>
+          </article>
+        </div>
+
+        <div class="events-box">
+          <h4>Historial OJT</h4>
+          @if (facade.isLoadingOjtEvents()) {
+            <p class="helper-text">Cargando eventos OJT...</p>
+          } @else if (facade.filteredOjtEventos().length) {
+            @for (event of facade.filteredOjtEventos(); track event.id) {
+              <article class="event-item">
+                <strong>{{ toLabel(event.accion) }}</strong>
+                <span>{{ toDate(event.createdAt) }}</span>
+                <p>
+                  Lead {{ event.idLead }} -
+                  {{ event.tipificacion || '-' }}
+                  @if (event.subtipificacion) {
+                    / {{ event.subtipificacion }}
+                  }
+                </p>
+                @if (event.comentario) {
+                  <small>{{ event.comentario }}</small>
+                }
+              </article>
+            }
+          } @else {
+            <p class="helper-text">Sin eventos para los filtros seleccionados.</p>
+          }
+        </div>
+      } @else {
       @if (facade.detailErrorMessage()) {
         <p class="form-message form-message--error">{{ facade.detailErrorMessage() }}</p>
       }
@@ -263,6 +392,7 @@
             <p class="helper-text">Sin eventos registrados.</p>
           }
         </div>
+      }
       }
     </section>
   </div>

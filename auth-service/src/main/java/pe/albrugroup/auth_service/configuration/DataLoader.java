@@ -390,6 +390,7 @@ public class DataLoader {
 
         );
         saveRol("ASESOR_VENTAS", "Ventas - Gestion de leads asignados", asesorVentasPermisos);
+        saveRol("OJT", "On the job training - Gestion de leads asignados", asesorVentasPermisos);
 
         // SUPERVISOR_VENTAS
         Set<Permiso> supervisorVentasPermisos = Set.of(

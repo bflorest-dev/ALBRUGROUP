@@ -27,13 +27,14 @@ import java.util.stream.Collectors;
 public class MonitoringService {
 
     private static final PuestoTrabajo ROL_ASESOR = PuestoTrabajo.ASESOR_VENTAS;
+    private static final PuestoTrabajo ROL_OJT = PuestoTrabajo.OJT;
 
     private final PresenceService presenceService;
     private final ScheduleMonitoringClient scheduleMonitoringClient;
     private final AuthMonitoringClient authMonitoringClient;
 
     public Mono<List<AsesorGtrResponse>> listarAsesoresConectadosGtr(String authHeader, LocalDate fecha) {
-        return presenceService.listarUsuariosConectados(ROL_ASESOR)
+        return listarConectadosVentasYOjt()
                 .flatMap(conectados -> consultarEstados(authHeader, connectedIds(conectados), fecha)
                         .map(estados -> conectados.stream()
                                 .map(conectado -> toGtrResponse(conectado, estados.get(conectado.getEmpleadoId())))
@@ -42,7 +43,7 @@ public class MonitoringService {
     }
 
     public Mono<List<AsesorSupervisorResponse>> listarAsesoresConectadosSupervisor(String authHeader, LocalDate fecha) {
-        return presenceService.listarUsuariosConectados(ROL_ASESOR)
+        return listarConectadosVentasYOjt()
                 .flatMap(conectados -> consultarEstados(authHeader, connectedIds(conectados), fecha)
                         .map(estados -> conectados.stream()
                                 .map(conectado -> toSupervisorResponse(conectado, estados.get(conectado.getEmpleadoId())))
@@ -51,8 +52,8 @@ public class MonitoringService {
     }
 
     public Mono<List<EmpleadoEsperadoResponse>> listarAsesoresEsperadosNoConectados(String authHeader, LocalDate fecha) {
-        Mono<List<UsuarioRolResponse>> asesoresMono = authMonitoringClient.listarUsuariosActivosPorRol(authHeader, ROL_ASESOR);
-        Mono<List<ConnectedUserResponse>> conectadosMono = presenceService.listarUsuariosConectados(ROL_ASESOR);
+        Mono<List<UsuarioRolResponse>> asesoresMono = listarUsuariosActivosVentasYOjt(authHeader);
+        Mono<List<ConnectedUserResponse>> conectadosMono = listarConectadosVentasYOjt();
 
         return Mono.zip(asesoresMono, conectadosMono)
                 .flatMap(tuple -> {
@@ -70,6 +71,41 @@ public class MonitoringService {
                                     .sorted(Comparator.comparing(EmpleadoEsperadoResponse::getNombreCompleto, String.CASE_INSENSITIVE_ORDER))
                                     .toList());
                 });
+    }
+
+    private Mono<List<ConnectedUserResponse>> listarConectadosVentasYOjt() {
+        return Mono.zip(
+                presenceService.listarUsuariosConectados(ROL_ASESOR),
+                presenceService.listarUsuariosConectados(ROL_OJT)
+        ).map(tuple -> mergePorEmpleado(tuple.getT1(), tuple.getT2()));
+    }
+
+    private Mono<List<UsuarioRolResponse>> listarUsuariosActivosVentasYOjt(String authHeader) {
+        return Mono.zip(
+                authMonitoringClient.listarUsuariosActivosPorRol(authHeader, ROL_ASESOR),
+                authMonitoringClient.listarUsuariosActivosPorRol(authHeader, ROL_OJT)
+        ).map(tuple -> mergePorEmpleado(tuple.getT1(), tuple.getT2()));
+    }
+
+    private <T> List<T> mergePorEmpleado(List<T> left, List<T> right) {
+        Map<Long, T> porEmpleado = new LinkedHashMap<>();
+        for (T item : left) {
+            porEmpleado.put(extractEmpleadoId(item), item);
+        }
+        for (T item : right) {
+            porEmpleado.put(extractEmpleadoId(item), item);
+        }
+        return List.copyOf(porEmpleado.values());
+    }
+
+    private Long extractEmpleadoId(Object item) {
+        if (item instanceof ConnectedUserResponse conectado) {
+            return conectado.getEmpleadoId();
+        }
+        if (item instanceof UsuarioRolResponse usuario) {
+            return usuario.getEmpleadoId();
+        }
+        throw new IllegalArgumentException("Tipo de asesor no soportado");
     }
 
     private Mono<Map<Long, EstadoMonitorResponse>> consultarEstados(String authHeader, Set<Long> empleadoIds, LocalDate fecha) {

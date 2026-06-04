@@ -69,6 +69,7 @@ type AgendadoGroup = {
 type AdvisorOption = {
   empleadoId: number;
   nombreCompleto: string;
+  roles: string[];
   connected: boolean;
   operativo: boolean;
   disponibilidad?: string | null;
@@ -1093,12 +1094,13 @@ export class GtrWorkspaceFacade {
 
     let activeUsers: UsuarioResponse[] = [];
     try {
-      // Asesores de ventas y supervisores de ventas: ambos pueden recibir leads asignados.
-      const [asesores, supervisores] = await Promise.all([
+      // Asesores, supervisores y OJT pueden recibir leads asignados.
+      const [asesores, supervisores, ojt] = await Promise.all([
         firstValueFrom(this.preventaService.listarUsuariosActivosPorRol('ASESOR_VENTAS')),
-        firstValueFrom(this.preventaService.listarUsuariosActivosPorRol('SUPERVISOR_VENTAS'))
+        firstValueFrom(this.preventaService.listarUsuariosActivosPorRol('SUPERVISOR_VENTAS')),
+        firstValueFrom(this.preventaService.listarUsuariosActivosPorRol('OJT'))
       ]);
-      activeUsers = this.mergePorEmpleado(asesores, supervisores);
+      activeUsers = this.mergePorEmpleado(asesores, supervisores, ojt);
     } catch (error) {
       this.advisors.set([]);
       throw new Error(this.getErrorMessage(error, 'catalogo de asesores activos'));
@@ -1106,11 +1108,12 @@ export class GtrWorkspaceFacade {
 
     let connectedUsers: ConnectedUserResponse[] = [];
     try {
-      const [asesoresConectados, supervisoresConectados] = await Promise.all([
+      const [asesoresConectados, supervisoresConectados, ojtConectados] = await Promise.all([
         firstValueFrom(this.presenceService.listarUsuariosConectados('ASESOR_VENTAS')),
-        firstValueFrom(this.presenceService.listarUsuariosConectados('SUPERVISOR_VENTAS'))
+        firstValueFrom(this.presenceService.listarUsuariosConectados('SUPERVISOR_VENTAS')),
+        firstValueFrom(this.presenceService.listarUsuariosConectados('OJT'))
       ]);
-      connectedUsers = this.mergePorEmpleado(asesoresConectados, supervisoresConectados);
+      connectedUsers = this.mergePorEmpleado(asesoresConectados, supervisoresConectados, ojtConectados);
     } catch (error) {
       this.advisors.set(this.mapAdvisorOptions(activeUsers, []));
       throw new Error(this.getErrorMessage(error, 'presencia de asesores'));
@@ -1126,10 +1129,10 @@ export class GtrWorkspaceFacade {
     this.advisors.set(this.mapAdvisorOptions(activeUsers, connectedUsers, monitorUsers));
   }
 
-  /** Une dos listas de usuarios deduplicando por empleadoId (asesores + supervisores). */
-  private mergePorEmpleado<T extends { empleadoId: number }>(left: T[], right: T[]): T[] {
+  /** Une listas de usuarios deduplicando por empleadoId. */
+  private mergePorEmpleado<T extends { empleadoId: number }>(...lists: T[][]): T[] {
     const porId = new Map<number, T>();
-    for (const item of [...left, ...right]) {
+    for (const item of lists.flat()) {
       porId.set(item.empleadoId, item);
     }
     return [...porId.values()];
@@ -1149,6 +1152,7 @@ export class GtrWorkspaceFacade {
         return {
           empleadoId: user.empleadoId,
           nombreCompleto: user.nombreCompleto,
+          roles: user.roles ?? presence?.roles ?? [],
           connected: !!presence,
           operativo: monitor?.operativo ?? false,
           estadoSchedule: monitor?.estadoSchedule ?? null,
@@ -1161,8 +1165,13 @@ export class GtrWorkspaceFacade {
         (left, right) =>
           Number(right.operativo) - Number(left.operativo) ||
           Number(right.connected) - Number(left.connected) ||
+          Number(this.isOjtAdvisor(left)) - Number(this.isOjtAdvisor(right)) ||
           left.nombreCompleto.localeCompare(right.nombreCompleto)
       );
+  }
+
+  isOjtAdvisor(advisor: Pick<AdvisorOption, 'roles'>): boolean {
+    return advisor.roles?.includes('OJT') ?? false;
   }
 
   async nextPage(): Promise<void> {

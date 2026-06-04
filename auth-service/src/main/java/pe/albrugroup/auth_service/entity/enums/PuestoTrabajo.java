@@ -16,6 +16,7 @@ public enum PuestoTrabajo {
     MONITOR("monitor"),
     SUPERVISOR_VENTAS("supsales"),
     ASESOR_VENTAS("sales"),
+    OJT("ojt"),
     SUPERVISOR_BACKOFFICE("supback"),
     ASESOR_BACKOFFICE("back"),
     SUPERVISOR_GTR("supgtr"),

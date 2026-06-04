@@ -117,6 +117,7 @@ INSERT INTO seed_roles (nombre, descripcion) VALUES
 ('ASESOR_GTR', 'GTR - Asignacion y seguimiento de leads'),
 ('SUPERVISOR_GTR', 'GTR - Supervision de asignacion de leads'),
 ('ASESOR_VENTAS', 'Ventas - Gestion de leads asignados'),
+('OJT', 'On the job training - Gestion de leads asignados'),
 ('SUPERVISOR_VENTAS', 'Ventas - Supervision de leads asignados'),
 ('MONITOR', 'Monitoreo - Consulta transversal de la operacion'),
 ('ASESOR_BACKOFFICE', 'Backoffice - Gestion operativa comercial'),
@@ -386,6 +387,11 @@ INSERT INTO seed_role_permiso (rol_nombre, permiso_nombre) VALUES
 ('CONTADOR', 'READ_ASISTENCIAS'),
 ('CONTADOR', 'READ_ASISTENCIAS_CUMPLIMIENTO'),
 ('CONTADOR', 'UPDATE_ASISTENCIAS');
+
+INSERT INTO seed_role_permiso (rol_nombre, permiso_nombre)
+SELECT 'OJT', permiso_nombre
+FROM seed_role_permiso
+WHERE rol_nombre = 'ASESOR_VENTAS';
 
 DELETE FROM rol_permiso rp
 USING roles r

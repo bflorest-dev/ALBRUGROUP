@@ -658,11 +658,18 @@
 
     <div class="advisor-list">
       @for (advisor of facade.advisorsView(); track advisor.empleadoId) {
-        <article class="advisor-card" [class.advisor-card--abandono]="advisor.esAbandonador">
+        <article
+          class="advisor-card"
+          [class.advisor-card--abandono]="advisor.esAbandonador"
+          [class.advisor-card--ojt]="facade.isOjtAdvisor(advisor)"
+        >
           <span class="advisor-card__dot {{ facade.advisorDotClass(advisor) }}"></span>
           <div class="advisor-card__body">
             <div class="advisor-card__name-row">
               <strong>{{ advisor.nombreCompleto | uppercase }}</strong>
+              @if (facade.isOjtAdvisor(advisor)) {
+                <p-tag severity="info" value="OJT" />
+              }
               @if (advisor.esAbandonador) {
                 <p-tag
                   severity="danger"
@@ -1032,10 +1039,15 @@
           <ng-template #item let-advisor>
             <div class="select-item select-item--advisor">
               <strong>{{ advisor.nombreCompleto | uppercase }}</strong>
-              <p-tag
-                [severity]="advisorSeverity(advisor.disponibilidad)"
-                [value]="facade.display(advisor.disponibilidad)"
-              />
+              <span class="select-item__tags">
+                @if (facade.isOjtAdvisor(advisor)) {
+                  <p-tag severity="info" value="OJT" />
+                }
+                <p-tag
+                  [severity]="advisorSeverity(advisor.disponibilidad)"
+                  [value]="facade.display(advisor.disponibilidad)"
+                />
+              </span>
             </div>
           </ng-template>
         </p-select>

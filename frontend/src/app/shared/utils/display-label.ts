@@ -1,6 +1,7 @@
 const LABEL_OVERRIDES: Record<string, string> = {
   RRHH: 'RRHH',
   ASESOR_VENTAS: 'Asesor de Ventas',
+  OJT: 'OJT',
   SUPERVISOR_VENTAS: 'Supervisor de Ventas',
   ASESOR_BACKOFFICE: 'Backoffice',
   SUPERVISOR_BACKOFFICE: 'Supervisor Backoffice',
