@@ -1191,7 +1191,7 @@
           inputmode="numeric"
           placeholder="Ej: 987654321"
           [value]="facade.searchQuery()"
-          (input)="facade.setSearchQuery($any($event.target).value.replace(/\D/g, '').slice(0, 9))"
+          (input)="facade.setSearchQuery($any($event.target).value)"
           (keydown.enter)="facade.executeSearch()"
         />
       </label>
@@ -1205,6 +1205,12 @@
         (click)="facade.executeSearch()"
       ></button>
     </div>
+
+    @if (facade.searchLookup()?.mensajeUsuario; as searchLookupMessage) {
+      <div class="search-feedback">
+        <p-message severity="warn" [text]="searchLookupMessage" />
+      </div>
+    }
 
     <p-table
       [value]="facade.searchResults()"

@@ -577,6 +577,7 @@ label {
 
 .search-form { align-items: flex-end; display: flex; gap: .75rem; margin-bottom: 1rem; }
 .search-form > label { flex: 1; }
+.search-feedback { margin-bottom: 1rem; }
 
 .event-detail { align-items: center; display: flex; gap: .4rem; justify-content: space-between; }
 .event-detail__summary { flex: 1 1 auto; min-width: 0; }
@@ -659,4 +660,3 @@ label {
   }
 
 }
-

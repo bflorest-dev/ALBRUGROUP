@@ -40,6 +40,7 @@ import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorVentasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrMetricasResponse;
+import pe.albrugroup.lead_service.entity.response.LeadGtrLookupResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 import pe.albrugroup.lead_service.entity.response.InternetResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPostventaResponse;
@@ -144,6 +145,26 @@ public class LeadService {
             aplicarAlertasRegistrosDia(leads.getContent(), rangoDia.inicio(), rangoDia.fin());
         }
         return PageResponse.from(leads);
+    }
+
+    public LeadGtrLookupResponse buscarContextoLeadGtr(String lead) {
+        String numeroLead = normalizarLead(lead);
+        if (numeroLead == null || numeroLead.isBlank()) {
+            throw new BadRequestException("El numero del lead es obligatorio");
+        }
+
+        return leadRepository.findFirstByLeadOrderByLastEntryAtDescIdDesc(numeroLead)
+                .map(this::mapearContextoLeadGtr)
+                .orElseGet(() -> new LeadGtrLookupResponse(
+                        false,
+                        null,
+                        null,
+                        numeroLead,
+                        null,
+                        null,
+                        false,
+                        "No encontramos ese lead en el sistema."
+                ));
     }
 
     /**
@@ -1456,6 +1477,35 @@ public class LeadService {
 
     private String normalizarLead(String lead) {
         return lead == null ? null : lead.trim();
+    }
+
+    private LeadGtrLookupResponse mapearContextoLeadGtr(Lead lead) {
+        Etapa etapaActual = lead.getEtapa();
+        boolean puedeGestionarseEnGtr = etapaActual == Etapa.PREVENTA;
+
+        return new LeadGtrLookupResponse(
+                true,
+                lead.getId(),
+                lead.getPrefijo(),
+                lead.getLead(),
+                etapaActual,
+                lead.getEstado(),
+                puedeGestionarseEnGtr,
+                construirMensajeContextoGtr(etapaActual)
+        );
+    }
+
+    private String construirMensajeContextoGtr(Etapa etapaActual) {
+        if (etapaActual == null || etapaActual == Etapa.PREVENTA) {
+            return null;
+        }
+
+        return switch (etapaActual) {
+            case VENTA -> "Este lead ya paso a Validaciones y no puede gestionarse desde GTR por el momento.";
+            case POSTVENTA -> "Este lead ya paso a Postventa y no puede gestionarse desde GTR por el momento.";
+            case COBRANZA -> "Este lead ya paso a Cobranza y no puede gestionarse desde GTR por el momento.";
+            case PREVENTA -> null;
+        };
     }
 
     private Map<Long, Instant> obtenerFechasAsignacion(List<Lead> leads) {

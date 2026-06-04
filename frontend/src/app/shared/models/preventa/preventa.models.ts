@@ -179,6 +179,17 @@ export interface LeadGtrMetricasResponse {
   preventas: number;
 }
 
+export interface LeadGtrLookupResponse {
+  existe: boolean;
+  idLead?: number | null;
+  prefijo?: string | null;
+  lead?: string | null;
+  etapaActual?: Etapa | string | null;
+  estadoActual?: EstadoSeguimiento | string | null;
+  puedeGestionarseEnGtr: boolean;
+  mensajeUsuario?: string | null;
+}
+
 export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   lastEntryAt?: string | null;
   nombreCampana?: string | null;

@@ -21,6 +21,7 @@ import {
   Etapa,
   EventoResponse,
   LeadAgendadoGtrResponse,
+  LeadGtrLookupResponse,
   LeadGtrResponse,
   LeadGtrMetricasResponse,
   LeadIntakeMasivoExcelResponse,
@@ -149,6 +150,7 @@ export class GtrWorkspaceFacade {
   readonly activeEventComment = signal<string | null>(null);
   readonly searchQuery = signal('');
   readonly searchResults = signal<LeadGtrResponse[]>([]);
+  readonly searchLookup = signal<LeadGtrLookupResponse | null>(null);
   readonly searchTotalElements = signal(0);
   readonly searchTotalPages = signal(0);
   readonly searchPageNumber = signal(0);
@@ -694,6 +696,7 @@ export class GtrWorkspaceFacade {
     }
     this.searchQuery.set('');
     this.searchResults.set([]);
+    this.searchLookup.set(null);
     this.searchTotalElements.set(0);
     this.searchTotalPages.set(0);
     this.searchPageNumber.set(0);
@@ -702,7 +705,7 @@ export class GtrWorkspaceFacade {
   }
 
   setSearchQuery(value: string): void {
-    const normalized = (value ?? '').replace(/\D/g, '').slice(0, 9);
+    const normalized = this.normalizeLeadSearchInput(value);
     this.searchQuery.set(normalized);
   }
 
@@ -734,6 +737,7 @@ export class GtrWorkspaceFacade {
     }
     this.isSearching.set(true);
     this.clearMessages();
+    this.searchLookup.set(null);
     try {
       const page = await firstValueFrom(
         this.preventaService.buscarLeadGtr(value, {
@@ -747,6 +751,10 @@ export class GtrWorkspaceFacade {
       this.searchTotalElements.set(page.totalElements);
       this.searchTotalPages.set(page.totalPages);
       this.searchExecuted.set(true);
+      if (page.content.length === 0 && this.searchPageNumber() === 0) {
+        const lookup = await firstValueFrom(this.preventaService.buscarContextoLeadGtr(value));
+        this.searchLookup.set(lookup.existe && !lookup.puedeGestionarseEnGtr ? lookup : null);
+      }
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo buscar el lead.'));
     } finally {
@@ -771,6 +779,7 @@ export class GtrWorkspaceFacade {
     this.selectedEventAnomalyFilter.set(null);
     this.searchQuery.set('');
     this.searchResults.set([]);
+    this.searchLookup.set(null);
     this.searchTotalElements.set(0);
     this.searchTotalPages.set(0);
     this.searchPageNumber.set(0);
@@ -1454,6 +1463,14 @@ export class GtrWorkspaceFacade {
 
   private normalizeLookup(value?: string | null): string {
     return (value ?? '').trim().toUpperCase();
+  }
+
+  private normalizeLeadSearchInput(value?: string | null): string {
+    const digits = (value ?? '').replace(/\D/g, '');
+    if (!digits) {
+      return '';
+    }
+    return digits.length > 9 ? digits.slice(-9) : digits;
   }
 
   private buildMasivoExcelFailuresText(rows: LeadIntakeMasivoExcelResultadoResponse[]): string {

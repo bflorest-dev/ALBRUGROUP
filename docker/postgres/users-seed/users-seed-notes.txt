@@ -2,12 +2,12 @@ Usuarios de prueba del users-seeder
 Password inicial: pendiente de reset/inicialización
 
 admin@albru.admin.pe
+albruadminorg
 albruadminpe
-
 -------------------------------------------------------(NIGHT)
 M71000027D@albru.supsales.pe
 
-
+MJv8SvamNw
 
 (MORNING)
 
@@ -19,3 +19,14 @@ p#zDR_5vyX
 
 Y71000025B@albru.supsales.pe
 mR8sZ7qp%j
+
+D71000005T@albru.rrhh.pe
+Bwh5QqkzpP
+
+(AFTERNOON)
+
+C71000042U@albru.gtr.pe
+jBkX&gJ6@#
+
+
+Lead reales que se cuentan, debe contar los repetidor, es decir 

@@ -26,6 +26,7 @@ import java.util.Optional;
 public interface LeadRepository extends JpaRepository<Lead, Long> {
 
     Optional<Lead> findByPrefijoAndLead(String prefijo, String lead);
+    Optional<Lead> findFirstByLeadOrderByLastEntryAtDescIdDesc(String lead);
     Optional<Lead> findByIdAndIdAsesorAsignadoAndEtapa(Long id, Long idAsesorAsignado, Etapa etapa);
     Optional<Lead> findByIdAndIdAsesorAsignadoAndEtapaIn(Long id, Long idAsesorAsignado, Collection<Etapa> etapas);
     @Lock(LockModeType.PESSIMISTIC_WRITE)
