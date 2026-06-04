@@ -593,6 +593,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return `${row.prefijo} ${row.lead}`.trim();
   }
 
+  protected isMine(row: LeadVentaResponse): boolean {
+    const empleadoId = this.sessionService.getSession()?.empleadoId;
+    return !!empleadoId && row.idAsesorAsignado === empleadoId;
+  }
+
   protected estadoSeverity(estado: string | null | undefined): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
     if (estado === 'GESTIONADO') return 'success';
     if (estado === 'EN_GESTION') return 'warn';

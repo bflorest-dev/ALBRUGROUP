@@ -105,6 +105,12 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
 
     Optional<Evento> findTopByIdLeadAndAccionOrderByCreatedAtDesc(Long idLead, Accion accion);
 
+    Optional<Evento> findTopByIdLeadAndIdActorAndAccionInOrderByCreatedAtDesc(
+            Long idLead,
+            Long idActor,
+            Collection<Accion> acciones
+    );
+
     boolean existsByIdLeadAndIdActorAndAccionIn(Long idLead, Long idActor, Collection<Accion> acciones);
 
     @Query("""

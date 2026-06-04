@@ -350,7 +350,7 @@ public class LeadService {
         OperationalDateTime.InstantRange rango = buscandoPorLead
                 ? new OperationalDateTime.InstantRange(Instant.EPOCH, Instant.ofEpochSecond(253402300799L))
                 : OperationalDateTime.dayRange(null);
-        Page<LeadResponse> leads = leadRepository.listarLeadsDisponiblesPorEtapa(
+        Page<LeadResponse> leads = leadRepository.listarBandejaVentaDelDia(
                 Etapa.VENTA,
                 leadPattern,
                 rango.inicio(),
@@ -1139,7 +1139,9 @@ public class LeadService {
                             lead.getNombreAsesorAsignado(),
                             requiereConfirmarReasignacion,
                             requiereConfirmarGestionPrevia,
-                            leadEnGestion
+                            leadEnGestion,
+                            lead.getId(),
+                            idAsesorAsignado
                     )
             );
         }
@@ -1159,12 +1161,20 @@ public class LeadService {
             String nombreAsesor,
             boolean requiereConfirmarReasignacion,
             boolean requiereConfirmarGestionPrevia,
-            boolean requiereConfirmarLeadEnGestion
+            boolean requiereConfirmarLeadEnGestion,
+            Long idLead,
+            Long idAsesorAsignado
     ) {
         Map<String, Object> details = detalleConflictoAsignacion(tipo, idAsesor, nombreAsesor);
         details.put("requiereConfirmarReasignacion", requiereConfirmarReasignacion);
         details.put("requiereConfirmarGestionPrevia", requiereConfirmarGestionPrevia);
         details.put("requiereConfirmarLeadEnGestion", requiereConfirmarLeadEnGestion);
+        if (requiereConfirmarGestionPrevia && idLead != null && idAsesorAsignado != null) {
+            eventoRepository
+                    .findTopByIdLeadAndIdActorAndAccionInOrderByCreatedAtDesc(idLead, idAsesorAsignado, ACCIONES_GESTION_LEAD)
+                    .map(Evento::getCreatedAt)
+                    .ifPresent(ultimaGestionAt -> details.put("ultimaGestionAt", ultimaGestionAt));
+        }
         return details;
     }
 

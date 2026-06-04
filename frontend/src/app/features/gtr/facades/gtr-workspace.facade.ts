@@ -91,11 +91,13 @@ type PendingReassignment = {
   requiresInManagement: boolean;
   requiresReassignment: boolean;
   requiresPreviousManagement: boolean;
+  previousManagementAt?: string | null;
 };
 
 type AssignmentConflictDetails = {
   tipo?: string;
   nombreAsesorActual?: string | null;
+  ultimaGestionAt?: string | null;
   requiereConfirmarLeadEnGestion?: boolean;
   requiereConfirmarReasignacion?: boolean;
   requiereConfirmarGestionPrevia?: boolean;
@@ -1500,7 +1502,8 @@ export class GtrWorkspaceFacade {
       details?.nombreAsesorActual || 'otro asesor',
       requiresInManagement,
       requiresReassignment,
-      requiresPreviousManagement
+      requiresPreviousManagement,
+      details?.ultimaGestionAt ?? null
     );
     return true;
   }
@@ -1511,7 +1514,8 @@ export class GtrWorkspaceFacade {
     currentAdvisorName: string,
     requiresInManagement: boolean,
     requiresReassignment: boolean,
-    requiresPreviousManagement: boolean
+    requiresPreviousManagement: boolean,
+    previousManagementAt: string | null
   ): void {
     this.errorMessage.set(null);
     this.pendingReassignment.set({
@@ -1520,7 +1524,8 @@ export class GtrWorkspaceFacade {
       currentAdvisorName,
       requiresInManagement,
       requiresReassignment,
-      requiresPreviousManagement
+      requiresPreviousManagement,
+      previousManagementAt
     });
     this.activeDialog.set('reassign-confirm');
   }

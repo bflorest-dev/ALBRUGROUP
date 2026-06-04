@@ -69,7 +69,9 @@ export class EmployeeAccessPanelComponent {
    */
   protected readonly filteredRows = computed<EmployeeRow[]>(() => {
     const role = this.selectedRole();
-    const groups = role ? this.activeGroups().filter((group) => group.role === role) : this.activeGroups();
+    const groups = role
+      ? this.activeGroups().filter((group) => group.role === role)
+      : this.activeGroups().filter((group) => group.role !== 'OJT');
     return groups.flatMap((group) => group.employees.map((employee) => ({ ...employee, role: group.role })));
   });
 

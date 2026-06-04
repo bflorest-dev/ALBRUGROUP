@@ -133,16 +133,24 @@
           <td><p-tag severity="secondary" [value]="display(row.totalAsignaciones ?? 0)" /></td>
           <td>
             @if (section() === 'plataforma') {
-              <button
-                pButton
-                type="button"
-                icon="pi pi-user-plus"
-                label="Asignarmelo"
-                size="small"
-                [disabled]="!!row.idAsesorAsignado || isSaving() || !canMutateOperationalData()"
-                [loading]="isSaving()"
-                (click)="tomarLead(row)"
-              ></button>
+              @if (row.idAsesorAsignado) {
+                <p-tag
+                  [severity]="isMine(row) ? 'info' : 'secondary'"
+                  [icon]="isMine(row) ? 'pi pi-user' : 'pi pi-lock'"
+                  [value]="isMine(row) ? 'Tuyo' : 'Tomado'"
+                />
+              } @else {
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-user-plus"
+                  label="Asignarmelo"
+                  size="small"
+                  [disabled]="isSaving() || !canMutateOperationalData()"
+                  [loading]="isSaving()"
+                  (click)="tomarLead(row)"
+                ></button>
+              }
             } @else {
               <button
                 pButton

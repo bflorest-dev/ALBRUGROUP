@@ -1097,7 +1097,10 @@
           <p class="reassign-problem">
             <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
             <span>
-              {{ pending.advisor.nombreCompleto | uppercase }} ya gestiono o tipifico este Lead anteriormente.
+              {{ pending.advisor.nombreCompleto | uppercase }} ya gestiono este Lead anteriormente
+              @if (pending.previousManagementAt) {
+                ({{ pending.previousManagementAt | date: 'dd/MM/yyyy' }})
+              }.
             </span>
           </p>
         }
