@@ -1,12 +1,15 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, firstValueFrom } from 'rxjs';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
+import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { PaginatorModule } from 'primeng/paginator';
@@ -16,6 +19,7 @@ import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
+import { ToastModule } from 'primeng/toast';
 import { SessionService } from '../../../../core/services/session.service';
 import { OperationalGateService } from '../../../../core/services/operational-gate.service';
 import { EstadoAsistencia } from '../../../../shared/models/schedule/estado-asistencia';
@@ -34,15 +38,20 @@ import { BackofficeLeadService } from '../../services/backoffice-lead.service';
 
 type BackofficeSection = 'plataforma' | 'gestion';
 type VisualLeadVenta = LeadVentaResponse & { isNew?: boolean };
+type AdicionalSeleccionado = { idAdicional: number; cantidad: number };
+type ToastSeverity = 'success' | 'info' | 'warn' | 'error';
 
 @Component({
   selector: 'app-backoffice-workspace-page',
   imports: [
+    FormsModule,
     ReactiveFormsModule,
     DatePipe,
     ButtonModule,
     CardModule,
+    ConfirmDialogModule,
     DialogModule,
+    InputNumberModule,
     InputTextModule,
     MessageModule,
     PaginatorModule,
@@ -51,8 +60,10 @@ type VisualLeadVenta = LeadVentaResponse & { isNew?: boolean };
     TableModule,
     TabsModule,
     TagModule,
-    TextareaModule
+    TextareaModule,
+    ToastModule
   ],
+  providers: [MessageService, ConfirmationService],
   templateUrl: './backoffice-workspace-page.component.html',
   styleUrl: './backoffice-workspace-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -66,6 +77,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private readonly sessionService = inject(SessionService);
   private readonly leadService = inject(BackofficeLeadService);
   private readonly realtimeService = inject(LeadRealtimeService);
+  private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
   private readonly realtimeSubscription = new Subscription();
   private readonly newRowTimers = new Map<number, number>();
   private initialized = false;
@@ -78,8 +91,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly isLoading = signal(false);
   protected readonly isReconciling = signal(false);
   protected readonly isSaving = signal(false);
-  protected readonly successMessage = signal<string | null>(null);
-  protected readonly errorMessage = signal<string | null>(null);
   protected readonly plataformaRows = signal<VisualLeadVenta[]>([]);
   protected readonly gestionRows = signal<VisualLeadVenta[]>([]);
   protected readonly detail = signal<LeadDetalleResponse | null>(null);
@@ -94,6 +105,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly planes = signal<PlanResponse[]>([]);
   protected readonly promociones = signal<PromocionComercialResponse[]>([]);
   protected readonly adicionales = signal<AdicionalResponse[]>([]);
+  protected readonly adicionalesSeleccionados = signal<AdicionalSeleccionado[]>([]);
+  protected readonly nuevoAdicionalId = signal<number | null>(null);
+  private readonly adicionalesDirty = signal(false);
   protected readonly detailDialogOpen = signal(false);
   protected readonly activeDataTab = signal('datos');
   protected readonly showComment = signal(false);
@@ -140,8 +154,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   protected readonly ofertaForm = this.fb.group({
     idPlan: [0],
-    idPromocionInterna: [0],
-    adicionales: ['']
+    idPromocionInterna: [0]
   });
 
   protected readonly tipificacionForm = this.fb.group({
@@ -165,8 +178,42 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly requiresInstallDate = computed(() => this.selectedSubtipificacion()?.etapaCambio === 'POSTVENTA');
   protected readonly planOptions = computed(() => [{ id: 0, nombre: 'Sin plan' }, ...this.planes()]);
   protected readonly promocionOptions = computed(() => [{ id: 0, reglaComercial: 'Sin promocion' }, ...this.promociones()]);
+
+  // Regla de negocio (backend): el BackOffice solo puede registrar la oferta comercial
+  // una vez por ciclo de VENTA. Se detecta replicando la validacion del backend sobre
+  // el historial de eventos del lead (orden descendente, se corta al salir de VENTA).
+  protected readonly ofertaYaRegistrada = computed(() => {
+    for (const evento of this.eventos()) {
+      if (evento.etapa !== 'VENTA') {
+        break;
+      }
+      if (evento.accion === 'ACTUALIZACION_OFERTA_COMERCIAL') {
+        return true;
+      }
+    }
+    return false;
+  });
+
+  protected readonly adicionalDisponibles = computed(() => {
+    const seleccionadosIds = new Set(this.adicionalesSeleccionados().map((item) => item.idAdicional));
+    return this.adicionales().filter((adicional) => !seleccionadosIds.has(adicional.id));
+  });
+
+  protected readonly adicionalesSeleccionadosView = computed(() => {
+    const catalogo = new Map(this.adicionales().map((adicional) => [adicional.id, adicional]));
+    return this.adicionalesSeleccionados().map((item) => {
+      const adicional = catalogo.get(item.idAdicional);
+      return {
+        idAdicional: item.idAdicional,
+        cantidad: item.cantidad,
+        nombre: adicional?.nombre ?? `Adicional #${item.idAdicional}`,
+        precioUnitario: adicional?.precioUnitario ?? null
+      };
+    });
+  });
+
   protected readonly hasUnsavedDataChanges = computed(
-    () => this.datosForm.dirty || this.direccionForm.dirty || this.ofertaForm.dirty
+    () => this.datosForm.dirty || this.direccionForm.dirty || this.ofertaForm.dirty || this.adicionalesDirty()
   );
 
   constructor() {
@@ -223,13 +270,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
     this.initializeInFlight = true;
     this.isLoading.set(true);
-    this.clearMessages();
     try {
       await Promise.all([this.refreshPlanes(), this.refreshPlataforma(false), this.refreshGestion(false)]);
       this.initialized = true;
       this.operationalGate.markActivated();
     } catch (error) {
-      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar BACKOFFICE.'));
+      this.notify('error', this.getErrorMessage(error, 'No se pudo cargar BACKOFFICE.'));
     } finally {
       this.initializeInFlight = false;
       this.isLoading.set(false);
@@ -255,11 +301,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return;
     }
     if (this.hasUnsavedDataChanges() && this.selectedLeadId() !== idLead) {
-      this.errorMessage.set('Guarda los cambios pendientes antes de gestionar otro lead.');
+      this.notify('warn', 'Guarda los cambios pendientes antes de gestionar otro lead.');
       return;
     }
     this.selectedLeadId.set(idLead);
-    this.clearMessages();
     try {
       const detail = await firstValueFrom(this.leadService.obtenerDetalle(idLead));
       this.detail.set(detail);
@@ -268,17 +313,17 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       try {
         await this.refreshTipificationCatalog();
       } catch {
-        this.errorMessage.set('Detalle abierto, pero no se pudo cargar el catalogo de tipificaciones de VENTA.');
+        this.notify('warn', 'Detalle abierto, pero no se pudo cargar el catalogo de tipificaciones de VENTA.');
       }
       this.detailDialogOpen.set(true);
     } catch (error) {
-      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo abrir el detalle.'));
+      this.notify('error', this.getErrorMessage(error, 'No se pudo abrir el detalle.'));
     }
   }
 
   protected requestCloseDetail(): void {
     if (this.hasUnsavedDataChanges()) {
-      this.errorMessage.set('Hay datos sin guardar. Guarda los cambios antes de cerrar.');
+      this.notify('warn', 'Hay datos sin guardar. Guarda los cambios antes de cerrar.');
       this.detailDialogOpen.set(true);
       return;
     }
@@ -293,7 +338,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     await this.saveAction(() => this.leadService.registrarContacto(detail.id), 'Contacto registrado.', () => this.reconcile(detail.id));
   }
 
-  protected async guardarCambiosLead(): Promise<void> {
+  protected guardarCambiosLead(): void {
     if (!this.ensureCanMutate()) {
       return;
     }
@@ -302,68 +347,92 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const tasks: { label: string; action: () => Promise<void>; form: { markAsPristine: () => void } }[] = [];
+    // La oferta comercial solo se puede registrar una vez por ciclo de VENTA:
+    // si el usuario va a registrarla por primera vez, confirmamos antes de enviar.
+    if (this.isOfertaChanged() && !this.ofertaYaRegistrada()) {
+      this.confirmationService.confirm({
+        header: 'Registrar plan ofrecido',
+        message:
+          'Vas a registrar el plan ofrecido. Solo se permite una vez y despues no podras cambiarlo. Revisa el plan, la promocion y los adicionales. ¿Quieres registrarlo?',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Si, registrar',
+        rejectLabel: 'Revisar de nuevo',
+        acceptButtonStyleClass: 'p-button-warning',
+        rejectButtonStyleClass: 'p-button-text',
+        accept: () => void this.performSave(detail)
+      });
+      return;
+    }
+
+    void this.performSave(detail);
+  }
+
+  private async performSave(detail: LeadDetalleResponse): Promise<void> {
+    const tasks: { label: string; action: () => Promise<void>; markPristine: () => void }[] = [];
     if (this.datosForm.dirty) {
       if (this.datosForm.invalid) {
-        this.errorMessage.set('Datos Preventa incompleto: tipo y documento son obligatorios.');
+        this.notify('warn', 'Datos Preventa incompleto: tipo y documento son obligatorios.');
         return;
       }
       tasks.push({
         label: 'Datos Preventa',
-        form: this.datosForm,
+        markPristine: () => this.datosForm.markAsPristine(),
         action: () => firstValueFrom(this.leadService.actualizarDatosPreventa(detail.id, this.cleanObject(this.datosForm.getRawValue())))
       });
     }
     if (this.direccionForm.dirty) {
       if (this.direccionForm.invalid) {
-        this.errorMessage.set('Direccion incompleta: ubigeo, direccion, latitud y longitud son obligatorios.');
+        this.notify('warn', 'Direccion incompleta: ubigeo, direccion, latitud y longitud son obligatorios.');
         return;
       }
       tasks.push({
         label: 'Direccion',
-        form: this.direccionForm,
+        markPristine: () => this.direccionForm.markAsPristine(),
         action: () => firstValueFrom(this.leadService.actualizarDireccion(detail.id, this.cleanObject(this.direccionForm.getRawValue())))
       });
     }
-    if (this.ofertaForm.dirty) {
+    if (this.isOfertaChanged()) {
       const raw = this.ofertaForm.getRawValue();
+      const adicionales = this.adicionalesSeleccionados();
       tasks.push({
         label: 'Oferta Comercial',
-        form: this.ofertaForm,
+        markPristine: () => {
+          this.ofertaForm.markAsPristine();
+          this.adicionalesDirty.set(false);
+        },
         action: () =>
           firstValueFrom(
             this.leadService.actualizarOfertaComercial(detail.id, {
               idPlan: raw.idPlan || null,
               idPromocionInterna: raw.idPromocionInterna || null,
-              adicionales: this.parseAdditionals(raw.adicionales)
+              adicionales: adicionales.length ? adicionales : null
             })
           )
       });
     }
     if (!tasks.length) {
-      this.successMessage.set('No hay cambios pendientes por guardar.');
+      this.notify('info', 'No hay cambios pendientes por guardar.');
       return;
     }
 
     this.isSaving.set(true);
-    this.clearMessages();
     const saved: string[] = [];
     const failed: string[] = [];
     try {
       for (const task of tasks) {
         try {
           await task.action();
-          task.form.markAsPristine();
+          task.markPristine();
           saved.push(task.label);
         } catch (error) {
           failed.push(`${task.label}: ${this.getErrorMessage(error, 'No se pudo guardar')}`);
         }
       }
       if (failed.length) {
-        this.errorMessage.set(`Guardado parcial. OK: ${saved.join(', ') || 'ninguno'}. Fallo: ${failed.join(' | ')}`);
-        return;
+        this.notify('error', `Guardado parcial. OK: ${saved.join(', ') || 'ninguno'}. Fallo: ${failed.join(' | ')}`);
+      } else {
+        this.notify('success', `Guardado: ${saved.join(', ')}.`);
       }
-      this.successMessage.set(`Guardado: ${saved.join(', ')}.`);
       await this.reconcile(detail.id);
     } finally {
       this.isSaving.set(false);
@@ -375,20 +444,20 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return;
     }
     if (this.hasUnsavedDataChanges()) {
-      this.errorMessage.set('Guarda los cambios pendientes antes de tipificar.');
+      this.notify('warn', 'Guarda los cambios pendientes antes de tipificar.');
       return;
     }
     if (!this.catalogo()) {
-      this.errorMessage.set('No se pudo cargar el catalogo de tipificaciones de VENTA.');
+      this.notify('error', 'No se pudo cargar el catalogo de tipificaciones de VENTA.');
       return;
     }
     const detail = this.detail();
     if (!detail || this.tipificacionForm.invalid) {
-      this.errorMessage.set('Selecciona tipificacion y subtipificacion.');
+      this.notify('warn', 'Selecciona tipificacion y subtipificacion.');
       return;
     }
     if (this.requiresInstallDate() && !this.tipificacionForm.controls.fechaInstalacion.value) {
-      this.errorMessage.set('La fecha de instalacion es obligatoria para pasar a POSTVENTA.');
+      this.notify('warn', 'La fecha de instalacion es obligatoria para pasar a POSTVENTA.');
       return;
     }
     const raw = this.tipificacionForm.getRawValue();
@@ -412,7 +481,40 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (!this.canDisplayOperationalData()) {
       return;
     }
+    // Cambiar de plan puede cambiar de proveedor: los adicionales seleccionados dejan de ser validos.
+    if (this.adicionalesSeleccionados().length) {
+      this.adicionalesSeleccionados.set([]);
+      this.adicionalesDirty.set(true);
+    }
+    this.nuevoAdicionalId.set(null);
     await this.refreshOfferCatalogs(this.ofertaForm.controls.idPlan.value);
+  }
+
+  protected agregarAdicional(): void {
+    const id = this.nuevoAdicionalId();
+    if (!id) {
+      return;
+    }
+    if (this.adicionalesSeleccionados().some((item) => item.idAdicional === id)) {
+      this.nuevoAdicionalId.set(null);
+      return;
+    }
+    this.adicionalesSeleccionados.update((items) => [...items, { idAdicional: id, cantidad: 1 }]);
+    this.adicionalesDirty.set(true);
+    this.nuevoAdicionalId.set(null);
+  }
+
+  protected cambiarCantidadAdicional(idAdicional: number, cantidad: number | null): void {
+    const value = Math.max(1, Math.trunc(cantidad ?? 1));
+    this.adicionalesSeleccionados.update((items) =>
+      items.map((item) => (item.idAdicional === idAdicional ? { ...item, cantidad: value } : item))
+    );
+    this.adicionalesDirty.set(true);
+  }
+
+  protected quitarAdicional(idAdicional: number): void {
+    this.adicionalesSeleccionados.update((items) => items.filter((item) => item.idAdicional !== idAdicional));
+    this.adicionalesDirty.set(true);
   }
 
   protected async changePage(pageNumber: number): Promise<void> {
@@ -467,8 +569,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
           }
         },
         error: () =>
-          this.errorMessage.set(
-            'Se perdio conexion con el sistema. Si estamos en una actualizacion, recarga la pagina en unos segundos hasta que esta alerta desaparezca.'
+          this.notify(
+            'warn',
+            'Se perdio conexion con el sistema. Si estamos en una actualizacion, recarga la pagina en unos segundos.'
           )
       })
     );
@@ -626,7 +729,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       piso: detail.piso ?? '',
       interior: detail.interior ?? ''
     });
-    this.ofertaForm.patchValue({ idPlan: detail.idPlan ?? 0, idPromocionInterna: detail.idPromocionInterna ?? 0, adicionales: '' });
+    this.ofertaForm.patchValue({ idPlan: detail.idPlan ?? 0, idPromocionInterna: detail.idPromocionInterna ?? 0 });
+    this.adicionalesSeleccionados.set([]);
+    this.adicionalesDirty.set(false);
+    this.nuevoAdicionalId.set(null);
     this.tipificacionForm.reset({ codigoTipificacion: '', codigoSubtipificacion: '', comentario: '', fechaInstalacion: '' });
     this.selectedTipificacionCode.set('');
     this.showComment.set(false);
@@ -666,6 +772,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.eventos.set([]);
     this.selectedLeadId.set(null);
     this.showComment.set(false);
+    this.adicionalesSeleccionados.set([]);
+    this.adicionalesDirty.set(false);
+    this.nuevoAdicionalId.set(null);
   }
 
   private markFormsPristine(): void {
@@ -675,45 +784,40 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.tipificacionForm.markAsPristine();
   }
 
+  private isOfertaChanged(): boolean {
+    return this.ofertaForm.dirty || this.adicionalesDirty();
+  }
+
   private async saveAction(action: () => import('rxjs').Observable<void>, successMessage: string, afterSuccess: () => Promise<void>): Promise<void> {
     if (!this.ensureCanMutate()) {
       return;
     }
 
     this.isSaving.set(true);
-    this.clearMessages();
     try {
       await firstValueFrom(action());
-      this.successMessage.set(successMessage);
+      this.notify('success', successMessage);
       await afterSuccess();
     } catch (error) {
-      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo completar la operacion.'));
+      this.notify('error', this.getErrorMessage(error, 'No se pudo completar la operacion.'));
       await this.reconcile();
     } finally {
       this.isSaving.set(false);
     }
   }
 
-  private parseAdditionals(value: string): { idAdicional: number; cantidad: number }[] | null {
-    const additionals = value
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean)
-      .map((item) => {
-        const [idAdicional, cantidad = '1'] = item.split(':');
-        return { idAdicional: Number(idAdicional), cantidad: Number(cantidad) };
-      })
-      .filter((item) => Number.isFinite(item.idAdicional) && item.idAdicional > 0 && Number.isFinite(item.cantidad) && item.cantidad > 0);
-    return additionals.length ? additionals : null;
-  }
-
   private cleanObject<T extends Record<string, unknown>>(value: T): T {
     return Object.fromEntries(Object.entries(value).map(([key, entryValue]) => [key, entryValue === '' ? null : entryValue])) as T;
   }
 
-  private clearMessages(): void {
-    this.successMessage.set(null);
-    this.errorMessage.set(null);
+  private notify(severity: ToastSeverity, detail: string): void {
+    const summary: Record<ToastSeverity, string> = {
+      success: 'Listo',
+      info: 'Informacion',
+      warn: 'Atencion',
+      error: 'Hubo un problema'
+    };
+    this.messageService.add({ severity, summary: summary[severity], detail, life: severity === 'error' ? 6000 : 4000 });
   }
 
   private ensureCanMutate(): boolean {
@@ -721,7 +825,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return true;
     }
 
-    this.errorMessage.set('Marca ONLINE para realizar esta accion.');
+    this.notify('warn', 'Marca ONLINE para realizar esta accion.');
     return false;
   }
 
@@ -743,6 +847,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.pageGestion.set(0);
     this.detailDialogOpen.set(false);
     this.showComment.set(false);
+    this.adicionalesSeleccionados.set([]);
+    this.adicionalesDirty.set(false);
+    this.nuevoAdicionalId.set(null);
+    this.messageService.clear();
   }
 
   private getErrorMessage(error: unknown, fallback: string): string {

@@ -1,4 +1,7 @@
 <section class="backoffice-page">
+  <p-toast position="top-right" />
+  <p-confirmDialog />
+
   <p-card styleClass="backoffice-hero">
     <div class="hero-row">
       <div>
@@ -24,13 +27,6 @@
       </div>
     </div>
   </p-card>
-
-  @if (successMessage()) {
-    <p-message severity="success" [text]="successMessage() ?? ''" />
-  }
-  @if (errorMessage()) {
-    <p-message severity="error" [text]="errorMessage() ?? ''" />
-  }
 
   <p-card styleClass="backoffice-board">
     <ng-template #title>
@@ -291,10 +287,31 @@
             </p-tabpanel>
 
             <p-tabpanel value="oferta">
+              @if (ofertaYaRegistrada()) {
+                <p-message
+                  severity="info"
+                  styleClass="oferta-note"
+                  text="El plan ofrecido ya fue registrado en esta venta. No se puede cambiar de nuevo."
+                />
+              } @else {
+                <p-message
+                  severity="warn"
+                  styleClass="oferta-note"
+                  text="Solo puedes registrar el plan una vez. Revisa el plan, la promocion y los adicionales antes de guardar."
+                />
+              }
               <form class="form-grid" [formGroup]="ofertaForm">
                 <label class="wide">
                   <span>Plan</span>
-                  <p-select formControlName="idPlan" [options]="planOptions()" optionLabel="nombre" optionValue="id" appendTo="body" (onChange)="onPlanChanged()">
+                  <p-select
+                    formControlName="idPlan"
+                    [options]="planOptions()"
+                    optionLabel="nombre"
+                    optionValue="id"
+                    appendTo="body"
+                    [disabled]="ofertaYaRegistrada()"
+                    (onChange)="onPlanChanged()"
+                  >
                     <ng-template #item let-plan>
                       <div class="select-item">
                         <strong>{{ plan.nombre }}</strong>
@@ -305,13 +322,85 @@
                     </ng-template>
                   </p-select>
                 </label>
-                <label class="wide"><span>Promocion</span><p-select formControlName="idPromocionInterna" [options]="promocionOptions()" optionLabel="reglaComercial" optionValue="id" appendTo="body" /></label>
-                <label class="wide"><span>Adicionales id:cantidad</span><input pInputText type="text" formControlName="adicionales" placeholder="1:1, 2:2" /></label>
-                <div class="chips wide">
-                  @for (adicional of adicionales(); track adicional.id) {
-                    <span>{{ adicional.id }} - {{ adicional.nombre }} - S/ {{ display(adicional.precioUnitario) }}</span>
+                <label class="wide">
+                  <span>Promocion</span>
+                  <p-select
+                    formControlName="idPromocionInterna"
+                    [options]="promocionOptions()"
+                    optionLabel="reglaComercial"
+                    optionValue="id"
+                    appendTo="body"
+                    [disabled]="ofertaYaRegistrada()"
+                  />
+                </label>
+
+                @if (!ofertaYaRegistrada()) {
+                  <div class="adicional-picker wide">
+                    <span class="field-label">Agregar adicional</span>
+                    <div class="adicional-add">
+                      <p-select
+                        [options]="adicionalDisponibles()"
+                        optionLabel="nombre"
+                        optionValue="id"
+                        placeholder="Elige un adicional"
+                        appendTo="body"
+                        [filter]="true"
+                        filterBy="nombre"
+                        [ngModel]="nuevoAdicionalId()"
+                        (ngModelChange)="nuevoAdicionalId.set($event)"
+                        [ngModelOptions]="{ standalone: true }"
+                      >
+                        <ng-template #item let-adicional>
+                          <div class="select-item">
+                            <strong>{{ adicional.nombre }}</strong>
+                            <small>S/ {{ display(adicional.precioUnitario) }}</small>
+                          </div>
+                        </ng-template>
+                      </p-select>
+                      <button
+                        pButton
+                        type="button"
+                        icon="pi pi-plus"
+                        label="Agregar"
+                        severity="secondary"
+                        [disabled]="!nuevoAdicionalId()"
+                        (click)="agregarAdicional()"
+                      ></button>
+                    </div>
+                  </div>
+                }
+
+                <div class="adicional-list wide">
+                  @for (item of adicionalesSeleccionadosView(); track item.idAdicional) {
+                    <div class="adicional-row">
+                      <span class="adicional-name">{{ item.nombre }}</span>
+                      <span class="adicional-price">S/ {{ display(item.precioUnitario) }}</span>
+                      <p-inputNumber
+                        [ngModel]="item.cantidad"
+                        (ngModelChange)="cambiarCantidadAdicional(item.idAdicional, $event)"
+                        [ngModelOptions]="{ standalone: true }"
+                        [min]="1"
+                        [showButtons]="true"
+                        buttonLayout="horizontal"
+                        decrementButtonClass="p-button-secondary"
+                        incrementButtonClass="p-button-secondary"
+                        incrementButtonIcon="pi pi-plus"
+                        decrementButtonIcon="pi pi-minus"
+                        [disabled]="ofertaYaRegistrada()"
+                        inputStyleClass="adicional-qty"
+                      />
+                      @if (!ofertaYaRegistrada()) {
+                        <button pButton type="button" icon="pi pi-trash" severity="danger" text (click)="quitarAdicional(item.idAdicional)"></button>
+                      }
+                    </div>
                   } @empty {
-                    <span>Selecciona un plan para ver adicionales.</span>
+                    <span class="adicional-empty">
+                      @if (ofertaYaRegistrada()) {
+                        Sin adicionales registrados.
+                      } @else {
+                        No agregaste adicionales. Elige uno arriba si corresponde.
+                      }
+                    </span>
                   }
                 </div>
               </form>
