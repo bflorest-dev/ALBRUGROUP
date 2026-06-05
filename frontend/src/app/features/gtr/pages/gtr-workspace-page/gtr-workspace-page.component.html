@@ -296,6 +296,9 @@
         numberPlaceholder="Numero de lead"
         numberInvalidMessage="Ingresa un celular valido de 9 digitos que empiece con 9."
       />
+      @if (facade.intakeError()) {
+        <p-message class="wide" severity="error" [text]="facade.intakeError() ?? ''" />
+      }
       <label class="wide">
         <span>Campaña</span>
         <p-select
@@ -325,7 +328,7 @@
           pButton
           type="submit"
           label="Registrar"
-          [disabled]="!facade.canMutateOperationalData()"
+          [disabled]="!facade.canMutateOperationalData() || facade.intakeForm.invalid"
           [loading]="facade.isSaving()"
         ></button>
       </div>

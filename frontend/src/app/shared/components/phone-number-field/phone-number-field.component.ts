@@ -45,6 +45,7 @@ export class PhoneNumberFieldComponent {
   }
 
   protected get showNumberInvalidMessage(): boolean {
-    return !!this.numberInvalidMessage && this.numberControl.invalid && (this.numberControl.dirty || this.numberControl.touched);
+    const hasDigits = this.numberControl.value.trim().length > 0;
+    return !!this.numberInvalidMessage && hasDigits && this.numberControl.invalid;
   }
 }

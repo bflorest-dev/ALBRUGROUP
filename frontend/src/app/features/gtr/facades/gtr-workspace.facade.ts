@@ -148,6 +148,7 @@ export class GtrWorkspaceFacade {
   readonly masivoExcelResultsDialogOpen = signal(false);
   readonly successMessage = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
+  readonly intakeError = signal<string | null>(null);
   readonly rows = signal<VisualLeadGtr[]>([]);
   readonly agendadosRows = signal<VisualLeadAgendadoGtr[]>([]);
   readonly masivoRows = signal<VisualLeadGtr[]>([]);
@@ -551,6 +552,7 @@ export class GtrWorkspaceFacade {
 
   cancelIntakeConfirmation(): void {
     this.pendingIntakeLookup.set(null);
+    this.intakeError.set(null);
     this.activeDialog.set('lead');
   }
 
@@ -585,13 +587,15 @@ export class GtrWorkspaceFacade {
       return;
     }
     if (this.intakeForm.invalid) {
-      this.errorMessage.set('Completa un celular valido que empiece con 9, campana y base.');
+      this.intakeForm.markAllAsTouched();
+      this.intakeError.set(null);
       return;
     }
 
     const formValue = this.intakeForm.getRawValue();
     if (!skipLookupConfirmation) {
       this.clearMessages();
+      this.intakeError.set(null);
       try {
         const lookup = await firstValueFrom(this.preventaService.buscarContextoLeadGtr(formValue.lead));
         if (lookup.existe) {
@@ -600,22 +604,23 @@ export class GtrWorkspaceFacade {
           return;
         }
       } catch (error) {
-        this.errorMessage.set(this.getErrorMessage(error, 'No se pudo validar el lead antes del registro.'));
+        this.intakeError.set(this.getErrorMessage(error, 'No se pudo validar el lead antes del registro.'));
         return;
       }
     }
 
     this.isSaving.set(true);
     this.clearMessages();
+    this.intakeError.set(null);
     try {
       await firstValueFrom(this.preventaService.registrarIngresoLead(formValue));
-      this.intakeForm.controls.lead.reset('');
+      this.resetIntakeForm();
       this.pendingIntakeLookup.set(null);
       this.successMessage.set('Lead registrado, puedes gestionarlo para anadir informacion basica de validacion.');
       this.activeDialog.set(null);
       await this.reconcile();
     } catch (error) {
-      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo ingresar el lead.'));
+      this.intakeError.set(this.getErrorMessage(error, 'No se pudo ingresar el lead.'));
     } finally {
       this.isSaving.set(false);
     }
@@ -694,7 +699,10 @@ export class GtrWorkspaceFacade {
     if (!this.ensureCanMutate()) {
       return;
     }
+    this.clearMessages();
+    this.resetIntakeForm();
     this.pendingIntakeLookup.set(null);
+    this.intakeError.set(null);
     this.activeDialog.set('lead');
   }
 
@@ -863,7 +871,12 @@ export class GtrWorkspaceFacade {
   }
 
   closeDialog(): void {
+    const currentDialog = this.activeDialog();
+    if (currentDialog === 'lead' || currentDialog === 'intake-confirm') {
+      this.clearMessages();
+    }
     this.assignmentForm.reset({ idAsesorAsignado: 0 });
+    this.resetIntakeForm();
     this.activeDialog.set(null);
     this.activeAssignmentLead.set(null);
     this.activeEventsLead.set(null);
@@ -871,6 +884,7 @@ export class GtrWorkspaceFacade {
     this.eventRows.set([]);
     this.selectedEventAnomalyFilter.set(null);
     this.pendingIntakeLookup.set(null);
+    this.intakeError.set(null);
     this.searchQuery.set('');
     this.searchResults.set([]);
     this.searchLookup.set(null);
@@ -2130,6 +2144,17 @@ export class GtrWorkspaceFacade {
   private clearMessages(): void {
     this.successMessage.set(null);
     this.errorMessage.set(null);
+  }
+
+  private resetIntakeForm(): void {
+    this.intakeForm.reset({
+      prefijo: '+51',
+      lead: '',
+      idCampana: 0,
+      base: 'WHATSAPP'
+    });
+    this.intakeForm.markAsPristine();
+    this.intakeForm.markAsUntouched();
   }
 
   private async runInitialLoad(
