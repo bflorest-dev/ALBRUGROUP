@@ -465,9 +465,6 @@ export class AdminPersonalFacade implements OnDestroy {
       diaDescanso: ['DOMINGO', [Validators.required]],
       modoAvanzado: ['false', [Validators.required]],
       detalles: this.formBuilder.nonNullable.array(this.buildDefaultScheduleRows())
-    },
-    {
-      validators: [this.createHorarioValidator()]
     }
   );
 

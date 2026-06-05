@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
+import pe.albrugroup.lead_service.entity.response.LeadDiarioResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.service.EventoService;
 
@@ -36,6 +37,15 @@ public class EventoController {
     ) {
         var eventos = eventoService.listarPorLead(idLead, fechaDesde, fechaHasta, pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(eventos);
+    }
+
+    @GetMapping("/registros-diarios") @PreAuthorize("hasAuthority('READ_LEADS_DIARIOS')")
+    public ResponseEntity<PageResponse<LeadDiarioResponse>> listarRegistrosDiarios(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        var registros = eventoService.listarRegistrosDiarios(fecha, pageRequest);
+        return ResponseEntity.status(HttpStatus.OK).body(registros);
     }
 
     @GetMapping("/empleado/{idEmpleado}") @PreAuthorize("hasAuthority('READ_EVENTOS_LEADS')")

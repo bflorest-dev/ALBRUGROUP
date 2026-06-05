@@ -166,6 +166,7 @@ public class DataLoader {
         savePermiso("READ_LEADS_SUPERVISOR_VENTAS_BANDEJA", "Puede ver la bandeja de cualquier asesor para supervisor de ventas", "LEAD_SUPERVISOR_VENTAS", "READ");
 
         savePermiso("READ_EVENTOS_LEADS", "Puede ver el historico de eventos de leads", "EVENTO_LEAD", "READ");
+        savePermiso("READ_LEADS_DIARIOS", "Puede ver el listado de leads ingresados durante el dia", "EVENTO_LEAD", "READ");
 
         // LEADS - VENTA
         savePermiso("READ_LEADS_VENTA", "Puede ver la bandeja de leads disponibles en venta", "LEAD_VENTA", "READ");
@@ -328,6 +329,7 @@ public class DataLoader {
                 getPermiso("CREATE_PROMOCIONES"),
                 getPermiso("READ_PROMOCIONES"),
                 getPermiso("DELETE_PROMOCIONES"),
+                getPermiso("READ_LEADS_DIARIOS"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("UPDATE_ASISTENCIAS")
         );
@@ -352,6 +354,7 @@ public class DataLoader {
 
                 getPermiso("READ_LEADS_GTR"),
                 getPermiso("READ_EVENTOS_LEADS"),
+                getPermiso("READ_LEADS_DIARIOS"),
                 getPermiso("READ_ASISTENCIAS_MONITOR"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("UPDATE_ASISTENCIAS"),
@@ -363,6 +366,7 @@ public class DataLoader {
                 getPermiso("READ_LEADS_GTR"),
                 getPermiso("ASSIGN_LEADS"),
                 getPermiso("READ_EVENTOS_LEADS"),
+                getPermiso("READ_LEADS_DIARIOS"),
                 getPermiso("READ_CAMPANA"),
                 getPermiso("READ_ASISTENCIAS_MONITOR"),
                 getPermiso("READ_ASISTENCIAS_SELF"),

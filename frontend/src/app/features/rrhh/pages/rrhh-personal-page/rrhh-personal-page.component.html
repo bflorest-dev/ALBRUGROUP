@@ -256,8 +256,10 @@
               [showIcon]="true"
               icon="pi pi-clock"
               appendTo="body"
-              (onSelect)="applySimpleSchedule()"
-              (onInput)="applySimpleSchedule()"
+              (onFocus)="captureSimpleTimes()"
+              (onShow)="captureSimpleTimes()"
+              (onSelect)="onEntryTimeChange()"
+              (onInput)="onEntryTimeChange()"
             />
           </label>
 
@@ -272,8 +274,8 @@
               [showIcon]="true"
               icon="pi pi-clock"
               appendTo="body"
-              (onSelect)="applySimpleSchedule()"
-              (onInput)="applySimpleSchedule()"
+              (onSelect)="onIndependentTimeChange()"
+              (onInput)="onIndependentTimeChange()"
             />
           </label>
 
@@ -289,8 +291,10 @@
                 [showIcon]="true"
                 icon="pi pi-clock"
                 appendTo="body"
-                (onSelect)="applySimpleSchedule()"
-                (onInput)="applySimpleSchedule()"
+                (onFocus)="captureSimpleTimes()"
+                (onShow)="captureSimpleTimes()"
+                (onSelect)="onLunchStartTimeChange()"
+                (onInput)="onLunchStartTimeChange()"
               />
             </label>
 
@@ -305,8 +309,8 @@
                 [showIcon]="true"
                 icon="pi pi-clock"
                 appendTo="body"
-                (onSelect)="applySimpleSchedule()"
-                (onInput)="applySimpleSchedule()"
+                (onSelect)="onIndependentTimeChange()"
+                (onInput)="onIndependentTimeChange()"
               />
             </label>
           }

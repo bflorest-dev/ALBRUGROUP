@@ -40,8 +40,10 @@
             [showIcon]="true"
             icon="pi pi-clock"
             appendTo="body"
-            (onSelect)="onSimpleTimeChange()"
-            (onInput)="onSimpleTimeChange()"
+            (onFocus)="captureSimpleTimes()"
+            (onShow)="captureSimpleTimes()"
+            (onSelect)="onSimpleEntryTimeChange()"
+            (onInput)="onSimpleEntryTimeChange()"
           />
         </label>
 
@@ -56,8 +58,8 @@
             [showIcon]="true"
             icon="pi pi-clock"
             appendTo="body"
-            (onSelect)="onSimpleTimeChange()"
-            (onInput)="onSimpleTimeChange()"
+            (onSelect)="onSimpleIndependentTimeChange()"
+            (onInput)="onSimpleIndependentTimeChange()"
           />
         </label>
 
@@ -73,8 +75,10 @@
               [showIcon]="true"
               icon="pi pi-clock"
               appendTo="body"
-              (onSelect)="onSimpleTimeChange()"
-              (onInput)="onSimpleTimeChange()"
+              (onFocus)="captureSimpleTimes()"
+              (onShow)="captureSimpleTimes()"
+              (onSelect)="onSimpleLunchStartTimeChange()"
+              (onInput)="onSimpleLunchStartTimeChange()"
             />
           </label>
 
@@ -89,8 +93,8 @@
               [showIcon]="true"
               icon="pi pi-clock"
               appendTo="body"
-              (onSelect)="onSimpleTimeChange()"
-              (onInput)="onSimpleTimeChange()"
+              (onSelect)="onSimpleIndependentTimeChange()"
+              (onInput)="onSimpleIndependentTimeChange()"
             />
           </label>
         }
@@ -145,6 +149,10 @@
                 [showIcon]="true"
                 icon="pi pi-clock"
                 appendTo="body"
+                (onFocus)="captureRowTimes($index)"
+                (onShow)="captureRowTimes($index)"
+                (onSelect)="onRowEntryTimeChange($index)"
+                (onInput)="onRowEntryTimeChange($index)"
               />
             </label>
             <label class="field field--time">
@@ -158,6 +166,8 @@
                 [showIcon]="true"
                 icon="pi pi-clock"
                 appendTo="body"
+                (onSelect)="onRowIndependentTimeChange($index)"
+                (onInput)="onRowIndependentTimeChange($index)"
               />
             </label>
             @if (usesLunchBreakSig()) {
@@ -172,6 +182,10 @@
                   [showIcon]="true"
                   icon="pi pi-clock"
                   appendTo="body"
+                  (onFocus)="captureRowTimes($index)"
+                  (onShow)="captureRowTimes($index)"
+                  (onSelect)="onRowLunchStartTimeChange($index)"
+                  (onInput)="onRowLunchStartTimeChange($index)"
                 />
               </label>
               <label class="field field--time">
@@ -185,6 +199,8 @@
                   [showIcon]="true"
                   icon="pi pi-clock"
                   appendTo="body"
+                  (onSelect)="onRowIndependentTimeChange($index)"
+                  (onInput)="onRowIndependentTimeChange($index)"
                 />
               </label>
             }

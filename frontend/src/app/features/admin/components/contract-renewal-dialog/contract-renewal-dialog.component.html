@@ -191,8 +191,10 @@
                   icon="pi pi-clock"
                   [class.p-invalid]="isSimpleScheduleFieldInvalid('horaEntrada')"
                   appendTo="body"
-                  (onSelect)="applySimpleSchedule()"
-                  (onInput)="applySimpleSchedule()"
+                  (onFocus)="captureSimpleTimes()"
+                  (onShow)="captureSimpleTimes()"
+                  (onSelect)="onEntryTimeChange()"
+                  (onInput)="onEntryTimeChange()"
                 />
               </label>
 
@@ -208,8 +210,8 @@
                   icon="pi pi-clock"
                   [class.p-invalid]="isSimpleScheduleFieldInvalid('horaSalida')"
                   appendTo="body"
-                  (onSelect)="applySimpleSchedule()"
-                  (onInput)="applySimpleSchedule()"
+                  (onSelect)="onIndependentTimeChange()"
+                  (onInput)="onIndependentTimeChange()"
                 />
               </label>
 
@@ -226,8 +228,10 @@
                     icon="pi pi-clock"
                     [class.p-invalid]="isSimpleScheduleFieldInvalid('inicioAlmuerzo')"
                     appendTo="body"
-                    (onSelect)="applySimpleSchedule()"
-                    (onInput)="applySimpleSchedule()"
+                    (onFocus)="captureSimpleTimes()"
+                    (onShow)="captureSimpleTimes()"
+                    (onSelect)="onLunchStartTimeChange()"
+                    (onInput)="onLunchStartTimeChange()"
                   />
                 </label>
 
@@ -243,8 +247,8 @@
                     icon="pi pi-clock"
                     [class.p-invalid]="isSimpleScheduleFieldInvalid('finAlmuerzo')"
                     appendTo="body"
-                    (onSelect)="applySimpleSchedule()"
-                    (onInput)="applySimpleSchedule()"
+                    (onSelect)="onIndependentTimeChange()"
+                    (onInput)="onIndependentTimeChange()"
                   />
                 </label>
               }

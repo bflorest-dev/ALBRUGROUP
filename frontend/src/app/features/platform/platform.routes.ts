@@ -12,6 +12,7 @@ import { AsesorVentasHorarioPageComponent } from '../asesor-ventas/pages/asesor-
 import { AsesorVentasMetricasPageComponent } from '../asesor-ventas/pages/asesor-ventas-metricas-page/asesor-ventas-metricas-page.component';
 import { BackofficeWorkspacePageComponent } from '../backoffice/pages/backoffice-workspace-page/backoffice-workspace-page.component';
 import { CommunityWorkspacePageComponent } from '../community/pages/community-workspace-page/community-workspace-page.component';
+import { DailyLeadsPageComponent } from '../daily-leads/pages/daily-leads-page/daily-leads-page.component';
 import { GtrWorkspacePageComponent } from '../gtr/pages/gtr-workspace-page/gtr-workspace-page.component';
 import { PostulantesBoardPageComponent } from '../recruiter/pages/postulantes-board-page/postulantes-board-page.component';
 import { TrainingGroupsPageComponent } from '../recruiter/pages/training-groups-page/training-groups-page.component';
@@ -76,6 +77,14 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'admin/tipificaciones',
     component: AdminTipificacionesPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR']
+    }
+  },
+  {
+    path: 'admin/leads-del-dia',
+    component: DailyLeadsPageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR']
@@ -182,6 +191,14 @@ export const PLATFORM_ROUTES: Routes = [
     }
   },
   {
+    path: 'gtr/leads-del-dia',
+    component: DailyLeadsPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ASESOR_GTR', 'SUPERVISOR_GTR']
+    }
+  },
+  {
     path: 'asesor-ventas',
     pathMatch: 'full',
     redirectTo: 'asesor-ventas/plataforma'
@@ -266,6 +283,14 @@ export const PLATFORM_ROUTES: Routes = [
     data: {
       roles: ['COMMUNITY'],
       section: 'finanzas'
+    }
+  },
+  {
+    path: 'community/leads-del-dia',
+    component: DailyLeadsPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['COMMUNITY']
     }
   },
   {

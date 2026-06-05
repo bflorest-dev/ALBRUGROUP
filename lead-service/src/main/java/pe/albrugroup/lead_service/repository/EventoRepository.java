@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import pe.albrugroup.lead_service.entity.Evento;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.response.LeadDiarioResponse;
 import pe.albrugroup.lead_service.repository.projection.AsesorCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.AsesorProveedorCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.AsesorUltimoEventoProjection;
@@ -107,6 +108,31 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     Page<Evento> findByIdActorAndCreatedAtLessThanOrderByCreatedAtDesc(
             Long idActor,
             Instant fechaHasta,
+            Pageable pageable
+    );
+
+    @Query(value = """
+            SELECT new pe.albrugroup.lead_service.entity.response.LeadDiarioResponse(
+                       e.idLead, l.prefijo, l.lead, e.nombreActor, e.rolActor, e.accion, e.createdAt)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+            ORDER BY e.createdAt DESC
+            """,
+            countQuery = """
+            SELECT COUNT(e)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+            """)
+    Page<LeadDiarioResponse> listarRegistrosDiarios(
+            @Param("accion") Accion accion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
             Pageable pageable
     );
 

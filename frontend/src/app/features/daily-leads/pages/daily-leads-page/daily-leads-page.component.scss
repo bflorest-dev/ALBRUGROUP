@@ -1,0 +1,54 @@
+.daily-leads {
+  display: block;
+  padding: 1.25rem;
+
+  &__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  &__title h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  &__subtitle {
+    margin: 0.25rem 0 0;
+    color: var(--p-text-muted-color, #6b7280);
+    font-size: 0.875rem;
+  }
+
+  &__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  &__message {
+    display: block;
+    margin-bottom: 1rem;
+  }
+
+  &__lead {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+
+    i {
+      color: var(--p-primary-color, #4f46e5);
+      font-size: 0.85rem;
+    }
+  }
+
+  &__empty {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--p-text-muted-color, #6b7280);
+  }
+}

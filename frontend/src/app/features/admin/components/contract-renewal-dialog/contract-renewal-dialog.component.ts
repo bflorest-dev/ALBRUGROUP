@@ -66,6 +66,12 @@ export class ContractRenewalDialogComponent {
     FULL_TIME: { durationLabel: '9 horas', lunchLabel: '60 minutos de almuerzo' },
     SUPER_FULL: { durationLabel: '10 horas', lunchLabel: '60 minutos de almuerzo' }
   };
+  private simpleTimeSnapshot: {
+    horaEntrada: string;
+    horaSalida: string;
+    inicioAlmuerzo: string;
+    finAlmuerzo: string;
+  } | null = null;
 
   protected optionItems(options: string[]): SelectOption[] {
     let cached = this.optionItemsCache.get(options);
@@ -211,15 +217,53 @@ export class ContractRenewalDialogComponent {
     }
   }
 
+  protected captureSimpleTimes(): void {
+    this.simpleTimeSnapshot = {
+      horaEntrada: this.horarioForm.get('horaEntrada')?.value ?? '',
+      horaSalida: this.horarioForm.get('horaSalida')?.value ?? '',
+      inicioAlmuerzo: this.horarioForm.get('inicioAlmuerzo')?.value ?? '',
+      finAlmuerzo: this.horarioForm.get('finAlmuerzo')?.value ?? ''
+    };
+  }
+
+  protected onEntryTimeChange(): void {
+    const before = this.parseTimeToMinutes(this.simpleTimeSnapshot?.horaEntrada);
+    const after = this.parseTimeToMinutes(this.horarioForm.get('horaEntrada')?.value);
+    if (before !== null && after !== null && before !== after) {
+      this.shiftControl('horaSalida', after - before);
+      if (this.usesLunchBreak()) {
+        this.shiftControl('inicioAlmuerzo', after - before);
+        this.shiftControl('finAlmuerzo', after - before);
+      }
+    }
+    this.captureSimpleTimes();
+    this.applySimpleSchedule();
+  }
+
+  protected onLunchStartTimeChange(): void {
+    const before = this.parseTimeToMinutes(this.simpleTimeSnapshot?.inicioAlmuerzo);
+    const after = this.parseTimeToMinutes(this.horarioForm.get('inicioAlmuerzo')?.value);
+    if (before !== null && after !== null && before !== after) {
+      this.shiftControl('finAlmuerzo', after - before);
+    }
+    this.captureSimpleTimes();
+    this.applySimpleSchedule();
+  }
+
+  protected onIndependentTimeChange(): void {
+    this.captureSimpleTimes();
+    this.applySimpleSchedule();
+  }
+
   protected scheduleRuleHint(): string {
     const modalidad = this.contractForm.get('modalidad')?.value ?? 'FULL_TIME';
     const rule = this.scheduleRules[modalidad] ?? this.scheduleRules['FULL_TIME'];
 
     if (rule.lunchLabel) {
-      return `${this.toLabel(modalidad)}: ${rule.durationLabel} entre entrada y salida, con ${rule.lunchLabel}.`;
+      return `Sugerencia ${this.toLabel(modalidad)}: ${rule.durationLabel} entre entrada y salida, con ${rule.lunchLabel}.`;
     }
 
-    return `${this.toLabel(modalidad)}: ${rule.durationLabel} entre entrada y salida, sin almuerzo.`;
+    return `Sugerencia ${this.toLabel(modalidad)}: ${rule.durationLabel} entre entrada y salida, sin almuerzo.`;
   }
 
   protected scheduleValidationMessage(): string | null {
@@ -259,6 +303,36 @@ export class ContractRenewalDialogComponent {
     }
 
     return value;
+  }
+
+  private shiftControl(controlName: 'horaSalida' | 'inicioAlmuerzo' | 'finAlmuerzo', deltaMinutes: number): void {
+    const control = this.horarioForm.get(controlName);
+    const shifted = this.shiftTime(control?.value, deltaMinutes);
+    if (shifted) {
+      control?.setValue(shifted);
+    }
+  }
+
+  private shiftTime(value: string | null | undefined, deltaMinutes: number): string | null {
+    const minutes = this.parseTimeToMinutes(value);
+    if (minutes === null) {
+      return null;
+    }
+    const next = Math.max(0, Math.min(23 * 60 + 59, minutes + deltaMinutes));
+    const hours = Math.floor(next / 60);
+    const mins = next % 60;
+    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+  }
+
+  private parseTimeToMinutes(value: string | null | undefined): number | null {
+    if (!value) {
+      return null;
+    }
+    const match = /^(\d{2}):(\d{2})/.exec(value);
+    if (!match) {
+      return null;
+    }
+    return Number(match[1]) * 60 + Number(match[2]);
   }
 
   private getScheduleRows(): AbstractControl[] {

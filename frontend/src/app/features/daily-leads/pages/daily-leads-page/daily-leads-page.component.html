@@ -1,0 +1,109 @@
+<section class="daily-leads">
+  <p-card>
+    <div class="daily-leads__header">
+      <div class="daily-leads__title">
+        <h2>Leads del día</h2>
+        <p class="daily-leads__subtitle">
+          @if (facade.isToday()) {
+            Mostrando los leads ingresados hoy.
+          } @else {
+            Mostrando los leads ingresados en la fecha seleccionada.
+          }
+        </p>
+      </div>
+
+      <div class="daily-leads__controls">
+        <app-date-field
+          label="Fecha"
+          inputId="daily-leads-fecha"
+          [max]="facade.maxDate"
+          [ngModel]="facade.fecha()"
+          (ngModelChange)="onFechaChange($event)"
+        />
+        @if (!facade.isToday()) {
+          <button
+            pButton
+            type="button"
+            icon="pi pi-calendar"
+            label="Hoy"
+            size="small"
+            severity="secondary"
+            [outlined]="true"
+            (click)="onShowToday()"
+          ></button>
+        }
+        <p-tag
+          severity="info"
+          icon="pi pi-users"
+          [value]="facade.totalElements() + ' leads'"
+        />
+      </div>
+    </div>
+
+    @if (facade.errorMessage()) {
+      <p-message severity="error" [text]="facade.errorMessage()" styleClass="daily-leads__message" />
+    }
+
+    <p-table
+      [value]="facade.rows()"
+      dataKey="idLead"
+      [loading]="facade.isLoading()"
+      [rowHover]="true"
+      [scrollable]="true"
+      [tableStyle]="{ 'min-width': '720px' }"
+      styleClass="p-datatable-sm daily-leads__table"
+    >
+      <ng-template #header>
+        <tr>
+          <th>Lead</th>
+          <th>Asesor</th>
+          <th>Rol</th>
+          <th>Acción</th>
+          <th>Fecha y hora</th>
+        </tr>
+      </ng-template>
+
+      <ng-template #body let-row>
+        <tr>
+          <td>
+            <span class="daily-leads__lead">
+              <i class="pi pi-phone"></i>
+              <strong>{{ row.leadDisplay }}</strong>
+            </span>
+          </td>
+          <td>{{ row.asesor }}</td>
+          <td><p-tag severity="secondary" [value]="row.rolLabel" /></td>
+          <td><p-tag severity="success" [value]="row.accionLabel" /></td>
+          <td>{{ row.fechaHora }}</td>
+        </tr>
+      </ng-template>
+
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="5">
+            @if (facade.isLoading()) {
+              <div class="daily-leads__empty">Cargando…</div>
+            } @else {
+              <div class="daily-leads__empty">
+                @if (facade.isToday()) {
+                  Aún no se han ingresado leads hoy.
+                } @else {
+                  No se ingresaron leads en la fecha seleccionada.
+                }
+              </div>
+            }
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+
+    @if (facade.totalElements() > facade.pageSize) {
+      <p-paginator
+        [first]="facade.first()"
+        [rows]="facade.pageSize"
+        [totalRecords]="facade.totalElements()"
+        (onPageChange)="onPageChange($event.page ?? 0)"
+      />
+    }
+  </p-card>
+</section>

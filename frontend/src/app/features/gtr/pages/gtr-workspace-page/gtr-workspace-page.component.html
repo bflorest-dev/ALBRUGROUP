@@ -144,7 +144,25 @@
     >
       <ng-template #header>
         <tr>
-          <th class="col-check"></th>
+          <th class="col-check">
+            <button
+              type="button"
+              class="gtr-select"
+              [class.gtr-select--selected]="facade.allVisibleSelected()"
+              [class.gtr-select--partial]="facade.someVisibleSelected()"
+              [disabled]="!facade.canMutateOperationalData() || !facade.rows().length"
+              [attr.aria-pressed]="facade.allVisibleSelected()"
+              aria-label="Seleccionar todos los leads visibles"
+              title="Seleccionar todos"
+              (click)="facade.toggleSelectAllVisible(!facade.allVisibleSelected())"
+            >
+              @if (facade.allVisibleSelected()) {
+                <i class="pi pi-check" aria-hidden="true"></i>
+              } @else if (facade.someVisibleSelected()) {
+                <i class="pi pi-minus" aria-hidden="true"></i>
+              }
+            </button>
+          </th>
           <th>Lead</th>
           <th>Proveedor</th>
           <th>Canal</th>
@@ -161,14 +179,19 @@
       </ng-template>
 
       <ng-template #body let-row>
-        <tr [class.row-new]="row.isNew">
+        <tr [class.row-new]="row.isNew" [class.row-selected]="facade.isSelected(row.id)">
           <td class="col-check">
-            <input
-              type="checkbox"
-              [checked]="facade.isSelected(row.id)"
+            <button
+              type="button"
+              class="gtr-select"
+              [class.gtr-select--selected]="facade.isSelected(row.id)"
               [disabled]="!facade.canMutateOperationalData()"
-              (change)="facade.toggleSelection(row.id, $any($event.target).checked)"
-            />
+              [attr.aria-pressed]="facade.isSelected(row.id)"
+              [attr.aria-label]="facade.isSelected(row.id) ? 'Quitar lead de la seleccion' : 'Seleccionar lead'"
+              (click)="facade.toggleSelection(row.id, !facade.isSelected(row.id))"
+            >
+              <i class="pi pi-check" aria-hidden="true"></i>
+            </button>
           </td>
           <td>
             <strong>{{ facade.leadPrefixLabel(row.prefijo) }} {{ row.lead }}</strong>

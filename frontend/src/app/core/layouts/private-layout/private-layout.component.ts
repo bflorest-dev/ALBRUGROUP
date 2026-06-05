@@ -107,6 +107,7 @@ export class PrivateLayoutComponent {
         { label: 'Personal', route: '/app/admin/personal', icon: 'pi pi-users', exact: true },
         { label: 'Empleabilidad', route: '/app/admin/empleabilidad', icon: 'pi pi-briefcase' },
         { label: 'Tipificaciones', route: '/app/admin/tipificaciones', icon: 'pi pi-sitemap', exact: true },
+        { label: 'Leads del día', route: '/app/admin/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
         { label: 'Finanzas', route: '/app/admin/finanzas', icon: 'pi pi-wallet', exact: true },
         { label: 'Ranking', route: '/app/admin/ranking', icon: 'pi pi-chart-bar', exact: true }
       ];
@@ -129,6 +130,7 @@ export class PrivateLayoutComponent {
     if (session.primaryRole === 'COMMUNITY') {
       return [
         { label: 'Mantenimiento', route: '/app/community/mantenimiento', icon: 'pi pi-database', exact: true },
+        { label: 'Leads del día', route: '/app/community/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
         { label: 'Finanzas', route: '/app/community/finanzas', icon: 'pi pi-wallet', exact: true },
         { label: 'Metricas', route: '/app/community/metricas', icon: 'pi pi-chart-line', exact: true }
       ];
@@ -155,6 +157,7 @@ export class PrivateLayoutComponent {
         { label: 'Plataforma', route: '/app/gtr/plataforma', icon: 'pi pi-desktop', exact: true },
         { label: 'Agendados', route: '/app/gtr/agendados', icon: 'pi pi-calendar', exact: true },
         { label: 'Historicos', route: '/app/gtr/historicos', icon: 'pi pi-history', exact: true },
+        { label: 'Leads del día', route: '/app/gtr/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
         { label: 'Ranking', route: '/app/gtr/ranking', icon: 'pi pi-chart-bar', exact: true }
       ];
     }

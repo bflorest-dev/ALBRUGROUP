@@ -7,10 +7,12 @@ import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.Evento;
 import pe.albrugroup.lead_service.entity.Lead;
+import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
+import pe.albrugroup.lead_service.entity.response.LeadDiarioResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.EventoRepository;
@@ -109,6 +111,23 @@ public class EventoService {
                 paginationService.toPageable(pageRequest, EVENTO_SORT_FIELDS)
         ).map(eventoMapper::toResponse);
         return PageResponse.from(eventos);
+    }
+
+    public PageResponse<LeadDiarioResponse> listarRegistrosDiarios(LocalDate fecha, PageRequest pageRequest) {
+        OperationalDateTime.InstantRange rango = OperationalDateTime.dayRange(fecha);
+
+        var pageable = org.springframework.data.domain.PageRequest.of(
+                pageRequest.getPageNumber(),
+                pageRequest.getPageSize()
+        );
+
+        var registros = eventoRepository.listarRegistrosDiarios(
+                Accion.REGISTRO,
+                rango.inicio(),
+                rango.fin(),
+                pageable
+        );
+        return PageResponse.from(registros);
     }
 
     private Instant inicioDia(LocalDate fecha) {

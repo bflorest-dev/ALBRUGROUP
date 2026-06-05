@@ -40,6 +40,12 @@ import { AdminPersonalFacade } from '../../../admin/facades/admin-personal.facad
 export class RrhhPersonalPageComponent implements OnInit {
   protected readonly facade = inject(AdminPersonalFacade);
   protected readonly activeSection = signal<'activos' | 'alta'>('activos');
+  private simpleTimeSnapshot: {
+    horaEntrada: string;
+    horaSalida: string;
+    inicioAlmuerzo: string;
+    finAlmuerzo: string;
+  } | null = null;
 
   ngOnInit(): void {
     this.facade.initialize();
@@ -108,6 +114,49 @@ export class RrhhPersonalPageComponent implements OnInit {
     }
   }
 
+  protected captureSimpleTimes(): void {
+    const raw = this.facade.horarioForm.getRawValue();
+    this.simpleTimeSnapshot = {
+      horaEntrada: raw.horaEntrada,
+      horaSalida: raw.horaSalida,
+      inicioAlmuerzo: raw.inicioAlmuerzo,
+      finAlmuerzo: raw.finAlmuerzo
+    };
+  }
+
+  protected onEntryTimeChange(): void {
+    const previous = this.simpleTimeSnapshot;
+    const raw = this.facade.horarioForm.getRawValue();
+    const before = this.parseTimeToMinutes(previous?.horaEntrada);
+    const after = this.parseTimeToMinutes(raw.horaEntrada);
+    if (before !== null && after !== null && before !== after) {
+      this.shiftControl('horaSalida', after - before);
+      if (this.usesLunchBreak()) {
+        this.shiftControl('inicioAlmuerzo', after - before);
+        this.shiftControl('finAlmuerzo', after - before);
+      }
+    }
+    this.captureSimpleTimes();
+    this.applySimpleSchedule();
+  }
+
+  protected onLunchStartTimeChange(): void {
+    const previous = this.simpleTimeSnapshot;
+    const raw = this.facade.horarioForm.getRawValue();
+    const before = this.parseTimeToMinutes(previous?.inicioAlmuerzo);
+    const after = this.parseTimeToMinutes(raw.inicioAlmuerzo);
+    if (before !== null && after !== null && before !== after) {
+      this.shiftControl('finAlmuerzo', after - before);
+    }
+    this.captureSimpleTimes();
+    this.applySimpleSchedule();
+  }
+
+  protected onIndependentTimeChange(): void {
+    this.captureSimpleTimes();
+    this.applySimpleSchedule();
+  }
+
   protected scheduleValidationMessage(): string | null {
     const error = this.facade.horarioForm.errors?.['scheduleRule'] as { message?: string } | undefined;
     return error?.message && (this.facade.horarioForm.touched || this.facade.horarioForm.dirty) ? error.message : null;
@@ -121,5 +170,35 @@ export class RrhhPersonalPageComponent implements OnInit {
     }
 
     return typeof value === 'string' ? value : '';
+  }
+
+  private shiftControl(controlName: 'horaSalida' | 'inicioAlmuerzo' | 'finAlmuerzo', deltaMinutes: number): void {
+    const control = this.facade.horarioForm.controls[controlName];
+    const shifted = this.shiftTime(control.getRawValue(), deltaMinutes);
+    if (shifted) {
+      control.setValue(shifted);
+    }
+  }
+
+  private shiftTime(value: string | null | undefined, deltaMinutes: number): string | null {
+    const minutes = this.parseTimeToMinutes(value);
+    if (minutes === null) {
+      return null;
+    }
+    const next = Math.max(0, Math.min(23 * 60 + 59, minutes + deltaMinutes));
+    const hours = Math.floor(next / 60);
+    const mins = next % 60;
+    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+  }
+
+  private parseTimeToMinutes(value: string | null | undefined): number | null {
+    if (!value) {
+      return null;
+    }
+    const match = /^(\d{2}):(\d{2})/.exec(value);
+    if (!match) {
+      return null;
+    }
+    return Number(match[1]) * 60 + Number(match[2]);
   }
 }

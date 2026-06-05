@@ -57,6 +57,8 @@ export class ScheduleEditorPanelComponent {
   protected readonly yesNoOptions = YES_NO_OPTIONS;
   private readonly modalitySignal = signal<string>('FULL_TIME');
   protected readonly usesLunchBreakSig = computed(() => !MODALIDADES_SIN_ALMUERZO.has(this.modalitySignal()));
+  private simpleTimeSnapshot: Record<string, string> | null = null;
+  private readonly rowTimeSnapshots = new Map<number, Record<string, string>>();
 
   ngOnChanges(): void {
     this.modalitySignal.set(this.modalidad ?? 'FULL_TIME');
@@ -99,11 +101,123 @@ export class ScheduleEditorPanelComponent {
     this.simpleChanged.emit();
   }
 
+  protected captureSimpleTimes(): void {
+    this.simpleTimeSnapshot = this.readTimeControls(this.horarioForm);
+  }
+
+  protected onSimpleEntryTimeChange(): void {
+    const delta = this.resolveDelta(this.simpleTimeSnapshot?.['horaEntrada'], this.horarioForm.get('horaEntrada')?.value);
+    if (delta !== null) {
+      this.shiftControl(this.horarioForm, 'horaSalida', delta);
+      if (this.usesLunchBreakSig()) {
+        this.shiftControl(this.horarioForm, 'inicioAlmuerzo', delta);
+        this.shiftControl(this.horarioForm, 'finAlmuerzo', delta);
+      }
+    }
+    this.captureSimpleTimes();
+    this.simpleChanged.emit();
+  }
+
+  protected onSimpleLunchStartTimeChange(): void {
+    const delta = this.resolveDelta(
+      this.simpleTimeSnapshot?.['inicioAlmuerzo'],
+      this.horarioForm.get('inicioAlmuerzo')?.value
+    );
+    if (delta !== null) {
+      this.shiftControl(this.horarioForm, 'finAlmuerzo', delta);
+    }
+    this.captureSimpleTimes();
+    this.simpleChanged.emit();
+  }
+
+  protected onSimpleIndependentTimeChange(): void {
+    this.captureSimpleTimes();
+    this.simpleChanged.emit();
+  }
+
+  protected captureRowTimes(index: number): void {
+    const row = this.detallesArray.at(index) as FormGroup;
+    this.rowTimeSnapshots.set(index, this.readTimeControls(row));
+  }
+
+  protected onRowEntryTimeChange(index: number): void {
+    const row = this.detallesArray.at(index) as FormGroup;
+    const snapshot = this.rowTimeSnapshots.get(index);
+    const delta = this.resolveDelta(snapshot?.['horaEntrada'], row.get('horaEntrada')?.value);
+    if (delta !== null) {
+      this.shiftControl(row, 'horaSalida', delta);
+      if (this.usesLunchBreakSig()) {
+        this.shiftControl(row, 'inicioAlmuerzo', delta);
+        this.shiftControl(row, 'finAlmuerzo', delta);
+      }
+    }
+    this.captureRowTimes(index);
+  }
+
+  protected onRowLunchStartTimeChange(index: number): void {
+    const row = this.detallesArray.at(index) as FormGroup;
+    const snapshot = this.rowTimeSnapshots.get(index);
+    const delta = this.resolveDelta(snapshot?.['inicioAlmuerzo'], row.get('inicioAlmuerzo')?.value);
+    if (delta !== null) {
+      this.shiftControl(row, 'finAlmuerzo', delta);
+    }
+    this.captureRowTimes(index);
+  }
+
+  protected onRowIndependentTimeChange(index: number): void {
+    this.captureRowTimes(index);
+  }
+
   protected dayShort(day: string): string {
     return (DIA_LABELS[day] ?? day).slice(0, 3);
   }
 
   protected dayLabel(day: string): string {
     return DIA_LABELS[day] ?? day;
+  }
+
+  private readTimeControls(group: FormGroup): Record<string, string> {
+    return {
+      horaEntrada: group.get('horaEntrada')?.value ?? '',
+      horaSalida: group.get('horaSalida')?.value ?? '',
+      inicioAlmuerzo: group.get('inicioAlmuerzo')?.value ?? '',
+      finAlmuerzo: group.get('finAlmuerzo')?.value ?? ''
+    };
+  }
+
+  private resolveDelta(beforeValue: string | null | undefined, afterValue: string | null | undefined): number | null {
+    const before = this.parseTimeToMinutes(beforeValue);
+    const after = this.parseTimeToMinutes(afterValue);
+    return before !== null && after !== null && before !== after ? after - before : null;
+  }
+
+  private shiftControl(group: FormGroup, controlName: string, deltaMinutes: number): void {
+    const control = group.get(controlName);
+    const shifted = this.shiftTime(control?.value, deltaMinutes);
+    if (shifted) {
+      control?.setValue(shifted);
+    }
+  }
+
+  private shiftTime(value: string | null | undefined, deltaMinutes: number): string | null {
+    const minutes = this.parseTimeToMinutes(value);
+    if (minutes === null) {
+      return null;
+    }
+    const next = Math.max(0, Math.min(23 * 60 + 59, minutes + deltaMinutes));
+    const hours = Math.floor(next / 60);
+    const mins = next % 60;
+    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+  }
+
+  private parseTimeToMinutes(value: string | null | undefined): number | null {
+    if (!value) {
+      return null;
+    }
+    const match = /^(\d{2}):(\d{2})/.exec(value);
+    if (!match) {
+      return null;
+    }
+    return Number(match[1]) * 60 + Number(match[2]);
   }
 }

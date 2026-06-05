@@ -463,8 +463,10 @@
                     [class.p-invalid]="isSimpleScheduleFieldInvalid('horaEntrada')"
                     [attr.title]="scheduleFieldTitle('horaEntrada')"
                     appendTo="body"
-                    (onSelect)="applySimpleSchedule()"
-                    (onInput)="applySimpleSchedule()"
+                    (onFocus)="captureSimpleTimes()"
+                    (onShow)="captureSimpleTimes()"
+                    (onSelect)="onEntryTimeChange()"
+                    (onInput)="onEntryTimeChange()"
                   />
                 </label>
                 <label class="field field--time">
@@ -480,8 +482,8 @@
                     [class.p-invalid]="isSimpleScheduleFieldInvalid('horaSalida')"
                     [attr.title]="scheduleFieldTitle('horaSalida')"
                     appendTo="body"
-                    (onSelect)="applySimpleSchedule()"
-                    (onInput)="applySimpleSchedule()"
+                    (onSelect)="onIndependentTimeChange()"
+                    (onInput)="onIndependentTimeChange()"
                   />
                 </label>
                 @if (usesLunchBreak()) {
@@ -498,8 +500,10 @@
                         [class.p-invalid]="isSimpleScheduleFieldInvalid('inicioAlmuerzo')"
                         [attr.title]="scheduleFieldTitle('inicioAlmuerzo')"
                         appendTo="body"
-                        (onSelect)="applySimpleSchedule()"
-                        (onInput)="applySimpleSchedule()"
+                        (onFocus)="captureSimpleTimes()"
+                        (onShow)="captureSimpleTimes()"
+                        (onSelect)="onLunchStartTimeChange()"
+                        (onInput)="onLunchStartTimeChange()"
                     />
                   </label>
                   <label class="field field--time">
@@ -515,8 +519,8 @@
                         [class.p-invalid]="isSimpleScheduleFieldInvalid('finAlmuerzo')"
                         [attr.title]="scheduleFieldTitle('finAlmuerzo')"
                         appendTo="body"
-                        (onSelect)="applySimpleSchedule()"
-                        (onInput)="applySimpleSchedule()"
+                        (onSelect)="onIndependentTimeChange()"
+                        (onInput)="onIndependentTimeChange()"
                     />
                   </label>
                 }

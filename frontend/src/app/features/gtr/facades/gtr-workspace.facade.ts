@@ -1301,6 +1301,36 @@ export class GtrWorkspaceFacade {
     return this.selectedIds().has(idLead);
   }
 
+  readonly allVisibleSelected = computed(() => {
+    const rows = this.rows();
+    if (rows.length === 0) {
+      return false;
+    }
+    const selected = this.selectedIds();
+    return rows.every((row) => selected.has(row.id));
+  });
+
+  readonly someVisibleSelected = computed(() => {
+    const selected = this.selectedIds();
+    return this.rows().some((row) => selected.has(row.id)) && !this.allVisibleSelected();
+  });
+
+  toggleSelectAllVisible(checked: boolean): void {
+    if (!this.canMutateOperationalData()) {
+      this.errorMessage.set('Marca ONLINE para seleccionar leads.');
+      return;
+    }
+    const next = new Set(this.selectedIds());
+    for (const row of this.rows()) {
+      if (checked) {
+        next.add(row.id);
+      } else {
+        next.delete(row.id);
+      }
+    }
+    this.selectedIds.set(next);
+  }
+
   display(value: unknown): string {
     if (value === null || value === undefined || value === '') {
       return '-';
