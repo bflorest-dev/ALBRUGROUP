@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { roleGuard } from '../../core/guards/role.guard';
 import { AdminDashboardPageComponent } from '../admin/pages/admin-dashboard-page/admin-dashboard-page.component';
+import { AdminDeleteLeadsPageComponent } from '../admin/pages/admin-delete-leads-page/admin-delete-leads-page.component';
 import { AdminEmployabilityPageComponent } from '../admin/pages/admin-employability-page/admin-employability-page.component';
 import { AdminFinancePageComponent } from '../admin/pages/admin-finance-page/admin-finance-page.component';
 import { AdminRankingPageComponent } from '../admin/pages/admin-ranking-page/admin-ranking-page.component';
@@ -85,6 +86,14 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'admin/leads-del-dia',
     component: DailyLeadsPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR']
+    }
+  },
+  {
+    path: 'admin/eliminar-leads',
+    component: AdminDeleteLeadsPageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR']

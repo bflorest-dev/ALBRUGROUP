@@ -3,6 +3,7 @@ package pe.albrugroup.lead_service.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -24,6 +25,11 @@ import java.util.Optional;
 public interface EventoRepository extends JpaRepository<Evento, Long> {
 
     Page<Evento> findByIdLeadOrderByCreatedAtDesc(Long idLead, Pageable pageable);
+
+    @Modifying
+    @Query("DELETE FROM Evento e WHERE e.idLead = :idLead")
+    void deleteByIdLead(@Param("idLead") Long idLead);
+
     Page<Evento> findByIdLeadAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
             Long idLead,
             Instant fechaDesde,

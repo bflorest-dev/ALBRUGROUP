@@ -3,11 +3,12 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { DrawerModule } from 'primeng/drawer';
 import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
 import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
 
 @Component({
   selector: 'app-gtr-advisors-drawer',
-  imports: [UpperCasePipe, ButtonModule, DrawerModule, TagModule],
+  imports: [UpperCasePipe, ButtonModule, DrawerModule, TagModule, TooltipModule],
   templateUrl: './gtr-advisors-drawer.component.html',
   styleUrl: './gtr-advisors-drawer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

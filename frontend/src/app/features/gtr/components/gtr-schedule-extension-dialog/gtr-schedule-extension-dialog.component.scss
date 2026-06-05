@@ -1,0 +1,87 @@
+.extension-body {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.extension-advisor {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+.extension-message {
+  display: block;
+}
+
+.extension-loading {
+  align-items: center;
+  color: var(--app-text-muted);
+  display: flex;
+  gap: 0.7rem;
+  justify-content: center;
+  padding: 1.5rem 0;
+}
+
+.extension-spinner {
+  height: 2.5rem;
+  width: 2.5rem;
+}
+
+.extension-current {
+  align-items: baseline;
+  background: var(--app-surface-soft);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.7rem;
+  padding: 0.6rem 0.75rem;
+}
+
+.extension-current__label {
+  color: var(--app-text-muted);
+  font-size: 0.78rem;
+}
+
+.extension-current__value {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.extension-current__estado {
+  color: var(--app-text-muted);
+  font-size: 0.78rem;
+  margin-left: auto;
+}
+
+.extension-form {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.extension-field {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.extension-field > span {
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.extension-field > span small {
+  color: var(--app-text-muted);
+  font-weight: 400;
+}
+
+.extension-field p-datepicker,
+.extension-field textarea {
+  width: 100%;
+}
+
+.extension-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  margin-top: 0.4rem;
+}

@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Getter @Setter
 public class LeadTipificacionVentaRequest {
@@ -15,4 +16,6 @@ public class LeadTipificacionVentaRequest {
     private String codigoSubtipificacion;
     private String comentario;
     private LocalDate fechaInstalacion;
+    private LocalDate fechaProgramacion;
+    private LocalTime horaProgramada;
 }

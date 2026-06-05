@@ -51,6 +51,12 @@ public class PreventaController {
         return ResponseEntity.noContent().build();
     }
     // 2. Listar los Leads registrados y para gestionar Leads del día
+    @DeleteMapping("/{idLead}") @PreAuthorize("hasAuthority('DELETE_LEADS')")
+    public ResponseEntity<Void> eliminarLeadIntegral(@PathVariable Long idLead) {
+        leadService.eliminarLeadIntegral(idLead);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/gtr") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
     public ResponseEntity<PageResponse<LeadGtrResponse>> listarBandejaGtr(
             @RequestParam(required = false)

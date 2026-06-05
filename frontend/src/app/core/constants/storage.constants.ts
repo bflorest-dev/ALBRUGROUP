@@ -4,6 +4,7 @@ export const STORAGE_KEYS = {
   session: 'albru_session',
   asesorVentasWorkspace: 'albru_asesor_ventas_workspace',
   supervisorVentasSeenAdvisors: 'albru_supervisor_ventas_seen_advisors',
+  adminDeleteLeadsVisible: 'albru_admin_delete_leads_visible',
   activeTabs: 'albru_active_tabs',
   tabId: 'albru_tab_id',
   lastActivityAt: 'albru_last_activity_at'

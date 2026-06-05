@@ -29,4 +29,8 @@
       (input)="onNumberInput($event)"
     />
   </div>
+
+  @if (showNumberInvalidMessage) {
+    <span class="phone-field__error">{{ numberInvalidMessage }}</span>
+  }
 </div>

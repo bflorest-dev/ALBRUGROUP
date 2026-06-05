@@ -1,15 +1,15 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, firstValueFrom } from 'rxjs';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { DatePickerModule } from 'primeng/datepicker';
 import { DialogModule } from 'primeng/dialog';
-import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { PaginatorModule } from 'primeng/paginator';
@@ -23,6 +23,7 @@ import { ToastModule } from 'primeng/toast';
 import { SessionService } from '../../../../core/services/session.service';
 import { OperationalGateService } from '../../../../core/services/operational-gate.service';
 import { EstadoAsistencia } from '../../../../shared/models/schedule/estado-asistencia';
+import { LeadCommercialDataTabsComponent } from '../../../../shared/components/lead-commercial-data-tabs/lead-commercial-data-tabs.component';
 import {
   AdicionalResponse,
   CatalogoResponse,
@@ -32,7 +33,8 @@ import {
   LeadVentaResponse,
   PageQuery,
   PlanResponse,
-  PromocionComercialResponse
+  PromocionComercialResponse,
+  UbigeoItem
 } from '../../../../shared/models/preventa/preventa.models';
 import { LeadRealtimeService } from '../../../preventa/services/lead-realtime.service';
 import { BackofficeLeadService } from '../../services/backoffice-lead.service';
@@ -40,6 +42,7 @@ import { BackofficeLeadService } from '../../services/backoffice-lead.service';
 type BackofficeSection = 'plataforma' | 'gestion';
 type VisualLeadVenta = LeadVentaResponse & { isNew?: boolean };
 type AdicionalSeleccionado = { idAdicional: number; cantidad: number };
+type OfertaProviderOption = { id: number; nombre: string };
 type ToastSeverity = 'success' | 'info' | 'warn' | 'error';
 
 @Component({
@@ -51,8 +54,8 @@ type ToastSeverity = 'success' | 'info' | 'warn' | 'error';
     ButtonModule,
     CardModule,
     ConfirmDialogModule,
+    DatePickerModule,
     DialogModule,
-    InputNumberModule,
     InputTextModule,
     MessageModule,
     PaginatorModule,
@@ -62,7 +65,8 @@ type ToastSeverity = 'success' | 'info' | 'warn' | 'error';
     TabsModule,
     TagModule,
     TextareaModule,
-    ToastModule
+    ToastModule,
+    LeadCommercialDataTabsComponent
   ],
   providers: [MessageService, ConfirmationService],
   templateUrl: './backoffice-workspace-page.component.html',
@@ -82,6 +86,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private readonly confirmationService = inject(ConfirmationService);
   private readonly realtimeSubscription = new Subscription();
   private readonly newRowTimers = new Map<number, number>();
+  private readonly pickerDateCache = new Map<string, Date | null>();
   private initialized = false;
   private initializeInFlight = false;
   private lastAttendanceStatus: EstadoAsistencia | null = null;
@@ -103,11 +108,15 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly pageGestion = signal(0);
   protected readonly catalogo = signal<CatalogoResponse | null>(null);
   protected readonly selectedTipificacionCode = signal('');
+  protected readonly selectedSubtipificacionCode = signal('');
   protected readonly planes = signal<PlanResponse[]>([]);
   protected readonly promociones = signal<PromocionComercialResponse[]>([]);
   protected readonly adicionales = signal<AdicionalResponse[]>([]);
+  protected readonly selectedOfertaProviderId = signal<number | null>(null);
   protected readonly adicionalesSeleccionados = signal<AdicionalSeleccionado[]>([]);
-  protected readonly nuevoAdicionalId = signal<number | null>(null);
+  protected readonly departamentos = signal<UbigeoItem[]>([]);
+  protected readonly provinciasDomicilio = signal<UbigeoItem[]>([]);
+  protected readonly distritosDomicilio = signal<UbigeoItem[]>([]);
   private readonly adicionalesDirty = signal(false);
   protected readonly detailDialogOpen = signal(false);
   protected readonly activeDataTab = signal('datos');
@@ -116,12 +125,18 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly searchTermActive = signal('');
   protected readonly isSearching = signal(false);
   protected readonly searchLookup = signal<LeadContextoLookupResponse | null>(null);
+  protected readonly todayDate = this.todayLocalDate();
   protected readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   protected readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
   protected readonly skeletonRows = Array.from({ length: 8 });
-  protected readonly tipoDocumentoOptions = ['DNI', 'CE', 'PASAPORTE'];
-  protected readonly tipoDomicilioOptions = ['CASA', 'DEPARTAMENTO', 'NEGOCIO'];
-  protected readonly tipoViaOptions = ['CALLE', 'AVENIDA', 'JIRON'];
+  protected readonly tipoDocumentoOptions = ['DNI', 'CE', 'RUC'];
+  protected readonly tipoDomicilioOptions = [
+    'HOGAR',
+    'MULTIFAMILIAR',
+    'CONDOMINIO_EDIFICIO',
+    'CONDOMINIO_EDIFICIO_NO_HABILITADO'
+  ];
+  protected readonly tipoViaOptions = ['AVENIDA', 'JIRON', 'CALLE', 'PASAJE', 'PROLONGACION'];
 
   protected readonly datosForm = this.fb.group({
     tipoDocumento: ['DNI', [Validators.required]],
@@ -138,9 +153,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly direccionForm = this.fb.group({
+    idDepartamentoDomicilio: [0, [Validators.required, Validators.min(1)]],
+    idProvinciaDomicilio: [0, [Validators.required, Validators.min(1)]],
+    idDistritoDomicilio: [0, [Validators.required, Validators.min(1)]],
     ubigeoDomicilio: ['', [Validators.required]],
-    tipoDomicilio: ['CASA'],
-    tipoVia: ['CALLE'],
+    tipoDomicilio: [''],
+    tipoVia: [''],
     via: [''],
     direccion: ['', [Validators.required]],
     referencia: [''],
@@ -158,6 +176,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   });
 
   protected readonly ofertaForm = this.fb.group({
+    idProveedor: [0],
     idPlan: [0],
     idPromocionInterna: [0]
   });
@@ -166,7 +185,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     codigoTipificacion: ['', [Validators.required]],
     codigoSubtipificacion: ['', [Validators.required]],
     comentario: [''],
-    fechaInstalacion: ['']
+    fechaInstalacion: [''],
+    fechaProgramacion: [''],
+    horaProgramada: ['']
   });
 
   protected readonly tipificaciones = computed(() => [...(this.catalogo()?.tipificaciones ?? [])].sort((a, b) => a.orden - b.orden));
@@ -177,12 +198,34 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     ].sort((a, b) => a.orden - b.orden);
   });
   protected readonly selectedSubtipificacion = computed(() => {
-    const codigo = this.tipificacionForm.controls.codigoSubtipificacion.value;
+    const codigo = this.selectedSubtipificacionCode();
     return this.subtipificaciones().find((subtipificacion) => subtipificacion.codigo === codigo);
   });
-  protected readonly requiresInstallDate = computed(() => this.selectedSubtipificacion()?.etapaCambio === 'POSTVENTA');
-  protected readonly planOptions = computed(() => [{ id: 0, nombre: 'Sin plan' }, ...this.planes()]);
+  protected readonly requiresInstallDate = computed(() =>
+    this.selectedTipificacionCode() === 'INSTALADO' || this.selectedSubtipificacion()?.etapaCambio === 'POSTVENTA'
+  );
+  protected readonly requiresProgramming = computed(() => this.selectedTipificacionCode() === 'PROGRAMADO');
+  protected readonly ofertaProviderOptions = computed<OfertaProviderOption[]>(() => {
+    const providersById = new Map<number, OfertaProviderOption>();
+    for (const plan of this.planes()) {
+      if (plan.idProveedor) {
+        providersById.set(plan.idProveedor, {
+          id: plan.idProveedor,
+          nombre: plan.nombreProveedor ?? `Proveedor ${plan.idProveedor}`
+        });
+      }
+    }
+    return [...providersById.values()].sort((left, right) => left.nombre.localeCompare(right.nombre));
+  });
+  protected readonly planOptions = computed(() => {
+    const idProveedor = this.selectedOfertaProviderId();
+    const providerPlans = idProveedor ? this.planes().filter((plan) => plan.idProveedor === idProveedor) : [];
+    return [{ id: 0, nombre: 'Sin plan' }, ...providerPlans];
+  });
   protected readonly promocionOptions = computed(() => [{ id: 0, reglaComercial: 'Sin promocion' }, ...this.promociones()]);
+  protected readonly ofertaAdditionalsTotal = computed(() =>
+    this.adicionalesSeleccionadosView().reduce((total, adicional) => total + (adicional.precioUnitario ?? 0) * adicional.cantidad, 0)
+  );
 
   // Regla de negocio (backend): el BackOffice solo puede registrar la oferta comercial
   // una vez por ciclo de VENTA. Se detecta replicando la validacion del backend sobre
@@ -249,8 +292,13 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
     this.realtimeSubscription.add(
       this.tipificacionForm.controls.codigoTipificacion.valueChanges.subscribe((codigo) => {
-        this.selectedTipificacionCode.set(codigo);
-        this.tipificacionForm.patchValue({ codigoSubtipificacion: '', fechaInstalacion: '' });
+        this.onTipificacionSelected(codigo);
+      })
+    );
+
+    this.realtimeSubscription.add(
+      this.tipificacionForm.controls.codigoSubtipificacion.valueChanges.subscribe((codigo) => {
+        this.onSubtipificacionSelected(codigo);
       })
     );
 
@@ -276,7 +324,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.initializeInFlight = true;
     this.isLoading.set(true);
     try {
-      await Promise.all([this.refreshPlanes(), this.refreshPlataforma(false), this.refreshGestion(false)]);
+      await Promise.all([this.refreshPlanes(), this.refreshDepartamentos(), this.refreshPlataforma(false), this.refreshGestion(false)]);
       this.initialized = true;
       this.operationalGate.markActivated();
     } catch (error) {
@@ -393,7 +441,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       tasks.push({
         label: 'Direccion',
         markPristine: () => this.direccionForm.markAsPristine(),
-        action: () => firstValueFrom(this.leadService.actualizarDireccion(detail.id, this.cleanObject(this.direccionForm.getRawValue())))
+        action: () => firstValueFrom(this.leadService.actualizarDireccion(detail.id, this.getDireccionRequest()))
       });
     }
     if (this.isOfertaChanged()) {
@@ -465,6 +513,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.notify('warn', 'La fecha de instalacion es obligatoria para pasar a POSTVENTA.');
       return;
     }
+    if (this.requiresProgramming()) {
+      if (!this.tipificacionForm.controls.fechaProgramacion.value || !this.tipificacionForm.controls.horaProgramada.value) {
+        this.notify('warn', 'Ingresa fecha y hora de programacion.');
+        return;
+      }
+      if (this.tipificacionForm.controls.fechaProgramacion.value < this.todayLocalDate()) {
+        this.notify('warn', 'La fecha de programacion no puede ser anterior a hoy.');
+        return;
+      }
+    }
     const raw = this.tipificacionForm.getRawValue();
     await this.saveAction(
       () =>
@@ -472,7 +530,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
           codigoTipificacion: raw.codigoTipificacion,
           codigoSubtipificacion: raw.codigoSubtipificacion,
           comentario: this.showComment() ? raw.comentario || null : null,
-          fechaInstalacion: this.requiresInstallDate() ? raw.fechaInstalacion || null : null
+          fechaInstalacion: this.requiresInstallDate() ? raw.fechaInstalacion || null : null,
+          fechaProgramacion: this.requiresProgramming() ? raw.fechaProgramacion || null : null,
+          horaProgramada: this.requiresProgramming() ? raw.horaProgramada || null : null
         }),
       'Lead tipificado.',
       async () => {
@@ -486,40 +546,46 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (!this.canDisplayOperationalData()) {
       return;
     }
-    // Cambiar de plan puede cambiar de proveedor: los adicionales seleccionados dejan de ser validos.
-    if (this.adicionalesSeleccionados().length) {
-      this.adicionalesSeleccionados.set([]);
-      this.adicionalesDirty.set(true);
-    }
-    this.nuevoAdicionalId.set(null);
-    await this.refreshOfferCatalogs(this.ofertaForm.controls.idPlan.value);
+    const idPlan = this.ofertaForm.controls.idPlan.value;
+    this.ofertaForm.controls.idPromocionInterna.setValue(0);
+    await this.refreshPlanPromotions(idPlan);
   }
 
-  protected agregarAdicional(): void {
-    const id = this.nuevoAdicionalId();
-    if (!id) {
-      return;
-    }
-    if (this.adicionalesSeleccionados().some((item) => item.idAdicional === id)) {
-      this.nuevoAdicionalId.set(null);
-      return;
-    }
-    this.adicionalesSeleccionados.update((items) => [...items, { idAdicional: id, cantidad: 1 }]);
+  protected async onOfertaProviderChanged(idProveedor: number): Promise<void> {
+    this.selectedOfertaProviderId.set(idProveedor || null);
+    this.ofertaForm.patchValue({
+      idProveedor: idProveedor || 0,
+      idPlan: 0,
+      idPromocionInterna: 0
+    });
+    this.adicionalesSeleccionados.set([]);
+    this.promociones.set([]);
+    this.adicionales.set([]);
     this.adicionalesDirty.set(true);
-    this.nuevoAdicionalId.set(null);
+    this.ofertaForm.markAsDirty();
+    if (idProveedor) {
+      await this.refreshProviderAdditionals(idProveedor);
+    }
   }
 
-  protected cambiarCantidadAdicional(idAdicional: number, cantidad: number | null): void {
-    const value = Math.max(1, Math.trunc(cantidad ?? 1));
-    this.adicionalesSeleccionados.update((items) =>
-      items.map((item) => (item.idAdicional === idAdicional ? { ...item, cantidad: value } : item))
-    );
+  protected incrementarAdicional(adicional: AdicionalResponse): void {
+    const current = this.adicionalesSeleccionados();
+    const existing = current.find((item) => item.idAdicional === adicional.id);
+    const updated = existing
+      ? current.map((item) => (item.idAdicional === adicional.id ? { ...item, cantidad: item.cantidad + 1 } : item))
+      : [...current, { idAdicional: adicional.id, cantidad: 1 }];
+    this.adicionalesSeleccionados.set(updated);
     this.adicionalesDirty.set(true);
+    this.ofertaForm.markAsDirty();
   }
 
-  protected quitarAdicional(idAdicional: number): void {
-    this.adicionalesSeleccionados.update((items) => items.filter((item) => item.idAdicional !== idAdicional));
+  protected disminuirAdicional(adicional: AdicionalResponse): void {
+    const updated = this.adicionalesSeleccionados()
+      .map((item) => (item.idAdicional === adicional.id ? { ...item, cantidad: item.cantidad - 1 } : item))
+      .filter((item) => item.cantidad > 0);
+    this.adicionalesSeleccionados.set(updated);
     this.adicionalesDirty.set(true);
+    this.ofertaForm.markAsDirty();
   }
 
   protected async changePage(pageNumber: number): Promise<void> {
@@ -589,8 +655,50 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return `S/ ${value}`;
   }
 
+  protected toPickerDate(value: unknown): Date | null {
+    if (value instanceof Date) {
+      return value;
+    }
+
+    if (typeof value !== 'string' || !value) {
+      return null;
+    }
+
+    const cached = this.pickerDateCache.get(value);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    const parsed = match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : null;
+    this.pickerDateCache.set(value, parsed);
+    return parsed;
+  }
+
+  protected setDateControl(controlName: 'fechaInstalacion' | 'fechaProgramacion', value: Date | string | null): void {
+    const control = this.tipificacionForm.controls[controlName];
+    control.setValue(this.toBackendDate(value));
+    control.markAsTouched();
+    control.markAsDirty();
+  }
+
   protected leadPhone(row: LeadVentaResponse | LeadDetalleResponse): string {
     return `${row.prefijo} ${row.lead}`.trim();
+  }
+
+  protected eventScheduleLabel(evento: EventoResponse): string {
+    if (!evento.fechaProgramacion && !evento.horaProgramada) {
+      return '-';
+    }
+    return `${this.formatDateOnly(evento.fechaProgramacion)} ${evento.horaProgramada ?? ''}`.trim();
+  }
+
+  protected formatDateOnly(value?: string | null): string {
+    if (!value) {
+      return '-';
+    }
+    const [year, month, day] = value.split('-');
+    return year && month && day ? `${day}/${month}/${year}` : value;
   }
 
   protected isMine(row: LeadVentaResponse): boolean {
@@ -606,8 +714,89 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return 'info';
   }
 
+  protected onTipificacionSelected(codigo: string | null): void {
+    this.selectedTipificacionCode.set(codigo ?? '');
+    this.selectedSubtipificacionCode.set('');
+    this.tipificacionForm.patchValue(
+      {
+        codigoSubtipificacion: '',
+        fechaInstalacion: '',
+        fechaProgramacion: '',
+        horaProgramada: ''
+      },
+      { emitEvent: false }
+    );
+  }
+
+  protected onSubtipificacionSelected(codigo: string | null): void {
+    this.selectedSubtipificacionCode.set(codigo ?? '');
+    this.tipificacionForm.patchValue(
+      {
+        fechaInstalacion: '',
+        fechaProgramacion: '',
+        horaProgramada: ''
+      },
+      { emitEvent: false }
+    );
+  }
+
+  protected onTipoDocumentoChanged(): void {
+    const control = this.datosForm.controls.numeroDocumentoTitularServicio;
+    this.setNumericDigits(control, control.value, this.documentoServicioMaxLength());
+  }
+
+  protected async onDepartamentoDomicilioChanged(): Promise<void> {
+    const idDepartamento = this.direccionForm.controls.idDepartamentoDomicilio.value;
+    this.direccionForm.patchValue({
+      idProvinciaDomicilio: 0,
+      idDistritoDomicilio: 0,
+      ubigeoDomicilio: ''
+    });
+    this.provinciasDomicilio.set([]);
+    this.distritosDomicilio.set([]);
+    if (idDepartamento > 0) {
+      await this.loadProvinciasDomicilio(idDepartamento);
+    }
+  }
+
+  protected async onProvinciaDomicilioChanged(): Promise<void> {
+    const idProvincia = this.direccionForm.controls.idProvinciaDomicilio.value;
+    this.direccionForm.patchValue({
+      idDistritoDomicilio: 0,
+      ubigeoDomicilio: ''
+    });
+    this.distritosDomicilio.set([]);
+    if (idProvincia > 0) {
+      await this.loadDistritosDomicilio(idProvincia);
+    }
+  }
+
+  protected onDistritoDomicilioChanged(): void {
+    const idDistrito = this.direccionForm.controls.idDistritoDomicilio.value;
+    const distrito = this.distritosDomicilio().find((item) => item.id === idDistrito);
+    this.direccionForm.controls.ubigeoDomicilio.setValue(distrito?.codigo ?? '');
+    this.direccionForm.controls.ubigeoDomicilio.markAsDirty();
+  }
+
   protected toggleComment(): void {
     this.showComment.update((value) => !value);
+  }
+
+  private todayLocalDate(): string {
+    const now = new Date();
+    const month = `${now.getMonth() + 1}`.padStart(2, '0');
+    const day = `${now.getDate()}`.padStart(2, '0');
+    return `${now.getFullYear()}-${month}-${day}`;
+  }
+
+  private toBackendDate(value: Date | string | null): string {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      const month = `${value.getMonth() + 1}`.padStart(2, '0');
+      const day = `${value.getDate()}`.padStart(2, '0');
+      return `${value.getFullYear()}-${month}-${day}`;
+    }
+
+    return typeof value === 'string' ? value : '';
   }
 
   private startRealtime(): void {
@@ -724,6 +913,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.planes.set(planes);
   }
 
+  private async refreshDepartamentos(): Promise<void> {
+    const departamentos = await firstValueFrom(this.leadService.listarDepartamentos());
+    this.departamentos.set(departamentos);
+  }
+
   private async refreshTipificationCatalog(): Promise<void> {
     if (this.catalogo()) {
       return;
@@ -734,13 +928,91 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   private async refreshOfferCatalogs(idPlan: number): Promise<void> {
     const plan = this.planes().find((item) => item.id === idPlan);
-    const idProveedor = plan?.idProveedor;
+    const idProveedor = plan?.idProveedor ?? null;
+    this.selectedOfertaProviderId.set(idProveedor);
+    this.ofertaForm.controls.idProveedor.setValue(idProveedor ?? 0);
     const [promociones, adicionales] = await Promise.all([
       firstValueFrom(this.leadService.listarPromociones(idPlan ? { idPlan } : {})),
       idProveedor ? firstValueFrom(this.leadService.listarAdicionales(idProveedor)) : Promise.resolve([])
     ]);
     this.promociones.set(promociones);
     this.adicionales.set(adicionales);
+  }
+
+  private async refreshPlanPromotions(idPlan: number): Promise<void> {
+    const idProveedor = this.selectedOfertaProviderId() ?? undefined;
+    this.promociones.set(
+      await firstValueFrom(this.leadService.listarPromociones({
+        idProveedor,
+        ...(idPlan ? { idPlan } : {})
+      }))
+    );
+  }
+
+  private async refreshProviderAdditionals(idProveedor: number): Promise<void> {
+    this.adicionales.set(await firstValueFrom(this.leadService.listarAdicionales(idProveedor)));
+  }
+
+  private async resolveDomicilioSelection(ubigeoDomicilio: string | null): Promise<void> {
+    if (!ubigeoDomicilio) {
+      this.provinciasDomicilio.set([]);
+      this.distritosDomicilio.set([]);
+      this.direccionForm.patchValue({
+        idDepartamentoDomicilio: 0,
+        idProvinciaDomicilio: 0,
+        idDistritoDomicilio: 0
+      });
+      this.direccionForm.markAsPristine();
+      return;
+    }
+
+    try {
+      const departamentos = this.departamentos().length
+        ? this.departamentos()
+        : await firstValueFrom(this.leadService.listarDepartamentos());
+      if (!this.departamentos().length) {
+        this.departamentos.set(departamentos);
+      }
+
+      for (const departamento of departamentos) {
+        const provincias = await firstValueFrom(this.leadService.listarProvincias(departamento.id));
+        for (const provincia of provincias) {
+          const distritos = await firstValueFrom(this.leadService.listarDistritos(provincia.id));
+          const distrito = distritos.find((item) => item.codigo === ubigeoDomicilio);
+          if (distrito) {
+            this.provinciasDomicilio.set(provincias);
+            this.distritosDomicilio.set(distritos);
+            this.direccionForm.patchValue({
+              idDepartamentoDomicilio: departamento.id,
+              idProvinciaDomicilio: provincia.id,
+              idDistritoDomicilio: distrito.id,
+              ubigeoDomicilio
+            });
+            this.direccionForm.markAsPristine();
+            return;
+          }
+        }
+      }
+    } catch {
+      this.provinciasDomicilio.set([]);
+      this.distritosDomicilio.set([]);
+    }
+  }
+
+  private async loadProvinciasDomicilio(idDepartamento: number): Promise<void> {
+    try {
+      this.provinciasDomicilio.set(await firstValueFrom(this.leadService.listarProvincias(idDepartamento)));
+    } catch (error) {
+      this.notify('warn', this.getErrorMessage(error, 'No se pudieron cargar las provincias.'));
+    }
+  }
+
+  private async loadDistritosDomicilio(idProvincia: number): Promise<void> {
+    try {
+      this.distritosDomicilio.set(await firstValueFrom(this.leadService.listarDistritos(idProvincia)));
+    } catch (error) {
+      this.notify('warn', this.getErrorMessage(error, 'No se pudieron cargar los distritos.'));
+    }
   }
 
   private currentQuery(pageNumber: number): PageQuery {
@@ -762,9 +1034,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       nombreTitularCelularRegistro: detail.nombreTitularCelularRegistro ?? ''
     });
     this.direccionForm.patchValue({
+      idDepartamentoDomicilio: 0,
+      idProvinciaDomicilio: 0,
+      idDistritoDomicilio: 0,
       ubigeoDomicilio: detail.ubigeoDomicilio ?? '',
-      tipoDomicilio: detail.tipoDomicilio ?? 'CASA',
-      tipoVia: detail.tipoVia ?? 'CALLE',
+      tipoDomicilio: detail.tipoDomicilio ?? '',
+      tipoVia: detail.tipoVia ?? '',
       via: detail.via ?? '',
       direccion: detail.direccion ?? '',
       referencia: detail.referencia ?? '',
@@ -780,15 +1055,30 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       piso: detail.piso ?? '',
       interior: detail.interior ?? ''
     });
-    this.ofertaForm.patchValue({ idPlan: detail.idPlan ?? 0, idPromocionInterna: detail.idPromocionInterna ?? 0 });
+    const idPlan = detail.idPlan ?? 0;
+    const idProveedor = this.planes().find((plan) => plan.id === idPlan)?.idProveedor ?? null;
+    this.selectedOfertaProviderId.set(idProveedor);
+    this.ofertaForm.patchValue({
+      idProveedor: idProveedor ?? 0,
+      idPlan,
+      idPromocionInterna: detail.idPromocionInterna ?? 0
+    });
     this.adicionalesSeleccionados.set([]);
     this.adicionalesDirty.set(false);
-    this.nuevoAdicionalId.set(null);
-    this.tipificacionForm.reset({ codigoTipificacion: '', codigoSubtipificacion: '', comentario: '', fechaInstalacion: '' });
+    this.tipificacionForm.reset({
+      codigoTipificacion: '',
+      codigoSubtipificacion: '',
+      comentario: '',
+      fechaInstalacion: '',
+      fechaProgramacion: '',
+      horaProgramada: ''
+    });
     this.selectedTipificacionCode.set('');
+    this.selectedSubtipificacionCode.set('');
     this.showComment.set(false);
     this.activeDataTab.set('datos');
     this.markFormsPristine();
+    void this.resolveDomicilioSelection(detail.ubigeoDomicilio ?? null);
   }
 
   private mergeVisualRows(previous: VisualLeadVenta[], incoming: LeadVentaResponse[], animateNew: boolean): VisualLeadVenta[] {
@@ -822,10 +1112,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.detail.set(null);
     this.eventos.set([]);
     this.selectedLeadId.set(null);
+    this.selectedTipificacionCode.set('');
+    this.selectedSubtipificacionCode.set('');
     this.showComment.set(false);
+    this.selectedOfertaProviderId.set(null);
     this.adicionalesSeleccionados.set([]);
     this.adicionalesDirty.set(false);
-    this.nuevoAdicionalId.set(null);
+    this.provinciasDomicilio.set([]);
+    this.distritosDomicilio.set([]);
   }
 
   private markFormsPristine(): void {
@@ -863,6 +1157,49 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return '';
     }
     return digits.length > 9 ? digits.slice(-9) : digits;
+  }
+
+  private documentoServicioMaxLength(): number {
+    switch (this.datosForm.controls.tipoDocumento.value) {
+      case 'DNI': return 8;
+      case 'RUC': return 11;
+      case 'CE': return 12;
+      default: return 12;
+    }
+  }
+
+  private setNumericDigits(control: AbstractControl | null, value: string, maxLength: number): void {
+    if (!control) {
+      return;
+    }
+    const normalized = value.replace(/\D/g, '').slice(0, maxLength);
+    if (control.value !== normalized) {
+      control.setValue(normalized);
+      control.markAsDirty();
+    }
+  }
+
+  private getDireccionRequest() {
+    const raw = this.direccionForm.getRawValue();
+    return this.cleanObject({
+      ubigeoDomicilio: raw.ubigeoDomicilio,
+      tipoDomicilio: raw.tipoDomicilio,
+      tipoVia: raw.tipoVia,
+      via: raw.via,
+      direccion: raw.direccion,
+      referencia: raw.referencia,
+      latitud: raw.latitud as number,
+      longitud: raw.longitud as number,
+      urbanizacion: raw.urbanizacion,
+      numero: raw.numero,
+      manzana: raw.manzana,
+      lote: raw.lote,
+      nombreEdificio: raw.nombreEdificio,
+      nombreCondominio: raw.nombreCondominio,
+      plano: raw.plano,
+      piso: raw.piso,
+      interior: raw.interior
+    });
   }
 
   private cleanObject<T extends Record<string, unknown>>(value: T): T {
@@ -906,9 +1243,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.pageGestion.set(0);
     this.detailDialogOpen.set(false);
     this.showComment.set(false);
+    this.selectedOfertaProviderId.set(null);
     this.adicionalesSeleccionados.set([]);
     this.adicionalesDirty.set(false);
-    this.nuevoAdicionalId.set(null);
+    this.provinciasDomicilio.set([]);
+    this.distritosDomicilio.set([]);
     this.searchInput.set('');
     this.searchTermActive.set('');
     this.searchLookup.set(null);

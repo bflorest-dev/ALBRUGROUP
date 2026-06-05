@@ -16,7 +16,8 @@ import {
   LeadVentaResponse,
   PageQuery,
   PlanResponse,
-  PromocionComercialResponse
+  PromocionComercialResponse,
+  UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
 
 @Injectable({ providedIn: 'root' })
@@ -106,6 +107,18 @@ export class BackofficeLeadService {
     return this.http.get<AdicionalResponse[]>(`${this.leadUrl}/planes/adicionales`, {
       params: new HttpParams().set('idProveedor', idProveedor)
     });
+  }
+
+  listarDepartamentos(): Observable<UbigeoItem[]> {
+    return this.http.get<UbigeoItem[]>(`${this.leadUrl}/ubigeo/departamentos`);
+  }
+
+  listarProvincias(idDepartamento: number): Observable<UbigeoItem[]> {
+    return this.http.get<UbigeoItem[]>(`${this.leadUrl}/ubigeo/departamentos/${idDepartamento}/provincias`);
+  }
+
+  listarDistritos(idProvincia: number): Observable<UbigeoItem[]> {
+    return this.http.get<UbigeoItem[]>(`${this.leadUrl}/ubigeo/provincias/${idProvincia}/distritos`);
   }
 
   private pageParams(query: PageQuery): HttpParams {

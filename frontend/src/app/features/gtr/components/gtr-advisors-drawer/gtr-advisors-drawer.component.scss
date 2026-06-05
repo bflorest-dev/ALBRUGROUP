@@ -63,6 +63,26 @@
   gap: 0.65rem;
 }
 
+// Reloj sutil para ampliar horario. Inline = al final de la fila de tags (card normal).
+.advisor-card__clock--inline {
+  margin-left: auto;
+}
+
+// Fila de acciones de las cards en abandono: "Ver leads" toma el ancho libre y el reloj queda fijo.
+.advisor-card__actions {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.advisor-card__leads {
+  flex: 1 1 auto;
+}
+
+.advisor-card__clock {
+  flex: 0 0 auto;
+}
+
 .advisor-card__warning {
   color: #b91c1c;
   font-size: 0.76rem;

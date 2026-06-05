@@ -1,0 +1,114 @@
+<p-dialog
+  [visible]="facade.activeDialog() === 'schedule-extension'"
+  (visibleChange)="!$event && facade.closeScheduleExtension()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [dismissableMask]="true"
+  [style]="dialogStyle"
+  styleClass="gtr-extension-dialog"
+  header="Ampliar horario"
+>
+  <div class="extension-body">
+    @if (facade.extensionTarget(); as advisor) {
+      <p class="extension-advisor">{{ advisor.nombreCompleto | uppercase }}</p>
+    }
+
+    @if (facade.extensionError(); as error) {
+      <p-message severity="error" [text]="error" styleClass="extension-message" />
+    }
+
+    @if (facade.isLoadingExtensionContext()) {
+      <div class="extension-loading">
+        <p-progress-spinner strokeWidth="4" styleClass="extension-spinner" />
+        <span>Cargando horario…</span>
+      </div>
+    } @else if (facade.extensionContext(); as ctx) {
+      @if (!ctx.tieneHorarioVigente || !ctx.laborable) {
+        <p-message
+          severity="warn"
+          text="Este asesor no tiene un horario vigente hoy. No es posible ampliar."
+          styleClass="extension-message"
+        />
+      } @else {
+        <div class="extension-current">
+          <span class="extension-current__label">Horario de hoy</span>
+          <span class="extension-current__value">
+            {{ formatTime(ctx.entradaProgramada) }} – {{ formatTime(ctx.salidaProgramada) }}
+          </span>
+          <span class="extension-current__estado">{{ estadoLabel() }}</span>
+        </div>
+
+        <form [formGroup]="facade.extensionForm" class="extension-form" (ngSubmit)="facade.submitScheduleExtension()">
+          @if (ctx.jornadaCerrada) {
+            <p-message
+              severity="info"
+              text="La jornada ya se cerró. Se agregará un tramo nuevo para que el asesor retome el trabajo."
+              styleClass="extension-message"
+            />
+            <label class="extension-field">
+              <span>Entrada del nuevo tramo</span>
+              <p-datepicker formControlName="horaEntrada" [timeOnly]="true" hourFormat="24" appendTo="body" />
+            </label>
+            <label class="extension-field">
+              <span>Salida del nuevo tramo</span>
+              <p-datepicker formControlName="horaSalida" [timeOnly]="true" hourFormat="24" appendTo="body" />
+            </label>
+          } @else {
+            <label class="extension-field">
+              <span>Adelantar entrada a <small>(opcional)</small></span>
+              <p-datepicker
+                formControlName="horaEntrada"
+                [timeOnly]="true"
+                hourFormat="24"
+                appendTo="body"
+                placeholder="Sin cambio"
+              />
+            </label>
+            <label class="extension-field">
+              <span>Extender salida a <small>(opcional)</small></span>
+              <p-datepicker
+                formControlName="horaSalida"
+                [timeOnly]="true"
+                hourFormat="24"
+                appendTo="body"
+                placeholder="Sin cambio"
+              />
+            </label>
+          }
+
+          <label class="extension-field">
+            <span>Motivo</span>
+            <textarea
+              pTextarea
+              formControlName="motivo"
+              rows="2"
+              placeholder="Motivo de la ampliación"
+            ></textarea>
+          </label>
+        </form>
+      }
+    }
+  </div>
+
+  <div class="extension-actions">
+    <button
+      pButton
+      type="button"
+      label="Cancelar"
+      severity="secondary"
+      [text]="true"
+      [disabled]="facade.isSavingExtension()"
+      (click)="facade.closeScheduleExtension()"
+    ></button>
+    <button
+      pButton
+      type="button"
+      label="Guardar ampliación"
+      icon="pi pi-check"
+      [loading]="facade.isSavingExtension()"
+      [disabled]="facade.isLoadingExtensionContext() || !facade.extensionContext()?.tieneHorarioVigente || !facade.extensionContext()?.laborable"
+      (click)="facade.submitScheduleExtension()"
+    ></button>
+  </div>
+</p-dialog>

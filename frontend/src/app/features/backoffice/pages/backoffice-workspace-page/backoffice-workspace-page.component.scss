@@ -99,7 +99,7 @@ p,
   align-items: end;
   display: grid;
   gap: 0.8rem;
-  grid-template-columns: auto minmax(12rem, 1fr) minmax(12rem, 1fr) minmax(10rem, auto) auto auto;
+  grid-template-columns: auto repeat(4, minmax(10rem, 1fr)) auto auto;
 }
 
 .comment-field,
@@ -166,57 +166,6 @@ label {
   margin-top: 1rem;
 }
 
-.field-label {
-  color: #425466;
-  font-size: 0.78rem;
-  font-weight: 800;
-}
-
-.adicional-picker {
-  display: grid;
-  gap: 0.35rem;
-}
-
-.adicional-add {
-  align-items: center;
-  display: flex;
-  gap: 0.6rem;
-}
-
-.adicional-add .p-select {
-  flex: 1 1 auto;
-}
-
-.adicional-list {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.adicional-row {
-  align-items: center;
-  background: color-mix(in srgb, var(--role-accent) 7%, #ffffff 93%);
-  border: 1px solid color-mix(in srgb, var(--role-accent) 18%, #ffffff 82%);
-  border-radius: 12px;
-  display: flex;
-  gap: 0.75rem;
-  padding: 0.55rem 0.75rem;
-}
-
-.adicional-name {
-  flex: 1 1 auto;
-  font-weight: 800;
-}
-
-.adicional-price {
-  color: var(--role-muted);
-  font-weight: 700;
-}
-
-.adicional-empty {
-  color: var(--role-muted);
-  font-size: 0.85rem;
-}
-
 .dialog-actions {
   display: flex;
   justify-content: flex-end;
@@ -257,6 +206,8 @@ label {
   }
 
   .tipification-bar .p-select,
+  .tipification-bar .p-inputtext,
+  .tipification-bar .p-datepicker,
   .form-grid .p-select,
   .form-grid .p-inputtext,
   .form-grid .p-textarea,

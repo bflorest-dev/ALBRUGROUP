@@ -178,8 +178,41 @@
   background: transparent;
 }
 
+.profile-menu__item--switch {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
 .profile-menu__item:hover {
   background: var(--layout-sidebar-hover);
+}
+
+.profile-switch {
+  width: 2.15rem;
+  height: 1.18rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  transition: background-color 0.16s ease;
+}
+
+.profile-switch span {
+  width: 0.92rem;
+  height: 0.92rem;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  transition: transform 0.16s ease;
+}
+
+.profile-switch--on {
+  background: var(--role-accent);
+}
+
+.profile-switch--on span {
+  transform: translateX(0.96rem);
 }
 
 .profile-button {

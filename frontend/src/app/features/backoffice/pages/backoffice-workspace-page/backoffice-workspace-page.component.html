@@ -252,7 +252,15 @@
 
           <label>
             <span>Tipificacion</span>
-            <p-select formControlName="codigoTipificacion" [options]="tipificaciones()" optionLabel="codigo" optionValue="codigo" placeholder="Seleccionar" appendTo="body">
+            <p-select
+              formControlName="codigoTipificacion"
+              [options]="tipificaciones()"
+              optionLabel="codigo"
+              optionValue="codigo"
+              placeholder="Seleccionar"
+              appendTo="body"
+              (onChange)="onTipificacionSelected($event.value)"
+            >
               <ng-template #item let-tipificacion>
                 <div class="select-item">
                   <strong>{{ tipificacion.codigo }}</strong>
@@ -272,6 +280,7 @@
               placeholder="Seleccionar"
               appendTo="body"
               [disabled]="!selectedTipificacionCode() || !subtipificaciones().length"
+              (onChange)="onSubtipificacionSelected($event.value)"
             >
               <ng-template #item let-subtipificacion>
                 <div class="select-item">
@@ -285,7 +294,43 @@
           @if (requiresInstallDate()) {
             <label>
               <span>Fecha instalacion</span>
-              <input pInputText type="date" formControlName="fechaInstalacion" />
+              <p-datepicker
+                [ngModel]="toPickerDate(tipificacionForm.controls.fechaInstalacion.getRawValue())"
+                [ngModelOptions]="{ standalone: true }"
+                dateFormat="dd/mm/yy"
+                [showIcon]="true"
+                appendTo="body"
+                (ngModelChange)="setDateControl('fechaInstalacion', $event)"
+              />
+            </label>
+          }
+
+          @if (requiresProgramming()) {
+            <label>
+              <span>Fecha programacion</span>
+              <p-datepicker
+                [ngModel]="toPickerDate(tipificacionForm.controls.fechaProgramacion.getRawValue())"
+                [ngModelOptions]="{ standalone: true }"
+                dateFormat="dd/mm/yy"
+                [minDate]="toPickerDate(todayDate)"
+                [showIcon]="true"
+                appendTo="body"
+                (ngModelChange)="setDateControl('fechaProgramacion', $event)"
+              />
+            </label>
+
+            <label>
+              <span>Hora programacion</span>
+              <p-datepicker
+                formControlName="horaProgramada"
+                dataType="string"
+                [timeOnly]="true"
+                hourFormat="24"
+                [stepMinute]="15"
+                [showIcon]="true"
+                icon="pi pi-clock"
+                appendTo="body"
+              />
             </label>
           }
 
@@ -307,195 +352,66 @@
           }
         </form>
 
-        <p-tabs [value]="activeDataTab()" (valueChange)="activeDataTab.set($any($event))">
-          <p-tablist>
-            <p-tab value="datos">Datos Preventa</p-tab>
-            <p-tab value="direccion">Direccion</p-tab>
-            <p-tab value="oferta">Oferta Comercial</p-tab>
-            <p-tab value="historial">Historial</p-tab>
-          </p-tablist>
-
-          <p-tabpanels>
-            <p-tabpanel value="datos">
-              <form class="form-grid" [formGroup]="datosForm">
-                <label><span>Documento</span><p-select formControlName="tipoDocumento" [options]="tipoDocumentoOptions" appendTo="body" /></label>
-                <label><span>Numero documento</span><input pInputText type="text" formControlName="numeroDocumentoTitularServicio" /></label>
-                <label><span>Nombre titular</span><input pInputText type="text" formControlName="nombreTitularServicio" /></label>
-                <label><span>Celular registro</span><input pInputText type="text" formControlName="celularRegistro" /></label>
-                <label><span>Celular referencia</span><input pInputText type="text" formControlName="celularReferencia" /></label>
-                <label><span>Correo</span><input pInputText type="email" formControlName="correo" /></label>
-                <label><span>Ubigeo nacimiento</span><input pInputText type="text" formControlName="ubigeoNacimiento" /></label>
-                <label><span>Madre</span><input pInputText type="text" formControlName="nombreMadre" /></label>
-                <label><span>Padre</span><input pInputText type="text" formControlName="nombrePadre" /></label>
-                <label><span>Documento titular celular</span><input pInputText type="text" formControlName="numeroDocumentoTitularCelularRegistro" /></label>
-                <label class="wide"><span>Nombre titular celular</span><input pInputText type="text" formControlName="nombreTitularCelularRegistro" /></label>
-              </form>
-            </p-tabpanel>
-
-            <p-tabpanel value="direccion">
-              <form class="form-grid" [formGroup]="direccionForm">
-                <label><span>Ubigeo domicilio</span><input pInputText type="text" formControlName="ubigeoDomicilio" /></label>
-                <label><span>Tipo domicilio</span><p-select formControlName="tipoDomicilio" [options]="tipoDomicilioOptions" appendTo="body" /></label>
-                <label><span>Tipo via</span><p-select formControlName="tipoVia" [options]="tipoViaOptions" appendTo="body" /></label>
-                <label><span>Nombre via</span><input pInputText type="text" formControlName="via" /></label>
-                <label class="wide"><span>Direccion</span><input pInputText type="text" formControlName="direccion" /></label>
-                <label><span>Latitud</span><input pInputText type="number" step="0.000001" formControlName="latitud" /></label>
-                <label><span>Longitud</span><input pInputText type="number" step="0.000001" formControlName="longitud" /></label>
-                <label class="wide"><span>Referencia</span><input pInputText type="text" formControlName="referencia" /></label>
-                <label><span>Urbanizacion</span><input pInputText type="text" formControlName="urbanizacion" /></label>
-                <label><span>Numero</span><input pInputText type="text" formControlName="numero" /></label>
-                <label><span>Manzana</span><input pInputText type="text" formControlName="manzana" /></label>
-                <label><span>Lote</span><input pInputText type="text" formControlName="lote" /></label>
-                <label><span>Edificio</span><input pInputText type="text" formControlName="nombreEdificio" /></label>
-                <label><span>Condominio</span><input pInputText type="text" formControlName="nombreCondominio" /></label>
-                <label><span>Plano</span><input pInputText type="text" formControlName="plano" /></label>
-                <label><span>Piso</span><input pInputText type="text" formControlName="piso" /></label>
-                <label><span>Interior</span><input pInputText type="text" formControlName="interior" /></label>
-              </form>
-            </p-tabpanel>
-
-            <p-tabpanel value="oferta">
-              @if (ofertaYaRegistrada()) {
-                <p-message
-                  severity="info"
-                  styleClass="oferta-note"
-                  text="El plan ofrecido ya fue registrado en esta venta. No se puede cambiar de nuevo."
-                />
-              } @else {
-                <p-message
-                  severity="warn"
-                  styleClass="oferta-note"
-                  text="Solo puedes registrar el plan una vez. Revisa el plan, la promocion y los adicionales antes de guardar."
-                />
-              }
-              <form class="form-grid" [formGroup]="ofertaForm">
-                <label class="wide">
-                  <span>Plan</span>
-                  <p-select
-                    formControlName="idPlan"
-                    [options]="planOptions()"
-                    optionLabel="nombre"
-                    optionValue="id"
-                    appendTo="body"
-                    [disabled]="ofertaYaRegistrada()"
-                    (onChange)="onPlanChanged()"
-                  >
-                    <ng-template #item let-plan>
-                      <div class="select-item">
-                        <strong>{{ plan.nombre }}</strong>
-                        @if (plan.id) {
-                          <small>S/ {{ display(plan.precioPromocional || plan.precio) }}</small>
-                        }
-                      </div>
-                    </ng-template>
-                  </p-select>
-                </label>
-                <label class="wide">
-                  <span>Promocion</span>
-                  <p-select
-                    formControlName="idPromocionInterna"
-                    [options]="promocionOptions()"
-                    optionLabel="reglaComercial"
-                    optionValue="id"
-                    appendTo="body"
-                    [disabled]="ofertaYaRegistrada()"
-                  />
-                </label>
-
-                @if (!ofertaYaRegistrada()) {
-                  <div class="adicional-picker wide">
-                    <span class="field-label">Agregar adicional</span>
-                    <div class="adicional-add">
-                      <p-select
-                        [options]="adicionalDisponibles()"
-                        optionLabel="nombre"
-                        optionValue="id"
-                        placeholder="Elige un adicional"
-                        appendTo="body"
-                        [filter]="true"
-                        filterBy="nombre"
-                        [ngModel]="nuevoAdicionalId()"
-                        (ngModelChange)="nuevoAdicionalId.set($event)"
-                        [ngModelOptions]="{ standalone: true }"
-                      >
-                        <ng-template #item let-adicional>
-                          <div class="select-item">
-                            <strong>{{ adicional.nombre }}</strong>
-                            <small>S/ {{ display(adicional.precioUnitario) }}</small>
-                          </div>
-                        </ng-template>
-                      </p-select>
-                      <button
-                        pButton
-                        type="button"
-                        icon="pi pi-plus"
-                        label="Agregar"
-                        severity="secondary"
-                        [disabled]="!nuevoAdicionalId()"
-                        (click)="agregarAdicional()"
-                      ></button>
-                    </div>
-                  </div>
-                }
-
-                <div class="adicional-list wide">
-                  @for (item of adicionalesSeleccionadosView(); track item.idAdicional) {
-                    <div class="adicional-row">
-                      <span class="adicional-name">{{ item.nombre }}</span>
-                      <span class="adicional-price">S/ {{ display(item.precioUnitario) }}</span>
-                      <p-inputNumber
-                        [ngModel]="item.cantidad"
-                        (ngModelChange)="cambiarCantidadAdicional(item.idAdicional, $event)"
-                        [ngModelOptions]="{ standalone: true }"
-                        [min]="1"
-                        [showButtons]="true"
-                        buttonLayout="horizontal"
-                        decrementButtonClass="p-button-secondary"
-                        incrementButtonClass="p-button-secondary"
-                        incrementButtonIcon="pi pi-plus"
-                        decrementButtonIcon="pi pi-minus"
-                        [disabled]="ofertaYaRegistrada()"
-                        inputStyleClass="adicional-qty"
-                      />
-                      @if (!ofertaYaRegistrada()) {
-                        <button pButton type="button" icon="pi pi-trash" severity="danger" text (click)="quitarAdicional(item.idAdicional)"></button>
-                      }
-                    </div>
-                  } @empty {
-                    <span class="adicional-empty">
-                      @if (ofertaYaRegistrada()) {
-                        Sin adicionales registrados.
-                      } @else {
-                        No agregaste adicionales. Elige uno arriba si corresponde.
-                      }
-                    </span>
-                  }
-                </div>
-              </form>
-            </p-tabpanel>
-
-            <p-tabpanel value="historial">
-              <p-table [value]="eventos()" [rowHover]="true" styleClass="p-datatable-sm event-table">
-                <ng-template #header>
-                  <tr><th>Fecha</th><th>Accion</th><th>Actor</th><th>Tipificacion</th><th>Comentario</th></tr>
-                </ng-template>
-                <ng-template #body let-evento>
-                  <tr>
-                    <td>{{ evento.createdAt | date: 'dd/MM HH:mm' }}</td>
-                    <td>{{ display(evento.accion) }}</td>
-                    <td>{{ display(evento.nombreActor) }}</td>
-                    <td>{{ display(evento.tipificacion || evento.subtipificacion) }}</td>
-                    <td>{{ display(evento.comentario || evento.fechaInstalacion) }}</td>
-                  </tr>
-                </ng-template>
-                <ng-template #emptymessage>
-                  <tr><td colspan="5">No hay eventos para este lead.</td></tr>
-                </ng-template>
-              </p-table>
-            </p-tabpanel>
-          </p-tabpanels>
-        </p-tabs>
-
+        <app-lead-commercial-data-tabs
+          [datosForm]="datosForm"
+          [direccionForm]="direccionForm"
+          [ofertaForm]="ofertaForm"
+          [activeTab]="$any(activeDataTab())"
+          [showHistorialTab]="true"
+          [tipoDocumentoOptions]="tipoDocumentoOptions"
+          [tipoDomicilioOptions]="tipoDomicilioOptions"
+          [tipoViaOptions]="tipoViaOptions"
+          [departamentos]="departamentos()"
+          [provinciasDomicilio]="provinciasDomicilio()"
+          [distritosDomicilio]="distritosDomicilio()"
+          [providerOptions]="ofertaProviderOptions()"
+          [selectedProviderId]="selectedOfertaProviderId()"
+          [planOptions]="planOptions()"
+          [promocionOptions]="promocionOptions()"
+          [adicionales]="adicionales()"
+          [selectedAdditionals]="adicionalesSeleccionadosView()"
+          [additionalsTotal]="ofertaAdditionalsTotal()"
+          [offerLocked]="ofertaYaRegistrada()"
+          [offerNoticeSeverity]="ofertaYaRegistrada() ? 'info' : 'warn'"
+          [offerNoticeText]="ofertaYaRegistrada() ? 'El plan ofrecido ya fue registrado en esta venta. No se puede cambiar de nuevo.' : 'Solo puedes registrar el plan una vez. Revisa el plan, la promocion y los adicionales antes de guardar.'"
+          (activeTabChange)="activeDataTab.set($event)"
+          (tipoDocumentoChange)="onTipoDocumentoChanged()"
+          (departamentoDomicilioChange)="onDepartamentoDomicilioChanged()"
+          (provinciaDomicilioChange)="onProvinciaDomicilioChanged()"
+          (distritoDomicilioChange)="onDistritoDomicilioChanged()"
+          (ofertaProviderChange)="onOfertaProviderChanged($event)"
+          (planChange)="onPlanChanged()"
+          (incrementarAdicional)="incrementarAdicional($event)"
+          (disminuirAdicional)="disminuirAdicional($event)"
+        >
+          <p-table lead-commercial-history [value]="eventos()" [rowHover]="true" styleClass="p-datatable-sm event-table">
+            <ng-template #header>
+              <tr>
+                <th>Fecha</th>
+                <th>Accion</th>
+                <th>Actor</th>
+                <th>Tipificacion</th>
+                <th>Programacion</th>
+                <th>Instalacion</th>
+                <th>Comentario</th>
+              </tr>
+            </ng-template>
+            <ng-template #body let-evento>
+              <tr>
+                <td>{{ evento.createdAt | date: 'dd/MM HH:mm' }}</td>
+                <td>{{ display(evento.accion) }}</td>
+                <td>{{ display(evento.nombreActor) }}</td>
+                <td>{{ display(evento.tipificacion || evento.subtipificacion) }}</td>
+                <td>{{ eventScheduleLabel(evento) }}</td>
+                <td>{{ formatDateOnly(evento.fechaInstalacion) }}</td>
+                <td>{{ display(evento.comentario) }}</td>
+              </tr>
+            </ng-template>
+            <ng-template #emptymessage>
+              <tr><td colspan="7">No hay eventos para este lead.</td></tr>
+            </ng-template>
+          </p-table>
+        </app-lead-commercial-data-tabs>
         <footer class="dialog-actions">
           <button
             pButton

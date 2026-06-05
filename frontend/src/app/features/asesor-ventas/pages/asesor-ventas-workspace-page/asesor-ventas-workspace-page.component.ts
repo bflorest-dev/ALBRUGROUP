@@ -24,6 +24,7 @@ import { OperationalGateService } from '../../../../core/services/operational-ga
 import { DisponibilidadOperativa, PresenceService } from '../../../../core/services/presence.service';
 import { SessionService } from '../../../../core/services/session.service';
 import { EstadoAsistencia } from '../../../../shared/models/schedule/estado-asistencia';
+import { LeadCommercialDataTabsComponent } from '../../../../shared/components/lead-commercial-data-tabs/lead-commercial-data-tabs.component';
 import {
   AdicionalResponse,
   CatalogoResponse,
@@ -70,7 +71,8 @@ type OfertaAdditionalSelection = {
     TabsModule,
     TagModule,
     TextareaModule,
-    TooltipModule
+    TooltipModule,
+    LeadCommercialDataTabsComponent
   ],
   templateUrl: './asesor-ventas-workspace-page.component.html',
   styleUrl: './asesor-ventas-workspace-page.component.scss',
@@ -148,6 +150,8 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
     celularRegistro: [''],
     celularReferencia: [''],
     correo: [''],
+    nombreMadre: [''],
+    nombrePadre: [''],
     numeroDocumentoTitularCelularRegistro: [''],
     nombreTitularCelularRegistro: ['']
   });
@@ -1079,6 +1083,8 @@ export class AsesorVentasWorkspacePageComponent implements OnInit, OnDestroy {
       celularRegistro: detail.celularRegistro ?? '',
       celularReferencia: detail.celularReferencia ?? '',
       correo: detail.correo ?? '',
+      nombreMadre: detail.nombreMadre ?? '',
+      nombrePadre: detail.nombrePadre ?? '',
       numeroDocumentoTitularCelularRegistro: detail.numeroDocumentoTitularCelularRegistro ?? '',
       nombreTitularCelularRegistro: detail.nombreTitularCelularRegistro ?? ''
     });

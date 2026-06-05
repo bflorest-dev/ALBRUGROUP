@@ -62,8 +62,10 @@ import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.AdicionalRepository;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
 import pe.albrugroup.lead_service.repository.DistritoRepository;
+import pe.albrugroup.lead_service.repository.EncuestaPostventaRepository;
 import pe.albrugroup.lead_service.repository.EventoRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
+import pe.albrugroup.lead_service.repository.PagoPostventaRepository;
 import pe.albrugroup.lead_service.repository.PlanRepository;
 import pe.albrugroup.lead_service.repository.PromocionComercialRepository;
 import pe.albrugroup.lead_service.repository.SubtipificacionRepository;
@@ -96,6 +98,8 @@ public class LeadService {
     private final EventoService eventoService;
     private final CurrentUser currentUser;
     private final PlanRepository planRepository;
+    private final PagoPostventaRepository pagoPostventaRepository;
+    private final EncuestaPostventaRepository encuestaPostventaRepository;
     private final PromocionComercialRepository promocionComercialRepository;
     private final AdicionalRepository adicionalRepository;
     private final TipificacionRepository tipificacionRepository;
@@ -109,6 +113,7 @@ public class LeadService {
     private final LeadAsignacionCounterService leadAsignacionCounterService;
 
     private static final String TIPIFICACION_AGENDADO = "AGENDADO";
+    private static final String TIPIFICACION_PROGRAMADO = "PROGRAMADO";
     private static final String TIPIFICACION_SCORE_PREVENTA = "SCORE_PREVENTA";
     private static final String TIPIFICACION_PREVENTA_COMPLETA = "PREVENTA_COMPLETA";
     private static final String SUBTIPIFICACION_PREVENTA = "PREVENTA";
@@ -536,6 +541,28 @@ public class LeadService {
     }
 
     @Transactional
+    public void eliminarLeadIntegral(Long idLead) {
+        Lead lead = leadRepository.findById(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        Etapa etapa = lead.getEtapa();
+        Long idAsesorAsignado = lead.getIdAsesorAsignado();
+
+        pagoPostventaRepository.deleteByLeadId(idLead);
+        encuestaPostventaRepository.deleteByLeadId(idLead);
+        eventoRepository.deleteByIdLead(idLead);
+        leadRepository.delete(lead);
+        leadRepository.flush();
+
+        leadRealtimeNotifier.publishAfterCommit(LeadRealtimeEvent.builder()
+                .tipo("ELIMINACION")
+                .idLead(idLead)
+                .etapa(etapa)
+                .idAsesorAsignado(idAsesorAsignado)
+                .occurredAt(OperationalDateTime.now())
+                .build());
+    }
+
+    @Transactional
     public void actualizarDatosPreventa(Long idLead, LeadDatosPreventaRequest request) {
         Lead lead = obtenerLeadPreventaDelAsesor(idLead);
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
@@ -702,6 +729,8 @@ public class LeadService {
                 .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getCodigoSubtipificacion()));
 
         Etapa etapaDestino = subtipificacion.getEtapaCambio();
+        boolean requiereProgramacion = TIPIFICACION_PROGRAMADO.equals(tipificacion.getCodigo());
+        validarProgramacionVenta(requiereProgramacion, request.getFechaProgramacion(), request.getHoraProgramada());
         registrarPrimeraTipificacionSiFalta(lead, tipificacion.getCodigo(), subtipificacion.getCodigo());
 
         if (etapaDestino != null && etapaDestino != etapaActual) {
@@ -734,7 +763,9 @@ public class LeadService {
                 tipificacion.getCodigo(),
                 subtipificacion.getCodigo(),
                 request.getComentario(),
-                request.getFechaInstalacion()
+                etapaDestino == Etapa.POSTVENTA ? request.getFechaInstalacion() : null,
+                requiereProgramacion ? request.getFechaProgramacion() : null,
+                requiereProgramacion ? request.getHoraProgramada() : null
         );
         notificarCambioLead("TIPIFICACION", savedLead, etapaActual, idAsesorAnterior);
     }
@@ -1506,6 +1537,35 @@ public class LeadService {
         );
     }
 
+    private void registrarEventoTipificacion(
+            Long idLead,
+            Long idCampana,
+            Etapa etapa,
+            Long idPlanOfrecido,
+            String tipificacion,
+            String subtipificacion,
+            String comentario,
+            java.time.LocalDate fechaInstalacion,
+            java.time.LocalDate fechaProgramacion,
+            java.time.LocalTime horaProgramada
+    ) {
+        eventoService.registrarEvento(
+                RegistrarEventoRequest.builder()
+                        .idLead(idLead)
+                        .idCampana(idCampana)
+                        .accion(Accion.TIPIFICACION)
+                        .etapa(etapa)
+                        .idPlanOfrecido(idPlanOfrecido)
+                        .tipificacion(tipificacion)
+                        .subtipificacion(subtipificacion)
+                        .comentario(comentario)
+                        .fechaInstalacion(fechaInstalacion)
+                        .fechaProgramacion(fechaProgramacion)
+                        .horaProgramada(horaProgramada)
+                        .build()
+        );
+    }
+
     private void registrarEventoActualizacion(Lead lead, Accion accion, Long idPlanOfrecido) {
         Long idCampana = lead.getCampana() == null ? null : lead.getCampana().getId();
         eventoService.registrarEvento(
@@ -1529,6 +1589,28 @@ public class LeadService {
 
         if (horaProgramada != null) {
             throw new BadRequestException("La horaProgramada solo se permite para la tipificacion AGENDADO");
+        }
+    }
+
+    private void validarProgramacionVenta(
+            boolean requiereProgramacion,
+            java.time.LocalDate fechaProgramacion,
+            java.time.LocalTime horaProgramada
+    ) {
+        if (!requiereProgramacion) {
+            return;
+        }
+
+        if (fechaProgramacion == null) {
+            throw new BadRequestException("La fechaProgramacion es obligatoria para la tipificacion PROGRAMADO");
+        }
+
+        if (horaProgramada == null) {
+            throw new BadRequestException("La horaProgramada es obligatoria para la tipificacion PROGRAMADO");
+        }
+
+        if (fechaProgramacion.isBefore(OperationalDateTime.today())) {
+            throw new BadRequestException("La fechaProgramacion no puede ser anterior a hoy");
         }
     }
 

@@ -11,6 +11,7 @@ import { TopBannerComponent } from '../../../shared/components/top-banner/top-ba
 import { formatLabel } from '../../../shared/utils/display-label';
 import { AttendanceActionId } from '../../../shared/models/schedule/estado-asistencia';
 import { AsesorVentasWorkspaceStateService } from '../../services/asesor-ventas-workspace-state.service';
+import { STORAGE_KEYS } from '../../constants/storage.constants';
 
 type SidebarItem = {
   label: string;
@@ -61,6 +62,7 @@ export class PrivateLayoutComponent {
   private readonly sessionService = inject(SessionService);
   protected readonly profileMenuOpen = signal(false);
   protected readonly mobileMenuOpen = signal(false);
+  protected readonly adminDeleteLeadsVisible = signal(this.readAdminDeleteLeadsVisible());
   protected readonly attendanceErrorMessage = signal('');
   private attendanceInitialized = false;
   protected readonly session = this.sessionService.session;
@@ -102,7 +104,7 @@ export class PrivateLayoutComponent {
     }
 
     if (session.primaryRole === 'ADMINISTRADOR') {
-      return [
+      const items: SidebarItem[] = [
         { label: 'Inicio', route: '/app/admin/inicio', icon: 'pi pi-home', exact: true },
         { label: 'Personal', route: '/app/admin/personal', icon: 'pi pi-users', exact: true },
         { label: 'Empleabilidad', route: '/app/admin/empleabilidad', icon: 'pi pi-briefcase' },
@@ -111,6 +113,12 @@ export class PrivateLayoutComponent {
         { label: 'Finanzas', route: '/app/admin/finanzas', icon: 'pi pi-wallet', exact: true },
         { label: 'Ranking', route: '/app/admin/ranking', icon: 'pi pi-chart-bar', exact: true }
       ];
+
+      if (this.adminDeleteLeadsVisible()) {
+        items.push({ label: 'Eliminar Leads', route: '/app/admin/eliminar-leads', icon: 'pi pi-trash', exact: true });
+      }
+
+      return items;
     }
 
     if (session.primaryRole === 'RRHH') {
@@ -222,6 +230,14 @@ export class PrivateLayoutComponent {
     this.profileMenuOpen.update((value) => !value);
   }
 
+  protected toggleAdminDeleteLeadsVisible(): void {
+    this.adminDeleteLeadsVisible.update((value) => {
+      const nextValue = !value;
+      localStorage.setItem(STORAGE_KEYS.adminDeleteLeadsVisible, String(nextValue));
+      return nextValue;
+    });
+  }
+
   protected toggleMobileMenu(): void {
     this.mobileMenuOpen.update((value) => !value);
   }
@@ -234,5 +250,9 @@ export class PrivateLayoutComponent {
     this.profileMenuOpen.set(false);
     this.mobileMenuOpen.set(false);
     await this.authSessionService.logout();
+  }
+
+  private readAdminDeleteLeadsVisible(): boolean {
+    return localStorage.getItem(STORAGE_KEYS.adminDeleteLeadsVisible) === 'true';
   }
 }

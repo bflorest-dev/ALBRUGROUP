@@ -21,6 +21,7 @@ import { GtrHistoricosBoardComponent } from '../../components/gtr-historicos-boa
 import { GtrLeadsBoardComponent } from '../../components/gtr-leads-board/gtr-leads-board.component';
 import { GtrEventsDialogComponent } from '../../components/gtr-events-dialog/gtr-events-dialog.component';
 import { GtrSearchDialogComponent } from '../../components/gtr-search-dialog/gtr-search-dialog.component';
+import { GtrScheduleExtensionDialogComponent } from '../../components/gtr-schedule-extension-dialog/gtr-schedule-extension-dialog.component';
 
 @Component({
   selector: 'app-gtr-workspace-page',
@@ -44,7 +45,8 @@ import { GtrSearchDialogComponent } from '../../components/gtr-search-dialog/gtr
     GtrHistoricosBoardComponent,
     GtrLeadsBoardComponent,
     GtrEventsDialogComponent,
-    GtrSearchDialogComponent
+    GtrSearchDialogComponent,
+    GtrScheduleExtensionDialogComponent
   ],
   providers: [GtrWorkspaceFacade, RankingFacade],
   templateUrl: './gtr-workspace-page.component.html',

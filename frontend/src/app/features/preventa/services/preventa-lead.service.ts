@@ -88,6 +88,10 @@ export class PreventaLeadService {
     });
   }
 
+  eliminarLeadIntegral(idLead: number): Observable<void> {
+    return this.http.delete<void>(`${this.leadUrl}/preventa/${idLead}`);
+  }
+
   listarRankingGtr(desde: string, hasta?: string, soloActivos = true): Observable<GtrRankingAsesorResponse[]> {
     let params = new HttpParams().set('desde', desde).set('soloActivos', soloActivos);
     if (hasta) params = params.set('hasta', hasta);

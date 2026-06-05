@@ -57,6 +57,22 @@
     <div class="sidebar__bottom">
       @if (profileMenuOpen()) {
         <div class="profile-menu">
+          @if (isAdmin()) {
+            <button
+              type="button"
+              class="profile-menu__item profile-menu__item--switch"
+              role="switch"
+              [attr.aria-checked]="adminDeleteLeadsVisible()"
+              (click)="toggleAdminDeleteLeadsVisible()"
+            >
+              <i class="pi pi-trash" aria-hidden="true"></i>
+              <span>Eliminar Leads</span>
+              <span class="profile-switch" [class.profile-switch--on]="adminDeleteLeadsVisible()" aria-hidden="true">
+                <span></span>
+              </span>
+            </button>
+          }
+
           <button type="button" class="profile-menu__item" (click)="logout()">
             <i class="pi pi-sign-out" aria-hidden="true"></i>
             <span>Cerrar sesion</span>

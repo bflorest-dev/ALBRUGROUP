@@ -57,6 +57,7 @@ public class EventoService {
                 .tipificacion(request.getTipificacion())
                 .subtipificacion(request.getSubtipificacion())
                 .fechaInstalacion(request.getFechaInstalacion())
+                .fechaProgramacion(request.getFechaProgramacion())
                 .comentario(request.getComentario())
                 .horaProgramada(request.getHoraProgramada())
                 .build();

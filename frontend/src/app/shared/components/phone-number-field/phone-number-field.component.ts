@@ -18,6 +18,7 @@ export class PhoneNumberFieldComponent {
   @Input() numberMaxLength = 9;
   @Input() prefixPlaceholder = '51';
   @Input() numberPlaceholder = 'Numero';
+  @Input() numberInvalidMessage = '';
 
   focusNumber(): void {
     this.numberInputRef?.nativeElement.focus();
@@ -41,5 +42,9 @@ export class PhoneNumberFieldComponent {
     input.value = digits;
     this.numberControl.setValue(digits);
     this.numberControl.markAsTouched();
+  }
+
+  protected get showNumberInvalidMessage(): boolean {
+    return !!this.numberInvalidMessage && this.numberControl.invalid && (this.numberControl.dirty || this.numberControl.touched);
   }
 }

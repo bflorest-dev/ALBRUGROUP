@@ -1,0 +1,72 @@
+.admin-delete-leads-page {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 46rem;
+}
+
+.hero,
+.delete-panel {
+  background: var(--app-surface-raised);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.5rem;
+  box-shadow: var(--app-shadow-soft);
+  padding: 1.25rem;
+}
+
+.hero h2 {
+  margin: 0.75rem 0;
+}
+
+.hero p {
+  color: var(--role-muted);
+  margin-bottom: 0;
+}
+
+.delete-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.delete-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--app-text);
+  font-weight: 700;
+}
+
+.field p-inputnumber,
+.field input {
+  width: 100%;
+}
+
+.warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.85rem;
+  border: 1px solid color-mix(in srgb, #dc2626 34%, var(--app-border-soft) 66%);
+  border-radius: 0.45rem;
+  color: #991b1b;
+  background: #fff1f2;
+  font-weight: 700;
+}
+
+.warning i {
+  margin-top: 0.1rem;
+}
+
+@media (max-width: 760px) {
+  .admin-delete-leads-page {
+    gap: 1rem;
+  }
+
+  .hero,
+  .delete-panel {
+    padding: 1rem;
+  }
+}

@@ -381,6 +381,8 @@ export interface LeadTipificacionVentaRequest {
   codigoSubtipificacion: string;
   comentario?: string | null;
   fechaInstalacion?: string | null;
+  fechaProgramacion?: string | null;
+  horaProgramada?: string | null;
 }
 
 export interface EventoResponse {
@@ -398,6 +400,7 @@ export interface EventoResponse {
   tipificacion?: string | null;
   subtipificacion?: string | null;
   fechaInstalacion?: string | null;
+  fechaProgramacion?: string | null;
   comentario?: string | null;
   horaProgramada?: string | null;
   createdAt?: string | null;

@@ -294,6 +294,7 @@
         [prefixControl]="facade.intakeForm.controls.prefijo"
         [numberControl]="facade.intakeForm.controls.lead"
         numberPlaceholder="Numero de lead"
+        numberInvalidMessage="Ingresa un celular valido de 9 digitos que empiece con 9."
       />
       <label class="wide">
         <span>Campaña</span>
@@ -530,4 +531,6 @@
   <app-gtr-events-dialog />
 
   <app-gtr-search-dialog />
+
+  <app-gtr-schedule-extension-dialog />
 </section>

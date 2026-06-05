@@ -2,7 +2,14 @@
   <p-card>
     <div class="daily-leads__header">
       <div class="daily-leads__title">
-        <h2>Leads del día</h2>
+        <div class="daily-leads__title-line">
+          <h2>Leads del día</h2>
+          <p-tag
+            severity="info"
+            icon="pi pi-users"
+            [value]="facade.totalElements() + ' leads'"
+          />
+        </div>
         <p class="daily-leads__subtitle">
           @if (facade.isToday()) {
             Mostrando los leads ingresados hoy.
@@ -32,11 +39,6 @@
             (click)="onShowToday()"
           ></button>
         }
-        <p-tag
-          severity="info"
-          icon="pi pi-users"
-          [value]="facade.totalElements() + ' leads'"
-        />
       </div>
     </div>
 

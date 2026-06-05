@@ -1,0 +1,50 @@
+<section class="admin-delete-leads-page">
+  <header class="hero">
+    <p-tag value="Administrador" severity="danger" />
+    <h2>Eliminar Leads</h2>
+    <p>Herramienta restringida para borrar integralmente un Lead por id.</p>
+  </header>
+
+  <section class="delete-panel" aria-label="Eliminar Lead">
+    @if (successMessage()) {
+      <p-message severity="success" [text]="successMessage()" />
+    }
+
+    @if (errorMessage()) {
+      <p-message severity="error" [text]="errorMessage()" />
+    }
+
+    <form [formGroup]="form" (ngSubmit)="eliminarLead()" class="delete-form">
+      <label class="field">
+        <span>Id del Lead</span>
+        <p-inputnumber
+          formControlName="idLead"
+          inputId="idLead"
+          [useGrouping]="false"
+          [min]="1"
+          placeholder="Ej. 12345"
+        />
+      </label>
+
+      <label class="field">
+        <span>Confirmacion</span>
+        <input pInputText formControlName="confirmacion" placeholder="Escribe el mismo id" />
+      </label>
+
+      <div class="warning">
+        <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+        <span>Esta accion elimina datos del Lead, eventos, pagos y encuestas relacionadas.</span>
+      </div>
+
+      <button
+        pButton
+        type="submit"
+        severity="danger"
+        icon="pi pi-trash"
+        label="Eliminar Lead"
+        [loading]="isDeleting()"
+        [disabled]="!canDelete()"
+      ></button>
+    </form>
+  </section>
+</section>

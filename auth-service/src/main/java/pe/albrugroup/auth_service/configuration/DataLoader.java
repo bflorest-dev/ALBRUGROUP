@@ -156,6 +156,7 @@ public class DataLoader {
 
 
         savePermiso("CREATE_LEADS", "Puede registrar ingresos de leads", "LEAD", "CREATE");
+        savePermiso("DELETE_LEADS", "Puede eliminar integralmente leads", "LEAD", "DELETE");
         savePermiso("ASSIGN_LEADS", "Puede asignar leads", "LEAD", "ASSIGN");
         savePermiso("READ_LEADS_ASESOR", "Puede ver bandeja y detalle de leads del asesor", "LEAD", "READ");
         savePermiso("UPDATE_LEADS_ASESOR", "Puede actualizar datos de gestion del lead", "LEAD", "UPDATE");

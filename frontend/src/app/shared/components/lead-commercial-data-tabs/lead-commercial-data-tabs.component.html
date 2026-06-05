@@ -1,0 +1,371 @@
+<p-tabs [value]="activeTab" (valueChange)="activeTabChange.emit($any($event))">
+  <p-tablist>
+    <p-tab value="datos">Datos Preventa</p-tab>
+    <p-tab value="direccion">Direccion</p-tab>
+    <p-tab value="oferta">Oferta Comercial</p-tab>
+    @if (showHistorialTab) {
+      <p-tab value="historial">Historial</p-tab>
+    }
+  </p-tablist>
+
+  <p-tabpanels>
+    <p-tabpanel value="datos">
+      <form class="form-grid" [formGroup]="datosForm">
+        <label>
+          <span>Documento</span>
+          <p-select
+            formControlName="tipoDocumento"
+            [options]="tipoDocumentoOptions"
+            placeholder="Seleccionar"
+            appendTo="body"
+            (onChange)="tipoDocumentoChange.emit()"
+          />
+        </label>
+        <label>
+          <span>Numero de Documento</span>
+          <input
+            pInputText
+            type="text"
+            inputmode="numeric"
+            formControlName="numeroDocumentoTitularServicio"
+            (input)="setNumericDigits(datosForm.get('numeroDocumentoTitularServicio'), $any($event.target).value, documentoServicioMaxLength())"
+          />
+        </label>
+        <label>
+          <span>Titular del Servicio</span>
+          <input pInputText type="text" formControlName="nombreTitularServicio" />
+        </label>
+        <label>
+          <span>Celular a registrar</span>
+          <input
+            pInputText
+            type="text"
+            inputmode="numeric"
+            formControlName="celularRegistro"
+            (input)="setNumericDigits(datosForm.get('celularRegistro'), $any($event.target).value, 9)"
+          />
+        </label>
+        <label>
+          <span>Celular de referencia</span>
+          <input
+            pInputText
+            type="text"
+            inputmode="numeric"
+            formControlName="celularReferencia"
+            (input)="setNumericDigits(datosForm.get('celularReferencia'), $any($event.target).value, 9)"
+          />
+        </label>
+        <label>
+          <span>Correo</span>
+          <input pInputText type="email" formControlName="correo" />
+        </label>
+        <label>
+          <span>
+            Ubigeo de Nacimiento
+            <i
+              class="pi pi-info-circle ubigeo-hint"
+              pTooltip="El numero de Ubigeo se encuentra en la parte posterior del DNI"
+              tooltipPosition="top"
+              aria-hidden="true"
+            ></i>
+          </span>
+          <input
+            pInputText
+            type="text"
+            inputmode="numeric"
+            formControlName="ubigeoNacimiento"
+            (input)="setNumericDigits(datosForm.get('ubigeoNacimiento'), $any($event.target).value, 6)"
+          />
+        </label>
+        <label>
+          <span>Madre</span>
+          <input pInputText type="text" formControlName="nombreMadre" />
+        </label>
+        <label>
+          <span>Padre</span>
+          <input pInputText type="text" formControlName="nombrePadre" />
+        </label>
+        <label>
+          <span>Numero de Documento del Titular del Celular</span>
+          <input
+            pInputText
+            type="text"
+            inputmode="numeric"
+            formControlName="numeroDocumentoTitularCelularRegistro"
+            (input)="setNumericDigits(datosForm.get('numeroDocumentoTitularCelularRegistro'), $any($event.target).value, 8)"
+          />
+        </label>
+        <label class="wide">
+          <span>Nombre del Titular del Celular</span>
+          <input pInputText type="text" formControlName="nombreTitularCelularRegistro" />
+        </label>
+      </form>
+    </p-tabpanel>
+
+    <p-tabpanel value="direccion">
+      <form class="form-grid" [formGroup]="direccionForm">
+        <label>
+          <span>Departamento</span>
+          <p-select
+            formControlName="idDepartamentoDomicilio"
+            [options]="departamentos"
+            optionLabel="nombre"
+            optionValue="id"
+            placeholder="Seleccionar"
+            appendTo="body"
+            (onChange)="departamentoDomicilioChange.emit()"
+          />
+        </label>
+        <label>
+          <span>Provincia</span>
+          <p-select
+            formControlName="idProvinciaDomicilio"
+            [options]="provinciasDomicilio"
+            optionLabel="nombre"
+            optionValue="id"
+            placeholder="Seleccionar"
+            appendTo="body"
+            [disabled]="!provinciasDomicilio.length"
+            (onChange)="provinciaDomicilioChange.emit()"
+          />
+        </label>
+        <label>
+          <span>Distrito</span>
+          <p-select
+            formControlName="idDistritoDomicilio"
+            [options]="distritosDomicilio"
+            optionLabel="nombre"
+            optionValue="id"
+            placeholder="Seleccionar"
+            appendTo="body"
+            [disabled]="!distritosDomicilio.length"
+            (onChange)="distritoDomicilioChange.emit()"
+          />
+        </label>
+        <label>
+          <span>Tipo de Domicilio</span>
+          <p-select formControlName="tipoDomicilio" [options]="tipoDomicilioOptions" placeholder="Seleccionar" appendTo="body" />
+        </label>
+        <label>
+          <span>Tipo de Via</span>
+          <p-select formControlName="tipoVia" [options]="tipoViaOptions" placeholder="Seleccionar" appendTo="body" />
+        </label>
+        <label>
+          <span>Nombre de la Via</span>
+          <input pInputText type="text" formControlName="via" />
+        </label>
+        <label class="wide">
+          <span>Direccion</span>
+          <input pInputText type="text" formControlName="direccion" />
+        </label>
+        <label>
+          <span>Latitud</span>
+          <input pInputText type="number" step="0.000001" formControlName="latitud" placeholder="-12.046400" />
+        </label>
+        <label>
+          <span>Longitud</span>
+          <input pInputText type="number" step="0.000001" formControlName="longitud" placeholder="-77.042800" />
+        </label>
+        <label class="wide">
+          <span>Referencia</span>
+          <input pInputText type="text" formControlName="referencia" />
+        </label>
+        <label>
+          <span>Urbanizacion</span>
+          <input pInputText type="text" formControlName="urbanizacion" />
+        </label>
+        <label>
+          <span>Numero</span>
+          <input
+            pInputText
+            type="text"
+            inputmode="numeric"
+            formControlName="numero"
+            (input)="setNumericDigits(direccionForm.get('numero'), $any($event.target).value, 10)"
+          />
+        </label>
+        <label>
+          <span>Manzana</span>
+          <input pInputText type="text" formControlName="manzana" />
+        </label>
+        <label>
+          <span>Lote</span>
+          <input pInputText type="text" formControlName="lote" />
+        </label>
+        <label>
+          <span>Edificio</span>
+          <input pInputText type="text" formControlName="nombreEdificio" />
+        </label>
+        <label>
+          <span>Condominio</span>
+          <input pInputText type="text" formControlName="nombreCondominio" />
+        </label>
+        <label>
+          <span>Piso</span>
+          <input pInputText type="text" formControlName="piso" />
+        </label>
+        <label>
+          <span>Interior</span>
+          <input pInputText type="text" formControlName="interior" />
+        </label>
+      </form>
+    </p-tabpanel>
+
+    <p-tabpanel value="oferta">
+      @if (offerNoticeSeverity && offerNoticeText) {
+        <p-message [severity]="offerNoticeSeverity" styleClass="oferta-note" [text]="offerNoticeText" />
+      }
+
+      <form class="form-grid" [formGroup]="ofertaForm">
+        <div class="offer-provider wide">
+          <label>
+            <span>Proveedor</span>
+            @if (providerOptions.length) {
+              <p-selectbutton
+                formControlName="idProveedor"
+                [options]="providerOptions"
+                optionLabel="nombre"
+                optionValue="id"
+                [allowEmpty]="false"
+                styleClass="scope-select offer-provider-select"
+                [disabled]="offerLocked"
+                (onChange)="ofertaProviderChange.emit($any($event.value))"
+              >
+                <ng-template #item let-proveedor>
+                  <p-tag
+                    [severity]="selectedProviderId === proveedor.id ? 'info' : 'secondary'"
+                    [value]="proveedor.nombre"
+                    icon="pi pi-building"
+                    [rounded]="true"
+                  />
+                </ng-template>
+              </p-selectbutton>
+            } @else {
+              <p class="helper">No hay proveedores con planes vigentes.</p>
+            }
+          </label>
+        </div>
+
+        <label class="wide">
+          <span>Plan</span>
+          <p-select
+            formControlName="idPlan"
+            [options]="planOptions"
+            optionLabel="nombre"
+            optionValue="id"
+            placeholder="Seleccionar plan"
+            appendTo="body"
+            [disabled]="offerLocked || !selectedProviderId"
+            (onChange)="planChange.emit()"
+          >
+            <ng-template #item let-plan>
+              @if (!plan.id) {
+                <span>Sin plan</span>
+              } @else {
+                <div class="plan-item">
+                  <div class="plan-item__top">
+                    <strong>{{ plan.nombre }}</strong>
+                    <div class="plan-item__pricing">
+                      @if (plan.precioPromocional) {
+                        <span class="plan-price--promo">S/ {{ plan.precioPromocional }}</span>
+                        @if (plan.mesesPromocionPrecio) {
+                          <span class="plan-price--months">{{ plan.mesesPromocionPrecio }}m promo</span>
+                        }
+                        @if (plan.precio) {
+                          <span class="plan-price--regular">S/ {{ plan.precio }}</span>
+                        }
+                      } @else if (plan.precio) {
+                        <span class="plan-price--base">S/ {{ plan.precio }}</span>
+                      }
+                    </div>
+                  </div>
+                  @if (plan.internetVelocidad || plan.televisionNombre || plan.televisionCanales || plan.telefonoDescripcion || plan.telefonoMinutos) {
+                    <div class="plan-item__services">
+                      @if (plan.internetVelocidad) {
+                        <p-tag severity="info" [value]="plan.internetVelocidad + ' ' + (plan.internetUnidad || 'MBPS')" />
+                      }
+                      @if (plan.velocidadPromocional && plan.mesesPromocionVelocidad) {
+                        <p-tag severity="warn" [value]="plan.velocidadPromocional + ' ' + (plan.internetUnidad || 'MBPS') + ' - ' + plan.mesesPromocionVelocidad + 'm'" />
+                      }
+                      @if (plan.televisionNombre || plan.televisionCanales) {
+                        <p-tag severity="secondary" [value]="(plan.televisionNombre || 'TV') + (plan.televisionCanales ? ' - ' + plan.televisionCanales + ' ch' : '')" />
+                      }
+                      @if (plan.telefonoDescripcion || plan.telefonoMinutos) {
+                        <p-tag severity="secondary" [value]="plan.telefonoDescripcion || (plan.telefonoMinutos + ' min')" />
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </ng-template>
+          </p-select>
+        </label>
+        <label class="wide">
+          <span>Promocion</span>
+          <p-select
+            formControlName="idPromocionInterna"
+            [options]="promocionOptions"
+            optionLabel="reglaComercial"
+            optionValue="id"
+            appendTo="body"
+            [disabled]="offerLocked"
+          />
+        </label>
+        <div class="offer-additionals wide">
+          <div class="offer-additionals__head">
+            <span>Adicionales</span>
+            @if (selectedAdditionals.length) {
+              <p-tag severity="info" [value]="'S/ ' + display(additionalsTotal)" />
+            }
+          </div>
+
+          <div class="offer-additionals__list">
+            @for (adicional of adicionales; track adicional.id) {
+              <article class="offer-additional-item">
+                <div class="offer-additional-item__info">
+                  <strong>{{ adicional.nombre }}</strong>
+                  <small>S/ {{ display(adicional.precioUnitario) }}</small>
+                </div>
+
+                <div class="quantity-control" [attr.aria-label]="'Cantidad de ' + adicional.nombre">
+                  <button
+                    pButton
+                    type="button"
+                    icon="pi pi-minus"
+                    severity="secondary"
+                    size="small"
+                    [disabled]="offerLocked || adicionalCantidad(adicional.id) === 0"
+                    (click)="disminuirAdicional.emit(adicional)"
+                  ></button>
+                  <span>{{ adicionalCantidad(adicional.id) }}</span>
+                  <button
+                    pButton
+                    type="button"
+                    icon="pi pi-plus"
+                    size="small"
+                    [disabled]="offerLocked"
+                    (click)="incrementarAdicional.emit(adicional)"
+                  ></button>
+                </div>
+              </article>
+            } @empty {
+              <p class="helper">
+                @if (offerLocked) {
+                  Sin adicionales disponibles para mostrar.
+                } @else {
+                  Selecciona un proveedor para ver sus adicionales disponibles.
+                }
+              </p>
+            }
+          </div>
+        </div>
+      </form>
+    </p-tabpanel>
+
+    @if (showHistorialTab) {
+      <p-tabpanel value="historial">
+        <ng-content select="[lead-commercial-history]" />
+      </p-tabpanel>
+    }
+  </p-tabpanels>
+</p-tabs>

@@ -27,6 +27,7 @@ public class EventoResponse {
     private String tipificacion;
     private String subtipificacion;
     private LocalDate fechaInstalacion;
+    private LocalDate fechaProgramacion;
     private String comentario;
     private LocalTime horaProgramada;
     private Instant createdAt;

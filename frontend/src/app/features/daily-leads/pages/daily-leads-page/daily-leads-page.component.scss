@@ -5,10 +5,22 @@
   &__header {
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-end;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
     margin-bottom: 1rem;
+  }
+
+  &__title {
+    flex: 1 1 18rem;
+    min-width: 0;
+  }
+
+  &__title-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
   }
 
   &__title h2 {
@@ -26,8 +38,14 @@
   &__controls {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: flex-end;
+    justify-content: flex-end;
     gap: 0.75rem;
+    margin-left: auto;
+  }
+
+  &__controls app-date-field {
+    min-width: 12rem;
   }
 
   &__message {
@@ -50,5 +68,23 @@
     padding: 2rem 1rem;
     text-align: center;
     color: var(--p-text-muted-color, #6b7280);
+  }
+
+  @media (max-width: 640px) {
+    &__header,
+    &__controls {
+      align-items: stretch;
+      width: 100%;
+    }
+
+    &__controls {
+      justify-content: flex-start;
+      margin-left: 0;
+    }
+
+    &__controls app-date-field {
+      flex: 1 1 100%;
+      min-width: 0;
+    }
   }
 }

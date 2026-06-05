@@ -8,4 +8,5 @@ export interface ExcepcionHorarioResponse {
   finAlmuerzo?: string | null;
   laborable?: boolean | null;
   motivo: string;
+  creadoPor?: number | null;
 }
