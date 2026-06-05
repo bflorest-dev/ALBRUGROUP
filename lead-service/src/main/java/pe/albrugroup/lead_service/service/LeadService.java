@@ -1307,7 +1307,9 @@ public class LeadService {
         lead.setBase(request.getBase());
         lead.setLastEntryAt(OperationalDateTime.now());
 
-        if (lead.getEtapa() == Etapa.PREVENTA) {
+        // Solo se reinicia a NUEVO si el lead no tuvo gestion hoy. Si ya hubo asignacion, contacto
+        // o tipificacion en el dia, el re-registro conserva su estado, tipificacion y asesor.
+        if (lead.getEtapa() == Etapa.PREVENTA && !tieneGestionHoy(lead.getId())) {
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
             lead.setIdTipificacion(null);
@@ -1320,6 +1322,18 @@ public class LeadService {
         Lead savedLead = leadRepository.save(lead);
         registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa());
         notificarCambioLead("REGISTRO", savedLead, etapaAnterior, idAsesorAnterior);
+    }
+
+    private boolean tieneGestionHoy(Long idLead) {
+        if (idLead == null) {
+            return false;
+        }
+        OperationalDateTime.InstantRange hoy = OperationalDateTime.dayRange(null);
+        return eventoRepository.existsByIdLeadAndAccionInAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                idLead,
+                List.of(Accion.ASIGNACION, Accion.CONTACTO, Accion.TIPIFICACION),
+                hoy.inicio(),
+                hoy.fin());
     }
 
     private Lead registrarIngresoLeadMasivoExistente(
@@ -1347,7 +1361,9 @@ public class LeadService {
         lead.setLastEntryAt(OperationalDateTime.now());
         aplicarSnapshotsMasivo(lead, documentoSnapshot, direccionSnapshot, advertencias);
 
-        if (lead.getEtapa() == Etapa.PREVENTA) {
+        // Solo se reinicia a NUEVO si el lead no tuvo gestion hoy. Si ya hubo asignacion, contacto
+        // o tipificacion en el dia, el re-registro conserva su estado, tipificacion y asesor.
+        if (lead.getEtapa() == Etapa.PREVENTA && !tieneGestionHoy(lead.getId())) {
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
             lead.setIdTipificacion(null);

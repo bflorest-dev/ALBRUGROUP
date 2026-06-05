@@ -243,6 +243,20 @@ td small,
   justify-content: center;
 }
 
+/* El warning se ancla al espacio libre de la derecha de la celda, fuera del flujo,
+   para no reservar espacio ni empujar los botones de la columna de Acciones. */
+.actions-cell {
+  position: relative;
+}
+
+.actions-cell .lead-warning {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  margin: 0;
+  transform: translateY(-50%);
+}
+
 .gtr-assign-button {
   gap: 0;
   overflow: hidden;

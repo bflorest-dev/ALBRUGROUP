@@ -38,6 +38,7 @@ export class BrowserSessionService {
 
     if (!existingTabId && this.getActiveTabCount() === 1) {
       this.sessionService.clearSession();
+      localStorage.removeItem(STORAGE_KEYS.supervisorVentasSeenAdvisors);
       this.registerCurrentTab();
     }
 

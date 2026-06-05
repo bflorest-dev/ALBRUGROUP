@@ -56,7 +56,8 @@ export class SupervisorVentasMonitoreoPageComponent implements OnInit, OnDestroy
     }
   }
 
-  protected dotClass(operativo: boolean, estadoSchedule: string | null | undefined): string {
+  protected dotClass(conectado: boolean, operativo: boolean, estadoSchedule: string | null | undefined): string {
+    if (!conectado) return 'live-dot live-dot--offline';
     if (operativo) return 'live-dot live-dot--online';
     switch (estadoSchedule?.toUpperCase()) {
       case 'ALMUERZO': return 'live-dot live-dot--almuerzo';

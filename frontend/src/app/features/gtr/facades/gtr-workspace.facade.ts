@@ -197,6 +197,8 @@ export class GtrWorkspaceFacade {
   readonly catalogoTipificaciones = signal<SelectOption<number>[]>([]);
   readonly catalogoSubtipificaciones = signal<SubtipificacionSelectOption[]>([]);
   readonly activeDialog = signal<GtrDialog>(null);
+  // Recuerda desde que dialogo se abrio el historial para volver a el al cerrarlo (p. ej. la busqueda).
+  private eventsReturnDialog: GtrDialog = null;
   readonly activeAssignmentLead = signal<LeadGtrResponse | null>(null);
   readonly activeEventsLead = signal<EventHistoryTarget | null>(null);
   readonly pendingReassignment = signal<PendingReassignment | null>(null);
@@ -727,6 +729,7 @@ export class GtrWorkspaceFacade {
   }
 
   async openEventHistory(row: EventHistoryTarget): Promise<void> {
+    this.eventsReturnDialog = this.activeDialog();
     this.activeEventsLead.set(row);
     this.eventRows.set([]);
     this.selectedEventAnomalyFilter.set(null);
@@ -748,6 +751,16 @@ export class GtrWorkspaceFacade {
     } finally {
       this.isLoadingEvents.set(false);
     }
+  }
+
+  closeEventHistory(): void {
+    const returnTo = this.eventsReturnDialog;
+    this.eventsReturnDialog = null;
+    this.activeEventsLead.set(null);
+    this.eventRows.set([]);
+    this.selectedEventAnomalyFilter.set(null);
+    // Vuelve al dialogo desde el que se abrio el historial (p. ej. la busqueda) sin perder su estado.
+    this.activeDialog.set(returnTo);
   }
 
   openSearchDialog(): void {

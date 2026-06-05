@@ -218,7 +218,7 @@
           </td>
           <td>{{ facade.display(row.nombreAsesorAsignado) | uppercase }}</td>
           <td>{{ (row.lastEntryAt ?? row.createdAt) | date: 'hh:mm a' }}</td>
-          <td>
+          <td class="actions-cell">
             <div class="row-actions">
               <button
                 pButton
@@ -1126,7 +1126,7 @@
 
   <p-dialog
     [visible]="facade.activeDialog() === 'events'"
-    (visibleChange)="!$event && facade.closeDialog()"
+    (visibleChange)="!$event && facade.closeEventHistory()"
     [modal]="true"
     [draggable]="false"
     styleClass="gtr-dialog gtr-dialog--events"
@@ -1313,7 +1313,7 @@
           </td>
           <td>{{ facade.display(row.nombreAsesorAsignado) | uppercase }}</td>
           <td>{{ (row.lastEntryAt ?? row.createdAt) | date: 'dd/MM hh:mm a' }}</td>
-          <td>
+          <td class="actions-cell">
             <div class="row-actions">
               <button
                 pButton

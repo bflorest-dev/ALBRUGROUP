@@ -76,11 +76,16 @@
         </ng-template>
 
         <ng-template #body let-asesor>
-          <tr [class.row-alert]="asesor.excedioServicios">
+          <tr [class.row-alert]="asesor.excedioServicios" [class.row-disconnected]="!asesor.conectado">
             <td>
               <div class="asesor-cell">
-                <span [class]="dotClass(asesor.operativo, asesor.estadoSchedule)" aria-hidden="true"></span>
-                <strong>{{ asesor.nombreCompleto }}</strong>
+                <span [class]="dotClass(asesor.conectado, asesor.operativo, asesor.estadoSchedule)" aria-hidden="true"></span>
+                <span class="asesor-cell__identity">
+                  <strong>{{ asesor.nombreCompleto }}</strong>
+                  @if (!asesor.conectado) {
+                    <p-tag value="Desconectado" severity="secondary" />
+                  }
+                </span>
               </div>
             </td>
             <td><p-tag [severity]="scheduleSeverity(asesor.estadoSchedule)" [value]="display(asesor.estadoSchedule)" /></td>
@@ -124,7 +129,7 @@
         <ng-template #emptymessage>
           <tr>
             <td colspan="9">
-              <p-message severity="info" text="No hay asesores conectados en este momento." />
+              <p-message severity="info" text="No hay asesores en monitoreo por ahora." />
             </td>
           </tr>
         </ng-template>
@@ -133,16 +138,16 @@
   </p-card>
 
   <!-- Ausentes esperados -->
-  @if (facade.esperados().length) {
+  @if (facade.esperadosVisibles().length) {
     <p-card styleClass="monitor-absent">
       <ng-template #title>
         <span class="absent-title">
           <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-          Ausentes esperados ({{ facade.esperados().length }})
+          Ausentes esperados ({{ facade.esperadosVisibles().length }})
         </span>
       </ng-template>
       <div class="absent-list">
-        @for (empleado of facade.esperados(); track empleado.empleadoId) {
+        @for (empleado of facade.esperadosVisibles(); track empleado.empleadoId) {
           <article class="absent-item">
             <strong>{{ empleado.nombreCompleto }}</strong>
             @if (empleado.entradaProgramada) {

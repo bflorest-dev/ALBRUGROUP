@@ -72,6 +72,13 @@
   gap: 0.5rem;
 }
 
+.asesor-cell__identity {
+  align-items: flex-start;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
 .asesor-cell strong {
   color: #0f1f33;
   font-size: 0.86rem;
@@ -159,6 +166,19 @@
 
   .monitor-table .row-alert > td {
     background: color-mix(in srgb, #dc2626 6%, #ffffff 94%);
+  }
+
+  .monitor-table .row-disconnected > td {
+    background: #f8fafc;
+    color: #64748b;
+  }
+
+  .monitor-table .row-disconnected .asesor-cell strong {
+    color: #475569;
+  }
+
+  .monitor-table .row-disconnected .timer {
+    color: #64748b;
   }
 }
 

@@ -41,6 +41,13 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     );
     List<Evento> findAllByIdLeadOrderByCreatedAtDesc(Long idLead);
 
+    boolean existsByIdLeadAndAccionInAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+            Long idLead,
+            Collection<Accion> acciones,
+            Instant fechaDesde,
+            Instant fechaHasta
+    );
+
     @Query("""
             SELECT e.idActor AS idAsesor, MAX(e.createdAt) AS ultimo
             FROM Evento e
