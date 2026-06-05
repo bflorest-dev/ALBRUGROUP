@@ -22,4 +22,5 @@ public class ExcepcionHorarioResponse {
     private LocalTime finAlmuerzo;
     private Boolean laborable;
     private String motivo;
+    private Long creadoPor;
 }

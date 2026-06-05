@@ -1,0 +1,96 @@
+:host ::ng-deep .gtr-advisors-drawer {
+  width: min(420px, 100vw);
+  z-index: 1300;
+}
+
+.drawer-toolbar {
+  align-items: center;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.advisor-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.advisor-card {
+  align-items: center;
+  display: flex;
+  background: var(--app-surface-soft);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.65rem;
+  gap: 0.7rem;
+  padding: 0.75rem;
+}
+
+.advisor-card > div {
+  display: grid;
+  gap: 0.32rem;
+  min-width: 0;
+}
+
+.advisor-card__dot {
+  background: #cbd5e1;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  height: 0.7rem;
+  width: 0.7rem;
+}
+
+.advisor-card--abandono {
+  background: color-mix(in srgb, #dc2626 6%, var(--app-surface-soft) 94%);
+  border-color: color-mix(in srgb, #dc2626 40%, var(--app-border-soft) 60%);
+}
+
+.advisor-card--ojt {
+  background: color-mix(in srgb, #0ea5e9 7%, var(--app-surface-soft) 93%);
+  border-color: color-mix(in srgb, #0ea5e9 42%, var(--app-border-soft) 58%);
+}
+
+.advisor-card__name-row {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: space-between;
+}
+
+.advisor-card__tags {
+  align-items: center;
+  display: flex;
+  gap: 0.65rem;
+}
+
+.advisor-card__warning {
+  color: #b91c1c;
+  font-size: 0.76rem;
+  margin: 0;
+}
+
+.advisor-card small {
+  color: var(--app-text-muted);
+}
+
+.empty-state {
+  color: var(--app-text-muted);
+}
+
+.dot--available {
+  background: #16a34a;
+}
+
+.dot--working,
+.dot--connected {
+  background: #f59e0b;
+}
+
+.dot--busy {
+  background: #64748b;
+}
+
+.dot--saturated,
+.dot--offline {
+  background: #dc2626;
+}

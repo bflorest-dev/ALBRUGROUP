@@ -8,6 +8,7 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -29,4 +30,7 @@ public class CumplimientoDetalleDiaResponse {
     private Integer minutosServiciosAcumulados;
     private Boolean excedioServicios;
     private Boolean tardanza;
+
+    /** Tramos del dia cuando fue partido por una ampliacion (reapertura). Vacio en dias normales. */
+    private List<TramoAsistenciaResponse> tramos;
 }

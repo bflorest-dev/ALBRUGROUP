@@ -1,0 +1,71 @@
+<p-drawer
+  [visible]="facade.advisorsPanelOpen()"
+  (visibleChange)="!$event && facade.closeAdvisorsPanel()"
+  position="right"
+  header="Asesores disponibles"
+  styleClass="gtr-advisors-drawer"
+>
+  <div class="drawer-toolbar">
+    <button
+      pButton
+      type="button"
+      icon="pi pi-refresh"
+      label="Actualizar"
+      severity="secondary"
+      [disabled]="!facade.canDisplayOperationalData()"
+      (click)="facade.refreshAdvisors()"
+    ></button>
+  </div>
+
+  <div class="advisor-list">
+    @for (advisor of facade.advisorsPanelView(); track advisor.empleadoId) {
+      <article
+        class="advisor-card"
+        [class.advisor-card--abandono]="advisor.esAbandonador"
+        [class.advisor-card--ojt]="facade.isOjtAdvisor(advisor)"
+      >
+        <span class="advisor-card__dot {{ facade.advisorDotClass(advisor) }}"></span>
+        <div class="advisor-card__body">
+          <div class="advisor-card__name-row">
+            <strong>{{ advisor.nombreCompleto | uppercase }}</strong>
+            @if (facade.isOjtAdvisor(advisor)) {
+              <p-tag severity="info" value="OJT" />
+            }
+            @if (advisor.esAbandonador) {
+              <p-tag
+                severity="danger"
+                icon="pi pi-exclamation-triangle"
+                [value]="advisor.leadsPendientes + ' sin atender'"
+              />
+            }
+          </div>
+          <div class="advisor-card__tags">
+            <p-tag
+              [severity]="facade.advisorSeverity(advisor.estadoSchedule)"
+              [value]="facade.display(advisor.estadoSchedule)"
+            />
+            <p-tag
+              [severity]="facade.advisorSeverity(advisor.disponibilidad)"
+              [value]="facade.display(advisor.disponibilidad)"
+            />
+          </div>
+          @if (advisor.esAbandonador) {
+            <p class="advisor-card__warning">Se desconectó dejando leads sin gestionar.</p>
+            <button
+              pButton
+              type="button"
+              size="small"
+              severity="danger"
+              [outlined]="true"
+              icon="pi pi-inbox"
+              label="Ver leads"
+              (click)="facade.openAbandonedLeads(advisor.empleadoId)"
+            ></button>
+          }
+        </div>
+      </article>
+    } @empty {
+      <p class="empty-state">No hay asesores activos.</p>
+    }
+  </div>
+</p-drawer>

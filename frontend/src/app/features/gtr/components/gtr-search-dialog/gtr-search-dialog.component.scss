@@ -1,0 +1,47 @@
+@use '../gtr-board-shared';
+
+.search-form {
+  align-items: flex-end;
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.search-form > label {
+  flex: 1;
+}
+
+.search-feedback {
+  margin-bottom: 1rem;
+}
+
+label {
+  color: var(--app-text-muted);
+  display: grid;
+  font-size: 0.78rem;
+  font-weight: 800;
+  gap: 0.35rem;
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
+:host ::ng-deep .p-inputtext {
+  width: 100%;
+}
+
+:host ::ng-deep .gtr-dialog {
+  width: min(34rem, calc(100vw - 1rem));
+}
+
+:host ::ng-deep .gtr-dialog--search {
+  width: min(82rem, calc(100vw - 1rem));
+}
+
+@media (min-width: 901px) {
+  :host ::ng-deep .gtr-dialog--search {
+    margin-left: 292px;
+    width: min(82rem, calc(100vw - 292px - 2rem));
+  }
+}

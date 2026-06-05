@@ -52,4 +52,7 @@ public class ExcepcionHorario {
 
     @Column(nullable = false, length = 300)
     private String motivo;
+
+    /** Empleado que registro la excepcion (tomado del token). Nullable para filas previas a la auditoria. */
+    private Long creadoPor;
 }

@@ -370,7 +370,8 @@ public class DataLoader {
                 getPermiso("READ_CAMPANA"),
                 getPermiso("READ_ASISTENCIAS_MONITOR"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
-                getPermiso("UPDATE_ASISTENCIAS")
+                getPermiso("UPDATE_ASISTENCIAS"),
+                getPermiso("EXTEND_HORARIO")
         );
         saveRol("SUPERVISOR_GTR", "GTR - Supervision de asignacion de leads", supervisorGtrPermisos);
 

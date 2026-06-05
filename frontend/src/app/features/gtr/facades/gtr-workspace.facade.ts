@@ -226,9 +226,13 @@ export class GtrWorkspaceFacade {
           left.nombreCompleto.localeCompare(right.nombreCompleto)
       );
   });
-  /** Total de leads abandonados (de asesores desconectados) — alimenta el aviso del boton Asesores. */
+  /** Lista visible del panel GTR: oculta OJT salvo que tenga leads abandonados. */
+  readonly advisorsPanelView = computed<AdvisorView[]>(() =>
+    this.advisorsView().filter((advisor) => !this.isOjtAdvisor(advisor) || advisor.esAbandonador)
+  );
+  /** Total de leads abandonados visibles en el panel Asesores. */
   readonly abandonadosCount = computed(() =>
-    this.advisorsView()
+    this.advisorsPanelView()
       .filter((advisor) => advisor.esAbandonador)
       .reduce((total, advisor) => total + advisor.leadsPendientes, 0)
   );
@@ -1336,6 +1340,39 @@ export class GtrWorkspaceFacade {
       return '-';
     }
     return String(value);
+  }
+
+  estadoSeverity(value: string | null | undefined): 'success' | 'warn' | 'danger' | 'info' | 'secondary' {
+    switch (value) {
+      case 'NUEVO':
+        return 'info';
+      case 'ASIGNADO':
+        return 'warn';
+      case 'EN_GESTION':
+      case 'AGENDADO':
+        return 'secondary';
+      case 'GESTIONADO':
+        return 'success';
+      default:
+        return 'secondary';
+    }
+  }
+
+  advisorSeverity(value: string | null | undefined): 'success' | 'warn' | 'danger' | 'info' | 'secondary' {
+    switch (value) {
+      case 'DISPONIBLE':
+        return 'success';
+      case 'GESTIONANDO':
+        return 'warn';
+      case 'OCUPADO':
+        return 'secondary';
+      case 'SATURADO':
+      case 'SIN_PRESENCIA':
+      case 'OFFLINE':
+        return 'danger';
+      default:
+        return 'info';
+    }
   }
 
   warningTitle(row: LeadGtrResponse): string {

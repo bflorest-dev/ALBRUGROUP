@@ -1,0 +1,238 @@
+<p-card styleClass="gtr-board">
+  <ng-template #title>
+    <span class="board-title">
+      Bandeja diaria
+      <p-tag severity="info" [value]="facade.display(facade.totalElements())" />
+    </span>
+  </ng-template>
+  <ng-template #subtitle>
+    {{ facade.isReconciling() ? 'Sincronizando en segundo plano' : 'Leads del dia' }}
+  </ng-template>
+
+  <div class="board-toolbar">
+    <button
+      pButton
+      type="button"
+      icon="pi pi-user-plus"
+      [label]="'Asignar seleccion (' + facade.selectedCount() + ')'"
+      severity="secondary"
+      [disabled]="facade.isSaving() || facade.selectedCount() === 0 || !facade.canMutateOperationalData()"
+      (click)="facade.openAssignment()"
+    ></button>
+
+    <button
+      pButton
+      type="button"
+      icon="pi pi-search"
+      label="Buscar Lead"
+      severity="secondary"
+      [disabled]="!facade.canDisplayOperationalData()"
+      (click)="facade.openSearchDialog()"
+    ></button>
+
+    @if (facade.isReconciling()) {
+      <p-tag severity="secondary" value="Realtime activo" />
+    }
+  </div>
+
+  <p-table
+    [value]="facade.rows()"
+    dataKey="id"
+    [loading]="facade.canDisplayOperationalData() && facade.isLoading()"
+    [rowHover]="true"
+    [scrollable]="true"
+    scrollHeight="flex"
+    [tableStyle]="{ 'min-width': '1260px' }"
+    styleClass="p-datatable-sm gtr-table"
+  >
+    <ng-template #header>
+      <tr>
+        <th class="col-check">
+          <button
+            type="button"
+            class="gtr-select"
+            [class.gtr-select--selected]="facade.allVisibleSelected()"
+            [class.gtr-select--partial]="facade.someVisibleSelected()"
+            [disabled]="!facade.canMutateOperationalData() || !facade.rows().length"
+            [attr.aria-pressed]="facade.allVisibleSelected()"
+            aria-label="Seleccionar todos los leads visibles"
+            title="Seleccionar todos"
+            (click)="facade.toggleSelectAllVisible(!facade.allVisibleSelected())"
+          >
+            @if (facade.allVisibleSelected()) {
+              <i class="pi pi-check" aria-hidden="true"></i>
+            } @else if (facade.someVisibleSelected()) {
+              <i class="pi pi-minus" aria-hidden="true"></i>
+            }
+          </button>
+        </th>
+        <th>Lead</th>
+        <th>Proveedor</th>
+        <th>Canal</th>
+        <th>Base</th>
+        <th>Documento</th>
+        <th>Primera tipificacion</th>
+        <th>Ultima tipificacion</th>
+        <th>Plan ofrecido</th>
+        <th>Estado</th>
+        <th>Asesor</th>
+        <th>Ingreso</th>
+        <th class="col-actions">Acciones</th>
+      </tr>
+    </ng-template>
+
+    <ng-template #body let-row>
+      <tr [class.row-new]="row.isNew" [class.row-selected]="facade.isSelected(row.id)">
+        <td class="col-check">
+          <button
+            type="button"
+            class="gtr-select"
+            [class.gtr-select--selected]="facade.isSelected(row.id)"
+            [disabled]="!facade.canMutateOperationalData()"
+            [attr.aria-pressed]="facade.isSelected(row.id)"
+            [attr.aria-label]="facade.isSelected(row.id) ? 'Quitar lead de la seleccion' : 'Seleccionar lead'"
+            (click)="facade.toggleSelection(row.id, !facade.isSelected(row.id))"
+          >
+            <i class="pi pi-check" aria-hidden="true"></i>
+          </button>
+        </td>
+        <td>
+          <strong>{{ facade.leadPrefixLabel(row.prefijo) }} {{ row.lead }}</strong>
+        </td>
+        <td>
+          @if (facade.providerLogo(row.nombreProveedorCampana); as logo) {
+            <div class="provider-cell">
+              <img [src]="logo" [alt]="facade.display(row.nombreProveedorCampana)" />
+            </div>
+          } @else {
+            {{ facade.display(row.nombreProveedorCampana) }}
+          }
+        </td>
+        <td>{{ facade.display(row.numeroWhatsappEmpresa) }}</td>
+        <td>{{ facade.display(row.base) }}</td>
+        <td>{{ facade.display(row.numeroDocumentoTitularServicio) }}</td>
+        <td>
+          @if (facade.tipificacionParts(row.primeraCodigoTipificacion, row.primeraCodigoSubtipificacion); as tip) {
+            <div class="tip-stack">
+              <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion)" />
+              <span class="tip-stack__line"></span>
+              <p-tag
+                [value]="tip.subtipificacion"
+                [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion')"
+              />
+            </div>
+          }
+        </td>
+        <td>
+          @if (facade.tipificacionParts(row.codigoTipificacion, row.codigoSubtipificacion); as tip) {
+            <div class="tip-stack">
+              <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion)" />
+              <span class="tip-stack__line"></span>
+              <p-tag
+                [value]="tip.subtipificacion"
+                [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion')"
+              />
+            </div>
+          }
+        </td>
+        <td>{{ facade.display(row.nombrePlanOfrecido) }}</td>
+        <td>
+          <p-tag
+            [severity]="facade.estadoSeverity(row.estadoSeguimiento)"
+            [value]="facade.display(row.estadoSeguimiento)"
+          />
+        </td>
+        <td>{{ facade.display(row.nombreAsesorAsignado) | uppercase }}</td>
+        <td>{{ (row.lastEntryAt ?? row.createdAt) | date: 'hh:mm a' }}</td>
+        <td class="actions-cell">
+          <div class="row-actions">
+            <button
+              pButton
+              type="button"
+              icon="pi pi-phone"
+              label="Llamar"
+              size="small"
+              severity="secondary"
+              [disabled]="!row.lead || !facade.canMutateOperationalData()"
+              (click)="facade.openDialer(row)"
+            ></button>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-whatsapp"
+              label="Chat"
+              size="small"
+              severity="secondary"
+              [disabled]="!row.lead || !facade.canMutateOperationalData()"
+              (click)="facade.openWhatsAppChat(row)"
+            ></button>
+            <button
+              pButton
+              type="button"
+              size="small"
+              class="gtr-assign-button"
+              [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
+              title="Asignaciones del dia"
+              (click)="facade.openAssignment(row)"
+            >
+              <span class="gtr-assign-button__action">
+                <i class="pi pi-user-plus" aria-hidden="true"></i>
+                <span>Asignar</span>
+              </span>
+              <span class="gtr-assign-button__count">{{ facade.display(row.totalAsignaciones ?? 0) }}</span>
+            </button>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-cog"
+              label="Gestionar"
+              size="small"
+              severity="secondary"
+              [disabled]="!facade.canMutateOperationalData()"
+              (click)="facade.openSnapshot(row)"
+            ></button>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-history"
+              size="small"
+              severity="secondary"
+              [disabled]="facade.isLoadingEvents()"
+              title="Ver historial del dia"
+              aria-label="Ver historial del dia"
+              (click)="facade.openEventHistory(row)"
+            ></button>
+            @if (row.tieneAlertaRegistrosDia) {
+              <span class="lead-warning" [title]="facade.warningTitle(row)" aria-label="Alerta de registros">
+                <span class="lead-warning__triangle" aria-hidden="true">
+                  <span>!</span>
+                </span>
+              </span>
+            }
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template #emptymessage>
+      <tr>
+          <td colspan="13" style="color: var(--app-text-muted); font-weight: 500; opacity: 0.72; padding: 2rem 1rem; text-align: center;">
+            {{
+              !facade.canDisplayOperationalData()
+                ? 'Marca ONLINE para activar esta bandeja.'
+                : facade.isLoading()
+                  ? 'Cargando bandeja...'
+                  : 'No hay leads para hoy.'
+            }}
+          </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <p-paginator
+    [first]="facade.pageNumber() * facade.pageSize"
+    [rows]="facade.pageSize"
+    [totalRecords]="facade.totalElements()"
+    (onPageChange)="facade.changePage($event.page ?? 0)"
+  />
+</p-card>

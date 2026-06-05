@@ -1,0 +1,109 @@
+<p-dialog
+  [visible]="facade.activeDialog() === 'events'"
+  (visibleChange)="!$event && facade.closeEventHistory()"
+  [modal]="true"
+  [draggable]="false"
+  styleClass="gtr-dialog gtr-dialog--events"
+>
+  <ng-template #header>
+    <span class="events-dialog-title">
+      Historial de eventos del dia
+      @if (facade.activeEventsLead(); as lead) {
+        @if (lead.tieneMultiplesRegistrosDia) {
+          <button
+            type="button"
+            class="event-alert-button"
+            [class.event-alert-button--selected]="facade.selectedEventAnomalyFilter() === 'multiple-records'"
+            (click)="facade.toggleEventAnomalyFilter('multiple-records')"
+          >
+            <p-tag value="Multiples registros" [styleClass]="facade.eventAnomalyTagClass('multiple-records', 'danger')" />
+          </button>
+        }
+        @if (lead.tieneRegistrosMismaCampanaDia) {
+          <button
+            type="button"
+            class="event-alert-button"
+            [class.event-alert-button--selected]="facade.selectedEventAnomalyFilter() === 'same-campaign'"
+            (click)="facade.toggleEventAnomalyFilter('same-campaign')"
+          >
+            <p-tag value="Misma campaña" [styleClass]="facade.eventAnomalyTagClass('same-campaign', 'violet')" />
+          </button>
+        }
+      }
+    </span>
+  </ng-template>
+
+  @if (facade.activeEventsLead(); as lead) {
+    <p class="wide helper">Lead {{ facade.leadPrefixLabel(lead.prefijo) }} {{ lead.lead }}</p>
+  }
+
+  <p-table
+    [value]="facade.filteredEventRows()"
+    [rowHover]="true"
+    [tableStyle]="{ 'min-width': '680px' }"
+    styleClass="p-datatable-sm gtr-table"
+  >
+    <ng-template #header>
+      <tr>
+        <th>Hora</th>
+        <th>Evento</th>
+        <th>Responsable</th>
+        <th>Detalle</th>
+      </tr>
+    </ng-template>
+
+    <ng-template #body let-evento>
+      @if (!facade.isLoadingEvents()) {
+        <tr>
+          <td>{{ evento.createdAt | date: 'hh:mm a' }}</td>
+          <td><p-tag [value]="facade.display(evento.accion)" severity="secondary" /></td>
+          <td>{{ facade.display(evento.nombreActor) | uppercase }}</td>
+          <td>
+            <div class="event-detail">
+              <span class="event-detail__summary">{{ facade.eventSummary(evento) }}</span>
+              @if (facade.eventComentario(evento)) {
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-comment"
+                  size="small"
+                  severity="secondary"
+                  [text]="true"
+                  [rounded]="true"
+                  class="event-detail__comment-btn"
+                  title="Ver comentario"
+                  aria-label="Ver comentario"
+                  (click)="facade.showEventComment(evento); commentPopover.toggle($event)"
+                ></button>
+              }
+            </div>
+          </td>
+        </tr>
+      }
+    </ng-template>
+
+    <ng-template #emptymessage>
+      @if (facade.isLoadingEvents()) {
+        @for (row of [1, 2, 3, 4]; track row) {
+          <tr>
+            <td><p-skeleton width="4.25rem" height="1rem" /></td>
+            <td><p-skeleton width="6.5rem" height="1.5rem" borderRadius="999px" /></td>
+            <td><p-skeleton width="8rem" height="1rem" /></td>
+            <td><p-skeleton width="100%" height="1rem" /></td>
+          </tr>
+        }
+      } @else {
+        <tr>
+          <td colspan="4">No hay eventos para el dia.</td>
+        </tr>
+      }
+    </ng-template>
+  </p-table>
+</p-dialog>
+
+<p-popover #commentPopover styleClass="gtr-comment-popover">
+  <div class="comment-popover">
+    <span class="comment-popover__title">Comentario</span>
+    <p class="comment-popover__body">{{ facade.activeEventComment() || '-' }}</p>
+  </div>
+</p-popover>

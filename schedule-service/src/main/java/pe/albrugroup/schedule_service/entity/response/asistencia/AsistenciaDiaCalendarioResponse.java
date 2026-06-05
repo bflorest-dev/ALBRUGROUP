@@ -8,6 +8,7 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -23,4 +24,7 @@ public class AsistenciaDiaCalendarioResponse {
     private LocalTime horaSalidaEstablecida;
     private LocalTime horaSalidaAsistencia;
     private Boolean jornadaCerrada;
+
+    /** Tramos del dia cuando fue partido por una ampliacion (reapertura). Vacio en dias normales. */
+    private List<TramoAsistenciaResponse> tramos;
 }

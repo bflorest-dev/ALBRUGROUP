@@ -6,22 +6,21 @@ import { Subscription } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DialogModule } from 'primeng/dialog';
-import { DrawerModule } from 'primeng/drawer';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
-import { MultiSelectModule } from 'primeng/multiselect';
-import { PaginatorModule } from 'primeng/paginator';
-import { PopoverModule } from 'primeng/popover';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { SelectModule } from 'primeng/select';
-import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-number-field/phone-number-field.component';
 import { RankingFacade } from '../../../ranking/facades/ranking.facade';
 import { RankingViewComponent } from '../../../ranking/components/ranking-view/ranking-view.component';
 import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
+import { GtrAdvisorsDrawerComponent } from '../../components/gtr-advisors-drawer/gtr-advisors-drawer.component';
+import { GtrAgendadosBoardComponent } from '../../components/gtr-agendados-board/gtr-agendados-board.component';
+import { GtrHistoricosBoardComponent } from '../../components/gtr-historicos-board/gtr-historicos-board.component';
+import { GtrLeadsBoardComponent } from '../../components/gtr-leads-board/gtr-leads-board.component';
+import { GtrEventsDialogComponent } from '../../components/gtr-events-dialog/gtr-events-dialog.component';
+import { GtrSearchDialogComponent } from '../../components/gtr-search-dialog/gtr-search-dialog.component';
 
 @Component({
   selector: 'app-gtr-workspace-page',
@@ -33,20 +32,19 @@ import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
     ButtonModule,
     CardModule,
     DialogModule,
-    DrawerModule,
     InputTextModule,
     MessageModule,
-    MultiSelectModule,
-    PaginatorModule,
-    PopoverModule,
-    ProgressSpinnerModule,
     SelectModule,
-    SkeletonModule,
     TableModule,
     TagModule,
-    DateFieldComponent,
     PhoneNumberFieldComponent,
-    RankingViewComponent
+    RankingViewComponent,
+    GtrAdvisorsDrawerComponent,
+    GtrAgendadosBoardComponent,
+    GtrHistoricosBoardComponent,
+    GtrLeadsBoardComponent,
+    GtrEventsDialogComponent,
+    GtrSearchDialogComponent
   ],
   providers: [GtrWorkspaceFacade, RankingFacade],
   templateUrl: './gtr-workspace-page.component.html',
@@ -73,38 +71,5 @@ export class GtrWorkspacePageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.routeSubscription.unsubscribe();
     this.facade.stop();
-  }
-
-  protected estadoSeverity(value: string | null | undefined): 'success' | 'warn' | 'danger' | 'info' | 'secondary' {
-    switch (value) {
-      case 'NUEVO':
-        return 'info';
-      case 'ASIGNADO':
-        return 'warn';
-      case 'EN_GESTION':
-      case 'AGENDADO':
-        return 'secondary';
-      case 'GESTIONADO':
-        return 'success';
-      default:
-        return 'secondary';
-    }
-  }
-
-  protected advisorSeverity(value: string | null | undefined): 'success' | 'warn' | 'danger' | 'info' | 'secondary' {
-    switch (value) {
-      case 'DISPONIBLE':
-        return 'success';
-      case 'GESTIONANDO':
-        return 'warn';
-      case 'OCUPADO':
-        return 'secondary';
-      case 'SATURADO':
-      case 'SIN_PRESENCIA':
-      case 'OFFLINE':
-        return 'danger';
-      default:
-        return 'info';
-    }
   }
 }

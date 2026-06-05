@@ -3,11 +3,14 @@ package pe.albrugroup.schedule_service.usecase;
 import pe.albrugroup.schedule_service.entity.request.asistencia.ConsultaCumplimientoRequest;
 import pe.albrugroup.schedule_service.entity.request.asistencia.ConsultaMonitoreoRequest;
 import pe.albrugroup.schedule_service.entity.request.asistencia.MovimientoAsistenciaRequest;
+import pe.albrugroup.schedule_service.entity.request.horario.RegistrarAmpliacionRequest;
 import pe.albrugroup.schedule_service.entity.response.asistencia.AsistenciaMesResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.CumplimientoDetalleResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.CumplimientoResumenResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleAsistenciaResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.EstadoMonitorResponse;
+import pe.albrugroup.schedule_service.entity.response.horario.AmpliacionContextoResponse;
+import pe.albrugroup.schedule_service.entity.response.horario.AmpliacionHorarioResponse;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -26,4 +29,6 @@ public interface IAsistencia {
     List<EstadoMonitorResponse> getEstadosMonitor(ConsultaMonitoreoRequest request);
     List<Long> listarEmpleadosJornadaAbiertaVencida();
     DetalleAsistenciaResponse autoCerrarJornada(Long idEmpleado);
+    AmpliacionContextoResponse getContextoAmpliacion(Long idEmpleado, LocalDate fecha);
+    AmpliacionHorarioResponse registrarAmpliacion(Long idEmpleado, RegistrarAmpliacionRequest request);
 }

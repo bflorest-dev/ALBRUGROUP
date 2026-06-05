@@ -1,0 +1,6 @@
+@use '../gtr-board-shared';
+
+:host ::ng-deep .gtr-board {
+  border: 1px solid var(--app-border-soft);
+  box-shadow: var(--app-shadow-soft);
+}

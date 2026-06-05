@@ -1,0 +1,126 @@
+<p-card styleClass="gtr-board gtr-board--agendados">
+  <ng-template #title>
+    <span class="board-title">
+      Leads agendados
+      <p-tag severity="info" [value]="facade.display(facade.agendadosTotalElements())" />
+    </span>
+  </ng-template>
+  <ng-template #subtitle>
+    Separados por hora programada para priorizar llamadas.
+  </ng-template>
+
+  @if (!facade.canDisplayOperationalData()) {
+    <p class="empty-state">Marca ONLINE para activar esta bandeja.</p>
+  } @else if (facade.isLoadingAgendados()) {
+    <div class="loading-state">
+      <p-progress-spinner ariaLabel="Cargando agendados" />
+      <span>Cargando agendados...</span>
+    </div>
+  } @else {
+    <div class="schedule-list">
+      @for (group of facade.agendadoGroups(); track group.key) {
+        <section class="schedule-group">
+          <header class="schedule-group__header">
+            <strong>{{ group.label }}</strong>
+            <p-tag severity="secondary" [value]="facade.display(group.rows.length)" />
+          </header>
+
+          <p-table
+            [value]="group.rows"
+            dataKey="id"
+            [rowHover]="true"
+            [tableStyle]="{ 'min-width': '1080px' }"
+            styleClass="p-datatable-sm gtr-table"
+          >
+            <ng-template #header>
+              <tr>
+                <th>Hora</th>
+                <th>Lead</th>
+                <th>Titular</th>
+                <th>Proveedor</th>
+                <th>Base</th>
+                <th>Tipificacion</th>
+                <th>Asesor</th>
+                <th>Comentario</th>
+                <th>Estado</th>
+                <th class="col-actions">Acciones</th>
+              </tr>
+            </ng-template>
+
+            <ng-template #body let-row>
+              <tr>
+                <td>
+                  <strong>{{ facade.formatHoraProgramada(row.horaProgramada) }}</strong>
+                  <small>{{ facade.formatFechaAgendamiento(row.fechaAgendamiento) }}</small>
+                </td>
+                <td><strong>{{ facade.leadPrefixLabel(row.prefijo) }} {{ row.lead }}</strong></td>
+                <td>{{ facade.display(row.nombreTitular) }}</td>
+                <td>{{ facade.display(row.nombreProveedorCampana) }}</td>
+                <td>{{ facade.display(row.base) }}</td>
+                <td>
+                  @if (facade.tipificacionParts(row.codigoTipificacion, row.codigoSubtipificacion); as tip) {
+                    <div class="tip-stack">
+                      <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion)" />
+                      <span class="tip-stack__line"></span>
+                      <p-tag
+                        [value]="tip.subtipificacion"
+                        [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion')"
+                      />
+                    </div>
+                  }
+                </td>
+                <td>{{ facade.display(row.nombreAsesorTipifico ?? row.nombreAsesorAsignado) | uppercase }}</td>
+                <td>{{ facade.display(row.comentario) }}</td>
+                <td>
+                  <p-tag
+                    [severity]="facade.estadoSeverity(row.estadoSeguimiento)"
+                    [value]="facade.display(row.estadoSeguimiento)"
+                  />
+                </td>
+                <td>
+                  <div class="row-actions">
+                    <button
+                      pButton
+                      type="button"
+                      size="small"
+                      class="gtr-assign-button"
+                      [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
+                      title="Asignaciones"
+                      (click)="facade.openAgendadoAssignment(row)"
+                    >
+                      <span class="gtr-assign-button__action">
+                        <i class="pi pi-user-plus" aria-hidden="true"></i>
+                        <span>Asignar</span>
+                      </span>
+                      <span class="gtr-assign-button__count">{{ facade.display(row.totalAsignaciones ?? 0) }}</span>
+                    </button>
+                    <button
+                      pButton
+                      type="button"
+                      icon="pi pi-history"
+                      size="small"
+                      severity="secondary"
+                      [disabled]="facade.isLoadingEvents()"
+                      title="Ver historial del dia"
+                      aria-label="Ver historial del dia"
+                      (click)="facade.openEventHistory(row)"
+                    ></button>
+                  </div>
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </section>
+      } @empty {
+        <p class="empty-state" style="opacity: 0.72; padding: 1.5rem 0; text-align: center;">No hay leads agendados.</p>
+      }
+    </div>
+  }
+
+  <p-paginator
+    [first]="facade.agendadosPageNumber() * facade.pageSize"
+    [rows]="facade.pageSize"
+    [totalRecords]="facade.agendadosTotalElements()"
+    (onPageChange)="facade.changeAgendadosPage($event.page ?? 0)"
+  />
+</p-card>

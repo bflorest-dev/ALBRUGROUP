@@ -152,6 +152,24 @@ frontend/src/app/features/admin/employability/
 - Si aparece un subdominio funcional distinto, crear otro facade.
 - Los componentes visuales reutilizables del feature viven dentro del feature.
 - Solo mover algo a `shared` cuando ya esté probado que sirve para más de un feature.
+- Ningún componente debe concentrar la pantalla completa. Una página con tabla principal + varios diálogos + drawer se divide en sub-componentes (uno por bloque), no se deja en un solo archivo.
+
+## Tamaño de componentes (budget de estilos)
+
+El `anyComponentStyle` budget de Angular (warning 8 kB / error 12 kB en `angular.json`) es una señal de organización, no de rendimiento. Cuando un componente lo dispara, la respuesta correcta es **dividirlo**, no subir el budget.
+
+Indicadores de que toca dividir:
+
+- Template de más de ~300-400 líneas o con bloques visuales claramente independientes.
+- SCSS sobre ~8 kB o con paletas/estilos repetidos.
+
+Patrón de división (ver `features/gtr` como referencia):
+
+- La página queda como orquestador delgado y provee el facade.
+- Cada bloque (tabla, drawer, cada diálogo) es un sub-componente `OnPush` que comparte ese facade por DI; la coordinación sigue por signals, sin reescribir lógica.
+- Los estilos pesados compartidos entre sub-componentes se extraen a un partial SCSS del feature (`_*-shared.scss`) consumido con `@use`.
+
+Subir el budget solo es un parche temporal documentado para desbloquear un build; debe revertirse al refactorizar. La regla normativa completa está en `AGENTS.md`.
 
 ## Estado
 

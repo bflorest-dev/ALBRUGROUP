@@ -1,0 +1,157 @@
+<p-dialog
+  header="Buscar Lead"
+  [visible]="facade.activeDialog() === 'search'"
+  (visibleChange)="!$event && facade.closeDialog()"
+  (onShow)="searchInput.focus()"
+  [modal]="true"
+  [draggable]="false"
+  styleClass="gtr-dialog gtr-dialog--search"
+>
+  <div class="search-form">
+    <label class="wide">
+      <span>Numero de Lead</span>
+      <input
+        #searchInput
+        pInputText
+        type="text"
+        inputmode="numeric"
+        placeholder="Ej: 987654321"
+        [value]="facade.searchQuery()"
+        (input)="facade.setSearchQuery($any($event.target).value)"
+        (keydown.enter)="facade.executeSearch()"
+      />
+    </label>
+    <button
+      pButton
+      type="button"
+      icon="pi pi-search"
+      label="Buscar"
+      [disabled]="!facade.canDisplayOperationalData() || !facade.searchQuery()"
+      [loading]="facade.isSearching()"
+      (click)="facade.executeSearch()"
+    ></button>
+  </div>
+
+  @if (facade.searchLookup()?.mensajeUsuario; as searchLookupMessage) {
+    <div class="search-feedback">
+      <p-message severity="warn" [text]="searchLookupMessage" />
+    </div>
+  }
+
+  <p-table
+    [value]="facade.searchResults()"
+    dataKey="id"
+    [loading]="facade.isSearching()"
+    [rowHover]="true"
+    [tableStyle]="{ 'min-width': '880px' }"
+    styleClass="p-datatable-sm gtr-table"
+  >
+    <ng-template #header>
+      <tr>
+        <th>Lead</th>
+        <th>Proveedor</th>
+        <th>Base</th>
+        <th>Ultima tipificacion</th>
+        <th>Estado</th>
+        <th>Asesor</th>
+        <th>Ingreso</th>
+        <th class="col-actions">Acciones</th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-row>
+      <tr>
+        <td><strong>{{ facade.leadPrefixLabel(row.prefijo) }} {{ row.lead }}</strong></td>
+        <td>{{ facade.display(row.nombreProveedorCampana) }}</td>
+        <td>{{ facade.display(row.base) }}</td>
+        <td>
+          @if (facade.tipificacionParts(row.codigoTipificacion, row.codigoSubtipificacion); as tip) {
+            <div class="tip-stack">
+              <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion)" />
+              <span class="tip-stack__line"></span>
+              <p-tag
+                [value]="tip.subtipificacion"
+                [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion')"
+              />
+            </div>
+          }
+        </td>
+        <td>
+          <p-tag
+            [severity]="facade.estadoSeverity(row.estadoSeguimiento)"
+            [value]="facade.display(row.estadoSeguimiento)"
+          />
+        </td>
+        <td>{{ facade.display(row.nombreAsesorAsignado) | uppercase }}</td>
+        <td>{{ (row.lastEntryAt ?? row.createdAt) | date: 'dd/MM hh:mm a' }}</td>
+        <td class="actions-cell">
+          <div class="row-actions">
+            <button
+              pButton
+              type="button"
+              icon="pi pi-whatsapp"
+              size="small"
+              severity="secondary"
+              title="Chat"
+              aria-label="Chat WhatsApp"
+              [disabled]="!row.lead || !facade.canMutateOperationalData()"
+              (click)="facade.openWhatsAppChat(row)"
+            ></button>
+            <button
+              pButton
+              type="button"
+              size="small"
+              class="gtr-assign-button"
+              [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
+              title="Asignar"
+              (click)="facade.openAssignment(row)"
+            >
+              <span class="gtr-assign-button__action">
+                <i class="pi pi-user-plus" aria-hidden="true"></i>
+                <span>Asignar</span>
+              </span>
+              <span class="gtr-assign-button__count">{{ facade.display(row.totalAsignaciones ?? 0) }}</span>
+            </button>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-cog"
+              size="small"
+              severity="secondary"
+              title="Gestionar"
+              aria-label="Gestionar"
+              [disabled]="!facade.canMutateOperationalData()"
+              (click)="facade.openSnapshot(row)"
+            ></button>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-history"
+              size="small"
+              severity="secondary"
+              title="Historial del dia"
+              aria-label="Historial"
+              [disabled]="facade.isLoadingEvents()"
+              (click)="facade.openEventHistory(row)"
+            ></button>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="8" style="color: var(--app-text-muted); opacity: 0.72; padding: 1.5rem 1rem; text-align: center;">
+          {{ facade.searchExecuted() ? 'No se encontraron leads.' : 'Ingresa el numero y pulsa Buscar.' }}
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  @if (facade.searchTotalElements() > facade.pageSize) {
+    <p-paginator
+      [first]="facade.searchPageNumber() * facade.pageSize"
+      [rows]="facade.pageSize"
+      [totalRecords]="facade.searchTotalElements()"
+      (onPageChange)="facade.changeSearchPage($event.page ?? 0)"
+    />
+  }
+</p-dialog>
