@@ -171,6 +171,10 @@ Patrón de división (ver `features/gtr` como referencia):
 
 Subir el budget solo es un parche temporal documentado para desbloquear un build; debe revertirse al refactorizar. La regla normativa completa está en `AGENTS.md`.
 
+## Coherencia espacial y layout
+
+El layout no debe depender del contenido: la posición de textos, íconos y botones debe ser estable aunque cambie el largo del texto, falten datos o cambie un estado. Anclar acciones a slots fijos, reservar el espacio de lo condicional, truncar overflow y validar siempre con los estados extremos (texto más largo, sin datos, todos los opcionales activos). La regla normativa completa —con indicadores rojos y criterio de validación— está en `AGENTS.md` ("Regla obligatoria: coherencia espacial y layout").
+
 ## Estado
 
 - El estado remoto del feature debe vivir en el facade.

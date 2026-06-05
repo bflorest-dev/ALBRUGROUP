@@ -254,6 +254,15 @@ export const PLATFORM_ROUTES: Routes = [
     }
   },
   {
+    path: 'backoffice/programados',
+    component: BackofficeWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE'],
+      section: 'programados'
+    }
+  },
+  {
     path: 'postventa',
     component: RolePlatformPageComponent,
     canActivate: [roleGuard],

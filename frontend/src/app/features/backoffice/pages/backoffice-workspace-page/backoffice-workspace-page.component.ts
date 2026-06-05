@@ -39,8 +39,8 @@ import {
 import { LeadRealtimeService } from '../../../preventa/services/lead-realtime.service';
 import { BackofficeLeadService } from '../../services/backoffice-lead.service';
 
-type BackofficeSection = 'plataforma' | 'gestion';
-type VisualLeadVenta = LeadVentaResponse & { isNew?: boolean };
+type BackofficeSection = 'plataforma' | 'gestion' | 'programados';
+type VisualLeadVenta = LeadVentaResponse & { isNew?: boolean; programacionGroupKey?: string };
 type AdicionalSeleccionado = { idAdicional: number; cantidad: number };
 type OfertaProviderOption = { id: number; nombre: string };
 type ToastSeverity = 'success' | 'info' | 'warn' | 'error';
@@ -99,13 +99,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly isSaving = signal(false);
   protected readonly plataformaRows = signal<VisualLeadVenta[]>([]);
   protected readonly gestionRows = signal<VisualLeadVenta[]>([]);
+  protected readonly programadosRows = signal<VisualLeadVenta[]>([]);
   protected readonly detail = signal<LeadDetalleResponse | null>(null);
   protected readonly eventos = signal<EventoResponse[]>([]);
   protected readonly selectedLeadId = signal<number | null>(null);
   protected readonly totalPlataforma = signal(0);
   protected readonly totalGestion = signal(0);
+  protected readonly totalProgramados = signal(0);
   protected readonly pagePlataforma = signal(0);
   protected readonly pageGestion = signal(0);
+  protected readonly pageProgramados = signal(0);
   protected readonly catalogo = signal<CatalogoResponse | null>(null);
   protected readonly selectedTipificacionCode = signal('');
   protected readonly selectedSubtipificacionCode = signal('');
@@ -263,6 +266,41 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly hasUnsavedDataChanges = computed(
     () => this.datosForm.dirty || this.direccionForm.dirty || this.ofertaForm.dirty || this.adicionalesDirty()
   );
+  protected readonly boardTitle = computed(() => {
+    switch (this.section()) {
+      case 'plataforma': return 'Leads disponibles';
+      case 'programados': return 'Mis leads programados';
+      default: return 'Mis leads en gestion';
+    }
+  });
+  protected readonly boardSubtitle = computed(() => {
+    switch (this.section()) {
+      case 'plataforma': return 'Toma leads disponibles para iniciar gestion.';
+      case 'programados': return 'Gestiona tus leads programados por fecha y hora cercana.';
+      default: return 'Gestiona, edita, tipifica y revisa historial.';
+    }
+  });
+  protected readonly activeRows = computed(() => {
+    switch (this.section()) {
+      case 'plataforma': return this.plataformaRows();
+      case 'programados': return this.programadosRows();
+      default: return this.gestionRows();
+    }
+  });
+  protected readonly activeTotal = computed(() => {
+    switch (this.section()) {
+      case 'plataforma': return this.totalPlataforma();
+      case 'programados': return this.totalProgramados();
+      default: return this.totalGestion();
+    }
+  });
+  protected readonly activePage = computed(() => {
+    switch (this.section()) {
+      case 'plataforma': return this.pagePlataforma();
+      case 'programados': return this.pageProgramados();
+      default: return this.pageGestion();
+    }
+  });
 
   constructor() {
     effect(() => {
@@ -286,7 +324,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.route.data.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data) => {
-      this.section.set(data['section'] === 'gestion' ? 'gestion' : 'plataforma');
+      this.section.set(this.resolveSection(data['section']));
       void this.refreshCurrent(false);
     });
 
@@ -324,7 +362,13 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.initializeInFlight = true;
     this.isLoading.set(true);
     try {
-      await Promise.all([this.refreshPlanes(), this.refreshDepartamentos(), this.refreshPlataforma(false), this.refreshGestion(false)]);
+      await Promise.all([
+        this.refreshPlanes(),
+        this.refreshDepartamentos(),
+        this.refreshPlataforma(false),
+        this.refreshGestion(false),
+        this.refreshProgramados(false)
+      ]);
       this.initialized = true;
       this.operationalGate.markActivated();
     } catch (error) {
@@ -597,6 +641,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       await this.refreshPlataforma(false);
       return;
     }
+    if (this.section() === 'programados') {
+      this.pageProgramados.set(pageNumber);
+      await this.refreshProgramados(false);
+      return;
+    }
     this.pageGestion.set(pageNumber);
     await this.refreshGestion(false);
   }
@@ -701,6 +750,20 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return year && month && day ? `${day}/${month}/${year}` : value;
   }
 
+  protected programacionGroupTitle(row: LeadVentaResponse): string {
+    const fecha = row.fechaProgramacion;
+    const hora = row.horaProgramada;
+    if (!fecha || !hora) {
+      return 'Sin programacion';
+    }
+    const block = this.formatHourBlock(hora);
+    return fecha === this.todayDate ? block : `${this.formatDateOnly(fecha)} || ${block}`;
+  }
+
+  protected programacionGroupHint(row: LeadVentaResponse): string {
+    return row.fechaProgramacion === this.todayDate ? 'Hoy' : 'Programado';
+  }
+
   protected isMine(row: LeadVentaResponse): boolean {
     const empleadoId = this.sessionService.getSession()?.empleadoId;
     return !!empleadoId && row.idAsesorAsignado === empleadoId;
@@ -789,6 +852,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return `${now.getFullYear()}-${month}-${day}`;
   }
 
+  private resolveSection(value: unknown): BackofficeSection {
+    return value === 'gestion' || value === 'programados' ? value : 'plataforma';
+  }
+
   private toBackendDate(value: Date | string | null): string {
     if (value instanceof Date && !Number.isNaN(value.getTime())) {
       const month = `${value.getMonth() + 1}`.padStart(2, '0');
@@ -797,6 +864,26 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
 
     return typeof value === 'string' ? value : '';
+  }
+
+  private formatHourBlock(value?: string | null): string {
+    const hour = this.parseHour(value);
+    if (hour === null) {
+      return '-';
+    }
+    return `${this.formatHourLabel(hour)} - ${this.formatHourLabel(hour + 1)}`;
+  }
+
+  private parseHour(value?: string | null): number | null {
+    const hour = Number(String(value ?? '').slice(0, 2));
+    return Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : null;
+  }
+
+  private formatHourLabel(hour: number): string {
+    const normalized = ((hour % 24) + 24) % 24;
+    const suffix = normalized < 12 ? 'AM' : 'PM';
+    const displayHour = normalized % 12 || 12;
+    return `${displayHour}${suffix}`;
   }
 
   private startRealtime(): void {
@@ -847,7 +934,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     this.isReconciling.set(true);
     try {
-      await Promise.all([this.refreshPlataforma(true), this.refreshGestion(true)]);
+      await Promise.all([this.refreshPlataforma(true), this.refreshGestion(true), this.refreshProgramados(true)]);
       if (changedLeadId && this.selectedLeadId() === changedLeadId) {
         await this.refreshOpenDetail(changedLeadId);
       }
@@ -862,6 +949,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     if (this.section() === 'plataforma') {
       await this.refreshPlataforma(silent);
+      return;
+    }
+    if (this.section() === 'programados') {
+      await this.refreshProgramados(silent);
       return;
     }
     await this.refreshGestion(silent);
@@ -888,6 +979,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.gestionRows.set(this.mergeVisualRows(previous, page.content, silent));
   }
 
+  private async refreshProgramados(silent: boolean): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
+    const previous = this.programadosRows();
+    const page = await firstValueFrom(this.leadService.listarProgramados(this.currentQuery(this.pageProgramados())));
+    this.totalProgramados.set(page.totalElements);
+    this.programadosRows.set(this.mergeVisualRows(previous, page.content.map((row) => this.withProgramacionGroup(row)), silent));
+  }
+
   private async refreshOpenDetail(idLead: number): Promise<void> {
     try {
       const detail = await firstValueFrom(this.leadService.obtenerDetalle(idLead));
@@ -903,7 +1004,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   private async refreshEventos(idLead: number): Promise<void> {
     const page = await firstValueFrom(
-      this.leadService.listarEventos(idLead, { pageNumber: 0, pageSize: 20, sortBy: 'createdAt', direction: 'desc' })
+      this.leadService.listarEventos(idLead, this.todayDate, {
+        pageNumber: 0,
+        pageSize: 20,
+        sortBy: 'createdAt',
+        direction: 'desc'
+      })
     );
     this.eventos.set(page.content);
   }
@@ -1094,6 +1200,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return rows;
   }
 
+  private withProgramacionGroup(row: LeadVentaResponse): VisualLeadVenta {
+    const hour = this.parseHour(row.horaProgramada);
+    return {
+      ...row,
+      programacionGroupKey: row.fechaProgramacion && hour !== null ? `${row.fechaProgramacion}-${hour}` : 'sin-programacion'
+    };
+  }
+
   private scheduleNewRowReset(ids: number[]): void {
     for (const id of ids) {
       const existingTimer = this.newRowTimers.get(id);
@@ -1101,6 +1215,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       const timerId = window.setTimeout(() => {
         this.plataformaRows.update((rows) => rows.map((row) => (row.id === id ? { ...row, isNew: false } : row)));
         this.gestionRows.update((rows) => rows.map((row) => (row.id === id ? { ...row, isNew: false } : row)));
+        this.programadosRows.update((rows) => rows.map((row) => (row.id === id ? { ...row, isNew: false } : row)));
         this.newRowTimers.delete(id);
       }, 3500);
       this.newRowTimers.set(id, timerId);
@@ -1234,13 +1349,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.isSaving.set(false);
     this.plataformaRows.set([]);
     this.gestionRows.set([]);
+    this.programadosRows.set([]);
     this.detail.set(null);
     this.eventos.set([]);
     this.selectedLeadId.set(null);
     this.totalPlataforma.set(0);
     this.totalGestion.set(0);
+    this.totalProgramados.set(0);
     this.pagePlataforma.set(0);
     this.pageGestion.set(0);
+    this.pageProgramados.set(0);
     this.detailDialogOpen.set(false);
     this.showComment.set(false);
     this.selectedOfertaProviderId.set(null);

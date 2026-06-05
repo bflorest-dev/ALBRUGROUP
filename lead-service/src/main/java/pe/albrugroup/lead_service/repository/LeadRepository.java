@@ -295,7 +295,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.createdAt,
                 l.lastEntryAt,
                 l.updatedAt,
-                0L
+                0L,
+                null,
+                null
             )
             FROM Lead l
             WHERE l.etapa = :etapa
@@ -339,7 +341,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.createdAt,
                 l.lastEntryAt,
                 l.updatedAt,
-                0L
+                0L,
+                null,
+                null
             )
             FROM Lead l
             WHERE l.etapa = :etapa
@@ -353,6 +357,70 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     Page<LeadResponse> listarLeadsAsignadosPorEtapaYAsesor(
             @Param("etapa") Etapa etapa,
             @Param("idAsesor") Long idAsesor,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.LeadResponse(
+                l.id,
+                l.prefijo,
+                l.lead,
+                l.etapa,
+                l.estado,
+                l.idAsesorAsignado,
+                l.nombreAsesorAsignado,
+                l.base,
+                l.idTipificacion,
+                l.codigoTipificacion,
+                l.idSubtipificacion,
+                l.codigoSubtipificacion,
+                l.nombrePlanSnapshot,
+                l.nombreProveedorSnapshot,
+                l.precioPlanSnapshot,
+                l.nombrePromocionInternaSnapshot,
+                l.precioAdicionalesSnapshot,
+                l.precioFinal,
+                l.diaCorteFacturacion,
+                l.mesesPermanenciaSnapshot,
+                l.createdAt,
+                l.lastEntryAt,
+                l.updatedAt,
+                0L,
+                e.fechaProgramacion,
+                e.horaProgramada
+            )
+            FROM Lead l
+            JOIN Evento e ON e.idLead = l.id
+            WHERE l.etapa = :etapa
+              AND l.idAsesorAsignado = :idAsesor
+              AND l.codigoTipificacion = :codigoProgramado
+              AND e.accion = :accionTipificacion
+              AND e.tipificacion = :codigoProgramado
+              AND e.fechaProgramacion IS NOT NULL
+              AND e.horaProgramada IS NOT NULL
+              AND (
+                    e.fechaProgramacion > :fechaActual
+                    OR (e.fechaProgramacion = :fechaActual AND e.horaProgramada >= :horaDesde)
+              )
+              AND e.createdAt = (
+                  SELECT MAX(es.createdAt)
+                  FROM Evento es
+                  WHERE es.idLead = l.id
+                    AND es.accion = :accionTipificacion
+                    AND es.tipificacion = :codigoProgramado
+              )
+            ORDER BY e.fechaProgramacion ASC,
+                     e.horaProgramada ASC,
+                     e.createdAt ASC,
+                     l.id ASC
+            """)
+    Page<LeadResponse> listarLeadsProgramadosVentaAsignados(
+            @Param("etapa") Etapa etapa,
+            @Param("idAsesor") Long idAsesor,
+            @Param("codigoProgramado") String codigoProgramado,
+            @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("fechaActual") java.time.LocalDate fechaActual,
+            @Param("horaDesde") java.time.LocalTime horaDesde,
             Pageable pageable
     );
 

@@ -43,6 +43,12 @@ export class BackofficeLeadService {
     return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta/asignados`, { params: this.pageParams(query) });
   }
 
+  listarProgramados(query: PageQuery): Observable<LeadPage<LeadVentaResponse>> {
+    return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta/programados/asignados`, {
+      params: this.pageParams(query)
+    });
+  }
+
   tomarLead(idLead: number): Observable<void> {
     return this.http.patch<void>(`${this.leadUrl}/venta/${idLead}/asignacion`, {});
   }
@@ -55,9 +61,9 @@ export class BackofficeLeadService {
     return this.http.get<LeadDetalleResponse>(`${this.leadUrl}/venta/${idLead}/detalle-asesor`);
   }
 
-  listarEventos(idLead: number, query: PageQuery): Observable<LeadPage<EventoResponse>> {
-    return this.http.get<LeadPage<EventoResponse>>(`${this.leadUrl}/venta/${idLead}/eventos`, {
-      params: this.pageParams(query)
+  listarEventos(idLead: number, fecha: string, query: PageQuery): Observable<LeadPage<EventoResponse>> {
+    return this.http.get<LeadPage<EventoResponse>>(`${this.leadUrl}/eventos/lead/${idLead}`, {
+      params: this.pageParams(query).set('fechaDesde', fecha).set('fechaHasta', fecha)
     });
   }
 

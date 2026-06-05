@@ -11,6 +11,8 @@ import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Getter
 @Setter
@@ -43,4 +45,6 @@ public class LeadResponse {
     private Instant lastEntryAt;
     private Instant updatedAt;
     private long totalAsignaciones;
+    private LocalDate fechaProgramacion;
+    private LocalTime horaProgramada;
 }

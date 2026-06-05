@@ -19,11 +19,15 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<Map<String, Object>> handleBusinessException(BusinessException e) {
+        log.warn("[GlobalExceptionHandler] BusinessException {} - {}", e.getStatus(), e.getMessage(), e);
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("status", e.getStatus().value());
         body.put("error", e.getStatus().getReasonPhrase());
@@ -96,11 +100,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(DataIntegrityViolationException e) {
+        log.warn("[GlobalExceptionHandler] DataIntegrityViolation - {}", e.getMostSpecificCause().getMessage(), e);
         Map<String, String> constraintMessages = Map.of(
                 "uk_asistencia_empleado_fecha", "Ya existe una asistencia registrada para el empleado en esa fecha",
                 "uk_excepcion_horario_fecha", "Ya existe una excepcion registrada para ese horario en esa fecha",
                 "uk_horario_detalle_dia", "Ya existe un detalle de horario registrado para ese dia",
-                "politica_modalidad_modalidad_key", "Ya existe una politica registrada para esa modalidad"
+                "politica_modalidad_modalidad_key", "Ya existe una politica registrada para esa modalidad",
+                "excepcion_horario_tipo_check", "Tipo de excepcion no reconocido por el sistema"
         );
 
         String message = "Ya existe un registro con estos datos";
@@ -123,6 +129,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleUnexpected(Exception e) {
+        log.error("[GlobalExceptionHandler] Unexpected exception - {}", e.getMessage(), e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                 "status", HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "error", HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),

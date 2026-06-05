@@ -173,7 +173,8 @@ export class PrivateLayoutComponent {
     if (session.primaryRole === 'ASESOR_BACKOFFICE' || session.primaryRole === 'SUPERVISOR_BACKOFFICE') {
       return [
         { label: 'Plataforma', route: '/app/backoffice/plataforma', icon: 'pi pi-desktop', exact: true },
-        { label: 'Gestion', route: '/app/backoffice/gestion', icon: 'pi pi-briefcase', exact: true }
+        { label: 'Gestion', route: '/app/backoffice/gestion', icon: 'pi pi-briefcase', exact: true },
+        { label: 'Programados', route: '/app/backoffice/programados', icon: 'pi pi-calendar-clock', exact: true }
       ];
     }
 

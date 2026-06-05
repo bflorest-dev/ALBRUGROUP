@@ -21,7 +21,9 @@ export class PhoneNumberFieldComponent {
   @Input() numberInvalidMessage = '';
 
   focusNumber(): void {
-    this.numberInputRef?.nativeElement.focus();
+    window.setTimeout(() => {
+      this.numberInputRef?.nativeElement.focus();
+    });
   }
 
   protected get prefixDigits(): string {

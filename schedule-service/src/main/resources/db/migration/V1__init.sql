@@ -61,7 +61,8 @@ CREATE TABLE excepcion_horario (
     fin_almuerzo    TIME,
     laborable    BOOLEAN,
     motivo       VARCHAR(300) NOT NULL,
-    CONSTRAINT uk_excepcion_horario_fecha UNIQUE (horario_id, fecha)
+    CONSTRAINT uk_excepcion_horario_fecha UNIQUE (horario_id, fecha),
+    CONSTRAINT excepcion_horario_tipo_check CHECK (tipo IN ('CAMBIO_COMPLETO','DIA_LIBRE','COMPENSACION','AMPLIACION'))
 );
 
 CREATE INDEX idx_excepcion_horario_horario

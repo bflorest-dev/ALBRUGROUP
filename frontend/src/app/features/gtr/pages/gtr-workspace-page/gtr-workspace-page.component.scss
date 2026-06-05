@@ -228,10 +228,13 @@ label {
 }
 
 .select-item {
+  display: grid;
+  gap: 0.2rem;
   min-width: 0;
 }
 
 .select-item--advisor {
+  display: flex;
   justify-content: space-between;
   width: 100%;
 }

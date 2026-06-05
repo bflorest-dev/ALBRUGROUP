@@ -170,6 +170,8 @@ export interface LeadVentaResponse {
   lastEntryAt?: string | null;
   updatedAt?: string | null;
   totalAsignaciones?: number | null;
+  fechaProgramacion?: string | null;
+  horaProgramada?: string | null;
 }
 
 export interface LeadGtrMetricasResponse {

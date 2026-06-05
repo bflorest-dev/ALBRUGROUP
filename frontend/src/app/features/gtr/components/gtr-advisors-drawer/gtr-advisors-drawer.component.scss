@@ -23,12 +23,19 @@
   border-radius: 0.65rem;
   gap: 0.7rem;
   padding: 0.75rem;
+  position: relative;
 }
 
 .advisor-card > div {
   display: grid;
+  flex: 1 1 auto;
   gap: 0.32rem;
   min-width: 0;
+  // Reserva el espacio del reloj para TODO el contenido del cuerpo: nombre, tags, warning y
+  // "Ver leads" quedan naturalmente separados sin calcular margenes por elemento.
+  // Valor: ancho del boton reloj (~2rem) + su offset desde el borde de la card (0.3rem)
+  // menos el padding propio de la card (0.75rem) que ya separa el cuerpo del borde. ~2rem neto.
+  padding-right: 2rem;
 }
 
 .advisor-card__dot {
@@ -54,7 +61,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
-  justify-content: space-between;
+  justify-content: flex-start;
 }
 
 .advisor-card__tags {
@@ -63,24 +70,18 @@
   gap: 0.65rem;
 }
 
-// Reloj sutil para ampliar horario. Inline = al final de la fila de tags (card normal).
-.advisor-card__clock--inline {
-  margin-left: auto;
-}
-
-// Fila de acciones de las cards en abandono: "Ver leads" toma el ancho libre y el reloj queda fijo.
-.advisor-card__actions {
-  align-items: center;
-  display: flex;
-  gap: 0.5rem;
-}
-
-.advisor-card__leads {
-  flex: 1 1 auto;
-}
-
+// Reloj sutil para ampliar horario: SIEMPRE anclado a la esquina inferior derecha de la card,
+// independiente del largo del nombre o del contenido.
 .advisor-card__clock {
-  flex: 0 0 auto;
+  bottom: 0.3rem;
+  position: absolute;
+  right: 0.3rem;
+}
+
+// "Ver leads" ocupa el ancho completo del cuerpo; el espacio del reloj ya está reservado
+// por el padding-right del cuerpo, no hay que calcularlo aqui.
+.advisor-card__leads {
+  width: 100%;
 }
 
 .advisor-card__warning {

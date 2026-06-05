@@ -63,6 +63,14 @@ public class VentaController {
         var leads = leadService.listarLeadsVentaAsignados(pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
+    // 2.1. Listar los Leads PROGRAMADOS asignados al BackOffice, ordenados por fecha y hora de programacion.
+    @GetMapping("/programados/asignados") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
+    public ResponseEntity<PageResponse<LeadResponse>> listarLeadsVentaProgramadosAsignados(
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        var leads = leadService.listarLeadsVentaProgramadosAsignados(pageRequest);
+        return ResponseEntity.status(HttpStatus.OK).body(leads);
+    }
     // 3. Asignarse el lead, ahora la diferencia seria que el mismo backoffice se asigna lead si mismo
     // Una vez un backoffice se haga responsable de un lead, otro no podra hacerlo durante esa etapa.
     @PatchMapping("/{idLead}/asignacion") @PreAuthorize("hasAuthority('ASSIGN_LEADS')")

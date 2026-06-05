@@ -284,6 +284,7 @@
     (onShow)="nuevoLeadPhone.focusNumber()"
     [modal]="true"
     [draggable]="false"
+    [focusOnShow]="false"
     styleClass="gtr-dialog"
   >
     <form class="form-grid" [formGroup]="facade.intakeForm" (ngSubmit)="facade.submitIntake()">

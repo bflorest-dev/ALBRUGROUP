@@ -48,54 +48,36 @@
               [severity]="facade.advisorSeverity(advisor.disponibilidad)"
               [value]="facade.display(advisor.disponibilidad)"
             />
-            @if (!advisor.esAbandonador) {
-              <button
-                pButton
-                type="button"
-                size="small"
-                severity="secondary"
-                [text]="true"
-                [rounded]="true"
-                icon="pi pi-clock"
-                class="advisor-card__clock advisor-card__clock--inline"
-                pTooltip="Ampliar horario"
-                tooltipPosition="left"
-                [disabled]="!facade.canMutateOperationalData()"
-                (click)="facade.openScheduleExtension(advisor)"
-              ></button>
-            }
           </div>
           @if (advisor.esAbandonador) {
             <p class="advisor-card__warning">Se desconectó dejando leads sin gestionar.</p>
-            <div class="advisor-card__actions">
-              <button
-                pButton
-                type="button"
-                size="small"
-                severity="danger"
-                [outlined]="true"
-                icon="pi pi-inbox"
-                label="Ver leads"
-                class="advisor-card__leads"
-                (click)="facade.openAbandonedLeads(advisor.empleadoId)"
-              ></button>
-              <button
-                pButton
-                type="button"
-                size="small"
-                severity="secondary"
-                [text]="true"
-                [rounded]="true"
-                icon="pi pi-clock"
-                class="advisor-card__clock"
-                pTooltip="Ampliar horario"
-                tooltipPosition="left"
-                [disabled]="!facade.canMutateOperationalData()"
-                (click)="facade.openScheduleExtension(advisor)"
-              ></button>
-            </div>
+            <button
+              pButton
+              type="button"
+              size="small"
+              severity="danger"
+              [outlined]="true"
+              icon="pi pi-inbox"
+              label="Ver leads"
+              class="advisor-card__leads"
+              (click)="facade.openAbandonedLeads(advisor.empleadoId)"
+            ></button>
           }
         </div>
+        <button
+          pButton
+          type="button"
+          size="small"
+          severity="secondary"
+          [text]="true"
+          [rounded]="true"
+          icon="pi pi-clock"
+          class="advisor-card__clock"
+          pTooltip="Ampliar horario"
+          tooltipPosition="left"
+          [disabled]="!facade.canMutateOperationalData()"
+          (click)="facade.openScheduleExtension(advisor)"
+        ></button>
       </article>
     } @empty {
       <p class="empty-state">No hay asesores activos.</p>

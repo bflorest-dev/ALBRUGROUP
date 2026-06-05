@@ -6,7 +6,7 @@
     <div class="hero-row">
       <div>
         <span class="eyebrow">VENTA</span>
-        <h1>{{ section() === 'plataforma' ? 'Plataforma Backoffice' : 'Gestion Backoffice' }}</h1>
+        <h1>{{ section() === 'plataforma' ? 'Plataforma Backoffice' : section() === 'programados' ? 'Programados Backoffice' : 'Gestion Backoffice' }}</h1>
         <p>{{ isReconciling() ? 'Sincronizando cambios en tiempo real' : 'Bandeja operativa de leads en venta' }}</p>
       </div>
 
@@ -31,12 +31,12 @@
   <p-card styleClass="backoffice-board">
     <ng-template #title>
       <span class="board-title">
-        {{ section() === 'plataforma' ? 'Leads disponibles' : 'Mis leads en gestion' }}
-        <p-tag severity="info" [value]="display(section() === 'plataforma' ? totalPlataforma() : totalGestion())" />
+        {{ boardTitle() }}
+        <p-tag severity="info" [value]="display(activeTotal())" />
       </span>
     </ng-template>
     <ng-template #subtitle>
-      {{ section() === 'plataforma' ? 'Toma leads disponibles para iniciar gestion.' : 'Gestiona, edita, tipifica y revisa historial.' }}
+      {{ boardSubtitle() }}
     </ng-template>
 
     @if (section() === 'plataforma') {
@@ -80,7 +80,7 @@
     }
 
     <p-table
-      [value]="section() === 'plataforma' ? plataformaRows() : gestionRows()"
+      [value]="activeRows()"
       dataKey="id"
       [loading]="canDisplayOperationalData() && isLoading()"
       [rowHover]="true"
@@ -88,8 +88,8 @@
       scrollHeight="flex"
       [tableStyle]="{ 'min-width': '1120px' }"
       styleClass="p-datatable-sm backoffice-table"
-      [rowGroupMode]="section() === 'gestion' ? 'subheader' : undefined"
-      groupRowsBy="codigoTipificacion"
+      [rowGroupMode]="section() === 'gestion' || section() === 'programados' ? 'subheader' : undefined"
+      [groupRowsBy]="section() === 'programados' ? 'programacionGroupKey' : 'codigoTipificacion'"
     >
       <ng-template #header>
         <tr>
@@ -109,12 +109,17 @@
       <ng-template #groupheader let-row>
         <tr class="group-row">
           <td [attr.colspan]="10">
-            @if (row.codigoTipificacion) {
-              <span class="group-title">{{ row.codigoTipificacion }}</span>
-              <span class="group-hint">En seguimiento</span>
+            @if (section() === 'programados') {
+              <span class="group-title">{{ programacionGroupTitle(row) }}</span>
+              <span class="group-hint">{{ programacionGroupHint(row) }}</span>
             } @else {
-              <span class="group-title">Sin tipificar</span>
-              <span class="group-hint">Recien asignados</span>
+              @if (row.codigoTipificacion) {
+                <span class="group-title">{{ row.codigoTipificacion }}</span>
+                <span class="group-hint">En seguimiento</span>
+              } @else {
+                <span class="group-title">Sin tipificar</span>
+                <span class="group-hint">Recien asignados</span>
+              }
             }
           </td>
         </tr>
@@ -194,6 +199,8 @@
                   } @else {
                     No hay leads disponibles en VENTA.
                   }
+                } @else if (section() === 'programados') {
+                  No tienes leads programados pendientes.
                 } @else {
                   No tienes leads asignados en gestion.
                 }
@@ -205,9 +212,9 @@
     </p-table>
 
     <p-paginator
-      [first]="(section() === 'plataforma' ? pagePlataforma() : pageGestion()) * pageSize"
+      [first]="activePage() * pageSize"
       [rows]="pageSize"
-      [totalRecords]="section() === 'plataforma' ? totalPlataforma() : totalGestion()"
+      [totalRecords]="activeTotal()"
       (onPageChange)="changePage($event.page ?? 0)"
     />
   </p-card>
@@ -408,7 +415,7 @@
               </tr>
             </ng-template>
             <ng-template #emptymessage>
-              <tr><td colspan="7">No hay eventos para este lead.</td></tr>
+              <tr><td colspan="7">No hay eventos para el dia de hoy.</td></tr>
             </ng-template>
           </p-table>
         </app-lead-commercial-data-tabs>
