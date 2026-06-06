@@ -189,6 +189,7 @@ export class GtrWorkspaceFacade {
   );
   readonly selectedIds = signal<Set<number>>(new Set());
   readonly advisors = signal<AdvisorOption[]>([]);
+  readonly selectedAssignmentAdvisorId = signal(0);
   /** Leads que siguen en manos de cada asesor (ASIGNADO/EN_GESTION en PREVENTA). */
   readonly pendientesPorAsesor = signal<AsesorLeadsPendientesResponse[]>([]);
   /** Modal de leads abandonados: id del asesor cuyo listado esta abierto. */
@@ -427,7 +428,7 @@ export class GtrWorkspaceFacade {
       });
   });
   readonly selectedAdvisor = computed(() => {
-    const advisorId = this.assignmentForm.controls.idAsesorAsignado.value;
+    const advisorId = this.selectedAssignmentAdvisorId();
     return this.advisors().find((advisor) => advisor.empleadoId === advisorId) ?? null;
   });
   readonly selectedSnapshotLead = computed(() => {
@@ -751,8 +752,16 @@ export class GtrWorkspaceFacade {
       return;
     }
     this.assignmentForm.reset({ idAsesorAsignado: 0 });
+    this.selectedAssignmentAdvisorId.set(0);
+    this.pendingReassignment.set(null);
     this.activeAssignmentLead.set(row ?? null);
     this.activeDialog.set('assign');
+  }
+
+  changeAssignmentAdvisor(advisorId: number | null): void {
+    this.selectedAssignmentAdvisorId.set(advisorId ?? 0);
+    this.pendingReassignment.set(null);
+    this.clearMessages();
   }
 
   async openEventHistory(row: EventHistoryTarget): Promise<void> {
@@ -876,6 +885,7 @@ export class GtrWorkspaceFacade {
       this.clearMessages();
     }
     this.assignmentForm.reset({ idAsesorAsignado: 0 });
+    this.selectedAssignmentAdvisorId.set(0);
     this.resetIntakeForm();
     this.activeDialog.set(null);
     this.activeAssignmentLead.set(null);
@@ -999,6 +1009,7 @@ export class GtrWorkspaceFacade {
     }
 
     this.assignmentForm.controls.idAsesorAsignado.setValue(pending.advisor.empleadoId);
+    this.selectedAssignmentAdvisorId.set(pending.advisor.empleadoId);
     await this.assignOne(pending.row, pending.requiresReassignment, pending.requiresPreviousManagement);
   }
 

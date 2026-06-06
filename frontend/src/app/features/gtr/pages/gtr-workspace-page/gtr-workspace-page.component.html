@@ -438,6 +438,7 @@
           optionValue="empleadoId"
           [placeholder]="facade.availableAssignmentAdvisors().length ? 'Seleccionar asesor por disponibilidad' : 'No hay asesores con estado operativo'"
           appendTo="body"
+          (onChange)="facade.changeAssignmentAdvisor($event.value)"
         >
           <ng-template #selectedItem let-advisor>
             @if (advisor) {

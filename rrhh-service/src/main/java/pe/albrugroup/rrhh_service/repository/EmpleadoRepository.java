@@ -39,6 +39,9 @@ public interface EmpleadoRepository extends JpaRepository<Empleado, Long> {
                                  @Param("origen") Origen origen,
                                  @Param("estadoOperativo") EstadoOperativo estadoOperativo, Pageable pageable);
     Optional<Empleado> findByNumeroDocumento(String numeroDocumento);
+    boolean existsByNumeroDocumento(String numeroDocumento);
+    boolean existsByCelularPersonal(String celularPersonal);
+    boolean existsByCorreoPersonalIgnoreCase(String correoPersonal);
 
     @Query("SELECT DISTINCT e FROM Empleado e WHERE " +
             "LOWER(e.nombres) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +

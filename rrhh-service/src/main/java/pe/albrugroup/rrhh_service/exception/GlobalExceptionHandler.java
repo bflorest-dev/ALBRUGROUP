@@ -18,6 +18,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -108,27 +109,33 @@ public class GlobalExceptionHandler {
 
         // Mapa de constraints a mensajes amigables
         Map<String, String> constraintMessages = Map.of(
-                "UK_EMPLEADO_NUMERO_DOCUMENTO", "El número de documento ya está registrado",
-                "UK_EMPLEADO_CELULAR_PERSONAL", "El celular personal ya está registrado",
-                "UK_EMPLEADO_CORREO_PERSONAL", "El correo personal ya está registrado"
+                "uk_empleado_numero_documento", "El numero de documento ingresado ya esta registrado.",
+                "uk_empleado_celular_personal", "El celular personal ingresado ya esta registrado.",
+                "uk_empleado_correo_personal", "El correo personal ingresado ya esta registrado."
                 // Aquí puedes agregar más constraints de otras entidades
         );
 
         String message = "Ya existe un registro con estos datos";
         String errorMsg = e.getMostSpecificCause().getMessage();
+        Optional<String> detail = Optional.empty();
 
         // Buscar qué constraint fue violado
         if (errorMsg != null) {
-            message = constraintMessages.entrySet().stream()
-                    .filter(entry -> errorMsg.contains(entry.getKey()))
+            String normalizedError = errorMsg.toLowerCase();
+            detail = constraintMessages.entrySet().stream()
+                    .filter(entry -> normalizedError.contains(entry.getKey()))
                     .map(Map.Entry::getValue)
-                    .findFirst()
-                    .orElse(message);
+                    .findFirst();
+
+            if (detail.isPresent()) {
+                message = "No se pudo registrar el empleado porque hay datos repetidos";
+            }
         }
 
         body.put("status", HttpStatus.CONFLICT.value());
         body.put("error", "Conflict");
         body.put("message", message);
+        detail.ifPresent(value -> body.put("details", List.of(value)));
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }

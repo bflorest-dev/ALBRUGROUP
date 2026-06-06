@@ -4,7 +4,6 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormBuilder, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { Subscription, catchError, filter, firstValueFrom, map, of, startWith, switchMap, timeout } from 'rxjs';
 import { AttendanceRealtimeService } from '../../../core/services/attendance-realtime.service';
-import { ApiErrorResponse } from '../../../shared/models/api/api-error-response';
 import { UsuarioResponse } from '../../../shared/models/auth/usuario-response';
 import { PageResponse } from '../../../shared/models/common/page-response';
 import { PresenceRealtimeEvent } from '../../../shared/models/gateway/presence-realtime-event';
@@ -23,6 +22,7 @@ import { RegistrarExcepcionHorarioRequest } from '../../../shared/models/schedul
 import { ConnectedUserResponse, PresenceService } from '../../../core/services/presence.service';
 import { PresenceRealtimeService } from '../../../core/services/presence-realtime.service';
 import { EstadoMonitorResponse } from '../../../shared/models/schedule/cumplimiento-response';
+import { formatApiErrorMessage } from '../../../shared/utils/api-error.utils';
 import { AuthService } from '../../auth/services/auth.service';
 import { AdminRrhhService } from '../services/admin-rrhh.service';
 
@@ -2113,13 +2113,7 @@ export class AdminPersonalFacade implements OnDestroy {
   }
 
   private getErrorMessage(error: HttpErrorResponse, fallbackMessage: string): string {
-    const apiError = error.error as ApiErrorResponse | null;
-
-    if (apiError?.details?.length) {
-      return `${apiError.message}: ${apiError.details.join(', ')}`;
-    }
-
-    return apiError?.message ?? fallbackMessage;
+    return formatApiErrorMessage(error.error, fallbackMessage);
   }
 
   private getToday(): string {

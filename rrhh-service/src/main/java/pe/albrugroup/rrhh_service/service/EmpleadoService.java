@@ -17,6 +17,7 @@ import pe.albrugroup.rrhh_service.entity.request.empleado.*;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoRolResponse;
 import pe.albrugroup.rrhh_service.entity.response.EmpleadoResponse;
 import pe.albrugroup.rrhh_service.entity.response.PageResponse;
+import pe.albrugroup.rrhh_service.exception.ConflictException;
 import pe.albrugroup.rrhh_service.exception.EmpleadoInactivoException;
 import pe.albrugroup.rrhh_service.exception.NotFoundException;
 import pe.albrugroup.rrhh_service.exception.UnprocessableEntityException;
@@ -31,6 +32,7 @@ import pe.albrugroup.rrhh_service.repository.EmpleadoRepository;
 import pe.albrugroup.rrhh_service.usecase.IEmpleado;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -116,6 +118,7 @@ public class EmpleadoService implements IEmpleado {
     }
     @Override
     public EmpleadoResponse registrarEmpleado(RegistrarEmpleadoRequest nuevoEmpleado, Long responsableId) {
+        validarDatosUnicosEmpleado(nuevoEmpleado);
         Empleado empleado = mapper.toEntity(nuevoEmpleado);
         empleado.setEmpresaContratista(obtenerEmpresaContratista(nuevoEmpleado.getIdEmpresaContratista()));
         empleado.setEstadoOperativo(EstadoOperativo.INACTIVO);
@@ -123,6 +126,43 @@ public class EmpleadoService implements IEmpleado {
         Empleado empleadoRegistrado = repository.save(empleado);
         eventoService.registrarEventoRegistro(empleadoRegistrado, responsableId);
         return mapper.toResponse(empleadoRegistrado);
+    }
+
+    private void validarDatosUnicosEmpleado(RegistrarEmpleadoRequest nuevoEmpleado) {
+        List<String> detalles = new ArrayList<>();
+
+        String numeroDocumento = normalizarTexto(nuevoEmpleado.getNumeroDocumento());
+        String celularPersonal = normalizarTexto(nuevoEmpleado.getCelularPersonal());
+        String correoPersonal = normalizarTexto(nuevoEmpleado.getCorreoPersonal());
+
+        if (numeroDocumento != null && repository.existsByNumeroDocumento(numeroDocumento)) {
+            detalles.add("El numero de documento ingresado ya esta registrado.");
+        }
+
+        if (celularPersonal != null && repository.existsByCelularPersonal(celularPersonal)) {
+            detalles.add("El celular personal ingresado ya esta registrado.");
+        }
+
+        if (correoPersonal != null && repository.existsByCorreoPersonalIgnoreCase(correoPersonal)) {
+            detalles.add("El correo personal ingresado ya esta registrado.");
+        }
+
+        if (!detalles.isEmpty()) {
+            throw new ConflictException(
+                    "No se pudo registrar el empleado porque hay datos repetidos",
+                    null,
+                    detalles
+            );
+        }
+    }
+
+    private String normalizarTexto(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 
     @Override
