@@ -1,29 +1,29 @@
 import { DatePipe, UpperCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
-import { PaginatorModule } from 'primeng/paginator';
+import { DialogModule } from 'primeng/dialog';
+import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { GtrEventCommentPopoverComponent } from '../gtr-event-comment-popover/gtr-event-comment-popover.component';
 import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
-import { GtrLeadSelectControlComponent } from '../gtr-lead-select-control/gtr-lead-select-control.component';
 
 @Component({
-  selector: 'app-gtr-leads-board',
+  selector: 'app-gtr-tipification-history-dialog',
   imports: [
     DatePipe,
     UpperCasePipe,
     ButtonModule,
-    CardModule,
-    PaginatorModule,
+    DialogModule,
+    SkeletonModule,
     TableModule,
     TagModule,
-    GtrLeadSelectControlComponent
+    GtrEventCommentPopoverComponent
   ],
-  templateUrl: './gtr-leads-board.component.html',
-  styleUrl: './gtr-leads-board.component.scss',
+  templateUrl: './gtr-tipification-history-dialog.component.html',
+  styleUrl: './gtr-tipification-history-dialog.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class GtrLeadsBoardComponent {
+export class GtrTipificationHistoryDialogComponent {
   protected readonly facade = inject(GtrWorkspaceFacade);
 }

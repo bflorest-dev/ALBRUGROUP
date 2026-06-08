@@ -122,6 +122,24 @@ export class PreventaLeadService {
     });
   }
 
+  listarEventosLeadFiltrados(
+    idLead: number,
+    query: PageQuery,
+    filters: { accion?: string; fechaDesde?: string; fechaHasta?: string } = {}
+  ): Observable<LeadPage<EventoResponse>> {
+    let params = this.pageParams(query);
+    if (filters.accion) {
+      params = params.set('accion', filters.accion);
+    }
+    if (filters.fechaDesde) {
+      params = params.set('fechaDesde', filters.fechaDesde);
+    }
+    if (filters.fechaHasta) {
+      params = params.set('fechaHasta', filters.fechaHasta);
+    }
+    return this.http.get<LeadPage<EventoResponse>>(`${this.leadUrl}/eventos/lead/${idLead}`, { params });
+  }
+
   listarLeadsMasivo(filters: MasivoLeadFilters, query: PageQuery): Observable<LeadPage<LeadGtrResponse>> {
     return this.http.get<LeadPage<LeadGtrResponse>>(`${this.leadUrl}/masivo/leads`, {
       params: this.masivoParams(filters, query)

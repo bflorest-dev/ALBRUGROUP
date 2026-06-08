@@ -61,21 +61,7 @@
           <td>
             <div class="event-detail">
               <span class="event-detail__summary">{{ facade.eventSummary(evento) }}</span>
-              @if (facade.eventComentario(evento)) {
-                <button
-                  pButton
-                  type="button"
-                  icon="pi pi-comment"
-                  size="small"
-                  severity="secondary"
-                  [text]="true"
-                  [rounded]="true"
-                  class="event-detail__comment-btn"
-                  title="Ver comentario"
-                  aria-label="Ver comentario"
-                  (click)="facade.showEventComment(evento); commentPopover.toggle($event)"
-                ></button>
-              }
+              <app-gtr-event-comment-popover [comment]="evento.comentario" />
             </div>
           </td>
         </tr>
@@ -100,10 +86,3 @@
     </ng-template>
   </p-table>
 </p-dialog>
-
-<p-popover #commentPopover styleClass="gtr-comment-popover">
-  <div class="comment-popover">
-    <span class="comment-popover__title">Comentario</span>
-    <p class="comment-popover__body">{{ facade.activeEventComment() || '-' }}</p>
-  </div>
-</p-popover>

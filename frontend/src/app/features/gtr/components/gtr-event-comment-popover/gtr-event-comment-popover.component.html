@@ -1,0 +1,22 @@
+@if (hasComment()) {
+  <button
+    pButton
+    type="button"
+    icon="pi pi-comment"
+    size="small"
+    severity="secondary"
+    [text]="true"
+    [rounded]="true"
+    class="event-comment-button"
+    title="Ver comentario"
+    aria-label="Ver comentario"
+    (click)="commentPopover.toggle($event)"
+  ></button>
+
+  <p-popover #commentPopover styleClass="gtr-comment-popover">
+    <div class="comment-popover">
+      <span class="comment-popover__title">Comentario</span>
+      <p class="comment-popover__body">{{ normalizedComment() }}</p>
+    </div>
+  </p-popover>
+}

@@ -39,26 +39,54 @@
       <span>Tipificaciones</span>
       <p-multiselect
         formControlName="tipificaciones"
+        styleClass="historicos-multiselect"
         [options]="facade.catalogoTipificaciones()"
         optionLabel="label"
         optionValue="value"
         display="chip"
+        [maxSelectedLabels]="1"
+        selectedItemsLabel="{0} seleccionadas"
         [filter]="true"
+        filterBy="label,codigo,descripcion"
         appendTo="body"
         (onChange)="facade.onMasivoTipificacionesChange()"
-      />
+      >
+        <ng-template #item let-tipificacion>
+          <div class="catalog-option">
+            <strong>{{ tipificacion.codigo }}</strong>
+            <span>||</span>
+            <span>{{ tipificacion.descripcion }}</span>
+          </div>
+        </ng-template>
+      </p-multiselect>
     </label>
     <label style="grid-column: span 2;">
       <span>Subtipificaciones</span>
       <p-multiselect
         formControlName="subtipificaciones"
+        styleClass="historicos-multiselect"
         [options]="facade.availableSubtipificaciones()"
         optionLabel="label"
         optionValue="value"
         display="chip"
+        [maxSelectedLabels]="1"
+        selectedItemsLabel="{0} seleccionadas"
         [filter]="true"
+        filterBy="label,codigo,descripcion"
         appendTo="body"
-      />
+        emptyMessage="Selecciona una tipificacion o busca por codigo."
+        (onChange)="facade.onMasivoSubtipificacionesChange()"
+        (onFilter)="facade.onMasivoSubtipificacionesFilter($event.filter)"
+        (onPanelHide)="facade.clearMasivoSubtipificacionesFilter()"
+      >
+        <ng-template #item let-subtipificacion>
+          <div class="catalog-option">
+            <strong>{{ subtipificacion.codigo }}</strong>
+            <span>||</span>
+            <span>{{ subtipificacion.descripcion }}</span>
+          </div>
+        </ng-template>
+      </p-multiselect>
     </label>
     <div class="dialog-actions" style="grid-column: 1 / -1;">
       <button
@@ -80,6 +108,18 @@
     </div>
   </form>
 
+  <div class="board-toolbar">
+    <button
+      pButton
+      type="button"
+      icon="pi pi-user-plus"
+      [label]="'Asignar seleccion (' + facade.selectedCount() + ')'"
+      severity="secondary"
+      [disabled]="facade.isSaving() || facade.selectedCount() === 0 || !facade.canMutateOperationalData()"
+      (click)="facade.openAssignment()"
+    ></button>
+  </div>
+
   <p-table
     [value]="facade.masivoRows()"
     dataKey="id"
@@ -87,11 +127,21 @@
     [rowHover]="true"
     [scrollable]="true"
     scrollHeight="flex"
-    [tableStyle]="{ 'min-width': '1180px' }"
+    [tableStyle]="{ 'min-width': '1240px' }"
     styleClass="p-datatable-sm gtr-table"
   >
     <ng-template #header>
       <tr>
+        <th class="col-check">
+          <app-gtr-lead-select-control
+            [selected]="facade.allMasivoVisibleSelected()"
+            [partial]="facade.someMasivoVisibleSelected()"
+            [disabled]="!facade.canMutateOperationalData() || !facade.masivoRows().length"
+            ariaLabel="Seleccionar todos los leads visibles"
+            title="Seleccionar todos"
+            (selectionChange)="facade.toggleSelectAllMasivoVisible($event)"
+          />
+        </th>
         <th>Lead</th>
         <th>Proveedor</th>
         <th>Base</th>
@@ -106,7 +156,15 @@
     </ng-template>
 
     <ng-template #body let-row>
-      <tr>
+      <tr [class.row-selected]="facade.isSelected(row.id)">
+        <td class="col-check">
+          <app-gtr-lead-select-control
+            [selected]="facade.isSelected(row.id)"
+            [disabled]="!facade.canMutateOperationalData()"
+            [ariaLabel]="facade.isSelected(row.id) ? 'Quitar lead de la seleccion' : 'Seleccionar lead'"
+            (selectionChange)="facade.toggleSelection(row.id, $event)"
+          />
+        </td>
         <td><strong>{{ facade.leadPrefixLabel(row.prefijo) }} {{ row.lead }}</strong></td>
         <td>{{ facade.display(row.nombreProveedorCampana) }}</td>
         <td>{{ facade.display(row.base) }}</td>
@@ -155,10 +213,10 @@
               icon="pi pi-history"
               size="small"
               severity="secondary"
-              [disabled]="facade.isLoadingEvents()"
-              title="Ver historial del dia"
-              aria-label="Ver historial del dia"
-              (click)="facade.openEventHistory(row)"
+              [disabled]="facade.isLoadingTipificationHistory()"
+              title="Ver historial de tipificaciones"
+              aria-label="Ver historial de tipificaciones"
+              (click)="facade.openTipificationHistory(row)"
             ></button>
           </div>
         </td>
@@ -167,7 +225,7 @@
 
     <ng-template #emptymessage>
       <tr>
-        <td colspan="10" style="color: var(--app-text-muted); font-weight: 500; opacity: 0.72; padding: 2rem 1rem; text-align: center;">
+        <td colspan="11" style="color: var(--app-text-muted); font-weight: 500; opacity: 0.72; padding: 2rem 1rem; text-align: center;">
           {{
             !facade.canDisplayOperationalData()
               ? 'Marca ONLINE para activar esta bandeja.'
@@ -181,8 +239,8 @@
   </p-table>
 
   <p-paginator
-    [first]="facade.masivoPageNumber() * facade.pageSize"
-    [rows]="facade.pageSize"
+    [first]="facade.masivoPageNumber() * facade.historicosPageSize"
+    [rows]="facade.historicosPageSize"
     [totalRecords]="facade.masivoTotalElements()"
     (onPageChange)="facade.changeMasivoPage($event.page ?? 0)"
   />

@@ -10,6 +10,7 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
+import { GtrLeadSelectControlComponent } from '../gtr-lead-select-control/gtr-lead-select-control.component';
 
 @Component({
   selector: 'app-gtr-historicos-board',
@@ -24,7 +25,8 @@ import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
     SelectModule,
     TableModule,
     TagModule,
-    DateFieldComponent
+    DateFieldComponent,
+    GtrLeadSelectControlComponent
   ],
   templateUrl: './gtr-historicos-board.component.html',
   styleUrl: './gtr-historicos-board.component.scss',

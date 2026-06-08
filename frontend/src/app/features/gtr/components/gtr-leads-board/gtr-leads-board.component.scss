@@ -14,54 +14,6 @@
   margin-bottom: 0.9rem;
 }
 
-.col-check {
-  width: 3.75rem;
-  height: 1px; // permite que el boton ocupe el alto completo de la fila
-}
-
-// Control de seleccion: ocupa toda la celda para marcar leads rapido.
-.gtr-select {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%; // se estira al alto de la fila via col-check { height: 1px }
-  min-height: 2.5rem;
-  padding: 0;
-  border: 2px solid var(--app-border, #cbd5e1);
-  border-radius: 0.5rem;
-  background: var(--app-surface, #fff);
-  color: transparent;
-  cursor: pointer;
-  transition: all 140ms ease;
-
-  &:hover:not(:disabled) {
-    border-color: #1f9d57;
-    background: rgba(31, 157, 87, 0.08);
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.45;
-  }
-
-  &--selected,
-  &--partial {
-    border-color: #1f9d57;
-    background: #1f9d57;
-    color: #fff;
-  }
-}
-
-.row-selected {
-  --p-table-row-background: rgba(31, 157, 87, 0.1);
-}
-
-:host ::ng-deep .gtr-table td.col-check,
-:host ::ng-deep .gtr-table th.col-check {
-  padding: 0.3rem 0.4rem;
-}
-
 @media (max-width: 900px) {
   .board-toolbar {
     align-items: flex-start;

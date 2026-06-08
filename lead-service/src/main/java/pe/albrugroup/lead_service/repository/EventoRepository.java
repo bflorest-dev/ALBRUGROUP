@@ -46,6 +46,21 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             Instant fechaHasta,
             Pageable pageable
     );
+    @Query("""
+            SELECT e
+            FROM Evento e
+            WHERE e.idLead = :idLead
+              AND e.accion = :accion
+              AND (:fechaDesde IS NULL OR e.createdAt >= :fechaDesde)
+              AND (:fechaHasta IS NULL OR e.createdAt < :fechaHasta)
+            """)
+    Page<Evento> findByIdLeadAndAccionAndRango(
+            @Param("idLead") Long idLead,
+            @Param("accion") Accion accion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            Pageable pageable
+    );
     List<Evento> findAllByIdLeadOrderByCreatedAtDesc(Long idLead);
 
     boolean existsByIdLeadAndAccionInAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(

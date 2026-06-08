@@ -137,6 +137,20 @@ td small {
   justify-content: center;
 }
 
+.col-check {
+  height: 1px;
+  width: 3.75rem;
+}
+
+.row-selected {
+  --p-table-row-background: rgba(31, 157, 87, 0.1);
+}
+
+:host ::ng-deep .gtr-table td.col-check,
+:host ::ng-deep .gtr-table th.col-check {
+  padding: 0.3rem 0.4rem;
+}
+
 /* El warning se ancla al espacio libre de la derecha de la celda, fuera del flujo,
    para no reservar espacio ni empujar los botones de la columna de Acciones. */
 .actions-cell {

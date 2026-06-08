@@ -294,8 +294,9 @@
         label="Numero Celular"
         [prefixControl]="facade.intakeForm.controls.prefijo"
         [numberControl]="facade.intakeForm.controls.lead"
+        [numberMaxLength]="facade.intakeNumberMaxLength()"
         numberPlaceholder="Numero de lead"
-        numberInvalidMessage="Ingresa un celular valido de 9 digitos que empiece con 9."
+        [numberInvalidMessage]="facade.intakeNumberInvalidMessage()"
       />
       @if (facade.intakeError()) {
         <p-message class="wide" severity="error" [text]="facade.intakeError() ?? ''" />
@@ -534,6 +535,8 @@
   </p-dialog>
 
   <app-gtr-events-dialog />
+
+  <app-gtr-tipification-history-dialog />
 
   <app-gtr-search-dialog />
 

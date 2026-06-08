@@ -67,6 +67,7 @@ public class EventoService {
 
     public PageResponse<EventoResponse> listarPorLead(
             Long idLead,
+            Accion accion,
             LocalDate fechaDesde,
             LocalDate fechaHasta,
             PageRequest pageRequest
@@ -79,7 +80,15 @@ public class EventoService {
         Instant fechaHastaInstant = finDiaInclusivo(fechaHasta);
 
         var pageable = paginationService.toPageable(pageRequest, EVENTO_SORT_FIELDS);
-        var eventos = listarEventosLeadPorRango(idLead, fechaDesdeInstant, fechaHastaInstant, pageable);
+        var eventos = accion == null
+                ? listarEventosLeadPorRango(idLead, fechaDesdeInstant, fechaHastaInstant, pageable)
+                : eventoRepository.findByIdLeadAndAccionAndRango(
+                        idLead,
+                        accion,
+                        fechaDesdeInstant,
+                        fechaHastaInstant,
+                        pageable
+                );
         var response = eventos.map(eventoMapper::toResponse);
         return PageResponse.from(response);
     }

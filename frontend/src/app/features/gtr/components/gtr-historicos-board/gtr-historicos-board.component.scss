@@ -26,14 +26,77 @@ label {
   justify-content: flex-end;
 }
 
+.board-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: flex-start;
+  margin: 0.9rem 0;
+}
+
 :host ::ng-deep .p-select,
 :host ::ng-deep .p-multiselect,
 :host ::ng-deep .p-inputtext {
   width: 100%;
 }
 
+:host ::ng-deep .historicos-multiselect {
+  min-width: 0;
+}
+
+:host ::ng-deep .historicos-multiselect .p-multiselect-label-container,
+:host ::ng-deep .historicos-multiselect .p-multiselect-label {
+  min-width: 0;
+  overflow: hidden;
+}
+
+:host ::ng-deep .historicos-multiselect .p-multiselect-label {
+  align-items: center;
+  display: flex;
+  max-width: 100%;
+}
+
+:host ::ng-deep .historicos-multiselect .p-multiselect-chip-item,
+:host ::ng-deep .historicos-multiselect .p-multiselect-chip,
+:host ::ng-deep .historicos-multiselect .p-chip {
+  max-width: 100%;
+  min-width: 0;
+}
+
+:host ::ng-deep .historicos-multiselect .p-chip-label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.catalog-option {
+  align-items: baseline;
+  display: flex;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.catalog-option strong,
+.catalog-option span {
+  min-width: 0;
+}
+
+.catalog-option span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 900px) {
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .board-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

@@ -48,23 +48,14 @@
     <ng-template #header>
       <tr>
         <th class="col-check">
-          <button
-            type="button"
-            class="gtr-select"
-            [class.gtr-select--selected]="facade.allVisibleSelected()"
-            [class.gtr-select--partial]="facade.someVisibleSelected()"
+          <app-gtr-lead-select-control
+            [selected]="facade.allVisibleSelected()"
+            [partial]="facade.someVisibleSelected()"
             [disabled]="!facade.canMutateOperationalData() || !facade.rows().length"
-            [attr.aria-pressed]="facade.allVisibleSelected()"
-            aria-label="Seleccionar todos los leads visibles"
+            ariaLabel="Seleccionar todos los leads visibles"
             title="Seleccionar todos"
-            (click)="facade.toggleSelectAllVisible(!facade.allVisibleSelected())"
-          >
-            @if (facade.allVisibleSelected()) {
-              <i class="pi pi-check" aria-hidden="true"></i>
-            } @else if (facade.someVisibleSelected()) {
-              <i class="pi pi-minus" aria-hidden="true"></i>
-            }
-          </button>
+            (selectionChange)="facade.toggleSelectAllVisible($event)"
+          />
         </th>
         <th>Lead</th>
         <th>Proveedor</th>
@@ -84,17 +75,12 @@
     <ng-template #body let-row>
       <tr [class.row-new]="row.isNew" [class.row-selected]="facade.isSelected(row.id)">
         <td class="col-check">
-          <button
-            type="button"
-            class="gtr-select"
-            [class.gtr-select--selected]="facade.isSelected(row.id)"
+          <app-gtr-lead-select-control
+            [selected]="facade.isSelected(row.id)"
             [disabled]="!facade.canMutateOperationalData()"
-            [attr.aria-pressed]="facade.isSelected(row.id)"
-            [attr.aria-label]="facade.isSelected(row.id) ? 'Quitar lead de la seleccion' : 'Seleccionar lead'"
-            (click)="facade.toggleSelection(row.id, !facade.isSelected(row.id))"
-          >
-            <i class="pi pi-check" aria-hidden="true"></i>
-          </button>
+            [ariaLabel]="facade.isSelected(row.id) ? 'Quitar lead de la seleccion' : 'Seleccionar lead'"
+            (selectionChange)="facade.toggleSelection(row.id, $event)"
+          />
         </td>
         <td>
           <strong>{{ facade.leadPrefixLabel(row.prefijo) }} {{ row.lead }}</strong>

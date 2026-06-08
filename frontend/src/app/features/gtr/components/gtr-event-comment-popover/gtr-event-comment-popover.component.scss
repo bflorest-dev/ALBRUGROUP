@@ -1,0 +1,26 @@
+.event-comment-button {
+  flex: 0 0 auto;
+}
+
+.comment-popover {
+  display: grid;
+  gap: 0.4rem;
+  max-width: 22rem;
+  padding: 0.25rem 0.1rem;
+}
+
+.comment-popover__title {
+  color: var(--app-text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.comment-popover__body {
+  color: var(--app-text);
+  font-size: 0.88rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

@@ -34,6 +34,10 @@ import { AmpliacionContextoResponse } from '../../../shared/models/schedule/ampl
 import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
 import { PreventaLeadService } from '../../preventa/services/preventa-lead.service';
 import { GtrScheduleExtensionService } from '../services/gtr-schedule-extension.service';
+import {
+  GtrHistoricosFiltersFormValue,
+  GtrHistoricosStateService
+} from '../services/gtr-historicos-state.service';
 
 type VisualLeadGtr = LeadGtrResponse & { isNew?: boolean };
 
@@ -53,7 +57,14 @@ type SelectOption<T> = {
   value: T;
 };
 
+type TipificacionSelectOption = SelectOption<number> & {
+  codigo: string;
+  descripcion: string;
+};
+
 type SubtipificacionSelectOption = SelectOption<number> & {
+  codigo: string;
+  descripcion: string;
   idTipificacion: number;
 };
 
@@ -105,13 +116,23 @@ type AssignmentConflictDetails = {
   requiereConfirmarGestionPrevia?: boolean;
 };
 
-type GtrDialog = 'lead' | 'intake-confirm' | 'snapshot' | 'assign' | 'reassign-confirm' | 'events' | 'search' | 'schedule-extension' | null;
+type GtrDialog = 'lead' | 'intake-confirm' | 'snapshot' | 'assign' | 'reassign-confirm' | 'events' | 'tipification-history' | 'search' | 'schedule-extension' | null;
 type EventAnomalyFilter = 'multiple-records' | 'same-campaign' | null;
+type TipificationHistoryGroupMode = 'tipificacion' | 'asesor';
+type TipificationHistoryGroupOption = {
+  label: string;
+  value: string;
+  count: number;
+};
 
 type LoadError = {
   label: string;
   message: string;
 };
+
+const PERU_PHONE_PREFIX = '+51';
+const PERU_LEAD_PATTERN = /^9\d{8}$/;
+const INTERNATIONAL_LEAD_PATTERN = /^\d{6,15}$/;
 
 @Injectable()
 export class GtrWorkspaceFacade {
@@ -124,6 +145,7 @@ export class GtrWorkspaceFacade {
   private readonly browserSessionService = inject(BrowserSessionService);
   private readonly presenceService = inject(PresenceService);
   private readonly presenceRealtimeService = inject(PresenceRealtimeService);
+  private readonly historicosStateService = inject(GtrHistoricosStateService);
   private readonly realtimeSubscription = new Subscription();
   private readonly newRowTimers = new Map<number, number>();
   private attendanceRefreshId: number | null = null;
@@ -131,9 +153,12 @@ export class GtrWorkspaceFacade {
   private realtimeStarted = false;
   private initializeInFlight = false;
   private lastAttendanceStatus: EstadoAsistencia | null = null;
+  private lastMasivoSearchFiltersKey: string | null = null;
+  private readonly formSubscription = new Subscription();
   private readonly operationalGate = this.operationalGateService.createGate('gtr-workspace');
 
   readonly pageSize = 12;
+  readonly historicosPageSize = 20;
   readonly today = this.formatLocalDate(new Date());
   readonly todayLabel = this.formatReadableDate(new Date());
   readonly section = signal<GtrSection>('plataforma');
@@ -145,6 +170,8 @@ export class GtrWorkspaceFacade {
   readonly isLoadingMasivos = signal(false);
   readonly isUploadingMasivoExcel = signal(false);
   readonly isLoadingEvents = signal(false);
+  readonly isLoadingTipificationHistory = signal(false);
+  readonly intakeNumberMaxLength = signal(9);
   readonly masivoExcelResultsDialogOpen = signal(false);
   readonly successMessage = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
@@ -153,8 +180,10 @@ export class GtrWorkspaceFacade {
   readonly agendadosRows = signal<VisualLeadAgendadoGtr[]>([]);
   readonly masivoRows = signal<VisualLeadGtr[]>([]);
   readonly eventRows = signal<EventoResponse[]>([]);
+  readonly tipificationHistoryRows = signal<EventoResponse[]>([]);
   readonly selectedEventAnomalyFilter = signal<EventAnomalyFilter>(null);
-  readonly activeEventComment = signal<string | null>(null);
+  readonly tipificationHistoryGroupMode = signal<TipificationHistoryGroupMode>('tipificacion');
+  readonly selectedTipificationHistoryFilter = signal<string | null>(null);
   readonly searchQuery = signal('');
   readonly searchResults = signal<LeadGtrResponse[]>([]);
   readonly searchLookup = signal<LeadGtrLookupResponse | null>(null);
@@ -199,8 +228,10 @@ export class GtrWorkspaceFacade {
   /** Leads abandonados seleccionados para reasignar. */
   readonly abandonedSelectedLeadIds = signal<Set<number>>(new Set());
   readonly campanas = signal<CampanaResponse[]>([]);
-  readonly catalogoTipificaciones = signal<SelectOption<number>[]>([]);
+  readonly catalogoTipificaciones = signal<TipificacionSelectOption[]>([]);
   readonly catalogoSubtipificaciones = signal<SubtipificacionSelectOption[]>([]);
+  readonly selectedMasivoTipificacionIds = signal<Set<number>>(new Set());
+  readonly subtipificacionFilter = signal('');
   readonly activeDialog = signal<GtrDialog>(null);
   // Recuerda desde que dialogo se abrio el historial para volver a el al cerrarlo (p. ej. la busqueda).
   private eventsReturnDialog: GtrDialog = null;
@@ -367,12 +398,56 @@ export class GtrWorkspaceFacade {
         return this.eventTimestamp(right) - this.eventTimestamp(left);
       });
   });
+  readonly tipificationHistoryGroupOptions = computed<TipificationHistoryGroupOption[]>(() => {
+    const mode = this.tipificationHistoryGroupMode();
+    const counts = new Map<string, { label: string; count: number }>();
+
+    for (const event of this.tipificationHistoryRows()) {
+      const label = mode === 'tipificacion'
+        ? this.display(event.tipificacion)
+        : this.tipificationHistoryAdvisor(event);
+      const value = this.normalizeLookup(label);
+      const current = counts.get(value);
+      counts.set(value, {
+        label,
+        count: (current?.count ?? 0) + 1
+      });
+    }
+
+    return [...counts.entries()]
+      .map(([value, item]) => ({ value, label: item.label, count: item.count }))
+      .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label));
+  });
+  readonly filteredTipificationHistoryRows = computed(() => {
+    const selected = this.selectedTipificationHistoryFilter();
+    if (!selected) {
+      return this.tipificationHistoryRows();
+    }
+
+    const mode = this.tipificationHistoryGroupMode();
+    return this.tipificationHistoryRows().filter((event) => {
+      const label = mode === 'tipificacion'
+        ? this.display(event.tipificacion)
+        : this.tipificationHistoryAdvisor(event);
+      return this.normalizeLookup(label) === selected;
+    });
+  });
+  readonly intakeNumberInvalidMessage = computed(() =>
+    this.intakeNumberMaxLength() === 9
+      ? 'Ingresa un celular valido de 9 digitos que empiece con 9.'
+      : 'Ingresa un numero valido para el prefijo seleccionado.'
+  );
 
   readonly agendadoGroups = computed<AgendadoGroup[]>(() => this.groupAgendados(this.agendadosRows()));
   readonly availableSubtipificaciones = computed(() => {
-    const selected = new Set(this.masivoFiltersForm.controls.tipificaciones.value);
-    if (!selected.size) {
+    const hasActiveFilter = this.subtipificacionFilter().trim().length > 0;
+    if (hasActiveFilter) {
       return this.catalogoSubtipificaciones();
+    }
+
+    const selected = this.selectedMasivoTipificacionIds();
+    if (!selected.size) {
+      return [];
     }
     return this.catalogoSubtipificaciones().filter((option) => selected.has(option.idTipificacion));
   });
@@ -437,6 +512,14 @@ export class GtrWorkspaceFacade {
   });
 
   constructor(@Inject(DOCUMENT) private readonly document: Document) {
+    this.restoreHistoricosState();
+    this.updateIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
+    this.formSubscription.add(
+      this.intakeForm.controls.prefijo.valueChanges.subscribe((prefijo) => {
+        this.updateIntakeLeadValidation(prefijo);
+      })
+    );
+
     effect(() => {
       const status = this.operationalGateService.currentStatus();
 
@@ -488,7 +571,9 @@ export class GtrWorkspaceFacade {
   }
 
   stop(): void {
+    this.saveHistoricosState();
     this.started = false;
+    this.formSubscription.unsubscribe();
     this.realtimeSubscription.unsubscribe();
     this.realtimeStarted = false;
     this.stopAttendanceRefresh();
@@ -587,6 +672,7 @@ export class GtrWorkspaceFacade {
     if (!this.ensureCanMutate()) {
       return;
     }
+    this.updateIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
     if (this.intakeForm.invalid) {
       this.intakeForm.markAllAsTouched();
       this.intakeError.set(null);
@@ -789,6 +875,34 @@ export class GtrWorkspaceFacade {
     }
   }
 
+  async openTipificationHistory(row: EventHistoryTarget): Promise<void> {
+    this.eventsReturnDialog = this.activeDialog();
+    this.activeEventsLead.set(row);
+    this.tipificationHistoryRows.set([]);
+    this.tipificationHistoryGroupMode.set('tipificacion');
+    this.selectedTipificationHistoryFilter.set(null);
+    this.activeDialog.set('tipification-history');
+    this.isLoadingTipificationHistory.set(true);
+    this.clearMessages();
+    try {
+      const page = await firstValueFrom(
+        this.preventaService.listarEventosLeadFiltrados(row.id, {
+          pageNumber: 0,
+          pageSize: 100,
+          sortBy: 'createdAt',
+          direction: 'desc'
+        }, {
+          accion: 'TIPIFICACION'
+        })
+      );
+      this.tipificationHistoryRows.set(page.content);
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar el historial de tipificaciones.'));
+    } finally {
+      this.isLoadingTipificationHistory.set(false);
+    }
+  }
+
   closeEventHistory(): void {
     const returnTo = this.eventsReturnDialog;
     this.eventsReturnDialog = null;
@@ -796,6 +910,16 @@ export class GtrWorkspaceFacade {
     this.eventRows.set([]);
     this.selectedEventAnomalyFilter.set(null);
     // Vuelve al dialogo desde el que se abrio el historial (p. ej. la busqueda) sin perder su estado.
+    this.activeDialog.set(returnTo);
+  }
+
+  closeTipificationHistory(): void {
+    const returnTo = this.eventsReturnDialog;
+    this.eventsReturnDialog = null;
+    this.activeEventsLead.set(null);
+    this.tipificationHistoryRows.set([]);
+    this.tipificationHistoryGroupMode.set('tipificacion');
+    this.selectedTipificationHistoryFilter.set(null);
     this.activeDialog.set(returnTo);
   }
 
@@ -892,7 +1016,10 @@ export class GtrWorkspaceFacade {
     this.activeEventsLead.set(null);
     this.pendingReassignment.set(null);
     this.eventRows.set([]);
+    this.tipificationHistoryRows.set([]);
     this.selectedEventAnomalyFilter.set(null);
+    this.tipificationHistoryGroupMode.set('tipificacion');
+    this.selectedTipificationHistoryFilter.set(null);
     this.pendingIntakeLookup.set(null);
     this.intakeError.set(null);
     this.searchQuery.set('');
@@ -1377,6 +1504,7 @@ export class GtrWorkspaceFacade {
     this.clearMessages();
     this.masivoSearched.set(true);
     this.masivoPageNumber.set(0);
+    this.selectedIds.set(new Set());
     await this.refreshMasivos();
   }
 
@@ -1409,11 +1537,18 @@ export class GtrWorkspaceFacade {
     this.masivoTotalPages.set(0);
     this.masivoPageNumber.set(0);
     this.masivoSearched.set(false);
+    this.selectedIds.set(new Set());
+    this.lastMasivoSearchFiltersKey = null;
+    this.selectedMasivoTipificacionIds.set(new Set());
+    this.subtipificacionFilter.set('');
+    this.historicosStateService.clear();
   }
 
   onMasivoTipificacionesChange(): void {
     const selected = new Set(this.masivoFiltersForm.controls.tipificaciones.value);
+    this.selectedMasivoTipificacionIds.set(selected);
     if (!selected.size) {
+      this.masivoFiltersForm.controls.subtipificaciones.setValue([]);
       return;
     }
 
@@ -1423,6 +1558,29 @@ export class GtrWorkspaceFacade {
     this.masivoFiltersForm.controls.subtipificaciones.setValue(
       this.masivoFiltersForm.controls.subtipificaciones.value.filter((id) => validIds.has(id))
     );
+  }
+
+  onMasivoSubtipificacionesChange(): void {
+    const selectedSubtipificaciones = new Set(this.masivoFiltersForm.controls.subtipificaciones.value);
+    const selectedTipificaciones = new Set(this.masivoFiltersForm.controls.tipificaciones.value);
+
+    for (const subtipificacion of this.catalogoSubtipificaciones()) {
+      if (selectedSubtipificaciones.has(subtipificacion.value)) {
+        selectedTipificaciones.add(subtipificacion.idTipificacion);
+      }
+    }
+
+    const nextTipificaciones = [...selectedTipificaciones];
+    this.masivoFiltersForm.controls.tipificaciones.setValue(nextTipificaciones);
+    this.selectedMasivoTipificacionIds.set(new Set(nextTipificaciones));
+  }
+
+  onMasivoSubtipificacionesFilter(value: string | null | undefined): void {
+    this.subtipificacionFilter.set(value?.trim() ?? '');
+  }
+
+  clearMasivoSubtipificacionesFilter(): void {
+    this.subtipificacionFilter.set('');
   }
 
   toggleSelection(idLead: number, checked: boolean): void {
@@ -1457,6 +1615,20 @@ export class GtrWorkspaceFacade {
     return this.rows().some((row) => selected.has(row.id)) && !this.allVisibleSelected();
   });
 
+  readonly allMasivoVisibleSelected = computed(() => {
+    const rows = this.masivoRows();
+    if (rows.length === 0) {
+      return false;
+    }
+    const selected = this.selectedIds();
+    return rows.every((row) => selected.has(row.id));
+  });
+
+  readonly someMasivoVisibleSelected = computed(() => {
+    const selected = this.selectedIds();
+    return this.masivoRows().some((row) => selected.has(row.id)) && !this.allMasivoVisibleSelected();
+  });
+
   toggleSelectAllVisible(checked: boolean): void {
     if (!this.canMutateOperationalData()) {
       this.errorMessage.set('Marca ONLINE para seleccionar leads.');
@@ -1464,6 +1636,22 @@ export class GtrWorkspaceFacade {
     }
     const next = new Set(this.selectedIds());
     for (const row of this.rows()) {
+      if (checked) {
+        next.add(row.id);
+      } else {
+        next.delete(row.id);
+      }
+    }
+    this.selectedIds.set(next);
+  }
+
+  toggleSelectAllMasivoVisible(checked: boolean): void {
+    if (!this.canMutateOperationalData()) {
+      this.errorMessage.set('Marca ONLINE para seleccionar leads.');
+      return;
+    }
+    const next = new Set(this.selectedIds());
+    for (const row of this.masivoRows()) {
       if (checked) {
         next.add(row.id);
       } else {
@@ -1533,6 +1721,30 @@ export class GtrWorkspaceFacade {
     return `event-alert-tag event-alert-tag--${tone}${selected}`;
   }
 
+  setTipificationHistoryGroupMode(mode: TipificationHistoryGroupMode): void {
+    if (this.tipificationHistoryGroupMode() === mode) {
+      return;
+    }
+    this.tipificationHistoryGroupMode.set(mode);
+    this.selectedTipificationHistoryFilter.set(null);
+  }
+
+  toggleTipificationHistoryFilter(value: string | null): void {
+    if (!value) {
+      this.selectedTipificationHistoryFilter.set(null);
+      return;
+    }
+    this.selectedTipificationHistoryFilter.update((current) => (current === value ? null : value));
+  }
+
+  tipificationHistoryFilterSelected(value: string | null): boolean {
+    return this.selectedTipificationHistoryFilter() === value;
+  }
+
+  tipificationHistoryAdvisor(evento: EventoResponse): string {
+    return this.display(evento.nombreActor || evento.nombreAsesorAsignado || 'Sin responsable');
+  }
+
   eventSummary(evento: EventoResponse): string {
     const accion = (evento.accion ?? '').toUpperCase();
     const tipificacion = evento.tipificacion?.trim() || null;
@@ -1551,15 +1763,6 @@ export class GtrWorkspaceFacade {
       return tipParts.join(' / ');
     }
     return this.eventCampaignLabel(evento) ?? '-';
-  }
-
-  eventComentario(evento: EventoResponse): string | null {
-    const comentario = evento.comentario?.trim();
-    return comentario ? comentario : null;
-  }
-
-  showEventComment(evento: EventoResponse): void {
-    this.activeEventComment.set(this.eventComentario(evento));
   }
 
   private eventCampaignLabel(evento: EventoResponse): string | null {
@@ -1921,7 +2124,7 @@ export class GtrWorkspaceFacade {
       const page = await firstValueFrom(
         this.preventaService.listarLeadsMasivo(this.getMasivoFilters(), {
           pageNumber: this.masivoPageNumber(),
-          pageSize: this.pageSize,
+          pageSize: this.historicosPageSize,
           sortBy: 'lastEntryAt',
           direction: 'desc'
         })
@@ -1929,6 +2132,8 @@ export class GtrWorkspaceFacade {
       this.masivoTotalElements.set(page.totalElements);
       this.masivoTotalPages.set(page.totalPages);
       this.masivoRows.set(page.content);
+      this.lastMasivoSearchFiltersKey = this.historicosFiltersKey(this.currentHistoricosFiltersFormValue());
+      this.saveHistoricosState();
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo listar leads masivos.'));
     } finally {
@@ -1953,7 +2158,8 @@ export class GtrWorkspaceFacade {
       catalogo.tipificaciones
         .map((tipificacion) => ({
           codigo: tipificacion.codigo,
-          label: `${tipificacion.codigo} - ${tipificacion.descripcion}`,
+          descripcion: tipificacion.descripcion,
+          label: `${tipificacion.codigo} || ${tipificacion.descripcion}`,
           orden: tipificacion.orden,
           value: tipificacion.id
         }))
@@ -1964,8 +2170,9 @@ export class GtrWorkspaceFacade {
         .flatMap((tipificacion) =>
           tipificacion.subtipificaciones.map((subtipificacion) => ({
             codigo: subtipificacion.codigo,
+            descripcion: subtipificacion.descripcion,
             idTipificacion: tipificacion.id,
-            label: `${tipificacion.codigo}: ${subtipificacion.codigo} - ${subtipificacion.descripcion}`,
+            label: `${subtipificacion.codigo} || ${subtipificacion.descripcion}`,
             orden: subtipificacion.orden,
             value: subtipificacion.id
           }))
@@ -2001,6 +2208,58 @@ export class GtrWorkspaceFacade {
       fechaDesde: raw.fechaDesde || undefined,
       fechaHasta: raw.fechaHasta || undefined
     };
+  }
+
+  private currentHistoricosFiltersFormValue(): GtrHistoricosFiltersFormValue {
+    const raw = this.masivoFiltersForm.getRawValue();
+    return {
+      idProveedor: raw.idProveedor,
+      etapa: raw.etapa,
+      tipificaciones: [...raw.tipificaciones],
+      subtipificaciones: [...raw.subtipificaciones],
+      fechaDesde: raw.fechaDesde,
+      fechaHasta: raw.fechaHasta
+    };
+  }
+
+  private restoreHistoricosState(): void {
+    const state = this.historicosStateService.get();
+    if (!state) {
+      return;
+    }
+
+    this.masivoFiltersForm.reset(state.filters);
+    this.selectedMasivoTipificacionIds.set(new Set(state.filters.tipificaciones));
+    this.subtipificacionFilter.set('');
+    this.masivoRows.set(state.rows);
+    this.masivoTotalElements.set(state.totalElements);
+    this.masivoTotalPages.set(state.totalPages);
+    this.masivoPageNumber.set(state.pageNumber);
+    this.masivoSearched.set(state.searched);
+    this.lastMasivoSearchFiltersKey = state.searched ? this.historicosFiltersKey(state.filters) : null;
+  }
+
+  private saveHistoricosState(): void {
+    const filters = this.currentHistoricosFiltersFormValue();
+    const filtersMatchLastSearch =
+      this.masivoSearched() && this.historicosFiltersKey(filters) === this.lastMasivoSearchFiltersKey;
+
+    this.historicosStateService.set({
+      filters,
+      rows: filtersMatchLastSearch ? this.masivoRows() : [],
+      totalElements: filtersMatchLastSearch ? this.masivoTotalElements() : 0,
+      totalPages: filtersMatchLastSearch ? this.masivoTotalPages() : 0,
+      pageNumber: filtersMatchLastSearch ? this.masivoPageNumber() : 0,
+      searched: filtersMatchLastSearch
+    });
+  }
+
+  private historicosFiltersKey(filters: GtrHistoricosFiltersFormValue): string {
+    return JSON.stringify({
+      ...filters,
+      tipificaciones: [...filters.tipificaciones].sort((left, right) => left - right),
+      subtipificaciones: [...filters.subtipificaciones].sort((left, right) => left - right)
+    });
   }
 
   private mergeVisualRows(
@@ -2159,13 +2418,26 @@ export class GtrWorkspaceFacade {
 
   private resetIntakeForm(): void {
     this.intakeForm.reset({
-      prefijo: '+51',
+      prefijo: PERU_PHONE_PREFIX,
       lead: '',
       idCampana: 0,
       base: 'WHATSAPP'
     });
+    this.updateIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
     this.intakeForm.markAsPristine();
     this.intakeForm.markAsUntouched();
+  }
+
+  private updateIntakeLeadValidation(prefijo: string): void {
+    const leadControl = this.intakeForm.controls.lead;
+    const isPeruPrefix = prefijo === PERU_PHONE_PREFIX;
+
+    this.intakeNumberMaxLength.set(isPeruPrefix ? 9 : 15);
+    leadControl.setValidators([
+      Validators.required,
+      Validators.pattern(isPeruPrefix ? PERU_LEAD_PATTERN : INTERNATIONAL_LEAD_PATTERN)
+    ]);
+    leadControl.updateValueAndValidity({ emitEvent: false });
   }
 
   private async runInitialLoad(
@@ -2206,6 +2478,7 @@ export class GtrWorkspaceFacade {
     this.isLoadingAgendados.set(false);
     this.isLoadingMasivos.set(false);
     this.isLoadingEvents.set(false);
+    this.isLoadingTipificationHistory.set(false);
     this.rows.set([]);
     this.agendadosRows.set([]);
     this.masivoRows.set([]);
@@ -2226,13 +2499,20 @@ export class GtrWorkspaceFacade {
     this.masivoTotalPages.set(0);
     this.masivoPageNumber.set(0);
     this.masivoSearched.set(false);
+    this.lastMasivoSearchFiltersKey = null;
+    this.selectedMasivoTipificacionIds.set(new Set());
+    this.subtipificacionFilter.set('');
+    this.historicosStateService.clear();
     this.selectedIds.set(new Set());
     this.activeDialog.set(null);
     this.activeAssignmentLead.set(null);
     this.activeEventsLead.set(null);
     this.pendingReassignment.set(null);
     this.eventRows.set([]);
+    this.tipificationHistoryRows.set([]);
     this.selectedEventAnomalyFilter.set(null);
+    this.tipificationHistoryGroupMode.set('tipificacion');
+    this.selectedTipificationHistoryFilter.set(null);
   }
 
   private getErrorMessage(error: unknown, fallback: string): string {

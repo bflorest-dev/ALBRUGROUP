@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDiarioResponse;
@@ -31,11 +32,12 @@ public class EventoController {
     @GetMapping("/lead/{idLead}") @PreAuthorize("hasAuthority('READ_EVENTOS_LEADS')")
     public ResponseEntity<PageResponse<EventoResponse>> listarEventosPorLead(
             @PathVariable Long idLead,
+            @RequestParam(required = false) Accion accion,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var eventos = eventoService.listarPorLead(idLead, fechaDesde, fechaHasta, pageRequest);
+        var eventos = eventoService.listarPorLead(idLead, accion, fechaDesde, fechaHasta, pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(eventos);
     }
 
