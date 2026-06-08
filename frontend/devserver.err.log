@@ -2424,3 +2424,154 @@ To fix this, import the "DatePipe" class from "@angular/common" and add it to th
          ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
 
 [39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'tipificationHistoryGroupMode' does not exist on type 'GtrWorkspaceFacade'. Did you mean 'setTipificationHistoryGroupMode'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:882:9:
+[37m      882 │     this.[32mtipificationHistoryGroupMode[37m.set('tipificacion');
+          ╵          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  'setTipificationHistoryGroupMode' is declared here.
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:1724:2:
+[37m      1724 │   [32msetTipificationHistoryGroupMode[37m(mode: TipificationHistoryGroup...
+           ╵   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2345: Argument of type '"tipification-history"' is not assignable to parameter of type 'GtrDialog'.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:884:26:
+[37m      884 │     this.activeDialog.set([32m'tipification-history'[37m);
+          ╵                           [32m~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'tipificationHistoryGroupMode' does not exist on type 'GtrWorkspaceFacade'. Did you mean 'setTipificationHistoryGroupMode'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:921:9:
+[37m      921 │     this.[32mtipificationHistoryGroupMode[37m.set('tipificacion');
+          ╵          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  'setTipificationHistoryGroupMode' is declared here.
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:1724:2:
+[37m      1724 │   [32msetTipificationHistoryGroupMode[37m(mode: TipificationHistoryGroup...
+           ╵   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'tipificationHistoryGroupMode' does not exist on type 'GtrWorkspaceFacade'. Did you mean 'setTipificationHistoryGroupMode'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:1021:9:
+[37m      1021 │     this.[32mtipificationHistoryGroupMode[37m.set('tipificacion');
+           ╵          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  'setTipificationHistoryGroupMode' is declared here.
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:1724:2:
+[37m      1724 │   [32msetTipificationHistoryGroupMode[37m(mode: TipificationHistoryGroup...
+           ╵   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2552: Cannot find name 'TipificationHistoryGroupMode'. Did you mean 'TipificationHistoryGroupOption'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:1724:40:
+[37m      1724 │ ...tionHistoryGroupMode(mode: [32mTipificationHistoryGroupMode[37m): void {
+           ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'tipificationHistoryGroupMode' does not exist on type 'GtrWorkspaceFacade'. Did you mean 'setTipificationHistoryGroupMode'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:1725:13:
+[37m      1725 │     if (this.[32mtipificationHistoryGroupMode[37m() === mode) {
+           ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  'setTipificationHistoryGroupMode' is declared here.
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:1724:2:
+[37m      1724 │   [32msetTipificationHistoryGroupMode[37m(mode: TipificationHistoryGroup...
+           ╵   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'tipificationHistoryGroupMode' does not exist on type 'GtrWorkspaceFacade'. Did you mean 'setTipificationHistoryGroupMode'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:1728:9:
+[37m      1728 │     this.[32mtipificationHistoryGroupMode[37m.set(mode);
+           ╵          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  'setTipificationHistoryGroupMode' is declared here.
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:1724:2:
+[37m      1724 │   [32msetTipificationHistoryGroupMode[37m(mode: TipificationHistoryGroup...
+           ╵   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'tipificationHistoryGroupMode' does not exist on type 'GtrWorkspaceFacade'. Did you mean 'setTipificationHistoryGroupMode'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:2514:9:
+[37m      2514 │     this.[32mtipificationHistoryGroupMode[37m.set('tipificacion');
+           ╵          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  'setTipificationHistoryGroupMode' is declared here.
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:1724:2:
+[37m      1724 │   [32msetTipificationHistoryGroupMode[37m(mode: TipificationHistoryGroup...
+           ╵   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'tipificationHistoryGroupMode' does not exist on type 'GtrWorkspaceFacade'. Did you mean 'setTipificationHistoryGroupMode'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:1057:9:
+[37m      1057 │     this.[32mtipificationHistoryGroupMode[37m.set('tipificacion');
+           ╵          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  'setTipificationHistoryGroupMode' is declared here.
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:1760:2:
+[37m      1760 │   [32msetTipificationHistoryGroupMode[37m(mode: TipificationHistoryGroup...
+           ╵   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2552: Cannot find name 'TipificationHistoryGroupMode'. Did you mean 'TipificationHistoryGroupOption'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:1760:40:
+[37m      1760 │ ...tionHistoryGroupMode(mode: [32mTipificationHistoryGroupMode[37m): void {
+           ╵                               [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'tipificationHistoryGroupMode' does not exist on type 'GtrWorkspaceFacade'. Did you mean 'setTipificationHistoryGroupMode'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:1761:13:
+[37m      1761 │     if (this.[32mtipificationHistoryGroupMode[37m() === mode) {
+           ╵              [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  'setTipificationHistoryGroupMode' is declared here.
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:1760:2:
+[37m      1760 │   [32msetTipificationHistoryGroupMode[37m(mode: TipificationHistoryGroup...
+           ╵   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'tipificationHistoryGroupMode' does not exist on type 'GtrWorkspaceFacade'. Did you mean 'setTipificationHistoryGroupMode'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:1764:9:
+[37m      1764 │     this.[32mtipificationHistoryGroupMode[37m.set(mode);
+           ╵          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  'setTipificationHistoryGroupMode' is declared here.
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:1760:2:
+[37m      1760 │   [32msetTipificationHistoryGroupMode[37m(mode: TipificationHistoryGroup...
+           ╵   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mTS2551: Property 'tipificationHistoryGroupMode' does not exist on type 'GtrWorkspaceFacade'. Did you mean 'setTipificationHistoryGroupMode'?[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:2550:9:
+[37m      2550 │     this.[32mtipificationHistoryGroupMode[37m.set('tipificacion');
+           ╵          [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  'setTipificationHistoryGroupMode' is declared here.
+
+    src/app/features/gtr/facades/gtr-workspace.facade.ts:1760:2:
+[37m      1760 │   [32msetTipificationHistoryGroupMode[37m(mode: TipificationHistoryGroup...
+           ╵   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m

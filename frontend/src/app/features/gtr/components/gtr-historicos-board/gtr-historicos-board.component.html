@@ -213,10 +213,10 @@
               icon="pi pi-history"
               size="small"
               severity="secondary"
-              [disabled]="facade.isLoadingTipificationHistory()"
-              title="Ver historial de tipificaciones"
-              aria-label="Ver historial de tipificaciones"
-              (click)="facade.openTipificationHistory(row)"
+              [disabled]="facade.isLoadingEvents()"
+              title="Ver historial"
+              aria-label="Ver historial"
+              (click)="facade.openLeadHistory(row)"
             ></button>
           </div>
         </td>

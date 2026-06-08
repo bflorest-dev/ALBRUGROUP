@@ -116,9 +116,9 @@ type AssignmentConflictDetails = {
   requiereConfirmarGestionPrevia?: boolean;
 };
 
-type GtrDialog = 'lead' | 'intake-confirm' | 'snapshot' | 'assign' | 'reassign-confirm' | 'events' | 'tipification-history' | 'search' | 'schedule-extension' | null;
+type GtrDialog = 'lead' | 'intake-confirm' | 'snapshot' | 'assign' | 'reassign-confirm' | 'events' | 'search' | 'schedule-extension' | null;
 type EventAnomalyFilter = 'multiple-records' | 'same-campaign' | null;
-type TipificationHistoryGroupMode = 'tipificacion' | 'asesor';
+type LeadHistoryMode = 'eventos-dia' | 'tipificacion' | 'asesor';
 type TipificationHistoryGroupOption = {
   label: string;
   value: string;
@@ -181,8 +181,9 @@ export class GtrWorkspaceFacade {
   readonly masivoRows = signal<VisualLeadGtr[]>([]);
   readonly eventRows = signal<EventoResponse[]>([]);
   readonly tipificationHistoryRows = signal<EventoResponse[]>([]);
+  readonly tipificationHistoryLoaded = signal(false);
   readonly selectedEventAnomalyFilter = signal<EventAnomalyFilter>(null);
-  readonly tipificationHistoryGroupMode = signal<TipificationHistoryGroupMode>('tipificacion');
+  readonly leadHistoryMode = signal<LeadHistoryMode>('eventos-dia');
   readonly selectedTipificationHistoryFilter = signal<string | null>(null);
   readonly searchQuery = signal('');
   readonly searchResults = signal<LeadGtrResponse[]>([]);
@@ -399,13 +400,13 @@ export class GtrWorkspaceFacade {
       });
   });
   readonly tipificationHistoryGroupOptions = computed<TipificationHistoryGroupOption[]>(() => {
-    const mode = this.tipificationHistoryGroupMode();
+    const mode = this.leadHistoryMode();
     const counts = new Map<string, { label: string; count: number }>();
 
     for (const event of this.tipificationHistoryRows()) {
-      const label = mode === 'tipificacion'
-        ? this.display(event.tipificacion)
-        : this.tipificationHistoryAdvisor(event);
+      const label = mode === 'asesor'
+        ? this.tipificationHistoryAdvisor(event)
+        : this.display(event.tipificacion);
       const value = this.normalizeLookup(label);
       const current = counts.get(value);
       counts.set(value, {
@@ -424,11 +425,11 @@ export class GtrWorkspaceFacade {
       return this.tipificationHistoryRows();
     }
 
-    const mode = this.tipificationHistoryGroupMode();
+    const mode = this.leadHistoryMode();
     return this.tipificationHistoryRows().filter((event) => {
-      const label = mode === 'tipificacion'
-        ? this.display(event.tipificacion)
-        : this.tipificationHistoryAdvisor(event);
+      const label = mode === 'asesor'
+        ? this.tipificationHistoryAdvisor(event)
+        : this.display(event.tipificacion);
       return this.normalizeLookup(label) === selected;
     });
   });
@@ -850,12 +851,20 @@ export class GtrWorkspaceFacade {
     this.clearMessages();
   }
 
-  async openEventHistory(row: EventHistoryTarget): Promise<void> {
+  async openLeadHistory(row: EventHistoryTarget): Promise<void> {
     this.eventsReturnDialog = this.activeDialog();
     this.activeEventsLead.set(row);
     this.eventRows.set([]);
+    this.tipificationHistoryRows.set([]);
+    this.tipificationHistoryLoaded.set(false);
+    this.leadHistoryMode.set('eventos-dia');
     this.selectedEventAnomalyFilter.set(null);
+    this.selectedTipificationHistoryFilter.set(null);
     this.activeDialog.set('events');
+    await this.loadEventHistory(row);
+  }
+
+  private async loadEventHistory(row: EventHistoryTarget): Promise<void> {
     this.isLoadingEvents.set(true);
     this.clearMessages();
     try {
@@ -875,13 +884,33 @@ export class GtrWorkspaceFacade {
     }
   }
 
-  async openTipificationHistory(row: EventHistoryTarget): Promise<void> {
-    this.eventsReturnDialog = this.activeDialog();
-    this.activeEventsLead.set(row);
-    this.tipificationHistoryRows.set([]);
-    this.tipificationHistoryGroupMode.set('tipificacion');
+  async setLeadHistoryMode(mode: LeadHistoryMode): Promise<void> {
+    if (this.leadHistoryMode() === mode) {
+      return;
+    }
+
+    this.leadHistoryMode.set(mode);
     this.selectedTipificationHistoryFilter.set(null);
-    this.activeDialog.set('tipification-history');
+
+    if (mode !== 'eventos-dia') {
+      await this.ensureTipificationHistoryLoaded();
+    }
+  }
+
+  leadHistoryModeSelected(mode: LeadHistoryMode): boolean {
+    return this.leadHistoryMode() === mode;
+  }
+
+  private async ensureTipificationHistoryLoaded(): Promise<void> {
+    if (this.tipificationHistoryLoaded() || this.isLoadingTipificationHistory()) {
+      return;
+    }
+
+    const row = this.activeEventsLead();
+    if (!row) {
+      return;
+    }
+
     this.isLoadingTipificationHistory.set(true);
     this.clearMessages();
     try {
@@ -896,6 +925,7 @@ export class GtrWorkspaceFacade {
         })
       );
       this.tipificationHistoryRows.set(page.content);
+      this.tipificationHistoryLoaded.set(true);
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar el historial de tipificaciones.'));
     } finally {
@@ -903,23 +933,17 @@ export class GtrWorkspaceFacade {
     }
   }
 
-  closeEventHistory(): void {
+  closeLeadHistory(): void {
     const returnTo = this.eventsReturnDialog;
     this.eventsReturnDialog = null;
     this.activeEventsLead.set(null);
     this.eventRows.set([]);
-    this.selectedEventAnomalyFilter.set(null);
-    // Vuelve al dialogo desde el que se abrio el historial (p. ej. la busqueda) sin perder su estado.
-    this.activeDialog.set(returnTo);
-  }
-
-  closeTipificationHistory(): void {
-    const returnTo = this.eventsReturnDialog;
-    this.eventsReturnDialog = null;
-    this.activeEventsLead.set(null);
     this.tipificationHistoryRows.set([]);
-    this.tipificationHistoryGroupMode.set('tipificacion');
+    this.tipificationHistoryLoaded.set(false);
+    this.leadHistoryMode.set('eventos-dia');
+    this.selectedEventAnomalyFilter.set(null);
     this.selectedTipificationHistoryFilter.set(null);
+    // Vuelve al dialogo desde el que se abrio el historial (p. ej. la busqueda) sin perder su estado.
     this.activeDialog.set(returnTo);
   }
 
@@ -1017,8 +1041,9 @@ export class GtrWorkspaceFacade {
     this.pendingReassignment.set(null);
     this.eventRows.set([]);
     this.tipificationHistoryRows.set([]);
+    this.tipificationHistoryLoaded.set(false);
     this.selectedEventAnomalyFilter.set(null);
-    this.tipificationHistoryGroupMode.set('tipificacion');
+    this.leadHistoryMode.set('eventos-dia');
     this.selectedTipificationHistoryFilter.set(null);
     this.pendingIntakeLookup.set(null);
     this.intakeError.set(null);
@@ -1719,14 +1744,6 @@ export class GtrWorkspaceFacade {
   eventAnomalyTagClass(filter: Exclude<EventAnomalyFilter, null>, tone: 'danger' | 'violet'): string {
     const selected = this.selectedEventAnomalyFilter() === filter ? ' event-alert-tag--selected' : '';
     return `event-alert-tag event-alert-tag--${tone}${selected}`;
-  }
-
-  setTipificationHistoryGroupMode(mode: TipificationHistoryGroupMode): void {
-    if (this.tipificationHistoryGroupMode() === mode) {
-      return;
-    }
-    this.tipificationHistoryGroupMode.set(mode);
-    this.selectedTipificationHistoryFilter.set(null);
   }
 
   toggleTipificationHistoryFilter(value: string | null): void {
@@ -2510,8 +2527,9 @@ export class GtrWorkspaceFacade {
     this.pendingReassignment.set(null);
     this.eventRows.set([]);
     this.tipificationHistoryRows.set([]);
+    this.tipificationHistoryLoaded.set(false);
     this.selectedEventAnomalyFilter.set(null);
-    this.tipificationHistoryGroupMode.set('tipificacion');
+    this.leadHistoryMode.set('eventos-dia');
     this.selectedTipificationHistoryFilter.set(null);
   }
 

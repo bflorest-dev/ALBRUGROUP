@@ -184,9 +184,9 @@
               size="small"
               severity="secondary"
               [disabled]="facade.isLoadingEvents()"
-              title="Ver historial del dia"
-              aria-label="Ver historial del dia"
-              (click)="facade.openEventHistory(row)"
+              title="Ver historial"
+              aria-label="Ver historial"
+              (click)="facade.openLeadHistory(row)"
             ></button>
             @if (row.tieneAlertaRegistrosDia) {
               <span class="lead-warning" [title]="facade.warningTitle(row)" aria-label="Alerta de registros">
