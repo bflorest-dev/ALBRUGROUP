@@ -1,0 +1,223 @@
+@use '../../_asesor-shared' as shared;
+
+.lead-workspace {
+  display: grid;
+  gap: 1rem;
+}
+
+.lead-workspace__head {
+  align-items: center;
+  background:
+    linear-gradient(135deg, rgba(28, 125, 98, 0.1), rgba(15, 31, 51, 0.04)),
+    #ffffff;
+  border: 1px solid #dbe7e1;
+  border-radius: 12px;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 1rem;
+}
+
+.lead-workspace__tags {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.lead-workspace__eyebrow {
+  @include shared.eyebrow;
+}
+
+h2 {
+  color: #102032;
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+.lead-workspace__summary {
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.tipification-bar {
+  align-items: end;
+  background: #f8fbfa;
+  border: 1px solid #dce8e3;
+  border-radius: 12px;
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: minmax(0, auto) minmax(14rem, 1fr) minmax(14rem, 1fr) minmax(9rem, 11rem) minmax(0, auto) minmax(0, auto);
+  padding: 0.9rem;
+}
+
+.tipification-bar > * {
+  min-width: 0;
+}
+
+.tipification-bar__field {
+  min-width: 0;
+}
+
+.tipification-bar__comment-toggle,
+.tipification-bar__submit {
+  white-space: nowrap;
+}
+
+.contact-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.scheduled-field {
+  min-width: 0;
+}
+
+.comment-field {
+  grid-column: 1 / -1;
+}
+
+label {
+  color: #425466;
+  display: grid;
+  font-size: 0.78rem;
+  font-weight: 800;
+  gap: 0.35rem;
+}
+
+.select-item {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.select-item small {
+  color: #64748b;
+}
+
+.dialog-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  padding-top: 0.25rem;
+}
+
+.dialog-skeleton {
+  display: grid;
+  gap: 1rem;
+  min-width: min(58rem, 86vw);
+}
+
+:host ::ng-deep {
+  .asesor-dialog {
+    max-height: 92vh;
+    width: min(72rem, 94vw);
+  }
+
+  .asesor-dialog .p-dialog-content {
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .asesor-dialog .p-dialog-header {
+    border-bottom: 1px solid #e4ece8;
+  }
+
+  .tipification-bar .p-select,
+  .tipification-bar .p-datepicker {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .form-grid .p-select,
+  .form-grid .p-selectbutton,
+  .form-grid .p-inputtext,
+  .form-grid .p-textarea,
+  .comment-field .p-textarea {
+    width: 100%;
+  }
+
+  .tipification-bar .p-button {
+    width: 100%;
+  }
+
+  .scope-select .p-togglebutton {
+    background: transparent;
+    border: 0;
+    flex: 1;
+    padding: 0;
+  }
+
+  .scope-select .p-togglebutton-content {
+    background: transparent;
+    padding: 0;
+    width: 100%;
+  }
+
+  .p-tabpanels {
+    padding: 0;
+  }
+}
+
+@media (max-width: 1320px) {
+  .lead-workspace__head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tipification-bar {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .contact-actions {
+    grid-column: span 2;
+  }
+
+  .tipification-bar__field--tipificacion,
+  .tipification-bar__field--subtipificacion,
+  .scheduled-field,
+  .tipification-bar__comment-toggle,
+  .tipification-bar__submit {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 980px) {
+  .tipification-bar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .contact-actions,
+  .comment-field {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .tipification-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-actions,
+  .dialog-actions {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .contact-actions button,
+  .dialog-actions button {
+    width: 100%;
+  }
+
+  .tipification-bar__field--tipificacion,
+  .tipification-bar__field--subtipificacion,
+  .scheduled-field,
+  .tipification-bar__comment-toggle,
+  .tipification-bar__submit {
+    grid-column: 1 / -1;
+  }
+}

@@ -1,484 +1,65 @@
+@use '../../_asesor-shared' as shared;
+
 .asesor-page {
   display: grid;
   gap: 1rem;
 }
 
-.asesor-hero__content,
-.asesor-hero__actions,
-.board-title,
-.lead-workspace__head,
-.lead-workspace__tags,
-.contact-actions,
-.dialog-actions {
+.asesor-hero__content {
   align-items: center;
   display: flex;
-}
-
-.asesor-hero__content,
-.lead-workspace__head {
   justify-content: space-between;
 }
 
-.asesor-hero__actions,
-.lead-workspace__tags,
-.contact-actions,
-.dialog-actions {
+.asesor-hero__actions {
+  align-items: center;
+  display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
 }
 
-.asesor-hero__eyebrow,
-.lead-workspace__eyebrow,
-h1,
-h2,
-p {
-  margin: 0;
-}
-
-.asesor-hero__eyebrow,
-.lead-workspace__eyebrow {
-  color: #1c7d62;
-  font-size: 0.76rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
+.asesor-hero__eyebrow {
+  @include shared.eyebrow;
 }
 
 h1 {
   color: #0f1f33;
   font-size: clamp(1.45rem, 2vw, 1.9rem);
   line-height: 1.08;
-}
-
-h2 {
-  color: #102032;
-  font-size: 1.3rem;
-}
-
-.lead-workspace__summary {
-  line-height: 1.2;
-  text-wrap: balance;
+  margin: 0;
 }
 
 p {
   color: #617187;
-}
-
-.helper--centered {
-  display: block;
-  opacity: 0.72;
-  padding: 1.5rem 0;
-  text-align: center;
-}
-
-.board-title {
-  gap: 0.55rem;
-}
-
-.col-actions {
-  min-width: 10rem;
-}
-
-.row-new {
-  animation: row-enter 440ms ease-out;
-}
-
-.row-new td {
-  background: #ecfdf5;
-}
-
-.skeleton-table {
-  display: grid;
-  gap: 0.75rem;
-  padding: 0.35rem 0;
-}
-
-.skeleton-row {
-  align-items: center;
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: 8rem 14rem 11rem 6rem 8rem 7rem;
-  min-width: 900px;
-}
-
-.offline-state {
-  align-items: center;
-  background: linear-gradient(135deg, rgba(28, 125, 98, 0.1), rgba(15, 31, 51, 0.04));
-  border: 1px dashed #b8c9c1;
-  border-radius: 14px;
-  color: #425466;
-  display: flex;
-  gap: 0.85rem;
-  margin-bottom: 1rem;
-  padding: 1rem;
-}
-
-.offline-state i {
-  align-items: center;
-  background: #ffffff;
-  border-radius: 999px;
-  color: #1c7d62;
-  display: inline-flex;
-  height: 2.5rem;
-  justify-content: center;
-  width: 2.5rem;
-}
-
-.offline-state strong {
-  color: #0f1f33;
-}
-
-.offline-state__message {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-
-.lead-workspace {
-  display: grid;
-  gap: 1rem;
-}
-
-.lead-workspace__head {
-  background:
-    linear-gradient(135deg, rgba(28, 125, 98, 0.1), rgba(15, 31, 51, 0.04)),
-    #ffffff;
-  border: 1px solid #dbe7e1;
-  border-radius: 12px;
-  gap: 1rem;
-  padding: 1rem;
-}
-
-.tipification-bar {
-  align-items: end;
-  background: #f8fbfa;
-  border: 1px solid #dce8e3;
-  border-radius: 12px;
-  display: grid;
-  gap: 0.8rem;
-  grid-template-columns: minmax(0, auto) minmax(14rem, 1fr) minmax(14rem, 1fr) minmax(9rem, 11rem) minmax(0, auto) minmax(0, auto);
-  padding: 0.9rem;
-}
-
-.tipification-bar > * {
-  min-width: 0;
-}
-
-.tipification-bar__field {
-  min-width: 0;
-}
-
-.tipification-bar__comment-toggle,
-.tipification-bar__submit {
-  white-space: nowrap;
-}
-
-.contact-actions {
-  min-width: 0;
-}
-
-.scheduled-field {
-  min-width: 0;
-}
-
-.comment-field {
-  grid-column: 1 / -1;
-}
-
-.form-grid {
-  display: grid;
-  gap: 0.9rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  padding-top: 1rem;
-}
-
-.wide {
-  grid-column: 1 / -1;
-}
-
-label {
-  color: #425466;
-  display: grid;
-  font-size: 0.78rem;
-  font-weight: 800;
-  gap: 0.35rem;
-}
-
-.ubigeo-hint {
-  color: #7aa8c4;
-  cursor: help;
-  font-size: 0.72rem;
-  margin-left: 0.3rem;
-  vertical-align: middle;
-}
-
-.select-item {
-  display: grid;
-  gap: 0.15rem;
-}
-
-.select-item small {
-  color: #64748b;
-}
-
-// Plan rich item (oferta tab)
-
-.plan-item {
-  display: grid;
-  gap: 0.35rem;
-  width: 100%;
-}
-
-.plan-item__top {
-  align-items: baseline;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  justify-content: space-between;
-}
-
-.plan-item__pricing {
-  align-items: baseline;
-  display: flex;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.plan-price--promo {
-  color: #1c7d62;
-  font-weight: 700;
-}
-
-.plan-price--months {
-  color: #617187;
-  font-size: 0.72rem;
-}
-
-.plan-price--regular {
-  color: #a0aec0;
-  font-size: 0.8rem;
-  text-decoration: line-through;
-}
-
-.plan-price--base {
-  color: #425466;
-  font-weight: 600;
-}
-
-.plan-item__services {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-}
-
-.offer-additionals,
-.offer-additionals__list {
-  display: grid;
-  gap: 0.6rem;
-}
-
-.offer-additionals {
-  border: 1px solid #dce8e3;
-  border-radius: 12px;
-  padding: 0.75rem;
-}
-
-.offer-additionals__head,
-.offer-additional-item,
-.quantity-control {
-  align-items: center;
-  display: flex;
-  gap: 0.6rem;
-  justify-content: space-between;
-}
-
-.offer-additional-item__info {
-  align-items: baseline;
-  display: flex;
-  flex: 1;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  justify-content: space-between;
-  min-width: 0;
-}
-
-.offer-additionals__head,
-.quantity-control span {
-  color: #425466;
-  font-weight: 800;
-}
-
-.quantity-control span {
-  min-width: 2rem;
-  text-align: center;
-}
-
-.dialog-actions {
-  justify-content: flex-end;
-  padding-top: 0.25rem;
-}
-
-.dialog-skeleton {
-  display: grid;
-  gap: 1rem;
-  min-width: min(58rem, 86vw);
+  margin: 0;
 }
 
 :host ::ng-deep {
-  .asesor-hero,
-  .asesor-board {
+  .asesor-hero {
     border: 1px solid #d9e5df;
     border-radius: 14px;
     box-shadow: 0 14px 36px rgba(15, 31, 51, 0.06);
   }
 
-  .asesor-hero .p-card-body,
-  .asesor-board .p-card-body {
+  .asesor-hero .p-card-body {
     padding: 1rem;
-  }
-
-  .asesor-table .p-datatable-thead > tr > th {
-    background: #f4f8f6;
-    color: #304438;
-    font-size: 0.76rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  .asesor-table .p-datatable-tbody > tr > td {
-    vertical-align: middle;
-  }
-
-  .asesor-dialog {
-    max-height: 92vh;
-    width: min(72rem, 94vw);
-  }
-
-  .asesor-dialog .p-dialog-content {
-    min-height: 0;
-    overflow-y: auto;
-  }
-
-  .asesor-dialog .p-dialog-header {
-    border-bottom: 1px solid #e4ece8;
-  }
-
-  .tipification-bar .p-select,
-  .tipification-bar .p-datepicker {
-    min-width: 0;
-    width: 100%;
-  }
-
-  .form-grid .p-select,
-  .form-grid .p-selectbutton,
-  .form-grid .p-inputtext,
-  .form-grid .p-textarea,
-  .comment-field .p-textarea {
-    width: 100%;
-  }
-
-  .tipification-bar .p-button {
-    width: 100%;
-  }
-
-  .scope-select .p-togglebutton {
-    background: transparent;
-    border: 0;
-    flex: 1;
-    padding: 0;
-  }
-
-  .scope-select .p-togglebutton-content {
-    background: transparent;
-    padding: 0;
-    width: 100%;
-  }
-
-  .p-tabpanels {
-    padding: 0;
-  }
-}
-
-@keyframes row-enter {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
   }
 }
 
 @media (max-width: 1320px) {
-  .asesor-hero__content,
-  .lead-workspace__head {
+  .asesor-hero__content {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .tipification-bar {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-
-  .contact-actions {
-    grid-column: span 2;
-  }
-
-  .tipification-bar__field--tipificacion,
-  .tipification-bar__field--subtipificacion,
-  .scheduled-field,
-  .tipification-bar__comment-toggle,
-  .tipification-bar__submit {
-    grid-column: span 2;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .offer-additional-item,
-  .comment-field,
-  .wide {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (max-width: 980px) {
-  .tipification-bar,
-  .form-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .contact-actions,
-  .offer-additional-item,
-  .comment-field,
-  .wide {
-    grid-column: 1 / -1;
   }
 }
 
 @media (max-width: 720px) {
-  .tipification-bar,
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .asesor-hero__actions,
-  .contact-actions,
-  .dialog-actions {
+  .asesor-hero__actions {
     align-items: stretch;
     width: 100%;
   }
 
-  .asesor-hero__actions button,
-  .contact-actions button,
-  .dialog-actions button {
+  .asesor-hero__actions button {
     width: 100%;
-  }
-
-  .tipification-bar__field--tipificacion,
-  .tipification-bar__field--subtipificacion,
-  .scheduled-field,
-  .tipification-bar__comment-toggle,
-  .tipification-bar__submit {
-    grid-column: 1 / -1;
   }
 }

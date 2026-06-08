@@ -1,0 +1,104 @@
+.board-title {
+  align-items: center;
+  display: flex;
+  gap: 0.55rem;
+}
+
+.col-actions {
+  min-width: 10rem;
+}
+
+.row-new {
+  animation: row-enter 440ms ease-out;
+}
+
+.row-new td {
+  background: #ecfdf5;
+}
+
+.skeleton-table {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+}
+
+.skeleton-row {
+  align-items: center;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 8rem 14rem 11rem 6rem 8rem 7rem;
+  min-width: 900px;
+}
+
+.offline-state {
+  align-items: center;
+  background: linear-gradient(135deg, rgba(28, 125, 98, 0.1), rgba(15, 31, 51, 0.04));
+  border: 1px dashed #b8c9c1;
+  border-radius: 14px;
+  color: #425466;
+  display: flex;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+.offline-state i {
+  align-items: center;
+  background: #ffffff;
+  border-radius: 999px;
+  color: #1c7d62;
+  display: inline-flex;
+  height: 2.5rem;
+  justify-content: center;
+  width: 2.5rem;
+}
+
+.offline-state strong {
+  color: #0f1f33;
+}
+
+.offline-state__message {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.helper--centered {
+  display: block;
+  opacity: 0.72;
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+:host ::ng-deep {
+  .asesor-board {
+    border: 1px solid #d9e5df;
+    border-radius: 14px;
+    box-shadow: 0 14px 36px rgba(15, 31, 51, 0.06);
+  }
+
+  .asesor-board .p-card-body {
+    padding: 1rem;
+  }
+
+  .asesor-table .p-datatable-thead > tr > th {
+    background: #f4f8f6;
+    color: #304438;
+    font-size: 0.76rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .asesor-table .p-datatable-tbody > tr > td {
+    vertical-align: middle;
+  }
+}
+
+@keyframes row-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}

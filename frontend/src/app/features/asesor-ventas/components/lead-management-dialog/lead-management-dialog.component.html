@@ -1,0 +1,197 @@
+<p-dialog
+  header="Gestion de Lead"
+  [visible]="facade.detailDialogOpen()"
+  (visibleChange)="!$event && facade.requestCloseDetail()"
+  [modal]="true"
+  [draggable]="false"
+  [closable]="false"
+  [closeOnEscape]="false"
+  [dismissableMask]="false"
+  [breakpoints]="{ '1200px': '92vw', '720px': '96vw' }"
+  styleClass="asesor-dialog"
+>
+  @if (facade.detail(); as lead) {
+    <section class="lead-workspace">
+      <header class="lead-workspace__head">
+        <div>
+          <span class="lead-workspace__eyebrow">Gestion del Lead</span>
+          <h2 class="lead-workspace__summary">Lead | {{ facade.leadPhone(lead) }}</h2>
+        </div>
+
+        <div class="lead-workspace__tags">
+          <p-tag [severity]="facade.estadoSeverity(lead.estadoSeguimiento)" [value]="facade.display(lead.estadoSeguimiento)" />
+          @if (facade.hasUnsavedModalChanges()) {
+            <p-tag severity="warn" value="Cambios sin guardar" />
+          }
+        </div>
+      </header>
+
+      @if (facade.wrapUpActive()) {
+        <p-message
+          severity="warn"
+          text="Tu turno terminó. Tipifica este lead y luego continúa con los demás de tu bandeja."
+        />
+      }
+      @if (facade.successMessage()) {
+        <p-message severity="success" [text]="facade.successMessage() ?? ''" />
+      }
+      @if (facade.warningMessage()) {
+        <p-message severity="warn" [text]="facade.warningMessage() ?? ''" />
+      }
+      @if (facade.errorMessage()) {
+        <p-message severity="error" [text]="facade.errorMessage() ?? ''" />
+      }
+
+      <form class="tipification-bar" [formGroup]="facade.tipificacionForm" (ngSubmit)="facade.tipificar()">
+        <div class="contact-actions">
+          <button
+            pButton
+            type="button"
+            icon="pi pi-phone"
+            label="Llamar"
+            severity="secondary"
+            [disabled]="!facade.canMutateOperationalData()"
+            [loading]="facade.isSaving()"
+            (click)="facade.registrarLlamada()"
+          ></button>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-whatsapp"
+            label="Chat"
+            severity="secondary"
+            [loading]="facade.isSaving()"
+            (click)="facade.registrarChat()"
+          ></button>
+        </div>
+
+        <label class="tipification-bar__field tipification-bar__field--tipificacion">
+          <span>Tipificacion</span>
+          <p-select
+            formControlName="codigoTipificacion"
+            [options]="facade.tipificaciones()"
+            optionLabel="codigo"
+            optionValue="codigo"
+            placeholder="Seleccionar"
+            appendTo="body"
+          >
+            <ng-template #item let-tipificacion>
+              <div class="select-item">
+                <strong>{{ tipificacion.codigo }}</strong>
+                <small>{{ tipificacion.descripcion }}</small>
+              </div>
+            </ng-template>
+          </p-select>
+        </label>
+
+        <label class="tipification-bar__field tipification-bar__field--subtipificacion">
+          <span>Subtipificacion</span>
+          <p-select
+            formControlName="codigoSubtipificacion"
+            [options]="facade.subtipificaciones()"
+            optionLabel="codigo"
+            optionValue="codigo"
+            placeholder="Seleccionar"
+            appendTo="body"
+            [disabled]="!facade.selectedTipificacionCode() || !facade.subtipificaciones().length"
+          >
+            <ng-template #item let-subtipificacion>
+              <div class="select-item">
+                <strong>{{ subtipificacion.codigo }}</strong>
+                <small>{{ subtipificacion.descripcion }}</small>
+              </div>
+            </ng-template>
+          </p-select>
+        </label>
+
+        @if (facade.requiresScheduledTime()) {
+          <label class="scheduled-field tipification-bar__field">
+            <span>Hora programada</span>
+            <p-datepicker
+              formControlName="horaProgramada"
+              dataType="string"
+              [timeOnly]="true"
+              hourFormat="24"
+              [stepMinute]="5"
+              [showIcon]="true"
+              icon="pi pi-clock"
+              appendTo="body"
+            />
+          </label>
+        }
+
+        <button
+          pButton
+          type="button"
+          class="tipification-bar__comment-toggle"
+          icon="pi pi-comment"
+          [label]="facade.showComment() ? 'Ocultar comentario' : 'Comentario'"
+          severity="secondary"
+          (click)="facade.toggleComment()"
+        ></button>
+        <button
+          pButton
+          type="submit"
+          class="tipification-bar__submit"
+          icon="pi pi-check"
+          label="Tipificar"
+          [disabled]="!facade.canMutateOperationalData()"
+          [loading]="facade.isSaving()"
+        ></button>
+
+        @if (facade.showComment()) {
+          <label class="comment-field">
+            <span>Comentario opcional</span>
+            <textarea pTextarea rows="3" formControlName="comentario"></textarea>
+          </label>
+        }
+      </form>
+
+      <app-lead-commercial-data-tabs
+        [datosForm]="facade.datosForm"
+        [direccionForm]="facade.direccionForm"
+        [ofertaForm]="facade.ofertaForm"
+        [activeTab]="facade.activeDataTab()"
+        [tipoDocumentoOptions]="facade.tipoDocumentoOptions"
+        [tipoDomicilioOptions]="facade.tipoDomicilioOptions"
+        [tipoViaOptions]="facade.tipoViaOptions"
+        [departamentos]="facade.departamentos()"
+        [provinciasDomicilio]="facade.provinciasDomicilio()"
+        [distritosDomicilio]="facade.distritosDomicilio()"
+        [providerOptions]="facade.ofertaProviderOptions()"
+        [selectedProviderId]="facade.selectedOfertaProviderId()"
+        [planOptions]="facade.planOptions()"
+        [promocionOptions]="facade.promocionOptions()"
+        [adicionales]="facade.adicionales()"
+        [selectedAdditionals]="facade.selectedOfertaAdditionals()"
+        [additionalsTotal]="facade.ofertaAdditionalsTotal()"
+        (activeTabChange)="facade.setActiveDataTab($event)"
+        (tipoDocumentoChange)="facade.onTipoDocumentoChanged()"
+        (departamentoDomicilioChange)="facade.onDepartamentoDomicilioChanged()"
+        (provinciaDomicilioChange)="facade.onProvinciaDomicilioChanged()"
+        (distritoDomicilioChange)="facade.onDistritoDomicilioChanged()"
+        (ofertaProviderChange)="facade.onOfertaProviderChanged($event)"
+        (planChange)="facade.onPlanChanged()"
+        (incrementarAdicional)="facade.incrementarAdicional($event)"
+        (disminuirAdicional)="facade.disminuirAdicional($event)"
+      />
+      <footer class="dialog-actions">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-eraser"
+          label="Limpiar tab"
+          severity="secondary"
+          [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
+          title="Restaurar el tab al ultimo estado guardado"
+          (click)="facade.limpiarTabActiva()"
+        ></button>
+      </footer>
+    </section>
+  } @else {
+    <div class="dialog-skeleton">
+      <p-skeleton width="18rem" height="2rem" />
+      <p-skeleton width="100%" height="16rem" />
+    </div>
+  }
+</p-dialog>

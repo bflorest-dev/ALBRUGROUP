@@ -1,0 +1,109 @@
+<p-card styleClass="asesor-board">
+  <ng-template #title>
+    <span class="board-title">
+      Bandeja personal
+      <p-tag severity="info" [value]="facade.display(facade.totalElements())" />
+    </span>
+  </ng-template>
+  <ng-template #subtitle>
+    {{
+      !facade.canDisplayOperationalData()
+        ? 'Marca ONLINE para recibir leads'
+        : facade.isReconciling()
+          ? 'Validando cambios del realtime'
+          : 'Leads listos para gestion'
+    }}
+  </ng-template>
+
+  @if (!facade.canDisplayOperationalData()) {
+    <div class="offline-state">
+      <i class="pi pi-power-off" aria-hidden="true"></i>
+      <div>
+        <strong>Estas OFFLINE</strong>
+        <p class="offline-state__message">
+          Marca tu asistencia
+          <p-tag severity="success" value="ONLINE" />
+          para quedar operativo y listo para recibir y gestionar Leads.
+        </p>
+      </div>
+    </div>
+  }
+
+  <p-table
+    [value]="facade.rows()"
+    dataKey="id"
+    [loading]="facade.canDisplayOperationalData() && facade.isLoading()"
+    [rowHover]="true"
+    [scrollable]="true"
+    scrollHeight="flex"
+    [tableStyle]="{ 'min-width': '980px' }"
+    styleClass="p-datatable-sm asesor-table"
+  >
+    <ng-template #header>
+      <tr>
+        <th>Lead</th>
+        <th>Titular</th>
+        <th>Correo</th>
+        <th>Estado</th>
+        <th>Asignacion</th>
+        <th class="col-actions">Acciones</th>
+      </tr>
+    </ng-template>
+
+    <ng-template #body let-row>
+      <tr [class.row-new]="row.isNew">
+        <td>
+          <strong>{{ facade.leadPhone(row) }}</strong>
+        </td>
+        <td>{{ facade.display(row.nombreTitular) }}</td>
+        <td>{{ facade.display(row.correo) }}</td>
+        <td>
+          <p-tag [severity]="facade.estadoSeverity(row.estadoSeguimiento)" [value]="facade.display(row.estadoSeguimiento)" />
+        </td>
+        <td>{{ row.fechaAsignacion | date: 'dd/MM hh:mm a' }}</td>
+        <td>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-briefcase"
+            label="Gestionar"
+            size="small"
+            [disabled]="facade.isManageActionDisabled(row.id)"
+            [title]="facade.isManagingLead() && facade.selectedLeadId() !== row.id ? 'Tipifica el Lead actual antes de gestionar otro.' : ''"
+            (click)="facade.openDetail(row.id)"
+          ></button>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="6">
+          @if (facade.canDisplayOperationalData()) {
+            <div class="skeleton-table" aria-label="Esperando asignaciones">
+              @for (_ of facade.skeletonRows; track $index) {
+                <div class="skeleton-row">
+                  <p-skeleton width="8rem" height="1.1rem" />
+                  <p-skeleton width="14rem" height="1.1rem" />
+                  <p-skeleton width="11rem" height="1.1rem" />
+                  <p-skeleton width="6rem" height="1.6rem" borderRadius="999px" />
+                  <p-skeleton width="8rem" height="1.1rem" />
+                  <p-skeleton width="7rem" height="2rem" borderRadius="8px" />
+                </div>
+              }
+            </div>
+          } @else {
+            <span class="helper helper--centered">La bandeja se activara al marcar ONLINE.</span>
+          }
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <p-paginator
+    [first]="facade.pageNumber() * facade.pageSize"
+    [rows]="facade.pageSize"
+    [totalRecords]="facade.totalElements()"
+    (onPageChange)="facade.changePage($event.page ?? 0)"
+  />
+</p-card>

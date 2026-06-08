@@ -1,0 +1,10 @@
+// Estilos compartidos entre la pagina y el dialogo de gestion del workspace de asesor-ventas.
+// Se consume con `@use '../../_asesor-shared' as shared;` desde cada sub-componente.
+
+@mixin eyebrow {
+  color: #1c7d62;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  margin: 0;
+}

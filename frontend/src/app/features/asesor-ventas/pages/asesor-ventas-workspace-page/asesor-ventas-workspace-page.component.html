@@ -4,11 +4,11 @@
       <div>
         <span class="asesor-hero__eyebrow">PREVENTA</span>
         <h1>Mis Leads Asignados</h1>
-        <p>{{ isReconciling() ? 'Sincronizando en segundo plano' : todayLabel }}</p>
+        <p>{{ facade.isReconciling() ? 'Sincronizando en segundo plano' : facade.todayLabel }}</p>
       </div>
 
       <div class="asesor-hero__actions">
-        @if (hasUnsavedDataChanges()) {
+        @if (facade.hasUnsavedDataChanges()) {
           <p-tag severity="warn" value="Cambios pendientes" />
         }
         <button
@@ -17,335 +17,31 @@
           icon="pi pi-refresh"
           label="Actualizar"
           severity="secondary"
-          [disabled]="!canDisplayOperationalData()"
-          [loading]="isLoading()"
-          (click)="initialize()"
+          [disabled]="!facade.canDisplayOperationalData()"
+          [loading]="facade.isLoading()"
+          (click)="facade.initialize()"
         ></button>
       </div>
     </div>
   </p-card>
 
-  @if (!detailDialogOpen() && wrapUpActive()) {
+  @if (!facade.detailDialogOpen() && facade.wrapUpActive()) {
     <p-message
       severity="warn"
       text="Tu turno terminó. Puedes gestionar todos los leads de tu bandeja antes de cerrar. Al vaciarla, tu turno se cerrará solo."
     />
   }
-  @if (!detailDialogOpen() && successMessage()) {
-    <p-message severity="success" [text]="successMessage() ?? ''" />
+  @if (!facade.detailDialogOpen() && facade.successMessage()) {
+    <p-message severity="success" [text]="facade.successMessage() ?? ''" />
   }
-  @if (!detailDialogOpen() && warningMessage()) {
-    <p-message severity="warn" [text]="warningMessage() ?? ''" />
+  @if (!facade.detailDialogOpen() && facade.warningMessage()) {
+    <p-message severity="warn" [text]="facade.warningMessage() ?? ''" />
   }
-  @if (!detailDialogOpen() && errorMessage()) {
-    <p-message severity="error" [text]="errorMessage() ?? ''" />
+  @if (!facade.detailDialogOpen() && facade.errorMessage()) {
+    <p-message severity="error" [text]="facade.errorMessage() ?? ''" />
   }
 
-  <p-card styleClass="asesor-board">
-    <ng-template #title>
-      <span class="board-title">
-        Bandeja personal
-        <p-tag severity="info" [value]="display(totalElements())" />
-      </span>
-    </ng-template>
-    <ng-template #subtitle>
-      {{
-        !canDisplayOperationalData()
-          ? 'Marca ONLINE para recibir leads'
-          : isReconciling()
-            ? 'Validando cambios del realtime'
-            : 'Leads listos para gestion'
-      }}
-    </ng-template>
+  <app-asesor-board />
 
-    @if (!canDisplayOperationalData()) {
-      <div class="offline-state">
-        <i class="pi pi-power-off" aria-hidden="true"></i>
-        <div>
-          <strong>Estas OFFLINE</strong>
-          <p class="offline-state__message">
-            Marca tu asistencia
-            <p-tag severity="success" value="ONLINE" />
-            para quedar operativo y listo para recibir y gestionar Leads.
-          </p>
-        </div>
-      </div>
-    }
-
-    <p-table
-      [value]="rows()"
-      dataKey="id"
-      [loading]="canDisplayOperationalData() && isLoading()"
-      [rowHover]="true"
-      [scrollable]="true"
-      scrollHeight="flex"
-      [tableStyle]="{ 'min-width': '980px' }"
-      styleClass="p-datatable-sm asesor-table"
-    >
-      <ng-template #header>
-        <tr>
-          <th>Lead</th>
-          <th>Titular</th>
-          <th>Correo</th>
-          <th>Estado</th>
-          <th>Asignacion</th>
-          <th class="col-actions">Acciones</th>
-        </tr>
-      </ng-template>
-
-      <ng-template #body let-row>
-        <tr [class.row-new]="row.isNew">
-          <td>
-            <strong>{{ leadPhone(row) }}</strong>
-          </td>
-          <td>{{ display(row.nombreTitular) }}</td>
-          <td>{{ display(row.correo) }}</td>
-          <td>
-            <p-tag [severity]="estadoSeverity(row.estadoSeguimiento)" [value]="display(row.estadoSeguimiento)" />
-          </td>
-          <td>{{ row.fechaAsignacion | date: 'dd/MM hh:mm a' }}</td>
-          <td>
-            <button
-              pButton
-              type="button"
-              icon="pi pi-briefcase"
-              label="Gestionar"
-              size="small"
-              [disabled]="isManageActionDisabled(row.id)"
-              [title]="isManagingLead() && selectedLeadId() !== row.id ? 'Tipifica el Lead actual antes de gestionar otro.' : ''"
-              (click)="openDetail(row.id)"
-            ></button>
-          </td>
-        </tr>
-      </ng-template>
-
-      <ng-template #emptymessage>
-        <tr>
-          <td colspan="6">
-            @if (canDisplayOperationalData()) {
-              <div class="skeleton-table" aria-label="Esperando asignaciones">
-                @for (_ of skeletonRows; track $index) {
-                  <div class="skeleton-row">
-                    <p-skeleton width="8rem" height="1.1rem" />
-                    <p-skeleton width="14rem" height="1.1rem" />
-                    <p-skeleton width="11rem" height="1.1rem" />
-                    <p-skeleton width="6rem" height="1.6rem" borderRadius="999px" />
-                    <p-skeleton width="8rem" height="1.1rem" />
-                    <p-skeleton width="7rem" height="2rem" borderRadius="8px" />
-                  </div>
-                }
-              </div>
-            } @else {
-              <span class="helper helper--centered">La bandeja se activara al marcar ONLINE.</span>
-            }
-          </td>
-        </tr>
-      </ng-template>
-    </p-table>
-
-    <p-paginator
-      [first]="pageNumber() * pageSize"
-      [rows]="pageSize"
-      [totalRecords]="totalElements()"
-      (onPageChange)="changePage($event.page ?? 0)"
-    />
-  </p-card>
-
-  <p-dialog
-    header="Gestion de Lead"
-    [visible]="detailDialogOpen()"
-    (visibleChange)="!$event && requestCloseDetail()"
-    [modal]="true"
-    [draggable]="false"
-    [closable]="false"
-    [closeOnEscape]="false"
-    [dismissableMask]="false"
-    [breakpoints]="{ '1200px': '92vw', '720px': '96vw' }"
-    styleClass="asesor-dialog"
-  >
-    @if (detail(); as lead) {
-      <section class="lead-workspace">
-        <header class="lead-workspace__head">
-          <div>
-            <span class="lead-workspace__eyebrow">Gestion del Lead</span>
-                  <h2 class="lead-workspace__summary">Lead | {{ leadPhone(lead) }}</h2>
-          </div>
-
-          <div class="lead-workspace__tags">
-            <p-tag [severity]="estadoSeverity(lead.estadoSeguimiento)" [value]="display(lead.estadoSeguimiento)" />
-            @if (hasUnsavedModalChanges()) {
-              <p-tag severity="warn" value="Cambios sin guardar" />
-            }
-          </div>
-        </header>
-
-        @if (wrapUpActive()) {
-          <p-message
-            severity="warn"
-            text="Tu turno terminó. Tipifica este lead y luego continúa con los demás de tu bandeja."
-          />
-        }
-        @if (successMessage()) {
-          <p-message severity="success" [text]="successMessage() ?? ''" />
-        }
-        @if (warningMessage()) {
-          <p-message severity="warn" [text]="warningMessage() ?? ''" />
-        }
-        @if (errorMessage()) {
-          <p-message severity="error" [text]="errorMessage() ?? ''" />
-        }
-
-        <form class="tipification-bar" [formGroup]="tipificacionForm" (ngSubmit)="tipificar()">
-          <div class="contact-actions">
-            <button
-              pButton
-              type="button"
-              icon="pi pi-phone"
-              label="Llamar"
-              severity="secondary"
-              [disabled]="!canMutateOperationalData()"
-              [loading]="isSaving()"
-              (click)="registrarLlamada()"
-            ></button>
-            <button
-              pButton
-              type="button"
-              icon="pi pi-whatsapp"
-              label="Chat"
-              severity="secondary"
-              [loading]="isSaving()"
-              (click)="registrarChat()"
-            ></button>
-          </div>
-
-          <label class="tipification-bar__field tipification-bar__field--tipificacion">
-            <span>Tipificacion</span>
-            <p-select
-              formControlName="codigoTipificacion"
-              [options]="tipificaciones()"
-              optionLabel="codigo"
-              optionValue="codigo"
-              placeholder="Seleccionar"
-              appendTo="body"
-            >
-              <ng-template #item let-tipificacion>
-                <div class="select-item">
-                  <strong>{{ tipificacion.codigo }}</strong>
-                  <small>{{ tipificacion.descripcion }}</small>
-                </div>
-              </ng-template>
-            </p-select>
-          </label>
-
-          <label class="tipification-bar__field tipification-bar__field--subtipificacion">
-            <span>Subtipificacion</span>
-            <p-select
-              formControlName="codigoSubtipificacion"
-              [options]="subtipificaciones()"
-              optionLabel="codigo"
-              optionValue="codigo"
-              placeholder="Seleccionar"
-              appendTo="body"
-              [disabled]="!selectedTipificacionCode() || !subtipificaciones().length"
-            >
-              <ng-template #item let-subtipificacion>
-                <div class="select-item">
-                  <strong>{{ subtipificacion.codigo }}</strong>
-                  <small>{{ subtipificacion.descripcion }}</small>
-                </div>
-              </ng-template>
-            </p-select>
-          </label>
-
-          @if (requiresScheduledTime()) {
-            <label class="scheduled-field tipification-bar__field">
-              <span>Hora programada</span>
-              <p-datepicker
-                formControlName="horaProgramada"
-                dataType="string"
-                [timeOnly]="true"
-                hourFormat="24"
-                [stepMinute]="5"
-                [showIcon]="true"
-                icon="pi pi-clock"
-                appendTo="body"
-              />
-            </label>
-          }
-
-          <button
-            pButton
-            type="button"
-            class="tipification-bar__comment-toggle"
-            icon="pi pi-comment"
-            [label]="showComment() ? 'Ocultar comentario' : 'Comentario'"
-            severity="secondary"
-            (click)="toggleComment()"
-          ></button>
-          <button
-            pButton
-            type="submit"
-            class="tipification-bar__submit"
-            icon="pi pi-check"
-            label="Tipificar"
-            [disabled]="!canMutateOperationalData()"
-            [loading]="isSaving()"
-          ></button>
-
-          @if (showComment()) {
-            <label class="comment-field">
-              <span>Comentario opcional</span>
-              <textarea pTextarea rows="3" formControlName="comentario"></textarea>
-            </label>
-          }
-        </form>
-
-        <app-lead-commercial-data-tabs
-          [datosForm]="datosForm"
-          [direccionForm]="direccionForm"
-          [ofertaForm]="ofertaForm"
-          [activeTab]="activeDataTab()"
-          [tipoDocumentoOptions]="tipoDocumentoOptions"
-          [tipoDomicilioOptions]="tipoDomicilioOptions"
-          [tipoViaOptions]="tipoViaOptions"
-          [departamentos]="departamentos()"
-          [provinciasDomicilio]="provinciasDomicilio()"
-          [distritosDomicilio]="distritosDomicilio()"
-          [providerOptions]="ofertaProviderOptions()"
-          [selectedProviderId]="selectedOfertaProviderId()"
-          [planOptions]="planOptions()"
-          [promocionOptions]="promocionOptions()"
-          [adicionales]="adicionales()"
-          [selectedAdditionals]="selectedOfertaAdditionals()"
-          [additionalsTotal]="ofertaAdditionalsTotal()"
-          (activeTabChange)="setActiveDataTab($event)"
-          (tipoDocumentoChange)="onTipoDocumentoChanged()"
-          (departamentoDomicilioChange)="onDepartamentoDomicilioChanged()"
-          (provinciaDomicilioChange)="onProvinciaDomicilioChanged()"
-          (distritoDomicilioChange)="onDistritoDomicilioChanged()"
-          (ofertaProviderChange)="onOfertaProviderChanged($event)"
-          (planChange)="onPlanChanged()"
-          (incrementarAdicional)="incrementarAdicional($event)"
-          (disminuirAdicional)="disminuirAdicional($event)"
-        />
-        <footer class="dialog-actions">
-          <button
-            pButton
-            type="button"
-            icon="pi pi-eraser"
-            label="Limpiar tab"
-            severity="secondary"
-            [disabled]="isSaving() || !canMutateOperationalData()"
-            title="Restaurar el tab al ultimo estado guardado"
-            (click)="limpiarTabActiva()"
-          ></button>
-        </footer>
-      </section>
-    } @else {
-      <div class="dialog-skeleton">
-        <p-skeleton width="18rem" height="2rem" />
-        <p-skeleton width="100%" height="16rem" />
-      </div>
-    }
-  </p-dialog>
+  <app-lead-management-dialog />
 </section>
