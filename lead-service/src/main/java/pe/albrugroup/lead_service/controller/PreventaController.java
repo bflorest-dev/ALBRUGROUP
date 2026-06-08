@@ -179,7 +179,21 @@ public class PreventaController {
         var leads = leadService.listarBandejaAsesorVentas(pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
-    // 1.1. Marcar el Lead como EN_GESTION antes de abrir el flujo operativo
+    // 1.1. Listar (read-only) las preventas que el asesor paso a VENTA, para seguimiento
+    @GetMapping("/asesor-ventas/mis-preventas") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
+    public ResponseEntity<PageResponse<MisPreventaResponse>> listarMisPreventas(
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        var leads = leadService.listarMisPreventas(pageRequest);
+        return ResponseEntity.status(HttpStatus.OK).body(leads);
+    }
+    // 1.2. Ver (read-only) el detalle actual de una preventa propia
+    @GetMapping("/{idLead}/detalle-mi-preventa") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
+    public ResponseEntity<LeadDetalleResponse> obtenerDetalleMiPreventa(@PathVariable Long idLead) {
+        var lead = leadService.obtenerDetalleMiPreventa(idLead);
+        return ResponseEntity.status(HttpStatus.OK).body(lead);
+    }
+    // 1.3. Marcar el Lead como EN_GESTION antes de abrir el flujo operativo
     @PatchMapping("/{idLead}/gestion") @PreAuthorize("hasAuthority('UPDATE_LEADS_ASESOR')")
     public ResponseEntity<Void> iniciarGestionLead(@PathVariable Long idLead) {
         leadService.iniciarGestionPreventa(idLead);

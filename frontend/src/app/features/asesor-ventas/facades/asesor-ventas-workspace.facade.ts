@@ -1303,8 +1303,7 @@ export class AsesorVentasWorkspaceFacade {
 
     if (blank(a.ubigeoDomicilio.value)) faltantes.push({ tab: 'direccion', campo: 'Distrito' });
     if (blank(a.tipoDomicilio.value)) faltantes.push({ tab: 'direccion', campo: 'Tipo de Domicilio' });
-    if (blank(a.tipoVia.value)) faltantes.push({ tab: 'direccion', campo: 'Tipo de Via' });
-    if (blank(a.via.value)) faltantes.push({ tab: 'direccion', campo: 'Nombre de la Via' });
+    // tipoVia y via son opcionales (opcion "Sin Via"); no se exigen para cerrar la preventa.
     if (blank(a.direccion.value)) faltantes.push({ tab: 'direccion', campo: 'Direccion' });
     if (blank(a.referencia.value)) faltantes.push({ tab: 'direccion', campo: 'Referencia' });
     if (blank(a.piso.value)) faltantes.push({ tab: 'direccion', campo: 'Piso' });

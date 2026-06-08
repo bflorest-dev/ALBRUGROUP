@@ -15,6 +15,7 @@ import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
+import pe.albrugroup.lead_service.entity.response.MisPreventaResponse;
 import pe.albrugroup.lead_service.repository.projection.AsesorCantidadProjection;
 
 import java.time.Instant;
@@ -504,6 +505,74 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("idAsesor") Long idAsesor,
             @Param("etapa") Etapa etapa
     );
+
+    // Listado read-only de "mis preventas": leads que el asesor paso a VENTA, identificados por su
+    // evento de cierre (TIPIFICACION / PREVENTA_COMPLETA / VENTA_CERRADA). Se ordena por la ultima
+    // actualizacion para que el asesor vea primero lo que cambio en etapas posteriores.
+    @Query(value = """
+            SELECT new pe.albrugroup.lead_service.entity.response.MisPreventaResponse(
+                       l.id,
+                       l.prefijo,
+                       l.lead,
+                       l.etapa,
+                       l.estadoPostventa,
+                       l.updatedAt)
+            FROM Lead l
+            WHERE EXISTS (
+                SELECT 1 FROM Evento e
+                WHERE e.idLead = l.id
+                  AND e.idActor = :idActor
+                  AND e.accion = :accion
+                  AND e.tipificacion = :tipificacion
+                  AND e.subtipificacion = :subtipificacion
+            )
+            ORDER BY l.updatedAt DESC
+            """,
+            countQuery = """
+            SELECT COUNT(l)
+            FROM Lead l
+            WHERE EXISTS (
+                SELECT 1 FROM Evento e
+                WHERE e.idLead = l.id
+                  AND e.idActor = :idActor
+                  AND e.accion = :accion
+                  AND e.tipificacion = :tipificacion
+                  AND e.subtipificacion = :subtipificacion
+            )
+            """)
+    Page<MisPreventaResponse> listarMisPreventas(
+            @Param("idActor") Long idActor,
+            @Param("accion") Accion accion,
+            @Param("tipificacion") String tipificacion,
+            @Param("subtipificacion") String subtipificacion,
+            Pageable pageable
+    );
+
+    // Detalle completo de un lead por id, sin filtro de asesor ni etapa (la autorizacion del caso
+    // "mis preventas" se valida aparte contra el evento de cierre del asesor).
+    @Query("""
+            SELECT DISTINCT l
+            FROM Lead l
+            LEFT JOIN FETCH l.campana c
+            LEFT JOIN FETCH c.proveedor
+            LEFT JOIN FETCH l.datosPreventa
+            LEFT JOIN FETCH l.direccion
+            LEFT JOIN FETCH l.plan
+            LEFT JOIN FETCH l.plan.proveedor
+            LEFT JOIN FETCH l.plan.internet
+            LEFT JOIN FETCH l.plan.television
+            LEFT JOIN FETCH l.plan.telefono
+            LEFT JOIN FETCH l.plan.zona
+            LEFT JOIN FETCH l.plan.adicionales pa
+            LEFT JOIN FETCH pa.adicional
+            LEFT JOIN FETCH l.promocionInterna
+            LEFT JOIN FETCH l.promocionInterna.proveedor
+            LEFT JOIN FETCH l.promocionInterna.zona
+            LEFT JOIN FETCH l.adicionales la
+            LEFT JOIN FETCH la.adicional
+            WHERE l.id = :idLead
+            """)
+    Optional<Lead> buscarDetalleCompletoPorId(@Param("idLead") Long idLead);
 
     @Query("""
             SELECT new pe.albrugroup.lead_service.entity.response.LeadGtrResponse(

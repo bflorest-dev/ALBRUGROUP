@@ -69,6 +69,8 @@ export class LeadCommercialDataTabsComponent {
   @Input() offerLocked = false;
   @Input() offerNoticeSeverity: 'info' | 'warn' | null = null;
   @Input() offerNoticeText: string | null = null;
+  /** Modo solo-lectura: oculta acciones de edicion (+/- adicionales) y bloquea los selects de oferta. */
+  @Input() readonly = false;
 
   @Output() activeTabChange = new EventEmitter<LeadCommercialDataTab>();
   @Output() tipoDocumentoChange = new EventEmitter<void>();
@@ -79,6 +81,35 @@ export class LeadCommercialDataTabsComponent {
   @Output() planChange = new EventEmitter<void>();
   @Output() incrementarAdicional = new EventEmitter<AdicionalResponse>();
   @Output() disminuirAdicional = new EventEmitter<AdicionalResponse>();
+
+  private readonly viaSelectOptionsCache = new WeakMap<readonly string[], { label: string; value: string }[]>();
+
+  /**
+   * Opciones del select "Tipo de Via" con una primera entrada "Sin Via" seleccionable
+   * cuyo valor interno es vacio (el facade lo convierte a null al guardar). Cacheado por
+   * la referencia del array de entrada para no devolver una nueva referencia en cada
+   * change detection (evita el loop de CD con PrimeNG + OnPush).
+   */
+  protected viaSelectOptions(options: string[]): { label: string; value: string }[] {
+    let cached = this.viaSelectOptionsCache.get(options);
+    if (!cached) {
+      cached = [{ label: 'Sin Via', value: '' }, ...options.map((option) => ({ label: option, value: option }))];
+      this.viaSelectOptionsCache.set(options, cached);
+    }
+    return cached;
+  }
+
+  /** Al elegir "Sin Via", el nombre de via deja de tener sentido: se limpia para no enviar un dato huerfano. */
+  protected onTipoViaChanged(): void {
+    if (this.direccionForm.get('tipoVia')?.value) {
+      return;
+    }
+    const via = this.direccionForm.get('via');
+    if (via && via.value) {
+      via.setValue('');
+      via.markAsDirty();
+    }
+  }
 
   protected documentoServicioMaxLength(): number {
     switch (this.datosForm.get('tipoDocumento')?.value) {

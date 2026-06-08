@@ -1,0 +1,53 @@
+<p-dialog
+  header="Detalle de tu preventa"
+  [visible]="facade.detailDialogOpen()"
+  (visibleChange)="!$event && facade.closeDetail()"
+  [modal]="true"
+  [draggable]="false"
+  [dismissableMask]="true"
+  [breakpoints]="{ '1200px': '92vw', '720px': '96vw' }"
+  styleClass="mis-preventa-dialog"
+>
+  @if (facade.isLoadingDetail()) {
+    <div class="dialog-skeleton">
+      <p-skeleton width="18rem" height="2rem" />
+      <p-skeleton width="100%" height="16rem" />
+    </div>
+  } @else if (facade.detail(); as lead) {
+    <section class="preventa-detail">
+      <header class="preventa-detail__head">
+        <div>
+          <span class="preventa-detail__eyebrow">Solo lectura</span>
+          <h2 class="preventa-detail__summary">Lead | {{ facade.leadPhone(lead) }}</h2>
+        </div>
+        <p-tag [severity]="facade.etapaSeverity(facade.selectedEtapa())" [value]="facade.etapaLabel(facade.selectedEtapa())" />
+      </header>
+
+      <p class="preventa-detail__note">
+        Estos son los datos actuales del lead. En etapas posteriores algunos pueden cambiar; aquí solo puedes consultarlos.
+      </p>
+
+      <app-lead-commercial-data-tabs
+        [readonly]="true"
+        [datosForm]="facade.datosForm"
+        [direccionForm]="facade.direccionForm"
+        [ofertaForm]="facade.ofertaForm"
+        [activeTab]="facade.activeDataTab()"
+        [tipoDocumentoOptions]="facade.tipoDocumentoOptions"
+        [tipoDomicilioOptions]="facade.tipoDomicilioOptions"
+        [tipoViaOptions]="facade.tipoViaOptions"
+        [departamentos]="facade.departamentos()"
+        [provinciasDomicilio]="facade.provinciasDomicilio()"
+        [distritosDomicilio]="facade.distritosDomicilio()"
+        [providerOptions]="facade.providerOptions()"
+        [selectedProviderId]="facade.selectedProviderId()"
+        [planOptions]="facade.planOptions()"
+        [promocionOptions]="facade.promocionOptions()"
+        [adicionales]="facade.adicionales()"
+        [selectedAdditionals]="facade.selectedAdditionals()"
+        [additionalsTotal]="facade.additionalsTotal()"
+        (activeTabChange)="facade.setActiveDataTab($event)"
+      />
+    </section>
+  }
+</p-dialog>

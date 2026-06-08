@@ -148,12 +148,21 @@
         </label>
         <label>
           <span>Tipo de Via</span>
-          <p-select formControlName="tipoVia" [options]="tipoViaOptions" placeholder="Seleccionar" appendTo="body" />
+          <p-select
+            formControlName="tipoVia"
+            [options]="viaSelectOptions(tipoViaOptions)"
+            optionLabel="label"
+            optionValue="value"
+            appendTo="body"
+            (onChange)="onTipoViaChanged()"
+          />
         </label>
-        <label>
-          <span>Nombre de la Via</span>
-          <input pInputText type="text" formControlName="via" />
-        </label>
+        @if (direccionForm.get('tipoVia')?.value) {
+          <label>
+            <span>Nombre de la Via</span>
+            <input pInputText type="text" formControlName="via" />
+          </label>
+        }
         <label class="wide">
           <span>Direccion</span>
           <input pInputText type="text" formControlName="direccion" />
@@ -228,7 +237,7 @@
                 optionValue="id"
                 [allowEmpty]="false"
                 styleClass="scope-select offer-provider-select"
-                [disabled]="offerLocked"
+                [disabled]="offerLocked || readonly"
                 (onChange)="ofertaProviderChange.emit($any($event.value))"
               >
                 <ng-template #item let-proveedor>
@@ -255,7 +264,7 @@
             optionValue="id"
             placeholder="Seleccionar plan"
             appendTo="body"
-            [disabled]="offerLocked || !selectedProviderId"
+            [disabled]="offerLocked || readonly || !selectedProviderId"
             (onChange)="planChange.emit()"
           >
             <ng-template #item let-plan>
@@ -308,7 +317,7 @@
             optionLabel="reglaComercial"
             optionValue="id"
             appendTo="body"
-            [disabled]="offerLocked"
+            [disabled]="offerLocked || readonly"
           />
         </label>
         <div class="offer-additionals wide">
@@ -328,29 +337,35 @@
                 </div>
 
                 <div class="quantity-control" [attr.aria-label]="'Cantidad de ' + adicional.nombre">
-                  <button
-                    pButton
-                    type="button"
-                    icon="pi pi-minus"
-                    severity="secondary"
-                    size="small"
-                    [disabled]="offerLocked || adicionalCantidad(adicional.id) === 0"
-                    (click)="disminuirAdicional.emit(adicional)"
-                  ></button>
-                  <span>{{ adicionalCantidad(adicional.id) }}</span>
-                  <button
-                    pButton
-                    type="button"
-                    icon="pi pi-plus"
-                    size="small"
-                    [disabled]="offerLocked"
-                    (click)="incrementarAdicional.emit(adicional)"
-                  ></button>
+                  @if (!readonly) {
+                    <button
+                      pButton
+                      type="button"
+                      icon="pi pi-minus"
+                      severity="secondary"
+                      size="small"
+                      [disabled]="offerLocked || adicionalCantidad(adicional.id) === 0"
+                      (click)="disminuirAdicional.emit(adicional)"
+                    ></button>
+                  }
+                  <span>{{ readonly ? 'x' + adicionalCantidad(adicional.id) : adicionalCantidad(adicional.id) }}</span>
+                  @if (!readonly) {
+                    <button
+                      pButton
+                      type="button"
+                      icon="pi pi-plus"
+                      size="small"
+                      [disabled]="offerLocked"
+                      (click)="incrementarAdicional.emit(adicional)"
+                    ></button>
+                  }
                 </div>
               </article>
             } @empty {
               <p class="helper">
-                @if (offerLocked) {
+                @if (readonly) {
+                  Este lead no tiene adicionales.
+                } @else if (offerLocked) {
                   Sin adicionales disponibles para mostrar.
                 } @else {
                   Selecciona un proveedor para ver sus adicionales disponibles.

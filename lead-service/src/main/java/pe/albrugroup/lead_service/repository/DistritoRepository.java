@@ -19,6 +19,15 @@ public interface DistritoRepository extends JpaRepository<Distrito, Long> {
     @Query("""
             SELECT d
             FROM Distrito d
+            JOIN FETCH d.provincia
+            JOIN FETCH d.departamento
+            WHERE d.codigo = :codigo
+            """)
+    Optional<Distrito> findByCodigoConUbicacion(@Param("codigo") String codigo);
+
+    @Query("""
+            SELECT d
+            FROM Distrito d
             JOIN FETCH d.departamento
             WHERE d.codigo IN :codigos
             """)

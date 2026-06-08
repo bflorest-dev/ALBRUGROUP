@@ -1,0 +1,17 @@
+<section class="mis-preventas-page">
+  <p-card styleClass="mis-preventas-hero">
+    <div class="mis-preventas-hero__content">
+      <span class="mis-preventas-hero__eyebrow">PREVENTA</span>
+      <h1>Mis Preventas</h1>
+      <p>Seguimiento de los leads que pasaste a venta</p>
+    </div>
+  </p-card>
+
+  @if (facade.errorMessage()) {
+    <p-message severity="error" [text]="facade.errorMessage() ?? ''" />
+  }
+
+  <app-mis-preventas-board />
+
+  <app-mis-preventa-detail-dialog />
+</section>

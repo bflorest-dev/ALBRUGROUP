@@ -1,0 +1,74 @@
+.preventa-detail {
+  display: grid;
+  gap: 1rem;
+}
+
+.preventa-detail__head {
+  align-items: center;
+  background:
+    linear-gradient(135deg, rgba(28, 125, 98, 0.1), rgba(15, 31, 51, 0.04)),
+    #ffffff;
+  border: 1px solid #dbe7e1;
+  border-radius: 12px;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 1rem;
+}
+
+.preventa-detail__eyebrow {
+  color: #1c7d62;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  margin: 0;
+}
+
+h2 {
+  color: #102032;
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+.preventa-detail__summary {
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.preventa-detail__note {
+  color: #617187;
+  margin: 0;
+}
+
+.dialog-skeleton {
+  display: grid;
+  gap: 1rem;
+  min-width: min(58rem, 86vw);
+}
+
+:host ::ng-deep {
+  .mis-preventa-dialog {
+    max-height: 92vh;
+    width: min(72rem, 94vw);
+  }
+
+  .mis-preventa-dialog .p-dialog-content {
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .mis-preventa-dialog .p-dialog-header {
+    border-bottom: 1px solid #e4ece8;
+  }
+
+  .p-tabpanels {
+    padding: 0;
+  }
+}
+
+@media (max-width: 1320px) {
+  .preventa-detail__head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

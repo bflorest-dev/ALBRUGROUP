@@ -1,0 +1,40 @@
+.board-title {
+  align-items: center;
+  display: flex;
+  gap: 0.55rem;
+}
+
+.col-actions {
+  min-width: 7rem;
+}
+
+.helper--centered {
+  display: block;
+  opacity: 0.72;
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+:host ::ng-deep {
+  .mis-preventas-board {
+    border: 1px solid #d9e5df;
+    border-radius: 14px;
+    box-shadow: 0 14px 36px rgba(15, 31, 51, 0.06);
+  }
+
+  .mis-preventas-board .p-card-body {
+    padding: 1rem;
+  }
+
+  .mis-preventas-board .p-datatable-thead > tr > th {
+    background: #f4f8f6;
+    color: #304438;
+    font-size: 0.76rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .mis-preventas-board .p-datatable-tbody > tr > td {
+    vertical-align: middle;
+  }
+}

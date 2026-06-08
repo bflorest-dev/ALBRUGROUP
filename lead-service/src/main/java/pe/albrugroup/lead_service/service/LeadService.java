@@ -46,6 +46,7 @@ import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 import pe.albrugroup.lead_service.entity.response.InternetResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPostventaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadRealtimeEvent;
+import pe.albrugroup.lead_service.entity.response.MisPreventaResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.entity.response.PlanAdicionalResponse;
 import pe.albrugroup.lead_service.entity.response.GtrRankingAsesorResponse;
@@ -515,6 +516,39 @@ public class LeadService {
     public LeadDetalleResponse obtenerDetalleLeadAsignado(Long idLead, Etapa etapa) {
         Long idAsesor = currentUser.empleadoID();
         Lead lead = leadRepository.buscarDetalleAsesor(idLead, idAsesor, etapa)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+
+        Instant fechaAsignacion = eventoRepository.findTopByIdLeadAndAccionOrderByCreatedAtDesc(idLead, Accion.ASIGNACION)
+                .map(Evento::getCreatedAt)
+                .orElse(null);
+
+        return toDetalleResponse(lead, fechaAsignacion, obtenerTotalAsignaciones(lead.getId()));
+    }
+
+    // ── Mis preventas (read-only) ─────────────────────────────────────────────
+    // Leads que el asesor autenticado paso a VENTA. Identificados por su evento de cierre
+    // (TIPIFICACION / PREVENTA_COMPLETA / VENTA_CERRADA). Solo lectura: sirve de seguimiento.
+
+    public PageResponse<MisPreventaResponse> listarMisPreventas(PageRequest pageRequest) {
+        var page = leadRepository.listarMisPreventas(
+                currentUser.empleadoID(),
+                Accion.TIPIFICACION,
+                TIPIFICACION_PREVENTA_COMPLETA,
+                SUBTIPIFICACION_VENTA_CERRADA,
+                org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
+        );
+        return PageResponse.from(page);
+    }
+
+    public LeadDetalleResponse obtenerDetalleMiPreventa(Long idLead) {
+        Long idActor = currentUser.empleadoID();
+        boolean cierrePropio = eventoRepository.existsByIdLeadAndIdActorAndAccionAndTipificacionAndSubtipificacion(
+                idLead, idActor, Accion.TIPIFICACION, TIPIFICACION_PREVENTA_COMPLETA, SUBTIPIFICACION_VENTA_CERRADA);
+        if (!cierrePropio) {
+            throw new NotFoundException(Lead.class, idLead);
+        }
+
+        Lead lead = leadRepository.buscarDetalleCompletoPorId(idLead)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
 
         Instant fechaAsignacion = eventoRepository.findTopByIdLeadAndAccionOrderByCreatedAtDesc(idLead, Accion.ASIGNACION)
@@ -1895,6 +1929,21 @@ public class LeadService {
         LeadPlanDetalleResponse plan = toLeadPlanDetalleResponse(lead.getPlan());
         LeadPromocionDetalleResponse promocionInterna = toLeadPromocionDetalleResponse(lead.getPromocionInterna());
 
+        // Resolvemos los nombres de la ubicacion del domicilio desde el codigo de ubigeo con un unico
+        // lookup indexado, para que las vistas (incluida la read-only) no tengan que hacer la cascada.
+        String departamentoDomicilio = null;
+        String provinciaDomicilio = null;
+        String distritoDomicilio = null;
+        String ubigeoDomicilio = direccion == null ? null : direccion.getUbigeoDomicilio();
+        if (ubigeoDomicilio != null && !ubigeoDomicilio.isBlank()) {
+            var distritoUbicacion = distritoRepository.findByCodigoConUbicacion(ubigeoDomicilio).orElse(null);
+            if (distritoUbicacion != null) {
+                distritoDomicilio = distritoUbicacion.getNombre();
+                provinciaDomicilio = distritoUbicacion.getProvincia() == null ? null : distritoUbicacion.getProvincia().getNombre();
+                departamentoDomicilio = distritoUbicacion.getDepartamento() == null ? null : distritoUbicacion.getDepartamento().getNombre();
+            }
+        }
+
         return new LeadDetalleResponse(
                 lead.getId(),
                 fechaAsignacion,
@@ -1919,6 +1968,9 @@ public class LeadService {
                 datosPreventa == null ? null : datosPreventa.getNombreTitularCelularRegistro(),
                 datosPreventa == null ? null : datosPreventa.getUbigeoNacimiento(),
                 direccion == null ? null : direccion.getUbigeoDomicilio(),
+                departamentoDomicilio,
+                provinciaDomicilio,
+                distritoDomicilio,
                 direccion == null ? null : direccion.getTipoDomicilio(),
                 direccion == null ? null : direccion.getTipoVia(),
                 direccion == null ? null : direccion.getVia(),
@@ -2330,10 +2382,7 @@ public class LeadService {
         if (direccion.getTipoDomicilio() == null) {
             throw new BadRequestException("Falta tipoDomicilio");
         }
-        if (direccion.getTipoVia() == null) {
-            throw new BadRequestException("Falta tipoVia");
-        }
-        validarTextoObligatorio(direccion.getVia(), "Falta via");
+        // tipoVia y via son opcionales: una direccion puede no tener via (opcion "Sin Via" en la UI).
         validarTextoObligatorio(direccion.getDireccion(), "Falta direccion");
         validarTextoObligatorio(direccion.getReferencia(), "Falta referencia");
     }

@@ -1,0 +1,40 @@
+.mis-preventas-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.mis-preventas-hero__content {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.mis-preventas-hero__eyebrow {
+  color: #1c7d62;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+h1 {
+  color: #0f1f33;
+  font-size: clamp(1.45rem, 2vw, 1.9rem);
+  line-height: 1.08;
+  margin: 0;
+}
+
+p {
+  color: #617187;
+  margin: 0;
+}
+
+:host ::ng-deep {
+  .mis-preventas-hero {
+    border: 1px solid #d9e5df;
+    border-radius: 14px;
+    box-shadow: 0 14px 36px rgba(15, 31, 51, 0.06);
+  }
+
+  .mis-preventas-hero .p-card-body {
+    padding: 1rem;
+  }
+}

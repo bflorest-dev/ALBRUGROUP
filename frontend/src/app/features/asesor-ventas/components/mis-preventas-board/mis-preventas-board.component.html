@@ -1,0 +1,67 @@
+<p-card styleClass="mis-preventas-board">
+  <ng-template #title>
+    <span class="board-title">
+      Preventas que cerraste
+      <p-tag severity="info" [value]="facade.totalElements().toString()" />
+    </span>
+  </ng-template>
+  <ng-template #subtitle>Seguimiento de tus leads que pasaron a venta</ng-template>
+
+  <p-table
+    [value]="facade.rows()"
+    dataKey="id"
+    [loading]="facade.isLoading()"
+    [rowHover]="true"
+    [scrollable]="true"
+    scrollHeight="flex"
+    [tableStyle]="{ 'min-width': '720px' }"
+    styleClass="p-datatable-sm"
+  >
+    <ng-template #header>
+      <tr>
+        <th>Lead</th>
+        <th>Etapa actual</th>
+        <th>Última actualización</th>
+        <th class="col-actions">Acciones</th>
+      </tr>
+    </ng-template>
+
+    <ng-template #body let-row>
+      <tr>
+        <td>
+          <strong>{{ facade.leadPhone(row) }}</strong>
+        </td>
+        <td>
+          <p-tag [severity]="facade.etapaSeverity(row.etapa)" [value]="facade.etapaLabel(row.etapa)" />
+        </td>
+        <td>{{ row.updatedAt | date: 'dd/MM/yyyy hh:mm a' }}</td>
+        <td>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-eye"
+            label="Ver"
+            size="small"
+            severity="secondary"
+            (click)="facade.openDetail(row)"
+          ></button>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="4">
+          <span class="helper--centered">Todavía no has cerrado ninguna preventa.</span>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+
+  <p-paginator
+    [first]="facade.pageNumber() * facade.pageSize"
+    [rows]="facade.pageSize"
+    [totalRecords]="facade.totalElements()"
+    (onPageChange)="facade.changePage($event.page ?? 0)"
+  />
+</p-card>

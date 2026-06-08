@@ -29,6 +29,7 @@ import {
   LeadIntakeRequest,
   LeadIntakeMasivoExcelResponse,
   MasivoLeadFilters,
+  MisPreventaResponse,
   LeadSnapshotsRequest,
   LeadOfertaComercialRequest,
   LeadPage,
@@ -179,6 +180,16 @@ export class PreventaLeadService {
 
   obtenerDetalleAsesor(idLead: number): Observable<LeadDetalleResponse> {
     return this.http.get<LeadDetalleResponse>(`${this.leadUrl}/preventa/${idLead}/detalle-asesor`);
+  }
+
+  listarMisPreventas(query: PageQuery): Observable<LeadPage<MisPreventaResponse>> {
+    return this.http.get<LeadPage<MisPreventaResponse>>(`${this.leadUrl}/preventa/asesor-ventas/mis-preventas`, {
+      params: this.pageParams(query)
+    });
+  }
+
+  obtenerDetalleMiPreventa(idLead: number): Observable<LeadDetalleResponse> {
+    return this.http.get<LeadDetalleResponse>(`${this.leadUrl}/preventa/${idLead}/detalle-mi-preventa`);
   }
 
   iniciarGestionLead(idLead: number): Observable<void> {

@@ -147,6 +147,7 @@ export class PrivateLayoutComponent {
     if (session.primaryRole === 'ASESOR_VENTAS' || session.primaryRole === 'OJT') {
       return [
         { label: 'Plataforma', route: '/app/asesor-ventas/plataforma', icon: 'pi pi-desktop', exact: true },
+        { label: 'Mis Preventas', route: '/app/asesor-ventas/mis-preventas', icon: 'pi pi-check-square', exact: true },
         { label: 'Horario', route: '/app/asesor-ventas/horario', icon: 'pi pi-calendar', exact: true },
         { label: 'Metricas', route: '/app/asesor-ventas/metricas', icon: 'pi pi-chart-bar', exact: true }
       ];

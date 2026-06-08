@@ -10,6 +10,7 @@ import { AsesorVentasWorkspacePageComponent } from '../asesor-ventas/pages/aseso
 import { SupervisorVentasMonitoreoPageComponent } from '../supervisor-ventas/pages/supervisor-ventas-monitoreo-page/supervisor-ventas-monitoreo-page.component';
 import { SupervisorVentasReportePageComponent } from '../supervisor-ventas/pages/supervisor-ventas-reporte-page/supervisor-ventas-reporte-page.component';
 import { AsesorVentasHorarioPageComponent } from '../asesor-ventas/pages/asesor-ventas-horario-page/asesor-ventas-horario-page.component';
+import { AsesorVentasMisPreventasPageComponent } from '../asesor-ventas/pages/asesor-ventas-mis-preventas-page/asesor-ventas-mis-preventas-page.component';
 import { AsesorVentasMetricasPageComponent } from '../asesor-ventas/pages/asesor-ventas-metricas-page/asesor-ventas-metricas-page.component';
 import { BackofficeWorkspacePageComponent } from '../backoffice/pages/backoffice-workspace-page/backoffice-workspace-page.component';
 import { CommunityWorkspacePageComponent } from '../community/pages/community-workspace-page/community-workspace-page.component';
@@ -215,6 +216,12 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'asesor-ventas/plataforma',
     component: AsesorVentasWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: { roles: ['ASESOR_VENTAS', 'OJT'] }
+  },
+  {
+    path: 'asesor-ventas/mis-preventas',
+    component: AsesorVentasMisPreventasPageComponent,
     canActivate: [roleGuard],
     data: { roles: ['ASESOR_VENTAS', 'OJT'] }
   },

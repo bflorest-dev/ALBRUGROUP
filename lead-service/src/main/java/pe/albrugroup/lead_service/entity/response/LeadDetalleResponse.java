@@ -45,6 +45,9 @@ public class LeadDetalleResponse {
     private String nombreTitularCelularRegistro;
     private String ubigeoNacimiento;
     private String ubigeoDomicilio;
+    private String departamentoDomicilio;
+    private String provinciaDomicilio;
+    private String distritoDomicilio;
     private TipoDomicilio tipoDomicilio;
     private TipoVia tipoVia;
     private String via;

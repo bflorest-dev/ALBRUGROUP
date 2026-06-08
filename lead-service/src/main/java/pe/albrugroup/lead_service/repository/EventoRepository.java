@@ -188,6 +188,14 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
 
     boolean existsByIdLeadAndIdActorAndAccionIn(Long idLead, Long idActor, Collection<Accion> acciones);
 
+    boolean existsByIdLeadAndIdActorAndAccionAndTipificacionAndSubtipificacion(
+            Long idLead,
+            Long idActor,
+            Accion accion,
+            String tipificacion,
+            String subtipificacion
+    );
+
     @Query("""
             SELECT e.idLead, MAX(e.createdAt)
             FROM Evento e

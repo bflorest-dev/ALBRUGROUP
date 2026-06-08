@@ -223,6 +223,9 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   nombreTitularCelularRegistro?: string | null;
   ubigeoNacimiento?: string | null;
   ubigeoDomicilio?: string | null;
+  departamentoDomicilio?: string | null;
+  provinciaDomicilio?: string | null;
+  distritoDomicilio?: string | null;
   tipoDomicilio?: string | null;
   tipoVia?: string | null;
   via?: string | null;
@@ -247,6 +250,24 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   nombrePromocionInterna?: string | null;
   precioAdicionales?: number | null;
   precioFinal?: number | null;
+  adicionales?: LeadAdicionalDetalleResponse[] | null;
+}
+
+export interface LeadAdicionalDetalleResponse {
+  idAdicional?: number | null;
+  nombreAdicional?: string | null;
+  cantidad?: number | null;
+  precioUnitario?: number | null;
+  subtotal?: number | null;
+}
+
+export interface MisPreventaResponse {
+  id: number;
+  prefijo: string;
+  lead: string;
+  etapa?: Etapa | string | null;
+  estadoPostventa?: string | null;
+  updatedAt?: string | null;
 }
 
 export interface LeadRealtimeEvent {
