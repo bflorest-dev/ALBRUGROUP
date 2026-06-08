@@ -85,7 +85,7 @@ export class LeadCommercialDataTabsComponent {
   private readonly viaSelectOptionsCache = new WeakMap<readonly string[], { label: string; value: string }[]>();
 
   /**
-   * Opciones del select "Tipo de Via" con una primera entrada "Sin Via" seleccionable
+   * Opciones del select "Tipo de Via" con una primera entrada "SIN VIA" seleccionable
    * cuyo valor interno es vacio (el facade lo convierte a null al guardar). Cacheado por
    * la referencia del array de entrada para no devolver una nueva referencia en cada
    * change detection (evita el loop de CD con PrimeNG + OnPush).
@@ -93,13 +93,13 @@ export class LeadCommercialDataTabsComponent {
   protected viaSelectOptions(options: string[]): { label: string; value: string }[] {
     let cached = this.viaSelectOptionsCache.get(options);
     if (!cached) {
-      cached = [{ label: 'Sin Via', value: '' }, ...options.map((option) => ({ label: option, value: option }))];
+      cached = [{ label: 'SIN VIA', value: '' }, ...options.map((option) => ({ label: option, value: option }))];
       this.viaSelectOptionsCache.set(options, cached);
     }
     return cached;
   }
 
-  /** Al elegir "Sin Via", el nombre de via deja de tener sentido: se limpia para no enviar un dato huerfano. */
+  /** Al elegir "SIN VIA", el nombre de via deja de tener sentido: se limpia para no enviar un dato huerfano. */
   protected onTipoViaChanged(): void {
     if (this.direccionForm.get('tipoVia')?.value) {
       return;
