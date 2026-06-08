@@ -17,6 +17,8 @@ export interface LeadDiarioResponse {
 /** Modelo de vista listo para render: textos precomputados, sin lógica en el template. */
 export interface DailyLeadRowView {
   idLead: number;
+  prefijo: string | null;
+  lead: string | null;
   leadDisplay: string;
   asesor: string;
   rolLabel: string;

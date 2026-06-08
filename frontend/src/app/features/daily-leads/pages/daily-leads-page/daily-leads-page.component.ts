@@ -1,8 +1,11 @@
+import { DatePipe, UpperCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
+import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { PaginatorModule } from 'primeng/paginator';
@@ -14,10 +17,14 @@ import { DailyLeadsFacade } from '../../facades/daily-leads.facade';
   selector: 'app-daily-leads-page',
   standalone: true,
   imports: [
+    DatePipe,
+    UpperCasePipe,
     FormsModule,
     ButtonModule,
     CardModule,
+    DialogModule,
     MessageModule,
+    SkeletonModule,
     TableModule,
     TagModule,
     PaginatorModule,

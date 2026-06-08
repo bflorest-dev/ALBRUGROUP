@@ -73,6 +73,27 @@
     white-space: nowrap;
   }
 
+  &__actions-col {
+    width: 5.5rem;
+  }
+
+  &__events-title {
+    font-weight: 800;
+  }
+
+  &__events-lead {
+    color: var(--app-text-muted);
+    margin: 0 0 1rem;
+  }
+
+  &__event-comment {
+    max-width: 16rem;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   &__empty {
     padding: 2rem 1rem;
     text-align: center;
@@ -102,4 +123,14 @@
 :host ::ng-deep .daily-leads__table th {
   text-align: center;
   vertical-align: middle;
+}
+
+:host ::ng-deep .daily-leads__events-table td,
+:host ::ng-deep .daily-leads__events-table th {
+  text-align: center;
+  vertical-align: middle;
+}
+
+:host ::ng-deep .daily-leads-events-dialog {
+  width: min(56rem, calc(100vw - 1rem));
 }

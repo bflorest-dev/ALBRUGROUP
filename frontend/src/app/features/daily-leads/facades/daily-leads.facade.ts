@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import type { TipificationPaletteByCode } from '../../../shared/components/tipification-stack/tipification-stack.component';
+import { EventoResponse } from '../../../shared/models/preventa/preventa.models';
 import { formatLabel } from '../../../shared/utils/display-label';
 import { DailyLeadsService } from '../services/daily-leads.service';
 import { DailyLeadRowView, LeadDiarioResponse } from '../models/daily-lead.model';
@@ -22,8 +23,11 @@ export class DailyLeadsFacade {
   readonly totalElements = signal(0);
   readonly pageNumber = signal(0);
   readonly isLoading = signal(false);
+  readonly isLoadingEvents = signal(false);
   readonly errorMessage = signal('');
   readonly tipificationPaletteByCode = signal<TipificationPaletteByCode>({});
+  readonly eventRows = signal<EventoResponse[]>([]);
+  readonly activeHistoryLead = signal<DailyLeadRowView | null>(null);
   /** Fecha operativa seleccionada (YYYY-MM-DD). Vacío = hoy (lo resuelve el backend en America/Lima). */
   readonly fecha = signal('');
 
@@ -59,6 +63,62 @@ export class DailyLeadsFacade {
     await this.load(this.pageNumber());
   }
 
+  async openEventHistory(row: DailyLeadRowView): Promise<void> {
+    this.activeHistoryLead.set(row);
+    this.eventRows.set([]);
+    this.isLoadingEvents.set(true);
+    this.errorMessage.set('');
+    try {
+      const page = await firstValueFrom(
+        this.service.listarEventosLead(row.idLead, this.selectedHistoryDate(), {
+          pageNumber: 0,
+          pageSize: 100,
+          sortBy: 'createdAt',
+          direction: 'desc'
+        })
+      );
+      this.eventRows.set(page.content);
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar el historial de eventos.'));
+    } finally {
+      this.isLoadingEvents.set(false);
+    }
+  }
+
+  closeEventHistory(): void {
+    this.activeHistoryLead.set(null);
+    this.eventRows.set([]);
+    this.isLoadingEvents.set(false);
+  }
+
+  eventSummary(evento: EventoResponse): string {
+    const accion = (evento.accion ?? '').toUpperCase();
+    const tipificacion = evento.tipificacion?.trim() || null;
+    const subtipificacion = evento.subtipificacion?.trim() || null;
+    const tipParts = [tipificacion, subtipificacion].filter(Boolean);
+
+    if (accion === 'TIPIFICACION') {
+      return tipParts.length ? tipParts.join(' / ') : '-';
+    }
+
+    if (tipParts.length) {
+      return tipParts.join(' / ');
+    }
+
+    if (accion === 'REGISTRO' || accion === 'REGISTRO_MASIVO') {
+      return this.activeHistoryLead()?.campana ?? '-';
+    }
+
+    return '-';
+  }
+
+  display(value: unknown): string {
+    if (value === null || value === undefined || value === '') {
+      return '-';
+    }
+    return String(value);
+  }
+
   private async load(pageNumber: number): Promise<void> {
     this.isLoading.set(true);
     this.errorMessage.set('');
@@ -87,6 +147,8 @@ export class DailyLeadsFacade {
   private toRowView(item: LeadDiarioResponse): DailyLeadRowView {
     return {
       idLead: item.idLead,
+      prefijo: item.prefijo,
+      lead: item.lead,
       leadDisplay: this.formatLead(item.prefijo, item.lead),
       asesor: item.nombreActor?.trim() || '-',
       rolLabel: formatLabel(item.rolActor),
@@ -147,6 +209,10 @@ export class DailyLeadsFacade {
       return 0;
     }
     return (orden - 1) % totalPalettes;
+  }
+
+  private selectedHistoryDate(): string {
+    return this.fecha() || this.localToday();
   }
 
   private localToday(): string {
