@@ -24,7 +24,19 @@
           (click)="reload.emit()"
         ></button>
         @if (allowExpenseRegistration()) {
-          <button pButton type="button" icon="pi pi-plus" label="Agregar gasto" (click)="openExpenseDialog.emit()"></button>
+          <div class="expense-action-slot">
+            <button
+              pButton
+              type="button"
+              icon="pi pi-plus"
+              label="Agregar gasto"
+              [disabled]="!expenseRegistrationEnabled()"
+              (click)="openExpenseDialog.emit()"
+            ></button>
+            @if (!expenseRegistrationEnabled()) {
+              <small>{{ expenseRegistrationBlockedText() }}</small>
+            }
+          </div>
         }
       </div>
     </div>
@@ -163,11 +175,11 @@
     [modal]="true"
     [draggable]="false"
     [resizable]="false"
-    styleClass="compact-dialog"
+    styleClass="compact-dialog expense-dialog"
     (onHide)="closeExpenseDialog.emit()"
   >
-    <form class="form-grid" [formGroup]="expenseForm()" (ngSubmit)="submitExpense.emit()">
-      <label class="wide">
+    <form class="form-grid expense-dialog-form" [formGroup]="expenseForm()" (ngSubmit)="submitExpense.emit()">
+      <label class="expense-field wide">
         <span>Campana</span>
         <p-select
           formControlName="idCampana"
@@ -178,18 +190,37 @@
           appendTo="body"
         />
       </label>
-      <label>
+      <label class="expense-field">
         <span>Leads reportados</span>
-        <input pInputText type="number" min="0" formControlName="leads" />
+        <input
+          pInputText
+          type="text"
+          inputmode="numeric"
+          formControlName="leads"
+          placeholder="Ej. 120"
+          (keydown)="allowIntegerInput($event)"
+          (input)="sanitizeIntegerControl('leads')"
+        />
       </label>
-      <label>
+      <label class="expense-field">
         <span>Costo acumulado</span>
         <div class="input-prefix">
           <span>S/</span>
-          <input pInputText type="number" min="0" step="0.01" formControlName="costoTotal" />
+          <input
+            pInputText
+            type="text"
+            inputmode="decimal"
+            formControlName="costoTotal"
+            placeholder="Ej. 56,3 o 78.4"
+            (keydown)="allowDecimalInput($event)"
+            (input)="sanitizeDecimalControl('costoTotal')"
+          />
         </div>
       </label>
-      <div class="form-actions wide">
+      @if (expenseErrorMessage()) {
+        <p-message class="wide" severity="error" [text]="expenseErrorMessage() ?? ''" />
+      }
+      <div class="form-actions expense-dialog-actions wide">
         <button pButton type="button" label="Cancelar" severity="secondary" (click)="closeExpenseDialog.emit()"></button>
         <button pButton type="submit" icon="pi pi-save" label="Guardar gasto" [loading]="isSavingExpense()"></button>
       </div>

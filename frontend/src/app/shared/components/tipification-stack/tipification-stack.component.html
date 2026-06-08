@@ -1,0 +1,9 @@
+@if (hasAnyValue()) {
+  <div class="tipification-stack">
+    <p-tag [value]="tipificacionLabel()" [styleClass]="tipificacionClass()" />
+    <span class="tipification-stack__line"></span>
+    <p-tag [value]="subtipificacionLabel()" [styleClass]="subtipificacionClass()" />
+  </div>
+} @else {
+  <span class="tipification-stack__empty">{{ emptyText() }}</span>
+}

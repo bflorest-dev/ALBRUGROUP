@@ -25,6 +25,21 @@
   flex-wrap: wrap;
 }
 
+.expense-action-slot {
+  align-items: flex-end;
+  display: grid;
+  gap: 0.25rem;
+  min-width: 9.5rem;
+}
+
+.expense-action-slot small {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.25;
+  max-width: 11rem;
+}
+
 h2,
 p {
   margin: 0;
@@ -142,6 +157,32 @@ p {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.expense-dialog-form {
+  gap: 1rem 1.1rem;
+  min-width: 0;
+  padding-top: 0.15rem;
+}
+
+.expense-field {
+  color: #475569;
+  display: grid;
+  font-size: 0.78rem;
+  font-weight: 800;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.expense-field > span {
+  line-height: 1.2;
+}
+
+.expense-dialog-actions {
+  border-top: 1px solid #e2e8f0;
+  justify-content: flex-end;
+  margin-top: 0.2rem;
+  padding-top: 1rem;
+}
+
 .wide {
   grid-column: 1 / -1;
 }
@@ -160,6 +201,27 @@ p {
 
 .input-prefix input {
   border: 0;
+}
+
+.expense-field .input-prefix {
+  display: grid;
+  gap: 0;
+  grid-template-columns: max-content minmax(0, 1fr);
+  min-height: 2.5rem;
+  overflow: hidden;
+  width: 100%;
+}
+
+.expense-field .input-prefix span {
+  align-items: center;
+  display: inline-flex;
+  min-width: 2.6rem;
+  padding: 0 0.75rem;
+}
+
+.expense-field .input-prefix input {
+  min-width: 0;
+  width: 100%;
 }
 
 :host ::ng-deep {
@@ -228,6 +290,14 @@ p {
       overflow: visible;
     }
   }
+
+  .expense-dialog {
+    width: min(32rem, 94vw);
+
+    .p-dialog-content {
+      padding-top: 0.75rem;
+    }
+  }
 }
 
 @media (max-width: 1180px) {
@@ -252,6 +322,11 @@ p {
   }
 
   .finance-toolbar__actions label {
+    flex: 1 1 11rem;
+  }
+
+  .expense-action-slot {
+    align-items: stretch;
     flex: 1 1 11rem;
   }
 
@@ -280,6 +355,14 @@ p {
 
   .finance-toolbar__actions label {
     min-width: 0;
+  }
+
+  .expense-action-slot {
+    min-width: 0;
+  }
+
+  .expense-dialog-actions {
+    align-items: stretch;
   }
 
   .finance-kpi {

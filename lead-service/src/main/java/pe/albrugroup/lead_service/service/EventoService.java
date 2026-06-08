@@ -82,13 +82,7 @@ public class EventoService {
         var pageable = paginationService.toPageable(pageRequest, EVENTO_SORT_FIELDS);
         var eventos = accion == null
                 ? listarEventosLeadPorRango(idLead, fechaDesdeInstant, fechaHastaInstant, pageable)
-                : eventoRepository.findByIdLeadAndAccionAndRango(
-                        idLead,
-                        accion,
-                        fechaDesdeInstant,
-                        fechaHastaInstant,
-                        pageable
-                );
+                : listarEventosLeadPorAccionYRango(idLead, accion, fechaDesdeInstant, fechaHastaInstant, pageable);
         var response = eventos.map(eventoMapper::toResponse);
         return PageResponse.from(response);
     }
@@ -177,6 +171,41 @@ public class EventoService {
             );
         }
         return eventoRepository.findByIdLeadOrderByCreatedAtDesc(idLead, pageable);
+    }
+
+    private org.springframework.data.domain.Page<Evento> listarEventosLeadPorAccionYRango(
+            Long idLead,
+            Accion accion,
+            Instant fechaDesde,
+            Instant fechaHasta,
+            org.springframework.data.domain.Pageable pageable
+    ) {
+        if (fechaDesde != null && fechaHasta != null) {
+            return eventoRepository.findByIdLeadAndAccionAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
+                    idLead,
+                    accion,
+                    fechaDesde,
+                    fechaHasta,
+                    pageable
+            );
+        }
+        if (fechaDesde != null) {
+            return eventoRepository.findByIdLeadAndAccionAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(
+                    idLead,
+                    accion,
+                    fechaDesde,
+                    pageable
+            );
+        }
+        if (fechaHasta != null) {
+            return eventoRepository.findByIdLeadAndAccionAndCreatedAtLessThanOrderByCreatedAtDesc(
+                    idLead,
+                    accion,
+                    fechaHasta,
+                    pageable
+            );
+        }
+        return eventoRepository.findByIdLeadAndAccionOrderByCreatedAtDesc(idLead, accion, pageable);
     }
 
     private org.springframework.data.domain.Page<Evento> listarEventosActorPorRango(

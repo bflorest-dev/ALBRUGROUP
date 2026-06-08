@@ -7,6 +7,7 @@ import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { PaginatorModule } from 'primeng/paginator';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
+import { TipificationStackComponent } from '../../../../shared/components/tipification-stack/tipification-stack.component';
 import { DailyLeadsFacade } from '../../facades/daily-leads.facade';
 
 @Component({
@@ -20,7 +21,8 @@ import { DailyLeadsFacade } from '../../facades/daily-leads.facade';
     TableModule,
     TagModule,
     PaginatorModule,
-    DateFieldComponent
+    DateFieldComponent,
+    TipificationStackComponent
   ],
   providers: [DailyLeadsFacade],
   templateUrl: './daily-leads-page.component.html',

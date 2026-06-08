@@ -16,6 +16,7 @@
           label="Actualizar datos"
           severity="secondary"
           [loading]="facade.isLoading()"
+          [disabled]="!facade.canDisplayOperationalData()"
           (click)="facade.loadAll()"
         ></button>
       </div>
@@ -58,6 +59,9 @@
 
   @if (pageMode() === 'mantenimiento') {
   <p-card styleClass="community-workspace">
+    @if (!facade.canDisplayOperationalData()) {
+      <p-message severity="info" text="Marca tu asistencia para ver catalogos y usar acciones de mantenimiento." />
+    } @else {
     <p-tabs [value]="facade.section()" (valueChange)="facade.setSection($any($event))">
       <p-tablist>
         @for (section of sections; track section.id) {
@@ -672,6 +676,7 @@
 
       </p-tabpanels>
     </p-tabs>
+    }
   </p-card>
   } @else if (pageMode() === 'finanzas') {
     <app-campaign-finance-dashboard-panel
@@ -688,8 +693,10 @@
       [selectedCampaign]="facade.selectedExpenseCampaign()"
       [snapshotsVisible]="facade.expenseSnapshotsOpen()"
       [allowExpenseRegistration]="true"
+      [expenseRegistrationEnabled]="facade.canMutateOperationalData()"
       [expenseDialogVisible]="facade.expenseDialogOpen()"
       [expenseForm]="facade.expenseForm"
+      [expenseErrorMessage]="facade.errorMessage()"
       [campaignOptions]="facade.campanasActivas()"
       [isSavingExpense]="facade.isSaving()"
       (financeDateChanged)="facade.onFinanceDateChanged($event)"

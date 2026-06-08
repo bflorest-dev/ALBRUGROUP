@@ -3,7 +3,7 @@
     <div class="daily-leads__header">
       <div class="daily-leads__title">
         <div class="daily-leads__title-line">
-          <h2>Leads del día</h2>
+          <h2>Leads del dia</h2>
           <p-tag
             severity="info"
             icon="pi pi-users"
@@ -52,21 +52,26 @@
       [loading]="facade.isLoading()"
       [rowHover]="true"
       [scrollable]="true"
-      [tableStyle]="{ 'min-width': '720px' }"
+      [tableStyle]="{ 'min-width': '1180px' }"
       styleClass="p-datatable-sm daily-leads__table"
     >
       <ng-template #header>
         <tr>
+          <th>Hora</th>
+          <th>Accion</th>
           <th>Lead</th>
           <th>Asesor</th>
           <th>Rol</th>
-          <th>Acción</th>
-          <th>Fecha y hora</th>
+          <th>Campana</th>
+          <th>Primera tipificacion</th>
+          <th>Ultima tipificacion</th>
         </tr>
       </ng-template>
 
       <ng-template #body let-row>
         <tr>
+          <td>{{ row.hora }}</td>
+          <td><p-tag severity="success" [value]="row.accionLabel" /></td>
           <td>
             <span class="daily-leads__lead">
               <i class="pi pi-phone"></i>
@@ -75,20 +80,33 @@
           </td>
           <td>{{ row.asesor }}</td>
           <td><p-tag severity="secondary" [value]="row.rolLabel" /></td>
-          <td><p-tag severity="success" [value]="row.accionLabel" /></td>
-          <td>{{ row.fechaHora }}</td>
+          <td class="daily-leads__campaign">{{ row.campana }}</td>
+          <td>
+            <app-tipification-stack
+              [codigoTipificacion]="row.primeraCodigoTipificacion"
+              [codigoSubtipificacion]="row.primeraCodigoSubtipificacion"
+              [paletteByCode]="facade.tipificationPaletteByCode()"
+            />
+          </td>
+          <td>
+            <app-tipification-stack
+              [codigoTipificacion]="row.codigoTipificacion"
+              [codigoSubtipificacion]="row.codigoSubtipificacion"
+              [paletteByCode]="facade.tipificationPaletteByCode()"
+            />
+          </td>
         </tr>
       </ng-template>
 
       <ng-template #emptymessage>
         <tr>
-          <td colspan="5">
+          <td colspan="8">
             @if (facade.isLoading()) {
-              <div class="daily-leads__empty">Cargando…</div>
+              <div class="daily-leads__empty">Cargando...</div>
             } @else {
               <div class="daily-leads__empty">
                 @if (facade.isToday()) {
-                  Aún no se han ingresado leads hoy.
+                  Aun no se han ingresado leads hoy.
                 } @else {
                   No se ingresaron leads en la fecha seleccionada.
                 }

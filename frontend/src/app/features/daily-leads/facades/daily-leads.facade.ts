@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import type { TipificationPaletteByCode } from '../../../shared/components/tipification-stack/tipification-stack.component';
 import { formatLabel } from '../../../shared/utils/display-label';
 import { DailyLeadsService } from '../services/daily-leads.service';
 import { DailyLeadRowView, LeadDiarioResponse } from '../models/daily-lead.model';
@@ -9,11 +10,8 @@ import { DailyLeadRowView, LeadDiarioResponse } from '../models/daily-lead.model
 export class DailyLeadsFacade {
   private readonly service = inject(DailyLeadsService);
 
-  private readonly dateTimeFormatter = new Intl.DateTimeFormat('es-PE', {
+  private readonly timeFormatter = new Intl.DateTimeFormat('es-PE', {
     timeZone: 'America/Lima',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
   });
@@ -25,6 +23,7 @@ export class DailyLeadsFacade {
   readonly pageNumber = signal(0);
   readonly isLoading = signal(false);
   readonly errorMessage = signal('');
+  readonly tipificationPaletteByCode = signal<TipificationPaletteByCode>({});
   /** Fecha operativa seleccionada (YYYY-MM-DD). Vacío = hoy (lo resuelve el backend en America/Lima). */
   readonly fecha = signal('');
 
@@ -33,7 +32,7 @@ export class DailyLeadsFacade {
   readonly maxDate = this.localToday();
 
   async initialize(): Promise<void> {
-    await this.load(0);
+    await Promise.all([this.loadTipificationPalette(), this.load(0)]);
   }
 
   async setFecha(value: string): Promise<void> {
@@ -92,7 +91,12 @@ export class DailyLeadsFacade {
       asesor: item.nombreActor?.trim() || '-',
       rolLabel: formatLabel(item.rolActor),
       accionLabel: formatLabel(item.accion),
-      fechaHora: this.formatDateTime(item.createdAt)
+      hora: this.formatTime(item.createdAt),
+      campana: item.nombreCampana?.trim() || '-',
+      primeraCodigoTipificacion: item.primeraCodigoTipificacion,
+      primeraCodigoSubtipificacion: item.primeraCodigoSubtipificacion,
+      codigoTipificacion: item.codigoTipificacion,
+      codigoSubtipificacion: item.codigoSubtipificacion
     };
   }
 
@@ -105,7 +109,7 @@ export class DailyLeadsFacade {
     return codigo ? `${codigo} ${numero}` : numero;
   }
 
-  private formatDateTime(value: string): string {
+  private formatTime(value: string): string {
     if (!value) {
       return '-';
     }
@@ -113,7 +117,36 @@ export class DailyLeadsFacade {
     if (Number.isNaN(date.getTime())) {
       return '-';
     }
-    return this.dateTimeFormatter.format(date);
+    return this.timeFormatter.format(date);
+  }
+
+  private async loadTipificationPalette(): Promise<void> {
+    try {
+      const catalogs = await Promise.all([
+        firstValueFrom(this.service.getCatalogoTipificaciones('PREVENTA')),
+        firstValueFrom(this.service.getCatalogoTipificaciones('VENTA')),
+        firstValueFrom(this.service.getCatalogoTipificaciones('POSTVENTA'))
+      ]);
+      const paletteByCode: TipificationPaletteByCode = {};
+
+      for (const catalog of catalogs) {
+        for (const tipificacion of catalog.tipificaciones ?? []) {
+          paletteByCode[tipificacion.codigo.toUpperCase()] = this.tipificacionPaletteIndex(tipificacion.orden);
+        }
+      }
+
+      this.tipificationPaletteByCode.set(paletteByCode);
+    } catch {
+      this.tipificationPaletteByCode.set({});
+    }
+  }
+
+  private tipificacionPaletteIndex(orden: number): number {
+    const totalPalettes = 8;
+    if (!Number.isFinite(orden) || orden <= 0) {
+      return 0;
+    }
+    return (orden - 1) % totalPalettes;
   }
 
   private localToday(): string {

@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_CONSTANTS } from '../../../core/constants/api.constants';
 import { PageResponse } from '../../../shared/models/common/page-response';
+import { CatalogoResponse } from '../../../shared/models/preventa/preventa.models';
 import { LeadDiarioResponse } from '../models/daily-lead.model';
 
 export interface DailyLeadsQuery {
@@ -30,5 +31,9 @@ export class DailyLeadsService {
     return this.http.get<PageResponse<LeadDiarioResponse>>(`${this.leadUrl}/eventos/registros-diarios`, {
       params
     });
+  }
+
+  getCatalogoTipificaciones(etapa: string): Observable<CatalogoResponse> {
+    return this.http.get<CatalogoResponse>(`${this.leadUrl}/tipificaciones/${etapa}/catalogo`);
   }
 }

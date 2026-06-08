@@ -7,6 +7,11 @@ export interface LeadDiarioResponse {
   rolActor: string | null;
   accion: string;
   createdAt: string;
+  nombreCampana?: string | null;
+  primeraCodigoTipificacion?: string | null;
+  primeraCodigoSubtipificacion?: string | null;
+  codigoTipificacion?: string | null;
+  codigoSubtipificacion?: string | null;
 }
 
 /** Modelo de vista listo para render: textos precomputados, sin lógica en el template. */
@@ -16,5 +21,10 @@ export interface DailyLeadRowView {
   asesor: string;
   rolLabel: string;
   accionLabel: string;
-  fechaHora: string;
+  hora: string;
+  campana: string;
+  primeraCodigoTipificacion?: string | null;
+  primeraCodigoSubtipificacion?: string | null;
+  codigoTipificacion?: string | null;
+  codigoSubtipificacion?: string | null;
 }

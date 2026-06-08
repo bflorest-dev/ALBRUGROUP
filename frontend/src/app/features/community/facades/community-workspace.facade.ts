@@ -1,4 +1,4 @@
-﻿import { Injectable, computed, inject, signal } from '@angular/core';
+﻿import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, Validators } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -34,6 +34,7 @@ import {
   toFinanceRow,
   toSnapshotFinanceRows
 } from '../../../shared/utils/campaign-finance.utils';
+import { OperationalGateService } from '../../../core/services/operational-gate.service';
 
 export type CommunitySection = 'proveedores' | 'cuentas' | 'campanas' | 'zonas' | 'planes' | 'promociones';
 export type CommunityPageMode = 'mantenimiento' | 'metricas' | 'finanzas';
@@ -78,9 +79,13 @@ type PlanCatalogProviderFilter = ProveedorResponse & {
 export class CommunityWorkspaceFacade {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly leadService = inject(CommunityLeadService);
+  private readonly operationalGateService = inject(OperationalGateService);
+  private readonly operationalGate = this.operationalGateService.createGate('community-workspace');
   private readonly ubigeoLabels = new Map<string, string>();
   private ubigeoDirectoryLoaded = false;
+  private catalogLoadInFlight = false;
 
+  readonly currentMode = signal<CommunityPageMode>('mantenimiento');
   readonly section = signal<CommunitySection>('proveedores');
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
@@ -89,6 +94,8 @@ export class CommunityWorkspaceFacade {
   readonly isLoadingFinanceSnapshots = signal(false);
   readonly successMessage = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
+  readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
+  readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
 
   readonly proveedores = signal<ProveedorResponse[]>([]);
   readonly proveedoresActivos = computed(() => this.proveedores().filter((proveedor) => proveedor.activo !== false));
@@ -247,8 +254,8 @@ export class CommunityWorkspaceFacade {
 
   readonly expenseForm = this.fb.group({
     idCampana: [0, [Validators.required, Validators.min(1)]],
-    leads: [0, [Validators.required, Validators.min(0)]],
-    costoTotal: [0, [Validators.required, Validators.min(0)]]
+    leads: ['', [Validators.required, Validators.pattern(/^\d+$/)]],
+    costoTotal: ['', [Validators.required, Validators.pattern(/^\d+(?:[,.]\d+)?$/)]]
   });
 
   readonly campaignForm = this.fb.group({
@@ -342,10 +349,36 @@ export class CommunityWorkspaceFacade {
     geoId: [0, [Validators.required, Validators.min(1)]]
   });
 
+  constructor() {
+    effect(() => {
+      this.operationalGateService.currentStatus();
+      const mode = this.currentMode();
+
+      if (mode !== 'mantenimiento' && mode !== 'finanzas') {
+        return;
+      }
+
+      if (!this.operationalGate.canActivateOperationalData() || this.operationalGate.hasActivatedOperationalData()) {
+        return;
+      }
+
+      void this.loadAll();
+    });
+  }
+
   async initialize(mode: CommunityPageMode = 'mantenimiento'): Promise<void> {
-    await this.loadAll();
+    this.currentMode.set(mode);
+
     if (mode === 'finanzas') {
+      if (this.canDisplayOperationalData()) {
+        void this.loadAll();
+      }
       await this.loadFinanceDashboard();
+      return;
+    }
+
+    if (mode === 'mantenimiento') {
+      await this.loadAll();
     }
   }
 
@@ -355,6 +388,11 @@ export class CommunityWorkspaceFacade {
   }
 
   async loadAll(): Promise<void> {
+    if (!this.canDisplayOperationalData() || this.catalogLoadInFlight) {
+      return;
+    }
+
+    this.catalogLoadInFlight = true;
     this.isLoading.set(true);
     this.clearMessages();
     try {
@@ -379,9 +417,11 @@ export class CommunityWorkspaceFacade {
       if (failed.length) {
         this.errorMessage.set(`Algunos catalogos no cargaron: ${failed.join(', ')}.`);
       }
+      this.operationalGate.markActivated();
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar la informacion de COMMUNITY.'));
     } finally {
+      this.catalogLoadInFlight = false;
       this.isLoading.set(false);
     }
   }
@@ -404,7 +444,11 @@ export class CommunityWorkspaceFacade {
   }
 
   openExpenseDialog(): void {
-    this.expenseForm.reset({ idCampana: 0, leads: 0, costoTotal: 0 });
+    if (!this.ensureCanMutate()) {
+      return;
+    }
+
+    this.expenseForm.reset({ idCampana: 0, leads: '', costoTotal: '' });
     this.expenseDialogOpen.set(true);
     this.clearMessages();
   }
@@ -420,11 +464,19 @@ export class CommunityWorkspaceFacade {
     }
 
     const raw = this.expenseForm.getRawValue();
+    const leads = this.parseIntegerInput(raw.leads);
+    const costoTotal = this.parseDecimalInput(raw.costoTotal);
+
+    if (leads === null || costoTotal === null) {
+      this.errorMessage.set('Ingresa leads y costo acumulado con un formato valido.');
+      return;
+    }
+
     await this.saveAction(
       () =>
         this.leadService.registrarGastoCampana(raw.idCampana, {
-          leads: raw.leads,
-          costoTotal: raw.costoTotal
+          leads,
+          costoTotal
         }),
       'Gasto de campaña registrado.',
       async () => {
@@ -531,6 +583,10 @@ export class CommunityWorkspaceFacade {
   }
 
   openEditAccountDialog(cuenta: CuentaPublicitariaResponse): void {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
+
     this.selectedAccountId.set(cuenta.id);
     this.editAccountForm.reset({ nombreCuenta: cuenta.nombreCuenta as string });
     this.editAccountDialogOpen.set(true);
@@ -566,6 +622,10 @@ export class CommunityWorkspaceFacade {
   }
 
   openWhatsappDialog(campana: CampanaResponse): void {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
+
     this.selectedCampaign.set(campana);
     this.campaignWhatsappForm.reset({
       prefijo: campana.prefijo ?? '+51',
@@ -694,6 +754,10 @@ export class CommunityWorkspaceFacade {
   }
 
   openAdditionalDialog(): void {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
+
     this.additionalForm.reset({ idProveedor: 0, nombre: '', precioUnitario: 0 });
     this.additionalDialogOpen.set(true);
     this.clearMessages();
@@ -704,6 +768,10 @@ export class CommunityWorkspaceFacade {
   }
 
   openCreatePlanDialog(): void {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
+
     this.createPlanForm.reset({
       idProveedor: 0,
       nombre: '',
@@ -736,6 +804,10 @@ export class CommunityWorkspaceFacade {
   }
 
   openEditPlanDialog(plan: PlanResponse): void {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
+
     this.activePlanId.set(plan.id);
     this.activePlanProviderName.set(plan.nombreProveedor ?? '');
     this.selectedPlanProviderId.set(plan.idProveedor ?? 0);
@@ -914,6 +986,10 @@ export class CommunityWorkspaceFacade {
   }
 
   async filterPromotions(): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
+
     const raw = this.promotionFiltersForm.getRawValue();
     this.clearMessages();
     try {
@@ -938,6 +1014,10 @@ export class CommunityWorkspaceFacade {
   }
 
   async openCreateZone(): Promise<void> {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
+
     this.zoneDialogMode.set('create');
     this.activeZoneId.set(null);
     this.zoneForm.reset({ nombre: '' });
@@ -948,6 +1028,10 @@ export class CommunityWorkspaceFacade {
   }
 
   async openEditZone(zona: ZonaResponse): Promise<void> {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
+
     this.zoneDialogMode.set('edit');
     this.activeZoneId.set(zona.id);
     this.zoneForm.reset({ nombre: zona.nombre ?? '' });
@@ -1406,11 +1490,34 @@ export class CommunityWorkspaceFacade {
     return String(left ?? '').localeCompare(String(right ?? ''), 'es', { sensitivity: 'base' });
   }
 
+  private parseIntegerInput(value: string): number | null {
+    if (!/^\d+$/.test(value)) {
+      return null;
+    }
+
+    const parsed = Number(value);
+    return Number.isSafeInteger(parsed) ? parsed : null;
+  }
+
+  private parseDecimalInput(value: string): number | null {
+    const normalized = value.replace(',', '.');
+    if (!/^\d+(?:\.\d+)?$/.test(normalized)) {
+      return null;
+    }
+
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
   private async saveAction<T>(
     action: () => import('rxjs').Observable<T>,
     successMessage: string,
     afterSuccess?: () => Promise<void>
   ): Promise<void> {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
+
     this.isSaving.set(true);
     this.clearMessages();
     try {
@@ -1429,6 +1536,15 @@ export class CommunityWorkspaceFacade {
   private clearMessages(): void {
     this.successMessage.set(null);
     this.errorMessage.set(null);
+  }
+
+  private ensureCanMutate(): boolean {
+    if (this.canMutateOperationalData()) {
+      return true;
+    }
+
+    this.errorMessage.set('Marca tu asistencia para continuar.');
+    return false;
   }
 
   private getErrorMessage(error: unknown, fallback: string): string {

@@ -1,0 +1,128 @@
+:host {
+  display: inline-block;
+  min-width: 0;
+}
+
+.tipification-stack {
+  align-items: flex-start;
+  display: inline-grid;
+  gap: 0.18rem;
+  width: 10.85rem;
+}
+
+.tipification-stack__line {
+  background: var(--app-border-soft);
+  height: 1px;
+  width: 100%;
+}
+
+.tipification-stack__empty {
+  color: var(--app-text-muted);
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  max-width: 10.85rem;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:host ::ng-deep .tipification-stack__tag {
+  background: var(--tip-bg, #64748b);
+  border-radius: 0.35rem;
+  color: var(--tip-fg, #f8fafc);
+  font-size: 0.68rem;
+  font-weight: 800;
+  justify-content: center;
+  min-height: 1.5rem;
+  text-align: center;
+  white-space: nowrap;
+  width: 10.85rem;
+}
+
+:host ::ng-deep .tipification-stack__tag--subtipificacion {
+  font-weight: 700;
+  opacity: 0.88;
+}
+
+:host ::ng-deep .tipification-stack__tag--neutral,
+:host ::ng-deep .tipification-stack__tag--palette-0 {
+  --tip-bg: #475569;
+  --tip-fg: #f8fafc;
+}
+
+:host ::ng-deep .tipification-stack__tag--palette-1 {
+  --tip-bg: #2563eb;
+  --tip-fg: #eff6ff;
+}
+
+:host ::ng-deep .tipification-stack__tag--palette-2 {
+  --tip-bg: #7c3aed;
+  --tip-fg: #f5f3ff;
+}
+
+:host ::ng-deep .tipification-stack__tag--palette-3 {
+  --tip-bg: #0891b2;
+  --tip-fg: #ecfeff;
+}
+
+:host ::ng-deep .tipification-stack__tag--palette-4 {
+  --tip-bg: #b45309;
+  --tip-fg: #fffbeb;
+}
+
+:host ::ng-deep .tipification-stack__tag--palette-5 {
+  --tip-bg: #16a34a;
+  --tip-fg: #f0fdf4;
+}
+
+:host ::ng-deep .tipification-stack__tag--palette-6 {
+  --tip-bg: #db2777;
+  --tip-fg: #fdf2f8;
+}
+
+:host ::ng-deep .tipification-stack__tag--palette-7 {
+  --tip-bg: #dc2626;
+  --tip-fg: #fef2f2;
+}
+
+:host ::ng-deep .tipification-stack__tag--subtipificacion.tipification-stack__tag--neutral,
+:host ::ng-deep .tipification-stack__tag--subtipificacion.tipification-stack__tag--palette-0 {
+  --tip-bg: #64748b;
+}
+
+:host ::ng-deep .tipification-stack__tag--subtipificacion.tipification-stack__tag--palette-1 {
+  --tip-bg: #60a5fa;
+  --tip-fg: #0f172a;
+}
+
+:host ::ng-deep .tipification-stack__tag--subtipificacion.tipification-stack__tag--palette-2 {
+  --tip-bg: #a78bfa;
+  --tip-fg: #1e1b4b;
+}
+
+:host ::ng-deep .tipification-stack__tag--subtipificacion.tipification-stack__tag--palette-3 {
+  --tip-bg: #67e8f9;
+  --tip-fg: #164e63;
+}
+
+:host ::ng-deep .tipification-stack__tag--subtipificacion.tipification-stack__tag--palette-4 {
+  --tip-bg: #fbbf24;
+  --tip-fg: #451a03;
+}
+
+:host ::ng-deep .tipification-stack__tag--subtipificacion.tipification-stack__tag--palette-5 {
+  --tip-bg: #86efac;
+  --tip-fg: #14532d;
+}
+
+:host ::ng-deep .tipification-stack__tag--subtipificacion.tipification-stack__tag--palette-6 {
+  --tip-bg: #f9a8d4;
+  --tip-fg: #831843;
+}
+
+:host ::ng-deep .tipification-stack__tag--subtipificacion.tipification-stack__tag--palette-7 {
+  --tip-bg: #fca5a5;
+  --tip-fg: #7f1d1d;
+}

@@ -57,11 +57,20 @@
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
+    min-width: 0;
 
     i {
       color: var(--p-primary-color, #4f46e5);
       font-size: 0.85rem;
     }
+  }
+
+  &__campaign {
+    max-width: 13rem;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__empty {
@@ -87,4 +96,10 @@
       min-width: 0;
     }
   }
+}
+
+:host ::ng-deep .daily-leads__table td,
+:host ::ng-deep .daily-leads__table th {
+  text-align: center;
+  vertical-align: middle;
 }

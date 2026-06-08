@@ -42,8 +42,8 @@ export class EmployeeAccessPanelComponent {
   @Input({ required: true }) scheduleByEmployeeId: Record<number, HorarioResponse | null> = {};
   @Input({ required: true }) scheduleErrorByEmployeeId: Record<number, string> = {};
   @Input({ required: true }) scheduleLoadingByEmployeeId: Record<number, boolean> = {};
-  @Input() employeeStateById: Record<number, EstadoMonitorResponse> = {};
-  @Input() connectedUserById: Record<number, ConnectedUserResponse> = {};
+  readonly employeeStateById = input<Record<number, EstadoMonitorResponse>>({});
+  readonly connectedUserById = input<Record<number, ConnectedUserResponse>>({});
   @Input() isLoadingStates = false;
 
   @Input() isDismissingEmployeeId: number | null = null;
@@ -72,7 +72,9 @@ export class EmployeeAccessPanelComponent {
     const groups = role
       ? this.activeGroups().filter((group) => group.role === role)
       : this.activeGroups().filter((group) => group.role !== 'OJT');
-    return groups.flatMap((group) => group.employees.map((employee) => ({ ...employee, role: group.role })));
+    return groups
+      .flatMap((group) => group.employees.map((employee) => ({ ...employee, role: group.role })))
+      .sort((left, right) => this.compareEmployeeRows(left, right));
   });
 
   protected openDetail(employee: EmployeeRow): void {
@@ -167,15 +169,15 @@ export class EmployeeAccessPanelComponent {
   }
 
   protected getAttendanceState(empleadoId: number): string | null {
-    return this.employeeStateById[empleadoId]?.estadoActual ?? null;
+    return this.employeeStateById()[empleadoId]?.estadoActual ?? null;
   }
 
   protected getDisponibilidad(empleadoId: number): string | null {
-    return this.connectedUserById[empleadoId]?.disponibilidad ?? null;
+    return this.connectedUserById()[empleadoId]?.disponibilidad ?? null;
   }
 
   protected dotClass(empleadoId: number): string {
-    return this.connectedUserById[empleadoId] ? 'employee-dot dot--online' : 'employee-dot dot--offline';
+    return this.connectedUserById()[empleadoId] ? 'employee-dot dot--online' : 'employee-dot dot--offline';
   }
 
   protected stateSeverity(value: string | null | undefined): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
@@ -207,6 +209,41 @@ export class EmployeeAccessPanelComponent {
     const period = hours >= 12 ? 'PM' : 'AM';
     const normalizedHours = hours % 12 || 12;
     return `${normalizedHours}:${String(minutes).padStart(2, '0')} ${period}`;
+  }
+
+  private compareEmployeeRows(left: EmployeeRow, right: EmployeeRow): number {
+    const priorityDiff = this.getOperationalPriority(left.idEmpleado) - this.getOperationalPriority(right.idEmpleado);
+    if (priorityDiff !== 0) {
+      return priorityDiff;
+    }
+
+    const roleDiff = left.role.localeCompare(right.role);
+    if (roleDiff !== 0) {
+      return roleDiff;
+    }
+
+    return this.employeeFullName(left).localeCompare(this.employeeFullName(right));
+  }
+
+  private getOperationalPriority(empleadoId: number): number {
+    const attendanceState = this.getAttendanceState(empleadoId)?.toUpperCase();
+    const connectedUser = this.connectedUserById()[empleadoId];
+    const presenceStatus = connectedUser?.status?.toUpperCase() ?? (connectedUser ? 'ONLINE' : '');
+    const disponibilidad = connectedUser?.disponibilidad?.toUpperCase();
+
+    if (presenceStatus === 'ONLINE' && disponibilidad === 'DISPONIBLE') {
+      return 0;
+    }
+
+    if (attendanceState === 'ONLINE') {
+      return 1;
+    }
+
+    return 2;
+  }
+
+  private employeeFullName(employee: EmpleadoRolResponse): string {
+    return `${employee.nombres} ${employee.apellidos}`;
   }
 
   private shortDay(value: string): string {

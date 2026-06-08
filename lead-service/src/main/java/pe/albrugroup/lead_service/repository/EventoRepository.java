@@ -46,19 +46,28 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             Instant fechaHasta,
             Pageable pageable
     );
-    @Query("""
-            SELECT e
-            FROM Evento e
-            WHERE e.idLead = :idLead
-              AND e.accion = :accion
-              AND (:fechaDesde IS NULL OR e.createdAt >= :fechaDesde)
-              AND (:fechaHasta IS NULL OR e.createdAt < :fechaHasta)
-            """)
-    Page<Evento> findByIdLeadAndAccionAndRango(
-            @Param("idLead") Long idLead,
-            @Param("accion") Accion accion,
-            @Param("fechaDesde") Instant fechaDesde,
-            @Param("fechaHasta") Instant fechaHasta,
+    Page<Evento> findByIdLeadAndAccionOrderByCreatedAtDesc(
+            Long idLead,
+            Accion accion,
+            Pageable pageable
+    );
+    Page<Evento> findByIdLeadAndAccionAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
+            Long idLead,
+            Accion accion,
+            Instant fechaDesde,
+            Instant fechaHasta,
+            Pageable pageable
+    );
+    Page<Evento> findByIdLeadAndAccionAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(
+            Long idLead,
+            Accion accion,
+            Instant fechaDesde,
+            Pageable pageable
+    );
+    Page<Evento> findByIdLeadAndAccionAndCreatedAtLessThanOrderByCreatedAtDesc(
+            Long idLead,
+            Accion accion,
+            Instant fechaHasta,
             Pageable pageable
     );
     List<Evento> findAllByIdLeadOrderByCreatedAtDesc(Long idLead);
@@ -134,9 +143,21 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
 
     @Query(value = """
             SELECT new pe.albrugroup.lead_service.entity.response.LeadDiarioResponse(
-                       e.idLead, l.prefijo, l.lead, e.nombreActor, e.rolActor, e.accion, e.createdAt)
+                       e.idLead,
+                       l.prefijo,
+                       l.lead,
+                       e.nombreActor,
+                       e.rolActor,
+                       e.accion,
+                       e.createdAt,
+                       c.nombre,
+                       l.primeraCodigoTipificacion,
+                       l.primeraCodigoSubtipificacion,
+                       l.codigoTipificacion,
+                       l.codigoSubtipificacion)
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN l.campana c
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
