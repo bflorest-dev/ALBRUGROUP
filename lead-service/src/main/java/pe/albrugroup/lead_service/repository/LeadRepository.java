@@ -506,9 +506,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("etapa") Etapa etapa
     );
 
-    // Listado read-only de "mis preventas": leads que el asesor paso a VENTA, identificados por su
-    // evento de cierre (TIPIFICACION / PREVENTA_COMPLETA / VENTA_CERRADA). Se ordena por la ultima
-    // actualizacion para que el asesor vea primero lo que cambio en etapas posteriores.
+    // Listado read-only de "mis preventas": leads cuya preventa concreto el asesor (campo
+    // denormalizado idAsesorPreventa). Filtro opcional por rango de fecha de cierre (fechaPreventa)
+    // para ver preventas del dia/semana/mes. Muestra la ultima actualizacion para el seguimiento.
     @Query(value = """
             SELECT new pe.albrugroup.lead_service.entity.response.MisPreventaResponse(
                        l.id,
@@ -518,33 +518,22 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                        l.estadoPostventa,
                        l.updatedAt)
             FROM Lead l
-            WHERE EXISTS (
-                SELECT 1 FROM Evento e
-                WHERE e.idLead = l.id
-                  AND e.idActor = :idActor
-                  AND e.accion = :accion
-                  AND e.tipificacion = :tipificacion
-                  AND e.subtipificacion = :subtipificacion
-            )
-            ORDER BY l.updatedAt DESC
+            WHERE l.idAsesorPreventa = :idAsesor
+              AND (:fechaDesde IS NULL OR l.fechaPreventa >= :fechaDesde)
+              AND (:fechaHasta IS NULL OR l.fechaPreventa < :fechaHasta)
+            ORDER BY l.fechaPreventa DESC
             """,
             countQuery = """
             SELECT COUNT(l)
             FROM Lead l
-            WHERE EXISTS (
-                SELECT 1 FROM Evento e
-                WHERE e.idLead = l.id
-                  AND e.idActor = :idActor
-                  AND e.accion = :accion
-                  AND e.tipificacion = :tipificacion
-                  AND e.subtipificacion = :subtipificacion
-            )
+            WHERE l.idAsesorPreventa = :idAsesor
+              AND (:fechaDesde IS NULL OR l.fechaPreventa >= :fechaDesde)
+              AND (:fechaHasta IS NULL OR l.fechaPreventa < :fechaHasta)
             """)
     Page<MisPreventaResponse> listarMisPreventas(
-            @Param("idActor") Long idActor,
-            @Param("accion") Accion accion,
-            @Param("tipificacion") String tipificacion,
-            @Param("subtipificacion") String subtipificacion,
+            @Param("idAsesor") Long idAsesor,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
             Pageable pageable
     );
 

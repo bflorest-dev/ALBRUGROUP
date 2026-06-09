@@ -182,9 +182,11 @@ public class PreventaController {
     // 1.1. Listar (read-only) las preventas que el asesor paso a VENTA, para seguimiento
     @GetMapping("/asesor-ventas/mis-preventas") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
     public ResponseEntity<PageResponse<MisPreventaResponse>> listarMisPreventas(
-            @Valid @ModelAttribute PageRequest pageRequest
+            @Valid @ModelAttribute PageRequest pageRequest,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta
     ) {
-        var leads = leadService.listarMisPreventas(pageRequest);
+        var leads = leadService.listarMisPreventas(pageRequest, fechaDesde, fechaHasta);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
     // 1.2. Ver (read-only) el detalle actual de una preventa propia

@@ -23,7 +23,11 @@ import java.util.Set;
 @Table(indexes = {
         @Index(name = "idx_lead_etapa_last_entry_at", columnList = "etapa, lastEntryAt"),
         @Index(name = "idx_lead_prefijo_lead", columnList = "prefijo, lead"),
-        @Index(name = "idx_lead_estado", columnList = "estado")
+        @Index(name = "idx_lead_estado", columnList = "estado"),
+        @Index(name = "idx_lead_id_asesor_preventa_fecha", columnList = "idAsesorPreventa, fechaPreventa"),
+        @Index(name = "idx_lead_id_asesor_venta_fecha", columnList = "idAsesorVenta, fechaVenta"),
+        @Index(name = "idx_lead_id_asesor_postventa_fecha", columnList = "idAsesorPostventa, fechaPostventa"),
+        @Index(name = "idx_lead_id_asesor_cobranza_fecha", columnList = "idAsesorCobranza, fechaCobranza")
 })
 @AllArgsConstructor @NoArgsConstructor
 public class Lead {
@@ -98,6 +102,18 @@ public class Lead {
     private Integer mesesPermanenciaSnapshot;
     @Enumerated(EnumType.STRING)
     private EstadoPostventa estadoPostventa;
+
+    // ATRIBUCION POR ETAPA
+    // Asesor que concreto cada etapa (y cuando). Se sobrescribe cada vez que otro asesor vuelve a
+    // concretar la misma etapa sobre el lead (los leads pueden regresar y reiniciar el proceso).
+    private Long idAsesorPreventa;
+    private Instant fechaPreventa;
+    private Long idAsesorVenta;
+    private Instant fechaVenta;
+    private Long idAsesorPostventa;
+    private Instant fechaPostventa;
+    private Long idAsesorCobranza;
+    private Instant fechaCobranza;
 
     @CreationTimestamp @Column(updatable = false)
     private Instant createdAt;

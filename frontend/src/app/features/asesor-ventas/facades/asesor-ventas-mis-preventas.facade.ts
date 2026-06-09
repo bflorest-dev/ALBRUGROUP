@@ -12,6 +12,7 @@ import {
 import { PreventaLeadService } from '../../preventa/services/preventa-lead.service';
 
 type ActiveDataTab = 'datos' | 'direccion' | 'oferta';
+type MisPreventaPeriod = 'todas' | 'hoy' | 'semana' | 'mes';
 type ProviderOption = { id: number; nombre: string };
 type PlanOption = Partial<PlanResponse> & { id: number; nombre: string };
 type PromocionOption = { id: number; reglaComercial: string };
@@ -28,6 +29,13 @@ export class AsesorVentasMisPreventasFacade {
   private readonly preventaService = inject(PreventaLeadService);
 
   readonly pageSize = 12;
+  readonly period = signal<MisPreventaPeriod>('todas');
+  readonly periodOptions: { label: string; value: MisPreventaPeriod }[] = [
+    { label: 'Todas', value: 'todas' },
+    { label: 'Hoy', value: 'hoy' },
+    { label: 'Semana', value: 'semana' },
+    { label: 'Mes', value: 'mes' }
+  ];
   readonly isLoading = signal(false);
   readonly isLoadingDetail = signal(false);
   readonly errorMessage = signal<string | null>(null);
@@ -138,6 +146,18 @@ export class AsesorVentasMisPreventasFacade {
     }
   }
 
+  async setPeriod(value: string | number | undefined): Promise<void> {
+    if (value !== 'todas' && value !== 'hoy' && value !== 'semana' && value !== 'mes') {
+      return;
+    }
+    if (value === this.period()) {
+      return;
+    }
+    this.period.set(value);
+    this.pageNumber.set(0);
+    await this.load();
+  }
+
   async openDetail(row: MisPreventaResponse): Promise<void> {
     this.detailDialogOpen.set(true);
     this.detail.set(null);
@@ -202,13 +222,41 @@ export class AsesorVentasMisPreventasFacade {
     const query: PageQuery = {
       pageNumber: this.pageNumber(),
       pageSize: this.pageSize,
-      sortBy: 'updatedAt',
+      sortBy: 'fechaPreventa',
       direction: 'desc'
     };
-    const page = await firstValueFrom(this.preventaService.listarMisPreventas(query));
+    const page = await firstValueFrom(this.preventaService.listarMisPreventas(query, this.resolveFechaDesde()));
     this.rows.set(page.content);
     this.totalElements.set(page.totalElements);
     this.totalPages.set(page.totalPages);
+  }
+
+  /**
+   * Fecha de inicio del periodo seleccionado en formato YYYY-MM-DD usando la fecha LOCAL del
+   * navegador (nunca toISOString, que convierte a UTC y puede cambiar el dia en Peru).
+   * fechaHasta se omite: el rango queda abierto hasta hoy.
+   */
+  private resolveFechaDesde(): string | undefined {
+    const now = new Date();
+    switch (this.period()) {
+      case 'hoy':
+        return this.toLocalDate(now);
+      case 'semana': {
+        const desde = new Date(now);
+        desde.setDate(desde.getDate() - 6);
+        return this.toLocalDate(desde);
+      }
+      case 'mes':
+        return this.toLocalDate(new Date(now.getFullYear(), now.getMonth(), 1));
+      default:
+        return undefined;
+    }
+  }
+
+  private toLocalDate(date: Date): string {
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${date.getFullYear()}-${month}-${day}`;
   }
 
   private buildDetailView(detail: LeadDetalleResponse): void {

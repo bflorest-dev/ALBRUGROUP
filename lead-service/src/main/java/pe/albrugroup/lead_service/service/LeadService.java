@@ -119,6 +119,7 @@ public class LeadService {
     private static final String TIPIFICACION_PROGRAMADO = "PROGRAMADO";
     private static final String TIPIFICACION_SCORE_PREVENTA = "SCORE_PREVENTA";
     private static final String TIPIFICACION_PREVENTA_COMPLETA = "PREVENTA_COMPLETA";
+    private static final String TIPIFICACION_GRABADO = "GRABADO";
     private static final String SUBTIPIFICACION_PREVENTA = "PREVENTA";
     private static final String SUBTIPIFICACION_VENTA_CERRADA = "VENTA_CERRADA";
     private static final List<Accion> ACCIONES_GESTION_LEAD = List.of(Accion.CONTACTO, Accion.TIPIFICACION);
@@ -529,27 +530,25 @@ public class LeadService {
     // Leads que el asesor autenticado paso a VENTA. Identificados por su evento de cierre
     // (TIPIFICACION / PREVENTA_COMPLETA / VENTA_CERRADA). Solo lectura: sirve de seguimiento.
 
-    public PageResponse<MisPreventaResponse> listarMisPreventas(PageRequest pageRequest) {
+    public PageResponse<MisPreventaResponse> listarMisPreventas(PageRequest pageRequest, LocalDate fechaDesde, LocalDate fechaHasta) {
+        Instant desde = fechaDesde == null ? null : OperationalDateTime.startOfDay(fechaDesde);
+        Instant hasta = fechaHasta == null ? null : OperationalDateTime.endExclusiveOfDay(fechaHasta);
         var page = leadRepository.listarMisPreventas(
                 currentUser.empleadoID(),
-                Accion.TIPIFICACION,
-                TIPIFICACION_PREVENTA_COMPLETA,
-                SUBTIPIFICACION_VENTA_CERRADA,
+                desde,
+                hasta,
                 org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
         );
         return PageResponse.from(page);
     }
 
     public LeadDetalleResponse obtenerDetalleMiPreventa(Long idLead) {
-        Long idActor = currentUser.empleadoID();
-        boolean cierrePropio = eventoRepository.existsByIdLeadAndIdActorAndAccionAndTipificacionAndSubtipificacion(
-                idLead, idActor, Accion.TIPIFICACION, TIPIFICACION_PREVENTA_COMPLETA, SUBTIPIFICACION_VENTA_CERRADA);
-        if (!cierrePropio) {
-            throw new NotFoundException(Lead.class, idLead);
-        }
-
+        Long idAsesor = currentUser.empleadoID();
         Lead lead = leadRepository.buscarDetalleCompletoPorId(idLead)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        if (!idAsesor.equals(lead.getIdAsesorPreventa())) {
+            throw new NotFoundException(Lead.class, idLead);
+        }
 
         Instant fechaAsignacion = eventoRepository.findTopByIdLeadAndAccionOrderByCreatedAtDesc(idLead, Accion.ASIGNACION)
                 .map(Evento::getCreatedAt)
@@ -728,6 +727,10 @@ public class LeadService {
         if (etapaDestino != null && etapaDestino != etapaActual) {
             if (etapaActual == Etapa.PREVENTA && etapaDestino == Etapa.VENTA) {
                 validarPreventaCompleta(lead);
+                // Atribucion de preventa: quien la concreta (paso a VENTA). Se sobrescribe en cada
+                // cierre, asi el merito queda en el ultimo asesor que la concluyo correctamente.
+                lead.setIdAsesorPreventa(idAsesorAnterior);
+                lead.setFechaPreventa(OperationalDateTime.now());
             }
             lead.setEtapa(etapaDestino);
             lead.setLastEntryAt(OperationalDateTime.now());
@@ -784,6 +787,13 @@ public class LeadService {
         boolean requiereProgramacion = TIPIFICACION_PROGRAMADO.equals(tipificacion.getCodigo());
         validarProgramacionVenta(requiereProgramacion, request.getFechaProgramacion(), request.getHoraProgramada());
         registrarPrimeraTipificacionSiFalta(lead, tipificacion.getCodigo(), subtipificacion.getCodigo());
+
+        // Atribucion de venta: el responsable no es quien cambia de etapa, sino quien tipifica
+        // GRABADO (cualquier subtipificacion), que mantiene el lead en VENTA por los pasos extra.
+        if (TIPIFICACION_GRABADO.equals(tipificacion.getCodigo())) {
+            lead.setIdAsesorVenta(idAsesorAnterior);
+            lead.setFechaVenta(OperationalDateTime.now());
+        }
 
         if (etapaDestino != null && etapaDestino != etapaActual) {
             aplicarDatosPostventaSiCorresponde(lead, etapaDestino, request.getFechaInstalacion());
@@ -854,6 +864,17 @@ public class LeadService {
 
         if (estadoDestino != null) {
             lead.setEstadoPostventa(estadoDestino);
+        }
+
+        // Atribucion por etapa: postventa se concreta al avanzar a COBRANZA; cobranza se concreta al
+        // llegar a un estado final (no hay etapa posterior). Se sobrescribe en cada concrecion.
+        if (etapaActual == Etapa.POSTVENTA && etapaDestino == Etapa.COBRANZA) {
+            lead.setIdAsesorPostventa(idAsesorAnterior);
+            lead.setFechaPostventa(OperationalDateTime.now());
+        }
+        if (etapaActual == Etapa.COBRANZA && esEstadoPostventaFinal(estadoDestino)) {
+            lead.setIdAsesorCobranza(idAsesorAnterior);
+            lead.setFechaCobranza(OperationalDateTime.now());
         }
 
         if (etapaDestino != null && etapaDestino != etapaActual) {

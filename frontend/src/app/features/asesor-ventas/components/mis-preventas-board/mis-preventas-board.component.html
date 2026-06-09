@@ -7,6 +7,18 @@
   </ng-template>
   <ng-template #subtitle>Seguimiento de tus leads que pasaron a venta</ng-template>
 
+  <div class="board-filters">
+    <p-selectButton
+      [options]="facade.periodOptions"
+      optionLabel="label"
+      optionValue="value"
+      [allowEmpty]="false"
+      [ngModel]="facade.period()"
+      [ngModelOptions]="{ standalone: true }"
+      (onChange)="facade.setPeriod($event.value)"
+    />
+  </div>
+
   <p-table
     [value]="facade.rows()"
     dataKey="id"

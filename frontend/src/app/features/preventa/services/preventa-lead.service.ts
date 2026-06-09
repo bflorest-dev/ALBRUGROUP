@@ -182,9 +182,16 @@ export class PreventaLeadService {
     return this.http.get<LeadDetalleResponse>(`${this.leadUrl}/preventa/${idLead}/detalle-asesor`);
   }
 
-  listarMisPreventas(query: PageQuery): Observable<LeadPage<MisPreventaResponse>> {
+  listarMisPreventas(query: PageQuery, fechaDesde?: string, fechaHasta?: string): Observable<LeadPage<MisPreventaResponse>> {
+    let params = this.pageParams(query);
+    if (fechaDesde) {
+      params = params.set('fechaDesde', fechaDesde);
+    }
+    if (fechaHasta) {
+      params = params.set('fechaHasta', fechaHasta);
+    }
     return this.http.get<LeadPage<MisPreventaResponse>>(`${this.leadUrl}/preventa/asesor-ventas/mis-preventas`, {
-      params: this.pageParams(query)
+      params
     });
   }
 
