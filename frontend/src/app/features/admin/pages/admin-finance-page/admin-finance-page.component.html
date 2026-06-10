@@ -9,6 +9,10 @@
     <p-message severity="error" [text]="facade.errorMessage() ?? ''" />
   }
 
+  @if (facade.successMessage()) {
+    <p-message severity="success" [text]="facade.successMessage() ?? ''" />
+  }
+
   <app-campaign-finance-dashboard-panel
     panelTitle="Finanzas de campanas"
     [subtitle]="facade.dailyExpenseSummary()?.fecha ?? facade.financeDate()"
@@ -22,10 +26,18 @@
     [snapshotRows]="facade.snapshotRows()"
     [selectedCampaign]="facade.selectedExpenseCampaign()"
     [snapshotsVisible]="facade.expenseSnapshotsOpen()"
-    [allowExpenseRegistration]="false"
+    [allowExpenseRegistration]="true"
+    [expenseDialogVisible]="facade.expenseDialogOpen()"
+    [expenseForm]="facade.expenseForm"
+    [expenseErrorMessage]="facade.errorMessage()"
+    [campaignOptions]="facade.campanasActivas()"
+    [isSavingExpense]="facade.isSavingExpense()"
     (financeDateChanged)="facade.onFinanceDateChanged($event)"
     (financeMonthChanged)="facade.onFinanceMonthChanged($event)"
     (reload)="facade.loadFinanceDashboard()"
+    (openExpenseDialog)="facade.openExpenseDialog()"
+    (closeExpenseDialog)="facade.closeExpenseDialog()"
+    (submitExpense)="facade.submitExpense()"
     (openSnapshots)="facade.openExpenseSnapshots($event)"
     (closeSnapshots)="facade.closeExpenseSnapshots()"
   />
