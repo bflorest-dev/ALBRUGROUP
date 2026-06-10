@@ -9,19 +9,27 @@ import pe.albrugroup.lead_service.entity.Evento;
 import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDiarioResponse;
+import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionItemResponse;
+import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionesResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
+import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.EventoRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
+import pe.albrugroup.lead_service.repository.projection.LeadGtrAgrupacionProjection;
 import pe.albrugroup.lead_service.service.mapper.EventoMapper;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -145,8 +153,17 @@ public class EventoService {
         return numeros;
     }
 
-    public PageResponse<LeadDiarioResponse> listarRegistrosDiarios(LocalDate fecha, PageRequest pageRequest) {
+    public PageResponse<LeadDiarioResponse> listarRegistrosDiarios(
+            LocalDate fecha,
+            TipoGrupoGtr tipoGrupo,
+            Long idGrupo,
+            String codigoTipificacion,
+            String codigoSubtipificacion,
+            boolean sinValor,
+            PageRequest pageRequest
+    ) {
         OperationalDateTime.InstantRange rango = OperationalDateTime.dayRange(fecha);
+        validarFiltroAgrupacion(tipoGrupo, idGrupo, codigoTipificacion, sinValor);
 
         var pageable = org.springframework.data.domain.PageRequest.of(
                 pageRequest.getPageNumber(),
@@ -157,9 +174,169 @@ public class EventoService {
                 Accion.REGISTRO,
                 rango.inicio(),
                 rango.fin(),
+                tipoGrupo == TipoGrupoGtr.ASESOR,
+                tipoGrupo == TipoGrupoGtr.CAMPANA,
+                tipoGrupo == TipoGrupoGtr.PRIMERA_TIPIFICACION,
+                tipoGrupo == TipoGrupoGtr.ULTIMA_TIPIFICACION,
+                idGrupo,
+                normalizarCodigo(codigoTipificacion),
+                normalizarCodigo(codigoSubtipificacion),
+                sinValor,
                 pageable
         );
         return PageResponse.from(registros);
+    }
+
+    public LeadGtrAgrupacionesResponse listarAgrupacionesRegistrosDiarios(LocalDate fecha) {
+        OperationalDateTime.InstantRange rango = OperationalDateTime.dayRange(fecha);
+        return new LeadGtrAgrupacionesResponse(
+                mapearAgrupaciones(
+                        eventoRepository.agruparRegistrosDiariosPorAsesor(
+                                Accion.REGISTRO,
+                                rango.inicio(),
+                                rango.fin()
+                        ),
+                        "Sin asesor"
+                ),
+                mapearAgrupaciones(
+                        eventoRepository.agruparRegistrosDiariosPorCampana(
+                                Accion.REGISTRO,
+                                rango.inicio(),
+                                rango.fin()
+                        ),
+                        "Sin campaña"
+                ),
+                mapearAgrupacionesTipificacion(
+                        eventoRepository.agruparRegistrosDiariosPorPrimeraTipificacion(
+                                Accion.REGISTRO,
+                                rango.inicio(),
+                                rango.fin()
+                        )
+                ),
+                mapearAgrupacionesTipificacion(
+                        eventoRepository.agruparRegistrosDiariosPorUltimaTipificacion(
+                                Accion.REGISTRO,
+                                rango.inicio(),
+                                rango.fin()
+                        )
+                )
+        );
+    }
+
+    private void validarFiltroAgrupacion(
+            TipoGrupoGtr tipoGrupo,
+            Long idGrupo,
+            String codigoTipificacion,
+            boolean sinValor
+    ) {
+        if (tipoGrupo == null) {
+            if (idGrupo != null || codigoTipificacion != null || sinValor) {
+                throw new BadRequestException("Debes indicar el tipo de agrupación para filtrar los leads del día");
+            }
+            return;
+        }
+        if (sinValor) {
+            return;
+        }
+        if ((tipoGrupo == TipoGrupoGtr.ASESOR || tipoGrupo == TipoGrupoGtr.CAMPANA) && idGrupo == null) {
+            throw new BadRequestException("Debes indicar el grupo seleccionado");
+        }
+        if ((tipoGrupo == TipoGrupoGtr.PRIMERA_TIPIFICACION
+                || tipoGrupo == TipoGrupoGtr.ULTIMA_TIPIFICACION)
+                && normalizarCodigo(codigoTipificacion) == null) {
+            throw new BadRequestException("Debes indicar la tipificación seleccionada");
+        }
+    }
+
+    private String normalizarCodigo(String codigo) {
+        return codigo == null || codigo.isBlank() ? null : codigo.trim();
+    }
+
+    private List<LeadGtrAgrupacionItemResponse> mapearAgrupaciones(
+            List<LeadGtrAgrupacionProjection> rows,
+            String etiquetaSinValor
+    ) {
+        Map<Long, Long> cantidades = new LinkedHashMap<>();
+        Map<Long, String> etiquetas = new LinkedHashMap<>();
+        long cantidadSinValor = 0;
+        for (LeadGtrAgrupacionProjection row : rows) {
+            if (row.getIdGrupo() == null) {
+                cantidadSinValor += row.getCantidad();
+                continue;
+            }
+            cantidades.merge(row.getIdGrupo(), row.getCantidad(), Long::sum);
+            if (row.getEtiqueta() != null && !row.getEtiqueta().isBlank()) {
+                etiquetas.put(row.getIdGrupo(), row.getEtiqueta());
+            }
+        }
+
+        List<LeadGtrAgrupacionItemResponse> grupos = new ArrayList<>();
+        cantidades.forEach((id, cantidad) -> grupos.add(new LeadGtrAgrupacionItemResponse(
+                id,
+                null,
+                null,
+                etiquetas.getOrDefault(id, "Sin nombre"),
+                cantidad,
+                false
+        )));
+        if (cantidadSinValor > 0) {
+            grupos.add(new LeadGtrAgrupacionItemResponse(
+                    null,
+                    null,
+                    null,
+                    etiquetaSinValor,
+                    cantidadSinValor,
+                    true
+            ));
+        }
+        return ordenarAgrupaciones(grupos);
+    }
+
+    private List<LeadGtrAgrupacionItemResponse> mapearAgrupacionesTipificacion(
+            List<LeadGtrAgrupacionProjection> rows
+    ) {
+        List<LeadGtrAgrupacionItemResponse> grupos = new ArrayList<>();
+        long cantidadSinTipificar = 0;
+        for (LeadGtrAgrupacionProjection row : rows) {
+            String tipificacion = normalizarCodigo(row.getCodigoTipificacion());
+            String subtipificacion = normalizarCodigo(row.getCodigoSubtipificacion());
+            if (tipificacion == null) {
+                cantidadSinTipificar += row.getCantidad();
+                continue;
+            }
+            grupos.add(new LeadGtrAgrupacionItemResponse(
+                    null,
+                    tipificacion,
+                    subtipificacion,
+                    tipificacion + (subtipificacion == null ? "" : " / " + subtipificacion),
+                    row.getCantidad(),
+                    false
+            ));
+        }
+        if (cantidadSinTipificar > 0) {
+            grupos.add(new LeadGtrAgrupacionItemResponse(
+                    null,
+                    null,
+                    null,
+                    "Sin tipificar",
+                    cantidadSinTipificar,
+                    true
+            ));
+        }
+        return ordenarAgrupaciones(grupos);
+    }
+
+    private List<LeadGtrAgrupacionItemResponse> ordenarAgrupaciones(
+            List<LeadGtrAgrupacionItemResponse> grupos
+    ) {
+        return grupos.stream()
+                .sorted(Comparator.comparingLong(LeadGtrAgrupacionItemResponse::getCantidad)
+                        .reversed()
+                        .thenComparing(
+                                LeadGtrAgrupacionItemResponse::getEtiqueta,
+                                String.CASE_INSENSITIVE_ORDER
+                        ))
+                .toList();
     }
 
     private Instant inicioDia(LocalDate fecha) {

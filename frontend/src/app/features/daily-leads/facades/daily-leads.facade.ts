@@ -5,7 +5,14 @@ import type { TipificationPaletteByCode } from '../../../shared/components/tipif
 import { EventoResponse } from '../../../shared/models/preventa/preventa.models';
 import { formatLabel } from '../../../shared/utils/display-label';
 import { DailyLeadsService } from '../services/daily-leads.service';
-import { DailyLeadRowView, LeadDiarioResponse } from '../models/daily-lead.model';
+import {
+  DailyLeadGroupFilter,
+  DailyLeadGroupItem,
+  DailyLeadGroupMode,
+  DailyLeadGroupsResponse,
+  DailyLeadRowView,
+  LeadDiarioResponse
+} from '../models/daily-lead.model';
 
 @Injectable()
 export class DailyLeadsFacade {
@@ -21,8 +28,10 @@ export class DailyLeadsFacade {
 
   readonly rows = signal<DailyLeadRowView[]>([]);
   readonly totalElements = signal(0);
+  readonly visibleTotalElements = signal(0);
   readonly pageNumber = signal(0);
   readonly isLoading = signal(false);
+  readonly isLoadingGroups = signal(false);
   readonly isLoadingEvents = signal(false);
   readonly errorMessage = signal('');
   readonly tipificationPaletteByCode = signal<TipificationPaletteByCode>({});
@@ -30,13 +39,47 @@ export class DailyLeadsFacade {
   readonly activeHistoryLead = signal<DailyLeadRowView | null>(null);
   /** Fecha operativa seleccionada (YYYY-MM-DD). Vacío = hoy (lo resuelve el backend en America/Lima). */
   readonly fecha = signal('');
+  readonly groupingMode = signal<DailyLeadGroupMode>('SIN_AGRUPAR');
+  readonly selectedGroup = signal<DailyLeadGroupItem | null>(null);
+  readonly groups = signal<DailyLeadGroupsResponse>({
+    asesores: [],
+    campanas: [],
+    primerasTipificaciones: [],
+    ultimasTipificaciones: []
+  });
 
   readonly first = computed(() => this.pageNumber() * this.pageSize);
   readonly isToday = computed(() => this.fecha() === '');
+  readonly groupingModeOptions: Array<{ label: string; value: DailyLeadGroupMode }> = [
+    { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
+    { label: 'Asesor', value: 'ASESOR' },
+    { label: 'Campaña', value: 'CAMPANA' },
+    { label: 'Primera tipificación', value: 'PRIMERA_TIPIFICACION' },
+    { label: 'Última tipificación', value: 'ULTIMA_TIPIFICACION' }
+  ];
+  readonly activeGroupOptions = computed<DailyLeadGroupItem[]>(() => {
+    const groups = this.groups();
+    switch (this.groupingMode()) {
+      case 'ASESOR':
+        return groups.asesores;
+      case 'CAMPANA':
+        return groups.campanas;
+      case 'PRIMERA_TIPIFICACION':
+        return groups.primerasTipificaciones;
+      case 'ULTIMA_TIPIFICACION':
+        return groups.ultimasTipificaciones;
+      default:
+        return [];
+    }
+  });
   readonly maxDate = this.localToday();
 
   async initialize(): Promise<void> {
-    await Promise.all([this.loadTipificationPalette(), this.load(0)]);
+    await Promise.all([
+      this.loadTipificationPalette(),
+      this.loadGroups(),
+      this.load(0)
+    ]);
   }
 
   async setFecha(value: string): Promise<void> {
@@ -45,7 +88,7 @@ export class DailyLeadsFacade {
       return;
     }
     this.fecha.set(normalized);
-    await this.load(0);
+    await Promise.all([this.loadGroups(), this.load(0)]);
   }
 
   async showToday(): Promise<void> {
@@ -60,7 +103,39 @@ export class DailyLeadsFacade {
   }
 
   async refresh(): Promise<void> {
-    await this.load(this.pageNumber());
+    await Promise.all([this.loadGroups(), this.load(this.pageNumber())]);
+  }
+
+  async setGroupingMode(mode: DailyLeadGroupMode | null | undefined): Promise<void> {
+    if (!mode || mode === this.groupingMode()) {
+      return;
+    }
+    this.groupingMode.set(mode);
+    this.selectedGroup.set(null);
+    await this.load(0);
+  }
+
+  async toggleGroup(group: DailyLeadGroupItem): Promise<void> {
+    const selected = this.selectedGroup();
+    this.selectedGroup.set(
+      selected && this.groupKey(selected) === this.groupKey(group) ? null : group
+    );
+    await this.load(0);
+  }
+
+  isGroupSelected(group: DailyLeadGroupItem): boolean {
+    const selected = this.selectedGroup();
+    return !!selected && this.groupKey(selected) === this.groupKey(group);
+  }
+
+  groupKey(group: DailyLeadGroupItem): string {
+    if (group.sinValor) {
+      return `${this.groupingMode()}:SIN_VALOR`;
+    }
+    if (group.idGrupo !== null && group.idGrupo !== undefined) {
+      return `${this.groupingMode()}:ID:${group.idGrupo}`;
+    }
+    return `${this.groupingMode()}:TIP:${group.codigoTipificacion ?? ''}:SUB:${group.codigoSubtipificacion ?? ''}`;
   }
 
   async openEventHistory(row: DailyLeadRowView): Promise<void> {
@@ -127,21 +202,65 @@ export class DailyLeadsFacade {
         this.service.listarRegistrosDiarios({
           fecha: this.fecha() || undefined,
           pageNumber,
-          pageSize: this.pageSize
+          pageSize: this.pageSize,
+          filters: this.currentGroupFilter()
         })
       );
       this.pageNumber.set(page.page);
-      this.totalElements.set(page.totalElements);
+      this.visibleTotalElements.set(page.totalElements);
+      if (!this.selectedGroup()) {
+        this.totalElements.set(page.totalElements);
+      }
       this.rows.set(page.content.map((item) => this.toRowView(item)));
     } catch (error) {
       this.errorMessage.set(
         this.getErrorMessage(error, 'No se pudieron cargar los leads del día.')
       );
       this.rows.set([]);
-      this.totalElements.set(0);
+      this.visibleTotalElements.set(0);
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  private async loadGroups(): Promise<void> {
+    this.isLoadingGroups.set(true);
+    try {
+      const groups = await firstValueFrom(
+        this.service.listarAgrupacionesRegistrosDiarios(this.fecha() || undefined)
+      );
+      this.groups.set(groups);
+      this.totalElements.set(groups.asesores.reduce((total, group) => total + group.cantidad, 0));
+    } catch (error) {
+      this.errorMessage.set(
+        this.getErrorMessage(error, 'No se pudieron actualizar las agrupaciones.')
+      );
+    } finally {
+      this.isLoadingGroups.set(false);
+    }
+  }
+
+  private currentGroupFilter(): DailyLeadGroupFilter {
+    const mode = this.groupingMode();
+    const group = this.selectedGroup();
+    if (mode === 'SIN_AGRUPAR' || !group) {
+      return {};
+    }
+
+    const filter: DailyLeadGroupFilter = {
+      tipoGrupo: mode,
+      sinValor: group.sinValor
+    };
+    if (group.idGrupo !== null && group.idGrupo !== undefined) {
+      filter.idGrupo = group.idGrupo;
+    }
+    if (group.codigoTipificacion) {
+      filter.codigoTipificacion = group.codigoTipificacion;
+    }
+    if (group.codigoSubtipificacion) {
+      filter.codigoSubtipificacion = group.codigoSubtipificacion;
+    }
+    return filter;
   }
 
   private toRowView(item: LeadDiarioResponse): DailyLeadRowView {

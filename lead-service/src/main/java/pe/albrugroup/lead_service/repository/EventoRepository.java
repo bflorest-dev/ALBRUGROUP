@@ -15,6 +15,7 @@ import pe.albrugroup.lead_service.repository.projection.AsesorCantidadProjection
 import pe.albrugroup.lead_service.repository.projection.AsesorProveedorCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.AsesorUltimoEventoProjection;
 import pe.albrugroup.lead_service.repository.projection.CampanaTipificacionCantidadProjection;
+import pe.albrugroup.lead_service.repository.projection.LeadGtrAgrupacionProjection;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -161,21 +162,190 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
+              AND (
+                    :filtrarAsesor = false
+                    OR (:sinValor = true AND e.idActor IS NULL)
+                    OR (:sinValor = false AND e.idActor = :idGrupo)
+              )
+              AND (
+                    :filtrarCampana = false
+                    OR (:sinValor = true AND c.id IS NULL)
+                    OR (:sinValor = false AND c.id = :idGrupo)
+              )
+              AND (
+                    :filtrarPrimeraTipificacion = false
+                    OR (
+                        :sinValor = true
+                        AND l.primeraCodigoTipificacion IS NULL
+                        AND l.primeraCodigoSubtipificacion IS NULL
+                    )
+                    OR (
+                        :sinValor = false
+                        AND l.primeraCodigoTipificacion = :codigoTipificacion
+                        AND (
+                            (:codigoSubtipificacion IS NULL AND l.primeraCodigoSubtipificacion IS NULL)
+                            OR l.primeraCodigoSubtipificacion = :codigoSubtipificacion
+                        )
+                    )
+              )
+              AND (
+                    :filtrarUltimaTipificacion = false
+                    OR (
+                        :sinValor = true
+                        AND l.codigoTipificacion IS NULL
+                        AND l.codigoSubtipificacion IS NULL
+                    )
+                    OR (
+                        :sinValor = false
+                        AND l.codigoTipificacion = :codigoTipificacion
+                        AND (
+                            (:codigoSubtipificacion IS NULL AND l.codigoSubtipificacion IS NULL)
+                            OR l.codigoSubtipificacion = :codigoSubtipificacion
+                        )
+                    )
+              )
             ORDER BY e.createdAt DESC
             """,
             countQuery = """
             SELECT COUNT(e)
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN l.campana c
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
+              AND (
+                    :filtrarAsesor = false
+                    OR (:sinValor = true AND e.idActor IS NULL)
+                    OR (:sinValor = false AND e.idActor = :idGrupo)
+              )
+              AND (
+                    :filtrarCampana = false
+                    OR (:sinValor = true AND c.id IS NULL)
+                    OR (:sinValor = false AND c.id = :idGrupo)
+              )
+              AND (
+                    :filtrarPrimeraTipificacion = false
+                    OR (
+                        :sinValor = true
+                        AND l.primeraCodigoTipificacion IS NULL
+                        AND l.primeraCodigoSubtipificacion IS NULL
+                    )
+                    OR (
+                        :sinValor = false
+                        AND l.primeraCodigoTipificacion = :codigoTipificacion
+                        AND (
+                            (:codigoSubtipificacion IS NULL AND l.primeraCodigoSubtipificacion IS NULL)
+                            OR l.primeraCodigoSubtipificacion = :codigoSubtipificacion
+                        )
+                    )
+              )
+              AND (
+                    :filtrarUltimaTipificacion = false
+                    OR (
+                        :sinValor = true
+                        AND l.codigoTipificacion IS NULL
+                        AND l.codigoSubtipificacion IS NULL
+                    )
+                    OR (
+                        :sinValor = false
+                        AND l.codigoTipificacion = :codigoTipificacion
+                        AND (
+                            (:codigoSubtipificacion IS NULL AND l.codigoSubtipificacion IS NULL)
+                            OR l.codigoSubtipificacion = :codigoSubtipificacion
+                        )
+                    )
+              )
             """)
     Page<LeadDiarioResponse> listarRegistrosDiarios(
             @Param("accion") Accion accion,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin,
+            @Param("filtrarAsesor") boolean filtrarAsesor,
+            @Param("filtrarCampana") boolean filtrarCampana,
+            @Param("filtrarPrimeraTipificacion") boolean filtrarPrimeraTipificacion,
+            @Param("filtrarUltimaTipificacion") boolean filtrarUltimaTipificacion,
+            @Param("idGrupo") Long idGrupo,
+            @Param("codigoTipificacion") String codigoTipificacion,
+            @Param("codigoSubtipificacion") String codigoSubtipificacion,
+            @Param("sinValor") boolean sinValor,
             Pageable pageable
+    );
+
+    @Query("""
+            SELECT e.idActor AS idGrupo,
+                   e.nombreActor AS etiqueta,
+                   NULL AS codigoTipificacion,
+                   NULL AS codigoSubtipificacion,
+                   COUNT(e.id) AS cantidad
+            FROM Evento e
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+            GROUP BY e.idActor, e.nombreActor
+            """)
+    List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorAsesor(
+            @Param("accion") Accion accion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    @Query("""
+            SELECT c.id AS idGrupo,
+                   c.nombre AS etiqueta,
+                   NULL AS codigoTipificacion,
+                   NULL AS codigoSubtipificacion,
+                   COUNT(e.id) AS cantidad
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN l.campana c
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+            GROUP BY c.id, c.nombre
+            """)
+    List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorCampana(
+            @Param("accion") Accion accion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    @Query("""
+            SELECT NULL AS idGrupo,
+                   NULL AS etiqueta,
+                   l.primeraCodigoTipificacion AS codigoTipificacion,
+                   l.primeraCodigoSubtipificacion AS codigoSubtipificacion,
+                   COUNT(e.id) AS cantidad
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+            GROUP BY l.primeraCodigoTipificacion, l.primeraCodigoSubtipificacion
+            """)
+    List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorPrimeraTipificacion(
+            @Param("accion") Accion accion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    @Query("""
+            SELECT NULL AS idGrupo,
+                   NULL AS etiqueta,
+                   l.codigoTipificacion AS codigoTipificacion,
+                   l.codigoSubtipificacion AS codigoSubtipificacion,
+                   COUNT(e.id) AS cantidad
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+            GROUP BY l.codigoTipificacion, l.codigoSubtipificacion
+            """)
+    List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorUltimaTipificacion(
+            @Param("accion") Accion accion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
     );
 
     Optional<Evento> findTopByIdLeadAndAccionOrderByCreatedAtDesc(Long idLead, Accion accion);

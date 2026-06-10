@@ -14,9 +14,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.enums.Accion;
+import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDiarioResponse;
+import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionesResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.service.EventoService;
 
@@ -44,10 +46,30 @@ public class EventoController {
     @GetMapping("/registros-diarios") @PreAuthorize("hasAuthority('READ_LEADS_DIARIOS')")
     public ResponseEntity<PageResponse<LeadDiarioResponse>> listarRegistrosDiarios(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+            @RequestParam(required = false) TipoGrupoGtr tipoGrupo,
+            @RequestParam(required = false) Long idGrupo,
+            @RequestParam(required = false) String codigoTipificacion,
+            @RequestParam(required = false) String codigoSubtipificacion,
+            @RequestParam(defaultValue = "false") boolean sinValor,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var registros = eventoService.listarRegistrosDiarios(fecha, pageRequest);
+        var registros = eventoService.listarRegistrosDiarios(
+                fecha,
+                tipoGrupo,
+                idGrupo,
+                codigoTipificacion,
+                codigoSubtipificacion,
+                sinValor,
+                pageRequest
+        );
         return ResponseEntity.status(HttpStatus.OK).body(registros);
+    }
+
+    @GetMapping("/registros-diarios/agrupaciones") @PreAuthorize("hasAuthority('READ_LEADS_DIARIOS')")
+    public ResponseEntity<LeadGtrAgrupacionesResponse> listarAgrupacionesRegistrosDiarios(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
+    ) {
+        return ResponseEntity.ok(eventoService.listarAgrupacionesRegistrosDiarios(fecha));
     }
 
     @GetMapping("/empleado/{idEmpleado}") @PreAuthorize("hasAuthority('READ_EVENTOS_LEADS')")

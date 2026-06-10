@@ -30,3 +30,35 @@ export interface DailyLeadRowView {
   codigoTipificacion?: string | null;
   codigoSubtipificacion?: string | null;
 }
+
+export type DailyLeadGroupType =
+  | 'ASESOR'
+  | 'CAMPANA'
+  | 'PRIMERA_TIPIFICACION'
+  | 'ULTIMA_TIPIFICACION';
+
+export type DailyLeadGroupMode = 'SIN_AGRUPAR' | DailyLeadGroupType;
+
+export interface DailyLeadGroupItem {
+  idGrupo: number | null;
+  codigoTipificacion: string | null;
+  codigoSubtipificacion: string | null;
+  etiqueta: string;
+  cantidad: number;
+  sinValor: boolean;
+}
+
+export interface DailyLeadGroupsResponse {
+  asesores: DailyLeadGroupItem[];
+  campanas: DailyLeadGroupItem[];
+  primerasTipificaciones: DailyLeadGroupItem[];
+  ultimasTipificaciones: DailyLeadGroupItem[];
+}
+
+export interface DailyLeadGroupFilter {
+  tipoGrupo?: DailyLeadGroupType;
+  idGrupo?: number;
+  codigoTipificacion?: string;
+  codigoSubtipificacion?: string;
+  sinValor?: boolean;
+}

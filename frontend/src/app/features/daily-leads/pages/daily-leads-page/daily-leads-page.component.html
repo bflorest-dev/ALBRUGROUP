@@ -46,6 +46,45 @@
       <p-message severity="error" [text]="facade.errorMessage()" styleClass="daily-leads__message" />
     }
 
+    <section class="daily-leads__grouping" aria-label="Agrupar leads del día">
+      <div class="daily-leads__grouping-header">
+        <strong>Agrupar resultados</strong>
+        <p-selectbutton
+          [options]="facade.groupingModeOptions"
+          [ngModel]="facade.groupingMode()"
+          optionLabel="label"
+          optionValue="value"
+          [allowEmpty]="false"
+          (onChange)="facade.setGroupingMode($any($event.value))"
+        />
+      </div>
+
+      @if (facade.groupingMode() !== 'SIN_AGRUPAR') {
+        <div class="daily-leads__groups" aria-label="Grupos disponibles">
+          @for (group of facade.activeGroupOptions(); track facade.groupKey(group)) {
+            <button
+              pButton
+              type="button"
+              class="daily-leads__group"
+              [class.daily-leads__group--selected]="facade.isGroupSelected(group)"
+              [outlined]="!facade.isGroupSelected(group)"
+              severity="secondary"
+              [pTooltip]="group.etiqueta + ' · ' + group.cantidad"
+              tooltipPosition="bottom"
+              (click)="facade.toggleGroup(group)"
+            >
+              <span class="daily-leads__group-label">{{ group.etiqueta }}</span>
+              <span class="daily-leads__group-count">{{ group.cantidad }}</span>
+            </button>
+          } @empty {
+            <span class="daily-leads__groups-empty">
+              {{ facade.isLoadingGroups() ? 'Actualizando grupos...' : 'No hay grupos disponibles.' }}
+            </span>
+          }
+        </div>
+      }
+    </section>
+
     <p-table
       [value]="facade.rows()"
       dataKey="idLead"
@@ -132,11 +171,11 @@
       </ng-template>
     </p-table>
 
-    @if (facade.totalElements() > facade.pageSize) {
+    @if (facade.visibleTotalElements() > facade.pageSize) {
       <p-paginator
         [first]="facade.first()"
         [rows]="facade.pageSize"
-        [totalRecords]="facade.totalElements()"
+        [totalRecords]="facade.visibleTotalElements()"
         (onPageChange)="onPageChange($event.page ?? 0)"
       />
     }

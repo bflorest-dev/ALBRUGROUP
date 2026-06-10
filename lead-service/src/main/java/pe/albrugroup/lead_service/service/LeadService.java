@@ -155,21 +155,30 @@ public class LeadService {
                 : OperationalDateTime.dayRange(fecha);
         validarFiltroAgrupacionGtr(tipoGrupo, idGrupo, codigoTipificacion, sinValor);
 
-        Page<LeadGtrResponse> leads = leadRepository.listarBandejaGtr(
-                Etapa.PREVENTA,
-                leadPattern,
-                rangoDia.inicio(),
-                rangoDia.fin(),
-                tipoGrupo == TipoGrupoGtr.ASESOR,
-                tipoGrupo == TipoGrupoGtr.CAMPANA,
-                tipoGrupo == TipoGrupoGtr.PRIMERA_TIPIFICACION,
-                tipoGrupo == TipoGrupoGtr.ULTIMA_TIPIFICACION,
-                idGrupo,
-                normalizarCodigoAgrupacion(codigoTipificacion),
-                normalizarCodigoAgrupacion(codigoSubtipificacion),
-                sinValor,
-                paginationService.toPageable(pageRequest, LEAD_GTR_SORT_FIELDS)
-        );
+        var pageable = paginationService.toPageable(pageRequest, LEAD_GTR_SORT_FIELDS);
+        Page<LeadGtrResponse> leads = tipoGrupo == null
+                ? leadRepository.listarBandejaGtr(
+                        Etapa.PREVENTA,
+                        leadPattern,
+                        rangoDia.inicio(),
+                        rangoDia.fin(),
+                        pageable
+                )
+                : leadRepository.listarBandejaGtrFiltrada(
+                        Etapa.PREVENTA,
+                        leadPattern,
+                        rangoDia.inicio(),
+                        rangoDia.fin(),
+                        tipoGrupo == TipoGrupoGtr.ASESOR,
+                        tipoGrupo == TipoGrupoGtr.CAMPANA,
+                        tipoGrupo == TipoGrupoGtr.PRIMERA_TIPIFICACION,
+                        tipoGrupo == TipoGrupoGtr.ULTIMA_TIPIFICACION,
+                        idGrupo,
+                        normalizarCodigoAgrupacion(codigoTipificacion),
+                        normalizarCodigoAgrupacion(codigoSubtipificacion),
+                        sinValor,
+                        pageable
+                );
         aplicarTotalesAsignacion(leads.getContent(), LeadGtrResponse::getId, this::setTotalesAsignacion);
         if (!buscandoPorLead) {
             aplicarAlertasRegistrosDia(leads.getContent(), rangoDia.inicio(), rangoDia.fin());

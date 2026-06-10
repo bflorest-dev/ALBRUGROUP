@@ -70,6 +70,49 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
               AND l.lead LIKE :leadPattern
+            ORDER BY l.lastEntryAt DESC
+            """)
+    Page<LeadGtrResponse> listarBandejaGtr(
+            @Param("etapa") Etapa etapa,
+            @Param("leadPattern") String leadPattern,
+            @Param("inicioDia") Instant inicioDia,
+            @Param("finDia") Instant finDia,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.LeadGtrResponse(
+                l.id,
+                l.createdAt,
+                l.lastEntryAt,
+                l.prefijo,
+                l.lead,
+                c.nombre,
+                p.nombre,
+                c.numeroWhatsApp,
+                l.base,
+                null,
+                l.numeroDocumentoTitularServicioSnapshot,
+                l.direccionSnapshot,
+                l.primeraCodigoTipificacion,
+                l.primeraCodigoSubtipificacion,
+                l.codigoTipificacion,
+                l.codigoSubtipificacion,
+                l.nombrePlanSnapshot,
+                l.nombreAsesorAsignado,
+                l.estado,
+                0L,
+                false,
+                false,
+                false
+            )
+            FROM Lead l
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor p
+            WHERE l.etapa = :etapa
+              AND l.lastEntryAt >= :inicioDia
+              AND l.lastEntryAt < :finDia
+              AND l.lead LIKE :leadPattern
               AND (
                     :filtrarAsesor = false
                     OR (:sinValor = true AND l.idAsesorAsignado IS NULL)
@@ -114,7 +157,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               )
             ORDER BY l.lastEntryAt DESC
             """)
-    Page<LeadGtrResponse> listarBandejaGtr(
+    Page<LeadGtrResponse> listarBandejaGtrFiltrada(
             @Param("etapa") Etapa etapa,
             @Param("leadPattern") String leadPattern,
             @Param("inicioDia") Instant inicioDia,

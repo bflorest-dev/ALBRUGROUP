@@ -109,7 +109,7 @@ class LeadServiceGtrGroupingTest {
     }
 
     @Test
-    void aplicaLaCombinacionCompletaDePrimeraTipificacionAlListadoPaginado() {
+    void usaLaConsultaOriginalCuandoPlataformaNoTieneAgrupacion() {
         PageRequest request = PageRequest.builder()
                 .pageNumber(0)
                 .pageSize(12)
@@ -119,6 +119,44 @@ class LeadServiceGtrGroupingTest {
         Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 12);
         when(paginationService.toPageable(eq(request), any())).thenReturn(pageable);
         when(leadRepository.listarBandejaGtr(
+                eq(Etapa.PREVENTA),
+                eq("%"),
+                any(Instant.class),
+                any(Instant.class),
+                eq(pageable)
+        )).thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+        leadService.listarBandejaGtr(
+                LocalDate.of(2026, 6, 10),
+                null,
+                null,
+                null,
+                null,
+                null,
+                false,
+                request
+        );
+
+        verify(leadRepository).listarBandejaGtr(
+                eq(Etapa.PREVENTA),
+                eq("%"),
+                any(Instant.class),
+                any(Instant.class),
+                eq(pageable)
+        );
+    }
+
+    @Test
+    void aplicaLaCombinacionCompletaDePrimeraTipificacionAlListadoPaginado() {
+        PageRequest request = PageRequest.builder()
+                .pageNumber(0)
+                .pageSize(12)
+                .sortBy("lastEntryAt")
+                .direction("desc")
+                .build();
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 12);
+        when(paginationService.toPageable(eq(request), any())).thenReturn(pageable);
+        when(leadRepository.listarBandejaGtrFiltrada(
                 eq(Etapa.PREVENTA),
                 eq("%"),
                 any(Instant.class),
@@ -145,7 +183,7 @@ class LeadServiceGtrGroupingTest {
                 request
         );
 
-        verify(leadRepository).listarBandejaGtr(
+        verify(leadRepository).listarBandejaGtrFiltrada(
                 eq(Etapa.PREVENTA),
                 eq("%"),
                 any(Instant.class),

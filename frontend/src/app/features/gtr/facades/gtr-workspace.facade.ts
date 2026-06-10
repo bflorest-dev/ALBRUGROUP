@@ -21,10 +21,6 @@ import {
   Etapa,
   EventoResponse,
   LeadAgendadoGtrResponse,
-  LeadGtrGroupFilter,
-  LeadGtrGroupItemResponse,
-  LeadGtrGroupMode,
-  LeadGtrGroupsResponse,
   LeadGtrLookupResponse,
   LeadGtrResponse,
   LeadGtrMetricasResponse,
@@ -171,7 +167,6 @@ export class GtrWorkspaceFacade {
   readonly isUploadingMasivoExcel = signal(false);
   readonly isLoadingEvents = signal(false);
   readonly isLoadingTipificationHistory = signal(false);
-  readonly isLoadingLeadGroups = signal(false);
   readonly intakeNumberMaxLength = signal(9);
   readonly masivoExcelResultsDialogOpen = signal(false);
   readonly successMessage = signal<string | null>(null);
@@ -202,17 +197,8 @@ export class GtrWorkspaceFacade {
     preventas: 0
   });
   readonly totalElements = signal(0);
-  readonly visibleTotalElements = signal(0);
   readonly totalPages = signal(0);
   readonly pageNumber = signal(0);
-  readonly leadGroupingMode = signal<LeadGtrGroupMode>('SIN_AGRUPAR');
-  readonly selectedLeadGroup = signal<LeadGtrGroupItemResponse | null>(null);
-  readonly leadGroups = signal<LeadGtrGroupsResponse>({
-    asesores: [],
-    campanas: [],
-    primerasTipificaciones: [],
-    ultimasTipificaciones: []
-  });
   readonly agendadosTotalElements = signal(0);
   readonly agendadosTotalPages = signal(0);
   readonly agendadosPageNumber = signal(0);
@@ -345,14 +331,6 @@ export class GtrWorkspaceFacade {
     { label: 'Postventa', value: 'POSTVENTA' },
     { label: 'Cobranza', value: 'COBRANZA' }
   ];
-  readonly leadGroupingModeOptions: SelectOption<LeadGtrGroupMode>[] = [
-    { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
-    { label: 'Asesor', value: 'ASESOR' },
-    { label: 'Campaña', value: 'CAMPANA' },
-    { label: 'Primera tipificación', value: 'PRIMERA_TIPIFICACION' },
-    { label: 'Última tipificación', value: 'ULTIMA_TIPIFICACION' }
-  ];
-
   readonly providerOptions = computed<SelectOption<number>[]>(() => {
     const providers = new Map<number, string>();
     for (const campana of this.campanas()) {
@@ -366,21 +344,6 @@ export class GtrWorkspaceFacade {
         .map(([value, label]) => ({ label, value }))
         .sort((left, right) => left.label.localeCompare(right.label))
     ];
-  });
-  readonly activeLeadGroupOptions = computed<LeadGtrGroupItemResponse[]>(() => {
-    const groups = this.leadGroups();
-    switch (this.leadGroupingMode()) {
-      case 'ASESOR':
-        return groups.asesores;
-      case 'CAMPANA':
-        return groups.campanas;
-      case 'PRIMERA_TIPIFICACION':
-        return groups.primerasTipificaciones;
-      case 'ULTIMA_TIPIFICACION':
-        return groups.ultimasTipificaciones;
-      default:
-        return [];
-    }
   });
   readonly tipificacionVisualMetaByCode = computed(() => {
     const meta = new Map<string, TipificacionVisualMeta>();
@@ -647,7 +610,6 @@ export class GtrWorkspaceFacade {
 
     if (section === 'plataforma') {
       sectionLoads.push(['bandeja diaria', () => this.refreshPage(false)]);
-      sectionLoads.push(['agrupaciones de la bandeja', () => this.refreshLeadGroups(false)]);
       sectionLoads.push(['metricas', () => this.refreshMetrics()]);
     }
 
@@ -1557,42 +1519,6 @@ export class GtrWorkspaceFacade {
     return advisor.roles?.includes('OJT') ?? false;
   }
 
-  async setLeadGroupingMode(mode: LeadGtrGroupMode | null | undefined): Promise<void> {
-    if (!mode || mode === this.leadGroupingMode()) {
-      return;
-    }
-    this.leadGroupingMode.set(mode);
-    this.selectedLeadGroup.set(null);
-    this.pageNumber.set(0);
-    this.selectedIds.set(new Set());
-    await this.refreshPage(false);
-  }
-
-  async toggleLeadGroup(group: LeadGtrGroupItemResponse): Promise<void> {
-    const selected = this.selectedLeadGroup();
-    this.selectedLeadGroup.set(
-      selected && this.leadGroupKey(selected) === this.leadGroupKey(group) ? null : group
-    );
-    this.pageNumber.set(0);
-    this.selectedIds.set(new Set());
-    await this.refreshPage(false);
-  }
-
-  isLeadGroupSelected(group: LeadGtrGroupItemResponse): boolean {
-    const selected = this.selectedLeadGroup();
-    return !!selected && this.leadGroupKey(selected) === this.leadGroupKey(group);
-  }
-
-  leadGroupKey(group: LeadGtrGroupItemResponse): string {
-    if (group.sinValor) {
-      return `${this.leadGroupingMode()}:SIN_VALOR`;
-    }
-    if (group.idGrupo !== null && group.idGrupo !== undefined) {
-      return `${this.leadGroupingMode()}:ID:${group.idGrupo}`;
-    }
-    return `${this.leadGroupingMode()}:TIP:${group.codigoTipificacion ?? ''}:SUB:${group.codigoSubtipificacion ?? ''}`;
-  }
-
   async nextPage(): Promise<void> {
     if (this.pageNumber() + 1 >= this.totalPages()) {
       return;
@@ -2222,7 +2148,6 @@ export class GtrWorkspaceFacade {
       const section = this.section();
       await Promise.all([
         section === 'plataforma' ? this.refreshPage(true) : Promise.resolve(),
-        section === 'plataforma' ? this.refreshLeadGroups(true) : Promise.resolve(),
         section === 'plataforma' ? this.refreshMetrics() : Promise.resolve(),
         section === 'agendados' ? this.refreshAgendados(true) : Promise.resolve(),
         section === 'historicos' && this.masivoSearched() ? this.refreshMasivos() : Promise.resolve(),
@@ -2240,32 +2165,11 @@ export class GtrWorkspaceFacade {
     }
     const previous = this.rows();
     const page = await firstValueFrom(
-      this.preventaService.listarBandejaGtr(
-        this.today,
-        this.currentQuery(this.pageSize),
-        this.currentLeadGroupFilter()
-      )
+      this.preventaService.listarBandejaGtr(this.today, this.currentQuery(this.pageSize))
     );
-    this.visibleTotalElements.set(page.totalElements);
-    if (!this.selectedLeadGroup()) {
-      this.totalElements.set(page.totalElements);
-    }
+    this.totalElements.set(page.totalElements);
     this.totalPages.set(page.totalPages);
     this.rows.set(this.mergeVisualRows(previous, page.content, silent));
-  }
-
-  private async refreshLeadGroups(silent: boolean): Promise<void> {
-    if (!this.canDisplayOperationalData()) {
-      return;
-    }
-    this.isLoadingLeadGroups.set(!silent);
-    try {
-      const groups = await firstValueFrom(this.preventaService.listarAgrupacionesBandejaGtr(this.today));
-      this.leadGroups.set(groups);
-      this.totalElements.set(groups.asesores.reduce((total, group) => total + group.cantidad, 0));
-    } finally {
-      this.isLoadingLeadGroups.set(false);
-    }
   }
 
   private async refreshAgendados(silent: boolean): Promise<void> {
@@ -2372,29 +2276,6 @@ export class GtrWorkspaceFacade {
       sortBy: 'lastEntryAt',
       direction: 'desc'
     };
-  }
-
-  private currentLeadGroupFilter(): LeadGtrGroupFilter {
-    const mode = this.leadGroupingMode();
-    const group = this.selectedLeadGroup();
-    if (mode === 'SIN_AGRUPAR' || !group) {
-      return {};
-    }
-
-    const filter: LeadGtrGroupFilter = {
-      tipoGrupo: mode,
-      sinValor: group.sinValor
-    };
-    if (group.idGrupo !== null && group.idGrupo !== undefined) {
-      filter.idGrupo = group.idGrupo;
-    }
-    if (group.codigoTipificacion) {
-      filter.codigoTipificacion = group.codigoTipificacion;
-    }
-    if (group.codigoSubtipificacion) {
-      filter.codigoSubtipificacion = group.codigoSubtipificacion;
-    }
-    return filter;
   }
 
   private getMasivoFilters(): MasivoLeadFilters {
@@ -2646,7 +2527,6 @@ export class GtrWorkspaceFacade {
     this.isLoadingMasivos.set(false);
     this.isLoadingEvents.set(false);
     this.isLoadingTipificationHistory.set(false);
-    this.isLoadingLeadGroups.set(false);
     this.rows.set([]);
     this.agendadosRows.set([]);
     this.masivoRows.set([]);
@@ -2658,17 +2538,8 @@ export class GtrWorkspaceFacade {
       preventas: 0
     });
     this.totalElements.set(0);
-    this.visibleTotalElements.set(0);
     this.totalPages.set(0);
     this.pageNumber.set(0);
-    this.leadGroupingMode.set('SIN_AGRUPAR');
-    this.selectedLeadGroup.set(null);
-    this.leadGroups.set({
-      asesores: [],
-      campanas: [],
-      primerasTipificaciones: [],
-      ultimasTipificaciones: []
-    });
     this.agendadosTotalElements.set(0);
     this.agendadosTotalPages.set(0);
     this.agendadosPageNumber.set(0);

@@ -35,47 +35,6 @@
     }
   </div>
 
-  <section class="lead-grouping" aria-label="Agrupar leads del día">
-    <div class="lead-grouping__header">
-      <div>
-        <strong>Agrupar bandeja</strong>
-      </div>
-      <p-selectbutton
-        [options]="facade.leadGroupingModeOptions"
-        [ngModel]="facade.leadGroupingMode()"
-        optionLabel="label"
-        optionValue="value"
-        [allowEmpty]="false"
-        (onChange)="facade.setLeadGroupingMode($any($event.value))"
-      />
-    </div>
-
-    @if (facade.leadGroupingMode() !== 'SIN_AGRUPAR') {
-      <div class="lead-grouping__groups" aria-label="Grupos disponibles">
-        @for (group of facade.activeLeadGroupOptions(); track facade.leadGroupKey(group)) {
-          <button
-            pButton
-            type="button"
-            class="lead-group"
-            [class.lead-group--selected]="facade.isLeadGroupSelected(group)"
-            [outlined]="!facade.isLeadGroupSelected(group)"
-            severity="secondary"
-            [pTooltip]="group.etiqueta + ' · ' + group.cantidad"
-            tooltipPosition="bottom"
-            (click)="facade.toggleLeadGroup(group)"
-          >
-            <span class="lead-group__label">{{ group.etiqueta }}</span>
-            <span class="lead-group__count">{{ group.cantidad }}</span>
-          </button>
-        } @empty {
-          <span class="lead-grouping__empty">
-            {{ facade.isLoadingLeadGroups() ? 'Actualizando grupos...' : 'No hay grupos disponibles.' }}
-          </span>
-        }
-      </div>
-    }
-  </section>
-
   <p-table
     [value]="facade.rows()"
     dataKey="id"
@@ -83,7 +42,7 @@
     [rowHover]="true"
     [scrollable]="true"
     scrollHeight="flex"
-    [tableStyle]="{ 'min-width': '1380px' }"
+    [tableStyle]="{ 'min-width': '1260px' }"
     styleClass="p-datatable-sm gtr-table"
   >
     <ng-template #header>
@@ -100,7 +59,6 @@
         </th>
         <th>Lead</th>
         <th>Proveedor</th>
-        <th>Campaña</th>
         <th>Canal</th>
         <th>Base</th>
         <th>Documento</th>
@@ -136,7 +94,6 @@
             {{ facade.display(row.nombreProveedorCampana) }}
           }
         </td>
-        <td>{{ facade.display(row.nombreCampana) }}</td>
         <td>{{ facade.display(row.numeroWhatsappEmpresa) }}</td>
         <td>{{ facade.display(row.base) }}</td>
         <td>{{ facade.display(row.numeroDocumentoTitularServicio) }}</td>
@@ -245,7 +202,7 @@
 
     <ng-template #emptymessage>
       <tr>
-          <td colspan="14" style="color: var(--app-text-muted); font-weight: 500; opacity: 0.72; padding: 2rem 1rem; text-align: center;">
+          <td colspan="13" style="color: var(--app-text-muted); font-weight: 500; opacity: 0.72; padding: 2rem 1rem; text-align: center;">
             {{
               !facade.canDisplayOperationalData()
                 ? 'Marca ONLINE para activar esta bandeja.'
@@ -261,7 +218,7 @@
   <p-paginator
     [first]="facade.pageNumber() * facade.pageSize"
     [rows]="facade.pageSize"
-    [totalRecords]="facade.visibleTotalElements()"
+    [totalRecords]="facade.totalElements()"
     (onPageChange)="facade.changePage($event.page ?? 0)"
   />
 </p-card>

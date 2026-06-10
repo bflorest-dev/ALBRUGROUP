@@ -4,12 +4,17 @@ import { Observable } from 'rxjs';
 import { API_CONSTANTS } from '../../../core/constants/api.constants';
 import { PageResponse } from '../../../shared/models/common/page-response';
 import { CatalogoResponse, EventoResponse, PageQuery } from '../../../shared/models/preventa/preventa.models';
-import { LeadDiarioResponse } from '../models/daily-lead.model';
+import {
+  DailyLeadGroupFilter,
+  DailyLeadGroupsResponse,
+  LeadDiarioResponse
+} from '../models/daily-lead.model';
 
 export interface DailyLeadsQuery {
   fecha?: string;
   pageNumber: number;
   pageSize: number;
+  filters?: DailyLeadGroupFilter;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -27,10 +32,36 @@ export class DailyLeadsService {
     if (query.fecha) {
       params = params.set('fecha', query.fecha);
     }
+    if (query.filters?.tipoGrupo) {
+      params = params.set('tipoGrupo', query.filters.tipoGrupo);
+    }
+    if (query.filters?.idGrupo !== undefined) {
+      params = params.set('idGrupo', query.filters.idGrupo);
+    }
+    if (query.filters?.codigoTipificacion) {
+      params = params.set('codigoTipificacion', query.filters.codigoTipificacion);
+    }
+    if (query.filters?.codigoSubtipificacion) {
+      params = params.set('codigoSubtipificacion', query.filters.codigoSubtipificacion);
+    }
+    if (query.filters?.sinValor) {
+      params = params.set('sinValor', true);
+    }
 
     return this.http.get<PageResponse<LeadDiarioResponse>>(`${this.leadUrl}/eventos/registros-diarios`, {
       params
     });
+  }
+
+  listarAgrupacionesRegistrosDiarios(fecha?: string): Observable<DailyLeadGroupsResponse> {
+    let params = new HttpParams();
+    if (fecha) {
+      params = params.set('fecha', fecha);
+    }
+    return this.http.get<DailyLeadGroupsResponse>(
+      `${this.leadUrl}/eventos/registros-diarios/agrupaciones`,
+      { params }
+    );
   }
 
   getCatalogoTipificaciones(etapa: string): Observable<CatalogoResponse> {
