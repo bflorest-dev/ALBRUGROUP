@@ -186,7 +186,7 @@ public class LeadService {
                 ),
                 mapearAgrupaciones(
                         leadRepository.agruparBandejaGtrPorCampana(Etapa.PREVENTA, rangoDia.inicio(), rangoDia.fin()),
-                        "Sin campana"
+                        "Sin campaña"
                 ),
                 mapearAgrupacionesTipificacion(
                         leadRepository.agruparBandejaGtrPorPrimeraTipificacion(
@@ -1780,46 +1780,74 @@ public class LeadService {
             List<LeadGtrAgrupacionProjection> rows,
             String etiquetaSinValor
     ) {
-        return ordenarAgrupaciones(rows.stream()
-                .map(row -> {
-                    boolean sinValor = row.getIdGrupo() == null;
-                    String etiqueta = sinValor ? etiquetaSinValor : row.getEtiqueta();
-                    if (etiqueta == null || etiqueta.isBlank()) {
-                        etiqueta = "Sin nombre";
-                    }
-                    return new LeadGtrAgrupacionItemResponse(
-                            row.getIdGrupo(),
-                            null,
-                            null,
-                            etiqueta,
-                            row.getCantidad(),
-                            sinValor
-                    );
-                })
-                .toList());
+        Map<Long, Long> cantidades = new LinkedHashMap<>();
+        Map<Long, String> etiquetas = new LinkedHashMap<>();
+        long sinValorCantidad = 0;
+        for (LeadGtrAgrupacionProjection row : rows) {
+            if (row.getIdGrupo() == null) {
+                sinValorCantidad += row.getCantidad();
+                continue;
+            }
+            cantidades.merge(row.getIdGrupo(), row.getCantidad(), Long::sum);
+            if (row.getEtiqueta() != null && !row.getEtiqueta().isBlank()) {
+                etiquetas.put(row.getIdGrupo(), row.getEtiqueta());
+            }
+        }
+
+        List<LeadGtrAgrupacionItemResponse> agrupaciones = new ArrayList<>();
+        cantidades.forEach((idGrupo, cantidad) -> agrupaciones.add(new LeadGtrAgrupacionItemResponse(
+                idGrupo,
+                null,
+                null,
+                etiquetas.getOrDefault(idGrupo, "Sin nombre"),
+                cantidad,
+                false
+        )));
+        if (sinValorCantidad > 0) {
+            agrupaciones.add(new LeadGtrAgrupacionItemResponse(
+                    null,
+                    null,
+                    null,
+                    etiquetaSinValor,
+                    sinValorCantidad,
+                    true
+            ));
+        }
+        return ordenarAgrupaciones(agrupaciones);
     }
 
     private List<LeadGtrAgrupacionItemResponse> mapearAgrupacionesTipificacion(
             List<LeadGtrAgrupacionProjection> rows
     ) {
-        return ordenarAgrupaciones(rows.stream()
-                .map(row -> {
-                    String tipificacion = normalizarCodigoAgrupacion(row.getCodigoTipificacion());
-                    String subtipificacion = normalizarCodigoAgrupacion(row.getCodigoSubtipificacion());
-                    boolean sinValor = tipificacion == null && subtipificacion == null;
-                    String etiqueta = sinValor
-                            ? "Sin tipificar"
-                            : tipificacion + (subtipificacion == null ? "" : " / " + subtipificacion);
-                    return new LeadGtrAgrupacionItemResponse(
-                            null,
-                            tipificacion,
-                            subtipificacion,
-                            etiqueta,
-                            row.getCantidad(),
-                            sinValor
-                    );
-                })
-                .toList());
+        List<LeadGtrAgrupacionItemResponse> agrupaciones = new ArrayList<>();
+        long sinTipificar = 0;
+        for (LeadGtrAgrupacionProjection row : rows) {
+            String tipificacion = normalizarCodigoAgrupacion(row.getCodigoTipificacion());
+            String subtipificacion = normalizarCodigoAgrupacion(row.getCodigoSubtipificacion());
+            if (tipificacion == null) {
+                sinTipificar += row.getCantidad();
+                continue;
+            }
+            agrupaciones.add(new LeadGtrAgrupacionItemResponse(
+                    null,
+                    tipificacion,
+                    subtipificacion,
+                    tipificacion + (subtipificacion == null ? "" : " / " + subtipificacion),
+                    row.getCantidad(),
+                    false
+            ));
+        }
+        if (sinTipificar > 0) {
+            agrupaciones.add(new LeadGtrAgrupacionItemResponse(
+                    null,
+                    null,
+                    null,
+                    "Sin tipificar",
+                    sinTipificar,
+                    true
+            ));
+        }
+        return ordenarAgrupaciones(agrupaciones);
     }
 
     private List<LeadGtrAgrupacionItemResponse> ordenarAgrupaciones(

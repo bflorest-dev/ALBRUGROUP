@@ -1557,6 +1557,42 @@ export class GtrWorkspaceFacade {
     return advisor.roles?.includes('OJT') ?? false;
   }
 
+  async setLeadGroupingMode(mode: LeadGtrGroupMode | null | undefined): Promise<void> {
+    if (!mode || mode === this.leadGroupingMode()) {
+      return;
+    }
+    this.leadGroupingMode.set(mode);
+    this.selectedLeadGroup.set(null);
+    this.pageNumber.set(0);
+    this.selectedIds.set(new Set());
+    await this.refreshPage(false);
+  }
+
+  async toggleLeadGroup(group: LeadGtrGroupItemResponse): Promise<void> {
+    const selected = this.selectedLeadGroup();
+    this.selectedLeadGroup.set(
+      selected && this.leadGroupKey(selected) === this.leadGroupKey(group) ? null : group
+    );
+    this.pageNumber.set(0);
+    this.selectedIds.set(new Set());
+    await this.refreshPage(false);
+  }
+
+  isLeadGroupSelected(group: LeadGtrGroupItemResponse): boolean {
+    const selected = this.selectedLeadGroup();
+    return !!selected && this.leadGroupKey(selected) === this.leadGroupKey(group);
+  }
+
+  leadGroupKey(group: LeadGtrGroupItemResponse): string {
+    if (group.sinValor) {
+      return `${this.leadGroupingMode()}:SIN_VALOR`;
+    }
+    if (group.idGrupo !== null && group.idGrupo !== undefined) {
+      return `${this.leadGroupingMode()}:ID:${group.idGrupo}`;
+    }
+    return `${this.leadGroupingMode()}:TIP:${group.codigoTipificacion ?? ''}:SUB:${group.codigoSubtipificacion ?? ''}`;
+  }
+
   async nextPage(): Promise<void> {
     if (this.pageNumber() + 1 >= this.totalPages()) {
       return;
@@ -2338,6 +2374,29 @@ export class GtrWorkspaceFacade {
     };
   }
 
+  private currentLeadGroupFilter(): LeadGtrGroupFilter {
+    const mode = this.leadGroupingMode();
+    const group = this.selectedLeadGroup();
+    if (mode === 'SIN_AGRUPAR' || !group) {
+      return {};
+    }
+
+    const filter: LeadGtrGroupFilter = {
+      tipoGrupo: mode,
+      sinValor: group.sinValor
+    };
+    if (group.idGrupo !== null && group.idGrupo !== undefined) {
+      filter.idGrupo = group.idGrupo;
+    }
+    if (group.codigoTipificacion) {
+      filter.codigoTipificacion = group.codigoTipificacion;
+    }
+    if (group.codigoSubtipificacion) {
+      filter.codigoSubtipificacion = group.codigoSubtipificacion;
+    }
+    return filter;
+  }
+
   private getMasivoFilters(): MasivoLeadFilters {
     const raw = this.masivoFiltersForm.getRawValue();
     return {
@@ -2587,6 +2646,7 @@ export class GtrWorkspaceFacade {
     this.isLoadingMasivos.set(false);
     this.isLoadingEvents.set(false);
     this.isLoadingTipificationHistory.set(false);
+    this.isLoadingLeadGroups.set(false);
     this.rows.set([]);
     this.agendadosRows.set([]);
     this.masivoRows.set([]);
@@ -2598,8 +2658,17 @@ export class GtrWorkspaceFacade {
       preventas: 0
     });
     this.totalElements.set(0);
+    this.visibleTotalElements.set(0);
     this.totalPages.set(0);
     this.pageNumber.set(0);
+    this.leadGroupingMode.set('SIN_AGRUPAR');
+    this.selectedLeadGroup.set(null);
+    this.leadGroups.set({
+      asesores: [],
+      campanas: [],
+      primerasTipificaciones: [],
+      ultimasTipificaciones: []
+    });
     this.agendadosTotalElements.set(0);
     this.agendadosTotalPages.set(0);
     this.agendadosPageNumber.set(0);
