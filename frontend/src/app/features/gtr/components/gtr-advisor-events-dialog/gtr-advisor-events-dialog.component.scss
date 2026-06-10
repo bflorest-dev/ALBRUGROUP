@@ -1,0 +1,46 @@
+.events-dialog-title {
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.event-detail {
+  align-items: center;
+  display: flex;
+  gap: 0.4rem;
+  justify-content: space-between;
+}
+
+.event-detail__summary {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+:host ::ng-deep .gtr-table td,
+:host ::ng-deep .gtr-table th {
+  text-align: center;
+  vertical-align: middle;
+  white-space: normal;
+}
+
+:host ::ng-deep .gtr-table th {
+  color: var(--app-text-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+:host ::ng-deep .gtr-table td {
+  color: var(--app-text);
+}
+
+:host ::ng-deep .gtr-dialog--events {
+  width: min(62rem, calc(100vw - 1rem));
+}
+
+@media (min-width: 901px) {
+  :host ::ng-deep .gtr-dialog--events {
+    margin-left: 292px;
+    width: min(62rem, calc(100vw - 292px - 2rem));
+  }
+}

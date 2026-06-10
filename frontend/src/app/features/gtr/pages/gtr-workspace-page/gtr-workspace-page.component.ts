@@ -20,6 +20,7 @@ import { GtrAgendadosBoardComponent } from '../../components/gtr-agendados-board
 import { GtrHistoricosBoardComponent } from '../../components/gtr-historicos-board/gtr-historicos-board.component';
 import { GtrLeadsBoardComponent } from '../../components/gtr-leads-board/gtr-leads-board.component';
 import { GtrEventsDialogComponent } from '../../components/gtr-events-dialog/gtr-events-dialog.component';
+import { GtrAdvisorEventsDialogComponent } from '../../components/gtr-advisor-events-dialog/gtr-advisor-events-dialog.component';
 import { GtrSearchDialogComponent } from '../../components/gtr-search-dialog/gtr-search-dialog.component';
 import { GtrScheduleExtensionDialogComponent } from '../../components/gtr-schedule-extension-dialog/gtr-schedule-extension-dialog.component';
 
@@ -45,6 +46,7 @@ import { GtrScheduleExtensionDialogComponent } from '../../components/gtr-schedu
     GtrHistoricosBoardComponent,
     GtrLeadsBoardComponent,
     GtrEventsDialogComponent,
+    GtrAdvisorEventsDialogComponent,
     GtrSearchDialogComponent,
     GtrScheduleExtensionDialogComponent
   ],

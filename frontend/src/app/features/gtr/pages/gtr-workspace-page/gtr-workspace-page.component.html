@@ -354,10 +354,6 @@
         <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
         <span>{{ facade.intakeConfirmationMessage() }}</span>
       </p>
-
-      @if (facade.intakeConfirmationFollowUp(); as intakeConfirmationFollowUp) {
-        <p class="intake-confirmation__followup">{{ intakeConfirmationFollowUp }}</p>
-      }
     </div>
 
     <div class="dialog-actions">
@@ -535,6 +531,8 @@
   </p-dialog>
 
   <app-gtr-events-dialog />
+
+  <app-gtr-advisor-events-dialog />
 
   <app-gtr-search-dialog />
 

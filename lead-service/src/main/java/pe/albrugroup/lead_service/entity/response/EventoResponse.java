@@ -2,6 +2,7 @@ package pe.albrugroup.lead_service.entity.response;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
@@ -15,6 +16,9 @@ public class EventoResponse {
 
     private Long id;
     private Long idLead;
+    // Numero de lead (humano). Solo lo pobla la consulta por empleado; el listado por-lead lo deja null.
+    @Setter
+    private String lead;
     private Long idCampana;
     private Long idActor;
     private String nombreActor;

@@ -14,6 +14,7 @@ import pe.albrugroup.lead_service.entity.enums.CriterioZona;
 import pe.albrugroup.lead_service.entity.enums.EstadoPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.request.LeadAsignacionMasivaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadAsignacionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
@@ -40,6 +41,8 @@ import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorVentasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrMetricasResponse;
+import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionItemResponse;
+import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionesResponse;
 import pe.albrugroup.lead_service.entity.response.LeadContextoLookupResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrLookupResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
@@ -54,6 +57,7 @@ import pe.albrugroup.lead_service.entity.response.GtrTipificacionCampanaResponse
 import pe.albrugroup.lead_service.entity.response.SupervisorVentasProveedorResumenResponse;
 import pe.albrugroup.lead_service.entity.response.SupervisorVentasResumenResponse;
 import pe.albrugroup.lead_service.repository.projection.CampanaTipificacionCantidadProjection;
+import pe.albrugroup.lead_service.repository.projection.LeadGtrAgrupacionProjection;
 import pe.albrugroup.lead_service.entity.response.TelefonoResponse;
 import pe.albrugroup.lead_service.entity.response.TelevisionResponse;
 import pe.albrugroup.lead_service.exception.BusinessException;
@@ -120,6 +124,7 @@ public class LeadService {
     private static final String TIPIFICACION_SCORE_PREVENTA = "SCORE_PREVENTA";
     private static final String TIPIFICACION_PREVENTA_COMPLETA = "PREVENTA_COMPLETA";
     private static final String TIPIFICACION_GRABADO = "GRABADO";
+    private static final Instant MIS_PREVENTAS_FECHA_HASTA_ABIERTA = Instant.parse("9999-01-01T00:00:00Z");
     private static final String SUBTIPIFICACION_PREVENTA = "PREVENTA";
     private static final String SUBTIPIFICACION_VENTA_CERRADA = "VENTA_CERRADA";
     private static final List<Accion> ACCIONES_GESTION_LEAD = List.of(Accion.CONTACTO, Accion.TIPIFICACION);
@@ -132,22 +137,37 @@ public class LeadService {
     private static final Set<String> LEAD_POSTVENTA_SORT_FIELDS = Set.of(
             "lastEntryAt", "createdAt", "lead", "nombreProveedorSnapshot", "estadoPostventa", "diaCorteFacturacion"
     );
-    private static final Set<String> LEAD_AGENDADO_SORT_FIELDS = Set.of(
-            "horaProgramada", "createdAt", "lead", "nombreAsesorAsignado", "estado"
-    );
 
-    public PageResponse<LeadGtrResponse> listarBandejaGtr(LocalDate fecha, String lead, PageRequest pageRequest) {
+    public PageResponse<LeadGtrResponse> listarBandejaGtr(
+            LocalDate fecha,
+            String lead,
+            TipoGrupoGtr tipoGrupo,
+            Long idGrupo,
+            String codigoTipificacion,
+            String codigoSubtipificacion,
+            boolean sinValor,
+            PageRequest pageRequest
+    ) {
         boolean buscandoPorLead = lead != null && !lead.isBlank();
         String leadPattern = (buscandoPorLead ? lead.trim() : "") + "%";
         OperationalDateTime.InstantRange rangoDia = buscandoPorLead
                 ? new OperationalDateTime.InstantRange(Instant.EPOCH, Instant.ofEpochSecond(253402300799L))
                 : OperationalDateTime.dayRange(fecha);
+        validarFiltroAgrupacionGtr(tipoGrupo, idGrupo, codigoTipificacion, sinValor);
 
         Page<LeadGtrResponse> leads = leadRepository.listarBandejaGtr(
                 Etapa.PREVENTA,
                 leadPattern,
                 rangoDia.inicio(),
                 rangoDia.fin(),
+                tipoGrupo == TipoGrupoGtr.ASESOR,
+                tipoGrupo == TipoGrupoGtr.CAMPANA,
+                tipoGrupo == TipoGrupoGtr.PRIMERA_TIPIFICACION,
+                tipoGrupo == TipoGrupoGtr.ULTIMA_TIPIFICACION,
+                idGrupo,
+                normalizarCodigoAgrupacion(codigoTipificacion),
+                normalizarCodigoAgrupacion(codigoSubtipificacion),
+                sinValor,
                 paginationService.toPageable(pageRequest, LEAD_GTR_SORT_FIELDS)
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadGtrResponse::getId, this::setTotalesAsignacion);
@@ -155,6 +175,34 @@ public class LeadService {
             aplicarAlertasRegistrosDia(leads.getContent(), rangoDia.inicio(), rangoDia.fin());
         }
         return PageResponse.from(leads);
+    }
+
+    public LeadGtrAgrupacionesResponse listarAgrupacionesBandejaGtr(LocalDate fecha) {
+        OperationalDateTime.InstantRange rangoDia = OperationalDateTime.dayRange(fecha);
+        return new LeadGtrAgrupacionesResponse(
+                mapearAgrupaciones(
+                        leadRepository.agruparBandejaGtrPorAsesor(Etapa.PREVENTA, rangoDia.inicio(), rangoDia.fin()),
+                        "Sin asignar"
+                ),
+                mapearAgrupaciones(
+                        leadRepository.agruparBandejaGtrPorCampana(Etapa.PREVENTA, rangoDia.inicio(), rangoDia.fin()),
+                        "Sin campana"
+                ),
+                mapearAgrupacionesTipificacion(
+                        leadRepository.agruparBandejaGtrPorPrimeraTipificacion(
+                                Etapa.PREVENTA,
+                                rangoDia.inicio(),
+                                rangoDia.fin()
+                        )
+                ),
+                mapearAgrupacionesTipificacion(
+                        leadRepository.agruparBandejaGtrPorUltimaTipificacion(
+                                Etapa.PREVENTA,
+                                rangoDia.inicio(),
+                                rangoDia.fin()
+                        )
+                )
+        );
     }
 
     public LeadGtrLookupResponse buscarContextoLeadGtr(String lead) {
@@ -305,43 +353,34 @@ public class LeadService {
     }
 
     public PageResponse<LeadAgendadoGtrResponse> listarAgendadosGtr(PageRequest pageRequest) {
-        Page<LeadAgendadoGtrResponse> leads;
-        if ("horaProgramada".equals(pageRequest.getSortBy())) {
-            leads = listarAgendadosGtrOrdenadosPorHora(pageRequest);
-        } else {
-            leads = leadRepository.listarLeadsAgendadosGtr(
-                    Etapa.PREVENTA,
-                    TIPIFICACION_AGENDADO,
-                    Accion.TIPIFICACION,
-                    paginationService.toPageable(pageRequest, LEAD_AGENDADO_SORT_FIELDS)
-            );
-        }
+        Page<LeadAgendadoGtrResponse> leads = listarAgendadosGtrOrdenados(pageRequest);
         aplicarTotalesAsignacion(leads.getContent(), LeadAgendadoGtrResponse::getId, this::setTotalesAsignacion);
         return PageResponse.from(leads);
     }
 
-    private Page<LeadAgendadoGtrResponse> listarAgendadosGtrOrdenadosPorHora(PageRequest pageRequest) {
+    private Page<LeadAgendadoGtrResponse> listarAgendadosGtrOrdenados(PageRequest pageRequest) {
         validarDirection(pageRequest.getDirection());
+        boolean desc = "desc".equalsIgnoreCase(pageRequest.getDirection());
         var pageable = org.springframework.data.domain.PageRequest.of(
                 pageRequest.getPageNumber(),
                 pageRequest.getPageSize()
         );
 
-        if ("desc".equalsIgnoreCase(pageRequest.getDirection())) {
-            return leadRepository.listarLeadsAgendadosGtrPorHoraDesc(
-                    Etapa.PREVENTA,
-                    TIPIFICACION_AGENDADO,
-                    Accion.TIPIFICACION,
-                    pageable
-            );
+        // "agendado" ordena por el momento en que se tipifico (Evento.createdAt);
+        // "programado" (default) ordena por la hora de la cita (Evento.horaProgramada).
+        if ("agendado".equals(pageRequest.getSortBy())) {
+            return desc
+                    ? leadRepository.listarLeadsAgendadosGtrPorAgendadoDesc(
+                            Etapa.PREVENTA, TIPIFICACION_AGENDADO, Accion.TIPIFICACION, pageable)
+                    : leadRepository.listarLeadsAgendadosGtrPorAgendadoAsc(
+                            Etapa.PREVENTA, TIPIFICACION_AGENDADO, Accion.TIPIFICACION, pageable);
         }
 
-        return leadRepository.listarLeadsAgendadosGtrPorHoraAsc(
-                Etapa.PREVENTA,
-                TIPIFICACION_AGENDADO,
-                Accion.TIPIFICACION,
-                pageable
-        );
+        return desc
+                ? leadRepository.listarLeadsAgendadosGtrPorHoraDesc(
+                        Etapa.PREVENTA, TIPIFICACION_AGENDADO, Accion.TIPIFICACION, pageable)
+                : leadRepository.listarLeadsAgendadosGtrPorHoraAsc(
+                        Etapa.PREVENTA, TIPIFICACION_AGENDADO, Accion.TIPIFICACION, pageable);
     }
 
     private void validarDirection(String direction) {
@@ -531,8 +570,10 @@ public class LeadService {
     // (TIPIFICACION / PREVENTA_COMPLETA / VENTA_CERRADA). Solo lectura: sirve de seguimiento.
 
     public PageResponse<MisPreventaResponse> listarMisPreventas(PageRequest pageRequest, LocalDate fechaDesde, LocalDate fechaHasta) {
-        Instant desde = fechaDesde == null ? null : OperationalDateTime.startOfDay(fechaDesde);
-        Instant hasta = fechaHasta == null ? null : OperationalDateTime.endExclusiveOfDay(fechaHasta);
+        // Cotas concretas (centinelas si no hay filtro): evitamos parametros null en el WHERE, que en
+        // Postgres provocan "could not determine data type of parameter" (42P18).
+        Instant desde = fechaDesde == null ? Instant.EPOCH : OperationalDateTime.startOfDay(fechaDesde);
+        Instant hasta = fechaHasta == null ? MIS_PREVENTAS_FECHA_HASTA_ABIERTA : OperationalDateTime.endExclusiveOfDay(fechaHasta);
         var page = leadRepository.listarMisPreventas(
                 currentUser.empleadoID(),
                 desde,
@@ -1698,6 +1739,100 @@ public class LeadService {
 
     private String normalizarLead(String lead) {
         return lead == null ? null : lead.trim();
+    }
+
+    private void validarFiltroAgrupacionGtr(
+            TipoGrupoGtr tipoGrupo,
+            Long idGrupo,
+            String codigoTipificacion,
+            boolean sinValor
+    ) {
+        if (tipoGrupo == null) {
+            if (idGrupo != null || codigoTipificacion != null || sinValor) {
+                throw new BadRequestException("Debes indicar el tipo de agrupacion para filtrar la bandeja");
+            }
+            return;
+        }
+
+        if (sinValor) {
+            return;
+        }
+
+        if ((tipoGrupo == TipoGrupoGtr.ASESOR || tipoGrupo == TipoGrupoGtr.CAMPANA) && idGrupo == null) {
+            throw new BadRequestException("Debes indicar el grupo seleccionado");
+        }
+
+        if ((tipoGrupo == TipoGrupoGtr.PRIMERA_TIPIFICACION
+                || tipoGrupo == TipoGrupoGtr.ULTIMA_TIPIFICACION)
+                && normalizarCodigoAgrupacion(codigoTipificacion) == null) {
+            throw new BadRequestException("Debes indicar la tipificacion seleccionada");
+        }
+    }
+
+    private String normalizarCodigoAgrupacion(String codigo) {
+        if (codigo == null || codigo.isBlank()) {
+            return null;
+        }
+        return codigo.trim();
+    }
+
+    private List<LeadGtrAgrupacionItemResponse> mapearAgrupaciones(
+            List<LeadGtrAgrupacionProjection> rows,
+            String etiquetaSinValor
+    ) {
+        return ordenarAgrupaciones(rows.stream()
+                .map(row -> {
+                    boolean sinValor = row.getIdGrupo() == null;
+                    String etiqueta = sinValor ? etiquetaSinValor : row.getEtiqueta();
+                    if (etiqueta == null || etiqueta.isBlank()) {
+                        etiqueta = "Sin nombre";
+                    }
+                    return new LeadGtrAgrupacionItemResponse(
+                            row.getIdGrupo(),
+                            null,
+                            null,
+                            etiqueta,
+                            row.getCantidad(),
+                            sinValor
+                    );
+                })
+                .toList());
+    }
+
+    private List<LeadGtrAgrupacionItemResponse> mapearAgrupacionesTipificacion(
+            List<LeadGtrAgrupacionProjection> rows
+    ) {
+        return ordenarAgrupaciones(rows.stream()
+                .map(row -> {
+                    String tipificacion = normalizarCodigoAgrupacion(row.getCodigoTipificacion());
+                    String subtipificacion = normalizarCodigoAgrupacion(row.getCodigoSubtipificacion());
+                    boolean sinValor = tipificacion == null && subtipificacion == null;
+                    String etiqueta = sinValor
+                            ? "Sin tipificar"
+                            : tipificacion + (subtipificacion == null ? "" : " / " + subtipificacion);
+                    return new LeadGtrAgrupacionItemResponse(
+                            null,
+                            tipificacion,
+                            subtipificacion,
+                            etiqueta,
+                            row.getCantidad(),
+                            sinValor
+                    );
+                })
+                .toList());
+    }
+
+    private List<LeadGtrAgrupacionItemResponse> ordenarAgrupaciones(
+            List<LeadGtrAgrupacionItemResponse> agrupaciones
+    ) {
+        return agrupaciones.stream()
+                .sorted(Comparator.comparingLong(LeadGtrAgrupacionItemResponse::getCantidad)
+                        .reversed()
+                        .thenComparing(
+                                LeadGtrAgrupacionItemResponse::getEtiqueta,
+                                String.CASE_INSENSITIVE_ORDER
+                        ))
+                .toList();
     }
 
     private LeadGtrLookupResponse mapearContextoLeadGtr(Lead lead) {

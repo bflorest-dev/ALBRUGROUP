@@ -1,0 +1,65 @@
+<p-dialog
+  [visible]="facade.activeDialog() === 'advisor-events'"
+  (visibleChange)="!$event && facade.closeAdvisorEvents()"
+  [modal]="true"
+  [draggable]="false"
+  styleClass="gtr-dialog gtr-dialog--events"
+>
+  <ng-template #header>
+    <span class="events-dialog-title">
+      <span>Eventos del dia</span>
+      @if (facade.advisorEventsTarget(); as advisor) {
+        <p-tag severity="secondary" [value]="advisor.nombreCompleto | uppercase" />
+      }
+    </span>
+  </ng-template>
+
+  <p-table
+    [value]="facade.advisorEventRows()"
+    [rowHover]="true"
+    [tableStyle]="{ 'min-width': '600px' }"
+    styleClass="p-datatable-sm gtr-table"
+  >
+    <ng-template #header>
+      <tr>
+        <th>Hora</th>
+        <th>Evento</th>
+        <th>Lead</th>
+        <th>Detalle</th>
+      </tr>
+    </ng-template>
+
+    <ng-template #body let-evento>
+      @if (!facade.isLoadingAdvisorEvents()) {
+        <tr>
+          <td>{{ evento.createdAt | date: 'hh:mm a' }}</td>
+          <td><p-tag [value]="facade.display(evento.accion)" severity="secondary" /></td>
+          <td>{{ facade.display(evento.lead) }}</td>
+          <td>
+            <div class="event-detail">
+              <span class="event-detail__summary">{{ facade.eventSummary(evento) }}</span>
+              <app-gtr-event-comment-popover [comment]="evento.comentario" />
+            </div>
+          </td>
+        </tr>
+      }
+    </ng-template>
+
+    <ng-template #emptymessage>
+      @if (facade.isLoadingAdvisorEvents()) {
+        @for (row of [1, 2, 3, 4]; track row) {
+          <tr>
+            <td><p-skeleton width="4.25rem" height="1rem" /></td>
+            <td><p-skeleton width="6.5rem" height="1.5rem" borderRadius="999px" /></td>
+            <td><p-skeleton width="5rem" height="1rem" /></td>
+            <td><p-skeleton width="100%" height="1rem" /></td>
+          </tr>
+        }
+      } @else {
+        <tr>
+          <td colspan="4">Este asesor no registra eventos hoy.</td>
+        </tr>
+      }
+    </ng-template>
+  </p-table>
+</p-dialog>

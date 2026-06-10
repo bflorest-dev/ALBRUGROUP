@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import pe.albrugroup.lead_service.entity.request.*;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.response.*;
 import pe.albrugroup.lead_service.service.LeadExcelIntakeService;
 import pe.albrugroup.lead_service.service.LeadService;
@@ -62,10 +63,31 @@ public class PreventaController {
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
             @RequestParam(required = false) String lead,
+            @RequestParam(required = false) TipoGrupoGtr tipoGrupo,
+            @RequestParam(required = false) Long idGrupo,
+            @RequestParam(required = false) String codigoTipificacion,
+            @RequestParam(required = false) String codigoSubtipificacion,
+            @RequestParam(defaultValue = "false") boolean sinValor,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var leads = leadService.listarBandejaGtr(fecha, lead, pageRequest);
+        var leads = leadService.listarBandejaGtr(
+                fecha,
+                lead,
+                tipoGrupo,
+                idGrupo,
+                codigoTipificacion,
+                codigoSubtipificacion,
+                sinValor,
+                pageRequest
+        );
         return ResponseEntity.status(HttpStatus.OK).body(leads);
+    }
+    @GetMapping("/gtr/agrupaciones") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
+    public ResponseEntity<LeadGtrAgrupacionesResponse> listarAgrupacionesBandejaGtr(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
+    ) {
+        return ResponseEntity.ok(leadService.listarAgrupacionesBandejaGtr(fecha));
     }
     @GetMapping("/gtr/lookup") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
     public ResponseEntity<LeadGtrLookupResponse> buscarContextoLeadGtr(

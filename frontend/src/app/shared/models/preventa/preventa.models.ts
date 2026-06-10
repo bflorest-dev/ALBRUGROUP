@@ -106,6 +106,38 @@ export interface LeadGtrResponse {
   tieneRegistrosMismaCampanaDia?: boolean;
 }
 
+export type LeadGtrGroupType =
+  | 'ASESOR'
+  | 'CAMPANA'
+  | 'PRIMERA_TIPIFICACION'
+  | 'ULTIMA_TIPIFICACION';
+
+export type LeadGtrGroupMode = 'SIN_AGRUPAR' | LeadGtrGroupType;
+
+export interface LeadGtrGroupItemResponse {
+  idGrupo?: number | null;
+  codigoTipificacion?: string | null;
+  codigoSubtipificacion?: string | null;
+  etiqueta: string;
+  cantidad: number;
+  sinValor: boolean;
+}
+
+export interface LeadGtrGroupsResponse {
+  asesores: LeadGtrGroupItemResponse[];
+  campanas: LeadGtrGroupItemResponse[];
+  primerasTipificaciones: LeadGtrGroupItemResponse[];
+  ultimasTipificaciones: LeadGtrGroupItemResponse[];
+}
+
+export interface LeadGtrGroupFilter {
+  tipoGrupo?: LeadGtrGroupType;
+  idGrupo?: number;
+  codigoTipificacion?: string;
+  codigoSubtipificacion?: string;
+  sinValor?: boolean;
+}
+
 export interface LeadAgendadoGtrResponse {
   id: number;
   createdAt: string;
@@ -411,6 +443,8 @@ export interface LeadTipificacionVentaRequest {
 export interface EventoResponse {
   id: number;
   idLead: number;
+  // Numero de lead (humano). Solo lo pobla el listado de eventos por empleado.
+  lead?: string | null;
   idCampana?: number | null;
   idActor?: number | null;
   nombreActor?: string | null;

@@ -292,12 +292,8 @@ label {
   gap: .55rem;
   padding: .65rem .75rem;
 }
+.intake-confirmation__warning span { white-space: pre-line; }
 .intake-confirmation__warning i { font-size: 1rem; margin-top: .1rem; }
-.intake-confirmation__followup {
-  color: var(--app-text);
-  font-weight: 600;
-  margin: 0;
-}
 
 .reassign-confirmation { display: grid; gap: .65rem; margin-bottom: 1.25rem; }
 .reassign-problem {

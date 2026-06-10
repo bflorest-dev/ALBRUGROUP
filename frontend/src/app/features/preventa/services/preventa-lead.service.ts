@@ -17,6 +17,8 @@ import {
   LeadDireccionRequest,
   EventoResponse,
   LeadGtrResponse,
+  LeadGtrGroupFilter,
+  LeadGtrGroupsResponse,
   LeadGtrLookupResponse,
   LeadGtrMetricasResponse,
   AsesorLeadsPendientesResponse,
@@ -47,9 +49,35 @@ export class PreventaLeadService {
   private readonly leadUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads`;
   private readonly authUrl = `${API_CONSTANTS.gatewayBaseUrl}${API_CONSTANTS.authBasePath}`;
 
-  listarBandejaGtr(fecha: string, query: PageQuery): Observable<LeadPage<LeadGtrResponse>> {
+  listarBandejaGtr(
+    fecha: string,
+    query: PageQuery,
+    filters: LeadGtrGroupFilter = {}
+  ): Observable<LeadPage<LeadGtrResponse>> {
+    let params = this.pageParams(query).set('fecha', fecha);
+    if (filters.tipoGrupo) {
+      params = params.set('tipoGrupo', filters.tipoGrupo);
+    }
+    if (filters.idGrupo !== undefined) {
+      params = params.set('idGrupo', filters.idGrupo);
+    }
+    if (filters.codigoTipificacion) {
+      params = params.set('codigoTipificacion', filters.codigoTipificacion);
+    }
+    if (filters.codigoSubtipificacion) {
+      params = params.set('codigoSubtipificacion', filters.codigoSubtipificacion);
+    }
+    if (filters.sinValor) {
+      params = params.set('sinValor', true);
+    }
     return this.http.get<LeadPage<LeadGtrResponse>>(`${this.leadUrl}/preventa/gtr`, {
-      params: this.pageParams(query).set('fecha', fecha)
+      params
+    });
+  }
+
+  listarAgrupacionesBandejaGtr(fecha: string): Observable<LeadGtrGroupsResponse> {
+    return this.http.get<LeadGtrGroupsResponse>(`${this.leadUrl}/preventa/gtr/agrupaciones`, {
+      params: new HttpParams().set('fecha', fecha)
     });
   }
 
@@ -119,6 +147,12 @@ export class PreventaLeadService {
 
   listarEventosLead(idLead: number, fecha: string, query: PageQuery): Observable<LeadPage<EventoResponse>> {
     return this.http.get<LeadPage<EventoResponse>>(`${this.leadUrl}/eventos/lead/${idLead}`, {
+      params: this.pageParams(query).set('fechaDesde', fecha).set('fechaHasta', fecha)
+    });
+  }
+
+  listarEventosEmpleado(idEmpleado: number, fecha: string, query: PageQuery): Observable<LeadPage<EventoResponse>> {
+    return this.http.get<LeadPage<EventoResponse>>(`${this.leadUrl}/eventos/empleado/${idEmpleado}`, {
       params: this.pageParams(query).set('fechaDesde', fecha).set('fechaHasta', fecha)
     });
   }

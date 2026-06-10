@@ -4,3 +4,42 @@
   border: 1px solid var(--app-border-soft);
   box-shadow: var(--app-shadow-soft);
 }
+
+// Cabeceras ordenables (Agendado / Programado): boton que ocupa la celda sin alterar el layout.
+.col-sortable {
+  white-space: nowrap;
+}
+
+.sort-header {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: 800;
+  gap: 0.4rem;
+  justify-content: center;
+  margin-inline: auto;
+  padding: 0.15rem 0.3rem;
+}
+
+.sort-header i {
+  font-size: 0.72rem;
+  opacity: 0.55;
+}
+
+.sort-header--active {
+  color: var(--role-accent);
+}
+
+.sort-header--active i {
+  opacity: 1;
+}
+
+.sort-header:focus-visible {
+  border-radius: 0.4rem;
+  outline: 2px solid var(--role-accent);
+  outline-offset: 2px;
+}

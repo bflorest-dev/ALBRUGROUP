@@ -21,6 +21,10 @@ import {
   Etapa,
   EventoResponse,
   LeadAgendadoGtrResponse,
+  LeadGtrGroupFilter,
+  LeadGtrGroupItemResponse,
+  LeadGtrGroupMode,
+  LeadGtrGroupsResponse,
   LeadGtrLookupResponse,
   LeadGtrResponse,
   LeadGtrMetricasResponse,
@@ -73,11 +77,7 @@ type TipificacionVisualMeta = {
   paletteIndex: number;
 };
 
-type AgendadoGroup = {
-  key: string;
-  label: string;
-  rows: VisualLeadAgendadoGtr[];
-};
+type AgendadosSortField = 'programado' | 'agendado';
 
 type AdvisorOption = {
   empleadoId: number;
@@ -116,7 +116,7 @@ type AssignmentConflictDetails = {
   requiereConfirmarGestionPrevia?: boolean;
 };
 
-type GtrDialog = 'lead' | 'intake-confirm' | 'snapshot' | 'assign' | 'reassign-confirm' | 'events' | 'search' | 'schedule-extension' | null;
+type GtrDialog = 'lead' | 'intake-confirm' | 'snapshot' | 'assign' | 'reassign-confirm' | 'events' | 'advisor-events' | 'search' | 'schedule-extension' | null;
 type EventAnomalyFilter = 'multiple-records' | 'same-campaign' | null;
 type LeadHistoryMode = 'eventos-dia' | 'tipificacion' | 'asesor';
 type TipificationHistoryGroupOption = {
@@ -171,6 +171,7 @@ export class GtrWorkspaceFacade {
   readonly isUploadingMasivoExcel = signal(false);
   readonly isLoadingEvents = signal(false);
   readonly isLoadingTipificationHistory = signal(false);
+  readonly isLoadingLeadGroups = signal(false);
   readonly intakeNumberMaxLength = signal(9);
   readonly masivoExcelResultsDialogOpen = signal(false);
   readonly successMessage = signal<string | null>(null);
@@ -201,11 +202,23 @@ export class GtrWorkspaceFacade {
     preventas: 0
   });
   readonly totalElements = signal(0);
+  readonly visibleTotalElements = signal(0);
   readonly totalPages = signal(0);
   readonly pageNumber = signal(0);
+  readonly leadGroupingMode = signal<LeadGtrGroupMode>('SIN_AGRUPAR');
+  readonly selectedLeadGroup = signal<LeadGtrGroupItemResponse | null>(null);
+  readonly leadGroups = signal<LeadGtrGroupsResponse>({
+    asesores: [],
+    campanas: [],
+    primerasTipificaciones: [],
+    ultimasTipificaciones: []
+  });
   readonly agendadosTotalElements = signal(0);
   readonly agendadosTotalPages = signal(0);
   readonly agendadosPageNumber = signal(0);
+  // Orden de la bandeja de agendados: 'programado' = hora de la cita; 'agendado' = momento de tipificacion.
+  readonly agendadosSortField = signal<AgendadosSortField>('programado');
+  readonly agendadosSortDirection = signal<'asc' | 'desc'>('asc');
   readonly masivoTotalElements = signal(0);
   readonly masivoTotalPages = signal(0);
   readonly masivoPageNumber = signal(0);
@@ -238,6 +251,10 @@ export class GtrWorkspaceFacade {
   private eventsReturnDialog: GtrDialog = null;
   readonly activeAssignmentLead = signal<LeadGtrResponse | null>(null);
   readonly activeEventsLead = signal<EventHistoryTarget | null>(null);
+  // --- Historial de eventos del dia de un asesor (boton en la card del drawer) ---
+  readonly advisorEventsTarget = signal<AdvisorOption | null>(null);
+  readonly advisorEventRows = signal<EventoResponse[]>([]);
+  readonly isLoadingAdvisorEvents = signal(false);
   readonly pendingReassignment = signal<PendingReassignment | null>(null);
   readonly advisorsPanelOpen = signal(false);
   // --- Ampliacion de horario (modal sobre una card de asesor) ---
@@ -328,6 +345,13 @@ export class GtrWorkspaceFacade {
     { label: 'Postventa', value: 'POSTVENTA' },
     { label: 'Cobranza', value: 'COBRANZA' }
   ];
+  readonly leadGroupingModeOptions: SelectOption<LeadGtrGroupMode>[] = [
+    { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
+    { label: 'Asesor', value: 'ASESOR' },
+    { label: 'Campaña', value: 'CAMPANA' },
+    { label: 'Primera tipificación', value: 'PRIMERA_TIPIFICACION' },
+    { label: 'Última tipificación', value: 'ULTIMA_TIPIFICACION' }
+  ];
 
   readonly providerOptions = computed<SelectOption<number>[]>(() => {
     const providers = new Map<number, string>();
@@ -342,6 +366,21 @@ export class GtrWorkspaceFacade {
         .map(([value, label]) => ({ label, value }))
         .sort((left, right) => left.label.localeCompare(right.label))
     ];
+  });
+  readonly activeLeadGroupOptions = computed<LeadGtrGroupItemResponse[]>(() => {
+    const groups = this.leadGroups();
+    switch (this.leadGroupingMode()) {
+      case 'ASESOR':
+        return groups.asesores;
+      case 'CAMPANA':
+        return groups.campanas;
+      case 'PRIMERA_TIPIFICACION':
+        return groups.primerasTipificaciones;
+      case 'ULTIMA_TIPIFICACION':
+        return groups.ultimasTipificaciones;
+      default:
+        return [];
+    }
   });
   readonly tipificacionVisualMetaByCode = computed(() => {
     const meta = new Map<string, TipificacionVisualMeta>();
@@ -439,7 +478,15 @@ export class GtrWorkspaceFacade {
       : 'Ingresa un numero valido para el prefijo seleccionado.'
   );
 
-  readonly agendadoGroups = computed<AgendadoGroup[]>(() => this.groupAgendados(this.agendadosRows()));
+  // Tabla plana ordenada por el criterio activo. El backend decide qué filas trae cada página;
+  // este orden client-side mantiene la página visualmente consistente (incl. inserts realtime).
+  readonly agendadosView = computed<VisualLeadAgendadoGtr[]>(() => {
+    const field = this.agendadosSortField();
+    const factor = this.agendadosSortDirection() === 'desc' ? -1 : 1;
+    return [...this.agendadosRows()].sort(
+      (left, right) => (this.agendadoSortValue(left, field) - this.agendadoSortValue(right, field)) * factor
+    );
+  });
   readonly availableSubtipificaciones = computed(() => {
     const hasActiveFilter = this.subtipificacionFilter().trim().length > 0;
     if (hasActiveFilter) {
@@ -600,6 +647,7 @@ export class GtrWorkspaceFacade {
 
     if (section === 'plataforma') {
       sectionLoads.push(['bandeja diaria', () => this.refreshPage(false)]);
+      sectionLoads.push(['agrupaciones de la bandeja', () => this.refreshLeadGroups(false)]);
       sectionLoads.push(['metricas', () => this.refreshMetrics()]);
     }
 
@@ -653,20 +701,10 @@ export class GtrWorkspaceFacade {
       return 'Este lead ya se encuentra registrado en el sistema. Registralo nuevamente solo si se ha vuelto a comunicar por un canal de nuestras campañas.';
     }
 
-    return lookup.mensajeUsuario ?? 'Este lead ya se encuentra registrado en el sistema y no puede gestionarse desde GTR por el momento.';
-  }
-
-  intakeConfirmationFollowUp(): string {
-    const lookup = this.pendingIntakeLookup();
-    if (!lookup?.existe) {
-      return '';
-    }
-
-    if (lookup.etapaActual === 'PREVENTA') {
-      return '';
-    }
-
-    return 'Registralo nuevamente solo si se ha vuelto a comunicar por un canal de nuestras campañas.';
+    const contextMessage =
+      lookup.mensajeUsuario ??
+      'Este lead ya se encuentra registrado en el sistema y no puede gestionarse desde GTR por el momento.';
+    return `${contextMessage}\nRegistralo nuevamente solo si se ha vuelto a comunicar por un canal de nuestras campañas.`;
   }
 
   private async submitIntakeInternal(skipLookupConfirmation: boolean): Promise<void> {
@@ -945,6 +983,42 @@ export class GtrWorkspaceFacade {
     this.selectedTipificationHistoryFilter.set(null);
     // Vuelve al dialogo desde el que se abrio el historial (p. ej. la busqueda) sin perder su estado.
     this.activeDialog.set(returnTo);
+  }
+
+  async openAdvisorEvents(advisor: AdvisorOption): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
+    this.advisorEventsTarget.set(advisor);
+    this.advisorEventRows.set([]);
+    this.activeDialog.set('advisor-events');
+    await this.loadAdvisorEvents(advisor);
+  }
+
+  private async loadAdvisorEvents(advisor: AdvisorOption): Promise<void> {
+    this.isLoadingAdvisorEvents.set(true);
+    this.clearMessages();
+    try {
+      const page = await firstValueFrom(
+        this.preventaService.listarEventosEmpleado(advisor.empleadoId, this.today, {
+          pageNumber: 0,
+          pageSize: 100,
+          sortBy: 'createdAt',
+          direction: 'desc'
+        })
+      );
+      this.advisorEventRows.set(page.content);
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudieron cargar los eventos del asesor.'));
+    } finally {
+      this.isLoadingAdvisorEvents.set(false);
+    }
+  }
+
+  closeAdvisorEvents(): void {
+    this.advisorEventsTarget.set(null);
+    this.advisorEventRows.set([]);
+    this.activeDialog.set(null);
   }
 
   openSearchDialog(): void {
@@ -1521,6 +1595,31 @@ export class GtrWorkspaceFacade {
     await this.refreshAgendados(false);
   }
 
+  async changeAgendadosSort(field: AgendadosSortField): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
+    if (this.agendadosSortField() === field) {
+      this.agendadosSortDirection.update((direction) => (direction === 'asc' ? 'desc' : 'asc'));
+    } else {
+      this.agendadosSortField.set(field);
+      this.agendadosSortDirection.set('asc');
+    }
+    this.agendadosPageNumber.set(0);
+    await this.refreshAgendados(false);
+  }
+
+  agendadoSortActive(field: AgendadosSortField): boolean {
+    return this.agendadosSortField() === field;
+  }
+
+  agendadoSortIcon(field: AgendadosSortField): string {
+    if (this.agendadosSortField() !== field) {
+      return 'pi pi-sort-alt';
+    }
+    return this.agendadosSortDirection() === 'asc' ? 'pi pi-sort-amount-up-alt' : 'pi pi-sort-amount-down';
+  }
+
   async buscarMasivos(): Promise<void> {
     if (!this.canDisplayOperationalData()) {
       this.errorMessage.set('Marca ONLINE para activar esta bandeja.');
@@ -2087,6 +2186,7 @@ export class GtrWorkspaceFacade {
       const section = this.section();
       await Promise.all([
         section === 'plataforma' ? this.refreshPage(true) : Promise.resolve(),
+        section === 'plataforma' ? this.refreshLeadGroups(true) : Promise.resolve(),
         section === 'plataforma' ? this.refreshMetrics() : Promise.resolve(),
         section === 'agendados' ? this.refreshAgendados(true) : Promise.resolve(),
         section === 'historicos' && this.masivoSearched() ? this.refreshMasivos() : Promise.resolve(),
@@ -2103,10 +2203,33 @@ export class GtrWorkspaceFacade {
       return;
     }
     const previous = this.rows();
-    const page = await firstValueFrom(this.preventaService.listarBandejaGtr(this.today, this.currentQuery(12)));
-    this.totalElements.set(page.totalElements);
+    const page = await firstValueFrom(
+      this.preventaService.listarBandejaGtr(
+        this.today,
+        this.currentQuery(this.pageSize),
+        this.currentLeadGroupFilter()
+      )
+    );
+    this.visibleTotalElements.set(page.totalElements);
+    if (!this.selectedLeadGroup()) {
+      this.totalElements.set(page.totalElements);
+    }
     this.totalPages.set(page.totalPages);
     this.rows.set(this.mergeVisualRows(previous, page.content, silent));
+  }
+
+  private async refreshLeadGroups(silent: boolean): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
+    this.isLoadingLeadGroups.set(!silent);
+    try {
+      const groups = await firstValueFrom(this.preventaService.listarAgrupacionesBandejaGtr(this.today));
+      this.leadGroups.set(groups);
+      this.totalElements.set(groups.asesores.reduce((total, group) => total + group.cantidad, 0));
+    } finally {
+      this.isLoadingLeadGroups.set(false);
+    }
   }
 
   private async refreshAgendados(silent: boolean): Promise<void> {
@@ -2120,8 +2243,8 @@ export class GtrWorkspaceFacade {
         this.preventaService.listarAgendadosGtr({
           pageNumber: this.agendadosPageNumber(),
           pageSize: this.pageSize,
-          sortBy: 'horaProgramada',
-          direction: 'asc'
+          sortBy: this.agendadosSortField(),
+          direction: this.agendadosSortDirection()
         })
       );
       this.agendadosTotalElements.set(page.totalElements);
@@ -2331,68 +2454,36 @@ export class GtrWorkspaceFacade {
     };
   }
 
-  private groupAgendados(rows: VisualLeadAgendadoGtr[]): AgendadoGroup[] {
-    const now = new Date();
-    const groups = new Map<string, { label: string; sort: number; rows: VisualLeadAgendadoGtr[] }>();
-
-    for (const row of [...rows].sort((left, right) => this.agendadoSortValue(left) - this.agendadoSortValue(right))) {
-      const bucket = this.getAgendadoBucket(row, now);
-      const existing = groups.get(bucket.key);
-      if (existing) {
-        existing.rows.push(row);
-      } else {
-        groups.set(bucket.key, { label: bucket.label, sort: bucket.sort, rows: [row] });
-      }
+  private agendadoSortValue(row: LeadAgendadoGtrResponse, field: AgendadosSortField): number {
+    if (field === 'agendado') {
+      const ts = row.fechaAgendamiento ? new Date(row.fechaAgendamiento).getTime() : NaN;
+      return isNaN(ts) ? Number.MAX_SAFE_INTEGER : ts;
     }
-
-    return [...groups.entries()]
-      .sort((left, right) => left[1].sort - right[1].sort)
-      .map(([key, group]) => ({ key, label: group.label, rows: group.rows }));
-  }
-
-  private getAgendadoBucket(row: LeadAgendadoGtrResponse, now: Date): { key: string; label: string; sort: number } {
-    const scheduled = this.getScheduledDate(row);
-    if (!scheduled) {
-      return { key: 'sin-hora', label: 'Sin hora programada', sort: Number.MAX_SAFE_INTEGER };
-    }
-
-    const sameDay =
-      scheduled.getFullYear() === now.getFullYear() &&
-      scheduled.getMonth() === now.getMonth() &&
-      scheduled.getDate() === now.getDate();
-    const currentHour = sameDay && scheduled.getHours() <= now.getHours();
-
-    if (scheduled < now || currentHour) {
-      return { key: 'actual', label: 'Hora actual y vencidos', sort: 0 };
-    }
-
-    const hour = scheduled.getHours();
-    const dateLabel = this.formatReadableShortDate(scheduled);
-    return {
-      key: `${this.formatLocalDate(scheduled)}-${hour}`,
-      label: `${dateLabel} ${`${hour}`.padStart(2, '0')}:00 - ${`${hour}`.padStart(2, '0')}:59`,
-      sort: scheduled.getTime()
-    };
-  }
-
-  private agendadoSortValue(row: LeadAgendadoGtrResponse): number {
     return this.getScheduledDate(row)?.getTime() ?? Number.MAX_SAFE_INTEGER;
   }
 
-  formatHoraProgramada(horaProgramada?: string | null): string {
-    if (!horaProgramada) {
+  /** Fecha y hora en que el asesor tipifico AGENDADO (Evento.createdAt), con año. */
+  agendadoTipificadoLabel(row: LeadAgendadoGtrResponse): string {
+    if (!row.fechaAgendamiento) {
       return '-';
     }
-    // LocalTime llega como "HH:mm:ss" — mostrar solo "HH:mm"
-    return String(horaProgramada).substring(0, 5);
+    const d = new Date(row.fechaAgendamiento);
+    return isNaN(d.getTime()) ? '-' : this.formatDateTimeLabel(d);
   }
 
-  formatFechaAgendamiento(fechaAgendamiento?: string | null): string {
-    if (!fechaAgendamiento) {
-      return '-';
-    }
-    const d = new Date(fechaAgendamiento);
-    return isNaN(d.getTime()) ? '-' : this.formatReadableShortDate(d);
+  /** Fecha y hora de la cita: mismo día de la tipificación + la hora elegida, con año. */
+  agendadoProgramadoLabel(row: LeadAgendadoGtrResponse): string {
+    const scheduled = this.getScheduledDate(row);
+    return scheduled ? this.formatDateTimeLabel(scheduled) : 'Sin hora';
+  }
+
+  private formatDateTimeLabel(date: Date): string {
+    const day = `${date.getDate()}`.padStart(2, '0');
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = `${date.getHours()}`.padStart(2, '0');
+    const minutes = `${date.getMinutes()}`.padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
   }
 
   private getScheduledDate(row: LeadAgendadoGtrResponse): Date | null {
@@ -2583,15 +2674,6 @@ export class GtrWorkspaceFacade {
       'Diciembre'
     ];
     return `${days[date.getDay()]}, ${date.getDate()} de ${months[date.getMonth()]} ${date.getFullYear()}`;
-  }
-
-  private formatReadableShortDate(date: Date): string {
-    if (this.formatLocalDate(date) === this.today) {
-      return 'Hoy';
-    }
-    const day = `${date.getDate()}`.padStart(2, '0');
-    const month = `${date.getMonth() + 1}`.padStart(2, '0');
-    return `${day}/${month}`;
   }
 
   private applyPresenceRealtimeEvent(event: PresenceRealtimeEvent): void {

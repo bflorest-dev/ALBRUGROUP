@@ -24,6 +24,9 @@
   gap: 0.7rem;
   padding: 0.75rem;
   position: relative;
+  // Reserva la altura de las dos acciones apiladas (historial arriba + reloj abajo) para que
+  // nunca se solapen, aunque la card solo tenga nombre y tags.
+  min-height: 5rem;
 }
 
 .advisor-card > div {
@@ -68,6 +71,14 @@
   align-items: center;
   display: flex;
   gap: 0.65rem;
+}
+
+// Historial de eventos del dia: SIEMPRE anclado arriba-derecha, justo encima del reloj.
+// Comparte el gutter derecho ya reservado por el padding-right del cuerpo, no pisa el nombre.
+.advisor-card__history {
+  position: absolute;
+  right: 0.3rem;
+  top: 0.3rem;
 }
 
 // Reloj sutil para ampliar horario: SIEMPRE anclado a la esquina inferior derecha de la card,

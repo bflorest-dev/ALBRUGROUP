@@ -71,6 +71,20 @@
           severity="secondary"
           [text]="true"
           [rounded]="true"
+          icon="pi pi-history"
+          class="advisor-card__history"
+          pTooltip="Ver eventos del dia"
+          tooltipPosition="left"
+          [disabled]="!facade.canDisplayOperationalData()"
+          (click)="facade.openAdvisorEvents(advisor)"
+        ></button>
+        <button
+          pButton
+          type="button"
+          size="small"
+          severity="secondary"
+          [text]="true"
+          [rounded]="true"
           icon="pi pi-clock"
           class="advisor-card__clock"
           pTooltip="Ampliar horario"

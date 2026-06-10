@@ -21,8 +21,12 @@ import pe.albrugroup.lead_service.service.mapper.EventoMapper;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -108,13 +112,37 @@ public class EventoService {
         Instant fechaDesdeInstant = inicioDia(fechaDesde);
         Instant fechaHastaInstant = finDiaInclusivo(fechaHasta);
 
-        var eventos = listarEventosActorPorRango(
+        var pageEventos = listarEventosActorPorRango(
                 idEmpleado,
                 fechaDesdeInstant,
                 fechaHastaInstant,
                 paginationService.toPageable(pageRequest, EVENTO_SORT_FIELDS)
-        ).map(eventoMapper::toResponse);
+        );
+
+        Map<Long, String> leadNumeros = obtenerLeadNumeros(pageEventos.getContent());
+        var eventos = pageEventos.map(evento -> {
+            EventoResponse response = eventoMapper.toResponse(evento);
+            response.setLead(leadNumeros.get(evento.getIdLead()));
+            return response;
+        });
         return PageResponse.from(eventos);
+    }
+
+    /** Resuelve en un solo query el numero de lead (humano) para los eventos de la pagina. */
+    private Map<Long, String> obtenerLeadNumeros(List<Evento> eventos) {
+        Set<Long> idsLead = eventos.stream()
+                .map(Evento::getIdLead)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (idsLead.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, String> numeros = new HashMap<>();
+        for (Object[] fila : leadRepository.findLeadNumerosByIds(idsLead)) {
+            numeros.put((Long) fila[0], (String) fila[1]);
+        }
+        return numeros;
     }
 
     public PageResponse<LeadDiarioResponse> listarRegistrosDiarios(LocalDate fecha, PageRequest pageRequest) {

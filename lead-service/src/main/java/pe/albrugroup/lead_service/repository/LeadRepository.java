@@ -17,6 +17,7 @@ import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.entity.response.MisPreventaResponse;
 import pe.albrugroup.lead_service.repository.projection.AsesorCantidadProjection;
+import pe.albrugroup.lead_service.repository.projection.LeadGtrAgrupacionProjection;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -28,6 +29,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
 
     Optional<Lead> findByPrefijoAndLead(String prefijo, String lead);
     Optional<Lead> findFirstByLeadOrderByLastEntryAtDescIdDesc(String lead);
+
+    @Query("SELECT l.id, l.lead FROM Lead l WHERE l.id IN :ids")
+    List<Object[]> findLeadNumerosByIds(@Param("ids") Collection<Long> ids);
     Optional<Lead> findByIdAndIdAsesorAsignadoAndEtapa(Long id, Long idAsesorAsignado, Etapa etapa);
     Optional<Lead> findByIdAndIdAsesorAsignadoAndEtapaIn(Long id, Long idAsesorAsignado, Collection<Etapa> etapas);
     @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -66,6 +70,48 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
               AND l.lead LIKE :leadPattern
+              AND (
+                    :filtrarAsesor = false
+                    OR (:sinValor = true AND l.idAsesorAsignado IS NULL)
+                    OR (:sinValor = false AND l.idAsesorAsignado = :idGrupo)
+              )
+              AND (
+                    :filtrarCampana = false
+                    OR (:sinValor = true AND c.id IS NULL)
+                    OR (:sinValor = false AND c.id = :idGrupo)
+              )
+              AND (
+                    :filtrarPrimeraTipificacion = false
+                    OR (
+                        :sinValor = true
+                        AND l.primeraCodigoTipificacion IS NULL
+                        AND l.primeraCodigoSubtipificacion IS NULL
+                    )
+                    OR (
+                        :sinValor = false
+                        AND l.primeraCodigoTipificacion = :codigoTipificacion
+                        AND (
+                            (:codigoSubtipificacion IS NULL AND l.primeraCodigoSubtipificacion IS NULL)
+                            OR l.primeraCodigoSubtipificacion = :codigoSubtipificacion
+                        )
+                    )
+              )
+              AND (
+                    :filtrarUltimaTipificacion = false
+                    OR (
+                        :sinValor = true
+                        AND l.codigoTipificacion IS NULL
+                        AND l.codigoSubtipificacion IS NULL
+                    )
+                    OR (
+                        :sinValor = false
+                        AND l.codigoTipificacion = :codigoTipificacion
+                        AND (
+                            (:codigoSubtipificacion IS NULL AND l.codigoSubtipificacion IS NULL)
+                            OR l.codigoSubtipificacion = :codigoSubtipificacion
+                        )
+                    )
+              )
             ORDER BY l.lastEntryAt DESC
             """)
     Page<LeadGtrResponse> listarBandejaGtr(
@@ -73,7 +119,88 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("leadPattern") String leadPattern,
             @Param("inicioDia") Instant inicioDia,
             @Param("finDia") Instant finDia,
+            @Param("filtrarAsesor") boolean filtrarAsesor,
+            @Param("filtrarCampana") boolean filtrarCampana,
+            @Param("filtrarPrimeraTipificacion") boolean filtrarPrimeraTipificacion,
+            @Param("filtrarUltimaTipificacion") boolean filtrarUltimaTipificacion,
+            @Param("idGrupo") Long idGrupo,
+            @Param("codigoTipificacion") String codigoTipificacion,
+            @Param("codigoSubtipificacion") String codigoSubtipificacion,
+            @Param("sinValor") boolean sinValor,
             Pageable pageable
+    );
+
+    @Query("""
+            SELECT l.idAsesorAsignado AS idGrupo,
+                   l.nombreAsesorAsignado AS etiqueta,
+                   NULL AS codigoTipificacion,
+                   NULL AS codigoSubtipificacion,
+                   COUNT(l.id) AS cantidad
+            FROM Lead l
+            WHERE l.etapa = :etapa
+              AND l.lastEntryAt >= :inicioDia
+              AND l.lastEntryAt < :finDia
+            GROUP BY l.idAsesorAsignado, l.nombreAsesorAsignado
+            """)
+    List<LeadGtrAgrupacionProjection> agruparBandejaGtrPorAsesor(
+            @Param("etapa") Etapa etapa,
+            @Param("inicioDia") Instant inicioDia,
+            @Param("finDia") Instant finDia
+    );
+
+    @Query("""
+            SELECT c.id AS idGrupo,
+                   c.nombre AS etiqueta,
+                   NULL AS codigoTipificacion,
+                   NULL AS codigoSubtipificacion,
+                   COUNT(l.id) AS cantidad
+            FROM Lead l
+            LEFT JOIN l.campana c
+            WHERE l.etapa = :etapa
+              AND l.lastEntryAt >= :inicioDia
+              AND l.lastEntryAt < :finDia
+            GROUP BY c.id, c.nombre
+            """)
+    List<LeadGtrAgrupacionProjection> agruparBandejaGtrPorCampana(
+            @Param("etapa") Etapa etapa,
+            @Param("inicioDia") Instant inicioDia,
+            @Param("finDia") Instant finDia
+    );
+
+    @Query("""
+            SELECT NULL AS idGrupo,
+                   NULL AS etiqueta,
+                   l.primeraCodigoTipificacion AS codigoTipificacion,
+                   l.primeraCodigoSubtipificacion AS codigoSubtipificacion,
+                   COUNT(l.id) AS cantidad
+            FROM Lead l
+            WHERE l.etapa = :etapa
+              AND l.lastEntryAt >= :inicioDia
+              AND l.lastEntryAt < :finDia
+            GROUP BY l.primeraCodigoTipificacion, l.primeraCodigoSubtipificacion
+            """)
+    List<LeadGtrAgrupacionProjection> agruparBandejaGtrPorPrimeraTipificacion(
+            @Param("etapa") Etapa etapa,
+            @Param("inicioDia") Instant inicioDia,
+            @Param("finDia") Instant finDia
+    );
+
+    @Query("""
+            SELECT NULL AS idGrupo,
+                   NULL AS etiqueta,
+                   l.codigoTipificacion AS codigoTipificacion,
+                   l.codigoSubtipificacion AS codigoSubtipificacion,
+                   COUNT(l.id) AS cantidad
+            FROM Lead l
+            WHERE l.etapa = :etapa
+              AND l.lastEntryAt >= :inicioDia
+              AND l.lastEntryAt < :finDia
+            GROUP BY l.codigoTipificacion, l.codigoSubtipificacion
+            """)
+    List<LeadGtrAgrupacionProjection> agruparBandejaGtrPorUltimaTipificacion(
+            @Param("etapa") Etapa etapa,
+            @Param("inicioDia") Instant inicioDia,
+            @Param("finDia") Instant finDia
     );
 
     List<Lead> findByEtapaAndEstadoInAndIdAsesorAsignadoIsNotNullOrderByIdAsesorAsignadoAscLastEntryAtDesc(
@@ -263,8 +390,54 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     AND es.accion = :accionTipificacion
                     AND es.tipificacion = :codigoAgendado
               )
+            ORDER BY e.createdAt ASC
             """)
-    Page<LeadAgendadoGtrResponse> listarLeadsAgendadosGtr(
+    Page<LeadAgendadoGtrResponse> listarLeadsAgendadosGtrPorAgendadoAsc(
+            @Param("etapa") Etapa etapa,
+            @Param("codigoAgendado") String codigoAgendado,
+            @Param("accionTipificacion") Accion accionTipificacion,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse(
+                l.id,
+                l.createdAt,
+                l.prefijo,
+                l.lead,
+                c.nombre,
+                p.nombre,
+                l.base,
+                dp.nombreTitularServicio,
+                l.codigoTipificacion,
+                l.codigoSubtipificacion,
+                l.nombreAsesorAsignado,
+                e.nombreActor,
+                l.estado,
+                0L,
+                e.createdAt,
+                e.comentario,
+                e.horaProgramada
+            )
+            FROM Lead l
+            JOIN Evento e ON e.idLead = l.id
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor p
+            LEFT JOIN l.datosPreventa dp
+            WHERE l.etapa = :etapa
+              AND l.codigoTipificacion = :codigoAgendado
+              AND e.accion = :accionTipificacion
+              AND e.tipificacion = :codigoAgendado
+              AND e.createdAt = (
+                  SELECT MAX(es.createdAt)
+                  FROM Evento es
+                  WHERE es.idLead = l.id
+                    AND es.accion = :accionTipificacion
+                    AND es.tipificacion = :codigoAgendado
+              )
+            ORDER BY e.createdAt DESC
+            """)
+    Page<LeadAgendadoGtrResponse> listarLeadsAgendadosGtrPorAgendadoDesc(
             @Param("etapa") Etapa etapa,
             @Param("codigoAgendado") String codigoAgendado,
             @Param("accionTipificacion") Accion accionTipificacion,
@@ -519,16 +692,16 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                        l.updatedAt)
             FROM Lead l
             WHERE l.idAsesorPreventa = :idAsesor
-              AND (:fechaDesde IS NULL OR l.fechaPreventa >= :fechaDesde)
-              AND (:fechaHasta IS NULL OR l.fechaPreventa < :fechaHasta)
+              AND l.fechaPreventa >= :fechaDesde
+              AND l.fechaPreventa < :fechaHasta
             ORDER BY l.fechaPreventa DESC
             """,
             countQuery = """
             SELECT COUNT(l)
             FROM Lead l
             WHERE l.idAsesorPreventa = :idAsesor
-              AND (:fechaDesde IS NULL OR l.fechaPreventa >= :fechaDesde)
-              AND (:fechaHasta IS NULL OR l.fechaPreventa < :fechaHasta)
+              AND l.fechaPreventa >= :fechaDesde
+              AND l.fechaPreventa < :fechaHasta
             """)
     Page<MisPreventaResponse> listarMisPreventas(
             @Param("idAsesor") Long idAsesor,
