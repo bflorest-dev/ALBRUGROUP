@@ -62,6 +62,21 @@
             [disabled]="!facade.canMutateOperationalData()"
             (click)="facade.openNewLead()"
           ></button>
+          @if (facade.canShowRetroactiveIntake()) {
+            <button
+              pButton
+              type="button"
+              icon="pi pi-clock"
+              severity="secondary"
+              [outlined]="true"
+              [rounded]="true"
+              pTooltip="Registrar lead de ayer"
+              tooltipPosition="bottom"
+              aria-label="Registrar lead de ayer"
+              [disabled]="!facade.canMutateOperationalData()"
+              (click)="facade.openRetroactiveLead()"
+            ></button>
+          }
         }
         <button
           pButton
@@ -278,7 +293,7 @@
   </p-dialog>
 
   <p-dialog
-    header="Nuevo Lead"
+    [header]="facade.intakeDialogTitle()"
     [visible]="facade.activeDialog() === 'lead'"
     (visibleChange)="!$event && facade.closeDialog()"
     (onShow)="nuevoLeadPhone.focusNumber()"
@@ -288,6 +303,31 @@
     styleClass="gtr-dialog"
   >
     <form class="form-grid" [formGroup]="facade.intakeForm" (ngSubmit)="facade.submitIntake()">
+      @if (facade.isRetroactiveIntake()) {
+        <section class="retroactive-intake wide" aria-label="Datos del registro de ayer">
+          <div class="retroactive-intake__context">
+            <i class="pi pi-clock" aria-hidden="true"></i>
+            <div>
+              <strong>Registro atribuido a ayer</strong>
+              <span>{{ facade.retroactiveDateLabel() }}</span>
+            </div>
+          </div>
+          <label>
+            <span>Hora del registro</span>
+            <p-datepicker
+              [formControl]="facade.retroactiveHourControl"
+              [timeOnly]="true"
+              hourFormat="24"
+              [minDate]="facade.retroactiveMinTime"
+              [maxDate]="facade.retroactiveMaxTime"
+              [showIcon]="true"
+              iconDisplay="input"
+              appendTo="body"
+            />
+            <small>Entre 18:00 y 23:59</small>
+          </label>
+        </section>
+      }
       <app-phone-number-field
         #nuevoLeadPhone
         class="wide"
@@ -330,7 +370,7 @@
           pButton
           type="submit"
           label="Registrar"
-          [disabled]="!facade.canMutateOperationalData() || facade.intakeForm.invalid"
+          [disabled]="!facade.canMutateOperationalData() || facade.intakeForm.invalid || !facade.isRetroactiveHourValid()"
           [loading]="facade.isSaving()"
         ></button>
       </div>
@@ -350,10 +390,20 @@
         <p class="wide helper">Lead {{ facade.intakeForm.controls.prefijo.value }} {{ leadNumber }}</p>
       }
 
+      @if (facade.intakeError()) {
+        <p-message severity="error" [text]="facade.intakeError() ?? ''" />
+      }
+
       <p class="intake-confirmation__warning">
         <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
         <span>{{ facade.intakeConfirmationMessage() }}</span>
       </p>
+      @if (facade.isRetroactiveIntake()) {
+        <p class="intake-confirmation__retroactive">
+          El lead se anadira a la bandeja de hoy y el registro quedara atribuido al
+          {{ facade.retroactiveDateLabel() }} a las {{ facade.retroactiveHourLabel() }}.
+        </p>
+      }
     </div>
 
     <div class="dialog-actions">

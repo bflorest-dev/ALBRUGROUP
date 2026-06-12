@@ -294,6 +294,67 @@ label {
 }
 .intake-confirmation__warning span { white-space: pre-line; }
 .intake-confirmation__warning i { font-size: 1rem; margin-top: .1rem; }
+.intake-confirmation__retroactive {
+  background: var(--app-surface-soft);
+  border: 1px solid var(--app-border-soft);
+  border-radius: .4rem;
+  color: var(--app-text);
+  font-size: .82rem;
+  font-weight: 650;
+  padding: .65rem .75rem;
+}
+
+.retroactive-intake {
+  align-items: end;
+  background: var(--app-surface-soft);
+  border: 1px solid var(--app-border-soft);
+  border-left: 3px solid #2563eb;
+  border-radius: .45rem;
+  display: grid;
+  gap: .85rem;
+  grid-template-columns: minmax(0, 1fr) minmax(9.5rem, .55fr);
+  padding: .75rem;
+}
+
+.retroactive-intake__context {
+  align-items: center;
+  display: flex;
+  gap: .65rem;
+  min-width: 0;
+}
+
+.retroactive-intake__context i {
+  color: #2563eb;
+  font-size: 1.15rem;
+}
+
+.retroactive-intake__context div {
+  display: grid;
+  gap: .15rem;
+  min-width: 0;
+}
+
+.retroactive-intake__context strong {
+  color: var(--app-text);
+  font-size: .84rem;
+}
+
+.retroactive-intake__context span,
+.retroactive-intake small {
+  color: var(--app-text-muted);
+  font-size: .75rem;
+}
+
+:host ::ng-deep .retroactive-intake .p-datepicker {
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .retroactive-intake {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+}
 
 .reassign-confirmation { display: grid; gap: .65rem; margin-bottom: 1.25rem; }
 .reassign-problem {

@@ -2,7 +2,6 @@ package pe.albrugroup.lead_service.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
@@ -42,6 +41,13 @@ public class Evento {
     private String comentario;
     private LocalTime horaProgramada;
 
-    @CreationTimestamp @Column(updatable = false)
+    @Column(updatable = false)
     private Instant createdAt;
+
+    @PrePersist
+    void assignCreatedAt() {
+        if (createdAt == null) {
+            createdAt = Instant.now();
+        }
+    }
 }

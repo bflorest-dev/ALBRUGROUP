@@ -20,6 +20,7 @@ import pe.albrugroup.lead_service.entity.request.LeadAsignacionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
+import pe.albrugroup.lead_service.entity.request.LeadIntakeRetroactivoRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaAdicionalRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaComercialRequest;
 import pe.albrugroup.lead_service.entity.request.LeadSnapshotsRequest;
@@ -127,6 +128,8 @@ public class LeadService {
     private static final Instant MIS_PREVENTAS_FECHA_HASTA_ABIERTA = Instant.parse("9999-01-01T00:00:00Z");
     private static final String SUBTIPIFICACION_PREVENTA = "PREVENTA";
     private static final String SUBTIPIFICACION_VENTA_CERRADA = "VENTA_CERRADA";
+    private static final LocalTime HORA_MINIMA_REGISTRO_RETROACTIVO = LocalTime.of(18, 0);
+    private static final LocalTime HORA_MAXIMA_REGISTRO_RETROACTIVO = LocalTime.of(23, 59);
     private static final List<Accion> ACCIONES_GESTION_LEAD = List.of(Accion.CONTACTO, Accion.TIPIFICACION);
     private static final Set<String> LEAD_GTR_SORT_FIELDS = Set.of(
             "lastEntryAt", "createdAt", "lead", "nombreAsesorAsignado", "estado"
@@ -1046,15 +1049,45 @@ public class LeadService {
 
     @Transactional
     public void registrarIngresoLead(LeadIntakeRequest request) {
+        registrarIngresoLead(request, null);
+    }
+
+    @Transactional
+    public void registrarIngresoLeadRetroactivo(LeadIntakeRetroactivoRequest request) {
+        Instant registroAt = calcularRegistroRetroactivo(
+                OperationalDateTime.today(),
+                request.getHoraRegistro()
+        );
+        registrarIngresoLead(request, registroAt);
+    }
+
+    Instant calcularRegistroRetroactivo(LocalDate fechaActual, LocalTime horaRegistro) {
+        validarHoraRegistroRetroactivo(horaRegistro);
+        return fechaActual
+                .minusDays(1)
+                .atTime(horaRegistro)
+                .atZone(OperationalDateTime.ZONE)
+                .toInstant();
+    }
+
+    private void registrarIngresoLead(LeadIntakeRequest request, Instant registroAt) {
         String prefijo = normalizarPrefijo(request.getPrefijo());
         String numeroLead = normalizarLead(request.getLead());
         Campana campana = obtenerCampanaActiva(request.getIdCampana());
 
         leadRepository.findByPrefijoAndLead(prefijo, numeroLead)
                 .ifPresentOrElse(
-                        lead -> registrarIngresoLeadExistente(lead, request, campana),
-                        () -> registrarLeadNuevo(prefijo, numeroLead, request, campana)
+                        lead -> registrarIngresoLeadExistente(lead, request, campana, registroAt),
+                        () -> registrarLeadNuevo(prefijo, numeroLead, request, campana, registroAt)
                 );
+    }
+
+    private void validarHoraRegistroRetroactivo(LocalTime horaRegistro) {
+        if (horaRegistro == null
+                || horaRegistro.isBefore(HORA_MINIMA_REGISTRO_RETROACTIVO)
+                || horaRegistro.isAfter(HORA_MAXIMA_REGISTRO_RETROACTIVO)) {
+            throw new BadRequestException("La hora del registro debe estar entre las 18:00 y las 23:59");
+        }
     }
 
     @Transactional
@@ -1422,11 +1455,17 @@ public class LeadService {
         notificarCambioLead("CONTACTO", savedLead, null, idAsesorAnterior);
     }
 
-    private void registrarLeadNuevo(String prefijo, String numeroLead, LeadIntakeRequest request, Campana campana) {
+    private void registrarLeadNuevo(
+            String prefijo,
+            String numeroLead,
+            LeadIntakeRequest request,
+            Campana campana,
+            Instant registroAt
+    ) {
         Lead lead = leadMapper.toNuevoLead(prefijo, numeroLead, request.getBase(), campana, OperationalDateTime.now());
 
         Lead savedLead = leadRepository.save(lead);
-        registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa());
+        registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa(), registroAt);
         notificarCambioLead("REGISTRO", savedLead, null, null);
     }
 
@@ -1452,7 +1491,12 @@ public class LeadService {
         return savedLead;
     }
 
-    private void registrarIngresoLeadExistente(Lead lead, LeadIntakeRequest request, Campana campana) {
+    private void registrarIngresoLeadExistente(
+            Lead lead,
+            LeadIntakeRequest request,
+            Campana campana,
+            Instant registroAt
+    ) {
         Etapa etapaAnterior = lead.getEtapa();
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
         lead.setPrefijo(normalizarPrefijo(request.getPrefijo()));
@@ -1474,7 +1518,7 @@ public class LeadService {
         }
 
         Lead savedLead = leadRepository.save(lead);
-        registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa());
+        registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa(), registroAt);
         notificarCambioLead("REGISTRO", savedLead, etapaAnterior, idAsesorAnterior);
     }
 
@@ -1570,14 +1614,21 @@ public class LeadService {
     }
 
     private void registrarEventoRegistro(Long idLead, Long idCampana, Etapa etapa) {
-        eventoService.registrarEvento(
-                RegistrarEventoRequest.builder()
-                        .idLead(idLead)
-                        .idCampana(idCampana)
-                        .accion(Accion.REGISTRO)
-                        .etapa(etapa)
-                        .build()
-        );
+        registrarEventoRegistro(idLead, idCampana, etapa, null);
+    }
+
+    private void registrarEventoRegistro(Long idLead, Long idCampana, Etapa etapa, Instant registroAt) {
+        RegistrarEventoRequest request = RegistrarEventoRequest.builder()
+                .idLead(idLead)
+                .idCampana(idCampana)
+                .accion(Accion.REGISTRO)
+                .etapa(etapa)
+                .build();
+        if (registroAt == null) {
+            eventoService.registrarEvento(request);
+            return;
+        }
+        eventoService.registrarEvento(request, registroAt);
     }
 
     private void registrarEventoAsignacion(
@@ -2633,23 +2684,24 @@ public class LeadService {
                     item.gestionadosPeriodo = row.getCantidad();
                 });
 
-        eventoRepository.resumirPreventasPorAsesorGtr(
-                        Accion.TIPIFICACION, TIPIFICACION_SCORE_PREVENTA, SUBTIPIFICACION_PREVENTA,
+        // Preventas concretadas: fuente de verdad = Lead (idAsesorPreventa/fechaPreventa), no eventos.
+        leadRepository.resumirPreventasPorAsesorLeadGtr(
                         rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos)
                 .forEach(row -> {
-                    GtrRankingAccumulator item = obtenerAcumuladorGtr(acumulados, row.getIdAsesor(), row.getNombreAsesor());
+                    GtrRankingAccumulator item = obtenerAcumuladorGtr(acumulados, row.getIdAsesor(), null);
                     item.preventasPeriodo = row.getCantidad();
                 });
 
-        eventoRepository.resumirPreventasMensualesPorProveedorGtr(
-                        Accion.TIPIFICACION, TIPIFICACION_SCORE_PREVENTA, SUBTIPIFICACION_PREVENTA,
+        leadRepository.resumirPreventasMensualesPorProveedorLeadGtr(
                         rangoMes.inicio(), rangoMes.fin(), soloActivos)
                 .forEach(row -> {
-                    GtrRankingAccumulator item = obtenerAcumuladorGtr(acumulados, row.getIdAsesor(), row.getNombreAsesor());
+                    GtrRankingAccumulator item = obtenerAcumuladorGtr(acumulados, row.getIdAsesor(), null);
                     item.preventasMes += row.getCantidad();
                     item.preventasMesPorProveedor.add(new SupervisorVentasProveedorResumenResponse(
                             row.getIdProveedor(), row.getNombreProveedor(), row.getCantidad()));
                 });
+
+        resolverNombresAsesoresFaltantes(acumulados);
 
         return acumulados.values().stream()
                 .sorted(Comparator.comparingLong(GtrRankingAccumulator::gestionadosPeriodo).reversed()
@@ -2701,6 +2753,28 @@ public class LeadService {
             item.nombreAsesor = nombreAsesor;
         }
         return item;
+    }
+
+    // Algunos asesores entran al ranking solo por su preventa (id leido del Lead) y aun no tienen
+    // nombre desde los conteos de gestion. Se resuelve el nombre denormalizado en una sola consulta.
+    private void resolverNombresAsesoresFaltantes(Map<Long, GtrRankingAccumulator> acumulados) {
+        List<Long> idsSinNombre = acumulados.values().stream()
+                .filter(item -> item.nombreAsesor == null || item.nombreAsesor.isBlank())
+                .map(item -> item.idAsesor)
+                .filter(id -> id != null)
+                .toList();
+        if (idsSinNombre.isEmpty()) {
+            return;
+        }
+
+        for (Object[] fila : eventoRepository.resolverNombresActores(idsSinNombre)) {
+            Long idActor = (Long) fila[0];
+            String nombre = (String) fila[1];
+            GtrRankingAccumulator item = acumulados.get(idActor);
+            if (item != null && nombre != null && !nombre.isBlank()) {
+                item.nombreAsesor = nombre;
+            }
+        }
     }
 
     private static final class GtrRankingAccumulator {

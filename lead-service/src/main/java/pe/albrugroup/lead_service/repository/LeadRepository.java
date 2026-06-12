@@ -17,6 +17,8 @@ import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.entity.response.MisPreventaResponse;
 import pe.albrugroup.lead_service.repository.projection.AsesorCantidadProjection;
+import pe.albrugroup.lead_service.repository.projection.AsesorPreventaCantidadProjection;
+import pe.albrugroup.lead_service.repository.projection.AsesorProveedorPreventaProjection;
 import pe.albrugroup.lead_service.repository.projection.LeadGtrAgrupacionProjection;
 
 import java.time.Instant;
@@ -832,5 +834,50 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("filtrarFechaHasta") boolean filtrarFechaHasta,
             @Param("fechaHasta") Instant fechaHasta,
             Pageable pageable
+    );
+
+    // ── Ranking GTR: preventas concretadas leidas del Lead (idAsesorPreventa/fechaPreventa) ──
+    // Fuente de verdad del cierre PREVENTA→VENTA, en vez de cruzar con eventos.
+
+    @Query("""
+            SELECT l.idAsesorPreventa AS idAsesor,
+                   COUNT(l.id) AS cantidad
+            FROM Lead l
+            WHERE l.idAsesorPreventa IS NOT NULL
+              AND l.fechaPreventa >= :fechaDesde
+              AND l.fechaPreventa < :fechaHasta
+              AND (:soloActivos = false
+                   OR EXISTS (SELECT 1 FROM Lead la
+                              WHERE la.idAsesorAsignado = l.idAsesorPreventa
+                                AND la.etapa = 'PREVENTA'))
+            GROUP BY l.idAsesorPreventa
+            """)
+    List<AsesorPreventaCantidadProjection> resumirPreventasPorAsesorLeadGtr(
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("soloActivos") boolean soloActivos
+    );
+
+    @Query("""
+            SELECT l.idAsesorPreventa AS idAsesor,
+                   p.id AS idProveedor,
+                   p.nombre AS nombreProveedor,
+                   COUNT(l.id) AS cantidad
+            FROM Lead l
+            JOIN l.plan pl
+            JOIN pl.proveedor p
+            WHERE l.idAsesorPreventa IS NOT NULL
+              AND l.fechaPreventa >= :fechaDesde
+              AND l.fechaPreventa < :fechaHasta
+              AND (:soloActivos = false
+                   OR EXISTS (SELECT 1 FROM Lead la
+                              WHERE la.idAsesorAsignado = l.idAsesorPreventa
+                                AND la.etapa = 'PREVENTA'))
+            GROUP BY l.idAsesorPreventa, p.id, p.nombre
+            """)
+    List<AsesorProveedorPreventaProjection> resumirPreventasMensualesPorProveedorLeadGtr(
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("soloActivos") boolean soloActivos
     );
 }

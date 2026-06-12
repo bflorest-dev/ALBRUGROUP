@@ -51,6 +51,11 @@ public class EventoService {
 
     @Transactional
     public EventoResponse registrarEvento(RegistrarEventoRequest request) {
+        return registrarEvento(request, null);
+    }
+
+    @Transactional
+    EventoResponse registrarEvento(RegistrarEventoRequest request, Instant createdAt) {
         if (!leadRepository.existsById(request.getIdLead())) {
             throw new NotFoundException(Lead.class, request.getIdLead());
         }
@@ -72,6 +77,7 @@ public class EventoService {
                 .fechaProgramacion(request.getFechaProgramacion())
                 .comentario(request.getComentario())
                 .horaProgramada(request.getHoraProgramada())
+                .createdAt(createdAt)
                 .build();
 
         return eventoMapper.toResponse(eventoRepository.save(evento));

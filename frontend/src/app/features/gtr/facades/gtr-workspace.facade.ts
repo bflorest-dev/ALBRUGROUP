@@ -26,6 +26,8 @@ import {
   LeadGtrMetricasResponse,
   LeadIntakeMasivoExcelResponse,
   LeadIntakeMasivoExcelResultadoResponse,
+  LeadIntakeRequest,
+  LeadIntakeRetroactivoRequest,
   MasivoLeadFilters,
   PageQuery
 } from '../../../shared/models/preventa/preventa.models';
@@ -115,6 +117,7 @@ type AssignmentConflictDetails = {
 type GtrDialog = 'lead' | 'intake-confirm' | 'snapshot' | 'assign' | 'reassign-confirm' | 'events' | 'advisor-events' | 'search' | 'schedule-extension' | null;
 type EventAnomalyFilter = 'multiple-records' | 'same-campaign' | null;
 type LeadHistoryMode = 'eventos-dia' | 'tipificacion' | 'asesor';
+type IntakeMode = 'normal' | 'retroactivo';
 type TipificationHistoryGroupOption = {
   label: string;
   value: string;
@@ -129,6 +132,7 @@ type LoadError = {
 const PERU_PHONE_PREFIX = '+51';
 const PERU_LEAD_PATTERN = /^9\d{8}$/;
 const INTERNATIONAL_LEAD_PATTERN = /^\d{6,15}$/;
+const RESTRICT_RETROACTIVE_INTAKE_BY_TIME = true;
 
 @Injectable()
 export class GtrWorkspaceFacade {
@@ -145,6 +149,7 @@ export class GtrWorkspaceFacade {
   private readonly realtimeSubscription = new Subscription();
   private readonly newRowTimers = new Map<number, number>();
   private attendanceRefreshId: number | null = null;
+  private retroactiveWindowTimerId: number | null = null;
   private started = false;
   private realtimeStarted = false;
   private initializeInFlight = false;
@@ -158,6 +163,8 @@ export class GtrWorkspaceFacade {
   readonly today = this.formatLocalDate(new Date());
   readonly todayLabel = this.formatReadableDate(new Date());
   readonly section = signal<GtrSection>('plataforma');
+  private readonly currentOperationalClock = signal(new Date());
+  readonly intakeMode = signal<IntakeMode>('normal');
   readonly isLoading = signal(false);
   readonly isReconciling = signal(false);
   readonly isSaving = signal(false);
@@ -304,6 +311,28 @@ export class GtrWorkspaceFacade {
     idCampana: [0, [Validators.required, Validators.min(1)]],
     base: ['WHATSAPP', [Validators.required]]
   });
+  readonly retroactiveHourControl = new FormControl<Date | null>(this.createTimeValue(19, 0), {
+    validators: [Validators.required]
+  });
+  readonly retroactiveMinTime = this.createTimeValue(18, 0);
+  readonly retroactiveMaxTime = this.createTimeValue(23, 59);
+  readonly isRetroactiveIntake = computed(() => this.intakeMode() === 'retroactivo');
+  readonly canShowRetroactiveIntake = computed(() => {
+    if (this.section() !== 'plataforma') {
+      return false;
+    }
+    if (!RESTRICT_RETROACTIVE_INTAKE_BY_TIME) {
+      return true;
+    }
+    const hour = this.getLimaDateParts(this.currentOperationalClock()).hour;
+    return hour >= 4 && hour < 9;
+  });
+  readonly retroactiveDateLabel = computed(() =>
+    this.formatPreviousLimaDate(this.currentOperationalClock())
+  );
+  readonly intakeDialogTitle = computed(() =>
+    this.isRetroactiveIntake() ? 'Registrar lead de ayer' : 'Nuevo Lead'
+  );
 
   readonly assignmentForm = this.fb.group({
     idAsesorAsignado: [0, [Validators.required, Validators.min(1)]]
@@ -572,6 +601,7 @@ export class GtrWorkspaceFacade {
 
   start(): void {
     this.started = true;
+    this.startRetroactiveWindowClock();
     if (this.section() !== 'ranking' && this.operationalGate.canActivateOperationalData()) {
       void this.initialize();
     }
@@ -588,6 +618,7 @@ export class GtrWorkspaceFacade {
     this.realtimeSubscription.unsubscribe();
     this.realtimeStarted = false;
     this.stopAttendanceRefresh();
+    this.stopRetroactiveWindowClock();
     this.document.defaultView?.removeEventListener('visibilitychange', this.handleVisibilityChange);
 
     for (const timerId of this.newRowTimers.values()) {
@@ -674,18 +705,27 @@ export class GtrWorkspaceFacade {
       return;
     }
     this.updateIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
-    if (this.intakeForm.invalid) {
+    if (this.intakeForm.invalid || !this.isRetroactiveHourValid()) {
       this.intakeForm.markAllAsTouched();
+      if (this.isRetroactiveIntake()) {
+        this.retroactiveHourControl.markAsTouched();
+      }
       this.intakeError.set(null);
       return;
     }
 
     const formValue = this.intakeForm.getRawValue();
+    const request: LeadIntakeRequest = {
+      prefijo: formValue.prefijo,
+      lead: formValue.lead,
+      idCampana: formValue.idCampana,
+      base: formValue.base
+    };
     if (!skipLookupConfirmation) {
       this.clearMessages();
       this.intakeError.set(null);
       try {
-        const lookup = await firstValueFrom(this.preventaService.buscarContextoLeadGtr(formValue.lead));
+        const lookup = await firstValueFrom(this.preventaService.buscarContextoLeadGtr(request.lead));
         if (lookup.existe) {
           this.pendingIntakeLookup.set(lookup);
           this.activeDialog.set('intake-confirm');
@@ -701,10 +741,25 @@ export class GtrWorkspaceFacade {
     this.clearMessages();
     this.intakeError.set(null);
     try {
-      await firstValueFrom(this.preventaService.registrarIngresoLead(formValue));
+      const isRetroactive = this.isRetroactiveIntake();
+      const retroactiveTime = this.toApiTime(this.retroactiveHourControl.value);
+      if (isRetroactive && retroactiveTime) {
+        const retroactiveRequest: LeadIntakeRetroactivoRequest = {
+          ...request,
+          horaRegistro: retroactiveTime
+        };
+        await firstValueFrom(this.preventaService.registrarIngresoLeadRetroactivo(retroactiveRequest));
+      } else {
+        await firstValueFrom(this.preventaService.registrarIngresoLead(request));
+      }
       this.resetIntakeForm();
       this.pendingIntakeLookup.set(null);
-      this.successMessage.set('Lead registrado, puedes gestionarlo para anadir informacion basica de validacion.');
+      this.successMessage.set(
+        isRetroactive
+          ? `Lead anadido a la bandeja de hoy. Su registro quedo atribuido al ${this.retroactiveDateLabel()} a las ${retroactiveTime}.`
+          : 'Lead registrado, puedes gestionarlo para anadir informacion basica de validacion.'
+      );
+      this.intakeMode.set('normal');
       this.activeDialog.set(null);
       await this.reconcile();
     } catch (error) {
@@ -788,10 +843,39 @@ export class GtrWorkspaceFacade {
       return;
     }
     this.clearMessages();
+    this.intakeMode.set('normal');
     this.resetIntakeForm();
     this.pendingIntakeLookup.set(null);
     this.intakeError.set(null);
     this.activeDialog.set('lead');
+  }
+
+  openRetroactiveLead(): void {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
+    this.clearMessages();
+    this.intakeMode.set('retroactivo');
+    this.resetIntakeForm();
+    this.pendingIntakeLookup.set(null);
+    this.intakeError.set(null);
+    this.activeDialog.set('lead');
+  }
+
+  isRetroactiveHourValid(): boolean {
+    if (!this.isRetroactiveIntake()) {
+      return true;
+    }
+    const value = this.retroactiveHourControl.value;
+    if (!value || Number.isNaN(value.getTime())) {
+      return false;
+    }
+    const minutes = value.getHours() * 60 + value.getMinutes();
+    return minutes >= 18 * 60 && minutes <= 23 * 60 + 59;
+  }
+
+  retroactiveHourLabel(): string {
+    return this.toApiTime(this.retroactiveHourControl.value) ?? '19:00';
   }
 
   normalizeLeadNumber(value: string): void {
@@ -1071,6 +1155,7 @@ export class GtrWorkspaceFacade {
     this.assignmentForm.reset({ idAsesorAsignado: 0 });
     this.selectedAssignmentAdvisorId.set(0);
     this.resetIntakeForm();
+    this.intakeMode.set('normal');
     this.activeDialog.set(null);
     this.activeAssignmentLead.set(null);
     this.activeEventsLead.set(null);
@@ -2472,6 +2557,9 @@ export class GtrWorkspaceFacade {
       base: 'WHATSAPP'
     });
     this.updateIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
+    this.retroactiveHourControl.reset(this.createTimeValue(19, 0));
+    this.retroactiveHourControl.markAsPristine();
+    this.retroactiveHourControl.markAsUntouched();
     this.intakeForm.markAsPristine();
     this.intakeForm.markAsUntouched();
   }
@@ -2614,6 +2702,69 @@ export class GtrWorkspaceFacade {
       'Diciembre'
     ];
     return `${days[date.getDay()]}, ${date.getDate()} de ${months[date.getMonth()]} ${date.getFullYear()}`;
+  }
+
+  private startRetroactiveWindowClock(): void {
+    this.currentOperationalClock.set(new Date());
+    if (this.retroactiveWindowTimerId !== null) {
+      return;
+    }
+    this.retroactiveWindowTimerId = window.setInterval(() => {
+      this.currentOperationalClock.set(new Date());
+    }, 60_000);
+  }
+
+  private stopRetroactiveWindowClock(): void {
+    if (this.retroactiveWindowTimerId === null) {
+      return;
+    }
+    window.clearInterval(this.retroactiveWindowTimerId);
+    this.retroactiveWindowTimerId = null;
+  }
+
+  private createTimeValue(hours: number, minutes: number): Date {
+    const value = new Date();
+    value.setHours(hours, minutes, 0, 0);
+    return value;
+  }
+
+  private getLimaDateParts(date: Date): {
+    year: number;
+    month: number;
+    day: number;
+    hour: number;
+  } {
+    const values = new Map(
+      new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Lima',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        hourCycle: 'h23'
+      })
+        .formatToParts(date)
+        .map((part) => [part.type, part.value])
+    );
+    return {
+      year: Number(values.get('year')),
+      month: Number(values.get('month')),
+      day: Number(values.get('day')),
+      hour: Number(values.get('hour'))
+    };
+  }
+
+  private formatPreviousLimaDate(date: Date): string {
+    const current = this.getLimaDateParts(date);
+    const previousDate = new Date(Date.UTC(current.year, current.month - 1, current.day - 1, 12));
+    const label = new Intl.DateTimeFormat('es-PE', {
+      timeZone: 'UTC',
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    }).format(previousDate);
+    return label.charAt(0).toUpperCase() + label.slice(1);
   }
 
   private applyPresenceRealtimeEvent(event: PresenceRealtimeEvent): void {

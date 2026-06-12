@@ -91,6 +91,16 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("accion") Accion accion
     );
 
+    // Resuelve el nombre denormalizado de un conjunto de actores (empleados) por su id.
+    // Usado para nombrar asesores cuyo id viene del Lead (idAsesorPreventa) sin cruzar conteos.
+    @Query("""
+            SELECT e.idActor, MAX(e.nombreActor)
+            FROM Evento e
+            WHERE e.idActor IN :ids
+            GROUP BY e.idActor
+            """)
+    List<Object[]> resolverNombresActores(@Param("ids") Collection<Long> ids);
+
     @Query("""
             SELECT e.idLead, COUNT(e.id)
             FROM Evento e
@@ -600,60 +610,6 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             """)
     List<AsesorCantidadProjection> resumirNuevosGestionadosPorAsesorGtr(
             @Param("accion") Accion accion,
-            @Param("fechaDesde") Instant fechaDesde,
-            @Param("fechaHasta") Instant fechaHasta,
-            @Param("soloActivos") boolean soloActivos
-    );
-
-    @Query("""
-            SELECT e.idActor AS idAsesor,
-                   e.nombreActor AS nombreAsesor,
-                   COUNT(DISTINCT e.idLead) AS cantidad
-            FROM Evento e
-            WHERE e.accion = :accion
-              AND e.tipificacion = :tipificacion
-              AND e.subtipificacion = :subtipificacion
-              AND e.createdAt >= :fechaDesde
-              AND e.createdAt < :fechaHasta
-              AND (:soloActivos = false
-                   OR EXISTS (SELECT 1 FROM Lead la
-                              WHERE la.idAsesorAsignado = e.idActor
-                                AND la.etapa = 'PREVENTA'))
-            GROUP BY e.idActor, e.nombreActor
-            """)
-    List<AsesorCantidadProjection> resumirPreventasPorAsesorGtr(
-            @Param("accion") Accion accion,
-            @Param("tipificacion") String tipificacion,
-            @Param("subtipificacion") String subtipificacion,
-            @Param("fechaDesde") Instant fechaDesde,
-            @Param("fechaHasta") Instant fechaHasta,
-            @Param("soloActivos") boolean soloActivos
-    );
-
-    @Query("""
-            SELECT e.idActor AS idAsesor,
-                   e.nombreActor AS nombreAsesor,
-                   p.id AS idProveedor,
-                   p.nombre AS nombreProveedor,
-                   COUNT(e.id) AS cantidad
-            FROM Evento e
-            JOIN Plan pl ON pl.id = e.idPlanOfrecido
-            JOIN pl.proveedor p
-            WHERE e.accion = :accion
-              AND e.tipificacion = :tipificacion
-              AND e.subtipificacion = :subtipificacion
-              AND e.createdAt >= :fechaDesde
-              AND e.createdAt < :fechaHasta
-              AND (:soloActivos = false
-                   OR EXISTS (SELECT 1 FROM Lead la
-                              WHERE la.idAsesorAsignado = e.idActor
-                                AND la.etapa = 'PREVENTA'))
-            GROUP BY e.idActor, e.nombreActor, p.id, p.nombre
-            """)
-    List<AsesorProveedorCantidadProjection> resumirPreventasMensualesPorProveedorGtr(
-            @Param("accion") Accion accion,
-            @Param("tipificacion") String tipificacion,
-            @Param("subtipificacion") String subtipificacion,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("soloActivos") boolean soloActivos

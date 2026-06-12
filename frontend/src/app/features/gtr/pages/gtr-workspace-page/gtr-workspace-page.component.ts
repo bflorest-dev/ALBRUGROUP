@@ -5,12 +5,14 @@ import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { DatePickerModule } from 'primeng/datepicker';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
 import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-number-field/phone-number-field.component';
 import { RankingFacade } from '../../../ranking/facades/ranking.facade';
 import { RankingViewComponent } from '../../../ranking/components/ranking-view/ranking-view.component';
@@ -33,12 +35,14 @@ import { GtrScheduleExtensionDialogComponent } from '../../components/gtr-schedu
     UpperCasePipe,
     ButtonModule,
     CardModule,
+    DatePickerModule,
     DialogModule,
     InputTextModule,
     MessageModule,
     SelectModule,
     TableModule,
     TagModule,
+    TooltipModule,
     PhoneNumberFieldComponent,
     RankingViewComponent,
     GtrAdvisorsDrawerComponent,

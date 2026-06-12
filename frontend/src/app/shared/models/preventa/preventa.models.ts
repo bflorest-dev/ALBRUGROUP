@@ -325,6 +325,10 @@ export interface LeadIntakeRequest {
   base: string;
 }
 
+export interface LeadIntakeRetroactivoRequest extends LeadIntakeRequest {
+  horaRegistro: string;
+}
+
 export interface LeadSnapshotsRequest {
   numeroDocumentoTitularServicio?: string | null;
   direccion?: string | null;

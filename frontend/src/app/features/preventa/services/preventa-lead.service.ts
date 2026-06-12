@@ -29,6 +29,7 @@ import {
   GtrRankingAsesorResponse,
   GtrTipificacionCampanaResponse,
   LeadIntakeRequest,
+  LeadIntakeRetroactivoRequest,
   LeadIntakeMasivoExcelResponse,
   MasivoLeadFilters,
   MisPreventaResponse,
@@ -183,6 +184,10 @@ export class PreventaLeadService {
 
   registrarIngresoLead(request: LeadIntakeRequest): Observable<void> {
     return this.http.post<void>(`${this.leadUrl}/preventa/intake`, request);
+  }
+
+  registrarIngresoLeadRetroactivo(request: LeadIntakeRetroactivoRequest): Observable<void> {
+    return this.http.post<void>(`${this.leadUrl}/preventa/intake/retroactivo`, request);
   }
 
   registrarIngresoLeadsExcel(file: File): Observable<LeadIntakeMasivoExcelResponse> {
