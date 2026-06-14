@@ -1,3 +1,5 @@
+import { ExcepcionHorarioResponse } from './excepcion-horario-response';
+
 export interface HorarioResponse {
   id: number;
   idEmpleado: number;
@@ -19,5 +21,5 @@ export interface HorarioResponse {
     finAlmuerzo: string;
     laborable: boolean;
   }>;
-  excepciones: unknown[];
+  excepciones: ExcepcionHorarioResponse[];
 }

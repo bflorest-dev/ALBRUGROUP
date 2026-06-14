@@ -270,9 +270,33 @@
           @if (scheduleValidationMessage(); as scheduleMessage) {
             <p-message severity="error" [text]="scheduleMessage" />
           }
+
+          @if (facade.isTodayRestDay()) {
+            <p-message
+              severity="info"
+              text="Hoy es su día de descanso. Usa “Habilitar solo hoy” para crear una jornada extraordinaria sin cambiar su descanso semanal."
+            />
+          }
+
+          @if (facade.todayWorkdayEnabled()) {
+            <p-message severity="success" [text]="facade.scheduleChangeSuccessMessage()" />
+          }
         }
 
         <div class="actions actions--end">
+          @if (facade.isTodayRestDay()) {
+            <button
+              pButton
+              type="button"
+              severity="info"
+              [outlined]="true"
+              icon="pi pi-calendar"
+              label="Habilitar solo hoy"
+              [loading]="facade.isSubmittingScheduleChange()"
+              [disabled]="facade.isLoadingScheduleChange()"
+              (click)="facade.enableTodayAsWorkday()"
+            ></button>
+          }
           <button
             pButton
             type="button"

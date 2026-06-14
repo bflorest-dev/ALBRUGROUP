@@ -522,6 +522,16 @@ export class AdminPersonalFacade implements OnDestroy {
   readonly isSubmittingScheduleChange = signal(false);
   readonly scheduleChangeErrorMessage = signal('');
   readonly scheduleChangeSuccessMessage = signal('');
+  readonly todayWorkdayEnabled = signal(false);
+  readonly isTodayRestDay = computed(() => {
+    if (this.todayWorkdayEnabled()) {
+      return false;
+    }
+
+    const horario = this.currentScheduleForChange();
+    const todayDay = this.getTodayScheduleDay();
+    return horario?.detalles.some((detalle) => detalle.dia === todayDay && !detalle.laborable) ?? false;
+  });
   /** Sub-dialogo que aparece cuando el horario ya tiene marcaciones reales y
    *  el PATCH devuelve 409. Pregunta al admin como aplicar el cambio. */
   readonly isCorrectionDecisionVisible = signal(false);
@@ -1306,6 +1316,11 @@ export class AdminPersonalFacade implements OnDestroy {
 
       this.currentScheduleForChange.set(horario);
       this.currentContractForScheduleChange.set(contrato);
+      this.todayWorkdayEnabled.set(
+        horario.excepciones?.some(
+          (excepcion) => excepcion.fecha === this.getToday() && excepcion.laborable === true
+        ) ?? false
+      );
       this.populateScheduleChangeForm(horario, contrato.modalidad);
     } catch (error) {
       this.scheduleChangeErrorMessage.set(
@@ -1324,6 +1339,53 @@ export class AdminPersonalFacade implements OnDestroy {
     this.isLoadingScheduleChange.set(false);
     this.isSubmittingScheduleChange.set(false);
     this.scheduleChangeErrorMessage.set('');
+    this.todayWorkdayEnabled.set(false);
+  }
+
+  async enableTodayAsWorkday(): Promise<void> {
+    const employee = this.selectedEmployeeForScheduleChange();
+    const horario = this.currentScheduleForChange();
+    const contrato = this.currentContractForScheduleChange();
+    if (!employee || !horario || !contrato) {
+      return;
+    }
+
+    this.syncLunchBreakControls();
+    this.horarioForm.updateValueAndValidity({ emitEvent: false });
+    if (this.horarioForm.invalid) {
+      this.horarioForm.markAllAsTouched();
+      return;
+    }
+
+    this.scheduleChangeErrorMessage.set('');
+    this.scheduleChangeSuccessMessage.set('');
+    this.isSubmittingScheduleChange.set(true);
+    try {
+      const baseRequest = this.buildHorarioRequestForModalidad(contrato.modalidad);
+      const excepcion = await this.crearExcepcionDelDia(horario, this.getToday(), baseRequest);
+      this.currentScheduleForChange.update((current) =>
+        current
+          ? {
+              ...current,
+              excepciones: [
+                ...(current.excepciones ?? []).filter((item) => item.id !== excepcion.id),
+                excepcion
+              ]
+            }
+          : current
+      );
+      this.todayWorkdayEnabled.set(true);
+      this.scheduleChangeSuccessMessage.set(
+        'Jornada habilitada solo para hoy. El dia de descanso semanal no cambio.'
+      );
+      void this.loadEmployeeStates();
+    } catch (error) {
+      this.scheduleChangeErrorMessage.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No se pudo habilitar la jornada de hoy.')
+      );
+    } finally {
+      this.isSubmittingScheduleChange.set(false);
+    }
   }
 
   async submitScheduleChange(): Promise<void> {
@@ -1452,7 +1514,7 @@ export class AdminPersonalFacade implements OnDestroy {
   /** A. Solo para hoy: crea una ExcepcionHorario CAMBIO_COMPLETO para HOY. */
   async applyCorrectionOnlyToday(): Promise<void> {
     await this.runCorrectionDecision(async (empleadoId, horario, baseRequest) => {
-      await this.crearExcepcionDelDia(horario.id, this.getToday(), baseRequest);
+      await this.crearExcepcionDelDia(horario, this.getToday(), baseRequest);
       this.scheduleChangeSuccessMessage.set('Excepcion registrada solo para hoy. El horario base se mantiene.');
       void this.refreshScheduleAfterDecision(empleadoId, horario.id);
     });
@@ -1470,7 +1532,7 @@ export class AdminPersonalFacade implements OnDestroy {
   /** C. Hoy + Desde manana: excepcion de hoy + reemplazo desde manana. */
   async applyCorrectionTodayAndTomorrow(): Promise<void> {
     await this.runCorrectionDecision(async (empleadoId, horario, baseRequest) => {
-      await this.crearExcepcionDelDia(horario.id, this.getToday(), baseRequest);
+      await this.crearExcepcionDelDia(horario, this.getToday(), baseRequest);
       const fechaInicio = this.addDays(this.getToday(), 1);
       await this.reemplazarConFecha(empleadoId, horario.id, baseRequest, fechaInicio);
       this.scheduleChangeSuccessMessage.set('Excepcion creada para hoy y nuevo horario aplicado desde manana.');
@@ -1523,10 +1585,10 @@ export class AdminPersonalFacade implements OnDestroy {
   }
 
   private async crearExcepcionDelDia(
-    idHorario: number,
+    horario: HorarioResponse,
     fecha: string,
     baseRequest: Omit<RegistrarHorarioRequest, 'idEmpleado' | 'idContrato'>
-  ): Promise<void> {
+  ) {
     // En "correcciones rapidas" el modal trabaja con horas globales (simple).
     // Para la excepcion del dia tomamos esas horas y forzamos laborable=true:
     // si el admin esta corrigiendo el horario, quiere que ese dia se aplique
@@ -1546,9 +1608,18 @@ export class AdminPersonalFacade implements OnDestroy {
       motivo
     };
 
-    await firstValueFrom(
-      this.adminRrhhService.registrarExcepcionHorario(idHorario, excepcionRequest).pipe(timeout(this.requestTimeoutMs))
+    const existente = horario.excepciones?.find((excepcion) => excepcion.fecha === fecha);
+    return firstValueFrom(
+      (existente
+        ? this.adminRrhhService.actualizarExcepcionHorario(horario.id, existente.id, excepcionRequest)
+        : this.adminRrhhService.registrarExcepcionHorario(horario.id, excepcionRequest)
+      ).pipe(timeout(this.requestTimeoutMs))
     );
+  }
+
+  private getTodayScheduleDay(): string {
+    const days = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+    return days[new Date().getDay()];
   }
 
   private async reemplazarConFecha(

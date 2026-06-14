@@ -87,8 +87,8 @@ services:
     build:
       context: ./docker/asterisk
       args:
-        ASTERISK_VERSION: 22.9.0
-    image: albrugroup/asterisk:22.9.0
+        ASTERISK_VERSION: 22.10.0
+    image: albrugroup/asterisk:22.10.0
     hostname: asterisk
     volumes:
       - ./docker/asterisk/etc:/etc/asterisk:ro

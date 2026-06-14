@@ -1392,7 +1392,7 @@ export class GtrWorkspaceFacade {
     if (!advisor || !context) {
       return;
     }
-    if (!context.tieneHorarioVigente || !context.laborable) {
+    if (!context.tieneHorarioVigente) {
       this.extensionError.set('Este asesor no tiene un horario vigente hoy.');
       return;
     }
@@ -1406,7 +1406,12 @@ export class GtrWorkspaceFacade {
     const horaEntrada = this.toApiTime(raw.horaEntrada);
     const horaSalida = this.toApiTime(raw.horaSalida);
 
-    if (context.jornadaCerrada) {
+    if (!context.laborable) {
+      if (!horaEntrada || !horaSalida) {
+        this.extensionError.set('Para habilitar hoy, indica la hora de entrada y de salida.');
+        return;
+      }
+    } else if (context.jornadaCerrada) {
       if (!horaEntrada || !horaSalida) {
         this.extensionError.set('La jornada ya se cerro: indica hora de entrada y de salida del nuevo tramo.');
         return;
@@ -1424,7 +1429,9 @@ export class GtrWorkspaceFacade {
       );
       const nombre = advisor.nombreCompleto;
       this.successMessage.set(
-        response.jornadaReabierta
+        response.resultado === 'HABILITADA'
+          ? `Jornada extraordinaria habilitada para ${nombre}.`
+          : response.jornadaReabierta
           ? `Se reabrio la jornada de ${nombre}. El asesor debe volver a marcar ingreso.`
           : `Horario de ${nombre} ampliado.`
       );

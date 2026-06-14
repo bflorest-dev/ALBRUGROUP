@@ -383,7 +383,14 @@ public class AsistenciaService implements IAsistencia {
 
         ProgramacionDiaria base = resolverProgramacion(horario, fecha);
         if (!base.laborable()) {
-            throw new BadRequestException("El dia no es laborable para el empleado; requiere ajuste de RRHH");
+            return habilitarJornadaExtraordinaria(
+                    idEmpleado,
+                    horario,
+                    fecha,
+                    request,
+                    currentUser.empleadoID(),
+                    excepcionExistente
+            );
         }
         if (base.horaEntrada() == null || base.horaSalida() == null) {
             throw new BadRequestException("El horario del dia no tiene hora de entrada o salida configurada");
@@ -397,6 +404,46 @@ public class AsistenciaService implements IAsistencia {
             return reabrirJornada(idEmpleado, horario, fecha, asistencia, request, creadoPor, excepcionExistente);
         }
         return ampliarJornadaContinua(idEmpleado, horario, fecha, base, asistencia, request, creadoPor, excepcionExistente);
+    }
+
+    /** Habilita una jornada completa en un dia que originalmente era de descanso. */
+    private AmpliacionHorarioResponse habilitarJornadaExtraordinaria(
+            Long idEmpleado,
+            Horario horario,
+            LocalDate fecha,
+            RegistrarAmpliacionRequest request,
+            Long creadoPor,
+            ExcepcionHorario excepcionExistente
+    ) {
+        if (request.getHoraEntrada() == null || request.getHoraSalida() == null) {
+            throw new BadRequestException("Para habilitar un dia de descanso indica la hora de entrada y de salida");
+        }
+        if (!request.getHoraSalida().isAfter(request.getHoraEntrada())) {
+            throw new BadRequestException("La hora de salida debe ser posterior a la hora de entrada");
+        }
+
+        ExcepcionHorario excepcion = upsertAmpliacion(
+                excepcionExistente,
+                horario,
+                fecha,
+                request.getHoraEntrada(),
+                request.getHoraSalida(),
+                null,
+                null,
+                request.getMotivo(),
+                creadoPor
+        );
+
+        publicarAmpliacion(idEmpleado, fecha, false);
+        return AmpliacionHorarioResponse.builder()
+                .idEmpleado(idEmpleado)
+                .fecha(fecha)
+                .excepcion(horarioMapper.toResponse(excepcion))
+                .resultado("HABILITADA")
+                .entradaEfectiva(request.getHoraEntrada())
+                .salidaEfectiva(request.getHoraSalida())
+                .jornadaReabierta(false)
+                .build();
     }
 
     /** Casos 1 y 2: extender la entrada (antes) y/o la salida (despues) de una jornada continua. */

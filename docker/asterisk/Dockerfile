@@ -1,5 +1,5 @@
 # =============================================================================
-# Asterisk 22.9.0 LTS - Single-stage build para ALBRUGROUP
+# Asterisk 22.10.0 LTS - Single-stage build para ALBRUGROUP
 # =============================================================================
 # Single-stage: compile + runtime en la misma imagen Debian Bookworm.
 # Evita todos los problemas de "missing shared library" del multi-stage.
@@ -7,7 +7,7 @@
 # interno donde el build cache lo descarga una sola vez).
 # =============================================================================
 
-ARG ASTERISK_VERSION=22.9.0
+ARG ASTERISK_VERSION=22.10.0
 FROM debian:bookworm-slim
 
 ARG ASTERISK_VERSION
@@ -56,9 +56,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ---------------------------------------------------------------------------
 WORKDIR /usr/src
 
-RUN wget -q "https://downloads.asterisk.org/pub/telephony/asterisk/asterisk-${ASTERISK_VERSION}.tar.gz" \
- && tar xf "asterisk-${ASTERISK_VERSION}.tar.gz" \
- && rm  "asterisk-${ASTERISK_VERSION}.tar.gz"
+# Asterisk mueve las versiones a old-releases/ cuando libera una nueva del mismo branch
+# (ej. al salir 22.10.0, la 22.9.0 dejo de estar en el top-level). Intentamos primero
+# el top-level y caemos a old-releases/ para que el build no se rompa con cada release.
+RUN base="https://downloads.asterisk.org/pub/telephony/asterisk" \
+ && file="asterisk-${ASTERISK_VERSION}.tar.gz" \
+ && (wget -q "${base}/${file}" || wget -q "${base}/old-releases/${file}") \
+ && tar xf "${file}" \
+ && rm  "${file}"
 
 WORKDIR /usr/src/asterisk-${ASTERISK_VERSION}
 
@@ -125,7 +130,8 @@ EXPOSE 10000-10500/udp
 # ---------------------------------------------------------------------------
 # Entrypoint
 # ---------------------------------------------------------------------------
-# -F (mayúscula) = "never fork" -> Asterisk queda como PID 1 (obligatorio en Docker)
+# -f (minúscula) = "do not fork" -> Asterisk queda en foreground como PID 1 (obligatorio
+#    en Docker). OJO: -F (mayúscula) es "always fork" y NO sirve aquí.
 # -T = timestamp en consola
 # -vvvg = verbose level 3 + log a consola (visible con docker compose logs)
 # chown previo: asegura permisos sobre volúmenes montados en runtime

@@ -78,6 +78,17 @@ export class AdminRrhhService {
     );
   }
 
+  actualizarExcepcionHorario(
+    idHorario: number,
+    idExcepcion: number,
+    request: RegistrarExcepcionHorarioRequest
+  ): Observable<ExcepcionHorarioResponse> {
+    return this.http.put<ExcepcionHorarioResponse>(
+      `${this.horariosUrl}/${idHorario}/excepciones/${idExcepcion}`,
+      request
+    );
+  }
+
   getHorarioVigente(empleadoId: number, fecha?: string): Observable<HorarioResponse> {
     let params = new HttpParams();
     if (fecha) {

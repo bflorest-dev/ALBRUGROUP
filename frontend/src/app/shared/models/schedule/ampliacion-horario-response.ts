@@ -5,8 +5,8 @@ export interface AmpliacionHorarioResponse {
   idEmpleado: number;
   fecha: string;
   excepcion: ExcepcionHorarioResponse;
-  /** EXTENDIDA: jornada continua ampliada. REABIERTA: jornada cerrada reabierta con un tramo nuevo. */
-  resultado: 'EXTENDIDA' | 'REABIERTA';
+  /** HABILITADA: dia de descanso convertido en jornada. */
+  resultado: 'EXTENDIDA' | 'REABIERTA' | 'HABILITADA';
   entradaEfectiva: string | null;
   salidaEfectiva: string | null;
   jornadaReabierta: boolean;

@@ -24,7 +24,8 @@ public class AmpliacionHorarioResponse {
     private ExcepcionHorarioResponse excepcion;
 
     /** EXTENDIDA: se amplio una jornada continua (entrar antes / salir despues).
-     *  REABIERTA: se reabrio una jornada ya cerrada con un tramo nuevo. */
+     *  REABIERTA: se reabrio una jornada ya cerrada con un tramo nuevo.
+     *  HABILITADA: se convirtio un dia de descanso en jornada extraordinaria. */
     private String resultado;
 
     /** Ventana efectiva del dia tras la ampliacion (para EXTENDIDA es la jornada completa;

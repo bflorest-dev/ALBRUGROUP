@@ -197,8 +197,29 @@ export class PrivateLayoutComponent {
           .watchBajaEmpleado(session.empleadoId)
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({ next: () => void this.authSessionService.logout() });
+
+        this.attendanceRealtimeService
+          .watchTopic(`/topic/asistencia/empleado/${session.empleadoId}`)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: (event) => {
+              if (
+                event.tipo === 'EXCEPCION_HORARIO_AFECTADA' &&
+                event.fecha === this.getToday()
+              ) {
+                this.attendanceFacade.reload();
+              }
+            }
+          });
       }
     });
+  }
+
+  private getToday(): string {
+    const now = new Date();
+    const month = `${now.getMonth() + 1}`.padStart(2, '0');
+    const day = `${now.getDate()}`.padStart(2, '0');
+    return `${now.getFullYear()}-${month}-${day}`;
   }
 
   protected submitAttendanceAction(actionId: AttendanceActionId): void {

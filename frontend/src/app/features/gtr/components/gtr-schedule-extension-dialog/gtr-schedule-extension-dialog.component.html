@@ -24,23 +24,40 @@
         <span>Cargando horario…</span>
       </div>
     } @else if (facade.extensionContext(); as ctx) {
-      @if (!ctx.tieneHorarioVigente || !ctx.laborable) {
+      @if (!ctx.tieneHorarioVigente) {
         <p-message
           severity="warn"
           text="Este asesor no tiene un horario vigente hoy. No es posible ampliar."
           styleClass="extension-message"
         />
       } @else {
-        <div class="extension-current">
-          <span class="extension-current__label">Horario de hoy</span>
-          <span class="extension-current__value">
-            {{ formatTime(ctx.entradaProgramada) }} – {{ formatTime(ctx.salidaProgramada) }}
-          </span>
-          <span class="extension-current__estado">{{ estadoLabel() }}</span>
-        </div>
+        @if (ctx.laborable) {
+          <div class="extension-current">
+            <span class="extension-current__label">Horario de hoy</span>
+            <span class="extension-current__value">
+              {{ formatTime(ctx.entradaProgramada) }} – {{ formatTime(ctx.salidaProgramada) }}
+            </span>
+            <span class="extension-current__estado">{{ estadoLabel() }}</span>
+          </div>
+        } @else {
+          <p-message
+            severity="info"
+            text="Hoy es su día de descanso. Define una jornada extraordinaria para habilitar el ingreso."
+            styleClass="extension-message"
+          />
+        }
 
         <form [formGroup]="facade.extensionForm" class="extension-form" (ngSubmit)="facade.submitScheduleExtension()">
-          @if (ctx.jornadaCerrada) {
+          @if (!ctx.laborable) {
+            <label class="extension-field">
+              <span>Hora de entrada</span>
+              <p-datepicker formControlName="horaEntrada" [timeOnly]="true" hourFormat="24" appendTo="body" />
+            </label>
+            <label class="extension-field">
+              <span>Hora de salida</span>
+              <p-datepicker formControlName="horaSalida" [timeOnly]="true" hourFormat="24" appendTo="body" />
+            </label>
+          } @else if (ctx.jornadaCerrada) {
             <p-message
               severity="info"
               text="La jornada ya se cerró. Se agregará un tramo nuevo para que el asesor retome el trabajo."
@@ -107,7 +124,7 @@
       label="Guardar ampliación"
       icon="pi pi-check"
       [loading]="facade.isSavingExtension()"
-      [disabled]="facade.isLoadingExtensionContext() || !facade.extensionContext()?.tieneHorarioVigente || !facade.extensionContext()?.laborable"
+      [disabled]="facade.isLoadingExtensionContext() || !facade.extensionContext()?.tieneHorarioVigente"
       (click)="facade.submitScheduleExtension()"
     ></button>
   </div>
