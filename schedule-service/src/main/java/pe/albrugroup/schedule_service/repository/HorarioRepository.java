@@ -2,6 +2,7 @@ package pe.albrugroup.schedule_service.repository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,8 +11,13 @@ import pe.albrugroup.schedule_service.entity.Horario;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import jakarta.persistence.LockModeType;
 
 public interface HorarioRepository extends JpaRepository<Horario, Long> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT h FROM Horario h WHERE h.id = :id")
+    Optional<Horario> findByIdForUpdate(@Param("id") Long id);
 
     @Query("""
             SELECT h FROM Horario h

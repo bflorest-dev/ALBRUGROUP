@@ -16,6 +16,7 @@ import pe.albrugroup.schedule_service.entity.request.horario.RegistrarExcepcionH
 import pe.albrugroup.schedule_service.entity.request.horario.RegistrarHorarioRequest;
 import pe.albrugroup.schedule_service.entity.request.horario.ReemplazarHorarioRequest;
 import pe.albrugroup.schedule_service.entity.request.horario.CorregirHorarioRequest;
+import pe.albrugroup.schedule_service.entity.request.horario.CerrarHorarioEmpleadoRequest;
 import pe.albrugroup.schedule_service.entity.response.PageResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.ExcepcionHorarioResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.HorarioMesResponse;
@@ -103,5 +104,17 @@ public class HorarioController {
     public ResponseEntity<PageResponse<HorarioResponse>> listarHistorico(@PathVariable @Positive Long idEmpleado,
                                                                          @Valid @ModelAttribute PageRequest pageRequest) {
         return ResponseEntity.ok(horarioService.listarHistorico(idEmpleado, pageRequest));
+    }
+
+    @PostMapping("/empleados/{idEmpleado}/cerrar")
+    @PreAuthorize("hasAnyAuthority('UPDATE_HORARIOS','CANCEL_CONTRATOS')")
+    public ResponseEntity<HorarioResponse> cerrarHorarioEmpleado(
+            @PathVariable @Positive Long idEmpleado,
+            @RequestBody(required = false) CerrarHorarioEmpleadoRequest request
+    ) {
+        HorarioResponse response = horarioService.cerrarHorarioEmpleado(
+                idEmpleado,
+                request == null ? new CerrarHorarioEmpleadoRequest() : request);
+        return response == null ? ResponseEntity.noContent().build() : ResponseEntity.ok(response);
     }
 }

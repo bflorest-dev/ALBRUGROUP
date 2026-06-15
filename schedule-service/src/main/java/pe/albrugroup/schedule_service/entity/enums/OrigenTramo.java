@@ -7,5 +7,8 @@ package pe.albrugroup.schedule_service.entity.enums;
  */
 public enum OrigenTramo {
     BASE,
-    AMPLIACION
+    AMPLIACION,
+    REEMPLAZO_BASE,
+    JORNADA_EXTRAORDINARIA,
+    TRAMO_ADICIONAL
 }

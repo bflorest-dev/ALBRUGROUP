@@ -1,0 +1,151 @@
+<p-dialog
+  header="Ajustar jornada"
+  [visible]="visible()"
+  (visibleChange)="!$event && closed.emit()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  appendTo="body"
+  [style]="dialogStyle"
+>
+  <div class="adjustment-dialog">
+    <div class="adjustment-dialog__heading">
+      <strong>{{ employeeName() }}</strong>
+      <span>Define el horario puntual que debe aplicarse.</span>
+    </div>
+
+    @if (error(); as message) {
+      <p-message severity="error" [text]="message" />
+    }
+
+    <form [formGroup]="form" class="adjustment-form">
+      @if (allowDateChange()) {
+        <label class="field field--wide">
+          <span>Fecha</span>
+          <p-datepicker
+            formControlName="fecha"
+            dateFormat="dd/mm/yy"
+            [minDate]="minDate"
+            appendTo="body"
+            (onSelect)="onDateSelected($event)"
+          />
+        </label>
+      }
+
+      <label class="field">
+        <span>Hora de inicio</span>
+        <p-datepicker formControlName="inicio" [timeOnly]="true" hourFormat="24" appendTo="body" />
+      </label>
+
+      <label class="field">
+        <span>Hora de fin</span>
+        <p-datepicker formControlName="fin" [timeOnly]="true" hourFormat="24" appendTo="body" />
+      </label>
+
+      <label class="field field--wide">
+        <span>Motivo</span>
+        <textarea
+          pTextarea
+          formControlName="motivo"
+          rows="3"
+          maxlength="300"
+          placeholder="Indica por qué se necesita este cambio"
+        ></textarea>
+      </label>
+    </form>
+
+    <section class="schedule-block">
+      <div class="schedule-block__title">
+        <strong>Horario efectivo</strong>
+        @if (loading()) {
+          <span>Cargando...</span>
+        }
+      </div>
+      @if (!loading() && jornada()?.tramos?.length) {
+        <div class="segments">
+          @for (tramo of jornada()!.tramos; track tramo.idAjuste ?? tramo.inicio) {
+            <div class="segment">
+              <span>{{ formatDateTime(tramo.inicio) }} - {{ formatDateTime(tramo.fin) }}</span>
+              <p-tag [value]="originLabel(tramo)" [severity]="tramo.base ? 'secondary' : 'info'" />
+            </div>
+          }
+        </div>
+      } @else if (!loading()) {
+        <p-message severity="info" text="Ese día no tiene una jornada programada." />
+      }
+    </section>
+
+    @if (preview(); as result) {
+      <section class="schedule-block schedule-block--preview">
+        <div class="schedule-block__title">
+          <strong>Así quedará</strong>
+          <span>{{ result.jornadaResultante.tramos.length }} tramo(s)</span>
+        </div>
+        @if (result.normalizacion) {
+          <p-message severity="info" [text]="result.normalizacion" />
+        }
+        <div class="segments">
+          @for (tramo of result.jornadaResultante.tramos; track tramo.idAjuste ?? tramo.inicio) {
+            <div class="segment">
+              <span>{{ formatDateTime(tramo.inicio) }} - {{ formatDateTime(tramo.fin) }}</span>
+              <p-tag [value]="originLabel(tramo)" [severity]="tramo.base ? 'secondary' : 'success'" />
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    @if (history().length) {
+      <section class="schedule-block">
+        <div class="schedule-block__title"><strong>Historial del día</strong></div>
+        <div class="history">
+          @for (item of history(); track item.id) {
+            <div class="history__row">
+              <div>
+                <strong>{{ formatDateTime(item.inicio) }} - {{ formatDateTime(item.fin) }}</strong>
+                <span>{{ item.motivo }}</span>
+              </div>
+              <p-tag [value]="item.estado" [severity]="statusSeverity(item.estado)" />
+              @if (item.estado === 'ACTIVO' && allowDateChange()) {
+                <button
+                  pButton
+                  type="button"
+                  icon="pi pi-times"
+                  severity="danger"
+                  [text]="true"
+                  aria-label="Cancelar ajuste"
+                  (click)="cancelRequested.emit(item.id)"
+                ></button>
+              }
+            </div>
+          }
+        </div>
+      </section>
+    }
+  </div>
+
+  <ng-template #footer>
+    <div class="dialog-actions">
+      <button pButton type="button" label="Cerrar" severity="secondary" [text]="true" (click)="closed.emit()"></button>
+      <button
+        pButton
+        type="button"
+        label="Vista previa"
+        icon="pi pi-eye"
+        severity="secondary"
+        [outlined]="true"
+        [disabled]="loading() || saving()"
+        (click)="requestPreview()"
+      ></button>
+      <button
+        pButton
+        type="button"
+        label="Guardar ajuste"
+        icon="pi pi-check"
+        [loading]="saving()"
+        [disabled]="loading()"
+        (click)="save()"
+      ></button>
+    </div>
+  </ng-template>
+</p-dialog>

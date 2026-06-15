@@ -32,6 +32,26 @@ export interface CumplimientoDetalleDiaResponse {
   minutosServiciosAcumulados: number;
   excedioServicios: boolean;
   tardanza: boolean;
+  tramos: TramoAsistenciaResponse[];
+}
+
+export type OrigenTramo =
+  | 'BASE'
+  | 'AMPLIACION'
+  | 'REEMPLAZO_BASE'
+  | 'JORNADA_EXTRAORDINARIA'
+  | 'TRAMO_ADICIONAL';
+
+export interface TramoAsistenciaResponse {
+  origen: OrigenTramo;
+  horaEntradaEstablecida: string | null;
+  horaSalidaEstablecida: string | null;
+  horaEntradaAsistencia: string | null;
+  horaSalidaAsistencia: string | null;
+  minutosObjetivo: number;
+  minutosTrabajados: number;
+  motivo: string | null;
+  creadoPor: number | null;
 }
 
 export interface CumplimientoDetalleEmpleadoResponse {

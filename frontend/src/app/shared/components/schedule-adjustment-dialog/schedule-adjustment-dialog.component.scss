@@ -1,0 +1,111 @@
+:host {
+  display: contents;
+}
+
+.adjustment-dialog {
+  display: grid;
+  gap: 1rem;
+}
+
+.adjustment-dialog__heading {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.adjustment-dialog__heading span,
+.schedule-block__title span,
+.history__row span {
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
+}
+
+.adjustment-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.875rem;
+}
+
+.field {
+  display: grid;
+  min-width: 0;
+  gap: 0.4rem;
+}
+
+.field--wide {
+  grid-column: 1 / -1;
+}
+
+.field > span {
+  font-weight: 600;
+}
+
+.field :is(p-datepicker, textarea) {
+  width: 100%;
+}
+
+.schedule-block {
+  display: grid;
+  gap: 0.65rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--p-content-border-color);
+}
+
+.schedule-block--preview {
+  border-left: 3px solid var(--p-primary-color);
+  padding-left: 0.8rem;
+}
+
+.schedule-block__title,
+.segment,
+.history__row,
+.dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.segments,
+.history {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.segment,
+.history__row {
+  min-height: 2.75rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 6px;
+}
+
+.history__row > div {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.history__row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dialog-actions {
+  width: 100%;
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .adjustment-form {
+    grid-template-columns: 1fr;
+  }
+
+  .field--wide {
+    grid-column: auto;
+  }
+
+  .dialog-actions {
+    flex-wrap: wrap;
+  }
+}

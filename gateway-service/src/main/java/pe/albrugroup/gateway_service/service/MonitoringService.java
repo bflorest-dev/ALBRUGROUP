@@ -10,16 +10,21 @@ import pe.albrugroup.gateway_service.entity.response.EmpleadoEsperadoResponse;
 import pe.albrugroup.gateway_service.integration.auth.AuthMonitoringClient;
 import pe.albrugroup.gateway_service.integration.auth.dto.UsuarioRolResponse;
 import pe.albrugroup.gateway_service.integration.schedule.ScheduleMonitoringClient;
+import pe.albrugroup.gateway_service.integration.schedule.ScheduleAdjustmentClient;
 import pe.albrugroup.gateway_service.integration.schedule.dto.EstadoMonitorResponse;
 import pe.albrugroup.gateway_service.presence.PresenceService;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,10 +33,12 @@ public class MonitoringService {
 
     private static final PuestoTrabajo ROL_ASESOR = PuestoTrabajo.ASESOR_VENTAS;
     private static final PuestoTrabajo ROL_OJT = PuestoTrabajo.OJT;
+    private static final ZoneId OPERATIONAL_ZONE = ZoneId.of("America/Lima");
 
     private final PresenceService presenceService;
     private final ScheduleMonitoringClient scheduleMonitoringClient;
     private final AuthMonitoringClient authMonitoringClient;
+    private final ScheduleAdjustmentClient scheduleAdjustmentClient;
 
     public Mono<List<AsesorGtrResponse>> listarAsesoresConectadosGtr(String authHeader, LocalDate fecha) {
         return listarConectadosVentasYOjt()
@@ -85,6 +92,74 @@ public class MonitoringService {
                 authMonitoringClient.listarUsuariosActivosPorRol(authHeader, ROL_ASESOR),
                 authMonitoringClient.listarUsuariosActivosPorRol(authHeader, ROL_OJT)
         ).map(tuple -> mergePorEmpleado(tuple.getT1(), tuple.getT2()));
+    }
+
+    public Mono<JsonNode> getJornadaAjustableGtr(
+            String authHeader,
+            Long idEmpleado,
+            LocalDate fecha
+    ) {
+        requireToday(fecha);
+        return validarAsesorVisibleGtr(authHeader, idEmpleado)
+                .then(scheduleAdjustmentClient.getJornada(authHeader, idEmpleado, fecha));
+    }
+
+    public Mono<JsonNode> previewAjusteGtr(
+            String authHeader,
+            Long idEmpleado,
+            JsonNode request
+    ) {
+        requireToday(request);
+        return validarAsesorVisibleGtr(authHeader, idEmpleado)
+                .then(scheduleAdjustmentClient.preview(authHeader, idEmpleado, request));
+    }
+
+    public Mono<JsonNode> registrarAjusteGtr(
+            String authHeader,
+            Long idEmpleado,
+            JsonNode request
+    ) {
+        requireToday(request);
+        return validarAsesorVisibleGtr(authHeader, idEmpleado)
+                .then(scheduleAdjustmentClient.registrar(authHeader, idEmpleado, request));
+    }
+
+    private void requireToday(JsonNode request) {
+        try {
+            String inicio = request.path("inicio").asText(null);
+            String fin = request.path("fin").asText(null);
+            if (inicio == null || fin == null) {
+                throw invalidGtrDate();
+            }
+            requireToday(LocalDateTime.parse(inicio).toLocalDate());
+            requireToday(LocalDateTime.parse(fin).toLocalDate());
+        } catch (DateTimeParseException ex) {
+            throw invalidGtrDate();
+        }
+    }
+
+    private void requireToday(LocalDate fecha) {
+        if (fecha == null || !fecha.equals(LocalDate.now(OPERATIONAL_ZONE))) {
+            throw invalidGtrDate();
+        }
+    }
+
+    private org.springframework.web.server.ResponseStatusException invalidGtrDate() {
+        return new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_REQUEST,
+                "GTR solo puede registrar ajustes para el dia actual"
+        );
+    }
+
+    private Mono<Void> validarAsesorVisibleGtr(String authHeader, Long idEmpleado) {
+        return listarUsuariosActivosVentasYOjt(authHeader)
+                .flatMap(usuarios -> usuarios.stream()
+                        .anyMatch(usuario -> usuario.getEmpleadoId().equals(idEmpleado))
+                        ? Mono.empty()
+                        : Mono.error(new org.springframework.web.server.ResponseStatusException(
+                                org.springframework.http.HttpStatus.FORBIDDEN,
+                                "El empleado no pertenece a la lista operativa de GTR"
+                        )));
     }
 
     private <T> List<T> mergePorEmpleado(List<T> left, List<T> right) {

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.schedule_service.configuration.CurrentUser;
 import pe.albrugroup.schedule_service.configuration.OperationalDateTime;
+import pe.albrugroup.schedule_service.configuration.ScheduleEngineProperties;
 import pe.albrugroup.schedule_service.entity.Asistencia;
 import pe.albrugroup.schedule_service.entity.AsistenciaTramo;
 import pe.albrugroup.schedule_service.entity.ExcepcionHorario;
@@ -31,11 +32,16 @@ import pe.albrugroup.schedule_service.entity.response.asistencia.EstadoMonitorRe
 import pe.albrugroup.schedule_service.entity.response.asistencia.TramoAsistenciaResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.AmpliacionContextoResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.AmpliacionHorarioResponse;
+import pe.albrugroup.schedule_service.entity.request.horario.AjusteJornadaRequest;
+import pe.albrugroup.schedule_service.entity.response.horario.AjusteJornadaResponse;
+import pe.albrugroup.schedule_service.entity.response.horario.JornadaEfectivaResponse;
+import pe.albrugroup.schedule_service.entity.response.horario.TramoJornadaResponse;
 import pe.albrugroup.schedule_service.exception.BadRequestException;
 import pe.albrugroup.schedule_service.exception.ConflictException;
 import pe.albrugroup.schedule_service.exception.NotFoundException;
 import pe.albrugroup.schedule_service.repository.AsistenciaRepository;
 import pe.albrugroup.schedule_service.repository.AsistenciaTramoRepository;
+import pe.albrugroup.schedule_service.repository.AjusteJornadaRepository;
 import pe.albrugroup.schedule_service.repository.ExcepcionHorarioRepository;
 import pe.albrugroup.schedule_service.service.mapper.AsistenciaMapper;
 import pe.albrugroup.schedule_service.service.mapper.HorarioMapper;
@@ -60,6 +66,7 @@ public class AsistenciaService implements IAsistencia {
 
     private final AsistenciaRepository asistenciaRepository;
     private final AsistenciaTramoRepository asistenciaTramoRepository;
+    private final AjusteJornadaRepository ajusteJornadaRepository;
     private final ExcepcionHorarioRepository excepcionHorarioRepository;
     private final HorarioService horarioService;
     private final AttendanceMonitorResolver attendanceMonitorResolver;
@@ -67,12 +74,17 @@ public class AsistenciaService implements IAsistencia {
     private final AsistenciaMapper mapper;
     private final HorarioMapper horarioMapper;
     private final CurrentUser currentUser;
+    private final AjusteJornadaService ajusteJornadaService;
+    private final JornadaEfectivaResolver jornadaEfectivaResolver;
+    private final ScheduleEngineProperties scheduleEngineProperties;
+    private final JornadaShadowComparator jornadaShadowComparator;
 
     @Override
     @Transactional
     public DetalleAsistenciaResponse registrarIngreso(MovimientoAsistenciaRequest request) {
         LocalDateTime fechaHoraOperativa = OperationalDateTime.nowLocalDateTime();
         validarMovimientoDentroDeHorario(currentUser.empleadoID(), fechaHoraOperativa);
+        prepararTramoActualSiCorresponde(currentUser.empleadoID(), fechaHoraOperativa);
         Asistencia asistencia = getOrCreateAsistencia(currentUser.empleadoID(), fechaHoraOperativa);
         EstadoAsistencia estadoAnterior = asistencia.getEstadoActual();
         if (asistencia.getFechaHoraIngreso() != null) {
@@ -337,6 +349,10 @@ public class AsistenciaService implements IAsistencia {
     @Transactional(readOnly = true)
     public AmpliacionContextoResponse getContextoAmpliacion(Long idEmpleado, LocalDate fecha) {
         LocalDate consulta = OperationalDateTime.resolveDate(fecha);
+        if (scheduleEngineProperties.getMode() == ScheduleEngineProperties.Mode.ALL
+                && scheduleEngineProperties.enabledForOperationalReads(consulta)) {
+            return getContextoAmpliacionNuevo(idEmpleado, consulta);
+        }
         Asistencia asistencia = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, consulta).orElse(null);
         try {
             Horario horario = horarioService.getHorarioById(horarioService.getHorarioVigente(idEmpleado, consulta).getId());
@@ -369,6 +385,10 @@ public class AsistenciaService implements IAsistencia {
     @Transactional
     public AmpliacionHorarioResponse registrarAmpliacion(Long idEmpleado, RegistrarAmpliacionRequest request) {
         LocalDate fecha = request.getFecha() != null ? request.getFecha() : OperationalDateTime.today();
+        if (scheduleEngineProperties.getMode() == ScheduleEngineProperties.Mode.ALL
+                && !fecha.isBefore(scheduleEngineProperties.getEffectiveFrom())) {
+            return registrarAmpliacionConMotorNuevo(idEmpleado, fecha, request);
+        }
         if (request.getHoraEntrada() == null && request.getHoraSalida() == null) {
             throw new BadRequestException("Indica una nueva hora de entrada y/o de salida para la ampliacion");
         }
@@ -702,11 +722,25 @@ public class AsistenciaService implements IAsistencia {
     private Asistencia crearAsistencia(Long idEmpleado, LocalDate fecha) {
         Horario horario = horarioService.getHorarioById(horarioService.getHorarioVigente(idEmpleado, fecha).getId());
         ProgramacionDiaria programacion = resolverProgramacion(horario, fecha);
+        TramoJornadaResponse tramoNuevo = null;
+        if (scheduleEngineProperties.enabledForOperationalReads(fecha)) {
+            JornadaEfectivaResponse jornada = jornadaEfectivaResolver.resolver(idEmpleado, fecha);
+            tramoNuevo = jornada.getTramoActual();
+            if (tramoNuevo == null) {
+                throw new BadRequestException("No se puede registrar ingreso fuera del horario programado del dia");
+            }
+            programacion = ProgramacionDiaria.builder()
+                    .laborable(true)
+                    .horaEntrada(tramoNuevo.getInicio().toLocalTime())
+                    .horaSalida(tramoNuevo.getFin().toLocalTime())
+                    .minutosObjetivo((int) Duration.between(tramoNuevo.getInicio(), tramoNuevo.getFin()).toMinutes())
+                    .build();
+        }
         if (!programacion.laborable()) {
             throw new BadRequestException("La fecha consultada no es laborable para el horario vigente");
         }
 
-        return asistenciaRepository.save(Asistencia.builder()
+        Asistencia.AsistenciaBuilder builder = Asistencia.builder()
                 .idEmpleado(idEmpleado)
                 .idHorario(horario.getId())
                 .fecha(fecha)
@@ -721,8 +755,14 @@ public class AsistenciaService implements IAsistencia {
                 .minutosAlmuerzoTomados(0)
                 .minutosServiciosPermitidos(horario.getMinutosServicios())
                 .minutosServiciosAcumulados(0)
-                .excedioServicios(Boolean.FALSE)
-                .build());
+                .excedioServicios(Boolean.FALSE);
+        if (tramoNuevo != null) {
+            builder.origenTramoActual(mapOrigenTramo(tramoNuevo));
+            if (tramoNuevo.getIdAjuste() != null) {
+                builder.ajusteJornadaActual(ajusteJornadaRepository.findById(tramoNuevo.getIdAjuste()).orElse(null));
+            }
+        }
+        return asistenciaRepository.save(builder.build());
     }
 
     private ProgramacionDiaria resolverProgramacion(Horario horario, LocalDate fecha) {
@@ -910,6 +950,22 @@ public class AsistenciaService implements IAsistencia {
         }
 
         try {
+            if (scheduleEngineProperties.enabledForOperationalReads(fecha)) {
+                JornadaEfectivaResponse jornada = jornadaEfectivaResolver.resolver(idEmpleado, fecha);
+                if (jornada.getTramos().isEmpty()) {
+                    return ProgramacionDiaria.builder().laborable(false).minutosObjetivo(0).build();
+                }
+                TramoJornadaResponse primero = jornada.getTramos().getFirst();
+                int objetivo = jornada.getTramos().stream()
+                        .mapToInt(tramo -> (int) Duration.between(tramo.getInicio(), tramo.getFin()).toMinutes())
+                        .sum();
+                return ProgramacionDiaria.builder()
+                        .laborable(true)
+                        .horaEntrada(primero.getInicio().toLocalTime())
+                        .horaSalida(jornada.getTramos().getLast().getFin().toLocalTime())
+                        .minutosObjetivo(objetivo)
+                        .build();
+            }
             Horario horario = horarioService.getHorarioById(horarioService.getHorarioVigente(idEmpleado, fecha).getId());
             return resolverProgramacion(horario, fecha);
         } catch (NotFoundException e) {
@@ -958,6 +1014,7 @@ public class AsistenciaService implements IAsistencia {
 
     private DetalleAsistenciaResponse toDetalleOperativoResponse(Asistencia asistencia) {
         DetalleAsistenciaResponse response = mapper.toDetalleResponse(asistencia);
+        aplicarProximoTramoSiCorresponde(asistencia, response);
         boolean dentroHorario = estaDentroHorarioActualizado(asistencia.getIdEmpleado(), asistencia.getFecha());
         response.setDentroHorario(dentroHorario);
         response.setOperativo(esJornadaOperativaAbierta(asistencia));
@@ -976,8 +1033,18 @@ public class AsistenciaService implements IAsistencia {
 
     private DetalleAsistenciaResponse construirDetalleSinAsistencia(Long idEmpleado, LocalDate fecha) {
         try {
+            if (scheduleEngineProperties.enabledForOperationalReads(fecha)) {
+                return construirDetalleDesdeJornadaEfectiva(idEmpleado, fecha);
+            }
             Horario horario = horarioService.getHorarioById(horarioService.getHorarioVigente(idEmpleado, fecha).getId());
             ProgramacionDiaria programacion = resolverProgramacion(horario, fecha);
+            jornadaShadowComparator.compare(
+                    idEmpleado,
+                    fecha,
+                    programacion.laborable(),
+                    programacion.horaEntrada(),
+                    programacion.horaSalida()
+            );
             boolean dentroHorario = estaDentroHorarioActualizado(idEmpleado, fecha);
 
             return DetalleAsistenciaResponse.builder()
@@ -1024,6 +1091,9 @@ public class AsistenciaService implements IAsistencia {
         }
 
         try {
+            if (scheduleEngineProperties.enabledForOperationalReads(fecha)) {
+                return jornadaEfectivaResolver.resolver(idEmpleado, fecha).getTramoActual() != null;
+            }
             ProgramacionDiaria programacion = resolverProgramacionActualizada(idEmpleado, fecha);
             if (!programacion.laborable() || programacion.horaEntrada() == null || programacion.horaSalida() == null) {
                 return false;
@@ -1037,6 +1107,12 @@ public class AsistenciaService implements IAsistencia {
     }
 
     private void validarMovimientoDentroDeHorario(Long idEmpleado, LocalDateTime fechaHora) {
+        if (scheduleEngineProperties.enabledForOperationalReads(fechaHora.toLocalDate())) {
+            if (jornadaEfectivaResolver.resolver(idEmpleado, fechaHora.toLocalDate()).getTramoActual() == null) {
+                throw new BadRequestException("No se puede actualizar asistencia fuera del horario programado del dia");
+            }
+            return;
+        }
         ProgramacionDiaria programacion = resolverProgramacionActualizada(idEmpleado, fechaHora.toLocalDate());
         if (!programacion.laborable()) {
             throw new BadRequestException("No se puede actualizar asistencia en un dia no laborable");
@@ -1071,8 +1147,241 @@ public class AsistenciaService implements IAsistencia {
     }
 
     private ProgramacionDiaria resolverProgramacionActualizada(Long idEmpleado, LocalDate fecha) {
+        if (scheduleEngineProperties.enabledForOperationalReads(fecha)) {
+            JornadaEfectivaResponse jornada = jornadaEfectivaResolver.resolver(idEmpleado, fecha);
+            TramoJornadaResponse tramo = jornada.getTramoActual() != null
+                    ? jornada.getTramoActual()
+                    : jornada.getProximoTramo();
+            if (tramo == null && !jornada.getTramos().isEmpty()) {
+                tramo = jornada.getTramos().getLast();
+            }
+            if (tramo == null) {
+                return ProgramacionDiaria.builder().laborable(false).minutosObjetivo(0).build();
+            }
+            return ProgramacionDiaria.builder()
+                    .laborable(true)
+                    .horaEntrada(tramo.getInicio().toLocalTime())
+                    .horaSalida(tramo.getFin().toLocalTime())
+                    .minutosObjetivo((int) Duration.between(tramo.getInicio(), tramo.getFin()).toMinutes())
+                    .build();
+        }
         Horario horario = horarioService.getHorarioById(horarioService.getHorarioVigente(idEmpleado, fecha).getId());
         return resolverProgramacion(horario, fecha);
+    }
+
+    private AmpliacionContextoResponse getContextoAmpliacionNuevo(Long idEmpleado, LocalDate fecha) {
+        try {
+            JornadaEfectivaResponse jornada = jornadaEfectivaResolver.resolver(idEmpleado, fecha);
+            Asistencia asistencia = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, fecha).orElse(null);
+            TramoJornadaResponse tramo = jornada.getTramoActual() != null
+                    ? jornada.getTramoActual()
+                    : jornada.getProximoTramo();
+            if (tramo == null && !jornada.getTramos().isEmpty()) {
+                tramo = jornada.getTramos().getLast();
+            }
+            return AmpliacionContextoResponse.builder()
+                    .idEmpleado(idEmpleado)
+                    .fecha(fecha)
+                    .tieneHorarioVigente(true)
+                    .laborable(!jornada.getTramos().isEmpty())
+                    .entradaProgramada(tramo == null ? null : tramo.getInicio().toLocalTime())
+                    .salidaProgramada(tramo == null ? null : tramo.getFin().toLocalTime())
+                    .estadoActual(asistencia == null ? EstadoAsistencia.OFFLINE : asistencia.getEstadoActual())
+                    .tieneRegistro(asistencia != null && asistencia.getFechaHoraIngreso() != null)
+                    .jornadaCerrada(asistencia != null && asistencia.getFechaHoraSalida() != null
+                            && jornada.getProximoTramo() == null)
+                    .build();
+        } catch (NotFoundException exception) {
+            return AmpliacionContextoResponse.builder()
+                    .idEmpleado(idEmpleado)
+                    .fecha(fecha)
+                    .tieneHorarioVigente(false)
+                    .laborable(false)
+                    .estadoActual(EstadoAsistencia.OFFLINE)
+                    .tieneRegistro(false)
+                    .jornadaCerrada(false)
+                    .build();
+        }
+    }
+
+    private AmpliacionHorarioResponse registrarAmpliacionConMotorNuevo(
+            Long idEmpleado,
+            LocalDate fecha,
+            RegistrarAmpliacionRequest request
+    ) {
+        if (request.getHoraEntrada() == null || request.getHoraSalida() == null) {
+            throw new BadRequestException("Indica la hora de entrada y de salida del ajuste");
+        }
+        AjusteJornadaResponse ajuste = ajusteJornadaService.registrar(
+                idEmpleado,
+                AjusteJornadaRequest.builder()
+                        .inicio(LocalDateTime.of(fecha, request.getHoraEntrada()))
+                        .fin(LocalDateTime.of(fecha, request.getHoraSalida()))
+                        .motivo(request.getMotivo())
+                        .build()
+        );
+        String resultado = switch (ajuste.getOrigen()) {
+            case JORNADA_EXTRAORDINARIA -> "HABILITADA";
+            case TRAMO_ADICIONAL -> "REABIERTA";
+            case REEMPLAZO_BASE -> "EXTENDIDA";
+        };
+        return AmpliacionHorarioResponse.builder()
+                .idEmpleado(idEmpleado)
+                .fecha(fecha)
+                .resultado(resultado)
+                .entradaEfectiva(ajuste.getInicio().toLocalTime())
+                .salidaEfectiva(ajuste.getFin().toLocalTime())
+                .jornadaReabierta(ajuste.getOrigen() == pe.albrugroup.schedule_service.entity.enums.OrigenAjusteJornada.TRAMO_ADICIONAL)
+                .build();
+    }
+
+    private DetalleAsistenciaResponse construirDetalleDesdeJornadaEfectiva(Long idEmpleado, LocalDate fecha) {
+        JornadaEfectivaResponse jornada = jornadaEfectivaResolver.resolver(idEmpleado, fecha);
+        TramoJornadaResponse tramo = jornada.getTramoActual() != null
+                ? jornada.getTramoActual()
+                : jornada.getProximoTramo();
+        if (tramo == null && !jornada.getTramos().isEmpty()) {
+            tramo = jornada.getTramos().getLast();
+        }
+        if (tramo == null) {
+            return DetalleAsistenciaResponse.builder()
+                    .idEmpleado(idEmpleado)
+                    .idHorario(jornada.getIdHorario())
+                    .fecha(fecha)
+                    .estadoActual(EstadoAsistencia.OFFLINE)
+                    .minutosTrabajados(0)
+                    .minutosBalance(0)
+                    .minutosAlmuerzoTomados(0)
+                    .minutosServiciosAcumulados(0)
+                    .excedioServicios(false)
+                    .jornadaCerrada(false)
+                    .dentroHorario(false)
+                    .operativo(false)
+                    .build();
+        }
+        int objetivo = jornada.getTramos().stream()
+                .mapToInt(item -> (int) Duration.between(item.getInicio(), item.getFin()).toMinutes())
+                .sum();
+        return DetalleAsistenciaResponse.builder()
+                .idEmpleado(idEmpleado)
+                .idHorario(jornada.getIdHorario())
+                .fecha(fecha)
+                .estadoActual(EstadoAsistencia.OFFLINE)
+                .entradaProgramada(tramo.getInicio().toLocalTime())
+                .salidaProgramada(tramo.getFin().toLocalTime())
+                .minutosObjetivoDia(objetivo)
+                .minutosTrabajados(0)
+                .minutosBalance(-objetivo)
+                .minutosAlmuerzoTomados(0)
+                .minutosServiciosAcumulados(0)
+                .excedioServicios(false)
+                .jornadaCerrada(false)
+                .dentroHorario(jornada.getTramoActual() != null)
+                .operativo(false)
+                .build();
+    }
+
+    private void aplicarProximoTramoSiCorresponde(Asistencia asistencia, DetalleAsistenciaResponse response) {
+        if (!scheduleEngineProperties.enabledForOperationalReads(asistencia.getFecha())
+                || asistencia.getFechaHoraSalida() == null) {
+            return;
+        }
+        JornadaEfectivaResponse jornada = jornadaEfectivaResolver.resolver(
+                asistencia.getIdEmpleado(), asistencia.getFecha());
+        TramoJornadaResponse siguiente = jornada.getTramos().stream()
+                .filter(tramo -> tramo.getInicio().toLocalTime().isAfter(asistencia.getSalidaProgramada()))
+                .findFirst().orElse(null);
+        if (siguiente == null) {
+            return;
+        }
+        response.setEstadoActual(EstadoAsistencia.OFFLINE);
+        response.setEntradaProgramada(siguiente.getInicio().toLocalTime());
+        response.setSalidaProgramada(siguiente.getFin().toLocalTime());
+        response.setFechaHoraIngreso(null);
+        response.setFechaHoraSalida(null);
+        response.setFechaHoraInicioAlmuerzo(null);
+        response.setFechaHoraFinAlmuerzo(null);
+        response.setJornadaCerrada(false);
+    }
+
+    private void prepararTramoActualSiCorresponde(Long idEmpleado, LocalDateTime ahora) {
+        if (!scheduleEngineProperties.enabledForOperationalReads(ahora.toLocalDate())) {
+            return;
+        }
+        Asistencia asistencia = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, ahora.toLocalDate())
+                .orElse(null);
+        if (asistencia == null || asistencia.getFechaHoraSalida() == null) {
+            return;
+        }
+        TramoJornadaResponse actual = jornadaEfectivaResolver.resolver(idEmpleado, ahora.toLocalDate()).getTramoActual();
+        if (actual == null || !actual.getInicio().toLocalTime().isAfter(asistencia.getSalidaProgramada())) {
+            return;
+        }
+
+        List<AsistenciaTramo> tramosPrevios =
+                asistenciaTramoRepository.findByAsistenciaIdOrderByIdAsc(asistencia.getId());
+        int objetivoPrevioArchivado = tramosPrevios.stream()
+                .mapToInt(AsistenciaTramo::getMinutosObjetivo)
+                .sum();
+        int trabajadoPrevioArchivado = tramosPrevios.stream()
+                .mapToInt(AsistenciaTramo::getMinutosTrabajados)
+                .sum();
+        int objetivoActual = Math.max(
+                asistencia.getMinutosObjetivoDia() - objetivoPrevioArchivado, 0);
+        int trabajadoActual = Math.max(
+                asistencia.getMinutosTrabajados() - trabajadoPrevioArchivado, 0);
+        int objetivoAcumulado = asistencia.getMinutosObjetivoDia();
+        asistenciaTramoRepository.save(AsistenciaTramo.builder()
+                .asistencia(asistencia)
+                .origen(asistencia.getOrigenTramoActual() == null ? OrigenTramo.BASE : asistencia.getOrigenTramoActual())
+                .ajusteJornada(asistencia.getAjusteJornadaActual())
+                .inicioProgramadoAt(LocalDateTime.of(asistencia.getFecha(), asistencia.getEntradaProgramada()))
+                .finProgramadoAt(LocalDateTime.of(asistencia.getFecha(), asistencia.getSalidaProgramada()))
+                .entradaProgramada(asistencia.getEntradaProgramada())
+                .salidaProgramada(asistencia.getSalidaProgramada())
+                .fechaHoraIngreso(asistencia.getFechaHoraIngreso())
+                .fechaHoraSalida(asistencia.getFechaHoraSalida())
+                .fechaHoraInicioAlmuerzo(asistencia.getFechaHoraInicioAlmuerzo())
+                .fechaHoraFinAlmuerzo(asistencia.getFechaHoraFinAlmuerzo())
+                .minutosObjetivo(objetivoActual)
+                .minutosTrabajados(trabajadoActual)
+                .minutosAlmuerzoTomados(asistencia.getMinutosAlmuerzoTomados())
+                .minutosServiciosAcumulados(asistencia.getMinutosServiciosAcumulados())
+                .build());
+
+        int objetivoNuevo = (int) Duration.between(actual.getInicio(), actual.getFin()).toMinutes();
+        asistencia.setEntradaProgramada(actual.getInicio().toLocalTime());
+        asistencia.setSalidaProgramada(actual.getFin().toLocalTime());
+        asistencia.setInicioAlmuerzoProgramado(null);
+        asistencia.setFinAlmuerzoProgramado(null);
+        asistencia.setFechaHoraIngreso(null);
+        asistencia.setFechaHoraSalida(null);
+        asistencia.setFechaHoraInicioAlmuerzo(null);
+        asistencia.setFechaHoraFinAlmuerzo(null);
+        asistencia.setFechaHoraInicioServiciosActual(null);
+        asistencia.setEstadoActual(EstadoAsistencia.OFFLINE);
+        asistencia.setOrigenTramoActual(mapOrigenTramo(actual));
+        asistencia.setAjusteJornadaActual(
+                actual.getIdAjuste() == null
+                        ? null
+                        : ajusteJornadaRepository.findById(actual.getIdAjuste()).orElse(null));
+        asistencia.setMinutosAlmuerzoTomados(0);
+        asistencia.setMinutosServiciosAcumulados(0);
+        asistencia.setExcedioServicios(false);
+        asistencia.setMinutosObjetivoDia(objetivoAcumulado + objetivoNuevo);
+        asistencia.setMinutosBalance(asistencia.getMinutosTrabajados() - asistencia.getMinutosObjetivoDia());
+        asistenciaRepository.save(asistencia);
+    }
+
+    private OrigenTramo mapOrigenTramo(TramoJornadaResponse tramo) {
+        if (Boolean.TRUE.equals(tramo.getBase()) || tramo.getOrigen() == null) {
+            return OrigenTramo.BASE;
+        }
+        return switch (tramo.getOrigen()) {
+            case REEMPLAZO_BASE -> OrigenTramo.REEMPLAZO_BASE;
+            case JORNADA_EXTRAORDINARIA -> OrigenTramo.JORNADA_EXTRAORDINARIA;
+            case TRAMO_ADICIONAL -> OrigenTramo.TRAMO_ADICIONAL;
+        };
     }
 
     private YearMonth resolvePeriodoMensual(Integer anio, Integer mes) {
@@ -1175,7 +1484,9 @@ public class AsistenciaService implements IAsistencia {
         }
 
         tramos.add(TramoAsistenciaResponse.builder()
-                .origen(OrigenTramo.AMPLIACION)
+                .origen(asistencia.getOrigenTramoActual() == null
+                        ? OrigenTramo.AMPLIACION
+                        : asistencia.getOrigenTramoActual())
                 .horaEntradaEstablecida(asistencia.getEntradaProgramada())
                 .horaSalidaEstablecida(asistencia.getSalidaProgramada())
                 .horaEntradaAsistencia(asistencia.getFechaHoraIngreso() != null ? asistencia.getFechaHoraIngreso().toLocalTime() : null)
@@ -1187,6 +1498,13 @@ public class AsistenciaService implements IAsistencia {
     }
 
     private LocalDateTime resolverTopeSalidaProgramada(Long idEmpleado, LocalDate fecha) {
+        Asistencia asistenciaActual = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, fecha).orElse(null);
+        if (asistenciaActual != null
+                && asistenciaActual.getFechaHoraIngreso() != null
+                && asistenciaActual.getFechaHoraSalida() == null
+                && asistenciaActual.getSalidaProgramada() != null) {
+            return LocalDateTime.of(fecha, asistenciaActual.getSalidaProgramada());
+        }
         try {
             ProgramacionDiaria programacion = resolverProgramacionActualizada(idEmpleado, fecha);
             if (programacion.horaSalida() == null) {

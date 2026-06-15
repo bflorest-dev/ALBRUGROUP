@@ -2,8 +2,8 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, map, of, startWith, switchMap } from 'rxjs';
 import { AttendanceService } from '../../../core/services/attendance.service';
-import { DetalleAsistenciaResponse } from '../../../shared/models/schedule/detalle-asistencia-response';
-import { HorarioResponse } from '../../../shared/models/schedule/horario-response';
+import { AsistenciaDiaCalendarioResponse } from '../../../shared/models/schedule/asistencia-mes-response';
+import { HorarioMesVigenciaResponse } from '../../../shared/models/schedule/horario-mes-response';
 
 export interface DiaAsistenciaVm {
   fecha: string;
@@ -53,26 +53,26 @@ export class AsesorVentasHorarioFacade {
     toObservable(this.monthKey).pipe(
       switchMap(({ anio, mes }) =>
         this.attendanceService.getHorarioMes(anio, mes).pipe(
-          map(data => ({ status: 'success' as DataStatus, data })),
-          startWith({ status: 'loading' as DataStatus, data: [] as HorarioResponse[] }),
-          catchError(() => of({ status: 'error' as DataStatus, data: [] as HorarioResponse[] }))
+          map(response => ({ status: 'success' as DataStatus, data: response.vigencias })),
+          startWith({ status: 'loading' as DataStatus, data: [] as HorarioMesVigenciaResponse[] }),
+          catchError(() => of({ status: 'error' as DataStatus, data: [] as HorarioMesVigenciaResponse[] }))
         )
       )
     ),
-    { initialValue: { status: 'idle' as DataStatus, data: [] as HorarioResponse[] } }
+    { initialValue: { status: 'idle' as DataStatus, data: [] as HorarioMesVigenciaResponse[] } }
   );
 
   private readonly asistenciaState = toSignal(
     toObservable(this.monthKey).pipe(
       switchMap(({ anio, mes }) =>
         this.attendanceService.getAsistenciaMes(anio, mes).pipe(
-          map(data => ({ status: 'success' as DataStatus, data })),
-          startWith({ status: 'loading' as DataStatus, data: [] as DetalleAsistenciaResponse[] }),
-          catchError(() => of({ status: 'error' as DataStatus, data: [] as DetalleAsistenciaResponse[] }))
+          map(response => ({ status: 'success' as DataStatus, data: response.dias })),
+          startWith({ status: 'loading' as DataStatus, data: [] as AsistenciaDiaCalendarioResponse[] }),
+          catchError(() => of({ status: 'error' as DataStatus, data: [] as AsistenciaDiaCalendarioResponse[] }))
         )
       )
     ),
-    { initialValue: { status: 'idle' as DataStatus, data: [] as DetalleAsistenciaResponse[] } }
+    { initialValue: { status: 'idle' as DataStatus, data: [] as AsistenciaDiaCalendarioResponse[] } }
   );
 
   readonly isLoading = computed(() => {
@@ -81,7 +81,7 @@ export class AsesorVentasHorarioFacade {
     return hs === 'idle' || hs === 'loading' || as === 'idle' || as === 'loading';
   });
 
-  readonly horarioVigente = computed((): HorarioResponse | null => {
+  readonly horarioVigente = computed((): HorarioMesVigenciaResponse | null => {
     const data = this.horariosState().data;
     return data.length ? data[data.length - 1] : null;
   });
@@ -90,13 +90,13 @@ export class AsesorVentasHorarioFacade {
 
   readonly horarioDias = computed((): HorarioDiaVm[] => {
     const horario = this.horarioVigente();
-    if (!horario?.detalles?.length) return [];
+    if (!horario?.detallesBase?.length) return [];
     const order = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
     const labelMap: Record<string, string> = {
       LUNES: 'Lun', MARTES: 'Mar', MIERCOLES: 'Mié',
       JUEVES: 'Jue', VIERNES: 'Vie', SABADO: 'Sáb', DOMINGO: 'Dom'
     };
-    return [...horario.detalles]
+    return [...horario.detallesBase]
       .sort((a, b) => order.indexOf(this.normDia(a.dia)) - order.indexOf(this.normDia(b.dia)))
       .map(d => ({
         diaNorm: this.normDia(d.dia),
@@ -114,20 +114,20 @@ export class AsesorVentasHorarioFacade {
 
   readonly diasVm = computed((): DiaAsistenciaVm[] =>
     this.asistenciaDias()
-      .filter(d => d.jornadaCerrada || d.fechaHoraIngreso !== null)
+      .filter(d => d.jornadaCerrada || d.horaEntradaAsistencia !== null)
       .sort((a, b) => b.fecha.localeCompare(a.fecha))
       .map(d => this.toDiaVm(d))
   );
 
   readonly diasTrabajados = computed(() =>
-    this.asistenciaDias().filter(d => d.jornadaCerrada && (d.minutosTrabajados ?? 0) > 0).length
+    this.asistenciaDias().filter(d => d.jornadaCerrada && this.minutosTrabajados(d) > 0).length
   );
 
   readonly horasAcumuladas = computed(() =>
     this.fmtHoras(
       this.asistenciaDias()
         .filter(d => d.jornadaCerrada)
-        .reduce((acc, d) => acc + (d.minutosTrabajados ?? 0), 0)
+        .reduce((acc, d) => acc + this.minutosTrabajados(d), 0)
     )
   );
 
@@ -136,10 +136,10 @@ export class AsesorVentasHorarioFacade {
   );
 
   readonly porcentajeCumplimiento = computed((): number | null => {
-    const cerradas = this.asistenciaDias().filter(d => d.jornadaCerrada && (d.minutosObjetivoDia ?? 0) > 0);
+    const cerradas = this.asistenciaDias().filter(d => d.jornadaCerrada && this.minutosObjetivo(d) > 0);
     if (!cerradas.length) return null;
-    const totalObj = cerradas.reduce((acc, d) => acc + (d.minutosObjetivoDia ?? 0), 0);
-    const totalTrab = cerradas.reduce((acc, d) => acc + (d.minutosTrabajados ?? 0), 0);
+    const totalObj = cerradas.reduce((acc, d) => acc + this.minutosObjetivo(d), 0);
+    const totalTrab = cerradas.reduce((acc, d) => acc + this.minutosTrabajados(d), 0);
     return Math.round((totalTrab / totalObj) * 100);
   });
 
@@ -156,10 +156,10 @@ export class AsesorVentasHorarioFacade {
     );
   }
 
-  private tardanzaMin(d: DetalleAsistenciaResponse): number | null {
-    if (!d.fechaHoraIngreso || !d.entradaProgramada) return null;
-    const at = d.fechaHoraIngreso.split('T')[1]?.substring(0, 5) ?? '';
-    const pt = d.entradaProgramada.substring(0, 5);
+  private tardanzaMin(d: AsistenciaDiaCalendarioResponse): number | null {
+    if (!d.horaEntradaAsistencia || !d.horaEntradaEstablecida) return null;
+    const at = d.horaEntradaAsistencia.substring(0, 5);
+    const pt = d.horaEntradaEstablecida.substring(0, 5);
     if (!at || !pt) return null;
     const [ha, ma] = at.split(':').map(Number);
     const [hp, mp] = pt.split(':').map(Number);
@@ -167,21 +167,42 @@ export class AsesorVentasHorarioFacade {
     return diff > 0 ? diff : null;
   }
 
-  private toDiaVm(d: DetalleAsistenciaResponse): DiaAsistenciaVm {
+  private toDiaVm(d: AsistenciaDiaCalendarioResponse): DiaAsistenciaVm {
     const tardMin = this.tardanzaMin(d);
-    const balMin = d.minutosBalance ?? null;
+    const balMin = d.jornadaCerrada ? this.minutosTrabajados(d) - this.minutosObjetivo(d) : null;
     return {
       fecha: d.fecha,
       fechaDisplay: this.fmtFecha(d.fecha),
-      entradaProgramada: d.entradaProgramada ? d.entradaProgramada.substring(0, 5) : '---',
-      entradaReal: d.fechaHoraIngreso ? (d.fechaHoraIngreso.split('T')[1]?.substring(0, 5) ?? '---') : '---',
+      entradaProgramada: d.horaEntradaEstablecida ? d.horaEntradaEstablecida.substring(0, 5) : '---',
+      entradaReal: d.horaEntradaAsistencia ? d.horaEntradaAsistencia.substring(0, 5) : '---',
       isTardanza: tardMin !== null,
       tardanzaLabel: tardMin !== null ? `+${tardMin} min` : '—',
-      horasTrabajadas: this.fmtHoras(d.minutosTrabajados ?? 0),
+      horasTrabajadas: this.fmtHoras(this.minutosTrabajados(d)),
       balance: balMin !== null ? this.fmtBalance(balMin) : '---',
       balancePositivo: balMin !== null ? balMin >= 0 : null,
-      estadoActual: d.estadoActual
+      estadoActual: d.jornadaCerrada ? 'CERRADA' : 'PENDIENTE'
     };
+  }
+
+  private minutosObjetivo(d: AsistenciaDiaCalendarioResponse): number {
+    if (d.tramos?.length) {
+      return d.tramos.reduce((total, tramo) => total + (tramo.minutosObjetivo ?? 0), 0);
+    }
+    return this.minutesBetween(d.horaEntradaEstablecida, d.horaSalidaEstablecida);
+  }
+
+  private minutosTrabajados(d: AsistenciaDiaCalendarioResponse): number {
+    if (d.tramos?.length) {
+      return d.tramos.reduce((total, tramo) => total + (tramo.minutosTrabajados ?? 0), 0);
+    }
+    return this.minutesBetween(d.horaEntradaAsistencia, d.horaSalidaAsistencia);
+  }
+
+  private minutesBetween(start: string | null, end: string | null): number {
+    if (!start || !end) return 0;
+    const [startHour, startMinute] = start.split(':').map(Number);
+    const [endHour, endMinute] = end.split(':').map(Number);
+    return Math.max(endHour * 60 + endMinute - (startHour * 60 + startMinute), 0);
   }
 
   private normDia(dia: string): string {

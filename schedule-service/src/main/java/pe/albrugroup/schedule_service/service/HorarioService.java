@@ -16,6 +16,7 @@ import pe.albrugroup.schedule_service.entity.request.horario.RegistrarExcepcionH
 import pe.albrugroup.schedule_service.entity.request.horario.RegistrarHorarioRequest;
 import pe.albrugroup.schedule_service.entity.request.horario.ReemplazarHorarioRequest;
 import pe.albrugroup.schedule_service.entity.request.horario.CorregirHorarioRequest;
+import pe.albrugroup.schedule_service.entity.request.horario.CerrarHorarioEmpleadoRequest;
 import pe.albrugroup.schedule_service.entity.enums.ModalidadContrato;
 import pe.albrugroup.schedule_service.entity.response.PageResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.ExcepcionHorarioResponse;
@@ -375,6 +376,31 @@ public class HorarioService implements IHorario {
         LocalDate consulta = OperationalDateTime.resolveDate(fecha);
         return mapper.toResponse(horarioRepository.findHorarioVigente(idEmpleado, consulta)
                 .orElseThrow(() -> new NotFoundException("Horario vigente no encontrado", idEmpleado)));
+    }
+
+    @Override
+    @Transactional
+    public HorarioResponse cerrarHorarioEmpleado(Long idEmpleado, CerrarHorarioEmpleadoRequest request) {
+        LocalDate fechaFin = request != null && request.getFechaFin() != null
+                ? request.getFechaFin()
+                : OperationalDateTime.today();
+        Horario horario = horarioRepository.findHorarioVigente(idEmpleado, fechaFin)
+                .orElseGet(() -> horarioRepository.findByIdEmpleado(
+                                idEmpleado,
+                                org.springframework.data.domain.PageRequest.of(
+                                        0, 1, org.springframework.data.domain.Sort.by("fechaInicio").descending()))
+                        .stream().findFirst().orElse(null));
+        if (horario == null) {
+            return null;
+        }
+        if (horario.getFechaFin() != null && !horario.getFechaFin().isAfter(fechaFin)) {
+            return mapper.toResponse(horario);
+        }
+        if (fechaFin.isBefore(horario.getFechaInicio())) {
+            throw new BadRequestException("La fecha de cierre no puede ser anterior al inicio del horario");
+        }
+        horario.setFechaFin(fechaFin);
+        return mapper.toResponse(horarioRepository.save(horario));
     }
 
     @Override

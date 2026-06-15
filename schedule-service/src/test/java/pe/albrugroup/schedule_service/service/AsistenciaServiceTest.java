@@ -7,6 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pe.albrugroup.schedule_service.configuration.CurrentUser;
+import pe.albrugroup.schedule_service.configuration.ScheduleEngineProperties;
 import pe.albrugroup.schedule_service.entity.ExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.Horario;
 import pe.albrugroup.schedule_service.entity.HorarioDetalle;
@@ -18,6 +19,7 @@ import pe.albrugroup.schedule_service.entity.response.horario.ExcepcionHorarioRe
 import pe.albrugroup.schedule_service.entity.response.horario.HorarioResponse;
 import pe.albrugroup.schedule_service.repository.AsistenciaRepository;
 import pe.albrugroup.schedule_service.repository.AsistenciaTramoRepository;
+import pe.albrugroup.schedule_service.repository.AjusteJornadaRepository;
 import pe.albrugroup.schedule_service.repository.ExcepcionHorarioRepository;
 import pe.albrugroup.schedule_service.service.mapper.AsistenciaMapper;
 import pe.albrugroup.schedule_service.service.mapper.HorarioMapper;
@@ -40,6 +42,8 @@ class AsistenciaServiceTest {
     @Mock
     private AsistenciaTramoRepository asistenciaTramoRepository;
     @Mock
+    private AjusteJornadaRepository ajusteJornadaRepository;
+    @Mock
     private ExcepcionHorarioRepository excepcionHorarioRepository;
     @Mock
     private HorarioService horarioService;
@@ -53,6 +57,14 @@ class AsistenciaServiceTest {
     private HorarioMapper horarioMapper;
     @Mock
     private CurrentUser currentUser;
+    @Mock
+    private AjusteJornadaService ajusteJornadaService;
+    @Mock
+    private JornadaEfectivaResolver jornadaEfectivaResolver;
+    @Mock
+    private ScheduleEngineProperties scheduleEngineProperties;
+    @Mock
+    private JornadaShadowComparator jornadaShadowComparator;
 
     @InjectMocks
     private AsistenciaService service;
@@ -76,6 +88,7 @@ class AsistenciaServiceTest {
 
         when(horarioService.getHorarioVigente(21L, domingo))
                 .thenReturn(HorarioResponse.builder().id(7L).build());
+        when(scheduleEngineProperties.getMode()).thenReturn(ScheduleEngineProperties.Mode.LEGACY);
         when(horarioService.getHorarioById(7L)).thenReturn(horario);
         when(excepcionHorarioRepository.findByHorarioIdAndFecha(7L, domingo))
                 .thenReturn(Optional.empty());

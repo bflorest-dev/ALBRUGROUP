@@ -6,6 +6,7 @@ import pe.albrugroup.schedule_service.entity.request.horario.RegistrarExcepcionH
 import pe.albrugroup.schedule_service.entity.request.horario.RegistrarHorarioRequest;
 import pe.albrugroup.schedule_service.entity.request.horario.ReemplazarHorarioRequest;
 import pe.albrugroup.schedule_service.entity.request.horario.CorregirHorarioRequest;
+import pe.albrugroup.schedule_service.entity.request.horario.CerrarHorarioEmpleadoRequest;
 import pe.albrugroup.schedule_service.entity.response.PageResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.ExcepcionHorarioResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.HorarioMesResponse;
@@ -23,5 +24,7 @@ public interface IHorario {
     void eliminarExcepcion(Long idHorario, Long idExcepcion);
     HorarioMesResponse getHorarioMes(Integer anio, Integer mes);
     HorarioResponse getHorarioVigente(Long idEmpleado, LocalDate fecha);
+
+    HorarioResponse cerrarHorarioEmpleado(Long idEmpleado, CerrarHorarioEmpleadoRequest request);
     PageResponse<HorarioResponse> listarHistorico(Long idEmpleado, PageRequest pageRequest);
 }

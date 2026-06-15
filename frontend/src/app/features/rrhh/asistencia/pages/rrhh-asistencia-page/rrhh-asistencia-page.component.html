@@ -307,14 +307,40 @@
                           <p-tag [value]="dayStateLabel(d)" [severity]="dayStateSeverity(d)" />
                         </td>
                         <td>
-                          @if (d.laborable) {
-                            {{ formatTime(d.horaEntradaEstablecida) }} – {{ formatTime(d.horaSalidaEstablecida) }}
-                          } @else { — }
+                          @if (d.tramos?.length) {
+                            <div class="day-segments">
+                              @for (tramo of d.tramos; track $index) {
+                                <div class="day-segment">
+                                  <span class="day-segment__origin">{{ segmentOriginLabel(tramo.origen) }}</span>
+                                  <span>
+                                    {{ formatTime(tramo.horaEntradaEstablecida) }} -
+                                    {{ formatTime(tramo.horaSalidaEstablecida) }}
+                                  </span>
+                                </div>
+                              }
+                            </div>
+                          } @else if (d.laborable) {
+                            {{ formatTime(d.horaEntradaEstablecida) }} -
+                            {{ formatTime(d.horaSalidaEstablecida) }}
+                          } @else { - }
                         </td>
                         <td>
-                          @if (d.horaEntradaAsistencia) {
-                            {{ formatTime(d.horaEntradaAsistencia) }} – {{ formatTime(d.horaSalidaAsistencia) }}
-                          } @else { — }
+                          @if (d.tramos?.length) {
+                            <div class="day-segments">
+                              @for (tramo of d.tramos; track $index) {
+                                <div class="day-segment">
+                                  <span>
+                                    {{ formatTime(tramo.horaEntradaAsistencia) }} -
+                                    {{ formatTime(tramo.horaSalidaAsistencia) }}
+                                  </span>
+                                  <small>{{ workedTimeLabel(tramo.minutosTrabajados) }}</small>
+                                </div>
+                              }
+                            </div>
+                          } @else if (d.horaEntradaAsistencia) {
+                            {{ formatTime(d.horaEntradaAsistencia) }} -
+                            {{ formatTime(d.horaSalidaAsistencia) }}
+                          } @else { - }
                         </td>
                         <td class="col-num">
                           <p-tag

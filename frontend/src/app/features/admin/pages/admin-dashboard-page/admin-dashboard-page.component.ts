@@ -14,6 +14,7 @@ import { PersonalDataEditDialogComponent } from '../../components/personal-data-
 import { EmployeeAccessPanelComponent } from '../../components/employee-access-panel/employee-access-panel.component';
 import { PersonalRegistrationPanelComponent } from '../../components/personal-registration-panel/personal-registration-panel.component';
 import { AdminPersonalFacade } from '../../facades/admin-personal.facade';
+import { ScheduleAdjustmentDialogComponent } from '../../../../shared/components/schedule-adjustment-dialog/schedule-adjustment-dialog.component';
 
 @Component({
   selector: 'app-admin-dashboard-page',
@@ -31,7 +32,8 @@ import { AdminPersonalFacade } from '../../facades/admin-personal.facade';
     PersonalRegistrationPanelComponent,
     EmployeeAccessPanelComponent,
     ContractRenewalDialogComponent,
-    PersonalDataEditDialogComponent
+    PersonalDataEditDialogComponent,
+    ScheduleAdjustmentDialogComponent
   ],
   providers: [AdminPersonalFacade],
   templateUrl: './admin-dashboard-page.component.html',

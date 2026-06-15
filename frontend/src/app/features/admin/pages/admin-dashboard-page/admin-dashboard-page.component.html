@@ -284,19 +284,16 @@
         }
 
         <div class="actions actions--end">
-          @if (facade.isTodayRestDay()) {
-            <button
-              pButton
-              type="button"
-              severity="info"
-              [outlined]="true"
-              icon="pi pi-calendar"
-              label="Habilitar solo hoy"
-              [loading]="facade.isSubmittingScheduleChange()"
-              [disabled]="facade.isLoadingScheduleChange()"
-              (click)="facade.enableTodayAsWorkday()"
-            ></button>
-          }
+          <button
+            pButton
+            type="button"
+            severity="info"
+            [outlined]="true"
+            icon="pi pi-calendar-plus"
+            label="Ajuste puntual"
+            [disabled]="facade.isLoadingScheduleChange()"
+            (click)="facade.openScheduleAdjustment()"
+          ></button>
           <button
             pButton
             type="button"
@@ -466,3 +463,21 @@
   </div>
   }
 </section>
+
+<app-schedule-adjustment-dialog
+  [visible]="facade.isAdjustmentDialogVisible()"
+  [employeeName]="facade.adjustmentEmployeeName()"
+  [selectedDate]="facade.adjustmentDate()"
+  [allowDateChange]="true"
+  [jornada]="facade.adjustmentJornada()"
+  [preview]="facade.adjustmentPreview()"
+  [history]="facade.adjustmentHistory()"
+  [loading]="facade.isLoadingAdjustment()"
+  [saving]="facade.isSavingAdjustment()"
+  [error]="facade.adjustmentError()"
+  (closed)="facade.closeScheduleAdjustment()"
+  (dateChanged)="facade.changeScheduleAdjustmentDate($event)"
+  (previewRequested)="facade.previewScheduleAdjustment($event)"
+  (saveRequested)="facade.saveScheduleAdjustment($event)"
+  (cancelRequested)="facade.cancelScheduleAdjustment($event)"
+/>

@@ -234,6 +234,29 @@
   }
 }
 
+.day-segments {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 9rem;
+}
+
+.day-segment {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+
+  small {
+    color: var(--p-text-muted-color, #6b7280);
+  }
+}
+
+.day-segment__origin {
+  color: var(--p-text-muted-color, #6b7280);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
 .employee-schedule {
   display: flex;
   flex-direction: column;

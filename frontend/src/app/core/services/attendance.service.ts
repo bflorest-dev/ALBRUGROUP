@@ -5,6 +5,8 @@ import { API_CONSTANTS } from '../constants/api.constants';
 import { DetalleAsistenciaResponse } from '../../shared/models/schedule/detalle-asistencia-response';
 import { HorarioResponse } from '../../shared/models/schedule/horario-response';
 import { MovimientoAsistenciaRequest } from '../../shared/models/schedule/movimiento-asistencia-request';
+import { AsistenciaMesResponse } from '../../shared/models/schedule/asistencia-mes-response';
+import { HorarioMesResponse } from '../../shared/models/schedule/horario-mes-response';
 
 @Injectable({
   providedIn: 'root'
@@ -20,18 +22,18 @@ export class AttendanceService {
     return this.http.get<DetalleAsistenciaResponse>(`${this.attendanceUrl}/dia`, { params });
   }
 
-  getAsistenciaMes(anio?: number, mes?: number): Observable<DetalleAsistenciaResponse[]> {
+  getAsistenciaMes(anio?: number, mes?: number): Observable<AsistenciaMesResponse> {
     let params = new HttpParams();
     if (anio !== undefined) params = params.set('anio', anio);
     if (mes !== undefined) params = params.set('mes', mes);
-    return this.http.get<DetalleAsistenciaResponse[]>(`${this.attendanceUrl}/mes`, { params });
+    return this.http.get<AsistenciaMesResponse>(`${this.attendanceUrl}/mes`, { params });
   }
 
-  getHorarioMes(anio?: number, mes?: number): Observable<HorarioResponse[]> {
+  getHorarioMes(anio?: number, mes?: number): Observable<HorarioMesResponse> {
     let params = new HttpParams();
     if (anio !== undefined) params = params.set('anio', anio);
     if (mes !== undefined) params = params.set('mes', mes);
-    return this.http.get<HorarioResponse[]>(`${this.scheduleUrl}/horarios/mes`, { params });
+    return this.http.get<HorarioMesResponse>(`${this.scheduleUrl}/horarios/mes`, { params });
   }
 
   registrarIngreso(request: MovimientoAsistenciaRequest): Observable<DetalleAsistenciaResponse> {

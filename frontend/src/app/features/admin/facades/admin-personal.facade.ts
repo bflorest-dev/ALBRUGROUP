@@ -25,6 +25,13 @@ import { EstadoMonitorResponse } from '../../../shared/models/schedule/cumplimie
 import { formatApiErrorMessage } from '../../../shared/utils/api-error.utils';
 import { AuthService } from '../../auth/services/auth.service';
 import { AdminRrhhService } from '../services/admin-rrhh.service';
+import { ScheduleAdjustmentService } from '../../../core/services/schedule-adjustment.service';
+import {
+  AjusteJornadaRequest,
+  AjusteJornadaResponse,
+  JornadaEfectivaResponse,
+  PreviewAjusteJornadaResponse
+} from '../../../shared/models/schedule/jornada-efectiva-response';
 
 type EmployeeListRequest = {
   requestId: number;
@@ -108,6 +115,7 @@ export class AdminPersonalFacade implements OnDestroy {
   private readonly requestTimeoutMs = 15000;
   private readonly formBuilder = inject(FormBuilder);
   private readonly adminRrhhService = inject(AdminRrhhService);
+  private readonly scheduleAdjustmentService = inject(ScheduleAdjustmentService);
   private readonly authService = inject(AuthService);
   private readonly presenceService = inject(PresenceService);
   private readonly attendanceRealtimeService = inject(AttendanceRealtimeService);
@@ -523,6 +531,20 @@ export class AdminPersonalFacade implements OnDestroy {
   readonly scheduleChangeErrorMessage = signal('');
   readonly scheduleChangeSuccessMessage = signal('');
   readonly todayWorkdayEnabled = signal(false);
+  readonly isAdjustmentDialogVisible = signal(false);
+  readonly adjustmentDate = signal('');
+  readonly adjustmentJornada = signal<JornadaEfectivaResponse | null>(null);
+  readonly adjustmentPreview = signal<PreviewAjusteJornadaResponse | null>(null);
+  readonly adjustmentHistory = signal<AjusteJornadaResponse[]>([]);
+  readonly isLoadingAdjustment = signal(false);
+  readonly isSavingAdjustment = signal(false);
+  readonly adjustmentError = signal<string | null>(null);
+  readonly adjustmentEmployeeName = computed(
+    () => {
+      const employee = this.selectedEmployeeForScheduleChange();
+      return employee ? `${employee.nombres} ${employee.apellidos}`.trim() : '';
+    }
+  );
   readonly isTodayRestDay = computed(() => {
     if (this.todayWorkdayEnabled()) {
       return false;
@@ -1385,6 +1407,121 @@ export class AdminPersonalFacade implements OnDestroy {
       );
     } finally {
       this.isSubmittingScheduleChange.set(false);
+    }
+  }
+
+  openScheduleAdjustment(): void {
+    if (!this.selectedEmployeeForScheduleChange()) return;
+    this.adjustmentDate.set(this.getToday());
+    this.adjustmentPreview.set(null);
+    this.adjustmentError.set(null);
+    this.isAdjustmentDialogVisible.set(true);
+    void this.loadScheduleAdjustment();
+  }
+
+  closeScheduleAdjustment(): void {
+    this.isAdjustmentDialogVisible.set(false);
+    this.adjustmentJornada.set(null);
+    this.adjustmentPreview.set(null);
+    this.adjustmentHistory.set([]);
+    this.adjustmentError.set(null);
+  }
+
+  changeScheduleAdjustmentDate(fecha: string): void {
+    this.adjustmentDate.set(fecha);
+    this.adjustmentPreview.set(null);
+    void this.loadScheduleAdjustment();
+  }
+
+  async previewScheduleAdjustment(request: AjusteJornadaRequest): Promise<void> {
+    const employee = this.selectedEmployeeForScheduleChange();
+    if (!employee) return;
+    this.isLoadingAdjustment.set(true);
+    this.adjustmentError.set(null);
+    try {
+      this.adjustmentPreview.set(
+        await firstValueFrom(
+          this.scheduleAdjustmentService.preview(employee.idEmpleado, request)
+            .pipe(timeout(this.requestTimeoutMs))
+        )
+      );
+    } catch (error) {
+      this.adjustmentError.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No se pudo preparar la vista previa.')
+      );
+    } finally {
+      this.isLoadingAdjustment.set(false);
+    }
+  }
+
+  async saveScheduleAdjustment(request: AjusteJornadaRequest): Promise<void> {
+    const employee = this.selectedEmployeeForScheduleChange();
+    if (!employee) return;
+    this.isSavingAdjustment.set(true);
+    this.adjustmentError.set(null);
+    try {
+      await firstValueFrom(
+        this.scheduleAdjustmentService.registrar(employee.idEmpleado, request)
+          .pipe(timeout(this.requestTimeoutMs))
+      );
+      this.scheduleChangeSuccessMessage.set('La jornada puntual quedó actualizada.');
+      this.todayWorkdayEnabled.set(true);
+      await this.loadScheduleAdjustment();
+      void this.loadEmployeeStates();
+    } catch (error) {
+      this.adjustmentError.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No se pudo guardar el ajuste de jornada.')
+      );
+    } finally {
+      this.isSavingAdjustment.set(false);
+    }
+  }
+
+  async cancelScheduleAdjustment(idAjuste: number): Promise<void> {
+    const employee = this.selectedEmployeeForScheduleChange();
+    if (!employee) return;
+    this.isSavingAdjustment.set(true);
+    this.adjustmentError.set(null);
+    try {
+      await firstValueFrom(
+        this.scheduleAdjustmentService.cancelar(employee.idEmpleado, idAjuste)
+          .pipe(timeout(this.requestTimeoutMs))
+      );
+      await this.loadScheduleAdjustment();
+    } catch (error) {
+      this.adjustmentError.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No se pudo cancelar el ajuste.')
+      );
+    } finally {
+      this.isSavingAdjustment.set(false);
+    }
+  }
+
+  private async loadScheduleAdjustment(): Promise<void> {
+    const employee = this.selectedEmployeeForScheduleChange();
+    const fecha = this.adjustmentDate();
+    if (!employee || !fecha) return;
+    this.isLoadingAdjustment.set(true);
+    this.adjustmentError.set(null);
+    try {
+      const [jornada, history] = await Promise.all([
+        firstValueFrom(
+          this.scheduleAdjustmentService.getJornada(employee.idEmpleado, fecha)
+            .pipe(timeout(this.requestTimeoutMs))
+        ),
+        firstValueFrom(
+          this.scheduleAdjustmentService.listar(employee.idEmpleado, fecha)
+            .pipe(timeout(this.requestTimeoutMs))
+        )
+      ]);
+      this.adjustmentJornada.set(jornada);
+      this.adjustmentHistory.set(history);
+    } catch (error) {
+      this.adjustmentError.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No fue posible cargar la jornada.')
+      );
+    } finally {
+      this.isLoadingAdjustment.set(false);
     }
   }
 

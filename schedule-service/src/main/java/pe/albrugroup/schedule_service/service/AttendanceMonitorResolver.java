@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.schedule_service.configuration.OperationalDateTime;
+import pe.albrugroup.schedule_service.configuration.ScheduleEngineProperties;
 import pe.albrugroup.schedule_service.entity.Asistencia;
 import pe.albrugroup.schedule_service.entity.ExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.Horario;
@@ -13,6 +14,8 @@ import pe.albrugroup.schedule_service.entity.enums.EstadoAsistencia;
 import pe.albrugroup.schedule_service.entity.enums.TipoExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.request.asistencia.ConsultaMonitoreoRequest;
 import pe.albrugroup.schedule_service.entity.response.asistencia.EstadoMonitorResponse;
+import pe.albrugroup.schedule_service.entity.response.horario.JornadaEfectivaResponse;
+import pe.albrugroup.schedule_service.entity.response.horario.TramoJornadaResponse;
 import pe.albrugroup.schedule_service.exception.NotFoundException;
 import pe.albrugroup.schedule_service.repository.AsistenciaRepository;
 import pe.albrugroup.schedule_service.repository.ExcepcionHorarioRepository;
@@ -35,6 +38,8 @@ public class AttendanceMonitorResolver {
     private final AsistenciaRepository asistenciaRepository;
     private final ExcepcionHorarioRepository excepcionHorarioRepository;
     private final HorarioRepository horarioRepository;
+    private final JornadaEfectivaResolver jornadaEfectivaResolver;
+    private final ScheduleEngineProperties scheduleEngineProperties;
 
     @Transactional(readOnly = true)
     public List<EstadoMonitorResponse> getEstadosMonitor(ConsultaMonitoreoRequest request) {
@@ -66,15 +71,18 @@ public class AttendanceMonitorResolver {
 
     private EstadoMonitorResponse buildEstadoMonitor(Long idEmpleado, LocalDate fecha, Asistencia asistencia) {
         if (asistencia != null) {
+            JornadaEfectivaResponse jornada = resolverJornadaNueva(idEmpleado, fecha);
+            TramoJornadaResponse tramo = jornada == null ? null
+                    : jornada.getTramoActual() != null ? jornada.getTramoActual() : jornada.getProximoTramo();
             return EstadoMonitorResponse.builder()
                     .idEmpleado(idEmpleado)
                     .fecha(fecha)
                     .idHorario(asistencia.getIdHorario())
-                    .entradaProgramada(asistencia.getEntradaProgramada())
-                    .salidaProgramada(asistencia.getSalidaProgramada())
+                    .entradaProgramada(tramo == null ? asistencia.getEntradaProgramada() : tramo.getInicio().toLocalTime())
+                    .salidaProgramada(tramo == null ? asistencia.getSalidaProgramada() : tramo.getFin().toLocalTime())
                     .tieneHorarioVigente(true)
-                    .laborableHoy(true)
-                    .esperadoHoy(true)
+                    .laborableHoy(jornada == null || !jornada.getTramos().isEmpty())
+                    .esperadoHoy(jornada == null || !jornada.getTramos().isEmpty())
                     .tieneRegistroHoy(asistencia.getFechaHoraIngreso() != null)
                     .estadoActual(asistencia.getEstadoActual())
                     .desde(getDesdeEstado(asistencia))
@@ -87,6 +95,32 @@ public class AttendanceMonitorResolver {
         }
 
         try {
+            JornadaEfectivaResponse jornada = resolverJornadaNueva(idEmpleado, fecha);
+            if (jornada != null) {
+                TramoJornadaResponse tramo = jornada.getTramoActual() != null
+                        ? jornada.getTramoActual() : jornada.getProximoTramo();
+                if (tramo == null && !jornada.getTramos().isEmpty()) {
+                    tramo = jornada.getTramos().getLast();
+                }
+                boolean esperado = !jornada.getTramos().isEmpty();
+                return EstadoMonitorResponse.builder()
+                        .idEmpleado(idEmpleado)
+                        .fecha(fecha)
+                        .idHorario(jornada.getIdHorario())
+                        .entradaProgramada(tramo == null ? null : tramo.getInicio().toLocalTime())
+                        .salidaProgramada(tramo == null ? null : tramo.getFin().toLocalTime())
+                        .tieneHorarioVigente(true)
+                        .laborableHoy(esperado)
+                        .esperadoHoy(esperado)
+                        .tieneRegistroHoy(false)
+                        .estadoActual(EstadoAsistencia.OFFLINE)
+                        .minutosServiciosPermitidos(0)
+                        .minutosServiciosAcumulados(0)
+                        .minutosServiciosEnCurso(0)
+                        .excedioServicios(false)
+                        .operativo(false)
+                        .build();
+            }
             Horario horario = horarioRepository.findHorarioVigente(idEmpleado, fecha)
                     .orElseThrow(() -> new NotFoundException("Horario vigente no encontrado", idEmpleado));
             ProgramacionDiaria programacion = resolverProgramacion(horario, fecha);
@@ -126,6 +160,13 @@ public class AttendanceMonitorResolver {
                     .operativo(false)
                     .build();
         }
+    }
+
+    private JornadaEfectivaResponse resolverJornadaNueva(Long idEmpleado, LocalDate fecha) {
+        if (!scheduleEngineProperties.enabledForOperationalReads(fecha)) {
+            return null;
+        }
+        return jornadaEfectivaResolver.resolver(idEmpleado, fecha);
     }
 
     private ProgramacionDiaria resolverProgramacion(Horario horario, LocalDate fecha) {

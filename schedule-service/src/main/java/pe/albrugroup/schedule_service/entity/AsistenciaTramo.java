@@ -41,6 +41,13 @@ public class AsistenciaTramo {
     @Column(nullable = false, length = 30)
     private OrigenTramo origen;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ajuste_jornada_id")
+    private AjusteJornada ajusteJornada;
+
+    private LocalDateTime inicioProgramadoAt;
+    private LocalDateTime finProgramadoAt;
+
     private LocalTime entradaProgramada;
     private LocalTime salidaProgramada;
     private LocalTime inicioAlmuerzoProgramado;
@@ -48,6 +55,10 @@ public class AsistenciaTramo {
 
     private LocalDateTime fechaHoraIngreso;
     private LocalDateTime fechaHoraSalida;
+    private LocalDateTime fechaHoraInicioAlmuerzo;
+    private LocalDateTime fechaHoraFinAlmuerzo;
+    private LocalDateTime fechaHoraInicioServicios;
+    private LocalDateTime fechaHoraFinServicios;
 
     @Column(nullable = false)
     private Integer minutosObjetivo;

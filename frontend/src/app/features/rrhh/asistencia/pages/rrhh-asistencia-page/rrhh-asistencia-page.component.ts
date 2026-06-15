@@ -12,6 +12,7 @@ import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
+import type { OrigenTramo } from '../../../../../shared/models/schedule/cumplimiento-response';
 import { ScheduleEditorPanelComponent } from '../../components/schedule-editor-panel/schedule-editor-panel.component';
 import {
   CumplimientoRow,
@@ -201,6 +202,26 @@ export class RrhhAsistenciaPageComponent implements OnInit {
 
   protected formatTime(value: string | null): string {
     return value ? value.slice(0, 5) : '—';
+  }
+
+  protected segmentOriginLabel(origen: OrigenTramo): string {
+    const labels: Record<OrigenTramo, string> = {
+      BASE: 'Horario base',
+      AMPLIACION: 'Ampliacion anterior',
+      REEMPLAZO_BASE: 'Horario ajustado',
+      JORNADA_EXTRAORDINARIA: 'Jornada extraordinaria',
+      TRAMO_ADICIONAL: 'Tramo adicional'
+    };
+    return labels[origen] ?? 'Tramo de trabajo';
+  }
+
+  protected workedTimeLabel(minutes: number): string {
+    if (!minutes) return 'Sin tiempo registrado';
+    const hours = Math.floor(minutes / 60);
+    const remainder = minutes % 60;
+    if (hours === 0) return `${remainder} min`;
+    if (remainder === 0) return `${hours} h`;
+    return `${hours} h ${remainder} min`;
   }
 
   // ── Datepicker helpers (cache contra el loop PrimeNG)

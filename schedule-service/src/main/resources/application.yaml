@@ -19,6 +19,11 @@ app:
     gateway-url: ${SCHEDULE_DOCS_GATEWAY_URL:http://localhost:8080/schedule}
     public-url: ${SCHEDULE_DOCS_PUBLIC_URL:https://api.albrugroup.com/schedule}
 
+schedule:
+  engine:
+    mode: ${SCHEDULE_ENGINE_MODE:SHADOW}
+    effective-from: ${SCHEDULE_ENGINE_EFFECTIVE_FROM:2026-06-15}
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

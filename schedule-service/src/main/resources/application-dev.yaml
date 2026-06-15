@@ -20,3 +20,8 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
         format_sql: true
+
+schedule:
+  engine:
+    mode: ${SCHEDULE_ENGINE_MODE:ALL}
+    effective-from: ${SCHEDULE_ENGINE_EFFECTIVE_FROM:2026-06-15}

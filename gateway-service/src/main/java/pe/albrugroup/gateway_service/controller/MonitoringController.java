@@ -19,6 +19,10 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
 import java.util.List;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @RequiredArgsConstructor
@@ -59,5 +63,41 @@ public class MonitoringController {
     ) {
         return monitoringService.listarAsesoresEsperadosNoConectados(authHeader, fecha)
                 .map(ResponseEntity::ok);
+    }
+
+    @GetMapping("/gtr/asesores-ventas/{idEmpleado}/jornada-efectiva")
+    @PreAuthorize("hasAuthority('EXTEND_HORARIO')")
+    public Mono<ResponseEntity<JsonNode>> getJornadaAjustableGtr(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,
+            @PathVariable Long idEmpleado,
+            @RequestParam(required = false) LocalDate fecha
+    ) {
+        LocalDate consulta = fecha == null
+                ? LocalDate.now(java.time.ZoneId.of("America/Lima"))
+                : fecha;
+        return monitoringService.getJornadaAjustableGtr(authHeader, idEmpleado, consulta)
+                .map(ResponseEntity::ok);
+    }
+
+    @PostMapping("/gtr/asesores-ventas/{idEmpleado}/ajustes/preview")
+    @PreAuthorize("hasAuthority('EXTEND_HORARIO')")
+    public Mono<ResponseEntity<JsonNode>> previewAjusteGtr(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,
+            @PathVariable Long idEmpleado,
+            @RequestBody JsonNode request
+    ) {
+        return monitoringService.previewAjusteGtr(authHeader, idEmpleado, request)
+                .map(ResponseEntity::ok);
+    }
+
+    @PostMapping("/gtr/asesores-ventas/{idEmpleado}/ajustes")
+    @PreAuthorize("hasAuthority('EXTEND_HORARIO')")
+    public Mono<ResponseEntity<JsonNode>> registrarAjusteGtr(
+            @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader,
+            @PathVariable Long idEmpleado,
+            @RequestBody JsonNode request
+    ) {
+        return monitoringService.registrarAjusteGtr(authHeader, idEmpleado, request)
+                .map(response -> ResponseEntity.status(201).body(response));
     }
 }

@@ -32,10 +32,14 @@ import {
   PageQuery
 } from '../../../shared/models/preventa/preventa.models';
 import { buildTelUrl, buildWhatsAppUrl } from '../../../shared/utils/phone-link';
-import { AmpliacionContextoResponse } from '../../../shared/models/schedule/ampliacion-contexto-response';
+import {
+  AjusteJornadaRequest,
+  JornadaEfectivaResponse,
+  PreviewAjusteJornadaResponse
+} from '../../../shared/models/schedule/jornada-efectiva-response';
+import { ScheduleAdjustmentService } from '../../../core/services/schedule-adjustment.service';
 import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
 import { PreventaLeadService } from '../../preventa/services/preventa-lead.service';
-import { GtrScheduleExtensionService } from '../services/gtr-schedule-extension.service';
 import {
   GtrHistoricosFiltersFormValue,
   GtrHistoricosStateService
@@ -138,7 +142,7 @@ const RESTRICT_RETROACTIVE_INTAKE_BY_TIME = true;
 export class GtrWorkspaceFacade {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly preventaService = inject(PreventaLeadService);
-  private readonly scheduleExtensionService = inject(GtrScheduleExtensionService);
+  private readonly scheduleAdjustmentService = inject(ScheduleAdjustmentService);
   private readonly realtimeService = inject(LeadRealtimeService);
   private readonly attendanceRealtimeService = inject(AttendanceRealtimeService);
   private readonly operationalGateService = inject(OperationalGateService);
@@ -252,16 +256,12 @@ export class GtrWorkspaceFacade {
   readonly advisorsPanelOpen = signal(false);
   // --- Ampliacion de horario (modal sobre una card de asesor) ---
   readonly extensionTarget = signal<AdvisorOption | null>(null);
-  readonly extensionContext = signal<AmpliacionContextoResponse | null>(null);
+  readonly extensionJornada = signal<JornadaEfectivaResponse | null>(null);
+  readonly extensionPreview = signal<PreviewAjusteJornadaResponse | null>(null);
   readonly isLoadingExtensionContext = signal(false);
   readonly isSavingExtension = signal(false);
   /** Error propio del modal de ampliacion: se muestra dentro del dialogo, nunca detras. */
   readonly extensionError = signal<string | null>(null);
-  readonly extensionForm = new FormGroup({
-    horaEntrada: new FormControl<Date | null>(null),
-    horaSalida: new FormControl<Date | null>(null),
-    motivo: new FormControl('', { nonNullable: true, validators: [Validators.required] })
-  });
   readonly baseOptions = ['WHATSAPP', 'MESSENGER', 'RECONTACTO', 'PREDICTIVO', 'REFERIDO', 'MASIVO'];
   readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
@@ -1355,9 +1355,9 @@ export class GtrWorkspaceFacade {
       return;
     }
     this.extensionTarget.set(advisor);
-    this.extensionContext.set(null);
+    this.extensionJornada.set(null);
+    this.extensionPreview.set(null);
     this.extensionError.set(null);
-    this.extensionForm.reset({ horaEntrada: null, horaSalida: null, motivo: '' });
     this.activeDialog.set('schedule-extension');
     void this.loadExtensionContext(advisor.empleadoId);
   }
@@ -1366,8 +1366,8 @@ export class GtrWorkspaceFacade {
     this.isLoadingExtensionContext.set(true);
     this.extensionError.set(null);
     try {
-      const context = await firstValueFrom(this.scheduleExtensionService.getContexto(idEmpleado));
-      this.extensionContext.set(context);
+      const jornada = await firstValueFrom(this.scheduleAdjustmentService.getJornadaGtr(idEmpleado));
+      this.extensionJornada.set(jornada);
     } catch (error) {
       this.extensionError.set(this.getErrorMessage(error, 'No se pudo cargar el horario del asesor.'));
     } finally {
@@ -1377,81 +1377,54 @@ export class GtrWorkspaceFacade {
 
   closeScheduleExtension(): void {
     this.extensionTarget.set(null);
-    this.extensionContext.set(null);
+    this.extensionJornada.set(null);
+    this.extensionPreview.set(null);
     this.extensionError.set(null);
-    this.extensionForm.reset({ horaEntrada: null, horaSalida: null, motivo: '' });
     this.activeDialog.set(null);
   }
 
-  async submitScheduleExtension(): Promise<void> {
+  async previewScheduleExtension(request: AjusteJornadaRequest): Promise<void> {
     if (!this.ensureCanMutate()) {
       return;
     }
     const advisor = this.extensionTarget();
-    const context = this.extensionContext();
-    if (!advisor || !context) {
-      return;
+    if (!advisor) return;
+    this.isLoadingExtensionContext.set(true);
+    this.extensionError.set(null);
+    try {
+      this.extensionPreview.set(
+        await firstValueFrom(
+          this.scheduleAdjustmentService.previewGtr(advisor.empleadoId, request)
+        )
+      );
+    } catch (error) {
+      this.extensionError.set(this.getErrorMessage(error, 'No se pudo preparar la vista previa.'));
+    } finally {
+      this.isLoadingExtensionContext.set(false);
     }
-    if (!context.tieneHorarioVigente) {
-      this.extensionError.set('Este asesor no tiene un horario vigente hoy.');
-      return;
-    }
+  }
 
-    const raw = this.extensionForm.getRawValue();
-    const motivo = raw.motivo.trim();
-    if (!motivo) {
-      this.extensionError.set('Indica el motivo de la ampliacion.');
-      return;
-    }
-    const horaEntrada = this.toApiTime(raw.horaEntrada);
-    const horaSalida = this.toApiTime(raw.horaSalida);
-
-    if (!context.laborable) {
-      if (!horaEntrada || !horaSalida) {
-        this.extensionError.set('Para habilitar hoy, indica la hora de entrada y de salida.');
-        return;
-      }
-    } else if (context.jornadaCerrada) {
-      if (!horaEntrada || !horaSalida) {
-        this.extensionError.set('La jornada ya se cerro: indica hora de entrada y de salida del nuevo tramo.');
-        return;
-      }
-    } else if (!horaEntrada && !horaSalida) {
-      this.extensionError.set('Indica una nueva hora de entrada y/o de salida.');
-      return;
-    }
-
+  async submitScheduleExtension(request: AjusteJornadaRequest): Promise<void> {
+    if (!this.ensureCanMutate()) return;
+    const advisor = this.extensionTarget();
+    if (!advisor) return;
     this.isSavingExtension.set(true);
     this.extensionError.set(null);
     try {
-      const response = await firstValueFrom(
-        this.scheduleExtensionService.registrarAmpliacion(advisor.empleadoId, { horaEntrada, horaSalida, motivo })
-      );
-      const nombre = advisor.nombreCompleto;
-      this.successMessage.set(
-        response.resultado === 'HABILITADA'
-          ? `Jornada extraordinaria habilitada para ${nombre}.`
-          : response.jornadaReabierta
-          ? `Se reabrio la jornada de ${nombre}. El asesor debe volver a marcar ingreso.`
-          : `Horario de ${nombre} ampliado.`
-      );
+      await firstValueFrom(this.scheduleAdjustmentService.registrarGtr(advisor.empleadoId, request));
+      this.successMessage.set(`Jornada de ${advisor.nombreCompleto} actualizada.`);
       this.closeScheduleExtension();
       await this.refreshAdvisors();
     } catch (error) {
-      this.extensionError.set(this.getErrorMessage(error, 'No se pudo registrar la ampliacion.'));
+      this.extensionError.set(this.getErrorMessage(error, 'No se pudo guardar el ajuste de jornada.'));
     } finally {
       this.isSavingExtension.set(false);
     }
   }
 
-  /** Convierte el valor del p-datepicker (timeOnly) a "HH:mm" para el backend; null si no hay valor. */
   private toApiTime(value: Date | null): string | null {
-    if (!value) {
-      return null;
-    }
-    const hours = `${value.getHours()}`.padStart(2, '0');
-    const minutes = `${value.getMinutes()}`.padStart(2, '0');
-    return `${hours}:${minutes}`;
+    if (!value) return null;
+    return `${String(value.getHours()).padStart(2, '0')}:${String(value.getMinutes()).padStart(2, '0')}`;
   }
 
   isAbandonedLeadSelected(idLead: number): boolean {

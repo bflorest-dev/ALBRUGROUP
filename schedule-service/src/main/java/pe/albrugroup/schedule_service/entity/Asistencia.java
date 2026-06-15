@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import pe.albrugroup.schedule_service.entity.enums.EstadoAsistencia;
+import pe.albrugroup.schedule_service.entity.enums.OrigenTramo;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -39,6 +40,14 @@ public class Asistencia {
     private LocalDateTime fechaHoraInicioAlmuerzo;
     private LocalDateTime fechaHoraFinAlmuerzo;
     private LocalDateTime fechaHoraInicioServiciosActual;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ajuste_jornada_actual_id")
+    private AjusteJornada ajusteJornadaActual;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "origen_tramo_actual", length = 30)
+    private OrigenTramo origenTramoActual;
 
     @Column(nullable = false)
     private Integer minutosObjetivoDia;
