@@ -11,6 +11,7 @@ import pe.albrugroup.lead_service.entity.request.CampanaRequest;
 import pe.albrugroup.lead_service.entity.request.CampanaWhatsappRequest;
 import pe.albrugroup.lead_service.entity.response.CampanaResponse;
 import pe.albrugroup.lead_service.service.CampanaService;
+import pe.albrugroup.lead_service.service.CatalogoEquipoService;
 
 import java.util.List;
 
@@ -20,6 +21,7 @@ import java.util.List;
 public class CampanaController {
 
     private final CampanaService campanaService;
+    private final CatalogoEquipoService catalogoEquipoService;
 
     @PostMapping
     @PreAuthorize("hasAuthority('CREATE_CAMPANA')")
@@ -50,7 +52,7 @@ public class CampanaController {
     @PreAuthorize("hasAuthority('READ_CAMPANA')")
     public ResponseEntity<List<CampanaResponse>> listarCampanas(@RequestParam(required = false) Boolean activo)
     {
-        var campanas = campanaService.listarCampanas(activo);
+        var campanas = catalogoEquipoService.listarCampanasVisibles(activo);
         return ResponseEntity.status(HttpStatus.OK).body(campanas);
     }
 }

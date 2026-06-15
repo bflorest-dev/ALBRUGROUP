@@ -339,7 +339,8 @@ public class DataLoader {
                 getPermiso("DELETE_PROMOCIONES"),
                 getPermiso("READ_LEADS_DIARIOS"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
-                getPermiso("UPDATE_ASISTENCIAS")
+                getPermiso("UPDATE_ASISTENCIAS"),
+                getPermiso("VER_TODOS_LOS_EQUIPOS")
         );
         saveRol("COMMUNITY", "Marketing - Generacion y apoyo comercial", communityPermisos);
 

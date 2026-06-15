@@ -16,7 +16,7 @@ import java.util.Map;
  */
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/leads/backfill-equipo")
+@RequestMapping("/equipos-backfill")
 public class LeadEquipoBackfillController {
 
     private final EquipoProveedorService equipoProveedorService;

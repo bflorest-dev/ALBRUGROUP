@@ -1,10 +1,10 @@
 -- ============================================================
 -- V8: Visibilidad global de equipos para POSTVENTA y COBRANZA (Fase 1)
 --
--- El filtro por equipo en lead-service aplica a TODO acceso a leads. POSTVENTA y COBRANZA
--- aún NO entran al split por equipos, así que se les otorga VER_TODOS_LOS_EQUIPOS para que
--- sigan viendo todo como hoy (si no, el fail-closed los dejaría sin bandeja). Cuando se
--- extiendan los equipos al ciclo completo, se les asigna equipo y se revoca este permiso.
+-- El filtro por equipo en lead-service aplica a leads y a los catálogos (campañas/proveedores).
+-- POSTVENTA y COBRANZA aún NO entran al split por equipos (verían bandejas vacías), y COMMUNITY
+-- gestiona catálogos de TODOS los proveedores. A los tres se les otorga VER_TODOS_LOS_EQUIPOS
+-- para que sigan viendo todo como hoy. Cuando se extiendan los equipos, se reevalúa y se revoca.
 --
 -- Idempotente: INSERT ... WHERE NOT EXISTS.
 -- ============================================================
@@ -14,7 +14,7 @@ SELECT r.id, p.id
 FROM roles r
 CROSS JOIN permisos p
 WHERE p.nombre = 'VER_TODOS_LOS_EQUIPOS'
-  AND r.nombre IN ('ASESOR_POSTVENTA', 'SUPERVISOR_POSTVENTA', 'ASESOR_COBRANZA')
+  AND r.nombre IN ('ASESOR_POSTVENTA', 'SUPERVISOR_POSTVENTA', 'ASESOR_COBRANZA', 'COMMUNITY')
   AND NOT EXISTS (
         SELECT 1
         FROM rol_permiso rp
