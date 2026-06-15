@@ -9,6 +9,7 @@ import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.response.ProveedorResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.repository.EquipoProveedorRepository;
+import pe.albrugroup.lead_service.repository.LeadRepository;
 import pe.albrugroup.lead_service.repository.ProveedorRepository;
 import pe.albrugroup.lead_service.service.mapper.ProveedorMapper;
 
@@ -23,6 +24,7 @@ public class EquipoProveedorService {
     private final EquipoProveedorRepository equipoProveedorRepository;
     private final ProveedorRepository proveedorRepository;
     private final ProveedorMapper proveedorMapper;
+    private final LeadRepository leadRepository;
     private final CurrentUser currentUser;
 
     /** Reemplaza los proveedores asignados a un equipo. */
@@ -44,6 +46,15 @@ public class EquipoProveedorService {
                         .build()));
 
         return proveedores.stream().map(proveedorMapper::toResponse).toList();
+    }
+
+    /**
+     * Backfill de `id_equipo` en leads existentes según el mapping equipo_proveedor actual
+     * (campaña → proveedor → equipo). Idempotente: solo toca leads sin equipo. Se ejecuta
+     * después de asignar proveedores a los equipos. Retorna la cantidad de leads actualizados.
+     */
+    public int backfillIdEquipoLeads() {
+        return leadRepository.backfillIdEquipoDesdeMapping();
     }
 
     @Transactional(readOnly = true)

@@ -6,6 +6,7 @@ import pe.albrugroup.lead_service.entity.EquipoProveedor;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface EquipoProveedorRepository extends JpaRepository<EquipoProveedor, Long> {
@@ -13,5 +14,6 @@ public interface EquipoProveedorRepository extends JpaRepository<EquipoProveedor
     List<EquipoProveedor> findByIdEquipo(Long idEquipo);
     List<EquipoProveedor> findByIdEquipoIn(Collection<Long> idEquipos);
     boolean existsByIdEquipoAndProveedorId(Long idEquipo, Long proveedorId);
+    Optional<EquipoProveedor> findFirstByProveedorId(Long proveedorId);
     void deleteByIdEquipo(Long idEquipo);
 }

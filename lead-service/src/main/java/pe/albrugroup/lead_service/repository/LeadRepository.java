@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -880,4 +881,28 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("fechaHasta") Instant fechaHasta,
             @Param("soloActivos") boolean soloActivos
     );
+
+    // Backfill idempotente de id_equipo en leads existentes a partir del mapping
+    // equipo_proveedor (campaña → proveedor → equipo). Solo toca los que están sin equipo.
+    // Nativo + subconsulta correlacionada (portable Postgres/H2). No afectado por @Filter.
+    @Modifying
+    @Query(value = """
+            UPDATE lead l
+            SET id_equipo = (
+                SELECT ep.id_equipo
+                FROM equipo_proveedor ep
+                JOIN campana c ON c.id_proveedor = ep.id_proveedor
+                WHERE c.id = l.id_campana
+                LIMIT 1
+            )
+            WHERE l.id_equipo IS NULL
+              AND l.id_campana IS NOT NULL
+              AND EXISTS (
+                  SELECT 1
+                  FROM equipo_proveedor ep
+                  JOIN campana c ON c.id_proveedor = ep.id_proveedor
+                  WHERE c.id = l.id_campana
+              )
+            """, nativeQuery = true)
+    int backfillIdEquipoDesdeMapping();
 }

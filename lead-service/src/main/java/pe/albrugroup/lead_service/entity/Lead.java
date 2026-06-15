@@ -7,6 +7,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
+import org.hibernate.annotations.ParamDef;
 import org.hibernate.annotations.UpdateTimestamp;
 import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.EstadoPostventa;
@@ -30,6 +33,10 @@ import java.util.Set;
         @Index(name = "idx_lead_id_asesor_cobranza_fecha", columnList = "idAsesorCobranza, fechaCobranza")
 })
 @AllArgsConstructor @NoArgsConstructor
+// Partición por equipo: el filtro se habilita por request con los equipos del usuario
+// (ver EquipoFilterInterceptor). Usuarios con visibilidad global NO lo habilitan (ven todo).
+@FilterDef(name = "equipoFilter", parameters = @ParamDef(name = "equipos", type = Long.class))
+@Filter(name = "equipoFilter", condition = "id_equipo in (:equipos)")
 public class Lead {
 
 

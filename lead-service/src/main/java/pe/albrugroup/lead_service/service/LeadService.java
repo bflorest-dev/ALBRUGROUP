@@ -67,6 +67,8 @@ import pe.albrugroup.lead_service.exception.ConflictException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.AdicionalRepository;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
+import pe.albrugroup.lead_service.repository.ContactoRepository;
+import pe.albrugroup.lead_service.repository.EquipoProveedorRepository;
 import pe.albrugroup.lead_service.repository.DistritoRepository;
 import pe.albrugroup.lead_service.repository.EncuestaPostventaRepository;
 import pe.albrugroup.lead_service.repository.EventoRepository;
@@ -101,6 +103,8 @@ import java.util.Set;
 public class LeadService {
 
     private final LeadRepository leadRepository;
+    private final ContactoRepository contactoRepository;
+    private final EquipoProveedorRepository equipoProveedorRepository;
     private final CampanaRepository campanaRepository;
     private final EventoRepository eventoRepository;
     private final EventoService eventoService;
@@ -1455,6 +1459,29 @@ public class LeadService {
         notificarCambioLead("CONTACTO", savedLead, null, idAsesorAnterior);
     }
 
+    // Resuelve (o crea) el Contacto identidad por prefijo+lead. No se ve afectado por el filtro
+    // por equipo (el filtro aplica solo a Lead): el contacto es identidad compartida.
+    private Contacto resolverContacto(String prefijo, String numeroLead) {
+        return contactoRepository.findByPrefijoAndLead(prefijo, numeroLead)
+                .orElseGet(() -> contactoRepository.save(
+                        Contacto.builder().prefijo(prefijo).lead(numeroLead).build()));
+    }
+
+    // Deriva el equipo del lead: si el usuario pertenece a un único equipo, ese; si no, del
+    // proveedor de la campaña (mapping equipo_proveedor). Puede ser null (contexto sin equipo).
+    private Long derivarIdEquipo(Campana campana) {
+        List<Long> equipos = currentUser.equipos();
+        if (equipos != null && equipos.size() == 1) {
+            return equipos.get(0);
+        }
+        if (campana != null && campana.getProveedor() != null) {
+            return equipoProveedorRepository.findFirstByProveedorId(campana.getProveedor().getId())
+                    .map(EquipoProveedor::getIdEquipo)
+                    .orElse(null);
+        }
+        return null;
+    }
+
     private void registrarLeadNuevo(
             String prefijo,
             String numeroLead,
@@ -1463,6 +1490,8 @@ public class LeadService {
             Instant registroAt
     ) {
         Lead lead = leadMapper.toNuevoLead(prefijo, numeroLead, request.getBase(), campana, OperationalDateTime.now());
+        lead.setContacto(resolverContacto(prefijo, numeroLead));
+        lead.setIdEquipo(derivarIdEquipo(campana));
 
         Lead savedLead = leadRepository.save(lead);
         registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa(), registroAt);
@@ -1482,6 +1511,8 @@ public class LeadService {
         Campana campana = obtenerCampanaBaseMasivo(idCampanaBaseMasivo, advertencias);
         Lead lead = leadMapper.toNuevoLead(prefijo, numeroLead, base, campana, OperationalDateTime.now());
         aplicarSnapshotsMasivo(lead, documentoSnapshot, direccionSnapshot, advertencias);
+        lead.setContacto(resolverContacto(prefijo, numeroLead));
+        lead.setIdEquipo(derivarIdEquipo(campana));
 
         Lead savedLead = leadRepository.save(lead);
         registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa());
@@ -1504,6 +1535,12 @@ public class LeadService {
         lead.setCampana(campana);
         lead.setBase(request.getBase());
         lead.setLastEntryAt(OperationalDateTime.now());
+        if (lead.getContacto() == null) {
+            lead.setContacto(resolverContacto(lead.getPrefijo(), lead.getLead()));
+        }
+        if (lead.getIdEquipo() == null) {
+            lead.setIdEquipo(derivarIdEquipo(campana));
+        }
 
         // Solo se reinicia a NUEVO si el lead no tuvo gestion hoy. Si ya hubo asignacion, contacto
         // o tipificacion en el dia, el re-registro conserva su estado, tipificacion y asesor.
@@ -1558,6 +1595,12 @@ public class LeadService {
         lead.setBase(base);
         lead.setLastEntryAt(OperationalDateTime.now());
         aplicarSnapshotsMasivo(lead, documentoSnapshot, direccionSnapshot, advertencias);
+        if (lead.getContacto() == null) {
+            lead.setContacto(resolverContacto(prefijo, numeroLead));
+        }
+        if (lead.getIdEquipo() == null) {
+            lead.setIdEquipo(derivarIdEquipo(campana));
+        }
 
         // Solo se reinicia a NUEVO si el lead no tuvo gestion hoy. Si ya hubo asignacion, contacto
         // o tipificacion en el dia, el re-registro conserva su estado, tipificacion y asesor.

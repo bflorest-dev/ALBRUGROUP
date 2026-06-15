@@ -492,7 +492,8 @@ public class DataLoader {
                 getPermiso("READ_PROMOCIONES"),
                 getPermiso("READ_UBIGEO"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
-                getPermiso("UPDATE_ASISTENCIAS")
+                getPermiso("UPDATE_ASISTENCIAS"),
+                getPermiso("VER_TODOS_LOS_EQUIPOS")
         );
         saveRol("ASESOR_POSTVENTA", "Postventa - Gestion de cartera y seguimiento", postventaPermisos);
         saveRol("SUPERVISOR_POSTVENTA", "Postventa - Supervision de cartera y seguimiento", postventaPermisos);
@@ -512,7 +513,8 @@ public class DataLoader {
                 getPermiso("READ_PROMOCIONES"),
                 getPermiso("READ_UBIGEO"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
-                getPermiso("UPDATE_ASISTENCIAS")
+                getPermiso("UPDATE_ASISTENCIAS"),
+                getPermiso("VER_TODOS_LOS_EQUIPOS")
         );
         saveRol("ASESOR_COBRANZA", "Cobranza - Seguimiento de pagos postventa", cobranzaPermisos);
 
