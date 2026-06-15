@@ -16,4 +16,5 @@ public interface EquipoProveedorRepository extends JpaRepository<EquipoProveedor
     boolean existsByIdEquipoAndProveedorId(Long idEquipo, Long proveedorId);
     Optional<EquipoProveedor> findFirstByProveedorId(Long proveedorId);
     void deleteByIdEquipo(Long idEquipo);
+    void deleteByProveedorIdIn(Collection<Long> proveedorIds);
 }

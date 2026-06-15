@@ -1,0 +1,134 @@
+<p-toast />
+
+<section class="equipos-page">
+  <header class="equipos-page__header">
+    <div class="equipos-page__intro">
+      <h1>Equipos</h1>
+      <p>Agrupa GTR, asesores y backoffice por equipo y define qué proveedores ve cada uno.</p>
+    </div>
+    <p-button
+      label="Aplicar equipos a leads existentes"
+      icon="pi pi-sync"
+      severity="secondary"
+      [outlined]="true"
+      (onClick)="aplicarBackfill()"
+    />
+  </header>
+
+  <div class="equipos-page__grid">
+    <!-- Lista de equipos + crear -->
+    <p-card>
+      <h2 class="equipos-card__title">Equipos</h2>
+
+      <div class="equipos-list">
+        @for (equipo of equipos(); track equipo.id) {
+          <button
+            type="button"
+            class="equipos-list__item"
+            [class.equipos-list__item--active]="equipo.id === selectedEquipoId()"
+            (click)="seleccionarEquipo(equipo.id)"
+          >
+            <span class="equipos-list__name">{{ equipo.nombre }}</span>
+            @if (equipo.descripcion) {
+              <span class="equipos-list__desc">{{ equipo.descripcion }}</span>
+            }
+          </button>
+        } @empty {
+          <p class="equipos-hint">Aún no hay equipos. Crea el primero abajo.</p>
+        }
+      </div>
+
+      <div class="equipos-create">
+        <input pInputText placeholder="Nombre del equipo" [(ngModel)]="nuevoNombre" />
+        <input pInputText placeholder="Descripción (opcional)" [(ngModel)]="nuevaDescripcion" />
+        <p-button label="Crear equipo" icon="pi pi-plus" (onClick)="crearEquipo()" />
+      </div>
+    </p-card>
+
+    <!-- Detalle del equipo seleccionado -->
+    @if (selectedEquipo(); as equipo) {
+      <div class="equipos-detail">
+        <p-card>
+          <h2 class="equipos-card__title">Proveedores de {{ equipo.nombre }}</h2>
+          <p class="equipos-hint">
+            Cada proveedor pertenece a un solo equipo: al asignarlo aquí, se mueve desde el equipo en que estuviera.
+          </p>
+          <div class="equipos-row">
+            <p-multiSelect
+              [options]="proveedores()"
+              optionLabel="nombre"
+              optionValue="id"
+              [(ngModel)]="proveedorSeleccion"
+              placeholder="Selecciona proveedores"
+              display="chip"
+              [filter]="true"
+              appendTo="body"
+              styleClass="equipos-grow"
+            />
+            <p-button
+              label="Guardar proveedores"
+              icon="pi pi-save"
+              [loading]="guardandoProveedores()"
+              (onClick)="guardarProveedores()"
+            />
+          </div>
+        </p-card>
+
+        <p-card>
+          <h2 class="equipos-card__title">Empleados de {{ equipo.nombre }}</h2>
+          <div class="equipos-row">
+            <p-select
+              [options]="empleadoOptions()"
+              optionLabel="label"
+              optionValue="value"
+              [(ngModel)]="empleadoAAgregar"
+              placeholder="Elige un empleado"
+              [filter]="true"
+              appendTo="body"
+              styleClass="equipos-grow"
+            />
+            <p-button label="Agregar" icon="pi pi-user-plus" (onClick)="agregarEmpleado()" />
+          </div>
+
+          <p-table [value]="miembros()" styleClass="p-datatable-sm equipos-table">
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Empleado</th>
+                <th>Rol</th>
+                <th class="equipos-table__actions"></th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-miembro>
+              <tr>
+                <td>{{ miembro.nombreCompleto }}</td>
+                <td>
+                  @for (rol of miembro.roles; track rol) {
+                    <p-tag [value]="rol" styleClass="equipos-tag" />
+                  }
+                </td>
+                <td class="equipos-table__actions">
+                  <p-button
+                    icon="pi pi-times"
+                    severity="danger"
+                    [text]="true"
+                    [rounded]="true"
+                    (onClick)="quitarEmpleado(miembro.empleadoId)"
+                  />
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="3" class="equipos-hint">Este equipo aún no tiene empleados.</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </p-card>
+      </div>
+    } @else {
+      <p-card>
+        <p class="equipos-hint">Selecciona o crea un equipo para gestionar sus proveedores y empleados.</p>
+      </p-card>
+    }
+  </div>
+</section>

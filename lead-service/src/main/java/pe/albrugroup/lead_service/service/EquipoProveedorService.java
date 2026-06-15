@@ -38,7 +38,13 @@ public class EquipoProveedorService {
             throw new BadRequestException("Uno o más proveedores no existen");
         }
 
+        // Reemplaza el set del equipo y, por exclusividad, quita estos proveedores de cualquier
+        // otro equipo (semántica de "mover"). No se fuerza unicidad en BD para no bloquear el
+        // multi-equipo futuro; la exclusividad se aplica aquí.
         equipoProveedorRepository.deleteByIdEquipo(idEquipo);
+        if (!ids.isEmpty()) {
+            equipoProveedorRepository.deleteByProveedorIdIn(ids);
+        }
         proveedores.forEach(proveedor -> equipoProveedorRepository.save(
                 EquipoProveedor.builder()
                         .idEquipo(idEquipo)

@@ -133,10 +133,8 @@ public class EquipoService implements IEquipo {
                 .map(Rol::getNombre)
                 .anyMatch(ROLES_OPERATIVOS::contains);
 
-        if (esOperativo && idsSolicitados.isEmpty()) {
-            throw new BadRequestException(
-                    "Los roles operativos deben pertenecer a un equipo");
-        }
+        // Se permite dejar sin equipo (quitar): el fail-closed del filtro lo protege (no ve nada).
+        // Solo se restringe que un rol operativo pertenezca a más de un equipo a la vez.
         if (esOperativo && idsSolicitados.size() > 1) {
             throw new BadRequestException(
                     "Un rol operativo solo puede pertenecer a un equipo");
