@@ -40,6 +40,14 @@ public class Lead {
     private String prefijo; // +51
     private String lead; // 987654321
 
+    // Identidad del contacto (teléfono). prefijo+lead se mantienen denormalizados aquí.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_contacto")
+    private Contacto contacto;
+
+    // Equipo (partición de datos). Referencia lógica al Equipo administrado en auth-service.
+    private Long idEquipo;
+
     @Enumerated(EnumType.STRING)
     private Etapa etapa;
     @Enumerated(EnumType.STRING)

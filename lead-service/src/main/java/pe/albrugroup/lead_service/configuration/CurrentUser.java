@@ -32,4 +32,15 @@ public class CurrentUser {
                 .findFirst()
                 .orElse("SIN_ROL");
     }
+    public List<String> permisos() {
+        return get().permisos();
+    }
+    public List<Long> equipos() {
+        return get().equipos();
+    }
+    // Visibilidad global: ve datos de todos los equipos (salta el filtro por equipo).
+    // Nunca se deriva de "no tener equipo": es siempre un permiso explícito.
+    public boolean tieneVisibilidadGlobalEquipos() {
+        return permisos().contains("VER_TODOS_LOS_EQUIPOS");
+    }
 }

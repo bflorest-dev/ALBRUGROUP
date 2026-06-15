@@ -42,13 +42,14 @@ public class WebSocketAuthenticationInterceptor implements ChannelInterceptor {
             String nombreCompleto = jwtUtil.extractNombreCompleto(token);
             List<String> roles = jwtUtil.extractRoles(token);
             List<String> permisos = jwtUtil.extractPermisos(token);
+            List<Long> equipos = jwtUtil.extractEquipos(token);
 
             List<SimpleGrantedAuthority> authorities = Stream.concat(
                     roles.stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role)),
                     permisos.stream().map(SimpleGrantedAuthority::new)
             ).toList();
 
-            UserSession userSession = new UserSession(username, empleadoId, nombreCompleto, roles);
+            UserSession userSession = new UserSession(username, empleadoId, nombreCompleto, roles, permisos, equipos);
             accessor.setUser(new UsernamePasswordAuthenticationToken(userSession, null, authorities));
         } catch (Exception e) {
             log.warn("Conexion WebSocket rechazada por JWT invalido: {}", e.getMessage());

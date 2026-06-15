@@ -1,5 +1,7 @@
 package pe.albrugroup.auth_service.mapper;
 
+import pe.albrugroup.auth_service.entity.Equipo;
+import pe.albrugroup.auth_service.entity.Response.EquipoResponse;
 import pe.albrugroup.auth_service.entity.Response.UsuarioResponse;
 import pe.albrugroup.auth_service.entity.Rol;
 import pe.albrugroup.auth_service.entity.Usuario;
@@ -25,6 +27,23 @@ public class Mapper {
                                 .map(Rol::getNombre)
                                 .collect(Collectors.toSet())
                 )
+                .equipos
+                (
+                        usuario.getEquipos().stream()
+                                .map(Equipo::getNombre)
+                                .collect(Collectors.toSet())
+                )
+                .build();
+    }
+
+    public static EquipoResponse toEquipoResponse(Equipo equipo) {
+        if (equipo == null) return null;
+
+        return EquipoResponse.builder()
+                .id(equipo.getId())
+                .nombre(equipo.getNombre())
+                .descripcion(equipo.getDescripcion())
+                .activo(equipo.getActivo())
                 .build();
     }
 }

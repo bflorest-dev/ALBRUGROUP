@@ -6,9 +6,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import pe.albrugroup.auth_service.entity.Equipo;
 import pe.albrugroup.auth_service.entity.Permiso;
 import pe.albrugroup.auth_service.entity.Rol;
 import pe.albrugroup.auth_service.entity.Usuario;
+import pe.albrugroup.auth_service.repository.EquipoRepository;
 import pe.albrugroup.auth_service.repository.PermisoRepository;
 import pe.albrugroup.auth_service.repository.RolRepository;
 import pe.albrugroup.auth_service.repository.UsuarioRepository;
@@ -32,6 +34,7 @@ public class DataLoader {
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final PermisoRepository  permisoRepository;
+    private final EquipoRepository equipoRepository;
     private final PasswordEncoder passwordEncoder;
 
     @PostConstruct
@@ -42,6 +45,7 @@ public class DataLoader {
         crearPermisos();
         crearRoles();
         crearUsuariosIniciales();
+        crearEquipos();
 
         log.info("DATOS CARGADOS");
         log.info("=================================");
@@ -175,6 +179,9 @@ public class DataLoader {
         // LEADS - POSTVENTA
         savePermiso("READ_LEADS_POSTVENTA", "Puede ver la bandeja de leads disponibles en postventa", "LEAD_POSTVENTA", "READ");
         savePermiso("READ_LEADS_COBRANZA", "Puede ver la bandeja de leads disponibles en cobranza", "LEAD_COBRANZA", "READ");
+
+        // EQUIPOS
+        savePermiso("VER_TODOS_LOS_EQUIPOS", "Puede ver datos de todos los equipos (salta el filtro por equipo)", "EQUIPO", "READ_ALL");
 
         log.info("Permisos Creados");
     }
@@ -443,7 +450,8 @@ public class DataLoader {
                 getPermiso("READ_ASISTENCIAS_MONITOR"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("READ_ASISTENCIAS"),
-                getPermiso("READ_ASISTENCIAS_CUMPLIMIENTO")
+                getPermiso("READ_ASISTENCIAS_CUMPLIMIENTO"),
+                getPermiso("VER_TODOS_LOS_EQUIPOS")
 
 
         );
@@ -605,5 +613,28 @@ public class DataLoader {
         log.info("═══════════════════════════════════════════════════════");
 
         log.info("Usuarios Creados");
+    }
+
+    private void crearEquipos() {
+        log.info("Creando Equipos (seed dev)...");
+        saveEquipo("Equipo 1", "WIN, PERUFIBRA, MIFIBRA");
+        saveEquipo("Equipo 2", "CLARO");
+        log.info("Equipos Creados");
+    }
+
+    private void saveEquipo(String nombre, String descripcion) {
+        equipoRepository.findByNombre(nombre)
+                .ifPresentOrElse(
+                        equipo -> {
+                            equipo.setDescripcion(descripcion);
+                            equipo.setActivo(true);
+                            equipoRepository.save(equipo);
+                        },
+                        () -> equipoRepository.save(Equipo.builder()
+                                .nombre(nombre)
+                                .descripcion(descripcion)
+                                .activo(true)
+                                .build())
+                );
     }
 }

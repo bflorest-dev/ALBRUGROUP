@@ -63,6 +63,17 @@ public class JWTUtil {
         return list.stream().map(String::valueOf).toList();
     }
 
+    public List<Long> extractEquipos(String token) {
+        Object value = extractAllClaims(token).get("equipos");
+        if (!(value instanceof List<?> list)) {
+            return List.of();
+        }
+        return list.stream()
+                .filter(Number.class::isInstance)
+                .map(v -> ((Number) v).longValue())
+                .toList();
+    }
+
     private PublicKey parsePublicKey(String encodedKey) {
         try {
             byte[] keyBytes = decodeKey(encodedKey);

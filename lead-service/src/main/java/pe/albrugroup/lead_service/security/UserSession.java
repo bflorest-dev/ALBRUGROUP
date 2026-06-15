@@ -6,6 +6,8 @@ public record UserSession(
         String username,
         Long empleadoId,
         String nombreCompleto,
-        List<String> roles
+        List<String> roles,
+        List<String> permisos,
+        List<Long> equipos
 ) {
 }

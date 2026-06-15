@@ -1,0 +1,29 @@
+package pe.albrugroup.auth_service.entity;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.Instant;
+
+@Entity @Getter @Setter @Builder
+@AllArgsConstructor @NoArgsConstructor
+@Table(name = "equipos")
+public class Equipo {
+
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    @Column(unique = true)
+    private String nombre;
+    private String descripcion;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean activo = true;
+
+    @CreationTimestamp @Column(updatable = false)
+    private Instant createdAt;
+    @UpdateTimestamp
+    private Instant updatedAt;
+}

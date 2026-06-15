@@ -6,6 +6,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
+import pe.albrugroup.auth_service.entity.Equipo;
 
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
@@ -56,6 +57,13 @@ public class JWTUtil {
                 .filter(authority -> !authority.startsWith("ROLE_"))
                 .toList();
         claims.put("permisos", permisos);
+
+        // Equipos del usuario (partición de datos). Vacío = sin equipo; el acceso global
+        // se resuelve por permiso en los servicios consumidores, no por ausencia de equipo.
+        var equipos = userDetails.getUsuario().getEquipos().stream()
+                .map(Equipo::getId)
+                .toList();
+        claims.put("equipos", equipos);
 
         return createToken(claims, userDetails.getUsername());
     }

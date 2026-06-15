@@ -63,4 +63,15 @@ public class Usuario {
     )
     @Builder.Default
     private Set<Rol> roles = new HashSet<>();
+
+    // Equipos a los que pertenece el usuario (partición de datos, ortogonal al rol).
+    // Roles operativos: exactamente 1 equipo; ADMIN/COMMUNITY: sin equipo (acceso global por permiso).
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "usuario_equipo",
+            joinColumns = @JoinColumn(name = "usuario_id"),
+            inverseJoinColumns = @JoinColumn(name = "equipo_id")
+    )
+    @Builder.Default
+    private Set<Equipo> equipos = new HashSet<>();
 }
