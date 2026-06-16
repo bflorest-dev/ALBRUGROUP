@@ -147,6 +147,33 @@
         }
       </form>
 
+      <section class="oportunidades-contacto">
+        <div class="oportunidades-contacto__chips">
+          @for (op of facade.oportunidadesContacto(); track op.id) {
+            <button
+              type="button"
+              class="op-chip"
+              [class.op-chip--active]="op.id === facade.detail()?.id"
+              [disabled]="facade.isSaving()"
+              (click)="facade.cambiarOportunidad(op.id)"
+            >
+              <span class="op-chip__doc">{{ op.numeroDocumentoTitular || 'Sin documento' }}</span>
+              <span class="op-chip__estado">{{ facade.display(op.estado) }}</span>
+            </button>
+          }
+        </div>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-plus"
+          label="Nueva oportunidad (otro titular)"
+          severity="secondary"
+          size="small"
+          [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
+          (click)="facade.crearOportunidadAdicional()"
+        ></button>
+      </section>
+
       <app-lead-commercial-data-tabs
         [datosForm]="facade.datosForm"
         [direccionForm]="facade.direccionForm"

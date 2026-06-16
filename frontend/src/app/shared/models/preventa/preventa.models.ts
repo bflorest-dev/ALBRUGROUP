@@ -397,6 +397,16 @@ export interface LeadDatosPreventaRequest {
   nombreTitularCelularRegistro?: string | null;
 }
 
+export interface OportunidadHermana {
+  id: number;
+  numeroDocumentoTitular?: string | null;
+  estado?: string | null;
+  etapa?: string | null;
+  nombreAsesorAsignado?: string | null;
+  nombrePlanSnapshot?: string | null;
+  lastEntryAt?: string | null;
+}
+
 export interface LeadDireccionRequest {
   ubigeoDomicilio: string;
   tipoDomicilio?: string | null;

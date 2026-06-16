@@ -5,6 +5,52 @@
   gap: 1rem;
 }
 
+.oportunidades-contacto {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.oportunidades-contacto__chips {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.op-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--surface-border);
+  border-radius: 999px;
+  background: var(--surface-card);
+  cursor: pointer;
+  line-height: 1.1;
+}
+
+.op-chip:hover {
+  background: var(--surface-hover);
+}
+
+.op-chip--active {
+  border-color: var(--primary-color);
+  background: var(--highlight-bg, var(--surface-hover));
+}
+
+.op-chip__doc {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.op-chip__estado {
+  font-size: 0.7rem;
+  color: var(--text-color-secondary);
+}
+
 .lead-workspace__head {
   align-items: center;
   background:

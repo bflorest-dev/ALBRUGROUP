@@ -16,6 +16,7 @@ import {
   LeadDetalleResponse,
   LeadOfertaComercialRequest,
   LeadSnapshotsRequest,
+  OportunidadHermana,
   PageQuery,
   PlanResponse,
   PromocionComercialResponse,
@@ -65,6 +66,8 @@ export class AsesorVentasWorkspaceFacade {
   readonly errorMessage = signal<string | null>(null);
   readonly rows = signal<VisualLeadAsesor[]>([]);
   readonly detail = signal<LeadDetalleResponse | null>(null);
+  // Multi-titular: oportunidades del contacto del lead en gestión (para el selector del modal).
+  readonly oportunidadesContacto = signal<OportunidadHermana[]>([]);
   readonly selectedLeadId = signal<number | null>(null);
   readonly totalElements = signal(0);
   readonly totalPages = signal(0);
@@ -351,6 +354,7 @@ export class AsesorVentasWorkspaceFacade {
       this.detailDialogOpen.set(true);
       this.isManagingLead.set(true);
       this.workspaceState.setManagingLeadState(idLead);
+      await this.cargarOportunidadesContacto(idLead);
       await this.refreshPage(true);
     } catch (error) {
       this.selectedLeadId.set(null);
@@ -359,6 +363,68 @@ export class AsesorVentasWorkspaceFacade {
     } finally {
       this.isSaving.set(false);
     }
+  }
+
+  /** Carga las oportunidades del contacto del lead (para el selector del modal). */
+  private async cargarOportunidadesContacto(idLead: number): Promise<void> {
+    try {
+      const lista = await firstValueFrom(this.preventaService.listarOportunidadesContacto(idLead));
+      this.oportunidadesContacto.set(lista ?? []);
+    } catch {
+      this.oportunidadesContacto.set([]);
+    }
+  }
+
+  /** Cambia el modal a otra oportunidad (hermana) del mismo contacto, en la misma llamada. */
+  async cambiarOportunidad(idLead: number): Promise<void> {
+    if (idLead === this.selectedLeadId()) {
+      return;
+    }
+    if (this.hasUnsavedDataChanges()) {
+      this.errorMessage.set('Guarda o limpia los cambios antes de cambiar de oportunidad.');
+      return;
+    }
+    this.selectedLeadId.set(idLead);
+    this.clearMessages();
+    this.isSaving.set(true);
+    try {
+      await firstValueFrom(this.preventaService.iniciarGestionLead(idLead));
+      const detail = await firstValueFrom(this.preventaService.obtenerDetalleAsesor(idLead));
+      this.detail.set(detail);
+      this.patchForms(detail);
+      await this.refreshOfferCatalogs(detail.idPlan ?? 0);
+      this.isManagingLead.set(true);
+      this.workspaceState.setManagingLeadState(idLead);
+      await this.cargarOportunidadesContacto(idLead);
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cambiar de oportunidad.'));
+    } finally {
+      this.isSaving.set(false);
+    }
+  }
+
+  /** Crea otra oportunidad para el mismo contacto (otro titular) y cambia el modal a ella. */
+  async crearOportunidadAdicional(): Promise<void> {
+    const actual = this.selectedLeadId();
+    if (!actual) {
+      return;
+    }
+    if (this.hasUnsavedDataChanges()) {
+      this.errorMessage.set('Guarda o limpia los cambios antes de crear otra oportunidad.');
+      return;
+    }
+    this.isSaving.set(true);
+    let nuevoId: number;
+    try {
+      nuevoId = await firstValueFrom(this.preventaService.crearOportunidadAdicional(actual));
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo crear la nueva oportunidad.'));
+      return;
+    } finally {
+      this.isSaving.set(false);
+    }
+    await this.cambiarOportunidad(nuevoId);
+    this.successMessage.set('Nueva oportunidad creada para el mismo contacto (otro titular).');
   }
 
   requestCloseDetail(): void {
@@ -378,6 +444,7 @@ export class AsesorVentasWorkspaceFacade {
   private closeDetail(): void {
     this.detailDialogOpen.set(false);
     this.detail.set(null);
+    this.oportunidadesContacto.set([]);
     this.selectedLeadId.set(null);
     this.isManagingLead.set(false);
     this.workspaceState.clearManagingLeadState();

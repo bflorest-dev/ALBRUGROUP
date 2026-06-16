@@ -33,6 +33,7 @@ import {
   LeadIntakeMasivoExcelResponse,
   MasivoLeadFilters,
   MisPreventaResponse,
+  OportunidadHermana,
   LeadSnapshotsRequest,
   LeadOfertaComercialRequest,
   LeadPage,
@@ -49,6 +50,16 @@ export class PreventaLeadService {
   private readonly http = inject(HttpClient);
   private readonly leadUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads`;
   private readonly authUrl = `${API_CONSTANTS.gatewayBaseUrl}${API_CONSTANTS.authBasePath}`;
+
+  // Multi-titular: crea otra oportunidad para el mismo contacto (devuelve el id de la nueva).
+  crearOportunidadAdicional(idLead: number): Observable<number> {
+    return this.http.post<number>(`${this.leadUrl}/preventa/${idLead}/oportunidad-adicional`, {});
+  }
+
+  // Multi-titular: oportunidades del contacto (para el selector del asesor y la lupa del GTR).
+  listarOportunidadesContacto(idLead: number): Observable<OportunidadHermana[]> {
+    return this.http.get<OportunidadHermana[]>(`${this.leadUrl}/preventa/${idLead}/oportunidades-contacto`);
+  }
 
   listarBandejaGtr(
     fecha: string,
