@@ -33,6 +33,7 @@ public class MonitoringService {
 
     private static final PuestoTrabajo ROL_ASESOR = PuestoTrabajo.ASESOR_VENTAS;
     private static final PuestoTrabajo ROL_OJT = PuestoTrabajo.OJT;
+    private static final PuestoTrabajo ROL_SUPERVISOR_VENTAS = PuestoTrabajo.SUPERVISOR_VENTAS;
     private static final ZoneId OPERATIONAL_ZONE = ZoneId.of("America/Lima");
 
     private final PresenceService presenceService;
@@ -94,6 +95,13 @@ public class MonitoringService {
         ).map(tuple -> mergePorEmpleado(tuple.getT1(), tuple.getT2()));
     }
 
+    private Mono<List<UsuarioRolResponse>> listarUsuariosAjustablesGtr(String authHeader) {
+        return Mono.zip(
+                listarUsuariosActivosVentasYOjt(authHeader),
+                authMonitoringClient.listarUsuariosActivosPorRol(authHeader, ROL_SUPERVISOR_VENTAS)
+        ).map(tuple -> mergePorEmpleado(tuple.getT1(), tuple.getT2()));
+    }
+
     public Mono<JsonNode> getJornadaAjustableGtr(
             String authHeader,
             Long idEmpleado,
@@ -101,7 +109,7 @@ public class MonitoringService {
     ) {
         requireToday(fecha);
         return validarAsesorVisibleGtr(authHeader, idEmpleado)
-                .then(scheduleAdjustmentClient.getJornada(authHeader, idEmpleado, fecha));
+                .then(Mono.defer(() -> scheduleAdjustmentClient.getJornada(authHeader, idEmpleado, fecha)));
     }
 
     public Mono<JsonNode> previewAjusteGtr(
@@ -111,7 +119,7 @@ public class MonitoringService {
     ) {
         requireToday(request);
         return validarAsesorVisibleGtr(authHeader, idEmpleado)
-                .then(scheduleAdjustmentClient.preview(authHeader, idEmpleado, request));
+                .then(Mono.defer(() -> scheduleAdjustmentClient.preview(authHeader, idEmpleado, request)));
     }
 
     public Mono<JsonNode> registrarAjusteGtr(
@@ -121,7 +129,7 @@ public class MonitoringService {
     ) {
         requireToday(request);
         return validarAsesorVisibleGtr(authHeader, idEmpleado)
-                .then(scheduleAdjustmentClient.registrar(authHeader, idEmpleado, request));
+                .then(Mono.defer(() -> scheduleAdjustmentClient.registrar(authHeader, idEmpleado, request)));
     }
 
     private void requireToday(JsonNode request) {
@@ -152,7 +160,7 @@ public class MonitoringService {
     }
 
     private Mono<Void> validarAsesorVisibleGtr(String authHeader, Long idEmpleado) {
-        return listarUsuariosActivosVentasYOjt(authHeader)
+        return listarUsuariosAjustablesGtr(authHeader)
                 .flatMap(usuarios -> usuarios.stream()
                         .anyMatch(usuario -> usuario.getEmpleadoId().equals(idEmpleado))
                         ? Mono.empty()

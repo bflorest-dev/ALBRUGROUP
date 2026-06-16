@@ -223,3 +223,43 @@ Implementación revisada de T9 (aditiva, no destructiva):
    `ADD COLUMN id_equipo` (nullable, FK a contacto); backfill `contacto` + `UPDATE lead`.
    Los ids de `lead` no cambian → Evento/Pago/Encuesta intactos.
 5. Filtro `@Filter` por `lead.idEquipo` (T10).
+
+---
+
+## Anexo — Fase 1.5: multi-titular (oportunidades hermanas)
+
+Varias oportunidades del mismo contacto en el MISMO equipo, diferenciadas por
+`numeroDocumentoTitular`. Decisiones: filas separadas en bandeja + el modal agrupa; mismo
+asesor siempre; la crea solo el ASESOR_VENTAS; al cambiar de hermana con cambios sin guardar
+→ **avisar/confirmar** (reusar la guarda actual del modal).
+
+### Backend — HECHO y compila
+- Dedup intake tolerante: `LeadRepository.findFirstByPrefijoAndLeadOrderByLastEntryAtDescIdDesc`
+  (reemplazó `findByPrefijoAndLead` en intake y masivo; @Filter lo acota al equipo).
+- `findByContactoIdOrderByLastEntryAtDescIdDesc` para listar hermanas.
+- `LeadService.crearOportunidadAdicional(idLead)`: valida que la actual tenga documento; crea
+  hermana (mismo contacto/equipo/teléfono, asesor actual, EN_GESTION, datos en blanco); evento
+  REGISTRO; devuelve id. `listarOportunidadesDelContacto(idLead)` → `OportunidadHermanaResponse`.
+- Endpoints en `PreventaController`: `POST /preventa/{idLead}/oportunidad-adicional`
+  (UPDATE_LEADS_ASESOR); `GET /preventa/{idLead}/oportunidades-contacto`
+  (READ_LEADS_ASESOR + READ_LEADS_GTR).
+
+### Frontend — PENDIENTE (plan listo)
+1. **Service** (preventa service del asesor/GTR): `crearOportunidadAdicional(idLead): Observable<number>`
+   (POST) y `listarOportunidadesContacto(idLead): Observable<OportunidadHermana[]>` (GET). Nuevo
+   modelo `OportunidadHermana { id, numeroDocumentoTitular, estado, etapa, nombreAsesorAsignado,
+   nombrePlanSnapshot, lastEntryAt }`.
+2. **Facade `asesor-ventas-workspace.facade.ts`**: signal `oportunidadesContacto`; cargarla al
+   abrir el detalle (donde se setea `detail()`); `crearOportunidadAdicional()` → POST → cambiar el
+   detalle a la nueva id; `cambiarOportunidad(idLead)` → si `hasUnsavedModalChanges()` disparar la
+   guarda existente (guardar/descartar) y luego abrir el detalle de esa id (reusar el flujo de
+   apertura de detalle por id).
+3. **`lead-management-dialog.component.html`**: tira de chips/pestañas arriba (documento + estado),
+   resaltar la actual, click → `cambiarOportunidad(id)`; botón "Nueva oportunidad (otro titular)"
+   → `crearOportunidadAdicional()`. Mostrar solo si hay contacto.
+4. **GTR lupa**: en la búsqueda por teléfono mostrar la lista de oportunidades (usar
+   `listarOportunidadesContacto` o ampliar el lookup actual `/preventa/gtr/lookup`).
+5. Verificar build (`npm run build`). Cuidar no romper el flujo actual del asesor (95% = 1 sola).
+
+Archivos a tocar: preventa service FE, `asesor-ventas-workspace.facade.ts`,
+`lead-management-dialog.component.html`, componente de lupa GTR, nuevo modelo TS.

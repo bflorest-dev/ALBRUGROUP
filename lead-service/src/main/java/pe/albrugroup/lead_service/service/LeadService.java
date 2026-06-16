@@ -51,6 +51,7 @@ import pe.albrugroup.lead_service.entity.response.InternetResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPostventaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadRealtimeEvent;
 import pe.albrugroup.lead_service.entity.response.MisPreventaResponse;
+import pe.albrugroup.lead_service.entity.response.OportunidadHermanaResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.entity.response.PlanAdicionalResponse;
 import pe.albrugroup.lead_service.entity.response.GtrRankingAsesorResponse;
@@ -1079,7 +1080,7 @@ public class LeadService {
         String numeroLead = normalizarLead(request.getLead());
         Campana campana = obtenerCampanaActiva(request.getIdCampana());
 
-        leadRepository.findByPrefijoAndLead(prefijo, numeroLead)
+        leadRepository.findFirstByPrefijoAndLeadOrderByLastEntryAtDescIdDesc(prefijo, numeroLead)
                 .ifPresentOrElse(
                         lead -> registrarIngresoLeadExistente(lead, request, campana, registroAt),
                         () -> registrarLeadNuevo(prefijo, numeroLead, request, campana, registroAt)
@@ -1106,7 +1107,7 @@ public class LeadService {
     ) {
         String prefijoNormalizado = normalizarPrefijo(prefijo);
         String numeroLead = normalizarLead(lead);
-        return leadRepository.findByPrefijoAndLead(prefijoNormalizado, numeroLead)
+        return leadRepository.findFirstByPrefijoAndLeadOrderByLastEntryAtDescIdDesc(prefijoNormalizado, numeroLead)
                 .map(existingLead -> registrarIngresoLeadMasivoExistente(
                         existingLead,
                         prefijoNormalizado,
@@ -2478,6 +2479,65 @@ public class LeadService {
     private boolean esTipificacionPreventa(String codigoTipificacion, String codigoSubtipificacion) {
         return TIPIFICACION_SCORE_PREVENTA.equals(codigoTipificacion)
                 && SUBTIPIFICACION_PREVENTA.equals(codigoSubtipificacion);
+    }
+
+    // ── Multi-titular: oportunidades en paralelo del mismo contacto (Fase 1.5) ──
+
+    /**
+     * Crea una oportunidad hermana para el mismo contacto/equipo: la origina el asesor durante la
+     * gestión (la actual debe tener documento del titular). Nace asignada al mismo asesor y en
+     * gestión, con datos en blanco (otro titular/documento). Devuelve el id de la nueva.
+     */
+    @Transactional
+    public Long crearOportunidadAdicional(Long idLead) {
+        Lead original = obtenerLeadPreventaDelAsesor(idLead);
+        String documento = original.getDatosPreventa() == null
+                ? null
+                : original.getDatosPreventa().getNumeroDocumentoTitularServicio();
+        if (documento == null || documento.isBlank()) {
+            throw new BadRequestException(
+                    "Registra el documento del titular de la oportunidad actual antes de crear otra");
+        }
+
+        Lead nueva = leadMapper.toNuevoLead(
+                original.getPrefijo(), original.getLead(), original.getBase(),
+                original.getCampana(), OperationalDateTime.now());
+        nueva.setContacto(original.getContacto());
+        nueva.setIdEquipo(original.getIdEquipo());
+        nueva.setIdAsesorAsignado(currentUser.empleadoID());
+        nueva.setNombreAsesorAsignado(currentUser.nombreCompleto().trim());
+        nueva.setEstado(EstadoSeguimiento.EN_GESTION);
+
+        Lead saved = leadRepository.save(nueva);
+        Long idCampana = saved.getCampana() == null ? null : saved.getCampana().getId();
+        registrarEventoRegistro(saved.getId(), idCampana, saved.getEtapa());
+        notificarCambioLead("REGISTRO", saved, null, null);
+        return saved.getId();
+    }
+
+    /** Lista las oportunidades del contacto (acotadas al equipo) para el selector y la lupa. */
+    @Transactional(readOnly = true)
+    public List<OportunidadHermanaResponse> listarOportunidadesDelContacto(Long idLead) {
+        Lead lead = leadRepository.findById(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        if (lead.getContacto() == null) {
+            return List.of(toHermanaResponse(lead));
+        }
+        return leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(lead.getContacto().getId())
+                .stream()
+                .map(this::toHermanaResponse)
+                .toList();
+    }
+
+    private OportunidadHermanaResponse toHermanaResponse(Lead lead) {
+        return new OportunidadHermanaResponse(
+                lead.getId(),
+                lead.getNumeroDocumentoTitularServicioSnapshot(),
+                lead.getEstado(),
+                lead.getEtapa(),
+                lead.getNombreAsesorAsignado(),
+                lead.getNombrePlanSnapshot(),
+                lead.getLastEntryAt());
     }
 
     private Lead obtenerLeadPreventaDelAsesor(Long idLead) {

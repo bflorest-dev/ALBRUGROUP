@@ -31,6 +31,11 @@ import java.util.Optional;
 public interface LeadRepository extends JpaRepository<Lead, Long> {
 
     Optional<Lead> findByPrefijoAndLead(String prefijo, String lead);
+    // Dedup del intake tolerante a multi-titular: con varias oportunidades por teléfono+equipo
+    // (hermanas), trabaja sobre la activa (lastEntryAt más reciente). El @Filter lo acota al equipo.
+    Optional<Lead> findFirstByPrefijoAndLeadOrderByLastEntryAtDescIdDesc(String prefijo, String lead);
+    // Oportunidades del mismo contacto (acotadas al equipo por @Filter): para multi-titular.
+    List<Lead> findByContactoIdOrderByLastEntryAtDescIdDesc(Long idContacto);
     Optional<Lead> findFirstByLeadOrderByLastEntryAtDescIdDesc(String lead);
 
     @Query("SELECT l.id, l.lead FROM Lead l WHERE l.id IN :ids")

@@ -261,6 +261,18 @@ public class PreventaController {
         leadService.actualizarOfertaComercial(idLead, request);
         return ResponseEntity.noContent().build();
     }
+    // MULTI-TITULAR. Crear otra oportunidad para el mismo contacto (otro titular/documento).
+    @PostMapping("/{idLead}/oportunidad-adicional") @PreAuthorize("hasAuthority('UPDATE_LEADS_ASESOR')")
+    public ResponseEntity<Long> crearOportunidadAdicional(@PathVariable Long idLead) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(leadService.crearOportunidadAdicional(idLead));
+    }
+    // MULTI-TITULAR. Listar las oportunidades del contacto (para el selector del asesor y la lupa GTR).
+    @GetMapping("/{idLead}/oportunidades-contacto")
+    @PreAuthorize("hasAnyAuthority('READ_LEADS_ASESOR','READ_LEADS_GTR')")
+    public ResponseEntity<List<OportunidadHermanaResponse>> listarOportunidadesDelContacto(@PathVariable Long idLead) {
+        return ResponseEntity.ok(leadService.listarOportunidadesDelContacto(idLead));
+    }
+
     // GENERAL. Tipificar un Lead en PreVenta.
     @PostMapping("/{idLead}/tipificacion") @PreAuthorize("hasAuthority('TYPIFY_LEADS')")
     public ResponseEntity<Void> tipificarLead(
