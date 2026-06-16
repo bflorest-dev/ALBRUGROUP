@@ -77,28 +77,36 @@
             (input)="setNumericDigits(datosForm.get('ubigeoNacimiento'), $any($event.target).value, 6)"
           />
         </label>
-        <label>
-          <span>Madre</span>
-          <input pInputText type="text" formControlName="nombreMadre" />
-        </label>
-        <label>
-          <span>Padre</span>
-          <input pInputText type="text" formControlName="nombrePadre" />
-        </label>
-        <label>
-          <span>Numero de Documento del Titular del Celular</span>
-          <input
-            pInputText
-            type="text"
-            inputmode="numeric"
-            formControlName="numeroDocumentoTitularCelularRegistro"
-            (input)="setNumericDigits(datosForm.get('numeroDocumentoTitularCelularRegistro'), $any($event.target).value, 8)"
-          />
-        </label>
-        <label class="wide">
-          <span>Nombre del Titular del Celular</span>
-          <input pInputText type="text" formControlName="nombreTitularCelularRegistro" />
-        </label>
+        @if (perfilClaro || tieneValor(datosForm, 'nombreMadre')) {
+          <label>
+            <span>Madre</span>
+            <input pInputText type="text" formControlName="nombreMadre" />
+          </label>
+        }
+        @if (perfilClaro || tieneValor(datosForm, 'nombrePadre')) {
+          <label>
+            <span>Padre</span>
+            <input pInputText type="text" formControlName="nombrePadre" />
+          </label>
+        }
+        @if (!perfilClaro || tieneValor(datosForm, 'numeroDocumentoTitularCelularRegistro')) {
+          <label>
+            <span>Numero de Documento del Titular del Celular</span>
+            <input
+              pInputText
+              type="text"
+              inputmode="numeric"
+              formControlName="numeroDocumentoTitularCelularRegistro"
+              (input)="setNumericDigits(datosForm.get('numeroDocumentoTitularCelularRegistro'), $any($event.target).value, 8)"
+            />
+          </label>
+        }
+        @if (!perfilClaro || tieneValor(datosForm, 'nombreTitularCelularRegistro')) {
+          <label class="wide">
+            <span>Nombre del Titular del Celular</span>
+            <input pInputText type="text" formControlName="nombreTitularCelularRegistro" />
+          </label>
+        }
       </form>
     </p-tabpanel>
 
@@ -217,6 +225,12 @@
           <span>Interior</span>
           <input pInputText type="text" formControlName="interior" />
         </label>
+        @if (perfilClaro || tieneValor(direccionForm, 'plano')) {
+          <label>
+            <span>Plano</span>
+            <input pInputText type="text" formControlName="plano" />
+          </label>
+        }
       </form>
     </p-tabpanel>
 

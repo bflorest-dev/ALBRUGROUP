@@ -133,7 +133,8 @@ export class AsesorVentasWorkspaceFacade {
     nombreEdificio: [''],
     nombreCondominio: [''],
     piso: [''],
-    interior: ['']
+    interior: [''],
+    plano: ['']
   });
 
   readonly ofertaForm = this.fb.group({
@@ -171,6 +172,11 @@ export class AsesorVentasWorkspaceFacade {
     }
     return [...providersById.values()].sort((left, right) => left.nombre.localeCompare(right.nombre));
   });
+  // Perfil de campos del equipo CLARO: se infiere de los proveedores que el asesor puede ofertar
+  // (filtrados por su equipo). En equipo 2 (CLARO exclusivo) resulta true; en equipo 1, false.
+  readonly esPerfilClaro = computed(() =>
+    this.ofertaProviderOptions().some((proveedor) => (proveedor.nombre ?? '').toUpperCase().includes('CLARO'))
+  );
   readonly planOptions = computed(() => {
     const idProveedor = this.selectedOfertaProviderId();
     const providerPlans = idProveedor ? this.planes().filter((plan) => plan.idProveedor === idProveedor) : [];
@@ -1068,7 +1074,8 @@ export class AsesorVentasWorkspaceFacade {
       nombreEdificio: detail.nombreEdificio ?? '',
       nombreCondominio: detail.nombreCondominio ?? '',
       piso: detail.piso ?? '',
-      interior: detail.interior ?? ''
+      interior: detail.interior ?? '',
+      plano: detail.plano ?? ''
     });
     void this.resolveDomicilioSelection(detail.ubigeoDomicilio ?? null);
   }
@@ -1276,7 +1283,8 @@ export class AsesorVentasWorkspaceFacade {
       nombreEdificio: raw.nombreEdificio,
       nombreCondominio: raw.nombreCondominio,
       piso: raw.piso,
-      interior: raw.interior
+      interior: raw.interior,
+      plano: raw.plano
     });
   }
 

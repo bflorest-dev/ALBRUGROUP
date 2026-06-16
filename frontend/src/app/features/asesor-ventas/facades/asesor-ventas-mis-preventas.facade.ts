@@ -104,7 +104,8 @@ export class AsesorVentasMisPreventasFacade {
     nombreEdificio: [''],
     nombreCondominio: [''],
     piso: [''],
-    interior: ['']
+    interior: [''],
+    plano: ['']
   });
 
   readonly ofertaForm = this.fb.group({

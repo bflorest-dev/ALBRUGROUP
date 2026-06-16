@@ -71,6 +71,17 @@ export class LeadCommercialDataTabsComponent {
   @Input() offerNoticeText: string | null = null;
   /** Modo solo-lectura: oculta acciones de edicion (+/- adicionales) y bloquea los selects de oferta. */
   @Input() readonly = false;
+  /**
+   * Perfil de campos del proveedor CLARO (equipo 2). Cuando es true se piden Madre/Padre/Plano y se
+   * ocultan los de Titular del Celular; cuando es false, al reves. Los campos con valor guardado se
+   * muestran siempre (para no ocultar datos en vistas de solo-lectura de leads del otro perfil).
+   */
+  @Input() perfilClaro = false;
+
+  protected tieneValor(form: FormGroup, control: string): boolean {
+    const value = form.get(control)?.value;
+    return value !== null && value !== undefined && value !== '';
+  }
 
   @Output() activeTabChange = new EventEmitter<LeadCommercialDataTab>();
   @Output() tipoDocumentoChange = new EventEmitter<void>();
