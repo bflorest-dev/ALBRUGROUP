@@ -2,8 +2,11 @@ package pe.albrugroup.auth_service.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import pe.albrugroup.auth_service.entity.Equipo;
+import pe.albrugroup.auth_service.security.CustomUserDetails;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.auth_service.entity.Response.CredencialesResponse;
 import pe.albrugroup.auth_service.entity.Response.EstadoAccesoResponse;
@@ -240,14 +243,29 @@ public class UsuarioService implements IUsuario {
     @Override
     @Transactional(readOnly = true)
     public List<UsuarioRolResponse> listarUsuariosActivosPorRol(PuestoTrabajo puestoTrabajo) {
+        Set<Long> equiposDelSolicitante = equiposDelUsuarioActual();
         return usuarioRepository.findDistinctByRolesNombreAndActivoTrue(puestoTrabajo.name())
                 .stream()
+                // Si el solicitante pertenece a equipo(s) (GTR/supervisor), solo ve a quienes comparten
+                // su equipo. Si no tiene equipo (ADMIN/RRHH), ve a todos.
+                .filter(usuario -> equiposDelSolicitante.isEmpty()
+                        || usuario.getEquipos().stream().anyMatch(e -> equiposDelSolicitante.contains(e.getId())))
                 .map(usuario -> UsuarioRolResponse.builder()
                         .empleadoId(usuario.getEmpleadoId())
                         .nombreCompleto(usuario.getNombreCompleto())
                         .roles(usuario.getRoles().stream().map(Rol::getNombre).collect(java.util.stream.Collectors.toSet()))
                         .build())
                 .toList();
+    }
+
+    private Set<Long> equiposDelUsuarioActual() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof CustomUserDetails detalles) {
+            return detalles.getUsuario().getEquipos().stream()
+                    .map(Equipo::getId)
+                    .collect(java.util.stream.Collectors.toSet());
+        }
+        return Set.of();
     }
 
     @Override

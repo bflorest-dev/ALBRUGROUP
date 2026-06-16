@@ -36,12 +36,17 @@ services:
       PGUSER: postgres
       PGPORT: 5432
       PGHOST: postgres-core
+      LEAD_PGHOST: postgres-lead
     depends_on:
       postgres-core:
+        condition: service_healthy
+      postgres-lead:
         condition: service_healthy
       auth-service:
         condition: service_healthy
       rrhh-service:
+        condition: service_healthy
+      lead-service:
         condition: service_healthy
       schedule-service:
         condition: service_healthy

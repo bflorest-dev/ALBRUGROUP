@@ -79,3 +79,100 @@ SELECT setval(
     GREATEST((SELECT COALESCE(MAX(id), 1) FROM usuarios), 1),
     TRUE
 );
+
+CREATE TEMP TABLE seed_equipos (
+    id BIGINT,
+    nombre TEXT,
+    descripcion TEXT
+);
+
+INSERT INTO seed_equipos (id, nombre, descripcion) VALUES
+(101, 'Equipo Demo 1', 'Equipo de prueba para usuarios operativos'),
+(102, 'Equipo Demo 2', 'Equipo de prueba para usuarios operativos'),
+(103, 'Equipo Demo 3', 'Equipo de prueba para usuarios operativos');
+
+INSERT INTO equipos (
+    id,
+    nombre,
+    descripcion,
+    activo,
+    created_at,
+    updated_at
+)
+SELECT
+    se.id,
+    se.nombre,
+    se.descripcion,
+    TRUE,
+    CURRENT_TIMESTAMP,
+    CURRENT_TIMESTAMP
+FROM seed_equipos se
+ON CONFLICT (id) DO UPDATE
+SET nombre = EXCLUDED.nombre,
+    descripcion = EXCLUDED.descripcion,
+    activo = EXCLUDED.activo,
+    created_at = COALESCE(equipos.created_at, EXCLUDED.created_at),
+    updated_at = CURRENT_TIMESTAMP;
+
+CREATE TEMP TABLE seed_usuario_equipo (
+    empleado_id BIGINT,
+    equipo_id BIGINT
+);
+
+INSERT INTO seed_usuario_equipo (empleado_id, equipo_id) VALUES
+(1025, 101),
+(1052, 102),
+(1053, 103),
+(1026, 101),
+(1054, 102),
+(1055, 103),
+(1027, 101),
+(1056, 102),
+(1057, 103),
+(1028, 101),
+(1058, 102),
+(1059, 103),
+(1029, 101),
+(1060, 102),
+(1061, 103),
+(1030, 101),
+(1062, 102),
+(1063, 103),
+(1034, 101),
+(1064, 102),
+(1065, 103),
+(1035, 101),
+(1066, 102),
+(1067, 103),
+(1036, 101),
+(1068, 102),
+(1069, 103),
+(1040, 101),
+(1070, 102),
+(1071, 103),
+(1041, 101),
+(1072, 102),
+(1073, 103),
+(1042, 101),
+(1074, 102),
+(1075, 103);
+
+DELETE FROM usuario_equipo ue
+USING usuarios u, seed_usuario_equipo sue
+WHERE ue.usuario_id = u.id
+  AND u.empleado_id = sue.empleado_id;
+
+INSERT INTO usuario_equipo (usuario_id, equipo_id)
+SELECT
+    u.id,
+    sue.equipo_id
+FROM seed_usuario_equipo sue
+JOIN usuarios u ON u.empleado_id = sue.empleado_id
+JOIN equipos e ON e.id = sue.equipo_id
+ON CONFLICT (usuario_id, equipo_id) DO NOTHING;
+
+SELECT setval(
+    pg_get_serial_sequence('equipos', 'id'),
+    GREATEST((SELECT COALESCE(MAX(id), 1) FROM equipos), 1),
+    TRUE
+);

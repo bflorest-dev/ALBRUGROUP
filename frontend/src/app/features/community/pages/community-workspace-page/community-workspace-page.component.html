@@ -191,18 +191,16 @@
                           severity="secondary"
                           (click)="facade.openEditAccountDialog(cuenta)"
                         ></button>
-                        @if (cuenta.activo !== false) {
-                          <button
-                            pButton
-                            type="button"
-                            size="small"
-                            icon="pi pi-ban"
-                            label="Desactivar"
-                            severity="secondary"
-                            [loading]="facade.isSaving()"
-                            (click)="facade.deactivateAccount(cuenta.id)"
-                          ></button>
-                        }
+                        <button
+                          pButton
+                          type="button"
+                          size="small"
+                          [icon]="cuenta.activo === false ? 'pi pi-check' : 'pi pi-ban'"
+                          [label]="cuenta.activo === false ? 'Activar' : 'Desactivar'"
+                          severity="secondary"
+                          [loading]="facade.isSaving()"
+                          (click)="facade.toggleAccount(cuenta.id)"
+                        ></button>
                       </div>
                     </td>
                   </tr>

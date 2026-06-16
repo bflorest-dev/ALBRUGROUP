@@ -59,6 +59,16 @@ export class AdminEquipoService {
     return this.http.get<EquipoMiembroResponse[]>(`${this.authEquiposUrl}/${idEquipo}/usuarios`);
   }
 
+  // Elimina el equipo en auth (y desvincula a sus miembros).
+  eliminarEquipoAuth(id: number): Observable<unknown> {
+    return this.http.delete(`${this.authEquiposUrl}/${id}`);
+  }
+
+  // Limpia en lead las asignaciones de proveedores y desvincula los leads del equipo.
+  limpiarDatosLeadEquipo(id: number): Observable<unknown> {
+    return this.http.delete(`${this.leadEquiposUrl}/${id}`);
+  }
+
   // Reemplaza los equipos del empleado (mover = pasar nuevo id; quitar = arreglo vacío).
   asignarEquiposAEmpleado(empleadoId: number, equipoIds: number[]): Observable<unknown> {
     return this.http.put(`${this.authEquiposUrl}/usuarios/${empleadoId}`, { equipoIds });

@@ -882,9 +882,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("soloActivos") boolean soloActivos
     );
 
-    // Backfill idempotente de id_equipo en leads existentes a partir del mapping
-    // equipo_proveedor (campaña → proveedor → equipo). Solo toca los que están sin equipo.
-    // Nativo + subconsulta correlacionada (portable Postgres/H2). No afectado por @Filter.
+    // Re-sincroniza id_equipo de TODOS los leads (con campaña mapeada) a su equipo actual según
+    // el mapping equipo_proveedor (campaña → proveedor → equipo). Idempotente y seguro de re-ejecutar:
+    // alinea también los que cambiaron de equipo al mover un proveedor. Los leads cuya campaña/proveedor
+    // no está mapeada a ningún equipo quedan sin tocar. Nativo + subconsulta correlacionada
+    // (portable Postgres/H2). No afectado por @Filter.
     @Modifying
     @Query(value = """
             UPDATE lead l
@@ -895,8 +897,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 WHERE c.id = l.id_campana
                 LIMIT 1
             )
-            WHERE l.id_equipo IS NULL
-              AND l.id_campana IS NOT NULL
+            WHERE l.id_campana IS NOT NULL
               AND EXISTS (
                   SELECT 1
                   FROM equipo_proveedor ep
@@ -905,4 +906,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               )
             """, nativeQuery = true)
     int backfillIdEquipoDesdeMapping();
+
+    // Desvincula del equipo a los leads que apuntaban a él (al eliminar el equipo).
+    @Modifying
+    @Query(value = "UPDATE lead SET id_equipo = NULL WHERE id_equipo = :idEquipo", nativeQuery = true)
+    int desvincularEquipo(@Param("idEquipo") Long idEquipo);
 }

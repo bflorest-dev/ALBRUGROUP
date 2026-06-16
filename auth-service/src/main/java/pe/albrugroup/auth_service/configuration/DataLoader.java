@@ -129,7 +129,7 @@ public class DataLoader {
         // LEADS - PREVENTA
         savePermiso("CREATE_CUENTA_PUBLICITARIA", "Puede registrar cuentas publicitarias", "CUENTA_PUBLICITARIA", "CREATE");
         savePermiso("READ_CUENTAS_PUBLICITARIAS", "Puede listar y ver cuentas publicitarias", "CUENTA_PUBLICITARIA", "READ");
-        savePermiso("DELETE_CUENTA_PUBLICITARIA", "Puede desactivar cuentas publicitarias", "CUENTA_PUBLICITARIA", "DELETE");
+        savePermiso("UPDATE_CUENTA_PUBLICITARIA", "Puede actualizar cuentas publicitarias", "CUENTA_PUBLICITARIA", "UPDATE");
 
         savePermiso("CREATE_CAMPANA", "Puede registrar campanas", "CAMPANA", "CREATE");
         savePermiso("READ_CAMPANA", "Puede listar y ver campanas", "CAMPANA", "READ");
@@ -309,7 +309,7 @@ public class DataLoader {
         Set<Permiso> communityPermisos = Set.of(
                 getPermiso("CREATE_CUENTA_PUBLICITARIA"),
                 getPermiso("READ_CUENTAS_PUBLICITARIAS"),
-                getPermiso("DELETE_CUENTA_PUBLICITARIA"),
+                getPermiso("UPDATE_CUENTA_PUBLICITARIA"),
 
                 getPermiso("CREATE_CAMPANA"),
                 getPermiso("READ_CAMPANA"),

@@ -567,8 +567,8 @@ export class CommunityWorkspaceFacade {
     );
   }
 
-  async deactivateAccount(idCuenta: number): Promise<void> {
-    await this.saveAction(() => this.leadService.desactivarCuenta(idCuenta), 'Cuenta desactivada.', () => this.refreshAccounts());
+  async toggleAccount(idCuenta: number): Promise<void> {
+    await this.saveAction(() => this.leadService.alternarCuenta(idCuenta), 'Estado de cuenta actualizado.', () => this.refreshAccounts());
   }
 
   async submitCampaign(): Promise<void> {

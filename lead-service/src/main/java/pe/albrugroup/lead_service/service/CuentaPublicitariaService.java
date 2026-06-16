@@ -41,10 +41,10 @@ public class CuentaPublicitariaService {
     }
 
     @CacheEvict(value = CacheNames.CUENTAS_PUBLICITARIAS, allEntries = true)
-    public CuentaPublicitariaResponse desactivarCuentaPublicitaria(Long idCuentaPublicitaria) {
-        CuentaPublicitaria cuentaPublicitaria = repository.findByIdAndActivoTrue(idCuentaPublicitaria)
+    public CuentaPublicitariaResponse alternarEstadoCuentaPublicitaria(Long idCuentaPublicitaria) {
+        CuentaPublicitaria cuentaPublicitaria = repository.findById(idCuentaPublicitaria)
                 .orElseThrow(() -> new NotFoundException(CuentaPublicitaria.class, idCuentaPublicitaria));
-        cuentaPublicitaria.setActivo(Boolean.FALSE);
+        cuentaPublicitaria.setActivo(!Boolean.TRUE.equals(cuentaPublicitaria.getActivo()));
         return mapper.toResponse(repository.save(cuentaPublicitaria));
     }
 

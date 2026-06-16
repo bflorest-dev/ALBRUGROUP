@@ -45,7 +45,7 @@ public class CuentaPublicitariaController {
     }
 
     @PatchMapping("/{idCuentaPublicitaria}")
-    @PreAuthorize("hasAuthority('CREATE_CUENTA_PUBLICITARIA')")
+    @PreAuthorize("hasAuthority('UPDATE_CUENTA_PUBLICITARIA')")
     public ResponseEntity<CuentaPublicitariaResponse> actualizarNombreCuentaPublicitaria(
             @PathVariable Long idCuentaPublicitaria,
             @Validated @RequestBody ActualizarNombreCuentaRequest request) {
@@ -53,11 +53,11 @@ public class CuentaPublicitariaController {
         return ResponseEntity.ok(cuenta);
     }
 
-    @DeleteMapping("/{idCuentaPublicitaria}")
-    @PreAuthorize("hasAuthority('DELETE_CUENTA_PUBLICITARIA')")
-    public ResponseEntity<CuentaPublicitariaResponse> desactivarCuentaPublicitaria(@PathVariable Long idCuentaPublicitaria)
+    @PatchMapping("/{idCuentaPublicitaria}/estado")
+    @PreAuthorize("hasAuthority('UPDATE_CUENTA_PUBLICITARIA')")
+    public ResponseEntity<CuentaPublicitariaResponse> alternarEstadoCuentaPublicitaria(@PathVariable Long idCuentaPublicitaria)
     {
-        var cuentaPublicitaria = cuentaPublicitariaService.desactivarCuentaPublicitaria(idCuentaPublicitaria);
+        var cuentaPublicitaria = cuentaPublicitariaService.alternarEstadoCuentaPublicitaria(idCuentaPublicitaria);
         return ResponseEntity.status(HttpStatus.OK).body(cuentaPublicitaria);
     }
 }

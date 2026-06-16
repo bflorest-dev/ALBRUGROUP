@@ -14,12 +14,12 @@ import java.util.List;
 
 @RestController @Validated
 @RequiredArgsConstructor
-@RequestMapping("/equipos/{idEquipo}/proveedores")
+@RequestMapping("/equipos")
 public class EquipoProveedorController {
 
     private final EquipoProveedorService equipoProveedorService;
 
-    @PutMapping @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PutMapping("/{idEquipo}/proveedores") @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<List<ProveedorResponse>> asignarProveedores(
             @PathVariable Long idEquipo,
             @Valid @RequestBody AsignarProveedoresRequest request
@@ -27,8 +27,15 @@ public class EquipoProveedorController {
         return ResponseEntity.ok(equipoProveedorService.asignarProveedores(idEquipo, request.getProveedorIds()));
     }
 
-    @GetMapping @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @GetMapping("/{idEquipo}/proveedores") @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<List<ProveedorResponse>> listarProveedoresDeEquipo(@PathVariable Long idEquipo) {
         return ResponseEntity.ok(equipoProveedorService.listarProveedoresDeEquipo(idEquipo));
+    }
+
+    // Limpieza al eliminar un equipo: quita mappings de proveedores y desvincula sus leads.
+    @DeleteMapping("/{idEquipo}") @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<Void> eliminarDatosDeEquipo(@PathVariable Long idEquipo) {
+        equipoProveedorService.eliminarDatosDeEquipo(idEquipo);
+        return ResponseEntity.noContent().build();
     }
 }

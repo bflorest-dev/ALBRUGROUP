@@ -91,6 +91,18 @@ public class EquipoService implements IEquipo {
     }
 
     @Override
+    public void eliminar(Long id) {
+        Equipo equipo = equipoRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Equipo no encontrado", id));
+        // Quitar la membresía de los usuarios que pertenecían al equipo antes de borrarlo.
+        List<Usuario> miembros = usuarioRepository.findByEquiposId(id);
+        miembros.forEach(usuario -> usuario.getEquipos().removeIf(e -> e.getId().equals(id)));
+        usuarioRepository.saveAll(miembros);
+        equipoRepository.delete(equipo);
+        log.info("Equipo eliminado: {} ({} miembros desvinculados)", id, miembros.size());
+    }
+
+    @Override
     public UsuarioResponse asignarEquipos(Long empleadoId, Set<Long> equipoIds) {
         Usuario usuario = usuarioRepository.findByEmpleadoId(empleadoId)
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado por EmpleadoID", empleadoId));

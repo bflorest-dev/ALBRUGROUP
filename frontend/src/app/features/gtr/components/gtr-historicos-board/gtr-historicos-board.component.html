@@ -166,7 +166,15 @@
           />
         </td>
         <td><strong>{{ facade.leadPrefixLabel(row.prefijo) }} {{ row.lead }}</strong></td>
-        <td>{{ facade.display(row.nombreProveedorCampana) }}</td>
+        <td>
+          @if (facade.providerLogo(row.nombreProveedorCampana); as logo) {
+            <div class="provider-cell">
+              <img [src]="logo" [alt]="facade.display(row.nombreProveedorCampana)" />
+            </div>
+          } @else {
+            {{ facade.display(row.nombreProveedorCampana) }}
+          }
+        </td>
         <td>{{ facade.display(row.base) }}</td>
         <td>{{ facade.display(row.numeroDocumentoTitularServicio) }}</td>
         <td>

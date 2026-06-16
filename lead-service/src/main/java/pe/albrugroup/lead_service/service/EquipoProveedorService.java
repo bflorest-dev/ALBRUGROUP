@@ -63,6 +63,12 @@ public class EquipoProveedorService {
         return leadRepository.backfillIdEquipoDesdeMapping();
     }
 
+    /** Limpia los datos de lead-service asociados a un equipo (al eliminarlo en auth). */
+    public void eliminarDatosDeEquipo(Long idEquipo) {
+        equipoProveedorRepository.deleteByIdEquipo(idEquipo);
+        leadRepository.desvincularEquipo(idEquipo);
+    }
+
     @Transactional(readOnly = true)
     public List<ProveedorResponse> listarProveedoresDeEquipo(Long idEquipo) {
         return equipoProveedorRepository.findByIdEquipo(idEquipo).stream()

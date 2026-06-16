@@ -13,6 +13,7 @@ import pe.albrugroup.lead_service.entity.request.PlanUpdateRequest;
 import pe.albrugroup.lead_service.entity.response.AdicionalResponse;
 import pe.albrugroup.lead_service.entity.response.PlanResponse;
 import pe.albrugroup.lead_service.entity.response.ServiciosProveedorResponse;
+import pe.albrugroup.lead_service.service.CatalogoEquipoService;
 import pe.albrugroup.lead_service.service.PlanService;
 
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.List;
 public class PlanController {
 
     private final PlanService service;
+    private final CatalogoEquipoService catalogoEquipoService;
     
     @PostMapping("/adicionales") @PreAuthorize("hasAuthority('CREATE_ADICIONALES')")
     public ResponseEntity<AdicionalResponse> registrarAdicional(@Valid @RequestBody AdicionalRequest request) {
@@ -40,7 +42,7 @@ public class PlanController {
             @RequestParam(required = false) Long idProveedor,
             @RequestParam(defaultValue = "false") boolean soloVigentes
     ) {
-        return ResponseEntity.ok(service.listarPlanes(idProveedor, soloVigentes));
+        return ResponseEntity.ok(catalogoEquipoService.listarPlanesVisibles(idProveedor, soloVigentes));
     }
 
     @GetMapping("/adicionales") @PreAuthorize("hasAuthority('READ_ADICIONALES')")

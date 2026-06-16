@@ -203,8 +203,8 @@ export class CommunityLeadService {
     return this.http.patch<CuentaPublicitariaResponse>(`${this.leadUrl}/cuentas-publicitarias/${idCuenta}`, request);
   }
 
-  desactivarCuenta(idCuenta: number): Observable<void> {
-    return this.http.delete<void>(`${this.leadUrl}/cuentas-publicitarias/${idCuenta}`);
+  alternarCuenta(idCuenta: number): Observable<CuentaPublicitariaResponse> {
+    return this.http.patch<CuentaPublicitariaResponse>(`${this.leadUrl}/cuentas-publicitarias/${idCuenta}/estado`, {});
   }
 
   registrarCampana(request: unknown): Observable<CampanaResponse> {

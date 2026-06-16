@@ -3,6 +3,7 @@ package pe.albrugroup.lead_service.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import pe.albrugroup.lead_service.entity.response.CampanaResponse;
+import pe.albrugroup.lead_service.entity.response.PlanResponse;
 import pe.albrugroup.lead_service.entity.response.ProveedorResponse;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class CatalogoEquipoService {
 
     private final CampanaService campanaService;
     private final ProveedorService proveedorService;
+    private final PlanService planService;
     private final EquipoProveedorService equipoProveedorService;
 
     public List<CampanaResponse> listarCampanasVisibles(Boolean activo) {
@@ -41,6 +43,25 @@ public class CatalogoEquipoService {
         }
         return todos.stream()
                 .filter(p -> visibles.contains(p.getId()))
+                .toList();
+    }
+
+    public List<PlanResponse> listarPlanesVisibles(Long idProveedor, boolean soloVigentes) {
+        Set<Long> visibles = equipoProveedorService.proveedorIdsVisibles();
+        if (idProveedor != null) {
+            // Proveedor específico: si no es visible para el equipo, no se devuelven planes.
+            if (visibles != null && !visibles.contains(idProveedor)) {
+                return List.of();
+            }
+            return planService.listarPlanes(idProveedor, soloVigentes);
+        }
+        // "Todos los planes": filtra a los proveedores del equipo (global = sin filtro).
+        List<PlanResponse> todos = planService.listarPlanes(null, soloVigentes);
+        if (visibles == null) {
+            return todos;
+        }
+        return todos.stream()
+                .filter(p -> p.getIdProveedor() != null && visibles.contains(p.getIdProveedor()))
                 .toList();
     }
 }

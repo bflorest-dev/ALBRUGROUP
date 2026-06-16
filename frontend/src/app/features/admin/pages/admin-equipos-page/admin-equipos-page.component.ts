@@ -1,26 +1,31 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { MultiSelectModule } from 'primeng/multiselect';
-import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
+import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
 import { firstValueFrom } from 'rxjs';
 import {
   AdminEquipoService,
   EmpleadoLite,
-  EquipoMiembroResponse,
   EquipoResponse,
   ProveedorLite
 } from '../../services/admin-equipo.service';
 
-interface EmpleadoOption {
+interface OpcionEmpleado {
   label: string;
   value: number;
+}
+
+interface GrupoEmpleados {
+  label: string;
+  items: OpcionEmpleado[];
 }
 
 @Component({
@@ -29,14 +34,15 @@ interface EmpleadoOption {
     FormsModule,
     ButtonModule,
     CardModule,
+    ConfirmDialogModule,
+    DialogModule,
     InputTextModule,
     MultiSelectModule,
-    SelectModule,
     TableModule,
-    TagModule,
+    TextareaModule,
     ToastModule
   ],
-  providers: [MessageService],
+  providers: [MessageService, ConfirmationService],
   templateUrl: './admin-equipos-page.component.html',
   styleUrl: './admin-equipos-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -44,31 +50,42 @@ interface EmpleadoOption {
 export class AdminEquiposPageComponent implements OnInit {
   private readonly service = inject(AdminEquipoService);
   private readonly messageService = inject(MessageService);
+  private readonly confirmationService = inject(ConfirmationService);
 
   protected readonly equipos = signal<EquipoResponse[]>([]);
   protected readonly proveedores = signal<ProveedorLite[]>([]);
   protected readonly empleados = signal<EmpleadoLite[]>([]);
-  protected readonly miembros = signal<EquipoMiembroResponse[]>([]);
-  protected readonly selectedEquipoId = signal<number | null>(null);
   protected readonly cargando = signal(false);
-  protected readonly guardandoProveedores = signal(false);
+  protected readonly guardando = signal(false);
+  protected readonly sincronizando = signal(false);
 
-  protected readonly selectedEquipo = computed(
-    () => this.equipos().find((e) => e.id === this.selectedEquipoId()) ?? null
-  );
+  // Estado del modal
+  protected readonly dialogVisible = signal(false);
+  protected readonly editandoId = signal<number | null>(null);
+  private readonly miembrosOriginales = signal<number[]>([]);
 
-  protected readonly empleadoOptions = computed<EmpleadoOption[]>(() =>
-    this.empleados().map((e) => ({
-      label: `${e.nombres} ${e.apellidos} · ${e.puestoTrabajo}`,
-      value: e.idEmpleado
-    }))
-  );
+  // Empleados agrupados por rol (rol → lista de empleados), con búsqueda por nombre en el multiselect.
+  protected readonly empleadoGrupos = computed<GrupoEmpleados[]>(() => {
+    const grupos = new Map<string, OpcionEmpleado[]>();
+    for (const e of this.empleados()) {
+      const lista = grupos.get(e.puestoTrabajo) ?? [];
+      lista.push({ label: `${e.nombres} ${e.apellidos}`, value: e.idEmpleado });
+      grupos.set(e.puestoTrabajo, lista);
+    }
+    return [...grupos.entries()]
+      .map(([rol, items]) => ({ label: rol, items }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  });
 
-  // Campos de formulario (ngModel)
-  protected nuevoNombre = '';
-  protected nuevaDescripcion = '';
-  protected proveedorSeleccion: number[] = [];
-  protected empleadoAAgregar: number | null = null;
+  // Campos del formulario del modal
+  protected formNombre = '';
+  protected formDescripcion = '';
+  protected formProveedores: number[] = [];
+  protected formEmpleados: number[] = [];
+
+  protected get tituloDialog(): string {
+    return this.editandoId() ? 'Editar equipo' : 'Crear equipo';
+  }
 
   ngOnInit(): void {
     void this.cargar();
@@ -85,13 +102,6 @@ export class AdminEquiposPageComponent implements OnInit {
       this.equipos.set(equipos ?? []);
       this.proveedores.set(proveedores ?? []);
       this.empleados.set(empleados ?? []);
-
-      const seleccionActual = this.selectedEquipoId();
-      if (seleccionActual) {
-        await this.cargarDetalleEquipo(seleccionActual);
-      } else if ((equipos?.length ?? 0) > 0) {
-        await this.seleccionarEquipo(equipos[0].id);
-      }
     } catch {
       this.notify('error', 'No se pudieron cargar los equipos.');
     } finally {
@@ -99,103 +109,125 @@ export class AdminEquiposPageComponent implements OnInit {
     }
   }
 
-  protected async seleccionarEquipo(id: number): Promise<void> {
-    this.selectedEquipoId.set(id);
-    await this.cargarDetalleEquipo(id);
+  protected abrirCrear(): void {
+    this.editandoId.set(null);
+    this.miembrosOriginales.set([]);
+    this.formNombre = '';
+    this.formDescripcion = '';
+    this.formProveedores = [];
+    this.formEmpleados = [];
+    this.dialogVisible.set(true);
   }
 
-  private async cargarDetalleEquipo(id: number): Promise<void> {
+  protected async abrirEditar(equipo: EquipoResponse): Promise<void> {
+    this.editandoId.set(equipo.id);
+    this.formNombre = equipo.nombre;
+    this.formDescripcion = equipo.descripcion ?? '';
     try {
-      const [miembros, proveedoresEquipo] = await Promise.all([
-        firstValueFrom(this.service.listarMiembros(id)),
-        firstValueFrom(this.service.listarProveedoresDeEquipo(id))
+      const [proveedoresEquipo, miembros] = await Promise.all([
+        firstValueFrom(this.service.listarProveedoresDeEquipo(equipo.id)),
+        firstValueFrom(this.service.listarMiembros(equipo.id))
       ]);
-      this.miembros.set(miembros ?? []);
-      this.proveedorSeleccion = (proveedoresEquipo ?? []).map((p) => p.id);
+      this.formProveedores = (proveedoresEquipo ?? []).map((p) => p.id);
+      const miembrosIds = (miembros ?? []).map((m) => m.empleadoId);
+      this.formEmpleados = [...miembrosIds];
+      this.miembrosOriginales.set(miembrosIds);
+      this.dialogVisible.set(true);
     } catch {
       this.notify('error', 'No se pudo cargar el detalle del equipo.');
     }
   }
 
-  protected async crearEquipo(): Promise<void> {
-    const nombre = this.nuevoNombre.trim();
+  protected async guardar(): Promise<void> {
+    const nombre = this.formNombre.trim();
     if (!nombre) {
       this.notify('warn', 'Escribe un nombre para el equipo.');
       return;
     }
+    this.guardando.set(true);
     try {
-      const creado = await firstValueFrom(
-        this.service.crearEquipo(nombre, this.nuevaDescripcion.trim() || undefined)
-      );
-      this.nuevoNombre = '';
-      this.nuevaDescripcion = '';
-      this.notify('success', `Equipo "${creado.nombre}" creado.`);
-      await this.cargar();
-      if (creado?.id) {
-        await this.seleccionarEquipo(creado.id);
-      }
-    } catch {
-      this.notify('error', 'No se pudo crear el equipo. ¿Quizás el nombre ya existe?');
-    }
-  }
+      const id = await this.guardarEquipoBase(nombre);
+      await firstValueFrom(this.service.asignarProveedores(id, this.formProveedores));
+      await this.sincronizarMiembros(id);
 
-  protected async guardarProveedores(): Promise<void> {
-    const id = this.selectedEquipoId();
-    if (!id) {
-      return;
-    }
-    this.guardandoProveedores.set(true);
-    try {
-      await firstValueFrom(this.service.asignarProveedores(id, this.proveedorSeleccion));
-      this.notify('success', 'Proveedores del equipo actualizados.');
-      // Refresca todo: un proveedor pudo moverse desde otro equipo.
+      this.dialogVisible.set(false);
+      this.notify('success', this.editandoId() ? 'Equipo actualizado.' : 'Equipo creado.');
       await this.cargar();
     } catch {
-      this.notify('error', 'No se pudieron guardar los proveedores.');
+      this.notify('error', 'No se pudo guardar el equipo. ¿Quizás el nombre ya existe?');
     } finally {
-      this.guardandoProveedores.set(false);
+      this.guardando.set(false);
     }
   }
 
-  protected async agregarEmpleado(): Promise<void> {
-    const id = this.selectedEquipoId();
+  private async guardarEquipoBase(nombre: string): Promise<number> {
+    const descripcion = this.formDescripcion.trim() || undefined;
+    const id = this.editandoId();
+    if (id) {
+      await firstValueFrom(this.service.actualizarEquipo(id, { nombre, descripcion }));
+      return id;
+    }
+    const creado = await firstValueFrom(this.service.crearEquipo(nombre, descripcion));
+    return creado.id;
+  }
+
+  // Asigna los empleados nuevos a este equipo (mueve si estaban en otro) y quita los deseleccionados.
+  private async sincronizarMiembros(idEquipo: number): Promise<void> {
+    const seleccionados = new Set(this.formEmpleados);
+    const originales = new Set(this.miembrosOriginales());
+
+    const aAgregar = [...seleccionados].filter((empId) => !originales.has(empId));
+    const aQuitar = [...originales].filter((empId) => !seleccionados.has(empId));
+
+    for (const empId of aAgregar) {
+      await firstValueFrom(this.service.asignarEquiposAEmpleado(empId, [idEquipo]));
+    }
+    for (const empId of aQuitar) {
+      await firstValueFrom(this.service.asignarEquiposAEmpleado(empId, []));
+    }
+  }
+
+  protected confirmarEliminar(): void {
+    const id = this.editandoId();
     if (!id) {
       return;
     }
-    if (!this.empleadoAAgregar) {
-      this.notify('warn', 'Elige un empleado para agregar.');
-      return;
-    }
+    this.confirmationService.confirm({
+      header: 'Eliminar equipo',
+      message: `¿Eliminar "${this.formNombre}"? Sus empleados quedarán sin equipo y sus proveedores sin asignar.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Eliminar',
+      rejectLabel: 'Cancelar',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => void this.eliminar(id)
+    });
+  }
+
+  private async eliminar(id: number): Promise<void> {
+    this.guardando.set(true);
     try {
-      await firstValueFrom(this.service.asignarEquiposAEmpleado(this.empleadoAAgregar, [id]));
-      this.empleadoAAgregar = null;
-      this.notify('success', 'Empleado asignado al equipo (movido si estaba en otro).');
-      await this.cargarDetalleEquipo(id);
+      // Primero limpia datos en lead (proveedores + desvincular leads), luego borra el equipo en auth.
+      await firstValueFrom(this.service.limpiarDatosLeadEquipo(id));
+      await firstValueFrom(this.service.eliminarEquipoAuth(id));
+      this.dialogVisible.set(false);
+      this.notify('success', 'Equipo eliminado.');
+      await this.cargar();
     } catch {
-      this.notify('error', 'No se pudo asignar el empleado al equipo.');
+      this.notify('error', 'No se pudo eliminar el equipo.');
+    } finally {
+      this.guardando.set(false);
     }
   }
 
-  protected async quitarEmpleado(empleadoId: number): Promise<void> {
-    const id = this.selectedEquipoId();
-    if (!id) {
-      return;
-    }
-    try {
-      await firstValueFrom(this.service.asignarEquiposAEmpleado(empleadoId, []));
-      this.notify('success', 'Empleado removido del equipo.');
-      await this.cargarDetalleEquipo(id);
-    } catch {
-      this.notify('error', 'No se pudo quitar al empleado.');
-    }
-  }
-
-  protected async aplicarBackfill(): Promise<void> {
+  protected async sincronizarLeads(): Promise<void> {
+    this.sincronizando.set(true);
     try {
       const res = await firstValueFrom(this.service.backfillLeads());
-      this.notify('success', `Listo: ${res?.leadsActualizados ?? 0} leads existentes asignados a su equipo.`);
+      this.notify('success', `Listo: ${res?.leadsActualizados ?? 0} leads alineados a su equipo.`);
     } catch {
-      this.notify('error', 'No se pudo aplicar el backfill de leads.');
+      this.notify('error', 'No se pudieron sincronizar los leads.');
+    } finally {
+      this.sincronizando.set(false);
     }
   }
 

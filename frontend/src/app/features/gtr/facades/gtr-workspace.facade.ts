@@ -1963,6 +1963,9 @@ export class GtrWorkspaceFacade {
     if (normalized === 'WIN') {
       return '/provider-logos/WIN.png';
     }
+    if (normalized === 'CLARO') {
+      return '/provider-logos/CLARO.png';
+    }
     return null;
   }
 

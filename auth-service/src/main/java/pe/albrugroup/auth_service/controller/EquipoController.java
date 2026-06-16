@@ -57,6 +57,14 @@ public class EquipoController {
         return ResponseEntity.ok(equipoService.actualizar(id, request));
     }
 
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @Operation(summary = "Eliminar equipo", description = "Elimina el equipo y desvincula a sus miembros.")
+    public ResponseEntity<Void> eliminar(@PathVariable @Positive Long id) {
+        equipoService.eliminar(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PutMapping("/usuarios/{empleadoId}")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @Operation(summary = "Asignar equipos a usuario", description = "Reemplaza los equipos del usuario. Roles operativos: exactamente uno.")

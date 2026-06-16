@@ -63,6 +63,7 @@ run_sql() {
 
 export PGPASSWORD="${PGPASSWORD:-postgres}"
 export PGHOST="${PGHOST:-postgres-core}"
+export LEAD_PGHOST="${LEAD_PGHOST:-postgres-lead}"
 export PGPORT="${PGPORT:-5432}"
 export PGUSER="${PGUSER:-postgres}"
 
@@ -72,9 +73,11 @@ require_file "/seeds/users-seed.csv"
 require_file "/seeds/00-users-rrhh-seed.sql"
 require_file "/seeds/01-users-auth-seed.sql"
 require_file "/seeds/02-users-schedule-seed.sql"
+require_file "/seeds/03-users-lead-team-seed.sql"
 
 run_sql "$PGHOST" "rrhh_db" "/seeds/00-users-rrhh-seed.sql"
 run_sql "$PGHOST" "auth_db" "/seeds/01-users-auth-seed.sql"
 run_sql "$PGHOST" "schedule_db" "/seeds/02-users-schedule-seed.sql"
+run_sql "$LEAD_PGHOST" "lead_db" "/seeds/03-users-lead-team-seed.sql"
 
 log "Users seed completed"
