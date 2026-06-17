@@ -1288,14 +1288,13 @@ public class AsistenciaService implements IAsistencia {
         }
         JornadaEfectivaResponse jornada = jornadaEfectivaResolver.resolver(
                 asistencia.getIdEmpleado(), asistencia.getFecha());
-        TramoJornadaResponse siguiente = jornada.getTramos().stream()
-                .filter(tramo -> tramo.getInicio().toLocalTime().isAfter(asistencia.getSalidaProgramada()))
-                .findFirst().orElse(null);
+        TramoJornadaResponse siguiente = resolverTramoReingreso(asistencia, jornada);
         if (siguiente == null) {
             return;
         }
+        LocalDateTime inicioReingreso = resolverInicioReingreso(asistencia, siguiente);
         response.setEstadoActual(EstadoAsistencia.OFFLINE);
-        response.setEntradaProgramada(siguiente.getInicio().toLocalTime());
+        response.setEntradaProgramada(inicioReingreso.toLocalTime());
         response.setSalidaProgramada(siguiente.getFin().toLocalTime());
         response.setFechaHoraIngreso(null);
         response.setFechaHoraSalida(null);
@@ -1313,10 +1312,12 @@ public class AsistenciaService implements IAsistencia {
         if (asistencia == null || asistencia.getFechaHoraSalida() == null) {
             return;
         }
-        TramoJornadaResponse actual = jornadaEfectivaResolver.resolver(idEmpleado, ahora.toLocalDate()).getTramoActual();
-        if (actual == null || !actual.getInicio().toLocalTime().isAfter(asistencia.getSalidaProgramada())) {
+        JornadaEfectivaResponse jornada = jornadaEfectivaResolver.resolver(idEmpleado, ahora.toLocalDate());
+        TramoJornadaResponse actual = jornada.getTramoActual();
+        if (!debePrepararReingreso(asistencia, actual)) {
             return;
         }
+        LocalDateTime inicioReingreso = resolverInicioReingreso(asistencia, actual);
 
         List<AsistenciaTramo> tramosPrevios =
                 asistenciaTramoRepository.findByAsistenciaIdOrderByIdAsc(asistencia.getId());
@@ -1349,8 +1350,8 @@ public class AsistenciaService implements IAsistencia {
                 .minutosServiciosAcumulados(asistencia.getMinutosServiciosAcumulados())
                 .build());
 
-        int objetivoNuevo = (int) Duration.between(actual.getInicio(), actual.getFin()).toMinutes();
-        asistencia.setEntradaProgramada(actual.getInicio().toLocalTime());
+        int objetivoNuevo = (int) Duration.between(inicioReingreso, actual.getFin()).toMinutes();
+        asistencia.setEntradaProgramada(inicioReingreso.toLocalTime());
         asistencia.setSalidaProgramada(actual.getFin().toLocalTime());
         asistencia.setInicioAlmuerzoProgramado(null);
         asistencia.setFinAlmuerzoProgramado(null);
@@ -1371,6 +1372,40 @@ public class AsistenciaService implements IAsistencia {
         asistencia.setMinutosObjetivoDia(objetivoAcumulado + objetivoNuevo);
         asistencia.setMinutosBalance(asistencia.getMinutosTrabajados() - asistencia.getMinutosObjetivoDia());
         asistenciaRepository.save(asistencia);
+    }
+
+    private TramoJornadaResponse resolverTramoReingreso(Asistencia asistencia, JornadaEfectivaResponse jornada) {
+        if (jornada.getTramoActual() != null && debePrepararReingreso(asistencia, jornada.getTramoActual())) {
+            return jornada.getTramoActual();
+        }
+        return jornada.getTramos().stream()
+                .filter(tramo -> debePrepararReingreso(asistencia, tramo))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private boolean debePrepararReingreso(Asistencia asistencia, TramoJornadaResponse tramo) {
+        if (tramo == null
+                || asistencia.getSalidaProgramada() == null
+                || tramo.getInicio() == null
+                || tramo.getFin() == null) {
+            return false;
+        }
+        LocalDateTime finProgramadoAnterior = LocalDateTime.of(asistencia.getFecha(), asistencia.getSalidaProgramada());
+        if (!tramo.getFin().isAfter(finProgramadoAnterior)) {
+            return false;
+        }
+        boolean empiezaDespuesDelTramoCerrado = tramo.getInicio().isAfter(finProgramadoAnterior);
+        boolean ajusteExtiendeTramoCerrado = tramo.getIdAjuste() != null && tramo.getFin().isAfter(finProgramadoAnterior);
+        return empiezaDespuesDelTramoCerrado || ajusteExtiendeTramoCerrado;
+    }
+
+    private LocalDateTime resolverInicioReingreso(Asistencia asistencia, TramoJornadaResponse tramo) {
+        LocalDateTime finProgramadoAnterior = LocalDateTime.of(asistencia.getFecha(), asistencia.getSalidaProgramada());
+        if (!tramo.getInicio().isAfter(finProgramadoAnterior) && tramo.getFin().isAfter(finProgramadoAnterior)) {
+            return finProgramadoAnterior;
+        }
+        return tramo.getInicio();
     }
 
     private OrigenTramo mapOrigenTramo(TramoJornadaResponse tramo) {

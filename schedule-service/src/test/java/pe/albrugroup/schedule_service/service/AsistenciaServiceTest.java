@@ -7,16 +7,27 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pe.albrugroup.schedule_service.configuration.CurrentUser;
+import pe.albrugroup.schedule_service.configuration.OperationalDateTime;
 import pe.albrugroup.schedule_service.configuration.ScheduleEngineProperties;
+import pe.albrugroup.schedule_service.entity.AjusteJornada;
+import pe.albrugroup.schedule_service.entity.Asistencia;
+import pe.albrugroup.schedule_service.entity.AsistenciaTramo;
 import pe.albrugroup.schedule_service.entity.ExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.Horario;
 import pe.albrugroup.schedule_service.entity.HorarioDetalle;
 import pe.albrugroup.schedule_service.entity.enums.Dia;
+import pe.albrugroup.schedule_service.entity.enums.EstadoAsistencia;
+import pe.albrugroup.schedule_service.entity.enums.OrigenAjusteJornada;
+import pe.albrugroup.schedule_service.entity.enums.OrigenTramo;
 import pe.albrugroup.schedule_service.entity.enums.TipoExcepcionHorario;
+import pe.albrugroup.schedule_service.entity.request.asistencia.MovimientoAsistenciaRequest;
 import pe.albrugroup.schedule_service.entity.request.horario.RegistrarAmpliacionRequest;
+import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleAsistenciaResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.AmpliacionHorarioResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.ExcepcionHorarioResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.HorarioResponse;
+import pe.albrugroup.schedule_service.entity.response.horario.JornadaEfectivaResponse;
+import pe.albrugroup.schedule_service.entity.response.horario.TramoJornadaResponse;
 import pe.albrugroup.schedule_service.repository.AsistenciaRepository;
 import pe.albrugroup.schedule_service.repository.AsistenciaTramoRepository;
 import pe.albrugroup.schedule_service.repository.AjusteJornadaRepository;
@@ -24,8 +35,11 @@ import pe.albrugroup.schedule_service.repository.ExcepcionHorarioRepository;
 import pe.albrugroup.schedule_service.service.mapper.AsistenciaMapper;
 import pe.albrugroup.schedule_service.service.mapper.HorarioMapper;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -68,6 +82,79 @@ class AsistenciaServiceTest {
 
     @InjectMocks
     private AsistenciaService service;
+
+    @Test
+    void permiteNuevoIngresoCuandoUnAjusteExtiendeUnaJornadaCerrada() {
+        LocalDate fecha = LocalDate.of(2026, 6, 15);
+        LocalDateTime ahora = LocalDateTime.of(2026, 6, 15, 17, 10);
+        Clock fixedClock = Clock.fixed(
+                ZonedDateTime.of(2026, 6, 15, 17, 10, 0, 0, OperationalDateTime.ZONE).toInstant(),
+                OperationalDateTime.ZONE);
+        OperationalDateTime.useClock(fixedClock);
+
+        Asistencia asistencia = Asistencia.builder()
+                .id(1L)
+                .idEmpleado(21L)
+                .idHorario(7L)
+                .fecha(fecha)
+                .estadoActual(EstadoAsistencia.OFFLINE)
+                .entradaProgramada(LocalTime.of(9, 0))
+                .salidaProgramada(LocalTime.of(15, 0))
+                .fechaHoraIngreso(LocalDateTime.of(2026, 6, 15, 9, 2))
+                .fechaHoraSalida(LocalDateTime.of(2026, 6, 15, 15, 3))
+                .minutosObjetivoDia(360)
+                .minutosTrabajados(350)
+                .minutosBalance(-10)
+                .minutosAlmuerzoTomados(0)
+                .minutosServiciosPermitidos(20)
+                .minutosServiciosAcumulados(0)
+                .excedioServicios(false)
+                .origenTramoActual(OrigenTramo.BASE)
+                .build();
+        TramoJornadaResponse tramoExtendido = TramoJornadaResponse.builder()
+                .idAjuste(77L)
+                .inicio(LocalDateTime.of(2026, 6, 15, 9, 0))
+                .fin(LocalDateTime.of(2026, 6, 15, 18, 0))
+                .origen(OrigenAjusteJornada.REEMPLAZO_BASE)
+                .base(false)
+                .motivo("Extension operativa")
+                .build();
+        JornadaEfectivaResponse jornada = JornadaEfectivaResponse.builder()
+                .idEmpleado(21L)
+                .idHorario(7L)
+                .fecha(fecha)
+                .tramos(List.of(tramoExtendido))
+                .tramoActual(tramoExtendido)
+                .build();
+        AjusteJornada ajuste = AjusteJornada.builder().id(77L).build();
+
+        try {
+            when(currentUser.empleadoID()).thenReturn(21L);
+            when(scheduleEngineProperties.enabledForOperationalReads(fecha)).thenReturn(true);
+            when(jornadaEfectivaResolver.resolver(21L, fecha)).thenReturn(jornada);
+            when(asistenciaRepository.findByIdEmpleadoAndFecha(21L, fecha)).thenReturn(Optional.of(asistencia));
+            when(asistenciaTramoRepository.findByAsistenciaIdOrderByIdAsc(1L)).thenReturn(List.of());
+            when(ajusteJornadaRepository.findById(77L)).thenReturn(Optional.of(ajuste));
+            when(asistenciaTramoRepository.save(any(AsistenciaTramo.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(asistenciaRepository.save(any(Asistencia.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(mapper.toDetalleResponse(any(Asistencia.class))).thenReturn(DetalleAsistenciaResponse.builder().build());
+
+            service.registrarIngreso(MovimientoAsistenciaRequest.builder().build());
+
+            ArgumentCaptor<AsistenciaTramo> tramoArchivado = ArgumentCaptor.forClass(AsistenciaTramo.class);
+            verify(asistenciaTramoRepository).save(tramoArchivado.capture());
+            assertThat(tramoArchivado.getValue().getEntradaProgramada()).isEqualTo(LocalTime.of(9, 0));
+            assertThat(tramoArchivado.getValue().getSalidaProgramada()).isEqualTo(LocalTime.of(15, 0));
+            assertThat(asistencia.getEntradaProgramada()).isEqualTo(LocalTime.of(15, 0));
+            assertThat(asistencia.getSalidaProgramada()).isEqualTo(LocalTime.of(18, 0));
+            assertThat(asistencia.getFechaHoraIngreso()).isEqualTo(ahora);
+            assertThat(asistencia.getFechaHoraSalida()).isNull();
+            assertThat(asistencia.getEstadoActual()).isEqualTo(EstadoAsistencia.ONLINE);
+            assertThat(asistencia.getOrigenTramoActual()).isEqualTo(OrigenTramo.REEMPLAZO_BASE);
+        } finally {
+            OperationalDateTime.useClock(Clock.system(OperationalDateTime.ZONE));
+        }
+    }
 
     @Test
     void habilitaJornadaExtraordinariaEnDiaDeDescanso() {
