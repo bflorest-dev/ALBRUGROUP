@@ -36,17 +36,24 @@ label {
 }
 
 .plan-item {
-  display: grid;
-  gap: 0.35rem;
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
   width: 100%;
 }
 
-.plan-item__top {
-  align-items: baseline;
+.plan-item__main {
+  align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  justify-content: space-between;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.plan-item__name {
+  font-weight: 600;
 }
 
 .plan-item__pricing {
@@ -79,9 +86,21 @@ label {
 }
 
 .plan-item__services {
+  align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem;
+  gap: 0.35rem;
+}
+
+.svc-meses {
+  color: #617187;
+  font-size: 0.72rem;
+}
+
+.svc-tachado {
+  color: #a0aec0;
+  font-size: 0.8rem;
+  text-decoration: line-through;
 }
 
 .offer-additionals,

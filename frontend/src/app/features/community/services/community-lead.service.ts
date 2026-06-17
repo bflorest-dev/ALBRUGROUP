@@ -120,8 +120,15 @@ export type PlanResponse = LeadEntity & {
   vigenciaHasta?: string;
   idProveedor?: number;
   nombreProveedor?: string;
+  internetVelocidad?: number;
+  internetUnidad?: string;
+  internetTecnologia?: string;
   internet?: InternetResponse;
+  televisionNombre?: string;
+  televisionCanales?: number;
   television?: TelevisionResponse;
+  telefonoMinutos?: number;
+  telefonoDescripcion?: string;
   telefono?: TelefonoResponse;
   velocidadPromocional?: number;
   mesesPromocionVelocidad?: number;

@@ -424,6 +424,9 @@ public class PlanService {
     }
 
     private PlanResponse toPlanResponse(Plan plan) {
+        var internet = plan.getInternet();
+        var television = plan.getTelevision();
+        var telefono = plan.getTelefono();
         return new PlanResponse(
                 plan.getId(),
                 plan.getNombre(),
@@ -434,11 +437,15 @@ public class PlanService {
                 plan.getVigenciaHasta(),
                 plan.getProveedor().getId(),
                 plan.getProveedor().getNombre(),
-                mapper.toResponse(plan.getInternet()),
-                mapper.toResponse(plan.getTelevision()),
-                mapper.toResponse(plan.getTelefono()),
+                internet == null ? null : internet.getVelocidad(),
+                internet == null ? null : internet.getUnidad(),
+                internet == null ? null : internet.getTecnologia(),
                 plan.getVelocidadPromocional(),
                 plan.getMesesPromocionVelocidad(),
+                television == null ? null : television.getNombre(),
+                television == null ? null : television.getCantidadCanales(),
+                telefono == null ? null : telefono.getMinutos(),
+                telefono == null ? null : telefono.getDescripcion(),
                 plan.getZona() == null ? null : plan.getZona().getId(),
                 plan.getZona() == null ? null : plan.getZona().getNombre(),
                 plan.getAdicionales().stream()

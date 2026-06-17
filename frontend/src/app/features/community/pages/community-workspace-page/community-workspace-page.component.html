@@ -470,9 +470,9 @@
                     <td>{{ money(plan.precio) }}</td>
                     <td>{{ money(plan.precioPromocional) }}</td>
                     <td>{{ plan.mesesPromocionPrecio ? (plan.mesesPromocionPrecio + 'm') : '—' }}</td>
-                    <td>{{ plan.internet?.velocidad ? (plan.internet?.velocidad + ' ' + (plan.internet?.unidad || 'MBPS')) : '—' }}</td>
-                    <td>{{ plan.television?.nombre || (plan.television?.cantidadCanales ? (plan.television?.cantidadCanales + ' ch') : '—') }}</td>
-                    <td>{{ plan.telefono?.descripcion || (plan.telefono?.minutos ? (plan.telefono?.minutos + ' min') : '—') }}</td>
+                    <td>{{ facade.planInternetLabel(plan) }}</td>
+                    <td>{{ facade.planTelevisionLabel(plan) }}</td>
+                    <td>{{ facade.planPhoneLabel(plan) }}</td>
                     <td><p-tag [severity]="statusSeverity(plan.activo)" [value]="statusLabel(plan.activo)" /></td>
                     <td>
                       <div class="inline-action">

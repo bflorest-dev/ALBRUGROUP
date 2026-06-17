@@ -286,38 +286,39 @@
                 <span>Sin plan</span>
               } @else {
                 <div class="plan-item">
-                  <div class="plan-item__top">
-                    <strong>{{ plan.nombre }}</strong>
-                    <div class="plan-item__pricing">
-                      @if (plan.precioPromocional) {
-                        <span class="plan-price--promo">S/ {{ plan.precioPromocional }}</span>
-                        @if (plan.mesesPromocionPrecio) {
-                          <span class="plan-price--months">{{ plan.mesesPromocionPrecio }}m promo</span>
-                        }
-                        @if (plan.precio) {
-                          <span class="plan-price--regular">S/ {{ plan.precio }}</span>
-                        }
-                      } @else if (plan.precio) {
-                        <span class="plan-price--base">S/ {{ plan.precio }}</span>
-                      }
-                    </div>
-                  </div>
-                  @if (plan.internetVelocidad || plan.televisionNombre || plan.televisionCanales || plan.telefonoDescripcion || plan.telefonoMinutos) {
+                  <div class="plan-item__main">
+                    <strong class="plan-item__name">{{ plan.nombre }}</strong>
                     <div class="plan-item__services">
-                      @if (plan.internetVelocidad) {
+                      @if (plan.velocidadPromocional && plan.mesesPromocionVelocidad) {
+                        <p-tag severity="info" [value]="plan.velocidadPromocional + ' ' + (plan.internetUnidad || 'MBPS')" />
+                        <span class="svc-meses">{{ plan.mesesPromocionVelocidad }} meses</span>
+                        @if (plan.internetVelocidad) {
+                          <span class="svc-tachado">{{ plan.internetVelocidad }} {{ plan.internetUnidad || 'MBPS' }}</span>
+                        }
+                      } @else if (plan.internetVelocidad) {
                         <p-tag severity="info" [value]="plan.internetVelocidad + ' ' + (plan.internetUnidad || 'MBPS')" />
                       }
-                      @if (plan.velocidadPromocional && plan.mesesPromocionVelocidad) {
-                        <p-tag severity="warn" [value]="plan.velocidadPromocional + ' ' + (plan.internetUnidad || 'MBPS') + ' - ' + plan.mesesPromocionVelocidad + 'm'" />
-                      }
                       @if (plan.televisionNombre || plan.televisionCanales) {
-                        <p-tag severity="secondary" [value]="(plan.televisionNombre || 'TV') + (plan.televisionCanales ? ' - ' + plan.televisionCanales + ' ch' : '')" />
+                        <p-tag severity="secondary" [value]="(plan.televisionNombre || 'TV') + (plan.televisionCanales ? ' · ' + plan.televisionCanales + ' canales' : '')" />
                       }
                       @if (plan.telefonoDescripcion || plan.telefonoMinutos) {
                         <p-tag severity="secondary" [value]="plan.telefonoDescripcion || (plan.telefonoMinutos + ' min')" />
                       }
                     </div>
-                  }
+                  </div>
+                  <div class="plan-item__pricing">
+                    @if (plan.precioPromocional) {
+                      <span class="plan-price--promo">S/ {{ plan.precioPromocional }}</span>
+                      @if (plan.mesesPromocionPrecio) {
+                        <span class="plan-price--months">{{ plan.mesesPromocionPrecio }} meses</span>
+                      }
+                      @if (plan.precio) {
+                        <span class="plan-price--regular">S/ {{ plan.precio }}</span>
+                      }
+                    } @else if (plan.precio) {
+                      <span class="plan-price--base">S/ {{ plan.precio }}</span>
+                    }
+                  </div>
                 </div>
               }
             </ng-template>

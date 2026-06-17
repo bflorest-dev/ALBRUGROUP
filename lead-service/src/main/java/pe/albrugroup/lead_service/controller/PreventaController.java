@@ -50,7 +50,7 @@ public class PreventaController {
         var response = leadExcelIntakeService.registrarDesdeExcel(file);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
-    @PatchMapping("/{idLead}/snapshots") @PreAuthorize("hasAuthority('CREATE_LEADS')")
+    @PatchMapping("/{idLead}/snapshots") @PreAuthorize("hasAnyAuthority('CREATE_LEADS','UPDATE_LEADS_ASESOR')")
     public ResponseEntity<Void> actualizarSnapshotsLead(
             @PathVariable Long idLead,
             @Valid @RequestBody LeadSnapshotsRequest request

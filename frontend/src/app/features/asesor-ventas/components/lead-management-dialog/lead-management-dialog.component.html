@@ -1,5 +1,5 @@
 <p-dialog
-  header="Gestion de Lead"
+  [showHeader]="false"
   [visible]="facade.detailDialogOpen()"
   (visibleChange)="!$event && facade.requestCloseDetail()"
   [modal]="true"

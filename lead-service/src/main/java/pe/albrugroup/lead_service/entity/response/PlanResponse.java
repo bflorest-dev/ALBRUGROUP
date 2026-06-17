@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import pe.albrugroup.lead_service.entity.enums.Tecnologia;
+import pe.albrugroup.lead_service.entity.enums.Unidad;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -26,11 +28,18 @@ public class PlanResponse {
     private LocalDate vigenciaHasta;
     private Long idProveedor;
     private String nombreProveedor;
-    private InternetResponse internet;
-    private TelevisionResponse television;
-    private TelefonoResponse telefono;
+    // Internet (aplanado para el frontend)
+    private Integer internetVelocidad;
+    private Unidad internetUnidad;
+    private Tecnologia internetTecnologia;
     private Integer velocidadPromocional;
     private Integer mesesPromocionVelocidad;
+    // Television (aplanado)
+    private String televisionNombre;
+    private Integer televisionCanales;
+    // Telefono (aplanado)
+    private Integer telefonoMinutos;
+    private String telefonoDescripcion;
     private Long idZona;
     private String nombreZona;
     private List<PlanAdicionalResponse> adicionales;

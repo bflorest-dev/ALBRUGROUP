@@ -805,6 +805,19 @@ export class CommunityWorkspaceFacade {
     }
   }
 
+  planInternetLabel(plan: PlanResponse): string {
+    const speed = this.getPlanInternetSpeed(plan);
+    return speed ? `${speed} ${this.getPlanInternetUnit(plan) ?? 'MBPS'}` : '—';
+  }
+
+  planTelevisionLabel(plan: PlanResponse): string {
+    return this.getPlanTelevisionName(plan) ?? (this.getPlanTelevisionChannels(plan) ? `${this.getPlanTelevisionChannels(plan)} ch` : '—');
+  }
+
+  planPhoneLabel(plan: PlanResponse): string {
+    return this.getPlanPhoneDescription(plan) ?? (this.getPlanPhoneMinutes(plan) ? `${this.getPlanPhoneMinutes(plan)} min` : '—');
+  }
+
   async submitAdditional(): Promise<void> {
     if (this.additionalForm.invalid) {
       this.errorMessage.set('Completa los datos del adicional.');
@@ -883,13 +896,13 @@ export class CommunityWorkspaceFacade {
       mesesPromocionPrecio: this.toOptionalPositiveInteger(plan.mesesPromocionPrecio),
       vigenciaDesde: this.toDateInputValue(plan.vigenciaDesde),
       vigenciaHasta: this.toDateInputValue(plan.vigenciaHasta),
-      internetVelocidad: this.toOptionalPositiveInteger(plan.internet?.velocidad),
-      internetUnidad: plan.internet?.unidad ?? 'MBPS',
-      internetTecnologia: plan.internet?.tecnologia ?? 'FTTH',
-      televisionNombre: plan.television?.nombre ?? '',
-      televisionCanales: this.toOptionalPositiveInteger(plan.television?.cantidadCanales),
-      telefonoMinutos: this.toOptionalPositiveInteger(plan.telefono?.minutos),
-      telefonoDescripcion: plan.telefono?.descripcion ?? '',
+      internetVelocidad: this.getPlanInternetSpeed(plan),
+      internetUnidad: this.getPlanInternetUnit(plan) ?? 'MBPS',
+      internetTecnologia: this.getPlanInternetTechnology(plan) ?? 'FTTH',
+      televisionNombre: this.getPlanTelevisionName(plan) ?? '',
+      televisionCanales: this.getPlanTelevisionChannels(plan),
+      telefonoMinutos: this.getPlanPhoneMinutes(plan),
+      telefonoDescripcion: this.getPlanPhoneDescription(plan) ?? '',
       velocidadPromocional: this.toOptionalPositiveInteger(plan.velocidadPromocional),
       mesesPromocionVelocidad: this.toOptionalPositiveInteger(plan.mesesPromocionVelocidad),
       idZona: plan.idZona ?? 0
@@ -1333,6 +1346,10 @@ export class CommunityWorkspaceFacade {
     return this.ubigeoLabels.get(`${rule.nivelGeografico}:${rule.geoId}`) ?? `${rule.nivelGeografico} #${rule.geoId}`;
   }
 
+  private toOptionalText(value: unknown): string | null {
+    return typeof value === 'string' && value.trim() ? value.trim() : null;
+  }
+
   private toOptionalPositiveNumber(value: unknown): number | null {
     if (value === null || value === undefined || value === '') {
       return null;
@@ -1491,9 +1508,37 @@ export class CommunityWorkspaceFacade {
     }
   }
 
+  private getPlanInternetSpeed(plan: PlanResponse): number | null {
+    return this.toOptionalPositiveInteger(plan.internetVelocidad ?? plan.internet?.velocidad);
+  }
+
+  private getPlanInternetUnit(plan: PlanResponse): string | null {
+    return plan.internetUnidad ?? plan.internet?.unidad ?? null;
+  }
+
+  private getPlanInternetTechnology(plan: PlanResponse): string | null {
+    return plan.internetTecnologia ?? plan.internet?.tecnologia ?? null;
+  }
+
+  private getPlanTelevisionName(plan: PlanResponse): string | null {
+    return this.toOptionalText(plan.televisionNombre) ?? this.toOptionalText(plan.television?.nombre);
+  }
+
+  private getPlanTelevisionChannels(plan: PlanResponse): number | null {
+    return this.toOptionalPositiveInteger(plan.televisionCanales ?? plan.television?.cantidadCanales);
+  }
+
+  private getPlanPhoneMinutes(plan: PlanResponse): number | null {
+    return this.toOptionalPositiveInteger(plan.telefonoMinutos ?? plan.telefono?.minutos);
+  }
+
+  private getPlanPhoneDescription(plan: PlanResponse): string | null {
+    return this.toOptionalText(plan.telefonoDescripcion) ?? this.toOptionalText(plan.telefono?.descripcion);
+  }
+
   private buildPromotionPlanLabel(plan: PlanResponse): string {
     const details = [
-      plan.internet?.velocidad ? `${plan.internet.velocidad} ${plan.internet.unidad ?? 'MBPS'}` : null,
+      this.getPlanInternetSpeed(plan) ? `${this.getPlanInternetSpeed(plan)} ${this.getPlanInternetUnit(plan) ?? 'MBPS'}` : null,
       plan.precioPromocional ? `Promo S/ ${plan.precioPromocional}` : plan.precio ? `S/ ${plan.precio}` : null
     ].filter(Boolean);
 
@@ -1533,9 +1578,9 @@ export class CommunityWorkspaceFacade {
   }
 
   private resolvePlanCatalogComposition(plan: PlanResponse): PlanCatalogComposition {
-    const hasInternet = !!plan.internet?.velocidad;
-    const hasTelevision = !!plan.television?.nombre || !!plan.television?.cantidadCanales;
-    const hasTelefono = !!plan.telefono?.descripcion || !!plan.telefono?.minutos;
+    const hasInternet = this.getPlanInternetSpeed(plan) !== null;
+    const hasTelevision = this.getPlanTelevisionName(plan) !== null || this.getPlanTelevisionChannels(plan) !== null;
+    const hasTelefono = this.getPlanPhoneDescription(plan) !== null || this.getPlanPhoneMinutes(plan) !== null;
 
     if (hasInternet && hasTelevision && hasTelefono) {
       return 'TRIPLE_PACK';
