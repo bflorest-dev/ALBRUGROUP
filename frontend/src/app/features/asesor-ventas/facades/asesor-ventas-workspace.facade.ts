@@ -413,18 +413,27 @@ export class AsesorVentasWorkspaceFacade {
 
   /** Crea otra oportunidad para el mismo contacto (otro titular) y cambia el modal a ella. */
   async crearOportunidadAdicional(): Promise<void> {
-    const actual = this.selectedLeadId();
-    if (!actual) {
+    const detail = this.detail();
+    if (!detail) {
       return;
     }
-    if (this.hasUnsavedDataChanges()) {
-      this.errorMessage.set('Guarda o limpia los cambios antes de crear otra oportunidad.');
+    // El diferenciador es el número de documento (el tipo se ignora en el guardado por snapshot,
+    // igual que en el resto del flujo). Si hay más datos de DatosPreventa, guardarAntesDeTipificar
+    // hará el guardado completo y validará lo que corresponda.
+    if (this.datosForm.controls.numeroDocumentoTitularServicio.invalid) {
+      this.errorMessage.set('Ingresa el número de documento del titular antes de crear otra oportunidad.');
+      return;
+    }
+    // Guarda lo que el asesor ya ingresó en la oportunidad actual (sin tipificar), para no perderlo
+    // y para que la nueva pueda crearse. Si algún dato es inválido, guardarAntesDeTipificar avisa.
+    const guardado = await this.guardarAntesDeTipificar(detail, false);
+    if (!guardado) {
       return;
     }
     this.isSaving.set(true);
     let nuevoId: number;
     try {
-      nuevoId = await firstValueFrom(this.preventaService.crearOportunidadAdicional(actual));
+      nuevoId = await firstValueFrom(this.preventaService.crearOportunidadAdicional(detail.id));
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo crear la nueva oportunidad.'));
       return;
@@ -434,7 +443,7 @@ export class AsesorVentasWorkspaceFacade {
     // La creó el asesor: queda como activa (obligatoria) de la sesión.
     this.oportunidadesActivasSesion.add(nuevoId);
     await this.cambiarOportunidad(nuevoId);
-    this.successMessage.set('Nueva oportunidad creada para el mismo contacto (otro titular).');
+    this.mostrarExito('Nueva oportunidad creada para el mismo contacto (otro titular).');
   }
 
   requestCloseDetail(): void {
@@ -575,7 +584,7 @@ export class AsesorVentasWorkspaceFacade {
         );
         if (siguiente) {
           await this.cambiarOportunidad(siguiente);
-          this.successMessage.set('Oportunidad tipificada. Continúa con la siguiente del mismo contacto.');
+          this.mostrarExito('Oportunidad tipificada. Continúa con la siguiente del mismo contacto.');
           return;
         }
         this.closeDetail();
@@ -1264,13 +1273,24 @@ export class AsesorVentasWorkspaceFacade {
     this.clearMessages();
     try {
       await firstValueFrom(action());
-      this.successMessage.set(successMessage);
+      this.mostrarExito(successMessage);
       await afterSuccess();
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo completar la operacion.'));
     } finally {
       this.isSaving.set(false);
     }
+  }
+
+  // Muestra un mensaje de éxito que se auto-oculta a los pocos segundos (a menos que ya haya
+  // sido reemplazado por otro mensaje más reciente).
+  private mostrarExito(mensaje: string): void {
+    this.successMessage.set(mensaje);
+    setTimeout(() => {
+      if (this.successMessage() === mensaje) {
+        this.successMessage.set(null);
+      }
+    }, 4000);
   }
 
   private async syncDisponibilidadOperativa(): Promise<void> {

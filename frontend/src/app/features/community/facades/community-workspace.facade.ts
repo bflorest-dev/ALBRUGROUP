@@ -1,5 +1,6 @@
-﻿import { Injectable, computed, effect, inject, signal } from '@angular/core';
-import { NonNullableFormBuilder, Validators } from '@angular/forms';
+﻿import { DestroyRef, Injectable, computed, effect, inject, signal } from '@angular/core';
+import { NonNullableFormBuilder, Validators, type FormControl } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
 import {
   AdicionalResponse,
@@ -80,6 +81,7 @@ export class CommunityWorkspaceFacade {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly leadService = inject(CommunityLeadService);
   private readonly operationalGateService = inject(OperationalGateService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly operationalGate = this.operationalGateService.createGate('community-workspace');
   private readonly ubigeoLabels = new Map<string, string>();
   private ubigeoDirectoryLoaded = false;
@@ -284,39 +286,39 @@ export class CommunityWorkspaceFacade {
   readonly createPlanForm = this.fb.group({
     idProveedor: [0, [Validators.required, Validators.min(1)]],
     nombre: ['', [Validators.required]],
-    precio: [0, [Validators.required, Validators.min(0.01)]],
-    precioPromocional: [0],
-    mesesPromocionPrecio: [0],
+    precio: [null as number | null, [Validators.required, Validators.min(0.01)]],
+    precioPromocional: [null as number | null, [Validators.min(0.01)]],
+    mesesPromocionPrecio: [{ value: null as number | null, disabled: true }, [Validators.required, Validators.min(1)]],
     vigenciaDesde: [''],
     vigenciaHasta: [''],
-    internetVelocidad: [0],
+    internetVelocidad: [null as number | null],
     internetUnidad: ['MBPS'],
     internetTecnologia: ['FTTH'],
     televisionNombre: [''],
-    televisionCanales: [0],
-    telefonoMinutos: [0],
+    televisionCanales: [null as number | null],
+    telefonoMinutos: [null as number | null],
     telefonoDescripcion: [''],
-    velocidadPromocional: [0],
-    mesesPromocionVelocidad: [0],
+    velocidadPromocional: [null as number | null, [Validators.min(1)]],
+    mesesPromocionVelocidad: [{ value: null as number | null, disabled: true }, [Validators.required, Validators.min(1)]],
     idZona: [0]
   });
 
   readonly editPlanForm = this.fb.group({
     nombre: ['', [Validators.required]],
-    precio: [0, [Validators.required, Validators.min(0.01)]],
-    precioPromocional: [0],
-    mesesPromocionPrecio: [0],
+    precio: [null as number | null, [Validators.required, Validators.min(0.01)]],
+    precioPromocional: [null as number | null, [Validators.min(0.01)]],
+    mesesPromocionPrecio: [{ value: null as number | null, disabled: true }, [Validators.required, Validators.min(1)]],
     vigenciaDesde: [''],
     vigenciaHasta: [''],
-    internetVelocidad: [0],
+    internetVelocidad: [null as number | null],
     internetUnidad: ['MBPS'],
     internetTecnologia: ['FTTH'],
     televisionNombre: [''],
-    televisionCanales: [0],
-    telefonoMinutos: [0],
+    televisionCanales: [null as number | null],
+    telefonoMinutos: [null as number | null],
     telefonoDescripcion: [''],
-    velocidadPromocional: [0],
-    mesesPromocionVelocidad: [0],
+    velocidadPromocional: [null as number | null, [Validators.min(1)]],
+    mesesPromocionVelocidad: [{ value: null as number | null, disabled: true }, [Validators.required, Validators.min(1)]],
     idZona: [0]
   });
 
@@ -350,6 +352,8 @@ export class CommunityWorkspaceFacade {
   });
 
   constructor() {
+    this.bindPlanPromotionalMonthControls();
+
     effect(() => {
       this.operationalGateService.currentStatus();
       const mode = this.currentMode();
@@ -366,6 +370,66 @@ export class CommunityWorkspaceFacade {
     });
   }
 
+  private bindPlanPromotionalMonthControls(): void {
+    this.bindPromotionalMonthControl(
+      this.createPlanForm.controls.precioPromocional,
+      this.createPlanForm.controls.mesesPromocionPrecio
+    );
+    this.bindPromotionalMonthControl(
+      this.createPlanForm.controls.velocidadPromocional,
+      this.createPlanForm.controls.mesesPromocionVelocidad
+    );
+    this.bindPromotionalMonthControl(
+      this.editPlanForm.controls.precioPromocional,
+      this.editPlanForm.controls.mesesPromocionPrecio
+    );
+    this.bindPromotionalMonthControl(
+      this.editPlanForm.controls.velocidadPromocional,
+      this.editPlanForm.controls.mesesPromocionVelocidad
+    );
+  }
+
+  private bindPromotionalMonthControl(source: FormControl<number | null>, target: FormControl<number | null>): void {
+    source.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
+      this.updatePromotionalMonthControl(target, value);
+    });
+    this.updatePromotionalMonthControl(target, source.value, false);
+  }
+
+  private updatePromotionalMonthControl(target: FormControl<number | null>, sourceValue: unknown, clearWhenDisabled = true): void {
+    if (this.toOptionalPositiveNumber(sourceValue) !== null) {
+      target.enable({ emitEvent: false });
+      return;
+    }
+
+    if (clearWhenDisabled) {
+      target.reset(null, { emitEvent: false });
+    }
+    target.disable({ emitEvent: false });
+  }
+
+  private refreshPlanPromotionalMonthControls(): void {
+    this.updatePromotionalMonthControl(
+      this.createPlanForm.controls.mesesPromocionPrecio,
+      this.createPlanForm.controls.precioPromocional.value,
+      false
+    );
+    this.updatePromotionalMonthControl(
+      this.createPlanForm.controls.mesesPromocionVelocidad,
+      this.createPlanForm.controls.velocidadPromocional.value,
+      false
+    );
+    this.updatePromotionalMonthControl(
+      this.editPlanForm.controls.mesesPromocionPrecio,
+      this.editPlanForm.controls.precioPromocional.value,
+      false
+    );
+    this.updatePromotionalMonthControl(
+      this.editPlanForm.controls.mesesPromocionVelocidad,
+      this.editPlanForm.controls.velocidadPromocional.value,
+      false
+    );
+  }
   async initialize(mode: CommunityPageMode = 'mantenimiento'): Promise<void> {
     this.currentMode.set(mode);
 
@@ -775,22 +839,23 @@ export class CommunityWorkspaceFacade {
     this.createPlanForm.reset({
       idProveedor: 0,
       nombre: '',
-      precio: 0,
-      precioPromocional: 0,
-      mesesPromocionPrecio: 0,
+      precio: null,
+      precioPromocional: null,
+      mesesPromocionPrecio: null,
       vigenciaDesde: '',
       vigenciaHasta: '',
-      internetVelocidad: 0,
+      internetVelocidad: null,
       internetUnidad: 'MBPS',
       internetTecnologia: 'FTTH',
       televisionNombre: '',
-      televisionCanales: 0,
-      telefonoMinutos: 0,
+      televisionCanales: null,
+      telefonoMinutos: null,
       telefonoDescripcion: '',
-      velocidadPromocional: 0,
-      mesesPromocionVelocidad: 0,
+      velocidadPromocional: null,
+      mesesPromocionVelocidad: null,
       idZona: 0
     });
+    this.refreshPlanPromotionalMonthControls();
     this.selectedPlanProviderId.set(0);
     this.selectedPlanAdditionals.set([]);
     this.createPlanDialogOpen.set(true);
@@ -813,22 +878,23 @@ export class CommunityWorkspaceFacade {
     this.selectedPlanProviderId.set(plan.idProveedor ?? 0);
     this.editPlanForm.reset({
       nombre: plan.nombre ?? '',
-      precio: plan.precio ?? 0,
-      precioPromocional: plan.precioPromocional ?? 0,
-      mesesPromocionPrecio: plan.mesesPromocionPrecio ?? 0,
+      precio: this.toOptionalPositiveNumber(plan.precio),
+      precioPromocional: this.toOptionalPositiveNumber(plan.precioPromocional),
+      mesesPromocionPrecio: this.toOptionalPositiveInteger(plan.mesesPromocionPrecio),
       vigenciaDesde: this.toDateInputValue(plan.vigenciaDesde),
       vigenciaHasta: this.toDateInputValue(plan.vigenciaHasta),
-      internetVelocidad: plan.internet?.velocidad ?? 0,
+      internetVelocidad: this.toOptionalPositiveInteger(plan.internet?.velocidad),
       internetUnidad: plan.internet?.unidad ?? 'MBPS',
       internetTecnologia: plan.internet?.tecnologia ?? 'FTTH',
       televisionNombre: plan.television?.nombre ?? '',
-      televisionCanales: plan.television?.cantidadCanales ?? 0,
-      telefonoMinutos: plan.telefono?.minutos ?? 0,
+      televisionCanales: this.toOptionalPositiveInteger(plan.television?.cantidadCanales),
+      telefonoMinutos: this.toOptionalPositiveInteger(plan.telefono?.minutos),
       telefonoDescripcion: plan.telefono?.descripcion ?? '',
-      velocidadPromocional: plan.velocidadPromocional ?? 0,
-      mesesPromocionVelocidad: plan.mesesPromocionVelocidad ?? 0,
+      velocidadPromocional: this.toOptionalPositiveInteger(plan.velocidadPromocional),
+      mesesPromocionVelocidad: this.toOptionalPositiveInteger(plan.mesesPromocionVelocidad),
       idZona: plan.idZona ?? 0
     });
+    this.refreshPlanPromotionalMonthControls();
     this.selectedPlanAdditionals.set(
       (plan.adicionales ?? []).map((adicional) => ({
         idAdicional: adicional.idAdicional,
@@ -1267,20 +1333,51 @@ export class CommunityWorkspaceFacade {
     return this.ubigeoLabels.get(`${rule.nivelGeografico}:${rule.geoId}`) ?? `${rule.nivelGeografico} #${rule.geoId}`;
   }
 
+  private toOptionalPositiveNumber(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) && numericValue > 0 ? numericValue : null;
+  }
+
+  private toOptionalPositiveInteger(value: unknown): number | null {
+    const numericValue = this.toOptionalPositiveNumber(value);
+    if (numericValue === null || !Number.isInteger(numericValue)) {
+      return null;
+    }
+
+    return numericValue;
+  }
+
+  private toOptionalNonNegativeInteger(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+
+    const numericValue = Number(value);
+    if (!Number.isInteger(numericValue) || numericValue < 0) {
+      return null;
+    }
+
+    return numericValue;
+  }
+
   private buildPlanRequest(): Record<string, unknown> {
     const raw = this.createPlanForm.getRawValue();
 
     return this.cleanObject({
       idProveedor: raw.idProveedor,
       nombre: raw.nombre,
-      precio: raw.precio,
-      precioPromocional: raw.precioPromocional || null,
-      mesesPromocionPrecio: raw.mesesPromocionPrecio || null,
+      precio: this.toOptionalPositiveNumber(raw.precio),
+      precioPromocional: this.toOptionalPositiveNumber(raw.precioPromocional),
+      mesesPromocionPrecio: this.toOptionalPositiveInteger(raw.mesesPromocionPrecio),
       vigenciaDesde: raw.vigenciaDesde || null,
       vigenciaHasta: raw.vigenciaHasta || null,
-      internet: raw.internetVelocidad
+      internet: this.toOptionalPositiveInteger(raw.internetVelocidad)
         ? {
-            velocidad: raw.internetVelocidad,
+            velocidad: this.toOptionalPositiveInteger(raw.internetVelocidad),
             unidad: raw.internetUnidad,
             tecnologia: raw.internetTecnologia
           }
@@ -1288,17 +1385,17 @@ export class CommunityWorkspaceFacade {
       television: raw.televisionNombre
         ? {
             nombre: raw.televisionNombre,
-            cantidadCanales: raw.televisionCanales || 0
+            cantidadCanales: this.toOptionalNonNegativeInteger(raw.televisionCanales) ?? 0
           }
         : null,
       telefono: raw.telefonoDescripcion
         ? {
-            minutos: raw.telefonoMinutos || 0,
+            minutos: this.toOptionalNonNegativeInteger(raw.telefonoMinutos) ?? 0,
             descripcion: raw.telefonoDescripcion
           }
         : null,
-      velocidadPromocional: raw.velocidadPromocional || null,
-      mesesPromocionVelocidad: raw.mesesPromocionVelocidad || null,
+      velocidadPromocional: this.toOptionalPositiveInteger(raw.velocidadPromocional),
+      mesesPromocionVelocidad: this.toOptionalPositiveInteger(raw.mesesPromocionVelocidad),
       idZona: raw.idZona || null,
       adicionales: this.selectedPlanAdditionals().length
         ? this.selectedPlanAdditionals().map((adicional) => ({
@@ -1316,14 +1413,14 @@ export class CommunityWorkspaceFacade {
 
     return this.cleanObject({
       nombre: raw.nombre,
-      precio: raw.precio,
-      precioPromocional: raw.precioPromocional || null,
-      mesesPromocionPrecio: raw.mesesPromocionPrecio || null,
+      precio: this.toOptionalPositiveNumber(raw.precio),
+      precioPromocional: this.toOptionalPositiveNumber(raw.precioPromocional),
+      mesesPromocionPrecio: this.toOptionalPositiveInteger(raw.mesesPromocionPrecio),
       vigenciaDesde: raw.vigenciaDesde || null,
       vigenciaHasta: raw.vigenciaHasta || null,
-      internet: raw.internetVelocidad
+      internet: this.toOptionalPositiveInteger(raw.internetVelocidad)
         ? {
-            velocidad: raw.internetVelocidad,
+            velocidad: this.toOptionalPositiveInteger(raw.internetVelocidad),
             unidad: raw.internetUnidad,
             tecnologia: raw.internetTecnologia
           }
@@ -1331,17 +1428,17 @@ export class CommunityWorkspaceFacade {
       television: raw.televisionNombre
         ? {
             nombre: raw.televisionNombre,
-            cantidadCanales: raw.televisionCanales || 0
+            cantidadCanales: this.toOptionalNonNegativeInteger(raw.televisionCanales) ?? 0
           }
         : null,
       telefono: raw.telefonoDescripcion
         ? {
-            minutos: raw.telefonoMinutos || 0,
+            minutos: this.toOptionalNonNegativeInteger(raw.telefonoMinutos) ?? 0,
             descripcion: raw.telefonoDescripcion
           }
         : null,
-      velocidadPromocional: raw.velocidadPromocional || null,
-      mesesPromocionVelocidad: raw.mesesPromocionVelocidad || null,
+      velocidadPromocional: this.toOptionalPositiveInteger(raw.velocidadPromocional),
+      mesesPromocionVelocidad: this.toOptionalPositiveInteger(raw.mesesPromocionVelocidad),
       idZona: raw.idZona || null,
       adicionales: this.selectedPlanAdditionals().length
         ? this.selectedPlanAdditionals().map((adicional) => ({

@@ -794,7 +794,7 @@
         <input pInputText type="text" formControlName="nombre" [placeholder]="facade.planNamePlaceholder()" />
       </label>
       <label>
-        <span>Precio</span>
+        <span>Precio Regular</span>
         <div class="input-prefix">
           <span>S/</span>
           <input pInputText type="number" min="0.01" step="0.01" formControlName="precio" placeholder="79.90" />
@@ -827,17 +827,9 @@
         <span>Internet</span>
       </div>
       <label>
-        <span>Velocidad del Internet</span>
+        <span>Velocidad Regular</span>
         <input pInputText type="number" min="0" inputmode="numeric" formControlName="internetVelocidad" placeholder="200"
                (keydown)="preventNonInteger($event)" />
-      </label>
-      <label>
-        <span>Unidad</span>
-        <p-select formControlName="internetUnidad" [options]="['MBPS', 'GBPS']" appendTo="body" />
-      </label>
-      <label>
-        <span>Tecnología</span>
-        <p-select formControlName="internetTecnologia" [options]="['FTTH', 'HFC', 'HIBRIDA']" appendTo="body" />
       </label>
       <label>
         <span>Velocidad Promocional</span>
@@ -848,6 +840,15 @@
         <span>Meses de Velocidad Promocional</span>
         <input pInputText type="number" min="0" inputmode="numeric" formControlName="mesesPromocionVelocidad" placeholder="3"
                (keydown)="preventNonInteger($event)" />
+      </label>
+
+      <label>
+        <span>Unidad</span>
+        <p-select formControlName="internetUnidad" [options]="['MBPS', 'GBPS']" appendTo="body" />
+      </label>
+      <label>
+        <span>Tecnología</span>
+        <p-select formControlName="internetTecnologia" [options]="['FTTH', 'HFC', 'HIBRIDA']" appendTo="body" />
       </label>
 
       <!-- Seccion TV -->
@@ -968,7 +969,7 @@
         <p-select formControlName="idZona" [options]="facade.zonasActivas()" optionLabel="nombre" optionValue="id" placeholder="Sin zona" appendTo="body" />
       </label>
       <label>
-        <span>Precio</span>
+        <span>Precio Regular</span>
         <div class="input-prefix">
           <span>S/</span>
           <input pInputText type="number" min="0.01" step="0.01" formControlName="precio" placeholder="79.90" />
@@ -1000,10 +1001,21 @@
         <span>Internet</span>
       </div>
       <label>
-        <span>Velocidad del Internet</span>
+        <span>Velocidad Regular</span>
         <input pInputText type="number" min="0" inputmode="numeric" formControlName="internetVelocidad" placeholder="200"
                (keydown)="preventNonInteger($event)" />
       </label>
+      <label>
+        <span>Velocidad Promocional</span>
+        <input pInputText type="number" min="0" inputmode="numeric" formControlName="velocidadPromocional" placeholder="400"
+               (keydown)="preventNonInteger($event)" />
+      </label>
+      <label>
+        <span>Meses de Velocidad Promocional</span>
+        <input pInputText type="number" min="0" inputmode="numeric" formControlName="mesesPromocionVelocidad" placeholder="3"
+               (keydown)="preventNonInteger($event)" />
+      </label>
+
       <label>
         <span>Unidad</span>
         <p-select formControlName="internetUnidad" [options]="['MBPS', 'GBPS']" appendTo="body" />
@@ -1044,16 +1056,7 @@
                (keydown)="preventNonInteger($event)" />
       </label>
 
-      <label>
-        <span>Velocidad Promocional</span>
-        <input pInputText type="number" min="0" inputmode="numeric" formControlName="velocidadPromocional" placeholder="400"
-               (keydown)="preventNonInteger($event)" />
-      </label>
-      <label>
-        <span>Meses de Velocidad Promocional</span>
-        <input pInputText type="number" min="0" inputmode="numeric" formControlName="mesesPromocionVelocidad" placeholder="3"
-               (keydown)="preventNonInteger($event)" />
-      </label>
+
       <div class="plan-additionals wide">
         <label>
           <span>Adicionales disponibles</span>

@@ -2516,9 +2516,12 @@ public class LeadService {
     @Transactional
     public Long crearOportunidadAdicional(Long idLead) {
         Lead original = obtenerLeadPreventaDelAsesor(idLead);
-        String documento = original.getDatosPreventa() == null
-                ? null
-                : original.getDatosPreventa().getNumeroDocumentoTitularServicio();
+        // El documento puede haberse guardado como snapshot (guardado parcial sin tipificar) o en
+        // DatosPreventa. Aceptamos cualquiera de los dos para no obligar a tipificar antes de crear.
+        String documento = original.getNumeroDocumentoTitularServicioSnapshot();
+        if ((documento == null || documento.isBlank()) && original.getDatosPreventa() != null) {
+            documento = original.getDatosPreventa().getNumeroDocumentoTitularServicio();
+        }
         if (documento == null || documento.isBlank()) {
             throw new BadRequestException(
                     "Registra el documento del titular de la oportunidad actual antes de crear otra");
