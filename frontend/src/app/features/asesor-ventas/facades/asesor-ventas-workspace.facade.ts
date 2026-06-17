@@ -68,6 +68,12 @@ export class AsesorVentasWorkspaceFacade {
   readonly detail = signal<LeadDetalleResponse | null>(null);
   // Multi-titular: oportunidades del contacto del lead en gestión (para el selector del modal).
   readonly oportunidadesContacto = signal<OportunidadHermana[]>([]);
+  // Ids de oportunidades del contacto ya tipificadas en esta sesión de gestión (para avanzar
+  // a la siguiente pendiente al tipificar, en vez de cerrar). Se reinicia al abrir/cerrar.
+  private tipificadasEnSesion = new Set<number>();
+  // Oportunidades que el asesor DEBE resolver en esta sesión: la que abrió + las que creó con
+  // "Nueva oportunidad". Las demás hermanas asignadas son visibles y editables pero opcionales.
+  private oportunidadesActivasSesion = new Set<number>();
   readonly selectedLeadId = signal<number | null>(null);
   readonly totalElements = signal(0);
   readonly totalPages = signal(0);
@@ -330,6 +336,8 @@ export class AsesorVentasWorkspaceFacade {
   }
 
   async openDetail(idLead: number): Promise<void> {
+    this.tipificadasEnSesion = new Set();
+    this.oportunidadesActivasSesion = new Set([idLead]);
     if (!this.canMutateOperationalData()) {
       this.errorMessage.set('Marca ONLINE para gestionar Leads.');
       return;
@@ -423,6 +431,8 @@ export class AsesorVentasWorkspaceFacade {
     } finally {
       this.isSaving.set(false);
     }
+    // La creó el asesor: queda como activa (obligatoria) de la sesión.
+    this.oportunidadesActivasSesion.add(nuevoId);
     await this.cambiarOportunidad(nuevoId);
     this.successMessage.set('Nueva oportunidad creada para el mismo contacto (otro titular).');
   }
@@ -445,6 +455,8 @@ export class AsesorVentasWorkspaceFacade {
     this.detailDialogOpen.set(false);
     this.detail.set(null);
     this.oportunidadesContacto.set([]);
+    this.tipificadasEnSesion = new Set();
+    this.oportunidadesActivasSesion = new Set();
     this.selectedLeadId.set(null);
     this.isManagingLead.set(false);
     this.workspaceState.clearManagingLeadState();
@@ -553,6 +565,19 @@ export class AsesorVentasWorkspaceFacade {
       () => this.preventaService.tipificarLead(detail.id, tipificacionPayload),
       'Lead tipificado.',
       async () => {
+        this.tipificadasEnSesion.add(detail.id);
+        // Multi-titular: si el contacto tiene otra oportunidad aún no tipificada en esta sesión,
+        // avanzar a ella en la misma comunicación en vez de cerrar el modal.
+        // Solo se obliga a continuar con las oportunidades ACTIVAS de la sesión (la abierta +
+        // las creadas por el asesor). Las demás hermanas asignadas son opcionales.
+        const siguiente = [...this.oportunidadesActivasSesion].find(
+          (id) => id !== detail.id && !this.tipificadasEnSesion.has(id)
+        );
+        if (siguiente) {
+          await this.cambiarOportunidad(siguiente);
+          this.successMessage.set('Oportunidad tipificada. Continúa con la siguiente del mismo contacto.');
+          return;
+        }
         this.closeDetail();
         // El cierre del turno lo maneja el effect de auto-cierre (Opcion B): cuando la bandeja
         // quede en 0 despues de reconciliar, dispara REGISTRAR_SALIDA automaticamente.

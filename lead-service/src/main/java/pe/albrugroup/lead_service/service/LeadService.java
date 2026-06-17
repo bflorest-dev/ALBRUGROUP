@@ -1285,6 +1285,31 @@ public class LeadService {
                 savedLead.getNombreAsesorAsignado()
         );
         notificarCambioLead("ASIGNACION", savedLead, null, idAsesorAnterior);
+        propagarAsesorAHermanas(savedLead, idAsesorAsignado, savedLead.getNombreAsesorAsignado());
+    }
+
+    // Coherencia multi-titular: al asignar un lead, sus hermanas (mismo contacto+equipo) en PREVENTA
+    // pasan al mismo asesor, para que una sola persona maneje toda la comunicación del contacto.
+    // El @Filter acota a las del equipo del que asigna.
+    private void propagarAsesorAHermanas(Lead lead, Long idAsesor, String nombreAsesor) {
+        if (lead.getContacto() == null) {
+            return;
+        }
+        List<Lead> hermanas = leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(lead.getContacto().getId());
+        for (Lead hermana : hermanas) {
+            if (hermana.getId().equals(lead.getId()) || hermana.getEtapa() != Etapa.PREVENTA) {
+                continue;
+            }
+            if (java.util.Objects.equals(hermana.getIdAsesorAsignado(), idAsesor)) {
+                continue;
+            }
+            hermana.setIdAsesorAsignado(idAsesor);
+            hermana.setNombreAsesorAsignado(nombreAsesor);
+            Lead guardada = leadRepository.save(hermana);
+            Long idCampana = guardada.getCampana() == null ? null : guardada.getCampana().getId();
+            registrarEventoAsignacion(guardada.getId(), idCampana, guardada.getEtapa(), idAsesor, nombreAsesor);
+            notificarCambioLead("ASIGNACION", guardada, null, null);
+        }
     }
 
     private void validarAsignacionPermitida(

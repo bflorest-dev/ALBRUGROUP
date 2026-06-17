@@ -49,6 +49,7 @@
     <ng-template #header>
       <tr>
         <th>Lead</th>
+        <th>Documento</th>
         <th>Proveedor</th>
         <th>Base</th>
         <th>Ultima tipificacion</th>
@@ -61,6 +62,7 @@
     <ng-template #body let-row>
       <tr>
         <td><strong>{{ facade.leadPrefixLabel(row.prefijo) }} {{ row.lead }}</strong></td>
+        <td>{{ facade.display(row.numeroDocumentoTitularServicio) }}</td>
         <td>
           @if (facade.providerLogo(row.nombreProveedorCampana); as logo) {
             <div class="provider-cell">
@@ -147,7 +149,7 @@
     </ng-template>
     <ng-template #emptymessage>
       <tr>
-        <td colspan="8" style="color: var(--app-text-muted); opacity: 0.72; padding: 1.5rem 1rem; text-align: center;">
+        <td colspan="9" style="color: var(--app-text-muted); opacity: 0.72; padding: 1.5rem 1rem; text-align: center;">
           {{ facade.searchExecuted() ? 'No se encontraron leads.' : 'Ingresa el numero y pulsa Buscar.' }}
         </td>
       </tr>

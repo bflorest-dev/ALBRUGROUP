@@ -134,9 +134,9 @@ services:
       AUTH_DB_PASSWORD: postgres
       JWT_PRIVATE_KEY_BASE64: ${JWT_PRIVATE_KEY_BASE64:?JWT_PRIVATE_KEY_BASE64 is required}
       JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
-      JWT_ISSUER: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/auth
-      AUTH_DOCS_GATEWAY_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/auth
-      AUTH_DOCS_PUBLIC_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/auth
+      JWT_ISSUER: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/auth
+      AUTH_DOCS_GATEWAY_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/auth
+      AUTH_DOCS_PUBLIC_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/auth
     depends_on:
       postgres-core:
         condition: service_healthy
@@ -164,9 +164,9 @@ services:
       RECRUITMENT_SERVICE_URL: http://recruitment-service:8084
       SCHEDULE_SERVICE_URL: http://schedule-service:8085
       JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
-      JWT_ISSUER: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/auth
-      RRHH_DOCS_GATEWAY_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/rrhh
-      RRHH_DOCS_PUBLIC_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/rrhh
+      JWT_ISSUER: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/auth
+      RRHH_DOCS_GATEWAY_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/rrhh
+      RRHH_DOCS_PUBLIC_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/rrhh
     depends_on:
       postgres-core:
         condition: service_healthy
@@ -199,9 +199,9 @@ services:
       LEAD_REDIS_HOST: redis
       LEAD_REDIS_PORT: 6379
       JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
-      JWT_ISSUER: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/auth
-      LEAD_DOCS_GATEWAY_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/leads
-      LEAD_DOCS_PUBLIC_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/leads
+      JWT_ISSUER: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/auth
+      LEAD_DOCS_GATEWAY_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/leads
+      LEAD_DOCS_PUBLIC_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/leads
     depends_on:
       postgres-lead:
         condition: service_healthy
@@ -230,9 +230,9 @@ services:
       RECRUITMENT_REDIS_HOST: redis
       RECRUITMENT_REDIS_PORT: 6379
       JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
-      JWT_ISSUER: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/auth
-      RECRUITMENT_DOCS_GATEWAY_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/recruitment
-      RECRUITMENT_DOCS_PUBLIC_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/recruitment
+      JWT_ISSUER: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/auth
+      RECRUITMENT_DOCS_GATEWAY_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/recruitment
+      RECRUITMENT_DOCS_PUBLIC_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/recruitment
     depends_on:
       postgres-core:
         condition: service_healthy
@@ -261,10 +261,10 @@ services:
       SCHEDULE_ENGINE_MODE: ${SCHEDULE_ENGINE_MODE:-ALL}
       SCHEDULE_ENGINE_EFFECTIVE_FROM: ${SCHEDULE_ENGINE_EFFECTIVE_FROM:-2026-06-15}
       JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
-      JWT_ISSUER: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/auth
+      JWT_ISSUER: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/auth
       INTERNAL_SHARED_SECRET: ${INTERNAL_SHARED_SECRET:?INTERNAL_SHARED_SECRET is required}
-      SCHEDULE_DOCS_GATEWAY_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/schedule
-      SCHEDULE_DOCS_PUBLIC_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/schedule
+      SCHEDULE_DOCS_GATEWAY_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/schedule
+      SCHEDULE_DOCS_PUBLIC_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/schedule
     depends_on:
       postgres-core:
         condition: service_healthy
@@ -303,9 +303,9 @@ services:
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
       MINIO_BUCKET_RECORDINGS: recordings
       JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:-}
-      JWT_ISSUER: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/auth
-      CALL_DOCS_GATEWAY_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/calls
-      CALL_DOCS_PUBLIC_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/calls
+      JWT_ISSUER: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/auth
+      CALL_DOCS_GATEWAY_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/calls
+      CALL_DOCS_PUBLIC_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/calls
     ports:
       # Fase 1: exponemos el puerto del call-service al host para poder hacer pruebas
       # directas con curl/Postman sin pasar por el gateway. En Fase 2 esto deberia
@@ -348,10 +348,10 @@ services:
       CALL_SERVICE_URI: http://call-service:8086
       AUTH_SERVICE_URL: http://auth-service:8081
       SCHEDULE_SERVICE_URL: http://schedule-service:8085
-      FRONTEND_URL: http://${PUBLIC_HOST:-localhost}:${FRONTEND_HOST_PORT:-4200}
-      CORS_ALLOWED_ORIGIN_PATTERNS: http://${PUBLIC_HOST:-localhost}:${FRONTEND_HOST_PORT:-4200},http://localhost:${FRONTEND_HOST_PORT:-4200},http://127.0.0.1:${FRONTEND_HOST_PORT:-4200}
+      FRONTEND_URL: ${FRONTEND_PUBLIC_URL:-http://localhost:4200}
+      CORS_ALLOWED_ORIGIN_PATTERNS: ${FRONTEND_PUBLIC_URL:-http://localhost:4200},http://localhost:${FRONTEND_HOST_PORT:-4200},http://127.0.0.1:${FRONTEND_HOST_PORT:-4200}
       JWT_PUBLIC_KEY_BASE64: ${JWT_PUBLIC_KEY_BASE64:?JWT_PUBLIC_KEY_BASE64 is required}
-      JWT_ISSUER: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}/auth
+      JWT_ISSUER: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}/auth
       INTERNAL_SHARED_SECRET: ${INTERNAL_SHARED_SECRET:?INTERNAL_SHARED_SECRET is required}
     depends_on:
       redis:
@@ -383,7 +383,7 @@ services:
     build:
       context: ./frontend
       args:
-        GATEWAY_BASE_URL: http://${PUBLIC_HOST:-localhost}:${GATEWAY_HOST_PORT:-8080}
+        GATEWAY_BASE_URL: ${GATEWAY_PUBLIC_URL:-http://localhost:8080}
     depends_on:
       gateway-service:
         condition: service_healthy
