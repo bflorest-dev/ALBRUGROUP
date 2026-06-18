@@ -242,7 +242,12 @@ export class RrhhAsistenciaFacade {
       for (const item of estados ?? []) estadosMap[item.idEmpleado] = item;
       this.estadosHoyByEmpleadoId.set(estadosMap);
     } catch (error) {
-      this.errorMessage.set(this.extractErrorMessage(error, 'No se pudo cargar el cumplimiento del mes.'));
+      this.errorMessage.set(
+        this.extractErrorMessage(
+          error,
+          'No se pudo cargar la asistencia. Actualiza la vista; si continua, revisa que el personal tenga horario vigente.'
+        )
+      );
     } finally {
       this.isLoading.set(false);
     }

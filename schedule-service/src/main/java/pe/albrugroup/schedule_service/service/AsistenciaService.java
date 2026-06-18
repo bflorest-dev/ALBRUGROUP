@@ -43,6 +43,7 @@ import pe.albrugroup.schedule_service.repository.AsistenciaRepository;
 import pe.albrugroup.schedule_service.repository.AsistenciaTramoRepository;
 import pe.albrugroup.schedule_service.repository.AjusteJornadaRepository;
 import pe.albrugroup.schedule_service.repository.ExcepcionHorarioRepository;
+import pe.albrugroup.schedule_service.repository.HorarioRepository;
 import pe.albrugroup.schedule_service.service.mapper.AsistenciaMapper;
 import pe.albrugroup.schedule_service.service.mapper.HorarioMapper;
 import pe.albrugroup.schedule_service.usecase.IAsistencia;
@@ -68,6 +69,7 @@ public class AsistenciaService implements IAsistencia {
     private final AsistenciaTramoRepository asistenciaTramoRepository;
     private final AjusteJornadaRepository ajusteJornadaRepository;
     private final ExcepcionHorarioRepository excepcionHorarioRepository;
+    private final HorarioRepository horarioRepository;
     private final HorarioService horarioService;
     private final AttendanceMonitorResolver attendanceMonitorResolver;
     private final AttendanceRealtimeNotifier attendanceRealtimeNotifier;
@@ -354,8 +356,12 @@ public class AsistenciaService implements IAsistencia {
             return getContextoAmpliacionNuevo(idEmpleado, consulta);
         }
         Asistencia asistencia = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, consulta).orElse(null);
+        Horario horario = buscarHorarioVigente(idEmpleado, consulta);
+        if (horario == null) {
+            return contextoSinHorario(idEmpleado, consulta);
+        }
+
         try {
-            Horario horario = horarioService.getHorarioById(horarioService.getHorarioVigente(idEmpleado, consulta).getId());
             ProgramacionDiaria programacion = resolverProgramacion(horario, consulta);
             return AmpliacionContextoResponse.builder()
                     .idEmpleado(idEmpleado)
@@ -369,15 +375,7 @@ public class AsistenciaService implements IAsistencia {
                     .jornadaCerrada(asistencia != null && asistencia.getFechaHoraSalida() != null)
                     .build();
         } catch (NotFoundException e) {
-            return AmpliacionContextoResponse.builder()
-                    .idEmpleado(idEmpleado)
-                    .fecha(consulta)
-                    .tieneHorarioVigente(false)
-                    .laborable(false)
-                    .estadoActual(EstadoAsistencia.OFFLINE)
-                    .tieneRegistro(false)
-                    .jornadaCerrada(false)
-                    .build();
+            return contextoSinHorario(idEmpleado, consulta);
         }
     }
 
@@ -966,13 +964,13 @@ public class AsistenciaService implements IAsistencia {
                         .minutosObjetivo(objetivo)
                         .build();
             }
-            Horario horario = horarioService.getHorarioById(horarioService.getHorarioVigente(idEmpleado, fecha).getId());
+            Horario horario = buscarHorarioVigente(idEmpleado, fecha);
+            if (horario == null) {
+                return programacionNoLaborable();
+            }
             return resolverProgramacion(horario, fecha);
         } catch (NotFoundException e) {
-            return ProgramacionDiaria.builder()
-                    .laborable(false)
-                    .minutosObjetivo(0)
-                    .build();
+            return programacionNoLaborable();
         }
     }
 
@@ -1036,7 +1034,10 @@ public class AsistenciaService implements IAsistencia {
             if (scheduleEngineProperties.enabledForOperationalReads(fecha)) {
                 return construirDetalleDesdeJornadaEfectiva(idEmpleado, fecha);
             }
-            Horario horario = horarioService.getHorarioById(horarioService.getHorarioVigente(idEmpleado, fecha).getId());
+            Horario horario = buscarHorarioVigente(idEmpleado, fecha);
+            if (horario == null) {
+                return construirDetalleSinHorario(idEmpleado, fecha);
+            }
             ProgramacionDiaria programacion = resolverProgramacion(horario, fecha);
             jornadaShadowComparator.compare(
                     idEmpleado,
@@ -1068,19 +1069,7 @@ public class AsistenciaService implements IAsistencia {
                     .operativo(Boolean.FALSE)
                     .build();
         } catch (NotFoundException e) {
-            return DetalleAsistenciaResponse.builder()
-                    .idEmpleado(idEmpleado)
-                    .fecha(fecha)
-                    .estadoActual(EstadoAsistencia.OFFLINE)
-                    .minutosTrabajados(0)
-                    .minutosBalance(0)
-                    .minutosAlmuerzoTomados(0)
-                    .minutosServiciosAcumulados(0)
-                    .excedioServicios(Boolean.FALSE)
-                    .jornadaCerrada(Boolean.FALSE)
-                    .dentroHorario(Boolean.FALSE)
-                    .operativo(Boolean.FALSE)
-                    .build();
+            return construirDetalleSinHorario(idEmpleado, fecha);
         }
     }
 
@@ -1165,8 +1154,51 @@ public class AsistenciaService implements IAsistencia {
                     .minutosObjetivo((int) Duration.between(tramo.getInicio(), tramo.getFin()).toMinutes())
                     .build();
         }
-        Horario horario = horarioService.getHorarioById(horarioService.getHorarioVigente(idEmpleado, fecha).getId());
+        Horario horario = buscarHorarioVigente(idEmpleado, fecha);
+        if (horario == null) {
+            throw new NotFoundException("Horario vigente no encontrado", idEmpleado);
+        }
         return resolverProgramacion(horario, fecha);
+    }
+
+    private Horario buscarHorarioVigente(Long idEmpleado, LocalDate fecha) {
+        LocalDate consulta = OperationalDateTime.resolveDate(fecha);
+        return horarioRepository.findHorarioVigente(idEmpleado, consulta).orElse(null);
+    }
+
+    private ProgramacionDiaria programacionNoLaborable() {
+        return ProgramacionDiaria.builder()
+                .laborable(false)
+                .minutosObjetivo(0)
+                .build();
+    }
+
+    private DetalleAsistenciaResponse construirDetalleSinHorario(Long idEmpleado, LocalDate fecha) {
+        return DetalleAsistenciaResponse.builder()
+                .idEmpleado(idEmpleado)
+                .fecha(fecha)
+                .estadoActual(EstadoAsistencia.OFFLINE)
+                .minutosTrabajados(0)
+                .minutosBalance(0)
+                .minutosAlmuerzoTomados(0)
+                .minutosServiciosAcumulados(0)
+                .excedioServicios(Boolean.FALSE)
+                .jornadaCerrada(Boolean.FALSE)
+                .dentroHorario(Boolean.FALSE)
+                .operativo(Boolean.FALSE)
+                .build();
+    }
+
+    private AmpliacionContextoResponse contextoSinHorario(Long idEmpleado, LocalDate fecha) {
+        return AmpliacionContextoResponse.builder()
+                .idEmpleado(idEmpleado)
+                .fecha(fecha)
+                .tieneHorarioVigente(false)
+                .laborable(false)
+                .estadoActual(EstadoAsistencia.OFFLINE)
+                .tieneRegistro(false)
+                .jornadaCerrada(false)
+                .build();
     }
 
     private AmpliacionContextoResponse getContextoAmpliacionNuevo(Long idEmpleado, LocalDate fecha) {
