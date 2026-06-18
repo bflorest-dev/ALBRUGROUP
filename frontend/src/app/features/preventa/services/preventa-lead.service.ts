@@ -61,6 +61,11 @@ export class PreventaLeadService {
     return this.http.get<OportunidadHermana[]>(`${this.leadUrl}/preventa/${idLead}/oportunidades-contacto`);
   }
 
+  // Multi-titular: descartar (eliminar) una oportunidad creada por error, solo si está vacía.
+  descartarOportunidad(idLead: number): Observable<void> {
+    return this.http.delete<void>(`${this.leadUrl}/preventa/${idLead}/oportunidad`);
+  }
+
   listarBandejaGtr(
     fecha: string,
     query: PageQuery,

@@ -2557,6 +2557,32 @@ public class LeadService {
                 .toList();
     }
 
+    /**
+     * Descarta (elimina) una oportunidad hermana creada por error: solo si es del asesor, está
+     * completamente vacía (sin DatosPreventa/Direccion/Oferta, sin tipificación ni documento) y no
+     * es la única del contacto. Si ya tiene datos, debe cerrarse con una tipificación de descarte.
+     */
+    @Transactional
+    public void descartarOportunidad(Long idLead) {
+        Lead lead = obtenerLeadPreventaDelAsesor(idLead);
+        String docSnapshot = lead.getNumeroDocumentoTitularServicioSnapshot();
+        boolean vacia = lead.getDatosPreventa() == null
+                && lead.getDireccion() == null
+                && lead.getPlan() == null
+                && lead.getIdTipificacion() == null
+                && (docSnapshot == null || docSnapshot.isBlank());
+        if (!vacia) {
+            throw new ConflictException(
+                    "Solo se puede descartar una oportunidad vacía; si ya tiene datos, tipifícala con un descarte");
+        }
+        if (lead.getContacto() != null
+                && leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(lead.getContacto().getId()).size() <= 1) {
+            throw new ConflictException("No se puede descartar la única oportunidad del contacto");
+        }
+        eventoRepository.deleteByIdLead(lead.getId());
+        leadRepository.delete(lead);
+    }
+
     private OportunidadHermanaResponse toHermanaResponse(Lead lead) {
         return new OportunidadHermanaResponse(
                 lead.getId(),

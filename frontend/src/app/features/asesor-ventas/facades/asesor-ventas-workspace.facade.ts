@@ -74,6 +74,9 @@ export class AsesorVentasWorkspaceFacade {
   // Oportunidades que el asesor DEBE resolver en esta sesión: la que abrió + las que creó con
   // "Nueva oportunidad". Las demás hermanas asignadas son visibles y editables pero opcionales.
   private oportunidadesActivasSesion = new Set<number>();
+  // Oportunidades CREADAS en esta sesión (no la principal): candidatas a descartar con la "X" si
+  // siguen vacías. La principal nunca está aquí, así que nunca se puede descartar.
+  private oportunidadesCreadasSesion = new Set<number>();
   readonly selectedLeadId = signal<number | null>(null);
   readonly totalElements = signal(0);
   readonly totalPages = signal(0);
@@ -338,6 +341,7 @@ export class AsesorVentasWorkspaceFacade {
   async openDetail(idLead: number): Promise<void> {
     this.tipificadasEnSesion = new Set();
     this.oportunidadesActivasSesion = new Set([idLead]);
+    this.oportunidadesCreadasSesion = new Set();
     if (!this.canMutateOperationalData()) {
       this.errorMessage.set('Marca ONLINE para gestionar Leads.');
       return;
@@ -388,9 +392,14 @@ export class AsesorVentasWorkspaceFacade {
     if (idLead === this.selectedLeadId()) {
       return;
     }
-    if (this.hasUnsavedDataChanges()) {
-      this.errorMessage.set('Guarda o limpia los cambios antes de cambiar de oportunidad.');
-      return;
+    // Auto-guardar lo ingresado en la oportunidad actual antes de cambiar, para no perderlo.
+    // Si los datos están incompletos para guardar, guardarAntesDeTipificar avisa y no se cambia.
+    const actual = this.detail();
+    if (actual && this.hasUnsavedDataChanges()) {
+      const guardado = await this.guardarAntesDeTipificar(actual, false);
+      if (!guardado) {
+        return;
+      }
     }
     this.selectedLeadId.set(idLead);
     this.clearMessages();
@@ -440,10 +449,49 @@ export class AsesorVentasWorkspaceFacade {
     } finally {
       this.isSaving.set(false);
     }
-    // La creó el asesor: queda como activa (obligatoria) de la sesión.
+    // La creó el asesor: queda activa (obligatoria) y descartable si sigue vacía.
     this.oportunidadesActivasSesion.add(nuevoId);
+    this.oportunidadesCreadasSesion.add(nuevoId);
     await this.cambiarOportunidad(nuevoId);
     this.mostrarExito('Nueva oportunidad creada para el mismo contacto (otro titular).');
+  }
+
+  // La "X" solo aparece en oportunidades creadas en esta sesión que siguen vacías (sin documento).
+  // La principal nunca está en `oportunidadesCreadasSesion`, así que nunca se puede descartar.
+  puedeDescartar(op: OportunidadHermana): boolean {
+    return this.oportunidadesCreadasSesion.has(op.id) && !op.numeroDocumentoTitular;
+  }
+
+  async descartarOportunidad(idLead: number, event?: Event): Promise<void> {
+    event?.stopPropagation();
+    const esActual = idLead === this.detail()?.id;
+    this.isSaving.set(true);
+    try {
+      await firstValueFrom(this.preventaService.descartarOportunidad(idLead));
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo descartar la oportunidad.'));
+      return;
+    } finally {
+      this.isSaving.set(false);
+    }
+    this.oportunidadesActivasSesion.delete(idLead);
+    this.oportunidadesCreadasSesion.delete(idLead);
+    this.tipificadasEnSesion.delete(idLead);
+
+    if (esActual) {
+      const restante = this.oportunidadesContacto().find((op) => op.id !== idLead);
+      if (restante) {
+        await this.cambiarOportunidad(restante.id);
+      } else {
+        this.closeDetail();
+      }
+    } else {
+      const actual = this.detail();
+      if (actual) {
+        await this.cargarOportunidadesContacto(actual.id);
+      }
+    }
+    this.mostrarExito('Oportunidad descartada.');
   }
 
   requestCloseDetail(): void {
@@ -466,6 +514,7 @@ export class AsesorVentasWorkspaceFacade {
     this.oportunidadesContacto.set([]);
     this.tipificadasEnSesion = new Set();
     this.oportunidadesActivasSesion = new Set();
+    this.oportunidadesCreadasSesion = new Set();
     this.selectedLeadId.set(null);
     this.isManagingLead.set(false);
     this.workspaceState.clearManagingLeadState();

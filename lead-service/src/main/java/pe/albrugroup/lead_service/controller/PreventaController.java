@@ -272,6 +272,12 @@ public class PreventaController {
     public ResponseEntity<List<OportunidadHermanaResponse>> listarOportunidadesDelContacto(@PathVariable Long idLead) {
         return ResponseEntity.ok(leadService.listarOportunidadesDelContacto(idLead));
     }
+    // MULTI-TITULAR. Descartar una oportunidad creada por error (solo si está vacía).
+    @DeleteMapping("/{idLead}/oportunidad") @PreAuthorize("hasAuthority('UPDATE_LEADS_ASESOR')")
+    public ResponseEntity<Void> descartarOportunidad(@PathVariable Long idLead) {
+        leadService.descartarOportunidad(idLead);
+        return ResponseEntity.noContent().build();
+    }
 
     // GENERAL. Tipificar un Lead en PreVenta.
     @PostMapping("/{idLead}/tipificacion") @PreAuthorize("hasAuthority('TYPIFY_LEADS')")

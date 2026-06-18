@@ -16,40 +16,56 @@
 
 .oportunidades-contacto__chips {
   display: flex;
-  gap: 0.4rem;
+  align-items: center;
   flex-wrap: wrap;
+  gap: 0.4rem;
 }
 
 .op-chip {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.1rem;
-  padding: 0.35rem 0.7rem;
-  border: 1px solid var(--surface-border);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.6rem;
   border-radius: 999px;
-  background: var(--surface-card);
+  background: var(--surface-200, #e7edf4);
+  color: var(--text-color, #334155);
+  font-size: 0.78rem;
+  line-height: 1.2;
   cursor: pointer;
-  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .op-chip:hover {
-  background: var(--surface-hover);
+  filter: brightness(0.97);
 }
 
 .op-chip--active {
-  border-color: var(--primary-color);
-  background: var(--highlight-bg, var(--surface-hover));
+  background: var(--primary-color, #16a34a);
+  color: #fff;
 }
 
 .op-chip__doc {
   font-weight: 600;
-  font-size: 0.85rem;
 }
 
-.op-chip__estado {
-  font-size: 0.7rem;
-  color: var(--text-color-secondary);
+.op-chip__close {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0 0 0.1rem;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.op-chip:hover .op-chip__close {
+  opacity: 0.75;
+}
+
+.op-chip__close:hover {
+  opacity: 1;
 }
 
 .lead-workspace__head {
