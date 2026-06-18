@@ -7,5 +7,6 @@ export const STORAGE_KEYS = {
   adminDeleteLeadsVisible: 'albru_admin_delete_leads_visible',
   activeTabs: 'albru_active_tabs',
   tabId: 'albru_tab_id',
-  lastActivityAt: 'albru_last_activity_at'
+  lastActivityAt: 'albru_last_activity_at',
+  appVersion: 'albru_app_version'
 } as const;

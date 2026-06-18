@@ -11,10 +11,17 @@ import Aura from '@primeuix/themes/aura';
 
 import { routes } from './app.routes';
 import { authTokenInterceptor } from './core/interceptors/auth-token.interceptor';
+import { AppVersionService } from './core/services/app-version.service';
 import { BrowserSessionService } from './core/services/browser-session.service';
 
-function initializeBrowserSession(browserSessionService: BrowserSessionService): () => void {
-  return () => browserSessionService.initialize();
+function initializeApp(
+  browserSessionService: BrowserSessionService,
+  appVersionService: AppVersionService
+): () => void {
+  return () => {
+    browserSessionService.initialize();
+    appVersionService.initialize();
+  };
 }
 
 export const appConfig: ApplicationConfig = {
@@ -37,8 +44,8 @@ export const appConfig: ApplicationConfig = {
     {
       provide: APP_INITIALIZER,
       multi: true,
-      deps: [BrowserSessionService],
-      useFactory: initializeBrowserSession
+      deps: [BrowserSessionService, AppVersionService],
+      useFactory: initializeApp
     }
   ]
 };
