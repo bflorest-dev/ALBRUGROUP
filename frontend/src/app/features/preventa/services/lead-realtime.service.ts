@@ -11,24 +11,21 @@ export class LeadRealtimeService {
 
   watchTopic(topic: string): Observable<LeadRealtimeEvent> {
     return new Observable<LeadRealtimeEvent>((subscriber) => {
-      const token = this.tokenService.getAccessToken();
-
-      if (!token) {
-        subscriber.error(new Error('Token de acceso no disponible para realtime.'));
-        return undefined;
-      }
-
       let subscription: StompSubscription | null = null;
       const client = new Client({
         brokerURL: `${this.wsBaseUrl()}/leads/ws/leads`,
-        connectHeaders: {
-          Authorization: `Bearer ${token}`
-        },
         reconnectDelay: 5000,
         heartbeatIncoming: 20000,
         heartbeatOutgoing: 20000,
         debug: () => undefined
       });
+
+      // El access token rota; leerlo fresco antes de cada (re)conexion evita que stompjs
+      // reenvie un token vencido y el servidor rechace el CONNECT por "JWT expired".
+      client.beforeConnect = () => {
+        const token = this.tokenService.getAccessToken();
+        client.connectHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+      };
 
       client.onConnect = () => {
         subscription = client.subscribe(topic, (message: IMessage) => {
@@ -40,12 +37,15 @@ export class LeadRealtimeService {
         });
       };
 
+      // No terminamos el Observable ante cortes transitorios: stompjs reconecta solo
+      // (reconnectDelay) y onConnect vuelve a suscribir. Antes un solo error mataba el
+      // feed hasta recargar la pagina.
       client.onStompError = (frame) => {
-        subscriber.error(new Error(frame.headers['message'] ?? 'Error STOMP en realtime.'));
+        console.warn(frame.headers['message'] ?? 'Error STOMP en realtime de leads. Reintentando...');
       };
 
       client.onWebSocketError = () => {
-        subscriber.error(new Error('No se pudo conectar el realtime de leads.'));
+        console.warn('No se pudo conectar el realtime de leads. Reintentando...');
       };
 
       client.activate();

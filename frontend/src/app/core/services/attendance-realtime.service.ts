@@ -11,24 +11,21 @@ export class AttendanceRealtimeService {
 
   watchTopic(topic: string): Observable<AttendanceRealtimeEvent> {
     return new Observable<AttendanceRealtimeEvent>((subscriber) => {
-      const token = this.tokenService.getAccessToken();
-
-      if (!token) {
-        subscriber.error(new Error('Token de acceso no disponible para realtime.'));
-        return undefined;
-      }
-
       let subscription: StompSubscription | null = null;
       const client = new Client({
         brokerURL: `${this.wsBaseUrl()}/schedule/ws/asistencia`,
-        connectHeaders: {
-          Authorization: `Bearer ${token}`
-        },
         reconnectDelay: 5000,
         heartbeatIncoming: 20000,
         heartbeatOutgoing: 20000,
         debug: () => undefined
       });
+
+      // El access token rota; leerlo fresco antes de cada (re)conexion evita que stompjs
+      // reenvie un token vencido y el servidor rechace el CONNECT por "JWT expired".
+      client.beforeConnect = () => {
+        const token = this.tokenService.getAccessToken();
+        client.connectHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+      };
 
       client.onConnect = () => {
         subscription = client.subscribe(topic, (message: IMessage) => {
