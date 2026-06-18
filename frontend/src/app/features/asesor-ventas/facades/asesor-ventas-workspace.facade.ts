@@ -70,7 +70,14 @@ export class AsesorVentasWorkspaceFacade {
   readonly oportunidadesContacto = signal<OportunidadHermana[]>([]);
   // Ids de oportunidades del contacto ya tipificadas en esta sesión de gestión (para avanzar
   // a la siguiente pendiente al tipificar, en vez de cerrar). Se reinicia al abrir/cerrar.
-  private tipificadasEnSesion = new Set<number>();
+  private readonly tipificadasEnSesion = signal<Set<number>>(new Set());
+  // Chips visibles para el asesor: oportunidades del contacto aún en PREVENTA y NO tipificadas en
+  // esta sesión (una vez tipificada, sale de su alcance y abrirla daría "Lead no encontrado").
+  readonly chipsOportunidades = computed(() =>
+    this.oportunidadesContacto().filter(
+      (op) => op.etapa === 'PREVENTA' && !this.tipificadasEnSesion().has(op.id)
+    )
+  );
   // Oportunidades que el asesor DEBE resolver en esta sesión: la que abrió + las que creó con
   // "Nueva oportunidad". Las demás hermanas asignadas son visibles y editables pero opcionales.
   private oportunidadesActivasSesion = new Set<number>();
@@ -339,7 +346,7 @@ export class AsesorVentasWorkspaceFacade {
   }
 
   async openDetail(idLead: number): Promise<void> {
-    this.tipificadasEnSesion = new Set();
+    this.tipificadasEnSesion.set(new Set());
     this.oportunidadesActivasSesion = new Set([idLead]);
     this.oportunidadesCreadasSesion = new Set();
     if (!this.canMutateOperationalData()) {
@@ -476,7 +483,11 @@ export class AsesorVentasWorkspaceFacade {
     }
     this.oportunidadesActivasSesion.delete(idLead);
     this.oportunidadesCreadasSesion.delete(idLead);
-    this.tipificadasEnSesion.delete(idLead);
+    this.tipificadasEnSesion.update((s) => {
+      const copia = new Set(s);
+      copia.delete(idLead);
+      return copia;
+    });
 
     if (esActual) {
       const restante = this.oportunidadesContacto().find((op) => op.id !== idLead);
@@ -512,7 +523,7 @@ export class AsesorVentasWorkspaceFacade {
     this.detailDialogOpen.set(false);
     this.detail.set(null);
     this.oportunidadesContacto.set([]);
-    this.tipificadasEnSesion = new Set();
+    this.tipificadasEnSesion.set(new Set());
     this.oportunidadesActivasSesion = new Set();
     this.oportunidadesCreadasSesion = new Set();
     this.selectedLeadId.set(null);
@@ -623,13 +634,13 @@ export class AsesorVentasWorkspaceFacade {
       () => this.preventaService.tipificarLead(detail.id, tipificacionPayload),
       'Lead tipificado.',
       async () => {
-        this.tipificadasEnSesion.add(detail.id);
+        this.tipificadasEnSesion.update((s) => new Set(s).add(detail.id));
         // Multi-titular: si el contacto tiene otra oportunidad aún no tipificada en esta sesión,
         // avanzar a ella en la misma comunicación en vez de cerrar el modal.
         // Solo se obliga a continuar con las oportunidades ACTIVAS de la sesión (la abierta +
         // las creadas por el asesor). Las demás hermanas asignadas son opcionales.
         const siguiente = [...this.oportunidadesActivasSesion].find(
-          (id) => id !== detail.id && !this.tipificadasEnSesion.has(id)
+          (id) => id !== detail.id && !this.tipificadasEnSesion().has(id)
         );
         if (siguiente) {
           await this.cambiarOportunidad(siguiente);

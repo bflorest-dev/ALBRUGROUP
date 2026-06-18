@@ -149,8 +149,8 @@
 
       <section class="oportunidades-contacto">
         <div class="oportunidades-contacto__chips">
-          @if (facade.oportunidadesContacto().length > 1) {
-            @for (op of facade.oportunidadesContacto(); track op.id) {
+          @if (facade.chipsOportunidades().length > 1) {
+            @for (op of facade.chipsOportunidades(); track op.id) {
               <span
                 class="op-chip"
                 [class.op-chip--active]="op.id === facade.detail()?.id"

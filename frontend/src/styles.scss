@@ -327,3 +327,19 @@ select {
   background-clip: text;
   -webkit-background-clip: text;
 }
+
+.attendance-hint-tooltip {
+  max-width: min(20rem, calc(100vw - 2rem));
+  min-width: min(14rem, calc(100vw - 2rem));
+}
+
+.attendance-hint-tooltip .p-tooltip-text {
+  line-height: 1.35;
+  max-width: min(20rem, calc(100vw - 2rem));
+  min-width: min(14rem, calc(100vw - 2rem));
+  overflow-wrap: normal;
+  text-align: left;
+  white-space: normal;
+  word-break: normal;
+  writing-mode: horizontal-tb;
+}

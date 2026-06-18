@@ -140,20 +140,6 @@
   }
 }
 
-:host ::ng-deep .attendance-hint-tooltip {
-  max-width: min(20rem, calc(100vw - 2rem));
-}
-
-:host ::ng-deep .attendance-hint-tooltip .p-tooltip-text {
-  line-height: 1.35;
-  max-width: min(20rem, calc(100vw - 2rem));
-  overflow-wrap: break-word;
-  text-align: left;
-  white-space: normal;
-  word-break: normal;
-  writing-mode: horizontal-tb;
-}
-
 .attendance-status__confirm-actions {
   display: flex;
   justify-content: flex-end;
