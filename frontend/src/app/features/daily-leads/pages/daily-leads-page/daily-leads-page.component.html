@@ -50,7 +50,7 @@
       <div class="daily-leads__grouping-header">
         <strong>Agrupar resultados</strong>
         <p-selectbutton
-          [options]="facade.groupingModeOptions"
+          [options]="facade.groupingModeOptions()"
           [ngModel]="facade.groupingMode()"
           optionLabel="label"
           optionValue="value"

@@ -46,6 +46,13 @@ public class EquipoController {
         return ResponseEntity.ok(equipoService.listar());
     }
 
+    @GetMapping("/catalogo")
+    @PreAuthorize("hasAuthority('READ_LEADS_DIARIOS')")
+    @Operation(summary = "Catalogo de equipos", description = "Lista equipos (id y nombre) para selectores. Disponible para quienes ven los leads del dia.")
+    public ResponseEntity<List<EquipoResponse>> catalogo() {
+        return ResponseEntity.ok(equipoService.listar());
+    }
+
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @Operation(summary = "Actualizar equipo", description = "Actualiza nombre, descripcion o estado de un equipo.")

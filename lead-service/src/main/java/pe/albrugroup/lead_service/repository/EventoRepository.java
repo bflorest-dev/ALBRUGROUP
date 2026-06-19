@@ -161,6 +161,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                        e.rolActor,
                        e.accion,
                        e.createdAt,
+                       l.idEquipo,
                        c.nombre,
                        l.primeraCodigoTipificacion,
                        l.primeraCodigoSubtipificacion,
@@ -181,6 +182,11 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                     :filtrarCampana = false
                     OR (:sinValor = true AND c.id IS NULL)
                     OR (:sinValor = false AND c.id = :idGrupo)
+              )
+              AND (
+                    :filtrarEquipo = false
+                    OR (:sinValor = true AND l.idEquipo IS NULL)
+                    OR (:sinValor = false AND l.idEquipo = :idGrupo)
               )
               AND (
                     :filtrarPrimeraTipificacion = false
@@ -235,6 +241,11 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                     OR (:sinValor = false AND c.id = :idGrupo)
               )
               AND (
+                    :filtrarEquipo = false
+                    OR (:sinValor = true AND l.idEquipo IS NULL)
+                    OR (:sinValor = false AND l.idEquipo = :idGrupo)
+              )
+              AND (
                     :filtrarPrimeraTipificacion = false
                     OR (
                         :sinValor = true
@@ -273,6 +284,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("fin") Instant fin,
             @Param("filtrarAsesor") boolean filtrarAsesor,
             @Param("filtrarCampana") boolean filtrarCampana,
+            @Param("filtrarEquipo") boolean filtrarEquipo,
             @Param("filtrarPrimeraTipificacion") boolean filtrarPrimeraTipificacion,
             @Param("filtrarUltimaTipificacion") boolean filtrarUltimaTipificacion,
             @Param("idGrupo") Long idGrupo,
@@ -289,12 +301,32 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                    NULL AS codigoSubtipificacion,
                    COUNT(e.id) AS cantidad
             FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
             GROUP BY e.idActor, e.nombreActor
             """)
     List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorAsesor(
+            @Param("accion") Accion accion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    @Query("""
+            SELECT l.idEquipo AS idGrupo,
+                   NULL AS etiqueta,
+                   NULL AS codigoTipificacion,
+                   NULL AS codigoSubtipificacion,
+                   COUNT(e.id) AS cantidad
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+            GROUP BY l.idEquipo
+            """)
+    List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorEquipo(
             @Param("accion") Accion accion,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin

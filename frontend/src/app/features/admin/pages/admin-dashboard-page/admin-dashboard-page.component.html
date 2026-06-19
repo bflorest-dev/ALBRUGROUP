@@ -3,10 +3,10 @@
     <p-tag value="Administrador" severity="info" />
     @if (mode === 'inicio') {
       <h2>Empleados activos</h2>
-      <p>Personal con contrato vigente agrupado por rol operativo.</p>
+      <p>Revisa los equipos, sus integrantes y su estado actual en un solo lugar.</p>
     } @else {
       <h2>Alta de personal</h2>
-      <p>Flujo directo `empleado -> contrato -> usuario auth`.</p>
+      <p>Registra los datos del empleado, su contrato y su acceso al sistema en un solo proceso.</p>
     }
   </header>
 
@@ -25,6 +25,9 @@
       [scheduleByEmployeeId]="facade.scheduleByEmployeeId()"
       [scheduleErrorByEmployeeId]="facade.scheduleErrorByEmployeeId()"
       [scheduleLoadingByEmployeeId]="facade.scheduleLoadingByEmployeeId()"
+      [teamNameByEmployeeId]="facade.teamNameByEmployeeId()"
+      [isLoadingTeams]="facade.isLoadingTeams()"
+      [teamErrorMessage]="facade.teamErrorMessage()"
       (pageChange)="facade.loadActiveEmployees()"
       [employeeStateById]="facade.employeeStateById()"
       [connectedUserById]="facade.connectedUserById()"
@@ -34,7 +37,7 @@
       (renewContract)="facade.openContractRenewal($event)"
       (changeSchedule)="facade.openScheduleChange($event)"
       (editEmployee)="facade.openEditDialog($event)"
-      (refreshStates)="facade.loadEmployeeStates()"
+      (refreshStates)="facade.loadEmployeeStates(); facade.loadOperationalTeams()"
       (darDeBaja)="facade.darDeBajaEmpleado($event)"
     />
 

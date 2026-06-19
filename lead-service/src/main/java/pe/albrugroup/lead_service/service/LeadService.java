@@ -205,6 +205,8 @@ public class LeadService {
                         leadRepository.agruparBandejaGtrPorCampana(Etapa.PREVENTA, rangoDia.inicio(), rangoDia.fin()),
                         "Sin campaña"
                 ),
+                // La bandeja GTR ya está acotada al equipo del usuario; no se agrupa por equipo.
+                List.of(),
                 mapearAgrupacionesTipificacion(
                         leadRepository.agruparBandejaGtrPorPrimeraTipificacion(
                                 Etapa.PREVENTA,

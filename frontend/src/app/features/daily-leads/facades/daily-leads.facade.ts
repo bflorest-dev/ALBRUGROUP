@@ -44,19 +44,32 @@ export class DailyLeadsFacade {
   readonly groups = signal<DailyLeadGroupsResponse>({
     asesores: [],
     campanas: [],
+    equipos: [],
     primerasTipificaciones: [],
     ultimasTipificaciones: []
   });
+  /** Nombre de equipo por id, para mostrar los chips de la agrupación "Equipo". */
+  readonly equipoNombreById = signal<Map<number, string>>(new Map());
 
   readonly first = computed(() => this.pageNumber() * this.pageSize);
   readonly isToday = computed(() => this.fecha() === '');
-  readonly groupingModeOptions: Array<{ label: string; value: DailyLeadGroupMode }> = [
-    { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
-    { label: 'Asesor', value: 'ASESOR' },
-    { label: 'Campaña', value: 'CAMPANA' },
-    { label: 'Primera tipificación', value: 'PRIMERA_TIPIFICACION' },
-    { label: 'Última tipificación', value: 'ULTIMA_TIPIFICACION' }
-  ];
+  readonly groupingModeOptions = computed<Array<{ label: string; value: DailyLeadGroupMode }>>(() => {
+    const options: Array<{ label: string; value: DailyLeadGroupMode }> = [
+      { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
+      { label: 'Asesor', value: 'ASESOR' },
+      { label: 'Campaña', value: 'CAMPANA' }
+    ];
+    // "Equipo" solo aplica cuando el usuario ve más de un equipo (visibilidad global:
+    // ADMIN/COMMUNITY). El GTR está acotado por backend a su único equipo, así que no se ofrece.
+    if (this.groups().equipos.length > 1) {
+      options.push({ label: 'Equipo', value: 'EQUIPO' });
+    }
+    options.push(
+      { label: 'Primera tipificación', value: 'PRIMERA_TIPIFICACION' },
+      { label: 'Última tipificación', value: 'ULTIMA_TIPIFICACION' }
+    );
+    return options;
+  });
   readonly activeGroupOptions = computed<DailyLeadGroupItem[]>(() => {
     const groups = this.groups();
     switch (this.groupingMode()) {
@@ -64,6 +77,14 @@ export class DailyLeadsFacade {
         return groups.asesores;
       case 'CAMPANA':
         return groups.campanas;
+      case 'EQUIPO': {
+        const nombres = this.equipoNombreById();
+        return groups.equipos.map((group) =>
+          group.idGrupo !== null && group.idGrupo !== undefined
+            ? { ...group, etiqueta: nombres.get(group.idGrupo) ?? group.etiqueta }
+            : group
+        );
+      }
       case 'PRIMERA_TIPIFICACION':
         return groups.primerasTipificaciones;
       case 'ULTIMA_TIPIFICACION':
@@ -77,9 +98,19 @@ export class DailyLeadsFacade {
   async initialize(): Promise<void> {
     await Promise.all([
       this.loadTipificationPalette(),
+      this.loadEquipoCatalogo(),
       this.loadGroups(),
       this.load(0)
     ]);
+  }
+
+  private async loadEquipoCatalogo(): Promise<void> {
+    try {
+      const equipos = await firstValueFrom(this.service.listarCatalogoEquipos());
+      this.equipoNombreById.set(new Map(equipos.map((equipo) => [equipo.id, equipo.nombre])));
+    } catch {
+      // Catálogo opcional: si falla, se mantienen las etiquetas por defecto del backend.
+    }
   }
 
   async setFecha(value: string): Promise<void> {

@@ -7,6 +7,7 @@ export interface LeadDiarioResponse {
   rolActor: string | null;
   accion: string;
   createdAt: string;
+  idEquipo?: number | null;
   nombreCampana?: string | null;
   primeraCodigoTipificacion?: string | null;
   primeraCodigoSubtipificacion?: string | null;
@@ -34,6 +35,7 @@ export interface DailyLeadRowView {
 export type DailyLeadGroupType =
   | 'ASESOR'
   | 'CAMPANA'
+  | 'EQUIPO'
   | 'PRIMERA_TIPIFICACION'
   | 'ULTIMA_TIPIFICACION';
 
@@ -51,6 +53,7 @@ export interface DailyLeadGroupItem {
 export interface DailyLeadGroupsResponse {
   asesores: DailyLeadGroupItem[];
   campanas: DailyLeadGroupItem[];
+  equipos: DailyLeadGroupItem[];
   primerasTipificaciones: DailyLeadGroupItem[];
   ultimasTipificaciones: DailyLeadGroupItem[];
 }

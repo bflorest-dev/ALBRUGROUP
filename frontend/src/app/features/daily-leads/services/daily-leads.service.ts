@@ -17,10 +17,17 @@ export interface DailyLeadsQuery {
   filters?: DailyLeadGroupFilter;
 }
 
+/** Catálogo mínimo de equipos para resolver nombres en los selectores. */
+export interface EquipoCatalogoItem {
+  id: number;
+  nombre: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class DailyLeadsService {
   private readonly http = inject(HttpClient);
   private readonly leadUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads`;
+  private readonly authUrl = `${API_CONSTANTS.gatewayBaseUrl}/auth`;
 
   listarRegistrosDiarios(query: DailyLeadsQuery): Observable<PageResponse<LeadDiarioResponse>> {
     let params = new HttpParams()
@@ -62,6 +69,10 @@ export class DailyLeadsService {
       `${this.leadUrl}/eventos/registros-diarios/agrupaciones`,
       { params }
     );
+  }
+
+  listarCatalogoEquipos(): Observable<EquipoCatalogoItem[]> {
+    return this.http.get<EquipoCatalogoItem[]>(`${this.authUrl}/equipos/catalogo`);
   }
 
   getCatalogoTipificaciones(etapa: string): Observable<CatalogoResponse> {

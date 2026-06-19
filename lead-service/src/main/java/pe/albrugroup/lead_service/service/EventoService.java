@@ -182,6 +182,7 @@ public class EventoService {
                 rango.fin(),
                 tipoGrupo == TipoGrupoGtr.ASESOR,
                 tipoGrupo == TipoGrupoGtr.CAMPANA,
+                tipoGrupo == TipoGrupoGtr.EQUIPO,
                 tipoGrupo == TipoGrupoGtr.PRIMERA_TIPIFICACION,
                 tipoGrupo == TipoGrupoGtr.ULTIMA_TIPIFICACION,
                 idGrupo,
@@ -211,6 +212,14 @@ public class EventoService {
                                 rango.fin()
                         ),
                         "Sin campaña"
+                ),
+                mapearAgrupaciones(
+                        eventoRepository.agruparRegistrosDiariosPorEquipo(
+                                Accion.REGISTRO,
+                                rango.inicio(),
+                                rango.fin()
+                        ),
+                        "Sin equipo"
                 ),
                 mapearAgrupacionesTipificacion(
                         eventoRepository.agruparRegistrosDiariosPorPrimeraTipificacion(
@@ -244,7 +253,9 @@ public class EventoService {
         if (sinValor) {
             return;
         }
-        if ((tipoGrupo == TipoGrupoGtr.ASESOR || tipoGrupo == TipoGrupoGtr.CAMPANA) && idGrupo == null) {
+        if ((tipoGrupo == TipoGrupoGtr.ASESOR
+                || tipoGrupo == TipoGrupoGtr.CAMPANA
+                || tipoGrupo == TipoGrupoGtr.EQUIPO) && idGrupo == null) {
             throw new BadRequestException("Debes indicar el grupo seleccionado");
         }
         if ((tipoGrupo == TipoGrupoGtr.PRIMERA_TIPIFICACION

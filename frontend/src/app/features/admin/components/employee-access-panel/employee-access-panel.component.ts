@@ -21,6 +21,12 @@ export type ActiveEmployeeGroup = {
 
 export type EmployeeRow = EmpleadoRolResponse & { role: string };
 
+type EmployeeTeamGroup = {
+  key: string;
+  teamName: string;
+  employees: EmployeeRow[];
+};
+
 @Component({
   selector: 'app-employee-access-panel',
   imports: [ButtonModule, DialogModule, MessageModule, ProgressSpinnerModule, SkeletonModule, TableModule, TagModule],
@@ -44,6 +50,9 @@ export class EmployeeAccessPanelComponent {
   @Input({ required: true }) scheduleLoadingByEmployeeId: Record<number, boolean> = {};
   readonly employeeStateById = input<Record<number, EstadoMonitorResponse>>({});
   readonly connectedUserById = input<Record<number, ConnectedUserResponse>>({});
+  readonly teamNameByEmployeeId = input<Record<number, string>>({});
+  readonly isLoadingTeams = input(false);
+  readonly teamErrorMessage = input('');
   @Input() isLoadingStates = false;
 
   @Input() isDismissingEmployeeId: number | null = null;
@@ -75,6 +84,28 @@ export class EmployeeAccessPanelComponent {
     return groups
       .flatMap((group) => group.employees.map((employee) => ({ ...employee, role: group.role })))
       .sort((left, right) => this.compareEmployeeRows(left, right));
+  });
+
+  protected readonly teamGroups = computed<EmployeeTeamGroup[]>(() => {
+    const groups = new Map<string, EmployeeRow[]>();
+    const teamNames = this.teamNameByEmployeeId();
+
+    for (const employee of this.filteredRows()) {
+      const teamName = teamNames[employee.idEmpleado]?.trim() || 'Sin equipo asignado';
+      groups.set(teamName, [...(groups.get(teamName) ?? []), employee]);
+    }
+
+    return [...groups.entries()]
+      .map(([teamName, employees]) => ({
+        key: this.teamKey(teamName),
+        teamName,
+        employees: employees.sort((left, right) => this.compareEmployeeRows(left, right))
+      }))
+      .sort((left, right) => {
+        if (left.teamName === 'Sin equipo asignado') return 1;
+        if (right.teamName === 'Sin equipo asignado') return -1;
+        return left.teamName.localeCompare(right.teamName);
+      });
   });
 
   protected openDetail(employee: EmployeeRow): void {
@@ -117,6 +148,18 @@ export class EmployeeAccessPanelComponent {
 
   protected selectRole(role: string): void {
     this.selectedRole.set(role);
+  }
+
+  protected teamTotalLabel(total: number): string {
+    return `${total} ${total === 1 ? 'integrante' : 'integrantes'}`;
+  }
+
+  protected teamOnlineCount(group: EmployeeTeamGroup): number {
+    return group.employees.filter((employee) => this.isOnline(employee.idEmpleado)).length;
+  }
+
+  protected teamAvailableCount(group: EmployeeTeamGroup): number {
+    return group.employees.filter((employee) => this.isAvailable(employee.idEmpleado)).length;
   }
 
   protected hasAccessLoaded(empleadoId: number): boolean {
@@ -240,6 +283,23 @@ export class EmployeeAccessPanelComponent {
     }
 
     return 2;
+  }
+
+  private isOnline(empleadoId: number): boolean {
+    const attendanceState = this.getAttendanceState(empleadoId)?.toUpperCase();
+    const connectedUser = this.connectedUserById()[empleadoId];
+    const presenceStatus = connectedUser?.status?.toUpperCase() ?? (connectedUser ? 'ONLINE' : '');
+    return attendanceState === 'ONLINE' || presenceStatus === 'ONLINE';
+  }
+
+  private isAvailable(empleadoId: number): boolean {
+    const connectedUser = this.connectedUserById()[empleadoId];
+    const presenceStatus = connectedUser?.status?.toUpperCase() ?? (connectedUser ? 'ONLINE' : '');
+    return presenceStatus === 'ONLINE' && connectedUser?.disponibilidad?.toUpperCase() === 'DISPONIBLE';
+  }
+
+  private teamKey(teamName: string): string {
+    return teamName.toLowerCase().replace(/\s+/g, '-');
   }
 
   private employeeFullName(employee: EmpleadoRolResponse): string {

@@ -75,6 +75,59 @@
 }
 
 // ── Lista de empleados (tabla) ───────────────────────────────
+.team-loading {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.team-groups {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.team-section {
+  border-top: 1px solid var(--app-border-soft);
+  display: grid;
+  gap: 0.8rem;
+  padding-top: 1rem;
+}
+
+.team-section:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.team-section__header {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.9rem;
+  justify-content: space-between;
+}
+
+.team-section__header h4 {
+  color: var(--role-panel-text, #0f1f33);
+  font-size: 0.96rem;
+  margin: 0;
+}
+
+.team-section__header span {
+  color: var(--role-muted, #617187);
+  display: inline-block;
+  font-size: 0.78rem;
+  margin-top: 0.15rem;
+}
+
+.team-section__summary {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: flex-end;
+  min-width: 10rem;
+}
+
 .employee-name-cell {
   align-items: center;
   display: flex;
@@ -289,6 +342,15 @@
 
   .role-filter {
     gap: 0.4rem;
+  }
+
+  .team-section__header {
+    flex-direction: column;
+  }
+
+  .team-section__summary {
+    justify-content: flex-start;
+    min-width: 0;
   }
 
   :host ::ng-deep .admin-panel__header-actions .p-button {

@@ -23,6 +23,7 @@ public class LeadDiarioResponse {
     private String rolActor;
     private Accion accion;
     private Instant createdAt;
+    private Long idEquipo;
     private String nombreCampana;
     private String primeraCodigoTipificacion;
     private String primeraCodigoSubtipificacion;

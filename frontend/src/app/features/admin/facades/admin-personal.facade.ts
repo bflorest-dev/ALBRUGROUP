@@ -24,6 +24,7 @@ import { PresenceRealtimeService } from '../../../core/services/presence-realtim
 import { EstadoMonitorResponse } from '../../../shared/models/schedule/cumplimiento-response';
 import { formatApiErrorMessage } from '../../../shared/utils/api-error.utils';
 import { AuthService } from '../../auth/services/auth.service';
+import { AdminEquipoService, EquipoMiembroResponse } from '../services/admin-equipo.service';
 import { AdminRrhhService } from '../services/admin-rrhh.service';
 import { ScheduleAdjustmentService } from '../../../core/services/schedule-adjustment.service';
 import {
@@ -115,6 +116,7 @@ export class AdminPersonalFacade implements OnDestroy {
   private readonly requestTimeoutMs = 15000;
   private readonly formBuilder = inject(FormBuilder);
   private readonly adminRrhhService = inject(AdminRrhhService);
+  private readonly adminEquipoService = inject(AdminEquipoService);
   private readonly scheduleAdjustmentService = inject(ScheduleAdjustmentService);
   private readonly authService = inject(AuthService);
   private readonly presenceService = inject(PresenceService);
@@ -510,6 +512,9 @@ export class AdminPersonalFacade implements OnDestroy {
   readonly activeEmployees = signal<EmpleadoRolResponse[]>([]);
   readonly isLoadingActiveEmployees = signal(false);
   readonly activeEmployeeListErrorMessage = signal('');
+  readonly teamNameByEmployeeId = signal<Record<number, string>>({});
+  readonly isLoadingTeams = signal(false);
+  readonly teamErrorMessage = signal('');
   readonly accessByEmployeeId = signal<Record<number, UsuarioResponse | null>>({});
   readonly accessErrorByEmployeeId = signal<Record<number, string>>({});
   readonly accessLoadingByEmployeeId = signal<Record<number, boolean>>({});
@@ -788,6 +793,7 @@ export class AdminPersonalFacade implements OnDestroy {
   initialize(): void {
     this.loadEmployees();
     void this.loadActiveEmployees();
+    void this.loadOperationalTeams();
     void this.loadInactiveEmployees();
     this.startRealtime();
   }
@@ -1069,6 +1075,43 @@ export class AdminPersonalFacade implements OnDestroy {
       );
     } finally {
       this.isLoadingActiveEmployees.set(false);
+    }
+  }
+
+  async loadOperationalTeams(): Promise<void> {
+    this.isLoadingTeams.set(true);
+    this.teamErrorMessage.set('');
+
+    try {
+      const teams = await firstValueFrom(
+        this.adminEquipoService.listarEquipos().pipe(timeout(this.requestTimeoutMs))
+      );
+      const activeTeams = teams.filter((team) => team.activo);
+      const membersByTeam = await Promise.all(
+        activeTeams.map(async (team) => ({
+          team,
+          members: await firstValueFrom(
+            this.adminEquipoService.listarMiembros(team.id).pipe(
+              timeout(this.requestTimeoutMs),
+              catchError(() => of<EquipoMiembroResponse[]>([]))
+            )
+          )
+        }))
+      );
+
+      const teamNameByEmployeeId: Record<number, string> = {};
+      for (const item of membersByTeam) {
+        for (const member of item.members) {
+          teamNameByEmployeeId[member.empleadoId] = item.team.nombre;
+        }
+      }
+
+      this.teamNameByEmployeeId.set(teamNameByEmployeeId);
+    } catch {
+      this.teamNameByEmployeeId.set({});
+      this.teamErrorMessage.set('No se pudieron cargar los equipos. El personal se mostrara sin agrupar por ahora.');
+    } finally {
+      this.isLoadingTeams.set(false);
     }
   }
 

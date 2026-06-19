@@ -11,6 +11,7 @@ public class LeadGtrAgrupacionesResponse {
 
     private List<LeadGtrAgrupacionItemResponse> asesores;
     private List<LeadGtrAgrupacionItemResponse> campanas;
+    private List<LeadGtrAgrupacionItemResponse> equipos;
     private List<LeadGtrAgrupacionItemResponse> primerasTipificaciones;
     private List<LeadGtrAgrupacionItemResponse> ultimasTipificaciones;
 }
