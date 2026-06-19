@@ -1526,6 +1526,10 @@ export class AsesorVentasWorkspaceFacade {
       if (blank(d.nombreTitularCelularRegistro.value)) {
         faltantes.push({ tab: 'datos', campo: 'Nombre del Titular del Celular' });
       }
+    } else {
+      if (blank(d.nombreMadre.value)) faltantes.push({ tab: 'datos', campo: 'Madre' });
+      if (blank(d.nombrePadre.value)) faltantes.push({ tab: 'datos', campo: 'Padre' });
+      if (blank(a.plano.value)) faltantes.push({ tab: 'direccion', campo: 'Plano' });
     }
 
     if (blank(a.ubigeoDomicilio.value)) faltantes.push({ tab: 'direccion', campo: 'Distrito' });
