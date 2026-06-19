@@ -2778,8 +2778,6 @@ public class LeadService {
         validarTextoObligatorio(datosPreventa.getNombreTitularServicio(), "Falta nombreTitularServicio");
         validarTextoObligatorio(datosPreventa.getCelularRegistro(), "Falta celularRegistro");
         validarTextoObligatorio(datosPreventa.getCorreo(), "Falta correo");
-        validarTextoObligatorio(datosPreventa.getNumeroDocumentoTitularCelularRegistro(), "Falta numeroDocumentoTitularCelularRegistro");
-        validarTextoObligatorio(datosPreventa.getNombreTitularCelularRegistro(), "Falta nombreTitularCelularRegistro");
 
         validarTextoObligatorio(direccion.getUbigeoDomicilio(), "Falta ubigeoDomicilio");
         if (direccion.getTipoDomicilio() == null) {

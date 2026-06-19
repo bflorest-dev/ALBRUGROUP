@@ -1519,8 +1519,14 @@ export class AsesorVentasWorkspaceFacade {
     if (blank(d.nombreTitularServicio.value)) faltantes.push({ tab: 'datos', campo: 'Titular del Servicio' });
     if (blank(d.celularRegistro.value)) faltantes.push({ tab: 'datos', campo: 'Celular a registrar' });
     if (blank(d.correo.value)) faltantes.push({ tab: 'datos', campo: 'Correo' });
-    if (blank(d.numeroDocumentoTitularCelularRegistro.value)) faltantes.push({ tab: 'datos', campo: 'Numero de Documento del Titular del Celular' });
-    if (blank(d.nombreTitularCelularRegistro.value)) faltantes.push({ tab: 'datos', campo: 'Nombre del Titular del Celular' });
+    if (!this.esPerfilClaro()) {
+      if (blank(d.numeroDocumentoTitularCelularRegistro.value)) {
+        faltantes.push({ tab: 'datos', campo: 'Numero de Documento del Titular del Celular' });
+      }
+      if (blank(d.nombreTitularCelularRegistro.value)) {
+        faltantes.push({ tab: 'datos', campo: 'Nombre del Titular del Celular' });
+      }
+    }
 
     if (blank(a.ubigeoDomicilio.value)) faltantes.push({ tab: 'direccion', campo: 'Distrito' });
     if (blank(a.tipoDomicilio.value)) faltantes.push({ tab: 'direccion', campo: 'Tipo de Domicilio' });
