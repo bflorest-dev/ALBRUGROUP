@@ -1,0 +1,26 @@
+<section class="admin-maintenance-page">
+  <p-card styleClass="admin-maintenance-hero">
+    <div class="admin-maintenance-hero__content">
+      <div>
+        <p-tag value="Administrador" severity="info" />
+        <h1>Mantenimiento comercial</h1>
+        <p>Administra proveedores, cuentas, campanas, zonas, planes y promociones comerciales.</p>
+      </div>
+
+      <div class="admin-maintenance-hero__actions">
+        <p-tag severity="success" [value]="facade.proveedoresActivos().length + ' proveedores activos'" />
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          label="Actualizar datos"
+          severity="secondary"
+          [loading]="facade.isLoading()"
+          (click)="facade.loadAll()"
+        ></button>
+      </div>
+    </div>
+  </p-card>
+
+  <app-catalog-maintenance-panel />
+</section>

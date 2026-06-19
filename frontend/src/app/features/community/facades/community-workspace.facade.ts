@@ -39,6 +39,7 @@ import { OperationalGateService } from '../../../core/services/operational-gate.
 
 export type CommunitySection = 'proveedores' | 'cuentas' | 'campanas' | 'zonas' | 'planes' | 'promociones';
 export type CommunityPageMode = 'mantenimiento' | 'metricas' | 'finanzas';
+export type CommunityAccessMode = 'community' | 'admin';
 
 type ZoneDialogMode = 'create' | 'edit';
 type ZoneRuleDraft = ZonaReglaResponse & { label: string };
@@ -88,6 +89,7 @@ export class CommunityWorkspaceFacade {
   private catalogLoadInFlight = false;
 
   readonly currentMode = signal<CommunityPageMode>('mantenimiento');
+  readonly accessMode = signal<CommunityAccessMode>('community');
   readonly section = signal<CommunitySection>('proveedores');
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
@@ -96,8 +98,12 @@ export class CommunityWorkspaceFacade {
   readonly isLoadingFinanceSnapshots = signal(false);
   readonly successMessage = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
-  readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
-  readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
+  readonly canDisplayOperationalData = computed(
+    () => this.accessMode() === 'admin' || this.operationalGate.canDisplayOperationalData()
+  );
+  readonly canMutateOperationalData = computed(
+    () => this.accessMode() === 'admin' || this.operationalGate.canMutateOperationalData()
+  );
 
   readonly proveedores = signal<ProveedorResponse[]>([]);
   readonly proveedoresActivos = computed(() => this.proveedores().filter((proveedor) => proveedor.activo !== false));
@@ -358,6 +364,10 @@ export class CommunityWorkspaceFacade {
       this.operationalGateService.currentStatus();
       const mode = this.currentMode();
 
+      if (this.accessMode() === 'admin') {
+        return;
+      }
+
       if (mode !== 'mantenimiento' && mode !== 'finanzas') {
         return;
       }
@@ -430,6 +440,11 @@ export class CommunityWorkspaceFacade {
       false
     );
   }
+
+  setAccessMode(mode: CommunityAccessMode): void {
+    this.accessMode.set(mode);
+  }
+
   async initialize(mode: CommunityPageMode = 'mantenimiento'): Promise<void> {
     this.currentMode.set(mode);
 

@@ -1,43 +1,27 @@
 ﻿import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, effect, inject, signal } from '@angular/core';
 import { Location } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
-import { MultiSelectModule } from 'primeng/multiselect';
-import { DrawerModule } from 'primeng/drawer';
-import { SelectModule } from 'primeng/select';
-import { SelectButtonModule } from 'primeng/selectbutton';
-import { TableModule } from 'primeng/table';
-import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import { CampaignFinanceDashboardPanelComponent } from '../../../../shared/components/campaign-finance-dashboard-panel/campaign-finance-dashboard-panel.component';
-import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-number-field/phone-number-field.component';
+import {
+  CATALOG_MAINTENANCE_SECTIONS,
+  CatalogMaintenancePanelComponent
+} from '../../components/catalog-maintenance-panel/catalog-maintenance-panel.component';
 import { CommunityPageMode, CommunitySection, CommunityWorkspaceFacade } from '../../facades/community-workspace.facade';
 
 @Component({
   selector: 'app-community-workspace-page',
   imports: [
-    FormsModule,
-    ReactiveFormsModule,
     ButtonModule,
     CardModule,
-    DialogModule,
-    DrawerModule,
-    InputTextModule,
     MessageModule,
-    MultiSelectModule,
-    SelectModule,
-    SelectButtonModule,
-    TableModule,
-    TabsModule,
     TagModule,
     CampaignFinanceDashboardPanelComponent,
-    PhoneNumberFieldComponent
+    CatalogMaintenancePanelComponent
   ],
   providers: [CommunityWorkspaceFacade],
   templateUrl: './community-workspace-page.component.html',
@@ -51,14 +35,7 @@ export class CommunityWorkspacePageComponent implements OnInit {
   private readonly location = inject(Location);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly pageMode = signal<CommunityPageMode>('mantenimiento');
-  protected readonly sections: { id: CommunitySection; label: string; icon: string; disabled?: boolean }[] = [
-    { id: 'proveedores', label: 'Proveedores', icon: 'pi pi-building' },
-    { id: 'cuentas', label: 'Cuentas', icon: 'pi pi-credit-card' },
-    { id: 'campanas', label: 'Campañas', icon: 'pi pi-megaphone' },
-    { id: 'zonas', label: 'Zonas', icon: 'pi pi-map-marker' },
-    { id: 'planes', label: 'Planes', icon: 'pi pi-wifi' },
-    { id: 'promociones', label: 'Promociones', icon: 'pi pi-tags' }
-  ];
+  protected readonly sections = CATALOG_MAINTENANCE_SECTIONS;
 
   constructor() {
     // Restaurar la tab activa desde la URL al recargar (lectura sincrónica antes del primer effect)
@@ -85,15 +62,9 @@ export class CommunityWorkspacePageComponent implements OnInit {
       const mode: CommunityPageMode =
         data['section'] === 'finanzas' ? 'finanzas' : data['section'] === 'metricas' ? 'metricas' : 'mantenimiento';
       this.pageMode.set(mode);
+      this.facade.setAccessMode('community');
       void this.facade.initialize(mode);
     });
-  }
-
-  /** Previene el ingreso de caracteres no enteros en campos type="number". */
-  protected preventNonInteger(event: KeyboardEvent): void {
-    const allowed = ['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
-    if (allowed.includes(event.key) || event.ctrlKey || event.metaKey) return;
-    if (!/^\d$/.test(event.key)) event.preventDefault();
   }
 
   protected display(value: unknown): string {
@@ -102,46 +73,5 @@ export class CommunityWorkspacePageComponent implements OnInit {
     }
 
     return String(value);
-  }
-
-  protected statusLabel(active: boolean | undefined): string {
-    return active === false ? 'Inactivo' : 'Activo';
-  }
-
-  protected statusSeverity(active: boolean | undefined): 'success' | 'danger' {
-    return active === false ? 'danger' : 'success';
-  }
-
-  protected criterionSeverity(criterion: string): 'success' | 'danger' {
-    return criterion === 'INCLUIR' ? 'success' : 'danger';
-  }
-
-  protected zoneDialogTitle(): string {
-    return this.facade.zoneDialogMode() === 'edit' ? 'Editar zona' : 'Agregar zona';
-  }
-
-  protected listCount(value: unknown): number {
-    return Array.isArray(value) ? value.length : 0;
-  }
-
-  protected money(value: unknown): string {
-    if (value === null || value === undefined || value === '') {
-      return '-';
-    }
-    return `S/ ${value}`;
-  }
-
-  protected scopeLabel(value: unknown, fallback: string): string {
-    return value === null || value === undefined || value === '' ? fallback : String(value);
-  }
-
-  protected planScopeLabel(names: unknown, ids: unknown): string {
-    if (Array.isArray(names) && names.length) {
-      return names.join(', ');
-    }
-    if (Array.isArray(ids) && ids.length) {
-      return ids.join(', ');
-    }
-    return 'Todos';
   }
 }
