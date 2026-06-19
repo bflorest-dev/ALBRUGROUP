@@ -62,9 +62,24 @@ export class EmployeeAccessPanelComponent {
   @Output() readonly toggleAccess = new EventEmitter<number>();
   @Output() readonly renewContract = new EventEmitter<EmpleadoRolResponse>();
   @Output() readonly changeSchedule = new EventEmitter<EmpleadoRolResponse>();
+  @Output() readonly changeTeam = new EventEmitter<EmpleadoRolResponse>();
   @Output() readonly editEmployee = new EventEmitter<EmpleadoRolResponse>();
   @Output() readonly refreshStates = new EventEmitter<void>();
   @Output() readonly darDeBaja = new EventEmitter<EmpleadoRolResponse>();
+
+  private readonly teamAssignableRoles = new Set([
+    'ASESOR_GTR',
+    'SUPERVISOR_GTR',
+    'ASESOR_VENTAS',
+    'SUPERVISOR_VENTAS',
+    'OJT',
+    'ASESOR_BACKOFFICE',
+    'SUPERVISOR_BACKOFFICE',
+    'ASESOR_POSTVENTA',
+    'SUPERVISOR_POSTVENTA',
+    'ASESOR_COBRANZA',
+    'SUPERVISOR_COBRANZA'
+  ]);
 
   protected readonly selectedRole = signal('');
   protected readonly bajaTarget = signal<EmpleadoRolResponse | null>(null);
@@ -148,6 +163,14 @@ export class EmployeeAccessPanelComponent {
 
   protected selectRole(role: string): void {
     this.selectedRole.set(role);
+  }
+
+  protected canChangeTeam(employee: EmployeeRow): boolean {
+    return this.teamAssignableRoles.has(employee.role);
+  }
+
+  protected emitTeamChange(employee: EmployeeRow): void {
+    this.changeTeam.emit(employee);
   }
 
   protected teamTotalLabel(total: number): string {

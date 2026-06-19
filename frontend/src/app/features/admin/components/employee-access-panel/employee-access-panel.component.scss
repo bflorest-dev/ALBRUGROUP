@@ -195,6 +195,13 @@
   gap: 0.5rem;
 }
 
+.employee-mobile-card__tools {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.35rem;
+}
+
 .employee-detail__loading {
   align-items: center;
   color: var(--role-muted);
@@ -384,6 +391,10 @@
     gap: 0.55rem;
     justify-content: space-between;
     padding-right: 1.35rem;
+  }
+
+  .employee-mobile-card__tools {
+    margin-right: 0.9rem;
   }
 
   .employee-mobile-actions {

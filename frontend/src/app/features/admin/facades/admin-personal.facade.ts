@@ -24,7 +24,7 @@ import { PresenceRealtimeService } from '../../../core/services/presence-realtim
 import { EstadoMonitorResponse } from '../../../shared/models/schedule/cumplimiento-response';
 import { formatApiErrorMessage } from '../../../shared/utils/api-error.utils';
 import { AuthService } from '../../auth/services/auth.service';
-import { AdminEquipoService, EquipoMiembroResponse } from '../services/admin-equipo.service';
+import { AdminEquipoService, EquipoMiembroResponse, EquipoResponse } from '../services/admin-equipo.service';
 import { AdminRrhhService } from '../services/admin-rrhh.service';
 import { ScheduleAdjustmentService } from '../../../core/services/schedule-adjustment.service';
 import {
@@ -512,9 +512,21 @@ export class AdminPersonalFacade implements OnDestroy {
   readonly activeEmployees = signal<EmpleadoRolResponse[]>([]);
   readonly isLoadingActiveEmployees = signal(false);
   readonly activeEmployeeListErrorMessage = signal('');
+  readonly operationalTeams = signal<EquipoResponse[]>([]);
   readonly teamNameByEmployeeId = signal<Record<number, string>>({});
+  readonly teamIdByEmployeeId = signal<Record<number, number>>({});
   readonly isLoadingTeams = signal(false);
   readonly teamErrorMessage = signal('');
+  readonly isTeamChangeVisible = signal(false);
+  readonly selectedEmployeeForTeamChange = signal<EmpleadoRolResponse | null>(null);
+  readonly teamChangeSelectedId = signal(0);
+  readonly isSavingTeamChange = signal(false);
+  readonly teamChangeErrorMessage = signal('');
+  readonly teamChangeSuccessMessage = signal('');
+  readonly teamChangeOptions = computed(() => [
+    { label: 'Sin equipo', value: 0 },
+    ...this.operationalTeams().map((team) => ({ label: team.nombre, value: team.id }))
+  ]);
   readonly accessByEmployeeId = signal<Record<number, UsuarioResponse | null>>({});
   readonly accessErrorByEmployeeId = signal<Record<number, string>>({});
   readonly accessLoadingByEmployeeId = signal<Record<number, boolean>>({});
@@ -1087,6 +1099,7 @@ export class AdminPersonalFacade implements OnDestroy {
         this.adminEquipoService.listarEquipos().pipe(timeout(this.requestTimeoutMs))
       );
       const activeTeams = teams.filter((team) => team.activo);
+      this.operationalTeams.set(activeTeams);
       const membersByTeam = await Promise.all(
         activeTeams.map(async (team) => ({
           team,
@@ -1100,18 +1113,84 @@ export class AdminPersonalFacade implements OnDestroy {
       );
 
       const teamNameByEmployeeId: Record<number, string> = {};
+      const teamIdByEmployeeId: Record<number, number> = {};
       for (const item of membersByTeam) {
         for (const member of item.members) {
           teamNameByEmployeeId[member.empleadoId] = item.team.nombre;
+          teamIdByEmployeeId[member.empleadoId] = item.team.id;
         }
       }
 
       this.teamNameByEmployeeId.set(teamNameByEmployeeId);
+      this.teamIdByEmployeeId.set(teamIdByEmployeeId);
     } catch {
+      this.operationalTeams.set([]);
       this.teamNameByEmployeeId.set({});
+      this.teamIdByEmployeeId.set({});
       this.teamErrorMessage.set('No se pudieron cargar los equipos. El personal se mostrara sin agrupar por ahora.');
     } finally {
       this.isLoadingTeams.set(false);
+    }
+  }
+
+  openTeamChange(employee: EmpleadoRolResponse): void {
+    this.selectedEmployeeForTeamChange.set(employee);
+    this.teamChangeSelectedId.set(this.teamIdByEmployeeId()[employee.idEmpleado] ?? 0);
+    this.teamChangeErrorMessage.set('');
+    this.teamChangeSuccessMessage.set('');
+    this.isTeamChangeVisible.set(true);
+
+    if (!this.operationalTeams().length && !this.isLoadingTeams()) {
+      void this.loadOperationalTeams();
+    }
+  }
+
+  closeTeamChange(): void {
+    if (this.isSavingTeamChange()) {
+      return;
+    }
+    this.isTeamChangeVisible.set(false);
+    this.selectedEmployeeForTeamChange.set(null);
+    this.teamChangeSelectedId.set(0);
+    this.teamChangeErrorMessage.set('');
+  }
+
+  setTeamChangeSelectedId(value: number | null): void {
+    this.teamChangeSelectedId.set(value ?? 0);
+  }
+
+  async saveTeamChange(): Promise<void> {
+    const employee = this.selectedEmployeeForTeamChange();
+    if (!employee) {
+      return;
+    }
+
+    this.isSavingTeamChange.set(true);
+    this.teamChangeErrorMessage.set('');
+    this.teamChangeSuccessMessage.set('');
+
+    const selectedTeamId = this.teamChangeSelectedId();
+    const nextTeamIds = selectedTeamId > 0 ? [selectedTeamId] : [];
+
+    try {
+      await firstValueFrom(
+        this.adminEquipoService
+          .asignarEquiposAEmpleado(employee.idEmpleado, nextTeamIds)
+          .pipe(timeout(this.requestTimeoutMs))
+      );
+      this.teamChangeSuccessMessage.set(
+        'Equipo actualizado. Si el empleado ya estaba conectado, vera el cambio al renovar su sesion.'
+      );
+      this.isTeamChangeVisible.set(false);
+      this.selectedEmployeeForTeamChange.set(null);
+      await this.loadOperationalTeams();
+      void this.loadActiveEmployees();
+    } catch (error) {
+      this.teamChangeErrorMessage.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No se pudo actualizar el equipo del empleado.')
+      );
+    } finally {
+      this.isSavingTeamChange.set(false);
     }
   }
 

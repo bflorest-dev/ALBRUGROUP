@@ -6,6 +6,7 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
+import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { ToggleButtonModule } from 'primeng/togglebutton';
@@ -26,6 +27,7 @@ import { ScheduleAdjustmentDialogComponent } from '../../../../shared/components
     DialogModule,
     InputTextModule,
     MessageModule,
+    SelectModule,
     TableModule,
     TagModule,
     ToggleButtonModule,

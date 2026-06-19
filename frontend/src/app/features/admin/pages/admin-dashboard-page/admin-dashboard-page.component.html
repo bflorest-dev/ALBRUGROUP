@@ -18,7 +18,7 @@
       [totalPages]="1"
       [isLoading]="facade.isLoadingActiveEmployees()"
       [errorMessage]="facade.activeEmployeeListErrorMessage()"
-      [contractUpdateSuccessMessage]="facade.contractRenewalSuccessMessage()"
+      [contractUpdateSuccessMessage]="facade.contractRenewalSuccessMessage() || facade.teamChangeSuccessMessage()"
       [accessByEmployeeId]="facade.accessByEmployeeId()"
       [accessErrorByEmployeeId]="facade.accessErrorByEmployeeId()"
       [accessLoadingByEmployeeId]="facade.accessLoadingByEmployeeId()"
@@ -36,10 +36,84 @@
       (toggleAccess)="facade.toggleUserAccess($event)"
       (renewContract)="facade.openContractRenewal($event)"
       (changeSchedule)="facade.openScheduleChange($event)"
+      (changeTeam)="facade.openTeamChange($event)"
       (editEmployee)="facade.openEditDialog($event)"
       (refreshStates)="facade.loadEmployeeStates(); facade.loadOperationalTeams()"
       (darDeBaja)="facade.darDeBajaEmpleado($event)"
     />
+
+    <p-dialog
+      header="Cambiar equipo"
+      [visible]="facade.isTeamChangeVisible()"
+      (visibleChange)="!$event && facade.closeTeamChange()"
+      [modal]="true"
+      [draggable]="false"
+      [resizable]="false"
+      appendTo="body"
+      styleClass="team-change-dialog"
+    >
+      @if (facade.selectedEmployeeForTeamChange(); as employee) {
+        <div class="team-change-form">
+          <div class="team-change-target">
+            <p-tag value="Equipo operativo" severity="info" />
+            <h3>{{ employee.nombres }} {{ employee.apellidos }}</h3>
+            <p>Selecciona el equipo que debe ver este empleado.</p>
+          </div>
+
+          @if (facade.teamChangeErrorMessage()) {
+            <p-message severity="error" [text]="facade.teamChangeErrorMessage()" />
+          }
+
+          @if (facade.isLoadingTeams()) {
+            <p-message severity="info" text="Cargando equipos disponibles..." />
+          }
+
+          <label class="field">
+            <span>Equipo</span>
+            <p-select
+              [ngModel]="facade.teamChangeSelectedId()"
+              [ngModelOptions]="{ standalone: true }"
+              [options]="facade.teamChangeOptions()"
+              optionLabel="label"
+              optionValue="value"
+              [filter]="true"
+              [disabled]="facade.isSavingTeamChange() || facade.isLoadingTeams()"
+              appendTo="body"
+              (ngModelChange)="facade.setTeamChangeSelectedId($event)"
+            />
+          </label>
+
+          @if (facade.teamChangeSelectedId() === 0) {
+            <p-message
+              severity="warn"
+              text="Sin equipo, este usuario no vera datos filtrados por equipo hasta que tenga uno asignado nuevamente."
+            />
+          }
+
+          <div class="actions actions--end">
+            <button
+              pButton
+              type="button"
+              severity="secondary"
+              [outlined]="true"
+              icon="pi pi-times"
+              label="Cancelar"
+              [disabled]="facade.isSavingTeamChange()"
+              (click)="facade.closeTeamChange()"
+            ></button>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-save"
+              label="Guardar"
+              [loading]="facade.isSavingTeamChange()"
+              [disabled]="facade.isLoadingTeams()"
+              (click)="facade.saveTeamChange()"
+            ></button>
+          </div>
+        </div>
+      }
+    </p-dialog>
 
     <section class="inactive-panel">
       <div class="inactive-panel__header">

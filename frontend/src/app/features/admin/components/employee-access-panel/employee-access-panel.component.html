@@ -170,6 +170,19 @@
                         aria-label="Cambiar horario"
                         (click)="changeSchedule.emit(employee)"
                       ></button>
+                      @if (canChangeTeam(employee)) {
+                        <button
+                          pButton
+                          type="button"
+                          severity="secondary"
+                          size="small"
+                          [text]="true"
+                          icon="pi pi-th-large"
+                          title="Cambiar equipo"
+                          aria-label="Cambiar equipo"
+                          (click)="emitTeamChange(employee)"
+                        ></button>
+                      }
                       <button
                         pButton
                         type="button"
@@ -205,7 +218,22 @@
                       <span [class]="dotClass(employee.idEmpleado)" aria-hidden="true"></span>
                       <strong>{{ employee.nombres }} {{ employee.apellidos }}</strong>
                     </div>
-                    <p-tag [value]="toLabel(employee.role)" severity="secondary" />
+                    <div class="employee-mobile-card__tools">
+                      <p-tag [value]="toLabel(employee.role)" severity="secondary" />
+                      @if (canChangeTeam(employee)) {
+                        <button
+                          pButton
+                          type="button"
+                          severity="secondary"
+                          size="small"
+                          [text]="true"
+                          icon="pi pi-th-large"
+                          title="Cambiar equipo"
+                          aria-label="Cambiar equipo"
+                          (click)="$event.stopPropagation(); emitTeamChange(employee)"
+                        ></button>
+                      }
+                    </div>
                   </header>
                   <div class="employee-states">
                     @if (isLoadingStates) {
@@ -312,6 +340,17 @@
           label="Horario"
           (click)="changeSchedule.emit(employee); closeDetail()"
         ></button>
+        @if (canChangeTeam(employee)) {
+          <button
+            pButton
+            type="button"
+            severity="secondary"
+            [outlined]="true"
+            icon="pi pi-th-large"
+            label="Equipo"
+            (click)="emitTeamChange(employee); closeDetail()"
+          ></button>
+        }
         <button
           pButton
           type="button"
