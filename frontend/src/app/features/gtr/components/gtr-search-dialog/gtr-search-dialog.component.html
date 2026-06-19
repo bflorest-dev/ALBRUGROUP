@@ -98,17 +98,6 @@
             <button
               pButton
               type="button"
-              icon="pi pi-whatsapp"
-              size="small"
-              severity="secondary"
-              title="Chat"
-              aria-label="Chat WhatsApp"
-              [disabled]="!row.lead || !facade.canMutateOperationalData()"
-              (click)="facade.openWhatsAppChat(row)"
-            ></button>
-            <button
-              pButton
-              type="button"
               size="small"
               class="gtr-assign-button"
               [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"

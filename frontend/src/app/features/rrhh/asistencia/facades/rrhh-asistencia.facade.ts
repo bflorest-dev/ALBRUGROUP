@@ -1,7 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { FormBuilder, Validators } from '@angular/forms';
 import { firstValueFrom, timeout } from 'rxjs';
+import { OperationalGateService } from '../../../../core/services/operational-gate.service';
 import { ContratoResponse } from '../../../../shared/models/rrhh/contrato-response';
 import { EmpleadoRolResponse } from '../../../../shared/models/rrhh/empleado-rol-response';
 import { CorregirHorarioRequest } from '../../../../shared/models/schedule/corregir-horario-request';
@@ -46,6 +47,9 @@ const MODALIDADES_SIN_ALMUERZO = new Set(['PART_TIME', 'SEMI_FULL']);
 export class RrhhAsistenciaFacade {
   private readonly service = inject(RrhhAsistenciaService);
   private readonly fb = inject(FormBuilder);
+  private readonly operationalGateService = inject(OperationalGateService);
+  private readonly operationalGate = this.operationalGateService.createGate('rrhh-asistencia');
+  private recargaEnCurso = false;
 
   // ── Estado de navegación / tab activa
   readonly activeSection = signal<RrhhAsistenciaSection>('cumplimiento');
@@ -60,6 +64,8 @@ export class RrhhAsistenciaFacade {
   private readonly estadosHoyByEmpleadoId = signal<Record<number, EstadoMonitorResponse>>({});
   readonly isLoading = signal<boolean>(false);
   readonly errorMessage = signal<string>('');
+  readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
+  readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
 
   readonly diasSemanaOptions: readonly string[] = DIAS_SEMANA;
   readonly monthOptions: readonly MonthOption[] = this.buildMonthOptions();
@@ -85,6 +91,8 @@ export class RrhhAsistenciaFacade {
   });
 
   readonly rows = computed<CumplimientoRow[]>(() => {
+    if (!this.canDisplayOperationalData()) return [];
+
     const resumen = this.resumenByEmpleadoId();
     const search = this.searchTerm().trim().toLowerCase();
     const puesto = this.puestoFilter();
@@ -116,6 +124,8 @@ export class RrhhAsistenciaFacade {
    * Se excluyen los turnos cuya entrada todavia no llega (evita ruido visual).
    */
   readonly esperadosNoMarcados = computed(() => {
+    if (!this.canDisplayOperationalData()) return [];
+
     const estados = this.estadosHoyByEmpleadoId();
     const nowMinutes = this.currentMinutesOfDay();
     return this.empleados()
@@ -183,6 +193,18 @@ export class RrhhAsistenciaFacade {
     detalles: this.fb.nonNullable.array(this.buildDefaultScheduleRows())
   });
 
+  constructor() {
+    effect(() => {
+      this.operationalGateService.currentStatus();
+
+      if (!this.operationalGate.canActivateOperationalData() || this.operationalGate.hasActivatedOperationalData()) {
+        return;
+      }
+
+      void this.recargar();
+    });
+  }
+
   // ─────────────────────────────────────────────────────────────────────
   // Mes / filtros / cumplimiento (Fase A)
   // ─────────────────────────────────────────────────────────────────────
@@ -206,6 +228,11 @@ export class RrhhAsistenciaFacade {
   }
 
   async recargar(): Promise<void> {
+    if (!this.canDisplayOperationalData() || this.recargaEnCurso) {
+      return;
+    }
+
+    this.recargaEnCurso = true;
     this.isLoading.set(true);
     this.errorMessage.set('');
     try {
@@ -241,6 +268,7 @@ export class RrhhAsistenciaFacade {
       const estadosMap: Record<number, EstadoMonitorResponse> = {};
       for (const item of estados ?? []) estadosMap[item.idEmpleado] = item;
       this.estadosHoyByEmpleadoId.set(estadosMap);
+      this.operationalGate.markActivated();
     } catch (error) {
       this.errorMessage.set(
         this.extractErrorMessage(
@@ -249,6 +277,7 @@ export class RrhhAsistenciaFacade {
         )
       );
     } finally {
+      this.recargaEnCurso = false;
       this.isLoading.set(false);
     }
   }
@@ -262,6 +291,11 @@ export class RrhhAsistenciaFacade {
   }
 
   async openEmployeeDrawer(idEmpleado: number): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      this.errorMessage.set('Marca tu asistencia para revisar el detalle del equipo.');
+      return;
+    }
+
     const empleado = this.empleados().find((e) => e.idEmpleado === idEmpleado) ?? null;
     if (!empleado) return;
 
@@ -314,6 +348,10 @@ export class RrhhAsistenciaFacade {
   // ─────────────────────────────────────────────────────────────────────
 
   async submitScheduleChange(): Promise<void> {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
+
     const empleado = this.drawerEmpleado();
     const horario = this.drawerHorario();
     const contrato = this.drawerContrato();
@@ -461,6 +499,10 @@ export class RrhhAsistenciaFacade {
       baseRequest: { modalidad: string; fechaInicio: string; compensable: boolean; detalles: any[] }
     ) => Promise<void>
   ): Promise<void> {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
+
     const empleado = this.drawerEmpleado();
     const horario = this.drawerHorario();
     const contrato = this.drawerContrato();
@@ -707,5 +749,14 @@ export class RrhhAsistenciaFacade {
     const http = error as HttpErrorResponse;
     const apiMessage = (http?.error as { message?: string } | undefined)?.message;
     return apiMessage || fallback;
+  }
+
+  private ensureCanMutate(): boolean {
+    if (this.canMutateOperationalData()) {
+      return true;
+    }
+
+    this.scheduleChangeErrorMessage.set('Marca tu asistencia para modificar horarios.');
+    return false;
   }
 }

@@ -9,6 +9,9 @@
     </div>
   </p-card>
 
+  @if (!facade.canDisplayOperationalData()) {
+    <p-message severity="info" text="Marca tu asistencia para revisar asistencia y horarios del equipo." />
+  } @else {
   <p-tabs [value]="facade.activeSection()" (valueChange)="onSectionChange($event)">
     <p-tablist>
       <p-tab value="cumplimiento">
@@ -233,6 +236,7 @@
       </p-tabpanel>
     </p-tabpanels>
   </p-tabs>
+  }
 
   <!-- ───── Drawer del empleado ───── -->
   <p-drawer
@@ -364,6 +368,9 @@
                 @if (facade.scheduleChangeErrorMessage()) {
                   <p-message severity="error" [text]="facade.scheduleChangeErrorMessage()" />
                 }
+                @if (!facade.canMutateOperationalData()) {
+                  <p-message severity="info" text="Marca tu asistencia para modificar horarios." />
+                }
 
                 <label class="field">
                   <span>Fecha de inicio</span>
@@ -372,6 +379,7 @@
                     [ngModelOptions]="{ standalone: true }"
                     dateFormat="dd/mm/yy"
                     [showIcon]="true"
+                    [disabled]="!facade.canMutateOperationalData()"
                     appendTo="body"
                     (ngModelChange)="setScheduleStartDate($event)"
                   />
@@ -395,6 +403,7 @@
                     icon="pi pi-save"
                     label="Guardar horario"
                     [loading]="facade.isSubmittingHorario()"
+                    [disabled]="!facade.canMutateOperationalData()"
                     (click)="facade.submitScheduleChange()"
                   ></button>
                 </div>
@@ -442,6 +451,7 @@
           label="Solo para hoy"
           [outlined]="true"
           [loading]="facade.isApplyingCorrectionDecision()"
+          [disabled]="!facade.canMutateOperationalData()"
           (click)="facade.applyCorrectionOnlyToday()"
         ></button>
         <button
@@ -451,6 +461,7 @@
           label="Desde manana en adelante"
           [outlined]="true"
           [loading]="facade.isApplyingCorrectionDecision()"
+          [disabled]="!facade.canMutateOperationalData()"
           (click)="facade.applyCorrectionFromTomorrow()"
         ></button>
         <button
@@ -459,6 +470,7 @@
           icon="pi pi-bolt"
           label="Hoy + desde manana"
           [loading]="facade.isApplyingCorrectionDecision()"
+          [disabled]="!facade.canMutateOperationalData()"
           (click)="facade.applyCorrectionTodayAndTomorrow()"
         ></button>
       </div>
@@ -471,6 +483,7 @@
             [ngModelOptions]="{ standalone: true }"
             dateFormat="dd/mm/yy"
             [showIcon]="true"
+            [disabled]="!facade.canMutateOperationalData()"
             appendTo="body"
             (ngModelChange)="setCorrectionCustomDate($event)"
           />
@@ -482,6 +495,7 @@
           label="Aplicar desde esa fecha"
           [outlined]="true"
           [loading]="facade.isApplyingCorrectionDecision()"
+          [disabled]="!facade.canMutateOperationalData()"
           (click)="facade.applyCorrectionFromCustomDate()"
         ></button>
       </div>

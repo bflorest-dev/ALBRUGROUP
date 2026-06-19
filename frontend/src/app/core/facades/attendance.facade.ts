@@ -379,13 +379,13 @@ export class AttendanceFacade {
 
   private resolveDisponibilidadFromAttendance(status: EstadoAsistencia): DisponibilidadOperativa | null {
     switch (status) {
-      case 'ONLINE':
-        return 'DISPONIBLE';
       case 'ALMUERZO':
       case 'SERVICIOS':
       case 'CAPACITACION':
         return 'OCUPADO';
       default:
+        // La bandeja comercial calcula DISPONIBLE, CON_LEADS, GESTIONANDO, SIN_GESTIONAR
+        // y SATURADO a partir de los leads pendientes del asesor.
         return null;
     }
   }

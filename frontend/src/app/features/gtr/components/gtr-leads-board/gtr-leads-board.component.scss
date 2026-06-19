@@ -17,6 +17,7 @@
 .datetime-stack {
   align-items: flex-start;
   display: inline-flex;
+  font-family: inherit;
   flex-direction: column;
   gap: 0.1rem;
   line-height: 1.15;
@@ -26,12 +27,13 @@
 
 .datetime-stack span {
   color: var(--app-text-muted);
-  font-size: 0.72rem;
+  font-size: 0.8rem;
+  font-weight: 500;
 }
 
 .datetime-stack strong {
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.88rem;
+  font-weight: 650;
 }
 
 @media (max-width: 900px) {

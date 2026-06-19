@@ -250,10 +250,12 @@ export class EmployeeAccessPanelComponent {
     switch (value?.toUpperCase()) {
       case 'ONLINE':       return 'success';
       case 'DISPONIBLE':   return 'success';
+      case 'CON_LEADS':    return 'info';
       case 'ALMUERZO':     return 'warn';
       case 'SERVICIOS':    return 'info';
       case 'CAPACITACION': return 'warn';
       case 'GESTIONANDO':  return 'info';
+      case 'SIN_GESTIONAR': return 'warn';
       case 'OCUPADO':      return 'warn';
       case 'SATURADO':     return 'danger';
       default:             return 'secondary';

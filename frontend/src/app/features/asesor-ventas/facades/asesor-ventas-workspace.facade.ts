@@ -36,6 +36,38 @@ type OfertaAdditionalSelection = {
   cantidad: number;
 };
 
+export function resolveSalesAdvisorAvailability(
+  status: EstadoAsistencia,
+  totalLeads: number,
+  isManagingLead: boolean
+): DisponibilidadOperativa | null {
+  if (status === 'OFFLINE') {
+    return null;
+  }
+
+  if (status === 'ALMUERZO' || status === 'SERVICIOS' || status === 'CAPACITACION') {
+    return 'OCUPADO';
+  }
+
+  if (totalLeads >= 10) {
+    return 'SATURADO';
+  }
+
+  if (isManagingLead) {
+    return 'GESTIONANDO';
+  }
+
+  if (totalLeads >= 3) {
+    return 'SIN_GESTIONAR';
+  }
+
+  if (totalLeads >= 1) {
+    return 'CON_LEADS';
+  }
+
+  return 'DISPONIBLE';
+}
+
 @Injectable()
 export class AsesorVentasWorkspaceFacade {
   private readonly browserSessionService = inject(BrowserSessionService);
@@ -1369,6 +1401,10 @@ export class AsesorVentasWorkspaceFacade {
   private resolveDisponibilidadOperativa(): DisponibilidadOperativa | null {
     const status = this.operationalGateService.currentStatus();
 
+    if (this.isSalesAdvisorOrOjt()) {
+      return resolveSalesAdvisorAvailability(status, this.totalElements(), this.isManagingLead());
+    }
+
     if (status === 'OFFLINE') {
       return null;
     }
@@ -1390,6 +1426,11 @@ export class AsesorVentasWorkspaceFacade {
 
   private isBusyAttendanceStatus(status: EstadoAsistencia): boolean {
     return status === 'ALMUERZO' || status === 'SERVICIOS' || status === 'CAPACITACION';
+  }
+
+  private isSalesAdvisorOrOjt(): boolean {
+    const primaryRole = this.sessionService.getSession()?.primaryRole;
+    return primaryRole === 'ASESOR_VENTAS' || primaryRole === 'OJT';
   }
 
   /** Elimina caracteres no numericos y limita la longitud del control de formulario. */

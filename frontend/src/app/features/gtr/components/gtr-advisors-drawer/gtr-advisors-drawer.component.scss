@@ -113,8 +113,13 @@
   background: #16a34a;
 }
 
+.dot--with-leads {
+  background: #0284c7;
+}
+
 .dot--working,
-.dot--connected {
+.dot--connected,
+.dot--pending {
   background: #f59e0b;
 }
 

@@ -49,7 +49,9 @@ export class SupervisorVentasMonitoreoPageComponent implements OnInit, OnDestroy
   protected disponibilidadSeverity(value: string | null | undefined): Severity {
     switch (value?.toUpperCase()) {
       case 'DISPONIBLE': return 'success';
+      case 'CON_LEADS': return 'info';
       case 'GESTIONANDO': return 'info';
+      case 'SIN_GESTIONAR': return 'warn';
       case 'OCUPADO': return 'warn';
       case 'SATURADO': return 'danger';
       default: return 'secondary';

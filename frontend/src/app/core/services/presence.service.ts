@@ -64,7 +64,13 @@ export interface ConnectedStatusResponse {
   conectado: boolean;
 }
 
-export type DisponibilidadOperativa = 'DISPONIBLE' | 'GESTIONANDO' | 'OCUPADO' | 'SATURADO';
+export type DisponibilidadOperativa =
+  | 'DISPONIBLE'
+  | 'CON_LEADS'
+  | 'GESTIONANDO'
+  | 'SIN_GESTIONAR'
+  | 'OCUPADO'
+  | 'SATURADO';
 
 @Injectable({ providedIn: 'root' })
 export class PresenceService {

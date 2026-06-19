@@ -227,6 +227,13 @@ label {
   justify-content: flex-end;
 }
 
+.lead-contact-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
 .select-item {
   display: grid;
   gap: 0.2rem;

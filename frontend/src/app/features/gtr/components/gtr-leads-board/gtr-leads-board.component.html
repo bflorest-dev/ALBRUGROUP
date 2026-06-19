@@ -151,26 +151,6 @@
             <button
               pButton
               type="button"
-              icon="pi pi-phone"
-              label="Llamar"
-              size="small"
-              severity="secondary"
-              [disabled]="!row.lead || !facade.canMutateOperationalData()"
-              (click)="facade.openDialer(row)"
-            ></button>
-            <button
-              pButton
-              type="button"
-              icon="pi pi-whatsapp"
-              label="Chat"
-              size="small"
-              severity="secondary"
-              [disabled]="!row.lead || !facade.canMutateOperationalData()"
-              (click)="facade.openWhatsAppChat(row)"
-            ></button>
-            <button
-              pButton
-              type="button"
               size="small"
               class="gtr-assign-button"
               [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"

@@ -524,9 +524,11 @@ export class GtrWorkspaceFacade {
   readonly availableAssignmentAdvisors = computed(() => {
     const availabilityOrder = new Map<string, number>([
       ['DISPONIBLE', 0],
-      ['GESTIONANDO', 1],
-      ['OCUPADO', 2],
-      ['SATURADO', 3]
+      ['CON_LEADS', 1],
+      ['GESTIONANDO', 2],
+      ['SIN_GESTIONAR', 3],
+      ['OCUPADO', 4],
+      ['SATURADO', 5]
     ]);
 
     return this.advisors()
@@ -548,7 +550,9 @@ export class GtrWorkspaceFacade {
   });
   readonly selectedSnapshotLead = computed(() => {
     const idLead = this.snapshotForm.controls.idLead.value;
-    return this.rows().find((row) => row.id === idLead) ?? null;
+    return this.rows().find((row) => row.id === idLead)
+      ?? this.searchResults().find((row) => row.id === idLead)
+      ?? null;
   });
 
   constructor(@Inject(DOCUMENT) private readonly document: Document) {
@@ -1839,7 +1843,11 @@ export class GtrWorkspaceFacade {
     switch (value) {
       case 'DISPONIBLE':
         return 'success';
+      case 'CON_LEADS':
+        return 'info';
       case 'GESTIONANDO':
+        return 'warn';
+      case 'SIN_GESTIONAR':
         return 'warn';
       case 'OCUPADO':
         return 'secondary';
@@ -1973,8 +1981,12 @@ export class GtrWorkspaceFacade {
     switch (advisor.disponibilidad) {
       case 'DISPONIBLE':
         return 'dot--available';
+      case 'CON_LEADS':
+        return 'dot--with-leads';
       case 'GESTIONANDO':
         return 'dot--working';
+      case 'SIN_GESTIONAR':
+        return 'dot--pending';
       case 'OCUPADO':
         return 'dot--busy';
       case 'SATURADO':
