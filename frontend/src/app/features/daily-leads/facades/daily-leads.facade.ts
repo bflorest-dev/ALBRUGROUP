@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import type { TipificationPaletteByCode } from '../../../shared/components/tipification-stack/tipification-stack.component';
 import { EventoResponse } from '../../../shared/models/preventa/preventa.models';
 import { formatLabel } from '../../../shared/utils/display-label';
+import { SessionService } from '../../../core/services/session.service';
 import { DailyLeadsService } from '../services/daily-leads.service';
 import {
   DailyLeadGroupFilter,
@@ -17,6 +18,17 @@ import {
 @Injectable()
 export class DailyLeadsFacade {
   private readonly service = inject(DailyLeadsService);
+  private readonly session = inject(SessionService);
+
+  /**
+   * Roles con visibilidad global de equipos (backend: VER_TODOS_LOS_EQUIPOS) que llegan a esta
+   * vista. Solo ellos agrupan por equipo; el GTR está acotado por backend a su único equipo.
+   */
+  private static readonly ROLES_VISIBILIDAD_GLOBAL = new Set(['ADMINISTRADOR', 'COMMUNITY', 'MONITOR']);
+  readonly canGroupByTeam = computed(() => {
+    const role = this.session.primaryRole();
+    return !!role && DailyLeadsFacade.ROLES_VISIBILIDAD_GLOBAL.has(role);
+  });
 
   private readonly timeFormatter = new Intl.DateTimeFormat('es-PE', {
     timeZone: 'America/Lima',
@@ -59,9 +71,9 @@ export class DailyLeadsFacade {
       { label: 'Asesor', value: 'ASESOR' },
       { label: 'Campaña', value: 'CAMPANA' }
     ];
-    // "Equipo" solo aplica cuando el usuario ve más de un equipo (visibilidad global:
-    // ADMIN/COMMUNITY). El GTR está acotado por backend a su único equipo, así que no se ofrece.
-    if (this.groups().equipos.length > 1) {
+    // "Equipo" solo para roles con visibilidad global (ADMIN/COMMUNITY). El GTR está acotado
+    // por backend a su único equipo, así que no se le ofrece la agrupación.
+    if (this.canGroupByTeam()) {
       options.push({ label: 'Equipo', value: 'EQUIPO' });
     }
     options.push(
