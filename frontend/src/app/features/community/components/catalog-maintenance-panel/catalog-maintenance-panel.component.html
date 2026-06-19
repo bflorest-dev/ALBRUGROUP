@@ -657,6 +657,9 @@
           <input pInputText type="number" min="0.01" step="0.01" formControlName="precioUnitario" placeholder="15.00" />
         </div>
       </label>
+      @if (facade.errorMessage()) {
+        <p-message class="wide" severity="error" [text]="facade.errorMessage() ?? ''" />
+      }
       <div class="form-actions wide">
         <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeAdditionalDialog()"></button>
         <button pButton type="submit" icon="pi pi-save" label="Guardar" [loading]="facade.isSaving()"></button>
@@ -1040,6 +1043,9 @@
         <span>Nombre de la cuenta</span>
         <input pInputText type="text" formControlName="nombreCuenta" placeholder="Nombre de la cuenta publicitaria" />
       </label>
+      @if (facade.errorMessage()) {
+        <p-message class="wide" severity="error" [text]="facade.errorMessage() ?? ''" />
+      }
       <div class="form-actions wide">
         <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeEditAccountDialog()"></button>
         <button pButton type="submit" icon="pi pi-save" label="Guardar" [loading]="facade.isSaving()"></button>
@@ -1069,6 +1075,9 @@
         [numberMaxLength]="15"
         numberPlaceholder="Numero WhatsApp"
       />
+      @if (facade.errorMessage()) {
+        <p-message class="wide" severity="error" [text]="facade.errorMessage() ?? ''" />
+      }
       <div class="form-actions wide">
         <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeWhatsappDialog()"></button>
         <button pButton type="submit" icon="pi pi-save" label="Guardar" [loading]="facade.isSaving()"></button>
@@ -1184,6 +1193,9 @@
       </section>
     </div>
 
+    @if (facade.errorMessage()) {
+      <p-message severity="error" [text]="facade.errorMessage() ?? ''" />
+    }
     <div class="dialog-actions">
       <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.closeZoneDialog()"></button>
       <button pButton type="button" icon="pi pi-save" label="Guardar zona" [loading]="facade.isSaving()" (click)="facade.saveZone()"></button>

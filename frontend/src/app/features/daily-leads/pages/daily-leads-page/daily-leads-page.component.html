@@ -91,7 +91,7 @@
       [loading]="facade.isLoading()"
       [rowHover]="true"
       [scrollable]="true"
-      [tableStyle]="{ 'min-width': '1260px' }"
+      [tableStyle]="{ 'min-width': '1160px' }"
       styleClass="p-datatable-sm daily-leads__table"
     >
       <ng-template #header>
@@ -99,8 +99,7 @@
           <th>Hora</th>
           <th>Accion</th>
           <th>Lead</th>
-          <th>Asesor</th>
-          <th>Rol</th>
+          <th>GTR</th>
           <th>Campana</th>
           <th>Primera tipificacion</th>
           <th>Ultima tipificacion</th>
@@ -119,7 +118,6 @@
             </span>
           </td>
           <td>{{ row.asesor }}</td>
-          <td><p-tag severity="secondary" [value]="row.rolLabel" /></td>
           <td class="daily-leads__campaign">{{ row.campana }}</td>
           <td>
             <app-tipification-stack
@@ -154,7 +152,7 @@
 
       <ng-template #emptymessage>
         <tr>
-          <td colspan="9">
+          <td colspan="8">
             @if (facade.isLoading()) {
               <div class="daily-leads__empty">Cargando...</div>
             } @else {
