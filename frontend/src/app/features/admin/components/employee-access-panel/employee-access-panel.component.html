@@ -98,11 +98,11 @@
               <ng-template #header>
                 <tr>
                   <th>Empleado</th>
+                  <th>Rol</th>
+                  <th>Estado</th>
                   <th>Documento</th>
                   <th>Celular</th>
                   <th>Correo</th>
-                  <th>Rol</th>
-                  <th>Estado</th>
                   <th class="col-actions">Acciones</th>
                 </tr>
               </ng-template>
@@ -115,9 +115,6 @@
                       <strong>{{ employee.nombres }} {{ employee.apellidos }}</strong>
                     </div>
                   </td>
-                  <td>{{ employee.numeroDocumento }}</td>
-                  <td>{{ employee.celularPersonal }}</td>
-                  <td class="cell-email">{{ employee.correoPersonal }}</td>
                   <td><p-tag [value]="toLabel(employee.role)" severity="secondary" /></td>
                   <td>
                     <div class="employee-states">
@@ -135,6 +132,9 @@
                       }
                     </div>
                   </td>
+                  <td>{{ employee.numeroDocumento }}</td>
+                  <td>{{ employee.celularPersonal }}</td>
+                  <td class="cell-email">{{ employee.correoPersonal }}</td>
                   <td class="col-actions">
                     <div class="row-actions">
                       <button
