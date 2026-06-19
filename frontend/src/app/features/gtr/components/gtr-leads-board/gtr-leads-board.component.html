@@ -68,6 +68,7 @@
         <th>Estado</th>
         <th>Asesor</th>
         <th>Ingreso</th>
+        <th>Ultima Gestion</th>
         <th class="col-actions">Acciones</th>
       </tr>
     </ng-template>
@@ -129,7 +130,22 @@
           />
         </td>
         <td>{{ facade.display(row.nombreAsesorAsignado) | uppercase }}</td>
-        <td>{{ (row.lastEntryAt ?? row.createdAt) | date: 'hh:mm a' }}</td>
+        <td>
+          <div class="datetime-stack">
+            <span>{{ row.createdAt | date: 'dd/MM' }}</span>
+            <strong>{{ row.createdAt | date: 'hh:mm a' }}</strong>
+          </div>
+        </td>
+        <td>
+          @if (row.lastEntryAt; as lastEntryAt) {
+            <div class="datetime-stack">
+              <span>{{ lastEntryAt | date: 'dd/MM' }}</span>
+              <strong>{{ lastEntryAt | date: 'hh:mm a' }}</strong>
+            </div>
+          } @else {
+            <span class="muted-text">Sin gestion</span>
+          }
+        </td>
         <td class="actions-cell">
           <div class="row-actions">
             <button

@@ -14,6 +14,26 @@
   margin-bottom: 0.9rem;
 }
 
+.datetime-stack {
+  align-items: flex-start;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  line-height: 1.15;
+  min-width: 4.25rem;
+  white-space: nowrap;
+}
+
+.datetime-stack span {
+  color: var(--app-text-muted);
+  font-size: 0.72rem;
+}
+
+.datetime-stack strong {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 @media (max-width: 900px) {
   .board-toolbar {
     align-items: flex-start;
