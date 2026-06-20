@@ -1732,6 +1732,19 @@ public class LeadService {
         eventoService.registrarEvento(request, registroAt);
     }
 
+    // Multi-titular: el alta de una oportunidad adicional NO es un registro de lead nuevo.
+    // Se emite como NUEVA_OPORTUNIDAD para no inflar los conteos/alertas de REGISTRO.
+    private void registrarEventoNuevaOportunidad(Long idLead, Long idCampana, Etapa etapa) {
+        eventoService.registrarEvento(
+                RegistrarEventoRequest.builder()
+                        .idLead(idLead)
+                        .idCampana(idCampana)
+                        .accion(Accion.NUEVA_OPORTUNIDAD)
+                        .etapa(etapa)
+                        .build()
+        );
+    }
+
     private void registrarEventoAsignacion(
             Long idLead,
             Long idCampana,
@@ -2570,7 +2583,7 @@ public class LeadService {
 
         Lead saved = leadRepository.save(nueva);
         Long idCampana = saved.getCampana() == null ? null : saved.getCampana().getId();
-        registrarEventoRegistro(saved.getId(), idCampana, saved.getEtapa());
+        registrarEventoNuevaOportunidad(saved.getId(), idCampana, saved.getEtapa());
         notificarCambioLead("REGISTRO", saved, null, null);
         return saved.getId();
     }
