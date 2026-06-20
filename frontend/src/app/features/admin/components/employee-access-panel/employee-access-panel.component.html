@@ -92,9 +92,19 @@
               dataKey="idEmpleado"
               [rowHover]="true"
               [scrollable]="true"
-              [tableStyle]="{ 'min-width': '900px' }"
+              [tableStyle]="{ 'min-width': '105rem', 'table-layout': 'fixed' }"
               styleClass="p-datatable-sm employee-table"
             >
+              <ng-template #colgroup>
+                <col style="width: 27rem" />
+                <col style="width: 12rem" />
+                <col style="width: 12rem" />
+                <col style="width: 9rem" />
+                <col style="width: 10rem" />
+                <col style="width: 18rem" />
+                <col style="width: 17rem" />
+              </ng-template>
+
               <ng-template #header>
                 <tr>
                   <th>Empleado</th>
@@ -112,7 +122,9 @@
                   <td>
                     <div class="employee-name-cell">
                       <span [class]="dotClass(employee.idEmpleado)" aria-hidden="true"></span>
-                      <strong>{{ employee.nombres }} {{ employee.apellidos }}</strong>
+                      <strong [attr.title]="employee.nombres + ' ' + employee.apellidos">
+                        {{ employee.nombres }} {{ employee.apellidos }}
+                      </strong>
                     </div>
                   </td>
                   <td><p-tag [value]="toLabel(employee.role)" severity="secondary" /></td>

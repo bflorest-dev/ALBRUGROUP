@@ -523,6 +523,20 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     );
 
     @Query("""
+            SELECT COUNT(e)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.accion = :accion
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt < :fechaHasta
+            """)
+    long contarIngresosGtr(
+            @Param("accion") Accion accion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta
+    );
+
+    @Query("""
             SELECT COUNT(DISTINCT e.idLead)
             FROM Evento e
             WHERE e.accion = :accion

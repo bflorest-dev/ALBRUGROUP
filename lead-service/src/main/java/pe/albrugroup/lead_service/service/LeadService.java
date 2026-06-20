@@ -41,6 +41,7 @@ import pe.albrugroup.lead_service.entity.response.LeadPromocionDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsesorVentasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
+import pe.albrugroup.lead_service.entity.response.AgendadosGtrResumenResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrMetricasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionItemResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionesResponse;
@@ -84,6 +85,8 @@ import pe.albrugroup.lead_service.service.mapper.LeadMapper;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
@@ -367,14 +370,41 @@ public class LeadService {
                 rangoDia.inicio(),
                 rangoDia.fin()
         );
+        long ingresos = eventoRepository.contarIngresosGtr(
+                Accion.REGISTRO,
+                rangoDia.inicio(),
+                rangoDia.fin()
+        );
 
-        return new LeadGtrMetricasResponse(nuevos, sinGestionar, gestionados, preventas);
+        return new LeadGtrMetricasResponse(nuevos, sinGestionar, gestionados, preventas, ingresos);
     }
 
     public PageResponse<LeadAgendadoGtrResponse> listarAgendadosGtr(PageRequest pageRequest) {
         Page<LeadAgendadoGtrResponse> leads = listarAgendadosGtrOrdenados(pageRequest);
         aplicarTotalesAsignacion(leads.getContent(), LeadAgendadoGtrResponse::getId, this::setTotalesAsignacion);
         return PageResponse.from(leads);
+    }
+
+    public AgendadosGtrResumenResponse obtenerResumenAgendadosGtr() {
+        OperationalDateTime.InstantRange hoy = OperationalDateTime.dayRange(null);
+        Map<String, Long> programadosHoyPorHora = new LinkedHashMap<>();
+        for (int hora = 0; hora < 24; hora++) {
+            programadosHoyPorHora.put(String.format("%02d", hora), 0L);
+        }
+
+        leadRepository.contarAgendadosGtrHoyPorHora(
+                        Etapa.PREVENTA,
+                        TIPIFICACION_AGENDADO,
+                        Accion.TIPIFICACION,
+                        hoy.inicio(),
+                        hoy.fin())
+                .forEach(item -> programadosHoyPorHora.merge(
+                        String.format("%02d", item.getHoraProgramada().getHour()),
+                        item.getCantidad(),
+                        Long::sum));
+
+        long totalActivos = leadRepository.contarAgendadosGtrActivos(Etapa.PREVENTA, TIPIFICACION_AGENDADO);
+        return new AgendadosGtrResumenResponse(totalActivos, programadosHoyPorHora);
     }
 
     private Page<LeadAgendadoGtrResponse> listarAgendadosGtrOrdenados(PageRequest pageRequest) {

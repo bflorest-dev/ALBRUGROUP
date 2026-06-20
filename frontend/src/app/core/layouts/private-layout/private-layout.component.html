@@ -47,8 +47,17 @@
             <span>{{ item.label }}</span>
           </span>
 
-          @if (item.badge) {
-            <p-badge [value]="item.badge" severity="danger" />
+          @if (item.badge !== undefined) {
+            <span class="menu__item-alert" [attr.aria-label]="item.alertLabel ?? null">
+              <p-badge [value]="item.badge" severity="danger" />
+              <span
+                class="menu__item-alert-warning"
+                [class.menu__item-alert-warning--active]="item.alertActive"
+                aria-hidden="true"
+              >
+                <i class="pi pi-exclamation"></i>
+              </span>
+            </span>
           }
         </a>
       }

@@ -158,6 +158,11 @@ export interface LeadAgendadoGtrResponse {
   horaProgramada?: string | null;
 }
 
+export interface AgendadosGtrResumenResponse {
+  totalActivos: number;
+  programadosHoyPorHora: Record<string, number>;
+}
+
 export interface MasivoLeadFilters {
   idProveedor?: number;
   etapa?: Etapa | string;
@@ -211,6 +216,7 @@ export interface LeadGtrMetricasResponse {
   sinGestionar: number;
   gestionados: number;
   preventas: number;
+  ingresos: number;
 }
 
 export interface LeadGtrLookupResponse {

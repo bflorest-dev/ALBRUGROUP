@@ -164,6 +164,10 @@ public class PreventaController {
         var leads = leadService.listarAgendadosGtr(pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
+    @GetMapping("/gtr/agendados/resumen") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
+    public ResponseEntity<AgendadosGtrResumenResponse> obtenerResumenAgendadosGtr() {
+        return ResponseEntity.ok(leadService.obtenerResumenAgendadosGtr());
+    }
     // GENERAL. Ver detalle de un Lead
     @GetMapping("/{idLead}/detalle-asesor") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
     public ResponseEntity<LeadDetalleResponse> obtenerDetalleAsesor(@PathVariable Long idLead) {

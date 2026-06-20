@@ -12,12 +12,15 @@ import { formatLabel } from '../../../shared/utils/display-label';
 import { AttendanceActionId } from '../../../shared/models/schedule/estado-asistencia';
 import { AsesorVentasWorkspaceStateService } from '../../services/asesor-ventas-workspace-state.service';
 import { STORAGE_KEYS } from '../../constants/storage.constants';
+import { GtrAgendadosAlertFacade } from '../../../features/gtr/facades/gtr-agendados-alert.facade';
 
 type SidebarItem = {
   label: string;
   route: string;
   icon: string;
   badge?: string | number;
+  alertActive?: boolean;
+  alertLabel?: string;
   exact?: boolean;
 };
 
@@ -60,6 +63,7 @@ export class PrivateLayoutComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly asesorVentasState = inject(AsesorVentasWorkspaceStateService);
   private readonly sessionService = inject(SessionService);
+  private readonly gtrAgendadosAlertFacade = inject(GtrAgendadosAlertFacade);
   protected readonly profileMenuOpen = signal(false);
   protected readonly mobileMenuOpen = signal(false);
   protected readonly adminDeleteLeadsVisible = signal(this.readAdminDeleteLeadsVisible());
@@ -166,7 +170,15 @@ export class PrivateLayoutComponent {
     if (session.primaryRole === 'ASESOR_GTR' || session.primaryRole === 'SUPERVISOR_GTR') {
       return [
         { label: 'Plataforma', route: '/app/gtr/plataforma', icon: 'pi pi-desktop', exact: true },
-        { label: 'Agendados', route: '/app/gtr/agendados', icon: 'pi pi-calendar', exact: true },
+        {
+          label: 'Agendados',
+          route: '/app/gtr/agendados',
+          icon: 'pi pi-calendar',
+          badge: this.gtrAgendadosAlertFacade.totalActivos(),
+          alertActive: this.gtrAgendadosAlertFacade.hasCurrentHourWarning(),
+          alertLabel: this.gtrAgendadosAlertFacade.accessibleLabel(),
+          exact: true
+        },
         { label: 'Historicos', route: '/app/gtr/historicos', icon: 'pi pi-history', exact: true },
         { label: 'Leads del día', route: '/app/gtr/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
         { label: 'Ranking', route: '/app/gtr/ranking', icon: 'pi pi-chart-bar', exact: true }
@@ -187,6 +199,12 @@ export class PrivateLayoutComponent {
   constructor() {
     effect(() => {
       const session = this.session();
+
+      if (session?.primaryRole === 'ASESOR_GTR' || session?.primaryRole === 'SUPERVISOR_GTR') {
+        this.gtrAgendadosAlertFacade.start();
+      } else {
+        this.gtrAgendadosAlertFacade.stop();
+      }
 
       if (!session || session.primaryRole === 'ADMINISTRADOR' || this.attendanceInitialized) {
         return;

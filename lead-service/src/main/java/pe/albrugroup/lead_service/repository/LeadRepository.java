@@ -21,6 +21,7 @@ import pe.albrugroup.lead_service.repository.projection.AsesorCantidadProjection
 import pe.albrugroup.lead_service.repository.projection.AsesorPreventaCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.AsesorProveedorPreventaProjection;
 import pe.albrugroup.lead_service.repository.projection.LeadGtrAgrupacionProjection;
+import pe.albrugroup.lead_service.repository.projection.HoraProgramadaCantidadProjection;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -493,6 +494,45 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("codigoAgendado") String codigoAgendado,
             @Param("accionTipificacion") Accion accionTipificacion,
             Pageable pageable
+    );
+
+    @Query("""
+            SELECT COUNT(l)
+            FROM Lead l
+            WHERE l.etapa = :etapa
+              AND l.codigoTipificacion = :codigoAgendado
+            """)
+    long contarAgendadosGtrActivos(
+            @Param("etapa") Etapa etapa,
+            @Param("codigoAgendado") String codigoAgendado
+    );
+
+    @Query("""
+            SELECT e.horaProgramada AS horaProgramada, COUNT(l) AS cantidad
+            FROM Lead l
+            JOIN Evento e ON e.idLead = l.id
+            WHERE l.etapa = :etapa
+              AND l.codigoTipificacion = :codigoAgendado
+              AND e.accion = :accionTipificacion
+              AND e.tipificacion = :codigoAgendado
+              AND e.horaProgramada IS NOT NULL
+              AND e.createdAt >= :inicioDia
+              AND e.createdAt < :finDia
+              AND e.createdAt = (
+                  SELECT MAX(es.createdAt)
+                  FROM Evento es
+                  WHERE es.idLead = l.id
+                    AND es.accion = :accionTipificacion
+                    AND es.tipificacion = :codigoAgendado
+              )
+            GROUP BY e.horaProgramada
+            """)
+    List<HoraProgramadaCantidadProjection> contarAgendadosGtrHoyPorHora(
+            @Param("etapa") Etapa etapa,
+            @Param("codigoAgendado") String codigoAgendado,
+            @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("inicioDia") Instant inicioDia,
+            @Param("finDia") Instant finDia
     );
 
     @Query("""

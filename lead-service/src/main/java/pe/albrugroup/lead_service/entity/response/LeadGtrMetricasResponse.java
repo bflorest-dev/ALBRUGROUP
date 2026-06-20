@@ -11,4 +11,5 @@ public class LeadGtrMetricasResponse {
     private long sinGestionar;
     private long gestionados;
     private long preventas;
+    private long ingresos;
 }

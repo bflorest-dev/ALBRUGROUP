@@ -132,11 +132,17 @@
   align-items: center;
   display: flex;
   gap: 0.5rem;
+  min-width: 0;
 }
 
 .employee-name-cell strong {
   color: var(--role-panel-text, #0f1f33);
+  display: block;
   font-size: 0.86rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cell-email {
@@ -287,7 +293,14 @@
 
   .employee-table .p-datatable-tbody > tr > td {
     font-size: 0.82rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
     vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  .employee-table .p-datatable-table {
+    table-layout: fixed;
   }
 
   .employee-table .col-actions {

@@ -5,6 +5,7 @@ import { API_CONSTANTS } from '../../../core/constants/api.constants';
 import { UsuarioResponse } from '../../../shared/models/auth/usuario-response';
 import {
   AdicionalResponse,
+  AgendadosGtrResumenResponse,
   CampanaResponse,
   CatalogoResponse,
   LeadAsignacionMasivaRequest,
@@ -160,6 +161,10 @@ export class PreventaLeadService {
     return this.http.get<LeadPage<LeadAgendadoGtrResponse>>(`${this.leadUrl}/preventa/gtr/agendados`, {
       params: this.pageParams(query)
     });
+  }
+
+  obtenerResumenAgendadosGtr(): Observable<AgendadosGtrResumenResponse> {
+    return this.http.get<AgendadosGtrResumenResponse>(`${this.leadUrl}/preventa/gtr/agendados/resumen`);
   }
 
   listarEventosLead(idLead: number, fecha: string, query: PageQuery): Observable<LeadPage<EventoResponse>> {

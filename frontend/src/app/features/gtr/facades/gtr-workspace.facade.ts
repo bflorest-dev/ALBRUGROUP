@@ -205,7 +205,8 @@ export class GtrWorkspaceFacade {
     nuevos: 0,
     sinGestionar: 0,
     gestionados: 0,
-    preventas: 0
+    preventas: 0,
+    ingresos: 0
   });
   readonly totalElements = signal(0);
   readonly totalPages = signal(0);
@@ -513,6 +514,7 @@ export class GtrWorkspaceFacade {
   readonly metricCards = computed(() => {
     const metrics = this.metrics();
     return [
+      { label: 'Ingresos', value: metrics.ingresos, tone: 'blue' },
       { label: 'Nuevos', value: metrics.nuevos, tone: 'blue' },
       { label: 'Sin Gestionar', value: metrics.sinGestionar, tone: 'amber' },
       { label: 'Gestionados', value: metrics.gestionados, tone: 'green' },
@@ -2618,7 +2620,8 @@ export class GtrWorkspaceFacade {
       nuevos: 0,
       sinGestionar: 0,
       gestionados: 0,
-      preventas: 0
+      preventas: 0,
+      ingresos: 0
     });
     this.totalElements.set(0);
     this.totalPages.set(0);

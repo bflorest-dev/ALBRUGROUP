@@ -57,7 +57,7 @@ h1 {
 .metric-grid {
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 :host ::ng-deep .gtr-metric .p-card-body {
