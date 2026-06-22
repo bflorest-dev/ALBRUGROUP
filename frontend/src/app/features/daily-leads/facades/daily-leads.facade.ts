@@ -69,6 +69,9 @@ export class DailyLeadsFacade {
 
   readonly first = computed(() => this.pageNumber() * this.pageSize);
   readonly isToday = computed(() => this.fecha() === '');
+  readonly headerTotalElements = computed(() =>
+    this.selectedGroup() ? this.visibleTotalElements() : this.totalElements()
+  );
   readonly groupingModeOptions = computed<Array<{ label: string; value: DailyLeadGroupMode }>>(() => {
     const options: Array<{ label: string; value: DailyLeadGroupMode }> = [
       { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
