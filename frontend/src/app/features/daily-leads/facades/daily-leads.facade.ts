@@ -12,6 +12,8 @@ import {
   DailyLeadGroupMode,
   DailyLeadGroupsResponse,
   DailyLeadRowView,
+  DailyLeadSortDirection,
+  DailyLeadSortField,
   LeadDiarioResponse
 } from '../models/daily-lead.model';
 
@@ -53,6 +55,9 @@ export class DailyLeadsFacade {
   readonly fecha = signal('');
   readonly groupingMode = signal<DailyLeadGroupMode>('SIN_AGRUPAR');
   readonly selectedGroup = signal<DailyLeadGroupItem | null>(null);
+  readonly groupSearchQuery = signal('');
+  readonly sortField = signal<DailyLeadSortField>('createdAt');
+  readonly sortDirection = signal<DailyLeadSortDirection>('desc');
   readonly groups = signal<DailyLeadGroupsResponse>({
     asesores: [],
     campanas: [],
@@ -82,6 +87,31 @@ export class DailyLeadsFacade {
     );
     return options;
   });
+  readonly sortOptions: Array<{ label: string; value: DailyLeadSortField }> = [
+    { label: 'Hora de registro', value: 'createdAt' },
+    { label: 'Asesor', value: 'nombreActor' },
+    { label: 'Campaña', value: 'campana' },
+    { label: 'Lead', value: 'lead' },
+    { label: 'Primera tipificación', value: 'primeraTipificacion' },
+    { label: 'Última tipificación', value: 'ultimaTipificacion' }
+  ];
+  readonly sortDirectionOptions = computed<Array<{ label: string; value: DailyLeadSortDirection }>>(() =>
+    this.sortField() === 'createdAt'
+      ? [
+          { label: 'Más antiguos', value: 'asc' },
+          { label: 'Más recientes', value: 'desc' }
+        ]
+      : [
+          { label: 'A–Z', value: 'asc' },
+          { label: 'Z–A', value: 'desc' }
+        ]
+  );
+  readonly organizationSummary = computed(() => {
+    const grouping = this.groupingModeOptions().find((option) => option.value === this.groupingMode())?.label;
+    const sorting = this.sortOptions.find((option) => option.value === this.sortField())?.label;
+    const direction = this.sortDirection() === 'asc' ? 'ascendente' : 'descendente';
+    return `${grouping ?? 'Sin agrupar'} · ${sorting ?? 'Hora de registro'} (${direction})`;
+  });
   readonly activeGroupOptions = computed<DailyLeadGroupItem[]>(() => {
     const groups = this.groups();
     switch (this.groupingMode()) {
@@ -104,6 +134,14 @@ export class DailyLeadsFacade {
       default:
         return [];
     }
+  });
+  readonly filteredGroupOptions = computed<DailyLeadGroupItem[]>(() => {
+    const query = this.groupSearchQuery().trim().toLocaleLowerCase('es-PE');
+    const groups = this.activeGroupOptions();
+    if (!query) {
+      return groups;
+    }
+    return groups.filter((group) => group.etiqueta.toLocaleLowerCase('es-PE').includes(query));
   });
   readonly maxDate = this.localToday();
 
@@ -155,14 +193,45 @@ export class DailyLeadsFacade {
     }
     this.groupingMode.set(mode);
     this.selectedGroup.set(null);
+    this.groupSearchQuery.set('');
     await this.load(0);
   }
 
-  async toggleGroup(group: DailyLeadGroupItem): Promise<void> {
-    const selected = this.selectedGroup();
-    this.selectedGroup.set(
-      selected && this.groupKey(selected) === this.groupKey(group) ? null : group
-    );
+  searchGroups(query: string | null | undefined): void {
+    this.groupSearchQuery.set(query ?? '');
+  }
+
+  async selectGroup(group: DailyLeadGroupItem | null | undefined): Promise<void> {
+    if (!group || this.isGroupSelected(group)) {
+      return;
+    }
+    this.selectedGroup.set(group);
+    this.groupSearchQuery.set('');
+    await this.load(0);
+  }
+
+  async clearSelectedGroup(): Promise<void> {
+    if (!this.selectedGroup()) {
+      return;
+    }
+    this.selectedGroup.set(null);
+    this.groupSearchQuery.set('');
+    await this.load(0);
+  }
+
+  async setSortField(field: DailyLeadSortField | null | undefined): Promise<void> {
+    if (!field || field === this.sortField()) {
+      return;
+    }
+    this.sortField.set(field);
+    await this.load(0);
+  }
+
+  async setSortDirection(direction: DailyLeadSortDirection | null | undefined): Promise<void> {
+    if (!direction || direction === this.sortDirection()) {
+      return;
+    }
+    this.sortDirection.set(direction);
     await this.load(0);
   }
 
@@ -246,7 +315,9 @@ export class DailyLeadsFacade {
           fecha: this.fecha() || undefined,
           pageNumber,
           pageSize: this.pageSize,
-          filters: this.currentGroupFilter()
+          filters: this.currentGroupFilter(),
+          sortBy: this.sortField(),
+          direction: this.sortDirection()
         })
       );
       this.pageNumber.set(page.page);

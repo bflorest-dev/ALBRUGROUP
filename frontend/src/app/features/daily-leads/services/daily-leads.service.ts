@@ -7,6 +7,8 @@ import { CatalogoResponse, EventoResponse, PageQuery } from '../../../shared/mod
 import {
   DailyLeadGroupFilter,
   DailyLeadGroupsResponse,
+  DailyLeadSortDirection,
+  DailyLeadSortField,
   LeadDiarioResponse
 } from '../models/daily-lead.model';
 
@@ -15,6 +17,8 @@ export interface DailyLeadsQuery {
   pageNumber: number;
   pageSize: number;
   filters?: DailyLeadGroupFilter;
+  sortBy: DailyLeadSortField;
+  direction: DailyLeadSortDirection;
 }
 
 /** Catálogo mínimo de equipos para resolver nombres en los selectores. */
@@ -33,8 +37,8 @@ export class DailyLeadsService {
     let params = new HttpParams()
       .set('pageNumber', query.pageNumber)
       .set('pageSize', query.pageSize)
-      .set('sortBy', 'createdAt')
-      .set('direction', 'desc');
+      .set('sortBy', query.sortBy)
+      .set('direction', query.direction);
 
     if (query.fecha) {
       params = params.set('fecha', query.fecha);

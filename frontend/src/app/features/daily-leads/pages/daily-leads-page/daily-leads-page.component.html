@@ -46,43 +46,92 @@
       <p-message severity="error" [text]="facade.errorMessage()" styleClass="daily-leads__message" />
     }
 
-    <section class="daily-leads__grouping" aria-label="Agrupar leads del día">
-      <div class="daily-leads__grouping-header">
-        <strong>Agrupar resultados</strong>
-        <p-selectbutton
-          [options]="facade.groupingModeOptions()"
-          [ngModel]="facade.groupingMode()"
-          optionLabel="label"
-          optionValue="value"
-          [allowEmpty]="false"
-          (onChange)="facade.setGroupingMode($any($event.value))"
-        />
+    <section class="daily-leads__organization" aria-label="Organizar resultados">
+      <div class="daily-leads__organization-copy">
+        <strong>Organizar resultados</strong>
+        <span>{{ facade.organizationSummary() }}</span>
       </div>
 
-      @if (facade.groupingMode() !== 'SIN_AGRUPAR') {
-        <div class="daily-leads__groups" aria-label="Grupos disponibles">
-          @for (group of facade.activeGroupOptions(); track facade.groupKey(group)) {
-            <button
-              pButton
-              type="button"
-              class="daily-leads__group"
-              [class.daily-leads__group--selected]="facade.isGroupSelected(group)"
-              [outlined]="!facade.isGroupSelected(group)"
-              severity="secondary"
-              [pTooltip]="group.etiqueta + ' · ' + group.cantidad"
-              tooltipPosition="bottom"
-              (click)="facade.toggleGroup(group)"
-            >
-              <span class="daily-leads__group-label">{{ group.etiqueta }}</span>
-              <span class="daily-leads__group-count">{{ group.cantidad }}</span>
-            </button>
-          } @empty {
-            <span class="daily-leads__groups-empty">
-              {{ facade.isLoadingGroups() ? 'Actualizando grupos...' : 'No hay grupos disponibles.' }}
-            </span>
+      <div class="daily-leads__organization-actions">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-sliders-h"
+          label="Organizar"
+          severity="secondary"
+          [outlined]="true"
+          (click)="organizePopover.toggle($event)"
+        ></button>
+
+        <p-popover #organizePopover appendTo="body" styleClass="daily-leads-organize-popover">
+          <div class="daily-leads__organize-panel">
+          <div class="daily-leads__organize-field">
+            <label for="daily-leads-grouping">Agrupar por</label>
+            <p-select
+              inputId="daily-leads-grouping"
+              [options]="facade.groupingModeOptions()"
+              [ngModel]="facade.groupingMode()"
+              optionLabel="label"
+              optionValue="value"
+              (onChange)="facade.setGroupingMode($any($event.value))"
+            />
+          </div>
+
+          @if (facade.groupingMode() !== 'SIN_AGRUPAR') {
+            <div class="daily-leads__organize-field">
+              <label for="daily-leads-group">Filtrar grupo</label>
+              <p-autocomplete
+                inputId="daily-leads-group"
+                [ngModel]="facade.selectedGroup()"
+                [suggestions]="facade.filteredGroupOptions()"
+                optionLabel="etiqueta"
+                [dropdown]="true"
+                [forceSelection]="true"
+                [showClear]="true"
+                [completeOnFocus]="true"
+                emptyMessage="No hay opciones disponibles"
+                (completeMethod)="facade.searchGroups($any($event.query))"
+                (onSelect)="facade.selectGroup($any($event.value))"
+                (onClear)="facade.clearSelectedGroup()"
+              >
+                <ng-template #item let-group>
+                  <div class="daily-leads__group-option">
+                    <span>{{ group.etiqueta }}</span>
+                    <strong>{{ group.cantidad }}</strong>
+                  </div>
+                </ng-template>
+              </p-autocomplete>
+            </div>
           }
-        </div>
-      }
+
+          <div class="daily-leads__organize-divider"></div>
+
+          <div class="daily-leads__organize-field">
+            <label for="daily-leads-sort">Ordenar por</label>
+            <p-select
+              inputId="daily-leads-sort"
+              [options]="facade.sortOptions"
+              [ngModel]="facade.sortField()"
+              optionLabel="label"
+              optionValue="value"
+              (onChange)="facade.setSortField($any($event.value))"
+            />
+          </div>
+
+          <div class="daily-leads__organize-field">
+            <label for="daily-leads-direction">Mostrar primero</label>
+            <p-select
+              inputId="daily-leads-direction"
+              [options]="facade.sortDirectionOptions()"
+              [ngModel]="facade.sortDirection()"
+              optionLabel="label"
+              optionValue="value"
+              (onChange)="facade.setSortDirection($any($event.value))"
+            />
+          </div>
+          </div>
+        </p-popover>
+      </div>
     </section>
 
     <p-table

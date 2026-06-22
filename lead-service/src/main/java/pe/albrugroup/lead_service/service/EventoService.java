@@ -29,8 +29,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -48,6 +48,14 @@ public class EventoService {
     private final PaginationService paginationService;
 
     private static final Set<String> EVENTO_SORT_FIELDS = Set.of("createdAt", "accion", "etapa", "tipificacion", "subtipificacion");
+    private static final Map<String, String> LEADS_DIARIOS_SORT_FIELDS = Map.of(
+            "createdAt", "createdAt",
+            "nombreActor", "nombreActor",
+            "campana", "c.nombre",
+            "lead", "l.lead",
+            "primeraTipificacion", "l.primeraCodigoTipificacion",
+            "ultimaTipificacion", "l.codigoTipificacion"
+    );
 
     @Transactional
     public EventoResponse registrarEvento(RegistrarEventoRequest request) {
@@ -171,10 +179,7 @@ public class EventoService {
         OperationalDateTime.InstantRange rango = OperationalDateTime.dayRange(fecha);
         validarFiltroAgrupacion(tipoGrupo, idGrupo, codigoTipificacion, sinValor);
 
-        var pageable = org.springframework.data.domain.PageRequest.of(
-                pageRequest.getPageNumber(),
-                pageRequest.getPageSize()
-        );
+        var pageable = paginationService.toPageableWithMapping(pageRequest, LEADS_DIARIOS_SORT_FIELDS);
 
         var registros = eventoRepository.listarRegistrosDiarios(
                 Accion.REGISTRO,

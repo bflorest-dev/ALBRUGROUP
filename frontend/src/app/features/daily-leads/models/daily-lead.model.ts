@@ -41,6 +41,16 @@ export type DailyLeadGroupType =
 
 export type DailyLeadGroupMode = 'SIN_AGRUPAR' | DailyLeadGroupType;
 
+export type DailyLeadSortField =
+  | 'createdAt'
+  | 'nombreActor'
+  | 'campana'
+  | 'lead'
+  | 'primeraTipificacion'
+  | 'ultimaTipificacion';
+
+export type DailyLeadSortDirection = 'asc' | 'desc';
+
 export interface DailyLeadGroupItem {
   idGrupo: number | null;
   codigoTipificacion: string | null;

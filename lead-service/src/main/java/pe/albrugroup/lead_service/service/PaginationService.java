@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -20,6 +21,25 @@ public class PaginationService {
                 request.getPageNumber(),
                 request.getPageSize(),
                 Sort.by(direction, request.getSortBy())
+        );
+    }
+
+    /**
+     * Permite exponer nombres de ordenamiento estables para la API sin filtrar los alias
+     * internos que una consulta JPQL pueda necesitar.
+     */
+    public Pageable toPageableWithMapping(PageRequest request, Map<String, String> sortFieldMapping) {
+        validateDirection(request.getDirection());
+        String sortField = sortFieldMapping.get(request.getSortBy());
+        if (sortField == null) {
+            throw new BadRequestException("Campo de ordenamiento no permitido: " + request.getSortBy());
+        }
+
+        Sort.Direction direction = Sort.Direction.fromString(request.getDirection());
+        return org.springframework.data.domain.PageRequest.of(
+                request.getPageNumber(),
+                request.getPageSize(),
+                Sort.by(direction, sortField)
         );
     }
 

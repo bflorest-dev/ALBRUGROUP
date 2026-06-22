@@ -18,9 +18,9 @@
   --layout-sidebar-hover: rgba(255, 255, 255, 0.11);
   --layout-sidebar-active: rgba(255, 255, 255, 0.17);
 
-  position: sticky;
-  top: 0;
-  height: 100vh;
+  align-self: stretch;
+  min-height: 100vh;
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 1.15rem;

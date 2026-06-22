@@ -220,7 +220,6 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                         )
                     )
               )
-            ORDER BY e.createdAt DESC
             """,
             countQuery = """
             SELECT COUNT(e)

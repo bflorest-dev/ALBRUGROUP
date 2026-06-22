@@ -1,6 +1,7 @@
 import { DatePipe, UpperCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AutoCompleteModule } from 'primeng/autocomplete';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DialogModule } from 'primeng/dialog';
@@ -9,8 +10,8 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { PaginatorModule } from 'primeng/paginator';
-import { SelectButtonModule } from 'primeng/selectbutton';
-import { TooltipModule } from 'primeng/tooltip';
+import { PopoverModule } from 'primeng/popover';
+import { SelectModule } from 'primeng/select';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 import { TipificationStackComponent } from '../../../../shared/components/tipification-stack/tipification-stack.component';
 import { DailyLeadsFacade } from '../../facades/daily-leads.facade';
@@ -22,6 +23,7 @@ import { DailyLeadsFacade } from '../../facades/daily-leads.facade';
     DatePipe,
     UpperCasePipe,
     FormsModule,
+    AutoCompleteModule,
     ButtonModule,
     CardModule,
     DialogModule,
@@ -30,8 +32,8 @@ import { DailyLeadsFacade } from '../../facades/daily-leads.facade';
     TableModule,
     TagModule,
     PaginatorModule,
-    SelectButtonModule,
-    TooltipModule,
+    PopoverModule,
+    SelectModule,
     DateFieldComponent,
     TipificationStackComponent
   ],
