@@ -55,7 +55,6 @@ export class DailyLeadsFacade {
   readonly fecha = signal('');
   readonly groupingMode = signal<DailyLeadGroupMode>('SIN_AGRUPAR');
   readonly selectedGroup = signal<DailyLeadGroupItem | null>(null);
-  readonly groupSearchQuery = signal('');
   readonly sortField = signal<DailyLeadSortField>('createdAt');
   readonly sortDirection = signal<DailyLeadSortDirection>('desc');
   readonly groups = signal<DailyLeadGroupsResponse>({
@@ -109,7 +108,9 @@ export class DailyLeadsFacade {
   readonly organizationSummary = computed(() => {
     const grouping = this.groupingModeOptions().find((option) => option.value === this.groupingMode())?.label;
     const sorting = this.sortOptions.find((option) => option.value === this.sortField())?.label;
-    const direction = this.sortDirection() === 'asc' ? 'ascendente' : 'descendente';
+    const direction = this.sortDirectionOptions().find(
+      (option) => option.value === this.sortDirection()
+    )?.label;
     return `${grouping ?? 'Sin agrupar'} · ${sorting ?? 'Hora de registro'} (${direction})`;
   });
   readonly activeGroupOptions = computed<DailyLeadGroupItem[]>(() => {
@@ -134,14 +135,6 @@ export class DailyLeadsFacade {
       default:
         return [];
     }
-  });
-  readonly filteredGroupOptions = computed<DailyLeadGroupItem[]>(() => {
-    const query = this.groupSearchQuery().trim().toLocaleLowerCase('es-PE');
-    const groups = this.activeGroupOptions();
-    if (!query) {
-      return groups;
-    }
-    return groups.filter((group) => group.etiqueta.toLocaleLowerCase('es-PE').includes(query));
   });
   readonly maxDate = this.localToday();
 
@@ -193,12 +186,7 @@ export class DailyLeadsFacade {
     }
     this.groupingMode.set(mode);
     this.selectedGroup.set(null);
-    this.groupSearchQuery.set('');
     await this.load(0);
-  }
-
-  searchGroups(query: string | null | undefined): void {
-    this.groupSearchQuery.set(query ?? '');
   }
 
   async selectGroup(group: DailyLeadGroupItem | null | undefined): Promise<void> {
@@ -206,7 +194,6 @@ export class DailyLeadsFacade {
       return;
     }
     this.selectedGroup.set(group);
-    this.groupSearchQuery.set('');
     await this.load(0);
   }
 
@@ -215,7 +202,6 @@ export class DailyLeadsFacade {
       return;
     }
     this.selectedGroup.set(null);
-    this.groupSearchQuery.set('');
     await this.load(0);
   }
 

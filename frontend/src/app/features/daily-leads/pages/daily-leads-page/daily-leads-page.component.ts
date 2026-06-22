@@ -1,7 +1,6 @@
 import { DatePipe, UpperCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AutoCompleteModule } from 'primeng/autocomplete';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DialogModule } from 'primeng/dialog';
@@ -23,7 +22,6 @@ import { DailyLeadsFacade } from '../../facades/daily-leads.facade';
     DatePipe,
     UpperCasePipe,
     FormsModule,
-    AutoCompleteModule,
     ButtonModule,
     CardModule,
     DialogModule,

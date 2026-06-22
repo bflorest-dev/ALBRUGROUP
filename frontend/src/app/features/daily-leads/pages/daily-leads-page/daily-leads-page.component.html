@@ -80,19 +80,14 @@
           @if (facade.groupingMode() !== 'SIN_AGRUPAR') {
             <div class="daily-leads__organize-field">
               <label for="daily-leads-group">Filtrar grupo</label>
-              <p-autocomplete
+              <p-select
                 inputId="daily-leads-group"
                 [ngModel]="facade.selectedGroup()"
-                [suggestions]="facade.filteredGroupOptions()"
+                [options]="facade.activeGroupOptions()"
                 optionLabel="etiqueta"
-                [dropdown]="true"
-                [forceSelection]="true"
                 [showClear]="true"
-                [completeOnFocus]="true"
                 emptyMessage="No hay opciones disponibles"
-                (completeMethod)="facade.searchGroups($any($event.query))"
-                (onSelect)="facade.selectGroup($any($event.value))"
-                (onClear)="facade.clearSelectedGroup()"
+                (onChange)="$event.value ? facade.selectGroup($any($event.value)) : facade.clearSelectedGroup()"
               >
                 <ng-template #item let-group>
                   <div class="daily-leads__group-option">
@@ -100,7 +95,7 @@
                     <strong>{{ group.cantidad }}</strong>
                   </div>
                 </ng-template>
-              </p-autocomplete>
+              </p-select>
             </div>
           }
 
