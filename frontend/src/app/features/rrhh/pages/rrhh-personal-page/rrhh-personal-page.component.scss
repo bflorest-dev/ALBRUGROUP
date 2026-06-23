@@ -143,6 +143,25 @@
   margin: 0;
 }
 
+.team-change-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.team-change-target {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.team-change-target h3 {
+  margin: 0.1rem 0 0;
+}
+
+.team-change-target p {
+  color: var(--role-muted);
+  margin: 0;
+}
+
 .schedule-change-form {
   display: grid;
   gap: 0.9rem;
@@ -159,6 +178,14 @@
   color: var(--role-panel-text);
   font-size: 0.86rem;
   font-weight: 700;
+}
+
+:host ::ng-deep .team-change-dialog {
+  width: min(30rem, calc(100vw - 1rem));
+}
+
+:host ::ng-deep .team-change-dialog .p-select {
+  width: 100%;
 }
 
 .field--wide {
