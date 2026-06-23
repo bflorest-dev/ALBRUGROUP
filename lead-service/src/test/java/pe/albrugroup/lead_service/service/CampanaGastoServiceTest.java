@@ -44,6 +44,10 @@ class CampanaGastoServiceTest {
         Campana campana = campana();
         when(campanaRepository.findActiveByIdForUpdate(1L)).thenReturn(Optional.of(campana));
         when(registroRepository.existsByCampanaIdAndFechaCarga(1L, hoy)).thenReturn(false);
+        when(registroRepository.existsByCampanaIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(anyLong(), any(), any()))
+                .thenReturn(true);
+        when(registroRepository.existsByCampanaIdAndCreatedAtAndFechaCarga(1L, OperationalDateTime.previousDayClosure(hoy), hoy))
+                .thenReturn(false);
         when(registroRepository.saveAndFlush(any(CampanaGastoRegistro.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(registroRepository.save(any(CampanaGastoRegistro.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(eventoRepository.contarRegistrosPorCampanaYRango(anyLong(), any(), any(), any())).thenReturn(0L);
@@ -82,6 +86,25 @@ class CampanaGastoServiceTest {
         assertThat(response.getCierreRetroactivo()).isFalse();
         assertThat(OperationalDateTime.toOperationalDate(response.getCreatedAt())).isEqualTo(hoy);
         verify(registroRepository).findTopByCampanaIdAndFechaCargaOrderByIdDesc(1L, hoy);
+    }
+
+    @Test
+    void primerGastoSinActividadAyerSeRegistraHoy() {
+        LocalDate hoy = OperationalDateTime.today();
+        Campana campana = campana();
+        when(campanaRepository.findActiveByIdForUpdate(1L)).thenReturn(Optional.of(campana));
+        when(registroRepository.existsByCampanaIdAndFechaCarga(1L, hoy)).thenReturn(false);
+        when(registroRepository.existsByCampanaIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(anyLong(), any(), any()))
+                .thenReturn(false);
+        when(registroRepository.saveAndFlush(any(CampanaGastoRegistro.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(registroRepository.save(any(CampanaGastoRegistro.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(eventoRepository.contarRegistrosPorCampanaYRango(anyLong(), any(), any(), any())).thenReturn(0L);
+        when(eventoRepository.contarVentasCerradasPorCampanaYRango(anyLong(), any(), any(), any(), any(), any())).thenReturn(0L);
+
+        CampanaGastoResponse response = service.registrarGasto(1L, request(12));
+
+        assertThat(response.getCierreRetroactivo()).isFalse();
+        assertThat(OperationalDateTime.toOperationalDate(response.getCreatedAt())).isEqualTo(hoy);
     }
 
     private Campana campana() {

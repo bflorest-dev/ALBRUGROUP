@@ -51,7 +51,8 @@ public class CampanaGastoService {
         Campana campana = obtenerCampanaActivaParaRegistro(idCampana);
         LocalDate fechaCarga = OperationalDateTime.today();
         boolean esPrimerRegistroDelDia = !registroRepository.existsByCampanaIdAndFechaCarga(idCampana, fechaCarga);
-        Instant fechaRegistro = esPrimerRegistroDelDia
+        boolean aplicaCierreRetroactivo = debeAplicarCierreRetroactivo(idCampana, fechaCarga, esPrimerRegistroDelDia);
+        Instant fechaRegistro = aplicaCierreRetroactivo
                 ? OperationalDateTime.previousDayClosure(fechaCarga)
                 : OperationalDateTime.now();
         validarLeadsContraUltimoRegistroDia(idCampana, fechaCarga, request.getLeads());
@@ -73,11 +74,13 @@ public class CampanaGastoService {
         obtenerCampanaActiva(idCampana);
         LocalDate fechaCarga = OperationalDateTime.today();
         boolean esPrimerRegistroDelDia = !registroRepository.existsByCampanaIdAndFechaCarga(idCampana, fechaCarga);
-        Instant fechaRegistro = esPrimerRegistroDelDia
+        boolean aplicaCierreRetroactivo = debeAplicarCierreRetroactivo(idCampana, fechaCarga, esPrimerRegistroDelDia);
+        Instant fechaRegistro = aplicaCierreRetroactivo
                 ? OperationalDateTime.previousDayClosure(fechaCarga)
                 : OperationalDateTime.now();
         return CampanaGastoRegistroEstadoResponse.builder()
                 .esPrimerRegistroDelDia(esPrimerRegistroDelDia)
+                .aplicaCierreRetroactivo(aplicaCierreRetroactivo)
                 .fechaRegistroAplicada(fechaRegistro)
                 .build();
     }
@@ -296,6 +299,29 @@ public class CampanaGastoService {
                         );
                     }
                 });
+    }
+
+    private boolean debeAplicarCierreRetroactivo(Long idCampana, LocalDate fechaCarga, boolean esPrimerRegistroDelDia) {
+        if (!esPrimerRegistroDelDia) {
+            return false;
+        }
+
+        LocalDate fechaAnterior = fechaCarga.minusDays(1);
+        OperationalDateTime.InstantRange rangoAyer = OperationalDateTime.dayRange(fechaAnterior);
+        boolean huboActividadAyer = registroRepository.existsByCampanaIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                idCampana,
+                rangoAyer.inicio(),
+                rangoAyer.fin()
+        );
+        if (!huboActividadAyer) {
+            return false;
+        }
+
+        return !registroRepository.existsByCampanaIdAndCreatedAtAndFechaCarga(
+                idCampana,
+                OperationalDateTime.previousDayClosure(fechaCarga),
+                fechaCarga
+        );
     }
 
     private Campana obtenerCampanaActiva(Long idCampana) {

@@ -16,5 +16,6 @@ import java.time.Instant;
 public class CampanaGastoRegistroEstadoResponse {
 
     private Boolean esPrimerRegistroDelDia;
+    private Boolean aplicaCierreRetroactivo;
     private Instant fechaRegistroAplicada;
 }

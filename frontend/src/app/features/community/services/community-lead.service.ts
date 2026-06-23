@@ -50,6 +50,7 @@ export type CampanaGastoResponse = {
 
 export type CampanaGastoRegistroEstadoResponse = {
   esPrimerRegistroDelDia: boolean;
+  aplicaCierreRetroactivo: boolean;
   fechaRegistroAplicada: string;
 };
 

@@ -103,7 +103,7 @@ export class AdminFinanceFacade {
   });
   readonly snapshotRows = computed<SnapshotFinanceRow[]>(() => toSnapshotFinanceRows(this.campaignExpenseSnapshots()));
   readonly expenseRegistrationWarning = computed(() =>
-    this.expenseRegistrationStatus()?.esPrimerRegistroDelDia
+    this.expenseRegistrationStatus()?.aplicaCierreRetroactivo
       ? 'Este es el primer registro de hoy. Se guardará como cierre de ayer a las 23:59.'
       : null
   );

@@ -37,5 +37,13 @@ public interface CampanaGastoRegistroRepository extends JpaRepository<CampanaGas
 
     boolean existsByCampanaIdAndFechaCarga(Long idCampana, LocalDate fechaCarga);
 
+    boolean existsByCampanaIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+            Long idCampana,
+            Instant inicio,
+            Instant fin
+    );
+
+    boolean existsByCampanaIdAndCreatedAtAndFechaCarga(Long idCampana, Instant createdAt, LocalDate fechaCarga);
+
     Optional<CampanaGastoRegistro> findTopByCampanaIdAndFechaCargaOrderByIdDesc(Long idCampana, LocalDate fechaCarga);
 }
