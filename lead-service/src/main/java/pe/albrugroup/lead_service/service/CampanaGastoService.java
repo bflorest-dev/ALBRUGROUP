@@ -12,10 +12,12 @@ import pe.albrugroup.lead_service.entity.response.CampanaGastoCampanaResumenResp
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResponse;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResumenDiarioResponse;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResumenMensualResponse;
+import pe.albrugroup.lead_service.entity.response.CampanaGastoResumenPeriodoResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.CampanaGastoRegistroRepository;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
+import pe.albrugroup.lead_service.repository.EquipoProveedorRepository;
 import pe.albrugroup.lead_service.repository.EventoRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
 
@@ -39,6 +41,7 @@ public class CampanaGastoService {
 
     private final CampanaGastoRegistroRepository registroRepository;
     private final CampanaRepository campanaRepository;
+    private final EquipoProveedorRepository equipoProveedorRepository;
     private final LeadRepository leadRepository;
     private final EventoRepository eventoRepository;
 
@@ -96,10 +99,13 @@ public class CampanaGastoService {
     }
 
     public CampanaGastoResumenDiarioResponse obtenerResumenDiarioGlobal(LocalDate fecha) {
+        return obtenerResumenDiarioGlobal(fecha, null);
+    }
+
+    public CampanaGastoResumenDiarioResponse obtenerResumenDiarioGlobal(LocalDate fecha, Long idEquipo) {
         LocalDate fechaTrabajo = resolverFecha(fecha);
         RangoFechas rango = rangoDia(fechaTrabajo);
-        List<CampanaGastoCampanaResumenResponse> campanas = ultimosPorCampana(registroRepository
-                .findByCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(rango.inicio(), rango.fin()))
+        List<CampanaGastoCampanaResumenResponse> campanas = ultimosPorCampana(registrosPorPeriodo(rango, idEquipo))
                 .values()
                 .stream()
                 .map(this::toCampanaResumen)
@@ -125,7 +131,7 @@ public class CampanaGastoService {
                         rango.inicio(),
                         rango.fin()
                 );
-        CampanaGastoCampanaResumenResponse resumen = resumenMensualCampana(campana, registros);
+        CampanaGastoCampanaResumenResponse resumen = resumenPeriodoCampana(campana, registros);
         return CampanaGastoResumenMensualResponse.builder()
                 .idCampana(campana.getId())
                 .nombreCampana(campana.getNombre())
@@ -140,13 +146,16 @@ public class CampanaGastoService {
     }
 
     public CampanaGastoResumenMensualResponse obtenerResumenMensualGlobal(Integer anio, Integer mes) {
+        return obtenerResumenMensualGlobal(anio, mes, null);
+    }
+
+    public CampanaGastoResumenMensualResponse obtenerResumenMensualGlobal(Integer anio, Integer mes, Long idEquipo) {
         YearMonth periodo = resolverPeriodo(anio, mes);
         RangoFechas rango = rangoMes(periodo);
-        List<CampanaGastoCampanaResumenResponse> campanas = registrosPorCampana(registroRepository
-                .findByCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(rango.inicio(), rango.fin()))
+        List<CampanaGastoCampanaResumenResponse> campanas = registrosPorCampana(registrosPorPeriodo(rango, idEquipo))
                 .values()
                 .stream()
-                .map(registros -> resumenMensualCampana(registros.get(0).getCampana(), registros))
+                .map(registros -> resumenPeriodoCampana(registros.get(0).getCampana(), registros))
                 .toList();
         return CampanaGastoResumenMensualResponse.builder()
                 .anio(periodo.getYear())
@@ -158,6 +167,55 @@ public class CampanaGastoService {
                 .ultimoRegistroAt(ultimoRegistroAt(campanas))
                 .campanas(campanas)
                 .build();
+    }
+
+    public CampanaGastoResumenPeriodoResponse obtenerResumenPeriodoGlobal(
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            Long idEquipo
+    ) {
+        if (fechaDesde.isAfter(fechaHasta)) {
+            throw new BadRequestException("La fecha Desde no puede ser posterior a la fecha Hasta.");
+        }
+
+        RangoFechas rango = rangoPeriodo(fechaDesde, fechaHasta);
+        List<CampanaGastoCampanaResumenResponse> campanas = registrosPorCampana(registrosPorPeriodo(rango, idEquipo))
+                .values()
+                .stream()
+                .map(registros -> resumenPeriodoCampana(registros.get(0).getCampana(), registros))
+                .toList();
+        return CampanaGastoResumenPeriodoResponse.builder()
+                .fechaDesde(fechaDesde)
+                .fechaHasta(fechaHasta)
+                .leads(totalLeads(campanas))
+                .leadsReales(totalLeadsReales(campanas))
+                .ventasCerradas(totalVentasCerradas(campanas))
+                .costoTotal(totalCosto(campanas))
+                .ultimoRegistroAt(ultimoRegistroAt(campanas))
+                .campanas(campanas)
+                .build();
+    }
+
+    private List<CampanaGastoRegistro> registrosPorPeriodo(RangoFechas rango, Long idEquipo) {
+        if (idEquipo == null) {
+            return registroRepository.findByCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
+                    rango.inicio(),
+                    rango.fin()
+            );
+        }
+
+        List<Long> proveedorIds = equipoProveedorRepository.findByIdEquipo(idEquipo).stream()
+                .map(registro -> registro.getProveedor().getId())
+                .toList();
+        if (proveedorIds.isEmpty()) {
+            return List.of();
+        }
+        return registroRepository
+                .findByCampanaProveedorIdInAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
+                        proveedorIds,
+                        rango.inicio(),
+                        rango.fin()
+                );
     }
 
     private void aplicarMetricasReales(CampanaGastoRegistro registro) {
@@ -234,7 +292,7 @@ public class CampanaGastoService {
                 .build();
     }
 
-    private CampanaGastoCampanaResumenResponse resumenMensualCampana(Campana campana, List<CampanaGastoRegistro> registros) {
+    private CampanaGastoCampanaResumenResponse resumenPeriodoCampana(Campana campana, List<CampanaGastoRegistro> registros) {
         List<CampanaGastoRegistro> cierresDiarios = ultimosPorDia(registros).values().stream().toList();
         return CampanaGastoCampanaResumenResponse.builder()
                 .idCampana(campana.getId())
@@ -346,6 +404,13 @@ public class CampanaGastoService {
 
     private RangoFechas rangoMes(YearMonth periodo) {
         return toLocalRange(OperationalDateTime.monthRange(periodo));
+    }
+
+    private RangoFechas rangoPeriodo(LocalDate fechaDesde, LocalDate fechaHasta) {
+        return new RangoFechas(
+                OperationalDateTime.startOfDay(fechaDesde),
+                OperationalDateTime.endExclusiveOfDay(fechaHasta)
+        );
     }
 
     private RangoFechas toLocalRange(OperationalDateTime.InstantRange range) {

@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { ReactiveFormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { DatePickerModule } from 'primeng/datepicker';
 import { DialogModule } from 'primeng/dialog';
 import { DrawerModule } from 'primeng/drawer';
 import { InputTextModule } from 'primeng/inputtext';
@@ -24,8 +25,10 @@ import {
   selector: 'app-campaign-finance-dashboard-panel',
   imports: [
     ReactiveFormsModule,
+    FormsModule,
     ButtonModule,
     CardModule,
+    DatePickerModule,
     DialogModule,
     DrawerModule,
     InputTextModule,
@@ -41,8 +44,19 @@ import {
 export class CampaignFinanceDashboardPanelComponent {
   readonly panelTitle = input('Finanzas de campanas');
   readonly subtitle = input<string>('');
-  readonly financeDate = input.required<string>();
-  readonly financeMonth = input.required<string>();
+  readonly enablePeriodFilter = input(false);
+  readonly showTeamSelector = input(false);
+  readonly financeDate = input('');
+  readonly financeMonth = input('');
+  readonly periodStart = input<Date | null>(null);
+  readonly periodEnd = input<Date | null>(null);
+  readonly hasPeriodSelection = input(false);
+  readonly periodWarning = input('');
+  readonly dailySummaryTitle = input('Estado del día');
+  readonly dailyTableTitle = input('Estado del día por campaña');
+  readonly historyDisabled = input(false);
+  readonly teamOptions = input<Array<{ label: string; value: number | null }>>([]);
+  readonly selectedTeamId = input<number | null>(null);
   readonly isLoading = input(false);
   readonly isLoadingSnapshots = input(false);
   readonly dailyCards = input<FinanceMetricCard[]>([]);
@@ -60,9 +74,12 @@ export class CampaignFinanceDashboardPanelComponent {
   readonly campaignOptions = input<CampanaResponse[]>([]);
   readonly isSavingExpense = input(false);
 
+  readonly periodStartChanged = output<Date | null>();
+  readonly periodEndChanged = output<Date | null>();
+  readonly clearPeriod = output<void>();
   readonly financeDateChanged = output<string>();
   readonly financeMonthChanged = output<string>();
-  readonly reload = output<void>();
+  readonly teamChanged = output<number | null>();
   readonly openExpenseDialog = output<void>();
   readonly closeExpenseDialog = output<void>();
   readonly submitExpense = output<void>();

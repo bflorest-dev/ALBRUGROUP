@@ -22,6 +22,12 @@ public interface CampanaGastoRegistroRepository extends JpaRepository<CampanaGas
             Instant fin
     );
 
+    List<CampanaGastoRegistro> findByCampanaProveedorIdInAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
+            List<Long> proveedorIds,
+            Instant inicio,
+            Instant fin
+    );
+
     Optional<CampanaGastoRegistro> findTopByCampanaIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
             Long idCampana,
             Instant inicio,

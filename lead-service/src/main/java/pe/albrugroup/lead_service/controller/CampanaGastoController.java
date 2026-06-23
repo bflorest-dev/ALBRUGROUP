@@ -18,6 +18,7 @@ import pe.albrugroup.lead_service.entity.request.CampanaGastoRequest;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResponse;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResumenDiarioResponse;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResumenMensualResponse;
+import pe.albrugroup.lead_service.entity.response.CampanaGastoResumenPeriodoResponse;
 import pe.albrugroup.lead_service.service.CampanaGastoService;
 
 import java.time.LocalDate;
@@ -64,9 +65,10 @@ public class CampanaGastoController {
     @GetMapping("/gastos/resumen-diario")
     @PreAuthorize("hasAuthority('READ_CAMPANA')")
     public ResponseEntity<CampanaGastoResumenDiarioResponse> obtenerResumenDiarioGlobal(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+            @RequestParam(required = false) Long idEquipo
     ) {
-        var resumen = campanaGastoService.obtenerResumenDiarioGlobal(fecha);
+        var resumen = campanaGastoService.obtenerResumenDiarioGlobal(fecha, idEquipo);
         return ResponseEntity.status(HttpStatus.OK).body(resumen);
     }
 
@@ -85,9 +87,21 @@ public class CampanaGastoController {
     @PreAuthorize("hasAuthority('READ_CAMPANA')")
     public ResponseEntity<CampanaGastoResumenMensualResponse> obtenerResumenMensualGlobal(
             @RequestParam(required = false) Integer anio,
-            @RequestParam(required = false) Integer mes
+            @RequestParam(required = false) Integer mes,
+            @RequestParam(required = false) Long idEquipo
     ) {
-        var resumen = campanaGastoService.obtenerResumenMensualGlobal(anio, mes);
+        var resumen = campanaGastoService.obtenerResumenMensualGlobal(anio, mes, idEquipo);
+        return ResponseEntity.status(HttpStatus.OK).body(resumen);
+    }
+
+    @GetMapping("/gastos/resumen-periodo")
+    @PreAuthorize("hasAuthority('READ_CAMPANA')")
+    public ResponseEntity<CampanaGastoResumenPeriodoResponse> obtenerResumenPeriodoGlobal(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta,
+            @RequestParam(required = false) Long idEquipo
+    ) {
+        var resumen = campanaGastoService.obtenerResumenPeriodoGlobal(fechaDesde, fechaHasta, idEquipo);
         return ResponseEntity.status(HttpStatus.OK).body(resumen);
     }
 }

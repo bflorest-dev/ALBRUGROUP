@@ -6,23 +6,61 @@
         <p>{{ display(subtitle()) }}</p>
       </div>
       <div class="finance-toolbar__actions">
-        <label>
-          <span>Dia</span>
-          <input pInputText type="date" [value]="financeDate()" (change)="financeDateChanged.emit($any($event.target).value)" />
-        </label>
-        <label>
-          <span>Mes</span>
-          <input pInputText type="month" [value]="financeMonth()" (change)="financeMonthChanged.emit($any($event.target).value)" />
-        </label>
-        <button
-          pButton
-          type="button"
-          icon="pi pi-refresh"
-          label="Actualizar"
-          severity="secondary"
-          [loading]="isLoading()"
-          (click)="reload.emit()"
-        ></button>
+        @if (showTeamSelector()) {
+          <label class="finance-toolbar__team-field">
+            <span>Equipo</span>
+            <p-select
+              [options]="teamOptions()"
+              [ngModel]="selectedTeamId()"
+              optionLabel="label"
+              optionValue="value"
+              appendTo="body"
+              (onChange)="teamChanged.emit($event.value)"
+            />
+          </label>
+        }
+        @if (enablePeriodFilter()) {
+          <label class="finance-toolbar__date-field">
+            <span>Desde</span>
+            <p-datepicker
+              [ngModel]="periodStart()"
+              dateFormat="dd/mm/yy"
+              [showIcon]="true"
+              appendTo="body"
+              (ngModelChange)="periodStartChanged.emit($event)"
+            />
+          </label>
+          <label class="finance-toolbar__date-field">
+            <span>Hasta</span>
+            <p-datepicker
+              [ngModel]="periodEnd()"
+              dateFormat="dd/mm/yy"
+              [showIcon]="true"
+              appendTo="body"
+              (ngModelChange)="periodEndChanged.emit($event)"
+            />
+          </label>
+          @if (hasPeriodSelection()) {
+            <button
+              pButton
+              type="button"
+              icon="pi pi-times"
+              label="Limpiar período"
+              severity="secondary"
+              [outlined]="true"
+              (click)="clearPeriod.emit()"
+            ></button>
+          }
+        } @else {
+          <label>
+            <span>Dia</span>
+            <input pInputText type="date" [value]="financeDate()" (change)="financeDateChanged.emit($any($event.target).value)" />
+          </label>
+          <label>
+            <span>Mes</span>
+            <input pInputText type="month" [value]="financeMonth()" (change)="financeMonthChanged.emit($any($event.target).value)" />
+          </label>
+        }
         @if (allowExpenseRegistration()) {
           <div class="expense-action-slot">
             <button
@@ -40,11 +78,14 @@
         }
       </div>
     </div>
+    @if (periodWarning()) {
+      <p-message severity="warn" [text]="periodWarning()" styleClass="finance-toolbar__period-warning" />
+    }
   </p-card>
 
   <section class="finance-summary-grid">
     <p-card styleClass="community-table-card">
-      <ng-template #title>Estado del dia</ng-template>
+      <ng-template #title>{{ dailySummaryTitle() }}</ng-template>
       <div class="finance-kpi-grid">
         @for (card of dailyCards(); track card.label) {
           <article class="finance-kpi finance-kpi--{{ card.tone }}">
@@ -69,7 +110,7 @@
   </section>
 
   <p-card styleClass="community-table-card finance-desktop-table">
-    <ng-template #title>Estado del dia por campana</ng-template>
+    <ng-template #title>{{ dailyTableTitle() }}</ng-template>
     <p-table
       [value]="dailyRows()"
       [loading]="isLoading()"
@@ -115,6 +156,8 @@
               label="Historico"
               size="small"
               severity="secondary"
+              [disabled]="historyDisabled()"
+              [title]="historyDisabled() ? 'El historial no está disponible para un período personalizado.' : 'Ver historial diario'"
               (click)="openSnapshots.emit(row)"
             ></button>
           </td>
@@ -129,7 +172,7 @@
   </p-card>
 
   <p-card styleClass="community-table-card finance-mobile-card">
-    <ng-template #title>Estado del dia por campana</ng-template>
+    <ng-template #title>{{ dailyTableTitle() }}</ng-template>
     <div class="finance-mobile-list">
       @for (row of dailyRows(); track row.idCampana) {
         <article class="finance-mobile-item">
@@ -159,7 +202,16 @@
               <b>{{ row.conversionLeads }} / Real {{ row.conversionLeadsReales }}</b>
             </span>
           </div>
-          <button pButton type="button" icon="pi pi-list" label="Historico" size="small" severity="secondary" (click)="openSnapshots.emit(row)"></button>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-list"
+            label="Historico"
+            size="small"
+            severity="secondary"
+            [disabled]="historyDisabled()"
+            (click)="openSnapshots.emit(row)"
+          ></button>
         </article>
       } @empty {
         <p>No hay registros financieros para el dia.</p>

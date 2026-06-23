@@ -82,6 +82,17 @@ export type CampanaGastoResumenMensualResponse = {
   campanas?: CampanaGastoCampanaResumenResponse[] | null;
 };
 
+export type CampanaGastoResumenPeriodoResponse = {
+  fechaDesde: string;
+  fechaHasta: string;
+  leads: number;
+  leadsReales: number;
+  ventasCerradas: number;
+  costoTotal: number;
+  ultimoRegistroAt?: string | null;
+  campanas?: CampanaGastoCampanaResumenResponse[] | null;
+};
+
 export type AdicionalResponse = LeadEntity & {
   precioUnitario?: number;
   idProveedor?: number;
@@ -244,20 +255,46 @@ export class CommunityLeadService {
     });
   }
 
-  obtenerResumenGastosDiario(fecha?: string): Observable<CampanaGastoResumenDiarioResponse> {
+  obtenerResumenGastosDiario(fecha?: string, idEquipo?: number | null): Observable<CampanaGastoResumenDiarioResponse> {
+    let params = this.optionalDateParam('fecha', fecha);
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
     return this.http.get<CampanaGastoResumenDiarioResponse>(`${this.leadUrl}/campanas/gastos/resumen-diario`, {
-      params: this.optionalDateParam('fecha', fecha)
+      params
     });
   }
 
-  obtenerResumenGastosMensual(anio?: number, mes?: number): Observable<CampanaGastoResumenMensualResponse> {
+  obtenerResumenGastosMensual(
+    anio?: number,
+    mes?: number,
+    idEquipo?: number | null
+  ): Observable<CampanaGastoResumenMensualResponse> {
     let params = new HttpParams();
     if (anio && mes) {
       params = params.set('anio', anio).set('mes', mes);
     }
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
     return this.http.get<CampanaGastoResumenMensualResponse>(`${this.leadUrl}/campanas/gastos/resumen-mensual`, {
       params
     });
+  }
+
+  obtenerResumenGastosPeriodo(
+    fechaDesde: string,
+    fechaHasta: string,
+    idEquipo?: number | null
+  ): Observable<CampanaGastoResumenPeriodoResponse> {
+    let params = new HttpParams().set('fechaDesde', fechaDesde).set('fechaHasta', fechaHasta);
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
+    return this.http.get<CampanaGastoResumenPeriodoResponse>(
+      `${this.leadUrl}/campanas/gastos/resumen-periodo`,
+      { params }
+    );
   }
 
   registrarAdicional(request: unknown): Observable<AdicionalResponse> {

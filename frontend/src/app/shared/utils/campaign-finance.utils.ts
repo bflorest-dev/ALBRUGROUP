@@ -2,7 +2,8 @@ import {
   CampanaGastoCampanaResumenResponse,
   CampanaGastoResponse,
   CampanaGastoResumenDiarioResponse,
-  CampanaGastoResumenMensualResponse
+  CampanaGastoResumenMensualResponse,
+  CampanaGastoResumenPeriodoResponse
 } from '../../features/community/services/community-lead.service';
 
 const FINANCE_MONEY_FORMATTER = new Intl.NumberFormat('es-PE', {
@@ -36,7 +37,11 @@ export type SnapshotFinanceRow = FinanceRow & {
 };
 
 export function buildFinanceCards(
-  summary: CampanaGastoResumenDiarioResponse | CampanaGastoResumenMensualResponse | null
+  summary:
+    | CampanaGastoResumenDiarioResponse
+    | CampanaGastoResumenMensualResponse
+    | CampanaGastoResumenPeriodoResponse
+    | null
 ): FinanceMetricCard[] {
   return [
     { label: 'Leads', value: String(summary?.leads ?? 0), tone: 'blue' },
