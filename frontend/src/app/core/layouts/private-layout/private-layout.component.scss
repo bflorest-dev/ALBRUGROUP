@@ -18,13 +18,10 @@
   --layout-sidebar-hover: rgba(255, 255, 255, 0.11);
   --layout-sidebar-active: rgba(255, 255, 255, 0.17);
 
-  bottom: 0;
-  box-sizing: border-box;
-  left: 0;
-  position: fixed;
+  align-self: start;
+  height: 100dvh;
+  position: sticky;
   top: 0;
-  width: 292px;
-  z-index: 100;
   display: flex;
   flex-direction: column;
   gap: 1.15rem;
