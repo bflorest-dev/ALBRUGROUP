@@ -32,7 +32,7 @@ public class EquipoController {
     private final IEquipo equipoService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('CREATE_EQUIPOS')")
     @Operation(summary = "Crear equipo", description = "Registra un nuevo equipo de trabajo.")
     public ResponseEntity<EquipoResponse> crear(@Valid @RequestBody EquipoRequest request) {
         log.info("Creando equipo: {}", request.getNombre());
@@ -40,21 +40,21 @@ public class EquipoController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('READ_EQUIPOS')")
     @Operation(summary = "Listar equipos", description = "Retorna todos los equipos registrados.")
     public ResponseEntity<List<EquipoResponse>> listar() {
         return ResponseEntity.ok(equipoService.listar());
     }
 
     @GetMapping("/catalogo")
-    @PreAuthorize("hasAuthority('READ_LEADS_DIARIOS')")
-    @Operation(summary = "Catalogo de equipos", description = "Lista equipos (id y nombre) para selectores. Disponible para quienes ven los leads del dia.")
+    @PreAuthorize("hasAuthority('READ_EQUIPOS')")
+    @Operation(summary = "Catalogo de equipos", description = "Lista equipos (id y nombre) para selectores.")
     public ResponseEntity<List<EquipoResponse>> catalogo() {
         return ResponseEntity.ok(equipoService.listar());
     }
 
     @PatchMapping("/{id}")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('UPDATE_EQUIPOS')")
     @Operation(summary = "Actualizar equipo", description = "Actualiza nombre, descripcion o estado de un equipo.")
     public ResponseEntity<EquipoResponse> actualizar(
             @PathVariable @Positive Long id,
@@ -65,7 +65,7 @@ public class EquipoController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('DELETE_EQUIPOS')")
     @Operation(summary = "Eliminar equipo", description = "Elimina el equipo y desvincula a sus miembros.")
     public ResponseEntity<Void> eliminar(@PathVariable @Positive Long id) {
         equipoService.eliminar(id);
@@ -73,7 +73,7 @@ public class EquipoController {
     }
 
     @PutMapping("/usuarios/{empleadoId}")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('ASSIGN_EQUIPOS')")
     @Operation(summary = "Asignar equipos a usuario", description = "Reemplaza los equipos del usuario. Roles operativos: exactamente uno.")
     public ResponseEntity<UsuarioResponse> asignarEquipos(
             @PathVariable @Positive Long empleadoId,
@@ -84,7 +84,7 @@ public class EquipoController {
     }
 
     @GetMapping("/{id}/usuarios")
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("hasAuthority('READ_EQUIPOS')")
     @Operation(summary = "Listar miembros del equipo", description = "Retorna los usuarios activos asignados al equipo.")
     public ResponseEntity<List<UsuarioRolResponse>> listarMiembros(@PathVariable @Positive Long id) {
         return ResponseEntity.ok(equipoService.listarMiembros(id));

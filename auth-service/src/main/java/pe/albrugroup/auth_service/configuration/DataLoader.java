@@ -114,6 +114,13 @@ public class DataLoader {
         // EVENTOS en RRHH-SERVICE
         savePermiso("READ_EVENTOS", "Puede ver el historico de eventos", "ENTIDAD", "READ");
 
+        // EQUIPOS
+        savePermiso("CREATE_EQUIPOS", "Puede crear equipos", "EQUIPO", "CREATE");
+        savePermiso("READ_EQUIPOS", "Puede listar equipos e integrantes", "EQUIPO", "READ");
+        savePermiso("UPDATE_EQUIPOS", "Puede actualizar equipos", "EQUIPO", "UPDATE");
+        savePermiso("DELETE_EQUIPOS", "Puede eliminar equipos", "EQUIPO", "DELETE");
+        savePermiso("ASSIGN_EQUIPOS", "Puede asignar integrantes a equipos", "EQUIPO", "ASSIGN");
+
         // SCHEDULE-SERVICE - HORARIOS Y ASISTENCIAS
         savePermiso("CREATE_HORARIOS", "Puede registrar horarios", "HORARIO", "CREATE");
         savePermiso("READ_HORARIOS", "Puede listar y consultar horarios", "HORARIO", "READ");
@@ -248,6 +255,11 @@ public class DataLoader {
                 getPermiso("CANCEL_CONTRATOS"),
 
                 getPermiso("READ_EVENTOS"),
+                getPermiso("CREATE_EQUIPOS"),
+                getPermiso("READ_EQUIPOS"),
+                getPermiso("UPDATE_EQUIPOS"),
+                getPermiso("DELETE_EQUIPOS"),
+                getPermiso("ASSIGN_EQUIPOS"),
                 getPermiso("CREATE_HORARIOS"),
                 getPermiso("READ_HORARIOS"),
                 getPermiso("READ_HORARIOS_SELF"),
