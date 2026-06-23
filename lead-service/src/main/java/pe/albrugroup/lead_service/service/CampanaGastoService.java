@@ -10,6 +10,7 @@ import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.request.CampanaGastoRequest;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoCampanaResumenResponse;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResponse;
+import pe.albrugroup.lead_service.entity.response.CampanaGastoRegistroEstadoResponse;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResumenDiarioResponse;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResumenMensualResponse;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResumenPeriodoResponse;
@@ -47,18 +48,38 @@ public class CampanaGastoService {
 
     @Transactional
     public CampanaGastoResponse registrarGasto(Long idCampana, CampanaGastoRequest request) {
-        Campana campana = obtenerCampanaActiva(idCampana);
-        validarLeadsContraUltimoRegistroDia(idCampana, request.getLeads());
+        Campana campana = obtenerCampanaActivaParaRegistro(idCampana);
+        LocalDate fechaCarga = OperationalDateTime.today();
+        boolean esPrimerRegistroDelDia = !registroRepository.existsByCampanaIdAndFechaCarga(idCampana, fechaCarga);
+        Instant fechaRegistro = esPrimerRegistroDelDia
+                ? OperationalDateTime.previousDayClosure(fechaCarga)
+                : OperationalDateTime.now();
+        validarLeadsContraUltimoRegistroDia(idCampana, fechaCarga, request.getLeads());
         CampanaGastoRegistro registro = CampanaGastoRegistro.builder()
                 .campana(campana)
                 .leads(request.getLeads())
                 .leadsReales(0)
                 .ventasCerradas(0)
                 .costoTotal(request.getCostoTotal())
+                .fechaCarga(fechaCarga)
+                .createdAt(fechaRegistro)
                 .build();
         CampanaGastoRegistro savedRegistro = registroRepository.saveAndFlush(registro);
         aplicarMetricasReales(savedRegistro);
         return toRegistroResponse(registroRepository.save(savedRegistro));
+    }
+
+    public CampanaGastoRegistroEstadoResponse obtenerEstadoRegistro(Long idCampana) {
+        obtenerCampanaActiva(idCampana);
+        LocalDate fechaCarga = OperationalDateTime.today();
+        boolean esPrimerRegistroDelDia = !registroRepository.existsByCampanaIdAndFechaCarga(idCampana, fechaCarga);
+        Instant fechaRegistro = esPrimerRegistroDelDia
+                ? OperationalDateTime.previousDayClosure(fechaCarga)
+                : OperationalDateTime.now();
+        return CampanaGastoRegistroEstadoResponse.builder()
+                .esPrimerRegistroDelDia(esPrimerRegistroDelDia)
+                .fechaRegistroAplicada(fechaRegistro)
+                .build();
     }
 
     public List<CampanaGastoResponse> listarRegistrosDia(Long idCampana, LocalDate fecha) {
@@ -70,6 +91,32 @@ public class CampanaGastoService {
                         rango.inicio(),
                         rango.fin()
                 )
+                .stream()
+                .map(this::toRegistroResponse)
+                .toList();
+    }
+
+    public List<CampanaGastoResponse> listarCierresDiariosPeriodo(
+            Long idCampana,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta
+    ) {
+        obtenerCampanaActiva(idCampana);
+        if (fechaDesde.isAfter(fechaHasta)) {
+            throw new BadRequestException("La fecha Desde no puede ser posterior a la fecha Hasta.");
+        }
+        if (fechaDesde.equals(fechaHasta)) {
+            return listarRegistrosDia(idCampana, fechaDesde);
+        }
+
+        RangoFechas rango = rangoPeriodo(fechaDesde, fechaHasta);
+        return ultimosPorDia(registroRepository
+                .findByCampanaIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
+                        idCampana,
+                        rango.inicio(),
+                        rango.fin()
+                ))
+                .values()
                 .stream()
                 .map(this::toRegistroResponse)
                 .toList();
@@ -238,14 +285,9 @@ public class CampanaGastoService {
         ));
     }
 
-    private void validarLeadsContraUltimoRegistroDia(Long idCampana, Integer leads) {
-        OperationalDateTime.InstantRange rango = OperationalDateTime.dayRange(OperationalDateTime.today());
+    private void validarLeadsContraUltimoRegistroDia(Long idCampana, LocalDate fechaCarga, Integer leads) {
         registroRepository
-                .findTopByCampanaIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
-                        idCampana,
-                        rango.inicio(),
-                        rango.fin()
-                )
+                .findTopByCampanaIdAndFechaCargaOrderByIdDesc(idCampana, fechaCarga)
                 .ifPresent(ultimoRegistro -> {
                     Integer leadsPrevios = ultimoRegistro.getLeads();
                     if (leadsPrevios != null && leads != null && leads < leadsPrevios) {
@@ -261,6 +303,11 @@ public class CampanaGastoService {
                 .orElseThrow(() -> new NotFoundException(Campana.class, idCampana));
     }
 
+    private Campana obtenerCampanaActivaParaRegistro(Long idCampana) {
+        return campanaRepository.findActiveByIdForUpdate(idCampana)
+                .orElseThrow(() -> new NotFoundException(Campana.class, idCampana));
+    }
+
     private CampanaGastoResponse toRegistroResponse(CampanaGastoRegistro registro) {
         Campana campana = registro.getCampana();
         return CampanaGastoResponse.builder()
@@ -271,6 +318,7 @@ public class CampanaGastoService {
                 .leadsReales(registro.getLeadsReales())
                 .ventasCerradas(registro.getVentasCerradas())
                 .costoTotal(registro.getCostoTotal())
+                .cierreRetroactivo(!OperationalDateTime.toOperationalDate(registro.getCreatedAt()).equals(registro.getFechaCarga()))
                 .createdAt(registro.getCreatedAt())
                 .updatedAt(registro.getUpdatedAt())
                 .build();

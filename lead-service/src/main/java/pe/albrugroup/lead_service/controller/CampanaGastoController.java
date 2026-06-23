@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.request.CampanaGastoRequest;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResponse;
+import pe.albrugroup.lead_service.entity.response.CampanaGastoRegistroEstadoResponse;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResumenDiarioResponse;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResumenMensualResponse;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResumenPeriodoResponse;
@@ -42,6 +43,12 @@ public class CampanaGastoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(registro);
     }
 
+    @GetMapping("/{idCampana}/gastos/estado-registro")
+    @PreAuthorize("hasAuthority('READ_CAMPANA')")
+    public ResponseEntity<CampanaGastoRegistroEstadoResponse> obtenerEstadoRegistro(@PathVariable Long idCampana) {
+        return ResponseEntity.ok(campanaGastoService.obtenerEstadoRegistro(idCampana));
+    }
+
     @GetMapping("/{idCampana}/gastos")
     @PreAuthorize("hasAuthority('READ_CAMPANA')")
     public ResponseEntity<List<CampanaGastoResponse>> listarRegistrosDia(
@@ -49,6 +56,17 @@ public class CampanaGastoController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
     ) {
         var registros = campanaGastoService.listarRegistrosDia(idCampana, fecha);
+        return ResponseEntity.status(HttpStatus.OK).body(registros);
+    }
+
+    @GetMapping("/{idCampana}/gastos/periodo")
+    @PreAuthorize("hasAuthority('READ_CAMPANA')")
+    public ResponseEntity<List<CampanaGastoResponse>> listarCierresDiariosPeriodo(
+            @PathVariable Long idCampana,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta
+    ) {
+        var registros = campanaGastoService.listarCierresDiariosPeriodo(idCampana, fechaDesde, fechaHasta);
         return ResponseEntity.status(HttpStatus.OK).body(registros);
     }
 

@@ -64,6 +64,7 @@ export class CampaignFinanceDashboardPanelComponent {
   readonly dailyRows = input<FinanceRow[]>([]);
   readonly snapshotRows = input<SnapshotFinanceRow[]>([]);
   readonly selectedCampaign = input<Pick<FinanceRow, 'nombreCampana'> | null>(null);
+  readonly snapshotSubtitle = input<string>('');
   readonly snapshotsVisible = input(false);
   readonly allowExpenseRegistration = input(false);
   readonly expenseRegistrationEnabled = input(true);
@@ -71,6 +72,8 @@ export class CampaignFinanceDashboardPanelComponent {
   readonly expenseDialogVisible = input(false);
   readonly expenseForm = input<any | null>(null);
   readonly expenseErrorMessage = input<string | null>(null);
+  readonly expenseRegistrationWarning = input<string | null>(null);
+  readonly expenseRegistrationCheckError = input<string | null>(null);
   readonly campaignOptions = input<CampanaResponse[]>([]);
   readonly isSavingExpense = input(false);
 
@@ -83,6 +86,7 @@ export class CampaignFinanceDashboardPanelComponent {
   readonly openExpenseDialog = output<void>();
   readonly closeExpenseDialog = output<void>();
   readonly submitExpense = output<void>();
+  readonly expenseCampaignChanged = output<number | null>();
   readonly openSnapshots = output<FinanceRow>();
   readonly closeSnapshots = output<void>();
 

@@ -15,11 +15,11 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Entity
 @Getter
@@ -53,7 +53,9 @@ public class CampanaGastoRegistro {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal costoTotal;
 
-    @CreationTimestamp
+    @Column(nullable = false)
+    private LocalDate fechaCarga;
+
     private Instant createdAt;
 
     @UpdateTimestamp

@@ -23,6 +23,7 @@ public class CampanaGastoResponse {
     private Integer leadsReales;
     private Integer ventasCerradas;
     private BigDecimal costoTotal;
+    private Boolean cierreRetroactivo;
     private Instant createdAt;
     private Instant updatedAt;
 }

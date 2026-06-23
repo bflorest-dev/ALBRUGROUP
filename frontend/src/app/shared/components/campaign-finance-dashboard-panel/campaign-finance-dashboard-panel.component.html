@@ -240,8 +240,16 @@
           optionValue="id"
           placeholder="Seleccionar campana"
           appendTo="body"
+          (onChange)="expenseCampaignChanged.emit($event.value ?? null)"
         />
       </label>
+      <div class="expense-warning-slot wide" aria-live="polite">
+        @if (expenseRegistrationWarning()) {
+          <p-message severity="warn" [text]="expenseRegistrationWarning() ?? ''" />
+        } @else if (expenseRegistrationCheckError()) {
+          <p-message severity="error" [text]="expenseRegistrationCheckError() ?? ''" />
+        }
+      </div>
       <label class="expense-field">
         <span>Leads reportados</span>
         <input
@@ -284,7 +292,7 @@
   <ng-template #header>
     <div>
       <strong>{{ display(selectedCampaign()?.nombreCampana) }}</strong>
-      <p>{{ financeDate() }}</p>
+      <p>{{ snapshotSubtitle() || financeDate() }}</p>
     </div>
   </ng-template>
 

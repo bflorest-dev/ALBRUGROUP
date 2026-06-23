@@ -79,6 +79,8 @@
       [expenseDialogVisible]="facade.expenseDialogOpen()"
       [expenseForm]="facade.expenseForm"
       [expenseErrorMessage]="facade.errorMessage()"
+      [expenseRegistrationWarning]="facade.expenseRegistrationWarning()"
+      [expenseRegistrationCheckError]="facade.expenseRegistrationCheckError()"
       [campaignOptions]="facade.campanasActivas()"
       [isSavingExpense]="facade.isSaving()"
       (financeDateChanged)="facade.onFinanceDateChanged($event)"
@@ -87,6 +89,7 @@
       (openExpenseDialog)="facade.openExpenseDialog()"
       (closeExpenseDialog)="facade.closeExpenseDialog()"
       (submitExpense)="facade.submitExpense()"
+      (expenseCampaignChanged)="facade.onExpenseCampaignChanged($event)"
       (openSnapshots)="facade.openExpenseSnapshots($event)"
       (closeSnapshots)="facade.closeExpenseSnapshots()"
     />

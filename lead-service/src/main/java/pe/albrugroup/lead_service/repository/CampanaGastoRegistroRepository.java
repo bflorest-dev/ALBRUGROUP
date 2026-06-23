@@ -5,6 +5,7 @@ import org.springframework.stereotype.Repository;
 import pe.albrugroup.lead_service.entity.CampanaGastoRegistro;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,4 +34,8 @@ public interface CampanaGastoRegistroRepository extends JpaRepository<CampanaGas
             Instant inicio,
             Instant fin
     );
+
+    boolean existsByCampanaIdAndFechaCarga(Long idCampana, LocalDate fechaCarga);
+
+    Optional<CampanaGastoRegistro> findTopByCampanaIdAndFechaCargaOrderByIdDesc(Long idCampana, LocalDate fechaCarga);
 }

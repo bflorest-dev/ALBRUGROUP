@@ -43,6 +43,10 @@ public final class OperationalDateTime {
         return date.plusDays(1).atStartOfDay(ZONE).toInstant();
     }
 
+    public static Instant previousDayClosure(LocalDate date) {
+        return date.minusDays(1).atTime(23, 59).atZone(ZONE).toInstant();
+    }
+
     public static InstantRange dayRange(LocalDate date) {
         LocalDate resolvedDate = resolveDate(date);
         return new InstantRange(startOfDay(resolvedDate), endExclusiveOfDay(resolvedDate));

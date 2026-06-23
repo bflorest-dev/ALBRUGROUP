@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import {
   AdicionalResponse,
   CampanaGastoCampanaResumenResponse,
+  CampanaGastoRegistroEstadoResponse,
   CampanaGastoResponse,
   CampanaGastoResumenDiarioResponse,
   CampanaGastoResumenMensualResponse,
@@ -87,6 +88,7 @@ export class CommunityWorkspaceFacade {
   private readonly ubigeoLabels = new Map<string, string>();
   private ubigeoDirectoryLoaded = false;
   private catalogLoadInFlight = false;
+  private expenseRegistrationCheckId = 0;
 
   readonly currentMode = signal<CommunityPageMode>('mantenimiento');
   readonly accessMode = signal<CommunityAccessMode>('community');
@@ -177,6 +179,8 @@ export class CommunityWorkspaceFacade {
   readonly selectedExpenseCampaign = signal<FinanceRow | null>(null);
   readonly expenseDialogOpen = signal(false);
   readonly expenseSnapshotsOpen = signal(false);
+  readonly expenseRegistrationStatus = signal<CampanaGastoRegistroEstadoResponse | null>(null);
+  readonly expenseRegistrationCheckError = signal<string | null>(null);
   readonly financeDate = signal(financeCurrentDateValue());
   readonly financeMonth = signal(financeCurrentMonthValue());
 
@@ -245,6 +249,11 @@ export class CommunityWorkspaceFacade {
   readonly monthlyFinanceCards = computed(() => buildFinanceCards(this.monthlyExpenseSummary()));
   readonly dailyFinanceRows = computed<FinanceRow[]>(() => (this.dailyExpenseSummary()?.campanas ?? []).map((campana) => toFinanceRow(campana)));
   readonly snapshotRows = computed<SnapshotFinanceRow[]>(() => toSnapshotFinanceRows(this.campaignExpenseSnapshots()));
+  readonly expenseRegistrationWarning = computed(() =>
+    this.expenseRegistrationStatus()?.esPrimerRegistroDelDia
+      ? 'Este es el primer registro de hoy. Se guardará como cierre de ayer a las 23:59.'
+      : null
+  );
 
   readonly providerForm = this.fb.group({
     nombre: ['', [Validators.required]],
@@ -528,12 +537,37 @@ export class CommunityWorkspaceFacade {
     }
 
     this.expenseForm.reset({ idCampana: 0, leads: '', costoTotal: '' });
+    this.clearExpenseRegistrationStatus();
     this.expenseDialogOpen.set(true);
     this.clearMessages();
   }
 
   closeExpenseDialog(): void {
     this.expenseDialogOpen.set(false);
+    this.clearExpenseRegistrationStatus();
+  }
+
+  async onExpenseCampaignChanged(idCampana: number | null): Promise<void> {
+    const checkId = ++this.expenseRegistrationCheckId;
+    this.expenseRegistrationStatus.set(null);
+    this.expenseRegistrationCheckError.set(null);
+
+    if (!idCampana) {
+      return;
+    }
+
+    try {
+      const status = await firstValueFrom(this.leadService.obtenerEstadoRegistroGastoCampana(idCampana));
+      if (checkId === this.expenseRegistrationCheckId) {
+        this.expenseRegistrationStatus.set(status);
+      }
+    } catch (error) {
+      if (checkId === this.expenseRegistrationCheckId) {
+        this.expenseRegistrationCheckError.set(
+          this.getErrorMessage(error, 'No se pudo verificar la fecha del registro. Al guardar, el sistema la definirá.')
+        );
+      }
+    }
   }
 
   async submitExpense(): Promise<void> {
@@ -551,18 +585,21 @@ export class CommunityWorkspaceFacade {
       return;
     }
 
-    await this.saveAction(
+    const saved = await this.saveAction(
       () =>
         this.leadService.registrarGastoCampana(raw.idCampana, {
           leads,
           costoTotal
         }),
-      'Gasto de campaña registrado.',
+      '',
       async () => {
         this.closeExpenseDialog();
         await this.loadFinanceDashboard();
       }
     );
+    if (saved) {
+      this.successMessage.set(saved.cierreRetroactivo ? 'Gasto registrado como cierre del día anterior.' : 'Gasto de campaña registrado.');
+    }
   }
 
   async openExpenseSnapshots(row: FinanceRow): Promise<void> {
@@ -585,6 +622,12 @@ export class CommunityWorkspaceFacade {
     this.expenseSnapshotsOpen.set(false);
     this.selectedExpenseCampaign.set(null);
     this.campaignExpenseSnapshots.set([]);
+  }
+
+  private clearExpenseRegistrationStatus(): void {
+    this.expenseRegistrationCheckId++;
+    this.expenseRegistrationStatus.set(null);
+    this.expenseRegistrationCheckError.set(null);
   }
 
   async onFinanceDateChanged(value: string): Promise<void> {
@@ -1670,24 +1713,28 @@ export class CommunityWorkspaceFacade {
     action: () => import('rxjs').Observable<T>,
     successMessage: string,
     afterSuccess?: () => Promise<void>
-  ): Promise<void> {
+  ): Promise<T | null> {
     if (!this.ensureCanMutate()) {
-      return;
+      return null;
     }
 
     this.isSaving.set(true);
     this.clearMessages();
     try {
-      await firstValueFrom(action());
+      const result = await firstValueFrom(action());
       if (afterSuccess) {
         await afterSuccess();
       }
-      this.successMessage.set(successMessage);
+      if (successMessage) {
+        this.successMessage.set(successMessage);
+      }
+      return result;
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo completar la operacion.'));
     } finally {
       this.isSaving.set(false);
     }
+    return null;
   }
 
   private clearMessages(): void {

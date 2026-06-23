@@ -43,8 +43,14 @@ export type CampanaGastoResponse = {
   leadsReales: number;
   ventasCerradas: number;
   costoTotal: number;
+  cierreRetroactivo?: boolean;
   createdAt?: string;
   updatedAt?: string;
+};
+
+export type CampanaGastoRegistroEstadoResponse = {
+  esPrimerRegistroDelDia: boolean;
+  fechaRegistroAplicada: string;
 };
 
 export type CampanaGastoCampanaResumenResponse = {
@@ -249,9 +255,24 @@ export class CommunityLeadService {
     return this.http.post<CampanaGastoResponse>(`${this.leadUrl}/campanas/${idCampana}/gastos`, request);
   }
 
+  obtenerEstadoRegistroGastoCampana(idCampana: number): Observable<CampanaGastoRegistroEstadoResponse> {
+    return this.http.get<CampanaGastoRegistroEstadoResponse>(`${this.leadUrl}/campanas/${idCampana}/gastos/estado-registro`);
+  }
+
   listarGastosCampanaDia(idCampana: number, fecha?: string): Observable<CampanaGastoResponse[]> {
     return this.http.get<CampanaGastoResponse[]>(`${this.leadUrl}/campanas/${idCampana}/gastos`, {
       params: this.optionalDateParam('fecha', fecha)
+    });
+  }
+
+  listarCierresDiariosCampanaPeriodo(
+    idCampana: number,
+    fechaDesde: string,
+    fechaHasta: string
+  ): Observable<CampanaGastoResponse[]> {
+    const params = new HttpParams().set('fechaDesde', fechaDesde).set('fechaHasta', fechaHasta);
+    return this.http.get<CampanaGastoResponse[]>(`${this.leadUrl}/campanas/${idCampana}/gastos/periodo`, {
+      params
     });
   }
 

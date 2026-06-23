@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import {
   CampanaResponse,
   CampanaGastoResponse,
+  CampanaGastoRegistroEstadoResponse,
   CampanaGastoResumenDiarioResponse,
   CampanaGastoResumenMensualResponse,
   CampanaGastoResumenPeriodoResponse,
@@ -46,6 +47,8 @@ export class AdminFinanceFacade {
   readonly selectedExpenseCampaign = signal<FinanceRow | null>(null);
   readonly expenseDialogOpen = signal(false);
   readonly expenseSnapshotsOpen = signal(false);
+  readonly expenseRegistrationStatus = signal<CampanaGastoRegistroEstadoResponse | null>(null);
+  readonly expenseRegistrationCheckError = signal<string | null>(null);
   readonly financeDate = signal(financeCurrentDateValue());
   readonly financeMonth = signal(financeCurrentMonthValue());
   readonly periodStart = signal<Date | null>(null);
@@ -53,6 +56,7 @@ export class AdminFinanceFacade {
   readonly teams = signal<EquipoResponse[]>([]);
   readonly selectedTeamId = signal<number | null>(null);
   private readonly selectedTeamProviders = signal<Set<number> | null>(null);
+  private expenseRegistrationCheckId = 0;
 
   readonly isPeriodActive = computed(() => {
     const start = this.periodStart();
@@ -81,6 +85,14 @@ export class AdminFinanceFacade {
   readonly dailyTableTitle = computed(() =>
     this.isPeriodActive() ? 'Estado del período por campaña' : 'Estado del día por campaña'
   );
+  readonly snapshotSubtitle = computed(() => {
+    if (!this.isPeriodActive()) {
+      return this.financeDate();
+    }
+    const start = this.toDateValue(this.periodStart()!);
+    const end = this.toDateValue(this.periodEnd()!);
+    return start === end ? this.formatDate(start) : `${this.formatDate(start)} – ${this.formatDate(end)}`;
+  });
   readonly dailyFinanceCards = computed(() =>
     buildFinanceCards(this.isPeriodActive() ? this.periodExpenseSummary() : this.dailyExpenseSummary())
   );
@@ -90,6 +102,11 @@ export class AdminFinanceFacade {
     return (summary?.campanas ?? []).map((campana) => toFinanceRow(campana));
   });
   readonly snapshotRows = computed<SnapshotFinanceRow[]>(() => toSnapshotFinanceRows(this.campaignExpenseSnapshots()));
+  readonly expenseRegistrationWarning = computed(() =>
+    this.expenseRegistrationStatus()?.esPrimerRegistroDelDia
+      ? 'Este es el primer registro de hoy. Se guardará como cierre de ayer a las 23:59.'
+      : null
+  );
   readonly campanasActivas = computed(() =>
     this.campanas()
       .filter((campana) => campana.activo !== false)
@@ -168,6 +185,7 @@ export class AdminFinanceFacade {
     this.expenseForm.reset({ idCampana: 0, leads: '', costoTotal: '' });
     this.errorMessage.set(null);
     this.successMessage.set(null);
+    this.clearExpenseRegistrationStatus();
     this.expenseDialogOpen.set(true);
   }
 
@@ -175,6 +193,30 @@ export class AdminFinanceFacade {
     this.expenseDialogOpen.set(false);
     this.isSavingExpense.set(false);
     this.errorMessage.set(null);
+    this.clearExpenseRegistrationStatus();
+  }
+
+  async onExpenseCampaignChanged(idCampana: number | null): Promise<void> {
+    const checkId = ++this.expenseRegistrationCheckId;
+    this.expenseRegistrationStatus.set(null);
+    this.expenseRegistrationCheckError.set(null);
+
+    if (!idCampana) {
+      return;
+    }
+
+    try {
+      const status = await firstValueFrom(this.leadService.obtenerEstadoRegistroGastoCampana(idCampana));
+      if (checkId === this.expenseRegistrationCheckId) {
+        this.expenseRegistrationStatus.set(status);
+      }
+    } catch (error) {
+      if (checkId === this.expenseRegistrationCheckId) {
+        this.expenseRegistrationCheckError.set(
+          this.getErrorMessage(error, 'No se pudo verificar la fecha del registro. Al guardar, el sistema la definirá.')
+        );
+      }
+    }
   }
 
   async submitExpense(): Promise<void> {
@@ -197,14 +239,16 @@ export class AdminFinanceFacade {
     this.errorMessage.set(null);
     this.successMessage.set(null);
     try {
-      await firstValueFrom(
+      const saved = await firstValueFrom(
         this.leadService.registrarGastoCampana(raw.idCampana, {
           leads,
           costoTotal
         })
       );
       this.expenseDialogOpen.set(false);
-      this.successMessage.set('Gasto de campana registrado.');
+      this.successMessage.set(
+        saved.cierreRetroactivo ? 'Gasto registrado como cierre del día anterior.' : 'Gasto de campaña registrado.'
+      );
       await this.loadFinanceDashboard();
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo registrar el gasto de la campana.'));
@@ -214,16 +258,15 @@ export class AdminFinanceFacade {
   }
 
   async openExpenseSnapshots(row: FinanceRow): Promise<void> {
-    if (this.isPeriodActive()) {
-      return;
-    }
     this.selectedExpenseCampaign.set(row);
     this.campaignExpenseSnapshots.set([]);
     this.expenseSnapshotsOpen.set(true);
     this.isLoadingFinanceSnapshots.set(true);
     this.errorMessage.set(null);
     try {
-      const snapshots = await firstValueFrom(this.leadService.listarGastosCampanaDia(row.idCampana, this.financeDate()));
+      const snapshots = this.isPeriodActive()
+        ? await this.loadPeriodSnapshots(row.idCampana)
+        : await firstValueFrom(this.leadService.listarGastosCampanaDia(row.idCampana, this.financeDate()));
       this.campaignExpenseSnapshots.set(snapshots);
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar el detalle de gastos de la campaña.'));
@@ -236,6 +279,12 @@ export class AdminFinanceFacade {
     this.expenseSnapshotsOpen.set(false);
     this.selectedExpenseCampaign.set(null);
     this.campaignExpenseSnapshots.set([]);
+  }
+
+  private clearExpenseRegistrationStatus(): void {
+    this.expenseRegistrationCheckId++;
+    this.expenseRegistrationStatus.set(null);
+    this.expenseRegistrationCheckError.set(null);
   }
 
   async onPeriodStartChanged(value: Date | null): Promise<void> {
@@ -280,6 +329,15 @@ export class AdminFinanceFacade {
     if (this.isPeriodActive()) {
       await this.loadFinanceDashboard();
     }
+  }
+
+  private async loadPeriodSnapshots(idCampana: number): Promise<CampanaGastoResponse[]> {
+    const start = this.toDateValue(this.periodStart()!);
+    const end = this.toDateValue(this.periodEnd()!);
+    if (start === end) {
+      return firstValueFrom(this.leadService.listarGastosCampanaDia(idCampana, start));
+    }
+    return firstValueFrom(this.leadService.listarCierresDiariosCampanaPeriodo(idCampana, start, end));
   }
 
   private async loadTeams(): Promise<void> {
