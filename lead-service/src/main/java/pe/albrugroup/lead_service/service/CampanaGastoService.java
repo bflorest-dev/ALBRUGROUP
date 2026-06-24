@@ -55,7 +55,7 @@ public class CampanaGastoService {
         Instant fechaRegistro = aplicaCierreRetroactivo
                 ? OperationalDateTime.previousDayClosure(fechaCarga)
                 : OperationalDateTime.now();
-        validarLeadsContraUltimoRegistroDia(idCampana, fechaCarga, request.getLeads());
+        validarLeadsContraUltimoRegistroDia(idCampana, fechaRegistro, request.getLeads());
         CampanaGastoRegistro registro = CampanaGastoRegistro.builder()
                 .campana(campana)
                 .leads(request.getLeads())
@@ -288,9 +288,14 @@ public class CampanaGastoService {
         ));
     }
 
-    private void validarLeadsContraUltimoRegistroDia(Long idCampana, LocalDate fechaCarga, Integer leads) {
+    private void validarLeadsContraUltimoRegistroDia(Long idCampana, Instant fechaRegistro, Integer leads) {
+        RangoFechas rango = rangoDia(OperationalDateTime.toOperationalDate(fechaRegistro));
         registroRepository
-                .findTopByCampanaIdAndFechaCargaOrderByIdDesc(idCampana, fechaCarga)
+                .findTopByCampanaIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
+                        idCampana,
+                        rango.inicio(),
+                        rango.fin()
+                )
                 .ifPresent(ultimoRegistro -> {
                     Integer leadsPrevios = ultimoRegistro.getLeads();
                     if (leadsPrevios != null && leads != null && leads < leadsPrevios) {
