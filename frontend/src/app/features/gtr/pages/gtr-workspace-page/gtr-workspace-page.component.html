@@ -348,10 +348,13 @@
           [options]="facade.campanas()"
           optionLabel="nombre"
           optionValue="id"
-          placeholder="Sin campaña"
+          [placeholder]="facade.intakeCampaignPlaceholder()"
           [showClear]="true"
           appendTo="body"
         >
+          <ng-template #selectedItem let-campana>
+            <span>{{ campana?.nombre }}</span>
+          </ng-template>
           <ng-template #item let-campana>
             <div class="select-item">
               <strong>{{ campana.nombre }}</strong>

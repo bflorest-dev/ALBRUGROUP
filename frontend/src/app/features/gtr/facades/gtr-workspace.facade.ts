@@ -179,6 +179,7 @@ export class GtrWorkspaceFacade {
   readonly isLoadingEvents = signal(false);
   readonly isLoadingTipificationHistory = signal(false);
   readonly intakeNumberMaxLength = signal(9);
+  private readonly selectedIntakeCampaignId = signal<number | null>(null);
   readonly masivoExcelResultsDialogOpen = signal(false);
   readonly successMessage = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
@@ -470,6 +471,14 @@ export class GtrWorkspaceFacade {
       ? 'Ingresa un celular valido de 9 digitos que empiece con 9.'
       : 'Ingresa un numero valido para el prefijo seleccionado.'
   );
+  readonly intakeCampaignPlaceholder = computed(() => {
+    const selectedId = this.selectedIntakeCampaignId();
+    if (selectedId === null) {
+      return 'Sin campaña';
+    }
+
+    return this.campanas().find((campana) => Number(campana.id) === selectedId)?.nombre ?? 'Campaña seleccionada';
+  });
 
   // Tabla plana ordenada por el criterio activo. El backend decide qué filas trae cada página;
   // este orden client-side mantiene la página visualmente consistente (incl. inserts realtime).
@@ -563,6 +572,11 @@ export class GtrWorkspaceFacade {
     this.formSubscription.add(
       this.intakeForm.controls.prefijo.valueChanges.subscribe((prefijo) => {
         this.updateIntakeLeadValidation(prefijo);
+      })
+    );
+    this.formSubscription.add(
+      this.intakeForm.controls.idCampana.valueChanges.subscribe((idCampana) => {
+        this.selectedIntakeCampaignId.set(idCampana === null ? null : Number(idCampana));
       })
     );
 
