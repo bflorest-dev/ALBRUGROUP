@@ -1678,12 +1678,18 @@ export class AdminPersonalFacade implements OnDestroy {
     try {
       const baseRequest = this.buildHorarioRequestForModalidad(contrato.modalidad);
 
-      if (formFechaInicio === horario.fechaInicio) {
+      const horarioEnFecha = await firstValueFrom(
+        this.adminRrhhService
+          .getHorarioVigente(employee.idEmpleado, formFechaInicio)
+          .pipe(timeout(this.requestTimeoutMs))
+      );
+
+      if (horarioEnFecha.fechaInicio === formFechaInicio) {
         // Misma vigencia → corregir in-situ (PATCH).
-        await this.runCorregirHorario(employee.idEmpleado, horario.id, baseRequest);
+        await this.runCorregirHorario(employee.idEmpleado, horarioEnFecha.id, baseRequest);
       } else {
         // Fecha futura → reemplazar (PUT). Comportamiento original.
-        await this.runReemplazarHorario(employee.idEmpleado, horario.id, baseRequest);
+        await this.runReemplazarHorario(employee.idEmpleado, horarioEnFecha.id, baseRequest);
       }
     } finally {
       this.isSubmittingScheduleChange.set(false);

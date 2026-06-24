@@ -378,10 +378,16 @@ export class RrhhAsistenciaFacade {
 
     try {
       const baseRequest = this.buildHorarioRequestForModalidad(contrato.modalidad);
-      if (formFechaInicio === horario.fechaInicio) {
-        await this.runCorregir(empleado.idEmpleado, horario.id, baseRequest);
+      const horarioEnFecha = await firstValueFrom(
+        this.service
+          .getHorarioVigente(empleado.idEmpleado, formFechaInicio)
+          .pipe(timeout(REQUEST_TIMEOUT_MS))
+      );
+
+      if (horarioEnFecha.fechaInicio === formFechaInicio) {
+        await this.runCorregir(empleado.idEmpleado, horarioEnFecha.id, baseRequest);
       } else {
-        await this.runReemplazar(empleado.idEmpleado, horario.id, baseRequest);
+        await this.runReemplazar(empleado.idEmpleado, horarioEnFecha.id, baseRequest);
       }
     } finally {
       this.isSubmittingHorario.set(false);
