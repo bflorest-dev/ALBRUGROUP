@@ -342,13 +342,14 @@
         <p-message class="wide" severity="error" [text]="facade.intakeError() ?? ''" />
       }
       <label class="wide">
-        <span>Campaña</span>
+        <span>Campaña (opcional)</span>
         <p-select
           formControlName="idCampana"
           [options]="facade.campanas()"
           optionLabel="nombre"
           optionValue="id"
-          placeholder="Seleccionar"
+          placeholder="Sin campaña"
+          [showClear]="true"
           appendTo="body"
         >
           <ng-template #item let-campana>

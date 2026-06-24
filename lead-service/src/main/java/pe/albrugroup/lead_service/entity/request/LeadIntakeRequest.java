@@ -19,7 +19,7 @@ public class LeadIntakeRequest {
     @Pattern(regexp = "^\\d{6,15}$", message = "El lead debe contener solo digitos")
     private String lead;
 
-    @NotNull(message = "La campana es obligatoria")
+    // Opcional: un lead puede ingresar sin campana (queda en la bandeja del equipo del GTR).
     private Long idCampana;
 
     @NotNull(message = "La base es obligatoria")

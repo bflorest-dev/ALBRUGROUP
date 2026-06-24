@@ -327,7 +327,7 @@ export interface LeadRealtimeEvent {
 export interface LeadIntakeRequest {
   prefijo: string;
   lead: string;
-  idCampana: number;
+  idCampana?: number | null;
   base: string;
 }
 

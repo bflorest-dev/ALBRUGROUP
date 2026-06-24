@@ -50,7 +50,7 @@ public class LeadExcelIntakeService {
     private final TransactionTemplate transactionTemplate;
     private final LeadRealtimeNotifier leadRealtimeNotifier;
 
-    @Value("${app.lead.intake.masivo.id-campana-base}")
+    @Value("${app.lead.intake.masivo.id-campana-base:#{null}}")
     private Long idCampanaBaseMasivo;
 
     public LeadIntakeMasivoExcelResponse registrarDesdeExcel(MultipartFile file) {

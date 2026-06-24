@@ -1110,7 +1110,7 @@ public class LeadService {
     private void registrarIngresoLead(LeadIntakeRequest request, Instant registroAt) {
         String prefijo = normalizarPrefijo(request.getPrefijo());
         String numeroLead = normalizarLead(request.getLead());
-        Campana campana = obtenerCampanaActiva(request.getIdCampana());
+        Campana campana = request.getIdCampana() == null ? null : obtenerCampanaActiva(request.getIdCampana());
 
         leadRepository.findFirstByPrefijoAndLeadOrderByLastEntryAtDescIdDesc(prefijo, numeroLead)
                 .ifPresentOrElse(
@@ -1552,7 +1552,8 @@ public class LeadService {
         lead.setIdEquipo(derivarIdEquipo(campana));
 
         Lead savedLead = leadRepository.save(lead);
-        registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa(), registroAt);
+        Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
+        registrarEventoRegistro(savedLead.getId(), idCampana, savedLead.getEtapa(), registroAt);
         notificarCambioLead("REGISTRO", savedLead, null, null);
     }
 
@@ -1573,7 +1574,8 @@ public class LeadService {
         lead.setIdEquipo(derivarIdEquipo(campana));
 
         Lead savedLead = leadRepository.save(lead);
-        registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa());
+        Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
+        registrarEventoRegistro(savedLead.getId(), idCampana, savedLead.getEtapa());
         if (notificarRealtime) {
             notificarCambioLead("REGISTRO", savedLead, null, null);
         }
@@ -1590,7 +1592,10 @@ public class LeadService {
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
         lead.setPrefijo(normalizarPrefijo(request.getPrefijo()));
         lead.setLead(normalizarLead(request.getLead()));
-        lead.setCampana(campana);
+        // Si el re-registro no indica campana, se conserva la que ya tenia el lead (no se borra).
+        if (campana != null) {
+            lead.setCampana(campana);
+        }
         lead.setBase(request.getBase());
         lead.setLastEntryAt(OperationalDateTime.now());
         if (lead.getContacto() == null) {
@@ -1613,7 +1618,8 @@ public class LeadService {
         }
 
         Lead savedLead = leadRepository.save(lead);
-        registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa(), registroAt);
+        Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
+        registrarEventoRegistro(savedLead.getId(), idCampana, savedLead.getEtapa(), registroAt);
         notificarCambioLead("REGISTRO", savedLead, etapaAnterior, idAsesorAnterior);
     }
 
@@ -1673,7 +1679,8 @@ public class LeadService {
         }
 
         Lead savedLead = leadRepository.save(lead);
-        registrarEventoRegistro(savedLead.getId(), campana.getId(), savedLead.getEtapa());
+        Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
+        registrarEventoRegistro(savedLead.getId(), idCampana, savedLead.getEtapa());
         if (notificarRealtime) {
             notificarCambioLead("REGISTRO", savedLead, etapaAnterior, idAsesorAnterior);
         }
@@ -1681,11 +1688,15 @@ public class LeadService {
     }
 
     private Campana obtenerCampanaBaseMasivo(Long idCampanaBaseMasivo, List<String> advertencias) {
+        // Campana de respaldo opcional: si no esta configurada (o ya no existe/activa),
+        // el lead masivo queda sin campana, en la bandeja del equipo.
         if (idCampanaBaseMasivo == null) {
-            throw new BadRequestException("No esta configurada la campana BASE para carga masiva");
+            return null;
         }
-        Campana campana = obtenerCampanaActiva(idCampanaBaseMasivo);
-        advertencias.add("Campana BASE aplicada");
+        Campana campana = campanaRepository.findByIdAndActivoTrue(idCampanaBaseMasivo).orElse(null);
+        advertencias.add(campana == null
+                ? "Campana BASE no disponible; el lead queda sin campana"
+                : "Campana BASE aplicada");
         return campana;
     }
 

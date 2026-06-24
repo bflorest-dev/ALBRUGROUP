@@ -309,7 +309,7 @@ export class GtrWorkspaceFacade {
   readonly intakeForm = this.fb.group({
     prefijo: ['+51', [Validators.required, Validators.pattern(/^\+\d{2,3}$/)]],
     lead: ['', [Validators.required, Validators.pattern(/^9\d{8}$/)]],
-    idCampana: [0, [Validators.required, Validators.min(1)]],
+    idCampana: [null as number | null],
     base: ['WHATSAPP', [Validators.required]]
   });
   readonly retroactiveHourControl = new FormControl<Date | null>(this.createTimeValue(19, 0), {
@@ -724,7 +724,7 @@ export class GtrWorkspaceFacade {
     const request: LeadIntakeRequest = {
       prefijo: formValue.prefijo,
       lead: formValue.lead,
-      idCampana: formValue.idCampana,
+      idCampana: formValue.idCampana || null,
       base: formValue.base
     };
     if (!skipLookupConfirmation) {
@@ -2550,7 +2550,7 @@ export class GtrWorkspaceFacade {
     this.intakeForm.reset({
       prefijo: PERU_PHONE_PREFIX,
       lead: '',
-      idCampana: 0,
+      idCampana: null,
       base: 'WHATSAPP'
     });
     this.updateIntakeLeadValidation(this.intakeForm.controls.prefijo.value);

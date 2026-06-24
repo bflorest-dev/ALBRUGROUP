@@ -24,7 +24,8 @@ app:
   lead:
     intake:
       masivo:
-        id-campana-base: ${LEAD_INTAKE_MASIVO_ID_CAMPANA_BASE:1}
+        # Opcional: si no se configura, los leads masivos sin campana quedan en "Sin campana".
+        id-campana-base: ${LEAD_INTAKE_MASIVO_ID_CAMPANA_BASE:#{null}}
   docs:
     gateway-url: ${LEAD_DOCS_GATEWAY_URL:http://localhost:8080/leads}
     public-url: ${LEAD_DOCS_PUBLIC_URL:https://api.albrugroup.com/leads}
