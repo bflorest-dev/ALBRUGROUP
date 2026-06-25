@@ -542,7 +542,7 @@ export class GtrWorkspaceFacade {
       ['SATURADO', 5]
     ]);
 
-    return this.advisors()
+    return this.advisorsView()
       .filter((advisor) => availabilityOrder.has(advisor.disponibilidad ?? ''))
       .sort((left, right) => {
         const leftOrder = availabilityOrder.get(left.disponibilidad ?? '') ?? Number.MAX_SAFE_INTEGER;
@@ -557,7 +557,7 @@ export class GtrWorkspaceFacade {
   });
   readonly selectedAdvisor = computed(() => {
     const advisorId = this.selectedAssignmentAdvisorId();
-    return this.advisors().find((advisor) => advisor.empleadoId === advisorId) ?? null;
+    return this.advisorsView().find((advisor) => advisor.empleadoId === advisorId) ?? null;
   });
   readonly selectedSnapshotLead = computed(() => {
     const idLead = this.snapshotForm.controls.idLead.value;
@@ -1881,6 +1881,20 @@ export class GtrWorkspaceFacade {
     }
   }
 
+  advisorLeadCountSeverity(total: number | null | undefined): 'info' | 'secondary' {
+    return Number(total ?? 0) > 0 ? 'info' : 'secondary';
+  }
+
+  advisorLeadCountLabel(total: number | null | undefined): string {
+    const count = Number(total ?? 0);
+    return `${count} ${count === 1 ? 'LEAD' : 'LEADS'}`;
+  }
+
+  advisorUnattendedLeadLabel(total: number | null | undefined): string {
+    const count = Number(total ?? 0);
+    return `${count} ${count === 1 ? 'lead sin atender' : 'leads sin atender'}`;
+  }
+
   warningTitle(row: LeadGtrResponse): string {
     const reasons: string[] = [];
     if (row.tieneMultiplesRegistrosDia) {
@@ -2181,7 +2195,8 @@ export class GtrWorkspaceFacade {
               'DATOS_PREVENTA_ACTUALIZADOS',
               'DIRECCION_ACTUALIZADA',
               'TIPIFICACION',
-              'ATENCION_CERRADA'
+              'ATENCION_CERRADA',
+              'ELIMINACION'
             ].includes(event.tipo)
           ) {
             void this.reconcile();
@@ -2215,6 +2230,7 @@ export class GtrWorkspaceFacade {
   private readonly handleVisibilityChange = (): void => {
     if (this.document.visibilityState === 'visible' && this.canDisplayOperationalData()) {
       void this.refreshAdvisors().catch(() => undefined);
+      void this.refreshPendientes().catch(() => undefined);
     }
   };
 

@@ -31,13 +31,6 @@
             @if (facade.isOjtAdvisor(advisor)) {
               <p-tag severity="info" value="OJT" />
             }
-            @if (advisor.esAbandonador) {
-              <p-tag
-                severity="danger"
-                icon="pi pi-exclamation-triangle"
-                [value]="advisor.leadsPendientes + ' sin atender'"
-              />
-            }
           </div>
           <div class="advisor-card__tags">
             <p-tag
@@ -48,9 +41,21 @@
               [severity]="facade.advisorSeverity(advisor.disponibilidad)"
               [value]="facade.display(advisor.disponibilidad)"
             />
+            @if (advisor.esAbandonador) {
+              <p-tag
+                severity="danger"
+                icon="pi pi-exclamation-triangle"
+                [value]="facade.advisorUnattendedLeadLabel(advisor.leadsPendientes)"
+              />
+            } @else {
+              <p-tag
+                [severity]="facade.advisorLeadCountSeverity(advisor.leadsPendientes)"
+                [value]="facade.advisorLeadCountLabel(advisor.leadsPendientes)"
+              />
+            }
           </div>
           @if (advisor.esAbandonador) {
-            <p class="advisor-card__warning">Se desconectó dejando leads sin gestionar.</p>
+            <p class="advisor-card__warning">Se desconectó dejando leads sin atender.</p>
             <button
               pButton
               type="button"
@@ -73,7 +78,7 @@
           [rounded]="true"
           icon="pi pi-history"
           class="advisor-card__history"
-          pTooltip="Ver eventos del dia"
+          pTooltip="Ver eventos del día"
           tooltipPosition="left"
           [disabled]="!facade.canDisplayOperationalData()"
           (click)="facade.openAdvisorEvents(advisor)"

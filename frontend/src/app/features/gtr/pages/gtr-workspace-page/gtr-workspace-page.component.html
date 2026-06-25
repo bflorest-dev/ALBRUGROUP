@@ -526,6 +526,10 @@
                   <p-tag severity="info" value="OJT" />
                 }
                 <p-tag
+                  [severity]="facade.advisorLeadCountSeverity(advisor.leadsPendientes)"
+                  [value]="facade.advisorLeadCountLabel(advisor.leadsPendientes)"
+                />
+                <p-tag
                   [severity]="facade.advisorSeverity(advisor.disponibilidad)"
                   [value]="facade.display(advisor.disponibilidad)"
                 />
