@@ -85,6 +85,13 @@
         </td>
         <td>
           <strong>{{ facade.leadPrefixLabel(row.prefijo) }} {{ row.lead }}</strong>
+          @if (row.etapa && row.etapa !== 'PREVENTA') {
+            <p-tag
+              severity="warn"
+              [value]="'En ' + facade.display(row.etapa)"
+              [title]="'Este contacto se volvió a comunicar y su trámite sigue en ' + facade.display(row.etapa) + '. Asígnalo a un asesor para que lo atienda.'"
+            />
+          }
         </td>
         <td>
           @if (facade.providerLogo(row.nombreProveedorCampana); as logo) {

@@ -16,5 +16,8 @@ public class LeadGtrLookupResponse {
     private Etapa etapaActual;
     private EstadoSeguimiento estadoActual;
     private boolean puedeGestionarseEnGtr;
+    // El lead está en otra etapa y el contacto no tiene ninguno en PREVENTA: al registrarlo el GTR
+    // solo lo asigna para que un asesor atienda la comunicación, sin afectar su gestión actual.
+    private boolean atencionOtraEtapa;
     private String mensajeUsuario;
 }

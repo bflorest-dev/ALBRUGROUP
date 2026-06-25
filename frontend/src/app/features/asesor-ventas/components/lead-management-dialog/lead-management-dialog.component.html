@@ -32,6 +32,12 @@
           text="Tu turno terminó. Tipifica este lead y luego continúa con los demás de tu bandeja."
         />
       }
+      @if (facade.atencionOtraEtapa()) {
+        <p-message
+          severity="info"
+          text="Este contacto ya tiene un trámite en curso en otra etapa. Sus datos son de solo lectura: comunícate con el contacto y, si quiere un nuevo servicio, crea una nueva oportunidad. Tipificar este lead es opcional y no afecta su trámite."
+        />
+      }
       @if (facade.successMessage()) {
         <p-message severity="success" [text]="facade.successMessage() ?? ''" />
       }
@@ -186,6 +192,7 @@
         [datosForm]="facade.datosForm"
         [direccionForm]="facade.direccionForm"
         [ofertaForm]="facade.ofertaForm"
+        [readonly]="facade.atencionOtraEtapa()"
         [perfilClaro]="facade.esPerfilClaro()"
         [activeTab]="facade.activeDataTab()"
         [tipoDocumentoOptions]="facade.tipoDocumentoOptions"

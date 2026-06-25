@@ -104,6 +104,8 @@ export interface LeadGtrResponse {
   tieneAlertaRegistrosDia?: boolean;
   tieneMultiplesRegistrosDia?: boolean;
   tieneRegistrosMismaCampanaDia?: boolean;
+  // Etapa real del lead. En la bandeja diaria casi siempre PREVENTA; si es otra, es una atención GTR.
+  etapa?: Etapa | string | null;
 }
 
 export type LeadGtrGroupType =
@@ -180,6 +182,10 @@ export interface LeadAsesorVentasResponse {
   nombreTitular?: string | null;
   correo?: string | null;
   estadoSeguimiento?: EstadoSeguimiento | string | null;
+  // Etapa real del lead y bandera de atención: si el lead no está en PREVENTA, el asesor lo atiende
+  // en solo lectura y solo puede tipificarlo (informativo) o crear nuevas oportunidades.
+  etapa?: Etapa | string | null;
+  atencionOtraEtapa?: boolean;
 }
 
 export interface LeadVentaResponse {
@@ -227,6 +233,9 @@ export interface LeadGtrLookupResponse {
   etapaActual?: Etapa | string | null;
   estadoActual?: EstadoSeguimiento | string | null;
   puedeGestionarseEnGtr: boolean;
+  // El lead está en otra etapa y el contacto no tiene ninguno en PREVENTA: al registrarlo solo se
+  // asigna para que un asesor atienda la comunicación, sin afectar su gestión actual.
+  atencionOtraEtapa?: boolean;
   mensajeUsuario?: string | null;
 }
 
@@ -601,7 +610,9 @@ export interface GtrRankingAsesorResponse {
   idAsesor: number;
   nombreAsesor: string | null;
   nuevosGestionadosPeriodo: number;
+  asignadosPeriodo: number;
   gestionadosPeriodo: number;
+  nuevasOportunidadesPeriodo: number;
   preventasPeriodo: number;
   preventasMes: number;
   preventasMesPorProveedor: { idProveedor: number; nombreProveedor: string; cantidad: number }[];
@@ -612,6 +623,18 @@ export interface GtrTipificacionCampanaResponse {
   nombreCampana: string;
   codigoTipificacion: string | null;
   codigoSubtipificacion: string | null;
+  cantidad: number;
+  porcentaje: number;
+}
+
+export interface GtrTipificacionRankingResponse {
+  codigoTipificacion: string;
+  cantidad: number;
+  porcentaje: number;
+}
+
+export interface GtrSubtipificacionRankingResponse {
+  codigoSubtipificacion: string;
   cantidad: number;
   porcentaje: number;
 }

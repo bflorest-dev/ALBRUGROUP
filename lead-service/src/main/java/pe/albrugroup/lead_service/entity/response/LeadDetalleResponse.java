@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
+import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoDocumento;
 import pe.albrugroup.lead_service.entity.enums.TipoDomicilio;
 import pe.albrugroup.lead_service.entity.enums.TipoVia;
@@ -78,4 +79,8 @@ public class LeadDetalleResponse {
     private LeadPromocionDetalleResponse promocionInterna;
     private List<LeadAdicionalDetalleResponse> adicionales;
     private long totalAsignaciones;
+    // Etapa real del lead y bandera de atención: si no está en PREVENTA, el frontend muestra los
+    // campos en solo lectura y solo permite tipificar (informativo) o crear nuevas oportunidades.
+    private Etapa etapa;
+    private boolean atencionOtraEtapa;
 }

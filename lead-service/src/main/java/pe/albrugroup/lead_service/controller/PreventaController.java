@@ -122,9 +122,10 @@ public class PreventaController {
     public ResponseEntity<List<GtrRankingAsesorResponse>> listarRankingGtr(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
-            @RequestParam(defaultValue = "true") boolean soloActivos
+            @RequestParam(defaultValue = "true") boolean soloActivos,
+            @RequestParam(required = false) Long idEquipo
     ) {
-        var ranking = leadService.listarRankingGtr(desde, hasta, soloActivos);
+        var ranking = leadService.listarRankingGtr(desde, hasta, soloActivos, idEquipo);
         return ResponseEntity.ok(ranking);
     }
 
@@ -133,10 +134,33 @@ public class PreventaController {
     public ResponseEntity<List<GtrTipificacionCampanaResponse>> listarTipificacionesCampanaGtr(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
-            @RequestParam(defaultValue = "true") boolean soloActivos
+            @RequestParam(defaultValue = "true") boolean soloActivos,
+            @RequestParam(required = false) Long idEquipo
     ) {
-        var tipificaciones = leadService.listarTipificacionesCampanaGtr(desde, hasta, soloActivos);
+        var tipificaciones = leadService.listarTipificacionesCampanaGtr(desde, hasta, soloActivos, idEquipo);
         return ResponseEntity.ok(tipificaciones);
+    }
+
+    @GetMapping("/gtr/tipificaciones") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
+    public ResponseEntity<List<GtrTipificacionRankingResponse>> listarTipificacionesRankingGtr(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            @RequestParam(defaultValue = "true") boolean soloActivos,
+            @RequestParam(required = false) Long idEquipo
+    ) {
+        return ResponseEntity.ok(leadService.listarTipificacionesRankingGtr(desde, hasta, soloActivos, idEquipo));
+    }
+
+    @GetMapping("/gtr/tipificaciones/{codigoTipificacion}/subtipificaciones") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
+    public ResponseEntity<List<GtrSubtipificacionRankingResponse>> listarSubtipificacionesRankingGtr(
+            @PathVariable String codigoTipificacion,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            @RequestParam(defaultValue = "true") boolean soloActivos,
+            @RequestParam(required = false) Long idEquipo
+    ) {
+        return ResponseEntity.ok(leadService.listarSubtipificacionesRankingGtr(
+                codigoTipificacion, desde, hasta, soloActivos, idEquipo));
     }
 
     // 3. Asignar un Lead a un asesor de ventas
@@ -171,7 +195,7 @@ public class PreventaController {
     // GENERAL. Ver detalle de un Lead
     @GetMapping("/{idLead}/detalle-asesor") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
     public ResponseEntity<LeadDetalleResponse> obtenerDetalleAsesor(@PathVariable Long idLead) {
-        var lead = leadService.obtenerDetalleLeadAsignado(idLead, Etapa.PREVENTA);
+        var lead = leadService.obtenerDetalleLeadAsignado(idLead);
         return ResponseEntity.status(HttpStatus.OK).body(lead);
     }
 
@@ -280,6 +304,14 @@ public class PreventaController {
     @DeleteMapping("/{idLead}/oportunidad") @PreAuthorize("hasAuthority('UPDATE_LEADS_ASESOR')")
     public ResponseEntity<Void> descartarOportunidad(@PathVariable Long idLead) {
         leadService.descartarOportunidad(idLead);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ATENCIÓN GTR. Cerrar la atención de un lead que sigue en otra etapa sin tipificarlo (libera
+    // al asesor para que el lead vuelva a estar disponible en su etapa, sin alterar su gestión).
+    @PatchMapping("/{idLead}/atencion/cerrar") @PreAuthorize("hasAuthority('UPDATE_LEADS_ASESOR')")
+    public ResponseEntity<Void> cerrarAtencion(@PathVariable Long idLead) {
+        leadService.cerrarAtencion(idLead);
         return ResponseEntity.noContent().build();
     }
 

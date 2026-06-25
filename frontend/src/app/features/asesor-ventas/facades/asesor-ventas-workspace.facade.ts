@@ -107,7 +107,11 @@ export class AsesorVentasWorkspaceFacade {
   // esta sesión (una vez tipificada, sale de su alcance y abrirla daría "Lead no encontrado").
   readonly chipsOportunidades = computed(() =>
     this.oportunidadesContacto().filter(
-      (op) => op.etapa === 'PREVENTA' && !this.tipificadasEnSesion().has(op.id)
+      (op) =>
+        !this.tipificadasEnSesion().has(op.id) &&
+        // PREVENTA: oportunidades hermanas normales. Además, el lead en otra etapa que se está
+        // atendiendo (atención GTR) para poder volver a él y tipificarlo informativamente.
+        (op.etapa === 'PREVENTA' || op.id === this.atencionLeadId())
     )
   );
   // Oportunidades que el asesor DEBE resolver en esta sesión: la que abrió + las que creó con
@@ -116,6 +120,9 @@ export class AsesorVentasWorkspaceFacade {
   // Oportunidades CREADAS en esta sesión (no la principal): candidatas a descartar con la "X" si
   // siguen vacías. La principal nunca está aquí, así que nunca se puede descartar.
   private oportunidadesCreadasSesion = new Set<number>();
+  // Atención GTR: id del lead que se está atendiendo aunque siga en otra etapa. Sus campos van en
+  // solo lectura; tipificarlo es OPCIONAL (informativo) y al cerrar se libera si no se tipificó.
+  readonly atencionLeadId = signal<number | null>(null);
   readonly selectedLeadId = signal<number | null>(null);
   readonly totalElements = signal(0);
   readonly totalPages = signal(0);
@@ -240,12 +247,18 @@ export class AsesorVentasWorkspaceFacade {
   readonly ofertaAdditionalsTotal = computed(() =>
     this.selectedOfertaAdditionals().reduce((total, adicional) => total + (adicional.precioUnitario ?? 0) * adicional.cantidad, 0)
   );
+  // El lead abierto está en otra etapa: se atiende en solo lectura (atención GTR).
+  readonly atencionOtraEtapa = computed(() => !!this.detail()?.atencionOtraEtapa);
   readonly requiresScheduledTime = computed(() => this.selectedTipificacionCode() === 'AGENDADO');
   readonly requiresVentaCompleta = computed(() => this.selectedTipificacionCode() === 'PREVENTA_COMPLETA');
-  readonly hasUnsavedDataChanges = computed(
-    () => this.datosForm.dirty || this.direccionForm.dirty || this.ofertaForm.dirty
-  );
-  readonly hasUnsavedModalChanges = computed(() => this.hasUnsavedDataChanges() || this.tipificacionForm.dirty);
+  // Métodos (NO computed): `form.dirty` no es una señal, así que un computed quedaría congelado en
+  // su primer valor (pristine = false) y nunca detectaría cambios. Como métodos se evalúan frescos.
+  hasUnsavedDataChanges(): boolean {
+    return this.datosForm.dirty || this.direccionForm.dirty || this.ofertaForm.dirty;
+  }
+  hasUnsavedModalChanges(): boolean {
+    return this.hasUnsavedDataChanges() || this.tipificacionForm.dirty;
+  }
   readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
   /** El horario termino pero el asesor sigue con un lead en gestion: puede terminarlo (gracia de cierre). */
@@ -381,6 +394,7 @@ export class AsesorVentasWorkspaceFacade {
     this.tipificadasEnSesion.set(new Set());
     this.oportunidadesActivasSesion = new Set([idLead]);
     this.oportunidadesCreadasSesion = new Set();
+    this.atencionLeadId.set(null);
     if (!this.canMutateOperationalData()) {
       this.errorMessage.set('Marca ONLINE para gestionar Leads.');
       return;
@@ -400,6 +414,12 @@ export class AsesorVentasWorkspaceFacade {
       await firstValueFrom(this.preventaService.iniciarGestionLead(idLead));
       const detail = await firstValueFrom(this.preventaService.obtenerDetalleAsesor(idLead));
       this.detail.set(detail);
+      // Atención GTR: el lead sigue en otra etapa. Es opcional tipificarlo, así que no lo marcamos
+      // como obligatorio de la sesión; solo las oportunidades que el asesor cree serán obligatorias.
+      if (detail.atencionOtraEtapa) {
+        this.atencionLeadId.set(idLead);
+        this.oportunidadesActivasSesion.delete(idLead);
+      }
       this.patchForms(detail);
       await this.refreshOfferCatalogs(detail.idPlan ?? 0);
       this.detailDialogOpen.set(true);
@@ -465,18 +485,15 @@ export class AsesorVentasWorkspaceFacade {
     if (!detail) {
       return;
     }
-    // El diferenciador es el número de documento (el tipo se ignora en el guardado por snapshot,
-    // igual que en el resto del flujo). Si hay más datos de DatosPreventa, guardarAntesDeTipificar
-    // hará el guardado completo y validará lo que corresponda.
-    if (this.datosForm.controls.numeroDocumentoTitularServicio.invalid) {
-      this.errorMessage.set('Ingresa el número de documento del titular antes de crear otra oportunidad.');
-      return;
-    }
-    // Guarda lo que el asesor ya ingresó en la oportunidad actual (sin tipificar), para no perderlo
-    // y para que la nueva pueda crearse. Si algún dato es inválido, guardarAntesDeTipificar avisa.
-    const guardado = await this.guardarAntesDeTipificar(detail, false);
-    if (!guardado) {
-      return;
+    // Atención GTR: el lead actual es de solo lectura, no hay nada que guardar ni validar antes de
+    // crear la nueva oportunidad. En PREVENTA normal sí guardamos lo ingresado para no perderlo.
+    if (!detail.atencionOtraEtapa) {
+      // Sin restricciones de documento: el asesor crea la oportunidad a voluntad (su responsabilidad).
+      // Guardamos lo que ya ingresó en la oportunidad actual (sin tipificar) para no perderlo.
+      const guardado = await this.guardarAntesDeTipificar(detail, false);
+      if (!guardado) {
+        return;
+      }
     }
     this.isSaving.set(true);
     let nuevoId: number;
@@ -522,10 +539,16 @@ export class AsesorVentasWorkspaceFacade {
     });
 
     if (esActual) {
-      const restante = this.oportunidadesContacto().find((op) => op.id !== idLead);
+      // Redirigir solo a oportunidades aún gestionables (no tipificadas/liberadas): una hermana ya
+      // tipificada o el lead de otra etapa ya liberado no se pueden reabrir (saldría "no encontrado").
+      const restante = this.oportunidadesContacto().find(
+        (op) => op.id !== idLead && !this.tipificadasEnSesion().has(op.id)
+      );
       if (restante) {
         await this.cambiarOportunidad(restante.id);
       } else {
+        // No queda nada por gestionar: liberar el lead de otra etapa (si no se tipificó) y cerrar.
+        await this.liberarAtencionPendiente();
         this.closeDetail();
       }
     } else {
@@ -538,6 +561,23 @@ export class AsesorVentasWorkspaceFacade {
   }
 
   requestCloseDetail(): void {
+    // Atención GTR: tipificar el lead en otra etapa es opcional. Solo se bloquea el cierre si quedan
+    // oportunidades NUEVAS (creadas en esta sesión) sin tipificar; el lead en otra etapa se libera.
+    if (this.atencionLeadId() !== null) {
+      const pendientes = [...this.oportunidadesActivasSesion].filter((id) => !this.tipificadasEnSesion().has(id));
+      if (pendientes.length) {
+        this.errorMessage.set('Tipifica las nuevas oportunidades que creaste antes de cerrar.');
+        this.detailDialogOpen.set(true);
+        return;
+      }
+      if (this.hasUnsavedDataChanges()) {
+        this.errorMessage.set('Hay datos sin guardar. Guarda los cambios o limpia lo ultimo ingresado antes de cerrar.');
+        this.detailDialogOpen.set(true);
+        return;
+      }
+      this.closeDetail();
+      return;
+    }
     if (this.isManagingLead()) {
       this.errorMessage.set('Debes tipificar el Lead antes de cerrar esta gestion.');
       this.detailDialogOpen.set(true);
@@ -552,15 +592,23 @@ export class AsesorVentasWorkspaceFacade {
   }
 
   private closeDetail(): void {
+    // Atención GTR: si el lead en otra etapa no se tipificó (informativo), liberarlo al cerrar para
+    // que vuelva a estar disponible en su etapa. Si se tipificó, el backend ya lo liberó.
+    const atencionId = this.atencionLeadId();
+    const atencionSinTipificar = atencionId !== null && !this.tipificadasEnSesion().has(atencionId);
     this.detailDialogOpen.set(false);
     this.detail.set(null);
     this.oportunidadesContacto.set([]);
     this.tipificadasEnSesion.set(new Set());
     this.oportunidadesActivasSesion = new Set();
     this.oportunidadesCreadasSesion = new Set();
+    this.atencionLeadId.set(null);
     this.selectedLeadId.set(null);
     this.isManagingLead.set(false);
     this.workspaceState.clearManagingLeadState();
+    if (atencionId !== null && atencionSinTipificar) {
+      void this.liberarAtencionEnSegundoPlano(atencionId);
+    }
     this.tipificacionForm.reset({
       codigoTipificacion: '',
       codigoSubtipificacion: '',
@@ -570,6 +618,34 @@ export class AsesorVentasWorkspaceFacade {
     this.selectedTipificacionCode.set('');
     this.showComment.set(false);
     this.activeDataTab.set('datos');
+  }
+
+  // Libera la atención de un lead en otra etapa que no se tipificó (queda disponible en su etapa).
+  private async liberarAtencionEnSegundoPlano(idLead: number): Promise<void> {
+    try {
+      await firstValueFrom(this.preventaService.cerrarAtencion(idLead));
+      await this.refreshPage(true);
+    } catch {
+      // El cierre de atención es best-effort; si falla, el job de reconciliación lo liberará luego.
+    }
+  }
+
+  // Liberación AWAITED del lead en otra etapa cuando la gestión termina sin tipificarlo (p. ej. el
+  // asesor solo gestionó las oportunidades nuevas). Limpia atencionLeadId para que closeDetail no lo
+  // vuelva a liberar, y surfacea el error si falla (en vez de silenciarlo).
+  private async liberarAtencionPendiente(): Promise<void> {
+    const atencionId = this.atencionLeadId();
+    if (atencionId === null || this.tipificadasEnSesion().has(atencionId)) {
+      return;
+    }
+    this.atencionLeadId.set(null);
+    try {
+      await firstValueFrom(this.preventaService.cerrarAtencion(atencionId));
+      // Refrescamos aquí mismo: el reconcile posterior puede saltarse si ya hay uno en curso.
+      await this.refreshPage(true);
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cerrar la atención del lead en otra etapa.'));
+    }
   }
 
   async registrarLlamada(): Promise<void> {
@@ -629,7 +705,11 @@ export class AsesorVentasWorkspaceFacade {
       return;
     }
 
-    if (this.requiresVentaCompleta()) {
+    // Atención GTR: la tipificación es informativa y no impacta el lead (no pasa a VENTA), así que
+    // no se valida la preventa completa ni se fuerza el guardado de los datos (son de solo lectura).
+    const esAtencion = this.atencionOtraEtapa();
+
+    if (!esAtencion && this.requiresVentaCompleta()) {
       const message = this.getVentaCompletaMissingMessage();
       if (message) {
         this.errorMessage.set(message);
@@ -653,9 +733,9 @@ export class AsesorVentasWorkspaceFacade {
     // Al cerrar una venta NO confiamos en el flag "dirty": forzamos el guardado de
     // Datos, Direccion y Oferta para garantizar que el backend tenga la informacion
     // antes de validar la preventa completa. El pre-chequeo ya verifico que esta todo.
-    const forceFullSave = this.requiresVentaCompleta();
+    const forceFullSave = !esAtencion && this.requiresVentaCompleta();
 
-    if (forceFullSave || this.hasUnsavedDataChanges()) {
+    if (!esAtencion && (forceFullSave || this.hasUnsavedDataChanges())) {
       const canProceed = await this.guardarAntesDeTipificar(detail, forceFullSave);
       if (!canProceed) {
         return;
@@ -669,16 +749,20 @@ export class AsesorVentasWorkspaceFacade {
         this.tipificadasEnSesion.update((s) => new Set(s).add(detail.id));
         // Multi-titular: si el contacto tiene otra oportunidad aún no tipificada en esta sesión,
         // avanzar a ella en la misma comunicación en vez de cerrar el modal.
-        // Solo se obliga a continuar con las oportunidades ACTIVAS de la sesión (la abierta +
-        // las creadas por el asesor). Las demás hermanas asignadas son opcionales.
+        // Solo se obliga a continuar con las oportunidades ACTIVAS de la sesión (las creadas por el
+        // asesor). El lead de otra etapa es OPCIONAL: nunca cuenta como "siguiente" obligatoria; si
+        // se incluyera, el flujo saltaría a él y se saltaría la liberación + el refresco de bandeja.
         const siguiente = [...this.oportunidadesActivasSesion].find(
-          (id) => id !== detail.id && !this.tipificadasEnSesion().has(id)
+          (id) => id !== detail.id && id !== this.atencionLeadId() && !this.tipificadasEnSesion().has(id)
         );
         if (siguiente) {
           await this.cambiarOportunidad(siguiente);
           this.mostrarExito('Oportunidad tipificada. Continúa con la siguiente del mismo contacto.');
           return;
         }
+        // No quedan oportunidades pendientes: si el lead de otra etapa no se tipificó, liberarlo
+        // (awaited) antes de cerrar para que salga de la bandeja del asesor y del GTR.
+        await this.liberarAtencionPendiente();
         this.closeDetail();
         // El cierre del turno lo maneja el effect de auto-cierre (Opcion B): cuando la bandeja
         // quede en 0 despues de reconciliar, dispara REGISTRAR_SALIDA automaticamente.
@@ -1229,6 +1313,9 @@ export class AsesorVentasWorkspaceFacade {
     this.showComment.set(false);
     this.activeDataTab.set('datos');
     this.markFormsPristine();
+    // Atención GTR: el bloqueo de campos del lead en otra etapa es solo de presentación (input
+    // `readonly` del componente de tabs). No deshabilitamos los FormGroup para no interferir con el
+    // seguimiento de cambios ni el guardado de las nuevas oportunidades (que sí son editables).
   }
 
   private patchDatosForm(detail: LeadDetalleResponse): void {

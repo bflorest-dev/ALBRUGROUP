@@ -54,6 +54,13 @@
       <tr [class.row-new]="row.isNew">
         <td>
           <strong>{{ facade.leadPhone(row) }}</strong>
+          @if (row.atencionOtraEtapa) {
+            <p-tag
+              severity="warn"
+              [value]="'Atención · ' + facade.display(row.etapa)"
+              [title]="'Este contacto ya tiene un trámite en ' + facade.display(row.etapa) + '. Atiéndelo: sus datos son de solo lectura.'"
+            />
+          }
         </td>
         <td>{{ facade.display(row.nombreTitular) }}</td>
         <td>{{ facade.display(row.correo) }}</td>

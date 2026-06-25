@@ -75,7 +75,7 @@ export class DailyLeadsFacade {
   readonly groupingModeOptions = computed<Array<{ label: string; value: DailyLeadGroupMode }>>(() => {
     const options: Array<{ label: string; value: DailyLeadGroupMode }> = [
       { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
-      { label: 'Asesor', value: 'ASESOR' },
+      { label: 'GTR', value: 'ASESOR' },
       { label: 'Campaña', value: 'CAMPANA' }
     ];
     // "Equipo" solo para roles con visibilidad global (ADMIN/COMMUNITY). El GTR está acotado
@@ -91,7 +91,7 @@ export class DailyLeadsFacade {
   });
   readonly sortOptions: Array<{ label: string; value: DailyLeadSortField }> = [
     { label: 'Hora de registro', value: 'createdAt' },
-    { label: 'Asesor', value: 'nombreActor' },
+    { label: 'GTR', value: 'nombreActor' },
     { label: 'Campaña', value: 'campana' },
     { label: 'Lead', value: 'lead' },
     { label: 'Primera tipificación', value: 'primeraTipificacion' },
@@ -277,6 +277,10 @@ export class DailyLeadsFacade {
       return tipParts.length ? tipParts.join(' / ') : '-';
     }
 
+    if (accion === 'ASIGNACION') {
+      return evento.nombreAsesorAsignado?.trim() || 'Sin asesor asignado';
+    }
+
     if (tipParts.length) {
       return tipParts.join(' / ');
     }
@@ -376,7 +380,9 @@ export class DailyLeadsFacade {
       rolLabel: formatLabel(item.rolActor),
       accionLabel: formatLabel(item.accion),
       hora: this.formatTime(item.createdAt),
-      campana: item.nombreCampana?.trim() || '-',
+      campana: item.nombreCampana?.trim() || 'Sin campaña',
+      ultimoAsesor: item.ultimoNombreAsesorAsignado?.trim() || 'Sin asignación',
+      totalAsignacionesDia: item.totalAsignacionesDia ?? 0,
       primeraCodigoTipificacion: item.primeraCodigoTipificacion,
       primeraCodigoSubtipificacion: item.primeraCodigoSubtipificacion,
       codigoTipificacion: item.codigoTipificacion,

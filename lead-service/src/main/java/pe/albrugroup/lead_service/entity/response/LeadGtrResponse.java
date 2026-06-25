@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
+import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 import java.time.Instant;
 
@@ -37,4 +38,7 @@ public class LeadGtrResponse {
     private boolean tieneAlertaRegistrosDia;
     private boolean tieneMultiplesRegistrosDia;
     private boolean tieneRegistrosMismaCampanaDia;
+    // Etapa real del lead. En la bandeja diaria casi siempre es PREVENTA; cuando es otra,
+    // se trata de una atención GTR de un lead que sigue gestionándose en esa etapa.
+    private Etapa etapa;
 }

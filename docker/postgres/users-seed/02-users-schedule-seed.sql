@@ -22,6 +22,24 @@ CREATE TEMP TABLE seed_users (
 
 \copy seed_users FROM '/seeds/users-seed.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
 
+CREATE TEMP TABLE retired_seed_users AS
+SELECT id AS empleado_id
+FROM generate_series(1001, 1075) AS ids(id)
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM seed_users su
+    WHERE su.empleado_id = ids.id
+);
+
+DELETE FROM horario_detalle hd
+USING horario h, retired_seed_users rsu
+WHERE hd.horario_id = h.id
+  AND h.id_empleado = rsu.empleado_id;
+
+DELETE FROM horario h
+USING retired_seed_users rsu
+WHERE h.id_empleado = rsu.empleado_id;
+
 INSERT INTO horario (
     id,
     id_empleado,

@@ -35,6 +35,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     // Dedup del intake tolerante a multi-titular: con varias oportunidades por teléfono+equipo
     // (hermanas), trabaja sobre la activa (lastEntryAt más reciente). El @Filter lo acota al equipo.
     Optional<Lead> findFirstByPrefijoAndLeadOrderByLastEntryAtDescIdDesc(String prefijo, String lead);
+    // Intake: el lead PREVENTA del contacto (si existe) tiene prioridad para gestionarse;
+    // si no hay PREVENTA, el más reciente en otra etapa se marca para atención GTR.
+    Optional<Lead> findFirstByPrefijoAndLeadAndEtapaOrderByLastEntryAtDescIdDesc(String prefijo, String lead, Etapa etapa);
     // Oportunidades del mismo contacto (acotadas al equipo por @Filter): para multi-titular.
     List<Lead> findByContactoIdOrderByLastEntryAtDescIdDesc(Long idContacto);
     Optional<Lead> findFirstByLeadOrderByLastEntryAtDescIdDesc(String lead);
@@ -42,6 +45,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     @Query("SELECT l.id, l.lead FROM Lead l WHERE l.id IN :ids")
     List<Object[]> findLeadNumerosByIds(@Param("ids") Collection<Long> ids);
     Optional<Lead> findByIdAndIdAsesorAsignadoAndEtapa(Long id, Long idAsesorAsignado, Etapa etapa);
+    // Lead asignado al asesor en cualquier etapa: para crear oportunidades y para la
+    // tipificación informativa de un lead que sigue gestionándose en otra etapa.
+    Optional<Lead> findByIdAndIdAsesorAsignado(Long id, Long idAsesorAsignado);
     Optional<Lead> findByIdAndIdAsesorAsignadoAndEtapaIn(Long id, Long idAsesorAsignado, Collection<Etapa> etapas);
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Lead> findByIdAndEtapa(Long id, Etapa etapa);
@@ -70,12 +76,13 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 0L,
                 false,
                 false,
-                false
+                false,
+                l.etapa
             )
             FROM Lead l
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
-            WHERE l.etapa = :etapa
+            WHERE (l.etapa = :etapa OR l.requiereAtencionGtr = true)
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
               AND l.lead LIKE :leadPattern
@@ -113,7 +120,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 0L,
                 false,
                 false,
-                false
+                false,
+                l.etapa
             )
             FROM Lead l
             LEFT JOIN l.campana c
@@ -285,9 +293,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             FROM Lead l
             LEFT JOIN FETCH l.datosPreventa
             WHERE l.idAsesorAsignado = :idAsesor
-              AND l.etapa = :etapa
-              AND (l.codigoTipificacion IS NULL OR l.codigoTipificacion = :codigoAgendado)
               AND l.estado IN :estados
+              AND (
+                    (l.etapa = :etapa
+                        AND (l.codigoTipificacion IS NULL OR l.codigoTipificacion = :codigoAgendado))
+                    OR l.requiereAtencionGtr = true
+              )
             ORDER BY l.lastEntryAt DESC
             """)
     Page<Lead> listarPendientesAsesorVentas(
@@ -770,6 +781,36 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("etapa") Etapa etapa
     );
 
+    // Igual que buscarDetalleAsesor pero sin filtrar etapa: el asesor de PREVENTA también atiende
+    // (en modo solo lectura) leads asignados que siguen en otra etapa (atención GTR).
+    @Query("""
+            SELECT DISTINCT l
+            FROM Lead l
+            LEFT JOIN FETCH l.campana c
+            LEFT JOIN FETCH c.proveedor
+            LEFT JOIN FETCH l.datosPreventa
+            LEFT JOIN FETCH l.direccion
+            LEFT JOIN FETCH l.plan
+            LEFT JOIN FETCH l.plan.proveedor
+            LEFT JOIN FETCH l.plan.internet
+            LEFT JOIN FETCH l.plan.television
+            LEFT JOIN FETCH l.plan.telefono
+            LEFT JOIN FETCH l.plan.zona
+            LEFT JOIN FETCH l.plan.adicionales pa
+            LEFT JOIN FETCH pa.adicional
+            LEFT JOIN FETCH l.promocionInterna
+            LEFT JOIN FETCH l.promocionInterna.proveedor
+            LEFT JOIN FETCH l.promocionInterna.zona
+            LEFT JOIN FETCH l.adicionales la
+            LEFT JOIN FETCH la.adicional
+            WHERE l.id = :idLead
+              AND l.idAsesorAsignado = :idAsesor
+            """)
+    Optional<Lead> buscarDetalleAsesorCualquierEtapa(
+            @Param("idLead") Long idLead,
+            @Param("idAsesor") Long idAsesor
+    );
+
     // Listado read-only de "mis preventas": leads cuya preventa concreto el asesor (campo
     // denormalizado idAsesorPreventa). Filtro opcional por rango de fecha de cierre (fechaPreventa)
     // para ver preventas del dia/semana/mes. Muestra la ultima actualizacion para el seguimiento.
@@ -851,7 +892,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 0L,
                 false,
                 false,
-                false
+                false,
+                l.etapa
             )
             FROM Lead l
             LEFT JOIN l.campana c
@@ -892,6 +934,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.idAsesorPreventa IS NOT NULL
               AND l.fechaPreventa >= :fechaDesde
               AND l.fechaPreventa < :fechaHasta
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (:soloActivos = false
                    OR EXISTS (SELECT 1 FROM Lead la
                               WHERE la.idAsesorAsignado = l.idAsesorPreventa
@@ -901,7 +944,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     List<AsesorPreventaCantidadProjection> resumirPreventasPorAsesorLeadGtr(
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
-            @Param("soloActivos") boolean soloActivos
+            @Param("soloActivos") boolean soloActivos,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
     );
 
     @Query("""
@@ -915,6 +960,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.idAsesorPreventa IS NOT NULL
               AND l.fechaPreventa >= :fechaDesde
               AND l.fechaPreventa < :fechaHasta
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (:soloActivos = false
                    OR EXISTS (SELECT 1 FROM Lead la
                               WHERE la.idAsesorAsignado = l.idAsesorPreventa
@@ -924,7 +970,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     List<AsesorProveedorPreventaProjection> resumirPreventasMensualesPorProveedorLeadGtr(
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
-            @Param("soloActivos") boolean soloActivos
+            @Param("soloActivos") boolean soloActivos,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
     );
 
     // Re-sincroniza id_equipo de TODOS los leads (con campaña mapeada) a su equipo actual según

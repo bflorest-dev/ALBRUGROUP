@@ -13,6 +13,8 @@ export interface LeadDiarioResponse {
   primeraCodigoSubtipificacion?: string | null;
   codigoTipificacion?: string | null;
   codigoSubtipificacion?: string | null;
+  ultimoNombreAsesorAsignado?: string | null;
+  totalAsignacionesDia?: number | null;
 }
 
 /** Modelo de vista listo para render: textos precomputados, sin lógica en el template. */
@@ -26,6 +28,8 @@ export interface DailyLeadRowView {
   accionLabel: string;
   hora: string;
   campana: string;
+  ultimoAsesor: string;
+  totalAsignacionesDia: number;
   primeraCodigoTipificacion?: string | null;
   primeraCodigoSubtipificacion?: string | null;
   codigoTipificacion?: string | null;

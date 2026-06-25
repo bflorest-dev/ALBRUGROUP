@@ -924,7 +924,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       'DATOS_PREVENTA_ACTUALIZADOS',
       'DIRECCION_ACTUALIZADA',
       'OFERTA_COMERCIAL_ACTUALIZADA',
-      'TIPIFICACION'
+      'TIPIFICACION',
+      'ATENCION_CERRADA'
     ].includes(tipo);
   }
 

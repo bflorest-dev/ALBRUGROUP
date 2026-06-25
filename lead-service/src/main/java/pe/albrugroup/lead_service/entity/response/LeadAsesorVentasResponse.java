@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
+import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 import java.time.Instant;
 
@@ -24,4 +25,8 @@ public class LeadAsesorVentasResponse {
     private String correo;
     private EstadoSeguimiento estadoSeguimiento;
     private long totalAsignaciones;
+    // Etapa real del lead y bandera de atención: cuando el lead no está en PREVENTA, el asesor lo
+    // atiende en modo solo lectura (campos deshabilitados) y solo puede tipificarlo o crear oportunidades.
+    private Etapa etapa;
+    private boolean atencionOtraEtapa;
 }

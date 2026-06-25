@@ -26,4 +26,8 @@ public class LeadRealtimeEvent {
     private Integer totalRegistrados;
     private Integer totalFallidos;
     private Instant occurredAt;
+    // Atención GTR: el lead vive en otra etapa pero también es visible en la bandeja diaria del GTR.
+    // Cuando es true, el notificador publica además en el topic de PREVENTA para que el GTR refresque.
+    @Builder.Default
+    private boolean tambienBandejaGtr = false;
 }

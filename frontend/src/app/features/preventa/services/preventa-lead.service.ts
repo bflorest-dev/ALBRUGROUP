@@ -29,6 +29,8 @@ import {
   SupervisorVentasResumenResponse,
   GtrRankingAsesorResponse,
   GtrTipificacionCampanaResponse,
+  GtrTipificacionRankingResponse,
+  GtrSubtipificacionRankingResponse,
   LeadIntakeRequest,
   LeadIntakeRetroactivoRequest,
   LeadIntakeMasivoExcelResponse,
@@ -65,6 +67,11 @@ export class PreventaLeadService {
   // Multi-titular: descartar (eliminar) una oportunidad creada por error, solo si está vacía.
   descartarOportunidad(idLead: number): Observable<void> {
     return this.http.delete<void>(`${this.leadUrl}/preventa/${idLead}/oportunidad`);
+  }
+
+  // Atención GTR: cerrar la atención de un lead en otra etapa sin tipificarlo (libera al asesor).
+  cerrarAtencion(idLead: number): Observable<void> {
+    return this.http.patch<void>(`${this.leadUrl}/preventa/${idLead}/atencion/cerrar`, {});
   }
 
   listarBandejaGtr(
@@ -139,9 +146,15 @@ export class PreventaLeadService {
     return this.http.delete<void>(`${this.leadUrl}/preventa/${idLead}`);
   }
 
-  listarRankingGtr(desde: string, hasta?: string, soloActivos = true): Observable<GtrRankingAsesorResponse[]> {
+  listarRankingGtr(
+    desde: string,
+    hasta?: string,
+    soloActivos = true,
+    idEquipo?: number | null
+  ): Observable<GtrRankingAsesorResponse[]> {
     let params = new HttpParams().set('desde', desde).set('soloActivos', soloActivos);
     if (hasta) params = params.set('hasta', hasta);
+    if (idEquipo !== null && idEquipo !== undefined) params = params.set('idEquipo', idEquipo);
     return this.http.get<GtrRankingAsesorResponse[]>(`${this.leadUrl}/preventa/gtr/ranking`, { params });
   }
 
@@ -149,6 +162,34 @@ export class PreventaLeadService {
     let params = new HttpParams().set('desde', desde).set('soloActivos', soloActivos);
     if (hasta) params = params.set('hasta', hasta);
     return this.http.get<GtrTipificacionCampanaResponse[]>(`${this.leadUrl}/preventa/gtr/tipificaciones-campana`, { params });
+  }
+
+  listarTipificacionesRankingGtr(
+    desde: string,
+    hasta?: string,
+    soloActivos = true,
+    idEquipo?: number | null
+  ): Observable<GtrTipificacionRankingResponse[]> {
+    let params = new HttpParams().set('desde', desde).set('soloActivos', soloActivos);
+    if (hasta) params = params.set('hasta', hasta);
+    if (idEquipo !== null && idEquipo !== undefined) params = params.set('idEquipo', idEquipo);
+    return this.http.get<GtrTipificacionRankingResponse[]>(`${this.leadUrl}/preventa/gtr/tipificaciones`, { params });
+  }
+
+  listarSubtipificacionesRankingGtr(
+    codigoTipificacion: string,
+    desde: string,
+    hasta?: string,
+    soloActivos = true,
+    idEquipo?: number | null
+  ): Observable<GtrSubtipificacionRankingResponse[]> {
+    let params = new HttpParams().set('desde', desde).set('soloActivos', soloActivos);
+    if (hasta) params = params.set('hasta', hasta);
+    if (idEquipo !== null && idEquipo !== undefined) params = params.set('idEquipo', idEquipo);
+    return this.http.get<GtrSubtipificacionRankingResponse[]>(
+      `${this.leadUrl}/preventa/gtr/tipificaciones/${encodeURIComponent(codigoTipificacion)}/subtipificaciones`,
+      { params }
+    );
   }
 
   obtenerMetricasGtr(fecha: string): Observable<LeadGtrMetricasResponse> {

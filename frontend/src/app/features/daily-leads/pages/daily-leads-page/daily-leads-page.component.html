@@ -60,11 +60,13 @@
           label="Organizar"
           severity="secondary"
           [outlined]="true"
-          (click)="organizePopover.toggle($event)"
+          (mouseenter)="onOrganizeEnter()"
+          (mouseleave)="onOrganizeLeave(organizePopover)"
+          (click)="onOrganizeEnter(); organizePopover.toggle($event)"
         ></button>
 
         <p-popover #organizePopover appendTo="body" styleClass="daily-leads-organize-popover">
-          <div class="daily-leads__organize-panel">
+          <div class="daily-leads__organize-panel" (mouseenter)="onOrganizeEnter()" (mouseleave)="onOrganizeLeave(organizePopover)">
           <div class="daily-leads__organize-field">
             <label for="daily-leads-grouping">Agrupar por</label>
             <p-select
@@ -73,7 +75,7 @@
               [ngModel]="facade.groupingMode()"
               optionLabel="label"
               optionValue="value"
-              (onChange)="facade.setGroupingMode($any($event.value))"
+              (onChange)="onGroupingModeChange($any($event.value), organizePopover)"
             />
           </div>
 
@@ -87,7 +89,7 @@
                 optionLabel="etiqueta"
                 [showClear]="true"
                 emptyMessage="No hay opciones disponibles"
-                (onChange)="$event.value ? facade.selectGroup($any($event.value)) : facade.clearSelectedGroup()"
+                (onChange)="onGroupChange($event.value, organizePopover)"
               >
                 <ng-template #item let-group>
                   <div class="daily-leads__group-option">
@@ -109,7 +111,7 @@
               [ngModel]="facade.sortField()"
               optionLabel="label"
               optionValue="value"
-              (onChange)="facade.setSortField($any($event.value))"
+              (onChange)="onSortFieldChange($any($event.value), organizePopover)"
             />
           </div>
 
@@ -121,7 +123,7 @@
               [ngModel]="facade.sortDirection()"
               optionLabel="label"
               optionValue="value"
-              (onChange)="facade.setSortDirection($any($event.value))"
+              (onChange)="onSortDirectionChange($any($event.value), organizePopover)"
             />
           </div>
           </div>
@@ -135,26 +137,26 @@
       [loading]="facade.isLoading()"
       [rowHover]="true"
       [scrollable]="true"
-      [tableStyle]="{ 'min-width': '1160px' }"
+      [tableStyle]="{ 'min-width': '1240px' }"
       styleClass="p-datatable-sm daily-leads__table"
     >
       <ng-template #header>
         <tr>
-          <th>Hora</th>
-          <th>Accion</th>
+          <th>Hora registro</th>
           <th>Lead</th>
           <th>GTR</th>
-          <th>Campana</th>
+          <th>Último asesor</th>
+          <th>Asignaciones</th>
+          <th>Campaña</th>
           <th>Primera tipificacion</th>
           <th>Ultima tipificacion</th>
-          <th class="daily-leads__actions-col">Acciones</th>
+          <th class="daily-leads__actions-col">Historial</th>
         </tr>
       </ng-template>
 
       <ng-template #body let-row>
         <tr>
           <td>{{ row.hora }}</td>
-          <td><p-tag severity="success" [value]="row.accionLabel" /></td>
           <td>
             <span class="daily-leads__lead">
               <i class="pi pi-phone"></i>
@@ -162,6 +164,14 @@
             </span>
           </td>
           <td>{{ row.asesor }}</td>
+          <td>{{ row.ultimoAsesor }}</td>
+          <td>
+            <p-tag
+              [value]="facade.display(row.totalAsignacionesDia)"
+              [severity]="row.totalAsignacionesDia > 0 ? 'info' : 'secondary'"
+              styleClass="daily-leads__assignments-tag"
+            />
+          </td>
           <td class="daily-leads__campaign">{{ row.campana }}</td>
           <td>
             <app-tipification-stack
@@ -196,7 +206,7 @@
 
       <ng-template #emptymessage>
         <tr>
-          <td colspan="8">
+          <td colspan="9">
             @if (facade.isLoading()) {
               <div class="daily-leads__empty">Cargando...</div>
             } @else {

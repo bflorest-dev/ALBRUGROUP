@@ -156,6 +156,11 @@
     white-space: nowrap;
   }
 
+  &__assignments-tag {
+    min-width: 2.1rem;
+    justify-content: center;
+  }
+
   &__actions-col {
     width: 5.5rem;
   }

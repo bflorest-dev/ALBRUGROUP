@@ -22,6 +22,7 @@ import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.EventoRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
 import pe.albrugroup.lead_service.repository.projection.LeadGtrAgrupacionProjection;
+import pe.albrugroup.lead_service.repository.projection.LeadUltimaAsignacionProjection;
 import pe.albrugroup.lead_service.service.mapper.EventoMapper;
 
 import java.time.Instant;
@@ -46,6 +47,7 @@ public class EventoService {
     private final CurrentUser currentUser;
     private final EventoMapper eventoMapper;
     private final PaginationService paginationService;
+    private final LeadAsignacionCounterService leadAsignacionCounterService;
 
     private static final Set<String> EVENTO_SORT_FIELDS = Set.of("createdAt", "accion", "etapa", "tipificacion", "subtipificacion");
     private static final Map<String, String> LEADS_DIARIOS_SORT_FIELDS = Map.of(
@@ -196,7 +198,45 @@ public class EventoService {
                 sinValor,
                 pageable
         );
-        return PageResponse.from(registros);
+        Map<Long, String> ultimoAsesorPorLead = obtenerUltimosAsesoresAsignados(registros.getContent());
+        Map<Long, Long> asignacionesDiaPorLead = contarAsignacionesDia(registros.getContent(), rango);
+        var respuesta = registros.map(registro -> {
+            registro.setUltimoNombreAsesorAsignado(ultimoAsesorPorLead.get(registro.getIdLead()));
+            registro.setTotalAsignacionesDia(asignacionesDiaPorLead.getOrDefault(registro.getIdLead(), 0L));
+            return registro;
+        });
+        return PageResponse.from(respuesta);
+    }
+
+    private Map<Long, Long> contarAsignacionesDia(
+            List<LeadDiarioResponse> registros,
+            OperationalDateTime.InstantRange rango
+    ) {
+        List<Long> idsLead = registros.stream()
+                .map(LeadDiarioResponse::getIdLead)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (idsLead.isEmpty()) {
+            return Map.of();
+        }
+        return leadAsignacionCounterService.contarAsignacionesPorLeadIds(idsLead, rango.inicio(), rango.fin());
+    }
+
+    private Map<Long, String> obtenerUltimosAsesoresAsignados(List<LeadDiarioResponse> registros) {
+        List<Long> idsLead = registros.stream()
+                .map(LeadDiarioResponse::getIdLead)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (idsLead.isEmpty()) {
+            return Map.of();
+        }
+        return eventoRepository.listarUltimosAsesoresAsignados(idsLead, Accion.ASIGNACION).stream()
+                .collect(Collectors.toMap(
+                        LeadUltimaAsignacionProjection::getIdLead,
+                        LeadUltimaAsignacionProjection::getNombreAsesorAsignado
+                ));
     }
 
     public LeadGtrAgrupacionesResponse listarAgrupacionesRegistrosDiarios(LocalDate fecha) {

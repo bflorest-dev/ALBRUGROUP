@@ -24,20 +24,82 @@
 }
 
 .ranking-custom-range {
-  align-items: end;
-  background: var(--app-surface-soft, #f8fbfa);
-  border: 1px solid var(--app-border-soft);
-  border-radius: 0.6rem;
+  align-items: flex-end;
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: flex-start;
+  min-width: 0;
+}
+
+.ranking-custom-range__field {
+  color: #475569;
   display: grid;
-  gap: 0.75rem;
-  grid-template-columns: minmax(0, 16rem) minmax(0, 16rem) 1fr;
-  padding: 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  gap: 0.35rem;
+  min-width: 10.75rem;
 }
 
 .ranking-custom-range__hint {
   align-self: center;
   color: var(--app-text-muted);
   font-size: 0.82rem;
+  max-width: 12rem;
+}
+
+:host ::ng-deep .ranking-custom-range__field .p-datepicker {
+  width: 100%;
+}
+
+.ranking-organization {
+  align-items: center;
+  border-bottom: 1px solid var(--app-border-soft);
+  border-top: 1px solid var(--app-border-soft);
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 0.85rem 0;
+  width: 100%;
+}
+
+.ranking-organization__copy {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.ranking-organization__copy strong {
+  color: var(--app-text);
+  font-size: 0.9rem;
+}
+
+.ranking-organization__copy span {
+  color: var(--app-text-muted);
+  font-size: 0.82rem;
+}
+
+.ranking-organization__button {
+  margin-left: auto;
+}
+
+.ranking-group {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ranking-group__header {
+  align-items: center;
+  border-left: 4px solid var(--p-primary-color, #1c7d62);
+  display: flex;
+  min-height: 2.25rem;
+  padding-left: 0.75rem;
+}
+
+.ranking-group__header h2 {
+  color: var(--app-text);
+  font-size: 1rem;
+  margin: 0;
 }
 
 .ranking-grid {
@@ -58,6 +120,48 @@
   gap: 0.75rem;
   justify-content: center;
   padding: 2rem 1rem;
+}
+
+.ranking-loading--page {
+  background: var(--app-surface-soft, #f8fbfa);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.6rem;
+}
+
+:host ::ng-deep .ranking-organize-popover .p-popover-content {
+  padding: 0.8rem;
+}
+
+.ranking-organize-panel {
+  display: grid;
+  gap: 0.75rem;
+  min-width: min(19rem, calc(100vw - 2rem));
+}
+
+.ranking-organize-field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.ranking-organize-field label {
+  color: var(--app-text);
+  font-size: 0.77rem;
+  font-weight: 800;
+}
+
+.ranking-organize-divider {
+  background: var(--app-border-soft);
+  height: 1px;
+  margin: 0.15rem 0;
+}
+
+.ranking-organize-field :is(.p-select, .p-select-label) {
+  width: 100%;
+}
+
+:host ::ng-deep .ranking-detail-dialog {
+  max-width: calc(100vw - 2rem);
+  width: min(42rem, 100%);
 }
 
 .ranking-empty {
@@ -215,7 +319,7 @@
 
 @media (max-width: 900px) {
   .ranking-toolbar,
-  .ranking-custom-range {
+  .ranking-organization {
     align-items: flex-start;
   }
 
@@ -223,12 +327,23 @@
     flex-direction: column;
   }
 
-  .ranking-toolbar__left {
+  .ranking-custom-range {
+    justify-content: flex-start;
     width: 100%;
   }
 
-  .ranking-custom-range {
-    grid-template-columns: 1fr;
+  .ranking-organization {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ranking-organization__button {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .ranking-toolbar__left {
+    width: 100%;
   }
 
   :host ::ng-deep .ranking-board .p-card-body {
@@ -244,6 +359,15 @@
 
   .ranking-toolbar__left {
     flex-direction: column;
+  }
+
+  .ranking-custom-range {
+    flex-direction: column;
+  }
+
+  .ranking-custom-range,
+  .ranking-custom-range app-date-field {
+    width: 100%;
   }
 
   :host ::ng-deep {

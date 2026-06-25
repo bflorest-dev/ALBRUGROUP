@@ -16,6 +16,9 @@ import pe.albrugroup.lead_service.repository.projection.AsesorProveedorCantidadP
 import pe.albrugroup.lead_service.repository.projection.AsesorUltimoEventoProjection;
 import pe.albrugroup.lead_service.repository.projection.CampanaTipificacionCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.LeadGtrAgrupacionProjection;
+import pe.albrugroup.lead_service.repository.projection.LeadUltimaAsignacionProjection;
+import pe.albrugroup.lead_service.repository.projection.SubtipificacionCantidadProjection;
+import pe.albrugroup.lead_service.repository.projection.TipificacionCantidadProjection;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -166,7 +169,9 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                        l.primeraCodigoTipificacion,
                        l.primeraCodigoSubtipificacion,
                        l.codigoTipificacion,
-                       l.codigoSubtipificacion)
+                       l.codigoSubtipificacion,
+                       null,
+                       0L)
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
             LEFT JOIN l.campana c
@@ -291,6 +296,28 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("codigoSubtipificacion") String codigoSubtipificacion,
             @Param("sinValor") boolean sinValor,
             Pageable pageable
+    );
+
+    @Query("""
+            SELECT e.idLead AS idLead,
+                   e.nombreAsesorAsignado AS nombreAsesorAsignado
+            FROM Evento e
+            WHERE e.accion = :accion
+              AND e.idLead IN :idsLead
+              AND NOT EXISTS (
+                    SELECT 1
+                    FROM Evento posterior
+                    WHERE posterior.idLead = e.idLead
+                      AND posterior.accion = :accion
+                      AND (
+                            posterior.createdAt > e.createdAt
+                            OR (posterior.createdAt = e.createdAt AND posterior.id > e.id)
+                      )
+              )
+            """)
+    List<LeadUltimaAsignacionProjection> listarUltimosAsesoresAsignados(
+            @Param("idsLead") Collection<Long> idsLead,
+            @Param("accion") Accion accion
     );
 
     @Query("""
@@ -620,9 +647,11 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                    e.nombreActor AS nombreAsesor,
                    COUNT(DISTINCT e.idLead) AS cantidad
             FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
             WHERE e.accion = :accion
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (:soloActivos = false
                    OR EXISTS (SELECT 1 FROM Lead la
                               WHERE la.idAsesorAsignado = e.idActor
@@ -633,7 +662,9 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("accion") Accion accion,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
-            @Param("soloActivos") boolean soloActivos
+            @Param("soloActivos") boolean soloActivos,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
     );
 
     @Query("""
@@ -647,6 +678,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
               AND e.createdAt < :fechaHasta
               AND l.createdAt >= :fechaDesde
               AND l.createdAt < :fechaHasta
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (:soloActivos = false
                    OR EXISTS (SELECT 1 FROM Lead la
                               WHERE la.idAsesorAsignado = e.idActor
@@ -657,7 +689,60 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("accion") Accion accion,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
-            @Param("soloActivos") boolean soloActivos
+            @Param("soloActivos") boolean soloActivos,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query("""
+            SELECT e.idAsesorAsignado AS idAsesor,
+                   e.nombreAsesorAsignado AS nombreAsesor,
+                   COUNT(DISTINCT e.idLead) AS cantidad
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.accion = :accion
+              AND e.idAsesorAsignado IS NOT NULL
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt < :fechaHasta
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+              AND (:soloActivos = false
+                   OR EXISTS (SELECT 1 FROM Lead la
+                              WHERE la.idAsesorAsignado = e.idAsesorAsignado
+                                AND la.etapa = 'PREVENTA'))
+            GROUP BY e.idAsesorAsignado, e.nombreAsesorAsignado
+            """)
+    List<AsesorCantidadProjection> resumirAsignacionesPorAsesorDestinoGtr(
+            @Param("accion") Accion accion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("soloActivos") boolean soloActivos,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query("""
+            SELECT e.idActor AS idAsesor,
+                   e.nombreActor AS nombreAsesor,
+                   COUNT(e.id) AS cantidad
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.accion = :accion
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt < :fechaHasta
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+              AND (:soloActivos = false
+                   OR EXISTS (SELECT 1 FROM Lead la
+                              WHERE la.idAsesorAsignado = e.idActor
+                                AND la.etapa = 'PREVENTA'))
+            GROUP BY e.idActor, e.nombreActor
+            """)
+    List<AsesorCantidadProjection> resumirNuevasOportunidadesPorAsesorGtr(
+            @Param("accion") Accion accion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("soloActivos") boolean soloActivos,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
     );
 
     @Query("""
@@ -668,10 +753,12 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                    COUNT(DISTINCT e.idLead) AS cantidad
             FROM Evento e
             JOIN Campana c ON c.id = e.idCampana
+            JOIN Lead l ON l.id = e.idLead
             WHERE e.accion = :accion
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
               AND e.idCampana IS NOT NULL
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (:soloActivos = false OR c.activo = true)
             GROUP BY e.idCampana, c.nombre, e.tipificacion, e.subtipificacion
             """)
@@ -679,6 +766,60 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("accion") Accion accion,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
-            @Param("soloActivos") boolean soloActivos
+            @Param("soloActivos") boolean soloActivos,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query("""
+            SELECT TRIM(e.tipificacion) AS tipificacion,
+                   COUNT(e.id) AS cantidad
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.accion = :accion
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt < :fechaHasta
+              AND e.tipificacion IS NOT NULL
+              AND TRIM(e.tipificacion) <> ''
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+              AND (:soloActivos = false
+                   OR EXISTS (SELECT 1 FROM Lead la
+                              WHERE la.idAsesorAsignado = e.idActor
+                                AND la.etapa = 'PREVENTA'))
+            GROUP BY TRIM(e.tipificacion)
+            """)
+    List<TipificacionCantidadProjection> resumirTipificacionesRankingGtr(
+            @Param("accion") Accion accion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("soloActivos") boolean soloActivos,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query("""
+            SELECT COALESCE(NULLIF(TRIM(e.subtipificacion), ''), 'SIN_SUBTIPIFICACION') AS subtipificacion,
+                   COUNT(e.id) AS cantidad
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.accion = :accion
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt < :fechaHasta
+              AND TRIM(e.tipificacion) = :tipificacion
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+              AND (:soloActivos = false
+                   OR EXISTS (SELECT 1 FROM Lead la
+                              WHERE la.idAsesorAsignado = e.idActor
+                                AND la.etapa = 'PREVENTA'))
+            GROUP BY COALESCE(NULLIF(TRIM(e.subtipificacion), ''), 'SIN_SUBTIPIFICACION')
+            """)
+    List<SubtipificacionCantidadProjection> resumirSubtipificacionesRankingGtr(
+            @Param("accion") Accion accion,
+            @Param("tipificacion") String tipificacion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("soloActivos") boolean soloActivos,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
     );
 }

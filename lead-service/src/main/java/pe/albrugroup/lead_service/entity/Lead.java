@@ -63,6 +63,13 @@ public class Lead {
     private Long idAsesorAsignado;
     private String nombreAsesorAsignado;
 
+    // Atención GTR de un lead que ya NO está en PREVENTA: cuando el contacto vuelve a
+    // comunicarse y su único lead está en otra etapa, el GTR lo registra y este flag lo
+    // hace visible en la bandeja diaria solo para asignarlo a un asesor que atienda la
+    // comunicación, sin alterar la gestión del lead en su etapa actual.
+    @Builder.Default
+    private boolean requiereAtencionGtr = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_campana")
     private Campana campana;

@@ -1151,7 +1151,12 @@ export class GtrWorkspaceFacade {
       this.searchExecuted.set(true);
       if (page.content.length === 0 && this.searchPageNumber() === 0) {
         const lookup = await firstValueFrom(this.preventaService.buscarContextoLeadGtr(value));
-        this.searchLookup.set(lookup.existe && !lookup.puedeGestionarseEnGtr ? lookup : null);
+        // Mostrar el aviso cuando el número existe pero su lead está en otra etapa (aunque ahora SÍ
+        // pueda registrarse para atención): el GTR necesita saber que el número está en otra etapa.
+        const enOtraEtapa = !!lookup.etapaActual && lookup.etapaActual !== 'PREVENTA';
+        this.searchLookup.set(
+          lookup.existe && (enOtraEtapa || !lookup.puedeGestionarseEnGtr) ? lookup : null
+        );
       }
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo buscar el lead.'));
@@ -2175,7 +2180,8 @@ export class GtrWorkspaceFacade {
               'SNAPSHOTS_ACTUALIZADOS',
               'DATOS_PREVENTA_ACTUALIZADOS',
               'DIRECCION_ACTUALIZADA',
-              'TIPIFICACION'
+              'TIPIFICACION',
+              'ATENCION_CERRADA'
             ].includes(event.tipo)
           ) {
             void this.reconcile();

@@ -10,7 +10,7 @@
 
   <p-tabpanels>
     <p-tabpanel value="datos">
-      <form class="form-grid" [formGroup]="datosForm">
+      <form class="form-grid" [formGroup]="datosForm" [attr.inert]="readonly ? '' : null">
         <label>
           <span>Documento</span>
           <p-select
@@ -111,7 +111,7 @@
     </p-tabpanel>
 
     <p-tabpanel value="direccion">
-      <form class="form-grid" [formGroup]="direccionForm">
+      <form class="form-grid" [formGroup]="direccionForm" [attr.inert]="readonly ? '' : null">
         <label>
           <span>Departamento</span>
           <p-select

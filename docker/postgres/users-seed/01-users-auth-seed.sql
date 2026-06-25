@@ -22,6 +22,31 @@ CREATE TEMP TABLE seed_users (
 
 \copy seed_users FROM '/seeds/users-seed.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE TEMP TABLE retired_seed_users AS
+SELECT id AS empleado_id
+FROM generate_series(1001, 1075) AS ids(id)
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM seed_users su
+    WHERE su.empleado_id = ids.id
+);
+
+DELETE FROM usuario_equipo ue
+USING usuarios u, retired_seed_users rsu
+WHERE ue.usuario_id = u.id
+  AND u.empleado_id = rsu.empleado_id;
+
+DELETE FROM usuario_rol ur
+USING usuarios u, retired_seed_users rsu
+WHERE ur.usuario_id = u.id
+  AND u.empleado_id = rsu.empleado_id;
+
+DELETE FROM usuarios u
+USING retired_seed_users rsu
+WHERE u.empleado_id = rsu.empleado_id;
+
 INSERT INTO usuarios (
     id,
     username,
@@ -39,13 +64,13 @@ OVERRIDING SYSTEM VALUE
 SELECT
     su.usuario_id,
     su.username,
-    '$2a$10$EuVlRz.tIqNAnsOhz6zKpORDWllZ9/hRPPSCphurSpMG1XP3NC0tC',
+    crypt('123', gen_salt('bf')),
     su.correo_personal,
     su.empleado_id,
     su.numero_documento,
     su.nombres || ' ' || su.apellidos,
     TRUE,
-    FALSE,
+    TRUE,
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
 FROM seed_users su
@@ -121,41 +146,11 @@ CREATE TEMP TABLE seed_usuario_equipo (
 
 INSERT INTO seed_usuario_equipo (empleado_id, equipo_id) VALUES
 (1025, 101),
-(1052, 102),
-(1053, 103),
-(1026, 101),
-(1054, 102),
-(1055, 103),
-(1027, 101),
-(1056, 102),
-(1057, 103),
 (1028, 101),
-(1058, 102),
-(1059, 103),
-(1029, 101),
-(1060, 102),
-(1061, 103),
-(1030, 101),
-(1062, 102),
-(1063, 103),
+(1031, 101),
 (1034, 101),
-(1064, 102),
-(1065, 103),
-(1035, 101),
-(1066, 102),
-(1067, 103),
-(1036, 101),
-(1068, 102),
-(1069, 103),
-(1040, 101),
-(1070, 102),
-(1071, 103),
-(1041, 101),
-(1072, 102),
-(1073, 103),
-(1042, 101),
-(1074, 102),
-(1075, 103);
+(1037, 101),
+(1040, 101);
 
 DELETE FROM usuario_equipo ue
 USING usuarios u, seed_usuario_equipo sue

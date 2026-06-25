@@ -38,6 +38,11 @@ public class LeadRealtimeNotifier {
         if (event.getEtapaAnterior() != event.getEtapa()) {
             publishEtapa(event.getEtapaAnterior(), event);
         }
+        // Atención GTR: el lead está en otra etapa pero el GTR lo ve en su bandeja diaria; le
+        // notificamos por el topic de PREVENTA para que refresque (asignar/tipificar/cerrar atención).
+        if (event.isTambienBandejaGtr() && event.getEtapa() != Etapa.PREVENTA) {
+            publishEtapa(Etapa.PREVENTA, event);
+        }
 
         publishAsesor(event.getIdAsesorAsignado(), event);
         if (!equals(event.getIdAsesorAnterior(), event.getIdAsesorAsignado())) {

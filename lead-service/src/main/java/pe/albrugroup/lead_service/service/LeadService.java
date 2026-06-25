@@ -57,9 +57,13 @@ import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.entity.response.PlanAdicionalResponse;
 import pe.albrugroup.lead_service.entity.response.GtrRankingAsesorResponse;
 import pe.albrugroup.lead_service.entity.response.GtrTipificacionCampanaResponse;
+import pe.albrugroup.lead_service.entity.response.GtrTipificacionRankingResponse;
+import pe.albrugroup.lead_service.entity.response.GtrSubtipificacionRankingResponse;
 import pe.albrugroup.lead_service.entity.response.SupervisorVentasProveedorResumenResponse;
 import pe.albrugroup.lead_service.entity.response.SupervisorVentasResumenResponse;
 import pe.albrugroup.lead_service.repository.projection.CampanaTipificacionCantidadProjection;
+import pe.albrugroup.lead_service.repository.projection.TipificacionCantidadProjection;
+import pe.albrugroup.lead_service.repository.projection.SubtipificacionCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.LeadGtrAgrupacionProjection;
 import pe.albrugroup.lead_service.entity.response.TelefonoResponse;
 import pe.albrugroup.lead_service.entity.response.TelevisionResponse;
@@ -67,6 +71,7 @@ import pe.albrugroup.lead_service.exception.BusinessException;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.ConflictException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
+import pe.albrugroup.lead_service.exception.UnauthorizedException;
 import pe.albrugroup.lead_service.repository.AdicionalRepository;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
 import pe.albrugroup.lead_service.repository.ContactoRepository;
@@ -99,6 +104,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -242,6 +248,7 @@ public class LeadService {
                         numeroLead,
                         null,
                         null,
+                        false,
                         false,
                         "No encontramos ese lead en el sistema."
                 ));
@@ -614,6 +621,20 @@ public class LeadService {
         return toDetalleResponse(lead, fechaAsignacion, obtenerTotalAsignaciones(lead.getId()));
     }
 
+    // El asesor de PREVENTA puede ver el detalle de cualquier lead que tenga asignado, sin importar
+    // la etapa: para PREVENTA es su gestión normal; para otra etapa es una atención GTR (solo lectura).
+    public LeadDetalleResponse obtenerDetalleLeadAsignado(Long idLead) {
+        Long idAsesor = currentUser.empleadoID();
+        Lead lead = leadRepository.buscarDetalleAsesorCualquierEtapa(idLead, idAsesor)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+
+        Instant fechaAsignacion = eventoRepository.findTopByIdLeadAndAccionOrderByCreatedAtDesc(idLead, Accion.ASIGNACION)
+                .map(Evento::getCreatedAt)
+                .orElse(null);
+
+        return toDetalleResponse(lead, fechaAsignacion, obtenerTotalAsignaciones(lead.getId()));
+    }
+
     // ── Mis preventas (read-only) ─────────────────────────────────────────────
     // Leads que el asesor autenticado paso a VENTA. Identificados por su evento de cierre
     // (TIPIFICACION / PREVENTA_COMPLETA / VENTA_CERRADA). Solo lectura: sirve de seguimiento.
@@ -796,7 +817,13 @@ public class LeadService {
 
     @Transactional
     public void tipificarLead(Long idLead, LeadTipificacionRequest request) {
-        Lead lead = obtenerLeadPreventaDelAsesor(idLead);
+        Lead lead = obtenerLeadAsignadoDelAsesor(idLead);
+        // Atención GTR: el lead sigue en otra etapa. La tipificación es informativa: se guarda como
+        // evento (catálogo PREVENTA del asesor) pero NO cambia etapa/tipificación/datos del lead.
+        if (lead.getEtapa() != Etapa.PREVENTA) {
+            tipificarLeadOtraEtapaInformativo(lead, request);
+            return;
+        }
         Etapa etapaActual = lead.getEtapa();
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
 
@@ -854,6 +881,68 @@ public class LeadService {
                 request.getHoraProgramada()
         );
         notificarCambioLead("TIPIFICACION", savedLead, etapaActual, idAsesorAnterior);
+    }
+
+    // Tipificación informativa de un lead que sigue gestionándose en otra etapa (atención GTR).
+    // Resuelve la tipificación contra el catálogo PREVENTA (el que usa el asesor) y la guarda como
+    // evento, SIN mutar etapa/tipificación/datos del lead. Cierra la atención liberando al asesor
+    // (idAsesorAsignado = null, estado = GESTIONADO) para que el lead vuelva a estar disponible en
+    // su etapa actual y salga de la bandeja del asesor.
+    private void tipificarLeadOtraEtapaInformativo(Lead lead, LeadTipificacionRequest request) {
+        Etapa etapaLead = lead.getEtapa();
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
+
+        Tipificacion tipificacion = tipificacionRepository.findByEtapaAndCodigoAndActivoTrue(
+                        Etapa.PREVENTA,
+                        request.getCodigoTipificacion().trim()
+                )
+                .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getCodigoTipificacion()));
+        Subtipificacion subtipificacion = subtipificacionRepository.findByTipificacionIdAndCodigoAndActivoTrue(
+                        tipificacion.getId(),
+                        request.getCodigoSubtipificacion().trim()
+                )
+                .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getCodigoSubtipificacion()));
+        validarHoraProgramada(tipificacion.getCodigo(), request.getHoraProgramada());
+
+        // Liberar la atención sin tocar la gestión del lead en su etapa actual.
+        lead.setRequiereAtencionGtr(false);
+        lead.setIdAsesorAsignado(null);
+        lead.setNombreAsesorAsignado(null);
+        lead.setEstado(EstadoSeguimiento.GESTIONADO);
+
+        Lead savedLead = leadRepository.save(lead);
+        Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
+        // El evento se registra en PREVENTA (el catálogo que usó el asesor), coherente con el resto
+        // de tipificaciones de preventa. Es solo un registro informativo: no impacta el lead.
+        registrarEventoTipificacion(
+                savedLead.getId(),
+                idCampana,
+                Etapa.PREVENTA,
+                null,
+                tipificacion.getCodigo(),
+                subtipificacion.getCodigo(),
+                request.getComentario(),
+                request.getHoraProgramada()
+        );
+        notificarCambioLead("TIPIFICACION", savedLead, etapaLead, idAsesorAnterior, true);
+    }
+
+    // Cierra la atención GTR de un lead en otra etapa cuando el asesor no lo tipifica (p. ej. solo
+    // creó nuevas oportunidades). Libera al asesor sin registrar tipificación ni alterar la gestión.
+    @Transactional
+    public void cerrarAtencion(Long idLead) {
+        Lead lead = obtenerLeadAsignadoDelAsesor(idLead);
+        if (lead.getEtapa() == Etapa.PREVENTA) {
+            throw new BadRequestException("Este lead está en PREVENTA; debe tipificarse, no cerrarse como atención");
+        }
+        Etapa etapaLead = lead.getEtapa();
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
+        lead.setRequiereAtencionGtr(false);
+        lead.setIdAsesorAsignado(null);
+        lead.setNombreAsesorAsignado(null);
+        lead.setEstado(EstadoSeguimiento.GESTIONADO);
+        Lead savedLead = leadRepository.save(lead);
+        notificarCambioLead("ATENCION_CERRADA", savedLead, etapaLead, idAsesorAnterior, true);
     }
 
     @Transactional
@@ -1112,9 +1201,18 @@ public class LeadService {
         String numeroLead = normalizarLead(request.getLead());
         Campana campana = request.getIdCampana() == null ? null : obtenerCampanaActiva(request.getIdCampana());
 
+        // El lead PREVENTA del contacto (si existe) tiene prioridad: es el que el GTR gestiona y
+        // asigna normalmente. Si no hay ninguno en PREVENTA pero sí uno en otra etapa, lo marcamos
+        // para atención GTR (visible en la bandeja diaria solo para asignarlo, sin tocar su gestión).
+        Optional<Lead> leadPreventa = leadRepository
+                .findFirstByPrefijoAndLeadAndEtapaOrderByLastEntryAtDescIdDesc(prefijo, numeroLead, Etapa.PREVENTA);
+        if (leadPreventa.isPresent()) {
+            registrarIngresoLeadExistente(leadPreventa.get(), request, campana, registroAt);
+            return;
+        }
         leadRepository.findFirstByPrefijoAndLeadOrderByLastEntryAtDescIdDesc(prefijo, numeroLead)
                 .ifPresentOrElse(
-                        lead -> registrarIngresoLeadExistente(lead, request, campana, registroAt),
+                        lead -> registrarAtencionGtrLeadOtraEtapa(lead, request, campana, registroAt),
                         () -> registrarLeadNuevo(prefijo, numeroLead, request, campana, registroAt)
                 );
     }
@@ -1177,7 +1275,9 @@ public class LeadService {
 
     @Transactional
     public void iniciarGestionPreventa(Long idLead) {
-        Lead lead = obtenerLeadPreventaDelAsesor(idLead);
+        // Cualquier etapa asignada al asesor: también inicia la gestión de una atención GTR de un
+        // lead en otra etapa (lo deja EN_GESTION para que nadie más lo tome mientras se atiende).
+        Lead lead = obtenerLeadAsignadoDelAsesor(idLead);
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
         if (lead.getEstado() == EstadoSeguimiento.EN_GESTION) {
             return;
@@ -1316,7 +1416,8 @@ public class LeadService {
                 savedLead.getIdAsesorAsignado(),
                 savedLead.getNombreAsesorAsignado()
         );
-        notificarCambioLead("ASIGNACION", savedLead, null, idAsesorAnterior);
+        // Atención GTR: si el lead asignado vive en otra etapa, notificar también a la bandeja del GTR.
+        notificarCambioLead("ASIGNACION", savedLead, null, idAsesorAnterior, savedLead.getEtapa() != Etapa.PREVENTA);
         propagarAsesorAHermanas(savedLead, idAsesorAsignado, savedLead.getNombreAsesorAsignado());
     }
 
@@ -1621,6 +1722,33 @@ public class LeadService {
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
         registrarEventoRegistro(savedLead.getId(), idCampana, savedLead.getEtapa(), registroAt);
         notificarCambioLead("REGISTRO", savedLead, etapaAnterior, idAsesorAnterior);
+    }
+
+    // El contacto vuelve a comunicarse y su único lead ya no está en PREVENTA. Lo marcamos para
+    // atención GTR: visible en la bandeja diaria solo para asignarlo a un asesor que atienda la
+    // comunicación. NO se toca su etapa/estado/tipificación/datos ni su asignación: sigue
+    // gestionándose en su etapa actual. Solo se refresca lastEntryAt para que entre en el día.
+    private void registrarAtencionGtrLeadOtraEtapa(
+            Lead lead,
+            LeadIntakeRequest request,
+            Campana campana,
+            Instant registroAt
+    ) {
+        Etapa etapaAnterior = lead.getEtapa();
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
+        if (lead.getContacto() == null) {
+            lead.setContacto(resolverContacto(lead.getPrefijo(), lead.getLead()));
+        }
+        if (lead.getIdEquipo() == null) {
+            lead.setIdEquipo(derivarIdEquipo(campana));
+        }
+        lead.setRequiereAtencionGtr(true);
+        lead.setLastEntryAt(OperationalDateTime.now());
+
+        Lead savedLead = leadRepository.save(lead);
+        Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
+        registrarEventoRegistro(savedLead.getId(), idCampana, savedLead.getEtapa(), registroAt);
+        notificarCambioLead("REGISTRO", savedLead, etapaAnterior, idAsesorAnterior, true);
     }
 
     private boolean tieneGestionHoy(Long idLead) {
@@ -2050,7 +2178,13 @@ public class LeadService {
 
     private LeadGtrLookupResponse mapearContextoLeadGtr(Lead lead) {
         Etapa etapaActual = lead.getEtapa();
-        boolean puedeGestionarseEnGtr = etapaActual == Etapa.PREVENTA;
+        // El contacto tiene un lead PREVENTA si el resuelto lo es, o existe otra oportunidad PREVENTA.
+        boolean tienePreventa = etapaActual == Etapa.PREVENTA
+                || leadRepository.findFirstByPrefijoAndLeadAndEtapaOrderByLastEntryAtDescIdDesc(
+                        lead.getPrefijo(), lead.getLead(), Etapa.PREVENTA).isPresent();
+        // Lead en otra etapa y sin PREVENTA: el GTR puede registrarlo solo para asignar la atención.
+        boolean atencionOtraEtapa = !tienePreventa;
+        boolean puedeGestionarseEnGtr = tienePreventa || atencionOtraEtapa;
 
         return new LeadGtrLookupResponse(
                 true,
@@ -2060,7 +2194,8 @@ public class LeadService {
                 etapaActual,
                 lead.getEstado(),
                 puedeGestionarseEnGtr,
-                construirMensajeContextoGtr(etapaActual)
+                atencionOtraEtapa,
+                construirMensajeContextoGtr(etapaActual, tienePreventa)
         );
     }
 
@@ -2119,15 +2254,16 @@ public class LeadService {
         };
     }
 
-    private String construirMensajeContextoGtr(Etapa etapaActual) {
-        if (etapaActual == null || etapaActual == Etapa.PREVENTA) {
+    private String construirMensajeContextoGtr(Etapa etapaActual, boolean tienePreventa) {
+        if (etapaActual == null || etapaActual == Etapa.PREVENTA || tienePreventa) {
             return null;
         }
 
+        // Sin PREVENTA: el lead solo se puede registrar para asignar la atención de la comunicación.
         return switch (etapaActual) {
-            case VENTA -> "Este lead ya paso a Validaciones y no puede gestionarse desde GTR por el momento.";
-            case POSTVENTA -> "Este lead ya paso a Postventa y no puede gestionarse desde GTR por el momento.";
-            case COBRANZA -> "Este lead ya paso a Cobranza y no puede gestionarse desde GTR por el momento.";
+            case VENTA -> "Este lead está en Validaciones. Al registrarlo podrás asignarlo a un asesor para atender al contacto, sin afectar su gestión en Validaciones.";
+            case POSTVENTA -> "Este lead está en Postventa. Al registrarlo podrás asignarlo a un asesor para atender al contacto, sin afectar su gestión en Postventa.";
+            case COBRANZA -> "Este lead está en Cobranza. Al registrarlo podrás asignarlo a un asesor para atender al contacto, sin afectar su gestión en Cobranza.";
             case PREVENTA -> null;
         };
     }
@@ -2275,7 +2411,9 @@ public class LeadService {
                 datosPreventa == null ? null : datosPreventa.getNombreTitularServicio(),
                 datosPreventa == null ? null : datosPreventa.getCorreo(),
                 lead.getEstado(),
-                totalAsignaciones
+                totalAsignaciones,
+                lead.getEtapa(),
+                lead.getEtapa() != Etapa.PREVENTA
         );
     }
 
@@ -2369,7 +2507,9 @@ public class LeadService {
                 plan,
                 promocionInterna,
                 adicionales,
-                totalAsignaciones
+                totalAsignaciones,
+                lead.getEtapa(),
+                lead.getEtapa() != Etapa.PREVENTA
         );
     }
 
@@ -2571,17 +2711,10 @@ public class LeadService {
      */
     @Transactional
     public Long crearOportunidadAdicional(Long idLead) {
-        Lead original = obtenerLeadPreventaDelAsesor(idLead);
-        // El documento puede haberse guardado como snapshot (guardado parcial sin tipificar) o en
-        // DatosPreventa. Aceptamos cualquiera de los dos para no obligar a tipificar antes de crear.
-        String documento = original.getNumeroDocumentoTitularServicioSnapshot();
-        if ((documento == null || documento.isBlank()) && original.getDatosPreventa() != null) {
-            documento = original.getDatosPreventa().getNumeroDocumentoTitularServicio();
-        }
-        if (documento == null || documento.isBlank()) {
-            throw new BadRequestException(
-                    "Registra el documento del titular de la oportunidad actual antes de crear otra");
-        }
+        // Cualquier etapa asignada al asesor: también puede crear oportunidades partiendo de un
+        // lead que sigue en otra etapa (atención GTR). Sin restricciones de documento/plan/dirección:
+        // la responsabilidad de crear una nueva oportunidad es del asesor y se evalúa en su llamada.
+        Lead original = obtenerLeadAsignadoDelAsesor(idLead);
 
         Lead nueva = leadMapper.toNuevoLead(
                 original.getPrefijo(), original.getLead(), original.getBase(),
@@ -2652,6 +2785,13 @@ public class LeadService {
 
     private Lead obtenerLeadPreventaDelAsesor(Long idLead) {
         return obtenerLeadAsignadoEnEtapa(idLead, Etapa.PREVENTA);
+    }
+
+    // Lead asignado al asesor actual en cualquier etapa: para crear oportunidades y para la
+    // tipificación informativa de un lead que sigue gestionándose en otra etapa.
+    private Lead obtenerLeadAsignadoDelAsesor(Long idLead) {
+        return leadRepository.findByIdAndIdAsesorAsignado(idLead, currentUser.empleadoID())
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
     }
 
     private Lead obtenerLeadAsignadoEnEtapa(Long idLead, Etapa etapa) {
@@ -2849,6 +2989,11 @@ public class LeadService {
     }
 
     private void notificarCambioLead(String tipo, Lead lead, Etapa etapaAnterior, Long idAsesorAnterior) {
+        notificarCambioLead(tipo, lead, etapaAnterior, idAsesorAnterior, false);
+    }
+
+    private void notificarCambioLead(
+            String tipo, Lead lead, Etapa etapaAnterior, Long idAsesorAnterior, boolean tambienBandejaGtr) {
         leadRealtimeNotifier.publishAfterCommit(LeadRealtimeEvent.builder()
                 .tipo(tipo)
                 .idLead(lead.getId())
@@ -2861,6 +3006,7 @@ public class LeadService {
                 .codigoTipificacion(lead.getCodigoTipificacion())
                 .codigoSubtipificacion(lead.getCodigoSubtipificacion())
                 .occurredAt(OperationalDateTime.now())
+                .tambienBandejaGtr(tambienBandejaGtr)
                 .build());
     }
 
@@ -2868,9 +3014,15 @@ public class LeadService {
 
     public List<GtrRankingAsesorResponse> listarRankingGtr(
             LocalDate desde, LocalDate hasta, boolean soloActivos) {
+        return listarRankingGtr(desde, hasta, soloActivos, null);
+    }
+
+    public List<GtrRankingAsesorResponse> listarRankingGtr(
+            LocalDate desde, LocalDate hasta, boolean soloActivos, Long idEquipo) {
 
         LocalDate desdeResuelta = OperationalDateTime.resolveDate(desde);
         LocalDate hastaResuelta = hasta == null ? OperationalDateTime.today() : hasta;
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
 
         OperationalDateTime.InstantRange rangoPeriodo = new OperationalDateTime.InstantRange(
                 OperationalDateTime.dayRange(desdeResuelta).inicio(),
@@ -2882,29 +3034,49 @@ public class LeadService {
         Map<Long, GtrRankingAccumulator> acumulados = new HashMap<>();
 
         eventoRepository.resumirNuevosGestionadosPorAsesorGtr(
-                        Accion.TIPIFICACION, rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos)
+                        Accion.TIPIFICACION, rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos,
+                        equipos.filtrar(), equipos.ids())
                 .forEach(row -> {
                     GtrRankingAccumulator item = obtenerAcumuladorGtr(acumulados, row.getIdAsesor(), row.getNombreAsesor());
                     item.nuevosGestionadosPeriodo = row.getCantidad();
                 });
 
+        eventoRepository.resumirAsignacionesPorAsesorDestinoGtr(
+                        Accion.ASIGNACION, rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos,
+                        equipos.filtrar(), equipos.ids())
+                .forEach(row -> {
+                    GtrRankingAccumulator item = obtenerAcumuladorGtr(acumulados, row.getIdAsesor(), row.getNombreAsesor());
+                    item.asignadosPeriodo = row.getCantidad();
+                });
+
         eventoRepository.resumirTipificacionesPorAsesorGtr(
-                        Accion.TIPIFICACION, rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos)
+                        Accion.TIPIFICACION, rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos,
+                        equipos.filtrar(), equipos.ids())
                 .forEach(row -> {
                     GtrRankingAccumulator item = obtenerAcumuladorGtr(acumulados, row.getIdAsesor(), row.getNombreAsesor());
                     item.gestionadosPeriodo = row.getCantidad();
                 });
 
+        eventoRepository.resumirNuevasOportunidadesPorAsesorGtr(
+                        Accion.NUEVA_OPORTUNIDAD, rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos,
+                        equipos.filtrar(), equipos.ids())
+                .forEach(row -> {
+                    GtrRankingAccumulator item = obtenerAcumuladorGtr(acumulados, row.getIdAsesor(), row.getNombreAsesor());
+                    item.nuevasOportunidadesPeriodo = row.getCantidad();
+                });
+
         // Preventas concretadas: fuente de verdad = Lead (idAsesorPreventa/fechaPreventa), no eventos.
         leadRepository.resumirPreventasPorAsesorLeadGtr(
-                        rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos)
+                        rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos,
+                        equipos.filtrar(), equipos.ids())
                 .forEach(row -> {
                     GtrRankingAccumulator item = obtenerAcumuladorGtr(acumulados, row.getIdAsesor(), null);
                     item.preventasPeriodo = row.getCantidad();
                 });
 
         leadRepository.resumirPreventasMensualesPorProveedorLeadGtr(
-                        rangoMes.inicio(), rangoMes.fin(), soloActivos)
+                        rangoMes.inicio(), rangoMes.fin(), soloActivos,
+                        equipos.filtrar(), equipos.ids())
                 .forEach(row -> {
                     GtrRankingAccumulator item = obtenerAcumuladorGtr(acumulados, row.getIdAsesor(), null);
                     item.preventasMes += row.getCantidad();
@@ -2923,9 +3095,15 @@ public class LeadService {
 
     public List<GtrTipificacionCampanaResponse> listarTipificacionesCampanaGtr(
             LocalDate desde, LocalDate hasta, boolean soloActivos) {
+        return listarTipificacionesCampanaGtr(desde, hasta, soloActivos, null);
+    }
+
+    public List<GtrTipificacionCampanaResponse> listarTipificacionesCampanaGtr(
+            LocalDate desde, LocalDate hasta, boolean soloActivos, Long idEquipo) {
 
         LocalDate desdeResuelta = OperationalDateTime.resolveDate(desde);
         LocalDate hastaResuelta = hasta == null ? OperationalDateTime.today() : hasta;
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
 
         OperationalDateTime.InstantRange rangoPeriodo = new OperationalDateTime.InstantRange(
                 OperationalDateTime.dayRange(desdeResuelta).inicio(),
@@ -2934,7 +3112,8 @@ public class LeadService {
 
         List<CampanaTipificacionCantidadProjection> rows =
                 eventoRepository.resumirTipificacionesPorCampanaGtr(
-                        Accion.TIPIFICACION, rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos);
+                        Accion.TIPIFICACION, rangoPeriodo.inicio(), rangoPeriodo.fin(), soloActivos,
+                        equipos.filtrar(), equipos.ids());
 
         Map<Long, Long> totalPorCampana = rows.stream()
                 .collect(java.util.stream.Collectors.groupingBy(
@@ -2956,6 +3135,100 @@ public class LeadService {
                         .thenComparingLong(r -> -r.getCantidad()))
                 .toList();
     }
+
+    public List<GtrTipificacionRankingResponse> listarTipificacionesRankingGtr(
+            LocalDate desde, LocalDate hasta, boolean soloActivos, Long idEquipo) {
+        OperationalDateTime.InstantRange rango = resolverRangoRanking(desde, hasta);
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
+        List<TipificacionCantidadProjection> rows = eventoRepository.resumirTipificacionesRankingGtr(
+                Accion.TIPIFICACION, rango.inicio(), rango.fin(), soloActivos, equipos.filtrar(), equipos.ids());
+        long total = rows.stream().mapToLong(TipificacionCantidadProjection::getCantidad).sum();
+
+        return rows.stream()
+                .map(row -> new GtrTipificacionRankingResponse(
+                        row.getTipificacion(),
+                        row.getCantidad(),
+                        calcularPorcentajeRanking(row.getCantidad(), total)
+                ))
+                .sorted(Comparator.comparingLong(GtrTipificacionRankingResponse::getCantidad).reversed()
+                        .thenComparing(GtrTipificacionRankingResponse::getCodigoTipificacion,
+                                Comparator.nullsLast(String::compareToIgnoreCase)))
+                .toList();
+    }
+
+    public List<GtrSubtipificacionRankingResponse> listarSubtipificacionesRankingGtr(
+            String codigoTipificacion,
+            LocalDate desde,
+            LocalDate hasta,
+            boolean soloActivos,
+            Long idEquipo
+    ) {
+        if (codigoTipificacion == null || codigoTipificacion.isBlank()) {
+            throw new BadRequestException("Selecciona una tipificación para ver su detalle.");
+        }
+        OperationalDateTime.InstantRange rango = resolverRangoRanking(desde, hasta);
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
+        List<SubtipificacionCantidadProjection> rows = eventoRepository.resumirSubtipificacionesRankingGtr(
+                Accion.TIPIFICACION,
+                codigoTipificacion.trim(),
+                rango.inicio(),
+                rango.fin(),
+                soloActivos,
+                equipos.filtrar(),
+                equipos.ids()
+        );
+        long total = rows.stream().mapToLong(SubtipificacionCantidadProjection::getCantidad).sum();
+
+        return rows.stream()
+                .map(row -> new GtrSubtipificacionRankingResponse(
+                        "SIN_SUBTIPIFICACION".equals(row.getSubtipificacion())
+                                ? "Sin subtipificación"
+                                : row.getSubtipificacion(),
+                        row.getCantidad(),
+                        calcularPorcentajeRanking(row.getCantidad(), total)
+                ))
+                .sorted(Comparator.comparingLong(GtrSubtipificacionRankingResponse::getCantidad).reversed()
+                        .thenComparing(GtrSubtipificacionRankingResponse::getCodigoSubtipificacion,
+                                Comparator.nullsLast(String::compareToIgnoreCase)))
+                .toList();
+    }
+
+    private OperationalDateTime.InstantRange resolverRangoRanking(LocalDate desde, LocalDate hasta) {
+        LocalDate desdeResuelta = OperationalDateTime.resolveDate(desde);
+        LocalDate hastaResuelta = hasta == null ? OperationalDateTime.today() : hasta;
+        if (desdeResuelta.isAfter(hastaResuelta)) {
+            throw new BadRequestException("La fecha de inicio no puede ser posterior a la fecha final.");
+        }
+        return new OperationalDateTime.InstantRange(
+                OperationalDateTime.dayRange(desdeResuelta).inicio(),
+                OperationalDateTime.dayRange(hastaResuelta).fin()
+        );
+    }
+
+    private RankingEquipoScope resolverEquiposRanking(Long idEquipoSolicitado) {
+        if (currentUser.tieneVisibilidadGlobalEquipos()) {
+            return idEquipoSolicitado == null
+                    ? new RankingEquipoScope(false, List.of(-1L))
+                    : new RankingEquipoScope(true, List.of(idEquipoSolicitado));
+        }
+
+        List<Long> equiposUsuario = currentUser.equipos();
+        if (equiposUsuario == null || equiposUsuario.isEmpty()) {
+            return new RankingEquipoScope(true, List.of(-1L));
+        }
+        if (idEquipoSolicitado != null && !equiposUsuario.contains(idEquipoSolicitado)) {
+            throw new UnauthorizedException("No tienes acceso al equipo seleccionado.");
+        }
+        return idEquipoSolicitado == null
+                ? new RankingEquipoScope(true, equiposUsuario)
+                : new RankingEquipoScope(true, List.of(idEquipoSolicitado));
+    }
+
+    private double calcularPorcentajeRanking(long cantidad, long total) {
+        return total > 0 ? Math.round((cantidad * 1000.0) / total) / 10.0 : 0.0;
+    }
+
+    private record RankingEquipoScope(boolean filtrar, List<Long> ids) { }
 
     private GtrRankingAccumulator obtenerAcumuladorGtr(
             Map<Long, GtrRankingAccumulator> acumulados, Long idAsesor, String nombreAsesor) {
@@ -2992,7 +3265,9 @@ public class LeadService {
         private final Long idAsesor;
         private String nombreAsesor;
         private long nuevosGestionadosPeriodo;
+        private long asignadosPeriodo;
         private long gestionadosPeriodo;
+        private long nuevasOportunidadesPeriodo;
         private long preventasPeriodo;
         private long preventasMes;
         private final List<SupervisorVentasProveedorResumenResponse> preventasMesPorProveedor = new ArrayList<>();
@@ -3011,8 +3286,8 @@ public class LeadService {
                     .toList();
             return new GtrRankingAsesorResponse(
                     idAsesor, nombreAsesor,
-                    nuevosGestionadosPeriodo, gestionadosPeriodo,
-                    preventasPeriodo, preventasMes, proveedores);
+                    nuevosGestionadosPeriodo, asignadosPeriodo, gestionadosPeriodo,
+                    nuevasOportunidadesPeriodo, preventasPeriodo, preventasMes, proveedores);
         }
     }
 
