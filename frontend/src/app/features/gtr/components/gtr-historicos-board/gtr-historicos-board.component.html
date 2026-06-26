@@ -118,6 +118,94 @@
       [disabled]="facade.isSaving() || facade.selectedCount() === 0 || !facade.canMutateOperationalData()"
       (click)="facade.openAssignment()"
     ></button>
+
+    <button
+      pButton
+      type="button"
+      icon="pi pi-sliders-h"
+      label="Organizar"
+      severity="secondary"
+      [outlined]="true"
+      [disabled]="!facade.canDisplayOperationalData()"
+      (mouseenter)="onOrganizeEnter()"
+      (mouseleave)="onOrganizeLeave(organizePopover)"
+      (click)="onOrganizeEnter(); organizePopover.toggle($event)"
+    ></button>
+
+    <p-popover #organizePopover appendTo="body" styleClass="gtr-organize-popover">
+      <div class="gtr-organize-panel" (mouseenter)="onOrganizeEnter()" (mouseleave)="onOrganizeLeave(organizePopover)">
+        <div class="gtr-organize-field">
+          <label for="gtr-historicos-grouping">Agrupar por</label>
+          <p-select
+            inputId="gtr-historicos-grouping"
+            [options]="facade.historicosGroupingModeOptions"
+            [ngModel]="facade.historicosGroupingMode()"
+            optionLabel="label"
+            optionValue="value"
+            (onChange)="onGroupingModeChange($any($event.value), organizePopover)"
+          />
+        </div>
+
+        @if (facade.historicosGroupingMode() !== 'SIN_AGRUPAR') {
+          <div class="gtr-organize-field">
+            <label for="gtr-historicos-group">Filtrar grupo</label>
+            <p-select
+              inputId="gtr-historicos-group"
+              [ngModel]="facade.historicosSelectedGroup()"
+              [options]="facade.historicosActiveGroupOptions()"
+              optionLabel="etiqueta"
+              [showClear]="true"
+              emptyMessage="Ejecuta una busqueda para ver grupos"
+              (onChange)="onGroupChange($event.value, organizePopover)"
+            >
+              <ng-template #item let-group>
+                <div class="gtr-group-option">
+                  <span>{{ group.etiqueta }}</span>
+                  <strong>{{ group.cantidad }}</strong>
+                </div>
+              </ng-template>
+            </p-select>
+          </div>
+        }
+
+        <div class="gtr-organize-divider"></div>
+
+        <div class="gtr-organize-field">
+          <label for="gtr-historicos-sort">Ordenar por</label>
+          <p-select
+            inputId="gtr-historicos-sort"
+            [options]="facade.historicosSortOptions"
+            [ngModel]="facade.historicosSortField()"
+            optionLabel="label"
+            optionValue="value"
+            (onChange)="onSortFieldChange($any($event.value), organizePopover)"
+          />
+        </div>
+
+        <div class="gtr-organize-field">
+          <label for="gtr-historicos-direction">Mostrar primero</label>
+          <p-select
+            inputId="gtr-historicos-direction"
+            [options]="facade.historicosSortDirectionOptions()"
+            [ngModel]="facade.historicosSortDirection()"
+            optionLabel="label"
+            optionValue="value"
+            (onChange)="onSortDirectionChange($any($event.value), organizePopover)"
+          />
+        </div>
+
+        <button
+          pButton
+          type="button"
+          icon="pi pi-filter-slash"
+          label="Limpiar filtro"
+          severity="secondary"
+          [text]="true"
+          [disabled]="facade.isHistoricosOrganizationDefault()"
+          (click)="onClearOrganization(organizePopover)"
+        ></button>
+      </div>
+    </p-popover>
   </div>
 
   <p-table

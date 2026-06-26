@@ -8,6 +8,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
+import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
@@ -117,7 +118,7 @@ class LeadServiceGtrGroupingTest {
                 .direction("desc")
                 .build();
         Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 12);
-        when(paginationService.toPageable(eq(request), any())).thenReturn(pageable);
+        when(paginationService.toPageableWithMapping(eq(request), any())).thenReturn(pageable);
         when(leadRepository.listarBandejaGtr(
                 eq(Etapa.PREVENTA),
                 eq("%"),
@@ -128,6 +129,7 @@ class LeadServiceGtrGroupingTest {
 
         leadService.listarBandejaGtr(
                 LocalDate.of(2026, 6, 10),
+                null,
                 null,
                 null,
                 null,
@@ -155,7 +157,7 @@ class LeadServiceGtrGroupingTest {
                 .direction("desc")
                 .build();
         Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 12);
-        when(paginationService.toPageable(eq(request), any())).thenReturn(pageable);
+        when(paginationService.toPageableWithMapping(eq(request), any())).thenReturn(pageable);
         when(leadRepository.listarBandejaGtrFiltrada(
                 eq(Etapa.PREVENTA),
                 eq("%"),
@@ -165,7 +167,9 @@ class LeadServiceGtrGroupingTest {
                 eq(false),
                 eq(true),
                 eq(false),
-                eq(null),
+                eq(false),
+                eq((Long) null),
+                eq((EstadoSeguimiento) null),
                 eq("CONTACTADO"),
                 eq("INTERESADO"),
                 eq(false),
@@ -176,6 +180,7 @@ class LeadServiceGtrGroupingTest {
                 LocalDate.of(2026, 6, 10),
                 null,
                 TipoGrupoGtr.PRIMERA_TIPIFICACION,
+                null,
                 null,
                 "CONTACTADO",
                 "INTERESADO",
@@ -192,7 +197,9 @@ class LeadServiceGtrGroupingTest {
                 eq(false),
                 eq(true),
                 eq(false),
-                eq(null),
+                eq(false),
+                eq((Long) null),
+                eq((EstadoSeguimiento) null),
                 eq("CONTACTADO"),
                 eq("INTERESADO"),
                 eq(false),
@@ -208,6 +215,7 @@ class LeadServiceGtrGroupingTest {
                 LocalDate.of(2026, 6, 10),
                 null,
                 TipoGrupoGtr.ASESOR,
+                null,
                 null,
                 null,
                 null,

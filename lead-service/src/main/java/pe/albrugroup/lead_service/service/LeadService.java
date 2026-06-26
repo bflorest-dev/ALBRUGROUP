@@ -145,7 +145,17 @@ public class LeadService {
     private static final LocalTime HORA_MINIMA_REGISTRO_RETROACTIVO = LocalTime.of(18, 0);
     private static final LocalTime HORA_MAXIMA_REGISTRO_RETROACTIVO = LocalTime.of(23, 59);
     private static final List<Accion> ACCIONES_GESTION_LEAD = List.of(Accion.CONTACTO, Accion.TIPIFICACION);
-    private static final Set<String> LEAD_GTR_SORT_FIELDS = Set.of(
+    private static final Map<String, String> LEAD_GTR_SORT_FIELDS = Map.ofEntries(
+            Map.entry("lastEntryAt", "lastEntryAt"),
+            Map.entry("createdAt", "createdAt"),
+            Map.entry("lead", "lead"),
+            Map.entry("nombreAsesorAsignado", "nombreAsesorAsignado"),
+            Map.entry("estado", "estado"),
+            Map.entry("campana", "c.nombre"),
+            Map.entry("primeraCodigoTipificacion", "primeraCodigoTipificacion"),
+            Map.entry("codigoTipificacion", "codigoTipificacion")
+    );
+    private static final Set<String> LEAD_VENTA_SORT_FIELDS = Set.of(
             "lastEntryAt", "createdAt", "lead", "nombreAsesorAsignado", "estado"
     );
     private static final Set<String> LEAD_ASESOR_SORT_FIELDS = Set.of(
@@ -160,6 +170,7 @@ public class LeadService {
             String lead,
             TipoGrupoGtr tipoGrupo,
             Long idGrupo,
+            EstadoSeguimiento estadoGrupo,
             String codigoTipificacion,
             String codigoSubtipificacion,
             boolean sinValor,
@@ -170,9 +181,9 @@ public class LeadService {
         OperationalDateTime.InstantRange rangoDia = buscandoPorLead
                 ? new OperationalDateTime.InstantRange(Instant.EPOCH, Instant.ofEpochSecond(253402300799L))
                 : OperationalDateTime.dayRange(fecha);
-        validarFiltroAgrupacionGtr(tipoGrupo, idGrupo, codigoTipificacion, sinValor);
+        validarFiltroAgrupacionGtr(tipoGrupo, idGrupo, estadoGrupo, codigoTipificacion, sinValor);
 
-        var pageable = paginationService.toPageable(pageRequest, LEAD_GTR_SORT_FIELDS);
+        var pageable = paginationService.toPageableWithMapping(pageRequest, LEAD_GTR_SORT_FIELDS);
         Page<LeadGtrResponse> leads = tipoGrupo == null
                 ? leadRepository.listarBandejaGtr(
                         Etapa.PREVENTA,
@@ -187,10 +198,12 @@ public class LeadService {
                         rangoDia.inicio(),
                         rangoDia.fin(),
                         tipoGrupo == TipoGrupoGtr.ASESOR,
+                        tipoGrupo == TipoGrupoGtr.ESTADO,
                         tipoGrupo == TipoGrupoGtr.CAMPANA,
                         tipoGrupo == TipoGrupoGtr.PRIMERA_TIPIFICACION,
                         tipoGrupo == TipoGrupoGtr.ULTIMA_TIPIFICACION,
                         idGrupo,
+                        estadoGrupo,
                         normalizarCodigoAgrupacion(codigoTipificacion),
                         normalizarCodigoAgrupacion(codigoSubtipificacion),
                         sinValor,
@@ -216,6 +229,10 @@ public class LeadService {
                 ),
                 // La bandeja GTR ya está acotada al equipo del usuario; no se agrupa por equipo.
                 List.of(),
+                mapearAgrupaciones(
+                        leadRepository.agruparBandejaGtrPorEstado(Etapa.PREVENTA, rangoDia.inicio(), rangoDia.fin()),
+                        "Sin estado"
+                ),
                 mapearAgrupacionesTipificacion(
                         leadRepository.agruparBandejaGtrPorPrimeraTipificacion(
                                 Etapa.PREVENTA,
@@ -229,7 +246,8 @@ public class LeadService {
                                 rangoDia.inicio(),
                                 rangoDia.fin()
                         )
-                )
+                ),
+                List.of()
         );
     }
 
@@ -459,7 +477,7 @@ public class LeadService {
                 leadPattern,
                 rango.inicio(),
                 rango.fin(),
-                paginationService.toPageable(pageRequest, LEAD_GTR_SORT_FIELDS)
+                paginationService.toPageable(pageRequest, LEAD_VENTA_SORT_FIELDS)
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);
         return PageResponse.from(leads);
@@ -2057,11 +2075,12 @@ public class LeadService {
     private void validarFiltroAgrupacionGtr(
             TipoGrupoGtr tipoGrupo,
             Long idGrupo,
+            EstadoSeguimiento estadoGrupo,
             String codigoTipificacion,
             boolean sinValor
     ) {
         if (tipoGrupo == null) {
-            if (idGrupo != null || codigoTipificacion != null || sinValor) {
+            if (idGrupo != null || estadoGrupo != null || codigoTipificacion != null || sinValor) {
                 throw new BadRequestException("Debes indicar el tipo de agrupacion para filtrar la bandeja");
             }
             return;
@@ -2073,6 +2092,10 @@ public class LeadService {
 
         if ((tipoGrupo == TipoGrupoGtr.ASESOR || tipoGrupo == TipoGrupoGtr.CAMPANA) && idGrupo == null) {
             throw new BadRequestException("Debes indicar el grupo seleccionado");
+        }
+
+        if (tipoGrupo == TipoGrupoGtr.ESTADO && estadoGrupo == null) {
+            throw new BadRequestException("Debes indicar el estado seleccionado");
         }
 
         if ((tipoGrupo == TipoGrupoGtr.PRIMERA_TIPIFICACION

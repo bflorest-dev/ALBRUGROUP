@@ -111,6 +111,8 @@ export interface LeadGtrResponse {
 export type LeadGtrGroupType =
   | 'ASESOR'
   | 'CAMPANA'
+  | 'ESTADO'
+  | 'INGRESO'
   | 'PRIMERA_TIPIFICACION'
   | 'ULTIMA_TIPIFICACION';
 
@@ -123,20 +125,25 @@ export interface LeadGtrGroupItemResponse {
   etiqueta: string;
   cantidad: number;
   sinValor: boolean;
+  valor?: string | null;
 }
 
 export interface LeadGtrGroupsResponse {
   asesores: LeadGtrGroupItemResponse[];
   campanas: LeadGtrGroupItemResponse[];
+  estados: LeadGtrGroupItemResponse[];
   primerasTipificaciones: LeadGtrGroupItemResponse[];
   ultimasTipificaciones: LeadGtrGroupItemResponse[];
+  ingresos?: LeadGtrGroupItemResponse[];
 }
 
 export interface LeadGtrGroupFilter {
   tipoGrupo?: LeadGtrGroupType;
   idGrupo?: number;
+  estado?: EstadoSeguimiento | string;
   codigoTipificacion?: string;
   codigoSubtipificacion?: string;
+  fechaIngreso?: string;
   sinValor?: boolean;
 }
 
@@ -172,6 +179,12 @@ export interface MasivoLeadFilters {
   subtipificaciones?: number[];
   fechaDesde?: string;
   fechaHasta?: string;
+  tipoGrupo?: LeadGtrGroupType;
+  estado?: EstadoSeguimiento | string;
+  codigoTipificacion?: string;
+  codigoSubtipificacion?: string;
+  fechaIngreso?: string;
+  sinValor?: boolean;
 }
 
 export interface LeadAsesorVentasResponse {

@@ -4,6 +4,8 @@ public enum TipoGrupoGtr {
     ASESOR,
     CAMPANA,
     EQUIPO,
+    ESTADO,
+    INGRESO,
     PRIMERA_TIPIFICACION,
     ULTIMA_TIPIFICACION
 }

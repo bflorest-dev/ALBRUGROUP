@@ -10,6 +10,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import pe.albrugroup.lead_service.entity.request.*;
+import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.response.*;
@@ -72,6 +73,7 @@ public class PreventaController {
             @RequestParam(required = false) String lead,
             @RequestParam(required = false) TipoGrupoGtr tipoGrupo,
             @RequestParam(required = false) Long idGrupo,
+            @RequestParam(required = false) EstadoSeguimiento estado,
             @RequestParam(required = false) String codigoTipificacion,
             @RequestParam(required = false) String codigoSubtipificacion,
             @RequestParam(defaultValue = "false") boolean sinValor,
@@ -82,6 +84,7 @@ public class PreventaController {
                 lead,
                 tipoGrupo,
                 idGrupo,
+                estado,
                 codigoTipificacion,
                 codigoSubtipificacion,
                 sinValor,

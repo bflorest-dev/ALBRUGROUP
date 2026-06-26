@@ -30,6 +30,94 @@
       (click)="facade.openSearchDialog()"
     ></button>
 
+    <button
+      pButton
+      type="button"
+      icon="pi pi-sliders-h"
+      label="Organizar"
+      severity="secondary"
+      [outlined]="true"
+      [disabled]="!facade.canDisplayOperationalData()"
+      (mouseenter)="onOrganizeEnter()"
+      (mouseleave)="onOrganizeLeave(organizePopover)"
+      (click)="onOrganizeEnter(); organizePopover.toggle($event)"
+    ></button>
+
+    <p-popover #organizePopover appendTo="body" styleClass="gtr-organize-popover">
+      <div class="gtr-organize-panel" (mouseenter)="onOrganizeEnter()" (mouseleave)="onOrganizeLeave(organizePopover)">
+        <div class="gtr-organize-field">
+          <label for="gtr-platform-grouping">Agrupar por</label>
+          <p-select
+            inputId="gtr-platform-grouping"
+            [options]="facade.platformGroupingModeOptions"
+            [ngModel]="facade.platformGroupingMode()"
+            optionLabel="label"
+            optionValue="value"
+            (onChange)="onGroupingModeChange($any($event.value), organizePopover)"
+          />
+        </div>
+
+        @if (facade.platformGroupingMode() !== 'SIN_AGRUPAR') {
+          <div class="gtr-organize-field">
+            <label for="gtr-platform-group">Filtrar grupo</label>
+            <p-select
+              inputId="gtr-platform-group"
+              [ngModel]="facade.platformSelectedGroup()"
+              [options]="facade.platformActiveGroupOptions()"
+              optionLabel="etiqueta"
+              [showClear]="true"
+              emptyMessage="No hay opciones disponibles"
+              (onChange)="onGroupChange($event.value, organizePopover)"
+            >
+              <ng-template #item let-group>
+                <div class="gtr-group-option">
+                  <span>{{ group.etiqueta }}</span>
+                  <strong>{{ group.cantidad }}</strong>
+                </div>
+              </ng-template>
+            </p-select>
+          </div>
+        }
+
+        <div class="gtr-organize-divider"></div>
+
+        <div class="gtr-organize-field">
+          <label for="gtr-platform-sort">Ordenar por</label>
+          <p-select
+            inputId="gtr-platform-sort"
+            [options]="facade.platformSortOptions"
+            [ngModel]="facade.platformSortField()"
+            optionLabel="label"
+            optionValue="value"
+            (onChange)="onSortFieldChange($any($event.value), organizePopover)"
+          />
+        </div>
+
+        <div class="gtr-organize-field">
+          <label for="gtr-platform-direction">Mostrar primero</label>
+          <p-select
+            inputId="gtr-platform-direction"
+            [options]="facade.platformSortDirectionOptions()"
+            [ngModel]="facade.platformSortDirection()"
+            optionLabel="label"
+            optionValue="value"
+            (onChange)="onSortDirectionChange($any($event.value), organizePopover)"
+          />
+        </div>
+
+        <button
+          pButton
+          type="button"
+          icon="pi pi-filter-slash"
+          label="Limpiar filtro"
+          severity="secondary"
+          [text]="true"
+          [disabled]="facade.isPlatformOrganizationDefault()"
+          (click)="onClearOrganization(organizePopover)"
+        ></button>
+      </div>
+    </p-popover>
+
     @if (facade.isReconciling()) {
       <p-tag severity="secondary" value="Realtime activo" />
     }

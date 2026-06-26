@@ -20,6 +20,11 @@ import {
   CampanaResponse,
   Etapa,
   EventoResponse,
+  LeadGtrGroupFilter,
+  LeadGtrGroupItemResponse,
+  LeadGtrGroupMode,
+  LeadGtrGroupType,
+  LeadGtrGroupsResponse,
   LeadAgendadoGtrResponse,
   LeadGtrLookupResponse,
   LeadGtrResponse,
@@ -80,6 +85,17 @@ type TipificacionVisualMeta = {
 };
 
 type AgendadosSortField = 'programado' | 'agendado';
+type GtrPlatformSortField =
+  | 'lastEntryAt'
+  | 'createdAt'
+  | 'campana'
+  | 'primeraCodigoTipificacion'
+  | 'codigoTipificacion'
+  | 'estado'
+  | 'nombreAsesorAsignado';
+type GtrHistoricosSortField = 'lastEntryAt' | 'codigoTipificacion' | 'estado' | 'nombreAsesorAsignado';
+type GtrPlatformSortDirection = 'asc' | 'desc';
+type GtrHistoricosGroupMode = 'SIN_AGRUPAR' | 'ULTIMA_TIPIFICACION' | 'ESTADO' | 'INGRESO';
 
 type AdvisorOption = {
   empleadoId: number;
@@ -202,6 +218,30 @@ export class GtrWorkspaceFacade {
   readonly searchPageNumber = signal(0);
   readonly isSearching = signal(false);
   readonly searchExecuted = signal(false);
+  readonly platformGroupingMode = signal<LeadGtrGroupMode>('SIN_AGRUPAR');
+  readonly platformSelectedGroup = signal<LeadGtrGroupItemResponse | null>(null);
+  readonly platformSortField = signal<GtrPlatformSortField>('lastEntryAt');
+  readonly platformSortDirection = signal<GtrPlatformSortDirection>('desc');
+  readonly platformGroups = signal<LeadGtrGroupsResponse>({
+    asesores: [],
+    campanas: [],
+    estados: [],
+    primerasTipificaciones: [],
+    ultimasTipificaciones: [],
+    ingresos: []
+  });
+  readonly historicosGroupingMode = signal<GtrHistoricosGroupMode>('SIN_AGRUPAR');
+  readonly historicosSelectedGroup = signal<LeadGtrGroupItemResponse | null>(null);
+  readonly historicosSortField = signal<GtrHistoricosSortField>('lastEntryAt');
+  readonly historicosSortDirection = signal<GtrPlatformSortDirection>('desc');
+  readonly historicosGroups = signal<LeadGtrGroupsResponse>({
+    asesores: [],
+    campanas: [],
+    estados: [],
+    primerasTipificaciones: [],
+    ultimasTipificaciones: [],
+    ingresos: []
+  });
   readonly metrics = signal<LeadGtrMetricasResponse>({
     nuevos: 0,
     sinGestionar: 0,
@@ -531,6 +571,106 @@ export class GtrWorkspaceFacade {
     ];
   });
 
+  readonly platformGroupingModeOptions: Array<{ label: string; value: LeadGtrGroupMode }> = [
+    { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
+    { label: 'Proveedor', value: 'CAMPANA' },
+    { label: 'Primera tipificación', value: 'PRIMERA_TIPIFICACION' },
+    { label: 'Última tipificación', value: 'ULTIMA_TIPIFICACION' },
+    { label: 'Estado', value: 'ESTADO' },
+    { label: 'Asesor', value: 'ASESOR' }
+  ];
+  readonly platformSortOptions: Array<{ label: string; value: GtrPlatformSortField }> = [
+    { label: 'Última gestión', value: 'lastEntryAt' },
+    { label: 'Ingreso', value: 'createdAt' },
+    { label: 'Proveedor', value: 'campana' },
+    { label: 'Primera tipificación', value: 'primeraCodigoTipificacion' },
+    { label: 'Última tipificación', value: 'codigoTipificacion' },
+    { label: 'Estado', value: 'estado' },
+    { label: 'Asesor', value: 'nombreAsesorAsignado' }
+  ];
+  readonly platformSortDirectionOptions = computed<Array<{ label: string; value: GtrPlatformSortDirection }>>(() =>
+    this.platformSortField() === 'lastEntryAt' || this.platformSortField() === 'createdAt'
+      ? [
+          { label: 'Más antiguos', value: 'asc' },
+          { label: 'Más recientes', value: 'desc' }
+        ]
+      : [
+          { label: 'A-Z', value: 'asc' },
+          { label: 'Z-A', value: 'desc' }
+        ]
+  );
+  readonly platformOrganizationSummary = computed(() => {
+    const grouping = this.platformGroupingModeOptions.find((option) => option.value === this.platformGroupingMode())?.label;
+    const sorting = this.platformSortOptions.find((option) => option.value === this.platformSortField())?.label;
+    const direction = this.platformSortDirectionOptions().find((option) => option.value === this.platformSortDirection())?.label;
+    return `${grouping ?? 'Sin agrupar'} · ${sorting ?? 'Última gestión'} (${direction ?? 'Más recientes'})`;
+  });
+  readonly platformActiveGroupOptions = computed<LeadGtrGroupItemResponse[]>(() => {
+    const groups = this.platformGroups();
+    switch (this.platformGroupingMode()) {
+      case 'ASESOR':
+        return groups.asesores;
+      case 'CAMPANA':
+        return groups.campanas;
+      case 'ESTADO':
+        return groups.estados;
+      case 'PRIMERA_TIPIFICACION':
+        return groups.primerasTipificaciones;
+      case 'ULTIMA_TIPIFICACION':
+        return groups.ultimasTipificaciones;
+      default:
+        return [];
+    }
+  });
+  readonly isPlatformOrganizationDefault = computed(() =>
+    this.platformGroupingMode() === 'SIN_AGRUPAR' &&
+    this.platformSelectedGroup() === null &&
+    this.platformSortField() === 'lastEntryAt' &&
+    this.platformSortDirection() === 'desc'
+  );
+  readonly historicosGroupingModeOptions: Array<{ label: string; value: GtrHistoricosGroupMode }> = [
+    { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
+    { label: 'Última tipificación', value: 'ULTIMA_TIPIFICACION' },
+    { label: 'Estado', value: 'ESTADO' },
+    { label: 'Ingreso', value: 'INGRESO' }
+  ];
+  readonly historicosSortOptions: Array<{ label: string; value: GtrHistoricosSortField }> = [
+    { label: 'Ingreso', value: 'lastEntryAt' },
+    { label: 'Última tipificación', value: 'codigoTipificacion' },
+    { label: 'Estado', value: 'estado' },
+    { label: 'Asesor', value: 'nombreAsesorAsignado' }
+  ];
+  readonly historicosSortDirectionOptions = computed<Array<{ label: string; value: GtrPlatformSortDirection }>>(() =>
+    this.historicosSortField() === 'lastEntryAt'
+      ? [
+          { label: 'Más antiguos', value: 'asc' },
+          { label: 'Más recientes', value: 'desc' }
+        ]
+      : [
+          { label: 'A-Z', value: 'asc' },
+          { label: 'Z-A', value: 'desc' }
+        ]
+  );
+  readonly historicosActiveGroupOptions = computed<LeadGtrGroupItemResponse[]>(() => {
+    const groups = this.historicosGroups();
+    switch (this.historicosGroupingMode()) {
+      case 'ESTADO':
+        return groups.estados;
+      case 'INGRESO':
+        return groups.ingresos ?? [];
+      case 'ULTIMA_TIPIFICACION':
+        return groups.ultimasTipificaciones;
+      default:
+        return [];
+    }
+  });
+  readonly isHistoricosOrganizationDefault = computed(() =>
+    this.historicosGroupingMode() === 'SIN_AGRUPAR' &&
+    this.historicosSelectedGroup() === null &&
+    this.historicosSortField() === 'lastEntryAt' &&
+    this.historicosSortDirection() === 'desc'
+  );
+
   readonly selectedCount = computed(() => this.selectedIds().size);
   readonly availableAssignmentAdvisors = computed(() => {
     const availabilityOrder = new Map<string, number>([
@@ -662,6 +802,7 @@ export class GtrWorkspaceFacade {
     if (section === 'plataforma') {
       sectionLoads.push(['bandeja diaria', () => this.refreshPage(false)]);
       sectionLoads.push(['metricas', () => this.refreshMetrics()]);
+      sectionLoads.push(['agrupaciones', () => this.refreshPlatformGroups()]);
     }
 
     if (section === 'agendados') {
@@ -1617,6 +1758,104 @@ export class GtrWorkspaceFacade {
     await this.refreshPage(false);
   }
 
+  async setPlatformGroupingMode(mode: LeadGtrGroupMode): Promise<void> {
+    if (!mode || mode === this.platformGroupingMode()) {
+      return;
+    }
+    this.platformGroupingMode.set(mode);
+    this.platformSelectedGroup.set(null);
+    this.pageNumber.set(0);
+    await this.refreshPage(false);
+  }
+
+  async selectPlatformGroup(group: LeadGtrGroupItemResponse | null | undefined): Promise<void> {
+    this.platformSelectedGroup.set(group ?? null);
+    this.pageNumber.set(0);
+    await this.refreshPage(false);
+  }
+
+  async setPlatformSortField(field: GtrPlatformSortField): Promise<void> {
+    if (!field || field === this.platformSortField()) {
+      return;
+    }
+    this.platformSortField.set(field);
+    this.platformSortDirection.set(field === 'lastEntryAt' || field === 'createdAt' ? 'desc' : 'asc');
+    this.pageNumber.set(0);
+    await this.refreshPage(false);
+  }
+
+  async setPlatformSortDirection(direction: GtrPlatformSortDirection): Promise<void> {
+    if (!direction || direction === this.platformSortDirection()) {
+      return;
+    }
+    this.platformSortDirection.set(direction);
+    this.pageNumber.set(0);
+    await this.refreshPage(false);
+  }
+
+  async clearPlatformOrganization(): Promise<void> {
+    this.platformGroupingMode.set('SIN_AGRUPAR');
+    this.platformSelectedGroup.set(null);
+    this.platformSortField.set('lastEntryAt');
+    this.platformSortDirection.set('desc');
+    this.pageNumber.set(0);
+    await this.refreshPage(false);
+  }
+
+  async setHistoricosGroupingMode(mode: GtrHistoricosGroupMode): Promise<void> {
+    if (!mode || mode === this.historicosGroupingMode()) {
+      return;
+    }
+    this.historicosGroupingMode.set(mode);
+    this.historicosSelectedGroup.set(null);
+    this.masivoPageNumber.set(0);
+    if (this.masivoSearched()) {
+      await this.refreshMasivos();
+    }
+  }
+
+  async selectHistoricosGroup(group: LeadGtrGroupItemResponse | null | undefined): Promise<void> {
+    this.historicosSelectedGroup.set(group ?? null);
+    this.masivoPageNumber.set(0);
+    if (this.masivoSearched()) {
+      await this.refreshMasivos();
+    }
+  }
+
+  async setHistoricosSortField(field: GtrHistoricosSortField): Promise<void> {
+    if (!field || field === this.historicosSortField()) {
+      return;
+    }
+    this.historicosSortField.set(field);
+    this.historicosSortDirection.set(field === 'lastEntryAt' ? 'desc' : 'asc');
+    this.masivoPageNumber.set(0);
+    if (this.masivoSearched()) {
+      await this.refreshMasivos();
+    }
+  }
+
+  async setHistoricosSortDirection(direction: GtrPlatformSortDirection): Promise<void> {
+    if (!direction || direction === this.historicosSortDirection()) {
+      return;
+    }
+    this.historicosSortDirection.set(direction);
+    this.masivoPageNumber.set(0);
+    if (this.masivoSearched()) {
+      await this.refreshMasivos();
+    }
+  }
+
+  async clearHistoricosOrganization(): Promise<void> {
+    this.historicosGroupingMode.set('SIN_AGRUPAR');
+    this.historicosSelectedGroup.set(null);
+    this.historicosSortField.set('lastEntryAt');
+    this.historicosSortDirection.set('desc');
+    this.masivoPageNumber.set(0);
+    if (this.masivoSearched()) {
+      await this.refreshMasivos();
+    }
+  }
+
   async previousPage(): Promise<void> {
     if (this.pageNumber() === 0) {
       return;
@@ -1681,6 +1920,7 @@ export class GtrWorkspaceFacade {
     this.masivoSearched.set(true);
     this.masivoPageNumber.set(0);
     this.selectedIds.set(new Set());
+    await this.refreshHistoricosGroups();
     await this.refreshMasivos();
   }
 
@@ -1715,6 +1955,18 @@ export class GtrWorkspaceFacade {
     this.masivoSearched.set(false);
     this.selectedIds.set(new Set());
     this.lastMasivoSearchFiltersKey = null;
+    this.historicosGroupingMode.set('SIN_AGRUPAR');
+    this.historicosSelectedGroup.set(null);
+    this.historicosSortField.set('lastEntryAt');
+    this.historicosSortDirection.set('desc');
+    this.historicosGroups.set({
+      asesores: [],
+      campanas: [],
+      estados: [],
+      primerasTipificaciones: [],
+      ultimasTipificaciones: [],
+      ingresos: []
+    });
     this.selectedMasivoTipificacionIds.set(new Set());
     this.subtipificacionFilter.set('');
     this.historicosStateService.clear();
@@ -2267,6 +2519,7 @@ export class GtrWorkspaceFacade {
       await Promise.all([
         section === 'plataforma' ? this.refreshPage(true) : Promise.resolve(),
         section === 'plataforma' ? this.refreshMetrics() : Promise.resolve(),
+        section === 'plataforma' ? this.refreshPlatformGroups() : Promise.resolve(),
         section === 'agendados' ? this.refreshAgendados(true) : Promise.resolve(),
         section === 'historicos' && this.masivoSearched() ? this.refreshMasivos() : Promise.resolve(),
         this.refreshAdvisors(),
@@ -2283,7 +2536,7 @@ export class GtrWorkspaceFacade {
     }
     const previous = this.rows();
     const page = await firstValueFrom(
-      this.preventaService.listarBandejaGtr(this.today, this.currentQuery(this.pageSize))
+      this.preventaService.listarBandejaGtr(this.today, this.currentQuery(this.pageSize), this.platformGroupFilter())
     );
     this.totalElements.set(page.totalElements);
     this.totalPages.set(page.totalPages);
@@ -2323,8 +2576,8 @@ export class GtrWorkspaceFacade {
         this.preventaService.listarLeadsMasivo(this.getMasivoFilters(), {
           pageNumber: this.masivoPageNumber(),
           pageSize: this.historicosPageSize,
-          sortBy: 'lastEntryAt',
-          direction: 'desc'
+          sortBy: this.historicosSortField(),
+          direction: this.historicosSortDirection()
         })
       );
       this.masivoTotalElements.set(page.totalElements);
@@ -2344,6 +2597,47 @@ export class GtrWorkspaceFacade {
       return;
     }
     this.metrics.set(await firstValueFrom(this.preventaService.obtenerMetricasGtr(this.today)));
+  }
+
+  private async refreshPlatformGroups(): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
+    const groups = await firstValueFrom(this.preventaService.listarAgrupacionesBandejaGtr(this.today));
+    this.platformGroups.set({
+      asesores: groups.asesores ?? [],
+      campanas: groups.campanas ?? [],
+      estados: groups.estados ?? [],
+      primerasTipificaciones: groups.primerasTipificaciones ?? [],
+      ultimasTipificaciones: groups.ultimasTipificaciones ?? []
+    });
+
+    const selected = this.platformSelectedGroup();
+    if (selected && !this.platformActiveGroupOptions().some((group) => this.samePlatformGroup(group, selected))) {
+      this.platformSelectedGroup.set(null);
+    }
+  }
+
+  private async refreshHistoricosGroups(): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
+    const groups = await firstValueFrom(
+      this.preventaService.listarAgrupacionesLeadsMasivo(this.getMasivoBaseFilters())
+    );
+    this.historicosGroups.set({
+      asesores: [],
+      campanas: [],
+      estados: groups.estados ?? [],
+      primerasTipificaciones: [],
+      ultimasTipificaciones: groups.ultimasTipificaciones ?? [],
+      ingresos: groups.ingresos ?? []
+    });
+
+    const selected = this.historicosSelectedGroup();
+    if (selected && !this.historicosActiveGroupOptions().some((group) => this.samePlatformGroup(group, selected))) {
+      this.historicosSelectedGroup.set(null);
+    }
   }
 
   private async refreshCampanas(): Promise<void> {
@@ -2391,12 +2685,54 @@ export class GtrWorkspaceFacade {
     return {
       pageNumber: pageSize === 100 ? 0 : this.pageNumber(),
       pageSize,
-      sortBy: 'lastEntryAt',
-      direction: 'desc'
+      sortBy: this.platformSortField(),
+      direction: this.platformSortDirection()
     };
   }
 
+  private platformGroupFilter(): LeadGtrGroupFilter {
+    const mode = this.platformGroupingMode();
+    const group = this.platformSelectedGroup();
+    if (mode === 'SIN_AGRUPAR' || !group) {
+      return {};
+    }
+
+    const filter: LeadGtrGroupFilter = {
+      tipoGrupo: mode as LeadGtrGroupType,
+      sinValor: group.sinValor
+    };
+
+    if (group.idGrupo !== null && group.idGrupo !== undefined) {
+      filter.idGrupo = group.idGrupo;
+    }
+    if (mode === 'ESTADO' && group.etiqueta && !group.sinValor) {
+      filter.estado = group.etiqueta;
+    }
+    if (group.codigoTipificacion) {
+      filter.codigoTipificacion = group.codigoTipificacion;
+    }
+    if (group.codigoSubtipificacion) {
+      filter.codigoSubtipificacion = group.codigoSubtipificacion;
+    }
+    return filter;
+  }
+
+  private samePlatformGroup(left: LeadGtrGroupItemResponse, right: LeadGtrGroupItemResponse): boolean {
+    return Boolean(left.sinValor) === Boolean(right.sinValor)
+      && (left.idGrupo ?? null) === (right.idGrupo ?? null)
+      && (left.codigoTipificacion ?? null) === (right.codigoTipificacion ?? null)
+      && (left.codigoSubtipificacion ?? null) === (right.codigoSubtipificacion ?? null)
+      && (left.etiqueta ?? null) === (right.etiqueta ?? null);
+  }
+
   private getMasivoFilters(): MasivoLeadFilters {
+    return {
+      ...this.getMasivoBaseFilters(),
+      ...this.historicosGroupFilter()
+    };
+  }
+
+  private getMasivoBaseFilters(): MasivoLeadFilters {
     const raw = this.masivoFiltersForm.getRawValue();
     return {
       idProveedor: raw.idProveedor || undefined,
@@ -2406,6 +2742,34 @@ export class GtrWorkspaceFacade {
       fechaDesde: raw.fechaDesde || undefined,
       fechaHasta: raw.fechaHasta || undefined
     };
+  }
+
+  private historicosGroupFilter(): MasivoLeadFilters {
+    const mode = this.historicosGroupingMode();
+    const group = this.historicosSelectedGroup();
+    if (mode === 'SIN_AGRUPAR' || !group) {
+      return {};
+    }
+
+    const filter: MasivoLeadFilters = {
+      tipoGrupo: mode as LeadGtrGroupType,
+      sinValor: group.sinValor
+    };
+    if (mode === 'ESTADO' && group.etiqueta && !group.sinValor) {
+      filter.estado = group.etiqueta;
+    }
+    if (mode === 'ULTIMA_TIPIFICACION') {
+      if (group.codigoTipificacion) {
+        filter.codigoTipificacion = group.codigoTipificacion;
+      }
+      if (group.codigoSubtipificacion) {
+        filter.codigoSubtipificacion = group.codigoSubtipificacion;
+      }
+    }
+    if (mode === 'INGRESO' && group.valor && !group.sinValor) {
+      filter.fechaIngreso = group.valor;
+    }
+    return filter;
   }
 
   private currentHistoricosFiltersFormValue(): GtrHistoricosFiltersFormValue {

@@ -136,6 +136,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR (:sinValor = false AND l.idAsesorAsignado = :idGrupo)
               )
               AND (
+                    :filtrarEstado = false
+                    OR (:sinValor = true AND l.estado IS NULL)
+                    OR (:sinValor = false AND l.estado = :estadoGrupo)
+              )
+              AND (
                     :filtrarCampana = false
                     OR (:sinValor = true AND c.id IS NULL)
                     OR (:sinValor = false AND c.id = :idGrupo)
@@ -180,10 +185,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("inicioDia") Instant inicioDia,
             @Param("finDia") Instant finDia,
             @Param("filtrarAsesor") boolean filtrarAsesor,
+            @Param("filtrarEstado") boolean filtrarEstado,
             @Param("filtrarCampana") boolean filtrarCampana,
             @Param("filtrarPrimeraTipificacion") boolean filtrarPrimeraTipificacion,
             @Param("filtrarUltimaTipificacion") boolean filtrarUltimaTipificacion,
             @Param("idGrupo") Long idGrupo,
+            @Param("estadoGrupo") EstadoSeguimiento estadoGrupo,
             @Param("codigoTipificacion") String codigoTipificacion,
             @Param("codigoSubtipificacion") String codigoSubtipificacion,
             @Param("sinValor") boolean sinValor,
@@ -222,6 +229,24 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             GROUP BY c.id, c.nombre
             """)
     List<LeadGtrAgrupacionProjection> agruparBandejaGtrPorCampana(
+            @Param("etapa") Etapa etapa,
+            @Param("inicioDia") Instant inicioDia,
+            @Param("finDia") Instant finDia
+    );
+
+    @Query("""
+            SELECT NULL AS idGrupo,
+                   CONCAT('', l.estado) AS etiqueta,
+                   NULL AS codigoTipificacion,
+                   NULL AS codigoSubtipificacion,
+                   COUNT(l.id) AS cantidad
+            FROM Lead l
+            WHERE l.etapa = :etapa
+              AND l.lastEntryAt >= :inicioDia
+              AND l.lastEntryAt < :finDia
+            GROUP BY l.estado
+            """)
+    List<LeadGtrAgrupacionProjection> agruparBandejaGtrPorEstado(
             @Param("etapa") Etapa etapa,
             @Param("inicioDia") Instant inicioDia,
             @Param("finDia") Instant finDia
@@ -905,6 +930,28 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND (:filtrarSubtipificaciones = false OR l.idSubtipificacion IN :subtipificacionIds)
               AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
               AND (:filtrarFechaHasta = false OR l.lastEntryAt < :fechaHasta)
+              AND (
+                    :filtrarEstadoGrupo = false
+                    OR (:sinValorGrupo = true AND l.estado IS NULL)
+                    OR (:sinValorGrupo = false AND l.estado = :estadoGrupo)
+              )
+              AND (
+                    :filtrarUltimaTipificacionGrupo = false
+                    OR (:sinValorGrupo = true AND l.codigoTipificacion IS NULL)
+                    OR (
+                        :sinValorGrupo = false
+                        AND l.codigoTipificacion = :codigoTipificacionGrupo
+                        AND (
+                            (:codigoSubtipificacionGrupo IS NULL AND l.codigoSubtipificacion IS NULL)
+                            OR l.codigoSubtipificacion = :codigoSubtipificacionGrupo
+                        )
+                    )
+              )
+              AND (
+                    :filtrarIngresoGrupo = false
+                    OR (:sinValorGrupo = true AND l.lastEntryAt IS NULL)
+                    OR (:sinValorGrupo = false AND l.lastEntryAt >= :ingresoInicio AND l.lastEntryAt < :ingresoFin)
+              )
             ORDER BY l.lastEntryAt DESC, l.id DESC
             """)
     Page<LeadGtrResponse> listarLeadsMasivo(
@@ -921,7 +968,118 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("fechaDesde") Instant fechaDesde,
             @Param("filtrarFechaHasta") boolean filtrarFechaHasta,
             @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarEstadoGrupo") boolean filtrarEstadoGrupo,
+            @Param("estadoGrupo") EstadoSeguimiento estadoGrupo,
+            @Param("filtrarUltimaTipificacionGrupo") boolean filtrarUltimaTipificacionGrupo,
+            @Param("codigoTipificacionGrupo") String codigoTipificacionGrupo,
+            @Param("codigoSubtipificacionGrupo") String codigoSubtipificacionGrupo,
+            @Param("filtrarIngresoGrupo") boolean filtrarIngresoGrupo,
+            @Param("ingresoInicio") Instant ingresoInicio,
+            @Param("ingresoFin") Instant ingresoFin,
+            @Param("sinValorGrupo") boolean sinValorGrupo,
             Pageable pageable
+    );
+
+    @Query("""
+            SELECT NULL AS idGrupo,
+                   CONCAT('', l.estado) AS etiqueta,
+                   NULL AS codigoTipificacion,
+                   NULL AS codigoSubtipificacion,
+                   COUNT(l.id) AS cantidad
+            FROM Lead l
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor p
+            WHERE (:filtrarProveedor = false OR p.id = :idProveedor)
+              AND (:filtrarEtapa = false OR l.etapa = :etapa)
+              AND (l.codigoTipificacion IS NULL OR l.codigoTipificacion NOT IN :codigosTipificacionExcluidos)
+              AND (:filtrarTipificaciones = false OR l.idTipificacion IN :tipificacionIds)
+              AND (:filtrarSubtipificaciones = false OR l.idSubtipificacion IN :subtipificacionIds)
+              AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
+              AND (:filtrarFechaHasta = false OR l.lastEntryAt < :fechaHasta)
+            GROUP BY l.estado
+            """)
+    List<LeadGtrAgrupacionProjection> agruparLeadsMasivoPorEstado(
+            @Param("filtrarProveedor") boolean filtrarProveedor,
+            @Param("idProveedor") Long idProveedor,
+            @Param("filtrarEtapa") boolean filtrarEtapa,
+            @Param("etapa") Etapa etapa,
+            @Param("filtrarTipificaciones") boolean filtrarTipificaciones,
+            @Param("tipificacionIds") Collection<Long> tipificacionIds,
+            @Param("filtrarSubtipificaciones") boolean filtrarSubtipificaciones,
+            @Param("subtipificacionIds") Collection<Long> subtipificacionIds,
+            @Param("codigosTipificacionExcluidos") Collection<String> codigosTipificacionExcluidos,
+            @Param("filtrarFechaDesde") boolean filtrarFechaDesde,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("filtrarFechaHasta") boolean filtrarFechaHasta,
+            @Param("fechaHasta") Instant fechaHasta
+    );
+
+    @Query("""
+            SELECT NULL AS idGrupo,
+                   NULL AS etiqueta,
+                   l.codigoTipificacion AS codigoTipificacion,
+                   l.codigoSubtipificacion AS codigoSubtipificacion,
+                   COUNT(l.id) AS cantidad
+            FROM Lead l
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor p
+            WHERE (:filtrarProveedor = false OR p.id = :idProveedor)
+              AND (:filtrarEtapa = false OR l.etapa = :etapa)
+              AND (l.codigoTipificacion IS NULL OR l.codigoTipificacion NOT IN :codigosTipificacionExcluidos)
+              AND (:filtrarTipificaciones = false OR l.idTipificacion IN :tipificacionIds)
+              AND (:filtrarSubtipificaciones = false OR l.idSubtipificacion IN :subtipificacionIds)
+              AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
+              AND (:filtrarFechaHasta = false OR l.lastEntryAt < :fechaHasta)
+            GROUP BY l.codigoTipificacion, l.codigoSubtipificacion
+            """)
+    List<LeadGtrAgrupacionProjection> agruparLeadsMasivoPorUltimaTipificacion(
+            @Param("filtrarProveedor") boolean filtrarProveedor,
+            @Param("idProveedor") Long idProveedor,
+            @Param("filtrarEtapa") boolean filtrarEtapa,
+            @Param("etapa") Etapa etapa,
+            @Param("filtrarTipificaciones") boolean filtrarTipificaciones,
+            @Param("tipificacionIds") Collection<Long> tipificacionIds,
+            @Param("filtrarSubtipificaciones") boolean filtrarSubtipificaciones,
+            @Param("subtipificacionIds") Collection<Long> subtipificacionIds,
+            @Param("codigosTipificacionExcluidos") Collection<String> codigosTipificacionExcluidos,
+            @Param("filtrarFechaDesde") boolean filtrarFechaDesde,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("filtrarFechaHasta") boolean filtrarFechaHasta,
+            @Param("fechaHasta") Instant fechaHasta
+    );
+
+    @Query(value = """
+            SELECT NULL AS "idGrupo",
+                   to_char(l.last_entry_at AT TIME ZONE 'America/Lima', 'YYYY-MM-DD') AS "etiqueta",
+                   NULL AS "codigoTipificacion",
+                   NULL AS "codigoSubtipificacion",
+                   COUNT(l.id) AS "cantidad"
+            FROM lead l
+            LEFT JOIN campana c ON c.id = l.id_campana
+            LEFT JOIN proveedor p ON p.id = c.id_proveedor
+            WHERE (:filtrarProveedor = false OR p.id = :idProveedor)
+              AND (:filtrarEtapa = false OR l.etapa = CAST(:etapa AS text))
+              AND (l.codigo_tipificacion IS NULL OR l.codigo_tipificacion NOT IN (:codigosTipificacionExcluidos))
+              AND (:filtrarTipificaciones = false OR l.id_tipificacion IN (:tipificacionIds))
+              AND (:filtrarSubtipificaciones = false OR l.id_subtipificacion IN (:subtipificacionIds))
+              AND (:filtrarFechaDesde = false OR l.last_entry_at >= :fechaDesde)
+              AND (:filtrarFechaHasta = false OR l.last_entry_at < :fechaHasta)
+            GROUP BY to_char(l.last_entry_at AT TIME ZONE 'America/Lima', 'YYYY-MM-DD')
+            """, nativeQuery = true)
+    List<LeadGtrAgrupacionProjection> agruparLeadsMasivoPorIngreso(
+            @Param("filtrarProveedor") boolean filtrarProveedor,
+            @Param("idProveedor") Long idProveedor,
+            @Param("filtrarEtapa") boolean filtrarEtapa,
+            @Param("etapa") String etapa,
+            @Param("filtrarTipificaciones") boolean filtrarTipificaciones,
+            @Param("tipificacionIds") Collection<Long> tipificacionIds,
+            @Param("filtrarSubtipificaciones") boolean filtrarSubtipificaciones,
+            @Param("subtipificacionIds") Collection<Long> subtipificacionIds,
+            @Param("codigosTipificacionExcluidos") Collection<String> codigosTipificacionExcluidos,
+            @Param("filtrarFechaDesde") boolean filtrarFechaDesde,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("filtrarFechaHasta") boolean filtrarFechaHasta,
+            @Param("fechaHasta") Instant fechaHasta
     );
 
     // ── Ranking GTR: preventas concretadas leidas del Lead (idAsesorPreventa/fechaPreventa) ──

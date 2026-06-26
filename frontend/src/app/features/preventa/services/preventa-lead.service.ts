@@ -86,6 +86,9 @@ export class PreventaLeadService {
     if (filters.idGrupo !== undefined) {
       params = params.set('idGrupo', filters.idGrupo);
     }
+    if (filters.estado) {
+      params = params.set('estado', filters.estado);
+    }
     if (filters.codigoTipificacion) {
       params = params.set('codigoTipificacion', filters.codigoTipificacion);
     }
@@ -244,6 +247,12 @@ export class PreventaLeadService {
     });
   }
 
+  listarAgrupacionesLeadsMasivo(filters: MasivoLeadFilters): Observable<LeadGtrGroupsResponse> {
+    return this.http.get<LeadGtrGroupsResponse>(`${this.leadUrl}/masivo/leads/agrupaciones`, {
+      params: this.masivoFilterParams(filters)
+    });
+  }
+
   registrarIngresoLead(request: LeadIntakeRequest): Observable<void> {
     return this.http.post<void>(`${this.leadUrl}/preventa/intake`, request);
   }
@@ -393,7 +402,35 @@ export class PreventaLeadService {
   }
 
   private masivoParams(filters: MasivoLeadFilters, query: PageQuery): HttpParams {
-    let params = this.pageParams(query);
+    let params = this.masivoFilterParams(filters);
+    params = params
+      .set('pageNumber', query.pageNumber)
+      .set('pageSize', query.pageSize)
+      .set('sortBy', query.sortBy)
+      .set('direction', query.direction);
+    if (filters.tipoGrupo) {
+      params = params.set('tipoGrupo', filters.tipoGrupo);
+    }
+    if (filters.estado) {
+      params = params.set('estado', filters.estado);
+    }
+    if (filters.codigoTipificacion) {
+      params = params.set('codigoTipificacion', filters.codigoTipificacion);
+    }
+    if (filters.codigoSubtipificacion) {
+      params = params.set('codigoSubtipificacion', filters.codigoSubtipificacion);
+    }
+    if (filters.fechaIngreso) {
+      params = params.set('fechaIngreso', filters.fechaIngreso);
+    }
+    if (filters.sinValor) {
+      params = params.set('sinValor', true);
+    }
+    return params;
+  }
+
+  private masivoFilterParams(filters: MasivoLeadFilters): HttpParams {
+    let params = new HttpParams();
     if (filters.idProveedor) {
       params = params.set('idProveedor', filters.idProveedor);
     }

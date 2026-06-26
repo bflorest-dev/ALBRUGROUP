@@ -266,6 +266,7 @@ public class EventoService {
                         ),
                         "Sin equipo"
                 ),
+                List.of(),
                 mapearAgrupacionesTipificacion(
                         eventoRepository.agruparRegistrosDiariosPorPrimeraTipificacion(
                                 Accion.REGISTRO,
@@ -279,7 +280,8 @@ public class EventoService {
                                 rango.inicio(),
                                 rango.fin()
                         )
-                )
+                ),
+                List.of()
         );
     }
 

@@ -25,10 +25,6 @@
           <p-tag [value]="facade.esperadosNoMarcados().length.toString()" severity="danger" />
         }
       </p-tab>
-      <p-tab value="horarios">
-        <i class="pi pi-calendar" aria-hidden="true"></i>
-        <span>Horarios</span>
-      </p-tab>
     </p-tablist>
 
     <p-tabpanels>
@@ -224,16 +220,6 @@
         </section>
       </p-tabpanel>
 
-      <p-tabpanel value="horarios">
-        <div class="section-placeholder">
-          <p-tag value="Próxima fase" severity="info" />
-          <h3>Horarios</h3>
-          <p>
-            Vista dedicada para crear/buscar horarios sin pasar por cumplimiento. Por ahora,
-            puedes editar el horario de cualquier empleado desde la tabla de cumplimiento → drawer → tab Horario.
-          </p>
-        </div>
-      </p-tabpanel>
     </p-tabpanels>
   </p-tabs>
   }
@@ -372,6 +358,33 @@
                   <p-message severity="info" text="Marca tu asistencia para modificar horarios." />
                 }
 
+                <section class="schedule-action-block schedule-action-block--punctual">
+                  <div>
+                    <span class="schedule-action-block__eyebrow">Ajuste puntual</span>
+                    <h4>Permitir otro horario en un dia</h4>
+                    <p>
+                      Usa esta opcion para adelantar la entrada, extender la salida o agregar un tramo extra
+                      sin cambiar el horario base del empleado.
+                    </p>
+                  </div>
+                  <button
+                    pButton
+                    type="button"
+                    icon="pi pi-clock"
+                    label="Crear ajuste puntual"
+                    [outlined]="true"
+                    [disabled]="!facade.canMutateOperationalData()"
+                    (click)="facade.openScheduleAdjustment()"
+                  ></button>
+                </section>
+
+                <section class="schedule-base-block">
+                  <div class="schedule-base-block__head">
+                    <span class="schedule-action-block__eyebrow">Horario base</span>
+                    <h4>Cambiar horario recurrente</h4>
+                    <p>Este cambio aplica desde la fecha de inicio y se mantiene para los dias siguientes.</p>
+                  </div>
+
                 <label class="field">
                   <span>Fecha de inicio</span>
                   <p-datepicker
@@ -384,8 +397,7 @@
                     (ngModelChange)="setScheduleStartDate($event)"
                   />
                   <small class="hint">
-                    Si dejas la fecha actual, se corrige el horario vigente. Si la mueves a futuro, se cierra el
-                    actual y se aplica uno nuevo desde esa fecha.
+                    Por defecto se aplicara desde manana. Si eliges la fecha actual, se intentara corregir el horario vigente.
                   </small>
                 </label>
 
@@ -407,6 +419,7 @@
                     (click)="facade.submitScheduleChange()"
                   ></button>
                 </div>
+                </section>
               </div>
             </p-tabpanel>
           </p-tabpanels>
@@ -513,4 +526,22 @@
       </div>
     </div>
   </p-dialog>
+
+  <app-schedule-adjustment-dialog
+    [visible]="facade.isAdjustmentDialogVisible()"
+    [employeeName]="facade.adjustmentEmployeeName()"
+    [selectedDate]="facade.adjustmentDate()"
+    [allowDateChange]="true"
+    [jornada]="facade.adjustmentJornada()"
+    [preview]="facade.adjustmentPreview()"
+    [history]="facade.adjustmentHistory()"
+    [loading]="facade.isLoadingAdjustment()"
+    [saving]="facade.isSavingAdjustment()"
+    [error]="facade.adjustmentError()"
+    (closed)="facade.closeScheduleAdjustment()"
+    (dateChanged)="facade.changeScheduleAdjustmentDate($event)"
+    (previewRequested)="facade.previewScheduleAdjustment($event)"
+    (saveRequested)="facade.saveScheduleAdjustment($event)"
+    (cancelRequested)="facade.cancelScheduleAdjustment($event)"
+  />
 </section>

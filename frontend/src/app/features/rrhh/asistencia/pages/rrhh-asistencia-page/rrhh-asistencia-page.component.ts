@@ -13,6 +13,7 @@ import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import type { OrigenTramo } from '../../../../../shared/models/schedule/cumplimiento-response';
+import { ScheduleAdjustmentDialogComponent } from '../../../../../shared/components/schedule-adjustment-dialog/schedule-adjustment-dialog.component';
 import { ScheduleEditorPanelComponent } from '../../components/schedule-editor-panel/schedule-editor-panel.component';
 import {
   CumplimientoRow,
@@ -39,6 +40,7 @@ interface SelectChoice {
     InputTextModule,
     MessageModule,
     ProgressSpinnerModule,
+    ScheduleAdjustmentDialogComponent,
     ScheduleEditorPanelComponent,
     SelectModule,
     TableModule,

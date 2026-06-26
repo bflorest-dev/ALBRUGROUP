@@ -35,6 +35,53 @@ label {
   margin: 0.9rem 0;
 }
 
+.gtr-organize-panel {
+  display: grid;
+  gap: 0.85rem;
+  min-width: min(20rem, calc(100vw - 2rem));
+}
+
+.gtr-organize-field {
+  display: grid;
+  gap: 0.38rem;
+}
+
+.gtr-organize-field label {
+  color: var(--app-text);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.gtr-organize-divider {
+  border-top: 1px solid var(--app-border-soft);
+}
+
+.gtr-group-option {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.gtr-group-option span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gtr-group-option strong {
+  align-items: center;
+  background: var(--app-surface-soft);
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  justify-content: center;
+  min-width: 1.75rem;
+  padding: 0.16rem 0.38rem;
+}
+
 :host ::ng-deep .p-select,
 :host ::ng-deep .p-multiselect,
 :host ::ng-deep .p-inputtext {
