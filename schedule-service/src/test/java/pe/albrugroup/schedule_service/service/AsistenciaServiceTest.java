@@ -20,8 +20,11 @@ import pe.albrugroup.schedule_service.entity.enums.EstadoAsistencia;
 import pe.albrugroup.schedule_service.entity.enums.OrigenAjusteJornada;
 import pe.albrugroup.schedule_service.entity.enums.OrigenTramo;
 import pe.albrugroup.schedule_service.entity.enums.TipoExcepcionHorario;
+import pe.albrugroup.schedule_service.entity.request.asistencia.ConsultaCumplimientoRequest;
 import pe.albrugroup.schedule_service.entity.request.asistencia.MovimientoAsistenciaRequest;
 import pe.albrugroup.schedule_service.entity.request.horario.RegistrarAmpliacionRequest;
+import pe.albrugroup.schedule_service.entity.response.asistencia.CumplimientoDetalleResponse;
+import pe.albrugroup.schedule_service.entity.response.asistencia.CumplimientoResumenResponse;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleAsistenciaResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.AmpliacionHorarioResponse;
 import pe.albrugroup.schedule_service.entity.response.horario.ExcepcionHorarioResponse;
@@ -82,6 +85,43 @@ class AsistenciaServiceTest {
 
     @InjectMocks
     private AsistenciaService service;
+
+    @Test
+    void aplicaToleranciaDeCincoMinutosSoloParaEtiquetaDeTardanzaEnReporte() {
+        LocalDate fechaDentroTolerancia = LocalDate.of(2026, 6, 11);
+        LocalDate fechaFueraTolerancia = LocalDate.of(2026, 6, 12);
+        Asistencia dentroTolerancia = asistenciaReporte(
+                1L,
+                fechaDentroTolerancia,
+                LocalDateTime.of(2026, 6, 11, 13, 5, 58)
+        );
+        Asistencia fueraTolerancia = asistenciaReporte(
+                2L,
+                fechaFueraTolerancia,
+                LocalDateTime.of(2026, 6, 12, 13, 6, 0)
+        );
+        ConsultaCumplimientoRequest request = ConsultaCumplimientoRequest.builder()
+                .empleadoIds(List.of(32L))
+                .desde(fechaDentroTolerancia)
+                .hasta(fechaFueraTolerancia)
+                .build();
+
+        when(asistenciaRepository.findByIdEmpleadoInAndFechaBetweenOrderByIdEmpleadoAscFechaAsc(
+                List.of(32L),
+                fechaDentroTolerancia,
+                fechaFueraTolerancia
+        )).thenReturn(List.of(dentroTolerancia, fueraTolerancia));
+        when(asistenciaTramoRepository.findByAsistenciaIdInOrderByAsistenciaIdAscIdAsc(List.of(1L, 2L)))
+                .thenReturn(List.of());
+
+        CumplimientoResumenResponse resumen = service.getCumplimientoResumen(request);
+        CumplimientoDetalleResponse detalle = service.getCumplimientoDetalle(request);
+
+        assertThat(resumen.getEmpleados().getFirst().getCantidadTardanzas()).isEqualTo(1);
+        assertThat(detalle.getEmpleados().getFirst().getDias().get(0).getTardanza()).isFalse();
+        assertThat(detalle.getEmpleados().getFirst().getDias().get(1).getTardanza()).isTrue();
+        assertThat(detalle.getEmpleados().getFirst().getDias().get(0).getMinutosBalance()).isEqualTo(-6);
+    }
 
     @Test
     void permiteNuevoIngresoCuandoUnAjusteExtiendeUnaJornadaCerrada() {
@@ -214,5 +254,27 @@ class AsistenciaServiceTest {
                 domingo,
                 null
         );
+    }
+
+    private Asistencia asistenciaReporte(Long id, LocalDate fecha, LocalDateTime ingreso) {
+        return Asistencia.builder()
+                .id(id)
+                .idEmpleado(32L)
+                .idHorario(7L)
+                .fecha(fecha)
+                .estadoActual(EstadoAsistencia.OFFLINE)
+                .entradaProgramada(LocalTime.of(13, 0))
+                .salidaProgramada(LocalTime.of(19, 0))
+                .fechaHoraIngreso(ingreso)
+                .fechaHoraSalida(LocalDateTime.of(fecha, LocalTime.of(19, 0)))
+                .minutosObjetivoDia(360)
+                .minutosTrabajados((int) java.time.Duration.between(ingreso, LocalDateTime.of(fecha, LocalTime.of(19, 0))).toMinutes())
+                .minutosBalance((int) java.time.Duration.between(ingreso, LocalDateTime.of(fecha, LocalTime.of(19, 0))).toMinutes() - 360)
+                .minutosAlmuerzoTomados(0)
+                .minutosServiciosPermitidos(20)
+                .minutosServiciosAcumulados(0)
+                .excedioServicios(false)
+                .origenTramoActual(OrigenTramo.BASE)
+                .build();
     }
 }

@@ -179,7 +179,6 @@ export class RrhhAsistenciaPageComponent implements OnInit {
 
   protected dayStateLabel(dia: { laborable: boolean; horaEntradaAsistencia: string | null; tardanza: boolean; jornadaCerrada: boolean; minutosTrabajados: number }): string {
     if (!dia.laborable) return 'Libre';
-    if (!dia.horaEntradaAsistencia && !dia.jornadaCerrada) return 'Sin registro';
     if (!dia.horaEntradaAsistencia) return 'Falta';
     if (dia.tardanza) return 'Tardanza';
     return 'Presente';
@@ -187,8 +186,7 @@ export class RrhhAsistenciaPageComponent implements OnInit {
 
   protected dayStateSeverity(dia: { laborable: boolean; horaEntradaAsistencia: string | null; tardanza: boolean; jornadaCerrada: boolean }): 'success' | 'warn' | 'danger' | 'info' | 'secondary' {
     if (!dia.laborable) return 'info';
-    if (!dia.horaEntradaAsistencia && dia.jornadaCerrada) return 'danger';
-    if (!dia.horaEntradaAsistencia) return 'secondary';
+    if (!dia.horaEntradaAsistencia) return 'danger';
     if (dia.tardanza) return 'warn';
     return 'success';
   }

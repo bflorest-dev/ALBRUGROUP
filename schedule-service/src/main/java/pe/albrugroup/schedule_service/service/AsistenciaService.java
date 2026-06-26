@@ -54,6 +54,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -64,6 +65,8 @@ import java.util.Objects;
 @Service
 @RequiredArgsConstructor
 public class AsistenciaService implements IAsistencia {
+
+    private static final int MINUTOS_TOLERANCIA_TARDANZA_REPORTE = 5;
 
     private final AsistenciaRepository asistenciaRepository;
     private final AsistenciaTramoRepository asistenciaTramoRepository;
@@ -1011,7 +1014,8 @@ public class AsistenciaService implements IAsistencia {
     private boolean esTardanza(LocalDateTime fechaHoraIngreso, LocalTime horaEntradaEstablecida) {
         return fechaHoraIngreso != null
                 && horaEntradaEstablecida != null
-                && fechaHoraIngreso.toLocalTime().isAfter(horaEntradaEstablecida);
+                && fechaHoraIngreso.toLocalTime().truncatedTo(ChronoUnit.MINUTES)
+                .isAfter(horaEntradaEstablecida.plusMinutes(MINUTOS_TOLERANCIA_TARDANZA_REPORTE));
     }
 
     private DetalleAsistenciaResponse toDetalleOperativoResponse(Asistencia asistencia) {
