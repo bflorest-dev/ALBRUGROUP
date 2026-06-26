@@ -91,33 +91,34 @@
               [value]="team.employees"
               dataKey="idEmpleado"
               [rowHover]="true"
-              [scrollable]="true"
-              [tableStyle]="{ 'min-width': '105rem', 'table-layout': 'fixed' }"
+              [tableStyle]="{ width: '100%', 'table-layout': 'fixed' }"
               styleClass="p-datatable-sm employee-table"
             >
               <ng-template #colgroup>
-                <col style="width: 23rem" />
-                <col style="width: 12rem" />
-                <col style="width: 16rem" />
-                <col style="width: 9rem" />
-                <col style="width: 10rem" />
-                <col style="width: 17rem" />
+                <col class="col-employee" />
+                <col class="col-role" />
+                <col class="col-state" />
+                <col class="col-document" />
+                <col class="col-phone" />
+                <col class="col-email" />
+                <col class="col-actions" />
               </ng-template>
 
               <ng-template #header>
                 <tr>
-                  <th>Empleado</th>
-                  <th>Rol</th>
-                  <th>Estado</th>
-                  <th>Documento</th>
-                  <th>Celular</th>
+                  <th class="col-employee">Empleado</th>
+                  <th class="col-role">Rol</th>
+                  <th class="col-state">Estado</th>
+                  <th class="col-document">Documento</th>
+                  <th class="col-phone">Celular</th>
+                  <th class="col-email">Correo</th>
                   <th class="col-actions">Acciones</th>
                 </tr>
               </ng-template>
 
               <ng-template #body let-employee>
                 <tr>
-                  <td>
+                  <td class="col-employee">
                     <div class="employee-name-cell">
                       <span [class]="dotClass(employee.idEmpleado)" aria-hidden="true"></span>
                       <strong [attr.title]="employee.nombres + ' ' + employee.apellidos">
@@ -125,8 +126,8 @@
                       </strong>
                     </div>
                   </td>
-                  <td><p-tag [value]="toLabel(employee.role)" severity="secondary" /></td>
-                  <td>
+                  <td class="col-role"><p-tag [value]="toLabel(employee.role)" severity="secondary" /></td>
+                  <td class="col-state">
                     <div class="employee-states">
                       @if (isLoadingStates) {
                         <p-skeleton width="4.5rem" height="1.4rem" />
@@ -145,8 +146,9 @@
                       }
                     </div>
                   </td>
-                  <td>{{ employee.numeroDocumento }}</td>
-                  <td>{{ employee.celularPersonal }}</td>
+                  <td class="col-document">{{ employee.numeroDocumento }}</td>
+                  <td class="col-phone">{{ employee.celularPersonal }}</td>
+                  <td class="col-email">{{ employee.correoPersonal }}</td>
                   <td class="col-actions">
                     <div class="row-actions">
                       <button
@@ -182,19 +184,18 @@
                         aria-label="Cambiar horario"
                         (click)="changeSchedule.emit(employee)"
                       ></button>
-                      @if (canChangeTeam(employee)) {
-                        <button
-                          pButton
-                          type="button"
-                          severity="secondary"
-                          size="small"
-                          [text]="true"
-                          icon="pi pi-th-large"
-                          title="Cambiar equipo"
-                          aria-label="Cambiar equipo"
-                          (click)="emitTeamChange(employee)"
-                        ></button>
-                      }
+                      <button
+                        pButton
+                        type="button"
+                        severity="secondary"
+                        size="small"
+                        [text]="true"
+                        icon="pi pi-th-large"
+                        title="Cambiar equipo"
+                        aria-label="Cambiar equipo"
+                        [disabled]="!canChangeTeam(employee)"
+                        (click)="emitTeamChange(employee)"
+                      ></button>
                       <button
                         pButton
                         type="button"

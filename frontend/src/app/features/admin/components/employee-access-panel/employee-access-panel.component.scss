@@ -2,7 +2,6 @@
   display: block;
 }
 
-// ── Panel contenedor ────────────────────────────────────────
 .admin-panel {
   display: grid;
   gap: 1rem;
@@ -37,7 +36,6 @@
   flex-wrap: wrap;
 }
 
-// ── Estado de carga ─────────────────────────────────────────
 .loading-state {
   min-height: 12rem;
   display: grid;
@@ -46,7 +44,6 @@
   color: var(--role-muted);
 }
 
-// ── Filtro de rol ────────────────────────────────────────────
 .role-filter {
   display: flex;
   flex-wrap: wrap;
@@ -66,7 +63,6 @@
   outline-offset: 2px;
 }
 
-// ── Separador filtro / resultados ────────────────────────────
 .panel-divider {
   border: 0;
   border-top: 1px solid var(--app-border-soft);
@@ -74,7 +70,6 @@
   width: 100%;
 }
 
-// ── Lista de empleados (tabla) ───────────────────────────────
 .team-loading {
   align-items: center;
   display: flex;
@@ -163,7 +158,6 @@
   display: none;
 }
 
-// ── Dot de estado ────────────────────────────────────────────
 .employee-dot {
   width: 10px;
   height: 10px;
@@ -179,7 +173,6 @@
 .dot--capacitacion { background: #ff9b54; }
 .dot--offline     { background: #c0cdd4; }
 
-// ── Modal de detalle del empleado ────────────────────────────
 .employee-detail {
   display: grid;
   gap: 0.85rem;
@@ -271,7 +264,6 @@
   word-break: break-all;
 }
 
-// ── PrimeNG overrides ─────────────────────────────────────────
 :host ::ng-deep {
   .p-progressspinner {
     width: 2.5rem;
@@ -293,10 +285,6 @@
     text-overflow: ellipsis;
     vertical-align: middle;
     white-space: nowrap;
-  }
-
-  .employee-table .p-datatable-table {
-    table-layout: fixed;
   }
 
   .employee-table .col-actions {
@@ -341,7 +329,6 @@
   }
 }
 
-// ── Responsive ───────────────────────────────────────────────
 @media (max-width: 760px) {
   .admin-panel__header {
     align-items: stretch;

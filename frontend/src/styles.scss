@@ -1,6 +1,96 @@
 @use '@tabler/icons-webfont/dist/tabler-icons.scss';
 @import 'primeicons/primeicons.css';
 
+app-employee-access-panel .team-section {
+  container-type: inline-size;
+}
+
+app-employee-access-panel .employee-table {
+  --employee-col: 20%;
+  --role-col: 10%;
+  --state-col: 20%;
+  --document-col: 8%;
+  --phone-col: 8%;
+  --email-col: 16%;
+  --actions-col: 18%;
+}
+
+app-employee-access-panel .employee-table .p-datatable-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+app-employee-access-panel .employee-desktop-table .p-datatable-table-container {
+  overflow-x: hidden;
+}
+
+app-employee-access-panel .employee-table .col-employee { width: var(--employee-col); }
+app-employee-access-panel .employee-table .col-role { width: var(--role-col); }
+app-employee-access-panel .employee-table .col-state { width: var(--state-col); }
+app-employee-access-panel .employee-table .col-document { width: var(--document-col); }
+app-employee-access-panel .employee-table .col-phone { width: var(--phone-col); }
+app-employee-access-panel .employee-table .col-email { width: var(--email-col); }
+app-employee-access-panel .employee-table .col-actions { width: var(--actions-col); }
+
+app-employee-access-panel .employee-table .p-datatable-tbody > tr > td.col-role,
+app-employee-access-panel .employee-table .p-datatable-tbody > tr > td.col-state,
+app-employee-access-panel .employee-table .p-datatable-tbody > tr > td.col-actions {
+  overflow: visible;
+}
+
+app-employee-access-panel .employee-table .p-tag,
+app-employee-access-panel .employee-table .p-button,
+app-employee-access-panel .row-actions {
+  flex: 0 0 auto;
+  max-width: none;
+}
+
+app-employee-access-panel .row-actions {
+  min-width: max-content;
+}
+
+@container (max-width: 100rem) {
+  app-employee-access-panel .employee-table {
+    --employee-col: 24%;
+    --role-col: 12%;
+    --state-col: 24%;
+    --document-col: 8%;
+    --phone-col: 10%;
+    --actions-col: 22%;
+  }
+
+  app-employee-access-panel .employee-table .col-email {
+    display: none;
+  }
+}
+
+@container (max-width: 90rem) {
+  app-employee-access-panel .employee-table {
+    --employee-col: 27%;
+    --role-col: 14%;
+    --state-col: 24%;
+    --phone-col: 10%;
+    --actions-col: 25%;
+  }
+
+  app-employee-access-panel .employee-table .col-document {
+    display: none;
+  }
+}
+
+@container (max-width: 72rem) {
+  app-employee-access-panel .employee-table {
+    --employee-col: 22%;
+    --role-col: 20%;
+    --state-col: 22%;
+    --actions-col: 36%;
+  }
+
+  app-employee-access-panel .employee-table .col-phone {
+    display: none;
+  }
+}
+
 :root {
   --app-font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --app-bg: #f2f4f7;
