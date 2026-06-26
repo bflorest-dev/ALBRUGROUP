@@ -23,6 +23,7 @@ import java.time.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +42,23 @@ public class JornadaEfectivaResolver {
                 .findByIdEmpleadoAndFechaOperativaAndEstadoOrderByInicioAsc(
                         idEmpleado, fecha, EstadoAjusteJornada.ACTIVO);
         return resolver(horario, fecha, ajustes);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<JornadaEfectivaResponse> resolverSiExiste(Long idEmpleado, LocalDate fecha) {
+        Optional<Horario> horario = horarioRepository.findHorarioVigente(idEmpleado, fecha);
+        if (horario.isEmpty()) {
+            return Optional.empty();
+        }
+
+        List<AjusteJornada> ajustes = ajusteJornadaRepository
+                .findByIdEmpleadoAndFechaOperativaAndEstadoOrderByInicioAsc(
+                        idEmpleado, fecha, EstadoAjusteJornada.ACTIVO);
+        try {
+            return Optional.of(resolver(horario.get(), fecha, ajustes));
+        } catch (NotFoundException e) {
+            return Optional.empty();
+        }
     }
 
     JornadaEfectivaResponse resolver(Horario horario, LocalDate fecha, List<AjusteJornada> ajustes) {

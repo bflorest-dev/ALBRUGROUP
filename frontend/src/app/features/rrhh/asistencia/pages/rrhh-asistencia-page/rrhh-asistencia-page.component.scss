@@ -192,22 +192,103 @@
   }
 }
 
+:host ::ng-deep .p-drawer.employee-drawer {
+  width: min(1180px, 98vw);
+  max-width: 98vw;
+
+  .p-drawer-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: 0;
+    overflow: hidden;
+    padding-inline: 1.25rem;
+  }
+
+  p-tabs,
+  .p-tabs {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .p-tablist {
+    flex: 0 0 auto;
+  }
+
+  .p-tabpanels {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-inline: 0;
+  }
+
+  .p-tabpanel {
+    min-width: 0;
+  }
+}
+
 .employee-drawer {
   ::ng-deep .p-drawer {
-    width: min(960px, 95vw);
+    width: min(1180px, 98vw);
+    max-width: 98vw;
+  }
+
+  ::ng-deep .p-drawer-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: 0;
+    overflow: hidden;
+    padding-inline: 1.25rem;
+  }
+
+  ::ng-deep p-tabs {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  ::ng-deep .p-tabs {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  ::ng-deep .p-tablist {
+    flex: 0 0 auto;
+  }
+
+  ::ng-deep .p-tabpanels {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-inline: 0;
+  }
+
+  ::ng-deep .p-tabpanel {
+    min-width: 0;
   }
 }
 
 .employee-drawer__head {
-  padding-bottom: 0.75rem;
+  flex: 0 0 auto;
+  padding: 0 0 0.75rem;
 
   h3 {
     margin: 0.25rem 0 0;
     font-size: 1.25rem;
+    overflow-wrap: anywhere;
   }
   p {
     margin: 0.25rem 0 0;
     color: var(--p-text-muted-color, #6b7280);
+    overflow-wrap: anywhere;
   }
 }
 
@@ -225,20 +306,53 @@
 }
 
 .employee-month-table {
+  width: 100%;
+
+  ::ng-deep table {
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  ::ng-deep th,
+  ::ng-deep td {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    vertical-align: top;
+  }
+
+  ::ng-deep th:first-child,
+  ::ng-deep td:first-child {
+    width: 4.5rem;
+  }
+
   ::ng-deep .col-state {
     width: 7.5rem;
   }
+
+  ::ng-deep th:nth-child(3),
+  ::ng-deep td:nth-child(3),
+  ::ng-deep th:nth-child(4),
+  ::ng-deep td:nth-child(4) {
+    width: auto;
+  }
+
   ::ng-deep .col-num {
     text-align: center;
     width: 7.5rem;
   }
 }
 
+.employee-month {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
 .day-segments {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
-  min-width: 9rem;
+  min-width: 0;
 }
 
 .day-segment {

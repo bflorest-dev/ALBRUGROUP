@@ -949,7 +949,11 @@ public class AsistenciaService implements IAsistencia {
 
         try {
             if (scheduleEngineProperties.enabledForOperationalReads(fecha)) {
-                JornadaEfectivaResponse jornada = jornadaEfectivaResolver.resolver(idEmpleado, fecha);
+                JornadaEfectivaResponse jornada = jornadaEfectivaResolver.resolverSiExiste(idEmpleado, fecha)
+                        .orElse(null);
+                if (jornada == null) {
+                    return programacionNoLaborable();
+                }
                 if (jornada.getTramos().isEmpty()) {
                     return ProgramacionDiaria.builder().laborable(false).minutosObjetivo(0).build();
                 }

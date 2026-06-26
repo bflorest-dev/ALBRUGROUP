@@ -42,6 +42,7 @@ const MESES_ESPANOL = [
 ];
 const DIAS_SEMANA: string[] = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
 const MODALIDADES_SIN_ALMUERZO = new Set(['PART_TIME', 'SEMI_FULL']);
+const PUESTOS_EXCLUIDOS_CUMPLIMIENTO = new Set(['OJT', 'ADMINISTRADOR']);
 
 @Injectable()
 export class RrhhAsistenciaFacade {
@@ -239,16 +240,17 @@ export class RrhhAsistenciaFacade {
       const empleados = await firstValueFrom(
         this.service.listarEmpleadosActivos().pipe(timeout(REQUEST_TIMEOUT_MS))
       );
-      this.empleados.set(empleados ?? []);
+      const empleadosCumplimiento = (empleados ?? []).filter((empleado) => this.isIncludedInAttendanceReport(empleado));
+      this.empleados.set(empleadosCumplimiento);
 
-      if (!empleados || empleados.length === 0) {
+      if (empleadosCumplimiento.length === 0) {
         this.resumenByEmpleadoId.set({});
         this.estadosHoyByEmpleadoId.set({});
         return;
       }
 
       const range = this.resolveMonthRange(this.selectedMonth());
-      const empleadoIds = empleados.map((e) => e.idEmpleado);
+      const empleadoIds = empleadosCumplimiento.map((e) => e.idEmpleado);
 
       const [resumen, estados] = await Promise.all([
         firstValueFrom(
@@ -623,6 +625,14 @@ export class RrhhAsistenciaFacade {
     return this.drawerContrato()?.modalidad ?? 'FULL_TIME';
   }
 
+  private isIncludedInAttendanceReport(empleado: EmpleadoRolResponse): boolean {
+    return !PUESTOS_EXCLUIDOS_CUMPLIMIENTO.has(this.normalizeRoleLikeValue(empleado.puestoTrabajo));
+  }
+
+  private normalizeRoleLikeValue(value: string | null | undefined): string {
+    return (value ?? '').trim().toUpperCase().replaceAll(' ', '_');
+  }
+
   private syncLunchBreakControls(): void {
     const requiereAlmuerzo = this.requiresLunchBreak(this.currentScheduleModalidad());
     const lunchStart = this.horarioForm.controls.inicioAlmuerzo;
@@ -707,9 +717,12 @@ export class RrhhAsistenciaFacade {
   private resolveMonthRange(monthValue: string): { desde: string; hasta: string } {
     const [year, month] = monthValue.split('-').map(Number);
     const lastDay = this.daysInMonth(year, month);
+    const currentMonth = this.currentMonthValue();
+    const selectedMonth = `${year}-${this.pad2(month)}`;
+    const endDay = selectedMonth === currentMonth ? new Date().getDate() : lastDay;
     return {
       desde: `${year}-${this.pad2(month)}-01`,
-      hasta: `${year}-${this.pad2(month)}-${this.pad2(lastDay)}`
+      hasta: `${year}-${this.pad2(month)}-${this.pad2(endDay)}`
     };
   }
 
@@ -754,6 +767,15 @@ export class RrhhAsistenciaFacade {
   private extractErrorMessage(error: unknown, fallback: string): string {
     const http = error as HttpErrorResponse;
     const apiMessage = (http?.error as { message?: string } | undefined)?.message;
+
+    if (http?.status === 401) {
+      return 'Tu sesion vencio. Vuelve a ingresar para revisar la asistencia.';
+    }
+
+    if (http?.status === 500) {
+      return 'No se pudo preparar el resumen de asistencia. Intenta actualizar en unos minutos.';
+    }
+
     return apiMessage || fallback;
   }
 
