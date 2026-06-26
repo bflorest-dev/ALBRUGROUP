@@ -96,9 +96,9 @@
               styleClass="p-datatable-sm employee-table"
             >
               <ng-template #colgroup>
-                <col style="width: 27rem" />
+                <col style="width: 23rem" />
                 <col style="width: 12rem" />
-                <col style="width: 12rem" />
+                <col style="width: 16rem" />
                 <col style="width: 9rem" />
                 <col style="width: 10rem" />
                 <col style="width: 18rem" />
@@ -140,6 +140,9 @@
                         }
                         @if (getDisponibilidad(employee.idEmpleado); as disp) {
                           <p-tag [value]="disp" [severity]="stateSeverity(disp)" />
+                        }
+                        @if (getAssignedLeadCount(employee.idEmpleado); as totalLeads) {
+                          <p-tag [value]="assignedLeadCountLabel(totalLeads)" severity="info" />
                         }
                       }
                     </div>
@@ -258,6 +261,9 @@
                       }
                       @if (getDisponibilidad(employee.idEmpleado); as disp) {
                         <p-tag [value]="disp" [severity]="stateSeverity(disp)" />
+                      }
+                      @if (getAssignedLeadCount(employee.idEmpleado); as totalLeads) {
+                        <p-tag [value]="assignedLeadCountLabel(totalLeads)" severity="info" />
                       }
                     }
                   </div>

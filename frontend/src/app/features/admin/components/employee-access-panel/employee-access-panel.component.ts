@@ -50,6 +50,7 @@ export class EmployeeAccessPanelComponent {
   @Input({ required: true }) scheduleLoadingByEmployeeId: Record<number, boolean> = {};
   readonly employeeStateById = input<Record<number, EstadoMonitorResponse>>({});
   readonly connectedUserById = input<Record<number, ConnectedUserResponse>>({});
+  readonly assignedLeadCountByEmployeeId = input<Record<number, number>>({});
   readonly teamNameByEmployeeId = input<Record<number, string>>({});
   readonly isLoadingTeams = input(false);
   readonly teamErrorMessage = input('');
@@ -240,6 +241,14 @@ export class EmployeeAccessPanelComponent {
 
   protected getDisponibilidad(empleadoId: number): string | null {
     return this.connectedUserById()[empleadoId]?.disponibilidad ?? null;
+  }
+
+  protected getAssignedLeadCount(empleadoId: number): number {
+    return this.assignedLeadCountByEmployeeId()[empleadoId] ?? 0;
+  }
+
+  protected assignedLeadCountLabel(total: number): string {
+    return `${total} ${total === 1 ? 'LEAD' : 'LEADS'}`;
   }
 
   protected dotClass(empleadoId: number): string {

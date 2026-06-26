@@ -22,8 +22,11 @@ import { RegistrarExcepcionHorarioRequest } from '../../../shared/models/schedul
 import { ConnectedUserResponse, PresenceService } from '../../../core/services/presence.service';
 import { PresenceRealtimeService } from '../../../core/services/presence-realtime.service';
 import { EstadoMonitorResponse } from '../../../shared/models/schedule/cumplimiento-response';
+import { AsesorLeadsPendientesResponse } from '../../../shared/models/preventa/preventa.models';
 import { formatApiErrorMessage } from '../../../shared/utils/api-error.utils';
 import { AuthService } from '../../auth/services/auth.service';
+import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
+import { PreventaLeadService } from '../../preventa/services/preventa-lead.service';
 import { AdminEquipoService, EquipoMiembroResponse, EquipoResponse } from '../services/admin-equipo.service';
 import { AdminRrhhService } from '../services/admin-rrhh.service';
 import { ScheduleAdjustmentService } from '../../../core/services/schedule-adjustment.service';
@@ -122,6 +125,8 @@ export class AdminPersonalFacade implements OnDestroy {
   private readonly presenceService = inject(PresenceService);
   private readonly attendanceRealtimeService = inject(AttendanceRealtimeService);
   private readonly presenceRealtimeService = inject(PresenceRealtimeService);
+  private readonly leadRealtimeService = inject(LeadRealtimeService);
+  private readonly preventaLeadService = inject(PreventaLeadService);
   private readonly realtimeSubscription = new Subscription();
   private realtimeStarted = false;
   private readonly modalidadesSinAlmuerzo = new Set(['PART_TIME', 'SEMI_FULL']);
@@ -496,6 +501,7 @@ export class AdminPersonalFacade implements OnDestroy {
   readonly editErrorMessage = signal('');
   readonly employeeStateById = signal<Record<number, EstadoMonitorResponse>>({});
   readonly connectedUserById = signal<Record<number, ConnectedUserResponse>>({});
+  readonly assignedLeadCountByEmployeeId = signal<Record<number, number>>({});
   readonly isLoadingStates = signal(false);
 
   readonly currentStep = signal(1);
@@ -1081,6 +1087,7 @@ export class AdminPersonalFacade implements OnDestroy {
         await firstValueFrom(this.adminRrhhService.listarEmpleadosLight().pipe(timeout(this.requestTimeoutMs)))
       );
       void this.loadEmployeeStates();
+      void this.loadAssignedLeadCounts();
     } catch (error) {
       this.activeEmployeeListErrorMessage.set(
         this.getErrorMessage(error as HttpErrorResponse, 'No fue posible cargar empleados activos.')
@@ -1246,6 +1253,26 @@ export class AdminPersonalFacade implements OnDestroy {
     }
   }
 
+  async loadAssignedLeadCounts(): Promise<void> {
+    try {
+      const grupos = await firstValueFrom(
+        this.preventaLeadService.listarLeadsPendientesPorAsesor().pipe(
+          timeout(this.requestTimeoutMs),
+          catchError(() => of([] as AsesorLeadsPendientesResponse[]))
+        )
+      );
+      const counts: Record<number, number> = {};
+      for (const grupo of grupos) {
+        if (grupo.idAsesor && grupo.total > 0) {
+          counts[grupo.idAsesor] = grupo.total;
+        }
+      }
+      this.assignedLeadCountByEmployeeId.set(counts);
+    } catch {
+      // El contador es un apoyo visual: si falla, conservamos la vista principal sin bloquear Admin.
+    }
+  }
+
   private startRealtime(): void {
     if (this.realtimeStarted) {
       return;
@@ -1262,6 +1289,28 @@ export class AdminPersonalFacade implements OnDestroy {
     this.realtimeSubscription.add(
       this.presenceRealtimeService.watchAll().subscribe({
         next: (event) => this.applyPresenceRealtimeEvent(event),
+        error: () => undefined
+      })
+    );
+
+    this.realtimeSubscription.add(
+      this.leadRealtimeService.watchTopic('/topic/leads/etapa/PREVENTA').subscribe({
+        next: (event) => {
+          if (
+            [
+              'REGISTRO',
+              'REGISTRO_MASIVO',
+              'ASIGNACION',
+              'CONTACTO',
+              'GESTION_INICIADA',
+              'TIPIFICACION',
+              'ATENCION_CERRADA',
+              'ELIMINACION'
+            ].includes(event.tipo)
+          ) {
+            void this.loadAssignedLeadCounts();
+          }
+        },
         error: () => undefined
       })
     );
