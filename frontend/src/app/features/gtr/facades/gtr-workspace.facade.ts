@@ -348,7 +348,7 @@ export class GtrWorkspaceFacade {
   );
 
   readonly intakeForm = this.fb.group({
-    prefijo: ['+51', [Validators.required, Validators.pattern(/^\+\d{2,3}$/)]],
+    prefijo: ['+51', [Validators.required, Validators.pattern(/^\+\d{1,3}$/)]],
     lead: ['', [Validators.required, Validators.pattern(/^9\d{8}$/)]],
     idCampana: [null as number | null],
     base: ['WHATSAPP', [Validators.required]]

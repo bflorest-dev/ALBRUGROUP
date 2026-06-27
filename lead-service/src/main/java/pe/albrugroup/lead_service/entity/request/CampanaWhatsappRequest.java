@@ -16,7 +16,7 @@ import lombok.Setter;
 public class CampanaWhatsappRequest {
 
     @NotBlank(message = "El prefijo es obligatorio")
-    @Pattern(regexp = "^\\+\\d{2,3}$", message = "El prefijo debe tener formato +51 o similar")
+    @Pattern(regexp = "^\\+\\d{1,3}$", message = "El prefijo debe tener formato +1, +51 o similar")
     private String prefijo;
 
     @NotBlank(message = "El numero de WhatsApp es obligatorio")

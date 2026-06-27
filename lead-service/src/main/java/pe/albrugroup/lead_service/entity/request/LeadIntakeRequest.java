@@ -12,7 +12,7 @@ import pe.albrugroup.lead_service.entity.enums.Base;
 public class LeadIntakeRequest {
 
     @NotBlank(message = "El prefijo es obligatorio")
-    @Pattern(regexp = "^\\+\\d{2,3}$", message = "El prefijo debe tener formato +51 o similar")
+    @Pattern(regexp = "^\\+\\d{1,3}$", message = "El prefijo debe tener formato +1, +51 o similar")
     private String prefijo;
 
     @NotBlank(message = "El lead es obligatorio")

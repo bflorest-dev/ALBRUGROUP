@@ -45,5 +45,6 @@ Thumbs.db
 # Local docs and agent instructions
 /AGENTS.md
 /FRONTEND_ARCHITECTURE.md
+/ADMIN_RESPONSIVE_GUIDE.md
 /docs
 /primeng-loop-fix.md

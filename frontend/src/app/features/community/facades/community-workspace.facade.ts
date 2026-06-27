@@ -277,14 +277,14 @@ export class CommunityWorkspaceFacade {
 
   readonly campaignForm = this.fb.group({
     nombre: ['', [Validators.required]],
-    prefijo: ['+51', [Validators.required, Validators.pattern(/^\+\d{2,3}$/)]],
+    prefijo: ['+51', [Validators.required, Validators.pattern(/^\+\d{1,3}$/)]],
     numeroWhatsApp: ['', [Validators.required, Validators.pattern(/^\d{6,15}$/)]],
     idCuentaPublicitaria: [0, [Validators.required, Validators.min(1)]],
     idProveedor: [0, [Validators.required, Validators.min(1)]]
   });
 
   readonly campaignWhatsappForm = this.fb.group({
-    prefijo: ['+51', [Validators.required, Validators.pattern(/^\+\d{2,3}$/)]],
+    prefijo: ['+51', [Validators.required, Validators.pattern(/^\+\d{1,3}$/)]],
     numeroWhatsApp: ['', [Validators.required, Validators.pattern(/^\d{6,15}$/)]]
   });
 
