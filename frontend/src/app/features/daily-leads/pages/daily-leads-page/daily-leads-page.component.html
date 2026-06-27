@@ -223,10 +223,10 @@
       </ng-template>
     </p-table>
 
-    @if (facade.visibleTotalElements() > facade.pageSize) {
+    @if (facade.visibleTotalElements() > facade.pageSize()) {
       <p-paginator
         [first]="facade.first()"
-        [rows]="facade.pageSize"
+        [rows]="facade.pageSize()"
         [totalRecords]="facade.visibleTotalElements()"
         (onPageChange)="onPageChange($event.page ?? 0)"
       />

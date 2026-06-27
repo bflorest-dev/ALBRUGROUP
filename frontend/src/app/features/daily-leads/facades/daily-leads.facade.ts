@@ -38,7 +38,7 @@ export class DailyLeadsFacade {
     minute: '2-digit'
   });
 
-  readonly pageSize = 10;
+  readonly pageSize = signal(10);
 
   readonly rows = signal<DailyLeadRowView[]>([]);
   readonly totalElements = signal(0);
@@ -67,7 +67,7 @@ export class DailyLeadsFacade {
   /** Nombre de equipo por id, para mostrar los chips de la agrupación "Equipo". */
   readonly equipoNombreById = signal<Map<number, string>>(new Map());
 
-  readonly first = computed(() => this.pageNumber() * this.pageSize);
+  readonly first = computed(() => this.pageNumber() * this.pageSize());
   readonly isToday = computed(() => this.fecha() === '');
   readonly headerTotalElements = computed(() =>
     this.selectedGroup() ? this.visibleTotalElements() : this.totalElements()
@@ -148,6 +148,18 @@ export class DailyLeadsFacade {
       this.loadGroups(),
       this.load(0)
     ]);
+  }
+
+  async setPageSize(pageSize: number, reload = true): Promise<void> {
+    const normalized = Math.max(8, Math.min(18, Math.trunc(pageSize)));
+    if (normalized === this.pageSize()) {
+      return;
+    }
+
+    this.pageSize.set(normalized);
+    if (reload) {
+      await this.load(0);
+    }
   }
 
   private async loadEquipoCatalogo(): Promise<void> {
@@ -307,7 +319,7 @@ export class DailyLeadsFacade {
         this.service.listarRegistrosDiarios({
           fecha: this.fecha() || undefined,
           pageNumber,
-          pageSize: this.pageSize,
+          pageSize: this.pageSize(),
           filters: this.currentGroupFilter(),
           sortBy: this.sortField(),
           direction: this.sortDirection()

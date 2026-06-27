@@ -1,5 +1,6 @@
 .layout-shell {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   grid-template-columns: 292px 1fr;
   min-width: 0;
@@ -18,8 +19,10 @@
   --layout-sidebar-hover: rgba(255, 255, 255, 0.11);
   --layout-sidebar-active: rgba(255, 255, 255, 0.17);
 
-  align-self: start;
-  height: 100dvh;
+  align-self: stretch;
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100%;
   position: sticky;
   top: 0;
   display: flex;
@@ -415,6 +418,7 @@
   .sidebar {
     bottom: 0;
     height: auto;
+    min-height: 0;
     left: 0;
     max-width: min(20rem, 86vw);
     overflow-y: auto;

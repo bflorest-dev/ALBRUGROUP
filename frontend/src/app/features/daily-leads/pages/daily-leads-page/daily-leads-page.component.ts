@@ -1,5 +1,5 @@
 import { DatePipe, UpperCasePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -40,12 +40,33 @@ import { DailyLeadsFacade } from '../../facades/daily-leads.facade';
   styleUrl: './daily-leads-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class DailyLeadsPageComponent implements OnInit {
+export class DailyLeadsPageComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(DailyLeadsFacade);
   private organizeCloseTimeout: ReturnType<typeof setTimeout> | null = null;
+  private pageSizeResizeTimeout: ReturnType<typeof setTimeout> | null = null;
 
   ngOnInit(): void {
+    void this.updateAdaptivePageSize(false);
     void this.facade.initialize();
+  }
+
+  ngOnDestroy(): void {
+    if (this.organizeCloseTimeout !== null) {
+      clearTimeout(this.organizeCloseTimeout);
+    }
+    if (this.pageSizeResizeTimeout !== null) {
+      clearTimeout(this.pageSizeResizeTimeout);
+    }
+  }
+
+  @HostListener('window:resize')
+  protected onWindowResize(): void {
+    this.scheduleAdaptivePageSizeUpdate();
+  }
+
+  @HostListener('window:orientationchange')
+  protected onWindowOrientationChange(): void {
+    this.scheduleAdaptivePageSizeUpdate();
   }
 
   protected onFechaChange(value: string): void {
@@ -97,5 +118,39 @@ export class DailyLeadsPageComponent implements OnInit {
   protected onSortDirectionChange(value: Parameters<DailyLeadsFacade['setSortDirection']>[0], popover: { hide: () => void }): void {
     void this.facade.setSortDirection(value);
     popover.hide();
+  }
+
+  private scheduleAdaptivePageSizeUpdate(): void {
+    if (this.pageSizeResizeTimeout !== null) {
+      clearTimeout(this.pageSizeResizeTimeout);
+    }
+
+    this.pageSizeResizeTimeout = setTimeout(() => {
+      this.pageSizeResizeTimeout = null;
+      void this.updateAdaptivePageSize(true);
+    }, 160);
+  }
+
+  private async updateAdaptivePageSize(reload: boolean): Promise<void> {
+    await this.facade.setPageSize(this.adaptivePageSize(), reload);
+  }
+
+  private adaptivePageSize(): number {
+    if (typeof window === 'undefined') {
+      return 10;
+    }
+
+    const viewport = window.visualViewport;
+    const width = viewport?.width ?? window.innerWidth;
+    const height = viewport?.height ?? window.innerHeight;
+    const isTablet = window.matchMedia('(pointer: coarse) and (min-width: 700px) and (max-width: 1180px)').matches;
+
+    if (!isTablet) {
+      return 10;
+    }
+
+    const reservedHeight = width <= 900 ? 320 : 300;
+    const rowHeight = 54;
+    return Math.floor((height - reservedHeight) / rowHeight);
   }
 }
