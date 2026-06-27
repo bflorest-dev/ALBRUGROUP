@@ -19,17 +19,18 @@
   --layout-sidebar-hover: rgba(255, 255, 255, 0.11);
   --layout-sidebar-active: rgba(255, 255, 255, 0.17);
 
-  align-self: stretch;
-  min-height: 100vh;
-  min-height: 100dvh;
-  height: 100%;
+  align-self: start;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
   position: sticky;
   top: 0;
   display: flex;
   flex-direction: column;
   gap: 1.15rem;
   padding: 1.25rem;
-  overflow-y: auto;
+  overflow: hidden;
   color: var(--layout-sidebar-text);
   background:
     radial-gradient(circle at 15% 0%, var(--layout-sidebar-glow), transparent 34%),
@@ -92,8 +93,14 @@
 }
 
 .menu {
+  align-content: start;
   display: grid;
+  flex: 1 1 auto;
   gap: 0.35rem;
+  grid-auto-rows: max-content;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.2rem;
 }
 
 .menu__section {
@@ -214,8 +221,8 @@
 }
 
 .sidebar__bottom {
-  position: sticky;
-  bottom: 0;
+  flex: 0 0 auto;
+  position: relative;
   display: grid;
   gap: 0.55rem;
   margin-top: auto;

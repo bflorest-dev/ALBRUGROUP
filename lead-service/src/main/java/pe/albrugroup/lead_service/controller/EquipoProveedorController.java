@@ -24,7 +24,11 @@ public class EquipoProveedorController {
             @PathVariable Long idEquipo,
             @Valid @RequestBody AsignarProveedoresRequest request
     ) {
-        return ResponseEntity.ok(equipoProveedorService.asignarProveedores(idEquipo, request.getProveedorIds()));
+        return ResponseEntity.ok(equipoProveedorService.asignarProveedores(
+                idEquipo,
+                request.getProveedorIds(),
+                request.getIdProveedorFallbackLeadSinCampana()
+        ));
     }
 
     @GetMapping("/{idEquipo}/proveedores") @PreAuthorize("hasRole('ADMINISTRADOR')")

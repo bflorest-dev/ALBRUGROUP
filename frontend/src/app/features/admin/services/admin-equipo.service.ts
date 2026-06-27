@@ -20,6 +20,7 @@ export interface ProveedorLite {
   id: number;
   nombre: string;
   activo?: boolean;
+  fallbackLeadSinCampana?: boolean;
 }
 
 export interface EmpleadoLite {
@@ -85,8 +86,15 @@ export class AdminEquipoService {
   }
 
   // Reemplaza el set de proveedores del equipo (move/exclusividad la aplica el backend).
-  asignarProveedores(idEquipo: number, proveedorIds: number[]): Observable<ProveedorLite[]> {
-    return this.http.put<ProveedorLite[]>(`${this.leadEquiposUrl}/${idEquipo}/proveedores`, { proveedorIds });
+  asignarProveedores(
+    idEquipo: number,
+    proveedorIds: number[],
+    idProveedorFallbackLeadSinCampana?: number | null
+  ): Observable<ProveedorLite[]> {
+    return this.http.put<ProveedorLite[]>(`${this.leadEquiposUrl}/${idEquipo}/proveedores`, {
+      proveedorIds,
+      idProveedorFallbackLeadSinCampana: idProveedorFallbackLeadSinCampana ?? null
+    });
   }
 
   backfillLeads(): Observable<{ leadsActualizados: number }> {

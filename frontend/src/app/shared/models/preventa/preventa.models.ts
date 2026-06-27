@@ -88,6 +88,7 @@ export interface LeadGtrResponse {
   lead: string;
   nombreCampana?: string | null;
   nombreProveedorCampana?: string | null;
+  nombreProveedorEquipo?: string | null;
   numeroWhatsappEmpresa?: string | null;
   base?: BaseLead | string | null;
   nombreTitular?: string | null;
@@ -154,6 +155,7 @@ export interface LeadAgendadoGtrResponse {
   lead: string;
   nombreCampana?: string | null;
   nombreProveedorCampana?: string | null;
+  nombreProveedorEquipo?: string | null;
   base?: BaseLead | string | null;
   nombreTitular?: string | null;
   codigoTipificacion?: string | null;
@@ -270,6 +272,7 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   lastEntryAt?: string | null;
   nombreCampana?: string | null;
   nombreProveedorCampana?: string | null;
+  nombreProveedorEquipo?: string | null;
   base?: string | null;
   idAsesorAsignado?: number | null;
   nombreAsesorAsignado?: string | null;

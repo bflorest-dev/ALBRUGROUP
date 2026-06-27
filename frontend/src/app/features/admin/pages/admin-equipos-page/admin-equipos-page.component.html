@@ -80,8 +80,26 @@
         [filter]="true"
         appendTo="body"
         styleClass="equipos-grow"
+        (onChange)="onProveedoresChange()"
       />
       <small class="equipos-hint">Cada proveedor pertenece a un solo equipo: al asignarlo aquí, se mueve desde otro.</small>
+    </div>
+
+    <div class="equipos-field">
+      <label>Proveedor fallback</label>
+      <p-select
+        [options]="formProveedorFallbackOptions"
+        optionLabel="nombre"
+        optionValue="id"
+        [(ngModel)]="formProveedorFallback"
+        placeholder="Proveedor para leads sin campaÃ±a"
+        appendTo="body"
+        styleClass="equipos-grow"
+        [disabled]="!formProveedores.length"
+      />
+      <small class="equipos-hint">
+        Se mostrarÃ¡ en GTR cuando el lead ingrese sin campaÃ±a. Debe ser uno de los proveedores del equipo.
+      </small>
     </div>
 
     <div class="equipos-field">

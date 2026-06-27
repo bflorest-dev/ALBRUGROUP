@@ -24,6 +24,7 @@ public class LeadAgendadoGtrResponse {
     private String lead;
     private String nombreCampana;
     private String nombreProveedorCampana;
+    private String nombreProveedorEquipo;
     private Base base;
     private String nombreTitular;
     private String codigoTipificacion;

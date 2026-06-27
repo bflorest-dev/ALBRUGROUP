@@ -255,12 +255,12 @@
         </td>
         <td><strong>{{ facade.leadPrefixLabel(row.prefijo) }} {{ row.lead }}</strong></td>
         <td>
-          @if (facade.providerLogo(row.nombreProveedorCampana); as logo) {
+          @if (facade.providerLogo(row.nombreProveedorCampana ?? row.nombreProveedorEquipo); as logo) {
             <div class="provider-cell">
-              <img [src]="logo" [alt]="facade.display(row.nombreProveedorCampana)" />
+              <img [src]="logo" [alt]="facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo)" />
             </div>
           } @else {
-            {{ facade.display(row.nombreProveedorCampana) }}
+            {{ facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo) }}
           }
         </td>
         <td>{{ facade.display(row.base) }}</td>

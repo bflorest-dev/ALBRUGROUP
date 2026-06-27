@@ -19,4 +19,5 @@ public class ProveedorResponse {
     private Integer mesesPermanencia;
     private Boolean activo;
     private Instant createdAt;
+    private Boolean fallbackLeadSinCampana;
 }

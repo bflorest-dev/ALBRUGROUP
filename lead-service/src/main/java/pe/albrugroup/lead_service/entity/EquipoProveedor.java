@@ -25,4 +25,8 @@ public class EquipoProveedor {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_proveedor", nullable = false)
     private Proveedor proveedor;
+
+    @Column(name = "fallback_lead_sin_campana", nullable = false)
+    @Builder.Default
+    private boolean fallbackLeadSinCampana = false;
 }

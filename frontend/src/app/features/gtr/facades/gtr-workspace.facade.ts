@@ -2863,6 +2863,7 @@ export class GtrWorkspaceFacade {
       lead: row.lead,
       nombreCampana: row.nombreCampana,
       nombreProveedorCampana: row.nombreProveedorCampana,
+      nombreProveedorEquipo: row.nombreProveedorEquipo,
       base: row.base,
       nombreTitular: row.nombreTitular,
       codigoTipificacion: row.codigoTipificacion,

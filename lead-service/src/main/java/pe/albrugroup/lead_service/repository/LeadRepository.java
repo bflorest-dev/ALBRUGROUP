@@ -61,6 +61,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.lead,
                 c.nombre,
                 p.nombre,
+                (SELECT peFallback.nombre
+                 FROM EquipoProveedor epFallback
+                 JOIN epFallback.proveedor peFallback
+                 WHERE epFallback.idEquipo = l.idEquipo
+                   AND epFallback.fallbackLeadSinCampana = true),
                 c.numeroWhatsApp,
                 l.base,
                 null,
@@ -105,6 +110,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.lead,
                 c.nombre,
                 p.nombre,
+                (SELECT peFallback.nombre
+                 FROM EquipoProveedor epFallback
+                 JOIN epFallback.proveedor peFallback
+                 WHERE epFallback.idEquipo = l.idEquipo
+                   AND epFallback.fallbackLeadSinCampana = true),
                 c.numeroWhatsApp,
                 l.base,
                 null,
@@ -360,6 +370,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.lead,
                 c.nombre,
                 p.nombre,
+                (SELECT peFallback.nombre
+                 FROM EquipoProveedor epFallback
+                 JOIN epFallback.proveedor peFallback
+                 WHERE epFallback.idEquipo = l.idEquipo
+                   AND epFallback.fallbackLeadSinCampana = true),
                 l.base,
                 dp.nombreTitularServicio,
                 l.codigoTipificacion,
@@ -405,6 +420,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.lead,
                 c.nombre,
                 p.nombre,
+                (SELECT peFallback.nombre
+                 FROM EquipoProveedor epFallback
+                 JOIN epFallback.proveedor peFallback
+                 WHERE epFallback.idEquipo = l.idEquipo
+                   AND epFallback.fallbackLeadSinCampana = true),
                 l.base,
                 dp.nombreTitularServicio,
                 l.codigoTipificacion,
@@ -450,6 +470,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.lead,
                 c.nombre,
                 p.nombre,
+                (SELECT peFallback.nombre
+                 FROM EquipoProveedor epFallback
+                 JOIN epFallback.proveedor peFallback
+                 WHERE epFallback.idEquipo = l.idEquipo
+                   AND epFallback.fallbackLeadSinCampana = true),
                 l.base,
                 dp.nombreTitularServicio,
                 l.codigoTipificacion,
@@ -495,6 +520,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.lead,
                 c.nombre,
                 p.nombre,
+                (SELECT peFallback.nombre
+                 FROM EquipoProveedor epFallback
+                 JOIN epFallback.proveedor peFallback
+                 WHERE epFallback.idEquipo = l.idEquipo
+                   AND epFallback.fallbackLeadSinCampana = true),
                 l.base,
                 dp.nombreTitularServicio,
                 l.codigoTipificacion,
@@ -902,6 +932,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.lead,
                 c.nombre,
                 p.nombre,
+                (SELECT peFallback.nombre
+                 FROM EquipoProveedor epFallback
+                 JOIN epFallback.proveedor peFallback
+                 WHERE epFallback.idEquipo = l.idEquipo
+                   AND epFallback.fallbackLeadSinCampana = true),
                 c.numeroWhatsApp,
                 l.base,
                 null,

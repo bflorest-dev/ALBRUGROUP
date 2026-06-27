@@ -14,4 +14,7 @@ public class AsignarProveedoresRequest {
     @NotNull(message = "La lista de proveedores es obligatoria (puede ir vacía)")
     @Builder.Default
     private Set<Long> proveedorIds = new HashSet<>();
+
+    // Proveedor que representa al equipo cuando un lead ingresa sin campaÃ±a.
+    private Long idProveedorFallbackLeadSinCampana;
 }

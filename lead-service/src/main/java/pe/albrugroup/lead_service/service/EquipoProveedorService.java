@@ -28,8 +28,13 @@ public class EquipoProveedorService {
     private final CurrentUser currentUser;
 
     /** Reemplaza los proveedores asignados a un equipo. */
-    public List<ProveedorResponse> asignarProveedores(Long idEquipo, Set<Long> proveedorIds) {
+    public List<ProveedorResponse> asignarProveedores(
+            Long idEquipo,
+            Set<Long> proveedorIds,
+            Long idProveedorFallbackLeadSinCampana
+    ) {
         Set<Long> ids = proveedorIds == null ? Set.of() : proveedorIds;
+        validarFallback(ids, idProveedorFallbackLeadSinCampana);
 
         List<Proveedor> proveedores = ids.isEmpty()
                 ? List.of()
@@ -49,9 +54,12 @@ public class EquipoProveedorService {
                 EquipoProveedor.builder()
                         .idEquipo(idEquipo)
                         .proveedor(proveedor)
+                        .fallbackLeadSinCampana(proveedor.getId().equals(idProveedorFallbackLeadSinCampana))
                         .build()));
 
-        return proveedores.stream().map(proveedorMapper::toResponse).toList();
+        return equipoProveedorRepository.findByIdEquipo(idEquipo).stream()
+                .map(this::mapearProveedorEquipo)
+                .toList();
     }
 
     /**
@@ -72,8 +80,29 @@ public class EquipoProveedorService {
     @Transactional(readOnly = true)
     public List<ProveedorResponse> listarProveedoresDeEquipo(Long idEquipo) {
         return equipoProveedorRepository.findByIdEquipo(idEquipo).stream()
-                .map(ep -> proveedorMapper.toResponse(ep.getProveedor()))
+                .map(this::mapearProveedorEquipo)
                 .toList();
+    }
+
+    private void validarFallback(Set<Long> proveedorIds, Long idProveedorFallbackLeadSinCampana) {
+        if (proveedorIds.isEmpty()) {
+            if (idProveedorFallbackLeadSinCampana != null) {
+                throw new BadRequestException("El fallback debe pertenecer a los proveedores del equipo");
+            }
+            return;
+        }
+        if (idProveedorFallbackLeadSinCampana == null) {
+            throw new BadRequestException("Elige el proveedor fallback para leads sin campana");
+        }
+        if (!proveedorIds.contains(idProveedorFallbackLeadSinCampana)) {
+            throw new BadRequestException("El proveedor fallback debe estar asignado al equipo");
+        }
+    }
+
+    private ProveedorResponse mapearProveedorEquipo(EquipoProveedor equipoProveedor) {
+        ProveedorResponse response = proveedorMapper.toResponse(equipoProveedor.getProveedor());
+        response.setFallbackLeadSinCampana(equipoProveedor.isFallbackLeadSinCampana());
+        return response;
     }
 
     /**

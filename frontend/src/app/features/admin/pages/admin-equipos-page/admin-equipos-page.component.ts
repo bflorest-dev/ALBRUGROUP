@@ -7,6 +7,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { MultiSelectModule } from 'primeng/multiselect';
+import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
@@ -38,6 +39,7 @@ interface GrupoEmpleados {
     DialogModule,
     InputTextModule,
     MultiSelectModule,
+    SelectModule,
     TableModule,
     TextareaModule,
     ToastModule
@@ -81,6 +83,8 @@ export class AdminEquiposPageComponent implements OnInit {
   protected formNombre = '';
   protected formDescripcion = '';
   protected formProveedores: number[] = [];
+  protected formProveedorFallback: number | null = null;
+  protected formProveedorFallbackOptions: ProveedorLite[] = [];
   protected formEmpleados: number[] = [];
 
   protected get tituloDialog(): string {
@@ -115,6 +119,8 @@ export class AdminEquiposPageComponent implements OnInit {
     this.formNombre = '';
     this.formDescripcion = '';
     this.formProveedores = [];
+    this.formProveedorFallback = null;
+    this.formProveedorFallbackOptions = [];
     this.formEmpleados = [];
     this.dialogVisible.set(true);
   }
@@ -129,6 +135,8 @@ export class AdminEquiposPageComponent implements OnInit {
         firstValueFrom(this.service.listarMiembros(equipo.id))
       ]);
       this.formProveedores = (proveedoresEquipo ?? []).map((p) => p.id);
+      this.formProveedorFallback = proveedoresEquipo.find((p) => p.fallbackLeadSinCampana)?.id ?? null;
+      this.syncProveedorFallbackOptions();
       const miembrosIds = (miembros ?? []).map((m) => m.empleadoId);
       this.formEmpleados = [...miembrosIds];
       this.miembrosOriginales.set(miembrosIds);
@@ -144,10 +152,18 @@ export class AdminEquiposPageComponent implements OnInit {
       this.notify('warn', 'Escribe un nombre para el equipo.');
       return;
     }
+    if (this.formProveedores.length && !this.formProveedorFallback) {
+      this.notify('warn', 'Elige el proveedor fallback para leads sin campaña.');
+      return;
+    }
+    if (this.formProveedorFallback && !this.formProveedores.includes(this.formProveedorFallback)) {
+      this.notify('warn', 'El proveedor fallback debe estar entre los proveedores del equipo.');
+      return;
+    }
     this.guardando.set(true);
     try {
       const id = await this.guardarEquipoBase(nombre);
-      await firstValueFrom(this.service.asignarProveedores(id, this.formProveedores));
+      await firstValueFrom(this.service.asignarProveedores(id, this.formProveedores, this.formProveedorFallback));
       await this.sincronizarMiembros(id);
 
       this.dialogVisible.set(false);
@@ -158,6 +174,21 @@ export class AdminEquiposPageComponent implements OnInit {
     } finally {
       this.guardando.set(false);
     }
+  }
+
+  protected onProveedoresChange(): void {
+    this.syncProveedorFallbackOptions();
+    if (this.formProveedorFallback && !this.formProveedores.includes(this.formProveedorFallback)) {
+      this.formProveedorFallback = null;
+    }
+    if (!this.formProveedorFallback && this.formProveedores.length === 1) {
+      this.formProveedorFallback = this.formProveedores[0];
+    }
+  }
+
+  private syncProveedorFallbackOptions(): void {
+    const selected = new Set(this.formProveedores);
+    this.formProveedorFallbackOptions = this.proveedores().filter((proveedor) => selected.has(proveedor.id));
   }
 
   private async guardarEquipoBase(nombre: string): Promise<number> {
