@@ -34,15 +34,22 @@ public class EquipoService implements IEquipo {
     private final EquipoRepository equipoRepository;
     private final UsuarioRepository usuarioRepository;
 
-    // Roles operativos: su acceso a datos se particiona por equipo, por lo que deben
-    // pertenecer a exactamente un equipo. ADMIN/COMMUNITY/MONITOR no son operativos
-    // (acceso global por permiso) y van sin equipo.
+    // Roles operativos: su acceso a datos se particiona por equipo. Por defecto pertenecen a
+    // exactamente un equipo (salvo los listados en ROLES_MULTIEQUIPO). ADMIN/COMMUNITY/MONITOR no
+    // son operativos (acceso global por permiso) y van sin equipo.
     private static final Set<String> ROLES_OPERATIVOS = Set.of(
             "ASESOR_GTR", "SUPERVISOR_GTR",
             "ASESOR_VENTAS", "SUPERVISOR_VENTAS", "OJT",
             "ASESOR_BACKOFFICE", "SUPERVISOR_BACKOFFICE",
             "ASESOR_POSTVENTA", "SUPERVISOR_POSTVENTA",
             "ASESOR_COBRANZA"
+    );
+
+    // Roles operativos que SÍ pueden pertenecer a varios equipos a la vez. El ASESOR_VENTAS se
+    // comparte entre equipos: cada GTR le asigna leads de su propio equipo y el aislamiento se
+    // mantiene porque la partición de datos es por el equipo del lead, no por la membresía del asesor.
+    private static final Set<String> ROLES_MULTIEQUIPO = Set.of(
+            "ASESOR_VENTAS"
     );
 
     @Override
@@ -141,15 +148,17 @@ public class EquipoService implements IEquipo {
     }
 
     private void validarMembresia(Usuario usuario, Set<Long> idsSolicitados) {
-        boolean esOperativo = usuario.getRoles().stream()
+        // Un usuario queda limitado a un solo equipo si tiene algún rol operativo que NO admite
+        // multi-equipo. Así un ASESOR_VENTAS "puro" puede pertenecer a varios equipos, pero si
+        // además tuviera un rol operativo single-team (p. ej. GTR) prevalece la restricción a uno.
+        boolean limitadoAUnEquipo = usuario.getRoles().stream()
                 .map(Rol::getNombre)
-                .anyMatch(ROLES_OPERATIVOS::contains);
+                .anyMatch(rol -> ROLES_OPERATIVOS.contains(rol) && !ROLES_MULTIEQUIPO.contains(rol));
 
         // Se permite dejar sin equipo (quitar): el fail-closed del filtro lo protege (no ve nada).
-        // Solo se restringe que un rol operativo pertenezca a más de un equipo a la vez.
-        if (esOperativo && idsSolicitados.size() > 1) {
+        if (limitadoAUnEquipo && idsSolicitados.size() > 1) {
             throw new BadRequestException(
-                    "Un rol operativo solo puede pertenecer a un equipo");
+                    "Este rol solo puede pertenecer a un equipo a la vez");
         }
     }
 }

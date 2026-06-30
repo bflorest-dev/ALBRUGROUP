@@ -8,6 +8,21 @@
   min-width: 10rem;
 }
 
+.provider-cell {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.provider-cell img {
+  border-radius: 0.35rem;
+  display: block;
+  max-height: 2rem;
+  max-width: 6rem;
+  object-fit: contain;
+}
+
 .row-new {
   animation: row-enter 440ms ease-out;
 }
@@ -26,8 +41,8 @@
   align-items: center;
   display: grid;
   gap: 1rem;
-  grid-template-columns: 8rem 14rem 11rem 6rem 8rem 7rem;
-  min-width: 900px;
+  grid-template-columns: 8rem 5rem 14rem 11rem 6rem 8rem 7rem;
+  min-width: 980px;
 }
 
 .offline-state {

@@ -101,6 +101,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly gestionRows = signal<VisualLeadVenta[]>([]);
   protected readonly programadosRows = signal<VisualLeadVenta[]>([]);
   protected readonly detail = signal<LeadDetalleResponse | null>(null);
+  // Campos que muestra el equipo del lead: se ven los visibles del equipo + los que tengan valor.
+  protected readonly camposVisibles = computed<ReadonlySet<string>>(
+    () => new Set((this.detail()?.camposConfig ?? []).filter((campo) => campo.visible).map((campo) => campo.campo))
+  );
   protected readonly eventos = signal<EventoResponse[]>([]);
   protected readonly selectedLeadId = signal<number | null>(null);
   protected readonly totalPlataforma = signal(0);

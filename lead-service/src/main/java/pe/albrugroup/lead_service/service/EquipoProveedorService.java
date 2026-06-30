@@ -8,6 +8,7 @@ import pe.albrugroup.lead_service.entity.EquipoProveedor;
 import pe.albrugroup.lead_service.entity.Proveedor;
 import pe.albrugroup.lead_service.entity.response.ProveedorResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
+import pe.albrugroup.lead_service.repository.EquipoCampoRepository;
 import pe.albrugroup.lead_service.repository.EquipoProveedorRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
 import pe.albrugroup.lead_service.repository.ProveedorRepository;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 public class EquipoProveedorService {
 
     private final EquipoProveedorRepository equipoProveedorRepository;
+    private final EquipoCampoRepository equipoCampoRepository;
     private final ProveedorRepository proveedorRepository;
     private final ProveedorMapper proveedorMapper;
     private final LeadRepository leadRepository;
@@ -74,6 +76,7 @@ public class EquipoProveedorService {
     /** Limpia los datos de lead-service asociados a un equipo (al eliminarlo en auth). */
     public void eliminarDatosDeEquipo(Long idEquipo) {
         equipoProveedorRepository.deleteByIdEquipo(idEquipo);
+        equipoCampoRepository.deleteByIdEquipo(idEquipo);
         leadRepository.desvincularEquipo(idEquipo);
     }
 

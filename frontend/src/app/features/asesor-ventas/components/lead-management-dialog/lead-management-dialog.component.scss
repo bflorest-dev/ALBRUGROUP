@@ -88,6 +88,17 @@
   gap: 0.6rem;
 }
 
+.lead-workspace__provider {
+  background: #ffffff;
+  border: 1px solid #e2ebe7;
+  border-radius: 0.4rem;
+  display: block;
+  max-height: 2rem;
+  max-width: 6rem;
+  object-fit: contain;
+  padding: 0.15rem 0.35rem;
+}
+
 .lead-workspace__eyebrow {
   @include shared.eyebrow;
 }

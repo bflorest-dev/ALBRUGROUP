@@ -42,6 +42,7 @@
     <ng-template #header>
       <tr>
         <th>Lead</th>
+        <th>Origen</th>
         <th>Titular</th>
         <th>Correo</th>
         <th>Estado</th>
@@ -60,6 +61,15 @@
               [value]="'Atención · ' + facade.display(row.etapa)"
               [title]="'Este contacto ya tiene un trámite en ' + facade.display(row.etapa) + '. Atiéndelo: sus datos son de solo lectura.'"
             />
+          }
+        </td>
+        <td>
+          @if (facade.providerLogo(row); as logo) {
+            <div class="provider-cell">
+              <img [src]="logo" [alt]="facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo)" />
+            </div>
+          } @else {
+            {{ facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo) }}
           }
         </td>
         <td>{{ facade.display(row.nombreTitular) }}</td>
@@ -85,12 +95,13 @@
 
     <ng-template #emptymessage>
       <tr>
-        <td colspan="6">
+        <td colspan="7">
           @if (facade.canDisplayOperationalData()) {
             <div class="skeleton-table" aria-label="Esperando asignaciones">
               @for (_ of facade.skeletonRows; track $index) {
                 <div class="skeleton-row">
                   <p-skeleton width="8rem" height="1.1rem" />
+                  <p-skeleton width="5rem" height="1.6rem" borderRadius="6px" />
                   <p-skeleton width="14rem" height="1.1rem" />
                   <p-skeleton width="11rem" height="1.1rem" />
                   <p-skeleton width="6rem" height="1.6rem" borderRadius="999px" />

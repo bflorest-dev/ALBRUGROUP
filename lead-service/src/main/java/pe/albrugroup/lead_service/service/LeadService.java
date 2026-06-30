@@ -115,6 +115,7 @@ public class LeadService {
     private final LeadRepository leadRepository;
     private final ContactoRepository contactoRepository;
     private final EquipoProveedorRepository equipoProveedorRepository;
+    private final EquipoCampoService equipoCampoService;
     private final CampanaRepository campanaRepository;
     private final EventoRepository eventoRepository;
     private final EventoService eventoService;
@@ -2339,12 +2340,33 @@ public class LeadService {
     private PageResponse<LeadAsesorVentasResponse> mapearBandejaAsesorVentas(Page<Lead> leads) {
         Map<Long, Instant> fechasAsignacion = obtenerFechasAsignacion(leads.getContent());
         Map<Long, Long> totalesAsignacion = obtenerTotalesAsignacion(leads.getContent(), Lead::getId);
+        Map<Long, String> proveedoresEquipo = obtenerProveedoresFallbackPorEquipo(leads.getContent());
         Page<LeadAsesorVentasResponse> responsePage = leads.map(lead -> toAsesorResponse(
                 lead,
                 fechasAsignacion.get(lead.getId()),
-                totalesAsignacion.getOrDefault(lead.getId(), 0L)
+                totalesAsignacion.getOrDefault(lead.getId(), 0L),
+                lead.getIdEquipo() == null ? null : proveedoresEquipo.get(lead.getIdEquipo())
         ));
         return PageResponse.from(responsePage);
+    }
+
+    // Proveedor fallback de cada equipo presente en la página (un único query, sin N+1). Es el que se
+    // muestra como origen cuando el lead no tiene campaña, igual que en la bandeja GTR.
+    private Map<Long, String> obtenerProveedoresFallbackPorEquipo(List<Lead> leads) {
+        Set<Long> idsEquipo = leads.stream()
+                .map(Lead::getIdEquipo)
+                .filter(id -> id != null)
+                .collect(java.util.stream.Collectors.toSet());
+        if (idsEquipo.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, String> porEquipo = new HashMap<>();
+        for (EquipoProveedor ep : equipoProveedorRepository.findByIdEquipoIn(idsEquipo)) {
+            if (ep.isFallbackLeadSinCampana() && ep.getProveedor() != null) {
+                porEquipo.put(ep.getIdEquipo(), ep.getProveedor().getNombre());
+            }
+        }
+        return porEquipo;
     }
 
     private PageResponse<LeadPostventaResponse> mapearBandejaPostventa(Page<Lead> leads) {
@@ -2445,8 +2467,11 @@ public class LeadService {
         return departamentosPorUbigeo.get(direccion.getUbigeoDomicilio());
     }
 
-    private LeadAsesorVentasResponse toAsesorResponse(Lead lead, Instant fechaAsignacion, long totalAsignaciones) {
+    private LeadAsesorVentasResponse toAsesorResponse(
+            Lead lead, Instant fechaAsignacion, long totalAsignaciones, String nombreProveedorEquipo) {
         DatosPreventa datosPreventa = lead.getDatosPreventa();
+        String nombreProveedorCampana = lead.getCampana() == null || lead.getCampana().getProveedor() == null
+                ? null : lead.getCampana().getProveedor().getNombre();
 
         return new LeadAsesorVentasResponse(
                 lead.getId(),
@@ -2458,7 +2483,9 @@ public class LeadService {
                 lead.getEstado(),
                 totalAsignaciones,
                 lead.getEtapa(),
-                lead.getEtapa() != Etapa.PREVENTA
+                lead.getEtapa() != Etapa.PREVENTA,
+                nombreProveedorCampana,
+                nombreProveedorEquipo
         );
     }
 
@@ -2554,8 +2581,22 @@ public class LeadService {
                 adicionales,
                 totalAsignaciones,
                 lead.getEtapa(),
-                lead.getEtapa() != Etapa.PREVENTA
+                lead.getEtapa() != Etapa.PREVENTA,
+                equipoCampoService.resolverConfig(lead.getIdEquipo()),
+                obtenerProveedorFallbackDeEquipo(lead.getIdEquipo())
         );
+    }
+
+    // Proveedor fallback de un equipo (null-safe). Origen a mostrar cuando el lead no tiene campaña.
+    private String obtenerProveedorFallbackDeEquipo(Long idEquipo) {
+        if (idEquipo == null) {
+            return null;
+        }
+        return equipoProveedorRepository.findByIdEquipo(idEquipo).stream()
+                .filter(ep -> ep.isFallbackLeadSinCampana() && ep.getProveedor() != null)
+                .map(ep -> ep.getProveedor().getNombre())
+                .findFirst()
+                .orElse(null);
     }
 
     private LeadPlanDetalleResponse toLeadPlanDetalleResponse(Plan plan) {

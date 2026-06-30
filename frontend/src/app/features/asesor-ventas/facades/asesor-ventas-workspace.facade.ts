@@ -10,6 +10,8 @@ import { SessionService } from '../../../core/services/session.service';
 import { EstadoAsistencia } from '../../../shared/models/schedule/estado-asistencia';
 import {
   AdicionalResponse,
+  CampoCaptura,
+  CampoConfigItem,
   CatalogoResponse,
   LeadAsesorVentasResponse,
   LeadDireccionRequest,
@@ -23,6 +25,7 @@ import {
   UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
 import { buildTelUrl, buildWhatsAppUrl } from '../../../shared/utils/phone-link';
+import { providerLogo as resolveProviderLogo } from '../../../shared/utils/provider-logo';
 import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
 import { PreventaLeadService } from '../../preventa/services/preventa-lead.service';
 
@@ -34,6 +37,21 @@ type OfertaAdditionalSelection = {
   nombre: string;
   precioUnitario?: number;
   cantidad: number;
+};
+
+// Mapa de cada campo configurable a su control de formulario y etiqueta (la misma que muestra el
+// modal), para validar los obligatorios al cerrar venta. La fuente de verdad de qué se muestra/exige
+// es la config del equipo del lead (camposConfig); aquí solo está el "cómo" ubicar cada control.
+const CAMPOS_CONFIGURABLES: Record<CampoCaptura, { tab: 'datos' | 'direccion'; control: string; label: string }> = {
+  NOMBRE_MADRE: { tab: 'datos', control: 'nombreMadre', label: 'Madre' },
+  NOMBRE_PADRE: { tab: 'datos', control: 'nombrePadre', label: 'Padre' },
+  DOC_TITULAR_CELULAR: {
+    tab: 'datos',
+    control: 'numeroDocumentoTitularCelularRegistro',
+    label: 'Numero de Documento del Titular del Celular'
+  },
+  NOMBRE_TITULAR_CELULAR: { tab: 'datos', control: 'nombreTitularCelularRegistro', label: 'Nombre del Titular del Celular' },
+  PLANO: { tab: 'direccion', control: 'plano', label: 'Plano' }
 };
 
 export function resolveSalesAdvisorAvailability(
@@ -230,10 +248,14 @@ export class AsesorVentasWorkspaceFacade {
     }
     return [...providersById.values()].sort((left, right) => left.nombre.localeCompare(right.nombre));
   });
-  // Perfil de campos del equipo CLARO: se infiere de los proveedores que el asesor puede ofertar
-  // (filtrados por su equipo). En equipo 2 (CLARO exclusivo) resulta true; en equipo 1, false.
-  readonly esPerfilClaro = computed(() =>
-    this.ofertaProviderOptions().some((proveedor) => (proveedor.nombre ?? '').toUpperCase().includes('CLARO'))
+  // Config de campos resuelta por el backend según el EQUIPO del lead abierto (viaja en el detalle):
+  // qué campos muestra y exige el modal. Sigue al lead, así un ASESOR_VENTAS multi-equipo ve/valida
+  // los campos del equipo del lead, no del agregado de sus equipos.
+  readonly camposConfig = computed<CampoConfigItem[]>(() => this.detail()?.camposConfig ?? []);
+  // Set de keys visibles para el componente. Ref estable por detalle (computed memoiza) y .has()
+  // devuelve un primitivo: seguro con PrimeNG + OnPush (no genera refs nuevas por change detection).
+  readonly camposVisibles = computed<ReadonlySet<string>>(
+    () => new Set(this.camposConfig().filter((campo) => campo.visible).map((campo) => campo.campo))
   );
   readonly planOptions = computed(() => {
     const idProveedor = this.selectedOfertaProviderId();
@@ -1079,6 +1101,13 @@ export class AsesorVentasWorkspaceFacade {
     return `${row.prefijo} ${row.lead}`.trim();
   }
 
+  // Logo del origen del lead: proveedor de la campaña si lo tiene; si no, el fallback del equipo del
+  // lead. Mismo criterio que la bandeja GTR, para que el asesor (sobre todo el multi-equipo) sepa de
+  // qué equipo/proveedor viene cada lead.
+  providerLogo(row: { nombreProveedorCampana?: string | null; nombreProveedorEquipo?: string | null }): string | null {
+    return resolveProviderLogo(row.nombreProveedorCampana ?? row.nombreProveedorEquipo);
+  }
+
   private telUrl(row: Pick<LeadAsesorVentasResponse, 'prefijo' | 'lead'>): string | null {
     return buildTelUrl(row.prefijo, row.lead);
   }
@@ -1606,17 +1635,18 @@ export class AsesorVentasWorkspaceFacade {
     if (blank(d.nombreTitularServicio.value)) faltantes.push({ tab: 'datos', campo: 'Titular del Servicio' });
     if (blank(d.celularRegistro.value)) faltantes.push({ tab: 'datos', campo: 'Celular a registrar' });
     if (blank(d.correo.value)) faltantes.push({ tab: 'datos', campo: 'Correo' });
-    if (!this.esPerfilClaro()) {
-      if (blank(d.numeroDocumentoTitularCelularRegistro.value)) {
-        faltantes.push({ tab: 'datos', campo: 'Numero de Documento del Titular del Celular' });
+    // Campos configurables por equipo: solo se exigen los que el equipo del lead MUESTRA y marca
+    // como obligatorios (misma config que decide su visibilidad en el modal). Para un asesor
+    // multi-equipo esto sigue al equipo del lead abierto, no al agregado de sus equipos.
+    for (const campo of this.camposConfig()) {
+      if (!campo.visible || !campo.requerido) continue;
+      const meta = CAMPOS_CONFIGURABLES[campo.campo];
+      if (!meta) continue;
+      const value =
+        meta.tab === 'datos' ? this.datosForm.get(meta.control)?.value : this.direccionForm.get(meta.control)?.value;
+      if (blank(value)) {
+        faltantes.push({ tab: meta.tab, campo: meta.label });
       }
-      if (blank(d.nombreTitularCelularRegistro.value)) {
-        faltantes.push({ tab: 'datos', campo: 'Nombre del Titular del Celular' });
-      }
-    } else {
-      if (blank(d.nombreMadre.value)) faltantes.push({ tab: 'datos', campo: 'Madre' });
-      if (blank(d.nombrePadre.value)) faltantes.push({ tab: 'datos', campo: 'Padre' });
-      if (blank(a.plano.value)) faltantes.push({ tab: 'direccion', campo: 'Plano' });
     }
 
     if (blank(a.ubigeoDomicilio.value)) faltantes.push({ tab: 'direccion', campo: 'Distrito' });

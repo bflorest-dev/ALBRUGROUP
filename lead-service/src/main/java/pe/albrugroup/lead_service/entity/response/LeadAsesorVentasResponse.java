@@ -29,4 +29,8 @@ public class LeadAsesorVentasResponse {
     // atiende en modo solo lectura (campos deshabilitados) y solo puede tipificarlo o crear oportunidades.
     private Etapa etapa;
     private boolean atencionOtraEtapa;
+    // Origen del lead (para mostrar el logo del proveedor al asesor, igual que en la bandeja GTR):
+    // proveedor de la campaña si la tiene; si no, el proveedor fallback del equipo del lead.
+    private String nombreProveedorCampana;
+    private String nombreProveedorEquipo;
 }

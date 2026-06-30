@@ -77,19 +77,19 @@
             (input)="setNumericDigits(datosForm.get('ubigeoNacimiento'), $any($event.target).value, 6)"
           />
         </label>
-        @if (perfilClaro || tieneValor(datosForm, 'nombreMadre')) {
+        @if (camposVisibles.has('NOMBRE_MADRE') || tieneValor(datosForm, 'nombreMadre')) {
           <label>
             <span>Madre</span>
             <input pInputText type="text" formControlName="nombreMadre" />
           </label>
         }
-        @if (perfilClaro || tieneValor(datosForm, 'nombrePadre')) {
+        @if (camposVisibles.has('NOMBRE_PADRE') || tieneValor(datosForm, 'nombrePadre')) {
           <label>
             <span>Padre</span>
             <input pInputText type="text" formControlName="nombrePadre" />
           </label>
         }
-        @if (!perfilClaro || tieneValor(datosForm, 'numeroDocumentoTitularCelularRegistro')) {
+        @if (camposVisibles.has('DOC_TITULAR_CELULAR') || tieneValor(datosForm, 'numeroDocumentoTitularCelularRegistro')) {
           <label>
             <span>Numero de Documento del Titular del Celular</span>
             <input
@@ -101,7 +101,7 @@
             />
           </label>
         }
-        @if (!perfilClaro || tieneValor(datosForm, 'nombreTitularCelularRegistro')) {
+        @if (camposVisibles.has('NOMBRE_TITULAR_CELULAR') || tieneValor(datosForm, 'nombreTitularCelularRegistro')) {
           <label class="wide">
             <span>Nombre del Titular del Celular</span>
             <input pInputText type="text" formControlName="nombreTitularCelularRegistro" />
@@ -225,7 +225,7 @@
           <span>Interior</span>
           <input pInputText type="text" formControlName="interior" />
         </label>
-        @if (perfilClaro || tieneValor(direccionForm, 'plano')) {
+        @if (camposVisibles.has('PLANO') || tieneValor(direccionForm, 'plano')) {
           <label>
             <span>Plano</span>
             <input pInputText type="text" formControlName="plano" />

@@ -11,7 +11,8 @@ import java.util.Set;
 public class AsignarEquiposRequest {
 
     // Reemplaza los equipos del usuario por este conjunto.
-    // Roles operativos: exactamente 1. ADMIN/COMMUNITY: vacío (acceso global por permiso).
+    // Roles operativos: normalmente 1 (ASESOR_VENTAS admite varios). ADMIN/COMMUNITY: vacío
+    // (acceso global por permiso).
     @NotNull(message = "La lista de equipos es obligatoria (puede ir vacía)")
     @Builder.Default
     private Set<Long> equipoIds = new HashSet<>();

@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -46,6 +46,11 @@ export class AsesorVentasMisPreventasFacade {
 
   readonly detailDialogOpen = signal(false);
   readonly detail = signal<LeadDetalleResponse | null>(null);
+  // Campos que muestra el equipo del lead (solo lectura): se ven los visibles del equipo + los que
+  // tengan valor. Mantiene esta consulta coherente con lo que vio el asesor al cerrar la venta.
+  readonly camposVisibles = computed<ReadonlySet<string>>(
+    () => new Set((this.detail()?.camposConfig ?? []).filter((campo) => campo.visible).map((campo) => campo.campo))
+  );
   readonly selectedEtapa = signal<string | null>(null);
   readonly activeDataTab = signal<ActiveDataTab>('datos');
 

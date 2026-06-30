@@ -65,7 +65,8 @@ public class Usuario {
     private Set<Rol> roles = new HashSet<>();
 
     // Equipos a los que pertenece el usuario (partición de datos, ortogonal al rol).
-    // Roles operativos: exactamente 1 equipo; ADMIN/COMMUNITY: sin equipo (acceso global por permiso).
+    // Roles operativos: normalmente 1 equipo (ASESOR_VENTAS puede pertenecer a varios);
+    // ADMIN/COMMUNITY: sin equipo (acceso global por permiso).
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "usuario_equipo",

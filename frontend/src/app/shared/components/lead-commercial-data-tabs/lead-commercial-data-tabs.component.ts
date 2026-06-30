@@ -72,11 +72,12 @@ export class LeadCommercialDataTabsComponent {
   /** Modo solo-lectura: oculta acciones de edicion (+/- adicionales) y bloquea los selects de oferta. */
   @Input() readonly = false;
   /**
-   * Perfil de campos del proveedor CLARO (equipo 2). Cuando es true se piden Madre/Padre/Plano y se
-   * ocultan los de Titular del Celular; cuando es false, al reves. Los campos con valor guardado se
-   * muestran siempre (para no ocultar datos en vistas de solo-lectura de leads del otro perfil).
+   * Campos de captura que el equipo del lead muestra (keys del catalogo CampoConfigurable, p. ej.
+   * 'NOMBRE_MADRE', 'PLANO'). Resuelto por el backend segun el equipo del lead. Un campo con valor
+   * guardado se muestra siempre (para no ocultar datos en vistas de solo-lectura de otro perfil).
+   * Set vacio => solo se muestran los campos con valor. Se usa .has() (primitivo) para no romper CD.
    */
-  @Input() perfilClaro = false;
+  @Input() camposVisibles: ReadonlySet<string> = new Set<string>();
 
   protected tieneValor(form: FormGroup, control: string): boolean {
     const value = form.get(control)?.value;

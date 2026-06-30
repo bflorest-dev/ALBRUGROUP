@@ -196,6 +196,9 @@ export interface LeadAsesorVentasResponse {
   lead: string;
   nombreTitular?: string | null;
   correo?: string | null;
+  // Origen del lead (logo de proveedor): campaña si la tiene; si no, el fallback del equipo del lead.
+  nombreProveedorCampana?: string | null;
+  nombreProveedorEquipo?: string | null;
   estadoSeguimiento?: EstadoSeguimiento | string | null;
   // Etapa real del lead y bandera de atención: si el lead no está en PREVENTA, el asesor lo atiende
   // en solo lectura y solo puede tipificarlo (informativo) o crear nuevas oportunidades.
@@ -268,6 +271,23 @@ export interface LeadContextoLookupResponse {
   mensajeUsuario?: string | null;
 }
 
+// Catálogo de campos de captura cuya visibilidad/obligatoriedad varía por equipo (espejo del enum
+// CampoConfigurable del backend). Los campos núcleo no entran aquí: van siempre visibles/obligatorios.
+export type CampoCaptura =
+  | 'NOMBRE_MADRE'
+  | 'NOMBRE_PADRE'
+  | 'DOC_TITULAR_CELULAR'
+  | 'NOMBRE_TITULAR_CELULAR'
+  | 'PLANO';
+
+export interface CampoConfigItem {
+  campo: CampoCaptura;
+  tab: 'DATOS' | 'DIRECCION';
+  descripcion: string;
+  visible: boolean;
+  requerido: boolean;
+}
+
 export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   lastEntryAt?: string | null;
   nombreCampana?: string | null;
@@ -314,6 +334,9 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   precioAdicionales?: number | null;
   precioFinal?: number | null;
   adicionales?: LeadAdicionalDetalleResponse[] | null;
+  // Config de campos de captura resuelta por el backend según el equipo del lead (no inferida en el
+  // front): por cada campo configurable, si se muestra y si es obligatorio para cerrar la venta.
+  camposConfig?: CampoConfigItem[] | null;
 }
 
 export interface LeadAdicionalDetalleResponse {

@@ -19,6 +19,14 @@
         </div>
 
         <div class="lead-workspace__tags">
+          @if (facade.providerLogo(lead); as logo) {
+            <img
+              class="lead-workspace__provider"
+              [src]="logo"
+              [alt]="facade.display(lead.nombreProveedorCampana ?? lead.nombreProveedorEquipo)"
+              [title]="'Origen: ' + facade.display(lead.nombreProveedorCampana ?? lead.nombreProveedorEquipo)"
+            />
+          }
           <p-tag [severity]="facade.estadoSeverity(lead.estadoSeguimiento)" [value]="facade.display(lead.estadoSeguimiento)" />
           @if (facade.hasUnsavedModalChanges()) {
             <p-tag severity="warn" value="Cambios sin guardar" />
@@ -193,7 +201,7 @@
         [direccionForm]="facade.direccionForm"
         [ofertaForm]="facade.ofertaForm"
         [readonly]="facade.atencionOtraEtapa()"
-        [perfilClaro]="facade.esPerfilClaro()"
+        [camposVisibles]="facade.camposVisibles()"
         [activeTab]="facade.activeDataTab()"
         [tipoDocumentoOptions]="facade.tipoDocumentoOptions"
         [tipoDomicilioOptions]="facade.tipoDomicilioOptions"

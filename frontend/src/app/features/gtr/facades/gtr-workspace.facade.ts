@@ -37,6 +37,7 @@ import {
   PageQuery
 } from '../../../shared/models/preventa/preventa.models';
 import { buildTelUrl, buildWhatsAppUrl } from '../../../shared/utils/phone-link';
+import { providerLogo as resolveProviderLogo } from '../../../shared/utils/provider-logo';
 import {
   AjusteJornadaRequest,
   JornadaEfectivaResponse,
@@ -2254,14 +2255,7 @@ export class GtrWorkspaceFacade {
   }
 
   providerLogo(nombreProveedor?: string | null): string | null {
-    const normalized = this.display(nombreProveedor).toUpperCase();
-    if (normalized === 'WIN') {
-      return '/provider-logos/WIN.png';
-    }
-    if (normalized === 'CLARO') {
-      return '/provider-logos/CLARO.png';
-    }
-    return null;
+    return resolveProviderLogo(nombreProveedor);
   }
 
   advisorDotClass(advisor: AdvisorOption): string {
