@@ -28,6 +28,7 @@ import { AuthService } from '../../auth/services/auth.service';
 import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
 import { PreventaLeadService } from '../../preventa/services/preventa-lead.service';
 import { AdminEquipoService, EquipoMiembroResponse, EquipoResponse } from '../services/admin-equipo.service';
+import { puedeMultiEquipo } from '../../../shared/constants/multi-team-roles';
 import { AdminRrhhService } from '../services/admin-rrhh.service';
 import { ScheduleAdjustmentService } from '../../../core/services/schedule-adjustment.service';
 import {
@@ -521,11 +522,15 @@ export class AdminPersonalFacade implements OnDestroy {
   readonly operationalTeams = signal<EquipoResponse[]>([]);
   readonly teamNameByEmployeeId = signal<Record<number, string>>({});
   readonly teamIdByEmployeeId = signal<Record<number, number>>({});
+  // Todos los equipos de cada empleado (para roles multi-equipo como ASESOR_VENTAS).
+  readonly teamIdsByEmployeeId = signal<Record<number, number[]>>({});
   readonly isLoadingTeams = signal(false);
   readonly teamErrorMessage = signal('');
   readonly isTeamChangeVisible = signal(false);
   readonly selectedEmployeeForTeamChange = signal<EmpleadoRolResponse | null>(null);
   readonly teamChangeSelectedId = signal(0);
+  // Selección multi-equipo (solo para roles que lo admiten); el caso común usa teamChangeSelectedId.
+  readonly teamChangeSelectedIds = signal<number[]>([]);
   readonly isSavingTeamChange = signal(false);
   readonly teamChangeErrorMessage = signal('');
   readonly teamChangeSuccessMessage = signal('');
@@ -533,6 +538,12 @@ export class AdminPersonalFacade implements OnDestroy {
     { label: 'Sin equipo', value: 0 },
     ...this.operationalTeams().map((team) => ({ label: team.nombre, value: team.id }))
   ]);
+  // Opciones para el multi-select (sin la opción "Sin equipo": vaciar la selección equivale a ninguno).
+  readonly teamChangeMultiOptions = computed(() =>
+    this.operationalTeams().map((team) => ({ label: team.nombre, value: team.id }))
+  );
+  // El empleado en edición puede pertenecer a varios equipos (gateado por su puesto).
+  readonly canMultiTeam = computed(() => puedeMultiEquipo(this.selectedEmployeeForTeamChange()?.puestoTrabajo));
   readonly accessByEmployeeId = signal<Record<number, UsuarioResponse | null>>({});
   readonly accessErrorByEmployeeId = signal<Record<number, string>>({});
   readonly accessLoadingByEmployeeId = signal<Record<number, boolean>>({});
@@ -1119,21 +1130,33 @@ export class AdminPersonalFacade implements OnDestroy {
         }))
       );
 
-      const teamNameByEmployeeId: Record<number, string> = {};
-      const teamIdByEmployeeId: Record<number, number> = {};
+      // Un empleado puede estar en varios equipos: acumulamos todos sus equipos (no "último gana").
+      const namesByEmployeeId: Record<number, string[]> = {};
+      const teamIdsByEmployeeId: Record<number, number[]> = {};
       for (const item of membersByTeam) {
         for (const member of item.members) {
-          teamNameByEmployeeId[member.empleadoId] = item.team.nombre;
-          teamIdByEmployeeId[member.empleadoId] = item.team.id;
+          (namesByEmployeeId[member.empleadoId] ??= []).push(item.team.nombre);
+          (teamIdsByEmployeeId[member.empleadoId] ??= []).push(item.team.id);
         }
+      }
+
+      const teamNameByEmployeeId: Record<number, string> = {};
+      const teamIdByEmployeeId: Record<number, number> = {};
+      for (const [empId, names] of Object.entries(namesByEmployeeId)) {
+        teamNameByEmployeeId[Number(empId)] = names.join(', ');
+      }
+      for (const [empId, ids] of Object.entries(teamIdsByEmployeeId)) {
+        teamIdByEmployeeId[Number(empId)] = ids[0];
       }
 
       this.teamNameByEmployeeId.set(teamNameByEmployeeId);
       this.teamIdByEmployeeId.set(teamIdByEmployeeId);
+      this.teamIdsByEmployeeId.set(teamIdsByEmployeeId);
     } catch {
       this.operationalTeams.set([]);
       this.teamNameByEmployeeId.set({});
       this.teamIdByEmployeeId.set({});
+      this.teamIdsByEmployeeId.set({});
       this.teamErrorMessage.set('No se pudieron cargar los equipos. El personal se mostrara sin agrupar por ahora.');
     } finally {
       this.isLoadingTeams.set(false);
@@ -1142,7 +1165,10 @@ export class AdminPersonalFacade implements OnDestroy {
 
   openTeamChange(employee: EmpleadoRolResponse): void {
     this.selectedEmployeeForTeamChange.set(employee);
-    this.teamChangeSelectedId.set(this.teamIdByEmployeeId()[employee.idEmpleado] ?? 0);
+    const equiposActuales = this.teamIdsByEmployeeId()[employee.idEmpleado] ?? [];
+    // Precarga: el caso común (un equipo) usa el select simple; el multi-equipo usa el multi-select.
+    this.teamChangeSelectedId.set(equiposActuales[0] ?? 0);
+    this.teamChangeSelectedIds.set([...equiposActuales]);
     this.teamChangeErrorMessage.set('');
     this.teamChangeSuccessMessage.set('');
     this.isTeamChangeVisible.set(true);
@@ -1159,11 +1185,16 @@ export class AdminPersonalFacade implements OnDestroy {
     this.isTeamChangeVisible.set(false);
     this.selectedEmployeeForTeamChange.set(null);
     this.teamChangeSelectedId.set(0);
+    this.teamChangeSelectedIds.set([]);
     this.teamChangeErrorMessage.set('');
   }
 
   setTeamChangeSelectedId(value: number | null): void {
     this.teamChangeSelectedId.set(value ?? 0);
+  }
+
+  setTeamChangeSelectedIds(value: number[] | null): void {
+    this.teamChangeSelectedIds.set(value ?? []);
   }
 
   async saveTeamChange(): Promise<void> {
@@ -1176,8 +1207,13 @@ export class AdminPersonalFacade implements OnDestroy {
     this.teamChangeErrorMessage.set('');
     this.teamChangeSuccessMessage.set('');
 
+    // Multi-equipo (ASESOR_VENTAS): el set completo elegido. Caso común: 0 o 1 equipo.
     const selectedTeamId = this.teamChangeSelectedId();
-    const nextTeamIds = selectedTeamId > 0 ? [selectedTeamId] : [];
+    const nextTeamIds = this.canMultiTeam()
+      ? [...new Set(this.teamChangeSelectedIds())]
+      : selectedTeamId > 0
+        ? [selectedTeamId]
+        : [];
 
     try {
       await firstValueFrom(

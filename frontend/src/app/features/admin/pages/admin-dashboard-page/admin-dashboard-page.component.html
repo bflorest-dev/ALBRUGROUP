@@ -58,7 +58,11 @@
           <div class="team-change-target">
             <p-tag value="Equipo operativo" severity="info" />
             <h3>{{ employee.nombres }} {{ employee.apellidos }}</h3>
-            <p>Selecciona el equipo que debe ver este empleado.</p>
+            @if (facade.canMultiTeam()) {
+              <p>Este puesto puede pertenecer a varios equipos. Selecciona uno o más.</p>
+            } @else {
+              <p>Selecciona el equipo que debe ver este empleado.</p>
+            }
           </div>
 
           @if (facade.teamChangeErrorMessage()) {
@@ -69,26 +73,52 @@
             <p-message severity="info" text="Cargando equipos disponibles..." />
           }
 
-          <label class="field">
-            <span>Equipo</span>
-            <p-select
-              [ngModel]="facade.teamChangeSelectedId()"
-              [ngModelOptions]="{ standalone: true }"
-              [options]="facade.teamChangeOptions()"
-              optionLabel="label"
-              optionValue="value"
-              [filter]="true"
-              [disabled]="facade.isSavingTeamChange() || facade.isLoadingTeams()"
-              appendTo="body"
-              (ngModelChange)="facade.setTeamChangeSelectedId($event)"
-            />
-          </label>
+          @if (facade.canMultiTeam()) {
+            <label class="field">
+              <span>Equipos</span>
+              <p-multiSelect
+                [ngModel]="facade.teamChangeSelectedIds()"
+                [ngModelOptions]="{ standalone: true }"
+                [options]="facade.teamChangeMultiOptions()"
+                optionLabel="label"
+                optionValue="value"
+                [filter]="true"
+                display="chip"
+                placeholder="Selecciona uno o más equipos"
+                [disabled]="facade.isSavingTeamChange() || facade.isLoadingTeams()"
+                appendTo="body"
+                (ngModelChange)="facade.setTeamChangeSelectedIds($event)"
+              />
+            </label>
 
-          @if (facade.teamChangeSelectedId() === 0) {
-            <p-message
-              severity="warn"
-              text="Sin equipo, este usuario no vera datos filtrados por equipo hasta que tenga uno asignado nuevamente."
-            />
+            @if (!facade.teamChangeSelectedIds().length) {
+              <p-message
+                severity="warn"
+                text="Sin equipo, este usuario no vera datos filtrados por equipo hasta que tenga uno asignado nuevamente."
+              />
+            }
+          } @else {
+            <label class="field">
+              <span>Equipo</span>
+              <p-select
+                [ngModel]="facade.teamChangeSelectedId()"
+                [ngModelOptions]="{ standalone: true }"
+                [options]="facade.teamChangeOptions()"
+                optionLabel="label"
+                optionValue="value"
+                [filter]="true"
+                [disabled]="facade.isSavingTeamChange() || facade.isLoadingTeams()"
+                appendTo="body"
+                (ngModelChange)="facade.setTeamChangeSelectedId($event)"
+              />
+            </label>
+
+            @if (facade.teamChangeSelectedId() === 0) {
+              <p-message
+                severity="warn"
+                text="Sin equipo, este usuario no vera datos filtrados por equipo hasta que tenga uno asignado nuevamente."
+              />
+            }
           }
 
           <div class="actions actions--end">

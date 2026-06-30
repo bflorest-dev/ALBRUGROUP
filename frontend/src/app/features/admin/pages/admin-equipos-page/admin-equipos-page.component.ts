@@ -11,13 +11,15 @@ import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
-import { firstValueFrom } from 'rxjs';
+import { catchError, firstValueFrom, of } from 'rxjs';
 import {
   AdminEquipoService,
   EmpleadoLite,
+  EquipoMiembroResponse,
   EquipoResponse,
   ProveedorLite
 } from '../../services/admin-equipo.service';
+import { puedeMultiEquipo } from '../../../../shared/constants/multi-team-roles';
 
 interface OpcionEmpleado {
   label: string;
@@ -65,6 +67,9 @@ export class AdminEquiposPageComponent implements OnInit {
   protected readonly dialogVisible = signal(false);
   protected readonly editandoId = signal<number | null>(null);
   private readonly miembrosOriginales = signal<number[]>([]);
+  // Todos los equipos de cada empleado (cruce de los rosters de todos los equipos), para que al
+  // editar un equipo no se le quite silenciosamente a un asesor sus otras membresías.
+  private readonly teamIdsByEmployeeId = signal<Record<number, number[]>>({});
 
   // Empleados agrupados por rol (rol → lista de empleados), con búsqueda por nombre en el multiselect.
   protected readonly empleadoGrupos = computed<GrupoEmpleados[]>(() => {
@@ -106,11 +111,31 @@ export class AdminEquiposPageComponent implements OnInit {
       this.equipos.set(equipos ?? []);
       this.proveedores.set(proveedores ?? []);
       this.empleados.set(empleados ?? []);
+      await this.cargarMembresiasPorEmpleado(equipos ?? []);
     } catch {
       this.notify('error', 'No se pudieron cargar los equipos.');
     } finally {
       this.cargando.set(false);
     }
+  }
+
+  // Cruza los miembros de todos los equipos para saber a qué equipos pertenece cada empleado.
+  private async cargarMembresiasPorEmpleado(equipos: EquipoResponse[]): Promise<void> {
+    const rosters = await Promise.all(
+      equipos.map(async (equipo) => ({
+        id: equipo.id,
+        miembros: await firstValueFrom(
+          this.service.listarMiembros(equipo.id).pipe(catchError(() => of<EquipoMiembroResponse[]>([])))
+        )
+      }))
+    );
+    const porEmpleado: Record<number, number[]> = {};
+    for (const roster of rosters) {
+      for (const miembro of roster.miembros) {
+        (porEmpleado[miembro.empleadoId] ??= []).push(roster.id);
+      }
+    }
+    this.teamIdsByEmployeeId.set(porEmpleado);
   }
 
   protected abrirCrear(): void {
@@ -202,7 +227,9 @@ export class AdminEquiposPageComponent implements OnInit {
     return creado.id;
   }
 
-  // Asigna los empleados nuevos a este equipo (mueve si estaban en otro) y quita los deseleccionados.
+  // Sincroniza la membresía de este equipo de forma aditiva: agregar SUMA este equipo (sin pisar las
+  // otras membresías de un asesor multi-equipo) y quitar RESTA solo este equipo. Los roles que no
+  // admiten multi-equipo se mueven (un solo equipo), como antes.
   private async sincronizarMiembros(idEquipo: number): Promise<void> {
     const seleccionados = new Set(this.formEmpleados);
     const originales = new Set(this.miembrosOriginales());
@@ -210,11 +237,19 @@ export class AdminEquiposPageComponent implements OnInit {
     const aAgregar = [...seleccionados].filter((empId) => !originales.has(empId));
     const aQuitar = [...originales].filter((empId) => !seleccionados.has(empId));
 
+    const equiposPorEmpleado = this.teamIdsByEmployeeId();
+    const puestoPorEmpleado = new Map(this.empleados().map((e) => [e.idEmpleado, e.puestoTrabajo]));
+
     for (const empId of aAgregar) {
-      await firstValueFrom(this.service.asignarEquiposAEmpleado(empId, [idEquipo]));
+      const actuales = equiposPorEmpleado[empId] ?? [];
+      const esMulti = puedeMultiEquipo(puestoPorEmpleado.get(empId));
+      const next = esMulti ? [...new Set([...actuales, idEquipo])] : [idEquipo];
+      await firstValueFrom(this.service.asignarEquiposAEmpleado(empId, next));
     }
     for (const empId of aQuitar) {
-      await firstValueFrom(this.service.asignarEquiposAEmpleado(empId, []));
+      const actuales = equiposPorEmpleado[empId] ?? [idEquipo];
+      const next = actuales.filter((equipo) => equipo !== idEquipo);
+      await firstValueFrom(this.service.asignarEquiposAEmpleado(empId, next));
     }
   }
 
