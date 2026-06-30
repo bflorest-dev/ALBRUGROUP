@@ -108,9 +108,19 @@ public class EventoService {
         Instant fechaHastaInstant = finDiaInclusivo(fechaHasta);
 
         var pageable = paginationService.toPageable(pageRequest, EVENTO_SORT_FIELDS);
-        var eventos = accion == null
-                ? listarEventosLeadPorRango(idLead, fechaDesdeInstant, fechaHastaInstant, pageable)
-                : listarEventosLeadPorAccionYRango(idLead, accion, fechaDesdeInstant, fechaHastaInstant, pageable);
+        EquipoScope equipoScope = equipoScopeActual();
+        var eventos = eventoRepository.listarEventosLeadVisibles(
+                idLead,
+                accion != null,
+                accion,
+                fechaDesdeInstant != null,
+                fechaDesdeInstant == null ? Instant.EPOCH : fechaDesdeInstant,
+                fechaHastaInstant != null,
+                fechaHastaInstant == null ? Instant.EPOCH : fechaHastaInstant,
+                equipoScope.filtrar(),
+                equipoScope.ids(),
+                pageable
+        );
         var response = eventos.map(eventoMapper::toResponse);
         return PageResponse.from(response);
     }
@@ -136,10 +146,15 @@ public class EventoService {
         Instant fechaDesdeInstant = inicioDia(fechaDesde);
         Instant fechaHastaInstant = finDiaInclusivo(fechaHasta);
 
-        var pageEventos = listarEventosActorPorRango(
+        EquipoScope equipoScope = equipoScopeActual();
+        var pageEventos = eventoRepository.listarEventosActorVisibles(
                 idEmpleado,
-                fechaDesdeInstant,
-                fechaHastaInstant,
+                fechaDesdeInstant != null,
+                fechaDesdeInstant == null ? Instant.EPOCH : fechaDesdeInstant,
+                fechaHastaInstant != null,
+                fechaHastaInstant == null ? Instant.EPOCH : fechaHastaInstant,
+                equipoScope.filtrar(),
+                equipoScope.ids(),
                 paginationService.toPageable(pageRequest, EVENTO_SORT_FIELDS)
         );
 
@@ -150,6 +165,17 @@ public class EventoService {
             return response;
         });
         return PageResponse.from(eventos);
+    }
+
+    private EquipoScope equipoScopeActual() {
+        if (currentUser.tieneVisibilidadGlobalEquipos()) {
+            return new EquipoScope(false, List.of(-1L));
+        }
+        List<Long> equipos = currentUser.equipos();
+        if (equipos == null || equipos.isEmpty()) {
+            return new EquipoScope(true, List.of(-1L));
+        }
+        return new EquipoScope(true, equipos);
     }
 
     /** Resuelve en un solo query el numero de lead (humano) para los eventos de la pagina. */
@@ -506,5 +532,8 @@ public class EventoService {
             );
         }
         return eventoRepository.findByIdActorOrderByCreatedAtDesc(idActor, pageable);
+    }
+
+    private record EquipoScope(boolean filtrar, List<Long> ids) {
     }
 }

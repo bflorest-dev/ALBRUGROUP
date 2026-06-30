@@ -156,6 +156,68 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     );
 
     @Query(value = """
+            SELECT e
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.idLead = :idLead
+              AND (:filtrarAccion = false OR e.accion = :accion)
+              AND (:filtrarFechaDesde = false OR e.createdAt >= :fechaDesde)
+              AND (:filtrarFechaHasta = false OR e.createdAt < :fechaHasta)
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            """,
+            countQuery = """
+            SELECT COUNT(e)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.idLead = :idLead
+              AND (:filtrarAccion = false OR e.accion = :accion)
+              AND (:filtrarFechaDesde = false OR e.createdAt >= :fechaDesde)
+              AND (:filtrarFechaHasta = false OR e.createdAt < :fechaHasta)
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            """)
+    Page<Evento> listarEventosLeadVisibles(
+            @Param("idLead") Long idLead,
+            @Param("filtrarAccion") boolean filtrarAccion,
+            @Param("accion") Accion accion,
+            @Param("filtrarFechaDesde") boolean filtrarFechaDesde,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("filtrarFechaHasta") boolean filtrarFechaHasta,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds,
+            Pageable pageable
+    );
+
+    @Query(value = """
+            SELECT e
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.idActor = :idActor
+              AND (:filtrarFechaDesde = false OR e.createdAt >= :fechaDesde)
+              AND (:filtrarFechaHasta = false OR e.createdAt < :fechaHasta)
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            """,
+            countQuery = """
+            SELECT COUNT(e)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.idActor = :idActor
+              AND (:filtrarFechaDesde = false OR e.createdAt >= :fechaDesde)
+              AND (:filtrarFechaHasta = false OR e.createdAt < :fechaHasta)
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            """)
+    Page<Evento> listarEventosActorVisibles(
+            @Param("idActor") Long idActor,
+            @Param("filtrarFechaDesde") boolean filtrarFechaDesde,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("filtrarFechaHasta") boolean filtrarFechaHasta,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds,
+            Pageable pageable
+    );
+
+    @Query(value = """
             SELECT new pe.albrugroup.lead_service.entity.response.LeadDiarioResponse(
                        e.idLead,
                        l.prefijo,

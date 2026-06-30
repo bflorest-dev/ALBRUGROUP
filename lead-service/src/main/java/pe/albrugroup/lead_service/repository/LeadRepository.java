@@ -91,6 +91,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
               AND l.lead LIKE :leadPattern
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             ORDER BY l.lastEntryAt DESC
             """)
     Page<LeadGtrResponse> listarBandejaGtr(
@@ -98,6 +99,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("leadPattern") String leadPattern,
             @Param("inicioDia") Instant inicioDia,
             @Param("finDia") Instant finDia,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds,
             Pageable pageable
     );
 
@@ -140,6 +143,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
               AND l.lead LIKE :leadPattern
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (
                     :filtrarAsesor = false
                     OR (:sinValor = true AND l.idAsesorAsignado IS NULL)
@@ -204,6 +208,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("codigoTipificacion") String codigoTipificacion,
             @Param("codigoSubtipificacion") String codigoSubtipificacion,
             @Param("sinValor") boolean sinValor,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds,
             Pageable pageable
     );
 
@@ -217,12 +223,15 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.idAsesorAsignado, l.nombreAsesorAsignado
             """)
     List<LeadGtrAgrupacionProjection> agruparBandejaGtrPorAsesor(
             @Param("etapa") Etapa etapa,
             @Param("inicioDia") Instant inicioDia,
-            @Param("finDia") Instant finDia
+            @Param("finDia") Instant finDia,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
     );
 
     @Query("""
@@ -236,12 +245,15 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY c.id, c.nombre
             """)
     List<LeadGtrAgrupacionProjection> agruparBandejaGtrPorCampana(
             @Param("etapa") Etapa etapa,
             @Param("inicioDia") Instant inicioDia,
-            @Param("finDia") Instant finDia
+            @Param("finDia") Instant finDia,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
     );
 
     @Query("""
@@ -254,12 +266,15 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.estado
             """)
     List<LeadGtrAgrupacionProjection> agruparBandejaGtrPorEstado(
             @Param("etapa") Etapa etapa,
             @Param("inicioDia") Instant inicioDia,
-            @Param("finDia") Instant finDia
+            @Param("finDia") Instant finDia,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
     );
 
     @Query("""
@@ -272,12 +287,15 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.primeraCodigoTipificacion, l.primeraCodigoSubtipificacion
             """)
     List<LeadGtrAgrupacionProjection> agruparBandejaGtrPorPrimeraTipificacion(
             @Param("etapa") Etapa etapa,
             @Param("inicioDia") Instant inicioDia,
-            @Param("finDia") Instant finDia
+            @Param("finDia") Instant finDia,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
     );
 
     @Query("""
@@ -290,17 +308,31 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.codigoTipificacion, l.codigoSubtipificacion
             """)
     List<LeadGtrAgrupacionProjection> agruparBandejaGtrPorUltimaTipificacion(
             @Param("etapa") Etapa etapa,
             @Param("inicioDia") Instant inicioDia,
-            @Param("finDia") Instant finDia
+            @Param("finDia") Instant finDia,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
     );
 
-    List<Lead> findByEtapaAndEstadoInAndIdAsesorAsignadoIsNotNullOrderByIdAsesorAsignadoAscLastEntryAtDesc(
-            Etapa etapa,
-            Collection<EstadoSeguimiento> estados
+    @Query("""
+            SELECT l
+            FROM Lead l
+            WHERE l.idAsesorAsignado IS NOT NULL
+              AND l.etapa = :etapa
+              AND l.estado IN :estados
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            ORDER BY l.idAsesorAsignado ASC, l.lastEntryAt DESC
+            """)
+    List<Lead> listarPendientesGtrPorAsesor(
+            @Param("etapa") Etapa etapa,
+            @Param("estados") Collection<EstadoSeguimiento> estados,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
     );
 
     long countByEtapaAndEstadoAndLastEntryAtGreaterThanEqualAndLastEntryAtLessThan(
@@ -353,13 +385,16 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND l.etapa = :etapa
               AND l.estado IN :estados
               AND (:filtrarAsesores = false OR l.idAsesorAsignado IN :asesorIds)
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.idAsesorAsignado, l.nombreAsesorAsignado
             """)
     List<AsesorCantidadProjection> resumirAsignadosActualesPorAsesor(
             @Param("etapa") Etapa etapa,
             @Param("estados") Collection<EstadoSeguimiento> estados,
             @Param("filtrarAsesores") boolean filtrarAsesores,
-            @Param("asesorIds") Collection<Long> asesorIds
+            @Param("asesorIds") Collection<Long> asesorIds,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
     );
 
     @Query("""

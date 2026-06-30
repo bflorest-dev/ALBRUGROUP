@@ -184,12 +184,15 @@ public class LeadService {
         validarFiltroAgrupacionGtr(tipoGrupo, idGrupo, estadoGrupo, codigoTipificacion, sinValor);
 
         var pageable = paginationService.toPageableWithMapping(pageRequest, LEAD_GTR_SORT_FIELDS);
+        RankingEquipoScope equipos = resolverEquiposActuales();
         Page<LeadGtrResponse> leads = tipoGrupo == null
                 ? leadRepository.listarBandejaGtr(
                         Etapa.PREVENTA,
                         leadPattern,
                         rangoDia.inicio(),
                         rangoDia.fin(),
+                        equipos.filtrar(),
+                        equipos.ids(),
                         pageable
                 )
                 : leadRepository.listarBandejaGtrFiltrada(
@@ -207,6 +210,8 @@ public class LeadService {
                         normalizarCodigoAgrupacion(codigoTipificacion),
                         normalizarCodigoAgrupacion(codigoSubtipificacion),
                         sinValor,
+                        equipos.filtrar(),
+                        equipos.ids(),
                         pageable
                 );
         aplicarTotalesAsignacion(leads.getContent(), LeadGtrResponse::getId, this::setTotalesAsignacion);
@@ -218,33 +223,41 @@ public class LeadService {
 
     public LeadGtrAgrupacionesResponse listarAgrupacionesBandejaGtr(LocalDate fecha) {
         OperationalDateTime.InstantRange rangoDia = OperationalDateTime.dayRange(fecha);
+        RankingEquipoScope equipos = resolverEquiposActuales();
         return new LeadGtrAgrupacionesResponse(
                 mapearAgrupaciones(
-                        leadRepository.agruparBandejaGtrPorAsesor(Etapa.PREVENTA, rangoDia.inicio(), rangoDia.fin()),
+                        leadRepository.agruparBandejaGtrPorAsesor(
+                                Etapa.PREVENTA, rangoDia.inicio(), rangoDia.fin(), equipos.filtrar(), equipos.ids()),
                         "Sin asignar"
                 ),
                 mapearAgrupaciones(
-                        leadRepository.agruparBandejaGtrPorCampana(Etapa.PREVENTA, rangoDia.inicio(), rangoDia.fin()),
+                        leadRepository.agruparBandejaGtrPorCampana(
+                                Etapa.PREVENTA, rangoDia.inicio(), rangoDia.fin(), equipos.filtrar(), equipos.ids()),
                         "Sin campaña"
                 ),
                 // La bandeja GTR ya está acotada al equipo del usuario; no se agrupa por equipo.
                 List.of(),
                 mapearAgrupaciones(
-                        leadRepository.agruparBandejaGtrPorEstado(Etapa.PREVENTA, rangoDia.inicio(), rangoDia.fin()),
+                        leadRepository.agruparBandejaGtrPorEstado(
+                                Etapa.PREVENTA, rangoDia.inicio(), rangoDia.fin(), equipos.filtrar(), equipos.ids()),
                         "Sin estado"
                 ),
                 mapearAgrupacionesTipificacion(
                         leadRepository.agruparBandejaGtrPorPrimeraTipificacion(
                                 Etapa.PREVENTA,
                                 rangoDia.inicio(),
-                                rangoDia.fin()
+                                rangoDia.fin(),
+                                equipos.filtrar(),
+                                equipos.ids()
                         )
                 ),
                 mapearAgrupacionesTipificacion(
                         leadRepository.agruparBandejaGtrPorUltimaTipificacion(
                                 Etapa.PREVENTA,
                                 rangoDia.inicio(),
-                                rangoDia.fin()
+                                rangoDia.fin(),
+                                equipos.filtrar(),
+                                equipos.ids()
                         )
                 ),
                 List.of()
@@ -301,9 +314,12 @@ public class LeadService {
      * detectar a los asesores ausentes que dejaron leads sin atender.
      */
     public List<AsesorLeadsPendientesResponse> listarLeadsPendientesPorAsesor() {
-        List<Lead> leads = leadRepository.findByEtapaAndEstadoInAndIdAsesorAsignadoIsNotNullOrderByIdAsesorAsignadoAscLastEntryAtDesc(
+        RankingEquipoScope equipos = resolverEquiposActuales();
+        List<Lead> leads = leadRepository.listarPendientesGtrPorAsesor(
                 Etapa.PREVENTA,
-                List.of(EstadoSeguimiento.ASIGNADO, EstadoSeguimiento.EN_GESTION)
+                List.of(EstadoSeguimiento.ASIGNADO, EstadoSeguimiento.EN_GESTION),
+                equipos.filtrar(),
+                equipos.ids()
         );
 
         Map<Long, AsesorLeadsPendientesResponse> porAsesor = new LinkedHashMap<>();
@@ -340,11 +356,14 @@ public class LeadService {
             return List.of();
         }
 
+        RankingEquipoScope equipos = resolverEquiposActuales();
         Set<Long> conLeads = leadRepository.resumirAsignadosActualesPorAsesor(
                         Etapa.PREVENTA,
                         List.of(EstadoSeguimiento.ASIGNADO, EstadoSeguimiento.EN_GESTION),
                         true,
-                        idsAsesor
+                        idsAsesor,
+                        equipos.filtrar(),
+                        equipos.ids()
                 ).stream()
                 .map(row -> row.getIdAsesor())
                 .collect(java.util.stream.Collectors.toSet());
@@ -561,6 +580,7 @@ public class LeadService {
 
         List<Long> asesorIds = idsAsesor == null ? List.of() : idsAsesor.stream().distinct().toList();
         boolean filtrarAsesores = !asesorIds.isEmpty();
+        RankingEquipoScope equipos = resolverEquiposActuales();
 
         Map<Long, ResumenSupervisorVentasAccumulator> acumulados = new HashMap<>();
 
@@ -568,7 +588,9 @@ public class LeadService {
                         Etapa.PREVENTA,
                         List.of(EstadoSeguimiento.ASIGNADO, EstadoSeguimiento.EN_GESTION),
                         filtrarAsesores,
-                        asesorIds
+                        asesorIds,
+                        equipos.filtrar(),
+                        equipos.ids()
                 )
                 .forEach(row -> {
                     ResumenSupervisorVentasAccumulator item = obtenerAcumulador(acumulados, row.getIdAsesor(), row.getNombreAsesor());
@@ -3245,6 +3267,17 @@ public class LeadService {
         return idEquipoSolicitado == null
                 ? new RankingEquipoScope(true, equiposUsuario)
                 : new RankingEquipoScope(true, List.of(idEquipoSolicitado));
+    }
+
+    private RankingEquipoScope resolverEquiposActuales() {
+        if (currentUser.tieneVisibilidadGlobalEquipos()) {
+            return new RankingEquipoScope(false, List.of(-1L));
+        }
+        List<Long> equiposUsuario = currentUser.equipos();
+        if (equiposUsuario == null || equiposUsuario.isEmpty()) {
+            return new RankingEquipoScope(true, List.of(-1L));
+        }
+        return new RankingEquipoScope(true, equiposUsuario);
     }
 
     private double calcularPorcentajeRanking(long cantidad, long total) {

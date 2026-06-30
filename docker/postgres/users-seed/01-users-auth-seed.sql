@@ -147,10 +147,14 @@ CREATE TEMP TABLE seed_usuario_equipo (
 INSERT INTO seed_usuario_equipo (empleado_id, equipo_id) VALUES
 (1025, 101),
 (1028, 101),
+(1029, 102),
+(1030, 103),
 (1031, 101),
 (1034, 101),
 (1037, 101),
-(1040, 101);
+(1040, 101),
+(1041, 102),
+(1042, 103);
 
 DELETE FROM usuario_equipo ue
 USING usuarios u, seed_usuario_equipo sue

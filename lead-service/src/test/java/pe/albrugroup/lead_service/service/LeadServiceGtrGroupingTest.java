@@ -35,6 +35,8 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -66,22 +68,24 @@ class LeadServiceGtrGroupingTest {
 
     @Test
     void listaConteosGlobalesOrdenadosEIncluyeValoresPendientes() {
-        when(leadRepository.agruparBandejaGtrPorAsesor(eq(Etapa.PREVENTA), any(Instant.class), any(Instant.class)))
+        when(leadRepository.agruparBandejaGtrPorAsesor(
+                eq(Etapa.PREVENTA), any(Instant.class), any(Instant.class), anyBoolean(), anyCollection()))
                 .thenReturn(List.of(
                         group(8L, "Asesor B", null, null, 2),
                         group(null, null, null, null, 3),
                         group(7L, "Asesor A", null, null, 5)
                 ));
-        when(leadRepository.agruparBandejaGtrPorCampana(eq(Etapa.PREVENTA), any(Instant.class), any(Instant.class)))
+        when(leadRepository.agruparBandejaGtrPorCampana(
+                eq(Etapa.PREVENTA), any(Instant.class), any(Instant.class), anyBoolean(), anyCollection()))
                 .thenReturn(List.of(group(null, null, null, null, 10)));
         when(leadRepository.agruparBandejaGtrPorPrimeraTipificacion(
-                eq(Etapa.PREVENTA), any(Instant.class), any(Instant.class)))
+                eq(Etapa.PREVENTA), any(Instant.class), any(Instant.class), anyBoolean(), anyCollection()))
                 .thenReturn(List.of(
                         group(null, null, "CONTACTADO", "INTERESADO", 6),
                         group(null, null, null, null, 4)
                 ));
         when(leadRepository.agruparBandejaGtrPorUltimaTipificacion(
-                eq(Etapa.PREVENTA), any(Instant.class), any(Instant.class)))
+                eq(Etapa.PREVENTA), any(Instant.class), any(Instant.class), anyBoolean(), anyCollection()))
                 .thenReturn(List.of(group(null, null, null, "DATO_INCONSISTENTE", 10)));
 
         LeadGtrAgrupacionesResponse response =
@@ -124,6 +128,8 @@ class LeadServiceGtrGroupingTest {
                 eq("%"),
                 any(Instant.class),
                 any(Instant.class),
+                anyBoolean(),
+                anyCollection(),
                 eq(pageable)
         )).thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
@@ -144,6 +150,8 @@ class LeadServiceGtrGroupingTest {
                 eq("%"),
                 any(Instant.class),
                 any(Instant.class),
+                anyBoolean(),
+                anyCollection(),
                 eq(pageable)
         );
     }
@@ -165,14 +173,16 @@ class LeadServiceGtrGroupingTest {
                 any(Instant.class),
                 eq(false),
                 eq(false),
-                eq(true),
                 eq(false),
+                eq(true),
                 eq(false),
                 eq((Long) null),
                 eq((EstadoSeguimiento) null),
                 eq("CONTACTADO"),
                 eq("INTERESADO"),
                 eq(false),
+                anyBoolean(),
+                anyCollection(),
                 eq(pageable)
         )).thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
@@ -195,14 +205,16 @@ class LeadServiceGtrGroupingTest {
                 any(Instant.class),
                 eq(false),
                 eq(false),
-                eq(true),
                 eq(false),
+                eq(true),
                 eq(false),
                 eq((Long) null),
                 eq((EstadoSeguimiento) null),
                 eq("CONTACTADO"),
                 eq("INTERESADO"),
                 eq(false),
+                anyBoolean(),
+                anyCollection(),
                 eq(pageable)
         );
     }
