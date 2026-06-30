@@ -2814,6 +2814,13 @@ public class LeadService {
         Lead saved = leadRepository.save(nueva);
         Long idCampana = saved.getCampana() == null ? null : saved.getCampana().getId();
         registrarEventoNuevaOportunidad(saved.getId(), idCampana, saved.getEtapa());
+        registrarEventoAsignacion(
+                saved.getId(),
+                idCampana,
+                saved.getEtapa(),
+                currentUser.empleadoID(),
+                currentUser.nombreCompleto().trim()
+        );
         notificarCambioLead("REGISTRO", saved, null, null);
         return saved.getId();
     }
