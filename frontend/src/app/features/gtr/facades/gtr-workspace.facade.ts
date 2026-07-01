@@ -153,9 +153,7 @@ type LoadError = {
 const PERU_PHONE_PREFIX = '+51';
 const PERU_LEAD_PATTERN = /^9\d{8}$/;
 const INTERNATIONAL_LEAD_PATTERN = /^\d{6,15}$/;
-// Temporal para capacitacion GTR: muestra "Registrar lead de ayer" fuera de la ventana 04:00-09:00.
-// Revertir a true cuando termine la capacitacion.
-const RESTRICT_RETROACTIVE_INTAKE_BY_TIME = false;
+const RESTRICT_RETROACTIVE_INTAKE_BY_TIME = true;
 
 @Injectable()
 export class GtrWorkspaceFacade {
