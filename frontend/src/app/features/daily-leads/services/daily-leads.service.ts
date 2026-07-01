@@ -14,6 +14,7 @@ import {
 
 export interface DailyLeadsQuery {
   fecha?: string;
+  lead?: string;
   pageNumber: number;
   pageSize: number;
   filters?: DailyLeadGroupFilter;
@@ -43,6 +44,9 @@ export class DailyLeadsService {
     if (query.fecha) {
       params = params.set('fecha', query.fecha);
     }
+    if (query.lead) {
+      params = params.set('lead', query.lead);
+    }
     if (query.filters?.tipoGrupo) {
       params = params.set('tipoGrupo', query.filters.tipoGrupo);
     }
@@ -64,10 +68,13 @@ export class DailyLeadsService {
     });
   }
 
-  listarAgrupacionesRegistrosDiarios(fecha?: string): Observable<DailyLeadGroupsResponse> {
+  listarAgrupacionesRegistrosDiarios(fecha?: string, lead?: string): Observable<DailyLeadGroupsResponse> {
     let params = new HttpParams();
     if (fecha) {
       params = params.set('fecha', fecha);
+    }
+    if (lead) {
+      params = params.set('lead', lead);
     }
     return this.http.get<DailyLeadGroupsResponse>(
       `${this.leadUrl}/eventos/registros-diarios/agrupaciones`,

@@ -49,10 +49,62 @@
     <section class="daily-leads__organization" aria-label="Organizar resultados">
       <div class="daily-leads__organization-copy">
         <strong>Organizar resultados</strong>
-        <span>{{ facade.organizationSummary() }}</span>
+        <span>
+          {{ facade.organizationSummary() }}
+          @if (facade.isLeadSearchActive()) {
+            · Lead {{ facade.leadSearch() }}
+          }
+        </span>
       </div>
 
       <div class="daily-leads__organization-actions">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-search"
+          label="Buscar Lead"
+          severity="secondary"
+          (click)="searchPopover.toggle($event)"
+        ></button>
+
+        <p-popover #searchPopover appendTo="body" styleClass="daily-leads-search-popover">
+          <form class="daily-leads__search-panel" (ngSubmit)="onLeadSearchSubmit(searchPopover)">
+            <label for="daily-leads-search">
+              <span>Número de lead</span>
+              <input
+                pInputText
+                id="daily-leads-search"
+                type="text"
+                inputmode="numeric"
+                autocomplete="off"
+                placeholder="Ej. 987654321"
+                [ngModel]="facade.leadSearchDraft()"
+                name="dailyLeadsSearch"
+                (ngModelChange)="onLeadSearchChange($event)"
+              />
+            </label>
+
+            <div class="daily-leads__search-actions">
+              <button
+                pButton
+                type="button"
+                label="Limpiar"
+                severity="secondary"
+                [outlined]="true"
+                [disabled]="!facade.leadSearch() && !facade.leadSearchDraft()"
+                (click)="onLeadSearchClear(searchPopover)"
+              ></button>
+              <button
+                pButton
+                type="submit"
+                label="Buscar"
+                icon="pi pi-search"
+                [disabled]="!facade.leadSearchDraft()"
+              ></button>
+            </div>
+          </form>
+        </p-popover>
+
         <button
           pButton
           type="button"
@@ -211,7 +263,9 @@
               <div class="daily-leads__empty">Cargando...</div>
             } @else {
               <div class="daily-leads__empty">
-                @if (facade.isToday()) {
+                @if (facade.isLeadSearchActive()) {
+                  No encontramos ese lead en esta fecha.
+                } @else if (facade.isToday()) {
                   Aun no se han ingresado leads hoy.
                 } @else {
                   No se ingresaron leads en la fecha seleccionada.

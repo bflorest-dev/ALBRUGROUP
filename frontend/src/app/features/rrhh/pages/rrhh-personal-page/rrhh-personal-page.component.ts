@@ -5,6 +5,7 @@ import { CardModule } from 'primeng/card';
 import { DatePickerModule } from 'primeng/datepicker';
 import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
@@ -25,6 +26,7 @@ import { AdminPersonalFacade } from '../../../admin/facades/admin-personal.facad
     DatePickerModule,
     DialogModule,
     MessageModule,
+    MultiSelectModule,
     SelectModule,
     TableModule,
     TagModule,

@@ -42,24 +42,26 @@ class EventoServiceDailyGroupingTest {
     void agrupaTodosLosRegistrosDelDiaOperativo() {
         Instant inicio = Instant.parse("2026-06-10T05:00:00Z");
         Instant fin = Instant.parse("2026-06-11T05:00:00Z");
-        when(eventoRepository.agruparRegistrosDiariosPorAsesor(Accion.REGISTRO, inicio, fin))
+        when(eventoRepository.agruparRegistrosDiariosPorAsesor(Accion.REGISTRO, inicio, fin, false, null))
                 .thenReturn(List.of(
                         group(9L, "Asesor B", null, null, 2),
                         group(null, null, null, null, 1),
                         group(8L, "Asesor A", null, null, 4)
                 ));
-        when(eventoRepository.agruparRegistrosDiariosPorCampana(Accion.REGISTRO, inicio, fin))
+        when(eventoRepository.agruparRegistrosDiariosPorCampana(Accion.REGISTRO, inicio, fin, false, null))
                 .thenReturn(List.of(group(null, null, null, null, 7)));
-        when(eventoRepository.agruparRegistrosDiariosPorPrimeraTipificacion(Accion.REGISTRO, inicio, fin))
+        when(eventoRepository.agruparRegistrosDiariosPorEquipo(Accion.REGISTRO, inicio, fin, false, null))
+                .thenReturn(List.of());
+        when(eventoRepository.agruparRegistrosDiariosPorPrimeraTipificacion(Accion.REGISTRO, inicio, fin, false, null))
                 .thenReturn(List.of(
                         group(null, null, "CONTACTADO", "INTERESADO", 5),
                         group(null, null, null, null, 2)
                 ));
-        when(eventoRepository.agruparRegistrosDiariosPorUltimaTipificacion(Accion.REGISTRO, inicio, fin))
+        when(eventoRepository.agruparRegistrosDiariosPorUltimaTipificacion(Accion.REGISTRO, inicio, fin, false, null))
                 .thenReturn(List.of(group(null, null, null, null, 7)));
 
         LeadGtrAgrupacionesResponse response =
-                eventoService.listarAgrupacionesRegistrosDiarios(LocalDate.of(2026, 6, 10));
+                eventoService.listarAgrupacionesRegistrosDiarios(LocalDate.of(2026, 6, 10), null);
 
         assertThat(response.getAsesores())
                 .extracting("etiqueta", "cantidad", "sinValor")
@@ -82,6 +84,7 @@ class EventoServiceDailyGroupingTest {
                 .pageNumber(0)
                 .pageSize(10)
                 .build();
+        when(paginationService.toPageableWithMapping(eq(request), any())).thenReturn(Pageable.unpaged());
         when(eventoRepository.listarRegistrosDiarios(
                 eq(Accion.REGISTRO),
                 any(Instant.class),
@@ -95,6 +98,8 @@ class EventoServiceDailyGroupingTest {
                 eq("CONTACTADO"),
                 eq("INTERESADO"),
                 eq(false),
+                eq(null),
+                eq(false),
                 any(Pageable.class)
         )).thenReturn(new PageImpl<>(List.of()));
 
@@ -104,6 +109,7 @@ class EventoServiceDailyGroupingTest {
                 null,
                 "CONTACTADO",
                 "INTERESADO",
+                null,
                 false,
                 request
         );
@@ -120,6 +126,63 @@ class EventoServiceDailyGroupingTest {
                 eq(null),
                 eq("CONTACTADO"),
                 eq("INTERESADO"),
+                eq(false),
+                eq(null),
+                eq(false),
+                any(Pageable.class)
+        );
+    }
+
+    @Test
+    void filtraPorLeadNormalizadoEnRegistrosDiarios() {
+        PageRequest request = PageRequest.builder()
+                .pageNumber(0)
+                .pageSize(10)
+                .build();
+        when(paginationService.toPageableWithMapping(eq(request), any())).thenReturn(Pageable.unpaged());
+        when(eventoRepository.listarRegistrosDiarios(
+                eq(Accion.REGISTRO),
+                any(Instant.class),
+                any(Instant.class),
+                eq(false),
+                eq(false),
+                eq(false),
+                eq(false),
+                eq(false),
+                eq(null),
+                eq(null),
+                eq(null),
+                eq(true),
+                eq("987654321"),
+                eq(false),
+                any(Pageable.class)
+        )).thenReturn(new PageImpl<>(List.of()));
+
+        eventoService.listarRegistrosDiarios(
+                LocalDate.of(2026, 6, 10),
+                null,
+                null,
+                null,
+                null,
+                " 987 654 321 ",
+                false,
+                request
+        );
+
+        verify(eventoRepository).listarRegistrosDiarios(
+                eq(Accion.REGISTRO),
+                eq(Instant.parse("2026-06-10T05:00:00Z")),
+                eq(Instant.parse("2026-06-11T05:00:00Z")),
+                eq(false),
+                eq(false),
+                eq(false),
+                eq(false),
+                eq(false),
+                eq(null),
+                eq(null),
+                eq(null),
+                eq(true),
+                eq("987654321"),
                 eq(false),
                 any(Pageable.class)
         );

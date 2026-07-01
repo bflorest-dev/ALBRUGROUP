@@ -11,6 +11,7 @@ import { TagModule } from 'primeng/tag';
 import { PaginatorModule } from 'primeng/paginator';
 import { PopoverModule } from 'primeng/popover';
 import { SelectModule } from 'primeng/select';
+import { InputTextModule } from 'primeng/inputtext';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 import { TipificationStackComponent } from '../../../../shared/components/tipification-stack/tipification-stack.component';
 import { DailyLeadsFacade } from '../../facades/daily-leads.facade';
@@ -32,6 +33,7 @@ import { DailyLeadsFacade } from '../../facades/daily-leads.facade';
     PaginatorModule,
     PopoverModule,
     SelectModule,
+    InputTextModule,
     DateFieldComponent,
     TipificationStackComponent
   ],
@@ -117,6 +119,20 @@ export class DailyLeadsPageComponent implements OnInit, OnDestroy {
 
   protected onSortDirectionChange(value: Parameters<DailyLeadsFacade['setSortDirection']>[0], popover: { hide: () => void }): void {
     void this.facade.setSortDirection(value);
+    popover.hide();
+  }
+
+  protected onLeadSearchChange(value: string): void {
+    this.facade.setLeadSearchDraft(value);
+  }
+
+  protected onLeadSearchSubmit(popover: { hide: () => void }): void {
+    void this.facade.applyLeadSearch();
+    popover.hide();
+  }
+
+  protected onLeadSearchClear(popover: { hide: () => void }): void {
+    void this.facade.clearLeadSearch();
     popover.hide();
   }
 

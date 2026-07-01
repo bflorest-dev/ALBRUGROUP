@@ -349,6 +349,7 @@ public class DataLoader {
                 getPermiso("CREATE_PROMOCIONES"),
                 getPermiso("READ_PROMOCIONES"),
                 getPermiso("DELETE_PROMOCIONES"),
+                getPermiso("READ_EVENTOS_LEADS"),
                 getPermiso("READ_LEADS_DIARIOS"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("UPDATE_ASISTENCIAS"),

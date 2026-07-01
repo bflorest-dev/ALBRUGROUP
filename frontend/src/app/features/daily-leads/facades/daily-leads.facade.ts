@@ -53,6 +53,8 @@ export class DailyLeadsFacade {
   readonly activeHistoryLead = signal<DailyLeadRowView | null>(null);
   /** Fecha operativa seleccionada (YYYY-MM-DD). Vacío = hoy (lo resuelve el backend en America/Lima). */
   readonly fecha = signal('');
+  readonly leadSearchDraft = signal('');
+  readonly leadSearch = signal('');
   readonly groupingMode = signal<DailyLeadGroupMode>('SIN_AGRUPAR');
   readonly selectedGroup = signal<DailyLeadGroupItem | null>(null);
   readonly sortField = signal<DailyLeadSortField>('createdAt');
@@ -69,6 +71,7 @@ export class DailyLeadsFacade {
 
   readonly first = computed(() => this.pageNumber() * this.pageSize());
   readonly isToday = computed(() => this.fecha() === '');
+  readonly isLeadSearchActive = computed(() => this.leadSearch().trim().length > 0);
   readonly headerTotalElements = computed(() =>
     this.selectedGroup() ? this.visibleTotalElements() : this.totalElements()
   );
@@ -195,6 +198,29 @@ export class DailyLeadsFacade {
     await Promise.all([this.loadGroups(), this.load(this.pageNumber())]);
   }
 
+  setLeadSearchDraft(value: string): void {
+    this.leadSearchDraft.set(value);
+  }
+
+  async applyLeadSearch(): Promise<void> {
+    const normalized = this.normalizeLeadSearch(this.leadSearchDraft());
+    if (normalized === this.leadSearch()) {
+      return;
+    }
+    this.leadSearch.set(normalized);
+    this.leadSearchDraft.set(normalized);
+    await Promise.all([this.loadGroups(), this.load(0)]);
+  }
+
+  async clearLeadSearch(): Promise<void> {
+    if (!this.leadSearch() && !this.leadSearchDraft()) {
+      return;
+    }
+    this.leadSearch.set('');
+    this.leadSearchDraft.set('');
+    await Promise.all([this.loadGroups(), this.load(0)]);
+  }
+
   async setGroupingMode(mode: DailyLeadGroupMode | null | undefined): Promise<void> {
     if (!mode || mode === this.groupingMode()) {
       return;
@@ -318,6 +344,7 @@ export class DailyLeadsFacade {
       const page = await firstValueFrom(
         this.service.listarRegistrosDiarios({
           fecha: this.fecha() || undefined,
+          lead: this.leadSearch() || undefined,
           pageNumber,
           pageSize: this.pageSize(),
           filters: this.currentGroupFilter(),
@@ -346,7 +373,7 @@ export class DailyLeadsFacade {
     this.isLoadingGroups.set(true);
     try {
       const groups = await firstValueFrom(
-        this.service.listarAgrupacionesRegistrosDiarios(this.fecha() || undefined)
+        this.service.listarAgrupacionesRegistrosDiarios(this.fecha() || undefined, this.leadSearch() || undefined)
       );
       this.groups.set(groups);
       this.totalElements.set(groups.asesores.reduce((total, group) => total + group.cantidad, 0));
@@ -420,6 +447,10 @@ export class DailyLeadsFacade {
       return '-';
     }
     return this.timeFormatter.format(date);
+  }
+
+  private normalizeLeadSearch(value: string): string {
+    return value.replace(/\s+/g, '').trim();
   }
 
   private async loadTipificationPalette(): Promise<void> {

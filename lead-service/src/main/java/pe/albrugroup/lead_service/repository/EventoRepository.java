@@ -240,6 +240,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
+              AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
               AND (
                     :filtrarAsesor = false
                     OR (:sinValor = true AND e.idActor IS NULL)
@@ -296,6 +297,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
+              AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
               AND (
                     :filtrarAsesor = false
                     OR (:sinValor = true AND e.idActor IS NULL)
@@ -356,6 +358,8 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("idGrupo") Long idGrupo,
             @Param("codigoTipificacion") String codigoTipificacion,
             @Param("codigoSubtipificacion") String codigoSubtipificacion,
+            @Param("filtrarLead") boolean filtrarLead,
+            @Param("lead") String lead,
             @Param("sinValor") boolean sinValor,
             Pageable pageable
     );
@@ -393,12 +397,15 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
+              AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
             GROUP BY e.idActor, e.nombreActor
             """)
     List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorAsesor(
             @Param("accion") Accion accion,
             @Param("inicio") Instant inicio,
-            @Param("fin") Instant fin
+            @Param("fin") Instant fin,
+            @Param("filtrarLead") boolean filtrarLead,
+            @Param("lead") String lead
     );
 
     @Query("""
@@ -412,12 +419,15 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
+              AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
             GROUP BY l.idEquipo
             """)
     List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorEquipo(
             @Param("accion") Accion accion,
             @Param("inicio") Instant inicio,
-            @Param("fin") Instant fin
+            @Param("fin") Instant fin,
+            @Param("filtrarLead") boolean filtrarLead,
+            @Param("lead") String lead
     );
 
     @Query("""
@@ -432,12 +442,15 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
+              AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
             GROUP BY c.id, c.nombre
             """)
     List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorCampana(
             @Param("accion") Accion accion,
             @Param("inicio") Instant inicio,
-            @Param("fin") Instant fin
+            @Param("fin") Instant fin,
+            @Param("filtrarLead") boolean filtrarLead,
+            @Param("lead") String lead
     );
 
     @Query("""
@@ -451,12 +464,15 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
+              AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
             GROUP BY l.primeraCodigoTipificacion, l.primeraCodigoSubtipificacion
             """)
     List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorPrimeraTipificacion(
             @Param("accion") Accion accion,
             @Param("inicio") Instant inicio,
-            @Param("fin") Instant fin
+            @Param("fin") Instant fin,
+            @Param("filtrarLead") boolean filtrarLead,
+            @Param("lead") String lead
     );
 
     @Query("""
@@ -470,12 +486,15 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
+              AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
             GROUP BY l.codigoTipificacion, l.codigoSubtipificacion
             """)
     List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorUltimaTipificacion(
             @Param("accion") Accion accion,
             @Param("inicio") Instant inicio,
-            @Param("fin") Instant fin
+            @Param("fin") Instant fin,
+            @Param("filtrarLead") boolean filtrarLead,
+            @Param("lead") String lead
     );
 
     Optional<Evento> findTopByIdLeadAndAccionOrderByCreatedAtDesc(Long idLead, Accion accion);

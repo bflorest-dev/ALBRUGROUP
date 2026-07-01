@@ -201,11 +201,13 @@ public class EventoService {
             Long idGrupo,
             String codigoTipificacion,
             String codigoSubtipificacion,
+            String lead,
             boolean sinValor,
             PageRequest pageRequest
     ) {
         OperationalDateTime.InstantRange rango = OperationalDateTime.dayRange(fecha);
         validarFiltroAgrupacion(tipoGrupo, idGrupo, codigoTipificacion, sinValor);
+        String leadNormalizado = normalizarBusquedaLead(lead);
 
         var pageable = paginationService.toPageableWithMapping(pageRequest, LEADS_DIARIOS_SORT_FIELDS);
 
@@ -221,6 +223,8 @@ public class EventoService {
                 idGrupo,
                 normalizarCodigo(codigoTipificacion),
                 normalizarCodigo(codigoSubtipificacion),
+                leadNormalizado != null,
+                leadNormalizado,
                 sinValor,
                 pageable
         );
@@ -265,14 +269,17 @@ public class EventoService {
                 ));
     }
 
-    public LeadGtrAgrupacionesResponse listarAgrupacionesRegistrosDiarios(LocalDate fecha) {
+    public LeadGtrAgrupacionesResponse listarAgrupacionesRegistrosDiarios(LocalDate fecha, String lead) {
         OperationalDateTime.InstantRange rango = OperationalDateTime.dayRange(fecha);
+        String leadNormalizado = normalizarBusquedaLead(lead);
         return new LeadGtrAgrupacionesResponse(
                 mapearAgrupaciones(
                         eventoRepository.agruparRegistrosDiariosPorAsesor(
                                 Accion.REGISTRO,
                                 rango.inicio(),
-                                rango.fin()
+                                rango.fin(),
+                                leadNormalizado != null,
+                                leadNormalizado
                         ),
                         "Sin asesor"
                 ),
@@ -280,7 +287,9 @@ public class EventoService {
                         eventoRepository.agruparRegistrosDiariosPorCampana(
                                 Accion.REGISTRO,
                                 rango.inicio(),
-                                rango.fin()
+                                rango.fin(),
+                                leadNormalizado != null,
+                                leadNormalizado
                         ),
                         "Sin campaña"
                 ),
@@ -288,7 +297,9 @@ public class EventoService {
                         eventoRepository.agruparRegistrosDiariosPorEquipo(
                                 Accion.REGISTRO,
                                 rango.inicio(),
-                                rango.fin()
+                                rango.fin(),
+                                leadNormalizado != null,
+                                leadNormalizado
                         ),
                         "Sin equipo"
                 ),
@@ -297,14 +308,18 @@ public class EventoService {
                         eventoRepository.agruparRegistrosDiariosPorPrimeraTipificacion(
                                 Accion.REGISTRO,
                                 rango.inicio(),
-                                rango.fin()
+                                rango.fin(),
+                                leadNormalizado != null,
+                                leadNormalizado
                         )
                 ),
                 mapearAgrupacionesTipificacion(
                         eventoRepository.agruparRegistrosDiariosPorUltimaTipificacion(
                                 Accion.REGISTRO,
                                 rango.inicio(),
-                                rango.fin()
+                                rango.fin(),
+                                leadNormalizado != null,
+                                leadNormalizado
                         )
                 ),
                 List.of()
@@ -340,6 +355,10 @@ public class EventoService {
 
     private String normalizarCodigo(String codigo) {
         return codigo == null || codigo.isBlank() ? null : codigo.trim();
+    }
+
+    private String normalizarBusquedaLead(String lead) {
+        return lead == null || lead.isBlank() ? null : lead.replaceAll("\\s+", "").toLowerCase();
     }
 
     private List<LeadGtrAgrupacionItemResponse> mapearAgrupaciones(

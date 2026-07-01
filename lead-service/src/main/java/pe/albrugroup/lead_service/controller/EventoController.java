@@ -50,6 +50,7 @@ public class EventoController {
             @RequestParam(required = false) Long idGrupo,
             @RequestParam(required = false) String codigoTipificacion,
             @RequestParam(required = false) String codigoSubtipificacion,
+            @RequestParam(required = false) String lead,
             @RequestParam(defaultValue = "false") boolean sinValor,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
@@ -59,6 +60,7 @@ public class EventoController {
                 idGrupo,
                 codigoTipificacion,
                 codigoSubtipificacion,
+                lead,
                 sinValor,
                 pageRequest
         );
@@ -67,9 +69,10 @@ public class EventoController {
 
     @GetMapping("/registros-diarios/agrupaciones") @PreAuthorize("hasAuthority('READ_LEADS_DIARIOS')")
     public ResponseEntity<LeadGtrAgrupacionesResponse> listarAgrupacionesRegistrosDiarios(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+            @RequestParam(required = false) String lead
     ) {
-        return ResponseEntity.ok(eventoService.listarAgrupacionesRegistrosDiarios(fecha));
+        return ResponseEntity.ok(eventoService.listarAgrupacionesRegistrosDiarios(fecha, lead));
     }
 
     @GetMapping("/empleado/{idEmpleado}") @PreAuthorize("hasAuthority('READ_EVENTOS_LEADS')")

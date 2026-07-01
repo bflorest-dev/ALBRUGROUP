@@ -85,8 +85,36 @@
   &__organization-actions {
     display: flex;
     flex: 0 0 auto;
+    gap: 0.65rem;
     justify-content: flex-end;
     margin-left: auto;
+  }
+
+  &__search-panel {
+    display: grid;
+    gap: 0.85rem;
+    min-width: min(18rem, calc(100vw - 2rem));
+
+    label {
+      display: grid;
+      gap: 0.38rem;
+    }
+
+    span {
+      color: var(--app-text);
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    input {
+      width: 100%;
+    }
+  }
+
+  &__search-actions {
+    display: flex;
+    gap: 0.65rem;
+    justify-content: flex-end;
   }
 
   &__organize-panel {
@@ -216,6 +244,10 @@
 }
 
 :host ::ng-deep .daily-leads-organize-popover .p-popover-content {
+  padding: 1rem;
+}
+
+:host ::ng-deep .daily-leads-search-popover .p-popover-content {
   padding: 1rem;
 }
 
