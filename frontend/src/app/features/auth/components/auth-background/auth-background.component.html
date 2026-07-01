@@ -1,16 +1,44 @@
 <div class="auth-background {{ backgroundClass() }}" aria-hidden="true">
-  <div class="auth-animated-bg">
-    <span></span>
-    <span></span>
-    <span></span>
-    <span></span>
-    <span></span>
-    <span></span>
-    <span></span>
-    <span></span>
-  </div>
+  @if (theme() === 'day') {
+    <div class="auth-leaves">
+      @for (leaf of leaves; track $index) {
+        <div
+          class="auth-leaf-pos"
+          #leafPos
+          [style.--leaf-top]="leaf.top"
+          [style.--leaf-size.px]="leaf.size"
+          [style.--leaf-delay]="leaf.delay"
+          [style.--leaf-dur]="leaf.duration"
+          [style.--leaf-opacity]="leaf.opacity"
+          [style.--leaf-hue]="leaf.hue"
+        >
+          <div class="auth-leaf-push">
+            <span class="auth-leaf"></span>
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="auth-stars">
+      @for (star of stars; track $index) {
+        <span
+          class="auth-star"
+          #starEl
+          [style.--star-size.px]="star.size"
+          [style.--star-top]="star.top"
+          [style.--star-left]="star.left"
+          [style.--star-delay]="star.delay"
+          [style.--star-dur]="star.duration"
+          [style.--star-opacity]="star.opacity"
+          [style.--star-glow.px]="star.glow"
+        ></span>
+      }
+    </div>
+  }
 
-  <div class="auth-glow auth-glow--primary"></div>
-  <div class="auth-glow auth-glow--secondary"></div>
-  <div class="auth-glow auth-glow--tertiary"></div>
+  <div
+    class="auth-spotlight"
+    [style.--spot-x]="spotX()"
+    [style.--spot-y]="spotY()"
+  ></div>
 </div>

@@ -1,14 +1,23 @@
 <p-card styleClass="auth-card">
+  <div class="auth-steps" aria-hidden="true">
+    <span class="auth-steps__dot auth-steps__dot--active"></span>
+    <span class="auth-steps__line"></span>
+    <span class="auth-steps__dot"></span>
+    <span class="auth-steps__line"></span>
+    <span class="auth-steps__dot"></span>
+  </div>
+
   <div class="auth-card__header">
-    <span class="auth-card__eyebrow">Ingreso operativo</span>
     <h1>Valida tu acceso</h1>
-    <p>Ingresa tu username para verificar si tu cuenta puede entrar al sistema.</p>
   </div>
 
   <form [formGroup]="accessForm" (ngSubmit)="formSubmit.emit()" class="auth-form">
     <label class="auth-field">
       <span>Username</span>
-      <input pInputText type="text" formControlName="username" placeholder="Ingresa tu username" autocomplete="username" />
+      <p-iconfield iconPosition="left">
+        <p-inputicon class="pi pi-user" />
+        <input #usernameInput pInputText type="text" formControlName="username" placeholder="Ingresa tu username" autocomplete="username" />
+      </p-iconfield>
     </label>
 
     @if (errorMessage) {
@@ -27,4 +36,6 @@
       <span pButtonLabel>Continuar</span>
     </button>
   </form>
+
+  <p class="auth-quote">"Grandes logros comienzan con un simple paso."</p>
 </p-card>

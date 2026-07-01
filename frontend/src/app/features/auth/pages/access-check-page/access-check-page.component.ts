@@ -26,7 +26,13 @@ type AccessCheckState =
   | { status: 'loading'; requestId: number }
   | { status: 'error'; requestId: number; message: string }
   | { status: 'blocked'; requestId: number; message: string }
-  | { status: 'redirect'; requestId: number; username: string; targetRoute: string };
+  | {
+      status: 'redirect';
+      requestId: number;
+      username: string;
+      nombreCompleto: string;
+      targetRoute: string;
+    };
 
 @Component({
   selector: 'app-access-check-page',
@@ -82,7 +88,9 @@ export class AccessCheckPageComponent {
       }
 
       this.handledRequestId.set(state.requestId);
-      void this.router.navigate([state.targetRoute], { queryParams: { username: state.username } });
+      void this.router.navigate([state.targetRoute], {
+        queryParams: { username: state.username, nombre: state.nombreCompleto }
+      });
     });
   }
 
@@ -114,6 +122,7 @@ export class AccessCheckPageComponent {
       status: 'redirect',
       requestId: request.requestId,
       username: request.username,
+      nombreCompleto: response.nombreCompleto,
       targetRoute: response.passwordInicializada ? '/auth/login' : '/auth/forgot-password'
     };
   }

@@ -81,9 +81,11 @@ export class ForgotPasswordPageComponent {
   });
   protected readonly copyFeedbackMessage = signal('');
   protected readonly copyFeedbackSeverity = signal<'success' | 'error'>('success');
+  protected readonly nombreEmpleado = signal('');
 
   constructor() {
     const username = this.route.snapshot.queryParamMap.get('username')?.trim() ?? '';
+    const nombre = this.route.snapshot.queryParamMap.get('nombre')?.trim() ?? '';
 
     if (!username) {
       void this.router.navigate(['/auth/access']);
@@ -91,6 +93,7 @@ export class ForgotPasswordPageComponent {
     }
 
     this.forgotPasswordForm.controls.username.setValue(username);
+    this.nombreEmpleado.set(nombre);
   }
 
   protected submit(): void {
@@ -111,7 +114,16 @@ export class ForgotPasswordPageComponent {
 
   protected continueToLogin(): void {
     const username = this.forgotPasswordForm.controls.username.getRawValue();
-    void this.router.navigate(['/auth/login'], { queryParams: { username } });
+    void this.router.navigate(['/auth/login'], {
+      queryParams: { username, nombre: this.nombreEmpleado() }
+    });
+  }
+
+  protected goBack(): void {
+    const username = this.forgotPasswordForm.controls.username.getRawValue();
+    void this.router.navigate(['/auth/login'], {
+      queryParams: { username, nombre: this.nombreEmpleado() }
+    });
   }
 
   protected async copyPassword(password: string): Promise<void> {

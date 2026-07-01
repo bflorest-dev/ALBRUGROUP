@@ -87,9 +87,25 @@ export class LoginPageComponent {
     const state = this.loginState();
     return state.status === 'error' ? state.message : '';
   });
+  protected readonly nombreEmpleado = signal('');
+  protected readonly welcomeName = computed(() => {
+    const nombre = this.nombreEmpleado().trim();
+    if (nombre) {
+      return this.formatName(nombre);
+    }
+
+    const username = this.loginForm.controls.username.getRawValue().trim();
+    if (!username) {
+      return '';
+    }
+
+    const firstPart = username.split(/[._\s-]/)[0] ?? username;
+    return firstPart ? firstPart.charAt(0).toUpperCase() + firstPart.slice(1) : username;
+  });
 
   constructor() {
     const username = this.route.snapshot.queryParamMap.get('username')?.trim() ?? '';
+    const nombre = this.route.snapshot.queryParamMap.get('nombre')?.trim() ?? '';
 
     if (!username) {
       void this.router.navigate(['/auth/access']);
@@ -97,6 +113,7 @@ export class LoginPageComponent {
     }
 
     this.loginForm.controls.username.setValue(username);
+    this.nombreEmpleado.set(nombre);
 
     effect(() => {
       const state = this.loginState();
@@ -127,7 +144,13 @@ export class LoginPageComponent {
 
   protected goToForgotPassword(): void {
     const username = this.loginForm.controls.username.getRawValue().trim();
-    void this.router.navigate(['/auth/forgot-password'], { queryParams: { username } });
+    void this.router.navigate(['/auth/forgot-password'], {
+      queryParams: { username, nombre: this.nombreEmpleado() }
+    });
+  }
+
+  protected goBack(): void {
+    void this.router.navigate(['/auth/access']);
   }
 
   private handleLoginSuccess(response: LoginResponse): void {
@@ -151,5 +174,20 @@ export class LoginPageComponent {
   private getErrorMessage(error: HttpErrorResponse, fallbackMessage: string): string {
     const apiError = error.error as ApiErrorResponse | null;
     return apiError?.message ?? fallbackMessage;
+  }
+
+  private formatName(name: string): string {
+    const words = name.trim().split(/\s+/);
+    const total = words.length;
+
+    if (total === 4) {
+      return `${words[0]} ${words[1]}\n${words[2]} ${words[3]}`;
+    }
+
+    if (total === 5) {
+      return `${words[0]} ${words[1]} ${words[2]}\n${words[3]} ${words[4]}`;
+    }
+
+    return name;
   }
 }

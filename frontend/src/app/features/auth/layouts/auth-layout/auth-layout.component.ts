@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { AuthBackgroundComponent } from '../../components/auth-background/auth-background.component';
+import { AuthBackgroundThemeService } from '../../services/auth-background-theme.service';
 
 @Component({
   selector: 'app-auth-layout',
@@ -9,4 +10,10 @@ import { AuthBackgroundComponent } from '../../components/auth-background/auth-b
   styleUrl: './auth-layout.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AuthLayoutComponent {}
+export class AuthLayoutComponent {
+  private readonly themeService = inject(AuthBackgroundThemeService);
+
+  protected readonly pageThemeClass = computed(
+    () => `auth-page--${this.themeService.theme()}`
+  );
+}

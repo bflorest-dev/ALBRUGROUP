@@ -122,6 +122,7 @@ public class UsuarioService implements IUsuario {
         return EstadoAccesoResponse.builder()
                 .activo(usuario.getActivo())
                 .passwordInicializada(usuario.getPasswordInicializada())
+                .nombreCompleto(usuario.getNombreCompleto())
                 .build();
     }
 

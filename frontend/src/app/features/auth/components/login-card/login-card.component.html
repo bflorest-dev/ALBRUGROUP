@@ -1,26 +1,47 @@
 <p-card styleClass="auth-card">
+  <div class="auth-steps" aria-hidden="true">
+    <span class="auth-steps__dot auth-steps__dot--done"></span>
+    <span class="auth-steps__line auth-steps__line--done"></span>
+    <span class="auth-steps__dot auth-steps__dot--active"></span>
+    <span class="auth-steps__line"></span>
+    <span class="auth-steps__dot"></span>
+  </div>
+
+  <button pButton type="button" class="auth-back" severity="secondary" text icon="pi pi-arrow-left" (click)="back.emit()">
+    <span pButtonLabel>Volver</span>
+  </button>
+
   <div class="auth-card__header">
-    <span class="auth-card__eyebrow">Acceso seguro</span>
-    <h1>Ingresa tu password</h1>
-    <p>Tu usuario ya fue validado. Solo falta autenticar tus credenciales.</p>
+    @if (welcomeName) {
+      <span class="auth-greeting__label">Bienvenido de vuelta</span>
+      <h1 class="auth-greeting__name">{{ welcomeName }}</h1>
+    } @else {
+      <h1>Ingresa tu password</h1>
+    }
   </div>
 
   <form [formGroup]="loginForm" (ngSubmit)="formSubmit.emit()" class="auth-form">
     <label class="auth-field">
       <span>Username</span>
-      <input pInputText type="text" formControlName="username" autocomplete="username" />
+      <p-iconfield iconPosition="left">
+        <p-inputicon class="pi pi-user" />
+        <input pInputText type="text" formControlName="username" autocomplete="username" />
+      </p-iconfield>
     </label>
 
     <label class="auth-field">
       <span>Password</span>
-      <p-password
-        formControlName="password"
-        placeholder="Ingresa tu password"
-        autocomplete="current-password"
-        [toggleMask]="true"
-        [feedback]="false"
-        [fluid]="true"
-      />
+      <p-iconfield iconPosition="left">
+        <p-inputicon class="pi pi-lock" />
+        <p-password
+          formControlName="password"
+          placeholder="Ingresa tu password"
+          autocomplete="current-password"
+          [toggleMask]="true"
+          [feedback]="false"
+          [fluid]="true"
+        />
+      </p-iconfield>
     </label>
 
     @if (errorMessage) {
@@ -43,4 +64,6 @@
       <span pButtonLabel>Ingresar</span>
     </button>
   </form>
+
+  <p class="auth-quote">"Un dia mas, un paso mas cerca de tus metas."</p>
 </p-card>

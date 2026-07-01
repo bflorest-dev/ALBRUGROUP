@@ -7,4 +7,5 @@ import lombok.*;
 public class EstadoAccesoResponse {
     private Boolean activo;
     private Boolean passwordInicializada;
+    private String nombreCompleto;
 }
