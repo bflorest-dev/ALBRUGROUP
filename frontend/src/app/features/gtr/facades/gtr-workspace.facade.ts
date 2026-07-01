@@ -290,6 +290,7 @@ export class GtrWorkspaceFacade {
   // Recuerda desde que dialogo se abrio el historial para volver a el al cerrarlo (p. ej. la busqueda).
   private eventsReturnDialog: GtrDialog = null;
   readonly activeAssignmentLead = signal<LeadGtrResponse | null>(null);
+  readonly activeSnapshotLead = signal<LeadGtrResponse | null>(null);
   readonly activeEventsLead = signal<EventHistoryTarget | null>(null);
   // --- Historial de eventos del dia de un asesor (boton en la card del drawer) ---
   readonly advisorEventsTarget = signal<AdvisorOption | null>(null);
@@ -701,6 +702,11 @@ export class GtrWorkspaceFacade {
     return this.advisorsView().find((advisor) => advisor.empleadoId === advisorId) ?? null;
   });
   readonly selectedSnapshotLead = computed(() => {
+    const lead = this.activeSnapshotLead();
+    if (lead) {
+      return lead;
+    }
+
     const idLead = this.snapshotForm.controls.idLead.value;
     return this.rows().find((row) => row.id === idLead)
       ?? this.searchResults().find((row) => row.id === idLead)
@@ -993,6 +999,7 @@ export class GtrWorkspaceFacade {
   }
 
   beginSnapshot(row: LeadGtrResponse): void {
+    this.activeSnapshotLead.set(row);
     this.snapshotForm.reset({
       idLead: row.id,
       numeroDocumentoTitularServicio: row.numeroDocumentoTitularServicio ?? '',
@@ -1325,6 +1332,7 @@ export class GtrWorkspaceFacade {
     this.intakeMode.set('normal');
     this.activeDialog.set(null);
     this.activeAssignmentLead.set(null);
+    this.activeSnapshotLead.set(null);
     this.activeEventsLead.set(null);
     this.pendingReassignment.set(null);
     this.eventRows.set([]);
@@ -1353,6 +1361,7 @@ export class GtrWorkspaceFacade {
   }
 
   cancelSnapshot(): void {
+    this.activeSnapshotLead.set(null);
     this.snapshotForm.reset({
       idLead: 0,
       numeroDocumentoTitularServicio: '',

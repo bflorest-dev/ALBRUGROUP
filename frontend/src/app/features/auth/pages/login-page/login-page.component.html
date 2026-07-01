@@ -1,46 +1,7 @@
-<p-card styleClass="auth-card">
-  <div class="auth-card__header">
-    <span class="auth-card__eyebrow">Acceso seguro</span>
-    <h1>Ingresa tu password</h1>
-    <p>Tu usuario ya fue validado. Solo falta autenticar tus credenciales.</p>
-  </div>
-
-  <form [formGroup]="loginForm" (ngSubmit)="submit()" class="auth-form">
-    <label class="auth-field">
-      <span>Username</span>
-      <input pInputText type="text" formControlName="username" autocomplete="username" />
-    </label>
-
-    <label class="auth-field">
-      <span>Password</span>
-      <p-password
-        formControlName="password"
-        placeholder="Ingresa tu password"
-        autocomplete="current-password"
-        [toggleMask]="true"
-        [feedback]="false"
-        [fluid]="true"
-      />
-    </label>
-
-    @if (errorMessage()) {
-      <p-message severity="error" [text]="errorMessage()" />
-    }
-
-    <button pButton type="button" class="auth-link" severity="secondary" text (click)="goToForgotPassword()">
-      <span pButtonLabel>Olvide mi password</span>
-    </button>
-
-    <button
-      pButton
-      type="submit"
-      class="auth-submit"
-      icon="pi pi-sign-in"
-      iconPos="right"
-      [loading]="isSubmitting()"
-      [disabled]="isSubmitting()"
-    >
-      <span pButtonLabel>Ingresar</span>
-    </button>
-  </form>
-</p-card>
+<app-login-card
+  [loginForm]="loginForm"
+  [errorMessage]="errorMessage()"
+  [isSubmitting]="isSubmitting()"
+  (formSubmit)="submit()"
+  (forgotPassword)="goToForgotPassword()"
+/>

@@ -55,36 +55,28 @@ export class GtrHistoricosBoardComponent {
   }
 
   protected onGroupingModeChange(
-    value: Parameters<GtrWorkspaceFacade['setHistoricosGroupingMode']>[0],
-    popover: { hide: () => void }
+    value: Parameters<GtrWorkspaceFacade['setHistoricosGroupingMode']>[0]
   ): void {
     void this.facade.setHistoricosGroupingMode(value);
-    popover.hide();
   }
 
-  protected onGroupChange(value: unknown, popover: { hide: () => void }): void {
+  protected onGroupChange(value: unknown): void {
     void this.facade.selectHistoricosGroup(value as Parameters<GtrWorkspaceFacade['selectHistoricosGroup']>[0]);
-    popover.hide();
   }
 
   protected onSortFieldChange(
-    value: Parameters<GtrWorkspaceFacade['setHistoricosSortField']>[0],
-    popover: { hide: () => void }
+    value: Parameters<GtrWorkspaceFacade['setHistoricosSortField']>[0]
   ): void {
     void this.facade.setHistoricosSortField(value);
-    popover.hide();
   }
 
   protected onSortDirectionChange(
-    value: Parameters<GtrWorkspaceFacade['setHistoricosSortDirection']>[0],
-    popover: { hide: () => void }
+    value: Parameters<GtrWorkspaceFacade['setHistoricosSortDirection']>[0]
   ): void {
     void this.facade.setHistoricosSortDirection(value);
-    popover.hide();
   }
 
-  protected onClearOrganization(popover: { hide: () => void }): void {
+  protected onClearOrganization(): void {
     void this.facade.clearHistoricosOrganization();
-    popover.hide();
   }
 }

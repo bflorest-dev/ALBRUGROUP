@@ -1,0 +1,176 @@
+:host {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-background {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(20, 184, 166, 0.22), transparent 28%),
+    linear-gradient(130deg, #07111f 0%, #123052 48%, #0f766e 100%);
+}
+
+.auth-background::before {
+  content: '';
+  position: absolute;
+  inset: -1rem;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 74% 24%, rgba(255, 255, 255, 0.18), transparent 24%),
+    radial-gradient(circle at 38% 78%, rgba(217, 119, 69, 0.2), transparent 24%),
+    linear-gradient(120deg, rgba(96, 165, 250, 0.24), rgba(20, 184, 166, 0.12));
+  filter: blur(8px) saturate(112%);
+  transform: scale(1.02);
+  z-index: 0;
+}
+
+.auth-background::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(255, 255, 255, 0.18), transparent 34%),
+    linear-gradient(120deg, rgba(8, 18, 32, 0.34), rgba(8, 18, 32, 0.12) 45%, rgba(8, 18, 32, 0.38)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(2, 8, 23, 0.18));
+  z-index: 1;
+}
+
+.auth-animated-bg {
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+.auth-animated-bg span {
+  animation: auth-float 16s linear infinite;
+  background: rgba(255, 255, 255, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 0.35rem;
+  bottom: -8rem;
+  box-shadow: 0 0 34px rgba(255, 255, 255, 0.18);
+  display: block;
+  height: var(--bubble-size, 3rem);
+  left: var(--bubble-left, 50%);
+  position: absolute;
+  will-change: transform, opacity, border-radius;
+  width: var(--bubble-size, 3rem);
+}
+
+.auth-animated-bg span:nth-child(1) {
+  --bubble-left: 8%;
+  --bubble-size: 4.4rem;
+  animation-delay: -3s;
+}
+
+.auth-animated-bg span:nth-child(2) {
+  --bubble-left: 20%;
+  --bubble-size: 1.7rem;
+  animation-delay: -9s;
+  animation-duration: 14s;
+}
+
+.auth-animated-bg span:nth-child(3) {
+  --bubble-left: 34%;
+  --bubble-size: 6rem;
+  animation-delay: -14s;
+  animation-duration: 19s;
+}
+
+.auth-animated-bg span:nth-child(4) {
+  --bubble-left: 48%;
+  --bubble-size: 2.2rem;
+  animation-delay: -6s;
+  animation-duration: 15s;
+}
+
+.auth-animated-bg span:nth-child(5) {
+  --bubble-left: 62%;
+  --bubble-size: 7.2rem;
+  animation-delay: -18s;
+  animation-duration: 21s;
+}
+
+.auth-animated-bg span:nth-child(6) {
+  --bubble-left: 76%;
+  --bubble-size: 2.8rem;
+  animation-delay: -11s;
+  animation-duration: 16s;
+}
+
+.auth-animated-bg span:nth-child(7) {
+  --bubble-left: 88%;
+  --bubble-size: 5rem;
+  animation-delay: -4s;
+  animation-duration: 18s;
+}
+
+.auth-animated-bg span:nth-child(8) {
+  --bubble-left: 54%;
+  --bubble-size: 1.2rem;
+  animation-delay: -8s;
+  animation-duration: 12s;
+}
+
+.auth-glow {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(24px);
+  opacity: 0.72;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.auth-glow--primary {
+  width: 18rem;
+  height: 18rem;
+  left: max(2rem, 8vw);
+  top: 10vh;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.auth-glow--secondary {
+  width: 22rem;
+  height: 22rem;
+  right: max(2rem, 9vw);
+  top: 16vh;
+  background: rgba(96, 165, 250, 0.13);
+}
+
+.auth-glow--tertiary {
+  width: 17rem;
+  height: 17rem;
+  bottom: 8vh;
+  left: 44vw;
+  background: rgba(20, 184, 166, 0.1);
+}
+
+@keyframes auth-float {
+  0% {
+    opacity: 0.18;
+    transform: translateY(0) rotate(0deg) scale(0.96);
+  }
+
+  12% {
+    opacity: 0.82;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-118vh) rotate(680deg) scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-animated-bg span {
+    animation: none;
+    opacity: 0.18;
+  }
+}

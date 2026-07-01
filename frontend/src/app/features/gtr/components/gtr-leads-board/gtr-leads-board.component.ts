@@ -50,36 +50,28 @@ export class GtrLeadsBoardComponent {
   }
 
   protected onGroupingModeChange(
-    value: Parameters<GtrWorkspaceFacade['setPlatformGroupingMode']>[0],
-    popover: { hide: () => void }
+    value: Parameters<GtrWorkspaceFacade['setPlatformGroupingMode']>[0]
   ): void {
     void this.facade.setPlatformGroupingMode(value);
-    popover.hide();
   }
 
-  protected onGroupChange(value: unknown, popover: { hide: () => void }): void {
+  protected onGroupChange(value: unknown): void {
     void this.facade.selectPlatformGroup(value as Parameters<GtrWorkspaceFacade['selectPlatformGroup']>[0]);
-    popover.hide();
   }
 
   protected onSortFieldChange(
-    value: Parameters<GtrWorkspaceFacade['setPlatformSortField']>[0],
-    popover: { hide: () => void }
+    value: Parameters<GtrWorkspaceFacade['setPlatformSortField']>[0]
   ): void {
     void this.facade.setPlatformSortField(value);
-    popover.hide();
   }
 
   protected onSortDirectionChange(
-    value: Parameters<GtrWorkspaceFacade['setPlatformSortDirection']>[0],
-    popover: { hide: () => void }
+    value: Parameters<GtrWorkspaceFacade['setPlatformSortDirection']>[0]
   ): void {
     void this.facade.setPlatformSortDirection(value);
-    popover.hide();
   }
 
-  protected onClearOrganization(popover: { hide: () => void }): void {
+  protected onClearOrganization(): void {
     void this.facade.clearPlatformOrganization();
-    popover.hide();
   }
 }

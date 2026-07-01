@@ -8,14 +8,9 @@ import {
   signal
 } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, filter, map, of, startWith, switchMap } from 'rxjs';
-import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
-import { InputTextModule } from 'primeng/inputtext';
-import { MessageModule } from 'primeng/message';
-import { PasswordModule } from 'primeng/password';
 import { ROLE_HOME_ROUTES } from '../../../../core/constants/role.constants';
 import { IdleSessionService } from '../../../../core/services/idle-session.service';
 import { SessionService } from '../../../../core/services/session.service';
@@ -23,6 +18,7 @@ import { TokenService } from '../../../../core/services/token.service';
 import { ApiErrorResponse } from '../../../../shared/models/api/api-error-response';
 import { LoginRequest } from '../../../../shared/models/auth/login-request';
 import { LoginResponse } from '../../../../shared/models/auth/login-response';
+import { LoginCardComponent } from '../../components/login-card/login-card.component';
 import { AuthService } from '../../services/auth.service';
 
 type LoginSubmission = {
@@ -38,7 +34,7 @@ type LoginState =
 
 @Component({
   selector: 'app-login-page',
-  imports: [ReactiveFormsModule, ButtonModule, CardModule, InputTextModule, MessageModule, PasswordModule],
+  imports: [LoginCardComponent],
   templateUrl: './login-page.component.html',
   styleUrl: './login-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

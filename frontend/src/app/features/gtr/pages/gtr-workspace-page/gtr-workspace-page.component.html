@@ -425,39 +425,50 @@
   </p-dialog>
 
   <p-dialog
-    header="Gestionar Lead"
     [visible]="facade.activeDialog() === 'snapshot'"
     (visibleChange)="!$event && facade.closeDialog()"
     [modal]="true"
     [draggable]="false"
-    styleClass="gtr-dialog"
+    styleClass="gtr-dialog gtr-dialog--snapshot"
   >
+    <ng-template #header>
+      <div class="snapshot-dialog-header">
+        @if (facade.selectedSnapshotLead(); as lead) {
+          <div class="snapshot-dialog-header__title">
+            <strong>Gestionar</strong>
+            <span>{{ facade.leadPrefixLabel(lead.prefijo) }} {{ lead.lead }}</span>
+          </div>
+          <div class="lead-contact-actions" aria-label="Contacto del lead">
+            <button
+              pButton
+              type="button"
+              icon="pi pi-phone"
+              label="Llamar"
+              size="small"
+              severity="secondary"
+              [disabled]="!lead.lead || !facade.canMutateOperationalData()"
+              (click)="facade.openDialer(lead)"
+            ></button>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-whatsapp"
+              label="Chat"
+              size="small"
+              severity="secondary"
+              [disabled]="!lead.lead || !facade.canMutateOperationalData()"
+              (click)="facade.openWhatsAppChat(lead)"
+            ></button>
+          </div>
+        } @else {
+          <div class="snapshot-dialog-header__title">
+            <strong>Gestionar</strong>
+          </div>
+        }
+      </div>
+    </ng-template>
+
     <form class="form-grid" [formGroup]="facade.snapshotForm" (ngSubmit)="facade.saveSnapshot()">
-      @if (facade.selectedSnapshotLead(); as lead) {
-        <p class="wide helper">Lead {{ facade.leadPrefixLabel(lead.prefijo) }} {{ lead.lead }}</p>
-        <div class="lead-contact-actions wide" aria-label="Contacto del lead">
-          <button
-            pButton
-            type="button"
-            icon="pi pi-phone"
-            label="Llamar"
-            size="small"
-            severity="secondary"
-            [disabled]="!lead.lead || !facade.canMutateOperationalData()"
-            (click)="facade.openDialer(lead)"
-          ></button>
-          <button
-            pButton
-            type="button"
-            icon="pi pi-whatsapp"
-            label="Chat"
-            size="small"
-            severity="secondary"
-            [disabled]="!lead.lead || !facade.canMutateOperationalData()"
-            (click)="facade.openWhatsAppChat(lead)"
-          ></button>
-        </div>
-      }
       <label class="wide">
         <span>Numero de documento</span>
         <input pInputText type="text" formControlName="numeroDocumentoTitularServicio" />

@@ -142,7 +142,7 @@
             [ngModel]="facade.historicosGroupingMode()"
             optionLabel="label"
             optionValue="value"
-            (onChange)="onGroupingModeChange($any($event.value), organizePopover)"
+            (onChange)="onGroupingModeChange($any($event.value))"
           />
         </div>
 
@@ -156,7 +156,7 @@
               optionLabel="etiqueta"
               [showClear]="true"
               emptyMessage="Ejecuta una busqueda para ver grupos"
-              (onChange)="onGroupChange($event.value, organizePopover)"
+              (onChange)="onGroupChange($event.value)"
             >
               <ng-template #item let-group>
                 <div class="gtr-group-option">
@@ -178,7 +178,7 @@
             [ngModel]="facade.historicosSortField()"
             optionLabel="label"
             optionValue="value"
-            (onChange)="onSortFieldChange($any($event.value), organizePopover)"
+            (onChange)="onSortFieldChange($any($event.value))"
           />
         </div>
 
@@ -190,7 +190,7 @@
             [ngModel]="facade.historicosSortDirection()"
             optionLabel="label"
             optionValue="value"
-            (onChange)="onSortDirectionChange($any($event.value), organizePopover)"
+            (onChange)="onSortDirectionChange($any($event.value))"
           />
         </div>
 
@@ -202,7 +202,7 @@
           severity="secondary"
           [text]="true"
           [disabled]="facade.isHistoricosOrganizationDefault()"
-          (click)="onClearOrganization(organizePopover)"
+          (click)="onClearOrganization()"
         ></button>
       </div>
     </p-popover>

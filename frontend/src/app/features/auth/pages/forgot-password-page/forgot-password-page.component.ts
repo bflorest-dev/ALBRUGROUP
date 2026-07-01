@@ -2,16 +2,13 @@ import { DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, filter, map, of, startWith, switchMap } from 'rxjs';
-import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
-import { InputTextModule } from 'primeng/inputtext';
-import { MessageModule } from 'primeng/message';
 import { ApiErrorResponse } from '../../../../shared/models/api/api-error-response';
 import { CredencialesResponse } from '../../../../shared/models/auth/credenciales-response';
 import { ForgotPasswordRequest } from '../../../../shared/models/auth/forgot-password-request';
+import { ForgotPasswordCardComponent } from '../../components/forgot-password-card/forgot-password-card.component';
 import { AuthService } from '../../services/auth.service';
 
 type ForgotPasswordSubmission = {
@@ -27,7 +24,7 @@ type ForgotPasswordState =
 
 @Component({
   selector: 'app-forgot-password-page',
-  imports: [ReactiveFormsModule, ButtonModule, CardModule, InputTextModule, MessageModule],
+  imports: [ForgotPasswordCardComponent],
   templateUrl: './forgot-password-page.component.html',
   styleUrl: './forgot-password-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

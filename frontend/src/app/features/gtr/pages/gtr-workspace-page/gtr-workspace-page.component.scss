@@ -232,6 +232,50 @@ label {
   display: flex;
   flex-wrap: wrap;
   gap: .5rem;
+  justify-content: flex-end;
+  min-height: 2rem;
+}
+
+:host ::ng-deep .gtr-dialog--snapshot .p-dialog-header {
+  align-items: flex-start;
+  padding-bottom: .45rem;
+  position: relative;
+}
+
+:host ::ng-deep .gtr-dialog--snapshot .p-dialog-header-actions {
+  position: absolute;
+  right: .9rem;
+  top: .85rem;
+}
+
+.snapshot-dialog-header {
+  align-items: flex-end;
+  display: flex;
+  gap: .85rem;
+  justify-content: space-between;
+  min-width: 0;
+  padding-right: 2rem;
+  padding-top: 1.45rem;
+  width: 100%;
+}
+
+.snapshot-dialog-header__title {
+  display: grid;
+  gap: .18rem;
+  min-width: 0;
+}
+
+.snapshot-dialog-header__title strong {
+  color: var(--role-primary);
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.snapshot-dialog-header__title span {
+  color: var(--app-text-muted);
+  font-size: .8rem;
+  font-weight: 700;
+  line-height: 1.15;
 }
 
 .select-item {
@@ -409,6 +453,18 @@ label {
 
   .form-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .snapshot-dialog-header {
+    align-items: stretch;
+    flex-direction: column;
+    padding-top: 1.6rem;
+  }
+
+  .lead-contact-actions {
+    justify-content: flex-start;
   }
 }
 
