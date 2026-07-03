@@ -166,6 +166,16 @@ public class PreventaController {
                 codigoTipificacion, desde, hasta, soloActivos, idEquipo));
     }
 
+    @PostMapping("/gtr/{idLead}/tomar-gestion")
+    @PreAuthorize("hasAuthority('READ_LEADS_GTR') and hasAuthority('UPDATE_LEADS_ASESOR')")
+    public ResponseEntity<Void> tomarGestionGtr(
+            @PathVariable Long idLead,
+            @RequestBody(required = false) LeadTomaGestionGtrRequest request
+    ) {
+        leadService.tomarGestionGtr(idLead, request == null ? new LeadTomaGestionGtrRequest() : request);
+        return ResponseEntity.noContent().build();
+    }
+
     // 3. Asignar un Lead a un asesor de ventas
     @PatchMapping("/{idLead}/asignacion") @PreAuthorize("hasAuthority('ASSIGN_LEADS')")
     public ResponseEntity<Void> asignarLead(

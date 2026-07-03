@@ -41,6 +41,7 @@ import {
   LeadOfertaComercialRequest,
   LeadPage,
   LeadTipificacionRequest,
+  LeadTomaGestionGtrRequest,
   PageQuery,
   PlanResponse,
   PromocionComercialResponse,
@@ -280,6 +281,10 @@ export class PreventaLeadService {
 
   asignarLeads(request: LeadAsignacionMasivaRequest): Observable<LeadAsignacionMasivaResponse> {
     return this.http.patch<LeadAsignacionMasivaResponse>(`${this.leadUrl}/preventa/asignacion-masiva`, request);
+  }
+
+  tomarGestionGtr(idLead: number, request: LeadTomaGestionGtrRequest = {}): Observable<void> {
+    return this.http.post<void>(`${this.leadUrl}/preventa/gtr/${idLead}/tomar-gestion`, request);
   }
 
   listarBandejaAsesorVentas(query: PageQuery): Observable<LeadPage<LeadAsesorVentasResponse>> {

@@ -27,6 +27,7 @@ import pe.albrugroup.lead_service.entity.request.LeadSnapshotsRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionPostventaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionVentaRequest;
+import pe.albrugroup.lead_service.entity.request.LeadTomaGestionGtrRequest;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.AsesorLeadsPendientesResponse;
@@ -1312,6 +1313,50 @@ public class LeadService {
                 Boolean.TRUE.equals(request.getConfirmarGestionPrevia()),
                 true
         );
+    }
+
+    @Transactional
+    public void tomarGestionGtr(Long idLead, LeadTomaGestionGtrRequest request) {
+        Lead lead = leadRepository.findById(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        validarLeadDentroAlcanceGtr(lead);
+
+        Long idGtr = currentUser.empleadoID();
+        String nombreGtr = currentUser.nombreCompleto().trim();
+        if (idGtr.equals(lead.getIdAsesorAsignado())) {
+            moverAEnGestionSiAplica(lead);
+            lead.setLastEntryAt(OperationalDateTime.now());
+            Lead savedLead = leadRepository.save(lead);
+            notificarCambioLead("GESTION_INICIADA", savedLead, null, idGtr, savedLead.getEtapa() != Etapa.PREVENTA);
+            return;
+        }
+
+        asignarLeadInterno(
+                idLead,
+                idGtr,
+                nombreGtr,
+                Boolean.TRUE.equals(request.getConfirmarReasignacion()),
+                Boolean.TRUE.equals(request.getConfirmarGestionPrevia()),
+                true
+        );
+        Lead savedLead = leadRepository.findById(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        moverAEnGestionSiAplica(savedLead);
+        savedLead.setLastEntryAt(OperationalDateTime.now());
+        savedLead = leadRepository.save(savedLead);
+        notificarCambioLead("GESTION_INICIADA", savedLead, null, idGtr, savedLead.getEtapa() != Etapa.PREVENTA);
+    }
+
+    private void validarLeadDentroAlcanceGtr(Lead lead) {
+        if (currentUser.tieneVisibilidadGlobalEquipos()) {
+            return;
+        }
+        List<Long> equipos = currentUser.equipos();
+        if (equipos == null || equipos.isEmpty()
+                || lead.getIdEquipo() == null
+                || !equipos.contains(lead.getIdEquipo())) {
+            throw new NotFoundException(Lead.class, lead.getId());
+        }
     }
 
     @Transactional

@@ -633,6 +633,62 @@
     </div>
   </p-dialog>
 
+  <p-dialog
+    header="Tomar gestion"
+    [visible]="facade.activeDialog() === 'takeover-confirm'"
+    (visibleChange)="!$event && facade.cancelTakeover()"
+    [modal]="true"
+    [draggable]="false"
+    styleClass="gtr-dialog"
+  >
+    @if (facade.pendingTakeover(); as pending) {
+      <div class="reassign-confirmation">
+        @if (pending.requiresInManagement) {
+          <p class="reassign-problem">
+            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+            <span>
+              {{ pending.leadLabel }} esta en gestion con {{ pending.currentAdvisorName | uppercase }}.
+            </span>
+          </p>
+        } @else if (pending.requiresReassignment) {
+          <p class="reassign-problem">
+            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+            <span>
+              {{ pending.leadLabel }} esta asignado a {{ pending.currentAdvisorName | uppercase }}.
+            </span>
+          </p>
+        }
+        @if (pending.requiresPreviousManagement) {
+          <p class="reassign-problem">
+            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+            <span>
+              Ya gestionaste este lead anteriormente
+              @if (pending.previousManagementAt) {
+                ({{ pending.previousManagementAt | date: 'dd/MM/yyyy' }})
+              }.
+            </span>
+          </p>
+        }
+        <p class="reassign-confirmation__final">
+          Confirma si deseas tomarlo para tipificarlo.
+        </p>
+      </div>
+    }
+
+    <div class="dialog-actions reassign-confirmation__actions">
+      <button pButton type="button" label="Cancelar" severity="secondary" (click)="facade.cancelTakeover()"></button>
+      <button
+        pButton
+        type="button"
+        label="Tomar gestion"
+        icon="pi pi-check"
+        [disabled]="!facade.canMutateOperationalData()"
+        [loading]="facade.isLoadingTypifyDetail()"
+        (click)="facade.confirmTakeover()"
+      ></button>
+    </div>
+  </p-dialog>
+
   <app-gtr-events-dialog />
 
   <app-gtr-advisor-events-dialog />

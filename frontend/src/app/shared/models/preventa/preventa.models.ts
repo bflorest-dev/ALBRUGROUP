@@ -395,6 +395,11 @@ export interface LeadAsignacionRequest {
   confirmarGestionPrevia?: boolean;
 }
 
+export interface LeadTomaGestionGtrRequest {
+  confirmarReasignacion?: boolean;
+  confirmarGestionPrevia?: boolean;
+}
+
 export interface LeadAsignacionMasivaRequest {
   idsLead: number[];
   idAsesorAsignado: number;

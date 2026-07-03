@@ -157,6 +157,16 @@ type PendingReassignment = {
   previousManagementAt?: string | null;
 };
 
+type PendingTakeover = {
+  idLead: number;
+  leadLabel: string;
+  currentAdvisorName: string;
+  requiresInManagement: boolean;
+  requiresReassignment: boolean;
+  requiresPreviousManagement: boolean;
+  previousManagementAt?: string | null;
+};
+
 type AssignmentConflictDetails = {
   tipo?: string;
   nombreAsesorActual?: string | null;
@@ -166,7 +176,7 @@ type AssignmentConflictDetails = {
   requiereConfirmarGestionPrevia?: boolean;
 };
 
-type GtrDialog = 'lead' | 'intake-confirm' | 'snapshot' | 'typify' | 'assign' | 'reassign-confirm' | 'events' | 'advisor-events' | 'search' | 'schedule-extension' | null;
+type GtrDialog = 'lead' | 'intake-confirm' | 'snapshot' | 'typify' | 'assign' | 'reassign-confirm' | 'takeover-confirm' | 'events' | 'advisor-events' | 'search' | 'schedule-extension' | null;
 type EventAnomalyFilter = 'multiple-records' | 'same-campaign' | null;
 type LeadHistoryMode = 'eventos-dia' | 'tipificacion' | 'asesor';
 type IntakeMode = 'normal' | 'retroactivo';
@@ -342,6 +352,7 @@ export class GtrWorkspaceFacade {
   readonly advisorEventRows = signal<EventoResponse[]>([]);
   readonly isLoadingAdvisorEvents = signal(false);
   readonly pendingReassignment = signal<PendingReassignment | null>(null);
+  readonly pendingTakeover = signal<PendingTakeover | null>(null);
   readonly advisorsPanelOpen = signal(false);
   // --- Ampliacion de horario (modal sobre una card de asesor) ---
   readonly extensionTarget = signal<AdvisorOption | null>(null);
@@ -1223,22 +1234,29 @@ export class GtrWorkspaceFacade {
     await this.openTipification(lead.id);
   }
 
-  async openTipification(idLead: number): Promise<void> {
+  async openTipification(
+    idLead: number,
+    options: { confirmarReasignacion?: boolean; confirmarGestionPrevia?: boolean } = {}
+  ): Promise<void> {
     if (!this.ensureCanMutate()) {
       return;
     }
     this.clearMessages();
+    this.pendingTakeover.set(null);
     this.isLoadingTypifyDetail.set(true);
     this.activeDialog.set('typify');
     try {
+      await firstValueFrom(this.preventaService.tomarGestionGtr(idLead, options));
       await this.ensureTypifyCatalogs();
-      const detail = await firstValueFrom(this.preventaService.obtenerDetalleMiPreventa(idLead));
+      const detail = await firstValueFrom(this.preventaService.obtenerDetalleAsesor(idLead));
       this.typifyDetail.set(detail);
       this.patchTypifyForms(detail);
       await this.refreshOfferCatalogs(detail.idPlan ?? 0);
     } catch (error) {
-      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar el detalle para tipificar.'));
-      this.closeTipificationDialog();
+      if (!this.handleTakeoverConflict(error, idLead)) {
+        this.errorMessage.set(this.getTipificationOpenError(error));
+        this.closeTipificationDialog();
+      }
     } finally {
       this.isLoadingTypifyDetail.set(false);
     }
@@ -1248,6 +1266,22 @@ export class GtrWorkspaceFacade {
     this.typifyDetail.set(null);
     this.activeDialog.set('snapshot');
     this.resetTipificationState();
+  }
+
+  async confirmTakeover(): Promise<void> {
+    const pending = this.pendingTakeover();
+    if (!pending) {
+      return;
+    }
+    await this.openTipification(pending.idLead, {
+      confirmarReasignacion: pending.requiresReassignment,
+      confirmarGestionPrevia: pending.requiresPreviousManagement
+    });
+  }
+
+  cancelTakeover(): void {
+    this.pendingTakeover.set(null);
+    this.activeDialog.set('snapshot');
   }
 
   async tipificarLeadGtr(): Promise<void> {
@@ -1576,6 +1610,7 @@ export class GtrWorkspaceFacade {
     this.resetTipificationState();
     this.activeEventsLead.set(null);
     this.pendingReassignment.set(null);
+    this.pendingTakeover.set(null);
     this.eventRows.set([]);
     this.tipificationHistoryRows.set([]);
     this.tipificationHistoryLoaded.set(false);
@@ -2770,6 +2805,51 @@ export class GtrWorkspaceFacade {
     this.activeDialog.set('reassign-confirm');
   }
 
+  private handleTakeoverConflict(error: unknown, idLead: number): boolean {
+    if (!(error instanceof HttpErrorResponse) || error.status !== 409) {
+      return false;
+    }
+
+    const details = (error.error as { details?: AssignmentConflictDetails } | null)?.details;
+    const requiresInManagement =
+      Boolean(details?.requiereConfirmarLeadEnGestion) ||
+      details?.tipo === 'LEAD_EN_GESTION';
+    const requiresReassignment =
+      requiresInManagement ||
+      Boolean(details?.requiereConfirmarReasignacion) ||
+      details?.tipo === 'LEAD_YA_ASIGNADO' ||
+      details?.tipo === 'CONFIRMACION_ASIGNACION_REQUERIDA';
+    const requiresPreviousManagement =
+      Boolean(details?.requiereConfirmarGestionPrevia) ||
+      details?.tipo === 'ASESOR_YA_GESTIONO_LEAD' ||
+      details?.tipo === 'CONFIRMACION_ASIGNACION_REQUERIDA';
+
+    if (!requiresReassignment && !requiresPreviousManagement) {
+      return false;
+    }
+
+    this.errorMessage.set(null);
+    this.pendingTakeover.set({
+      idLead,
+      leadLabel: this.getTakeoverLeadLabel(idLead),
+      currentAdvisorName: details?.nombreAsesorActual || 'otro asesor',
+      requiresInManagement,
+      requiresReassignment,
+      requiresPreviousManagement,
+      previousManagementAt: details?.ultimaGestionAt ?? null
+    });
+    this.activeDialog.set('takeover-confirm');
+    return true;
+  }
+
+  private getTakeoverLeadLabel(idLead: number): string {
+    const row = this.selectedSnapshotLead();
+    if (row?.id === idLead) {
+      return `${this.leadPrefixLabel(row.prefijo)} ${row.lead}`;
+    }
+    return `Lead ${idLead}`;
+  }
+
   private sameAdvisorName(currentAdvisorName: string, targetAdvisorName: string): boolean {
     return this.normalizeLookup(currentAdvisorName) === this.normalizeLookup(targetAdvisorName);
   }
@@ -3822,6 +3902,7 @@ export class GtrWorkspaceFacade {
     this.activeAssignmentLead.set(null);
     this.activeEventsLead.set(null);
     this.pendingReassignment.set(null);
+    this.pendingTakeover.set(null);
     this.eventRows.set([]);
     this.tipificationHistoryRows.set([]);
     this.tipificationHistoryLoaded.set(false);
@@ -3846,6 +3927,21 @@ export class GtrWorkspaceFacade {
       return responseError?.message ?? responseError?.error ?? fallback;
     }
     return fallback;
+  }
+
+  private getTipificationOpenError(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      const responseError = error.error as { message?: string; error?: string } | null;
+      const detail = responseError?.message ?? responseError?.error;
+      if (error.status === 404) {
+        return 'El lead ya no esta disponible para tu equipo.';
+      }
+      if (error.status === 403) {
+        return 'No tienes permiso para tomar este lead.';
+      }
+      return detail || 'No se pudo preparar el lead para tipificar.';
+    }
+    return this.getErrorMessage(error, 'No se pudo preparar el lead para tipificar.');
   }
 
   private whatsAppUrl(prefijo?: string | null, lead?: string | null): string | null {
