@@ -315,8 +315,8 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   via?: string | null;
   direccion?: string | null;
   referencia?: string | null;
-  latitud?: number | null;
-  longitud?: number | null;
+  latitud?: number | string | null;
+  longitud?: number | string | null;
   urbanizacion?: string | null;
   numero?: string | null;
   manzana?: string | null;
@@ -474,8 +474,8 @@ export interface LeadDireccionRequest {
   via?: string | null;
   direccion: string;
   referencia?: string | null;
-  latitud: number;
-  longitud: number;
+  latitud: number | string;
+  longitud: number | string;
   urbanizacion?: string | null;
   numero?: string | null;
   manzana?: string | null;

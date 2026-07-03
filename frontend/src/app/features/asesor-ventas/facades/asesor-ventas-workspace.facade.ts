@@ -200,8 +200,8 @@ export class AsesorVentasWorkspaceFacade {
     via: [''],
     direccion: ['', [Validators.required]],
     referencia: [''],
-    latitud: [null as number | null, [Validators.required]],
-    longitud: [null as number | null, [Validators.required]],
+    latitud: [null as number | string | null, [Validators.required]],
+    longitud: [null as number | string | null, [Validators.required]],
     urbanizacion: [''],
     numero: [''],
     manzana: [''],
@@ -1603,8 +1603,8 @@ export class AsesorVentasWorkspaceFacade {
       via: raw.via,
       direccion: raw.direccion,
       referencia: raw.referencia,
-      latitud: raw.latitud as number,
-      longitud: raw.longitud as number,
+      latitud: this.toCoordinateValue(raw.latitud),
+      longitud: this.toCoordinateValue(raw.longitud),
       urbanizacion: raw.urbanizacion,
       numero: raw.numero,
       manzana: raw.manzana,
@@ -1679,6 +1679,10 @@ export class AsesorVentasWorkspaceFacade {
     this.activeDataTab.set(faltantes[0].tab);
 
     return `Para cerrar la venta, completa estos datos. ${grupos.join('. ')}.`;
+  }
+
+  private toCoordinateValue(value: number | string | null | undefined): string {
+    return String(value ?? '').replace(',', '.').trim();
   }
 
   private getDireccionValidationMessage(): string {

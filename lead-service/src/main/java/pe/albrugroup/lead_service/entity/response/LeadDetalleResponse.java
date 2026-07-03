@@ -1,5 +1,6 @@
 package pe.albrugroup.lead_service.entity.response;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -54,7 +55,9 @@ public class LeadDetalleResponse {
     private String via;
     private String direccion;
     private String referencia;
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private BigDecimal latitud;
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private BigDecimal longitud;
     private String urbanizacion;
     private String numero;

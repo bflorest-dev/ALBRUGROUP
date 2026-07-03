@@ -1,0 +1,3 @@
+ALTER TABLE direccion
+    ALTER COLUMN latitud TYPE NUMERIC(18, 15),
+    ALTER COLUMN longitud TYPE NUMERIC(18, 15);

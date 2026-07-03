@@ -169,8 +169,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     via: [''],
     direccion: ['', [Validators.required]],
     referencia: [''],
-    latitud: [-12.0464, [Validators.required]],
-    longitud: [-77.0428, [Validators.required]],
+    latitud: ['-12.0464' as number | string | null, [Validators.required]],
+    longitud: ['-77.0428' as number | string | null, [Validators.required]],
     urbanizacion: [''],
     numero: [''],
     manzana: [''],
@@ -267,9 +267,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     });
   });
 
-  protected readonly hasUnsavedDataChanges = computed(
-    () => this.datosForm.dirty || this.direccionForm.dirty || this.ofertaForm.dirty || this.adicionalesDirty()
-  );
+  // Metodo, no computed: `form.dirty` no es signal y un computed queda congelado con su primer valor.
+  protected hasUnsavedDataChanges(): boolean {
+    return this.datosForm.dirty || this.direccionForm.dirty || this.ofertaForm.dirty || this.adicionalesDirty();
+  }
   protected readonly boardTitle = computed(() => {
     switch (this.section()) {
       case 'plataforma': return 'Leads disponibles';
@@ -1308,8 +1309,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       via: raw.via,
       direccion: raw.direccion,
       referencia: raw.referencia,
-      latitud: raw.latitud as number,
-      longitud: raw.longitud as number,
+      latitud: this.toCoordinateValue(raw.latitud),
+      longitud: this.toCoordinateValue(raw.longitud),
       urbanizacion: raw.urbanizacion,
       numero: raw.numero,
       manzana: raw.manzana,
@@ -1324,6 +1325,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   private cleanObject<T extends Record<string, unknown>>(value: T): T {
     return Object.fromEntries(Object.entries(value).map(([key, entryValue]) => [key, entryValue === '' ? null : entryValue])) as T;
+  }
+
+  private toCoordinateValue(value: number | string | null | undefined): string {
+    return String(value ?? '').replace(',', '.').trim();
   }
 
   private notify(severity: ToastSeverity, detail: string): void {

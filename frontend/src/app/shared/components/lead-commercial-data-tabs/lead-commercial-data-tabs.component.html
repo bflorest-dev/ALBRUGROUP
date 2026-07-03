@@ -177,11 +177,27 @@
         </label>
         <label>
           <span>Latitud</span>
-          <input pInputText type="number" step="0.000001" formControlName="latitud" placeholder="-12.046400" />
+          <input
+            pInputText
+            type="text"
+            inputmode="decimal"
+            formControlName="latitud"
+            placeholder="-12.015933657805615"
+            (paste)="pasteCoordinates($event)"
+            (input)="setCoordinateValue(direccionForm.get('latitud'), $any($event.target).value)"
+          />
         </label>
         <label>
           <span>Longitud</span>
-          <input pInputText type="number" step="0.000001" formControlName="longitud" placeholder="-77.042800" />
+          <input
+            pInputText
+            type="text"
+            inputmode="decimal"
+            formControlName="longitud"
+            placeholder="-77.09587279011754"
+            (paste)="pasteCoordinates($event)"
+            (input)="setCoordinateValue(direccionForm.get('longitud'), $any($event.target).value)"
+          />
         </label>
         <label class="wide">
           <span>Referencia</span>

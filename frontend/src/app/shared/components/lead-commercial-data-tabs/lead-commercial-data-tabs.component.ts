@@ -157,4 +157,54 @@ export class LeadCommercialDataTabsComponent {
       control.markAsDirty();
     }
   }
+
+  protected setCoordinateValue(control: AbstractControl | null, value: string): void {
+    if (!control) {
+      return;
+    }
+    const normalized = this.normalizeCoordinate(value);
+    if (control.value !== normalized) {
+      control.setValue(normalized);
+      control.markAsDirty();
+    }
+  }
+
+  protected pasteCoordinates(event: ClipboardEvent): void {
+    const pasted = event.clipboardData?.getData('text') ?? '';
+    const coordinates = this.extractCoordinatePair(pasted);
+    if (!coordinates) {
+      return;
+    }
+
+    event.preventDefault();
+    this.setCoordinateValue(this.direccionForm.get('latitud'), coordinates.latitud);
+    this.setCoordinateValue(this.direccionForm.get('longitud'), coordinates.longitud);
+  }
+
+  private extractCoordinatePair(value: string): { latitud: string; longitud: string } | null {
+    const matches = value.match(/-?\d+(?:[.,]\d+)?/g);
+    if (!matches || matches.length < 2) {
+      return null;
+    }
+
+    return {
+      latitud: matches[0],
+      longitud: matches[1]
+    };
+  }
+
+  private normalizeCoordinate(value: string): string {
+    const normalizedSeparator = value.replace(',', '.');
+    const sign = normalizedSeparator.trimStart().startsWith('-') ? '-' : '';
+    const unsigned = normalizedSeparator.replace(/-/g, '');
+    const [integerPart = '', ...decimalParts] = unsigned.split('.');
+    const integerDigits = integerPart.replace(/\D/g, '').slice(0, 3);
+    const decimalDigits = decimalParts.join('').replace(/\D/g, '').slice(0, 15);
+
+    if (!integerDigits && !decimalDigits) {
+      return sign;
+    }
+
+    return `${sign}${integerDigits}${decimalDigits ? `.${decimalDigits}` : ''}`;
+  }
 }

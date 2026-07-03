@@ -25,7 +25,9 @@ public class Direccion {
 
     private String direccion;
     private String referencia;
+    @Column(precision = 18, scale = 15)
     private BigDecimal latitud;
+    @Column(precision = 18, scale = 15)
     private BigDecimal longitud;
 
     // SITUACIONALES
