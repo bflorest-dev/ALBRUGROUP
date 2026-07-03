@@ -29,7 +29,7 @@ export class TipificationStackComponent {
   private tagClass(codigo: string | null | undefined, kind: 'tipificacion' | 'subtipificacion'): string {
     const base = 'tipification-stack__tag';
     const normalized = this.normalizeCode(codigo);
-    const paletteIndex = normalized ? this.paletteByCode()[normalized] : undefined;
+    const paletteIndex = normalized ? this.paletteByCode()[normalized] ?? this.hashPalette(normalized) : undefined;
     const tone = paletteIndex === undefined ? 'neutral' : `palette-${paletteIndex}`;
     return `${base} ${base}--${tone} ${base}--${kind}`;
   }
@@ -44,5 +44,14 @@ export class TipificationStackComponent {
 
   private normalizeCode(value: string | null | undefined): string {
     return value?.trim().toUpperCase() ?? '';
+  }
+
+  private hashPalette(value: string): number {
+    const totalPalettes = 8;
+    let hash = 0;
+    for (let index = 0; index < value.length; index++) {
+      hash = (hash * 31 + value.charCodeAt(index)) | 0;
+    }
+    return Math.abs(hash) % totalPalettes;
   }
 }

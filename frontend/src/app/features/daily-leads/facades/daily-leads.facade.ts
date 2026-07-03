@@ -455,14 +455,19 @@ export class DailyLeadsFacade {
 
   private async loadTipificationPalette(): Promise<void> {
     try {
-      const catalogs = await Promise.all([
+      const catalogResults = await Promise.allSettled([
         firstValueFrom(this.service.getCatalogoTipificaciones('PREVENTA')),
         firstValueFrom(this.service.getCatalogoTipificaciones('VENTA')),
         firstValueFrom(this.service.getCatalogoTipificaciones('POSTVENTA'))
       ]);
       const paletteByCode: TipificationPaletteByCode = {};
 
-      for (const catalog of catalogs) {
+      for (const result of catalogResults) {
+        if (result.status !== 'fulfilled') {
+          continue;
+        }
+
+        const catalog = result.value;
         for (const tipificacion of catalog.tipificaciones ?? []) {
           paletteByCode[tipificacion.codigo.toUpperCase()] = this.tipificacionPaletteIndex(tipificacion.orden);
         }
