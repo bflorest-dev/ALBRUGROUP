@@ -54,6 +54,8 @@
             aria-label="Cargar Excel"
             (click)="$any(masivoExcelInput).click()"
           ></button>
+        }
+        @if (facade.section() !== 'ranking') {
           <button
             pButton
             type="button"

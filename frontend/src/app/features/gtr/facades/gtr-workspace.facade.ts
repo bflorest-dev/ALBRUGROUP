@@ -362,7 +362,7 @@ export class GtrWorkspaceFacade {
   readonly retroactiveMaxTime = this.createTimeValue(23, 59);
   readonly isRetroactiveIntake = computed(() => this.intakeMode() === 'retroactivo');
   readonly canShowRetroactiveIntake = computed(() => {
-    if (this.section() !== 'plataforma') {
+    if (this.section() === 'ranking') {
       return false;
     }
     if (!RESTRICT_RETROACTIVE_INTAKE_BY_TIME) {
