@@ -6,6 +6,12 @@
   gap: 1rem;
 }
 
+.lead-workspace {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  max-height: calc(100dvh - 8rem);
+  min-height: 0;
+}
+
 .hero-row,
 .hero-actions,
 .board-title,
@@ -172,6 +178,10 @@ label {
   padding-top: 0.25rem;
 }
 
+app-lead-commercial-data-tabs {
+  min-height: 0;
+}
+
 :host ::ng-deep {
   .backoffice-hero,
   .backoffice-board {
@@ -198,11 +208,12 @@ label {
   }
 
   .backoffice-dialog {
+    max-height: calc(100dvh - 2rem);
     width: min(76rem, 94vw);
   }
 
   .backoffice-dialog .p-dialog-content {
-    overflow: visible;
+    overflow: hidden;
   }
 
   .tipification-bar .p-select,

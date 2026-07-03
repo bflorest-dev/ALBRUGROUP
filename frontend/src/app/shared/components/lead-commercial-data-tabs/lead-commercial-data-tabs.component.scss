@@ -1,3 +1,9 @@
+:host {
+  display: block;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .form-grid {
   display: grid;
   gap: 0.9rem;
@@ -146,6 +152,26 @@ label {
 }
 
 :host ::ng-deep {
+  .p-tabs {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .p-tabpanels {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .p-tabpanel {
+    max-height: 100%;
+    min-height: 0;
+    overflow: auto;
+    padding-right: 0.25rem;
+  }
+
   .form-grid .p-select,
   .form-grid .p-selectbutton,
   .form-grid .p-inputtext {
