@@ -98,28 +98,24 @@ export class DailyLeadsPageComponent implements OnInit, OnDestroy {
     }, 180);
   }
 
-  protected onGroupingModeChange(value: Parameters<DailyLeadsFacade['setGroupingMode']>[0], popover: { hide: () => void }): void {
+  protected onGroupingModeChange(value: Parameters<DailyLeadsFacade['setGroupingMode']>[0]): void {
     void this.facade.setGroupingMode(value);
-    popover.hide();
   }
 
-  protected onGroupChange(value: unknown, popover: { hide: () => void }): void {
+  protected onGroupChange(value: unknown): void {
     if (value) {
       void this.facade.selectGroup(value as Parameters<DailyLeadsFacade['selectGroup']>[0]);
     } else {
       void this.facade.clearSelectedGroup();
     }
-    popover.hide();
   }
 
-  protected onSortFieldChange(value: Parameters<DailyLeadsFacade['setSortField']>[0], popover: { hide: () => void }): void {
+  protected onSortFieldChange(value: Parameters<DailyLeadsFacade['setSortField']>[0]): void {
     void this.facade.setSortField(value);
-    popover.hide();
   }
 
-  protected onSortDirectionChange(value: Parameters<DailyLeadsFacade['setSortDirection']>[0], popover: { hide: () => void }): void {
+  protected onSortDirectionChange(value: Parameters<DailyLeadsFacade['setSortDirection']>[0]): void {
     void this.facade.setSortDirection(value);
-    popover.hide();
   }
 
   protected onLeadSearchChange(value: string): void {
