@@ -109,8 +109,14 @@ export class AdminRrhhService {
     });
   }
 
-  listarEmpleadosLight(): Observable<EmpleadoRolResponse[]> {
-    return this.http.get<EmpleadoRolResponse[]>(`${this.empleadosUrl}/light`);
+  listarEmpleadosLight(empleadoIds?: number[]): Observable<EmpleadoRolResponse[]> {
+    let params = new HttpParams();
+    if (empleadoIds?.length) {
+      for (const id of empleadoIds) {
+        params = params.append('empleadoIds', id);
+      }
+    }
+    return this.http.get<EmpleadoRolResponse[]>(`${this.empleadosUrl}/light`, { params });
   }
 
   getEstadosMonitorEmpleados(empleadoIds: number[], fecha: string): Observable<EstadoMonitorResponse[]> {

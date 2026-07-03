@@ -105,14 +105,17 @@ public class EmpleadoController {
 
     @Operation(
             summary = "Listar empleados vigentes de forma ligera",
-            description = "Devuelve empleados activos con contrato vigente a la fecha actual. Permite filtrar opcionalmente por uno o varios puestos de trabajo."
+            description = "Devuelve empleados activos con contrato vigente a la fecha actual. Permite filtrar opcionalmente por uno o varios puestos de trabajo, " +
+                    "o por un conjunto de IDs de empleado (carga granular por categoria). Si se envian ambos, prevalece el filtro por IDs."
     )
     @GetMapping("/light")
     @PreAuthorize("hasAuthority('READ_EMPLEADOS')")
     public ResponseEntity<List<EmpleadoRolResponse>> listarEmpleadosLight(
-            @RequestParam(required = false) List<PuestoTrabajo> puestosTrabajo
+            @RequestParam(required = false) List<PuestoTrabajo> puestosTrabajo,
+            @Parameter(description = "IDs de empleado para carga granular; si se envia, prevalece sobre puestosTrabajo")
+            @RequestParam(required = false) List<Long> empleadoIds
     ) {
-        return ResponseEntity.ok(empleadoService.listarEmpleadosLight(puestosTrabajo));
+        return ResponseEntity.ok(empleadoService.listarEmpleadosLight(puestosTrabajo, empleadoIds));
     }
 
     @Operation(

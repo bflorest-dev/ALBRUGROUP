@@ -228,7 +228,18 @@ public class EmpleadoService implements IEmpleado {
 
     @Override
     @Transactional(readOnly = true)
-    public List<EmpleadoRolResponse> listarEmpleadosLight(List<PuestoTrabajo> puestosTrabajo) {
+    public List<EmpleadoRolResponse> listarEmpleadosLight(List<PuestoTrabajo> puestosTrabajo, List<Long> empleadoIds) {
+        // Filtro por IDs (carga granular por categoria): si se pide un conjunto vacio,
+        // devolvemos vacio en lugar de caer al listado completo.
+        if (empleadoIds != null) {
+            if (empleadoIds.isEmpty()) {
+                return List.of();
+            }
+            return empleadoRolMapper.toResponseList(
+                    contratoRepository.findEmpleadosActivosByIds(EstadoOperativo.ACTIVO, LocalDate.now(), empleadoIds)
+            );
+        }
+
         List<EmpleadoRolResponse> empleados = empleadoRolMapper.toResponseList(
                 puestosTrabajo == null || puestosTrabajo.isEmpty()
                         ? contratoRepository.findEmpleadosActivos(EstadoOperativo.ACTIVO, LocalDate.now())

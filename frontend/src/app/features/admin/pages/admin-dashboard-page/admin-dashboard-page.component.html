@@ -1,16 +1,21 @@
 <section class="admin-page">
   <header class="hero">
     <p-tag value="Administrador" severity="info" />
-    @if (mode === 'inicio') {
-      <h2>Empleados activos</h2>
-      <p>Revisa los equipos, sus integrantes y su estado actual en un solo lugar.</p>
+    @if (mode === 'colaboradores') {
+      <h2>{{ facade.activeCategoriaTitle() || 'Colaboradores' }}</h2>
+      @if (facade.activeCategoriaKey() === 'inactivos') {
+        <p>Personal dado de baja que puede recibir un nuevo contrato y horario.</p>
+      } @else {
+        <p>Integrantes de esta categoría y su estado actual.</p>
+      }
     } @else {
       <h2>Alta de personal</h2>
       <p>Registra los datos del empleado, su contrato y su acceso al sistema en un solo proceso.</p>
     }
   </header>
 
-  @if (mode === 'inicio') {
+  @if (mode === 'colaboradores') {
+    @if (facade.activeCategoriaKey() !== 'inactivos') {
     <app-employee-access-panel
       [employees]="[]"
       [activeGroups]="facade.activeEmployeeGroups()"
@@ -28,7 +33,7 @@
       [teamNameByEmployeeId]="facade.teamNameByEmployeeId()"
       [isLoadingTeams]="facade.isLoadingTeams()"
       [teamErrorMessage]="facade.teamErrorMessage()"
-      (pageChange)="facade.loadActiveEmployees()"
+      (pageChange)="facade.reloadCurrentCategory()"
       [employeeStateById]="facade.employeeStateById()"
       [connectedUserById]="facade.connectedUserById()"
       [assignedLeadCountByEmployeeId]="facade.assignedLeadCountByEmployeeId()"
@@ -39,9 +44,10 @@
       (changeSchedule)="facade.openScheduleChange($event)"
       (changeTeam)="facade.openTeamChange($event)"
       (editEmployee)="facade.openEditDialog($event)"
-      (refreshStates)="facade.loadEmployeeStates(); facade.loadOperationalTeams()"
+      (refreshStates)="facade.loadEmployeeStates()"
       (darDeBaja)="facade.darDeBajaEmpleado($event)"
     />
+    }
 
     <p-dialog
       header="Cambiar equipo"
@@ -146,6 +152,7 @@
       }
     </p-dialog>
 
+    @if (facade.activeCategoriaKey() === 'inactivos') {
     <section class="inactive-panel">
       <div class="inactive-panel__header">
         <div>
@@ -211,6 +218,7 @@
         <p-message severity="info" text="No hay empleados inactivos para recontratar." />
       }
     </section>
+    }
 
     <app-contract-renewal-dialog
       [visible]="facade.isContractRenewalVisible()"

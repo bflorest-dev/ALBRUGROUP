@@ -1,6 +1,8 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { map } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { DatePickerModule } from 'primeng/datepicker';
 import { DialogModule } from 'primeng/dialog';
@@ -46,7 +48,10 @@ import { ScheduleAdjustmentDialogComponent } from '../../../../shared/components
 })
 export class AdminDashboardPageComponent implements OnInit {
   protected readonly facade = inject(AdminPersonalFacade);
-  protected readonly mode = inject(ActivatedRoute).snapshot.data['mode'] as 'inicio' | 'personal';
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+  protected readonly mode = this.route.snapshot.data['mode'] as 'colaboradores' | 'personal';
   private simpleTimeSnapshot: {
     horaEntrada: string;
     horaSalida: string;
@@ -55,7 +60,34 @@ export class AdminDashboardPageComponent implements OnInit {
   } | null = null;
 
   ngOnInit(): void {
-    this.facade.initialize();
+    if (this.mode === 'personal') {
+      this.facade.initialize();
+      return;
+    }
+
+    // Vista COLABORADORES: arranque ligero y carga por categoria segun la ruta.
+    // El componente se reutiliza entre categorias, asi que seguimos el paramMap.
+    void this.facade.initializeColaboradores();
+    this.route.paramMap
+      .pipe(
+        map((params) => params.get('categoria')),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((categoria) => {
+        if (categoria) {
+          void this.facade.selectCategoria(categoria);
+        } else {
+          void this.goToDefaultCategoria();
+        }
+      });
+  }
+
+  /** Sin categoria en la URL: aterriza en el primer equipo activo, o en "Sin equipo". */
+  private async goToDefaultCategoria(): Promise<void> {
+    await this.facade.ensureTeamsCatalog();
+    const teams = this.facade.operationalTeams();
+    const categoria = teams.length ? `equipo-${teams[0].id}` : 'sin-equipo';
+    void this.router.navigate(['/app/admin/colaboradores', categoria], { replaceUrl: true });
   }
 
   // Cache por clave string: misma fecha => misma instancia Date. Evita el loop de

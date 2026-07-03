@@ -519,6 +519,11 @@ export class AdminPersonalFacade implements OnDestroy {
   readonly activeEmployees = signal<EmpleadoRolResponse[]>([]);
   readonly isLoadingActiveEmployees = signal(false);
   readonly activeEmployeeListErrorMessage = signal('');
+  // Vista COLABORADORES: una sola categoria a la vez (equipo-{id} | sin-equipo | inactivos).
+  readonly activeCategoriaKey = signal<string | null>(null);
+  readonly activeCategoriaTitle = signal('');
+  // Cache por categoria de empleados activos; volver a una ya vista es inmediato.
+  private readonly categoryCache = new Map<string, EmpleadoRolResponse[]>();
   readonly operationalTeams = signal<EquipoResponse[]>([]);
   readonly teamNameByEmployeeId = signal<Record<number, string>>({});
   readonly teamIdByEmployeeId = signal<Record<number, number>>({});
@@ -1070,7 +1075,7 @@ export class AdminPersonalFacade implements OnDestroy {
       );
 
       this.closeEditDialog();
-      void this.loadActiveEmployees();
+      void this.reloadCurrentCategory();
       this.refreshUserAccess(empleadoId);
     } catch (error) {
       this.editErrorMessage.set(
@@ -1106,6 +1111,185 @@ export class AdminPersonalFacade implements OnDestroy {
     } finally {
       this.isLoadingActiveEmployees.set(false);
     }
+  }
+
+  /**
+   * Arranque de la vista COLABORADORES: solo realtime + catalogo ligero de
+   * equipos (para resolver nombres). NO carga a todos los empleados: cada
+   * categoria se pide bajo demanda con `selectCategoria`.
+   */
+  async initializeColaboradores(): Promise<void> {
+    this.startRealtime();
+    await this.ensureTeamsCatalog();
+  }
+
+  /** Lista ligera de equipos activos (id + nombre), sin miembros. Idempotente. */
+  async ensureTeamsCatalog(): Promise<void> {
+    if (this.operationalTeams().length) {
+      return;
+    }
+    try {
+      const teams = await firstValueFrom(
+        this.adminEquipoService.listarEquipos().pipe(timeout(this.requestTimeoutMs))
+      );
+      this.operationalTeams.set(
+        teams.filter((team) => team.activo).sort((left, right) => left.nombre.localeCompare(right.nombre))
+      );
+    } catch {
+      // Silencioso: el submenu del sidebar tiene su propia fuente de equipos.
+    }
+  }
+
+  /** Carga la categoria indicada (equipo-{id} | sin-equipo | inactivos). */
+  async selectCategoria(rawKey: string | null): Promise<void> {
+    this.activeCategoriaKey.set(rawKey);
+
+    if (!rawKey) {
+      return;
+    }
+
+    if (rawKey === 'inactivos') {
+      this.activeCategoriaTitle.set('Inactivos');
+      await this.loadInactiveEmployees();
+      return;
+    }
+
+    if (rawKey === 'sin-equipo') {
+      this.activeCategoriaTitle.set('Sin equipo');
+      await this.loadSinEquipoCategory();
+      return;
+    }
+
+    const match = /^equipo-(\d+)$/.exec(rawKey);
+    if (match) {
+      const teamId = Number(match[1]);
+      await this.ensureTeamsCatalog();
+      const teamName = this.operationalTeams().find((team) => team.id === teamId)?.nombre ?? 'Equipo';
+      this.activeCategoriaTitle.set(teamName);
+      await this.loadTeamCategory(teamId, teamName);
+      return;
+    }
+
+    // Clave desconocida: vista vacia controlada.
+    this.activeCategoriaTitle.set('');
+    this.activeEmployees.set([]);
+  }
+
+  /** Recarga la categoria activa ignorando cache (tras una mutacion). */
+  async reloadCurrentCategory(): Promise<void> {
+    const key = this.activeCategoriaKey();
+    if (!key) {
+      return;
+    }
+    this.categoryCache.delete(key);
+    await this.selectCategoria(key);
+  }
+
+  private invalidateCategoryCache(): void {
+    this.categoryCache.clear();
+  }
+
+  private async loadTeamCategory(teamId: number, teamName: string): Promise<void> {
+    const key = `equipo-${teamId}`;
+    const cached = this.categoryCache.get(key);
+    if (cached) {
+      this.applyCategoryEmployees(cached, teamName, [teamId]);
+      return;
+    }
+
+    this.isLoadingActiveEmployees.set(true);
+    this.activeEmployeeListErrorMessage.set('');
+    try {
+      const miembros = await firstValueFrom(
+        this.adminEquipoService.listarMiembros(teamId).pipe(timeout(this.requestTimeoutMs))
+      );
+      const ids = miembros.map((miembro) => miembro.empleadoId);
+      const empleados = ids.length
+        ? await firstValueFrom(
+            this.adminRrhhService.listarEmpleadosLight(ids).pipe(timeout(this.requestTimeoutMs))
+          )
+        : [];
+      this.categoryCache.set(key, empleados);
+      this.applyCategoryEmployees(empleados, teamName, [teamId]);
+    } catch (error) {
+      this.activeEmployees.set([]);
+      this.activeEmployeeListErrorMessage.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No fue posible cargar el equipo.')
+      );
+    } finally {
+      this.isLoadingActiveEmployees.set(false);
+    }
+  }
+
+  private async loadSinEquipoCategory(): Promise<void> {
+    const key = 'sin-equipo';
+    const cached = this.categoryCache.get(key);
+    if (cached) {
+      this.applyCategoryEmployees(cached, 'Sin equipo asignado', []);
+      return;
+    }
+
+    this.isLoadingActiveEmployees.set(true);
+    this.activeEmployeeListErrorMessage.set('');
+    try {
+      await this.ensureTeamsCatalog();
+      const teams = this.operationalTeams();
+      const all = await firstValueFrom(
+        this.adminRrhhService.listarEmpleadosLight().pipe(timeout(this.requestTimeoutMs))
+      );
+      const memberLists = await Promise.all(
+        teams.map((team) =>
+          firstValueFrom(
+            this.adminEquipoService.listarMiembros(team.id).pipe(
+              timeout(this.requestTimeoutMs),
+              catchError(() => of<EquipoMiembroResponse[]>([]))
+            )
+          )
+        )
+      );
+      const asignados = new Set<number>();
+      for (const list of memberLists) {
+        for (const miembro of list) {
+          asignados.add(miembro.empleadoId);
+        }
+      }
+      const sinEquipo = all.filter((empleado) => !asignados.has(empleado.idEmpleado));
+      this.categoryCache.set(key, sinEquipo);
+      this.applyCategoryEmployees(sinEquipo, 'Sin equipo asignado', []);
+    } catch (error) {
+      this.activeEmployees.set([]);
+      this.activeEmployeeListErrorMessage.set(
+        this.getErrorMessage(error as HttpErrorResponse, 'No fue posible cargar el personal sin equipo.')
+      );
+    } finally {
+      this.isLoadingActiveEmployees.set(false);
+    }
+  }
+
+  /** Aplica los empleados de una categoria a los signals que consume el panel. */
+  private applyCategoryEmployees(
+    empleados: EmpleadoRolResponse[],
+    teamName: string,
+    teamIds: number[]
+  ): void {
+    this.activeEmployees.set(empleados);
+
+    const nameByEmployeeId: Record<number, string> = {};
+    const idsByEmployeeId: Record<number, number[]> = {};
+    const idByEmployeeId: Record<number, number> = {};
+    for (const empleado of empleados) {
+      nameByEmployeeId[empleado.idEmpleado] = teamName;
+      idsByEmployeeId[empleado.idEmpleado] = [...teamIds];
+      if (teamIds.length) {
+        idByEmployeeId[empleado.idEmpleado] = teamIds[0];
+      }
+    }
+    this.teamNameByEmployeeId.set(nameByEmployeeId);
+    this.teamIdsByEmployeeId.set(idsByEmployeeId);
+    this.teamIdByEmployeeId.set(idByEmployeeId);
+
+    void this.loadEmployeeStates();
+    void this.loadAssignedLeadCounts();
   }
 
   async loadOperationalTeams(): Promise<void> {
@@ -1226,8 +1410,9 @@ export class AdminPersonalFacade implements OnDestroy {
       );
       this.isTeamChangeVisible.set(false);
       this.selectedEmployeeForTeamChange.set(null);
-      await this.loadOperationalTeams();
-      void this.loadActiveEmployees();
+      // La membresia cambio: invalida todas las categorias y recarga la visible.
+      this.invalidateCategoryCache();
+      void this.reloadCurrentCategory();
     } catch (error) {
       this.teamChangeErrorMessage.set(
         this.getErrorMessage(error as HttpErrorResponse, 'No se pudo actualizar el equipo del empleado.')
@@ -1473,8 +1658,9 @@ export class AdminPersonalFacade implements OnDestroy {
       );
       this.bajaSuccessMessage.set(`${employee.nombres} ${employee.apellidos} ha sido dado de baja correctamente.`);
       this.loadEmployees(0, true);
+      this.invalidateCategoryCache();
       void this.loadInactiveEmployees();
-      void this.loadActiveEmployees();
+      void this.reloadCurrentCategory();
     } catch (error) {
       this.bajaErrorMessage.set(
         this.getErrorMessage(error as HttpErrorResponse, 'No se pudo completar la baja. Intenta de nuevo.')

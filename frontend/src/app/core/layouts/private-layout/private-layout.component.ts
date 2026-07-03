@@ -13,15 +13,20 @@ import { AttendanceActionId } from '../../../shared/models/schedule/estado-asist
 import { AsesorVentasWorkspaceStateService } from '../../services/asesor-ventas-workspace-state.service';
 import { STORAGE_KEYS } from '../../constants/storage.constants';
 import { GtrAgendadosAlertFacade } from '../../../features/gtr/facades/gtr-agendados-alert.facade';
+import { EquiposNavService } from '../../services/equipos-nav.service';
 
 type SidebarItem = {
   label: string;
-  route: string;
+  route?: string;
   icon: string;
   badge?: string | number;
   alertActive?: boolean;
   alertLabel?: string;
   exact?: boolean;
+  /** Sub-items de un grupo expandible (p. ej. COLABORADORES). */
+  children?: SidebarItem[];
+  /** Marca el primer hijo de un bloque distinto (dibuja un divisor arriba). */
+  startsGroup?: boolean;
 };
 
 const ROLE_THEME_CLASS: Record<string, string> = {
@@ -64,8 +69,12 @@ export class PrivateLayoutComponent {
   private readonly asesorVentasState = inject(AsesorVentasWorkspaceStateService);
   private readonly sessionService = inject(SessionService);
   private readonly gtrAgendadosAlertFacade = inject(GtrAgendadosAlertFacade);
+  private readonly equiposNav = inject(EquiposNavService);
   protected readonly profileMenuOpen = signal(false);
   protected readonly mobileMenuOpen = signal(false);
+  // Grupos expandibles del sidebar (clave = label del padre). Colaboradores
+  // arranca abierto para que sus categorias esten a la vista.
+  protected readonly expandedGroups = signal<Record<string, boolean>>({ Colaboradores: true });
   protected readonly adminDeleteLeadsVisible = signal(this.readAdminDeleteLeadsVisible());
   protected readonly attendanceErrorMessage = signal('');
   private attendanceInitialized = false;
@@ -108,9 +117,21 @@ export class PrivateLayoutComponent {
     }
 
     if (session.primaryRole === 'ADMINISTRADOR') {
+      const colaboradoresChildren: SidebarItem[] = [
+        ...this.equiposNav.activeTeams().map((team) => ({
+          label: team.nombre,
+          route: `/app/admin/colaboradores/equipo-${team.id}`,
+          icon: 'pi pi-users',
+          exact: true
+        })),
+        { label: 'Sin equipo', route: '/app/admin/colaboradores/sin-equipo', icon: 'pi pi-user', exact: true, startsGroup: true },
+        { label: 'Inactivos', route: '/app/admin/colaboradores/inactivos', icon: 'pi pi-user-minus', exact: true }
+      ];
+
       const items: SidebarItem[] = [
-        { label: 'Inicio', route: '/app/admin/inicio', icon: 'pi pi-home', exact: true },
-        { label: 'Personal', route: '/app/admin/personal', icon: 'pi pi-users', exact: true },
+        { label: 'Dashboard', route: '/app/admin/dashboard', icon: 'pi pi-chart-pie', exact: true },
+        { label: 'Colaboradores', icon: 'pi pi-users', children: colaboradoresChildren },
+        { label: 'Personal', route: '/app/admin/personal', icon: 'pi pi-id-card', exact: true },
         { label: 'Empleabilidad', route: '/app/admin/empleabilidad', icon: 'pi pi-briefcase' },
         { label: 'Tipificaciones', route: '/app/admin/tipificaciones', icon: 'pi pi-sitemap', exact: true },
         { label: 'Equipos', route: '/app/admin/equipos', icon: 'pi pi-th-large', exact: true },
@@ -196,7 +217,23 @@ export class PrivateLayoutComponent {
     return [{ label: 'Inicio', route: session.homeRoute, icon: 'pi pi-home', exact: true }];
   });
 
+  protected isGroupExpanded(label: string): boolean {
+    return this.expandedGroups()[label] ?? false;
+  }
+
+  protected toggleGroup(label: string): void {
+    this.expandedGroups.update((current) => ({ ...current, [label]: !(current[label] ?? false) }));
+  }
+
   constructor() {
+    // El submenu de COLABORADORES se arma con los equipos activos; se cargan una
+    // sola vez cuando la sesion es de ADMINISTRADOR.
+    effect(() => {
+      if (this.session()?.primaryRole === 'ADMINISTRADOR') {
+        this.equiposNav.ensureLoaded();
+      }
+    });
+
     effect(() => {
       const session = this.session();
 

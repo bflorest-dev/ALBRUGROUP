@@ -133,6 +133,54 @@
     0 10px 28px color-mix(in srgb, #000000 12%, transparent 88%);
 }
 
+/* Encabezado expandible (COLABORADORES): reset del boton para que herede el look de item. */
+.menu__item--group {
+  width: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  appearance: none;
+}
+
+.menu__item-chevron {
+  flex: 0 0 auto;
+  width: 1rem;
+  font-size: 0.85rem;
+  color: var(--layout-sidebar-icon);
+  transition: color 0.16s ease;
+}
+
+.menu__item--group.is-open .menu__item-chevron {
+  color: var(--layout-sidebar-text);
+}
+
+/* Sub-items de un grupo: leve sangria y su propio divisor de bloque. */
+.menu__subitems {
+  display: grid;
+  gap: 0.25rem;
+  padding-left: 0.85rem;
+  margin: 0.1rem 0 0.15rem;
+  border-left: 1px solid var(--layout-sidebar-hover);
+}
+
+.menu__subitem {
+  min-height: 2.4rem;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.92rem;
+}
+
+.menu__subitem .menu__item-main i {
+  font-size: 0.9rem;
+}
+
+.menu__subitems-divider {
+  height: 1px;
+  margin: 0.3rem 0.35rem;
+  background: var(--layout-sidebar-hover);
+}
+
 .menu__item-main {
   min-width: 0;
   display: inline-flex;

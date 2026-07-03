@@ -6,6 +6,7 @@ import { AdminEmployabilityPageComponent } from '../admin/pages/admin-employabil
 import { AdminEquiposPageComponent } from '../admin/pages/admin-equipos-page/admin-equipos-page.component';
 import { AdminFinancePageComponent } from '../admin/pages/admin-finance-page/admin-finance-page.component';
 import { AdminMaintenancePageComponent } from '../admin/pages/admin-maintenance-page/admin-maintenance-page.component';
+import { AdminMetricsPageComponent } from '../admin/pages/admin-metrics-page/admin-metrics-page.component';
 import { AdminRankingPageComponent } from '../admin/pages/admin-ranking-page/admin-ranking-page.component';
 import { AdminTipificacionesPageComponent } from '../admin/pages/admin-tipificaciones-page/admin-tipificaciones-page.component';
 import { AsesorVentasWorkspacePageComponent } from '../asesor-ventas/pages/asesor-ventas-workspace-page/asesor-ventas-workspace-page.component';
@@ -34,15 +35,37 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'admin',
     pathMatch: 'full',
-    redirectTo: 'admin/inicio'
+    redirectTo: 'admin/colaboradores'
   },
   {
     path: 'admin/inicio',
+    pathMatch: 'full',
+    redirectTo: 'admin/colaboradores'
+  },
+  {
+    path: 'admin/dashboard',
+    component: AdminMetricsPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR']
+    }
+  },
+  {
+    path: 'admin/colaboradores',
     component: AdminDashboardPageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR'],
-      mode: 'inicio'
+      mode: 'colaboradores'
+    }
+  },
+  {
+    path: 'admin/colaboradores/:categoria',
+    component: AdminDashboardPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR'],
+      mode: 'colaboradores'
     }
   },
   {

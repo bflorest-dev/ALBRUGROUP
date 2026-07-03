@@ -28,6 +28,6 @@ public interface IEmpleado {
     EmpleadoResponse actualizarContactoCorporativo(Long idEmpleado, DatosContactoCorporativoRequest datosCorporativos);
     EmpleadoResponse listaNegraEmpleado(Long idEmpleado, Long responsableId);
     EmpleadoResponse darDeBajaEmpleado(Long idEmpleado, String authHeader);
-    List<EmpleadoRolResponse> listarEmpleadosLight(List<PuestoTrabajo> puestosTrabajo);
+    List<EmpleadoRolResponse> listarEmpleadosLight(List<PuestoTrabajo> puestosTrabajo, List<Long> empleadoIds);
     List<EmpleadoRolResponse> listarPersonalRecruitment();
 }
