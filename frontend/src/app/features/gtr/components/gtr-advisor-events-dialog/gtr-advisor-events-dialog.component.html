@@ -14,34 +14,119 @@
     </span>
   </ng-template>
 
+  <div class="advisor-events-toolbar">
+    <span class="advisor-events-search">
+      <i class="pi pi-search" aria-hidden="true"></i>
+      <input
+        pInputText
+        type="search"
+        placeholder="Buscar por lead, evento o detalle"
+        [ngModel]="facade.advisorEventsSearch()"
+        (ngModelChange)="facade.setAdvisorEventsSearch($event)"
+      />
+    </span>
+
+    <button
+      pButton
+      type="button"
+      icon="pi pi-sliders-h"
+      label="Organizar"
+      severity="secondary"
+      [outlined]="true"
+      (mouseenter)="onOrganizeEnter()"
+      (mouseleave)="onOrganizeLeave(organizePopover)"
+      (click)="onOrganizeEnter(); organizePopover.toggle($event)"
+    ></button>
+
+    <p-popover #organizePopover appendTo="body" styleClass="gtr-organize-popover">
+      <div class="gtr-organize-panel" (mouseenter)="onOrganizeEnter()" (mouseleave)="onOrganizeLeave(organizePopover)">
+        <div class="gtr-organize-field">
+          <label for="gtr-advisor-events-grouping">Agrupar por</label>
+          <p-select
+            inputId="gtr-advisor-events-grouping"
+            [options]="facade.advisorEventsGroupOptions"
+            [ngModel]="facade.advisorEventsGroupMode()"
+            optionLabel="label"
+            optionValue="value"
+            (onChange)="facade.setAdvisorEventsGroupMode($any($event.value))"
+          />
+        </div>
+
+        <button
+          pButton
+          type="button"
+          icon="pi pi-filter-slash"
+          label="Limpiar"
+          severity="secondary"
+          [text]="true"
+          [disabled]="facade.isAdvisorEventsOrganizationDefault()"
+          (click)="facade.clearAdvisorEventsOrganization()"
+        ></button>
+      </div>
+    </p-popover>
+
+    @if (!facade.isLoadingAdvisorEvents()) {
+      <span class="advisor-events-count">{{ facade.advisorEventResultCount() }} eventos</span>
+    }
+  </div>
+
   <p-table
-    [value]="facade.advisorEventRows()"
+    [value]="facade.advisorEventDisplayRows()"
     [rowHover]="true"
     [tableStyle]="{ 'min-width': '600px' }"
     styleClass="p-datatable-sm gtr-table"
   >
     <ng-template #header>
       <tr>
-        <th>Hora</th>
-        <th>Evento</th>
-        <th>Lead</th>
-        <th>Detalle</th>
+        <th>
+          <button type="button" class="event-sort-button" (click)="facade.toggleAdvisorEventsSort('createdAt')">
+            <span>Hora</span>
+            <i [class]="facade.advisorEventsSortIcon('createdAt')" aria-hidden="true"></i>
+          </button>
+        </th>
+        <th>
+          <button type="button" class="event-sort-button" (click)="facade.toggleAdvisorEventsSort('accion')">
+            <span>Evento</span>
+            <i [class]="facade.advisorEventsSortIcon('accion')" aria-hidden="true"></i>
+          </button>
+        </th>
+        <th>
+          <button type="button" class="event-sort-button" (click)="facade.toggleAdvisorEventsSort('lead')">
+            <span>Lead</span>
+            <i [class]="facade.advisorEventsSortIcon('lead')" aria-hidden="true"></i>
+          </button>
+        </th>
+        <th>
+          <button type="button" class="event-sort-button" (click)="facade.toggleAdvisorEventsSort('detalle')">
+            <span>Detalle</span>
+            <i [class]="facade.advisorEventsSortIcon('detalle')" aria-hidden="true"></i>
+          </button>
+        </th>
       </tr>
     </ng-template>
 
-    <ng-template #body let-evento>
+    <ng-template #body let-row>
       @if (!facade.isLoadingAdvisorEvents()) {
-        <tr>
-          <td>{{ evento.createdAt | date: 'hh:mm a' }}</td>
-          <td><p-tag [value]="facade.display(evento.accion)" severity="secondary" /></td>
-          <td>{{ facade.display(evento.lead) }}</td>
-          <td>
-            <div class="event-detail">
-              <span class="event-detail__summary">{{ facade.eventSummary(evento) }}</span>
-              <app-gtr-event-comment-popover [comment]="evento.comentario" />
-            </div>
-          </td>
-        </tr>
+        @if (row.kind === 'group') {
+          <tr class="event-group-row">
+            <td colspan="4">
+              <span>{{ row.label }}</span>
+              <strong>{{ row.count }}</strong>
+            </td>
+          </tr>
+        } @else {
+          <tr>
+            <td>{{ row.event.createdAt | date: 'hh:mm a' }}</td>
+            <td><p-tag [value]="facade.display(row.event.accion)" severity="secondary" /></td>
+            <td>{{ facade.display(row.event.lead) }}</td>
+            <td>
+              <div class="event-detail">
+                <span class="event-detail__summary">{{ facade.eventSummary(row.event) }}</span>
+                <app-gtr-event-comment-popover [comment]="row.event.comentario" />
+              </div>
+            </td>
+          </tr>
+        }
       }
     </ng-template>
 
@@ -57,7 +142,7 @@
         }
       } @else {
         <tr>
-          <td colspan="4">Este asesor no registra eventos hoy.</td>
+          <td colspan="4">{{ facade.advisorEventsSearch() ? 'No hay eventos con esa busqueda.' : 'Este asesor no registra eventos hoy.' }}</td>
         </tr>
       }
     </ng-template>

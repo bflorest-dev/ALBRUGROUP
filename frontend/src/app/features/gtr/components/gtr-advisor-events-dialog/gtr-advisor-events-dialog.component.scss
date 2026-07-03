@@ -5,6 +5,59 @@
   gap: 0.5rem;
 }
 
+.advisor-events-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: flex-end;
+  margin-bottom: 0.85rem;
+}
+
+.advisor-events-search {
+  align-items: center;
+  display: flex;
+  flex: 1 1 18rem;
+  max-width: 28rem;
+  min-width: min(18rem, 100%);
+  position: relative;
+}
+
+.advisor-events-search i {
+  color: var(--app-text-muted);
+  left: 0.85rem;
+  position: absolute;
+  pointer-events: none;
+}
+
+.advisor-events-search input {
+  padding-left: 2.35rem;
+  width: 100%;
+}
+
+.advisor-events-count {
+  color: var(--app-text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.gtr-organize-panel {
+  display: grid;
+  gap: 0.85rem;
+  min-width: min(18rem, calc(100vw - 2rem));
+}
+
+.gtr-organize-field {
+  display: grid;
+  gap: 0.38rem;
+}
+
+.gtr-organize-field label {
+  color: var(--app-text);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
 .event-detail {
   align-items: center;
   display: flex;
@@ -32,6 +85,46 @@
 
 :host ::ng-deep .gtr-table td {
   color: var(--app-text);
+}
+
+.event-sort-button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: inherit;
+  gap: 0.35rem;
+  justify-content: center;
+  padding: 0.15rem 0.25rem;
+}
+
+.event-sort-button i {
+  color: var(--app-text-muted);
+  font-size: 0.75rem;
+}
+
+.event-group-row td {
+  background: var(--app-surface-muted);
+  border-top: 1px solid var(--app-border-soft);
+  color: var(--app-text);
+  font-weight: 800;
+  text-align: left;
+}
+
+.event-group-row td span {
+  margin-right: 0.6rem;
+}
+
+.event-group-row td strong {
+  background: var(--app-surface);
+  border-radius: 999px;
+  color: var(--app-text-muted);
+  display: inline-flex;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.45rem;
 }
 
 :host ::ng-deep .gtr-dialog--events {

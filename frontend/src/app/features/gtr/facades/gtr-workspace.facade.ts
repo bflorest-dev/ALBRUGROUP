@@ -129,6 +129,12 @@ type GtrPlatformSortField =
 type GtrHistoricosSortField = 'lastEntryAt' | 'codigoTipificacion' | 'estado' | 'nombreAsesorAsignado';
 type GtrPlatformSortDirection = 'asc' | 'desc';
 type GtrHistoricosGroupMode = 'SIN_AGRUPAR' | 'ULTIMA_TIPIFICACION' | 'ESTADO' | 'INGRESO';
+type AdvisorEventGroupMode = 'SIN_AGRUPAR' | 'LEAD' | 'EVENTO' | 'DETALLE';
+type AdvisorEventSortField = 'createdAt' | 'accion' | 'lead' | 'detalle';
+type AdvisorEventSortDirection = 'asc' | 'desc' | null;
+type AdvisorEventDisplayRow =
+  | { kind: 'group'; key: string; label: string; count: number }
+  | { kind: 'event'; event: EventoResponse };
 
 type AdvisorOption = {
   empleadoId: number;
@@ -351,6 +357,10 @@ export class GtrWorkspaceFacade {
   // --- Historial de eventos del dia de un asesor (boton en la card del drawer) ---
   readonly advisorEventsTarget = signal<AdvisorOption | null>(null);
   readonly advisorEventRows = signal<EventoResponse[]>([]);
+  readonly advisorEventsSearch = signal('');
+  readonly advisorEventsGroupMode = signal<AdvisorEventGroupMode>('SIN_AGRUPAR');
+  readonly advisorEventsSortField = signal<AdvisorEventSortField | null>(null);
+  readonly advisorEventsSortDirection = signal<AdvisorEventSortDirection>(null);
   readonly isLoadingAdvisorEvents = signal(false);
   readonly pendingReassignment = signal<PendingReassignment | null>(null);
   readonly pendingTakeover = signal<PendingTakeover | null>(null);
@@ -377,6 +387,12 @@ export class GtrWorkspaceFacade {
   readonly intakeBaseOptions = computed<Array<SelectOption<BaseLead>>>(() =>
     this.selectedIntakeCampaignId() ? this.campaignOriginOptions : this.noCampaignOriginOptions
   );
+  readonly advisorEventsGroupOptions: Array<{ label: string; value: AdvisorEventGroupMode }> = [
+    { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
+    { label: 'Lead', value: 'LEAD' },
+    { label: 'Evento', value: 'EVENTO' },
+    { label: 'Detalle', value: 'DETALLE' }
+  ];
   readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
 
@@ -642,6 +658,51 @@ export class GtrWorkspaceFacade {
         return this.eventTimestamp(right) - this.eventTimestamp(left);
       });
   });
+  readonly advisorEventDisplayRows = computed<AdvisorEventDisplayRow[]>(() => {
+    const query = this.normalizeAdvisorEventText(this.advisorEventsSearch());
+    const sortField = this.advisorEventsSortField();
+    const sortDirection = this.advisorEventsSortDirection();
+    const groupMode = this.advisorEventsGroupMode();
+
+    let rows = this.advisorEventRows().filter((evento) => {
+      if (!query) {
+        return true;
+      }
+      return this.advisorEventSearchText(evento).includes(query);
+    });
+
+    if (sortField && sortDirection) {
+      const factor = sortDirection === 'asc' ? 1 : -1;
+      rows = [...rows].sort((left, right) => this.compareAdvisorEventRows(left, right, sortField) * factor);
+    }
+
+    if (groupMode === 'SIN_AGRUPAR') {
+      return rows.map((event) => ({ kind: 'event', event }));
+    }
+
+    const grouped = new Map<string, { label: string; rows: EventoResponse[] }>();
+    for (const evento of rows) {
+      const label = this.advisorEventGroupLabel(evento, groupMode);
+      const key = this.normalizeAdvisorEventText(label);
+      const group = grouped.get(key) ?? { label, rows: [] };
+      group.rows.push(evento);
+      grouped.set(key, group);
+    }
+
+    return [...grouped.entries()].flatMap(([key, group]) => [
+      { kind: 'group' as const, key, label: group.label, count: group.rows.length },
+      ...group.rows.map((event) => ({ kind: 'event' as const, event }))
+    ]);
+  });
+  readonly advisorEventResultCount = computed(() =>
+    this.advisorEventDisplayRows().filter((row) => row.kind === 'event').length
+  );
+  readonly isAdvisorEventsOrganizationDefault = computed(() =>
+    !this.advisorEventsSearch().trim() &&
+    this.advisorEventsGroupMode() === 'SIN_AGRUPAR' &&
+    this.advisorEventsSortField() === null &&
+    this.advisorEventsSortDirection() === null
+  );
   readonly tipificationHistoryGroupOptions = computed<TipificationHistoryGroupOption[]>(() => {
     const mode = this.leadHistoryMode();
     const counts = new Map<string, { label: string; count: number }>();
@@ -1498,6 +1559,7 @@ export class GtrWorkspaceFacade {
     }
     this.advisorEventsTarget.set(advisor);
     this.advisorEventRows.set([]);
+    this.resetAdvisorEventsOrganization();
     this.activeDialog.set('advisor-events');
     await this.loadAdvisorEvents(advisor);
   }
@@ -1525,7 +1587,46 @@ export class GtrWorkspaceFacade {
   closeAdvisorEvents(): void {
     this.advisorEventsTarget.set(null);
     this.advisorEventRows.set([]);
+    this.resetAdvisorEventsOrganization();
     this.activeDialog.set(null);
+  }
+
+  setAdvisorEventsSearch(value: string): void {
+    this.advisorEventsSearch.set(value ?? '');
+  }
+
+  setAdvisorEventsGroupMode(value: AdvisorEventGroupMode): void {
+    this.advisorEventsGroupMode.set(value);
+  }
+
+  toggleAdvisorEventsSort(field: AdvisorEventSortField): void {
+    const currentField = this.advisorEventsSortField();
+    const currentDirection = this.advisorEventsSortDirection();
+
+    if (currentField !== field || currentDirection === null) {
+      this.advisorEventsSortField.set(field);
+      this.advisorEventsSortDirection.set('asc');
+      return;
+    }
+
+    if (currentDirection === 'asc') {
+      this.advisorEventsSortDirection.set('desc');
+      return;
+    }
+
+    this.advisorEventsSortField.set(null);
+    this.advisorEventsSortDirection.set(null);
+  }
+
+  advisorEventsSortIcon(field: AdvisorEventSortField): string {
+    if (this.advisorEventsSortField() !== field || this.advisorEventsSortDirection() === null) {
+      return 'pi pi-sort-alt';
+    }
+    return this.advisorEventsSortDirection() === 'asc' ? 'pi pi-sort-amount-up-alt' : 'pi pi-sort-amount-down';
+  }
+
+  clearAdvisorEventsOrganization(): void {
+    this.resetAdvisorEventsOrganization();
   }
 
   openSearchDialog(): void {
@@ -2636,6 +2737,68 @@ export class GtrWorkspaceFacade {
       return tipParts.join(' / ');
     }
     return this.eventCampaignLabel(evento) ?? '-';
+  }
+
+  private resetAdvisorEventsOrganization(): void {
+    this.advisorEventsSearch.set('');
+    this.advisorEventsGroupMode.set('SIN_AGRUPAR');
+    this.advisorEventsSortField.set(null);
+    this.advisorEventsSortDirection.set(null);
+  }
+
+  private advisorEventSearchText(evento: EventoResponse): string {
+    return this.normalizeAdvisorEventText([
+      evento.lead,
+      evento.accion,
+      evento.tipificacion,
+      evento.subtipificacion,
+      evento.comentario,
+      this.eventSummary(evento)
+    ].filter(Boolean).join(' '));
+  }
+
+  private advisorEventGroupLabel(evento: EventoResponse, mode: AdvisorEventGroupMode): string {
+    if (mode === 'LEAD') {
+      return this.display(evento.lead);
+    }
+    if (mode === 'EVENTO') {
+      return this.display(evento.accion);
+    }
+    if (mode === 'DETALLE') {
+      return this.eventSummary(evento);
+    }
+    return 'Sin agrupar';
+  }
+
+  private compareAdvisorEventRows(left: EventoResponse, right: EventoResponse, field: AdvisorEventSortField): number {
+    if (field === 'createdAt') {
+      return this.eventTimestamp(left) - this.eventTimestamp(right);
+    }
+
+    const leftValue = this.advisorEventSortValue(left, field);
+    const rightValue = this.advisorEventSortValue(right, field);
+    return leftValue.localeCompare(rightValue, 'es', { numeric: true, sensitivity: 'base' });
+  }
+
+  private advisorEventSortValue(evento: EventoResponse, field: AdvisorEventSortField): string {
+    if (field === 'accion') {
+      return this.display(evento.accion);
+    }
+    if (field === 'lead') {
+      return this.display(evento.lead);
+    }
+    if (field === 'detalle') {
+      return this.eventSummary(evento);
+    }
+    return '';
+  }
+
+  private normalizeAdvisorEventText(value: string): string {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
   }
 
   private eventCampaignLabel(evento: EventoResponse): string | null {
