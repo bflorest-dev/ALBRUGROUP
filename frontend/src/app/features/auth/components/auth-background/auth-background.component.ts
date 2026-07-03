@@ -6,7 +6,7 @@ import {
   HostListener,
   computed,
   inject,
-  signal,
+  viewChild,
   viewChildren
 } from '@angular/core';
 import { AuthBackgroundThemeService } from '../../services/auth-background-theme.service';
@@ -46,9 +46,8 @@ export class AuthBackgroundComponent {
   protected readonly backgroundClass = computed(
     () => `auth-background--${this.theme()}`
   );
-  protected readonly spotX = signal('50vw');
-  protected readonly spotY = signal('50vh');
 
+  protected readonly spotlightElement = viewChild<ElementRef<HTMLDivElement>>('spotlight');
   protected readonly leafPosElements = viewChildren<ElementRef<HTMLDivElement>>('leafPos');
   protected readonly starElements = viewChildren<ElementRef<HTMLSpanElement>>('starEl');
 
@@ -113,8 +112,11 @@ export class AuthBackgroundComponent {
   }
 
   private processMouseMove(event: MouseEvent): void {
-    this.spotX.set(`${event.clientX}px`);
-    this.spotY.set(`${event.clientY}px`);
+    const spotlight = this.spotlightElement()?.nativeElement;
+    if (spotlight) {
+      spotlight.style.setProperty('--spot-x', `${event.clientX}px`);
+      spotlight.style.setProperty('--spot-y', `${event.clientY}px`);
+    }
 
     if (this.theme() === 'day') {
       this.processLeaves(event);

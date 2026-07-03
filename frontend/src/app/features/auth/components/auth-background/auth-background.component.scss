@@ -140,7 +140,6 @@
   pointer-events: none;
   z-index: 2;
   mix-blend-mode: screen;
-  transition: left 0.15s ease-out, top 0.15s ease-out;
   will-change: left, top;
 }
 
@@ -230,7 +229,4 @@
     opacity: var(--star-opacity, 0.4);
   }
 
-  .auth-spotlight {
-    transition: none;
-  }
 }
