@@ -423,7 +423,7 @@ export class GtrWorkspaceFacade {
     prefijo: ['+51', [Validators.required, Validators.pattern(/^\+\d{1,3}$/)]],
     lead: ['', [Validators.required, Validators.pattern(/^9\d{8}$/)]],
     idCampana: [null as number | null],
-    base: ['SIN_IDENTIFICAR' as BaseLead, [Validators.required]]
+    base: [null as BaseLead | null, [Validators.required]]
   });
   readonly retroactiveHourControl = new FormControl<Date | null>(this.createTimeValue(19, 0), {
     validators: [Validators.required]
@@ -1069,7 +1069,7 @@ export class GtrWorkspaceFacade {
       prefijo: formValue.prefijo,
       lead: formValue.lead,
       idCampana: formValue.idCampana || null,
-      base: formValue.base
+      base: formValue.base as BaseLead
     };
     if (!skipLookupConfirmation) {
       this.clearMessages();
@@ -3842,7 +3842,7 @@ export class GtrWorkspaceFacade {
       prefijo: PERU_PHONE_PREFIX,
       lead: '',
       idCampana: null,
-      base: 'SIN_IDENTIFICAR'
+      base: null
     });
     this.selectedIntakeCampaignId.set(null);
     this.updateIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
@@ -3859,7 +3859,7 @@ export class GtrWorkspaceFacade {
     if (current && allowedValues.has(current)) {
       return;
     }
-    this.intakeForm.controls.base.setValue(this.selectedIntakeCampaignId() ? 'WHATSAPP' : 'SIN_IDENTIFICAR');
+    this.intakeForm.controls.base.setValue(this.selectedIntakeCampaignId() ? 'WHATSAPP' : null);
   }
 
   private updateIntakeLeadValidation(prefijo: string): void {
