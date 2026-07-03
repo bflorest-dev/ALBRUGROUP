@@ -919,11 +919,15 @@ export class GtrWorkspaceFacade {
   }
 
   setSection(section: GtrSection): void {
-    if (this.section() === section) {
+    const previousSection = this.section();
+    if (previousSection === section) {
       return;
     }
+    if (previousSection === 'historicos') {
+      this.saveHistoricosState();
+    }
     this.section.set(section);
-    this.selectedIds.set(new Set());
+    this.selectedIds.set(section === 'historicos' ? this.getStoredHistoricosSelectedIds() : new Set());
     if (this.started && section !== 'ranking') {
       void this.initialize();
     }
@@ -3657,6 +3661,9 @@ export class GtrWorkspaceFacade {
     this.masivoTotalPages.set(state.totalPages);
     this.masivoPageNumber.set(state.pageNumber);
     this.masivoSearched.set(state.searched);
+    if (this.section() === 'historicos') {
+      this.selectedIds.set(new Set(state.selectedIds));
+    }
     this.lastMasivoSearchFiltersKey = state.searched ? this.historicosFiltersKey(state.filters) : null;
   }
 
@@ -3664,6 +3671,10 @@ export class GtrWorkspaceFacade {
     const filters = this.currentHistoricosFiltersFormValue();
     const filtersMatchLastSearch =
       this.masivoSearched() && this.historicosFiltersKey(filters) === this.lastMasivoSearchFiltersKey;
+    const previousState = this.historicosStateService.get();
+    const selectedIds = this.section() === 'historicos'
+      ? [...this.selectedIds()]
+      : previousState?.selectedIds ?? [];
 
     this.historicosStateService.set({
       filters,
@@ -3671,8 +3682,13 @@ export class GtrWorkspaceFacade {
       totalElements: filtersMatchLastSearch ? this.masivoTotalElements() : 0,
       totalPages: filtersMatchLastSearch ? this.masivoTotalPages() : 0,
       pageNumber: filtersMatchLastSearch ? this.masivoPageNumber() : 0,
-      searched: filtersMatchLastSearch
+      searched: filtersMatchLastSearch,
+      selectedIds
     });
+  }
+
+  private getStoredHistoricosSelectedIds(): Set<number> {
+    return new Set(this.historicosStateService.get()?.selectedIds ?? []);
   }
 
   private historicosFiltersKey(filters: GtrHistoricosFiltersFormValue): string {

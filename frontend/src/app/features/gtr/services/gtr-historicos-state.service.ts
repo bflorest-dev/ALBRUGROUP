@@ -17,6 +17,7 @@ export type GtrHistoricosState = {
   totalPages: number;
   pageNumber: number;
   searched: boolean;
+  selectedIds: number[];
 };
 
 @Injectable({ providedIn: 'root' })
@@ -28,7 +29,8 @@ export class GtrHistoricosStateService {
       ? {
           ...this.state,
           filters: this.cloneFilters(this.state.filters),
-          rows: [...this.state.rows]
+          rows: [...this.state.rows],
+          selectedIds: [...this.state.selectedIds]
         }
       : null;
   }
@@ -37,7 +39,8 @@ export class GtrHistoricosStateService {
     this.state = {
       ...state,
       filters: this.cloneFilters(state.filters),
-      rows: [...state.rows]
+      rows: [...state.rows],
+      selectedIds: [...state.selectedIds]
     };
   }
 
