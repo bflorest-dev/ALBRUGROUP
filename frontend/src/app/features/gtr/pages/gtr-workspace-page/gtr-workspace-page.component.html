@@ -366,8 +366,14 @@
         </p-select>
       </label>
       <label class="wide">
-        <span>Base</span>
-        <p-select formControlName="base" [options]="facade.baseOptions" appendTo="body" />
+        <span>Origen</span>
+        <p-select
+          formControlName="base"
+          [options]="facade.intakeBaseOptions()"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+        />
       </label>
 
       <div class="dialog-actions">

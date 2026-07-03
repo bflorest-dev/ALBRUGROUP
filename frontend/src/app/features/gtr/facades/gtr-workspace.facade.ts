@@ -18,6 +18,7 @@ import { PresenceRealtimeEvent } from '../../../shared/models/gateway/presence-r
 import {
   AdicionalResponse,
   AsesorLeadsPendientesResponse,
+  BaseLead,
   CampanaResponse,
   CampoCaptura,
   CampoConfigItem,
@@ -362,7 +363,20 @@ export class GtrWorkspaceFacade {
   readonly isSavingExtension = signal(false);
   /** Error propio del modal de ampliacion: se muestra dentro del dialogo, nunca detras. */
   readonly extensionError = signal<string | null>(null);
-  readonly baseOptions = ['WHATSAPP', 'MESSENGER', 'RECONTACTO', 'PREDICTIVO', 'REFERIDO', 'MASIVO'];
+  private readonly campaignOriginOptions: Array<SelectOption<BaseLead>> = [
+    { label: 'WhatsApp', value: 'WHATSAPP' },
+    { label: 'Messenger', value: 'MESSENGER' }
+  ];
+  private readonly noCampaignOriginOptions: Array<SelectOption<BaseLead>> = [
+    { label: 'Recontacto', value: 'RECONTACTO' },
+    { label: 'Predictivo', value: 'PREDICTIVO' },
+    { label: 'Referido', value: 'REFERIDO' },
+    { label: 'Masivo', value: 'MASIVO' },
+    { label: 'Sin identificar', value: 'SIN_IDENTIFICAR' }
+  ];
+  readonly intakeBaseOptions = computed<Array<SelectOption<BaseLead>>>(() =>
+    this.selectedIntakeCampaignId() ? this.campaignOriginOptions : this.noCampaignOriginOptions
+  );
   readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
 
@@ -409,7 +423,7 @@ export class GtrWorkspaceFacade {
     prefijo: ['+51', [Validators.required, Validators.pattern(/^\+\d{1,3}$/)]],
     lead: ['', [Validators.required, Validators.pattern(/^9\d{8}$/)]],
     idCampana: [null as number | null],
-    base: ['WHATSAPP', [Validators.required]]
+    base: ['SIN_IDENTIFICAR' as BaseLead, [Validators.required]]
   });
   readonly retroactiveHourControl = new FormControl<Date | null>(this.createTimeValue(19, 0), {
     validators: [Validators.required]
@@ -878,6 +892,7 @@ export class GtrWorkspaceFacade {
     this.formSubscription.add(
       this.intakeForm.controls.idCampana.valueChanges.subscribe((idCampana) => {
         this.selectedIntakeCampaignId.set(idCampana === null ? null : Number(idCampana));
+        this.syncIntakeOriginWithCampaign();
       })
     );
     this.formSubscription.add(
@@ -3827,14 +3842,24 @@ export class GtrWorkspaceFacade {
       prefijo: PERU_PHONE_PREFIX,
       lead: '',
       idCampana: null,
-      base: 'WHATSAPP'
+      base: 'SIN_IDENTIFICAR'
     });
+    this.selectedIntakeCampaignId.set(null);
     this.updateIntakeLeadValidation(this.intakeForm.controls.prefijo.value);
     this.retroactiveHourControl.reset(this.createTimeValue(19, 0));
     this.retroactiveHourControl.markAsPristine();
     this.retroactiveHourControl.markAsUntouched();
     this.intakeForm.markAsPristine();
     this.intakeForm.markAsUntouched();
+  }
+
+  private syncIntakeOriginWithCampaign(): void {
+    const allowedValues = new Set(this.intakeBaseOptions().map((option) => option.value));
+    const current = this.intakeForm.controls.base.value as BaseLead | null;
+    if (current && allowedValues.has(current)) {
+      return;
+    }
+    this.intakeForm.controls.base.setValue(this.selectedIntakeCampaignId() ? 'WHATSAPP' : 'SIN_IDENTIFICAR');
   }
 
   private updateIntakeLeadValidation(prefijo: string): void {

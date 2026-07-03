@@ -9,7 +9,8 @@ export type BaseLead =
   | 'RECONTACTO'
   | 'PREDICTIVO'
   | 'REFERIDO'
-  | 'MASIVO';
+  | 'MASIVO'
+  | 'SIN_IDENTIFICAR';
 
 export interface PageQuery {
   pageNumber: number;

@@ -147,6 +147,14 @@ public class LeadService {
     private static final LocalTime HORA_MINIMA_REGISTRO_RETROACTIVO = LocalTime.of(18, 0);
     private static final LocalTime HORA_MAXIMA_REGISTRO_RETROACTIVO = LocalTime.of(23, 59);
     private static final List<Accion> ACCIONES_GESTION_LEAD = List.of(Accion.CONTACTO, Accion.TIPIFICACION);
+    private static final Set<Base> ORIGENES_CON_CAMPANA = Set.of(Base.WHATSAPP, Base.MESSENGER);
+    private static final Set<Base> ORIGENES_SIN_CAMPANA = Set.of(
+            Base.RECONTACTO,
+            Base.PREDICTIVO,
+            Base.REFERIDO,
+            Base.MASIVO,
+            Base.SIN_IDENTIFICAR
+    );
     private static final Map<String, String> LEAD_GTR_SORT_FIELDS = Map.ofEntries(
             Map.entry("lastEntryAt", "lastEntryAt"),
             Map.entry("createdAt", "createdAt"),
@@ -1242,6 +1250,7 @@ public class LeadService {
         String prefijo = normalizarPrefijo(request.getPrefijo());
         String numeroLead = normalizarLead(request.getLead());
         Campana campana = request.getIdCampana() == null ? null : obtenerCampanaActiva(request.getIdCampana());
+        validarOrigenIntake(request.getBase(), campana != null);
 
         // El lead PREVENTA del contacto (si existe) tiene prioridad: es el que el GTR gestiona y
         // asigna normalmente. Si no hay ninguno en PREVENTA pero sí uno en otra etapa, lo marcamos
@@ -1257,6 +1266,18 @@ public class LeadService {
                         lead -> registrarAtencionGtrLeadOtraEtapa(lead, request, campana, registroAt),
                         () -> registrarLeadNuevo(prefijo, numeroLead, request, campana, registroAt)
                 );
+    }
+
+    private void validarOrigenIntake(Base origen, boolean tieneCampana) {
+        if (origen == null) {
+            throw new BadRequestException("Selecciona un origen para registrar el lead");
+        }
+        if (tieneCampana && !ORIGENES_CON_CAMPANA.contains(origen)) {
+            throw new BadRequestException("Cuando eliges una campana, el origen debe ser WhatsApp o Messenger");
+        }
+        if (!tieneCampana && !ORIGENES_SIN_CAMPANA.contains(origen)) {
+            throw new BadRequestException("Cuando no eliges campana, selecciona un origen sin campana");
+        }
     }
 
     private void validarHoraRegistroRetroactivo(LocalTime horaRegistro) {

@@ -6,5 +6,6 @@ public enum Base {
     RECONTACTO,
     PREDICTIVO,
     REFERIDO,
-    MASIVO
+    MASIVO,
+    SIN_IDENTIFICAR
 }
