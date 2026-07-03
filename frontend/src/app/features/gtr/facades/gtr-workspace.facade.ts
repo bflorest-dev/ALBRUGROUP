@@ -1,7 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Inject, Injectable, computed, effect, inject, signal } from '@angular/core';
-import { FormControl, FormGroup, NonNullableFormBuilder, Validators } from '@angular/forms';
+import { AbstractControl, FormControl, FormGroup, NonNullableFormBuilder, Validators } from '@angular/forms';
 import { Subscription, firstValueFrom } from 'rxjs';
 import {
   AsesorGtrPresenceResponse,
@@ -16,10 +16,16 @@ import { PresenceRealtimeService } from '../../../core/services/presence-realtim
 import { UsuarioResponse } from '../../../shared/models/auth/usuario-response';
 import { PresenceRealtimeEvent } from '../../../shared/models/gateway/presence-realtime-event';
 import {
+  AdicionalResponse,
   AsesorLeadsPendientesResponse,
   CampanaResponse,
+  CampoCaptura,
+  CampoConfigItem,
+  CatalogoResponse,
   Etapa,
   EventoResponse,
+  LeadDetalleResponse,
+  LeadDireccionRequest,
   LeadGtrGroupFilter,
   LeadGtrGroupItemResponse,
   LeadGtrGroupMode,
@@ -33,9 +39,14 @@ import {
   LeadIntakeMasivoExcelResultadoResponse,
   LeadIntakeRequest,
   LeadIntakeRetroactivoRequest,
+  LeadOfertaComercialRequest,
   MasivoLeadFilters,
-  PageQuery
+  PageQuery,
+  PlanResponse,
+  PromocionComercialResponse,
+  UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
+import { LeadCommercialDataTab } from '../../../shared/components/lead-commercial-data-tabs/lead-commercial-data-tabs.component';
 import { buildTelUrl, buildWhatsAppUrl } from '../../../shared/utils/phone-link';
 import { providerLogo as resolveProviderLogo } from '../../../shared/utils/provider-logo';
 import {
@@ -83,6 +94,26 @@ type SubtipificacionSelectOption = SelectOption<number> & {
 type TipificacionVisualMeta = {
   orden: number;
   paletteIndex: number;
+};
+
+type OfertaProviderOption = { id: number; nombre: string };
+type OfertaAdditionalSelection = {
+  idAdicional: number;
+  nombre: string;
+  precioUnitario?: number | null;
+  cantidad: number;
+};
+
+const CAMPOS_CONFIGURABLES: Record<CampoCaptura, { tab: 'datos' | 'direccion'; control: string; label: string }> = {
+  NOMBRE_MADRE: { tab: 'datos', control: 'nombreMadre', label: 'Madre' },
+  NOMBRE_PADRE: { tab: 'datos', control: 'nombrePadre', label: 'Padre' },
+  DOC_TITULAR_CELULAR: {
+    tab: 'datos',
+    control: 'numeroDocumentoTitularCelularRegistro',
+    label: 'Numero de Documento del Titular del Celular'
+  },
+  NOMBRE_TITULAR_CELULAR: { tab: 'datos', control: 'nombreTitularCelularRegistro', label: 'Nombre del Titular del Celular' },
+  PLANO: { tab: 'direccion', control: 'plano', label: 'Plano' }
 };
 
 type AgendadosSortField = 'programado' | 'agendado';
@@ -135,7 +166,7 @@ type AssignmentConflictDetails = {
   requiereConfirmarGestionPrevia?: boolean;
 };
 
-type GtrDialog = 'lead' | 'intake-confirm' | 'snapshot' | 'assign' | 'reassign-confirm' | 'events' | 'advisor-events' | 'search' | 'schedule-extension' | null;
+type GtrDialog = 'lead' | 'intake-confirm' | 'snapshot' | 'typify' | 'assign' | 'reassign-confirm' | 'events' | 'advisor-events' | 'search' | 'schedule-extension' | null;
 type EventAnomalyFilter = 'multiple-records' | 'same-campaign' | null;
 type LeadHistoryMode = 'eventos-dia' | 'tipificacion' | 'asesor';
 type IntakeMode = 'normal' | 'retroactivo';
@@ -284,6 +315,20 @@ export class GtrWorkspaceFacade {
   readonly campanas = signal<CampanaResponse[]>([]);
   readonly catalogoTipificaciones = signal<TipificacionSelectOption[]>([]);
   readonly catalogoSubtipificaciones = signal<SubtipificacionSelectOption[]>([]);
+  readonly typifyDetail = signal<LeadDetalleResponse | null>(null);
+  readonly typifyCatalogo = signal<CatalogoResponse | null>(null);
+  readonly selectedTipificacionCode = signal('');
+  readonly planes = signal<PlanResponse[]>([]);
+  readonly promociones = signal<PromocionComercialResponse[]>([]);
+  readonly adicionales = signal<AdicionalResponse[]>([]);
+  readonly selectedOfertaProviderId = signal<number | null>(null);
+  readonly selectedOfertaAdditionals = signal<OfertaAdditionalSelection[]>([]);
+  readonly departamentos = signal<UbigeoItem[]>([]);
+  readonly provinciasDomicilio = signal<UbigeoItem[]>([]);
+  readonly distritosDomicilio = signal<UbigeoItem[]>([]);
+  readonly activeDataTab = signal<LeadCommercialDataTab>('datos');
+  readonly showComment = signal(false);
+  readonly isLoadingTypifyDetail = signal(false);
   readonly selectedMasivoTipificacionIds = signal<Set<number>>(new Set());
   readonly subtipificacionFilter = signal('');
   readonly activeDialog = signal<GtrDialog>(null);
@@ -388,6 +433,56 @@ export class GtrWorkspaceFacade {
     direccion: ['']
   });
 
+  readonly datosForm = this.fb.group({
+    tipoDocumento: ['', [Validators.required]],
+    numeroDocumentoTitularServicio: ['', [Validators.required]],
+    ubigeoNacimiento: [''],
+    nombreTitularServicio: [''],
+    celularRegistro: [''],
+    celularReferencia: [''],
+    correo: [''],
+    nombreMadre: [''],
+    nombrePadre: [''],
+    numeroDocumentoTitularCelularRegistro: [''],
+    nombreTitularCelularRegistro: ['']
+  });
+
+  readonly direccionForm = this.fb.group({
+    idDepartamentoDomicilio: [0, [Validators.required, Validators.min(1)]],
+    idProvinciaDomicilio: [0, [Validators.required, Validators.min(1)]],
+    idDistritoDomicilio: [0, [Validators.required, Validators.min(1)]],
+    ubigeoDomicilio: ['', [Validators.required]],
+    tipoDomicilio: [''],
+    tipoVia: [''],
+    via: [''],
+    direccion: ['', [Validators.required]],
+    referencia: [''],
+    latitud: [null as number | null, [Validators.required]],
+    longitud: [null as number | null, [Validators.required]],
+    urbanizacion: [''],
+    numero: [''],
+    manzana: [''],
+    lote: [''],
+    nombreEdificio: [''],
+    nombreCondominio: [''],
+    piso: [''],
+    interior: [''],
+    plano: ['']
+  });
+
+  readonly ofertaForm = this.fb.group({
+    idProveedor: [0],
+    idPlan: [0],
+    idPromocionInterna: [0]
+  });
+
+  readonly tipificacionForm = this.fb.group({
+    codigoTipificacion: ['', [Validators.required]],
+    codigoSubtipificacion: ['', [Validators.required]],
+    comentario: [''],
+    horaProgramada: ['']
+  });
+
   readonly masivoFiltersForm = this.fb.group({
     idProveedor: [0],
     etapa: [''],
@@ -404,6 +499,14 @@ export class GtrWorkspaceFacade {
     { label: 'Postventa', value: 'POSTVENTA' },
     { label: 'Cobranza', value: 'COBRANZA' }
   ];
+  readonly tipoDocumentoOptions = ['DNI', 'CE', 'RUC'];
+  readonly tipoDomicilioOptions = [
+    'HOGAR',
+    'MULTIFAMILIAR',
+    'CONDOMINIO_EDIFICIO',
+    'CONDOMINIO_EDIFICIO_NO_HABILITADO'
+  ];
+  readonly tipoViaOptions = ['AVENIDA', 'JIRON', 'CALLE', 'PASAJE', 'PROLONGACION'];
   readonly providerOptions = computed<SelectOption<number>[]>(() => {
     const providers = new Map<number, string>();
     for (const campana of this.campanas()) {
@@ -418,6 +521,46 @@ export class GtrWorkspaceFacade {
         .sort((left, right) => left.label.localeCompare(right.label))
     ];
   });
+  readonly subtipificaciones = computed(() => {
+    const codigo = this.selectedTipificacionCode();
+    const subtipificaciones =
+      this.typifyCatalogo()?.tipificaciones.find((tipificacion) => tipificacion.codigo === codigo)?.subtipificaciones ?? [];
+
+    return [...subtipificaciones].sort((left, right) => left.orden - right.orden);
+  });
+  readonly tipificaciones = computed(() =>
+    [...(this.typifyCatalogo()?.tipificaciones ?? [])].sort((left, right) => left.orden - right.orden)
+  );
+  readonly camposConfig = computed<CampoConfigItem[]>(() => this.typifyDetail()?.camposConfig ?? []);
+  readonly camposVisibles = computed<ReadonlySet<string>>(
+    () => new Set(this.camposConfig().filter((campo) => campo.visible).map((campo) => campo.campo))
+  );
+  readonly ofertaProviderOptions = computed<OfertaProviderOption[]>(() => {
+    const providersById = new Map<number, OfertaProviderOption>();
+    for (const plan of this.planes()) {
+      if (plan.idProveedor) {
+        providersById.set(plan.idProveedor, {
+          id: plan.idProveedor,
+          nombre: plan.nombreProveedor ?? `Proveedor ${plan.idProveedor}`
+        });
+      }
+    }
+    return [...providersById.values()].sort((left, right) => left.nombre.localeCompare(right.nombre));
+  });
+  readonly planOptions = computed(() => {
+    const idProveedor = this.selectedOfertaProviderId();
+    const providerPlans = idProveedor ? this.planes().filter((plan) => plan.idProveedor === idProveedor) : [];
+    return [{ id: 0, nombre: 'Sin plan' }, ...providerPlans];
+  });
+  readonly promocionOptions = computed(() => [
+    { id: 0, reglaComercial: 'Sin promocion' },
+    ...this.promociones()
+  ]);
+  readonly ofertaAdditionalsTotal = computed(() =>
+    this.selectedOfertaAdditionals().reduce((total, adicional) => total + (adicional.precioUnitario ?? 0) * adicional.cantidad, 0)
+  );
+  readonly requiresScheduledTime = computed(() => this.selectedTipificacionCode() === 'AGENDADO');
+  readonly requiresVentaCompleta = computed(() => this.selectedTipificacionCode() === 'PREVENTA_COMPLETA');
   readonly tipificacionVisualMetaByCode = computed(() => {
     const meta = new Map<string, TipificacionVisualMeta>();
     for (const option of this.catalogoTipificaciones()) {
@@ -724,6 +867,15 @@ export class GtrWorkspaceFacade {
     this.formSubscription.add(
       this.intakeForm.controls.idCampana.valueChanges.subscribe((idCampana) => {
         this.selectedIntakeCampaignId.set(idCampana === null ? null : Number(idCampana));
+      })
+    );
+    this.formSubscription.add(
+      this.tipificacionForm.controls.codigoTipificacion.valueChanges.subscribe((codigo) => {
+        this.selectedTipificacionCode.set(codigo);
+        this.tipificacionForm.controls.codigoSubtipificacion.setValue('');
+        if (codigo !== 'AGENDADO') {
+          this.tipificacionForm.controls.horaProgramada.setValue('');
+        }
       })
     );
 
@@ -1062,6 +1214,93 @@ export class GtrWorkspaceFacade {
     this.activeDialog.set('snapshot');
   }
 
+  async openTipificationFromSnapshot(): Promise<void> {
+    const lead = this.selectedSnapshotLead();
+    if (!lead) {
+      this.errorMessage.set('Selecciona un lead antes de tipificar.');
+      return;
+    }
+    await this.openTipification(lead.id);
+  }
+
+  async openTipification(idLead: number): Promise<void> {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
+    this.clearMessages();
+    this.isLoadingTypifyDetail.set(true);
+    this.activeDialog.set('typify');
+    try {
+      await this.ensureTypifyCatalogs();
+      const detail = await firstValueFrom(this.preventaService.obtenerDetalleMiPreventa(idLead));
+      this.typifyDetail.set(detail);
+      this.patchTypifyForms(detail);
+      await this.refreshOfferCatalogs(detail.idPlan ?? 0);
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar el detalle para tipificar.'));
+      this.closeTipificationDialog();
+    } finally {
+      this.isLoadingTypifyDetail.set(false);
+    }
+  }
+
+  closeTipificationDialog(): void {
+    this.typifyDetail.set(null);
+    this.activeDialog.set('snapshot');
+    this.resetTipificationState();
+  }
+
+  async tipificarLeadGtr(): Promise<void> {
+    if (!this.ensureCanMutate()) {
+      return;
+    }
+    const detail = this.typifyDetail();
+    if (!detail || this.tipificacionForm.invalid) {
+      this.errorMessage.set('Selecciona tipificacion y subtipificacion.');
+      return;
+    }
+    if (this.requiresScheduledTime() && !this.tipificacionForm.controls.horaProgramada.value) {
+      this.errorMessage.set('La hora programada es obligatoria para AGENDADO.');
+      return;
+    }
+    if (this.requiresVentaCompleta()) {
+      const message = this.getVentaCompletaMissingMessage();
+      if (message) {
+        this.errorMessage.set(message);
+        return;
+      }
+    }
+
+    const raw = this.tipificacionForm.getRawValue();
+    const tipificacionPayload = {
+      codigoTipificacion: raw.codigoTipificacion,
+      codigoSubtipificacion: raw.codigoSubtipificacion,
+      comentario: this.showComment() ? raw.comentario || null : null,
+      horaProgramada: this.requiresScheduledTime() ? raw.horaProgramada || null : null
+    };
+    const forceFullSave = this.requiresVentaCompleta();
+
+    if (forceFullSave || this.hasUnsavedDataChanges()) {
+      const canProceed = await this.guardarAntesDeTipificar(detail, forceFullSave);
+      if (!canProceed) {
+        return;
+      }
+    }
+
+    this.isSaving.set(true);
+    this.clearMessages();
+    try {
+      await firstValueFrom(this.preventaService.tipificarLead(detail.id, tipificacionPayload));
+      this.successMessage.set('Lead tipificado.');
+      this.closeDialog();
+      await this.reconcile();
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo tipificar el lead.'));
+    } finally {
+      this.isSaving.set(false);
+    }
+  }
+
   openWhatsAppChat(row: Pick<LeadGtrResponse, 'prefijo' | 'lead'>): void {
     const url = this.whatsAppUrl(row.prefijo, row.lead);
     if (!url) {
@@ -1333,6 +1572,8 @@ export class GtrWorkspaceFacade {
     this.activeDialog.set(null);
     this.activeAssignmentLead.set(null);
     this.activeSnapshotLead.set(null);
+    this.typifyDetail.set(null);
+    this.resetTipificationState();
     this.activeEventsLead.set(null);
     this.pendingReassignment.set(null);
     this.eventRows.set([]);
@@ -1358,6 +1599,136 @@ export class GtrWorkspaceFacade {
 
   closeAdvisorsPanel(): void {
     this.advisorsPanelOpen.set(false);
+  }
+
+  hasUnsavedDataChanges(): boolean {
+    return this.datosForm.dirty || this.direccionForm.dirty || this.ofertaForm.dirty;
+  }
+
+  toggleComment(): void {
+    this.showComment.update((value) => !value);
+  }
+
+  onTipoDocumentoChanged(): void {
+    const control = this.datosForm.controls.numeroDocumentoTitularServicio;
+    this.setNumericDigits(control, control.value, this.documentoServicioMaxLength());
+  }
+
+  async onPlanChanged(): Promise<void> {
+    const idPlan = this.ofertaForm.controls.idPlan.value;
+    this.ofertaForm.controls.idPromocionInterna.setValue(0);
+    await this.refreshPlanPromotions(idPlan);
+  }
+
+  async onOfertaProviderChanged(idProveedor: number): Promise<void> {
+    this.selectedOfertaProviderId.set(idProveedor || null);
+    this.ofertaForm.patchValue({
+      idProveedor: idProveedor || 0,
+      idPlan: 0,
+      idPromocionInterna: 0
+    });
+    this.selectedOfertaAdditionals.set([]);
+    this.promociones.set([]);
+    this.adicionales.set([]);
+    this.ofertaForm.markAsDirty();
+    if (idProveedor) {
+      await this.refreshProviderAdditionals(idProveedor);
+    }
+  }
+
+  incrementarAdicional(adicional: AdicionalResponse): void {
+    const current = this.selectedOfertaAdditionals();
+    const existing = current.find((item) => item.idAdicional === adicional.id);
+    const updated = existing
+      ? current.map((item) =>
+          item.idAdicional === adicional.id ? { ...item, cantidad: item.cantidad + 1 } : item
+        )
+      : [
+          ...current,
+          {
+            idAdicional: adicional.id,
+            nombre: adicional.nombre,
+            precioUnitario: adicional.precioUnitario,
+            cantidad: 1
+          }
+        ];
+    this.selectedOfertaAdditionals.set(updated);
+    this.ofertaForm.markAsDirty();
+  }
+
+  disminuirAdicional(adicional: AdicionalResponse): void {
+    const updated = this.selectedOfertaAdditionals()
+      .map((item) => (item.idAdicional === adicional.id ? { ...item, cantidad: item.cantidad - 1 } : item))
+      .filter((item) => item.cantidad > 0);
+    this.selectedOfertaAdditionals.set(updated);
+    this.ofertaForm.markAsDirty();
+  }
+
+  async onDepartamentoDomicilioChanged(): Promise<void> {
+    const idDepartamento = this.direccionForm.controls.idDepartamentoDomicilio.value;
+    this.direccionForm.patchValue({
+      idProvinciaDomicilio: 0,
+      idDistritoDomicilio: 0,
+      ubigeoDomicilio: ''
+    });
+    this.provinciasDomicilio.set([]);
+    this.distritosDomicilio.set([]);
+    if (idDepartamento > 0) {
+      await this.loadProvinciasDomicilio(idDepartamento);
+    }
+  }
+
+  async onProvinciaDomicilioChanged(): Promise<void> {
+    const idProvincia = this.direccionForm.controls.idProvinciaDomicilio.value;
+    this.direccionForm.patchValue({
+      idDistritoDomicilio: 0,
+      ubigeoDomicilio: ''
+    });
+    this.distritosDomicilio.set([]);
+    if (idProvincia > 0) {
+      await this.loadDistritosDomicilio(idProvincia);
+    }
+  }
+
+  onDistritoDomicilioChanged(): void {
+    const idDistrito = this.direccionForm.controls.idDistritoDomicilio.value;
+    const distrito = this.distritosDomicilio().find((item) => item.id === idDistrito);
+    this.direccionForm.controls.ubigeoDomicilio.setValue(distrito?.codigo ?? '');
+    this.direccionForm.controls.ubigeoDomicilio.markAsDirty();
+  }
+
+  setActiveDataTab(value: string | number | undefined): void {
+    if (value === 'datos' || value === 'direccion' || value === 'oferta') {
+      this.activeDataTab.set(value);
+    }
+  }
+
+  async limpiarTabActiva(): Promise<void> {
+    const detail = this.typifyDetail();
+    if (!detail) {
+      return;
+    }
+
+    this.clearMessages();
+    switch (this.activeDataTab()) {
+      case 'datos':
+        this.patchDatosForm(detail);
+        this.datosForm.markAsPristine();
+        this.successMessage.set('Cambios de Datos Preventa limpiados.');
+        return;
+      case 'direccion':
+        this.patchDireccionForm(detail);
+        this.direccionForm.markAsPristine();
+        void this.resolveDomicilioSelection(detail.ubigeoDomicilio ?? null);
+        this.successMessage.set('Cambios de Direccion limpiados.');
+        return;
+      case 'oferta':
+        this.patchOfertaForm(detail);
+        this.ofertaForm.markAsPristine();
+        await this.refreshOfferCatalogs(detail.idPlan ?? 0);
+        this.successMessage.set('Cambios de Oferta Comercial limpiados.');
+        return;
+    }
   }
 
   cancelSnapshot(): void {
@@ -2647,8 +3018,25 @@ export class GtrWorkspaceFacade {
     this.campanas.set(await firstValueFrom(this.preventaService.listarCampanasActivas()));
   }
 
+  private async ensureTypifyCatalogs(): Promise<void> {
+    if (this.typifyCatalogo() && this.planes().length && this.departamentos().length) {
+      return;
+    }
+    const [catalogo, planes, departamentos] = await Promise.all([
+      this.typifyCatalogo()
+        ? Promise.resolve(this.typifyCatalogo()!)
+        : firstValueFrom(this.preventaService.getCatalogoTipificaciones('PREVENTA')),
+      this.planes().length ? Promise.resolve(this.planes()) : firstValueFrom(this.preventaService.listarPlanes(undefined, true)),
+      this.departamentos().length ? Promise.resolve(this.departamentos()) : firstValueFrom(this.preventaService.listarDepartamentos())
+    ]);
+    this.typifyCatalogo.set(catalogo);
+    this.planes.set(planes);
+    this.departamentos.set(departamentos);
+  }
+
   private async refreshCatalogoTipificaciones(): Promise<void> {
     const catalogo = await firstValueFrom(this.preventaService.getCatalogoTipificaciones('PREVENTA'));
+    this.typifyCatalogo.set(catalogo);
     this.catalogoTipificaciones.set(
       catalogo.tipificaciones
         .map((tipificacion) => ({
@@ -2674,6 +3062,394 @@ export class GtrWorkspaceFacade {
         )
         .sort((left, right) => left.label.localeCompare(right.label))
     );
+  }
+
+  private async refreshOfferCatalogs(idPlan: number): Promise<void> {
+    const plan = this.planes().find((item) => item.id === idPlan);
+    const idProveedor = plan?.idProveedor ?? null;
+    this.selectedOfertaProviderId.set(idProveedor);
+    this.ofertaForm.controls.idProveedor.setValue(idProveedor ?? 0);
+    const [promociones, adicionales] = await Promise.all([
+      firstValueFrom(this.preventaService.listarPromociones(idPlan ? { idPlan } : {})),
+      idProveedor ? firstValueFrom(this.preventaService.listarAdicionales(idProveedor)) : Promise.resolve([])
+    ]);
+    this.promociones.set(promociones);
+    this.adicionales.set(adicionales);
+  }
+
+  private async refreshPlanPromotions(idPlan: number): Promise<void> {
+    const idProveedor = this.selectedOfertaProviderId() ?? undefined;
+    this.promociones.set(
+      await firstValueFrom(this.preventaService.listarPromociones({
+        idProveedor,
+        ...(idPlan ? { idPlan } : {})
+      }))
+    );
+  }
+
+  private async refreshProviderAdditionals(idProveedor: number): Promise<void> {
+    this.adicionales.set(await firstValueFrom(this.preventaService.listarAdicionales(idProveedor)));
+  }
+
+  private patchTypifyForms(detail: LeadDetalleResponse): void {
+    this.patchDatosForm(detail);
+    this.patchDireccionForm(detail);
+    this.patchOfertaForm(detail);
+    this.tipificacionForm.reset({
+      codigoTipificacion: '',
+      codigoSubtipificacion: '',
+      comentario: '',
+      horaProgramada: ''
+    });
+    this.selectedTipificacionCode.set('');
+    this.showComment.set(false);
+    this.activeDataTab.set('datos');
+    this.markTypifyFormsPristine();
+  }
+
+  private patchDatosForm(detail: LeadDetalleResponse): void {
+    this.datosForm.patchValue({
+      tipoDocumento: detail.tipoDocumento ?? '',
+      numeroDocumentoTitularServicio: detail.numeroDocumentoTitularServicio ?? '',
+      ubigeoNacimiento: detail.ubigeoNacimiento ?? '',
+      nombreTitularServicio: detail.nombreTitular ?? '',
+      celularRegistro: detail.celularRegistro ?? '',
+      celularReferencia: detail.celularReferencia ?? '',
+      correo: detail.correo ?? '',
+      nombreMadre: detail.nombreMadre ?? '',
+      nombrePadre: detail.nombrePadre ?? '',
+      numeroDocumentoTitularCelularRegistro: detail.numeroDocumentoTitularCelularRegistro ?? '',
+      nombreTitularCelularRegistro: detail.nombreTitularCelularRegistro ?? ''
+    });
+  }
+
+  private patchDireccionForm(detail: LeadDetalleResponse): void {
+    this.direccionForm.patchValue({
+      idDepartamentoDomicilio: 0,
+      idProvinciaDomicilio: 0,
+      idDistritoDomicilio: 0,
+      ubigeoDomicilio: detail.ubigeoDomicilio ?? '',
+      tipoDomicilio: detail.tipoDomicilio ?? '',
+      tipoVia: detail.tipoVia ?? '',
+      via: detail.via ?? '',
+      direccion: detail.direccion ?? '',
+      referencia: detail.referencia ?? '',
+      latitud: detail.latitud ?? null,
+      longitud: detail.longitud ?? null,
+      urbanizacion: detail.urbanizacion ?? '',
+      numero: detail.numero ?? '',
+      manzana: detail.manzana ?? '',
+      lote: detail.lote ?? '',
+      nombreEdificio: detail.nombreEdificio ?? '',
+      nombreCondominio: detail.nombreCondominio ?? '',
+      piso: detail.piso ?? '',
+      interior: detail.interior ?? '',
+      plano: detail.plano ?? ''
+    });
+    void this.resolveDomicilioSelection(detail.ubigeoDomicilio ?? null);
+  }
+
+  private patchOfertaForm(detail: LeadDetalleResponse): void {
+    const idPlan = detail.idPlan ?? 0;
+    const idProveedor = this.planes().find((plan) => plan.id === idPlan)?.idProveedor ?? null;
+    this.selectedOfertaProviderId.set(idProveedor);
+    this.selectedOfertaAdditionals.set([]);
+    this.ofertaForm.patchValue({
+      idProveedor: idProveedor ?? 0,
+      idPlan,
+      idPromocionInterna: detail.idPromocionInterna ?? 0
+    });
+  }
+
+  private markTypifyFormsPristine(): void {
+    this.datosForm.markAsPristine();
+    this.direccionForm.markAsPristine();
+    this.ofertaForm.markAsPristine();
+    this.tipificacionForm.markAsPristine();
+  }
+
+  private resetTipificationState(): void {
+    this.typifyDetail.set(null);
+    this.selectedTipificacionCode.set('');
+    this.selectedOfertaProviderId.set(null);
+    this.selectedOfertaAdditionals.set([]);
+    this.promociones.set([]);
+    this.adicionales.set([]);
+    this.provinciasDomicilio.set([]);
+    this.distritosDomicilio.set([]);
+    this.activeDataTab.set('datos');
+    this.showComment.set(false);
+    this.tipificacionForm.reset({
+      codigoTipificacion: '',
+      codigoSubtipificacion: '',
+      comentario: '',
+      horaProgramada: ''
+    });
+    this.markTypifyFormsPristine();
+  }
+
+  private async guardarAntesDeTipificar(detail: LeadDetalleResponse, forceFullSave = false): Promise<boolean> {
+    const tasks: { label: string; action: () => Promise<void>; form: { markAsPristine: () => void } }[] = [];
+
+    if (forceFullSave || this.datosForm.dirty) {
+      if (this.datosForm.invalid) {
+        this.errorMessage.set('Datos Preventa incompleto: tipo y numero de documento son obligatorios.');
+        return false;
+      }
+      tasks.push({
+        label: 'Datos Preventa',
+        form: this.datosForm,
+        action: () =>
+          firstValueFrom(this.preventaService.actualizarDatosPreventa(detail.id, this.cleanObject(this.datosForm.getRawValue())))
+      });
+    }
+
+    if (forceFullSave || this.direccionForm.dirty) {
+      if (this.direccionForm.invalid) {
+        this.errorMessage.set(this.getDireccionValidationMessage());
+        return false;
+      }
+      tasks.push({
+        label: 'Direccion',
+        form: this.direccionForm,
+        action: () =>
+          firstValueFrom(this.preventaService.actualizarDireccion(detail.id, this.getDireccionRequest()))
+      });
+    }
+
+    if (forceFullSave || this.ofertaForm.dirty) {
+      tasks.push({
+        label: 'Oferta Comercial',
+        form: this.ofertaForm,
+        action: () =>
+          firstValueFrom(this.preventaService.actualizarOfertaComercial(detail.id, this.getOfertaRequest()))
+      });
+    }
+
+    this.isSaving.set(true);
+    const saved: string[] = [];
+    const failed: string[] = [];
+
+    try {
+      for (const task of tasks) {
+        try {
+          await task.action();
+          task.form.markAsPristine();
+          saved.push(task.label);
+        } catch (error) {
+          failed.push(`${task.label}: ${this.getErrorMessage(error, 'No se pudo guardar')}`);
+        }
+      }
+    } finally {
+      this.isSaving.set(false);
+    }
+
+    if (failed.length) {
+      const okMsg = saved.length ? `OK: ${saved.join(', ')}. ` : '';
+      this.errorMessage.set(`Guardado parcial. ${okMsg}Fallo: ${failed.join(' | ')}. Corrige e intenta tipificar de nuevo.`);
+      return false;
+    }
+
+    return true;
+  }
+
+  private documentoServicioMaxLength(): number {
+    switch (this.datosForm.controls.tipoDocumento.value) {
+      case 'DNI':
+        return 8;
+      case 'RUC':
+        return 11;
+      case 'CE':
+        return 12;
+      default:
+        return 12;
+    }
+  }
+
+  private setNumericDigits(control: AbstractControl | null, value: string, maxLength: number): void {
+    if (!control) {
+      return;
+    }
+    const normalized = value.replace(/\D/g, '').slice(0, maxLength);
+    if (control.value !== normalized) {
+      control.setValue(normalized);
+    }
+  }
+
+  private cleanObject<T extends Record<string, unknown>>(value: T): T {
+    return Object.fromEntries(Object.entries(value).map(([key, entryValue]) => [key, entryValue === '' ? null : entryValue])) as T;
+  }
+
+  private getOfertaRequest(): LeadOfertaComercialRequest {
+    const raw = this.ofertaForm.getRawValue();
+    const adicionales = this.selectedOfertaAdditionals()
+      .filter((item) => item.cantidad > 0)
+      .map((item) => ({
+        idAdicional: item.idAdicional,
+        cantidad: item.cantidad
+      }));
+
+    return {
+      idPlan: raw.idPlan || null,
+      idPromocionInterna: raw.idPromocionInterna || null,
+      adicionales: adicionales.length ? adicionales : null
+    };
+  }
+
+  private getDireccionRequest(): LeadDireccionRequest {
+    const raw = this.direccionForm.getRawValue();
+    return this.cleanObject({
+      ubigeoDomicilio: raw.ubigeoDomicilio,
+      tipoDomicilio: raw.tipoDomicilio,
+      tipoVia: raw.tipoVia,
+      via: raw.via,
+      direccion: raw.direccion,
+      referencia: raw.referencia,
+      latitud: raw.latitud as number,
+      longitud: raw.longitud as number,
+      urbanizacion: raw.urbanizacion,
+      numero: raw.numero,
+      manzana: raw.manzana,
+      lote: raw.lote,
+      nombreEdificio: raw.nombreEdificio,
+      nombreCondominio: raw.nombreCondominio,
+      piso: raw.piso,
+      interior: raw.interior,
+      plano: raw.plano
+    });
+  }
+
+  private getVentaCompletaMissingMessage(): string | null {
+    const blank = (value: string | null | undefined): boolean => !value || !value.trim();
+    const d = this.datosForm.controls;
+    const a = this.direccionForm.controls;
+
+    const faltantes: { tab: 'datos' | 'direccion' | 'oferta'; campo: string }[] = [];
+
+    if (blank(d.tipoDocumento.value)) faltantes.push({ tab: 'datos', campo: 'Documento' });
+    if (blank(d.numeroDocumentoTitularServicio.value)) faltantes.push({ tab: 'datos', campo: 'Numero de Documento' });
+    if (blank(d.nombreTitularServicio.value)) faltantes.push({ tab: 'datos', campo: 'Titular del Servicio' });
+    if (blank(d.celularRegistro.value)) faltantes.push({ tab: 'datos', campo: 'Celular a registrar' });
+    if (blank(d.correo.value)) faltantes.push({ tab: 'datos', campo: 'Correo' });
+
+    for (const campo of this.camposConfig()) {
+      if (!campo.visible || !campo.requerido) {
+        continue;
+      }
+      const meta = CAMPOS_CONFIGURABLES[campo.campo];
+      if (!meta) {
+        continue;
+      }
+      const value =
+        meta.tab === 'datos' ? this.datosForm.get(meta.control)?.value : this.direccionForm.get(meta.control)?.value;
+      if (blank(value)) {
+        faltantes.push({ tab: meta.tab, campo: meta.label });
+      }
+    }
+
+    if (blank(a.ubigeoDomicilio.value)) faltantes.push({ tab: 'direccion', campo: 'Distrito' });
+    if (blank(a.tipoDomicilio.value)) faltantes.push({ tab: 'direccion', campo: 'Tipo de Domicilio' });
+    if (blank(a.direccion.value)) faltantes.push({ tab: 'direccion', campo: 'Direccion' });
+    if (blank(a.referencia.value)) faltantes.push({ tab: 'direccion', campo: 'Referencia' });
+    if (blank(a.piso.value)) faltantes.push({ tab: 'direccion', campo: 'Piso' });
+    if (blank(a.interior.value)) faltantes.push({ tab: 'direccion', campo: 'Interior' });
+
+    if (!this.ofertaForm.controls.idPlan.value) {
+      faltantes.push({ tab: 'oferta', campo: 'Plan' });
+    }
+
+    if (!faltantes.length) {
+      return null;
+    }
+
+    const tabsOrdenadas: { tab: 'datos' | 'direccion' | 'oferta'; titulo: string }[] = [
+      { tab: 'datos', titulo: 'Datos' },
+      { tab: 'direccion', titulo: 'Direccion' },
+      { tab: 'oferta', titulo: 'Oferta comercial' }
+    ];
+
+    const grupos = tabsOrdenadas
+      .map(({ tab, titulo }) => {
+        const campos = faltantes.filter((item) => item.tab === tab).map((item) => item.campo);
+        return campos.length ? `${titulo}: ${campos.join(', ')}` : null;
+      })
+      .filter((grupo): grupo is string => grupo !== null);
+
+    this.activeDataTab.set(faltantes[0].tab);
+    return `Para cerrar la venta, completa estos datos. ${grupos.join('. ')}.`;
+  }
+
+  private getDireccionValidationMessage(): string {
+    const missing: string[] = [];
+    if (this.direccionForm.controls.idDepartamentoDomicilio.invalid) missing.push('departamento');
+    if (this.direccionForm.controls.idProvinciaDomicilio.invalid) missing.push('provincia');
+    if (this.direccionForm.controls.idDistritoDomicilio.invalid) missing.push('distrito');
+    if (this.direccionForm.controls.direccion.invalid) missing.push('direccion');
+    if (this.direccionForm.controls.latitud.invalid) missing.push('latitud');
+    if (this.direccionForm.controls.longitud.invalid) missing.push('longitud');
+    return missing.length ? `Direccion incompleta. Revisa: ${missing.join(', ')}.` : 'Direccion incompleta.';
+  }
+
+  private async resolveDomicilioSelection(ubigeoDomicilio: string | null): Promise<void> {
+    if (!ubigeoDomicilio) {
+      this.provinciasDomicilio.set([]);
+      this.distritosDomicilio.set([]);
+      this.direccionForm.patchValue({
+        idDepartamentoDomicilio: 0,
+        idProvinciaDomicilio: 0,
+        idDistritoDomicilio: 0
+      });
+      this.direccionForm.markAsPristine();
+      return;
+    }
+
+    try {
+      const departamentos = this.departamentos().length
+        ? this.departamentos()
+        : await firstValueFrom(this.preventaService.listarDepartamentos());
+      if (!this.departamentos().length) {
+        this.departamentos.set(departamentos);
+      }
+
+      for (const departamento of departamentos) {
+        const provincias = await firstValueFrom(this.preventaService.listarProvincias(departamento.id));
+        for (const provincia of provincias) {
+          const distritos = await firstValueFrom(this.preventaService.listarDistritos(provincia.id));
+          const distrito = distritos.find((item) => item.codigo === ubigeoDomicilio);
+          if (distrito) {
+            this.provinciasDomicilio.set(provincias);
+            this.distritosDomicilio.set(distritos);
+            this.direccionForm.patchValue({
+              idDepartamentoDomicilio: departamento.id,
+              idProvinciaDomicilio: provincia.id,
+              idDistritoDomicilio: distrito.id,
+              ubigeoDomicilio
+            });
+            this.direccionForm.markAsPristine();
+            return;
+          }
+        }
+      }
+    } catch {
+      this.provinciasDomicilio.set([]);
+      this.distritosDomicilio.set([]);
+    }
+  }
+
+  private async loadProvinciasDomicilio(idDepartamento: number): Promise<void> {
+    try {
+      this.provinciasDomicilio.set(await firstValueFrom(this.preventaService.listarProvincias(idDepartamento)));
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudieron cargar las provincias.'));
+    }
+  }
+
+  private async loadDistritosDomicilio(idProvincia: number): Promise<void> {
+    try {
+      this.distritosDomicilio.set(await firstValueFrom(this.preventaService.listarDistritos(idProvincia)));
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudieron cargar los distritos.'));
+    }
   }
 
   private tipificacionPaletteIndex(orden: number): number {

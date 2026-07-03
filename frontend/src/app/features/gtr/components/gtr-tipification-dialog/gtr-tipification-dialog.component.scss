@@ -1,0 +1,123 @@
+:host ::ng-deep .gtr-tipification-dialog {
+  width: min(72rem, calc(100vw - 1.5rem));
+}
+
+:host ::ng-deep .gtr-tipification-dialog .p-dialog-content {
+  padding: 0;
+}
+
+.tipify-workspace {
+  display: grid;
+  gap: 1rem;
+  padding: 1.1rem;
+}
+
+.tipify-workspace__head {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.tipify-workspace__eyebrow {
+  color: var(--role-accent);
+  font-size: .75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+h2 {
+  color: var(--role-primary);
+  font-size: 1.25rem;
+  margin: .1rem 0 0;
+}
+
+.tipify-workspace__tags {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+  justify-content: flex-end;
+}
+
+.tipify-workspace__tags img {
+  display: block;
+  max-height: 2rem;
+  max-width: 5rem;
+  object-fit: contain;
+}
+
+.tipification-bar {
+  align-items: end;
+  background: var(--app-surface-soft);
+  border: 1px solid var(--app-border-soft);
+  border-radius: .55rem;
+  display: grid;
+  gap: .75rem;
+  grid-template-columns: minmax(10rem, 1fr) minmax(10rem, 1fr) auto auto;
+  padding: .85rem;
+}
+
+.tipification-bar__field,
+.tipification-bar__comment {
+  color: var(--app-text-muted);
+  display: grid;
+  font-size: .78rem;
+  font-weight: 800;
+  gap: .35rem;
+}
+
+.tipification-bar__field--time {
+  min-width: 9rem;
+}
+
+.tipification-bar__comment {
+  grid-column: 1 / -1;
+}
+
+.select-item {
+  display: grid;
+  gap: .15rem;
+}
+
+.select-item small {
+  color: var(--app-text-muted);
+}
+
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65rem;
+  justify-content: flex-end;
+}
+
+.dialog-skeleton {
+  display: grid;
+  gap: 1rem;
+  padding: 1.1rem;
+}
+
+:host ::ng-deep .p-select,
+:host ::ng-deep .p-datepicker,
+:host ::ng-deep .p-textarea {
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .tipify-workspace__head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tipification-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .dialog-actions {
+    justify-content: stretch;
+  }
+
+  .dialog-actions button {
+    flex: 1 1 12rem;
+  }
+}

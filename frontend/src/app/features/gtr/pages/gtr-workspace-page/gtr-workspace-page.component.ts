@@ -25,6 +25,7 @@ import { GtrEventsDialogComponent } from '../../components/gtr-events-dialog/gtr
 import { GtrAdvisorEventsDialogComponent } from '../../components/gtr-advisor-events-dialog/gtr-advisor-events-dialog.component';
 import { GtrSearchDialogComponent } from '../../components/gtr-search-dialog/gtr-search-dialog.component';
 import { GtrScheduleExtensionDialogComponent } from '../../components/gtr-schedule-extension-dialog/gtr-schedule-extension-dialog.component';
+import { GtrTipificationDialogComponent } from '../../components/gtr-tipification-dialog/gtr-tipification-dialog.component';
 
 @Component({
   selector: 'app-gtr-workspace-page',
@@ -52,7 +53,8 @@ import { GtrScheduleExtensionDialogComponent } from '../../components/gtr-schedu
     GtrEventsDialogComponent,
     GtrAdvisorEventsDialogComponent,
     GtrSearchDialogComponent,
-    GtrScheduleExtensionDialogComponent
+    GtrScheduleExtensionDialogComponent,
+    GtrTipificationDialogComponent
   ],
   providers: [GtrWorkspaceFacade, RankingFacade],
   templateUrl: './gtr-workspace-page.component.html',

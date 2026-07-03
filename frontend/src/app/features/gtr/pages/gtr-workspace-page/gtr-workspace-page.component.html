@@ -444,6 +444,16 @@
             <button
               pButton
               type="button"
+              icon="pi pi-check-circle"
+              label="Tipificar"
+              size="small"
+              severity="secondary"
+              [disabled]="!lead.lead || !facade.canMutateOperationalData()"
+              (click)="facade.openTipificationFromSnapshot()"
+            ></button>
+            <button
+              pButton
+              type="button"
               icon="pi pi-phone"
               label="Llamar"
               size="small"
@@ -630,4 +640,6 @@
   <app-gtr-search-dialog />
 
   <app-gtr-schedule-extension-dialog />
+
+  <app-gtr-tipification-dialog />
 </section>

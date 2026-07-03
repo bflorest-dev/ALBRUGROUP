@@ -1,0 +1,177 @@
+<p-dialog
+  [showHeader]="false"
+  [visible]="facade.activeDialog() === 'typify'"
+  (visibleChange)="!$event && facade.closeTipificationDialog()"
+  [modal]="true"
+  [draggable]="false"
+  [closable]="false"
+  [closeOnEscape]="false"
+  [dismissableMask]="false"
+  [breakpoints]="{ '1200px': '92vw', '720px': '96vw' }"
+  appendTo="body"
+  styleClass="gtr-tipification-dialog"
+>
+  @if (facade.typifyDetail(); as lead) {
+    <section class="tipify-workspace">
+      <header class="tipify-workspace__head">
+        <div>
+          <span class="tipify-workspace__eyebrow">Tipificacion del lead</span>
+          <h2>{{ facade.leadPrefixLabel(lead.prefijo) }} {{ lead.lead }}</h2>
+        </div>
+
+        <div class="tipify-workspace__tags">
+          @if (facade.providerLogo(lead.nombreProveedorCampana ?? lead.nombreProveedorEquipo); as logo) {
+            <img [src]="logo" [alt]="facade.display(lead.nombreProveedorCampana ?? lead.nombreProveedorEquipo)" />
+          }
+          <p-tag [severity]="facade.estadoSeverity(lead.estadoSeguimiento)" [value]="facade.display(lead.estadoSeguimiento)" />
+          @if (facade.hasUnsavedDataChanges()) {
+            <p-tag severity="warn" value="Cambios sin guardar" />
+          }
+        </div>
+      </header>
+
+      @if (facade.successMessage()) {
+        <p-message severity="success" [text]="facade.successMessage() ?? ''" />
+      }
+      @if (facade.errorMessage()) {
+        <p-message severity="error" [text]="facade.errorMessage() ?? ''" />
+      }
+
+      <form class="tipification-bar" [formGroup]="facade.tipificacionForm" (ngSubmit)="facade.tipificarLeadGtr()">
+        <label class="tipification-bar__field tipification-bar__field--tipificacion">
+          <span>Tipificacion</span>
+          <p-select
+            formControlName="codigoTipificacion"
+            [options]="facade.tipificaciones()"
+            optionLabel="codigo"
+            optionValue="codigo"
+            placeholder="Seleccionar"
+            appendTo="body"
+          >
+            <ng-template #item let-tipificacion>
+              <div class="select-item">
+                <strong>{{ tipificacion.codigo }}</strong>
+                <small>{{ tipificacion.descripcion }}</small>
+              </div>
+            </ng-template>
+          </p-select>
+        </label>
+
+        <label class="tipification-bar__field tipification-bar__field--subtipificacion">
+          <span>Subtipificacion</span>
+          <p-select
+            formControlName="codigoSubtipificacion"
+            [options]="facade.subtipificaciones()"
+            optionLabel="codigo"
+            optionValue="codigo"
+            placeholder="Seleccionar"
+            appendTo="body"
+            [disabled]="!facade.selectedTipificacionCode() || !facade.subtipificaciones().length"
+          >
+            <ng-template #item let-subtipificacion>
+              <div class="select-item">
+                <strong>{{ subtipificacion.codigo }}</strong>
+                <small>{{ subtipificacion.descripcion }}</small>
+              </div>
+            </ng-template>
+          </p-select>
+        </label>
+
+        @if (facade.requiresScheduledTime()) {
+          <label class="tipification-bar__field tipification-bar__field--time">
+            <span>Hora programada</span>
+            <p-datepicker
+              formControlName="horaProgramada"
+              dataType="string"
+              [timeOnly]="true"
+              hourFormat="24"
+              [stepMinute]="5"
+              [showIcon]="true"
+              icon="pi pi-clock"
+              appendTo="body"
+            />
+          </label>
+        }
+
+        <button
+          pButton
+          type="button"
+          icon="pi pi-comment"
+          [label]="facade.showComment() ? 'Ocultar comentario' : 'Comentario'"
+          severity="secondary"
+          (click)="facade.toggleComment()"
+        ></button>
+        <button
+          pButton
+          type="submit"
+          icon="pi pi-check"
+          label="Tipificar"
+          [disabled]="!facade.canMutateOperationalData()"
+          [loading]="facade.isSaving()"
+        ></button>
+
+        @if (facade.showComment()) {
+          <label class="tipification-bar__comment">
+            <span>Comentario opcional</span>
+            <textarea pTextarea rows="3" formControlName="comentario"></textarea>
+          </label>
+        }
+      </form>
+
+      <app-lead-commercial-data-tabs
+        [datosForm]="facade.datosForm"
+        [direccionForm]="facade.direccionForm"
+        [ofertaForm]="facade.ofertaForm"
+        [camposVisibles]="facade.camposVisibles()"
+        [activeTab]="facade.activeDataTab()"
+        [tipoDocumentoOptions]="facade.tipoDocumentoOptions"
+        [tipoDomicilioOptions]="facade.tipoDomicilioOptions"
+        [tipoViaOptions]="facade.tipoViaOptions"
+        [departamentos]="facade.departamentos()"
+        [provinciasDomicilio]="facade.provinciasDomicilio()"
+        [distritosDomicilio]="facade.distritosDomicilio()"
+        [providerOptions]="facade.ofertaProviderOptions()"
+        [selectedProviderId]="facade.selectedOfertaProviderId()"
+        [planOptions]="facade.planOptions()"
+        [promocionOptions]="facade.promocionOptions()"
+        [adicionales]="facade.adicionales()"
+        [selectedAdditionals]="facade.selectedOfertaAdditionals()"
+        [additionalsTotal]="facade.ofertaAdditionalsTotal()"
+        (activeTabChange)="facade.setActiveDataTab($event)"
+        (tipoDocumentoChange)="facade.onTipoDocumentoChanged()"
+        (departamentoDomicilioChange)="facade.onDepartamentoDomicilioChanged()"
+        (provinciaDomicilioChange)="facade.onProvinciaDomicilioChanged()"
+        (distritoDomicilioChange)="facade.onDistritoDomicilioChanged()"
+        (ofertaProviderChange)="facade.onOfertaProviderChanged($event)"
+        (planChange)="facade.onPlanChanged()"
+        (incrementarAdicional)="facade.incrementarAdicional($event)"
+        (disminuirAdicional)="facade.disminuirAdicional($event)"
+      />
+
+      <footer class="dialog-actions">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-eraser"
+          label="Limpiar tab"
+          severity="secondary"
+          [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
+          (click)="facade.limpiarTabActiva()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          label="Volver"
+          severity="secondary"
+          [outlined]="true"
+          (click)="facade.closeTipificationDialog()"
+        ></button>
+      </footer>
+    </section>
+  } @else {
+    <div class="dialog-skeleton">
+      <p-skeleton width="18rem" height="2rem" />
+      <p-skeleton width="100%" height="16rem" />
+    </div>
+  }
+</p-dialog>
