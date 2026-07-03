@@ -14,6 +14,7 @@
 
 .hero-row,
 .hero-actions,
+.board-organization,
 .board-title,
 .lead-head,
 .lead-tags,
@@ -28,6 +29,7 @@
 }
 
 .hero-actions,
+.board-organization,
 .lead-tags,
 .dialog-actions {
   flex-wrap: wrap;
@@ -64,6 +66,49 @@ p,
 
 .board-title {
   gap: 0.55rem;
+}
+
+.board-organization {
+  background: color-mix(in srgb, var(--role-accent) 5%, #ffffff 95%);
+  border: 1px solid color-mix(in srgb, var(--role-accent) 14%, #ffffff 86%);
+  border-radius: 12px;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+}
+
+.board-organization-copy {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 14rem;
+}
+
+.board-organization-copy strong {
+  color: var(--role-primary);
+  font-size: 0.9rem;
+}
+
+.board-organization-copy span {
+  color: var(--role-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.board-organization-actions {
+  display: flex;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.backoffice-organize-panel {
+  display: grid;
+  gap: 0.8rem;
+  min-width: 17rem;
+}
+
+.backoffice-organize-divider {
+  background: color-mix(in srgb, var(--role-accent) 14%, #ffffff 86%);
+  height: 1px;
 }
 
 .col-actions {
@@ -162,6 +207,19 @@ label {
   max-width: 22rem;
 }
 
+.lead-search-spacer {
+  flex: 1 1 auto;
+}
+
+.lead-search-summary {
+  color: var(--role-muted);
+  flex: 0 1 auto;
+  font-size: 0.78rem;
+  font-weight: 700;
+  min-width: 10rem;
+  text-align: right;
+}
+
 .lead-search-note {
   display: block;
   margin-bottom: 0.75rem;
@@ -229,6 +287,14 @@ app-lead-commercial-data-tabs {
   .p-tabpanels {
     padding: 0;
   }
+
+  .backoffice-organize-popover .p-popover-content {
+    padding: 0.9rem;
+  }
+
+  .backoffice-organize-panel .p-select {
+    width: 100%;
+  }
 }
 
 @keyframes row-enter {
@@ -263,13 +329,28 @@ app-lead-commercial-data-tabs {
   }
 
   .hero-actions,
+  .board-organization,
   .dialog-actions {
     align-items: stretch;
     width: 100%;
   }
 
   .hero-actions button,
+  .board-organization button,
   .dialog-actions button {
+    width: 100%;
+  }
+
+  .board-organization-actions {
+    width: 100%;
+  }
+
+  .lead-search-summary {
+    text-align: left;
+    width: 100%;
+  }
+
+  .lead-search-organize {
     width: 100%;
   }
 }

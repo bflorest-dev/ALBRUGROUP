@@ -39,6 +39,83 @@
       {{ boardSubtitle() }}
     </ng-template>
 
+    @if (section() === 'gestion') {
+      <section class="board-organization" aria-label="Organizar resultados">
+        <div class="board-organization-copy">
+          <strong>Organizar resultados</strong>
+          <span>{{ organizationSummary() }}</span>
+        </div>
+
+        <div class="board-organization-actions">
+          <button
+            pButton
+            type="button"
+            icon="pi pi-sliders-h"
+            label="Organizar"
+            severity="secondary"
+            [outlined]="true"
+            [disabled]="!canDisplayOperationalData()"
+            (mouseenter)="onOrganizeEnter()"
+            (mouseleave)="onOrganizeLeave(organizePopover)"
+            (click)="onOrganizeEnter(); organizePopover.toggle($event)"
+          ></button>
+
+          <p-popover #organizePopover appendTo="body" styleClass="backoffice-organize-popover">
+            <div class="backoffice-organize-panel" (mouseenter)="onOrganizeEnter()" (mouseleave)="onOrganizeLeave(organizePopover)">
+              <label for="backoffice-grouping">
+                <span>Agrupar por</span>
+                <p-select
+                  inputId="backoffice-grouping"
+                  [options]="groupingModeOptions"
+                  [ngModel]="activeGroupingMode()"
+                  optionLabel="label"
+                  optionValue="value"
+                  (onChange)="setActiveGroupingMode($any($event.value))"
+                />
+              </label>
+
+              <div class="backoffice-organize-divider"></div>
+
+              <label for="backoffice-sort">
+                <span>Ordenar por</span>
+                <p-select
+                  inputId="backoffice-sort"
+                  [options]="sortOptions"
+                  [ngModel]="activeSortField()"
+                  optionLabel="label"
+                  optionValue="value"
+                  (onChange)="setActiveSortField($any($event.value))"
+                />
+              </label>
+
+              <label for="backoffice-direction">
+                <span>Mostrar primero</span>
+                <p-select
+                  inputId="backoffice-direction"
+                  [options]="sortDirectionOptions()"
+                  [ngModel]="activeSortDirection()"
+                  optionLabel="label"
+                  optionValue="value"
+                  (onChange)="setActiveSortDirection($any($event.value))"
+                />
+              </label>
+
+              <button
+                pButton
+                type="button"
+                icon="pi pi-filter-slash"
+                label="Limpiar"
+                severity="secondary"
+                [text]="true"
+                [disabled]="isOrganizationDefault()"
+                (click)="clearOrganization()"
+              ></button>
+            </div>
+          </p-popover>
+        </div>
+      </section>
+    }
+
     @if (section() === 'plataforma') {
       <div class="lead-search">
         <input
@@ -72,6 +149,74 @@
             (click)="limpiarBusqueda()"
           ></button>
         }
+        <span class="lead-search-spacer"></span>
+        <span class="lead-search-summary">{{ organizationSummary() }}</span>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-sliders-h"
+          label="Organizar"
+          severity="secondary"
+          [outlined]="true"
+          class="lead-search-organize"
+          [disabled]="!canDisplayOperationalData()"
+          (mouseenter)="onOrganizeEnter()"
+          (mouseleave)="onOrganizeLeave(platformOrganizePopover)"
+          (click)="onOrganizeEnter(); platformOrganizePopover.toggle($event)"
+        ></button>
+
+        <p-popover #platformOrganizePopover appendTo="body" styleClass="backoffice-organize-popover">
+          <div class="backoffice-organize-panel" (mouseenter)="onOrganizeEnter()" (mouseleave)="onOrganizeLeave(platformOrganizePopover)">
+            <label for="backoffice-platform-grouping">
+              <span>Agrupar por</span>
+              <p-select
+                inputId="backoffice-platform-grouping"
+                [options]="groupingModeOptions"
+                [ngModel]="activeGroupingMode()"
+                optionLabel="label"
+                optionValue="value"
+                (onChange)="setActiveGroupingMode($any($event.value))"
+              />
+            </label>
+
+            <div class="backoffice-organize-divider"></div>
+
+            <label for="backoffice-platform-sort">
+              <span>Ordenar por</span>
+              <p-select
+                inputId="backoffice-platform-sort"
+                [options]="sortOptions"
+                [ngModel]="activeSortField()"
+                optionLabel="label"
+                optionValue="value"
+                (onChange)="setActiveSortField($any($event.value))"
+              />
+            </label>
+
+            <label for="backoffice-platform-direction">
+              <span>Mostrar primero</span>
+              <p-select
+                inputId="backoffice-platform-direction"
+                [options]="sortDirectionOptions()"
+                [ngModel]="activeSortDirection()"
+                optionLabel="label"
+                optionValue="value"
+                (onChange)="setActiveSortDirection($any($event.value))"
+              />
+            </label>
+
+            <button
+              pButton
+              type="button"
+              icon="pi pi-filter-slash"
+              label="Limpiar"
+              severity="secondary"
+              [text]="true"
+              [disabled]="isOrganizationDefault()"
+              (click)="clearOrganization()"
+            ></button>
+          </div>
+        </p-popover>
       </div>
 
       @if (searchLookup(); as lookup) {
@@ -88,8 +233,8 @@
       scrollHeight="flex"
       [tableStyle]="{ 'min-width': '1120px' }"
       styleClass="p-datatable-sm backoffice-table"
-      [rowGroupMode]="section() === 'gestion' || section() === 'programados' ? 'subheader' : undefined"
-      [groupRowsBy]="section() === 'programados' ? 'programacionGroupKey' : 'codigoTipificacion'"
+      [rowGroupMode]="activeRowGroupMode()"
+      [groupRowsBy]="activeGroupRowsBy()"
     >
       <ng-template #header>
         <tr>
@@ -113,13 +258,8 @@
               <span class="group-title">{{ programacionGroupTitle(row) }}</span>
               <span class="group-hint">{{ programacionGroupHint(row) }}</span>
             } @else {
-              @if (row.codigoTipificacion) {
-                <span class="group-title">{{ row.codigoTipificacion }}</span>
-                <span class="group-hint">En seguimiento</span>
-              } @else {
-                <span class="group-title">Sin tipificar</span>
-                <span class="group-hint">Recien asignados</span>
-              }
+              <span class="group-title">{{ organizationGroupTitle(row) }}</span>
+              <span class="group-hint">{{ organizationGroupHint(row) }}</span>
             }
           </td>
         </tr>
