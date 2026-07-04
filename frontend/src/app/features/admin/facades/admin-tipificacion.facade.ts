@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import {
+  CatalogoEstadoRequest,
   CatalogoRequest,
   CatalogoResponse,
   SubtipificacionCatalogoRequest,
@@ -33,6 +34,8 @@ export interface TipDraft {
 export class AdminTipificacionFacade {
   private readonly service = inject(AdminTipificacionService);
   private uidSeq = 0;
+  private readonly tipificacionesDesactivar = signal<number[]>([]);
+  private readonly subtipificacionesDesactivar = signal<number[]>([]);
 
   readonly etapaOptions: { value: EtapaCatalogo; label: string }[] = [
     { value: 'PREVENTA', label: 'Preventa' },
@@ -75,6 +78,7 @@ export class AdminTipificacionFacade {
     try {
       const catalogo = await firstValueFrom(this.service.getCatalogo(etapa));
       this.drafts.set(this.toDrafts(catalogo, etapa));
+      this.clearPendingStateChanges();
     } finally {
       this.isLoading.set(false);
     }
@@ -89,7 +93,13 @@ export class AdminTipificacionFacade {
   }
 
   removeTipificacion(uid: string): void {
-    this.drafts.update((items) => items.filter((item) => item.uid !== uid));
+    this.drafts.update((items) => {
+      const target = items.find((item) => item.uid === uid);
+      if (target?.id) {
+        this.queueTipificacionDesactivar(target);
+      }
+      return items.filter((item) => item.uid !== uid);
+    });
   }
 
   updateTipField(uid: string, field: 'codigo' | 'descripcion' | 'orden', value: string | number): void {
@@ -110,11 +120,16 @@ export class AdminTipificacionFacade {
 
   removeSubtipificacion(tipUid: string, subUid: string): void {
     this.drafts.update((items) =>
-      items.map((item) =>
-        item.uid === tipUid
-          ? { ...item, subtipificaciones: item.subtipificaciones.filter((sub) => sub.uid !== subUid) }
-          : item
-      )
+      items.map((item) => {
+        if (item.uid !== tipUid) {
+          return item;
+        }
+        const target = item.subtipificaciones.find((sub) => sub.uid === subUid);
+        if (target?.id) {
+          this.queueSubtipificacionDesactivar(target.id);
+        }
+        return { ...item, subtipificaciones: item.subtipificaciones.filter((sub) => sub.uid !== subUid) };
+      })
     );
   }
 
@@ -191,11 +206,30 @@ export class AdminTipificacionFacade {
     const request = this.toRequest();
     this.isSaving.set(true);
     try {
+      await this.applyPendingStateChanges();
       const catalogo = await firstValueFrom(this.service.upsertCatalogo(request));
       this.drafts.set(this.toDrafts(catalogo, this.selectedEtapa()));
+      this.clearPendingStateChanges();
     } finally {
       this.isSaving.set(false);
     }
+  }
+
+  private async applyPendingStateChanges(): Promise<void> {
+    const tipificacionesDesactivar = this.tipificacionesDesactivar();
+    const subtipificacionesDesactivar = this.subtipificacionesDesactivar();
+    if (!tipificacionesDesactivar.length && !subtipificacionesDesactivar.length) {
+      return;
+    }
+
+    const request: CatalogoEstadoRequest = {
+      etapa: this.selectedEtapa(),
+      tipificacionesActivar: [],
+      tipificacionesDesactivar,
+      subtipificacionesActivar: [],
+      subtipificacionesDesactivar
+    };
+    await firstValueFrom(this.service.actualizarEstadoCatalogo(request));
   }
 
   private toRequest(): CatalogoRequest {
@@ -264,5 +298,31 @@ export class AdminTipificacionFacade {
 
   private nextUid(): string {
     return `d${this.uidSeq++}`;
+  }
+
+  private queueTipificacionDesactivar(tipificacion: TipDraft): void {
+    this.tipificacionesDesactivar.update((ids) => this.addUniqueId(ids, tipificacion.id));
+    const subIds = tipificacion.subtipificaciones
+      .map((sub) => sub.id)
+      .filter((id): id is number => id !== null);
+    if (subIds.length) {
+      this.subtipificacionesDesactivar.update((ids) => ids.filter((id) => !subIds.includes(id)));
+    }
+  }
+
+  private queueSubtipificacionDesactivar(id: number): void {
+    this.subtipificacionesDesactivar.update((ids) => this.addUniqueId(ids, id));
+  }
+
+  private addUniqueId(ids: number[], id: number | null): number[] {
+    if (id === null || ids.includes(id)) {
+      return ids;
+    }
+    return [...ids, id];
+  }
+
+  private clearPendingStateChanges(): void {
+    this.tipificacionesDesactivar.set([]);
+    this.subtipificacionesDesactivar.set([]);
   }
 }

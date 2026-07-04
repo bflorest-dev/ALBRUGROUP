@@ -588,6 +588,14 @@ export interface CatalogoRequest {
   tipificaciones: TipificacionCatalogoRequest[];
 }
 
+export interface CatalogoEstadoRequest {
+  etapa: string;
+  tipificacionesActivar: number[];
+  tipificacionesDesactivar: number[];
+  subtipificacionesActivar: number[];
+  subtipificacionesDesactivar: number[];
+}
+
 export interface CampanaResponse {
   id: number;
   nombre: string;
