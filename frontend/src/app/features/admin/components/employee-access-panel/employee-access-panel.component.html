@@ -75,10 +75,25 @@
       <div class="team-groups">
         @for (team of teamGroups(); track team.key) {
           <section class="team-section">
+            @let attendedCount = teamAttendedCount(team);
+            @let connectedCount = teamConnectedCount(team);
             <header class="team-section__header">
-              <div>
+              <div class="team-section__title-row">
                 <h4>{{ team.teamName }}</h4>
-                <span>{{ teamSummaryLabel(team) }}</span>
+                <div class="team-metrics" aria-label="Resumen del equipo">
+                  <span class="team-metric team-metric--total">
+                    <strong>{{ team.employees.length }}</strong>
+                    {{ teamCollaboratorsLabel(team.employees.length) }}
+                  </span>
+                  <span class="team-metric team-metric--attendance">
+                    <strong>{{ attendedCount }}</strong>
+                    {{ teamAttendedLabel(attendedCount) }}
+                  </span>
+                  <span class="team-metric team-metric--connected">
+                    <strong>{{ connectedCount }}</strong>
+                    {{ teamConnectedLabel(connectedCount) }}
+                  </span>
+                </div>
               </div>
             </header>
 

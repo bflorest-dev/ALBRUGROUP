@@ -101,18 +101,57 @@
   justify-content: flex-start;
 }
 
+.team-section__title-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 0.8rem;
+  min-width: 0;
+}
+
 .team-section__header h4 {
   color: var(--role-panel-text, #0f1f33);
   font-size: 0.96rem;
   margin: 0;
 }
 
-.team-section__header span {
+.team-metrics {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.team-metric {
+  align-items: baseline;
+  background: color-mix(in srgb, var(--role-accent, #1c7d62) 8%, #ffffff 92%);
+  border: 1px solid color-mix(in srgb, var(--role-accent, #1c7d62) 15%, #d9e2ec 85%);
+  border-radius: 999px;
   color: var(--role-muted, #617187);
-  display: block;
-  font-size: 0.78rem;
-  line-height: 1.35;
-  margin-top: 0.15rem;
+  display: inline-flex;
+  font-size: 0.76rem;
+  font-weight: 700;
+  gap: 0.25rem;
+  line-height: 1;
+  padding: 0.28rem 0.55rem;
+  white-space: nowrap;
+}
+
+.team-metric strong {
+  color: var(--role-panel-text, #0f1f33);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.team-metric--attendance {
+  background: color-mix(in srgb, #10b981 12%, #ffffff 88%);
+  border-color: color-mix(in srgb, #10b981 26%, #d9e2ec 74%);
+}
+
+.team-metric--connected {
+  background: color-mix(in srgb, #0ea5e9 12%, #ffffff 88%);
+  border-color: color-mix(in srgb, #0ea5e9 26%, #d9e2ec 74%);
 }
 
 .employee-name-cell {

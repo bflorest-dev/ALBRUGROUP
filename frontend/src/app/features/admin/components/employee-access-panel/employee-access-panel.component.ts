@@ -174,32 +174,24 @@ export class EmployeeAccessPanelComponent {
     this.changeTeam.emit(employee);
   }
 
-  protected teamSummaryLabel(group: EmployeeTeamGroup): string {
-    return [
-      this.teamCollaboratorsLabel(group.employees.length),
-      this.teamAttendedLabel(this.teamAttendedCount(group)),
-      this.teamConnectedLabel(this.teamConnectedCount(group))
-    ].join(', ');
-  }
-
-  private teamAttendedCount(group: EmployeeTeamGroup): number {
+  protected teamAttendedCount(group: EmployeeTeamGroup): number {
     return group.employees.filter((employee) => this.hasAttendedToday(employee.idEmpleado)).length;
   }
 
-  private teamConnectedCount(group: EmployeeTeamGroup): number {
+  protected teamConnectedCount(group: EmployeeTeamGroup): number {
     return group.employees.filter((employee) => this.isConnectedToWeb(employee.idEmpleado)).length;
   }
 
-  private teamCollaboratorsLabel(total: number): string {
-    return `${total} ${total === 1 ? 'Colaborador' : 'Colaboradores'}`;
+  protected teamCollaboratorsLabel(total: number): string {
+    return total === 1 ? 'Colaborador' : 'Colaboradores';
   }
 
-  private teamAttendedLabel(total: number): string {
-    return `${total} ${total === 1 ? 'Asistió' : 'Asistieron'}`;
+  protected teamAttendedLabel(total: number): string {
+    return total === 1 ? 'Asistió' : 'Asistieron';
   }
 
-  private teamConnectedLabel(total: number): string {
-    return `${total} ${total === 1 ? 'Conectado' : 'Conectados'}`;
+  protected teamConnectedLabel(total: number): string {
+    return total === 1 ? 'Conectado' : 'Conectados';
   }
 
   protected hasAccessLoaded(empleadoId: number): boolean {
