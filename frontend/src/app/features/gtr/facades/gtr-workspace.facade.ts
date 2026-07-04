@@ -3396,8 +3396,8 @@ export class GtrWorkspaceFacade {
       via: detail.via ?? '',
       direccion: detail.direccion ?? '',
       referencia: detail.referencia ?? '',
-      latitud: detail.latitud ?? null,
-      longitud: detail.longitud ?? null,
+      latitud: this.toCoordinateValue(detail.latitud),
+      longitud: this.toCoordinateValue(detail.longitud),
       urbanizacion: detail.urbanizacion ?? '',
       numero: detail.numero ?? '',
       manzana: detail.manzana ?? '',
@@ -3642,7 +3642,14 @@ export class GtrWorkspaceFacade {
   }
 
   private toCoordinateValue(value: number | string | null | undefined): string {
-    return String(value ?? '').replace(',', '.').trim();
+    return this.stripTrailingCoordinateZeros(String(value ?? '').replace(',', '.').trim());
+  }
+
+  private stripTrailingCoordinateZeros(value: string): string {
+    if (!value.includes('.')) {
+      return value;
+    }
+    return value.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
   }
 
   private getDireccionValidationMessage(): string {

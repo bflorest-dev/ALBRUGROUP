@@ -3,6 +3,7 @@ package pe.albrugroup.lead_service.service.mapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.Named;
 import pe.albrugroup.lead_service.entity.Campana;
 import pe.albrugroup.lead_service.entity.DatosPreventa;
 import pe.albrugroup.lead_service.entity.Direccion;
@@ -73,8 +74,8 @@ public interface LeadMapper {
     @Mapping(target = "via", expression = "java(trimToNull(request.getVia()))")
     @Mapping(target = "direccion", expression = "java(trimToNull(request.getDireccion()))")
     @Mapping(target = "referencia", expression = "java(trimToNull(request.getReferencia()))")
-    @Mapping(target = "latitud", source = "latitud")
-    @Mapping(target = "longitud", source = "longitud")
+    @Mapping(target = "latitud", source = "latitud", qualifiedByName = "coordinateText")
+    @Mapping(target = "longitud", source = "longitud", qualifiedByName = "coordinateText")
     @Mapping(target = "urbanizacion", expression = "java(trimToNull(request.getUrbanizacion()))")
     @Mapping(target = "numero", expression = "java(trimToNull(request.getNumero()))")
     @Mapping(target = "manzana", expression = "java(trimToNull(request.getManzana()))")
@@ -92,5 +93,14 @@ public interface LeadMapper {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    @Named("coordinateText")
+    default String normalizeCoordinate(String value) {
+        String normalized = trimToNull(value);
+        if (normalized == null) {
+            return null;
+        }
+        return normalized.replace(',', '.');
     }
 }

@@ -1,13 +1,12 @@
 package pe.albrugroup.lead_service.entity.request;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.TipoDomicilio;
 import pe.albrugroup.lead_service.entity.enums.TipoVia;
-
-import java.math.BigDecimal;
 
 @Getter
 @Setter
@@ -23,11 +22,15 @@ public class LeadDireccionRequest {
     private String direccion;
     private String referencia;
 
-    @NotNull(message = "latitud es obligatoria")
-    private BigDecimal latitud;
+    @NotBlank(message = "latitud es obligatoria")
+    @Size(max = 64, message = "latitud no debe superar 64 caracteres")
+    @Pattern(regexp = "-?\\d{1,3}([\\.,]\\d+)?", message = "latitud no tiene un formato valido")
+    private String latitud;
 
-    @NotNull(message = "longitud es obligatoria")
-    private BigDecimal longitud;
+    @NotBlank(message = "longitud es obligatoria")
+    @Size(max = 64, message = "longitud no debe superar 64 caracteres")
+    @Pattern(regexp = "-?\\d{1,3}([\\.,]\\d+)?", message = "longitud no tiene un formato valido")
+    private String longitud;
     private String urbanizacion;
     private String numero;
     private String manzana;

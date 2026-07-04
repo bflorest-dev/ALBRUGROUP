@@ -199,12 +199,20 @@ export class LeadCommercialDataTabsComponent {
     const unsigned = normalizedSeparator.replace(/-/g, '');
     const [integerPart = '', ...decimalParts] = unsigned.split('.');
     const integerDigits = integerPart.replace(/\D/g, '').slice(0, 3);
-    const decimalDigits = decimalParts.join('').replace(/\D/g, '').slice(0, 15);
+    const decimalDigits = decimalParts.join('').replace(/\D/g, '').slice(0, 40);
 
     if (!integerDigits && !decimalDigits) {
       return sign;
     }
 
-    return `${sign}${integerDigits}${decimalDigits ? `.${decimalDigits}` : ''}`;
+    const coordinate = `${sign}${integerDigits}${decimalDigits ? `.${decimalDigits}` : ''}`;
+    return this.stripTrailingCoordinateZeros(coordinate);
+  }
+
+  private stripTrailingCoordinateZeros(value: string): string {
+    if (!value.includes('.')) {
+      return value;
+    }
+    return value.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
   }
 }

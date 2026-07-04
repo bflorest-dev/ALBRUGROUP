@@ -1369,8 +1369,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       via: detail.via ?? '',
       direccion: detail.direccion ?? '',
       referencia: detail.referencia ?? '',
-      latitud: detail.latitud ?? -12.0464,
-      longitud: detail.longitud ?? -77.0428,
+      latitud: this.toCoordinateValue(detail.latitud ?? '-12.0464'),
+      longitud: this.toCoordinateValue(detail.longitud ?? '-77.0428'),
       urbanizacion: detail.urbanizacion ?? '',
       numero: detail.numero ?? '',
       manzana: detail.manzana ?? '',
@@ -1704,7 +1704,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private toCoordinateValue(value: number | string | null | undefined): string {
-    return String(value ?? '').replace(',', '.').trim();
+    return this.stripTrailingCoordinateZeros(String(value ?? '').replace(',', '.').trim());
+  }
+
+  private stripTrailingCoordinateZeros(value: string): string {
+    if (!value.includes('.')) {
+      return value;
+    }
+    return value.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
   }
 
   private notify(severity: ToastSeverity, detail: string): void {
