@@ -174,16 +174,32 @@ export class EmployeeAccessPanelComponent {
     this.changeTeam.emit(employee);
   }
 
-  protected teamTotalLabel(total: number): string {
-    return `${total} ${total === 1 ? 'integrante' : 'integrantes'}`;
+  protected teamSummaryLabel(group: EmployeeTeamGroup): string {
+    return [
+      this.teamCollaboratorsLabel(group.employees.length),
+      this.teamAttendedLabel(this.teamAttendedCount(group)),
+      this.teamConnectedLabel(this.teamConnectedCount(group))
+    ].join(', ');
   }
 
-  protected teamOnlineCount(group: EmployeeTeamGroup): number {
-    return group.employees.filter((employee) => this.isOnline(employee.idEmpleado)).length;
+  private teamAttendedCount(group: EmployeeTeamGroup): number {
+    return group.employees.filter((employee) => this.hasAttendedToday(employee.idEmpleado)).length;
   }
 
-  protected teamAvailableCount(group: EmployeeTeamGroup): number {
-    return group.employees.filter((employee) => this.isAvailable(employee.idEmpleado)).length;
+  private teamConnectedCount(group: EmployeeTeamGroup): number {
+    return group.employees.filter((employee) => this.isConnectedToWeb(employee.idEmpleado)).length;
+  }
+
+  private teamCollaboratorsLabel(total: number): string {
+    return `${total} ${total === 1 ? 'Colaborador' : 'Colaboradores'}`;
+  }
+
+  private teamAttendedLabel(total: number): string {
+    return `${total} ${total === 1 ? 'Asistió' : 'Asistieron'}`;
+  }
+
+  private teamConnectedLabel(total: number): string {
+    return `${total} ${total === 1 ? 'Conectado' : 'Conectados'}`;
   }
 
   protected hasAccessLoaded(empleadoId: number): boolean {
@@ -319,17 +335,15 @@ export class EmployeeAccessPanelComponent {
     return 2;
   }
 
-  private isOnline(empleadoId: number): boolean {
-    const attendanceState = this.getAttendanceState(empleadoId)?.toUpperCase();
-    const connectedUser = this.connectedUserById()[empleadoId];
-    const presenceStatus = connectedUser?.status?.toUpperCase() ?? (connectedUser ? 'ONLINE' : '');
-    return attendanceState === 'ONLINE' || presenceStatus === 'ONLINE';
+  private hasAttendedToday(empleadoId: number): boolean {
+    const state = this.employeeStateById()[empleadoId];
+    return !!state?.tieneRegistroHoy || !!state?.estadoActual;
   }
 
-  private isAvailable(empleadoId: number): boolean {
+  private isConnectedToWeb(empleadoId: number): boolean {
     const connectedUser = this.connectedUserById()[empleadoId];
     const presenceStatus = connectedUser?.status?.toUpperCase() ?? (connectedUser ? 'ONLINE' : '');
-    return presenceStatus === 'ONLINE' && connectedUser?.disponibilidad?.toUpperCase() === 'DISPONIBLE';
+    return presenceStatus === 'ONLINE';
   }
 
   private teamKey(teamName: string): string {

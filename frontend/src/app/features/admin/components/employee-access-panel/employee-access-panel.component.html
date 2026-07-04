@@ -78,11 +78,7 @@
             <header class="team-section__header">
               <div>
                 <h4>{{ team.teamName }}</h4>
-                <span>{{ teamTotalLabel(team.employees.length) }}</span>
-              </div>
-              <div class="team-section__summary" aria-label="Resumen del equipo">
-                <p-tag [value]="teamAvailableCount(team) + ' disponibles'" severity="success" />
-                <p-tag [value]="teamOnlineCount(team) + ' online'" severity="info" />
+                <span>{{ teamSummaryLabel(team) }}</span>
               </div>
             </header>
 

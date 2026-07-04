@@ -98,7 +98,7 @@
   align-items: flex-start;
   display: flex;
   gap: 0.9rem;
-  justify-content: space-between;
+  justify-content: flex-start;
 }
 
 .team-section__header h4 {
@@ -109,18 +109,10 @@
 
 .team-section__header span {
   color: var(--role-muted, #617187);
-  display: inline-block;
+  display: block;
   font-size: 0.78rem;
+  line-height: 1.35;
   margin-top: 0.15rem;
-}
-
-.team-section__summary {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  justify-content: flex-end;
-  min-width: 10rem;
 }
 
 .employee-name-cell {
@@ -349,11 +341,6 @@
 
   .team-section__header {
     flex-direction: column;
-  }
-
-  .team-section__summary {
-    justify-content: flex-start;
-    min-width: 0;
   }
 
   :host ::ng-deep .admin-panel__header-actions .p-button {
