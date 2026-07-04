@@ -230,9 +230,11 @@ public class EventoService {
         );
         Map<Long, String> ultimoAsesorPorLead = obtenerUltimosAsesoresAsignados(registros.getContent());
         Map<Long, Long> asignacionesDiaPorLead = contarAsignacionesDia(registros.getContent(), rango);
+        Map<Long, Long> registrosDiaPorLead = contarRegistrosDia(registros.getContent(), rango);
         var respuesta = registros.map(registro -> {
             registro.setUltimoNombreAsesorAsignado(ultimoAsesorPorLead.get(registro.getIdLead()));
             registro.setTotalAsignacionesDia(asignacionesDiaPorLead.getOrDefault(registro.getIdLead(), 0L));
+            registro.setTotalRegistrosDia(registrosDiaPorLead.getOrDefault(registro.getIdLead(), 1L));
             return registro;
         });
         return PageResponse.from(respuesta);
@@ -251,6 +253,27 @@ public class EventoService {
             return Map.of();
         }
         return leadAsignacionCounterService.contarAsignacionesPorLeadIds(idsLead, rango.inicio(), rango.fin());
+    }
+
+    /** Cuenta cuántos eventos REGISTRO tuvo cada lead en el día (>= 1); alimenta el despliegue de repeticiones. */
+    private Map<Long, Long> contarRegistrosDia(
+            List<LeadDiarioResponse> registros,
+            OperationalDateTime.InstantRange rango
+    ) {
+        List<Long> idsLead = registros.stream()
+                .map(LeadDiarioResponse::getIdLead)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (idsLead.isEmpty()) {
+            return Map.of();
+        }
+        return eventoRepository.contarRegistrosDiariosPorLead(Accion.REGISTRO, rango.inicio(), rango.fin(), idsLead)
+                .stream()
+                .collect(Collectors.toMap(
+                        fila -> (Long) fila[0],
+                        fila -> (Long) fila[1]
+                ));
     }
 
     private Map<Long, String> obtenerUltimosAsesoresAsignados(List<LeadDiarioResponse> registros) {
@@ -322,7 +345,14 @@ public class EventoService {
                                 leadNormalizado
                         )
                 ),
-                List.of()
+                List.of(),
+                eventoRepository.contarRegistrosDiarios(
+                        Accion.REGISTRO,
+                        rango.inicio(),
+                        rango.fin(),
+                        leadNormalizado != null,
+                        leadNormalizado
+                )
         );
     }
 

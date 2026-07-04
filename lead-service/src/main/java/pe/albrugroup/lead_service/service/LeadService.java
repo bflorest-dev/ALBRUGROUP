@@ -270,7 +270,9 @@ public class LeadService {
                                 equipos.ids()
                         )
                 ),
-                List.of()
+                List.of(),
+                // La bandeja GTR no usa el total de registros del día (es exclusivo de "Leads del día").
+                null
         );
     }
 
@@ -506,6 +508,7 @@ public class LeadService {
                 leadPattern,
                 rango.inicio(),
                 rango.fin(),
+                Accion.TIPIFICACION,
                 paginationService.toPageable(pageRequest, LEAD_VENTA_SORT_FIELDS)
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);
@@ -518,6 +521,7 @@ public class LeadService {
         Page<LeadResponse> leads = leadRepository.listarLeadsAsignadosPorEtapaYAsesor(
                 Etapa.VENTA,
                 currentUser.empleadoID(),
+                Accion.TIPIFICACION,
                 org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);

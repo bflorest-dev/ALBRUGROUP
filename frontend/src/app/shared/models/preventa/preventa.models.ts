@@ -234,6 +234,13 @@ export interface LeadVentaResponse {
   totalAsignaciones?: number | null;
   fechaProgramacion?: string | null;
   horaProgramada?: string | null;
+  // Enriquecimiento del plan ofrecido (velocidad regular y promocional) para la bandeja BackOffice.
+  internetVelocidad?: number | null;
+  internetUnidad?: string | null;
+  velocidadPromocional?: number | null;
+  mesesPromocionVelocidad?: number | null;
+  // Fecha/hora de la ultima tipificacion del lead.
+  ultimaTipificacionAt?: string | null;
 }
 
 export interface LeadGtrMetricasResponse {

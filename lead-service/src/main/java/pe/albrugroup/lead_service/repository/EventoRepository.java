@@ -233,6 +233,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                        l.codigoTipificacion,
                        l.codigoSubtipificacion,
                        null,
+                       0L,
                        0L)
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
@@ -240,6 +241,17 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
+              AND NOT EXISTS (
+                    SELECT 1 FROM Evento anterior
+                    WHERE anterior.idLead = e.idLead
+                      AND anterior.accion = :accion
+                      AND anterior.createdAt >= :inicio
+                      AND anterior.createdAt < :fin
+                      AND (
+                            anterior.createdAt < e.createdAt
+                            OR (anterior.createdAt = e.createdAt AND anterior.id < e.id)
+                      )
+              )
               AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
               AND (
                     :filtrarAsesor = false
@@ -297,6 +309,17 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
+              AND NOT EXISTS (
+                    SELECT 1 FROM Evento anterior
+                    WHERE anterior.idLead = e.idLead
+                      AND anterior.accion = :accion
+                      AND anterior.createdAt >= :inicio
+                      AND anterior.createdAt < :fin
+                      AND (
+                            anterior.createdAt < e.createdAt
+                            OR (anterior.createdAt = e.createdAt AND anterior.id < e.id)
+                      )
+              )
               AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
               AND (
                     :filtrarAsesor = false
@@ -397,6 +420,17 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
+              AND NOT EXISTS (
+                    SELECT 1 FROM Evento anterior
+                    WHERE anterior.idLead = e.idLead
+                      AND anterior.accion = :accion
+                      AND anterior.createdAt >= :inicio
+                      AND anterior.createdAt < :fin
+                      AND (
+                            anterior.createdAt < e.createdAt
+                            OR (anterior.createdAt = e.createdAt AND anterior.id < e.id)
+                      )
+              )
               AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
             GROUP BY e.idActor, e.nombreActor
             """)
@@ -419,6 +453,17 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
+              AND NOT EXISTS (
+                    SELECT 1 FROM Evento anterior
+                    WHERE anterior.idLead = e.idLead
+                      AND anterior.accion = :accion
+                      AND anterior.createdAt >= :inicio
+                      AND anterior.createdAt < :fin
+                      AND (
+                            anterior.createdAt < e.createdAt
+                            OR (anterior.createdAt = e.createdAt AND anterior.id < e.id)
+                      )
+              )
               AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
             GROUP BY l.idEquipo
             """)
@@ -442,6 +487,17 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
+              AND NOT EXISTS (
+                    SELECT 1 FROM Evento anterior
+                    WHERE anterior.idLead = e.idLead
+                      AND anterior.accion = :accion
+                      AND anterior.createdAt >= :inicio
+                      AND anterior.createdAt < :fin
+                      AND (
+                            anterior.createdAt < e.createdAt
+                            OR (anterior.createdAt = e.createdAt AND anterior.id < e.id)
+                      )
+              )
               AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
             GROUP BY c.id, c.nombre
             """)
@@ -464,6 +520,17 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
+              AND NOT EXISTS (
+                    SELECT 1 FROM Evento anterior
+                    WHERE anterior.idLead = e.idLead
+                      AND anterior.accion = :accion
+                      AND anterior.createdAt >= :inicio
+                      AND anterior.createdAt < :fin
+                      AND (
+                            anterior.createdAt < e.createdAt
+                            OR (anterior.createdAt = e.createdAt AND anterior.id < e.id)
+                      )
+              )
               AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
             GROUP BY l.primeraCodigoTipificacion, l.primeraCodigoSubtipificacion
             """)
@@ -486,6 +553,17 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
+              AND NOT EXISTS (
+                    SELECT 1 FROM Evento anterior
+                    WHERE anterior.idLead = e.idLead
+                      AND anterior.accion = :accion
+                      AND anterior.createdAt >= :inicio
+                      AND anterior.createdAt < :fin
+                      AND (
+                            anterior.createdAt < e.createdAt
+                            OR (anterior.createdAt = e.createdAt AND anterior.id < e.id)
+                      )
+              )
               AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
             GROUP BY l.codigoTipificacion, l.codigoSubtipificacion
             """)
@@ -495,6 +573,39 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("fin") Instant fin,
             @Param("filtrarLead") boolean filtrarLead,
             @Param("lead") String lead
+    );
+
+    @Query("""
+            SELECT COUNT(e.id)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
+            """)
+    long contarRegistrosDiarios(
+            @Param("accion") Accion accion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("filtrarLead") boolean filtrarLead,
+            @Param("lead") String lead
+    );
+
+    @Query("""
+            SELECT e.idLead, COUNT(e.id)
+            FROM Evento e
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND e.idLead IN :idsLead
+            GROUP BY e.idLead
+            """)
+    List<Object[]> contarRegistrosDiariosPorLead(
+            @Param("accion") Accion accion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("idsLead") Collection<Long> idsLead
     );
 
     Optional<Evento> findTopByIdLeadAndAccionOrderByCreatedAtDesc(Long idLead, Accion accion);

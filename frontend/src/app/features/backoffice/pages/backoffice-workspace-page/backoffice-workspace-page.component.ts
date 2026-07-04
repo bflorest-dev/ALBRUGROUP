@@ -25,6 +25,8 @@ import { SessionService } from '../../../../core/services/session.service';
 import { OperationalGateService } from '../../../../core/services/operational-gate.service';
 import { EstadoAsistencia } from '../../../../shared/models/schedule/estado-asistencia';
 import { LeadCommercialDataTabsComponent } from '../../../../shared/components/lead-commercial-data-tabs/lead-commercial-data-tabs.component';
+import { TipificationStackComponent, TipificationPaletteByCode } from '../../../../shared/components/tipification-stack/tipification-stack.component';
+import { providerLogo as resolveProviderLogo } from '../../../../shared/utils/provider-logo';
 import {
   AdicionalResponse,
   CatalogoResponse,
@@ -77,7 +79,8 @@ type ToastSeverity = 'success' | 'info' | 'warn' | 'error';
     TagModule,
     TextareaModule,
     ToastModule,
-    LeadCommercialDataTabsComponent
+    LeadCommercialDataTabsComponent,
+    TipificationStackComponent
   ],
   providers: [MessageService, ConfirmationService],
   templateUrl: './backoffice-workspace-page.component.html',
@@ -132,6 +135,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly pageGestion = signal(0);
   protected readonly pageProgramados = signal(0);
   protected readonly catalogo = signal<CatalogoResponse | null>(null);
+  // Paleta de color por codigo de tipificacion (mismo criterio que GTR / Leads del dia): orden -> tono.
+  protected readonly tipificationPaletteByCode = computed<TipificationPaletteByCode>(() => {
+    const palette: TipificationPaletteByCode = {};
+    const totalPalettes = 8;
+    for (const tipificacion of this.catalogo()?.tipificaciones ?? []) {
+      const orden = tipificacion.orden;
+      palette[tipificacion.codigo.toUpperCase()] = Number.isFinite(orden) && orden > 0 ? (orden - 1) % totalPalettes : 0;
+    }
+    return palette;
+  });
   protected readonly selectedTipificacionCode = signal('');
   protected readonly selectedSubtipificacionCode = signal('');
   protected readonly planes = signal<PlanResponse[]>([]);
@@ -463,6 +476,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       await Promise.all([
         this.refreshPlanes(),
         this.refreshDepartamentos(),
+        // La paleta de la columna Tipificacion sale de este catalogo; si falla no bloquea la bandeja.
+        this.refreshTipificationCatalog().catch(() => undefined),
         this.refreshPlataforma(false),
         this.refreshGestion(false),
         this.refreshProgramados(false)
@@ -863,13 +878,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return String(value);
   }
 
-  protected money(value: unknown): string {
-    if (value === null || value === undefined || value === '') {
-      return '-';
-    }
-    return `S/ ${value}`;
-  }
-
   protected toPickerDate(value: unknown): Date | null {
     if (value instanceof Date) {
       return value;
@@ -899,6 +907,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   protected leadPhone(row: LeadVentaResponse | LeadDetalleResponse): string {
     return `${row.prefijo} ${row.lead}`.trim();
+  }
+
+  // Logo del proveedor del plan ofrecido (WIN/CLARO). Devuelve string estable (o null): seguro en template.
+  protected providerLogo(nombreProveedor?: string | null): string | null {
+    return resolveProviderLogo(nombreProveedor);
   }
 
   protected eventScheduleLabel(evento: EventoResponse): string {

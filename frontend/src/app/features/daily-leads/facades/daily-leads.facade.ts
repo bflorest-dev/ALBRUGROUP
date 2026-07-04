@@ -11,6 +11,7 @@ import {
   DailyLeadGroupItem,
   DailyLeadGroupMode,
   DailyLeadGroupsResponse,
+  DailyLeadRegistroView,
   DailyLeadRowView,
   DailyLeadSortDirection,
   DailyLeadSortField,
@@ -43,6 +44,12 @@ export class DailyLeadsFacade {
   readonly rows = signal<DailyLeadRowView[]>([]);
   readonly totalElements = signal(0);
   readonly visibleTotalElements = signal(0);
+  /** Total de eventos REGISTRO del día (incluye repeticiones), para "N leads · M registros". */
+  readonly totalRegistros = signal(0);
+  /** Filas expandidas (clave = idLead) y sus registros repetidos ya cargados. */
+  readonly expandedRowKeys = signal<Record<number, boolean>>({});
+  readonly registrosByLead = signal<Record<number, DailyLeadRegistroView[]>>({});
+  readonly loadingRegistrosLeadId = signal<number | null>(null);
   readonly pageNumber = signal(0);
   readonly isLoading = signal(false);
   readonly isLoadingGroups = signal(false);
@@ -75,6 +82,19 @@ export class DailyLeadsFacade {
   readonly headerTotalElements = computed(() =>
     this.selectedGroup() ? this.visibleTotalElements() : this.totalElements()
   );
+  /** Texto de la cabecera: "N leads" y, si hay repeticiones y sin grupo, "· M registros". */
+  readonly headerCountLabel = computed(() => {
+    const leads = this.headerTotalElements();
+    const leadsLabel = `${leads} ${leads === 1 ? 'lead' : 'leads'}`;
+    if (this.selectedGroup()) {
+      return leadsLabel;
+    }
+    const registros = this.totalRegistros();
+    if (registros <= leads) {
+      return leadsLabel;
+    }
+    return `${leadsLabel} · ${registros} ${registros === 1 ? 'registro' : 'registros'}`;
+  });
   readonly groupingModeOptions = computed<Array<{ label: string; value: DailyLeadGroupMode }>>(() => {
     const options: Array<{ label: string; value: DailyLeadGroupMode }> = [
       { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
@@ -305,6 +325,59 @@ export class DailyLeadsFacade {
     this.isLoadingEvents.set(false);
   }
 
+  isRegistrosExpanded(idLead: number): boolean {
+    return !!this.expandedRowKeys()[idLead];
+  }
+
+  /** Despliega/colapsa los registros repetidos del lead (los que no son el registro inicial del día). */
+  async toggleRegistros(row: DailyLeadRowView): Promise<void> {
+    const id = row.idLead;
+    const keys = { ...this.expandedRowKeys() };
+
+    if (keys[id]) {
+      delete keys[id];
+      this.expandedRowKeys.set(keys);
+      return;
+    }
+
+    keys[id] = true;
+    this.expandedRowKeys.set(keys);
+
+    if (this.registrosByLead()[id]) {
+      return;
+    }
+
+    this.loadingRegistrosLeadId.set(id);
+    try {
+      const page = await firstValueFrom(
+        this.service.listarEventosLead(
+          id,
+          this.selectedHistoryDate(),
+          { pageNumber: 0, pageSize: 100, sortBy: 'createdAt', direction: 'asc' },
+          'REGISTRO'
+        )
+      );
+      // El primer registro (más temprano) es la fila principal; el despliegue muestra los demás.
+      const otros = page.content.slice(1).map((evento) => this.toRegistroView(evento));
+      this.registrosByLead.update((current) => ({ ...current, [id]: otros }));
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudieron cargar los registros del lead.'));
+      const revert = { ...this.expandedRowKeys() };
+      delete revert[id];
+      this.expandedRowKeys.set(revert);
+    } finally {
+      this.loadingRegistrosLeadId.set(null);
+    }
+  }
+
+  private toRegistroView(evento: EventoResponse): DailyLeadRegistroView {
+    return {
+      hora: this.formatTime(evento.createdAt ?? ''),
+      asesor: evento.nombreActor?.trim() || '-',
+      rolLabel: formatLabel(evento.rolActor)
+    };
+  }
+
   eventSummary(evento: EventoResponse): string {
     const accion = (evento.accion ?? '').toUpperCase();
     const tipificacion = evento.tipificacion?.trim() || null;
@@ -357,6 +430,10 @@ export class DailyLeadsFacade {
       if (!this.selectedGroup()) {
         this.totalElements.set(page.totalElements);
       }
+      // Al recargar la página/filtro, colapsamos y descartamos expansiones previas.
+      this.expandedRowKeys.set({});
+      this.registrosByLead.set({});
+      this.loadingRegistrosLeadId.set(null);
       this.rows.set(page.content.map((item) => this.toRowView(item)));
     } catch (error) {
       this.errorMessage.set(
@@ -376,7 +453,9 @@ export class DailyLeadsFacade {
         this.service.listarAgrupacionesRegistrosDiarios(this.fecha() || undefined, this.leadSearch() || undefined)
       );
       this.groups.set(groups);
+      // Leads únicos del día = suma de la agrupación por asesor (un representante por lead).
       this.totalElements.set(groups.asesores.reduce((total, group) => total + group.cantidad, 0));
+      this.totalRegistros.set(groups.totalRegistros ?? 0);
     } catch (error) {
       this.errorMessage.set(
         this.getErrorMessage(error, 'No se pudieron actualizar las agrupaciones.')
@@ -422,6 +501,7 @@ export class DailyLeadsFacade {
       campana: item.nombreCampana?.trim() || 'Sin campaña',
       ultimoAsesor: item.ultimoNombreAsesorAsignado?.trim() || 'Sin asignación',
       totalAsignacionesDia: item.totalAsignacionesDia ?? 0,
+      totalRegistrosDia: item.totalRegistrosDia ?? 1,
       primeraCodigoTipificacion: item.primeraCodigoTipificacion,
       primeraCodigoSubtipificacion: item.primeraCodigoSubtipificacion,
       codigoTipificacion: item.codigoTipificacion,

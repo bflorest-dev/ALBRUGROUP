@@ -16,4 +16,6 @@ public class LeadGtrAgrupacionesResponse {
     private List<LeadGtrAgrupacionItemResponse> primerasTipificaciones;
     private List<LeadGtrAgrupacionItemResponse> ultimasTipificaciones;
     private List<LeadGtrAgrupacionItemResponse> ingresos;
+    /** Total de eventos REGISTRO del día (incluye repeticiones); los leads únicos = suma de los grupos por asesor. */
+    private Long totalRegistros;
 }

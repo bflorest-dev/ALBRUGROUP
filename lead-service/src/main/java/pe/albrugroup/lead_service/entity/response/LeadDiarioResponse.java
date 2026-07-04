@@ -32,4 +32,6 @@ public class LeadDiarioResponse {
     private String codigoSubtipificacion;
     private String ultimoNombreAsesorAsignado;
     private Long totalAsignacionesDia;
+    /** Cantidad de eventos REGISTRO del lead en el día operativo (>= 1). La fila representa el registro más temprano. */
+    private Long totalRegistrosDia;
 }

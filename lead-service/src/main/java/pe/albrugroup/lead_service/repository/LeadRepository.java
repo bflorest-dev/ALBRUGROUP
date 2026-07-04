@@ -663,9 +663,18 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.updatedAt,
                 0L,
                 null,
-                null
+                null,
+                inter.velocidad,
+                inter.unidad,
+                pl.velocidadPromocional,
+                pl.mesesPromocionVelocidad,
+                (SELECT MAX(ev.createdAt) FROM Evento ev
+                    WHERE ev.idLead = l.id
+                      AND ev.accion = :accionTipificacion)
             )
             FROM Lead l
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.internet inter
             WHERE l.etapa = :etapa
               AND l.lead LIKE :leadPattern
               AND l.lastEntryAt >= :inicioDia
@@ -679,6 +688,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("leadPattern") String leadPattern,
             @Param("inicioDia") Instant inicioDia,
             @Param("finDia") Instant finDia,
+            @Param("accionTipificacion") Accion accionTipificacion,
             Pageable pageable
     );
 
@@ -709,9 +719,18 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.updatedAt,
                 0L,
                 null,
-                null
+                null,
+                inter.velocidad,
+                inter.unidad,
+                pl.velocidadPromocional,
+                pl.mesesPromocionVelocidad,
+                (SELECT MAX(ev.createdAt) FROM Evento ev
+                    WHERE ev.idLead = l.id
+                      AND ev.accion = :accionTipificacion)
             )
             FROM Lead l
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.internet inter
             WHERE l.etapa = :etapa
               AND l.idAsesorAsignado = :idAsesor
             ORDER BY CASE WHEN l.codigoTipificacion IS NULL THEN 0 ELSE 1 END,
@@ -723,6 +742,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     Page<LeadResponse> listarLeadsAsignadosPorEtapaYAsesor(
             @Param("etapa") Etapa etapa,
             @Param("idAsesor") Long idAsesor,
+            @Param("accionTipificacion") Accion accionTipificacion,
             Pageable pageable
     );
 
@@ -753,10 +773,19 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.updatedAt,
                 0L,
                 e.fechaProgramacion,
-                e.horaProgramada
+                e.horaProgramada,
+                inter.velocidad,
+                inter.unidad,
+                pl.velocidadPromocional,
+                pl.mesesPromocionVelocidad,
+                (SELECT MAX(ev.createdAt) FROM Evento ev
+                    WHERE ev.idLead = l.id
+                      AND ev.accion = :accionTipificacion)
             )
             FROM Lead l
             JOIN Evento e ON e.idLead = l.id
+            LEFT JOIN l.plan pl
+            LEFT JOIN pl.internet inter
             WHERE l.etapa = :etapa
               AND l.idAsesorAsignado = :idAsesor
               AND l.codigoTipificacion = :codigoProgramado

@@ -170,7 +170,9 @@ public class MasivoService {
                                 filtros.filtrarFechaHasta(),
                                 filtros.fechaHastaParam()
                         )
-                )
+                ),
+                // La vista masiva no usa el total de registros del día (es exclusivo de "Leads del día").
+                null
         );
     }
 

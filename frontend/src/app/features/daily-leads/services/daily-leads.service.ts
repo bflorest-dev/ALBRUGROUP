@@ -90,9 +90,18 @@ export class DailyLeadsService {
     return this.http.get<CatalogoResponse>(`${this.leadUrl}/tipificaciones/${etapa}/catalogo`);
   }
 
-  listarEventosLead(idLead: number, fecha: string, query: PageQuery): Observable<PageResponse<EventoResponse>> {
+  listarEventosLead(
+    idLead: number,
+    fecha: string,
+    query: PageQuery,
+    accion?: string
+  ): Observable<PageResponse<EventoResponse>> {
+    let params = this.pageParams(query).set('fechaDesde', fecha).set('fechaHasta', fecha);
+    if (accion) {
+      params = params.set('accion', accion);
+    }
     return this.http.get<PageResponse<EventoResponse>>(`${this.leadUrl}/eventos/lead/${idLead}`, {
-      params: this.pageParams(query).set('fechaDesde', fecha).set('fechaHasta', fecha)
+      params
     });
   }
 

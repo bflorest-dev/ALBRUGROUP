@@ -7,7 +7,7 @@
           <p-tag
             severity="info"
             icon="pi pi-users"
-            [value]="facade.headerTotalElements() + ' leads'"
+            [value]="facade.headerCountLabel()"
           />
         </div>
         <p class="daily-leads__subtitle">
@@ -186,14 +186,16 @@
     <p-table
       [value]="facade.rows()"
       dataKey="idLead"
+      [expandedRowKeys]="facade.expandedRowKeys()"
       [loading]="facade.isLoading()"
       [rowHover]="true"
       [scrollable]="true"
-      [tableStyle]="{ 'min-width': '1240px' }"
+      [tableStyle]="{ 'min-width': '1280px' }"
       styleClass="p-datatable-sm daily-leads__table"
     >
       <ng-template #header>
         <tr>
+          <th class="daily-leads__expander-col"></th>
           <th>Hora registro</th>
           <th>Lead</th>
           <th>GTR</th>
@@ -208,11 +210,34 @@
 
       <ng-template #body let-row>
         <tr>
+          <td class="daily-leads__expander-col">
+            @if (row.totalRegistrosDia > 1) {
+              <button
+                pButton
+                type="button"
+                size="small"
+                severity="secondary"
+                [text]="true"
+                [icon]="facade.isRegistrosExpanded(row.idLead) ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
+                [title]="'Ver los otros ' + (row.totalRegistrosDia - 1) + ' registros del día'"
+                aria-label="Ver otros registros del día"
+                (click)="facade.toggleRegistros(row)"
+              ></button>
+            }
+          </td>
           <td>{{ row.hora }}</td>
           <td>
             <span class="daily-leads__lead">
               <i class="pi pi-phone"></i>
               <strong>{{ row.leadDisplay }}</strong>
+              @if (row.totalRegistrosDia > 1) {
+                <p-tag
+                  [value]="'×' + row.totalRegistrosDia"
+                  severity="warn"
+                  styleClass="daily-leads__repeat-tag"
+                  [title]="row.totalRegistrosDia + ' registros del día para este lead'"
+                />
+              }
             </span>
           </td>
           <td>{{ row.asesor }}</td>
@@ -256,9 +281,38 @@
         </tr>
       </ng-template>
 
+      <ng-template #expandedrow let-row>
+        <tr class="daily-leads__registros-row">
+          <td colspan="10">
+            @if (facade.loadingRegistrosLeadId() === row.idLead) {
+              <div class="daily-leads__registros-loading">Cargando registros...</div>
+            } @else if (facade.registrosByLead()[row.idLead]?.length) {
+              <div class="daily-leads__registros">
+                <span class="daily-leads__registros-title">
+                  Otros registros de hoy para este lead
+                </span>
+                <ul class="daily-leads__registros-list">
+                  @for (registro of facade.registrosByLead()[row.idLead]; track $index) {
+                    <li class="daily-leads__registros-item">
+                      <span class="daily-leads__registros-hora">
+                        <i class="pi pi-clock"></i>{{ registro.hora }}
+                      </span>
+                      <span class="daily-leads__registros-asesor">{{ registro.asesor }}</span>
+                      <p-tag [value]="registro.rolLabel" severity="secondary" />
+                    </li>
+                  }
+                </ul>
+              </div>
+            } @else {
+              <div class="daily-leads__registros-empty">No hay registros adicionales.</div>
+            }
+          </td>
+        </tr>
+      </ng-template>
+
       <ng-template #emptymessage>
         <tr>
-          <td colspan="9">
+          <td colspan="10">
             @if (facade.isLoading()) {
               <div class="daily-leads__empty">Cargando...</div>
             } @else {

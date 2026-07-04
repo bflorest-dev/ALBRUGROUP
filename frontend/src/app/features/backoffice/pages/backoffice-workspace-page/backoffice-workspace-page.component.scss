@@ -115,6 +115,67 @@ p,
   min-width: 10rem;
 }
 
+.col-fecha,
+.col-gestion {
+  white-space: nowrap;
+  width: 8rem;
+}
+
+.col-proveedor {
+  width: 7rem;
+}
+
+.col-plan {
+  max-width: 22rem;
+  min-width: 0;
+}
+
+.provider-cell {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.provider-cell img {
+  border-radius: 0.35rem;
+  display: block;
+  max-height: 2rem;
+  max-width: 6rem;
+  object-fit: contain;
+}
+
+.plan-cell {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.plan-cell__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-cell__services {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.plan-cell__meses {
+  font-size: 0.72rem;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.plan-cell__tachado {
+  font-size: 0.72rem;
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+
 .row-new {
   animation: row-enter 440ms ease-out;
 }

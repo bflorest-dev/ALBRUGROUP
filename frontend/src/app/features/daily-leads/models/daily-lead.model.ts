@@ -15,6 +15,15 @@ export interface LeadDiarioResponse {
   codigoSubtipificacion?: string | null;
   ultimoNombreAsesorAsignado?: string | null;
   totalAsignacionesDia?: number | null;
+  /** Cantidad de eventos REGISTRO del lead en el día (>= 1). La fila es el registro más temprano. */
+  totalRegistrosDia?: number | null;
+}
+
+/** Un registro adicional del mismo lead en el día (para el despliegue de repeticiones). */
+export interface DailyLeadRegistroView {
+  hora: string;
+  asesor: string;
+  rolLabel: string;
 }
 
 /** Modelo de vista listo para render: textos precomputados, sin lógica en el template. */
@@ -30,6 +39,8 @@ export interface DailyLeadRowView {
   campana: string;
   ultimoAsesor: string;
   totalAsignacionesDia: number;
+  /** Cantidad de registros del lead en el día; > 1 habilita el despliegue de repeticiones. */
+  totalRegistrosDia: number;
   primeraCodigoTipificacion?: string | null;
   primeraCodigoSubtipificacion?: string | null;
   codigoTipificacion?: string | null;
@@ -70,6 +81,8 @@ export interface DailyLeadGroupsResponse {
   equipos: DailyLeadGroupItem[];
   primerasTipificaciones: DailyLeadGroupItem[];
   ultimasTipificaciones: DailyLeadGroupItem[];
+  /** Total de eventos REGISTRO del día (incluye repeticiones). Leads únicos = suma de agrupación por asesor. */
+  totalRegistros?: number | null;
 }
 
 export interface DailyLeadGroupFilter {

@@ -8,6 +8,7 @@ import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.enums.Unidad;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -47,4 +48,11 @@ public class LeadResponse {
     private long totalAsignaciones;
     private LocalDate fechaProgramacion;
     private LocalTime horaProgramada;
+    // Enriquecimiento del plan ofrecido para la bandeja BackOffice: velocidad regular y promocional.
+    private Integer internetVelocidad;
+    private Unidad internetUnidad;
+    private Integer velocidadPromocional;
+    private Integer mesesPromocionVelocidad;
+    // Ultima vez que el lead fue tipificado (max createdAt de eventos de accion TIPIFICACION).
+    private Instant ultimaTipificacionAt;
 }

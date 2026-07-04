@@ -238,22 +238,21 @@
     >
       <ng-template #header>
         <tr>
-          <th>Lead</th>
-          <th>Estado</th>
-          <th>Asignado</th>
-          <th>Plan</th>
-          <th>Proveedor</th>
-          <th>Precio final</th>
-          <th>Tipificacion</th>
-          <th>Ultima entrada</th>
-          <th>Asignaciones</th>
+          <th class="col-fecha">Fecha ingreso</th>
+          <th class="col-lead">Lead</th>
+          <th class="col-proveedor">Proveedor</th>
+          <th class="col-estado">Estado</th>
+          <th class="col-asignado">Asignado</th>
+          <th class="col-plan">Plan</th>
+          <th class="col-tipificacion">Tipificacion</th>
+          <th class="col-gestion">Ultima gestion</th>
           <th class="col-actions">Acciones</th>
         </tr>
       </ng-template>
 
       <ng-template #groupheader let-row>
         <tr class="group-row">
-          <td [attr.colspan]="10">
+          <td [attr.colspan]="9">
             @if (section() === 'programados') {
               <span class="group-title">{{ programacionGroupTitle(row) }}</span>
               <span class="group-hint">{{ programacionGroupHint(row) }}</span>
@@ -267,16 +266,48 @@
 
       <ng-template #body let-row>
         <tr [class.row-new]="row.isNew">
-          <td><strong>{{ leadPhone(row) }}</strong></td>
-          <td><p-tag [severity]="estadoSeverity(row.estadoSeguimiento)" [value]="display(row.estadoSeguimiento)" /></td>
-          <td>{{ display(row.nombreAsesorAsignado) }}</td>
-          <td>{{ display(row.nombrePlanSnapshot) }}</td>
-          <td>{{ display(row.nombreProveedorSnapshot) }}</td>
-          <td>{{ money(row.precioFinal || row.precioPlanSnapshot) }}</td>
-          <td>{{ display(row.codigoTipificacion || row.codigoSubtipificacion) }}</td>
-          <td>{{ row.lastEntryAt | date: 'dd/MM HH:mm' }}</td>
-          <td><p-tag severity="secondary" [value]="display(row.totalAsignaciones ?? 0)" /></td>
-          <td>
+          <td class="col-fecha">{{ row.lastEntryAt | date: 'dd/MM HH:mm' }}</td>
+          <td class="col-lead"><strong>{{ leadPhone(row) }}</strong></td>
+          <td class="col-proveedor">
+            @if (providerLogo(row.nombreProveedorSnapshot); as logo) {
+              <div class="provider-cell">
+                <img [src]="logo" [alt]="display(row.nombreProveedorSnapshot)" />
+              </div>
+            } @else {
+              {{ display(row.nombreProveedorSnapshot) }}
+            }
+          </td>
+          <td class="col-estado"><p-tag [severity]="estadoSeverity(row.estadoSeguimiento)" [value]="display(row.estadoSeguimiento)" /></td>
+          <td class="col-asignado">{{ display(row.nombreAsesorAsignado) }}</td>
+          <td class="col-plan">
+            @if (row.nombrePlanSnapshot) {
+              <div class="plan-cell">
+                <strong class="plan-cell__name">{{ row.nombrePlanSnapshot }}</strong>
+                <div class="plan-cell__services">
+                  @if (row.velocidadPromocional && row.mesesPromocionVelocidad) {
+                    <p-tag severity="info" [value]="row.velocidadPromocional + ' ' + (row.internetUnidad || 'MBPS')" />
+                    <span class="plan-cell__meses">{{ row.mesesPromocionVelocidad }} meses</span>
+                    @if (row.internetVelocidad) {
+                      <span class="plan-cell__tachado">{{ row.internetVelocidad }} {{ row.internetUnidad || 'MBPS' }}</span>
+                    }
+                  } @else if (row.internetVelocidad) {
+                    <p-tag severity="info" [value]="row.internetVelocidad + ' ' + (row.internetUnidad || 'MBPS')" />
+                  }
+                </div>
+              </div>
+            } @else {
+              -
+            }
+          </td>
+          <td class="col-tipificacion">
+            <app-tipification-stack
+              [codigoTipificacion]="row.codigoTipificacion"
+              [codigoSubtipificacion]="row.codigoSubtipificacion"
+              [paletteByCode]="tipificationPaletteByCode()"
+            />
+          </td>
+          <td class="col-gestion">{{ row.ultimaTipificacionAt ? (row.ultimaTipificacionAt | date: 'dd/MM HH:mm') : '-' }}</td>
+          <td class="col-actions">
             @if (section() === 'plataforma') {
               @if (row.idAsesorAsignado) {
                 <p-tag
@@ -313,7 +344,7 @@
 
       <ng-template #emptymessage>
         <tr>
-          <td colspan="10">
+          <td colspan="9">
             @if (!canDisplayOperationalData()) {
               <div class="empty-state">Marca ONLINE para activar esta bandeja.</div>
             } @else if (isLoading()) {
