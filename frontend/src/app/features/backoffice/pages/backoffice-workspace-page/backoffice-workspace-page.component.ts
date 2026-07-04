@@ -52,6 +52,10 @@ type VisualLeadVenta = LeadVentaResponse & {
   organizationGroupKey?: string;
   organizationGroupLabel?: string;
   programacionGroupKey?: string;
+  // Separacion por fecha en Plataforma: etiqueta visible y clave estable para el orden interno de PrimeNG.
+  fechaGroupKey?: string;
+  fechaGroupLabel?: string;
+  fechaGroupSortKey?: string;
 };
 type AdicionalSeleccionado = { idAdicional: number; cantidad: number };
 type OfertaProviderOption = { id: number; nombre: string };
@@ -358,14 +362,27 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
           { label: 'Z-A', value: 'desc' }
         ]
   );
+  // La separacion por fecha (HOY / mes) solo aplica en Plataforma con la vista por defecto:
+  // sin agrupacion manual y ordenado por fecha de ingreso descendente.
+  protected readonly plataformaDateSeparation = computed(() =>
+    this.section() === 'plataforma'
+    && this.plataformaGroupingMode() === 'SIN_AGRUPAR'
+    && this.plataformaSortField() === 'lastEntryAt'
+    && this.plataformaSortDirection() === 'desc'
+  );
   protected readonly activeRowGroupMode = computed(() =>
-    this.section() === 'programados' || (this.canOrganizeActiveSection() && this.activeGroupingMode() !== 'SIN_AGRUPAR')
+    this.section() === 'programados'
+    || this.plataformaDateSeparation()
+    || (this.canOrganizeActiveSection() && this.activeGroupingMode() !== 'SIN_AGRUPAR')
       ? 'subheader'
       : undefined
   );
   protected readonly activeGroupRowsBy = computed(() => {
     if (this.section() === 'programados') {
       return 'programacionGroupKey';
+    }
+    if (this.plataformaDateSeparation()) {
+      return 'fechaGroupSortKey';
     }
     return this.canOrganizeActiveSection() && this.activeGroupingMode() !== 'SIN_AGRUPAR' ? 'organizationGroupKey' : undefined;
   });
@@ -381,6 +398,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.activeSortDirection() === 'desc'
   );
   protected readonly activeRows = computed(() => {
+    if (this.plataformaDateSeparation()) {
+      // PrimeNG pinta los separadores segun el orden visible. Ordenamos por bloque temporal para que
+      // HOY y los meses recientes siempre queden arriba, aunque la pagina llegue mezclada por realtime.
+      return this.sortedRowsForDateSeparation(this.plataformaRows().map((row) => this.withFechaGroup(row)));
+    }
     let rows: VisualLeadVenta[];
     switch (this.section()) {
       case 'plataforma':
@@ -1398,6 +1420,59 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return rows;
   }
 
+  private readonly monthNames = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+
+  private withFechaGroup(row: VisualLeadVenta): VisualLeadVenta {
+    const key = this.fechaGroupKeyFor(row.lastEntryAt);
+    return {
+      ...row,
+      fechaGroupKey: key,
+      fechaGroupLabel: this.fechaGroupLabelFor(key),
+      fechaGroupSortKey: this.fechaGroupSortKeyFor(key)
+    };
+  }
+
+  private fechaGroupKeyFor(iso?: string | null): string {
+    const date = iso ? new Date(iso) : null;
+    if (!date || Number.isNaN(date.getTime())) {
+      return 'SIN_FECHA';
+    }
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    const localDate = `${date.getFullYear()}-${month}-${day}`;
+    return localDate === this.todayDate ? 'HOY' : localDate.slice(0, 7);
+  }
+
+  private fechaGroupLabelFor(key: string): string {
+    if (key === 'HOY') {
+      return 'Hoy';
+    }
+    if (key === 'SIN_FECHA') {
+      return 'Sin fecha de ingreso';
+    }
+    const [year, month] = key.split('-').map(Number);
+    const label = this.monthNames[(month - 1) % 12] ?? key;
+    return year === new Date().getFullYear() ? label : `${label} ${year}`;
+  }
+
+  private fechaGroupSortKeyFor(key: string): string {
+    if (key === 'HOY') {
+      return '000-HOY';
+    }
+    if (key === 'SIN_FECHA') {
+      return '999-SIN-FECHA';
+    }
+    const [year, month] = key.split('-').map(Number);
+    if (!year || !month) {
+      return '998-FECHA-INVALIDA';
+    }
+    const invertedMonthRank = 999999 - (year * 12 + month);
+    return `100-${String(invertedMonthRank).padStart(6, '0')}`;
+  }
+
   private withProgramacionGroup(row: LeadVentaResponse): VisualLeadVenta {
     const hour = this.parseHour(row.horaProgramada);
     const blockStart = hour === null ? null : this.programacionBlockStart(hour);
@@ -1467,6 +1542,31 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   private groupSortValue(row: VisualLeadVenta, groupRowsBy: string): string {
     return String(row[groupRowsBy as keyof VisualLeadVenta] ?? '');
+  }
+
+  private sortedRowsForDateSeparation(rows: VisualLeadVenta[]): VisualLeadVenta[] {
+    return [...rows].sort((left, right) => {
+      const groupCompare = this.fechaGroupRank(left) - this.fechaGroupRank(right);
+      if (groupCompare !== 0) {
+        return groupCompare;
+      }
+      return this.rowDateValue(right, 'lastEntryAt') - this.rowDateValue(left, 'lastEntryAt');
+    });
+  }
+
+  private fechaGroupRank(row: VisualLeadVenta): number {
+    const key = row.fechaGroupKey ?? this.fechaGroupKeyFor(row.lastEntryAt);
+    if (key === 'HOY') {
+      return Number.MIN_SAFE_INTEGER;
+    }
+    if (key === 'SIN_FECHA') {
+      return Number.MAX_SAFE_INTEGER;
+    }
+    const [year, month] = key.split('-').map(Number);
+    if (!year || !month) {
+      return Number.MAX_SAFE_INTEGER - 1;
+    }
+    return -(year * 12 + month);
   }
 
   private compareRows(left: LeadVentaResponse, right: LeadVentaResponse, field: BackofficeSortField, direction: BackofficeSortDirection): number {

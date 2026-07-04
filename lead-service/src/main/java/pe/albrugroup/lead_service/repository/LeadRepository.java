@@ -679,11 +679,10 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND l.lead LIKE :leadPattern
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
-            ORDER BY CASE WHEN l.idAsesorAsignado IS NULL THEN 0 ELSE 1 END,
-                     l.lastEntryAt DESC,
+            ORDER BY l.lastEntryAt DESC,
                      l.id DESC
             """)
-    Page<LeadResponse> listarBandejaVentaDelDia(
+    Page<LeadResponse> listarBandejaVentaVentana(
             @Param("etapa") Etapa etapa,
             @Param("leadPattern") String leadPattern,
             @Param("inicioDia") Instant inicioDia,

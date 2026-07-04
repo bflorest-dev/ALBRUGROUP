@@ -165,9 +165,6 @@ public class LeadService {
             Map.entry("primeraCodigoTipificacion", "primeraCodigoTipificacion"),
             Map.entry("codigoTipificacion", "codigoTipificacion")
     );
-    private static final Set<String> LEAD_VENTA_SORT_FIELDS = Set.of(
-            "lastEntryAt", "createdAt", "lead", "nombreAsesorAsignado", "estado"
-    );
     private static final Set<String> LEAD_ASESOR_SORT_FIELDS = Set.of(
             "lastEntryAt", "createdAt", "lead", "estado"
     );
@@ -498,18 +495,22 @@ public class LeadService {
         String numeroLead = normalizarLead(lead);
         boolean buscandoPorLead = numeroLead != null && !numeroLead.isBlank();
         String leadPattern = buscandoPorLead ? numeroLead + "%" : "%";
-        // Por defecto la Plataforma muestra solo el dia operativo de hoy (America/Lima).
-        // Al buscar un numero puntual se ignora el filtro de dia para poder ubicarlo en cualquier fecha.
+        // Por defecto la Plataforma muestra los ultimos 30 dias operativos (America/Lima).
+        // Al buscar un numero puntual se ignora el filtro de fecha para ubicarlo en cualquier momento.
         OperationalDateTime.InstantRange rango = buscandoPorLead
                 ? new OperationalDateTime.InstantRange(Instant.EPOCH, Instant.ofEpochSecond(253402300799L))
-                : OperationalDateTime.dayRange(null);
-        Page<LeadResponse> leads = leadRepository.listarBandejaVentaDelDia(
+                : new OperationalDateTime.InstantRange(
+                        OperationalDateTime.startOfDay(OperationalDateTime.today().minusDays(29)),
+                        OperationalDateTime.endExclusiveOfDay(OperationalDateTime.today()));
+        // El orden lo fija la propia query (lastEntryAt DESC, id DESC): Pageable sin sort para no
+        // agregar un ORDER BY extra que descuadre el orden y la paginacion entre paginas.
+        Page<LeadResponse> leads = leadRepository.listarBandejaVentaVentana(
                 Etapa.VENTA,
                 leadPattern,
                 rango.inicio(),
                 rango.fin(),
                 Accion.TIPIFICACION,
-                paginationService.toPageable(pageRequest, LEAD_VENTA_SORT_FIELDS)
+                org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);
         return PageResponse.from(leads);

@@ -251,17 +251,25 @@
       </ng-template>
 
       <ng-template #groupheader let-row>
-        <tr class="group-row">
-          <td [attr.colspan]="9">
-            @if (section() === 'programados') {
-              <span class="group-title">{{ programacionGroupTitle(row) }}</span>
-              <span class="group-hint">{{ programacionGroupHint(row) }}</span>
-            } @else {
-              <span class="group-title">{{ organizationGroupTitle(row) }}</span>
-              <span class="group-hint">{{ organizationGroupHint(row) }}</span>
-            }
-          </td>
-        </tr>
+        @if (plataformaDateSeparation()) {
+          <tr class="date-divider-row" [class.date-divider-row--today]="row.fechaGroupKey === 'HOY'">
+            <td [attr.colspan]="9">
+              <span class="date-divider-label">{{ row.fechaGroupLabel }}</span>
+            </td>
+          </tr>
+        } @else {
+          <tr class="group-row">
+            <td [attr.colspan]="9">
+              @if (section() === 'programados') {
+                <span class="group-title">{{ programacionGroupTitle(row) }}</span>
+                <span class="group-hint">{{ programacionGroupHint(row) }}</span>
+              } @else {
+                <span class="group-title">{{ organizationGroupTitle(row) }}</span>
+                <span class="group-hint">{{ organizationGroupHint(row) }}</span>
+              }
+            </td>
+          </tr>
+        }
       </ng-template>
 
       <ng-template #body let-row>

@@ -176,6 +176,34 @@ p,
   text-decoration: line-through;
 }
 
+// Separacion por fecha en Plataforma: linea gruesa a lo ancho + etiqueta a la izquierda.
+.date-divider-row td {
+  background: transparent;
+  border-top: 3px solid #d81f3c;
+  padding: 0 0 0.1rem;
+}
+
+.date-divider-label {
+  background: #d81f3c;
+  border-radius: 0 0 0.45rem 0;
+  color: #ffffff;
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 0.12rem 0.75rem;
+  text-transform: uppercase;
+}
+
+// HOY resaltado con el color de la marca para diferenciarlo de los cortes de mes.
+.date-divider-row--today td {
+  border-top-color: var(--role-primary);
+}
+
+.date-divider-row--today .date-divider-label {
+  background: var(--role-primary);
+}
+
 .row-new {
   animation: row-enter 440ms ease-out;
 }
@@ -320,6 +348,10 @@ app-lead-commercial-data-tabs {
     color: var(--role-primary);
     font-size: 0.76rem;
     text-transform: uppercase;
+  }
+
+  .backoffice-table .p-datatable-thead > tr > th {
+    text-align: center;
   }
 
   .backoffice-table .p-datatable-tbody > tr > td {
