@@ -1198,34 +1198,24 @@ public class LeadService {
         if (fechaInstalacion == null) {
             throw new BadRequestException("La fechaInstalacion es obligatoria para pasar a POSTVENTA");
         }
-        if (proveedor.getCortesFacturacion() == null || proveedor.getCortesFacturacion().isEmpty()) {
+        List<Integer> cortesOrdenados = proveedor.getCortesFacturacion() == null
+                ? List.of()
+                : proveedor.getCortesFacturacion().stream()
+                        .filter(dia -> dia != null)
+                        .sorted()
+                        .toList();
+        if (cortesOrdenados.isEmpty()) {
             throw new BadRequestException("El proveedor no tiene cortes de facturacion configurados");
         }
 
-        if ("WIN".equalsIgnoreCase(proveedor.getNombre())) {
-            Integer diaCorte = fechaInstalacion.getDayOfMonth() <= 22 ? 1 : 2;
-            validarCorteFacturacionConfigurado(proveedor, diaCorte);
-            return diaCorte;
-        }
-
-        if (proveedor.getCortesFacturacion().size() == 1) {
-            return proveedor.getCortesFacturacion().iterator().next();
-        }
-
-        throw new BadRequestException("No existe regla de corte de facturacion para el proveedor");
-    }
-
-    private void validarCorteFacturacionConfigurado(Proveedor proveedor, Integer diaCorte) {
-        if (!proveedor.getCortesFacturacion().contains(diaCorte)) {
-            throw new BadRequestException(
-                    "El corte de facturacion calculado no esta configurado para el proveedor",
-                    null,
-                    Map.of(
-                            "proveedor", proveedor.getNombre(),
-                            "diaCorteFacturacion", diaCorte
-                    )
-            );
-        }
+        // Regla unica para todos los proveedores: el corte de facturacion es el primer dia de corte
+        // configurado que sea >= al dia de instalacion. Si la instalacion cae despues del ultimo corte
+        // del mes, se factura en el primer corte del siguiente ciclo (el menor dia configurado).
+        int diaInstalacion = fechaInstalacion.getDayOfMonth();
+        return cortesOrdenados.stream()
+                .filter(corte -> corte >= diaInstalacion)
+                .findFirst()
+                .orElse(cortesOrdenados.get(0));
     }
 
     @Transactional

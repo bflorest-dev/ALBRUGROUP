@@ -247,7 +247,7 @@
                         [label]="campana.activo === false ? 'Activar' : 'Desactivar'"
                         severity="secondary"
                         [loading]="facade.isSaving()"
-                        (click)="facade.toggleCampaign(campana.id)"
+                        (click)="confirmCampaignToggle(campana)"
                       ></button>
                     </td>
                   </tr>
@@ -1201,4 +1201,5 @@
       <button pButton type="button" icon="pi pi-save" label="Guardar zona" [loading]="facade.isSaving()" (click)="facade.saveZone()"></button>
     </div>
   </p-dialog>
+  <p-confirmDialog appendTo="body" />
 </section>

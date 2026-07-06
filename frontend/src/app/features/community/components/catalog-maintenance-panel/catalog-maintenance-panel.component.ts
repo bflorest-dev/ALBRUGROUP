@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
@@ -13,6 +15,7 @@ import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-number-field/phone-number-field.component';
 import { CommunitySection, CommunityWorkspaceFacade } from '../../facades/community-workspace.facade';
+import { CampanaResponse } from '../../services/community-lead.service';
 
 export const CATALOG_MAINTENANCE_SECTIONS: { id: CommunitySection; label: string; icon: string }[] = [
   { id: 'proveedores', label: 'Proveedores', icon: 'pi pi-building' },
@@ -30,6 +33,7 @@ export const CATALOG_MAINTENANCE_SECTIONS: { id: CommunitySection; label: string
     ReactiveFormsModule,
     ButtonModule,
     CardModule,
+    ConfirmDialogModule,
     DialogModule,
     InputTextModule,
     MessageModule,
@@ -43,10 +47,12 @@ export const CATALOG_MAINTENANCE_SECTIONS: { id: CommunitySection; label: string
   ],
   templateUrl: './catalog-maintenance-panel.component.html',
   styleUrl: './catalog-maintenance-panel.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [ConfirmationService]
 })
 export class CatalogMaintenancePanelComponent {
   protected readonly facade = inject(CommunityWorkspaceFacade);
+  private readonly confirmationService = inject(ConfirmationService);
   protected readonly sections = CATALOG_MAINTENANCE_SECTIONS;
 
   protected preventNonInteger(event: KeyboardEvent): void {
@@ -69,6 +75,27 @@ export class CatalogMaintenancePanelComponent {
 
   protected statusSeverity(active: boolean | undefined): 'success' | 'danger' {
     return active === false ? 'danger' : 'success';
+  }
+
+  protected confirmCampaignToggle(campana: CampanaResponse): void {
+    if (campana.activo === false) {
+      void this.facade.toggleCampaign(campana.id);
+      return;
+    }
+
+    const campaignName = this.display(campana.nombre);
+    this.confirmationService.confirm({
+      header: 'Desactivar campaña',
+      message: `La campaña ${campaignName} dejará de estar disponible para nuevos registros. ¿Deseas desactivarla?`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Desactivar',
+      rejectLabel: 'Cancelar',
+      acceptButtonStyleClass: 'p-button-danger',
+      rejectButtonStyleClass: 'p-button-secondary p-button-outlined',
+      accept: () => {
+        void this.facade.toggleCampaign(campana.id);
+      }
+    });
   }
 
   protected criterionSeverity(criterion: string): 'success' | 'danger' {
