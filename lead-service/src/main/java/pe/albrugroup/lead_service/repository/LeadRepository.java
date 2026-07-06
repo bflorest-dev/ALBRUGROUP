@@ -49,6 +49,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     // tipificación informativa de un lead que sigue gestionándose en otra etapa.
     Optional<Lead> findByIdAndIdAsesorAsignado(Long id, Long idAsesorAsignado);
     Optional<Lead> findByIdAndIdAsesorAsignadoAndEtapaIn(Long id, Long idAsesorAsignado, Collection<Etapa> etapas);
+    // Gestiones aparcadas del asesor: para topar cuántos leads puede tener EN_GESTION en paralelo.
+    long countByIdAsesorAsignadoAndEstado(Long idAsesorAsignado, EstadoSeguimiento estado);
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Lead> findByIdAndEtapa(Long id, Etapa etapa);
 
@@ -359,6 +361,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             SELECT l
             FROM Lead l
             LEFT JOIN FETCH l.datosPreventa
+            LEFT JOIN FETCH l.direccion
             WHERE l.idAsesorAsignado = :idAsesor
               AND l.estado IN :estados
               AND (
@@ -945,7 +948,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                        l.lead,
                        l.etapa,
                        l.estadoPostventa,
-                       l.updatedAt)
+                       l.updatedAt,
+                       l.codigoTipificacion,
+                       l.codigoSubtipificacion)
             FROM Lead l
             WHERE l.idAsesorPreventa = :idAsesor
               AND l.fechaPreventa >= :fechaDesde

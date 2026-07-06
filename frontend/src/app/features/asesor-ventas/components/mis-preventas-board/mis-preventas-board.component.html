@@ -26,13 +26,14 @@
     [rowHover]="true"
     [scrollable]="true"
     scrollHeight="flex"
-    [tableStyle]="{ 'min-width': '720px' }"
+    [tableStyle]="{ 'min-width': '860px' }"
     styleClass="p-datatable-sm"
   >
     <ng-template #header>
       <tr>
         <th>Lead</th>
         <th>Etapa actual</th>
+        <th>Tipificación</th>
         <th>Última actualización</th>
         <th class="col-actions">Acciones</th>
       </tr>
@@ -45,6 +46,12 @@
         </td>
         <td>
           <p-tag [severity]="facade.etapaSeverity(row.etapa)" [value]="facade.etapaLabel(row.etapa)" />
+        </td>
+        <td>
+          <app-tipification-stack
+            [codigoTipificacion]="row.codigoTipificacion"
+            [codigoSubtipificacion]="row.codigoSubtipificacion"
+          />
         </td>
         <td>{{ row.updatedAt | date: 'dd/MM/yyyy hh:mm a' }}</td>
         <td>
@@ -63,7 +70,7 @@
 
     <ng-template #emptymessage>
       <tr>
-        <td colspan="4">
+        <td colspan="5">
           <span class="helper--centered">Todavía no has cerrado ninguna preventa.</span>
         </td>
       </tr>

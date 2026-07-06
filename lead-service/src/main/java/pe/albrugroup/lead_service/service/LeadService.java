@@ -143,6 +143,11 @@ public class LeadService {
     private static final String TIPIFICACION_GRABADO = "GRABADO";
     private static final String TIPIFICACION_SUBIDO = "SUBIDO";
     private static final Instant MIS_PREVENTAS_FECHA_HASTA_ABIERTA = Instant.parse("9999-01-01T00:00:00Z");
+    // Tope de gestiones que un asesor puede tener "aparcadas" (EN_GESTION) al mismo tiempo. Permite
+    // trabajar varios leads en paralelo cuando alguno se retrasa, pero fuerza a cerrar antes de
+    // seguir acumulando. Se valida en backend porque el asesor puede abrir varias pestañas que no
+    // comparten estado entre sí.
+    private static final long MAX_GESTIONES_SIMULTANEAS = 3;
     private static final String SUBTIPIFICACION_PREVENTA = "PREVENTA";
     private static final String SUBTIPIFICACION_VENTA_CERRADA = "VENTA_CERRADA";
     private static final LocalTime HORA_MINIMA_REGISTRO_RETROACTIVO = LocalTime.of(18, 0);
@@ -1422,6 +1427,15 @@ public class LeadService {
         if (lead.getEstado() != EstadoSeguimiento.ASIGNADO) {
             throw new BadRequestException("Solo se puede gestionar un Lead ASIGNADO");
         }
+        // Un lead ASIGNADO -> EN_GESTION cuenta como una nueva gestión aparcada. Retomar un lead que
+        // ya está EN_GESTION no pasa por aquí (retorna arriba), así que no consume cupo adicional.
+        long gestionesAbiertas = leadRepository.countByIdAsesorAsignadoAndEstado(
+                currentUser.empleadoID(), EstadoSeguimiento.EN_GESTION);
+        if (gestionesAbiertas >= MAX_GESTIONES_SIMULTANEAS) {
+            throw new BadRequestException(
+                    "Ya tienes " + MAX_GESTIONES_SIMULTANEAS
+                            + " gestiones abiertas. Retoma y tipifica una antes de abrir otra.");
+        }
 
         lead.setEstado(EstadoSeguimiento.EN_GESTION);
         lead.setLastEntryAt(OperationalDateTime.now());
@@ -2566,16 +2580,24 @@ public class LeadService {
     private LeadAsesorVentasResponse toAsesorResponse(
             Lead lead, Instant fechaAsignacion, long totalAsignaciones, String nombreProveedorEquipo) {
         DatosPreventa datosPreventa = lead.getDatosPreventa();
+        Direccion direccion = lead.getDireccion();
         String nombreProveedorCampana = lead.getCampana() == null || lead.getCampana().getProveedor() == null
                 ? null : lead.getCampana().getProveedor().getNombre();
+
+        // Valor efectivo documento/direccion: si ya existe la entidad de preventa se usa esa; si no,
+        // el snapshot que pudo llenar el GTR. Misma resolucion que el detalle, para que coincidan.
+        String numeroDocumento = datosPreventa == null
+                ? lead.getNumeroDocumentoTitularServicioSnapshot()
+                : datosPreventa.getNumeroDocumentoTitularServicio();
+        String direccionTexto = direccion == null ? lead.getDireccionSnapshot() : direccion.getDireccion();
 
         return new LeadAsesorVentasResponse(
                 lead.getId(),
                 fechaAsignacion,
                 lead.getPrefijo(),
                 lead.getLead(),
-                datosPreventa == null ? null : datosPreventa.getNombreTitularServicio(),
-                datosPreventa == null ? null : datosPreventa.getCorreo(),
+                numeroDocumento,
+                direccionTexto,
                 lead.getEstado(),
                 totalAsignaciones,
                 lead.getEtapa(),

@@ -8,6 +8,15 @@
   min-width: 10rem;
 }
 
+// Direccion puede ser larga: se trunca con ellipsis para no empujar ni desbordar la fila. El texto
+// completo queda disponible en el tooltip (title) y en el modal de gestion.
+.col-direccion {
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .provider-cell {
   align-items: center;
   display: inline-flex;

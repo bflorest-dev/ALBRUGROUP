@@ -43,8 +43,8 @@
       <tr>
         <th>Lead</th>
         <th>Origen</th>
-        <th>Titular</th>
-        <th>Correo</th>
+        <th>Documento</th>
+        <th>Direccion</th>
         <th>Estado</th>
         <th>Asignacion</th>
         <th class="col-actions">Acciones</th>
@@ -72,8 +72,8 @@
             {{ facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo) }}
           }
         </td>
-        <td>{{ facade.display(row.nombreTitular) }}</td>
-        <td>{{ facade.display(row.correo) }}</td>
+        <td>{{ facade.display(row.numeroDocumento) }}</td>
+        <td class="col-direccion" [title]="facade.display(row.direccion)">{{ facade.display(row.direccion) }}</td>
         <td>
           <p-tag [severity]="facade.estadoSeverity(row.estadoSeguimiento)" [value]="facade.display(row.estadoSeguimiento)" />
         </td>
@@ -82,11 +82,12 @@
           <button
             pButton
             type="button"
-            icon="pi pi-briefcase"
-            label="Gestionar"
+            [icon]="facade.manageActionIcon(row)"
+            [label]="facade.manageActionLabel(row)"
             size="small"
-            [disabled]="facade.isManageActionDisabled(row.id)"
-            [title]="facade.isManagingLead() && facade.selectedLeadId() !== row.id ? 'Tipifica el Lead actual antes de gestionar otro.' : ''"
+            [severity]="facade.manageActionSeverity(row)"
+            [disabled]="facade.isManageActionDisabledRow(row)"
+            [title]="facade.manageActionTitle(row)"
             (click)="facade.openDetail(row.id)"
           ></button>
         </td>

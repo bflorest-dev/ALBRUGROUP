@@ -88,6 +88,12 @@
   gap: 0.6rem;
 }
 
+// Ancla la acción de minimizar al extremo derecho del cluster del header, independientemente del
+// largo de los tags de estado que la preceden.
+.lead-workspace__minimize {
+  margin-left: auto;
+}
+
 .lead-workspace__provider {
   background: #ffffff;
   border: 1px solid #e2ebe7;

@@ -108,6 +108,9 @@ export class AsesorVentasWorkspaceFacade {
   private readonly operationalGate = this.operationalGateService.createGate('asesor-ventas-workspace');
 
   readonly pageSize = 12;
+  // Tope de gestiones "aparcadas" (EN_GESTION) a la vez. Debe coincidir con MAX_GESTIONES_SIMULTANEAS
+  // del backend, que es quien lo impone de verdad (el asesor puede abrir varias pestañas).
+  readonly maxGestionesSimultaneas = 3;
   readonly isLoading = signal(false);
   readonly isReconciling = signal(false);
   readonly isSaving = signal(false);
@@ -367,7 +370,10 @@ export class AsesorVentasWorkspaceFacade {
                 'DIRECCION_ACTUALIZADA',
                 'OFERTA_COMERCIAL_ACTUALIZADA',
                 'GESTION_INICIADA',
-                'TIPIFICACION'
+                'TIPIFICACION',
+                // El GTR llena documento/direccion (snapshots) del lead ya asignado: refrescar bandeja
+                // y modal para que el asesor vea esos datos sin recargar.
+                'SNAPSHOTS_ACTUALIZADOS'
               ].includes(event.tipo)
             ) {
               void this.reconcile(event.idLead);
@@ -413,22 +419,24 @@ export class AsesorVentasWorkspaceFacade {
   }
 
   async openDetail(idLead: number): Promise<void> {
-    this.tipificadasEnSesion.set(new Set());
-    this.oportunidadesActivasSesion = new Set([idLead]);
-    this.oportunidadesCreadasSesion = new Set();
-    this.atencionLeadId.set(null);
     if (!this.canMutateOperationalData()) {
       this.errorMessage.set('Marca ONLINE para gestionar Leads.');
       return;
     }
     if (this.isManagingLead() && this.selectedLeadId() !== idLead) {
-      this.errorMessage.set('Ya tienes un Lead en gestion. Debes tipificarlo antes de abrir otro.');
+      this.errorMessage.set('Tipifica o minimiza el Lead actual antes de abrir otro.');
       return;
     }
     if (this.hasUnsavedModalChanges() && this.selectedLeadId() !== idLead) {
       this.errorMessage.set('Guarda los datos pendientes o limpia los cambios antes de gestionar otro lead.');
       return;
     }
+    // Reset de la sesión de gestión (oportunidades) despues de pasar los guards: si el open se aborta
+    // arriba, no tocamos el estado de la sesión que pueda seguir viva en otro lead.
+    this.tipificadasEnSesion.set(new Set());
+    this.oportunidadesActivasSesion = new Set([idLead]);
+    this.oportunidadesCreadasSesion = new Set();
+    this.atencionLeadId.set(null);
     this.selectedLeadId.set(idLead);
     this.clearMessages();
     this.isSaving.set(true);
@@ -618,6 +626,40 @@ export class AsesorVentasWorkspaceFacade {
     // que vuelva a estar disponible en su etapa. Si se tipificó, el backend ya lo liberó.
     const atencionId = this.atencionLeadId();
     const atencionSinTipificar = atencionId !== null && !this.tipificadasEnSesion().has(atencionId);
+    this.resetDetailSignals();
+    if (atencionId !== null && atencionSinTipificar) {
+      void this.liberarAtencionEnSegundoPlano(atencionId);
+    }
+  }
+
+  /**
+   * Minimiza la gestión actual: guarda lo ingresado y cierra el modal SIN tipificar. El lead queda
+   * EN_GESTION (aparcado) y vuelve a la bandeja como "Retomar", para que el asesor gestione otros
+   * mientras este se destraba. A diferencia de cerrar, no exige tipificación ni libera la atención de
+   * un lead en otra etapa: se retoma tal cual quedó.
+   */
+  async minimizeDetail(): Promise<void> {
+    const detail = this.detail();
+    if (!detail || !this.detailDialogOpen()) {
+      return;
+    }
+    this.clearMessages();
+    // Guardar lo ingresado para no perderlo. En atención GTR los datos son de solo lectura: no hay
+    // nada que guardar. Si el guardado falla, no minimizamos: el asesor ve el error y sigue aquí.
+    if (!this.atencionOtraEtapa() && this.hasUnsavedDataChanges()) {
+      const guardado = await this.guardarAntesDeTipificar(detail, false);
+      if (!guardado) {
+        return;
+      }
+    }
+    this.resetDetailSignals();
+    // El lead sigue EN_GESTION en el backend; refrescamos la bandeja para que aparezca como "Retomar".
+    await this.refreshPage(true).catch(() => undefined);
+  }
+
+  // Limpia todo el estado del modal/sesión de gestión (formularios, oportunidades, banderas). No
+  // decide qué pasa con la atención de un lead en otra etapa: eso lo resuelve cada caller.
+  private resetDetailSignals(): void {
     this.detailDialogOpen.set(false);
     this.detail.set(null);
     this.oportunidadesContacto.set([]);
@@ -628,9 +670,6 @@ export class AsesorVentasWorkspaceFacade {
     this.selectedLeadId.set(null);
     this.isManagingLead.set(false);
     this.workspaceState.clearManagingLeadState();
-    if (atencionId !== null && atencionSinTipificar) {
-      void this.liberarAtencionEnSegundoPlano(atencionId);
-    }
     this.tipificacionForm.reset({
       codigoTipificacion: '',
       codigoSubtipificacion: '',
@@ -1136,70 +1175,66 @@ export class AsesorVentasWorkspaceFacade {
     return this.isSaving() || !this.canMutateOperationalData() || (this.isManagingLead() && this.selectedLeadId() !== idLead);
   }
 
+  // Un lead ya EN_GESTION (aparcado): su acción es "Retomar", no "Gestionar". Retomar nunca consume
+  // un cupo nuevo del tope; solo abrir una gestión de un lead ASIGNADO cuenta.
+  isRetomar(row: LeadAsesorVentasResponse): boolean {
+    return row.estadoSeguimiento === 'EN_GESTION';
+  }
+
+  // Gestiones aparcadas visibles en la bandeja. Es solo un espejo para el hint/estado del botón: el
+  // tope real lo impone el backend (que ve todas las pestañas del asesor).
+  readonly gestionesAbiertas = computed(
+    () => this.rows().filter((row) => row.estadoSeguimiento === 'EN_GESTION').length
+  );
+  readonly capGestionesAlcanzado = computed(() => this.gestionesAbiertas() >= this.maxGestionesSimultaneas);
+
+  manageActionLabel(row: LeadAsesorVentasResponse): string {
+    return this.isRetomar(row) ? 'Retomar' : 'Gestionar';
+  }
+
+  manageActionIcon(row: LeadAsesorVentasResponse): string {
+    return this.isRetomar(row) ? 'pi pi-arrow-right' : 'pi pi-briefcase';
+  }
+
+  manageActionSeverity(row: LeadAsesorVentasResponse): 'warn' | undefined {
+    return this.isRetomar(row) ? 'warn' : undefined;
+  }
+
+  // Deshabilita el botón por fila: mientras hay un modal abierto, el resto queda bloqueado (una
+  // gestión activa a la vez); y si se alcanzó el tope, se bloquea abrir NUEVAS gestiones (retomar sí).
+  isManageActionDisabledRow(row: LeadAsesorVentasResponse): boolean {
+    if (this.isManageActionDisabled(row.id)) {
+      return true;
+    }
+    return !this.isRetomar(row) && this.capGestionesAlcanzado();
+  }
+
+  manageActionTitle(row: LeadAsesorVentasResponse): string {
+    if (this.isManagingLead() && this.selectedLeadId() !== row.id) {
+      return 'Tipifica o minimiza el Lead actual antes de gestionar otro.';
+    }
+    if (!this.isRetomar(row) && this.capGestionesAlcanzado()) {
+      return `Tienes ${this.maxGestionesSimultaneas} gestiones abiertas. Retoma y tipifica una antes de abrir otra.`;
+    }
+    return this.isRetomar(row) ? 'Retoma esta gestión donde la dejaste.' : '';
+  }
+
   private async restoreManagingLeadAfterRefresh(): Promise<void> {
     const workspaceSnapshot = this.workspaceState.snapshot();
 
+    // Solo restauramos una gestión que quedó ACTIVA (modal abierto) e interrumpida, p. ej. por un
+    // refresh del navegador. Los leads que el asesor minimizó a propósito limpian este estado y se
+    // quedan como "Retomar" en la bandeja: no se reabren solos.
     if (workspaceSnapshot.isManagingLead && workspaceSnapshot.activeLeadId) {
       const restored = await this.reopenManagedLead(
         workspaceSnapshot.activeLeadId,
         'Se restauro tu lead en gestion para que continues donde quedaste.'
       );
 
-      if (restored) {
-        return;
+      if (!restored) {
+        this.workspaceState.clearManagingLeadState();
       }
     }
-
-    const managingRows = this.rows().filter((row) => row.estadoSeguimiento === 'EN_GESTION');
-    if (!managingRows.length) {
-      this.workspaceState.clearManagingLeadState();
-      return;
-    }
-
-    const candidate = this.pickManagingLeadCandidate(managingRows);
-    if (!candidate) {
-      this.workspaceState.clearManagingLeadState();
-      return;
-    }
-
-    const restored = await this.reopenManagedLead(candidate.id);
-    if (!restored) {
-      this.workspaceState.clearManagingLeadState();
-      return;
-    }
-
-    if (managingRows.length > 1) {
-      this.warningMessage.set('Se detectaron varias gestiones abiertas. Se reabrio la mas reciente para que continues.');
-      return;
-    }
-
-    this.successMessage.set('Se restauro tu lead en gestion para que continues donde quedaste.');
-  }
-
-  private pickManagingLeadCandidate(rows: LeadAsesorVentasResponse[]): LeadAsesorVentasResponse | null {
-    if (!rows.length) {
-      return null;
-    }
-
-    return [...rows].sort((left, right) => this.leadRowSortTimestamp(right) - this.leadRowSortTimestamp(left))[0] ?? null;
-  }
-
-  private leadRowSortTimestamp(row: LeadAsesorVentasResponse): number {
-    const lastEntryAt =
-      'lastEntryAt' in row && typeof row.lastEntryAt === 'string' && row.lastEntryAt
-        ? new Date(row.lastEntryAt).getTime()
-        : Number.NaN;
-
-    if (Number.isFinite(lastEntryAt)) {
-      return lastEntryAt;
-    }
-
-    const fechaAsignacion = row.fechaAsignacion ? new Date(row.fechaAsignacion).getTime() : Number.NaN;
-    if (Number.isFinite(fechaAsignacion)) {
-      return fechaAsignacion;
-    }
-
-    return row.id;
   }
 
   private async reopenManagedLead(idLead: number, restoredMessage?: string): Promise<boolean> {

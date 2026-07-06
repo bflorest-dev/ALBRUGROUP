@@ -24,4 +24,6 @@ public class MisPreventaResponse {
     private Etapa etapa;
     private EstadoPostventa estadoPostventa;
     private Instant updatedAt;
+    private String codigoTipificacion;
+    private String codigoSubtipificacion;
 }
