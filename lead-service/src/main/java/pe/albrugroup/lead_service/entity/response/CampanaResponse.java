@@ -18,5 +18,6 @@ public class CampanaResponse {
     private String nombreCuenta;
     private Long idProveedor;
     private String nombreProveedor;
+    private Instant createdAt;
     private Instant updatedAt;
 }
