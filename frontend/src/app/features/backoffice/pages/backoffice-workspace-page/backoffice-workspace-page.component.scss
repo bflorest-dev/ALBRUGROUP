@@ -256,12 +256,25 @@ p,
   align-items: end;
   display: grid;
   gap: 0.8rem;
-  grid-template-columns: auto repeat(6, minmax(9rem, 1fr)) auto auto;
+  grid-template-columns: auto minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(8.5rem, 0.7fr) minmax(8.5rem, 0.7fr) auto auto;
 }
 
 .comment-field,
 .wide {
   grid-column: 1 / -1;
+}
+
+.tipification-field {
+  min-width: 0;
+}
+
+.tipification-field--code,
+.tipification-field--time {
+  min-width: 8.5rem;
+}
+
+.tipification-bar > button {
+  white-space: nowrap;
 }
 
 .form-grid {
@@ -392,6 +405,19 @@ app-lead-commercial-data-tabs {
   .form-grid .p-textarea,
   .comment-field .p-textarea {
     width: 100%;
+  }
+
+  .tipification-bar .p-select,
+  .tipification-bar .p-inputtext,
+  .tipification-bar .p-datepicker {
+    min-width: 0;
+  }
+
+  .tipification-bar .p-select-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .p-tabpanels {

@@ -447,7 +447,7 @@
             (click)="registrarContacto()"
           ></button>
 
-          <label>
+          <label class="tipification-field tipification-field--wide">
             <span>Tipificacion</span>
             <p-select
               formControlName="codigoTipificacion"
@@ -467,7 +467,7 @@
             </p-select>
           </label>
 
-          <label>
+          <label class="tipification-field tipification-field--wide">
             <span>Subtipificacion</span>
             <p-select
               formControlName="codigoSubtipificacion"
@@ -489,7 +489,7 @@
           </label>
 
           @if (requiresInstallDate()) {
-            <label>
+            <label class="tipification-field">
               <span>Fecha instalacion</span>
               <p-datepicker
                 [ngModel]="toPickerDate(tipificacionForm.controls.fechaInstalacion.getRawValue())"
@@ -503,7 +503,7 @@
           }
 
           @if (requiresProgramming()) {
-            <label>
+            <label class="tipification-field">
               <span>Fecha programacion</span>
               <p-datepicker
                 [ngModel]="toPickerDate(tipificacionForm.controls.fechaProgramacion.getRawValue())"
@@ -516,7 +516,7 @@
               />
             </label>
 
-            <label>
+            <label class="tipification-field tipification-field--time">
               <span>Hora programacion</span>
               <p-datepicker
                 formControlName="horaProgramada"
@@ -532,7 +532,7 @@
           }
 
           @if (requiresSecSot()) {
-            <label>
+            <label class="tipification-field tipification-field--code">
               <span>SEC</span>
               <input
                 pInputText
@@ -546,7 +546,7 @@
               />
             </label>
 
-            <label>
+            <label class="tipification-field tipification-field--code">
               <span>SOT</span>
               <input
                 pInputText
