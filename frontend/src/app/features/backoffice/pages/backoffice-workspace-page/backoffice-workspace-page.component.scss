@@ -203,6 +203,7 @@ p,
   background: transparent;
   border-top: 3px solid #d81f3c;
   padding: 0 0 0.1rem;
+  text-align: left;
 }
 
 .date-divider-label {
@@ -392,6 +393,10 @@ app-lead-commercial-data-tabs {
   .backoffice-table .p-datatable-tbody > tr > td {
     text-align: center;
     vertical-align: middle;
+  }
+
+  .backoffice-table .p-datatable-tbody > tr.date-divider-row > td {
+    text-align: left;
   }
 
   .backoffice-table .p-datatable-tbody > tr > td.col-actions {
