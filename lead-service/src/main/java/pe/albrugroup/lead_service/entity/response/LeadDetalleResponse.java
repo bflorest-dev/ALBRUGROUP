@@ -65,6 +65,8 @@ public class LeadDetalleResponse {
     private String plano;
     private String piso;
     private String interior;
+    private String sec;
+    private String sot;
     private Long idPlan;
     private String nombrePlan;
     private String nombreProveedorPlan;

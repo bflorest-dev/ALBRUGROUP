@@ -231,7 +231,7 @@
       [rowHover]="true"
       [scrollable]="true"
       scrollHeight="flex"
-      [tableStyle]="{ 'min-width': '1120px' }"
+      [tableStyle]="{ 'min-width': '1220px' }"
       styleClass="p-datatable-sm backoffice-table"
       [rowGroupMode]="activeRowGroupMode()"
       [groupRowsBy]="activeGroupRowsBy()"
@@ -245,6 +245,7 @@
           <th class="col-asignado">Asignado</th>
           <th class="col-plan">Plan</th>
           <th class="col-tipificacion">Tipificacion</th>
+          <th class="col-sec-sot">SEC/SOT</th>
           <th class="col-gestion">Ultima gestion</th>
           <th class="col-actions">Acciones</th>
         </tr>
@@ -253,13 +254,13 @@
       <ng-template #groupheader let-row>
         @if (plataformaDateSeparation()) {
           <tr class="date-divider-row" [class.date-divider-row--today]="row.fechaGroupKey === 'HOY'">
-            <td [attr.colspan]="9">
+            <td [attr.colspan]="10">
               <span class="date-divider-label">{{ row.fechaGroupLabel }}</span>
             </td>
           </tr>
         } @else {
           <tr class="group-row">
-            <td [attr.colspan]="9">
+            <td [attr.colspan]="10">
               @if (section() === 'programados') {
                 <span class="group-title">{{ programacionGroupTitle(row) }}</span>
                 <span class="group-hint">{{ programacionGroupHint(row) }}</span>
@@ -314,6 +315,16 @@
               [paletteByCode]="tipificationPaletteByCode()"
             />
           </td>
+          <td class="col-sec-sot">
+            @if (row.sec || row.sot) {
+              <div class="sec-sot-cell">
+                <span>SEC {{ row.sec ?? '-' }}</span>
+                <span>SOT {{ row.sot ?? '-' }}</span>
+              </div>
+            } @else {
+              -
+            }
+          </td>
           <td class="col-gestion">{{ row.ultimaTipificacionAt ? (row.ultimaTipificacionAt | date: 'dd/MM HH:mm') : '-' }}</td>
           <td class="col-actions">
             @if (section() === 'plataforma') {
@@ -352,7 +363,7 @@
 
       <ng-template #emptymessage>
         <tr>
-          <td colspan="9">
+          <td colspan="10">
             @if (!canDisplayOperationalData()) {
               <div class="empty-state">Marca ONLINE para activar esta bandeja.</div>
             } @else if (isLoading()) {
@@ -516,6 +527,36 @@
                 [showIcon]="true"
                 icon="pi pi-clock"
                 appendTo="body"
+              />
+            </label>
+          }
+
+          @if (requiresSecSot()) {
+            <label>
+              <span>SEC</span>
+              <input
+                pInputText
+                type="text"
+                inputmode="numeric"
+                maxlength="9"
+                autocomplete="off"
+                formControlName="sec"
+                placeholder="9 digitos"
+                (input)="setFixedDigits('sec', $any($event.target).value, 9)"
+              />
+            </label>
+
+            <label>
+              <span>SOT</span>
+              <input
+                pInputText
+                type="text"
+                inputmode="numeric"
+                maxlength="8"
+                autocomplete="off"
+                formControlName="sot"
+                placeholder="8 digitos"
+                (input)="setFixedDigits('sot', $any($event.target).value, 8)"
               />
             </label>
           }

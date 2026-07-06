@@ -45,6 +45,8 @@ public class LeadResponse {
     private Instant createdAt;
     private Instant lastEntryAt;
     private Instant updatedAt;
+    private String sec;
+    private String sot;
     private long totalAsignaciones;
     private LocalDate fechaProgramacion;
     private LocalTime horaProgramada;

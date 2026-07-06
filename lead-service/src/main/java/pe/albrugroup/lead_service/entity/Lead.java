@@ -88,6 +88,10 @@ public class Lead {
 
     private String numeroDocumentoTitularServicioSnapshot;
     private String direccionSnapshot;
+    @Column(length = 9)
+    private String sec;
+    @Column(length = 8)
+    private String sot;
 
     // ASESOR VENTAS
 

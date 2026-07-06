@@ -234,6 +234,8 @@ export interface LeadVentaResponse {
   totalAsignaciones?: number | null;
   fechaProgramacion?: string | null;
   horaProgramada?: string | null;
+  sec?: string | null;
+  sot?: string | null;
   // Enriquecimiento del plan ofrecido (velocidad regular y promocional) para la bandeja BackOffice.
   internetVelocidad?: number | null;
   internetUnidad?: string | null;
@@ -324,6 +326,8 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   referencia?: string | null;
   latitud?: string | null;
   longitud?: string | null;
+  sec?: string | null;
+  sot?: string | null;
   urbanizacion?: string | null;
   numero?: string | null;
   manzana?: string | null;
@@ -519,6 +523,8 @@ export interface LeadTipificacionVentaRequest {
   fechaInstalacion?: string | null;
   fechaProgramacion?: string | null;
   horaProgramada?: string | null;
+  sec?: string | null;
+  sot?: string | null;
 }
 
 export interface EventoResponse {

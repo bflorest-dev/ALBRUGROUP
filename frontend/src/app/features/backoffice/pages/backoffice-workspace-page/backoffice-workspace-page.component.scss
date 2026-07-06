@@ -130,6 +130,23 @@ p,
   min-width: 0;
 }
 
+.col-sec-sot {
+  width: 8rem;
+}
+
+.sec-sot-cell {
+  display: grid;
+  gap: 0.15rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.sec-sot-cell span {
+  color: var(--role-primary);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
 .provider-cell {
   align-items: center;
   display: inline-flex;
@@ -239,7 +256,7 @@ p,
   align-items: end;
   display: grid;
   gap: 0.8rem;
-  grid-template-columns: auto repeat(4, minmax(10rem, 1fr)) auto auto;
+  grid-template-columns: auto repeat(6, minmax(9rem, 1fr)) auto auto;
 }
 
 .comment-field,

@@ -141,6 +141,7 @@ public class LeadService {
     private static final String TIPIFICACION_SCORE_PREVENTA = "SCORE_PREVENTA";
     private static final String TIPIFICACION_PREVENTA_COMPLETA = "PREVENTA_COMPLETA";
     private static final String TIPIFICACION_GRABADO = "GRABADO";
+    private static final String TIPIFICACION_SUBIDO = "SUBIDO";
     private static final Instant MIS_PREVENTAS_FECHA_HASTA_ABIERTA = Instant.parse("9999-01-01T00:00:00Z");
     private static final String SUBTIPIFICACION_PREVENTA = "PREVENTA";
     private static final String SUBTIPIFICACION_VENTA_CERRADA = "VENTA_CERRADA";
@@ -1020,6 +1021,7 @@ public class LeadService {
         Etapa etapaDestino = subtipificacion.getEtapaCambio();
         boolean requiereProgramacion = TIPIFICACION_PROGRAMADO.equals(tipificacion.getCodigo());
         validarProgramacionVenta(requiereProgramacion, request.getFechaProgramacion(), request.getHoraProgramada());
+        aplicarSecSotVentaSiCorresponde(lead, tipificacion.getCodigo(), request.getSec(), request.getSot());
         registrarPrimeraTipificacionSiFalta(lead, tipificacion.getCodigo(), subtipificacion.getCodigo());
 
         // Atribucion de venta: el responsable no es quien cambia de etapa, sino quien tipifica
@@ -1192,6 +1194,39 @@ public class LeadService {
         lead.setDiaCorteFacturacion(resolverDiaCorteFacturacion(proveedor, fechaInstalacion));
         lead.setMesesPermanenciaSnapshot(proveedor.getMesesPermanencia());
         lead.setEstadoPostventa(EstadoPostventa.EN_SEGUIMIENTO);
+    }
+
+    private void aplicarSecSotVentaSiCorresponde(Lead lead, String codigoTipificacion, String secRequest, String sotRequest) {
+        if (!TIPIFICACION_SUBIDO.equals(codigoTipificacion)) {
+            return;
+        }
+
+        String sec = normalizarCodigoNumerico(secRequest);
+        String sot = normalizarCodigoNumerico(sotRequest);
+        if (sec == null) {
+            sec = normalizarCodigoNumerico(lead.getSec());
+        }
+        if (sot == null) {
+            sot = normalizarCodigoNumerico(lead.getSot());
+        }
+        validarCodigoExacto(sec, 9, "SEC");
+        validarCodigoExacto(sot, 8, "SOT");
+        lead.setSec(sec);
+        lead.setSot(sot);
+    }
+
+    private String normalizarCodigoNumerico(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private void validarCodigoExacto(String value, int length, String label) {
+        if (value == null || !value.matches("\\d{" + length + "}")) {
+            throw new BadRequestException(label + " debe tener " + length + " digitos");
+        }
     }
 
     private Integer resolverDiaCorteFacturacion(Proveedor proveedor, LocalDate fechaInstalacion) {
@@ -2627,6 +2662,8 @@ public class LeadService {
                 direccion == null ? null : direccion.getPlano(),
                 direccion == null ? null : direccion.getPiso(),
                 direccion == null ? null : direccion.getInterior(),
+                lead.getSec(),
+                lead.getSot(),
                 lead.getPlan() == null ? null : lead.getPlan().getId(),
                 lead.getNombrePlanSnapshot(),
                 lead.getNombreProveedorSnapshot(),

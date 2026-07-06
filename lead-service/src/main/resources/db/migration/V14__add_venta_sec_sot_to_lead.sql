@@ -1,0 +1,3 @@
+ALTER TABLE lead
+    ADD COLUMN sec VARCHAR(9),
+    ADD COLUMN sot VARCHAR(8);

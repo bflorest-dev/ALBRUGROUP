@@ -244,7 +244,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     comentario: [''],
     fechaInstalacion: [''],
     fechaProgramacion: [''],
-    horaProgramada: ['']
+    horaProgramada: [''],
+    sec: [''],
+    sot: ['']
   });
 
   protected readonly tipificaciones = computed(() => [...(this.catalogo()?.tipificaciones ?? [])].sort((a, b) => a.orden - b.orden));
@@ -262,6 +264,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.selectedTipificacionCode() === 'INSTALADO' || this.selectedSubtipificacion()?.etapaCambio === 'POSTVENTA'
   );
   protected readonly requiresProgramming = computed(() => this.selectedTipificacionCode() === 'PROGRAMADO');
+  protected readonly requiresSecSot = computed(() => this.selectedTipificacionCode() === 'SUBIDO');
   protected readonly ofertaProviderOptions = computed<OfertaProviderOption[]>(() => {
     const providersById = new Map<number, OfertaProviderOption>();
     for (const plan of this.planes()) {
@@ -688,6 +691,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.notify('warn', 'Selecciona tipificacion y subtipificacion.');
       return;
     }
+    const raw = this.tipificacionForm.getRawValue();
     if (this.requiresInstallDate() && !this.tipificacionForm.controls.fechaInstalacion.value) {
       this.notify('warn', 'La fecha de instalacion es obligatoria para pasar a POSTVENTA.');
       return;
@@ -702,7 +706,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         return;
       }
     }
-    const raw = this.tipificacionForm.getRawValue();
+    if (this.requiresSecSot()) {
+      const sec = this.resolveSecForTipification(raw.sec, detail.sec);
+      const sot = this.resolveSotForTipification(raw.sot, detail.sot);
+      if (!sec || !sot) {
+        this.notify('warn', 'Ingresa SEC de 9 digitos y SOT de 8 digitos.');
+        return;
+      }
+    }
     await this.saveAction(
       () =>
         this.leadService.tipificarLead(detail.id, {
@@ -711,7 +722,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
           comentario: this.showComment() ? raw.comentario || null : null,
           fechaInstalacion: this.requiresInstallDate() ? raw.fechaInstalacion || null : null,
           fechaProgramacion: this.requiresProgramming() ? raw.fechaProgramacion || null : null,
-          horaProgramada: this.requiresProgramming() ? raw.horaProgramada || null : null
+          horaProgramada: this.requiresProgramming() ? raw.horaProgramada || null : null,
+          sec: this.requiresSecSot() ? this.resolveSecForTipification(raw.sec, detail.sec) : null,
+          sot: this.requiresSecSot() ? this.resolveSotForTipification(raw.sot, detail.sot) : null
         }),
       'Lead tipificado.',
       async () => {
@@ -925,6 +938,15 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     control.setValue(this.toBackendDate(value));
     control.markAsTouched();
     control.markAsDirty();
+  }
+
+  protected setFixedDigits(controlName: 'sec' | 'sot', value: string, maxLength: number): void {
+    const normalized = value.replace(/\D/g, '').slice(0, maxLength);
+    const control = this.tipificacionForm.controls[controlName];
+    if (control.value !== normalized) {
+      control.setValue(normalized);
+      control.markAsDirty();
+    }
   }
 
   protected leadPhone(row: LeadVentaResponse | LeadDetalleResponse): string {
@@ -1397,7 +1419,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       comentario: '',
       fechaInstalacion: '',
       fechaProgramacion: '',
-      horaProgramada: ''
+      horaProgramada: '',
+      sec: detail.sec ?? '',
+      sot: detail.sot ?? ''
     });
     this.selectedTipificacionCode.set('');
     this.selectedSubtipificacionCode.set('');
@@ -1705,6 +1729,23 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   private toCoordinateValue(value: number | string | null | undefined): string {
     return this.stripTrailingCoordinateZeros(String(value ?? '').replace(',', '.').trim());
+  }
+
+  private resolveSecForTipification(value: string | null | undefined, fallback: string | null | undefined): string | null {
+    return this.resolveFixedDigits(value, fallback, 9);
+  }
+
+  private resolveSotForTipification(value: string | null | undefined, fallback: string | null | undefined): string | null {
+    return this.resolveFixedDigits(value, fallback, 8);
+  }
+
+  private resolveFixedDigits(value: string | null | undefined, fallback: string | null | undefined, length: number): string | null {
+    const normalized = String(value ?? '').replace(/\D/g, '');
+    if (normalized.length === length) {
+      return normalized;
+    }
+    const fallbackNormalized = String(fallback ?? '').replace(/\D/g, '');
+    return fallbackNormalized.length === length ? fallbackNormalized : null;
   }
 
   private stripTrailingCoordinateZeros(value: string): string {
