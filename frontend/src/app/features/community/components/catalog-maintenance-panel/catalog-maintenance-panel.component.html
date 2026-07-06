@@ -214,6 +214,7 @@
                     <th>Proveedor</th>
                     <th>Cuenta</th>
                     <th>WhatsApp</th>
+                    <th>Fecha creaciÃ³n</th>
                     <th>Estado</th>
                     <th>Acciones</th>
                   </tr>
@@ -237,6 +238,10 @@
                         ></button>
                       </div>
                     </td>
+                    <td class="compact-date-cell">
+                      <span class="compact-date-cell__time">{{ compactTimePart(campana.createdAt) }}</span>
+                      <span class="compact-date-cell__date">{{ compactDatePart(campana.createdAt) }}</span>
+                    </td>
                     <td><p-tag [severity]="statusSeverity(campana.activo)" [value]="statusLabel(campana.activo)" /></td>
                     <td>
                       <button
@@ -253,7 +258,7 @@
                   </tr>
                 </ng-template>
                 <ng-template #emptymessage>
-                  <tr><td colspan="6">No hay campañas registradas.</td></tr>
+                  <tr><td colspan="7">No hay campañas registradas.</td></tr>
                 </ng-template>
               </p-table>
             </p-card>

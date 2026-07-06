@@ -7,6 +7,7 @@ export type LeadEntity = Record<string, unknown> & {
   id: number;
   nombre?: string;
   activo?: boolean;
+  createdAt?: string;
 };
 
 export type ProveedorResponse = LeadEntity & {

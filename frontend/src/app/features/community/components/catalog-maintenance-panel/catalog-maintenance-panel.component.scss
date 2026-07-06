@@ -223,6 +223,30 @@ label,
   outline-offset: 2px;
 }
 
+.compact-date-cell {
+  min-width: 6.5rem;
+  white-space: nowrap;
+}
+
+.compact-date-cell__time,
+.compact-date-cell__date {
+  display: block;
+  line-height: 1.15;
+}
+
+.compact-date-cell__time {
+  color: var(--role-primary);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.compact-date-cell__date {
+  color: var(--role-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-top: 0.12rem;
+}
+
 :host ::ng-deep .plan-catalog-tag {
   border-radius: 0.35rem;
   color: #ffffff;

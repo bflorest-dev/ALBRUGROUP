@@ -117,6 +117,30 @@ export class CatalogMaintenancePanelComponent {
     return `S/ ${value}`;
   }
 
+  protected compactDatePart(value: string | null | undefined): string {
+    const date = this.parseDate(value);
+    if (!date) {
+      return '-';
+    }
+    return new Intl.DateTimeFormat('es-PE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).format(date);
+  }
+
+  protected compactTimePart(value: string | null | undefined): string {
+    const date = this.parseDate(value);
+    if (!date) {
+      return '-';
+    }
+    return new Intl.DateTimeFormat('es-PE', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).format(date);
+  }
+
   protected scopeLabel(value: unknown, fallback: string): string {
     return value === null || value === undefined || value === '' ? fallback : String(value);
   }
@@ -129,5 +153,13 @@ export class CatalogMaintenancePanelComponent {
       return ids.join(', ');
     }
     return 'Todos';
+  }
+
+  private parseDate(value: string | null | undefined): Date | null {
+    if (!value) {
+      return null;
+    }
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
   }
 }
