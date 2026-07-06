@@ -328,14 +328,14 @@ export class EmployeeAccessPanelComponent {
   }
 
   private hasAttendedToday(empleadoId: number): boolean {
-    const state = this.employeeStateById()[empleadoId];
-    return !!state?.tieneRegistroHoy || !!state?.estadoActual;
+    return this.employeeStateById()[empleadoId]?.tieneRegistroHoy === true;
   }
 
   private isConnectedToWeb(empleadoId: number): boolean {
     const connectedUser = this.connectedUserById()[empleadoId];
     const presenceStatus = connectedUser?.status?.toUpperCase() ?? (connectedUser ? 'ONLINE' : '');
-    return presenceStatus === 'ONLINE';
+    const disponibilidad = connectedUser?.disponibilidad?.toUpperCase();
+    return presenceStatus === 'ONLINE' && !!disponibilidad;
   }
 
   private teamKey(teamName: string): string {
