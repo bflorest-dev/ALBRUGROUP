@@ -137,6 +137,7 @@ p,
 .sec-sot-cell {
   display: grid;
   gap: 0.15rem;
+  justify-content: center;
   line-height: 1.2;
   white-space: nowrap;
 }
@@ -152,6 +153,7 @@ p,
   display: inline-flex;
   justify-content: center;
   min-width: 0;
+  width: 100%;
 }
 
 .provider-cell img {
@@ -165,7 +167,9 @@ p,
 .plan-cell {
   display: grid;
   gap: 0.3rem;
+  justify-items: center;
   min-width: 0;
+  text-align: center;
 }
 
 .plan-cell__name {
@@ -179,6 +183,7 @@ p,
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
+  justify-content: center;
 }
 
 .plan-cell__meses {
@@ -385,7 +390,12 @@ app-lead-commercial-data-tabs {
   }
 
   .backoffice-table .p-datatable-tbody > tr > td {
+    text-align: center;
     vertical-align: middle;
+  }
+
+  .backoffice-table .p-datatable-tbody > tr > td.col-actions {
+    text-align: center;
   }
 
   .backoffice-dialog {
