@@ -17,6 +17,19 @@
       [ngModelOptions]="{ standalone: true }"
       (onChange)="facade.setPeriod($event.value)"
     />
+    <p-datepicker
+      view="month"
+      dateFormat="MM yy"
+      [ngModel]="facade.selectedMonth()"
+      [ngModelOptions]="{ standalone: true }"
+      [maxDate]="facade.maxMonth"
+      [readonlyInput]="true"
+      [showIcon]="true"
+      iconDisplay="input"
+      appendTo="body"
+      placeholder="Elegir mes"
+      (onSelect)="facade.setMonth($event)"
+    />
   </div>
 
   <p-table

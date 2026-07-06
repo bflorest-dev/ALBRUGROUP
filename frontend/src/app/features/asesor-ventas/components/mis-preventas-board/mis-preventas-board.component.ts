@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { DatePickerModule } from 'primeng/datepicker';
 import { PaginatorModule } from 'primeng/paginator';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
@@ -17,6 +18,7 @@ import { AsesorVentasMisPreventasFacade } from '../../facades/asesor-ventas-mis-
     FormsModule,
     ButtonModule,
     CardModule,
+    DatePickerModule,
     PaginatorModule,
     SelectButtonModule,
     TableModule,

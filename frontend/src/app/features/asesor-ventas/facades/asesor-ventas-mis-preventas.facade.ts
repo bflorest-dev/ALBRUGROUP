@@ -12,7 +12,7 @@ import {
 import { PreventaLeadService } from '../../preventa/services/preventa-lead.service';
 
 type ActiveDataTab = 'datos' | 'direccion' | 'oferta';
-type MisPreventaPeriod = 'todas' | 'hoy' | 'semana' | 'mes';
+type MisPreventaPeriod = 'hoy' | 'mes';
 type ProviderOption = { id: number; nombre: string };
 type PlanOption = Partial<PlanResponse> & { id: number; nombre: string };
 type PromocionOption = { id: number; reglaComercial: string };
@@ -29,13 +29,15 @@ export class AsesorVentasMisPreventasFacade {
   private readonly preventaService = inject(PreventaLeadService);
 
   readonly pageSize = 12;
-  readonly period = signal<MisPreventaPeriod>('todas');
+  readonly period = signal<MisPreventaPeriod>('mes');
   readonly periodOptions: { label: string; value: MisPreventaPeriod }[] = [
-    { label: 'Todas', value: 'todas' },
     { label: 'Hoy', value: 'hoy' },
-    { label: 'Semana', value: 'semana' },
     { label: 'Mes', value: 'mes' }
   ];
+  // Mes a consultar cuando el periodo es 'mes' (por defecto el mes actual). Se guarda como el primer
+  // dia del mes en fecha LOCAL. Refs estables (signal almacenada / campo) para no romper PrimeNG.
+  readonly selectedMonth = signal<Date>(this.firstDayOfCurrentMonth());
+  readonly maxMonth = new Date();
   readonly isLoading = signal(false);
   readonly isLoadingDetail = signal(false);
   readonly errorMessage = signal<string | null>(null);
@@ -153,13 +155,24 @@ export class AsesorVentasMisPreventasFacade {
   }
 
   async setPeriod(value: string | number | undefined): Promise<void> {
-    if (value !== 'todas' && value !== 'hoy' && value !== 'semana' && value !== 'mes') {
+    if (value !== 'hoy' && value !== 'mes') {
       return;
     }
     if (value === this.period()) {
       return;
     }
     this.period.set(value);
+    this.pageNumber.set(0);
+    await this.load();
+  }
+
+  /** Elegir otro mes para revisar. Seleccionar un mes implica ver ese mes (cambia el periodo a 'mes'). */
+  async setMonth(value: Date | null | undefined): Promise<void> {
+    if (!value) {
+      return;
+    }
+    this.selectedMonth.set(new Date(value.getFullYear(), value.getMonth(), 1));
+    this.period.set('mes');
     this.pageNumber.set(0);
     await this.load();
   }
@@ -231,32 +244,33 @@ export class AsesorVentasMisPreventasFacade {
       sortBy: 'fechaPreventa',
       direction: 'desc'
     };
-    const page = await firstValueFrom(this.preventaService.listarMisPreventas(query, this.resolveFechaDesde()));
+    const { desde, hasta } = this.resolveRange();
+    const page = await firstValueFrom(this.preventaService.listarMisPreventas(query, desde, hasta));
     this.rows.set(page.content);
     this.totalElements.set(page.totalElements);
     this.totalPages.set(page.totalPages);
   }
 
   /**
-   * Fecha de inicio del periodo seleccionado en formato YYYY-MM-DD usando la fecha LOCAL del
-   * navegador (nunca toISOString, que convierte a UTC y puede cambiar el dia en Peru).
-   * fechaHasta se omite: el rango queda abierto hasta hoy.
+   * Rango cerrado [desde, hasta] en formato YYYY-MM-DD usando la fecha LOCAL del navegador (nunca
+   * toISOString, que convierte a UTC y puede cambiar el dia en Peru). A diferencia del selector
+   * anterior, el rango tiene tope superior: 'hoy' es solo hoy y 'mes' es exactamente ese mes, para
+   * que los conteos no se solapen ni dependan de un limite abierto.
    */
-  private resolveFechaDesde(): string | undefined {
-    const now = new Date();
-    switch (this.period()) {
-      case 'hoy':
-        return this.toLocalDate(now);
-      case 'semana': {
-        const desde = new Date(now);
-        desde.setDate(desde.getDate() - 6);
-        return this.toLocalDate(desde);
-      }
-      case 'mes':
-        return this.toLocalDate(new Date(now.getFullYear(), now.getMonth(), 1));
-      default:
-        return undefined;
+  private resolveRange(): { desde: string; hasta: string } {
+    if (this.period() === 'hoy') {
+      const hoy = this.toLocalDate(new Date());
+      return { desde: hoy, hasta: hoy };
     }
+    const month = this.selectedMonth();
+    const primerDia = new Date(month.getFullYear(), month.getMonth(), 1);
+    const ultimoDia = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+    return { desde: this.toLocalDate(primerDia), hasta: this.toLocalDate(ultimoDia) };
+  }
+
+  private firstDayOfCurrentMonth(): Date {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
   }
 
   private toLocalDate(date: Date): string {

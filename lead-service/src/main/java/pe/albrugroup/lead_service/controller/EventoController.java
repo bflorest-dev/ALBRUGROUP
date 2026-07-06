@@ -20,9 +20,11 @@ import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDiarioResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionesResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
+import pe.albrugroup.lead_service.entity.response.RegistroDiarioLeadResponse;
 import pe.albrugroup.lead_service.service.EventoService;
 
 import java.time.LocalDate;
+import java.util.List;
 @RestController
 @Validated
 @RequiredArgsConstructor
@@ -65,6 +67,14 @@ public class EventoController {
                 pageRequest
         );
         return ResponseEntity.status(HttpStatus.OK).body(registros);
+    }
+
+    @GetMapping("/registros-diarios/lead/{idLead}") @PreAuthorize("hasAuthority('READ_LEADS_DIARIOS')")
+    public ResponseEntity<List<RegistroDiarioLeadResponse>> listarRegistrosDiariosDeLead(
+            @PathVariable Long idLead,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
+    ) {
+        return ResponseEntity.ok(eventoService.listarRegistrosDiariosDeLead(idLead, fecha));
     }
 
     @GetMapping("/registros-diarios/agrupaciones") @PreAuthorize("hasAuthority('READ_LEADS_DIARIOS')")

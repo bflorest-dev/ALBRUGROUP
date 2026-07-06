@@ -282,32 +282,38 @@
       </ng-template>
 
       <ng-template #expandedrow let-row>
-        <tr class="daily-leads__registros-row">
-          <td colspan="10">
-            @if (facade.loadingRegistrosLeadId() === row.idLead) {
-              <div class="daily-leads__registros-loading">Cargando registros...</div>
-            } @else if (facade.registrosByLead()[row.idLead]?.length) {
-              <div class="daily-leads__registros">
-                <span class="daily-leads__registros-title">
-                  Otros registros de hoy para este lead
-                </span>
-                <ul class="daily-leads__registros-list">
-                  @for (registro of facade.registrosByLead()[row.idLead]; track $index) {
-                    <li class="daily-leads__registros-item">
-                      <span class="daily-leads__registros-hora">
-                        <i class="pi pi-clock"></i>{{ registro.hora }}
-                      </span>
-                      <span class="daily-leads__registros-asesor">{{ registro.asesor }}</span>
-                      <p-tag [value]="registro.rolLabel" severity="secondary" />
-                    </li>
-                  }
-                </ul>
-              </div>
-            } @else {
-              <div class="daily-leads__registros-empty">No hay registros adicionales.</div>
-            }
-          </td>
-        </tr>
+        @if (facade.loadingRegistrosLeadId() === row.idLead) {
+          <tr class="daily-leads__registros-row">
+            <td class="daily-leads__expander-col"></td>
+            <td colspan="9" class="daily-leads__registros-note">Cargando registros...</td>
+          </tr>
+        } @else if (facade.registrosByLead()[row.idLead]?.length) {
+          <tr class="daily-leads__registros-row daily-leads__registros-row--head">
+            <td class="daily-leads__expander-col"></td>
+            <td colspan="9" class="daily-leads__registros-note">Otros registros de hoy para este lead</td>
+          </tr>
+          @for (registro of facade.registrosByLead()[row.idLead]; track $index) {
+            <tr class="daily-leads__registros-row">
+              <td class="daily-leads__expander-col"></td>
+              <td class="daily-leads__registros-hora">{{ registro.hora }}</td>
+              <td class="daily-leads__registros-branch" aria-hidden="true">
+                <i class="pi pi-angle-right"></i>
+              </td>
+              <td>{{ registro.asesor }}</td>
+              <td></td>
+              <td></td>
+              <td class="daily-leads__campaign">{{ registro.campana }}</td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+          }
+        } @else {
+          <tr class="daily-leads__registros-row">
+            <td class="daily-leads__expander-col"></td>
+            <td colspan="9" class="daily-leads__registros-note">No hay registros adicionales.</td>
+          </tr>
+        }
       </ng-template>
 
       <ng-template #emptymessage>

@@ -19,11 +19,18 @@ export interface LeadDiarioResponse {
   totalRegistrosDia?: number | null;
 }
 
-/** Un registro adicional del mismo lead en el día (para el despliegue de repeticiones). */
+/** Contrato del backend para un evento REGISTRO del lead en el día (despliegue de repeticiones). */
+export interface RegistroDiarioLeadResponse {
+  createdAt: string;
+  nombreActor: string | null;
+  nombreCampana: string | null;
+}
+
+/** Un registro adicional del mismo lead en el día, listo para render (alineado a las columnas). */
 export interface DailyLeadRegistroView {
   hora: string;
   asesor: string;
-  rolLabel: string;
+  campana: string;
 }
 
 /** Modelo de vista listo para render: textos precomputados, sin lógica en el template. */

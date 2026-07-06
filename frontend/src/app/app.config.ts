@@ -32,6 +32,22 @@ export const appConfig: ApplicationConfig = {
     providePrimeNG({
       ripple: true,
       inputVariant: 'filled',
+      // Locale en español para los componentes de PrimeNG (datepicker, etc.): nombres de meses/días y
+      // botones en el idioma del usuario final, no en inglés.
+      translation: {
+        firstDayOfWeek: 1,
+        dayNames: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+        dayNamesShort: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+        dayNamesMin: ['D', 'L', 'M', 'X', 'J', 'V', 'S'],
+        monthNames: [
+          'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+          'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+        ],
+        monthNamesShort: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+        today: 'Hoy',
+        clear: 'Limpiar',
+        weekHeader: 'Sem'
+      },
       theme: {
         preset: Aura,
         options: {

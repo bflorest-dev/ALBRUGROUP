@@ -11,6 +11,7 @@ import pe.albrugroup.lead_service.entity.Evento;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.response.LeadDiarioResponse;
+import pe.albrugroup.lead_service.entity.response.RegistroDiarioLeadResponse;
 import pe.albrugroup.lead_service.repository.projection.AsesorCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.AsesorProveedorCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.AsesorUltimoEventoProjection;
@@ -573,6 +574,27 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("fin") Instant fin,
             @Param("filtrarLead") boolean filtrarLead,
             @Param("lead") String lead
+    );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.RegistroDiarioLeadResponse(
+                       e.createdAt,
+                       e.nombreActor,
+                       c.nombre)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN Campana c ON c.id = e.idCampana
+            WHERE e.idLead = :idLead
+              AND e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+            ORDER BY e.createdAt ASC, e.id ASC
+            """)
+    List<RegistroDiarioLeadResponse> listarRegistrosDiariosDeLead(
+            @Param("idLead") Long idLead,
+            @Param("accion") Accion accion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
     );
 
     @Query("""

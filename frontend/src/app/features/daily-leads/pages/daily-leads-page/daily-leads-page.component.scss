@@ -232,53 +232,6 @@
     flex: 0 0 auto;
   }
 
-  &__registros {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    padding: 0.35rem 0.25rem;
-    text-align: left;
-  }
-
-  &__registros-title {
-    font-weight: 700;
-    color: var(--app-text-muted);
-  }
-
-  &__registros-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  &__registros-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  &__registros-hora {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    min-width: 5rem;
-    font-variant-numeric: tabular-nums;
-    color: var(--app-text-muted);
-  }
-
-  &__registros-asesor {
-    font-weight: 600;
-  }
-
-  &__registros-loading,
-  &__registros-empty {
-    padding: 0.5rem 0.25rem;
-    color: var(--app-text-muted);
-  }
-
   @media (max-width: 640px) {
     &__header,
     &__controls {
@@ -323,6 +276,30 @@
 :host ::ng-deep .daily-leads__table th {
   text-align: center;
   vertical-align: middle;
+}
+
+// Sub-filas del desplegable: mismas columnas que la tabla (Hora/GTR/Campaña alineadas
+// bajo su encabezado), con fondo tenue y texto atenuado para leerse como "hijas".
+:host ::ng-deep .daily-leads__table tr.daily-leads__registros-row > td {
+  background: var(--app-surface-sunken, rgba(148, 163, 184, 0.08));
+  color: var(--app-text-muted);
+  font-size: 0.88rem;
+}
+
+:host ::ng-deep .daily-leads__table tr.daily-leads__registros-row--head > td {
+  font-weight: 700;
+}
+
+:host ::ng-deep .daily-leads__table td.daily-leads__registros-note {
+  text-align: left;
+}
+
+:host ::ng-deep .daily-leads__table td.daily-leads__registros-hora {
+  font-variant-numeric: tabular-nums;
+}
+
+:host ::ng-deep .daily-leads__table td.daily-leads__registros-branch i {
+  opacity: 0.7;
 }
 
 :host ::ng-deep .daily-leads__events-table td,

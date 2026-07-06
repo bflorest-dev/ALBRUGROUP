@@ -15,7 +15,8 @@ import {
   DailyLeadRowView,
   DailyLeadSortDirection,
   DailyLeadSortField,
-  LeadDiarioResponse
+  LeadDiarioResponse,
+  RegistroDiarioLeadResponse
 } from '../models/daily-lead.model';
 
 @Injectable()
@@ -349,16 +350,11 @@ export class DailyLeadsFacade {
 
     this.loadingRegistrosLeadId.set(id);
     try {
-      const page = await firstValueFrom(
-        this.service.listarEventosLead(
-          id,
-          this.selectedHistoryDate(),
-          { pageNumber: 0, pageSize: 100, sortBy: 'createdAt', direction: 'asc' },
-          'REGISTRO'
-        )
+      const registros = await firstValueFrom(
+        this.service.listarRegistrosDiariosDeLead(id, this.fecha() || undefined)
       );
       // El primer registro (más temprano) es la fila principal; el despliegue muestra los demás.
-      const otros = page.content.slice(1).map((evento) => this.toRegistroView(evento));
+      const otros = registros.slice(1).map((registro) => this.toRegistroView(registro));
       this.registrosByLead.update((current) => ({ ...current, [id]: otros }));
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudieron cargar los registros del lead.'));
@@ -370,11 +366,11 @@ export class DailyLeadsFacade {
     }
   }
 
-  private toRegistroView(evento: EventoResponse): DailyLeadRegistroView {
+  private toRegistroView(registro: RegistroDiarioLeadResponse): DailyLeadRegistroView {
     return {
-      hora: this.formatTime(evento.createdAt ?? ''),
-      asesor: evento.nombreActor?.trim() || '-',
-      rolLabel: formatLabel(evento.rolActor)
+      hora: this.formatTime(registro.createdAt ?? ''),
+      asesor: registro.nombreActor?.trim() || '-',
+      campana: registro.nombreCampana?.trim() || 'Sin campaña'
     };
   }
 

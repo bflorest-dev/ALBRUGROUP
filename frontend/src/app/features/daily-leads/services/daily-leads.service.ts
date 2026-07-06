@@ -9,7 +9,8 @@ import {
   DailyLeadGroupsResponse,
   DailyLeadSortDirection,
   DailyLeadSortField,
-  LeadDiarioResponse
+  LeadDiarioResponse,
+  RegistroDiarioLeadResponse
 } from '../models/daily-lead.model';
 
 export interface DailyLeadsQuery {
@@ -88,6 +89,18 @@ export class DailyLeadsService {
 
   getCatalogoTipificaciones(etapa: string): Observable<CatalogoResponse> {
     return this.http.get<CatalogoResponse>(`${this.leadUrl}/tipificaciones/${etapa}/catalogo`);
+  }
+
+  /** Eventos REGISTRO del lead en el día (hora, GTR, campaña), para el despliegue de repeticiones. */
+  listarRegistrosDiariosDeLead(idLead: number, fecha?: string): Observable<RegistroDiarioLeadResponse[]> {
+    let params = new HttpParams();
+    if (fecha) {
+      params = params.set('fecha', fecha);
+    }
+    return this.http.get<RegistroDiarioLeadResponse[]>(
+      `${this.leadUrl}/eventos/registros-diarios/lead/${idLead}`,
+      { params }
+    );
   }
 
   listarEventosLead(

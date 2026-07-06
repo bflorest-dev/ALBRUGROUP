@@ -14,6 +14,7 @@ import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDiarioResponse;
+import pe.albrugroup.lead_service.entity.response.RegistroDiarioLeadResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionItemResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionesResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
@@ -290,6 +291,15 @@ public class EventoService {
                         LeadUltimaAsignacionProjection::getIdLead,
                         LeadUltimaAsignacionProjection::getNombreAsesorAsignado
                 ));
+    }
+
+    /**
+     * Eventos REGISTRO del lead en el día operativo (hora, GTR, campaña de cada uno), para el
+     * despliegue de repeticiones. Va acotado al equipo del usuario vía el filtro Hibernate sobre Lead.
+     */
+    public List<RegistroDiarioLeadResponse> listarRegistrosDiariosDeLead(Long idLead, LocalDate fecha) {
+        OperationalDateTime.InstantRange rango = OperationalDateTime.dayRange(fecha);
+        return eventoRepository.listarRegistrosDiariosDeLead(idLead, Accion.REGISTRO, rango.inicio(), rango.fin());
     }
 
     public LeadGtrAgrupacionesResponse listarAgrupacionesRegistrosDiarios(LocalDate fecha, String lead) {
