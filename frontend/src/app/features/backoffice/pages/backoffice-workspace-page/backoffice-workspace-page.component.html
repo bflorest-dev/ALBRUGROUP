@@ -242,7 +242,7 @@
           <th class="col-lead">Lead</th>
           <th class="col-proveedor">Proveedor</th>
           <th class="col-estado">Estado</th>
-          <th class="col-asignado">Asignado</th>
+          <th class="col-asignado">{{ section() === 'plataforma' ? 'Asignado' : 'Documento' }}</th>
           <th class="col-plan">Plan</th>
           <th class="col-tipificacion">Tipificacion</th>
           @if (showSecSotColumn()) {
@@ -289,7 +289,9 @@
             }
           </td>
           <td class="col-estado"><p-tag [severity]="estadoSeverity(row.estadoSeguimiento)" [value]="display(row.estadoSeguimiento)" /></td>
-          <td class="col-asignado">{{ display(row.nombreAsesorAsignado) }}</td>
+          <td class="col-asignado">
+            {{ section() === 'plataforma' ? display(row.nombreAsesorAsignado) : display(row.numeroDocumentoTitularServicio) }}
+          </td>
           <td class="col-plan">
             @if (row.nombrePlanSnapshot) {
               <div class="plan-cell">

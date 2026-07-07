@@ -648,6 +648,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.estado,
                 l.idAsesorAsignado,
                 l.nombreAsesorAsignado,
+                COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot),
                 l.base,
                 l.idTipificacion,
                 l.codigoTipificacion,
@@ -679,6 +680,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                       AND ev.accion = :accionTipificacion)
             )
             FROM Lead l
+            LEFT JOIN l.datosPreventa dp
             LEFT JOIN l.plan pl
             LEFT JOIN pl.proveedor pp
             LEFT JOIN pl.internet inter
@@ -713,6 +715,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.estado,
                 l.idAsesorAsignado,
                 l.nombreAsesorAsignado,
+                COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot),
                 l.base,
                 l.idTipificacion,
                 l.codigoTipificacion,
@@ -744,6 +747,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                       AND ev.accion = :accionTipificacion)
             )
             FROM Lead l
+            LEFT JOIN l.datosPreventa dp
             LEFT JOIN l.plan pl
             LEFT JOIN pl.proveedor pp
             LEFT JOIN pl.internet inter
@@ -777,6 +781,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.estado,
                 l.idAsesorAsignado,
                 l.nombreAsesorAsignado,
+                COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot),
                 l.base,
                 l.idTipificacion,
                 l.codigoTipificacion,
@@ -809,6 +814,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             )
             FROM Lead l
             JOIN Evento e ON e.idLead = l.id
+            LEFT JOIN l.datosPreventa dp
             LEFT JOIN l.plan pl
             LEFT JOIN pl.proveedor pp
             LEFT JOIN pl.internet inter

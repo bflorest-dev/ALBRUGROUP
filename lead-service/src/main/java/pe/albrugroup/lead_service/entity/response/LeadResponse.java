@@ -29,6 +29,7 @@ public class LeadResponse {
     private EstadoSeguimiento estadoSeguimiento;
     private Long idAsesorAsignado;
     private String nombreAsesorAsignado;
+    private String numeroDocumentoTitularServicio;
     private Base base;
     private Long idTipificacion;
     private String codigoTipificacion;

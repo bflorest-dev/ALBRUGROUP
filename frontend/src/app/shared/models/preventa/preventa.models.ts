@@ -217,6 +217,7 @@ export interface LeadVentaResponse {
   estadoSeguimiento?: EstadoSeguimiento | string | null;
   idAsesorAsignado?: number | null;
   nombreAsesorAsignado?: string | null;
+  numeroDocumentoTitularServicio?: string | null;
   base?: BaseLead | string | null;
   idTipificacion?: number | null;
   codigoTipificacion?: string | null;
