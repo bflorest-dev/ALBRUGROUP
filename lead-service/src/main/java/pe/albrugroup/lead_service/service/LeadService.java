@@ -522,12 +522,15 @@ public class LeadService {
         return PageResponse.from(leads);
     }
 
-    public PageResponse<LeadResponse> listarLeadsVentaAsignados(PageRequest pageRequest) {
+    public PageResponse<LeadResponse> listarLeadsVentaAsignados(String buscar, PageRequest pageRequest) {
         // El orden de Gestion lo define la consulta (sin tipificar primero, luego agrupado por
         // tipificacion/subtipificacion), por eso se usa un Pageable sin sort.
+        String search = normalizarLead(buscar);
+        String searchPattern = search == null || search.isBlank() ? "%" : search + "%";
         Page<LeadResponse> leads = leadRepository.listarLeadsAsignadosPorEtapaYAsesor(
                 Etapa.VENTA,
                 currentUser.empleadoID(),
+                searchPattern,
                 Accion.TIPIFICACION,
                 org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
         );
@@ -1187,6 +1190,7 @@ public class LeadService {
         if (etapaDestino != Etapa.POSTVENTA) {
             return;
         }
+        validarFechaInstalacionVenta(fechaInstalacion);
 
         Plan plan = lead.getPlan();
         if (plan == null) {
@@ -2218,8 +2222,21 @@ public class LeadService {
             throw new BadRequestException("La horaProgramada es obligatoria para la tipificacion PROGRAMADO");
         }
 
-        if (fechaProgramacion.isBefore(OperationalDateTime.today())) {
-            throw new BadRequestException("La fechaProgramacion no puede ser anterior a hoy");
+        // TEMPORAL: regularizacion de leads antiguos. Descomentar al cerrar la regularizacion.
+        // validarFechaNoAnteriorAHoy(fechaProgramacion, "La fecha de programacion no puede ser anterior a hoy");
+    }
+
+    private void validarFechaInstalacionVenta(java.time.LocalDate fechaInstalacion) {
+        if (fechaInstalacion == null) {
+            throw new BadRequestException("La fecha de instalacion es obligatoria para pasar a POSTVENTA");
+        }
+        // TEMPORAL: regularizacion de leads antiguos. Descomentar al cerrar la regularizacion.
+        // validarFechaNoAnteriorAHoy(fechaInstalacion, "La fecha de instalacion no puede ser anterior a hoy");
+    }
+
+    private void validarFechaNoAnteriorAHoy(java.time.LocalDate fecha, String mensajeUsuario) {
+        if (fecha != null && fecha.isBefore(OperationalDateTime.today())) {
+            throw new BadRequestException(mensajeUsuario);
         }
     }
 

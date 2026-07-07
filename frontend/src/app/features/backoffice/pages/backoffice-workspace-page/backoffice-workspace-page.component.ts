@@ -12,6 +12,7 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { PaginatorModule } from 'primeng/paginator';
 import { PopoverModule } from 'primeng/popover';
 import { SelectModule } from 'primeng/select';
@@ -46,6 +47,7 @@ type BackofficeSection = 'plataforma' | 'gestion' | 'programados';
 type BackofficeGroupMode = 'SIN_AGRUPAR' | 'ESTADO' | 'ASESOR' | 'PLAN' | 'PROVEEDOR' | 'TIPIFICACION';
 type BackofficeSortField = 'lastEntryAt' | 'createdAt' | 'lead' | 'nombreAsesorAsignado' | 'estado';
 type BackofficeSortDirection = 'asc' | 'desc';
+type GestionTipificacionFilter = { label: string; value: string; codigo?: string; descripcion?: string };
 type VisualLeadVenta = LeadVentaResponse & {
   isNew?: boolean;
   organizationGroupHint?: string;
@@ -74,6 +76,7 @@ type ToastSeverity = 'success' | 'info' | 'warn' | 'error';
     DialogModule,
     InputTextModule,
     MessageModule,
+    MultiSelectModule,
     PaginatorModule,
     PopoverModule,
     SelectModule,
@@ -125,6 +128,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly gestionSortField = signal<BackofficeSortField>('lastEntryAt');
   protected readonly plataformaSortDirection = signal<BackofficeSortDirection>('desc');
   protected readonly gestionSortDirection = signal<BackofficeSortDirection>('desc');
+  protected readonly gestionTipificacionFilter = signal<string[]>([]);
   protected readonly detail = signal<LeadDetalleResponse | null>(null);
   // Campos que muestra el equipo del lead: se ven los visibles del equipo + los que tengan valor.
   protected readonly camposVisibles = computed<ReadonlySet<string>>(
@@ -194,6 +198,15 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     { label: 'Asesor', value: 'nombreAsesorAsignado' },
     { label: 'Estado', value: 'estado' }
   ];
+  protected readonly gestionTipificacionFilterOptions = computed<GestionTipificacionFilter[]>(() => [
+    { label: 'Sin tipificar', value: '__SIN_TIPIFICAR__', codigo: 'Sin tipificar', descripcion: 'Leads pendientes de primera gestion' },
+    ...(this.catalogo()?.tipificaciones ?? []).map((tipificacion) => ({
+      label: tipificacion.codigo,
+      value: tipificacion.codigo,
+      codigo: tipificacion.codigo,
+      descripcion: tipificacion.descripcion
+    }))
+  ]);
 
   protected readonly datosForm = this.fb.group({
     tipoDocumento: ['DNI', [Validators.required]],
@@ -395,12 +408,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     const grouping = this.groupingModeOptions.find((option) => option.value === this.activeGroupingMode())?.label ?? 'Sin agrupar';
     const sorting = this.sortOptions.find((option) => option.value === this.activeSortField())?.label ?? 'Ultima entrada';
     const direction = this.sortDirectionOptions().find((option) => option.value === this.activeSortDirection())?.label ?? 'Mas recientes';
-    return `${grouping} · ${sorting} (${direction})`;
+    const filters = this.section() === 'gestion' && this.gestionTipificacionFilter().length
+      ? ` · ${this.gestionTipificacionFilter().length} tipificaciones`
+      : '';
+    return `${grouping} · ${sorting} (${direction})${filters}`;
   });
   protected readonly isOrganizationDefault = computed(() =>
     this.activeGroupingMode() === (this.section() === 'gestion' ? 'TIPIFICACION' : 'SIN_AGRUPAR') &&
     this.activeSortField() === 'lastEntryAt' &&
-    this.activeSortDirection() === 'desc'
+    this.activeSortDirection() === 'desc' &&
+    (this.section() !== 'gestion' || this.gestionTipificacionFilter().length === 0)
   );
   protected readonly activeRows = computed(() => {
     if (this.plataformaDateSeparation()) {
@@ -417,7 +434,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         rows = this.programadosRows();
         break;
       default:
-        rows = this.gestionRows().map((row) => this.withOrganizationGroup(row, this.gestionGroupingMode()));
+        rows = this.filterGestionRows(this.gestionRows()).map((row) => this.withOrganizationGroup(row, this.gestionGroupingMode()));
         break;
     }
     return this.sortedRowsForGrouping(rows, this.activeGroupRowsBy(), this.activeSortField(), this.activeSortDirection());
@@ -463,7 +480,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.route.data.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data) => {
-      this.section.set(this.resolveSection(data['section']));
+      const nextSection = this.resolveSection(data['section']);
+      if (nextSection !== this.section()) {
+        this.searchInput.set('');
+        this.searchTermActive.set('');
+        this.searchLookup.set(null);
+        this.isSearching.set(false);
+      }
+      this.section.set(nextSection);
       void this.refreshCurrent(false);
     });
 
@@ -702,15 +726,21 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.notify('warn', 'La fecha de instalacion es obligatoria para pasar a POSTVENTA.');
       return;
     }
+    // TEMPORAL: regularizacion de leads antiguos. Descomentar al cerrar la regularizacion.
+    // if (this.requiresInstallDate() && !this.validateDateNotBeforeToday(
+    //   this.tipificacionForm.controls.fechaInstalacion.value,
+    //   'La fecha de instalacion no puede ser anterior a hoy.'
+    // )) return;
     if (this.requiresProgramming()) {
       if (!this.tipificacionForm.controls.fechaProgramacion.value || !this.tipificacionForm.controls.horaProgramada.value) {
         this.notify('warn', 'Ingresa fecha y hora de programacion.');
         return;
       }
-      if (this.tipificacionForm.controls.fechaProgramacion.value < this.todayLocalDate()) {
-        this.notify('warn', 'La fecha de programacion no puede ser anterior a hoy.');
-        return;
-      }
+      // TEMPORAL: regularizacion de leads antiguos. Descomentar al cerrar la regularizacion.
+      // if (!this.validateDateNotBeforeToday(
+      //   this.tipificacionForm.controls.fechaProgramacion.value,
+      //   'La fecha de programacion no puede ser anterior a hoy.'
+      // )) return;
     }
     if (this.requiresSecSot()) {
       const sec = this.resolveSecForTipification(raw.sec, detail.sec);
@@ -814,16 +844,24 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     const term = this.normalizeLeadNumber(this.searchInput());
     if (!term) {
-      this.notify('warn', 'Escribe el numero del lead que quieres buscar.');
+      this.notify('warn', this.section() === 'gestion' ? 'Escribe el lead o documento que quieres buscar.' : 'Escribe el numero del lead que quieres buscar.');
       return;
     }
 
     this.searchInput.set(term);
     this.searchLookup.set(null);
     this.searchTermActive.set(term);
-    this.pagePlataforma.set(0);
+    if (this.section() === 'gestion') {
+      this.pageGestion.set(0);
+    } else {
+      this.pagePlataforma.set(0);
+    }
     this.isSearching.set(true);
     try {
+      if (this.section() === 'gestion') {
+        await this.refreshGestion(false);
+        return;
+      }
       await this.refreshPlataforma(false);
       if (!this.plataformaRows().length) {
         const lookup = await firstValueFrom(this.leadService.buscarContextoLead(term));
@@ -840,6 +878,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.searchInput.set('');
     this.searchTermActive.set('');
     this.searchLookup.set(null);
+    if (this.section() === 'gestion') {
+      this.pageGestion.set(0);
+      await this.refreshGestion(false);
+      return;
+    }
     this.pagePlataforma.set(0);
     await this.refreshPlataforma(false);
   }
@@ -903,6 +946,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.gestionGroupingMode.set('TIPIFICACION');
       this.gestionSortField.set('lastEntryAt');
       this.gestionSortDirection.set('desc');
+      this.gestionTipificacionFilter.set([]);
       return;
     }
     this.plataformaGroupingMode.set('SIN_AGRUPAR');
@@ -910,6 +954,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.plataformaSortDirection.set('desc');
     this.pagePlataforma.set(0);
     await this.refreshPlataforma(false);
+  }
+
+  protected setGestionTipificacionFilter(values: string[] | null | undefined): void {
+    this.gestionTipificacionFilter.set(values ?? []);
   }
 
   protected display(value: unknown): string {
@@ -937,6 +985,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     const parsed = match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : null;
     this.pickerDateCache.set(value, parsed);
     return parsed;
+  }
+
+  protected validateDateNotBeforeToday(value: string | null | undefined, message: string): boolean {
+    if (value && value < this.todayLocalDate()) {
+      this.notify('warn', message);
+      return false;
+    }
+    return true;
   }
 
   protected setDateControl(controlName: 'fechaInstalacion' | 'fechaProgramacion', value: Date | string | null): void {
@@ -1219,7 +1275,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return;
     }
     const previous = this.gestionRows();
-    const page = await firstValueFrom(this.leadService.listarGestion(this.currentQuery(this.pageGestion())));
+    const term = this.searchTermActive();
+    const page = await firstValueFrom(this.leadService.listarGestion(this.currentQuery(this.pageGestion()), term || undefined));
     this.totalGestion.set(page.totalElements);
     this.gestionRows.set(this.mergeVisualRows(previous, page.content, silent));
   }
@@ -1514,6 +1571,21 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     };
   }
 
+  private filterGestionRows(rows: VisualLeadVenta[]): VisualLeadVenta[] {
+    const selected = this.gestionTipificacionFilter();
+    if (!selected.length) {
+      return rows;
+    }
+    const selectedSet = new Set(selected.map((value) => value.toLocaleUpperCase()));
+    return rows.filter((row) => {
+      const code = row.codigoTipificacion?.trim();
+      if (!code) {
+        return selectedSet.has('__SIN_TIPIFICAR__');
+      }
+      return selectedSet.has(code.toLocaleUpperCase());
+    });
+  }
+
   private withOrganizationGroup(row: VisualLeadVenta, mode: BackofficeGroupMode): VisualLeadVenta {
     if (mode === 'SIN_AGRUPAR') {
       return {
@@ -1544,10 +1616,22 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       case 'PROVEEDOR':
         return this.groupValue('Proveedor', row.nombreProveedorSnapshot, 'Sin proveedor');
       case 'TIPIFICACION':
-        return this.groupValue('Tipificacion', row.codigoTipificacion || row.codigoSubtipificacion, 'Sin tipificar');
+        return this.tipificacionGroupValue(row);
       default:
         return this.groupValue('Organizacion', null, 'Sin agrupar');
     }
+  }
+
+  private tipificacionGroupValue(row: LeadVentaResponse): { hint: string; key: string; label: string } {
+    const code = row.codigoTipificacion?.trim();
+    if (!code) {
+      return { hint: 'Tipificacion', key: '00:SIN_TIPIFICAR', label: 'Sin tipificar' };
+    }
+    const upperCode = code.toLocaleUpperCase();
+    if (upperCode === 'PROGRAMADO') {
+      return { hint: 'Tipificacion', key: `01:${upperCode}`, label: code };
+    }
+    return { hint: 'Tipificacion', key: `10:${upperCode}`, label: code };
   }
 
   private groupValue(hint: string, value: unknown, emptyLabel: string): { hint: string; key: string; label: string } {

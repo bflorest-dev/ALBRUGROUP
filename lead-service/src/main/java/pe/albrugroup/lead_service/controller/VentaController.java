@@ -58,9 +58,10 @@ public class VentaController {
     // 2. Listar los Leads asignados al backoffice en la etapa Venta
     @GetMapping("/asignados") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
     public ResponseEntity<PageResponse<LeadResponse>> listarLeadsVentaAsignados(
+            @RequestParam(required = false) String buscar,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var leads = leadService.listarLeadsVentaAsignados(pageRequest);
+        var leads = leadService.listarLeadsVentaAsignados(buscar, pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
     // 2.1. Listar los Leads PROGRAMADOS asignados al BackOffice, ordenados por fecha y hora de programacion.

@@ -39,8 +39,12 @@ export class BackofficeLeadService {
     });
   }
 
-  listarGestion(query: PageQuery): Observable<LeadPage<LeadVentaResponse>> {
-    return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta/asignados`, { params: this.pageParams(query) });
+  listarGestion(query: PageQuery, buscar?: string): Observable<LeadPage<LeadVentaResponse>> {
+    let params = this.pageParams(query);
+    if (buscar) {
+      params = params.set('buscar', buscar);
+    }
+    return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta/asignados`, { params });
   }
 
   listarProgramados(query: PageQuery): Observable<LeadPage<LeadVentaResponse>> {

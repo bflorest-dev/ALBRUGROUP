@@ -759,6 +759,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN epFallback.proveedor fp
             WHERE l.etapa = :etapa
               AND l.idAsesorAsignado = :idAsesor
+              AND (
+                    :searchPattern = '%'
+                    OR l.lead LIKE :searchPattern
+                    OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+              )
             ORDER BY CASE WHEN l.codigoTipificacion IS NULL THEN 0 ELSE 1 END,
                      l.codigoTipificacion,
                      l.codigoSubtipificacion,
@@ -768,6 +773,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     Page<LeadResponse> listarLeadsAsignadosPorEtapaYAsesor(
             @Param("etapa") Etapa etapa,
             @Param("idAsesor") Long idAsesor,
+            @Param("searchPattern") String searchPattern,
             @Param("accionTipificacion") Accion accionTipificacion,
             Pageable pageable
     );
