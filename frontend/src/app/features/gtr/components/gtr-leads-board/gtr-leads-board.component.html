@@ -6,7 +6,7 @@
     </span>
   </ng-template>
   <ng-template #subtitle>
-    {{ facade.isReconciling() ? 'Sincronizando en segundo plano' : 'Leads del dia' }}
+    Leads del dia
   </ng-template>
 
   <div class="board-toolbar">
@@ -117,10 +117,6 @@
         ></button>
       </div>
     </p-popover>
-
-    @if (facade.isReconciling()) {
-      <p-tag severity="secondary" value="Realtime activo" />
-    }
   </div>
 
   <p-table
