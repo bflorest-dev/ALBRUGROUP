@@ -27,6 +27,10 @@ public class Proveedor {
 
     private Integer mesesPermanencia;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean requiereSecSotVenta = false;
+
     private Boolean activo;
 
     @CreationTimestamp @Column(updatable = false)

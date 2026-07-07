@@ -238,6 +238,7 @@ export interface LeadVentaResponse {
   horaProgramada?: string | null;
   sec?: string | null;
   sot?: string | null;
+  requiereSecSotVenta?: boolean | null;
   // Enriquecimiento del plan ofrecido (velocidad regular y promocional) para la bandeja BackOffice.
   internetVelocidad?: number | null;
   internetUnidad?: string | null;
@@ -334,6 +335,7 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   longitud?: string | null;
   sec?: string | null;
   sot?: string | null;
+  requiereSecSotVenta?: boolean | null;
   urbanizacion?: string | null;
   numero?: string | null;
   manzana?: string | null;
@@ -352,6 +354,8 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   precioAdicionales?: number | null;
   precioFinal?: number | null;
   adicionales?: LeadAdicionalDetalleResponse[] | null;
+  fechaProgramacion?: string | null;
+  horaProgramada?: string | null;
   // Config de campos de captura resuelta por el backend según el equipo del lead (no inferida en el
   // front): por cada campo configurable, si se muestra y si es obligatorio para cerrar la venta.
   camposConfig?: CampoConfigItem[] | null;

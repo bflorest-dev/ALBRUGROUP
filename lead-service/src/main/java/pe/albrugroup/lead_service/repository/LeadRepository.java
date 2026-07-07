@@ -666,6 +666,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.updatedAt,
                 l.sec,
                 l.sot,
+                COALESCE(pp.requiereSecSotVenta, cp.requiereSecSotVenta, fp.requiereSecSotVenta, false),
                 0L,
                 null,
                 null,
@@ -679,7 +680,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             )
             FROM Lead l
             LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
             LEFT JOIN pl.internet inter
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             WHERE l.etapa = :etapa
               AND l.lead LIKE :leadPattern
               AND l.lastEntryAt >= :inicioDia
@@ -723,6 +731,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.updatedAt,
                 l.sec,
                 l.sot,
+                COALESCE(pp.requiereSecSotVenta, cp.requiereSecSotVenta, fp.requiereSecSotVenta, false),
                 0L,
                 null,
                 null,
@@ -736,7 +745,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             )
             FROM Lead l
             LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
             LEFT JOIN pl.internet inter
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             WHERE l.etapa = :etapa
               AND l.idAsesorAsignado = :idAsesor
             ORDER BY CASE WHEN l.codigoTipificacion IS NULL THEN 0 ELSE 1 END,
@@ -779,6 +795,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.updatedAt,
                 l.sec,
                 l.sot,
+                COALESCE(pp.requiereSecSotVenta, cp.requiereSecSotVenta, fp.requiereSecSotVenta, false),
                 0L,
                 e.fechaProgramacion,
                 e.horaProgramada,
@@ -793,7 +810,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             FROM Lead l
             JOIN Evento e ON e.idLead = l.id
             LEFT JOIN l.plan pl
+            LEFT JOIN pl.proveedor pp
             LEFT JOIN pl.internet inter
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor cp
+            LEFT JOIN EquipoProveedor epFallback
+                ON epFallback.idEquipo = l.idEquipo
+               AND epFallback.fallbackLeadSinCampana = true
+            LEFT JOIN epFallback.proveedor fp
             WHERE l.etapa = :etapa
               AND l.idAsesorAsignado = :idAsesor
               AND l.codigoTipificacion = :codigoProgramado

@@ -245,7 +245,9 @@
           <th class="col-asignado">Asignado</th>
           <th class="col-plan">Plan</th>
           <th class="col-tipificacion">Tipificacion</th>
-          <th class="col-sec-sot">SEC/SOT</th>
+          @if (showSecSotColumn()) {
+            <th class="col-sec-sot">SEC/SOT</th>
+          }
           <th class="col-gestion">Ultima gestion</th>
           <th class="col-actions">Acciones</th>
         </tr>
@@ -254,13 +256,13 @@
       <ng-template #groupheader let-row>
         @if (plataformaDateSeparation()) {
           <tr class="date-divider-row" [class.date-divider-row--today]="row.fechaGroupKey === 'HOY'">
-            <td [attr.colspan]="10">
+            <td [attr.colspan]="tableColumnCount()">
               <span class="date-divider-label">{{ row.fechaGroupLabel }}</span>
             </td>
           </tr>
         } @else {
           <tr class="group-row">
-            <td [attr.colspan]="10">
+            <td [attr.colspan]="tableColumnCount()">
               @if (section() === 'programados') {
                 <span class="group-title">{{ programacionGroupTitle(row) }}</span>
                 <span class="group-hint">{{ programacionGroupHint(row) }}</span>
@@ -315,16 +317,18 @@
               [paletteByCode]="tipificationPaletteByCode()"
             />
           </td>
-          <td class="col-sec-sot">
-            @if (row.sec || row.sot) {
-              <div class="sec-sot-cell">
-                <span>SEC {{ row.sec ?? '-' }}</span>
-                <span>SOT {{ row.sot ?? '-' }}</span>
-              </div>
-            } @else {
-              -
-            }
-          </td>
+          @if (showSecSotColumn()) {
+            <td class="col-sec-sot">
+              @if (row.sec || row.sot) {
+                <div class="sec-sot-cell">
+                  <span>SEC {{ row.sec ?? '-' }}</span>
+                  <span>SOT {{ row.sot ?? '-' }}</span>
+                </div>
+              } @else {
+                -
+              }
+            </td>
+          }
           <td class="col-gestion">{{ row.ultimaTipificacionAt ? (row.ultimaTipificacionAt | date: 'dd/MM HH:mm') : '-' }}</td>
           <td class="col-actions">
             @if (section() === 'plataforma') {
@@ -363,7 +367,7 @@
 
       <ng-template #emptymessage>
         <tr>
-          <td colspan="10">
+          <td [attr.colspan]="tableColumnCount()">
             @if (!canDisplayOperationalData()) {
               <div class="empty-state">Marca ONLINE para activar esta bandeja.</div>
             } @else if (isLoading()) {

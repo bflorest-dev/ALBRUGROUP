@@ -1205,6 +1205,9 @@ public class LeadService {
         if (!TIPIFICACION_SUBIDO.equals(codigoTipificacion)) {
             return;
         }
+        if (!requiereSecSotVenta(lead)) {
+            return;
+        }
 
         String sec = normalizarCodigoNumerico(secRequest);
         String sot = normalizarCodigoNumerico(sotRequest);
@@ -1218,6 +1221,21 @@ public class LeadService {
         validarCodigoExacto(sot, 8, "SOT");
         lead.setSec(sec);
         lead.setSot(sot);
+    }
+
+    private boolean requiereSecSotVenta(Lead lead) {
+        Proveedor proveedor = resolverProveedorOperativoVenta(lead);
+        return proveedor != null && Boolean.TRUE.equals(proveedor.getRequiereSecSotVenta());
+    }
+
+    private Proveedor resolverProveedorOperativoVenta(Lead lead) {
+        if (lead.getPlan() != null && lead.getPlan().getProveedor() != null) {
+            return lead.getPlan().getProveedor();
+        }
+        if (lead.getCampana() != null && lead.getCampana().getProveedor() != null) {
+            return lead.getCampana().getProveedor();
+        }
+        return obtenerProveedorFallbackEntidadDeEquipo(lead.getIdEquipo());
     }
 
     private String normalizarCodigoNumerico(String value) {
@@ -2625,6 +2643,9 @@ public class LeadService {
                 .toList();
         LeadPlanDetalleResponse plan = toLeadPlanDetalleResponse(lead.getPlan());
         LeadPromocionDetalleResponse promocionInterna = toLeadPromocionDetalleResponse(lead.getPromocionInterna());
+        Evento ultimaProgramacionVenta = eventoRepository
+                .findTopByIdLeadAndAccionAndTipificacionOrderByCreatedAtDesc(lead.getId(), Accion.TIPIFICACION, TIPIFICACION_PROGRAMADO)
+                .orElse(null);
 
         // Resolvemos los nombres de la ubicacion del domicilio desde el codigo de ubigeo con un unico
         // lookup indexado, para que las vistas (incluida la read-only) no tengan que hacer la cascada.
@@ -2686,6 +2707,7 @@ public class LeadService {
                 direccion == null ? null : direccion.getInterior(),
                 lead.getSec(),
                 lead.getSot(),
+                requiereSecSotVenta(lead),
                 lead.getPlan() == null ? null : lead.getPlan().getId(),
                 lead.getNombrePlanSnapshot(),
                 lead.getNombreProveedorSnapshot(),
@@ -2696,6 +2718,8 @@ public class LeadService {
                 lead.getPrecioFinal(),
                 lead.getDiaCorteFacturacion(),
                 lead.getMesesPermanenciaSnapshot(),
+                ultimaProgramacionVenta == null ? null : ultimaProgramacionVenta.getFechaProgramacion(),
+                ultimaProgramacionVenta == null ? null : ultimaProgramacionVenta.getHoraProgramada(),
                 plan,
                 promocionInterna,
                 adicionales,
@@ -2709,12 +2733,17 @@ public class LeadService {
 
     // Proveedor fallback de un equipo (null-safe). Origen a mostrar cuando el lead no tiene campaña.
     private String obtenerProveedorFallbackDeEquipo(Long idEquipo) {
+        Proveedor proveedor = obtenerProveedorFallbackEntidadDeEquipo(idEquipo);
+        return proveedor == null ? null : proveedor.getNombre();
+    }
+
+    private Proveedor obtenerProveedorFallbackEntidadDeEquipo(Long idEquipo) {
         if (idEquipo == null) {
             return null;
         }
         return equipoProveedorRepository.findByIdEquipo(idEquipo).stream()
                 .filter(ep -> ep.isFallbackLeadSinCampana() && ep.getProveedor() != null)
-                .map(ep -> ep.getProveedor().getNombre())
+                .map(EquipoProveedor::getProveedor)
                 .findFirst()
                 .orElse(null);
     }

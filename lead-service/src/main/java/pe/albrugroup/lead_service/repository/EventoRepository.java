@@ -632,6 +632,8 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
 
     Optional<Evento> findTopByIdLeadAndAccionOrderByCreatedAtDesc(Long idLead, Accion accion);
 
+    Optional<Evento> findTopByIdLeadAndAccionAndTipificacionOrderByCreatedAtDesc(Long idLead, Accion accion, String tipificacion);
+
     Optional<Evento> findTopByIdLeadAndIdActorAndAccionInOrderByCreatedAtDesc(
             Long idLead,
             Long idActor,

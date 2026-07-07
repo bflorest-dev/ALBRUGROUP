@@ -14,6 +14,8 @@ import pe.albrugroup.lead_service.entity.enums.TipoVia;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @Getter
@@ -67,6 +69,7 @@ public class LeadDetalleResponse {
     private String interior;
     private String sec;
     private String sot;
+    private Boolean requiereSecSotVenta;
     private Long idPlan;
     private String nombrePlan;
     private String nombreProveedorPlan;
@@ -77,6 +80,8 @@ public class LeadDetalleResponse {
     private BigDecimal precioFinal;
     private Integer diaCorteFacturacion;
     private Integer mesesPermanenciaSnapshot;
+    private LocalDate fechaProgramacion;
+    private LocalTime horaProgramada;
     private LeadPlanDetalleResponse plan;
     private LeadPromocionDetalleResponse promocionInterna;
     private List<LeadAdicionalDetalleResponse> adicionales;

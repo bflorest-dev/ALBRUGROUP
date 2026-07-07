@@ -47,6 +47,7 @@ public class LeadResponse {
     private Instant updatedAt;
     private String sec;
     private String sot;
+    private Boolean requiereSecSotVenta;
     private long totalAsignaciones;
     private LocalDate fechaProgramacion;
     private LocalTime horaProgramada;

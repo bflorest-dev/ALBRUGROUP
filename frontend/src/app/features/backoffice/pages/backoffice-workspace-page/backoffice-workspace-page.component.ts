@@ -264,7 +264,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.selectedTipificacionCode() === 'INSTALADO' || this.selectedSubtipificacion()?.etapaCambio === 'POSTVENTA'
   );
   protected readonly requiresProgramming = computed(() => this.selectedTipificacionCode() === 'PROGRAMADO');
-  protected readonly requiresSecSot = computed(() => this.selectedTipificacionCode() === 'SUBIDO');
+  protected readonly requiresSecSot = computed(() =>
+    this.selectedTipificacionCode() === 'SUBIDO' && this.detail()?.requiereSecSotVenta === true
+  );
   protected readonly ofertaProviderOptions = computed<OfertaProviderOption[]>(() => {
     const providersById = new Map<number, OfertaProviderOption>();
     for (const plan of this.planes()) {
@@ -420,6 +422,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     return this.sortedRowsForGrouping(rows, this.activeGroupRowsBy(), this.activeSortField(), this.activeSortDirection());
   });
+  protected readonly showSecSotColumn = computed(() =>
+    this.activeRows().some((row) => row.requiereSecSotVenta === true || !!row.sec || !!row.sot)
+  );
+  protected readonly tableColumnCount = computed(() => this.showSecSotColumn() ? 10 : 9);
   protected readonly activeTotal = computed(() => {
     switch (this.section()) {
       case 'plataforma': return this.totalPlataforma();
@@ -1011,12 +1017,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected onTipificacionSelected(codigo: string | null): void {
     this.selectedTipificacionCode.set(codigo ?? '');
     this.selectedSubtipificacionCode.set('');
+    const detail = this.detail();
+    const isProgramado = codigo === 'PROGRAMADO';
     this.tipificacionForm.patchValue(
       {
         codigoSubtipificacion: '',
         fechaInstalacion: '',
-        fechaProgramacion: '',
-        horaProgramada: ''
+        fechaProgramacion: isProgramado ? detail?.fechaProgramacion ?? '' : '',
+        horaProgramada: isProgramado ? detail?.horaProgramada ?? '' : ''
       },
       { emitEvent: false }
     );
@@ -1027,8 +1035,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.tipificacionForm.patchValue(
       {
         fechaInstalacion: '',
-        fechaProgramacion: '',
-        horaProgramada: ''
+        fechaProgramacion: this.requiresProgramming() ? this.tipificacionForm.controls.fechaProgramacion.value : '',
+        horaProgramada: this.requiresProgramming() ? this.tipificacionForm.controls.horaProgramada.value : ''
       },
       { emitEvent: false }
     );

@@ -1,5 +1,6 @@
 :host {
   display: block;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
 }
@@ -160,12 +161,16 @@ label {
   }
 
   .p-tabpanels {
+    display: flex;
+    flex-direction: column;
     flex: 1 1 auto;
     min-height: 0;
     overflow: hidden;
   }
 
   .p-tabpanel {
+    flex: 1 1 auto;
+    height: 100%;
     max-height: 100%;
     min-height: 0;
     overflow: auto;
