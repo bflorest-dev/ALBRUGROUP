@@ -691,7 +691,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                AND epFallback.fallbackLeadSinCampana = true
             LEFT JOIN epFallback.proveedor fp
             WHERE l.etapa = :etapa
-              AND l.lead LIKE :leadPattern
+              AND (
+                    :leadPattern = '%'
+                    OR l.lead LIKE :leadPattern
+                    OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :leadPattern
+              )
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
             ORDER BY l.lastEntryAt DESC,

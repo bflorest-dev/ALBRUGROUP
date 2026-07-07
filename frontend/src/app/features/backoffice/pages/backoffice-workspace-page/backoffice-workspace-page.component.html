@@ -46,7 +46,7 @@
           type="text"
           inputmode="numeric"
           class="lead-search-input"
-          [placeholder]="section() === 'gestion' ? 'Buscar lead o documento' : 'Buscar lead por numero'"
+          placeholder="Buscar lead o documento"
           [ngModel]="searchInput()"
           (ngModelChange)="setSearchInput($event)"
           (keyup.enter)="buscarLead()"

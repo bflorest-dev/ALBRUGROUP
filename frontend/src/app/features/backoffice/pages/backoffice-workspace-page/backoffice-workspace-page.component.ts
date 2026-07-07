@@ -844,7 +844,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     const term = this.normalizeLeadNumber(this.searchInput());
     if (!term) {
-      this.notify('warn', this.section() === 'gestion' ? 'Escribe el lead o documento que quieres buscar.' : 'Escribe el numero del lead que quieres buscar.');
+      this.notify('warn', 'Escribe el lead o documento que quieres buscar.');
       return;
     }
 
