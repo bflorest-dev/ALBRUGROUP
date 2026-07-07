@@ -416,9 +416,11 @@ export class GtrWorkspaceFacade {
           left.nombreCompleto.localeCompare(right.nombreCompleto)
       );
   });
-  /** Lista visible del panel GTR: oculta OJT salvo que tenga leads abandonados. */
+  /** Lista visible del panel GTR: oculta OJT salvo que este operativo conectado o tenga leads abandonados. */
   readonly advisorsPanelView = computed<AdvisorView[]>(() =>
-    this.advisorsView().filter((advisor) => !this.isOjtAdvisor(advisor) || advisor.esAbandonador)
+    this.advisorsView().filter((advisor) =>
+      !this.isOjtAdvisor(advisor) || (advisor.connected && advisor.operativo) || advisor.esAbandonador
+    )
   );
   /** Total de leads abandonados visibles en el panel Asesores. */
   readonly abandonadosCount = computed(() =>

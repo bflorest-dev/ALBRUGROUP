@@ -240,9 +240,14 @@
         <tr>
           <th class="col-fecha">Fecha ingreso</th>
           <th class="col-lead">Lead</th>
+          @if (section() !== 'plataforma') {
+            <th class="col-documento">Documento</th>
+          }
           <th class="col-proveedor">Proveedor</th>
           <th class="col-estado">Estado</th>
-          <th class="col-asignado">{{ section() === 'plataforma' ? 'Asignado' : 'Documento' }}</th>
+          @if (section() === 'plataforma') {
+            <th class="col-asignado">Asignado</th>
+          }
           <th class="col-plan">Plan</th>
           <th class="col-tipificacion">Tipificacion</th>
           @if (showSecSotColumn()) {
@@ -279,6 +284,9 @@
         <tr [class.row-new]="row.isNew">
           <td class="col-fecha">{{ row.lastEntryAt | date: 'dd/MM HH:mm' }}</td>
           <td class="col-lead"><strong>{{ leadPhone(row) }}</strong></td>
+          @if (section() !== 'plataforma') {
+            <td class="col-documento">{{ display(row.numeroDocumentoTitularServicio) }}</td>
+          }
           <td class="col-proveedor">
             @if (providerLogo(row.nombreProveedorSnapshot); as logo) {
               <div class="provider-cell">
@@ -289,9 +297,9 @@
             }
           </td>
           <td class="col-estado"><p-tag [severity]="estadoSeverity(row.estadoSeguimiento)" [value]="display(row.estadoSeguimiento)" /></td>
-          <td class="col-asignado">
-            {{ section() === 'plataforma' ? display(row.nombreAsesorAsignado) : display(row.numeroDocumentoTitularServicio) }}
-          </td>
+          @if (section() === 'plataforma') {
+            <td class="col-asignado">{{ display(row.nombreAsesorAsignado) }}</td>
+          }
           <td class="col-plan">
             @if (row.nombrePlanSnapshot) {
               <div class="plan-cell">
