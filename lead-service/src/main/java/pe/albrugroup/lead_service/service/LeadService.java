@@ -1038,6 +1038,7 @@ public class LeadService {
 
         if (etapaDestino != null && etapaDestino != etapaActual) {
             aplicarDatosPostventaSiCorresponde(lead, etapaDestino, request.getFechaInstalacion());
+            asegurarAtribucionVentaSiFalta(lead, etapaDestino, idAsesorAnterior);
             lead.setEtapa(etapaDestino);
             lead.setLastEntryAt(OperationalDateTime.now());
             lead.setEstado(EstadoSeguimiento.GESTIONADO);
@@ -1199,6 +1200,18 @@ public class LeadService {
         lead.setDiaCorteFacturacion(resolverDiaCorteFacturacion(proveedor, fechaInstalacion));
         lead.setMesesPermanenciaSnapshot(proveedor.getMesesPermanencia());
         lead.setEstadoPostventa(EstadoPostventa.EN_SEGUIMIENTO);
+    }
+
+    private void asegurarAtribucionVentaSiFalta(Lead lead, Etapa etapaDestino, Long idAsesorVenta) {
+        if (etapaDestino != Etapa.POSTVENTA) {
+            return;
+        }
+        if (lead.getIdAsesorVenta() == null) {
+            lead.setIdAsesorVenta(idAsesorVenta);
+        }
+        if (lead.getFechaVenta() == null) {
+            lead.setFechaVenta(OperationalDateTime.now());
+        }
     }
 
     private void aplicarSecSotVentaSiCorresponde(Lead lead, String codigoTipificacion, String secRequest, String sotRequest) {

@@ -218,6 +218,7 @@ export class GtrWorkspaceFacade {
   private readonly realtimeSubscription = new Subscription();
   private readonly newRowTimers = new Map<number, number>();
   private attendanceRefreshId: number | null = null;
+  private leadDataRefreshId: number | null = null;
   private retroactiveWindowTimerId: number | null = null;
   private started = false;
   private realtimeStarted = false;
@@ -1028,6 +1029,7 @@ export class GtrWorkspaceFacade {
     this.realtimeSubscription.unsubscribe();
     this.realtimeStarted = false;
     this.stopAttendanceRefresh();
+    this.stopLeadDataRefresh();
     this.stopRetroactiveWindowClock();
     this.document.defaultView?.removeEventListener('visibilitychange', this.handleVisibilityChange);
 
@@ -3072,6 +3074,8 @@ export class GtrWorkspaceFacade {
     this.realtimeSubscription.add(
       this.realtimeService.watchTopic('/topic/leads/etapa/PREVENTA').subscribe({
         next: (event) => {
+          // Eventos estructurales: cambian conteos, asignaciones, estado o filas de la bandeja del
+          // GTR. Ameritan el reconcile completo (bandeja + metricas + grupos + asesores + pendientes).
           if (
             [
               'REGISTRO',
@@ -3079,15 +3083,26 @@ export class GtrWorkspaceFacade {
               'ASIGNACION',
               'CONTACTO',
               'GESTION_INICIADA',
-              'SNAPSHOTS_ACTUALIZADOS',
-              'DATOS_PREVENTA_ACTUALIZADOS',
-              'DIRECCION_ACTUALIZADA',
               'TIPIFICACION',
               'ATENCION_CERRADA',
               'ELIMINACION'
             ].includes(event.tipo)
           ) {
             void this.reconcile();
+            return;
+          }
+          // Ediciones de datos del lead por el asesor (documento/direccion/datos preventa). Llegan en
+          // rafagas mientras tipea y guarda, y solo afectan la columna Documento de la bandeja: NO los
+          // conteos, asesores ni pendientes. Refrescamos solo la lista, silencioso y con debounce,
+          // para no recargar toda la vista del GTR en cada guardado del asesor.
+          if (
+            [
+              'SNAPSHOTS_ACTUALIZADOS',
+              'DATOS_PREVENTA_ACTUALIZADOS',
+              'DIRECCION_ACTUALIZADA'
+            ].includes(event.tipo)
+          ) {
+            this.scheduleLeadDataRefresh();
           }
         },
         error: () => {
@@ -3135,6 +3150,28 @@ export class GtrWorkspaceFacade {
       this.attendanceRefreshId = null;
       void this.refreshAdvisors().catch(() => undefined);
     }, 500);
+  }
+
+  // Refresco liviano y con debounce de SOLO la bandeja ante ediciones de datos del asesor. Colapsa las
+  // rafagas de guardado en un unico refresco silencioso; no toca metricas, asesores ni pendientes.
+  private scheduleLeadDataRefresh(): void {
+    if (this.section() !== 'plataforma' || !this.canDisplayOperationalData()) {
+      return;
+    }
+    if (this.leadDataRefreshId !== null) {
+      return;
+    }
+    this.leadDataRefreshId = window.setTimeout(() => {
+      this.leadDataRefreshId = null;
+      void this.refreshPage(true).catch(() => undefined);
+    }, 1500);
+  }
+
+  private stopLeadDataRefresh(): void {
+    if (this.leadDataRefreshId !== null) {
+      window.clearTimeout(this.leadDataRefreshId);
+      this.leadDataRefreshId = null;
+    }
   }
 
   private stopAttendanceRefresh(): void {
