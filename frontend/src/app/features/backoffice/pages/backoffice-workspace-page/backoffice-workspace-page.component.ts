@@ -442,7 +442,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly showSecSotColumn = computed(() =>
     this.activeRows().some((row) => row.requiereSecSotVenta === true || !!row.sec || !!row.sot)
   );
-  protected readonly tableColumnCount = computed(() => this.showSecSotColumn() ? 10 : 9);
+  protected readonly tableColumnCount = computed(() => this.showSecSotColumn() ? 11 : 10);
   protected readonly activeTotal = computed(() => {
     switch (this.section()) {
       case 'plataforma': return this.totalPlataforma();
