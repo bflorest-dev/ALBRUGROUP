@@ -345,6 +345,24 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     );
 
     @Query("""
+            SELECT COUNT(l)
+            FROM Lead l
+            WHERE l.etapa = :etapa
+              AND l.estado = :estado
+              AND l.lastEntryAt >= :inicioDia
+              AND l.lastEntryAt < :finDia
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            """)
+    long contarMetricasGtrPorEstado(
+            @Param("etapa") Etapa etapa,
+            @Param("estado") EstadoSeguimiento estado,
+            @Param("inicioDia") Instant inicioDia,
+            @Param("finDia") Instant finDia,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query("""
             SELECT COUNT(DISTINCT l.id)
             FROM Lead l
             WHERE l.campana.id = :idCampana

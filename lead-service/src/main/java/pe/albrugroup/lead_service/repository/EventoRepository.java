@@ -750,18 +750,22 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     @Query("""
             SELECT COUNT(DISTINCT e.idLead)
             FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
             WHERE e.etapa = :etapa
               AND e.accion IN :acciones
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
               AND (e.tipificacion IS NULL OR e.tipificacion <> :tipificacionPreventaCompleta)
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             """)
     long contarGestionadosGtr(
             @Param("etapa") Etapa etapa,
             @Param("acciones") Collection<Accion> acciones,
             @Param("tipificacionPreventaCompleta") String tipificacionPreventaCompleta,
             @Param("fechaDesde") Instant fechaDesde,
-            @Param("fechaHasta") Instant fechaHasta
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
     );
 
     @Query("""
@@ -771,28 +775,35 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             """)
     long contarIngresosGtr(
             @Param("accion") Accion accion,
             @Param("fechaDesde") Instant fechaDesde,
-            @Param("fechaHasta") Instant fechaHasta
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
     );
 
     @Query("""
             SELECT COUNT(DISTINCT e.idLead)
             FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
             WHERE e.accion = :accion
               AND e.tipificacion = :tipificacion
               AND e.subtipificacion = :subtipificacion
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             """)
     long contarPreventasGtr(
             @Param("accion") Accion accion,
             @Param("tipificacion") String tipificacion,
             @Param("subtipificacion") String subtipificacion,
             @Param("fechaDesde") Instant fechaDesde,
-            @Param("fechaHasta") Instant fechaHasta
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
     );
 
     @Query("""

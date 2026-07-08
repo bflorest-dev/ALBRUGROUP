@@ -402,37 +402,48 @@ public class LeadService {
 
     public LeadGtrMetricasResponse obtenerMetricasGtr(LocalDate fecha) {
         OperationalDateTime.InstantRange rangoDia = OperationalDateTime.dayRange(fecha);
+        RankingEquipoScope equipos = resolverEquiposActuales();
 
-        long nuevos = leadRepository.countByEtapaAndEstadoAndLastEntryAtGreaterThanEqualAndLastEntryAtLessThan(
+        long nuevos = leadRepository.contarMetricasGtrPorEstado(
                 Etapa.PREVENTA,
                 EstadoSeguimiento.NUEVO,
                 rangoDia.inicio(),
-                rangoDia.fin()
+                rangoDia.fin(),
+                equipos.filtrar(),
+                equipos.ids()
         );
-        long sinGestionar = leadRepository.countByEtapaAndEstadoAndLastEntryAtGreaterThanEqualAndLastEntryAtLessThan(
+        long sinGestionar = leadRepository.contarMetricasGtrPorEstado(
                 Etapa.PREVENTA,
                 EstadoSeguimiento.ASIGNADO,
                 rangoDia.inicio(),
-                rangoDia.fin()
+                rangoDia.fin(),
+                equipos.filtrar(),
+                equipos.ids()
         );
         long gestionados = eventoRepository.contarGestionadosGtr(
                 Etapa.PREVENTA,
                 ACCIONES_GESTION_LEAD,
                 TIPIFICACION_PREVENTA_COMPLETA,
                 rangoDia.inicio(),
-                rangoDia.fin()
+                rangoDia.fin(),
+                equipos.filtrar(),
+                equipos.ids()
         );
         long preventas = eventoRepository.contarPreventasGtr(
                 Accion.TIPIFICACION,
                 TIPIFICACION_PREVENTA_COMPLETA,
                 SUBTIPIFICACION_VENTA_CERRADA,
                 rangoDia.inicio(),
-                rangoDia.fin()
+                rangoDia.fin(),
+                equipos.filtrar(),
+                equipos.ids()
         );
         long ingresos = eventoRepository.contarIngresosGtr(
                 Accion.REGISTRO,
                 rangoDia.inicio(),
-                rangoDia.fin()
+                rangoDia.fin(),
+                equipos.filtrar(),
+                equipos.ids()
         );
 
         return new LeadGtrMetricasResponse(nuevos, sinGestionar, gestionados, preventas, ingresos);
