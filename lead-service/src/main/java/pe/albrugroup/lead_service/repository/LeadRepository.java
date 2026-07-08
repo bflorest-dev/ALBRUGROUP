@@ -718,16 +718,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR l.lead LIKE :leadPattern
                     OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :leadPattern
               )
-              AND l.lastEntryAt >= :inicioDia
-              AND l.lastEntryAt < :finDia
             ORDER BY l.lastEntryAt DESC,
                      l.id DESC
             """)
-    Page<LeadResponse> listarBandejaVentaVentana(
+    Page<LeadResponse> listarBandejaVenta(
             @Param("etapa") Etapa etapa,
             @Param("leadPattern") String leadPattern,
-            @Param("inicioDia") Instant inicioDia,
-            @Param("finDia") Instant finDia,
             @Param("accionTipificacion") Accion accionTipificacion,
             Pageable pageable
     );
@@ -859,6 +855,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.idAsesorAsignado = :idAsesor
               AND l.codigoTipificacion = :codigoProgramado
+              AND (l.codigoSubtipificacion IS NULL OR l.codigoSubtipificacion <> :codigoProgramacionCancelada)
               AND e.accion = :accionTipificacion
               AND e.tipificacion = :codigoProgramado
               AND e.fechaProgramacion IS NOT NULL
@@ -880,6 +877,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("etapa") Etapa etapa,
             @Param("idAsesor") Long idAsesor,
             @Param("codigoProgramado") String codigoProgramado,
+            @Param("codigoProgramacionCancelada") String codigoProgramacionCancelada,
             @Param("accionTipificacion") Accion accionTipificacion,
             @Param("fechaActual") java.time.LocalDate fechaActual,
             Pageable pageable

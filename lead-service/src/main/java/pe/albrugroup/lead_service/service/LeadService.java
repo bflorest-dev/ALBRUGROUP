@@ -138,6 +138,7 @@ public class LeadService {
 
     private static final String TIPIFICACION_AGENDADO = "AGENDADO";
     private static final String TIPIFICACION_PROGRAMADO = "PROGRAMADO";
+    private static final String SUBTIPIFICACION_PROGRAMACION_CANCELADA = "PROGRAMACION_CANCELADA";
     private static final String TIPIFICACION_SCORE_PREVENTA = "SCORE_PREVENTA";
     private static final String TIPIFICACION_PREVENTA_COMPLETA = "PREVENTA_COMPLETA";
     private static final String TIPIFICACION_GRABADO = "GRABADO";
@@ -510,22 +511,12 @@ public class LeadService {
 
     public PageResponse<LeadResponse> listarBandejaVenta(String lead, PageRequest pageRequest) {
         String numeroLead = normalizarLead(lead);
-        boolean buscandoPorLead = numeroLead != null && !numeroLead.isBlank();
-        String leadPattern = buscandoPorLead ? numeroLead + "%" : "%";
-        // Por defecto la Plataforma muestra los ultimos 30 dias operativos (America/Lima).
-        // Al buscar un numero puntual se ignora el filtro de fecha para ubicarlo en cualquier momento.
-        OperationalDateTime.InstantRange rango = buscandoPorLead
-                ? new OperationalDateTime.InstantRange(Instant.EPOCH, Instant.ofEpochSecond(253402300799L))
-                : new OperationalDateTime.InstantRange(
-                        OperationalDateTime.startOfDay(OperationalDateTime.today().minusDays(29)),
-                        OperationalDateTime.endExclusiveOfDay(OperationalDateTime.today()));
+        String leadPattern = numeroLead == null || numeroLead.isBlank() ? "%" : numeroLead + "%";
         // El orden lo fija la propia query (lastEntryAt DESC, id DESC): Pageable sin sort para no
         // agregar un ORDER BY extra que descuadre el orden y la paginacion entre paginas.
-        Page<LeadResponse> leads = leadRepository.listarBandejaVentaVentana(
+        Page<LeadResponse> leads = leadRepository.listarBandejaVenta(
                 Etapa.VENTA,
                 leadPattern,
-                rango.inicio(),
-                rango.fin(),
                 Accion.TIPIFICACION,
                 org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
         );
@@ -555,6 +546,7 @@ public class LeadService {
                 Etapa.VENTA,
                 currentUser.empleadoID(),
                 TIPIFICACION_PROGRAMADO,
+                SUBTIPIFICACION_PROGRAMACION_CANCELADA,
                 Accion.TIPIFICACION,
                 hoy,
                 org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
