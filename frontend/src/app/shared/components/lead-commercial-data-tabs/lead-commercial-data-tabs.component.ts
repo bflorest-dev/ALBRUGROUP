@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { AbstractControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -94,6 +94,8 @@ export class LeadCommercialDataTabsComponent {
   @Output() incrementarAdicional = new EventEmitter<AdicionalResponse>();
   @Output() disminuirAdicional = new EventEmitter<AdicionalResponse>();
 
+  protected readonly coordinatePasteMessage = signal<string | null>(null);
+
   private readonly viaSelectOptionsCache = new WeakMap<readonly string[], { label: string; value: string }[]>();
 
   /**
@@ -169,14 +171,28 @@ export class LeadCommercialDataTabsComponent {
     }
   }
 
-  protected pasteCoordinates(event: ClipboardEvent): void {
-    const pasted = event.clipboardData?.getData('text') ?? '';
-    const coordinates = this.extractCoordinatePair(pasted);
-    if (!coordinates) {
+  protected async pasteCoordinatesFromClipboard(): Promise<void> {
+    this.coordinatePasteMessage.set(null);
+
+    if (!navigator.clipboard?.readText) {
+      this.coordinatePasteMessage.set('No pudimos acceder al portapapeles. Revisa el permiso e intenta nuevamente.');
       return;
     }
 
-    event.preventDefault();
+    let pasted: string;
+    try {
+      pasted = await navigator.clipboard.readText();
+    } catch {
+      this.coordinatePasteMessage.set('No pudimos acceder al portapapeles. Revisa el permiso e intenta nuevamente.');
+      return;
+    }
+
+    const coordinates = this.extractCoordinatePair(pasted);
+    if (!coordinates) {
+      this.coordinatePasteMessage.set('Copia la latitud y longitud juntas e intenta nuevamente.');
+      return;
+    }
+
     this.setCoordinateValue(this.direccionForm.get('latitud'), coordinates.latitud);
     this.setCoordinateValue(this.direccionForm.get('longitud'), coordinates.longitud);
   }
@@ -187,10 +203,23 @@ export class LeadCommercialDataTabsComponent {
       return null;
     }
 
-    return {
-      latitud: matches[0],
-      longitud: matches[1]
-    };
+    const latitud = this.normalizeCoordinate(matches[0]);
+    const longitud = this.normalizeCoordinate(matches[1]);
+    const latitudNumber = Number(latitud);
+    const longitudNumber = Number(longitud);
+
+    if (
+      !Number.isFinite(latitudNumber) ||
+      !Number.isFinite(longitudNumber) ||
+      latitudNumber < -90 ||
+      latitudNumber > 90 ||
+      longitudNumber < -180 ||
+      longitudNumber > 180
+    ) {
+      return null;
+    }
+
+    return { latitud, longitud };
   }
 
   private normalizeCoordinate(value: string): string {

@@ -16,6 +16,17 @@
   grid-column: 1 / -1;
 }
 
+.coordinate-fields {
+  align-items: end;
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+
+.coordinate-fields__message {
+  grid-column: 1 / -1;
+}
+
 label {
   color: #425466;
   display: grid;
@@ -183,6 +194,10 @@ label {
     width: 100%;
   }
 
+  .coordinate-fields__paste {
+    white-space: nowrap;
+  }
+
   .scope-select .p-togglebutton {
     background: transparent;
     border: 0;
@@ -215,5 +230,13 @@ label {
 @media (max-width: 720px) {
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .coordinate-fields {
+    grid-template-columns: 1fr;
+  }
+
+  :host ::ng-deep .coordinate-fields__paste {
+    width: 100%;
   }
 }

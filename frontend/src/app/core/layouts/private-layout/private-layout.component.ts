@@ -148,7 +148,8 @@ export class PrivateLayoutComponent {
         { label: 'Mantenimiento', route: '/app/admin/mantenimiento', icon: 'pi pi-database', exact: true },
         { label: 'Leads del día', route: '/app/admin/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
         { label: 'Finanzas', route: '/app/admin/finanzas', icon: 'pi pi-wallet', exact: true },
-        { label: 'Ranking', route: '/app/admin/ranking', icon: 'pi pi-chart-bar', exact: true }
+        { label: 'Ranking', route: '/app/admin/ranking', icon: 'pi pi-chart-bar', exact: true },
+        { label: 'Operaciones', route: '/app/admin/operaciones', icon: 'pi pi-wrench', exact: true }
       ];
 
       if (this.adminDeleteLeadsVisible()) {

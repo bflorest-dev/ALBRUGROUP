@@ -175,30 +175,46 @@
           <span>Direccion</span>
           <input pInputText type="text" formControlName="direccion" />
         </label>
-        <label>
-          <span>Latitud</span>
-          <input
-            pInputText
-            type="text"
-            inputmode="decimal"
-            formControlName="latitud"
-            placeholder="-12.015933657805615"
-            (paste)="pasteCoordinates($event)"
-            (input)="setCoordinateValue(direccionForm.get('latitud'), $any($event.target).value)"
-          />
-        </label>
-        <label>
-          <span>Longitud</span>
-          <input
-            pInputText
-            type="text"
-            inputmode="decimal"
-            formControlName="longitud"
-            placeholder="-77.09587279011754"
-            (paste)="pasteCoordinates($event)"
-            (input)="setCoordinateValue(direccionForm.get('longitud'), $any($event.target).value)"
-          />
-        </label>
+        <div class="coordinate-fields wide">
+          <label>
+            <span>Latitud</span>
+            <input
+              pInputText
+              type="text"
+              formControlName="latitud"
+              placeholder="-12.015933657805615"
+              readonly
+            />
+          </label>
+          <label>
+            <span>Longitud</span>
+            <input
+              pInputText
+              type="text"
+              formControlName="longitud"
+              placeholder="-77.09587279011754"
+              readonly
+            />
+          </label>
+          @if (!readonly) {
+            <p-button
+              type="button"
+              styleClass="coordinate-fields__paste"
+              label="Pegar coordenadas"
+              icon="pi pi-clipboard"
+              severity="secondary"
+              [outlined]="true"
+              (onClick)="pasteCoordinatesFromClipboard()"
+            />
+          }
+          @if (coordinatePasteMessage()) {
+            <p-message
+              class="coordinate-fields__message"
+              severity="warn"
+              [text]="coordinatePasteMessage() ?? ''"
+            />
+          }
+        </div>
         <label class="wide">
           <span>Referencia</span>
           <input pInputText type="text" formControlName="referencia" />

@@ -135,6 +135,7 @@ public class LeadService {
     private final TransactionTemplate transactionTemplate;
     private final LeadRealtimeNotifier leadRealtimeNotifier;
     private final LeadAsignacionCounterService leadAsignacionCounterService;
+    private final LeadEtapaResumenService leadEtapaResumenService;
 
     private static final String TIPIFICACION_AGENDADO = "AGENDADO";
     private static final String TIPIFICACION_PROGRAMADO = "PROGRAMADO";
@@ -901,6 +902,7 @@ public class LeadService {
         }
         Etapa etapaActual = lead.getEtapa();
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
+        String nombreAsesorAnterior = lead.getNombreAsesorAsignado();
 
         Tipificacion tipificacion = tipificacionRepository.findByEtapaAndCodigoAndActivoTrue(
                         etapaActual,
@@ -944,6 +946,9 @@ public class LeadService {
         }
 
         Lead savedLead = leadRepository.save(lead);
+        actualizarResumenEtapaTipificacion(
+                savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, idAsesorAnterior, nombreAsesorAnterior,
+                etapaActual == Etapa.PREVENTA && etapaDestino == Etapa.VENTA);
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
         registrarEventoTipificacion(
                 savedLead.getId(),
@@ -1025,6 +1030,7 @@ public class LeadService {
         Lead lead = obtenerLeadAsignadoEnEtapa(idLead, Etapa.VENTA);
         Etapa etapaActual = lead.getEtapa();
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
+        String nombreAsesorAnterior = lead.getNombreAsesorAsignado();
 
         Tipificacion tipificacion = tipificacionRepository.findByEtapaAndCodigoAndActivoTrue(
                         etapaActual,
@@ -1071,6 +1077,9 @@ public class LeadService {
         }
 
         Lead savedLead = leadRepository.save(lead);
+        actualizarResumenEtapaTipificacion(
+                savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, idAsesorAnterior, nombreAsesorAnterior,
+                TIPIFICACION_GRABADO.equals(tipificacion.getCodigo()));
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
         Long idPlanOfrecido = savedLead.getPlan() == null ? null : savedLead.getPlan().getId();
         registrarEventoTipificacion(
@@ -1102,6 +1111,7 @@ public class LeadService {
         Lead lead = obtenerLeadAsignadoEnEtapa(idLead, etapa);
         Etapa etapaActual = lead.getEtapa();
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
+        String nombreAsesorAnterior = lead.getNombreAsesorAsignado();
 
         Tipificacion tipificacion = tipificacionRepository.findByEtapaAndCodigoAndActivoTrue(
                         etapaActual,
@@ -1159,6 +1169,12 @@ public class LeadService {
         }
 
         Lead savedLead = leadRepository.save(lead);
+        boolean esMeritoSeguimiento =
+                (etapaActual == Etapa.POSTVENTA && etapaDestino == Etapa.COBRANZA)
+                        || (etapaActual == Etapa.COBRANZA && esEstadoPostventaFinal(estadoDestino));
+        actualizarResumenEtapaTipificacion(
+                savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, idAsesorAnterior, nombreAsesorAnterior,
+                esMeritoSeguimiento);
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
         Long idPlanOfrecido = savedLead.getPlan() == null ? null : savedLead.getPlan().getId();
         registrarEventoTipificacion(
@@ -1226,6 +1242,34 @@ public class LeadService {
         }
         if (lead.getFechaVenta() == null) {
             lead.setFechaVenta(OperationalDateTime.now());
+        }
+    }
+
+    /**
+     * Dual-write de la metadata por etapa en cada tipificacion: actualiza primera/ultima/mayor rango
+     * y el ultimo gestor de la etapa; marca el merito si esta tipificacion concreta la etapa; y
+     * registra salida/entrada cuando el lead avanza. No toca el estado operativo del Lead.
+     */
+    private void actualizarResumenEtapaTipificacion(
+            Lead lead,
+            Etapa etapaActual,
+            Etapa etapaDestino,
+            Tipificacion tipificacion,
+            Subtipificacion subtipificacion,
+            Long idAsesor,
+            String nombreAsesor,
+            boolean esMerito
+    ) {
+        Instant ahora = OperationalDateTime.now();
+        leadEtapaResumenService.registrarTipificacion(
+                lead.getId(), etapaActual, tipificacion.getCodigo(), subtipificacion.getCodigo(),
+                tipificacion.getOrden(), idAsesor, nombreAsesor, ahora);
+        if (esMerito) {
+            leadEtapaResumenService.registrarMerito(lead.getId(), etapaActual, idAsesor, nombreAsesor, ahora);
+        }
+        if (etapaDestino != null && etapaDestino != etapaActual) {
+            leadEtapaResumenService.registrarSalidaEtapa(lead.getId(), etapaActual, ahora);
+            leadEtapaResumenService.registrarEntradaEtapa(lead.getId(), etapaDestino, ahora);
         }
     }
 
@@ -1613,6 +1657,8 @@ public class LeadService {
                 savedLead.getIdAsesorAsignado(),
                 savedLead.getNombreAsesorAsignado()
         );
+        // Metadata por etapa: cuenta la asignación en la etapa actual del lead.
+        leadEtapaResumenService.registrarAsignacion(savedLead.getId(), savedLead.getEtapa(), OperationalDateTime.now());
         // Atención GTR: si el lead asignado vive en otra etapa, notificar también a la bandeja del GTR.
         notificarCambioLead("ASIGNACION", savedLead, null, idAsesorAnterior, savedLead.getEtapa() != Etapa.PREVENTA);
         propagarAsesorAHermanas(savedLead, idAsesorAsignado, savedLead.getNombreAsesorAsignado());
@@ -1638,6 +1684,7 @@ public class LeadService {
             Lead guardada = leadRepository.save(hermana);
             Long idCampana = guardada.getCampana() == null ? null : guardada.getCampana().getId();
             registrarEventoAsignacion(guardada.getId(), idCampana, guardada.getEtapa(), idAsesor, nombreAsesor);
+            leadEtapaResumenService.registrarAsignacion(guardada.getId(), guardada.getEtapa(), OperationalDateTime.now());
             notificarCambioLead("ASIGNACION", guardada, null, null);
         }
     }
@@ -1852,6 +1899,9 @@ public class LeadService {
         Lead savedLead = leadRepository.save(lead);
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
         registrarEventoRegistro(savedLead.getId(), idCampana, savedLead.getEtapa(), registroAt);
+        // Metadata por etapa: el lead nuevo ENTRA a PREVENTA.
+        leadEtapaResumenService.registrarEntradaEtapa(
+                savedLead.getId(), savedLead.getEtapa(), registroAt != null ? registroAt : OperationalDateTime.now());
         notificarCambioLead("REGISTRO", savedLead, null, null);
     }
 
@@ -1874,6 +1924,8 @@ public class LeadService {
         Lead savedLead = leadRepository.save(lead);
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
         registrarEventoRegistro(savedLead.getId(), idCampana, savedLead.getEtapa());
+        // Metadata por etapa: el lead nuevo (masivo) ENTRA a PREVENTA.
+        leadEtapaResumenService.registrarEntradaEtapa(savedLead.getId(), savedLead.getEtapa(), OperationalDateTime.now());
         if (notificarRealtime) {
             notificarCambioLead("REGISTRO", savedLead, null, null);
         }

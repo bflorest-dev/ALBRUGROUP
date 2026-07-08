@@ -76,6 +76,8 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             Pageable pageable
     );
     List<Evento> findAllByIdLeadOrderByCreatedAtDesc(Long idLead);
+    // Orden cronologico ascendente para el replay del backfill de LeadEtapaResumen.
+    List<Evento> findAllByIdLeadOrderByCreatedAtAscIdAsc(Long idLead);
 
     boolean existsByIdLeadAndAccionInAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
             Long idLead,
@@ -229,16 +231,17 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                        e.createdAt,
                        l.idEquipo,
                        c.nombre,
-                       l.primeraCodigoTipificacion,
-                       l.primeraCodigoSubtipificacion,
-                       l.codigoTipificacion,
-                       l.codigoSubtipificacion,
+                       r.primeraCodigoTipificacion,
+                       r.primeraCodigoSubtipificacion,
+                       r.ultimaCodigoTipificacion,
+                       r.ultimaCodigoSubtipificacion,
                        null,
                        0L,
                        0L)
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
             LEFT JOIN l.campana c
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = e.etapa
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
@@ -273,15 +276,15 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                     :filtrarPrimeraTipificacion = false
                     OR (
                         :sinValor = true
-                        AND l.primeraCodigoTipificacion IS NULL
-                        AND l.primeraCodigoSubtipificacion IS NULL
+                        AND r.primeraCodigoTipificacion IS NULL
+                        AND r.primeraCodigoSubtipificacion IS NULL
                     )
                     OR (
                         :sinValor = false
-                        AND l.primeraCodigoTipificacion = :codigoTipificacion
+                        AND r.primeraCodigoTipificacion = :codigoTipificacion
                         AND (
-                            (:codigoSubtipificacion IS NULL AND l.primeraCodigoSubtipificacion IS NULL)
-                            OR l.primeraCodigoSubtipificacion = :codigoSubtipificacion
+                            (:codigoSubtipificacion IS NULL AND r.primeraCodigoSubtipificacion IS NULL)
+                            OR r.primeraCodigoSubtipificacion = :codigoSubtipificacion
                         )
                     )
               )
@@ -289,15 +292,15 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                     :filtrarUltimaTipificacion = false
                     OR (
                         :sinValor = true
-                        AND l.codigoTipificacion IS NULL
-                        AND l.codigoSubtipificacion IS NULL
+                        AND r.ultimaCodigoTipificacion IS NULL
+                        AND r.ultimaCodigoSubtipificacion IS NULL
                     )
                     OR (
                         :sinValor = false
-                        AND l.codigoTipificacion = :codigoTipificacion
+                        AND r.ultimaCodigoTipificacion = :codigoTipificacion
                         AND (
-                            (:codigoSubtipificacion IS NULL AND l.codigoSubtipificacion IS NULL)
-                            OR l.codigoSubtipificacion = :codigoSubtipificacion
+                            (:codigoSubtipificacion IS NULL AND r.ultimaCodigoSubtipificacion IS NULL)
+                            OR r.ultimaCodigoSubtipificacion = :codigoSubtipificacion
                         )
                     )
               )
@@ -307,6 +310,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
             LEFT JOIN l.campana c
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = e.etapa
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
@@ -341,15 +345,15 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                     :filtrarPrimeraTipificacion = false
                     OR (
                         :sinValor = true
-                        AND l.primeraCodigoTipificacion IS NULL
-                        AND l.primeraCodigoSubtipificacion IS NULL
+                        AND r.primeraCodigoTipificacion IS NULL
+                        AND r.primeraCodigoSubtipificacion IS NULL
                     )
                     OR (
                         :sinValor = false
-                        AND l.primeraCodigoTipificacion = :codigoTipificacion
+                        AND r.primeraCodigoTipificacion = :codigoTipificacion
                         AND (
-                            (:codigoSubtipificacion IS NULL AND l.primeraCodigoSubtipificacion IS NULL)
-                            OR l.primeraCodigoSubtipificacion = :codigoSubtipificacion
+                            (:codigoSubtipificacion IS NULL AND r.primeraCodigoSubtipificacion IS NULL)
+                            OR r.primeraCodigoSubtipificacion = :codigoSubtipificacion
                         )
                     )
               )
@@ -357,15 +361,15 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                     :filtrarUltimaTipificacion = false
                     OR (
                         :sinValor = true
-                        AND l.codigoTipificacion IS NULL
-                        AND l.codigoSubtipificacion IS NULL
+                        AND r.ultimaCodigoTipificacion IS NULL
+                        AND r.ultimaCodigoSubtipificacion IS NULL
                     )
                     OR (
                         :sinValor = false
-                        AND l.codigoTipificacion = :codigoTipificacion
+                        AND r.ultimaCodigoTipificacion = :codigoTipificacion
                         AND (
-                            (:codigoSubtipificacion IS NULL AND l.codigoSubtipificacion IS NULL)
-                            OR l.codigoSubtipificacion = :codigoSubtipificacion
+                            (:codigoSubtipificacion IS NULL AND r.ultimaCodigoSubtipificacion IS NULL)
+                            OR r.ultimaCodigoSubtipificacion = :codigoSubtipificacion
                         )
                     )
               )
@@ -513,11 +517,12 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     @Query("""
             SELECT NULL AS idGrupo,
                    NULL AS etiqueta,
-                   l.primeraCodigoTipificacion AS codigoTipificacion,
-                   l.primeraCodigoSubtipificacion AS codigoSubtipificacion,
+                   r.primeraCodigoTipificacion AS codigoTipificacion,
+                   r.primeraCodigoSubtipificacion AS codigoSubtipificacion,
                    COUNT(e.id) AS cantidad
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = e.etapa
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
@@ -533,7 +538,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                       )
               )
               AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
-            GROUP BY l.primeraCodigoTipificacion, l.primeraCodigoSubtipificacion
+            GROUP BY r.primeraCodigoTipificacion, r.primeraCodigoSubtipificacion
             """)
     List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorPrimeraTipificacion(
             @Param("accion") Accion accion,
@@ -546,11 +551,12 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     @Query("""
             SELECT NULL AS idGrupo,
                    NULL AS etiqueta,
-                   l.codigoTipificacion AS codigoTipificacion,
-                   l.codigoSubtipificacion AS codigoSubtipificacion,
+                   r.ultimaCodigoTipificacion AS codigoTipificacion,
+                   r.ultimaCodigoSubtipificacion AS codigoSubtipificacion,
                    COUNT(e.id) AS cantidad
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = e.etapa
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
@@ -566,7 +572,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                       )
               )
               AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
-            GROUP BY l.codigoTipificacion, l.codigoSubtipificacion
+            GROUP BY r.ultimaCodigoTipificacion, r.ultimaCodigoSubtipificacion
             """)
     List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorUltimaTipificacion(
             @Param("accion") Accion accion,

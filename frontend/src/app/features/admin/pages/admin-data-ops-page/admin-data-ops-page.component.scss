@@ -1,0 +1,85 @@
+.admin-page {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.hero {
+  padding: 1.25rem;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.5rem;
+  background: var(--app-surface-raised);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.hero h2 {
+  margin: 0.75rem 0;
+}
+
+.hero p {
+  margin-bottom: 0;
+  color: var(--role-muted);
+}
+
+.op {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.op__info {
+  min-width: 0;
+}
+
+.op__info h3 {
+  margin: 0 0 0.4rem;
+}
+
+.op__info p {
+  margin: 0;
+  max-width: 46rem;
+  color: var(--role-muted);
+}
+
+.op__action {
+  flex: 0 0 auto;
+}
+
+.op__message {
+  display: block;
+  margin-top: 1rem;
+}
+
+.op__status {
+  margin-top: 1rem;
+}
+
+.op-confirm__text {
+  margin: 0 0 1.25rem;
+  max-width: 34rem;
+}
+
+.op-confirm__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+@media (max-width: 700px) {
+  .admin-page {
+    gap: 1rem;
+  }
+
+  .hero {
+    padding: 1rem;
+  }
+
+  .op {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .op__action {
+    align-self: flex-end;
+  }
+}

@@ -1,0 +1,68 @@
+<section class="admin-page">
+  <header class="hero">
+    <p-tag value="Administrador" severity="info" />
+    <h2>Operaciones</h2>
+    <p>Herramientas puntuales de mantenimiento de datos.</p>
+  </header>
+
+  <p-card>
+    <div class="op">
+      <div class="op__info">
+        <h3>Reconstruir métricas por etapa</h3>
+        <p>
+          Recalcula la primera y última tipificación, la de mayor rango, el mérito y el último asesor
+          de cada lead en cada etapa, a partir de su historial. Úsalo una sola vez después de un
+          despliegue; el sistema mantiene estos datos al día por sí solo.
+        </p>
+      </div>
+
+      <div class="op__action">
+        <button
+          pButton
+          type="button"
+          icon="pi pi-database"
+          label="Reconstruir"
+          [loading]="isStarting()"
+          [disabled]="enEjecucion() || isStarting()"
+          (click)="pedirConfirmacion()"
+        ></button>
+      </div>
+    </div>
+
+    @if (errorMessage()) {
+      <p-message severity="error" [text]="errorMessage()" styleClass="op__message" />
+    }
+
+    @if (estado(); as estado) {
+      <div class="op__status">
+        @if (estado.enEjecucion) {
+          <p-tag severity="warn" icon="pi pi-spin pi-spinner" [value]="progresoLabel()" />
+        } @else if (estado.finalizadoEn) {
+          <p-tag severity="success" icon="pi pi-check-circle" [value]="progresoLabel()" />
+        } @else {
+          <p-tag severity="secondary" [value]="progresoLabel()" />
+        }
+      </div>
+    }
+  </p-card>
+</section>
+
+<p-dialog
+  header="Reconstruir métricas por etapa"
+  [visible]="confirmVisible()"
+  (visibleChange)="!$event && cancelar()"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  appendTo="body"
+  styleClass="op-confirm-dialog"
+>
+  <p class="op-confirm__text">
+    Se recalcularán las métricas por etapa de todos los leads a partir de su historial. Corre en
+    segundo plano y puede tardar varios minutos. Es seguro repetirlo. ¿Continuar?
+  </p>
+  <div class="op-confirm__actions">
+    <button pButton type="button" severity="secondary" [outlined]="true" label="Cancelar" (click)="cancelar()"></button>
+    <button pButton type="button" icon="pi pi-database" label="Reconstruir" (click)="ejecutar()"></button>
+  </div>
+</p-dialog>
