@@ -143,12 +143,10 @@
         </th>
         <th>Lead</th>
         <th>Proveedor</th>
-        <th>Canal</th>
         <th>Base</th>
         <th>Documento</th>
         <th>Primera tipificacion</th>
         <th>Ultima tipificacion</th>
-        <th>Plan ofrecido</th>
         <th>Estado</th>
         <th>Asesor</th>
         <th>Ingreso</th>
@@ -186,7 +184,6 @@
             {{ facade.display(row.nombreProveedorCampana ?? row.nombreProveedorEquipo) }}
           }
         </td>
-        <td>{{ facade.display(row.numeroWhatsappEmpresa) }}</td>
         <td>{{ facade.display(row.base) }}</td>
         <td>{{ facade.display(row.numeroDocumentoTitularServicio) }}</td>
         <td>
@@ -213,14 +210,15 @@
             </div>
           }
         </td>
-        <td>{{ facade.display(row.nombrePlanOfrecido) }}</td>
         <td>
           <p-tag
             [severity]="facade.estadoSeverity(row.estadoSeguimiento)"
             [value]="facade.display(row.estadoSeguimiento)"
           />
         </td>
-        <td>{{ facade.display(row.nombreAsesorAsignado) | uppercase }}</td>
+        <td [title]="facade.display(row.nombreAsesorAsignado)">
+          {{ facade.advisorShortName(row.nombreAsesorAsignado) | uppercase }}
+        </td>
         <td>
           <div class="datetime-stack">
             <span>{{ row.createdAt | date: 'dd/MM' }}</span>

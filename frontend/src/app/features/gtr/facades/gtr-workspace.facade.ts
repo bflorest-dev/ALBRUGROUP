@@ -2638,6 +2638,14 @@ export class GtrWorkspaceFacade {
     return String(value);
   }
 
+  advisorShortName(value: unknown): string {
+    const displayValue = this.display(value);
+    if (displayValue === '-') {
+      return displayValue;
+    }
+    return displayValue.trim().split(/\s+/).slice(0, 2).join(' ');
+  }
+
   estadoSeverity(value: string | null | undefined): 'success' | 'warn' | 'danger' | 'info' | 'secondary' {
     switch (value) {
       case 'NUEVO':

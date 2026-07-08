@@ -91,7 +91,9 @@
             [value]="facade.display(row.estadoSeguimiento)"
           />
         </td>
-        <td>{{ facade.display(row.nombreAsesorAsignado) | uppercase }}</td>
+        <td [title]="facade.display(row.nombreAsesorAsignado)">
+          {{ facade.advisorShortName(row.nombreAsesorAsignado) | uppercase }}
+        </td>
         <td>{{ (row.lastEntryAt ?? row.createdAt) | date: 'dd/MM hh:mm a' }}</td>
         <td class="actions-cell">
           <div class="row-actions">

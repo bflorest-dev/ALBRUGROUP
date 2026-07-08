@@ -235,7 +235,6 @@
         <th>Base</th>
         <th>Documento</th>
         <th>Ultima tipificacion</th>
-        <th>Plan ofrecido</th>
         <th>Estado</th>
         <th>Asesor</th>
         <th>Ingreso</th>
@@ -277,14 +276,15 @@
             </div>
           }
         </td>
-        <td>{{ facade.display(row.nombrePlanOfrecido) }}</td>
         <td>
           <p-tag
             [severity]="facade.estadoSeverity(row.estadoSeguimiento)"
             [value]="facade.display(row.estadoSeguimiento)"
           />
         </td>
-        <td>{{ facade.display(row.nombreAsesorAsignado) | uppercase }}</td>
+        <td [title]="facade.display(row.nombreAsesorAsignado)">
+          {{ facade.advisorShortName(row.nombreAsesorAsignado) | uppercase }}
+        </td>
         <td>{{ (row.lastEntryAt ?? row.createdAt) | date: 'dd/MM hh:mm a' }}</td>
         <td>
           <div class="row-actions">
