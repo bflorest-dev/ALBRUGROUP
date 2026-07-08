@@ -87,6 +87,11 @@
   --tip-fg: #fef2f2;
 }
 
+:host ::ng-deep .tipification-stack__tag--danger {
+  --tip-bg: #dc2626;
+  --tip-fg: #fef2f2;
+}
+
 :host ::ng-deep .tipification-stack__tag--subtipificacion.tipification-stack__tag--neutral,
 :host ::ng-deep .tipification-stack__tag--subtipificacion.tipification-stack__tag--palette-0 {
   --tip-bg: #64748b;
@@ -123,6 +128,11 @@
 }
 
 :host ::ng-deep .tipification-stack__tag--subtipificacion.tipification-stack__tag--palette-7 {
+  --tip-bg: #fca5a5;
+  --tip-fg: #7f1d1d;
+}
+
+:host ::ng-deep .tipification-stack__tag--subtipificacion.tipification-stack__tag--danger {
   --tip-bg: #fca5a5;
   --tip-fg: #7f1d1d;
 }

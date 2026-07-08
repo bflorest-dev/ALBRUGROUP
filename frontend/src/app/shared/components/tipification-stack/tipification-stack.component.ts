@@ -23,15 +23,31 @@ export class TipificationStackComponent {
   protected readonly hasTipificacion = computed(() => this.hasValue(this.codigoTipificacion()));
   protected readonly hasSubtipificacion = computed(() => this.hasValue(this.codigoSubtipificacion()));
   protected readonly hasAnyValue = computed(() => this.hasTipificacion() || this.hasSubtipificacion());
-  protected readonly tipificacionClass = computed(() => this.tagClass(this.codigoTipificacion(), 'tipificacion'));
-  protected readonly subtipificacionClass = computed(() => this.tagClass(this.codigoTipificacion(), 'subtipificacion'));
+  protected readonly tipificacionClass = computed(() =>
+    this.tagClass(this.codigoTipificacion(), 'tipificacion', this.isProgramacionCancelada())
+  );
+  protected readonly subtipificacionClass = computed(() =>
+    this.tagClass(this.codigoTipificacion(), 'subtipificacion', this.isProgramacionCancelada())
+  );
 
-  private tagClass(codigo: string | null | undefined, kind: 'tipificacion' | 'subtipificacion'): string {
+  private tagClass(
+    codigo: string | null | undefined,
+    kind: 'tipificacion' | 'subtipificacion',
+    danger = false
+  ): string {
     const base = 'tipification-stack__tag';
+    if (danger) {
+      return `${base} ${base}--danger ${base}--${kind}`;
+    }
     const normalized = this.normalizeCode(codigo);
     const paletteIndex = normalized ? this.paletteByCode()[normalized] ?? this.hashPalette(normalized) : undefined;
     const tone = paletteIndex === undefined ? 'neutral' : `palette-${paletteIndex}`;
     return `${base} ${base}--${tone} ${base}--${kind}`;
+  }
+
+  private isProgramacionCancelada(): boolean {
+    return this.normalizeCode(this.codigoTipificacion()) === 'PROGRAMADO'
+      && this.normalizeCode(this.codigoSubtipificacion()) === 'PROGRAMACION_CANCELADA';
   }
 
   private formatCode(value: string | null | undefined): string {
