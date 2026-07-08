@@ -96,7 +96,6 @@ import java.util.Map;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -552,14 +551,12 @@ public class LeadService {
 
     public PageResponse<LeadResponse> listarLeadsVentaProgramadosAsignados(PageRequest pageRequest) {
         LocalDate hoy = OperationalDateTime.today();
-        LocalTime horaDesde = LocalTime.now(OperationalDateTime.ZONE).truncatedTo(ChronoUnit.HOURS);
         Page<LeadResponse> leads = leadRepository.listarLeadsProgramadosVentaAsignados(
                 Etapa.VENTA,
                 currentUser.empleadoID(),
                 TIPIFICACION_PROGRAMADO,
                 Accion.TIPIFICACION,
                 hoy,
-                horaDesde,
                 org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);

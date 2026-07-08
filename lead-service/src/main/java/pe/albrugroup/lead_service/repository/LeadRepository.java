@@ -863,10 +863,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND e.tipificacion = :codigoProgramado
               AND e.fechaProgramacion IS NOT NULL
               AND e.horaProgramada IS NOT NULL
-              AND (
-                    e.fechaProgramacion > :fechaActual
-                    OR (e.fechaProgramacion = :fechaActual AND e.horaProgramada >= :horaDesde)
-              )
+              AND e.fechaProgramacion >= :fechaActual
               AND e.createdAt = (
                   SELECT MAX(es.createdAt)
                   FROM Evento es
@@ -885,7 +882,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("codigoProgramado") String codigoProgramado,
             @Param("accionTipificacion") Accion accionTipificacion,
             @Param("fechaActual") java.time.LocalDate fechaActual,
-            @Param("horaDesde") java.time.LocalTime horaDesde,
             Pageable pageable
     );
 
