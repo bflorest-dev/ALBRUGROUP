@@ -228,20 +228,20 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                        e.nombreActor,
                        e.rolActor,
                        e.accion,
-                       e.createdAt,
+                       r.fechaIngresoEtapa,
                        l.idEquipo,
                        c.nombre,
                        r.primeraCodigoTipificacion,
                        r.primeraCodigoSubtipificacion,
                        r.ultimaCodigoTipificacion,
                        r.ultimaCodigoSubtipificacion,
-                       null,
-                       0L,
+                       r.nombreAsesorUltimaGestion,
+                       CAST(COALESCE(r.totalAsignaciones, 0) AS long),
                        0L)
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
             LEFT JOIN l.campana c
-            LEFT JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = e.etapa
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
@@ -310,7 +310,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
             LEFT JOIN l.campana c
-            LEFT JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = e.etapa
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
@@ -376,6 +376,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             """)
     Page<LeadDiarioResponse> listarRegistrosDiarios(
             @Param("accion") Accion accion,
+            @Param("etapaResumen") Etapa etapaResumen,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin,
             @Param("filtrarAsesor") boolean filtrarAsesor,

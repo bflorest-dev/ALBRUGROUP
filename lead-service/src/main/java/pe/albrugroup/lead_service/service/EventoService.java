@@ -52,12 +52,12 @@ public class EventoService {
 
     private static final Set<String> EVENTO_SORT_FIELDS = Set.of("createdAt", "accion", "etapa", "tipificacion", "subtipificacion");
     private static final Map<String, String> LEADS_DIARIOS_SORT_FIELDS = Map.of(
-            "createdAt", "createdAt",
+            "createdAt", "r.fechaIngresoEtapa",
             "nombreActor", "nombreActor",
             "campana", "c.nombre",
             "lead", "l.lead",
-            "primeraTipificacion", "l.primeraCodigoTipificacion",
-            "ultimaTipificacion", "l.codigoTipificacion"
+            "primeraTipificacion", "r.primeraCodigoTipificacion",
+            "ultimaTipificacion", "r.ultimaCodigoTipificacion"
     );
 
     @Transactional
@@ -214,6 +214,7 @@ public class EventoService {
 
         var registros = eventoRepository.listarRegistrosDiarios(
                 Accion.REGISTRO,
+                Etapa.PREVENTA,
                 rango.inicio(),
                 rango.fin(),
                 tipoGrupo == TipoGrupoGtr.ASESOR,
@@ -229,31 +230,12 @@ public class EventoService {
                 sinValor,
                 pageable
         );
-        Map<Long, String> ultimoAsesorPorLead = obtenerUltimosAsesoresAsignados(registros.getContent());
-        Map<Long, Long> asignacionesDiaPorLead = contarAsignacionesDia(registros.getContent(), rango);
         Map<Long, Long> registrosDiaPorLead = contarRegistrosDia(registros.getContent(), rango);
         var respuesta = registros.map(registro -> {
-            registro.setUltimoNombreAsesorAsignado(ultimoAsesorPorLead.get(registro.getIdLead()));
-            registro.setTotalAsignacionesDia(asignacionesDiaPorLead.getOrDefault(registro.getIdLead(), 0L));
             registro.setTotalRegistrosDia(registrosDiaPorLead.getOrDefault(registro.getIdLead(), 1L));
             return registro;
         });
         return PageResponse.from(respuesta);
-    }
-
-    private Map<Long, Long> contarAsignacionesDia(
-            List<LeadDiarioResponse> registros,
-            OperationalDateTime.InstantRange rango
-    ) {
-        List<Long> idsLead = registros.stream()
-                .map(LeadDiarioResponse::getIdLead)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
-        if (idsLead.isEmpty()) {
-            return Map.of();
-        }
-        return leadAsignacionCounterService.contarAsignacionesPorLeadIds(idsLead, rango.inicio(), rango.fin());
     }
 
     /** Cuenta cuántos eventos REGISTRO tuvo cada lead en el día (>= 1); alimenta el despliegue de repeticiones. */
@@ -274,22 +256,6 @@ public class EventoService {
                 .collect(Collectors.toMap(
                         fila -> (Long) fila[0],
                         fila -> (Long) fila[1]
-                ));
-    }
-
-    private Map<Long, String> obtenerUltimosAsesoresAsignados(List<LeadDiarioResponse> registros) {
-        List<Long> idsLead = registros.stream()
-                .map(LeadDiarioResponse::getIdLead)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
-        if (idsLead.isEmpty()) {
-            return Map.of();
-        }
-        return eventoRepository.listarUltimosAsesoresAsignados(idsLead, Accion.ASIGNACION).stream()
-                .collect(Collectors.toMap(
-                        LeadUltimaAsignacionProjection::getIdLead,
-                        LeadUltimaAsignacionProjection::getNombreAsesorAsignado
                 ));
     }
 
