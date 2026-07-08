@@ -80,8 +80,12 @@ export class PrivateLayoutComponent {
   private attendanceInitialized = false;
   protected readonly session = this.sessionService.session;
   protected readonly isAdmin = computed(() => this.session()?.primaryRole === 'ADMINISTRADOR');
+  protected readonly isAlwaysOnlineRole = computed(() => {
+    const primaryRole = this.session()?.primaryRole;
+    return primaryRole === 'ADMINISTRADOR' || primaryRole === 'COMMUNITY';
+  });
   protected readonly attendanceStatusLabel = computed(() => {
-    if (this.isAdmin()) return 'ONLINE';
+    if (this.isAlwaysOnlineRole()) return 'ONLINE';
     // Sin confirmacion del backend mostramos un estado neutro "Verificando", nunca un OFFLINE por
     // defecto (que ademas dispararia el vaciado de la bandeja). Solo pintamos el estado real una vez
     // confirmado.
@@ -89,21 +93,21 @@ export class PrivateLayoutComponent {
     return this.attendanceFacade.currentStatusMeta().label;
   });
   protected readonly attendanceStatusColor = computed(() => {
-    if (this.isAdmin()) return '#37c676';
+    if (this.isAlwaysOnlineRole()) return '#37c676';
     // Gris neutro mientras no haya confirmacion (coherente con "Verificando").
     if (!this.attendanceFacade.statusConfirmed()) return '#8f96ad';
     return this.attendanceFacade.currentStatusMeta().color;
   });
   protected readonly attendanceActions = computed(() =>
-    this.isAdmin() ? [] : this.attendanceFacade.availableActions()
+    this.isAlwaysOnlineRole() ? [] : this.attendanceFacade.availableActions()
   );
   protected readonly isAttendanceLoading = computed(() => {
-    if (this.isAdmin()) return false;
+    if (this.isAlwaysOnlineRole()) return false;
     return this.attendanceFacade.isLoading() || this.attendanceFacade.isInitializing();
   });
-  protected readonly isAttendancePickerDisabled = computed(() => this.isAdmin());
+  protected readonly isAttendancePickerDisabled = computed(() => this.isAlwaysOnlineRole());
   protected readonly attendanceHint = computed(() =>
-    this.isAdmin() ? '' : this.attendanceFacade.scheduleHint()
+    this.isAlwaysOnlineRole() ? '' : this.attendanceFacade.scheduleHint()
   );
   protected readonly themeClass = computed(() => {
     const primaryRole = this.session()?.primaryRole;
@@ -249,7 +253,7 @@ export class PrivateLayoutComponent {
         this.gtrAgendadosAlertFacade.stop();
       }
 
-      if (!session || session.primaryRole === 'ADMINISTRADOR' || this.attendanceInitialized) {
+      if (!session || session.primaryRole === 'ADMINISTRADOR' || session.primaryRole === 'COMMUNITY' || this.attendanceInitialized) {
         return;
       }
 
@@ -300,7 +304,7 @@ export class PrivateLayoutComponent {
   }
 
   protected attendancePickerErrorMessage(): string {
-    if (this.isAdmin()) {
+    if (this.isAlwaysOnlineRole()) {
       return '';
     }
 

@@ -1,4 +1,4 @@
-﻿import { DestroyRef, Injectable, computed, effect, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, Validators, type FormControl } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
@@ -36,7 +36,6 @@ import {
   toFinanceRow,
   toSnapshotFinanceRows
 } from '../../../shared/utils/campaign-finance.utils';
-import { OperationalGateService } from '../../../core/services/operational-gate.service';
 
 export type CommunitySection = 'proveedores' | 'cuentas' | 'campanas' | 'zonas' | 'planes' | 'promociones';
 export type CommunityPageMode = 'mantenimiento' | 'metricas' | 'finanzas';
@@ -82,9 +81,7 @@ type PlanCatalogProviderFilter = ProveedorResponse & {
 export class CommunityWorkspaceFacade {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly leadService = inject(CommunityLeadService);
-  private readonly operationalGateService = inject(OperationalGateService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly operationalGate = this.operationalGateService.createGate('community-workspace');
   private readonly ubigeoLabels = new Map<string, string>();
   private ubigeoDirectoryLoaded = false;
   private catalogLoadInFlight = false;
@@ -100,12 +97,8 @@ export class CommunityWorkspaceFacade {
   readonly isLoadingFinanceSnapshots = signal(false);
   readonly successMessage = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
-  readonly canDisplayOperationalData = computed(
-    () => this.accessMode() === 'admin' || this.operationalGate.canDisplayOperationalData()
-  );
-  readonly canMutateOperationalData = computed(
-    () => this.accessMode() === 'admin' || this.operationalGate.canMutateOperationalData()
-  );
+  readonly canDisplayOperationalData = computed(() => true);
+  readonly canMutateOperationalData = computed(() => true);
 
   readonly proveedores = signal<ProveedorResponse[]>([]);
   readonly proveedoresActivos = computed(() => this.proveedores().filter((proveedor) => proveedor.activo !== false));
@@ -251,7 +244,7 @@ export class CommunityWorkspaceFacade {
   readonly snapshotRows = computed<SnapshotFinanceRow[]>(() => toSnapshotFinanceRows(this.campaignExpenseSnapshots()));
   readonly expenseRegistrationWarning = computed(() =>
     this.expenseRegistrationStatus()?.aplicaCierreRetroactivo
-      ? 'Este es el primer registro de hoy. Se guardará como cierre de ayer a las 23:59.'
+      ? 'Este es el primer registro de hoy. Se guardar� como cierre de ayer a las 23:59.'
       : null
   );
 
@@ -368,25 +361,6 @@ export class CommunityWorkspaceFacade {
 
   constructor() {
     this.bindPlanPromotionalMonthControls();
-
-    effect(() => {
-      this.operationalGateService.currentStatus();
-      const mode = this.currentMode();
-
-      if (this.accessMode() === 'admin') {
-        return;
-      }
-
-      if (mode !== 'mantenimiento' && mode !== 'finanzas') {
-        return;
-      }
-
-      if (!this.operationalGate.canActivateOperationalData() || this.operationalGate.hasActivatedOperationalData()) {
-        return;
-      }
-
-      void this.loadAll();
-    });
   }
 
   private bindPlanPromotionalMonthControls(): void {
@@ -505,7 +479,6 @@ export class CommunityWorkspaceFacade {
       if (failed.length) {
         this.errorMessage.set(`Algunos catalogos no cargaron: ${failed.join(', ')}.`);
       }
-      this.operationalGate.markActivated();
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar la informacion de COMMUNITY.'));
     } finally {
@@ -525,7 +498,7 @@ export class CommunityWorkspaceFacade {
       this.dailyExpenseSummary.set(daily);
       this.monthlyExpenseSummary.set(monthly);
     } catch (error) {
-      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar finanzas de campañas.'));
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar finanzas de campa�as.'));
     } finally {
       this.isLoadingFinance.set(false);
     }
@@ -564,7 +537,7 @@ export class CommunityWorkspaceFacade {
     } catch (error) {
       if (checkId === this.expenseRegistrationCheckId) {
         this.expenseRegistrationCheckError.set(
-          this.getErrorMessage(error, 'No se pudo verificar la fecha del registro. Al guardar, el sistema la definirá.')
+          this.getErrorMessage(error, 'No se pudo verificar la fecha del registro. Al guardar, el sistema la definir�.')
         );
       }
     }
@@ -572,7 +545,7 @@ export class CommunityWorkspaceFacade {
 
   async submitExpense(): Promise<void> {
     if (this.expenseForm.invalid) {
-      this.errorMessage.set('Selecciona una campaña e indica leads y costo acumulado.');
+      this.errorMessage.set('Selecciona una campa�a e indica leads y costo acumulado.');
       return;
     }
 
@@ -598,7 +571,7 @@ export class CommunityWorkspaceFacade {
       }
     );
     if (saved) {
-      this.successMessage.set(saved.cierreRetroactivo ? 'Gasto registrado como cierre del día anterior.' : 'Gasto de campaña registrado.');
+      this.successMessage.set(saved.cierreRetroactivo ? 'Gasto registrado como cierre del d�a anterior.' : 'Gasto de campa�a registrado.');
     }
   }
 
@@ -612,7 +585,7 @@ export class CommunityWorkspaceFacade {
       const snapshots = await firstValueFrom(this.leadService.listarGastosCampanaDia(row.idCampana, this.financeDate()));
       this.campaignExpenseSnapshots.set(snapshots);
     } catch (error) {
-      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar el detalle de gastos de la campaña.'));
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar el detalle de gastos de la campa�a.'));
     } finally {
       this.isLoadingFinanceSnapshots.set(false);
     }
@@ -695,11 +668,11 @@ export class CommunityWorkspaceFacade {
 
   async submitCampaign(): Promise<void> {
     if (this.campaignForm.invalid) {
-      this.errorMessage.set('Completa los datos de la campaña.');
+      this.errorMessage.set('Completa los datos de la campa�a.');
       return;
     }
 
-    await this.saveAction(() => this.leadService.registrarCampana(this.campaignForm.getRawValue()), 'Campaña registrada.', () =>
+    await this.saveAction(() => this.leadService.registrarCampana(this.campaignForm.getRawValue()), 'Campa�a registrada.', () =>
       this.refreshCampaigns()
     );
   }
@@ -765,14 +738,14 @@ export class CommunityWorkspaceFacade {
   async saveCampaignWhatsapp(): Promise<void> {
     const campana = this.selectedCampaign();
     if (!campana || this.campaignWhatsappForm.invalid) {
-      this.errorMessage.set('Indica la campaña y el nuevo WhatsApp.');
+      this.errorMessage.set('Indica la campa�a y el nuevo WhatsApp.');
       return;
     }
 
     const raw = this.campaignWhatsappForm.getRawValue();
     await this.saveAction(
       () => this.leadService.actualizarWhatsappCampana(campana.id, raw),
-      'WhatsApp de campaña actualizado.',
+      'WhatsApp de campa�a actualizado.',
       async () => {
         await this.refreshCampaigns();
         this.closeWhatsappDialog();
@@ -819,7 +792,7 @@ export class CommunityWorkspaceFacade {
   }
 
   async toggleCampaign(idCampana: number): Promise<void> {
-    await this.saveAction(() => this.leadService.alternarCampana(idCampana), 'Estado de campaña actualizado.', () =>
+    await this.saveAction(() => this.leadService.alternarCampana(idCampana), 'Estado de campa�a actualizado.', () =>
       this.refreshCampaigns()
     );
   }
@@ -865,15 +838,15 @@ export class CommunityWorkspaceFacade {
 
   planInternetLabel(plan: PlanResponse): string {
     const speed = this.getPlanInternetSpeed(plan);
-    return speed ? `${speed} ${this.getPlanInternetUnit(plan) ?? 'MBPS'}` : '—';
+    return speed ? `${speed} ${this.getPlanInternetUnit(plan) ?? 'MBPS'}` : '�';
   }
 
   planTelevisionLabel(plan: PlanResponse): string {
-    return this.getPlanTelevisionName(plan) ?? (this.getPlanTelevisionChannels(plan) ? `${this.getPlanTelevisionChannels(plan)} ch` : '—');
+    return this.getPlanTelevisionName(plan) ?? (this.getPlanTelevisionChannels(plan) ? `${this.getPlanTelevisionChannels(plan)} ch` : '�');
   }
 
   planPhoneLabel(plan: PlanResponse): string {
-    return this.getPlanPhoneDescription(plan) ?? (this.getPlanPhoneMinutes(plan) ? `${this.getPlanPhoneMinutes(plan)} min` : '—');
+    return this.getPlanPhoneDescription(plan) ?? (this.getPlanPhoneMinutes(plan) ? `${this.getPlanPhoneMinutes(plan)} min` : '�');
   }
 
   async submitAdditional(): Promise<void> {
