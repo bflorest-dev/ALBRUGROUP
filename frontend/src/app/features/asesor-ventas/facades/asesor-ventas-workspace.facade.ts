@@ -301,7 +301,9 @@ export class AsesorVentasWorkspaceFacade {
       this.totalElements();
       this.isManagingLead();
       void this.syncDisponibilidadOperativa();
-      if (status === 'OFFLINE') {
+      // Solo limpiamos con un OFFLINE CONFIRMADO por el backend. Un OFFLINE "no confirmado" (estado aun
+      // sin cargar / re-login) es en realidad "verificando" y no debe vaciar la bandeja.
+      if (this.operationalGateService.isConfirmedOffline()) {
         // Gracia de cierre: si su horario termino pero esta gestionando un lead, NO limpiar la
         // bandeja ni cerrar el modal; debe poder terminar ese lead antes de cerrar su turno.
         if (this.isManagingLead()) {

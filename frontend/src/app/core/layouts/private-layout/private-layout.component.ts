@@ -82,12 +82,18 @@ export class PrivateLayoutComponent {
   protected readonly isAdmin = computed(() => this.session()?.primaryRole === 'ADMINISTRADOR');
   protected readonly attendanceStatusLabel = computed(() => {
     if (this.isAdmin()) return 'ONLINE';
-    if (this.attendanceFacade.isInitializing()) return 'Verificando';
+    // Sin confirmacion del backend mostramos un estado neutro "Verificando", nunca un OFFLINE por
+    // defecto (que ademas dispararia el vaciado de la bandeja). Solo pintamos el estado real una vez
+    // confirmado.
+    if (!this.attendanceFacade.statusConfirmed()) return 'Verificando';
     return this.attendanceFacade.currentStatusMeta().label;
   });
-  protected readonly attendanceStatusColor = computed(() =>
-    this.isAdmin() ? '#37c676' : this.attendanceFacade.currentStatusMeta().color
-  );
+  protected readonly attendanceStatusColor = computed(() => {
+    if (this.isAdmin()) return '#37c676';
+    // Gris neutro mientras no haya confirmacion (coherente con "Verificando").
+    if (!this.attendanceFacade.statusConfirmed()) return '#8f96ad';
+    return this.attendanceFacade.currentStatusMeta().color;
+  });
   protected readonly attendanceActions = computed(() =>
     this.isAdmin() ? [] : this.attendanceFacade.availableActions()
   );

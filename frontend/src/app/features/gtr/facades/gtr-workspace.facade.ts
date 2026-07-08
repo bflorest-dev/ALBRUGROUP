@@ -977,7 +977,9 @@ export class GtrWorkspaceFacade {
         return;
       }
 
-      if (status === 'OFFLINE') {
+      // Solo limpiamos con un OFFLINE CONFIRMADO por el backend; un OFFLINE "no confirmado" (estado
+      // aun sin cargar / re-login) es "verificando" y no debe vaciar la vista.
+      if (this.operationalGateService.isConfirmedOffline()) {
         this.clearOperationalData();
         this.lastAttendanceStatus = status;
         return;

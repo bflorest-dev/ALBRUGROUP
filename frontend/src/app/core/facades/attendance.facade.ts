@@ -1,5 +1,6 @@
+import { DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, filter, firstValueFrom, map, of, startWith, switchMap, timeout } from 'rxjs';
 import { ApiErrorResponse } from '../../shared/models/api/api-error-response';
@@ -44,12 +45,17 @@ export class AttendanceFacade {
   private readonly attendanceService = inject(AttendanceService);
   private readonly presenceService = inject(PresenceService);
   private readonly sessionService = inject(SessionService);
+  private readonly document = inject(DOCUMENT);
   private nextRequestId = 1;
   private initialized = false;
   private pollTimerId: ReturnType<typeof setInterval> | null = null;
   private autoCheckInArmed = false;
   private autoCheckInRequestId: number | null = null;
   private autoCheckInRetried = false;
+  private readonly maxLoadRetries = 3;
+  private readonly loadRetryDelayMs = 3000;
+  private loadRetryCount = 0;
+  private loadRetryTimerId: ReturnType<typeof setTimeout> | null = null;
 
   private readonly loadRequest = signal<LoadRequest | null>(null);
   private readonly actionRequest = signal<ActionRequest | null>(null);
@@ -123,6 +129,13 @@ export class AttendanceFacade {
 
   readonly attendanceDetail = signal<DetalleAsistenciaResponse | null>(null);
   /**
+   * true SOLO cuando el backend ha confirmado el estado (load/accion exitosos). Mientras sea false
+   * el cliente no debe pintar OFFLINE ni limpiar bandejas: es un estado "sin confirmar" (verificando),
+   * no un OFFLINE real. Se reinicia a false al cambiar de sesion y antes de la primera carga, y NO se
+   * degrada ante un error de refresco (para no parpadear un estado ya confirmado).
+   */
+  readonly statusConfirmed = signal(false);
+  /**
    * Indica que el asesor esta gestionando un lead. Mientras sea true se conserva la presencia
    * aunque su horario haya terminado (gracia para terminar el lead en gestion antes de cerrar turno).
    */
@@ -160,7 +173,9 @@ export class AttendanceFacade {
   readonly errorMessage = signal('');
   readonly currentStatusMeta = computed(() => ATTENDANCE_STATUS_META[this.currentStatus()]);
   readonly availableActions = computed<AttendanceActionOption[]>(() =>
-    this.resolveAvailableActions(this.currentStatus())
+    // Sin confirmacion del backend no ofrecemos acciones: el estado aun es "verificando", no un
+    // OFFLINE real, y mostrar un boton aqui seria enganoso.
+    this.statusConfirmed() ? this.resolveAvailableActions(this.currentStatus()) : []
   );
 
   readonly scheduleHint = computed<string>(() => {
@@ -200,6 +215,9 @@ export class AttendanceFacade {
 
       if (state.status === 'success') {
         this.attendanceDetail.set(state.detail);
+        this.statusConfirmed.set(true);
+        this.loadRetryCount = 0;
+        this.clearLoadRetryTimer();
         this.isLoading.set(false);
         this.errorMessage.set('');
         void this.syncPresence(state.detail);
@@ -208,9 +226,13 @@ export class AttendanceFacade {
       }
 
       if (state.status === 'error') {
+        // No degradamos un estado ya confirmado: dejamos attendanceDetail/statusConfirmed intactos
+        // (el badge sigue en "Verificando" si nunca se confirmo) y reintentamos con backoff, para que
+        // un timeout puntual no deje el estado congelado hasta un F5.
         this.isLoading.set(false);
         this.errorMessage.set(state.message);
         this.clearPollTimer();
+        this.scheduleLoadRetry();
       }
     });
 
@@ -225,6 +247,7 @@ export class AttendanceFacade {
 
       if (state.status === 'success') {
         this.attendanceDetail.set(state.detail);
+        this.statusConfirmed.set(true);
         this.isLoading.set(false);
         this.errorMessage.set('');
         void this.syncPresence(state.detail);
@@ -272,7 +295,45 @@ export class AttendanceFacade {
         this.autoCheckInRetried = false;
       }
     });
+
+    // Reactividad a la sesion. AttendanceFacade es singleton providedIn:root y sobrevive al logout,
+    // asi que si no lo reseteamos aqui, tras un logout/login SPA (sin recarga de pagina) el badge se
+    // queda con el estado de la sesion anterior hasta un F5 (y filtra estado entre usuarios). Este
+    // effect hace que el cambio de sesion se comporte como una recarga: limpia al cerrar y recarga
+    // fresco al iniciar.
+    effect(() => {
+      const session = this.sessionService.session();
+
+      if (!session) {
+        untracked(() => this.resetForSession());
+        return;
+      }
+
+      // El ADMINISTRADOR no marca asistencia; su badge es fijo ONLINE en el layout.
+      if (session.primaryRole === 'ADMINISTRADOR') {
+        return;
+      }
+
+      // Sesion operativa: asegurar una carga fresca una vez por sesion (initialize es idempotente).
+      untracked(() => this.initialize());
+    });
+
+    if (this.isBrowser()) {
+      // Al volver el foco a la pestana (p. ej. tras inactividad/backgrounding) re-consultamos el
+      // estado real en vez de arrastrar uno viejo. Refresco por evento, no polling.
+      this.document.addEventListener('visibilitychange', this.handleVisibilityChange);
+    }
   }
+
+  private readonly handleVisibilityChange = (): void => {
+    if (this.document.visibilityState !== 'visible') {
+      return;
+    }
+    if (!this.sessionService.session() || !this.initialized) {
+      return;
+    }
+    this.reload();
+  };
 
   initialize(): void {
     if (this.initialized) {
@@ -284,7 +345,55 @@ export class AttendanceFacade {
   }
 
   reload(): void {
+    this.clearLoadRetryTimer();
     this.loadRequest.set({ requestId: this.nextRequestId++ });
+  }
+
+  /**
+   * Reset completo al cambiar de sesion: deja el facade como recien creado para que el proximo login
+   * cargue estado fresco y no filtre el estado de la sesion anterior. Espejo del reset por sesion de
+   * PresenceService.
+   */
+  private resetForSession(): void {
+    this.clearPollTimer();
+    this.clearLoadRetryTimer();
+    this.loadRetryCount = 0;
+    this.initialized = false;
+    this.autoCheckInArmed = false;
+    this.autoCheckInRequestId = null;
+    this.autoCheckInRetried = false;
+    this.attendanceDetail.set(null);
+    this.statusConfirmed.set(false);
+    this.managingLeadActive.set(false);
+    this.isLoading.set(false);
+    this.errorMessage.set('');
+  }
+
+  private scheduleLoadRetry(): void {
+    if (this.loadRetryTimerId !== null) {
+      return;
+    }
+    if (this.loadRetryCount >= this.maxLoadRetries || !this.sessionService.session()) {
+      return;
+    }
+    this.loadRetryCount++;
+    this.loadRetryTimerId = setTimeout(() => {
+      this.loadRetryTimerId = null;
+      if (this.sessionService.session()) {
+        this.reload();
+      }
+    }, this.loadRetryDelayMs);
+  }
+
+  private clearLoadRetryTimer(): void {
+    if (this.loadRetryTimerId !== null) {
+      clearTimeout(this.loadRetryTimerId);
+      this.loadRetryTimerId = null;
+    }
+  }
+
+  private isBrowser(): boolean {
+    return !!this.document.defaultView;
   }
 
   submitAction(actionId: AttendanceActionId): void {

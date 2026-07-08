@@ -179,8 +179,28 @@ export class PresenceService {
     }
 
     this.heartbeatId = window.setInterval(() => {
-      void firstValueFrom(this.http.post<void>(`${this.baseUrl}/presence/heartbeat`, {})).catch(() => undefined);
+      void this.sendHeartbeat();
     }, this.heartbeatIntervalMs);
+  }
+
+  /**
+   * Heartbeat con auto-reencendido. Si el heartbeat falla (la presencia del gateway pudo expirar por un
+   * corte/Cloudflare), re-registramos con /presence/online en vez de quedar "apagados sin re-encender":
+   * asi el empleado no desaparece del monitoreo de GTR/Supervisor hasta el proximo F5.
+   */
+  private async sendHeartbeat(): Promise<void> {
+    try {
+      await firstValueFrom(this.http.post<void>(`${this.baseUrl}/presence/heartbeat`, {}));
+      this.online = true;
+    } catch {
+      this.online = false;
+      try {
+        await firstValueFrom(this.http.post<void>(`${this.baseUrl}/presence/online`, {}));
+        this.online = true;
+      } catch {
+        this.online = false;
+      }
+    }
   }
 
   private stopHeartbeat(): void {

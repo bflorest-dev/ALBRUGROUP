@@ -21,6 +21,14 @@ export class OperationalGateService {
   readonly canActivateOperationalData = computed(() => this.attendanceFacade.isOperational());
   readonly canMutateOperationalData = computed(() => this.attendanceFacade.isOperational());
   readonly shouldWarnBeforeUnload = computed(() => this.currentStatus() !== 'OFFLINE');
+  /**
+   * OFFLINE **confirmado por el backend**, no el OFFLINE por defecto de un estado aun sin cargar.
+   * Las vistas deben limpiar/cerrar su bandeja solo con esto, nunca con un OFFLINE "no confirmado"
+   * (que en realidad es "verificando"), para no vaciar la vista durante una ventana de carga/re-login.
+   */
+  readonly isConfirmedOffline = computed(
+    () => this.attendanceFacade.statusConfirmed() && this.currentStatus() === 'OFFLINE'
+  );
 
   createGate(flowKey: string): OperationalGate {
     const hasActivatedOperationalData = computed(() => this.activatedFlows()[flowKey] === true);
