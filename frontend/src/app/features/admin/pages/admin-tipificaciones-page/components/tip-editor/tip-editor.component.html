@@ -43,6 +43,7 @@
       <div
         cdkDrag
         [cdkDragData]="sub.uid"
+        cdkDragPreviewContainer="parent"
         class="subtip-row grid min-w-0 gap-2.5 rounded-md border border-slate-200 bg-slate-50 p-3"
         [class.has-postventa-state]="selectedEtapa === 'POSTVENTA' && sub.etapaCambio === 'POSTVENTA'"
       >
