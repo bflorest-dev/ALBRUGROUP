@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, HostListener, OnInit, inject } from '@angular/core';
+import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { FormsModule } from '@angular/forms';
 import { CanDeactivateFn } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -10,7 +11,6 @@ import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import { AdminTipificacionFacade, EtapaCatalogo } from '../../facades/admin-tipificacion.facade';
 import {
-  SubtipAction,
   SubtipDropAction,
   SubtipFieldChange,
   SubtipMoveAction,
@@ -22,6 +22,7 @@ import {
   selector: 'app-admin-tipificaciones-page',
   imports: [
     FormsModule,
+    DragDropModule,
     ButtonModule,
     InputTextModule,
     SelectModule,
@@ -38,8 +39,6 @@ import {
 export class AdminTipificacionesPageComponent implements OnInit {
   protected readonly facade = inject(AdminTipificacionFacade);
   private readonly messageService = inject(MessageService);
-  private draggedTipUid: string | null = null;
-  private draggedSubtip: SubtipAction | null = null;
 
   protected readonly skeletonRows = Array.from({ length: 4 });
 
@@ -114,54 +113,17 @@ export class AdminTipificacionesPageComponent implements OnInit {
     );
   }
 
-  protected startTipDrag(uid: string, event: DragEvent): void {
-    this.draggedSubtip = null;
-    this.draggedTipUid = uid;
-    event.dataTransfer?.setData('text/plain', uid);
-    if (event.dataTransfer) {
-      event.dataTransfer.effectAllowed = 'move';
-    }
-  }
-
-  protected allowDrop(event: DragEvent): void {
-    event.preventDefault();
-    if (event.dataTransfer) {
-      event.dataTransfer.dropEffect = 'move';
-    }
-  }
-
-  protected dropOnTip(targetUid: string, targetSubtipCount: number, event: DragEvent): void {
-    event.preventDefault();
-    if (this.draggedSubtip) {
-      this.facade.moveSubtipificacionTo(
-        this.draggedSubtip.tipUid,
-        this.draggedSubtip.subUid,
-        targetUid,
-        targetSubtipCount
-      );
-    } else if (this.draggedTipUid) {
-      this.facade.moveTipTo(this.draggedTipUid, targetUid);
-    }
-    this.draggedTipUid = null;
-    this.draggedSubtip = null;
-  }
-
-  protected startSubtipDrag(action: SubtipAction): void {
-    this.draggedTipUid = null;
-    this.draggedSubtip = action;
+  protected dropTip(event: CdkDragDrop<unknown>): void {
+    this.facade.moveTipToIndex(event.item.data as string, event.currentIndex);
   }
 
   protected dropSubtip(action: SubtipDropAction): void {
-    if (!this.draggedSubtip) {
-      return;
-    }
-    this.facade.moveSubtipificacionTo(
-      this.draggedSubtip.tipUid,
-      this.draggedSubtip.subUid,
-      action.tipUid,
+    this.facade.moveSubtipificacionToIndex(
+      action.sourceTipUid,
+      action.subUid,
+      action.targetTipUid,
       action.targetIndex
     );
-    this.draggedSubtip = null;
   }
 
   protected moveSubtip(action: SubtipMoveAction): void {

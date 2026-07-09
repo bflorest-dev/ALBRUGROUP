@@ -96,13 +96,11 @@
     </div>
   } @else {
     @if (facade.openTipUids().length === 2) {
-      <div class="comparison-grid grid w-full gap-4 lg:grid-cols-2">
+      <div cdkDropListGroup class="comparison-grid grid w-full gap-4 lg:grid-cols-2">
         @for (tip of facade.selectedTips(); track tip.uid; let position = $index) {
           <article
             class="comparison-panel min-w-0 overflow-hidden rounded-lg border border-l-4 border-slate-200 bg-white shadow-sm"
             [class]="stageAccentClass()"
-            (dragover)="allowDrop($event)"
-            (drop)="dropOnTip(tip.uid, tip.subtipificaciones.length, $event)"
           >
             <header class="flex items-center gap-2 border-b border-slate-200 bg-slate-50 p-3">
               <p-select
@@ -138,29 +136,33 @@
               (subtipFieldChange)="onSubtipFieldChange($event)"
               (removeSubtip)="facade.removeSubtipificacion($event.tipUid, $event.subUid)"
               (moveSubtip)="moveSubtip($event)"
-              (subtipDragStart)="startSubtipDrag($event)"
               (subtipDrop)="dropSubtip($event)"
             />
           </article>
         }
       </div>
     } @else {
-      <div class="mx-auto grid w-full max-w-[64rem] gap-3">
+      <div
+        cdkDropList
+        class="tip-list mx-auto grid w-full max-w-[64rem] gap-3"
+        [cdkDropListSortingDisabled]="!!facade.searchTerm()"
+        (cdkDropListDropped)="dropTip($event)"
+      >
       @for (tip of facade.filteredDrafts(); track tip.uid; let index = $index) {
         <article
+          cdkDrag
+          [cdkDragData]="tip.uid"
           class="tip-card overflow-hidden rounded-lg border border-l-4 border-slate-200 bg-white shadow-sm"
           [class]="stageAccentClass()"
-          (dragover)="allowDrop($event)"
-          (drop)="dropOnTip(tip.uid, tip.subtipificaciones.length, $event)"
         >
           <div class="flex min-h-16 items-center gap-2 bg-slate-50 px-3 py-2 sm:px-4">
             <button
+              cdkDragHandle
               type="button"
               class="tip-grip grid size-9 shrink-0 cursor-grab place-items-center rounded-md border-0 bg-transparent p-0 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
-              [draggable]="!facade.searchTerm()"
               pTooltip="Mover tipificación"
               tooltipPosition="top"
-              (dragstart)="startTipDrag(tip.uid, $event)"
+              [disabled]="!!facade.searchTerm()"
             >
               <i class="pi pi-bars"></i>
             </button>
@@ -235,7 +237,6 @@
               (subtipFieldChange)="onSubtipFieldChange($event)"
               (removeSubtip)="facade.removeSubtipificacion($event.tipUid, $event.subUid)"
               (moveSubtip)="moveSubtip($event)"
-              (subtipDragStart)="startSubtipDrag($event)"
               (subtipDrop)="dropSubtip($event)"
             />
           }

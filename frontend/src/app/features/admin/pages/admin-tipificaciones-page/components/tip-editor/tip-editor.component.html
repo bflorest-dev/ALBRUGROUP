@@ -33,23 +33,24 @@
     ></button>
   </div>
 
-  <div class="subtip-list grid gap-2.5 rounded-md border border-dashed border-slate-200 p-2.5">
+  <div
+    cdkDropList
+    class="subtip-list grid gap-2.5 rounded-md border border-dashed border-slate-200 p-2.5"
+    [cdkDropListData]="tip.uid"
+    (cdkDropListDropped)="dropSubtip($event)"
+  >
     @for (sub of tip.subtipificaciones; track sub.uid; let index = $index) {
       <div
+        cdkDrag
+        [cdkDragData]="sub.uid"
         class="subtip-row grid min-w-0 gap-2.5 rounded-md border border-slate-200 bg-slate-50 p-3"
         [class.has-postventa-state]="selectedEtapa === 'POSTVENTA' && sub.etapaCambio === 'POSTVENTA'"
-        [class.dragging]="draggingSubUid === sub.uid"
-        [class.drag-over]="dragOverIndex === index && draggingSubUid !== sub.uid"
-        (dragover)="markDropTarget(index, $event)"
-        (drop)="dropAt(index, $event)"
       >
         <div class="subtip-controls flex items-center gap-1">
           <button
+            cdkDragHandle
             type="button"
             class="subtip-grip grid size-9 cursor-grab place-items-center rounded-md border-0 bg-transparent p-0 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
-            draggable="true"
-            (dragstart)="startSubtipDrag(sub.uid, $event)"
-            (dragend)="endSubtipDrag()"
           >
             <i class="pi pi-bars"></i>
           </button>
@@ -208,12 +209,5 @@
         (click)="addSubtip.emit(tip.uid)"
       ></button>
     </div>
-
-    <div
-      class="subtip-end-drop h-3 rounded-sm"
-      [class.drag-over]="dragOverIndex === tip.subtipificaciones.length"
-      (dragover)="markDropTarget(tip.subtipificaciones.length, $event)"
-      (drop)="dropAt(tip.subtipificaciones.length, $event)"
-    ></div>
   </div>
 </div>

@@ -20,30 +20,48 @@
   color: var(--role-muted);
 }
 
+.metrics-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.metrics-toolbar app-date-field {
+  min-width: 12rem;
+}
+
+.metrics-message {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.metrics-team-col {
+  text-align: left;
+}
+
 .metrics-empty {
-  display: grid;
-  justify-items: center;
-  gap: 0.6rem;
-  padding: 3rem 1.5rem;
+  padding: 2rem 1rem;
   text-align: center;
-  border: 1px dashed var(--app-border-soft);
-  border-radius: 0.5rem;
-  background: var(--app-surface-raised);
+  color: var(--app-text-muted);
 }
 
-.metrics-empty i {
-  font-size: 2.5rem;
-  color: var(--role-accent);
+:host ::ng-deep .metrics-table td,
+:host ::ng-deep .metrics-table th {
+  text-align: center;
+  vertical-align: middle;
 }
 
-.metrics-empty h3 {
-  margin: 0;
+:host ::ng-deep .metrics-table td.metrics-team-col,
+:host ::ng-deep .metrics-table th.metrics-team-col {
+  text-align: left;
 }
 
-.metrics-empty p {
-  margin: 0;
-  max-width: 34rem;
-  color: var(--role-muted);
+:host ::ng-deep .metrics-table tr.metrics-total > td {
+  border-top: 2px solid var(--app-border-soft);
+  background: var(--app-surface-sunken, rgba(148, 163, 184, 0.08));
+  font-weight: 700;
 }
 
 @media (max-width: 700px) {
@@ -53,9 +71,5 @@
 
   .hero {
     padding: 1rem;
-  }
-
-  .metrics-empty {
-    padding: 2rem 1rem;
   }
 }

@@ -14,6 +14,7 @@ import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDiarioResponse;
+import pe.albrugroup.lead_service.entity.response.LeadsDiariosMetricasEquipoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadsDiariosMetricasResponse;
 import pe.albrugroup.lead_service.entity.response.RegistroDiarioLeadResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionItemResponse;
@@ -374,6 +375,65 @@ public class EventoService {
 
         return new LeadsDiariosMetricasResponse(
                 registros, leadsUnicos, leadsRepetidos, leadsTipificados, bloque1, bloque2, bloque3, leadsVentaCerrada);
+    }
+
+    /**
+     * Mismas métricas del día pero desglosadas por equipo (para el DASHBOARD del ADMIN). Un usuario
+     * con visibilidad global ve todos los equipos; uno acotado, solo el suyo (via equipoFilter).
+     * idEquipo null = "Sin equipo".
+     */
+    public List<LeadsDiariosMetricasEquipoResponse> obtenerMetricasRegistrosDiariosPorEquipo(LocalDate fecha) {
+        OperationalDateTime.InstantRange rango = OperationalDateTime.dayRange(fecha);
+        Instant inicio = rango.inicio();
+        Instant fin = rango.fin();
+
+        // Acumulador por equipo: [registros, leadsUnicos, repetidos, tipificados, b1, b2, b3, ventaCerrada].
+        Map<Long, long[]> porEquipo = new LinkedHashMap<>();
+
+        for (Object[] fila : eventoRepository.metricasBaseRegistrosDiariosPorEquipo(Accion.REGISTRO, inicio, fin)) {
+            long[] acc = acumuladorEquipo(porEquipo, (Long) fila[0]);
+            acc[0] = (Long) fila[1];
+            acc[1] = (Long) fila[2];
+        }
+        for (Object[] fila : eventoRepository.listarLeadsDiariosConRepeticionPorEquipo(Accion.REGISTRO, inicio, fin)) {
+            acumuladorEquipo(porEquipo, (Long) fila[0])[2] += 1;
+        }
+        for (Object[] fila : eventoRepository.contarLeadsDiariosTipificadosPorEquipo(
+                Accion.REGISTRO, Etapa.PREVENTA, inicio, fin)) {
+            acumuladorEquipo(porEquipo, (Long) fila[0])[3] = (Long) fila[1];
+        }
+        for (Object[] fila : eventoRepository.agruparLeadsDiariosPorOrdenPorEquipo(
+                Accion.REGISTRO, Etapa.PREVENTA, inicio, fin)) {
+            long[] acc = acumuladorEquipo(porEquipo, (Long) fila[0]);
+            Integer orden = (Integer) fila[1];
+            long cantidad = (Long) fila[2];
+            if (orden == null) {
+                continue;
+            }
+            if (orden <= 3) {
+                acc[4] += cantidad;
+            } else if (orden <= 6) {
+                acc[5] += cantidad;
+            } else {
+                acc[6] += cantidad;
+            }
+        }
+        for (Object[] fila : eventoRepository.contarLeadsDiariosVentaCerradaPorEquipo(
+                Accion.REGISTRO, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA_COMPLETA, SUBTIPIFICACION_VENTA_CERRADA)) {
+            acumuladorEquipo(porEquipo, (Long) fila[0])[7] = (Long) fila[1];
+        }
+
+        return porEquipo.entrySet().stream()
+                .map(entrada -> {
+                    long[] a = entrada.getValue();
+                    return new LeadsDiariosMetricasEquipoResponse(
+                            entrada.getKey(), a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]);
+                })
+                .toList();
+    }
+
+    private static long[] acumuladorEquipo(Map<Long, long[]> mapa, Long idEquipo) {
+        return mapa.computeIfAbsent(idEquipo, clave -> new long[8]);
     }
 
     private void validarFiltroAgrupacion(

@@ -729,6 +729,101 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("codigoSubtipificacion") String codigoSubtipificacion
     );
 
+    // --- Métricas de "Leads del día" DESGLOSADAS por equipo (idEquipo null = "Sin equipo") ---
+
+    // A + B por equipo: [idEquipo, registros, leadsUnicos].
+    @Query("""
+            SELECT l.idEquipo, COUNT(e.id), COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+            GROUP BY l.idEquipo
+            """)
+    List<Object[]> metricasBaseRegistrosDiariosPorEquipo(
+            @Param("accion") Accion accion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    // D por equipo: filas [idEquipo, idLead] de leads con más de un registro; se cuenta por equipo.
+    @Query("""
+            SELECT l.idEquipo, e.idLead
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+            GROUP BY l.idEquipo, e.idLead
+            HAVING COUNT(e.id) > 1
+            """)
+    List<Object[]> listarLeadsDiariosConRepeticionPorEquipo(
+            @Param("accion") Accion accion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    // F por equipo: [idEquipo, leadsTipificados].
+    @Query("""
+            SELECT l.idEquipo, COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND r.ultimaCodigoTipificacion IS NOT NULL
+            GROUP BY l.idEquipo
+            """)
+    List<Object[]> contarLeadsDiariosTipificadosPorEquipo(
+            @Param("accion") Accion accion,
+            @Param("etapaResumen") Etapa etapaResumen,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    // G por equipo: [idEquipo, orden, cantidad] para armar los bloques por equipo.
+    @Query("""
+            SELECT l.idEquipo, r.ultimaTipificacionOrden, COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND r.ultimaTipificacionOrden IS NOT NULL
+            GROUP BY l.idEquipo, r.ultimaTipificacionOrden
+            """)
+    List<Object[]> agruparLeadsDiariosPorOrdenPorEquipo(
+            @Param("accion") Accion accion,
+            @Param("etapaResumen") Etapa etapaResumen,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    // H por equipo: [idEquipo, leadsVentaCerrada].
+    @Query("""
+            SELECT l.idEquipo, COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND r.ultimaCodigoTipificacion = :codigoTipificacion
+              AND r.ultimaCodigoSubtipificacion = :codigoSubtipificacion
+            GROUP BY l.idEquipo
+            """)
+    List<Object[]> contarLeadsDiariosVentaCerradaPorEquipo(
+            @Param("accion") Accion accion,
+            @Param("etapaResumen") Etapa etapaResumen,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("codigoTipificacion") String codigoTipificacion,
+            @Param("codigoSubtipificacion") String codigoSubtipificacion
+    );
+
     Optional<Evento> findTopByIdLeadAndAccionOrderByCreatedAtDesc(Long idLead, Accion accion);
 
     Optional<Evento> findTopByIdLeadAndAccionAndTipificacionOrderByCreatedAtDesc(Long idLead, Accion accion, String tipificacion);

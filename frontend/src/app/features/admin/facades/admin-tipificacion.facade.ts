@@ -196,18 +196,14 @@ export class AdminTipificacionFacade {
     this.isDirty.set(true);
   }
 
-  moveTipTo(sourceUid: string, targetUid: string): void {
-    if (sourceUid === targetUid) {
-      return;
-    }
+  moveTipToIndex(uid: string, targetIndex: number): void {
     const items = [...this.drafts()];
-    const sourceIndex = items.findIndex((item) => item.uid === sourceUid);
-    const targetIndex = items.findIndex((item) => item.uid === targetUid);
-    if (sourceIndex < 0 || targetIndex < 0) {
+    const sourceIndex = items.findIndex((item) => item.uid === uid);
+    if (sourceIndex < 0 || sourceIndex === targetIndex) {
       return;
     }
     const [moved] = items.splice(sourceIndex, 1);
-    items.splice(targetIndex, 0, moved);
+    items.splice(Math.min(Math.max(targetIndex, 0), items.length), 0, moved);
     this.drafts.set(this.normalizeTipOrders(items));
     this.isDirty.set(true);
   }
@@ -283,6 +279,33 @@ export class AdminTipificacionFacade {
     this.openTipUids.update((open) =>
       open.includes(targetTipUid) ? open : [...open.slice(-1), targetTipUid]
     );
+    this.isDirty.set(true);
+  }
+
+  moveSubtipificacionToIndex(
+    sourceTipUid: string,
+    subUid: string,
+    targetTipUid: string,
+    targetIndex: number
+  ): void {
+    if (sourceTipUid !== targetTipUid) {
+      this.moveSubtipificacionTo(sourceTipUid, subUid, targetTipUid, targetIndex);
+      return;
+    }
+
+    this.drafts.update((items) => items.map((tip) => {
+      if (tip.uid !== sourceTipUid) {
+        return tip;
+      }
+      const next = [...tip.subtipificaciones];
+      const sourceIndex = next.findIndex((sub) => sub.uid === subUid);
+      if (sourceIndex < 0 || sourceIndex === targetIndex) {
+        return tip;
+      }
+      const [moved] = next.splice(sourceIndex, 1);
+      next.splice(Math.min(Math.max(targetIndex, 0), next.length), 0, moved);
+      return { ...tip, subtipificaciones: this.normalizeSubtipOrders(next) };
+    }));
     this.isDirty.set(true);
   }
 

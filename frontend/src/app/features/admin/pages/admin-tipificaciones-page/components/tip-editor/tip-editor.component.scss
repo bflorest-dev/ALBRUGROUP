@@ -74,31 +74,6 @@
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.05);
 }
 
-.subtip-row.dragging {
-  opacity: 0.35;
-  transform: scale(0.995);
-}
-
-.subtip-row.drag-over {
-  border-color: #10b981;
-  background: #ecfdf5;
-  box-shadow: inset 0 0 0 1px #10b981, 0 4px 12px rgb(16 185 129 / 0.12);
-  outline: 2px dashed #34d399;
-  outline-offset: -4px;
-  transform: translateY(2px);
-}
-
-.subtip-end-drop {
-  border: 1px dashed transparent;
-  transition: height 160ms ease, border-color 160ms ease, background-color 160ms ease;
-}
-
-.subtip-end-drop.drag-over {
-  height: 2rem;
-  border-color: #34d399;
-  background: #ecfdf5;
-}
-
 @container (min-width: 42rem) {
   .subtip-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
