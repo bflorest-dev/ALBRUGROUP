@@ -9,6 +9,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.entity.enums.Accion;
+import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionesResponse;
@@ -87,6 +88,7 @@ class EventoServiceDailyGroupingTest {
         when(paginationService.toPageableWithMapping(eq(request), any())).thenReturn(Pageable.unpaged());
         when(eventoRepository.listarRegistrosDiarios(
                 eq(Accion.REGISTRO),
+                eq(Etapa.PREVENTA),
                 any(Instant.class),
                 any(Instant.class),
                 eq(false),
@@ -116,6 +118,7 @@ class EventoServiceDailyGroupingTest {
 
         verify(eventoRepository).listarRegistrosDiarios(
                 eq(Accion.REGISTRO),
+                eq(Etapa.PREVENTA),
                 eq(Instant.parse("2026-06-10T05:00:00Z")),
                 eq(Instant.parse("2026-06-11T05:00:00Z")),
                 eq(false),
@@ -142,6 +145,7 @@ class EventoServiceDailyGroupingTest {
         when(paginationService.toPageableWithMapping(eq(request), any())).thenReturn(Pageable.unpaged());
         when(eventoRepository.listarRegistrosDiarios(
                 eq(Accion.REGISTRO),
+                eq(Etapa.PREVENTA),
                 any(Instant.class),
                 any(Instant.class),
                 eq(false),
@@ -171,6 +175,7 @@ class EventoServiceDailyGroupingTest {
 
         verify(eventoRepository).listarRegistrosDiarios(
                 eq(Accion.REGISTRO),
+                eq(Etapa.PREVENTA),
                 eq(Instant.parse("2026-06-10T05:00:00Z")),
                 eq(Instant.parse("2026-06-11T05:00:00Z")),
                 eq(false),

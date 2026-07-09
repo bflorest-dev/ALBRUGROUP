@@ -1091,7 +1091,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             WHERE (:filtrarProveedor = false OR p.id = :idProveedor)
               AND (:filtrarEtapa = false OR l.etapa = :etapa)
-              AND (l.codigoTipificacion IS NULL OR l.codigoTipificacion NOT IN :codigosTipificacionExcluidos)
+              AND (r.ultimaCodigoTipificacion IS NULL OR r.ultimaCodigoTipificacion NOT IN :codigosTipificacionExcluidos)
               AND (:filtrarTipificaciones = false OR l.idTipificacion IN :tipificacionIds)
               AND (:filtrarSubtipificaciones = false OR l.idSubtipificacion IN :subtipificacionIds)
               AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
@@ -1103,13 +1103,13 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               )
               AND (
                     :filtrarUltimaTipificacionGrupo = false
-                    OR (:sinValorGrupo = true AND l.codigoTipificacion IS NULL)
+                    OR (:sinValorGrupo = true AND r.ultimaCodigoTipificacion IS NULL)
                     OR (
                         :sinValorGrupo = false
-                        AND l.codigoTipificacion = :codigoTipificacionGrupo
+                        AND r.ultimaCodigoTipificacion = :codigoTipificacionGrupo
                         AND (
-                            (:codigoSubtipificacionGrupo IS NULL AND l.codigoSubtipificacion IS NULL)
-                            OR l.codigoSubtipificacion = :codigoSubtipificacionGrupo
+                            (:codigoSubtipificacionGrupo IS NULL AND r.ultimaCodigoSubtipificacion IS NULL)
+                            OR r.ultimaCodigoSubtipificacion = :codigoSubtipificacionGrupo
                         )
                     )
               )
@@ -1155,9 +1155,10 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             FROM Lead l
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             WHERE (:filtrarProveedor = false OR p.id = :idProveedor)
               AND (:filtrarEtapa = false OR l.etapa = :etapa)
-              AND (l.codigoTipificacion IS NULL OR l.codigoTipificacion NOT IN :codigosTipificacionExcluidos)
+              AND (r.ultimaCodigoTipificacion IS NULL OR r.ultimaCodigoTipificacion NOT IN :codigosTipificacionExcluidos)
               AND (:filtrarTipificaciones = false OR l.idTipificacion IN :tipificacionIds)
               AND (:filtrarSubtipificaciones = false OR l.idSubtipificacion IN :subtipificacionIds)
               AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
@@ -1183,20 +1184,21 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     @Query("""
             SELECT NULL AS idGrupo,
                    NULL AS etiqueta,
-                   l.codigoTipificacion AS codigoTipificacion,
-                   l.codigoSubtipificacion AS codigoSubtipificacion,
+                   r.ultimaCodigoTipificacion AS codigoTipificacion,
+                   r.ultimaCodigoSubtipificacion AS codigoSubtipificacion,
                    COUNT(l.id) AS cantidad
             FROM Lead l
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             WHERE (:filtrarProveedor = false OR p.id = :idProveedor)
               AND (:filtrarEtapa = false OR l.etapa = :etapa)
-              AND (l.codigoTipificacion IS NULL OR l.codigoTipificacion NOT IN :codigosTipificacionExcluidos)
+              AND (r.ultimaCodigoTipificacion IS NULL OR r.ultimaCodigoTipificacion NOT IN :codigosTipificacionExcluidos)
               AND (:filtrarTipificaciones = false OR l.idTipificacion IN :tipificacionIds)
               AND (:filtrarSubtipificaciones = false OR l.idSubtipificacion IN :subtipificacionIds)
               AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
               AND (:filtrarFechaHasta = false OR l.lastEntryAt < :fechaHasta)
-            GROUP BY l.codigoTipificacion, l.codigoSubtipificacion
+            GROUP BY r.ultimaCodigoTipificacion, r.ultimaCodigoSubtipificacion
             """)
     List<LeadGtrAgrupacionProjection> agruparLeadsMasivoPorUltimaTipificacion(
             @Param("filtrarProveedor") boolean filtrarProveedor,
@@ -1223,9 +1225,10 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             FROM lead l
             LEFT JOIN campana c ON c.id = l.id_campana
             LEFT JOIN proveedor p ON p.id = c.id_proveedor
+            LEFT JOIN lead_etapa_resumen r ON r.id_lead = l.id AND r.etapa = l.etapa
             WHERE (:filtrarProveedor = false OR p.id = :idProveedor)
               AND (:filtrarEtapa = false OR l.etapa = CAST(:etapa AS text))
-              AND (l.codigo_tipificacion IS NULL OR l.codigo_tipificacion NOT IN (:codigosTipificacionExcluidos))
+              AND (r.ultima_codigo_tipificacion IS NULL OR r.ultima_codigo_tipificacion NOT IN (:codigosTipificacionExcluidos))
               AND (:filtrarTipificaciones = false OR l.id_tipificacion IN (:tipificacionIds))
               AND (:filtrarSubtipificaciones = false OR l.id_subtipificacion IN (:subtipificacionIds))
               AND (:filtrarFechaDesde = false OR l.last_entry_at >= :fechaDesde)
