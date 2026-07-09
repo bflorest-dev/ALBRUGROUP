@@ -14,6 +14,7 @@ import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 import { TipificationStackComponent } from '../../../../shared/components/tipification-stack/tipification-stack.component';
+import { DailyLeadsMetricsBarComponent } from '../../components/daily-leads-metrics-bar/daily-leads-metrics-bar.component';
 import { DailyLeadsFacade } from '../../facades/daily-leads.facade';
 
 @Component({
@@ -35,7 +36,8 @@ import { DailyLeadsFacade } from '../../facades/daily-leads.facade';
     SelectModule,
     InputTextModule,
     DateFieldComponent,
-    TipificationStackComponent
+    TipificationStackComponent,
+    DailyLeadsMetricsBarComponent
   ],
   providers: [DailyLeadsFacade],
   templateUrl: './daily-leads-page.component.html',

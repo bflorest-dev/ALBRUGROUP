@@ -183,6 +183,10 @@
       </div>
     </section>
 
+    @if (facade.metricasView(); as metrics) {
+      <app-daily-leads-metrics-bar [metrics]="metrics" />
+    }
+
     <p-table
       [value]="facade.rows()"
       dataKey="idLead"

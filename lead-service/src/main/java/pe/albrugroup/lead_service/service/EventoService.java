@@ -14,6 +14,7 @@ import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDiarioResponse;
+import pe.albrugroup.lead_service.entity.response.LeadsDiariosMetricasResponse;
 import pe.albrugroup.lead_service.entity.response.RegistroDiarioLeadResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionItemResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionesResponse;
@@ -330,6 +331,49 @@ public class EventoService {
                         leadNormalizado
                 )
         );
+    }
+
+    private static final String TIPIFICACION_PREVENTA_COMPLETA = "PREVENTA_COMPLETA";
+    private static final String SUBTIPIFICACION_VENTA_CERRADA = "VENTA_CERRADA";
+
+    /**
+     * Métricas del día para "Leads del día" (día completo con el scope de equipo del usuario).
+     * A/B/D salen de los eventos REGISTRO; F/G/H del resumen por etapa (PREVENTA). C y E se derivan
+     * en el frontend a partir de A y B.
+     */
+    public LeadsDiariosMetricasResponse obtenerMetricasRegistrosDiarios(LocalDate fecha) {
+        OperationalDateTime.InstantRange rango = OperationalDateTime.dayRange(fecha);
+        Instant inicio = rango.inicio();
+        Instant fin = rango.fin();
+
+        long registros = eventoRepository.contarRegistrosDiarios(Accion.REGISTRO, inicio, fin, false, null);
+        long leadsUnicos = eventoRepository.contarLeadsUnicosDiarios(Accion.REGISTRO, inicio, fin);
+        long leadsRepetidos = eventoRepository.listarLeadsDiariosConRepeticion(Accion.REGISTRO, inicio, fin).size();
+        long leadsTipificados = eventoRepository.contarLeadsDiariosTipificados(Accion.REGISTRO, Etapa.PREVENTA, inicio, fin);
+        long leadsVentaCerrada = eventoRepository.contarLeadsDiariosPorUltimaTipificacion(
+                Accion.REGISTRO, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA_COMPLETA, SUBTIPIFICACION_VENTA_CERRADA);
+
+        long bloque1 = 0;
+        long bloque2 = 0;
+        long bloque3 = 0;
+        for (Object[] fila : eventoRepository.agruparLeadsDiariosPorOrdenUltimaTipificacion(
+                Accion.REGISTRO, Etapa.PREVENTA, inicio, fin)) {
+            Integer orden = (Integer) fila[0];
+            long cantidad = (Long) fila[1];
+            if (orden == null) {
+                continue;
+            }
+            if (orden <= 3) {
+                bloque1 += cantidad;
+            } else if (orden <= 6) {
+                bloque2 += cantidad;
+            } else {
+                bloque3 += cantidad;
+            }
+        }
+
+        return new LeadsDiariosMetricasResponse(
+                registros, leadsUnicos, leadsRepetidos, leadsTipificados, bloque1, bloque2, bloque3, leadsVentaCerrada);
     }
 
     private void validarFiltroAgrupacion(

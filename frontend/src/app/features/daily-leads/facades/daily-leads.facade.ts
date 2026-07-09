@@ -15,7 +15,9 @@ import {
   DailyLeadRowView,
   DailyLeadSortDirection,
   DailyLeadSortField,
+  DailyLeadsMetricsView,
   LeadDiarioResponse,
+  LeadsDiariosMetricas,
   RegistroDiarioLeadResponse
 } from '../models/daily-lead.model';
 
@@ -43,6 +45,25 @@ export class DailyLeadsFacade {
   readonly pageSize = signal(10);
 
   readonly rows = signal<DailyLeadRowView[]>([]);
+  readonly metricas = signal<LeadsDiariosMetricas | null>(null);
+  readonly metricasView = computed<DailyLeadsMetricsView | null>(() => {
+    const m = this.metricas();
+    if (!m) {
+      return null;
+    }
+    return {
+      registros: m.registros,
+      leadsUnicos: m.leadsUnicos,
+      repetidos: Math.max(0, m.registros - m.leadsUnicos),
+      porcentajeValidos: m.registros > 0 ? (m.leadsUnicos / m.registros) * 100 : 0,
+      leadsRepetidos: m.leadsRepetidos,
+      leadsTipificados: m.leadsTipificados,
+      bloque1: m.bloqueOrden1,
+      bloque2: m.bloqueOrden2,
+      bloque3: m.bloqueOrden3,
+      ventaCerrada: m.leadsVentaCerrada
+    };
+  });
   readonly totalElements = signal(0);
   readonly visibleTotalElements = signal(0);
   /** Total de eventos REGISTRO del día (incluye repeticiones), para "N leads · M registros". */
@@ -170,6 +191,7 @@ export class DailyLeadsFacade {
       this.loadTipificationPalette(),
       this.loadEquipoCatalogo(),
       this.loadGroups(),
+      this.loadMetricas(),
       this.load(0)
     ]);
   }
@@ -201,7 +223,7 @@ export class DailyLeadsFacade {
       return;
     }
     this.fecha.set(normalized);
-    await Promise.all([this.loadGroups(), this.load(0)]);
+    await Promise.all([this.loadGroups(), this.loadMetricas(), this.load(0)]);
   }
 
   async showToday(): Promise<void> {
@@ -216,7 +238,7 @@ export class DailyLeadsFacade {
   }
 
   async refresh(): Promise<void> {
-    await Promise.all([this.loadGroups(), this.load(this.pageNumber())]);
+    await Promise.all([this.loadGroups(), this.loadMetricas(), this.load(this.pageNumber())]);
   }
 
   setLeadSearchDraft(value: string): void {
@@ -439,6 +461,16 @@ export class DailyLeadsFacade {
       this.visibleTotalElements.set(0);
     } finally {
       this.isLoading.set(false);
+    }
+  }
+
+  private async loadMetricas(): Promise<void> {
+    try {
+      const metricas = await firstValueFrom(this.service.obtenerMetricas(this.fecha() || undefined));
+      this.metricas.set(metricas);
+    } catch {
+      // Métricas opcionales: si fallan, la barra se oculta y la tabla sigue funcionando.
+      this.metricas.set(null);
     }
   }
 

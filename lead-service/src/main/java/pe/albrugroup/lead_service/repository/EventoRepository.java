@@ -637,6 +637,98 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("idsLead") Collection<Long> idsLead
     );
 
+    // --- Métricas de "Leads del día" (día completo, scope por equipo vía JOIN Lead) ---
+
+    // B: leads únicos registrados en el día.
+    @Query("""
+            SELECT COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+            """)
+    long contarLeadsUnicosDiarios(
+            @Param("accion") Accion accion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    // D: leads con más de un registro en el día. Devuelve una fila por lead repetido; su tamaño = D.
+    @Query("""
+            SELECT e.idLead
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+            GROUP BY e.idLead
+            HAVING COUNT(e.id) > 1
+            """)
+    List<Long> listarLeadsDiariosConRepeticion(
+            @Param("accion") Accion accion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    // F: leads registrados hoy que tienen última tipificación en su resumen de la etapa indicada.
+    @Query("""
+            SELECT COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND r.ultimaCodigoTipificacion IS NOT NULL
+            """)
+    long contarLeadsDiariosTipificados(
+            @Param("accion") Accion accion,
+            @Param("etapaResumen") Etapa etapaResumen,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    // G: leads registrados hoy agrupados por el orden de su última tipificación (para los bloques).
+    @Query("""
+            SELECT r.ultimaTipificacionOrden, COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND r.ultimaTipificacionOrden IS NOT NULL
+            GROUP BY r.ultimaTipificacionOrden
+            """)
+    List<Object[]> agruparLeadsDiariosPorOrdenUltimaTipificacion(
+            @Param("accion") Accion accion,
+            @Param("etapaResumen") Etapa etapaResumen,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    // H: leads registrados hoy cuya última tipificación (etapa indicada) es la que avanza de etapa.
+    @Query("""
+            SELECT COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND r.ultimaCodigoTipificacion = :codigoTipificacion
+              AND r.ultimaCodigoSubtipificacion = :codigoSubtipificacion
+            """)
+    long contarLeadsDiariosPorUltimaTipificacion(
+            @Param("accion") Accion accion,
+            @Param("etapaResumen") Etapa etapaResumen,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("codigoTipificacion") String codigoTipificacion,
+            @Param("codigoSubtipificacion") String codigoSubtipificacion
+    );
+
     Optional<Evento> findTopByIdLeadAndAccionOrderByCreatedAtDesc(Long idLead, Accion accion);
 
     Optional<Evento> findTopByIdLeadAndAccionAndTipificacionOrderByCreatedAtDesc(Long idLead, Accion accion, String tipificacion);

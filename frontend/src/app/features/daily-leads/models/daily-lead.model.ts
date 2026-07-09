@@ -92,6 +92,32 @@ export interface DailyLeadGroupsResponse {
   totalRegistros?: number | null;
 }
 
+/** Métricas del día (backend). C y E se derivan en el frontend. */
+export interface LeadsDiariosMetricas {
+  registros: number; // A
+  leadsUnicos: number; // B
+  leadsRepetidos: number; // D
+  leadsTipificados: number; // F
+  bloqueOrden1: number; // G orden 1-3
+  bloqueOrden2: number; // G orden 4-6
+  bloqueOrden3: number; // G orden 7-8
+  leadsVentaCerrada: number; // H
+}
+
+/** Modelo de vista de la barra de métricas (incluye C y E ya calculados). */
+export interface DailyLeadsMetricsView {
+  registros: number; // A
+  leadsUnicos: number; // B
+  repetidos: number; // C = A - B
+  porcentajeValidos: number; // E = B / A (0-100)
+  leadsRepetidos: number; // D
+  leadsTipificados: number; // F
+  bloque1: number;
+  bloque2: number;
+  bloque3: number; // G
+  ventaCerrada: number; // H
+}
+
 export interface DailyLeadGroupFilter {
   tipoGrupo?: DailyLeadGroupType;
   idGrupo?: number;

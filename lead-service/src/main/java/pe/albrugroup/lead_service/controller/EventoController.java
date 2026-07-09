@@ -19,6 +19,7 @@ import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDiarioResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionesResponse;
+import pe.albrugroup.lead_service.entity.response.LeadsDiariosMetricasResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.entity.response.RegistroDiarioLeadResponse;
 import pe.albrugroup.lead_service.service.EventoService;
@@ -83,6 +84,13 @@ public class EventoController {
             @RequestParam(required = false) String lead
     ) {
         return ResponseEntity.ok(eventoService.listarAgrupacionesRegistrosDiarios(fecha, lead));
+    }
+
+    @GetMapping("/registros-diarios/metricas") @PreAuthorize("hasAuthority('READ_LEADS_DIARIOS')")
+    public ResponseEntity<LeadsDiariosMetricasResponse> obtenerMetricasRegistrosDiarios(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
+    ) {
+        return ResponseEntity.ok(eventoService.obtenerMetricasRegistrosDiarios(fecha));
     }
 
     @GetMapping("/empleado/{idEmpleado}") @PreAuthorize("hasAuthority('READ_EVENTOS_LEADS')")

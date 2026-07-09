@@ -1,0 +1,65 @@
+.metrics-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.metric {
+  flex: 1 1 8rem;
+  min-width: 7.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.5rem;
+  background: var(--app-surface-raised);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.metric__value {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--app-text-muted);
+}
+
+.metric__value--blocks i {
+  margin: 0 0.35rem;
+  font-style: normal;
+  color: var(--app-text-muted);
+  font-weight: 500;
+}
+
+.metric--wide {
+  flex: 1 1 12rem;
+}
+
+.metric--accent .metric__value {
+  color: var(--role-accent, #2563eb);
+}
+
+.metric--success .metric__value {
+  color: #16a34a;
+}
+
+@media (max-width: 640px) {
+  .metric {
+    flex: 1 1 6.5rem;
+    min-width: 6.5rem;
+    padding: 0.5rem 0.6rem;
+  }
+
+  .metric__value {
+    font-size: 1.15rem;
+  }
+}
