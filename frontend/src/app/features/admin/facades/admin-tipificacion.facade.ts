@@ -1,9 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import {
-  CatalogoEstadoRequest,
-  CatalogoRequest,
   CatalogoResponse,
+  MatrizCatalogoRequest,
   SubtipificacionCatalogoRequest,
   TipificacionCatalogoRequest
 } from '../../../shared/models/preventa/preventa.models';
@@ -34,8 +33,6 @@ export interface TipDraft {
 export class AdminTipificacionFacade {
   private readonly service = inject(AdminTipificacionService);
   private uidSeq = 0;
-  private readonly tipificacionesDesactivar = signal<number[]>([]);
-  private readonly subtipificacionesDesactivar = signal<number[]>([]);
 
   readonly etapaOptions: { value: EtapaCatalogo; label: string }[] = [
     { value: 'PREVENTA', label: 'Preventa' },
@@ -58,6 +55,7 @@ export class AdminTipificacionFacade {
   readonly drafts = signal<TipDraft[]>([]);
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
+  readonly isDirty = signal(false);
 
   // Opciones para "Resultado: el lead..." segun la etapa seleccionada.
   readonly etapaCambioOptions = computed(() => {
@@ -78,7 +76,7 @@ export class AdminTipificacionFacade {
     try {
       const catalogo = await firstValueFrom(this.service.getCatalogo(etapa));
       this.drafts.set(this.toDrafts(catalogo, etapa));
-      this.clearPendingStateChanges();
+      this.isDirty.set(false);
     } finally {
       this.isLoading.set(false);
     }
@@ -90,22 +88,19 @@ export class AdminTipificacionFacade {
 
   addTipificacion(): void {
     this.drafts.update((items) => [...items, this.newTipDraft(items.length + 1)]);
+    this.isDirty.set(true);
   }
 
   removeTipificacion(uid: string): void {
-    this.drafts.update((items) => {
-      const target = items.find((item) => item.uid === uid);
-      if (target?.id) {
-        this.queueTipificacionDesactivar(target);
-      }
-      return items.filter((item) => item.uid !== uid);
-    });
+    this.drafts.update((items) => items.filter((item) => item.uid !== uid));
+    this.isDirty.set(true);
   }
 
   updateTipField(uid: string, field: 'codigo' | 'descripcion' | 'orden', value: string | number): void {
     this.drafts.update((items) =>
       items.map((item) => (item.uid === uid ? { ...item, [field]: value } : item))
     );
+    this.isDirty.set(true);
   }
 
   addSubtipificacion(tipUid: string): void {
@@ -116,6 +111,7 @@ export class AdminTipificacionFacade {
           : item
       )
     );
+    this.isDirty.set(true);
   }
 
   removeSubtipificacion(tipUid: string, subUid: string): void {
@@ -124,13 +120,10 @@ export class AdminTipificacionFacade {
         if (item.uid !== tipUid) {
           return item;
         }
-        const target = item.subtipificaciones.find((sub) => sub.uid === subUid);
-        if (target?.id) {
-          this.queueSubtipificacionDesactivar(target.id);
-        }
         return { ...item, subtipificaciones: item.subtipificaciones.filter((sub) => sub.uid !== subUid) };
       })
     );
+    this.isDirty.set(true);
   }
 
   updateSubtipField(
@@ -159,6 +152,7 @@ export class AdminTipificacionFacade {
         };
       })
     );
+    this.isDirty.set(true);
   }
 
   /** Valida los drafts. Devuelve el primer mensaje de error o null si todo esta bien. */
@@ -206,50 +200,36 @@ export class AdminTipificacionFacade {
     const request = this.toRequest();
     this.isSaving.set(true);
     try {
-      await this.applyPendingStateChanges();
-      const catalogo = await firstValueFrom(this.service.upsertCatalogo(request));
+      const catalogo = await firstValueFrom(this.service.guardarMatriz(request));
       this.drafts.set(this.toDrafts(catalogo, this.selectedEtapa()));
-      this.clearPendingStateChanges();
+      this.isDirty.set(false);
     } finally {
       this.isSaving.set(false);
     }
   }
 
-  private async applyPendingStateChanges(): Promise<void> {
-    const tipificacionesDesactivar = this.tipificacionesDesactivar();
-    const subtipificacionesDesactivar = this.subtipificacionesDesactivar();
-    if (!tipificacionesDesactivar.length && !subtipificacionesDesactivar.length) {
-      return;
-    }
-
-    const request: CatalogoEstadoRequest = {
-      etapa: this.selectedEtapa(),
-      tipificacionesActivar: [],
-      tipificacionesDesactivar,
-      subtipificacionesActivar: [],
-      subtipificacionesDesactivar
-    };
-    await firstValueFrom(this.service.actualizarEstadoCatalogo(request));
-  }
-
-  private toRequest(): CatalogoRequest {
+  private toRequest(): MatrizCatalogoRequest {
     const etapa = this.selectedEtapa();
-    const tipificaciones: TipificacionCatalogoRequest[] = this.drafts().map((tip) => ({
-      id: tip.id,
-      codigo: tip.codigo.trim(),
-      descripcion: tip.descripcion.trim(),
-      orden: tip.orden,
-      subtipificaciones: tip.subtipificaciones.map(
-        (sub): SubtipificacionCatalogoRequest => ({
-          id: sub.id,
-          codigo: sub.codigo.trim(),
-          descripcion: sub.descripcion.trim(),
-          orden: sub.orden,
-          etapaCambio: sub.etapaCambio,
-          estadoPostventaCambio: sub.etapaCambio === 'POSTVENTA' ? sub.estadoPostventaCambio : null
-        })
-      )
-    }));
+    const tipificaciones: TipificacionCatalogoRequest[] = [...this.drafts()]
+      .sort((left, right) => left.orden - right.orden)
+      .map((tip, tipIndex) => ({
+        id: tip.id,
+        codigo: tip.codigo.trim(),
+        descripcion: tip.descripcion.trim(),
+        orden: tipIndex + 1,
+        subtipificaciones: [...tip.subtipificaciones]
+          .sort((left, right) => left.orden - right.orden)
+          .map(
+            (sub, subIndex): SubtipificacionCatalogoRequest => ({
+              id: sub.id,
+              codigo: sub.codigo.trim(),
+              descripcion: sub.descripcion.trim(),
+              orden: subIndex + 1,
+              etapaCambio: sub.etapaCambio,
+              estadoPostventaCambio: sub.etapaCambio === 'POSTVENTA' ? sub.estadoPostventaCambio : null
+            })
+          )
+      }));
     return { etapa, tipificaciones };
   }
 
@@ -300,29 +280,4 @@ export class AdminTipificacionFacade {
     return `d${this.uidSeq++}`;
   }
 
-  private queueTipificacionDesactivar(tipificacion: TipDraft): void {
-    this.tipificacionesDesactivar.update((ids) => this.addUniqueId(ids, tipificacion.id));
-    const subIds = tipificacion.subtipificaciones
-      .map((sub) => sub.id)
-      .filter((id): id is number => id !== null);
-    if (subIds.length) {
-      this.subtipificacionesDesactivar.update((ids) => ids.filter((id) => !subIds.includes(id)));
-    }
-  }
-
-  private queueSubtipificacionDesactivar(id: number): void {
-    this.subtipificacionesDesactivar.update((ids) => this.addUniqueId(ids, id));
-  }
-
-  private addUniqueId(ids: number[], id: number | null): number[] {
-    if (id === null || ids.includes(id)) {
-      return ids;
-    }
-    return [...ids, id];
-  }
-
-  private clearPendingStateChanges(): void {
-    this.tipificacionesDesactivar.set([]);
-    this.subtipificacionesDesactivar.set([]);
-  }
 }

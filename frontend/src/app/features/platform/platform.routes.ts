@@ -9,7 +9,10 @@ import { AdminMaintenancePageComponent } from '../admin/pages/admin-maintenance-
 import { AdminMetricsPageComponent } from '../admin/pages/admin-metrics-page/admin-metrics-page.component';
 import { AdminDataOpsPageComponent } from '../admin/pages/admin-data-ops-page/admin-data-ops-page.component';
 import { AdminRankingPageComponent } from '../admin/pages/admin-ranking-page/admin-ranking-page.component';
-import { AdminTipificacionesPageComponent } from '../admin/pages/admin-tipificaciones-page/admin-tipificaciones-page.component';
+import {
+  AdminTipificacionesPageComponent,
+  canDeactivateAdminTipificaciones
+} from '../admin/pages/admin-tipificaciones-page/admin-tipificaciones-page.component';
 import { AsesorVentasWorkspacePageComponent } from '../asesor-ventas/pages/asesor-ventas-workspace-page/asesor-ventas-workspace-page.component';
 import { SupervisorVentasMonitoreoPageComponent } from '../supervisor-ventas/pages/supervisor-ventas-monitoreo-page/supervisor-ventas-monitoreo-page.component';
 import { SupervisorVentasReportePageComponent } from '../supervisor-ventas/pages/supervisor-ventas-reporte-page/supervisor-ventas-reporte-page.component';
@@ -106,6 +109,7 @@ export const PLATFORM_ROUTES: Routes = [
     path: 'admin/tipificaciones',
     component: AdminTipificacionesPageComponent,
     canActivate: [roleGuard],
+    canDeactivate: [canDeactivateAdminTipificaciones],
     data: {
       roles: ['ADMINISTRADOR']
     }

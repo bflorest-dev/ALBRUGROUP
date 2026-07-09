@@ -608,6 +608,8 @@ export interface CatalogoRequest {
   tipificaciones: TipificacionCatalogoRequest[];
 }
 
+export type MatrizCatalogoRequest = CatalogoRequest;
+
 export interface CatalogoEstadoRequest {
   etapa: string;
   tipificacionesActivar: number[];

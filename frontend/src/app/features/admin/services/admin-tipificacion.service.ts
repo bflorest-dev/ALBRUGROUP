@@ -2,7 +2,12 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_CONSTANTS } from '../../../core/constants/api.constants';
-import { CatalogoEstadoRequest, CatalogoRequest, CatalogoResponse } from '../../../shared/models/preventa/preventa.models';
+import {
+  CatalogoEstadoRequest,
+  CatalogoRequest,
+  CatalogoResponse,
+  MatrizCatalogoRequest
+} from '../../../shared/models/preventa/preventa.models';
 
 @Injectable({ providedIn: 'root' })
 export class AdminTipificacionService {
@@ -19,5 +24,9 @@ export class AdminTipificacionService {
 
   actualizarEstadoCatalogo(request: CatalogoEstadoRequest): Observable<CatalogoResponse> {
     return this.http.patch<CatalogoResponse>(`${this.baseUrl}/catalogo/estado`, request);
+  }
+
+  guardarMatriz(request: MatrizCatalogoRequest): Observable<CatalogoResponse> {
+    return this.http.put<CatalogoResponse>(`${this.baseUrl}/catalogo/matriz`, request);
   }
 }

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.CatalogoEstadoRequest;
 import pe.albrugroup.lead_service.entity.request.CatalogoRequest;
+import pe.albrugroup.lead_service.entity.request.MatrizCatalogoRequest;
 import pe.albrugroup.lead_service.entity.response.CatalogoResponse;
 import pe.albrugroup.lead_service.service.TipificacionService;
 
@@ -41,5 +42,10 @@ public class TipificacionController {
     public ResponseEntity<CatalogoResponse> actualizarEstadoCatalogo(@Valid @RequestBody CatalogoEstadoRequest request) {
         var catalogo = service.actualizarEstadoCatalogo(request);
         return ResponseEntity.ok(catalogo);
+    }
+
+    @PutMapping("/catalogo/matriz") @PreAuthorize("hasAuthority('UPDATE_TIPIFICACIONES')")
+    public ResponseEntity<CatalogoResponse> guardarMatrizCatalogo(@Valid @RequestBody MatrizCatalogoRequest request) {
+        return ResponseEntity.ok(service.guardarMatrizCatalogo(request));
     }
 }

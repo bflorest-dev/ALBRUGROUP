@@ -11,6 +11,7 @@ import pe.albrugroup.lead_service.entity.Tipificacion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.CatalogoEstadoRequest;
 import pe.albrugroup.lead_service.entity.request.CatalogoRequest;
+import pe.albrugroup.lead_service.entity.request.MatrizCatalogoRequest;
 import pe.albrugroup.lead_service.entity.request.SubtipificacionCatalogoRequest;
 import pe.albrugroup.lead_service.entity.request.TipificacionCatalogoRequest;
 import pe.albrugroup.lead_service.entity.response.CatalogoResponse;
@@ -26,7 +27,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -125,6 +129,349 @@ public class TipificacionService {
         activarSubtipificaciones(subtipificacionesActivar, subtipificacionesPorId);
 
         return getCatalogoPorEtapa(request.getEtapa());
+    }
+
+    @Transactional
+    @CacheEvict(value = CacheNames.TIPIFICACIONES, allEntries = true)
+    public CatalogoResponse guardarMatrizCatalogo(MatrizCatalogoRequest request) {
+        List<TipificacionCatalogoRequest> matriz = Objects.requireNonNullElse(
+                request.getTipificaciones(),
+                List.of()
+        );
+        validarMatriz(matriz);
+
+        List<Tipificacion> existentes = tipificacionRepository.findByEtapaOrderByOrdenAsc(request.getEtapa());
+        Map<Long, Tipificacion> existentesPorId = existentes.stream()
+                .collect(Collectors.toMap(Tipificacion::getId, Function.identity()));
+        List<Subtipificacion> subtipificacionesExistentes = existentes.isEmpty()
+                ? List.of()
+                : subtipificacionRepository.findByTipificacionInOrderByTipificacion_IdAscOrdenAsc(existentes);
+        Map<Long, Subtipificacion> subtipificacionesPorId = subtipificacionesExistentes.stream()
+                .collect(Collectors.toMap(Subtipificacion::getId, Function.identity()));
+
+        validarIdsMatriz(matriz, existentesPorId, subtipificacionesPorId, request.getEtapa());
+
+        IdentityHashMap<TipificacionCatalogoRequest, Tipificacion> tipificacionPorRequest = new IdentityHashMap<>();
+        Set<Long> tipificacionesSeleccionadas = new HashSet<>();
+        for (TipificacionCatalogoRequest item : matriz) {
+            Tipificacion target = resolverTipificacionMatriz(
+                    item,
+                    existentes,
+                    existentesPorId,
+                    tipificacionesSeleccionadas,
+                    request.getEtapa()
+            );
+            tipificacionPorRequest.put(item, target);
+            if (target.getId() != null) {
+                tipificacionesSeleccionadas.add(target.getId());
+            }
+        }
+
+        liberarCodigosTipificacion(matriz, tipificacionPorRequest, existentes);
+        tipificacionRepository.flush();
+
+        for (int index = 0; index < matriz.size(); index++) {
+            TipificacionCatalogoRequest item = matriz.get(index);
+            Tipificacion target = tipificacionPorRequest.get(item);
+            target.setEtapa(request.getEtapa());
+            target.setCodigo(item.getCodigo().trim());
+            target.setDescripcion(item.getDescripcion().trim());
+            target.setOrden(index + 1);
+            target.setActivo(Boolean.TRUE);
+            Tipificacion saved = tipificacionRepository.save(target);
+            tipificacionPorRequest.put(item, saved);
+            tipificacionesSeleccionadas.add(saved.getId());
+        }
+
+        for (Tipificacion existente : existentes) {
+            if (!tipificacionesSeleccionadas.contains(existente.getId())) {
+                existente.setActivo(Boolean.FALSE);
+                tipificacionRepository.save(existente);
+            }
+        }
+        tipificacionRepository.flush();
+
+        IdentityHashMap<SubtipificacionCatalogoRequest, Subtipificacion> subtipificacionPorRequest =
+                new IdentityHashMap<>();
+        IdentityHashMap<SubtipificacionCatalogoRequest, Tipificacion> padrePorSubtipificacion =
+                new IdentityHashMap<>();
+        Set<Long> subtipificacionesSeleccionadas = new HashSet<>();
+
+        for (TipificacionCatalogoRequest item : matriz) {
+            Tipificacion padre = tipificacionPorRequest.get(item);
+            for (SubtipificacionCatalogoRequest subItem : Objects.requireNonNullElse(
+                    item.getSubtipificaciones(),
+                    List.<SubtipificacionCatalogoRequest>of()
+            )) {
+                Subtipificacion target = resolverSubtipificacionMatriz(
+                        subItem,
+                        padre,
+                        subtipificacionesExistentes,
+                        subtipificacionesPorId,
+                        subtipificacionesSeleccionadas
+                );
+                subtipificacionPorRequest.put(subItem, target);
+                padrePorSubtipificacion.put(subItem, padre);
+                if (target.getId() != null) {
+                    subtipificacionesSeleccionadas.add(target.getId());
+                }
+            }
+        }
+
+        liberarCodigosSubtipificacion(
+                matriz,
+                subtipificacionPorRequest,
+                padrePorSubtipificacion,
+                subtipificacionesExistentes
+        );
+        subtipificacionRepository.flush();
+
+        for (TipificacionCatalogoRequest item : matriz) {
+            List<SubtipificacionCatalogoRequest> subItems = Objects.requireNonNullElse(
+                    item.getSubtipificaciones(),
+                    List.of()
+            );
+            for (int index = 0; index < subItems.size(); index++) {
+                SubtipificacionCatalogoRequest subItem = subItems.get(index);
+                Subtipificacion target = subtipificacionPorRequest.get(subItem);
+                target.setTipificacion(padrePorSubtipificacion.get(subItem));
+                target.setCodigo(subItem.getCodigo().trim());
+                target.setDescripcion(subItem.getDescripcion().trim());
+                target.setOrden(index + 1);
+                target.setEtapaCambio(subItem.getEtapaCambio());
+                target.setEstadoPostventaCambio(subItem.getEstadoPostventaCambio());
+                target.setActivo(Boolean.TRUE);
+                Subtipificacion saved = subtipificacionRepository.save(target);
+                subtipificacionesSeleccionadas.add(saved.getId());
+            }
+        }
+
+        for (Subtipificacion existente : subtipificacionesExistentes) {
+            if (!subtipificacionesSeleccionadas.contains(existente.getId())) {
+                existente.setActivo(Boolean.FALSE);
+                subtipificacionRepository.save(existente);
+            }
+        }
+
+        return getCatalogoPorEtapa(request.getEtapa());
+    }
+
+    private void validarMatriz(List<TipificacionCatalogoRequest> matriz) {
+        if (matriz.isEmpty()) {
+            throw new BadRequestException("La matriz debe tener al menos una tipificacion", null, null);
+        }
+
+        Set<Long> tipificacionIds = new HashSet<>();
+        Set<Long> subtipificacionIds = new HashSet<>();
+        Set<String> codigosTipificacion = new HashSet<>();
+        for (TipificacionCatalogoRequest tipificacion : matriz) {
+            if (tipificacion.getId() != null && !tipificacionIds.add(tipificacion.getId())) {
+                throw new BadRequestException("La matriz contiene una tipificacion repetida", tipificacion.getId(), null);
+            }
+            String codigoTipificacion = normalizarCodigo(tipificacion.getCodigo());
+            if (!codigosTipificacion.add(codigoTipificacion)) {
+                throw new BadRequestException(
+                        "El codigo de tipificacion esta repetido",
+                        null,
+                        Map.of("codigo", tipificacion.getCodigo())
+                );
+            }
+
+            Set<String> codigosSubtipificacion = new HashSet<>();
+            for (SubtipificacionCatalogoRequest subtipificacion : Objects.requireNonNullElse(
+                    tipificacion.getSubtipificaciones(),
+                    List.<SubtipificacionCatalogoRequest>of()
+            )) {
+                if (subtipificacion.getId() != null && !subtipificacionIds.add(subtipificacion.getId())) {
+                    throw new BadRequestException(
+                            "La matriz contiene una subtipificacion repetida",
+                            subtipificacion.getId(),
+                            null
+                    );
+                }
+                String codigoSubtipificacion = normalizarCodigo(subtipificacion.getCodigo());
+                if (!codigosSubtipificacion.add(codigoSubtipificacion)) {
+                    throw new BadRequestException(
+                            "El codigo de subtipificacion esta repetido dentro de la tipificacion",
+                            null,
+                            Map.of(
+                                    "tipificacion", tipificacion.getCodigo(),
+                                    "subtipificacion", subtipificacion.getCodigo()
+                            )
+                    );
+                }
+                if (subtipificacion.getEtapaCambio() == Etapa.POSTVENTA
+                        && subtipificacion.getEstadoPostventaCambio() == null) {
+                    throw new BadRequestException(
+                            "La subtipificacion que pasa a POSTVENTA necesita un estado postventa",
+                            subtipificacion.getId(),
+                            null
+                    );
+                }
+            }
+        }
+    }
+
+    private void validarIdsMatriz(
+            List<TipificacionCatalogoRequest> matriz,
+            Map<Long, Tipificacion> tipificacionesPorId,
+            Map<Long, Subtipificacion> subtipificacionesPorId,
+            Etapa etapa
+    ) {
+        for (TipificacionCatalogoRequest item : matriz) {
+            if (item.getId() != null && !tipificacionesPorId.containsKey(item.getId())) {
+                throw new BadRequestException(
+                        "La tipificacion no pertenece a la etapa enviada",
+                        item.getId(),
+                        Map.of("etapa", etapa)
+                );
+            }
+            for (SubtipificacionCatalogoRequest subItem : Objects.requireNonNullElse(
+                    item.getSubtipificaciones(),
+                    List.<SubtipificacionCatalogoRequest>of()
+            )) {
+                Subtipificacion existente = subItem.getId() == null
+                        ? null
+                        : subtipificacionesPorId.get(subItem.getId());
+                if (subItem.getId() != null && existente == null) {
+                    throw new BadRequestException(
+                            "La subtipificacion no pertenece a la etapa enviada",
+                            subItem.getId(),
+                            Map.of("etapa", etapa)
+                    );
+                }
+            }
+        }
+    }
+
+    private Tipificacion resolverTipificacionMatriz(
+            TipificacionCatalogoRequest item,
+            List<Tipificacion> existentes,
+            Map<Long, Tipificacion> existentesPorId,
+            Set<Long> seleccionadas,
+            Etapa etapa
+    ) {
+        if (item.getId() != null) {
+            return existentesPorId.get(item.getId());
+        }
+
+        String codigo = normalizarCodigo(item.getCodigo());
+        return existentes.stream()
+                .filter(tipificacion -> !Boolean.TRUE.equals(tipificacion.getActivo()))
+                .filter(tipificacion -> !seleccionadas.contains(tipificacion.getId()))
+                .filter(tipificacion -> normalizarCodigo(tipificacion.getCodigo()).equals(codigo))
+                .findFirst()
+                .orElseGet(() -> {
+                    Tipificacion nueva = new Tipificacion();
+                    nueva.setEtapa(etapa);
+                    return nueva;
+                });
+    }
+
+    private Subtipificacion resolverSubtipificacionMatriz(
+            SubtipificacionCatalogoRequest item,
+            Tipificacion padre,
+            List<Subtipificacion> existentes,
+            Map<Long, Subtipificacion> existentesPorId,
+            Set<Long> seleccionadas
+    ) {
+        if (item.getId() != null) {
+            Subtipificacion source = existentesPorId.get(item.getId());
+            if (source.getTipificacion().getId().equals(padre.getId())) {
+                return source;
+            }
+        }
+
+        String codigo = normalizarCodigo(item.getCodigo());
+        return existentes.stream()
+                .filter(subtipificacion -> subtipificacion.getTipificacion().getId().equals(padre.getId()))
+                .filter(subtipificacion -> !Boolean.TRUE.equals(subtipificacion.getActivo()))
+                .filter(subtipificacion -> !seleccionadas.contains(subtipificacion.getId()))
+                .filter(subtipificacion -> normalizarCodigo(subtipificacion.getCodigo()).equals(codigo))
+                .findFirst()
+                .orElseGet(Subtipificacion::new);
+    }
+
+    private void liberarCodigosTipificacion(
+            List<TipificacionCatalogoRequest> matriz,
+            IdentityHashMap<TipificacionCatalogoRequest, Tipificacion> targets,
+            List<Tipificacion> existentes
+    ) {
+        Map<String, Tipificacion> targetPorCodigo = new LinkedHashMap<>();
+        for (TipificacionCatalogoRequest item : matriz) {
+            targetPorCodigo.put(normalizarCodigo(item.getCodigo()), targets.get(item));
+        }
+
+        for (Tipificacion existente : existentes) {
+            Tipificacion target = targetPorCodigo.get(normalizarCodigo(existente.getCodigo()));
+            boolean targetCambiaCodigo = targets.containsValue(existente)
+                    && !normalizarCodigo(existente.getCodigo()).equals(codigoDeseadoTipificacion(existente, matriz, targets));
+            if ((target != null && target != existente) || targetCambiaCodigo) {
+                existente.setCodigo(codigoArchivado("TIP", existente.getId()));
+                existente.setActivo(Boolean.FALSE);
+                tipificacionRepository.save(existente);
+            }
+        }
+    }
+
+    private String codigoDeseadoTipificacion(
+            Tipificacion target,
+            List<TipificacionCatalogoRequest> matriz,
+            IdentityHashMap<TipificacionCatalogoRequest, Tipificacion> targets
+    ) {
+        return matriz.stream()
+                .filter(item -> targets.get(item) == target)
+                .map(item -> normalizarCodigo(item.getCodigo()))
+                .findFirst()
+                .orElse("");
+    }
+
+    private void liberarCodigosSubtipificacion(
+            List<TipificacionCatalogoRequest> matriz,
+            IdentityHashMap<SubtipificacionCatalogoRequest, Subtipificacion> targets,
+            IdentityHashMap<SubtipificacionCatalogoRequest, Tipificacion> padres,
+            List<Subtipificacion> existentes
+    ) {
+        for (Subtipificacion existente : existentes) {
+            SubtipificacionCatalogoRequest targetRequest = null;
+            for (TipificacionCatalogoRequest item : matriz) {
+                for (SubtipificacionCatalogoRequest subItem : Objects.requireNonNullElse(
+                        item.getSubtipificaciones(),
+                        List.<SubtipificacionCatalogoRequest>of()
+                )) {
+                    Tipificacion padre = padres.get(subItem);
+                    if (padre.getId().equals(existente.getTipificacion().getId())
+                            && normalizarCodigo(subItem.getCodigo()).equals(normalizarCodigo(existente.getCodigo()))) {
+                        targetRequest = subItem;
+                        break;
+                    }
+                }
+                if (targetRequest != null) {
+                    break;
+                }
+            }
+
+            SubtipificacionCatalogoRequest ownRequest = targets.entrySet().stream()
+                    .filter(entry -> entry.getValue() == existente)
+                    .map(Map.Entry::getKey)
+                    .findFirst()
+                    .orElse(null);
+            boolean targetCambiaCodigo = ownRequest != null
+                    && !normalizarCodigo(ownRequest.getCodigo()).equals(normalizarCodigo(existente.getCodigo()));
+            if ((targetRequest != null && targets.get(targetRequest) != existente) || targetCambiaCodigo) {
+                existente.setCodigo(codigoArchivado("SUB", existente.getId()));
+                existente.setActivo(Boolean.FALSE);
+                subtipificacionRepository.save(existente);
+            }
+        }
+    }
+
+    private String normalizarCodigo(String codigo) {
+        return codigo == null ? "" : codigo.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private String codigoArchivado(String tipo, Long id) {
+        return "__ARCHIVED_" + tipo + "_" + id;
     }
 
     private Tipificacion upsertTipificacion(Etapa etapa, TipificacionCatalogoRequest request) {
