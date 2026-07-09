@@ -114,6 +114,16 @@ public class LeadEtapaResumenService {
         repository.save(resumen);
     }
 
+    /** ¿El asesor es el merito (quien concreto) de la etapa del lead? Autorizacion read-only. */
+    public boolean esAsesorMeritoEtapa(Long idLead, Etapa etapa, Long idAsesor) {
+        if (idAsesor == null) {
+            return false;
+        }
+        return repository.findByIdLeadAndEtapa(idLead, etapa)
+                .map(resumen -> idAsesor.equals(resumen.getIdAsesorMerito()))
+                .orElse(false);
+    }
+
     private LeadEtapaResumen obtenerOCrear(Long idLead, Etapa etapa, Instant at) {
         return repository.findByIdLeadAndEtapa(idLead, etapa)
                 .orElseGet(() -> LeadEtapaResumen.builder()

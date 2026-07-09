@@ -22,6 +22,8 @@ import pe.albrugroup.lead_service.repository.projection.AsesorPreventaCantidadPr
 import pe.albrugroup.lead_service.repository.projection.AsesorProveedorPreventaProjection;
 import pe.albrugroup.lead_service.repository.projection.LeadGtrAgrupacionProjection;
 import pe.albrugroup.lead_service.repository.projection.HoraProgramadaCantidadProjection;
+import pe.albrugroup.lead_service.repository.projection.TipificacionCantidadProjection;
+import pe.albrugroup.lead_service.repository.projection.SubtipificacionCantidadProjection;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -994,9 +996,10 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("idAsesor") Long idAsesor
     );
 
-    // Listado read-only de "mis preventas": leads cuya preventa concreto el asesor (campo
-    // denormalizado idAsesorPreventa). Filtro opcional por rango de fecha de cierre (fechaPreventa)
-    // para ver preventas del dia/semana/mes. Muestra la ultima actualizacion para el seguimiento.
+    // Listado read-only de "mis preventas": leads cuya preventa concreto el asesor (merito de la
+    // etapa PREVENTA en LeadEtapaResumen: idAsesorMerito/fechaMerito). Filtro opcional por rango de
+    // fecha de cierre (fechaMerito) para ver preventas del dia/semana/mes. Lead es raiz para conservar
+    // el @Filter por equipo. Muestra la ultima actualizacion para el seguimiento.
     @Query(value = """
             SELECT new pe.albrugroup.lead_service.entity.response.MisPreventaResponse(
                        l.id,
@@ -1008,17 +1011,19 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                        l.codigoTipificacion,
                        l.codigoSubtipificacion)
             FROM Lead l
-            WHERE l.idAsesorPreventa = :idAsesor
-              AND l.fechaPreventa >= :fechaDesde
-              AND l.fechaPreventa < :fechaHasta
-            ORDER BY l.fechaPreventa DESC
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
+            WHERE r.idAsesorMerito = :idAsesor
+              AND r.fechaMerito >= :fechaDesde
+              AND r.fechaMerito < :fechaHasta
+            ORDER BY r.fechaMerito DESC
             """,
             countQuery = """
-            SELECT COUNT(l)
+            SELECT COUNT(r)
             FROM Lead l
-            WHERE l.idAsesorPreventa = :idAsesor
-              AND l.fechaPreventa >= :fechaDesde
-              AND l.fechaPreventa < :fechaHasta
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
+            WHERE r.idAsesorMerito = :idAsesor
+              AND r.fechaMerito >= :fechaDesde
+              AND r.fechaMerito < :fechaHasta
             """)
     Page<MisPreventaResponse> listarMisPreventas(
             @Param("idAsesor") Long idAsesor,
@@ -1251,22 +1256,24 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("fechaHasta") Instant fechaHasta
     );
 
-    // ── Ranking GTR: preventas concretadas leidas del Lead (idAsesorPreventa/fechaPreventa) ──
-    // Fuente de verdad del cierre PREVENTA→VENTA, en vez de cruzar con eventos.
+    // ── Ranking GTR: preventas concretadas leidas del resumen por etapa (LeadEtapaResumen) ──
+    // Fuente de verdad del cierre PREVENTA→VENTA = merito de la etapa PREVENTA (idAsesorMerito/
+    // fechaMerito). Lead es raiz para conservar el @Filter por equipo; se joinea el resumen.
 
     @Query("""
-            SELECT l.idAsesorPreventa AS idAsesor,
-                   COUNT(l.id) AS cantidad
+            SELECT r.idAsesorMerito AS idAsesor,
+                   COUNT(r.id) AS cantidad
             FROM Lead l
-            WHERE l.idAsesorPreventa IS NOT NULL
-              AND l.fechaPreventa >= :fechaDesde
-              AND l.fechaPreventa < :fechaHasta
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
+            WHERE r.idAsesorMerito IS NOT NULL
+              AND r.fechaMerito >= :fechaDesde
+              AND r.fechaMerito < :fechaHasta
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (:soloActivos = false
                    OR EXISTS (SELECT 1 FROM Lead la
-                              WHERE la.idAsesorAsignado = l.idAsesorPreventa
+                              WHERE la.idAsesorAsignado = r.idAsesorMerito
                                 AND la.etapa = 'PREVENTA'))
-            GROUP BY l.idAsesorPreventa
+            GROUP BY r.idAsesorMerito
             """)
     List<AsesorPreventaCantidadProjection> resumirPreventasPorAsesorLeadGtr(
             @Param("fechaDesde") Instant fechaDesde,
@@ -1277,27 +1284,71 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     );
 
     @Query("""
-            SELECT l.idAsesorPreventa AS idAsesor,
+            SELECT r.idAsesorMerito AS idAsesor,
                    p.id AS idProveedor,
                    p.nombre AS nombreProveedor,
-                   COUNT(l.id) AS cantidad
+                   COUNT(r.id) AS cantidad
             FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
             JOIN l.plan pl
             JOIN pl.proveedor p
-            WHERE l.idAsesorPreventa IS NOT NULL
-              AND l.fechaPreventa >= :fechaDesde
-              AND l.fechaPreventa < :fechaHasta
+            WHERE r.idAsesorMerito IS NOT NULL
+              AND r.fechaMerito >= :fechaDesde
+              AND r.fechaMerito < :fechaHasta
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (:soloActivos = false
                    OR EXISTS (SELECT 1 FROM Lead la
-                              WHERE la.idAsesorAsignado = l.idAsesorPreventa
+                              WHERE la.idAsesorAsignado = r.idAsesorMerito
                                 AND la.etapa = 'PREVENTA'))
-            GROUP BY l.idAsesorPreventa, p.id, p.nombre
+            GROUP BY r.idAsesorMerito, p.id, p.nombre
             """)
     List<AsesorProveedorPreventaProjection> resumirPreventasMensualesPorProveedorLeadGtr(
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("soloActivos") boolean soloActivos,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    // ── Ranking GTR: tipificaciones/subtipificaciones por LEADS (no eventos) ──
+    // Cuenta LEADS distintos por su Tipificacion de Mayor Rango en PREVENTA (uno por lead), no la
+    // suma de intentos. Periodo = mayorRangoAt dentro de [desde, hasta). Lead es raiz (@Filter por
+    // equipo); soloActivos no aplica aqui (no hay un actor unico por lead de mayor rango).
+
+    @Query("""
+            SELECT TRIM(r.mayorRangoCodigoTipificacion) AS tipificacion,
+                   COUNT(r.id) AS cantidad
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
+            WHERE r.mayorRangoCodigoTipificacion IS NOT NULL
+              AND TRIM(r.mayorRangoCodigoTipificacion) <> ''
+              AND r.mayorRangoAt >= :fechaDesde
+              AND r.mayorRangoAt < :fechaHasta
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            GROUP BY TRIM(r.mayorRangoCodigoTipificacion)
+            """)
+    List<TipificacionCantidadProjection> resumirTipificacionesRankingGtr(
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query("""
+            SELECT COALESCE(NULLIF(TRIM(r.mayorRangoCodigoSubtipificacion), ''), 'SIN_SUBTIPIFICACION') AS subtipificacion,
+                   COUNT(r.id) AS cantidad
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
+            WHERE TRIM(r.mayorRangoCodigoTipificacion) = :tipificacion
+              AND r.mayorRangoAt >= :fechaDesde
+              AND r.mayorRangoAt < :fechaHasta
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            GROUP BY COALESCE(NULLIF(TRIM(r.mayorRangoCodigoSubtipificacion), ''), 'SIN_SUBTIPIFICACION')
+            """)
+    List<SubtipificacionCantidadProjection> resumirSubtipificacionesRankingGtr(
+            @Param("tipificacion") String tipificacion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds
     );

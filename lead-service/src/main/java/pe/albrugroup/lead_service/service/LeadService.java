@@ -722,7 +722,8 @@ public class LeadService {
         Long idAsesor = currentUser.empleadoID();
         Lead lead = leadRepository.buscarDetalleCompletoPorId(idLead)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
-        if (!idAsesor.equals(lead.getIdAsesorPreventa())) {
+        // "Mi preventa": solo la ve el asesor que concreto la etapa PREVENTA (merito del resumen).
+        if (!leadEtapaResumenService.esAsesorMeritoEtapa(idLead, Etapa.PREVENTA, idAsesor)) {
             throw new NotFoundException(Lead.class, idLead);
         }
 
@@ -906,14 +907,11 @@ public class LeadService {
 
         validarHoraProgramada(tipificacion.getCodigo(), request.getHoraProgramada());
         Etapa etapaDestino = subtipificacion.getEtapaCambio();
-        registrarPrimeraTipificacionSiFalta(lead, tipificacion.getCodigo(), subtipificacion.getCodigo());
         if (etapaDestino != null && etapaDestino != etapaActual) {
             if (etapaActual == Etapa.PREVENTA && etapaDestino == Etapa.VENTA) {
                 validarPreventaCompleta(lead);
-                // Atribucion de preventa: quien la concreta (paso a VENTA). Se sobrescribe en cada
-                // cierre, asi el merito queda en el ultimo asesor que la concluyo correctamente.
-                lead.setIdAsesorPreventa(idAsesorAnterior);
-                lead.setFechaPreventa(OperationalDateTime.now());
+                // Atribucion de preventa (merito de PREVENTA): la mantiene el resumen por etapa
+                // (registrarMerito via actualizarResumenEtapaTipificacion, esMerito=true mas abajo).
             }
             lead.setEtapa(etapaDestino);
             lead.setLastEntryAt(OperationalDateTime.now());
@@ -1036,18 +1034,12 @@ public class LeadService {
         boolean requiereProgramacion = TIPIFICACION_PROGRAMADO.equals(tipificacion.getCodigo());
         validarProgramacionVenta(requiereProgramacion, request.getFechaProgramacion(), request.getHoraProgramada());
         aplicarSecSotVentaSiCorresponde(lead, tipificacion.getCodigo(), request.getSec(), request.getSot());
-        registrarPrimeraTipificacionSiFalta(lead, tipificacion.getCodigo(), subtipificacion.getCodigo());
 
-        // Atribucion de venta: el responsable no es quien cambia de etapa, sino quien tipifica
-        // GRABADO (cualquier subtipificacion), que mantiene el lead en VENTA por los pasos extra.
-        if (TIPIFICACION_GRABADO.equals(tipificacion.getCodigo())) {
-            lead.setIdAsesorVenta(idAsesorAnterior);
-            lead.setFechaVenta(OperationalDateTime.now());
-        }
+        // Atribucion de venta (merito de VENTA): el responsable es quien tipifica GRABADO, no quien
+        // cambia de etapa. La mantiene el resumen por etapa (esMerito=TIPIFICACION_GRABADO mas abajo).
 
         if (etapaDestino != null && etapaDestino != etapaActual) {
             aplicarDatosPostventaSiCorresponde(lead, etapaDestino, request.getFechaInstalacion());
-            asegurarAtribucionVentaSiFalta(lead, etapaDestino, idAsesorAnterior);
             lead.setEtapa(etapaDestino);
             lead.setLastEntryAt(OperationalDateTime.now());
             lead.setEstado(EstadoSeguimiento.GESTIONADO);
@@ -1115,22 +1107,14 @@ public class LeadService {
 
         Etapa etapaDestino = subtipificacion.getEtapaCambio();
         EstadoPostventa estadoDestino = resolverEstadoPostventaDestino(etapaActual, etapaDestino, subtipificacion);
-        registrarPrimeraTipificacionSiFalta(lead, tipificacion.getCodigo(), subtipificacion.getCodigo());
 
         if (estadoDestino != null) {
             lead.setEstadoPostventa(estadoDestino);
         }
 
-        // Atribucion por etapa: postventa se concreta al avanzar a COBRANZA; cobranza se concreta al
-        // llegar a un estado final (no hay etapa posterior). Se sobrescribe en cada concrecion.
-        if (etapaActual == Etapa.POSTVENTA && etapaDestino == Etapa.COBRANZA) {
-            lead.setIdAsesorPostventa(idAsesorAnterior);
-            lead.setFechaPostventa(OperationalDateTime.now());
-        }
-        if (etapaActual == Etapa.COBRANZA && esEstadoPostventaFinal(estadoDestino)) {
-            lead.setIdAsesorCobranza(idAsesorAnterior);
-            lead.setFechaCobranza(OperationalDateTime.now());
-        }
+        // Atribucion por etapa (merito de POSTVENTA/COBRANZA): postventa se concreta al avanzar a
+        // COBRANZA; cobranza al llegar a un estado final. La mantiene el resumen por etapa
+        // (esMeritoSeguimiento mas abajo). Ver actualizarResumenEtapaTipificacion.
 
         if (etapaDestino != null && etapaDestino != etapaActual) {
             lead.setEtapa(etapaDestino);
@@ -1220,18 +1204,6 @@ public class LeadService {
         lead.setDiaCorteFacturacion(resolverDiaCorteFacturacion(proveedor, fechaInstalacion));
         lead.setMesesPermanenciaSnapshot(proveedor.getMesesPermanencia());
         lead.setEstadoPostventa(EstadoPostventa.EN_SEGUIMIENTO);
-    }
-
-    private void asegurarAtribucionVentaSiFalta(Lead lead, Etapa etapaDestino, Long idAsesorVenta) {
-        if (etapaDestino != Etapa.POSTVENTA) {
-            return;
-        }
-        if (lead.getIdAsesorVenta() == null) {
-            lead.setIdAsesorVenta(idAsesorVenta);
-        }
-        if (lead.getFechaVenta() == null) {
-            lead.setFechaVenta(OperationalDateTime.now());
-        }
     }
 
     /**
@@ -2981,32 +2953,6 @@ public class LeadService {
         }
     }
 
-    private void registrarPrimeraTipificacionSiFalta(
-            Lead lead,
-            String codigoTipificacionEntrante,
-            String codigoSubtipificacionEntrante
-    ) {
-        String primeraTipificacion = leadMapper.trimToNull(lead.getPrimeraCodigoTipificacion());
-        String primeraSubtipificacion = leadMapper.trimToNull(lead.getPrimeraCodigoSubtipificacion());
-        if (primeraTipificacion != null && primeraSubtipificacion != null) {
-            return;
-        }
-
-        String codigoTipificacionActual = leadMapper.trimToNull(lead.getCodigoTipificacion());
-        String codigoSubtipificacionActual = leadMapper.trimToNull(lead.getCodigoSubtipificacion());
-
-        if (primeraTipificacion == null) {
-            lead.setPrimeraCodigoTipificacion(
-                    codigoTipificacionActual == null ? codigoTipificacionEntrante : codigoTipificacionActual
-            );
-        }
-        if (primeraSubtipificacion == null) {
-            lead.setPrimeraCodigoSubtipificacion(
-                    codigoSubtipificacionActual == null ? codigoSubtipificacionEntrante : codigoSubtipificacionActual
-            );
-        }
-    }
-
     private Long obtenerIdPlanOfrecido(Lead lead, String codigoTipificacion, String codigoSubtipificacion) {
         if (!esTipificacionPreventa(codigoTipificacion, codigoSubtipificacion)) {
             return null;
@@ -3464,8 +3410,10 @@ public class LeadService {
             LocalDate desde, LocalDate hasta, boolean soloActivos, Long idEquipo) {
         OperationalDateTime.InstantRange rango = resolverRangoRanking(desde, hasta);
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
-        List<TipificacionCantidadProjection> rows = eventoRepository.resumirTipificacionesRankingGtr(
-                Accion.TIPIFICACION, rango.inicio(), rango.fin(), soloActivos, equipos.filtrar(), equipos.ids());
+        // Cuenta LEADS por su tipificacion de mayor rango en PREVENTA (uno por lead), no eventos.
+        // soloActivos no aplica en este bloque (no hay un actor unico por lead).
+        List<TipificacionCantidadProjection> rows = leadRepository.resumirTipificacionesRankingGtr(
+                rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
         long total = rows.stream().mapToLong(TipificacionCantidadProjection::getCantidad).sum();
 
         return rows.stream()
@@ -3492,12 +3440,11 @@ public class LeadService {
         }
         OperationalDateTime.InstantRange rango = resolverRangoRanking(desde, hasta);
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
-        List<SubtipificacionCantidadProjection> rows = eventoRepository.resumirSubtipificacionesRankingGtr(
-                Accion.TIPIFICACION,
+        // Cuenta LEADS por su tipificacion de mayor rango en PREVENTA (uno por lead), no eventos.
+        List<SubtipificacionCantidadProjection> rows = leadRepository.resumirSubtipificacionesRankingGtr(
                 codigoTipificacion.trim(),
                 rango.inicio(),
                 rango.fin(),
-                soloActivos,
                 equipos.filtrar(),
                 equipos.ids()
         );

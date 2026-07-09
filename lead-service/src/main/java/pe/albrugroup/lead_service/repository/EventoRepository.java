@@ -18,8 +18,6 @@ import pe.albrugroup.lead_service.repository.projection.AsesorUltimoEventoProjec
 import pe.albrugroup.lead_service.repository.projection.CampanaTipificacionCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.LeadGtrAgrupacionProjection;
 import pe.albrugroup.lead_service.repository.projection.LeadUltimaAsignacionProjection;
-import pe.albrugroup.lead_service.repository.projection.SubtipificacionCantidadProjection;
-import pe.albrugroup.lead_service.repository.projection.TipificacionCantidadProjection;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -1192,55 +1190,6 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("equipoIds") Collection<Long> equipoIds
     );
 
-    @Query("""
-            SELECT TRIM(e.tipificacion) AS tipificacion,
-                   COUNT(e.id) AS cantidad
-            FROM Evento e
-            JOIN Lead l ON l.id = e.idLead
-            WHERE e.accion = :accion
-              AND e.createdAt >= :fechaDesde
-              AND e.createdAt < :fechaHasta
-              AND e.tipificacion IS NOT NULL
-              AND TRIM(e.tipificacion) <> ''
-              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
-              AND (:soloActivos = false
-                   OR EXISTS (SELECT 1 FROM Lead la
-                              WHERE la.idAsesorAsignado = e.idActor
-                                AND la.etapa = 'PREVENTA'))
-            GROUP BY TRIM(e.tipificacion)
-            """)
-    List<TipificacionCantidadProjection> resumirTipificacionesRankingGtr(
-            @Param("accion") Accion accion,
-            @Param("fechaDesde") Instant fechaDesde,
-            @Param("fechaHasta") Instant fechaHasta,
-            @Param("soloActivos") boolean soloActivos,
-            @Param("filtrarEquipos") boolean filtrarEquipos,
-            @Param("equipoIds") Collection<Long> equipoIds
-    );
-
-    @Query("""
-            SELECT COALESCE(NULLIF(TRIM(e.subtipificacion), ''), 'SIN_SUBTIPIFICACION') AS subtipificacion,
-                   COUNT(e.id) AS cantidad
-            FROM Evento e
-            JOIN Lead l ON l.id = e.idLead
-            WHERE e.accion = :accion
-              AND e.createdAt >= :fechaDesde
-              AND e.createdAt < :fechaHasta
-              AND TRIM(e.tipificacion) = :tipificacion
-              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
-              AND (:soloActivos = false
-                   OR EXISTS (SELECT 1 FROM Lead la
-                              WHERE la.idAsesorAsignado = e.idActor
-                                AND la.etapa = 'PREVENTA'))
-            GROUP BY COALESCE(NULLIF(TRIM(e.subtipificacion), ''), 'SIN_SUBTIPIFICACION')
-            """)
-    List<SubtipificacionCantidadProjection> resumirSubtipificacionesRankingGtr(
-            @Param("accion") Accion accion,
-            @Param("tipificacion") String tipificacion,
-            @Param("fechaDesde") Instant fechaDesde,
-            @Param("fechaHasta") Instant fechaHasta,
-            @Param("soloActivos") boolean soloActivos,
-            @Param("filtrarEquipos") boolean filtrarEquipos,
-            @Param("equipoIds") Collection<Long> equipoIds
-    );
+    // Los rankings de tipificaciones/subtipificaciones GTR se mudaron a LeadRepository: ahora cuentan
+    // LEADS distintos por su Tipificacion de Mayor Rango (LeadEtapaResumen), no eventos TIPIFICACION.
 }

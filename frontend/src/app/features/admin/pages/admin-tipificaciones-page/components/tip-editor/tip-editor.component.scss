@@ -76,7 +76,11 @@
 
 .subtip-row-preview {
   pointer-events: none;
-  width: 100%;
+  width: min(62rem, calc(100vw - 3rem));
+  min-height: 5.125rem;
+  box-sizing: border-box;
+  align-items: end;
+  overflow: visible;
 }
 
 .preview-field {
