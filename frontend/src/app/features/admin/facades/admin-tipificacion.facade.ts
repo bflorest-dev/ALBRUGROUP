@@ -56,6 +56,33 @@ export class AdminTipificacionFacade {
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
   readonly isDirty = signal(false);
+  readonly openTipUid = signal<string | null>(null);
+  readonly searchTerm = signal('');
+
+  readonly filteredDrafts = computed(() => {
+    const term = this.searchTerm().trim().toUpperCase();
+    if (!term) {
+      return this.drafts();
+    }
+    return this.drafts().filter((tip) =>
+      tip.codigo.toUpperCase().includes(term)
+      || tip.descripcion.toUpperCase().includes(term)
+      || tip.subtipificaciones.some((sub) =>
+        sub.codigo.toUpperCase().includes(term) || sub.descripcion.toUpperCase().includes(term)
+      )
+    );
+  });
+
+  readonly subtipificacionCount = computed(() =>
+    this.drafts().reduce((total, tip) => total + tip.subtipificaciones.length, 0)
+  );
+
+  readonly tipParentOptions = computed(() =>
+    this.drafts().map((tip) => ({
+      label: tip.codigo || 'Nueva tipificación',
+      value: tip.uid
+    }))
+  );
 
   // Opciones para "Resultado: el lead..." segun la etapa seleccionada.
   readonly etapaCambioOptions = computed(() => {
@@ -77,6 +104,8 @@ export class AdminTipificacionFacade {
       const catalogo = await firstValueFrom(this.service.getCatalogo(etapa));
       this.drafts.set(this.toDrafts(catalogo, etapa));
       this.isDirty.set(false);
+      this.openTipUid.set(null);
+      this.searchTerm.set('');
     } finally {
       this.isLoading.set(false);
     }
@@ -87,16 +116,61 @@ export class AdminTipificacionFacade {
   }
 
   addTipificacion(): void {
-    this.drafts.update((items) => [...items, this.newTipDraft(items.length + 1)]);
+    const draft = this.newTipDraft(this.drafts().length + 1);
+    this.drafts.update((items) => [...items, draft]);
+    this.openTipUid.set(draft.uid);
     this.isDirty.set(true);
   }
 
   removeTipificacion(uid: string): void {
     this.drafts.update((items) => items.filter((item) => item.uid !== uid));
+    if (this.openTipUid() === uid) {
+      this.openTipUid.set(null);
+    }
+    this.isDirty.set(true);
+  }
+
+  toggleTip(uid: string): void {
+    this.openTipUid.update((current) => current === uid ? null : uid);
+  }
+
+  setSearchTerm(term: string): void {
+    this.searchTerm.set(term);
+  }
+
+  moveTip(uid: string, direction: -1 | 1): void {
+    const items = [...this.drafts()];
+    const index = items.findIndex((item) => item.uid === uid);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= items.length) {
+      return;
+    }
+    [items[index], items[target]] = [items[target], items[index]];
+    this.drafts.set(this.normalizeTipOrders(items));
+    this.isDirty.set(true);
+  }
+
+  moveTipTo(sourceUid: string, targetUid: string): void {
+    if (sourceUid === targetUid) {
+      return;
+    }
+    const items = [...this.drafts()];
+    const sourceIndex = items.findIndex((item) => item.uid === sourceUid);
+    const targetIndex = items.findIndex((item) => item.uid === targetUid);
+    if (sourceIndex < 0 || targetIndex < 0) {
+      return;
+    }
+    const [moved] = items.splice(sourceIndex, 1);
+    items.splice(targetIndex, 0, moved);
+    this.drafts.set(this.normalizeTipOrders(items));
     this.isDirty.set(true);
   }
 
   updateTipField(uid: string, field: 'codigo' | 'descripcion' | 'orden', value: string | number): void {
+    const current = this.drafts().find((item) => item.uid === uid);
+    if (!current || current[field] === value) {
+      return;
+    }
     this.drafts.update((items) =>
       items.map((item) => (item.uid === uid ? { ...item, [field]: value } : item))
     );
@@ -111,6 +185,74 @@ export class AdminTipificacionFacade {
           : item
       )
     );
+    this.isDirty.set(true);
+  }
+
+  moveSubtipificacion(tipUid: string, subUid: string, direction: -1 | 1): void {
+    this.drafts.update((items) => items.map((tip) => {
+      if (tip.uid !== tipUid) {
+        return tip;
+      }
+      const subs = [...tip.subtipificaciones];
+      const index = subs.findIndex((sub) => sub.uid === subUid);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= subs.length) {
+        return tip;
+      }
+      [subs[index], subs[target]] = [subs[target], subs[index]];
+      return { ...tip, subtipificaciones: this.normalizeSubtipOrders(subs) };
+    }));
+    this.isDirty.set(true);
+  }
+
+  moveSubtipificacionTo(
+    sourceTipUid: string,
+    subUid: string,
+    targetTipUid: string,
+    targetIndex: number
+  ): void {
+    if (sourceTipUid === targetTipUid) {
+      this.reorderSubtipificacionTo(sourceTipUid, subUid, targetIndex);
+      return;
+    }
+
+    const sourceTip = this.drafts().find((tip) => tip.uid === sourceTipUid);
+    const moved = sourceTip?.subtipificaciones.find((sub) => sub.uid === subUid);
+    if (!moved) {
+      return;
+    }
+
+    this.drafts.update((items) => items.map((tip) => {
+      if (tip.uid === sourceTipUid) {
+        const remaining = tip.subtipificaciones.filter((sub) => sub.uid !== subUid);
+        return { ...tip, subtipificaciones: this.normalizeSubtipOrders(remaining) };
+      }
+      if (tip.uid === targetTipUid) {
+        const next = [...tip.subtipificaciones];
+        next.splice(Math.min(Math.max(targetIndex, 0), next.length), 0, moved);
+        return { ...tip, subtipificaciones: this.normalizeSubtipOrders(next) };
+      }
+      return tip;
+    }));
+    this.openTipUid.set(targetTipUid);
+    this.isDirty.set(true);
+  }
+
+  private reorderSubtipificacionTo(tipUid: string, subUid: string, targetIndex: number): void {
+    this.drafts.update((items) => items.map((tip) => {
+      if (tip.uid !== tipUid) {
+        return tip;
+      }
+      const next = [...tip.subtipificaciones];
+      const sourceIndex = next.findIndex((sub) => sub.uid === subUid);
+      if (sourceIndex < 0) {
+        return tip;
+      }
+      const [moved] = next.splice(sourceIndex, 1);
+      const adjustedTarget = sourceIndex < targetIndex ? targetIndex - 1 : targetIndex;
+      next.splice(Math.min(Math.max(adjustedTarget, 0), next.length), 0, moved);
+      return { ...tip, subtipificaciones: this.normalizeSubtipOrders(next) };
+    }));
     this.isDirty.set(true);
   }
 
@@ -132,6 +274,12 @@ export class AdminTipificacionFacade {
     field: 'codigo' | 'descripcion' | 'orden' | 'etapaCambio' | 'estadoPostventaCambio',
     value: string | number | null
   ): void {
+    const current = this.drafts()
+      .find((item) => item.uid === tipUid)
+      ?.subtipificaciones.find((sub) => sub.uid === subUid);
+    if (!current || current[field] === value) {
+      return;
+    }
     this.drafts.update((items) =>
       items.map((item) => {
         if (item.uid !== tipUid) {
@@ -203,9 +351,14 @@ export class AdminTipificacionFacade {
       const catalogo = await firstValueFrom(this.service.guardarMatriz(request));
       this.drafts.set(this.toDrafts(catalogo, this.selectedEtapa()));
       this.isDirty.set(false);
+      this.openTipUid.set(null);
     } finally {
       this.isSaving.set(false);
     }
+  }
+
+  async discard(): Promise<void> {
+    await this.loadCatalogo();
   }
 
   private toRequest(): MatrizCatalogoRequest {
@@ -278,6 +431,14 @@ export class AdminTipificacionFacade {
 
   private nextUid(): string {
     return `d${this.uidSeq++}`;
+  }
+
+  private normalizeTipOrders(items: TipDraft[]): TipDraft[] {
+    return items.map((item, index) => ({ ...item, orden: index + 1 }));
+  }
+
+  private normalizeSubtipOrders(items: SubtipDraft[]): SubtipDraft[] {
+    return items.map((item, index) => ({ ...item, orden: index + 1 }));
   }
 
 }

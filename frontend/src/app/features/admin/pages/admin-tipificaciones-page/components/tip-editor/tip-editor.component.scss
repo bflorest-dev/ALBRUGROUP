@@ -1,0 +1,38 @@
+:host {
+  display: block;
+}
+
+:host ::ng-deep .p-select {
+  width: 100%;
+}
+
+:host ::ng-deep {
+  .result-preventa {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+  }
+
+  .result-venta {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+  }
+
+  .result-postventa {
+    background: #fffbeb;
+    border-color: #fde68a;
+  }
+
+  .result-cobranza {
+    background: #fff1f2;
+    border-color: #fecdd3;
+  }
+}
+
+.subtip-row {
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.subtip-row:hover {
+  border-color: #a7f3d0;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.05);
+}
