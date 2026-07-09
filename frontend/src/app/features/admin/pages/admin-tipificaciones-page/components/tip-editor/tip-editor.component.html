@@ -47,6 +47,66 @@
         class="subtip-row grid min-w-0 gap-2.5 rounded-md border border-slate-200 bg-slate-50 p-3"
         [class.has-postventa-state]="selectedEtapa === 'POSTVENTA' && sub.etapaCambio === 'POSTVENTA'"
       >
+        <ng-template cdkDragPreview [matchSize]="true">
+          <div
+            class="subtip-row subtip-row-preview grid min-w-0 gap-2.5 rounded-md border border-slate-200 bg-white p-3"
+            [class.has-postventa-state]="selectedEtapa === 'POSTVENTA' && sub.etapaCambio === 'POSTVENTA'"
+          >
+            <div class="subtip-controls flex items-center justify-between gap-2">
+              <div class="flex items-center gap-1">
+                <span class="subtip-grip grid size-9 place-items-center rounded-md text-slate-400">
+                  <i class="pi pi-bars"></i>
+                </span>
+              </div>
+              <span class="grid size-9 place-items-center text-red-500">
+                <i class="pi pi-trash"></i>
+              </span>
+            </div>
+
+            <div class="grid min-w-0 gap-1.5">
+              <span class="text-xs font-bold text-slate-600">Código</span>
+              <span class="preview-field truncate">{{ sub.codigo }}</span>
+            </div>
+
+            <div class="grid min-w-0 gap-1.5">
+              <span class="text-xs font-bold text-slate-600">Descripción</span>
+              <span class="preview-field truncate">{{ sub.descripcion }}</span>
+            </div>
+
+            <div class="grid min-w-0 gap-1.5">
+              <span class="text-xs font-bold text-slate-600">Resultado</span>
+              @let option = etapaOption(sub.etapaCambio);
+              <span class="preview-field preview-result" [ngClass]="resultClass(sub.etapaCambio)">
+                @if (option) {
+                  <i [class]="option.icon"></i>
+                  <span class="truncate">{{ option.label }}</span>
+                } @else {
+                  <span class="truncate">{{ sub.etapaCambio }}</span>
+                }
+              </span>
+            </div>
+
+            @if (selectedEtapa === 'POSTVENTA' && sub.etapaCambio === 'POSTVENTA') {
+              <div class="postventa-state grid min-w-0 gap-1.5">
+                <span class="text-xs font-bold text-slate-600">Estado de Postventa</span>
+                <span class="preview-field truncate">{{ sub.estadoPostventaCambio || 'Seleccionar' }}</span>
+              </div>
+            }
+
+            <div class="subtip-actions items-center justify-end gap-1">
+              <span class="grid size-8 place-items-center text-slate-500">
+                <i class="pi pi-chevron-up"></i>
+              </span>
+              <span class="grid size-8 place-items-center text-slate-500">
+                <i class="pi pi-chevron-down"></i>
+              </span>
+              <span class="grid size-8 place-items-center text-red-500">
+                <i class="pi pi-trash"></i>
+              </span>
+            </div>
+          </div>
+        </ng-template>
+
         <div class="subtip-controls flex items-center justify-between gap-2">
           <div class="flex items-center gap-1">
             <button

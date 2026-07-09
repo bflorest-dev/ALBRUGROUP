@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { NgClass } from '@angular/common';
 import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -49,7 +50,7 @@ interface EtapaCambioOption {
 
 @Component({
   selector: 'app-tip-editor',
-  imports: [FormsModule, DragDropModule, ButtonModule, InputTextModule, SelectModule, TooltipModule],
+  imports: [NgClass, FormsModule, DragDropModule, ButtonModule, InputTextModule, SelectModule, TooltipModule],
   templateUrl: './tip-editor.component.html',
   styleUrl: './tip-editor.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -96,5 +97,9 @@ export class TipEditorComponent {
       POSTVENTA: 'result-postventa',
       COBRANZA: 'result-cobranza'
     }[etapa ?? ''] ?? '';
+  }
+
+  protected etapaOption(etapa: string | null): EtapaCambioOption | undefined {
+    return this.etapaOptions.find((option) => option.value === etapa);
   }
 }
