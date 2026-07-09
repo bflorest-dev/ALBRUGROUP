@@ -46,40 +46,53 @@
         class="subtip-row grid min-w-0 gap-2.5 rounded-md border border-slate-200 bg-slate-50 p-3"
         [class.has-postventa-state]="selectedEtapa === 'POSTVENTA' && sub.etapaCambio === 'POSTVENTA'"
       >
-        <div class="subtip-controls flex items-center gap-1">
-          <button
-            cdkDragHandle
-            type="button"
-            class="subtip-grip grid size-9 cursor-grab place-items-center rounded-md border-0 bg-transparent p-0 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
-          >
-            <i class="pi pi-bars"></i>
-          </button>
-          <div class="subtip-mobile-order flex">
+        <div class="subtip-controls flex items-center justify-between gap-2">
+          <div class="flex items-center gap-1">
             <button
-              pButton
+              cdkDragHandle
               type="button"
-              icon="pi pi-chevron-up"
-              severity="secondary"
-              [text]="true"
-              [rounded]="true"
-              size="small"
-              pTooltip="Subir"
-              [disabled]="index === 0"
-              (click)="moveSubtip.emit({ tipUid: tip.uid, subUid: sub.uid, direction: -1 })"
-            ></button>
-            <button
-              pButton
-              type="button"
-              icon="pi pi-chevron-down"
-              severity="secondary"
-              [text]="true"
-              [rounded]="true"
-              size="small"
-              pTooltip="Bajar"
-              [disabled]="index === tip.subtipificaciones.length - 1"
-              (click)="moveSubtip.emit({ tipUid: tip.uid, subUid: sub.uid, direction: 1 })"
-            ></button>
+              class="subtip-grip grid size-9 cursor-grab place-items-center rounded-md border-0 bg-transparent p-0 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
+            >
+              <i class="pi pi-bars"></i>
+            </button>
+            <div class="subtip-mobile-order flex">
+              <button
+                pButton
+                type="button"
+                icon="pi pi-chevron-up"
+                severity="secondary"
+                [text]="true"
+                [rounded]="true"
+                size="small"
+                pTooltip="Subir"
+                [disabled]="index === 0"
+                (click)="moveSubtip.emit({ tipUid: tip.uid, subUid: sub.uid, direction: -1 })"
+              ></button>
+              <button
+                pButton
+                type="button"
+                icon="pi pi-chevron-down"
+                severity="secondary"
+                [text]="true"
+                [rounded]="true"
+                size="small"
+                pTooltip="Bajar"
+                [disabled]="index === tip.subtipificaciones.length - 1"
+                (click)="moveSubtip.emit({ tipUid: tip.uid, subUid: sub.uid, direction: 1 })"
+              ></button>
+            </div>
           </div>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-trash"
+            severity="danger"
+            [text]="true"
+            [rounded]="true"
+            class="subtip-mobile-remove"
+            pTooltip="Quitar"
+            (click)="removeSubtip.emit({ tipUid: tip.uid, subUid: sub.uid })"
+          ></button>
         </div>
 
         <label class="grid min-w-0 gap-1.5">
@@ -153,7 +166,7 @@
         } @else {
         }
 
-        <div class="subtip-actions flex items-center justify-end gap-1">
+        <div class="subtip-actions items-center justify-end gap-1">
           <div class="subtip-desktop-order hidden">
             <button
               pButton
@@ -187,6 +200,7 @@
             severity="danger"
             [text]="true"
             [rounded]="true"
+            class="subtip-desktop-remove"
             pTooltip="Quitar"
             (click)="removeSubtip.emit({ tipUid: tip.uid, subUid: sub.uid })"
           ></button>

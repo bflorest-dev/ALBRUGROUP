@@ -74,6 +74,10 @@
   box-shadow: 0 1px 2px rgb(15 23 42 / 0.05);
 }
 
+.subtip-actions {
+  display: none;
+}
+
 @container (min-width: 42rem) {
   .subtip-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -115,6 +119,11 @@
     display: none;
   }
 
+  .subtip-mobile-remove {
+    display: none;
+  }
+
+  .subtip-actions,
   .subtip-desktop-order {
     display: flex;
   }
