@@ -14,7 +14,6 @@ import {
   SubtipDropAction,
   SubtipFieldChange,
   SubtipMoveAction,
-  SubtipParentChange,
   TipEditorComponent,
   TipFieldChange
 } from './components/tip-editor/tip-editor.component';
@@ -167,19 +166,6 @@ export class AdminTipificacionesPageComponent implements OnInit {
 
   protected moveSubtip(action: SubtipMoveAction): void {
     this.facade.moveSubtipificacion(action.tipUid, action.subUid, action.direction);
-  }
-
-  protected changeSubtipParent(action: SubtipParentChange): void {
-    if (action.tipUid === action.targetTipUid) {
-      return;
-    }
-    const target = this.facade.drafts().find((tip) => tip.uid === action.targetTipUid);
-    this.facade.moveSubtipificacionTo(
-      action.tipUid,
-      action.subUid,
-      action.targetTipUid,
-      target?.subtipificaciones.length ?? 0
-    );
   }
 
   protected stageAccentClass(): string {

@@ -1,4 +1,4 @@
-<div class="grid gap-5 p-4 sm:p-5">
+<div class="compact-editor grid gap-4 p-4">
   <div class="grid items-end gap-3 lg:grid-cols-[minmax(12rem,0.8fr)_minmax(18rem,1.5fr)_auto]">
     <label class="grid min-w-0 gap-1.5">
       <span class="text-xs font-bold text-slate-600">Código</span>
@@ -33,25 +33,27 @@
     ></button>
   </div>
 
-  <div class="grid gap-3 border-t border-dashed border-slate-200 pt-4">
+  <div class="subtip-list grid gap-2.5 border-t border-dashed border-slate-200 pt-4">
     @for (sub of tip.subtipificaciones; track sub.uid; let index = $index) {
       <div
-        class="subtip-row grid min-w-0 gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 xl:grid-cols-[auto_minmax(8rem,0.7fr)_minmax(11rem,1.2fr)_minmax(9rem,0.8fr)_minmax(9rem,0.8fr)_minmax(9rem,0.8fr)_auto] xl:items-end"
-        (dragover)="allowDrop($event)"
+        class="subtip-row grid min-w-0 gap-2.5 rounded-md border border-slate-200 bg-slate-50 p-3"
+        [class.has-postventa-state]="selectedEtapa === 'POSTVENTA' && sub.etapaCambio === 'POSTVENTA'"
+        [class.dragging]="draggingSubUid === sub.uid"
+        [class.drag-over]="dragOverIndex === index && draggingSubUid !== sub.uid"
+        (dragover)="markDropTarget(index, $event)"
         (drop)="dropAt(index, $event)"
       >
-        <div class="flex h-10 items-center gap-1">
+        <div class="subtip-controls flex items-center gap-1">
           <button
             type="button"
             class="subtip-grip grid size-9 cursor-grab place-items-center rounded-md border-0 bg-transparent p-0 text-slate-400 hover:bg-slate-200 hover:text-slate-700"
             draggable="true"
-            pTooltip="Mover subtipificación"
-            tooltipPosition="top"
             (dragstart)="startSubtipDrag(sub.uid, $event)"
+            (dragend)="endSubtipDrag()"
           >
             <i class="pi pi-bars"></i>
           </button>
-          <div class="flex xl:hidden">
+          <div class="subtip-mobile-order flex">
             <button
               pButton
               type="button"
@@ -112,28 +114,31 @@
             optionValue="value"
             [ngModel]="sub.etapaCambio"
             (ngModelChange)="updateSubtip(sub, 'etapaCambio', $event)"
-          />
+          >
+            <ng-template pTemplate="selectedItem" let-selected>
+              @if (selected) {
+                <span class="flex min-w-0 items-center gap-2">
+                  <i [class]="selected.icon"></i>
+                  <span class="truncate">{{ selected.label }}</span>
+                </span>
+              }
+            </ng-template>
+            <ng-template pTemplate="item" let-option>
+              <span class="flex items-center gap-2">
+                <i
+                  [class]="option.icon"
+                  [class.text-slate-500]="option.direction === 'STAY'"
+                  [class.text-amber-600]="option.direction === 'BACK'"
+                  [class.text-emerald-600]="option.direction === 'FORWARD'"
+                ></i>
+                <span>{{ option.label }}</span>
+              </span>
+            </ng-template>
+          </p-select>
         </label>
 
-        <label class="grid min-w-0 gap-1.5">
-          <span class="text-xs font-bold text-slate-600">Tipificación</span>
-          <p-select
-            class="w-full"
-            appendTo="body"
-            [options]="parentOptions"
-            optionLabel="label"
-            optionValue="value"
-            [ngModel]="tip.uid"
-            (ngModelChange)="subtipParentChange.emit({
-              tipUid: tip.uid,
-              subUid: sub.uid,
-              targetTipUid: $event
-            })"
-          />
-        </label>
-
-        @if (sub.etapaCambio === 'POSTVENTA') {
-          <label class="grid min-w-0 gap-1.5">
+        @if (selectedEtapa === 'POSTVENTA' && sub.etapaCambio === 'POSTVENTA') {
+          <label class="postventa-state grid min-w-0 gap-1.5">
             <span class="text-xs font-bold text-slate-600">Estado de Postventa</span>
             <p-select
               class="w-full"
@@ -145,11 +150,10 @@
             />
           </label>
         } @else {
-          <span class="hidden xl:block"></span>
         }
 
-        <div class="flex h-10 items-center justify-end gap-1">
-          <div class="hidden xl:flex">
+        <div class="subtip-actions flex items-center justify-end gap-1">
+          <div class="subtip-desktop-order hidden">
             <button
               pButton
               type="button"
@@ -193,20 +197,22 @@
       </div>
     }
 
-    <button
-      pButton
-      type="button"
-      icon="pi pi-plus"
-      label="Agregar subtipificación"
-      severity="secondary"
-      [text]="true"
-      class="justify-self-start"
-      (click)="addSubtip.emit(tip.uid)"
-    ></button>
+    <div class="flex justify-center">
+      <button
+        pButton
+        type="button"
+        icon="pi pi-plus"
+        label="Agregar subtipificación"
+        severity="secondary"
+        [text]="true"
+        (click)="addSubtip.emit(tip.uid)"
+      ></button>
+    </div>
 
     <div
-      class="h-3 rounded-sm transition-colors hover:bg-emerald-100"
-      (dragover)="allowDrop($event)"
+      class="subtip-end-drop h-3 rounded-sm"
+      [class.drag-over]="dragOverIndex === tip.subtipificaciones.length"
+      (dragover)="markDropTarget(tip.subtipificaciones.length, $event)"
       (drop)="dropAt(tip.subtipificaciones.length, $event)"
     ></div>
   </div>

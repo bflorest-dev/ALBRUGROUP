@@ -95,7 +95,57 @@
       }
     </div>
   } @else {
-    <div class="mx-auto grid w-full max-w-[64rem] gap-3">
+    @if (facade.openTipUids().length === 2) {
+      <div class="comparison-grid grid w-full gap-4 lg:grid-cols-2">
+        @for (tip of facade.selectedTips(); track tip.uid; let position = $index) {
+          <article
+            class="comparison-panel min-w-0 overflow-hidden rounded-lg border border-l-4 border-slate-200 bg-white shadow-sm"
+            [class]="stageAccentClass()"
+            (dragover)="allowDrop($event)"
+            (drop)="dropOnTip(tip.uid, tip.subtipificaciones.length, $event)"
+          >
+            <header class="flex items-center gap-2 border-b border-slate-200 bg-slate-50 p-3">
+              <p-select
+                class="min-w-0 flex-1"
+                appendTo="body"
+                [options]="facade.tipParentOptions()"
+                optionLabel="label"
+                optionValue="value"
+                [ngModel]="tip.uid"
+                (ngModelChange)="facade.replaceOpenTip(position, $event)"
+              />
+              <button
+                pButton
+                type="button"
+                icon="pi pi-times"
+                severity="secondary"
+                [text]="true"
+                [rounded]="true"
+                pTooltip="Cerrar comparación"
+                (click)="facade.toggleTip(tip.uid)"
+              ></button>
+            </header>
+
+            <app-tip-editor
+              class="tip-editor-enter"
+              [tip]="tip"
+              [selectedEtapa]="facade.selectedEtapa()"
+              [etapaOptions]="facade.etapaCambioOptions()"
+              [estadoPostventaOptions]="facade.estadoPostventaOptions"
+              (tipFieldChange)="onTipFieldChange($event)"
+              (removeTip)="facade.removeTipificacion($event)"
+              (addSubtip)="facade.addSubtipificacion($event)"
+              (subtipFieldChange)="onSubtipFieldChange($event)"
+              (removeSubtip)="facade.removeSubtipificacion($event.tipUid, $event.subUid)"
+              (moveSubtip)="moveSubtip($event)"
+              (subtipDragStart)="startSubtipDrag($event)"
+              (subtipDrop)="dropSubtip($event)"
+            />
+          </article>
+        }
+      </div>
+    } @else {
+      <div class="mx-auto grid w-full max-w-[64rem] gap-3">
       @for (tip of facade.filteredDrafts(); track tip.uid; let index = $index) {
         <article
           class="tip-card overflow-hidden rounded-lg border border-l-4 border-slate-200 bg-white shadow-sm"
@@ -167,25 +217,24 @@
               </span>
               <i
                 class="pi pi-chevron-down shrink-0 text-xs text-slate-500 transition-transform"
-                [class.rotate-180]="facade.openTipUid() === tip.uid"
+                [class.rotate-180]="facade.openTipUids().includes(tip.uid)"
               ></i>
             </button>
           </div>
 
-          @if (facade.openTipUid() === tip.uid) {
+          @if (facade.openTipUids().includes(tip.uid)) {
             <app-tip-editor
               class="tip-editor-enter"
               [tip]="tip"
+              [selectedEtapa]="facade.selectedEtapa()"
               [etapaOptions]="facade.etapaCambioOptions()"
               [estadoPostventaOptions]="facade.estadoPostventaOptions"
-              [parentOptions]="facade.tipParentOptions()"
               (tipFieldChange)="onTipFieldChange($event)"
               (removeTip)="facade.removeTipificacion($event)"
               (addSubtip)="facade.addSubtipificacion($event)"
               (subtipFieldChange)="onSubtipFieldChange($event)"
               (removeSubtip)="facade.removeSubtipificacion($event.tipUid, $event.subUid)"
               (moveSubtip)="moveSubtip($event)"
-              (subtipParentChange)="changeSubtipParent($event)"
               (subtipDragStart)="startSubtipDrag($event)"
               (subtipDrop)="dropSubtip($event)"
             />
@@ -217,6 +266,7 @@
           }
         </div>
       }
-    </div>
+      </div>
+    }
   }
 </section>

@@ -56,7 +56,7 @@ export class AdminTipificacionFacade {
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
   readonly isDirty = signal(false);
-  readonly openTipUid = signal<string | null>(null);
+  readonly openTipUids = signal<string[]>([]);
   readonly searchTerm = signal('');
 
   readonly filteredDrafts = computed(() => {
@@ -84,13 +84,41 @@ export class AdminTipificacionFacade {
     }))
   );
 
+  readonly selectedTips = computed(() => {
+    const draftsByUid = new Map(this.drafts().map((tip) => [tip.uid, tip]));
+    return this.openTipUids()
+      .map((uid) => draftsByUid.get(uid))
+      .filter((tip): tip is TipDraft => !!tip);
+  });
+
   // Opciones para "Resultado: el lead..." segun la etapa seleccionada.
   readonly etapaCambioOptions = computed(() => {
     const actual = this.selectedEtapa();
-    return this.etapaOptions.map((option) => ({
-      value: option.value,
-      label: option.value === actual ? `Se mantiene en ${option.label}` : `Pasa a ${option.label}`
-    }));
+    const currentIndex = this.etapaOptions.findIndex((option) => option.value === actual);
+    return this.etapaOptions
+      .filter((_, index) => Math.abs(index - currentIndex) <= 1)
+      .map((option) => {
+        const targetIndex = this.etapaOptions.findIndex((item) => item.value === option.value);
+        const direction: 'BACK' | 'STAY' | 'FORWARD' = targetIndex < currentIndex
+          ? 'BACK'
+          : targetIndex > currentIndex
+            ? 'FORWARD'
+            : 'STAY';
+        return {
+          value: option.value,
+          label: direction === 'STAY'
+            ? `Se mantiene en ${option.label}`
+            : direction === 'BACK'
+              ? `Regresa a ${option.label}`
+              : `Pasa a ${option.label}`,
+          direction,
+          icon: direction === 'STAY'
+            ? 'pi pi-replay'
+            : direction === 'BACK'
+              ? 'pi pi-arrow-left'
+              : 'pi pi-arrow-right'
+        };
+      });
   });
 
   etapaLabel(value?: string | null): string {
@@ -104,7 +132,7 @@ export class AdminTipificacionFacade {
       const catalogo = await firstValueFrom(this.service.getCatalogo(etapa));
       this.drafts.set(this.toDrafts(catalogo, etapa));
       this.isDirty.set(false);
-      this.openTipUid.set(null);
+      this.openTipUids.set([]);
       this.searchTerm.set('');
     } finally {
       this.isLoading.set(false);
@@ -118,20 +146,38 @@ export class AdminTipificacionFacade {
   addTipificacion(): void {
     const draft = this.newTipDraft(this.drafts().length + 1);
     this.drafts.update((items) => [...items, draft]);
-    this.openTipUid.set(draft.uid);
+    this.openTipUids.set([draft.uid]);
     this.isDirty.set(true);
   }
 
   removeTipificacion(uid: string): void {
     this.drafts.update((items) => items.filter((item) => item.uid !== uid));
-    if (this.openTipUid() === uid) {
-      this.openTipUid.set(null);
-    }
+    this.openTipUids.update((open) => open.filter((item) => item !== uid));
     this.isDirty.set(true);
   }
 
   toggleTip(uid: string): void {
-    this.openTipUid.update((current) => current === uid ? null : uid);
+    this.openTipUids.update((current) => {
+      if (current.includes(uid)) {
+        return current.filter((item) => item !== uid);
+      }
+      if (current.length < 2) {
+        return [...current, uid];
+      }
+      return [current[0], uid];
+    });
+  }
+
+  replaceOpenTip(position: number, uid: string): void {
+    this.openTipUids.update((current) => {
+      const other = current[position === 0 ? 1 : 0];
+      if (uid === other) {
+        return current;
+      }
+      const next = [...current];
+      next[position] = uid;
+      return next;
+    });
   }
 
   setSearchTerm(term: string): void {
@@ -234,7 +280,9 @@ export class AdminTipificacionFacade {
       }
       return tip;
     }));
-    this.openTipUid.set(targetTipUid);
+    this.openTipUids.update((open) =>
+      open.includes(targetTipUid) ? open : [...open.slice(-1), targetTipUid]
+    );
     this.isDirty.set(true);
   }
 
@@ -292,8 +340,10 @@ export class AdminTipificacionFacade {
               return sub;
             }
             const next = { ...sub, [field]: value } as SubtipDraft;
-            if (field === 'etapaCambio' && value !== 'POSTVENTA') {
-              next.estadoPostventaCambio = null;
+            if (field === 'etapaCambio') {
+              next.estadoPostventaCambio = value === 'POSTVENTA' && this.selectedEtapa() !== 'POSTVENTA'
+                ? 'EN_SEGUIMIENTO'
+                : null;
             }
             return next;
           })
@@ -331,7 +381,11 @@ export class AdminTipificacionFacade {
         if (sub.orden <= 0) {
           return `La subtipificacion ${sub.codigo} necesita un orden mayor a cero.`;
         }
-        if (sub.etapaCambio === 'POSTVENTA' && !sub.estadoPostventaCambio) {
+        if (
+          this.selectedEtapa() === 'POSTVENTA'
+          && sub.etapaCambio === 'POSTVENTA'
+          && !sub.estadoPostventaCambio
+        ) {
           return `La subtipificacion ${sub.codigo} pasa a Postventa: elige el estado postventa.`;
         }
         const subNorm = sub.codigo.trim().toUpperCase();
@@ -351,7 +405,7 @@ export class AdminTipificacionFacade {
       const catalogo = await firstValueFrom(this.service.guardarMatriz(request));
       this.drafts.set(this.toDrafts(catalogo, this.selectedEtapa()));
       this.isDirty.set(false);
-      this.openTipUid.set(null);
+      this.openTipUids.set([]);
     } finally {
       this.isSaving.set(false);
     }
@@ -379,7 +433,11 @@ export class AdminTipificacionFacade {
               descripcion: sub.descripcion.trim(),
               orden: subIndex + 1,
               etapaCambio: sub.etapaCambio,
-              estadoPostventaCambio: sub.etapaCambio === 'POSTVENTA' ? sub.estadoPostventaCambio : null
+              estadoPostventaCambio: sub.etapaCambio === 'POSTVENTA'
+                ? this.selectedEtapa() === 'POSTVENTA'
+                  ? sub.estadoPostventaCambio
+                  : 'EN_SEGUIMIENTO'
+                : null
             })
           )
       }));
