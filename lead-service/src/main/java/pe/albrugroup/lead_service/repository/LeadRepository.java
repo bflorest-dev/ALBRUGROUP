@@ -715,6 +715,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                AND epFallback.fallbackLeadSinCampana = true
             LEFT JOIN epFallback.proveedor fp
             WHERE l.etapa = :etapa
+              AND (:filtrarVentana = false OR l.lastEntryAt >= :inicioVentana)
               AND (
                     :leadPattern = '%'
                     OR l.lead LIKE :leadPattern
@@ -726,6 +727,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     Page<LeadResponse> listarBandejaVenta(
             @Param("etapa") Etapa etapa,
             @Param("leadPattern") String leadPattern,
+            @Param("filtrarVentana") boolean filtrarVentana,
+            @Param("inicioVentana") Instant inicioVentana,
             @Param("accionTipificacion") Accion accionTipificacion,
             Pageable pageable
     );

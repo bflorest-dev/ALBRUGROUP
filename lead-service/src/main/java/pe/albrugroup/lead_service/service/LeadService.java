@@ -96,6 +96,7 @@ import java.util.Map;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -512,12 +513,17 @@ public class LeadService {
 
     public PageResponse<LeadResponse> listarBandejaVenta(String lead, PageRequest pageRequest) {
         String numeroLead = normalizarLead(lead);
-        String leadPattern = numeroLead == null || numeroLead.isBlank() ? "%" : numeroLead + "%";
+        boolean buscando = numeroLead != null && !numeroLead.isBlank();
+        String leadPattern = buscando ? numeroLead + "%" : "%";
+        boolean filtrarVentana = !buscando;
+        Instant inicioVentana = OperationalDateTime.now().minus(30, ChronoUnit.DAYS);
         // El orden lo fija la propia query (lastEntryAt DESC, id DESC): Pageable sin sort para no
         // agregar un ORDER BY extra que descuadre el orden y la paginacion entre paginas.
         Page<LeadResponse> leads = leadRepository.listarBandejaVenta(
                 Etapa.VENTA,
                 leadPattern,
+                filtrarVentana,
+                inicioVentana,
                 Accion.TIPIFICACION,
                 org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
         );
