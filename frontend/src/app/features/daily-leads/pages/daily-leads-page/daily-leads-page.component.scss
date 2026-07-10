@@ -169,10 +169,19 @@
     align-items: center;
     gap: 0.4rem;
     min-width: 0;
+    max-width: 100%;
 
     i {
+      flex: 0 0 auto;
       color: var(--p-primary-color, #4f46e5);
       font-size: 0.85rem;
+    }
+
+    strong {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 
@@ -187,6 +196,15 @@
   &__assignments-tag {
     min-width: 2.1rem;
     justify-content: center;
+  }
+
+  &__time,
+  &__person {
+    font-variant-numeric: tabular-nums;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__actions-col {
@@ -276,6 +294,32 @@
 :host ::ng-deep .daily-leads__table th {
   text-align: center;
   vertical-align: middle;
+}
+
+:host ::ng-deep .daily-leads__table th {
+  white-space: nowrap;
+}
+
+:host ::ng-deep .daily-leads__table .p-datatable-tbody > tr.daily-leads__data-row,
+:host ::ng-deep .daily-leads__table .p-datatable-tbody > tr.daily-leads__placeholder-row {
+  height: 4.25rem;
+}
+
+:host ::ng-deep .daily-leads__table .p-datatable-tbody > tr.daily-leads__data-row > td,
+:host ::ng-deep .daily-leads__table .p-datatable-tbody > tr.daily-leads__placeholder-row > td {
+  height: 4.25rem;
+  max-height: 4.25rem;
+  overflow: hidden;
+  padding-bottom: 0.4rem;
+  padding-top: 0.4rem;
+}
+
+:host ::ng-deep .daily-leads__table .p-datatable-tbody > tr.daily-leads__placeholder-row {
+  pointer-events: none;
+}
+
+:host ::ng-deep .daily-leads__table .p-datatable-tbody > tr.daily-leads__placeholder-row > td {
+  color: transparent;
 }
 
 // Sub-filas del desplegable: mismas columnas que la tabla (Hora/GTR/Campaña alineadas

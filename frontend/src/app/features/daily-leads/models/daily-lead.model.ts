@@ -40,11 +40,13 @@ export interface DailyLeadRowView {
   lead: string | null;
   leadDisplay: string;
   asesor: string;
+  asesorDisplay: string;
   rolLabel: string;
   accionLabel: string;
   hora: string;
   campana: string;
   ultimoAsesor: string;
+  ultimoAsesorDisplay: string;
   totalAsignacionesDia: number;
   /** Cantidad de registros del lead en el día; > 1 habilita el despliegue de repeticiones. */
   totalRegistrosDia: number;
@@ -52,6 +54,7 @@ export interface DailyLeadRowView {
   primeraCodigoSubtipificacion?: string | null;
   codigoTipificacion?: string | null;
   codigoSubtipificacion?: string | null;
+  isPlaceholder?: boolean;
 }
 
 export type DailyLeadGroupType =

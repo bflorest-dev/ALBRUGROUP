@@ -36,15 +36,32 @@ export class DailyLeadsFacade {
     return !!role && DailyLeadsFacade.ROLES_VISIBILIDAD_GLOBAL.has(role);
   });
 
-  private readonly timeFormatter = new Intl.DateTimeFormat('es-PE', {
+  private readonly timeFormatter = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Lima',
-    hour: '2-digit',
-    minute: '2-digit'
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
   });
 
   readonly pageSize = signal(10);
 
   readonly rows = signal<DailyLeadRowView[]>([]);
+  readonly tableRows = computed<DailyLeadRowView[]>(() => {
+    const rows = this.rows();
+    if (rows.length === 0) {
+      return rows;
+    }
+
+    const missingRows = Math.max(0, this.pageSize() - rows.length);
+    if (missingRows === 0) {
+      return rows;
+    }
+
+    return [
+      ...rows,
+      ...Array.from({ length: missingRows }, (_, index) => this.placeholderRow(index))
+    ];
+  });
   readonly metricas = signal<LeadsDiariosMetricas | null>(null);
   readonly metricasView = computed<DailyLeadsMetricsView | null>(() => {
     const m = this.metricas();
@@ -391,7 +408,7 @@ export class DailyLeadsFacade {
   private toRegistroView(registro: RegistroDiarioLeadResponse): DailyLeadRegistroView {
     return {
       hora: this.formatTime(registro.createdAt ?? ''),
-      asesor: registro.nombreActor?.trim() || '-',
+      asesor: this.firstWords(registro.nombreActor?.trim() || '-', 2),
       campana: registro.nombreCampana?.trim() || 'Sin campaña'
     };
   }
@@ -517,17 +534,21 @@ export class DailyLeadsFacade {
   }
 
   private toRowView(item: LeadDiarioResponse): DailyLeadRowView {
+    const asesor = item.nombreActor?.trim() || '-';
+    const ultimoAsesor = item.ultimoNombreAsesorAsignado?.trim() || 'Sin asignación';
     return {
       idLead: item.idLead,
       prefijo: item.prefijo,
       lead: item.lead,
       leadDisplay: this.formatLead(item.prefijo, item.lead),
-      asesor: item.nombreActor?.trim() || '-',
+      asesor,
+      asesorDisplay: this.firstWords(asesor, 2),
       rolLabel: formatLabel(item.rolActor),
       accionLabel: formatLabel(item.accion),
       hora: this.formatTime(item.createdAt),
       campana: item.nombreCampana?.trim() || 'Sin campaña',
-      ultimoAsesor: item.ultimoNombreAsesorAsignado?.trim() || 'Sin asignación',
+      ultimoAsesor,
+      ultimoAsesorDisplay: this.firstWords(ultimoAsesor, 2),
       totalAsignacionesDia: item.totalAsignacionesDia ?? 0,
       totalRegistrosDia: item.totalRegistrosDia ?? 1,
       primeraCodigoTipificacion: item.primeraCodigoTipificacion,
@@ -537,13 +558,12 @@ export class DailyLeadsFacade {
     };
   }
 
-  private formatLead(prefijo: string | null, lead: string | null): string {
+  private formatLead(_prefijo: string | null, lead: string | null): string {
     const numero = lead?.trim() ?? '';
-    const codigo = prefijo?.trim() ?? '';
     if (!numero) {
       return '-';
     }
-    return codigo ? `${codigo} ${numero}` : numero;
+    return numero;
   }
 
   private formatTime(value: string): string {
@@ -555,6 +575,33 @@ export class DailyLeadsFacade {
       return '-';
     }
     return this.timeFormatter.format(date);
+  }
+
+  private firstWords(value: string, count: number): string {
+    if (!value || value === '-') {
+      return value || '-';
+    }
+    return value.split(/\s+/).filter(Boolean).slice(0, count).join(' ') || '-';
+  }
+
+  private placeholderRow(index: number): DailyLeadRowView {
+    return {
+      idLead: -(index + 1),
+      prefijo: null,
+      lead: null,
+      leadDisplay: '',
+      asesor: '',
+      asesorDisplay: '',
+      rolLabel: '',
+      accionLabel: '',
+      hora: '',
+      campana: '',
+      ultimoAsesor: '',
+      ultimoAsesorDisplay: '',
+      totalAsignacionesDia: 0,
+      totalRegistrosDia: 1,
+      isPlaceholder: true
+    };
   }
 
   private normalizeLeadSearch(value: string): string {

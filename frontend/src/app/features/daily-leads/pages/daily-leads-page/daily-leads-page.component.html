@@ -188,22 +188,22 @@
     }
 
     <p-table
-      [value]="facade.rows()"
+      [value]="facade.tableRows()"
       dataKey="idLead"
       [expandedRowKeys]="facade.expandedRowKeys()"
       [loading]="facade.isLoading()"
       [rowHover]="true"
       [scrollable]="true"
-      [tableStyle]="{ 'min-width': '1280px' }"
+      [tableStyle]="{ 'min-width': '1280px', 'table-layout': 'fixed' }"
       styleClass="p-datatable-sm daily-leads__table"
     >
       <ng-template #header>
         <tr>
           <th class="daily-leads__expander-col"></th>
-          <th>Hora registro</th>
+          <th>Hora Registro</th>
           <th>Lead</th>
           <th>GTR</th>
-          <th>Último asesor</th>
+          <th>Ultimo Asesor</th>
           <th>Asignaciones</th>
           <th>Campaña</th>
           <th>Primera tipificacion</th>
@@ -213,7 +213,13 @@
       </ng-template>
 
       <ng-template #body let-row>
-        <tr>
+        @if (row.isPlaceholder) {
+          <tr class="daily-leads__placeholder-row" aria-hidden="true">
+            <td class="daily-leads__expander-col"></td>
+            <td colspan="9"></td>
+          </tr>
+        } @else {
+        <tr class="daily-leads__data-row">
           <td class="daily-leads__expander-col">
             @if (row.totalRegistrosDia > 1) {
               <button
@@ -229,7 +235,7 @@
               ></button>
             }
           </td>
-          <td>{{ row.hora }}</td>
+          <td class="daily-leads__time">{{ row.hora }}</td>
           <td>
             <span class="daily-leads__lead">
               <i class="pi pi-phone"></i>
@@ -244,8 +250,8 @@
               }
             </span>
           </td>
-          <td>{{ row.asesor }}</td>
-          <td>{{ row.ultimoAsesor }}</td>
+          <td class="daily-leads__person" [title]="row.asesor">{{ row.asesorDisplay }}</td>
+          <td class="daily-leads__person" [title]="row.ultimoAsesor">{{ row.ultimoAsesorDisplay }}</td>
           <td>
             <p-tag
               [value]="facade.display(row.totalAsignacionesDia)"
@@ -283,6 +289,7 @@
             ></button>
           </td>
         </tr>
+        }
       </ng-template>
 
       <ng-template #expandedrow let-row>
