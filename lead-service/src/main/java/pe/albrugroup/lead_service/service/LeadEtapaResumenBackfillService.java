@@ -9,6 +9,7 @@ import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.Evento;
 import pe.albrugroup.lead_service.entity.Tipificacion;
 import pe.albrugroup.lead_service.entity.enums.Accion;
+import pe.albrugroup.lead_service.entity.enums.EstadoPostventa;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.response.BackfillEstadoResponse;
 import pe.albrugroup.lead_service.repository.EventoRepository;
@@ -32,10 +33,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * metadata por etapa de los leads existentes reproduciendo sus eventos en orden cronológico y
  * reutilizando los mismos métodos de escritura que usan los hooks en vivo ({@link LeadEtapaResumenService}).
  *
- * El mérito por etapa se siembra desde la atribución ya calculada en el Lead
- * (idAsesorPreventa/Venta/Postventa/Cobranza), que es la fuente de verdad actual. Idempotente y
- * re-ejecutable: borra las filas del lead antes de reconstruirlas. Cada lead va en su propia
- * transacción para aislar fallos y no mantener una transacción gigante.
+ * El mérito por etapa se reconstruye desde los propios eventos (el actor que concreta la etapa),
+ * aplicando las mismas condiciones que los hooks en vivo de {@link LeadService}: PREVENTA al avanzar
+ * a VENTA, VENTA al tipificar GRABADO, POSTVENTA al avanzar a COBRANZA y COBRANZA al llegar a un
+ * estado final. El resumen es la única fuente de verdad (el Lead ya no guarda la atribución histórica).
+ * Idempotente y re-ejecutable: borra las filas del lead antes de reconstruirlas. Cada lead va en su
+ * propia transacción para aislar fallos y no mantener una transacción gigante.
  */
 @Service
 @Slf4j
@@ -51,6 +54,10 @@ public class LeadEtapaResumenBackfillService {
     private final TransactionTemplate transactionTemplate;
 
     private static final Set<Accion> ACCIONES_REGISTRO = EnumSet.of(Accion.REGISTRO, Accion.NUEVA_OPORTUNIDAD);
+    // Código de la tipificación de VENTA que atribuye el mérito (mismo criterio que LeadService).
+    private static final String TIPIFICACION_GRABADO = "GRABADO";
+    private static final Set<EstadoPostventa> ESTADOS_POSTVENTA_FINALES =
+            EnumSet.of(EstadoPostventa.EFECTIVO, EstadoPostventa.NO_EFECTIVO, EstadoPostventa.BAJA_CONFIRMADA);
 
     // El backfill completo corre en segundo plano (evita el timeout de Cloudflare/gateway en runs
     // largos) y expone su progreso en memoria. Un solo hilo => nunca hay dos runs en paralelo.
@@ -119,13 +126,9 @@ public class LeadEtapaResumenBackfillService {
         resumenRepository.deleteByIdLead(idLead);
 
         List<Evento> eventos = eventoRepository.findAllByIdLeadOrderByCreatedAtAscIdAsc(idLead);
-        Map<Long, String> nombrePorActor = new HashMap<>();
         boolean preventaIniciada = false;
 
         for (Evento evento : eventos) {
-            if (evento.getIdActor() != null && evento.getNombreActor() != null) {
-                nombrePorActor.putIfAbsent(evento.getIdActor(), evento.getNombreActor());
-            }
             Etapa etapa = evento.getEtapa();
             Accion accion = evento.getAccion();
             if (etapa == null || accion == null) {
@@ -147,29 +150,32 @@ public class LeadEtapaResumenBackfillService {
                         orden, evento.getIdActor(), evento.getNombreActor(), evento.getCreatedAt());
 
                 Etapa destino = catalogo.etapaCambio(etapa, evento.getTipificacion(), evento.getSubtipificacion());
+                EstadoPostventa estadoPostventaCambio =
+                        catalogo.estadoPostventaCambio(etapa, evento.getTipificacion(), evento.getSubtipificacion());
+
+                // Mérito por etapa: mismas condiciones que los hooks en vivo (LeadService), pero
+                // reconstruidas desde el evento (el actor que concretó la etapa).
+                if (esMeritoEvento(etapa, destino, evento.getTipificacion(), estadoPostventaCambio)) {
+                    resumenService.registrarMerito(
+                            idLead, etapa, evento.getIdActor(), evento.getNombreActor(), evento.getCreatedAt());
+                }
+
                 if (destino != null && destino != etapa) {
                     resumenService.registrarSalidaEtapa(idLead, etapa, evento.getCreatedAt());
                     resumenService.registrarEntradaEtapa(idLead, destino, evento.getCreatedAt());
                 }
             }
         }
-
-        // Mérito por etapa desde la atribución del Lead (fuente de verdad actual).
-        leadRepository.findById(idLead).ifPresent(lead -> {
-            sembrarMerito(idLead, Etapa.PREVENTA, lead.getIdAsesorPreventa(), lead.getFechaPreventa(), nombrePorActor);
-            sembrarMerito(idLead, Etapa.VENTA, lead.getIdAsesorVenta(), lead.getFechaVenta(), nombrePorActor);
-            sembrarMerito(idLead, Etapa.POSTVENTA, lead.getIdAsesorPostventa(), lead.getFechaPostventa(), nombrePorActor);
-            sembrarMerito(idLead, Etapa.COBRANZA, lead.getIdAsesorCobranza(), lead.getFechaCobranza(), nombrePorActor);
-        });
     }
 
-    private void sembrarMerito(Long idLead, Etapa etapa, Long idAsesor, Instant fecha, Map<Long, String> nombres) {
-        if (idAsesor == null) {
-            return;
-        }
-        resumenService.registrarMerito(
-                idLead, etapa, idAsesor, nombres.get(idAsesor),
-                fecha != null ? fecha : OperationalDateTime.now());
+    /** ¿Esta tipificación concreta la etapa (le da el mérito)? Espejo de las condiciones de LeadService. */
+    private boolean esMeritoEvento(Etapa etapa, Etapa destino, String codigoTipificacion, EstadoPostventa estadoPostventaCambio) {
+        return switch (etapa) {
+            case PREVENTA -> destino == Etapa.VENTA;
+            case VENTA -> TIPIFICACION_GRABADO.equals(codigoTipificacion);
+            case POSTVENTA -> destino == Etapa.COBRANZA;
+            case COBRANZA -> ESTADOS_POSTVENTA_FINALES.contains(estadoPostventaCambio);
+        };
     }
 
     private void ejecutarEnTransaccionNueva(Runnable accion) {
@@ -189,18 +195,24 @@ public class LeadEtapaResumenBackfillService {
         }
 
         Map<String, Etapa> etapaCambioPorSubtipificacion = new HashMap<>();
+        Map<String, EstadoPostventa> estadoPostventaCambioPorSubtipificacion = new HashMap<>();
         for (Object[] fila : subtipificacionRepository.listarCambiosEtapa()) {
             Etapa etapa = (Etapa) fila[0];
             String codigoTip = (String) fila[1];
             String codigoSub = (String) fila[2];
             Etapa etapaCambio = (Etapa) fila[3];
+            EstadoPostventa estadoPostventaCambio = (EstadoPostventa) fila[4];
             if (etapa != null && codigoTip != null && codigoSub != null) {
-                etapaCambioPorSubtipificacion.putIfAbsent(
-                        claveSubtipificacion(etapa, codigoTip, codigoSub), etapaCambio);
+                String clave = claveSubtipificacion(etapa, codigoTip, codigoSub);
+                etapaCambioPorSubtipificacion.putIfAbsent(clave, etapaCambio);
+                if (estadoPostventaCambio != null) {
+                    estadoPostventaCambioPorSubtipificacion.putIfAbsent(clave, estadoPostventaCambio);
+                }
             }
         }
 
-        return new Catalogo(ordenPorTipificacion, etapaCambioPorSubtipificacion);
+        return new Catalogo(
+                ordenPorTipificacion, etapaCambioPorSubtipificacion, estadoPostventaCambioPorSubtipificacion);
     }
 
     private static String claveTipificacion(Etapa etapa, String codigoTipificacion) {
@@ -211,8 +223,11 @@ public class LeadEtapaResumenBackfillService {
         return etapa.name() + "|" + codigoTipificacion + "|" + codigoSubtipificacion;
     }
 
-    /** Catálogo plano en memoria: orden de la tipificación y etapa de cambio de la subtipificación. */
-    private record Catalogo(Map<String, Integer> ordenPorTipificacion, Map<String, Etapa> etapaCambioPorSubtipificacion) {
+    /** Catálogo plano en memoria: orden de la tipificación, etapa de cambio y estado postventa de cambio. */
+    private record Catalogo(
+            Map<String, Integer> ordenPorTipificacion,
+            Map<String, Etapa> etapaCambioPorSubtipificacion,
+            Map<String, EstadoPostventa> estadoPostventaCambioPorSubtipificacion) {
         Integer orden(Etapa etapa, String codigoTipificacion) {
             if (etapa == null || codigoTipificacion == null) {
                 return null;
@@ -225,6 +240,14 @@ public class LeadEtapaResumenBackfillService {
                 return null;
             }
             return etapaCambioPorSubtipificacion.get(claveSubtipificacion(etapa, codigoTipificacion, codigoSubtipificacion));
+        }
+
+        EstadoPostventa estadoPostventaCambio(Etapa etapa, String codigoTipificacion, String codigoSubtipificacion) {
+            if (etapa == null || codigoTipificacion == null || codigoSubtipificacion == null) {
+                return null;
+            }
+            return estadoPostventaCambioPorSubtipificacion.get(
+                    claveSubtipificacion(etapa, codigoTipificacion, codigoSubtipificacion));
         }
     }
 }

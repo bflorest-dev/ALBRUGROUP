@@ -26,11 +26,7 @@ import java.util.Set;
 @Table(indexes = {
         @Index(name = "idx_lead_etapa_last_entry_at", columnList = "etapa, lastEntryAt"),
         @Index(name = "idx_lead_prefijo_lead", columnList = "prefijo, lead"),
-        @Index(name = "idx_lead_estado", columnList = "estado"),
-        @Index(name = "idx_lead_id_asesor_preventa_fecha", columnList = "idAsesorPreventa, fechaPreventa"),
-        @Index(name = "idx_lead_id_asesor_venta_fecha", columnList = "idAsesorVenta, fechaVenta"),
-        @Index(name = "idx_lead_id_asesor_postventa_fecha", columnList = "idAsesorPostventa, fechaPostventa"),
-        @Index(name = "idx_lead_id_asesor_cobranza_fecha", columnList = "idAsesorCobranza, fechaCobranza")
+        @Index(name = "idx_lead_estado", columnList = "estado")
 })
 @AllArgsConstructor @NoArgsConstructor
 // Partición por equipo: el filtro se habilita por request con los equipos del usuario
@@ -83,9 +79,6 @@ public class Lead {
     private Long idSubtipificacion;
     private String codigoSubtipificacion;
 
-    private String primeraCodigoTipificacion;
-    private String primeraCodigoSubtipificacion;
-
     private String numeroDocumentoTitularServicioSnapshot;
     private String direccionSnapshot;
     @Column(length = 9)
@@ -129,17 +122,8 @@ public class Lead {
     @Enumerated(EnumType.STRING)
     private EstadoPostventa estadoPostventa;
 
-    // ATRIBUCION POR ETAPA
-    // Asesor que concreto cada etapa (y cuando). Se sobrescribe cada vez que otro asesor vuelve a
-    // concretar la misma etapa sobre el lead (los leads pueden regresar y reiniciar el proceso).
-    private Long idAsesorPreventa;
-    private Instant fechaPreventa;
-    private Long idAsesorVenta;
-    private Instant fechaVenta;
-    private Long idAsesorPostventa;
-    private Instant fechaPostventa;
-    private Long idAsesorCobranza;
-    private Instant fechaCobranza;
+    // La atribución histórica por etapa (mérito/fechas) y la primera tipificación viven ahora en
+    // LeadEtapaResumen (una fila por (idLead, etapa)); el Lead solo conserva su estado operativo vivo.
 
     @CreationTimestamp @Column(updatable = false)
     private Instant createdAt;

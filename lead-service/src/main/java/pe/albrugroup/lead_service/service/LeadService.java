@@ -169,7 +169,8 @@ public class LeadService {
             Map.entry("nombreAsesorAsignado", "nombreAsesorAsignado"),
             Map.entry("estado", "estado"),
             Map.entry("campana", "c.nombre"),
-            Map.entry("primeraCodigoTipificacion", "primeraCodigoTipificacion"),
+            // La primera tipificacion vive en el resumen por etapa (alias r), no en el Lead.
+            Map.entry("primeraCodigoTipificacion", "r.primeraCodigoTipificacion"),
             Map.entry("codigoTipificacion", "codigoTipificacion")
     );
     private static final Set<String> LEAD_ASESOR_SORT_FIELDS = Set.of(
@@ -836,7 +837,8 @@ public class LeadService {
     public void actualizarOfertaComercialVenta(Long idLead, LeadOfertaComercialRequest request) {
         Lead lead = obtenerLeadAsignadoEnEtapa(idLead, Etapa.VENTA);
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
-        validarOfertaComercialEditableEnCicloActualVenta(lead.getId());
+        validarOfertaComercialVentaObligatoria(request);
+        validarOfertaComercialEditableEnCicloActualVenta(lead);
         Lead savedLead = actualizarOfertaComercialInterno(lead, request);
         Long idPlanOfrecido = savedLead.getPlan() == null ? null : savedLead.getPlan().getId();
         registrarEventoActualizacion(savedLead, Accion.ACTUALIZACION_OFERTA_COMERCIAL, idPlanOfrecido);
@@ -3069,8 +3071,17 @@ public class LeadService {
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
     }
 
-    private void validarOfertaComercialEditableEnCicloActualVenta(Long idLead) {
-        List<Evento> eventos = eventoRepository.findAllByIdLeadOrderByCreatedAtDesc(idLead);
+    private void validarOfertaComercialVentaObligatoria(LeadOfertaComercialRequest request) {
+        if (request == null || request.getIdPlan() == null || request.getIdPlan() <= 0) {
+            throw new BadRequestException("Selecciona un plan antes de guardar la oferta comercial");
+        }
+    }
+
+    private void validarOfertaComercialEditableEnCicloActualVenta(Lead lead) {
+        if (lead.getPlan() == null) {
+            return;
+        }
+        List<Evento> eventos = eventoRepository.findAllByIdLeadOrderByCreatedAtDesc(lead.getId());
         for (Evento evento : eventos) {
             if (evento.getEtapa() != Etapa.VENTA) {
                 break;

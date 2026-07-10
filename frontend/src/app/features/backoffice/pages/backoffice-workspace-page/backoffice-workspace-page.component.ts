@@ -306,6 +306,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   // una vez por ciclo de VENTA. Se detecta replicando la validacion del backend sobre
   // el historial de eventos del lead (orden descendente, se corta al salir de VENTA).
   protected readonly ofertaYaRegistrada = computed(() => {
+    if (this.ofertaSinPlanVenta()) {
+      return false;
+    }
     for (const evento of this.eventos()) {
       if (evento.etapa !== 'VENTA') {
         break;
@@ -315,6 +318,25 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       }
     }
     return false;
+  });
+
+  protected readonly ofertaSinPlanVenta = computed(() => {
+    const detail = this.detail();
+    return detail?.etapa === 'VENTA' && !detail.idPlan;
+  });
+
+  protected readonly ofertaBloqueada = computed(() => this.ofertaYaRegistrada());
+
+  protected readonly ofertaNoticeSeverity = computed<'info' | 'warn'>(() => (this.ofertaBloqueada() ? 'info' : 'warn'));
+
+  protected readonly ofertaNoticeText = computed(() => {
+    if (this.ofertaBloqueada()) {
+      return 'El plan ofrecido ya fue registrado en esta venta.';
+    }
+    if (this.ofertaSinPlanVenta()) {
+      return 'Selecciona el plan ofrecido para completar la venta.';
+    }
+    return 'Solo puedes registrar el plan una vez. Revisa el plan, la promocion y los adicionales antes de guardar.';
   });
 
   protected readonly adicionalDisponibles = computed(() => {
@@ -614,6 +636,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (this.isOfertaChanged() && !this.ofertaForm.controls.idPlan.value) {
+      this.notify('warn', 'Selecciona un plan antes de guardar la oferta comercial.');
+      return;
+    }
+
     // La oferta comercial solo se puede registrar una vez por ciclo de VENTA:
     // si el usuario va a registrarla por primera vez, confirmamos antes de enviar.
     if (this.isOfertaChanged() && !this.ofertaYaRegistrada()) {
@@ -661,6 +688,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (this.isOfertaChanged()) {
       const raw = this.ofertaForm.getRawValue();
       const adicionales = this.adicionalesSeleccionados();
+      if (!raw.idPlan) {
+        this.notify('warn', 'Selecciona un plan antes de guardar la oferta comercial.');
+        return;
+      }
       tasks.push({
         label: 'Oferta Comercial',
         markPristine: () => {
@@ -670,7 +701,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         action: () =>
           firstValueFrom(
             this.leadService.actualizarOfertaComercial(detail.id, {
-              idPlan: raw.idPlan || null,
+              idPlan: raw.idPlan,
               idPromocionInterna: raw.idPromocionInterna || null,
               adicionales: adicionales.length ? adicionales : null
             })
