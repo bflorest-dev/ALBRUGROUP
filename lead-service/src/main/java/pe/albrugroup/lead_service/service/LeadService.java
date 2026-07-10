@@ -923,7 +923,7 @@ public class LeadService {
             }
             lead.setEtapa(etapaDestino);
             lead.setLastEntryAt(OperationalDateTime.now());
-            lead.setEstado(EstadoSeguimiento.GESTIONADO);
+            lead.setEstado(EstadoSeguimiento.NUEVO);
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
             lead.setIdTipificacion(null);
@@ -1050,7 +1050,7 @@ public class LeadService {
             aplicarDatosPostventaSiCorresponde(lead, etapaDestino, request.getFechaInstalacion());
             lead.setEtapa(etapaDestino);
             lead.setLastEntryAt(OperationalDateTime.now());
-            lead.setEstado(EstadoSeguimiento.GESTIONADO);
+            lead.setEstado(EstadoSeguimiento.NUEVO);
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
             lead.setIdTipificacion(null);
@@ -1127,7 +1127,7 @@ public class LeadService {
         if (etapaDestino != null && etapaDestino != etapaActual) {
             lead.setEtapa(etapaDestino);
             lead.setLastEntryAt(OperationalDateTime.now());
-            lead.setEstado(EstadoSeguimiento.GESTIONADO);
+            lead.setEstado(EstadoSeguimiento.NUEVO);
             lead.setIdAsesorAsignado(null);
             lead.setNombreAsesorAsignado(null);
             lead.setIdTipificacion(null);
