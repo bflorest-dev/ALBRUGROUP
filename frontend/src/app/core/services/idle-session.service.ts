@@ -1,9 +1,7 @@
 import { DOCUMENT } from '@angular/common';
-import { Inject, Injectable, NgZone } from '@angular/core';
-import { Router } from '@angular/router';
+import { Inject, Injectable } from '@angular/core';
 import { STORAGE_KEYS } from '../constants/storage.constants';
-import { AttendanceFacade } from '../facades/attendance.facade';
-import { PresenceService } from './presence.service';
+import { AuthSessionService } from './auth-session.service';
 import { SessionService } from './session.service';
 
 @Injectable({
@@ -14,15 +12,11 @@ export class IdleSessionService {
   private readonly checkIntervalMs = 60 * 1000;
   private checkTimerId: number | null = null;
   private initialized = false;
-  private expiring = false;
 
   constructor(
     @Inject(DOCUMENT) private readonly document: Document,
-    private readonly ngZone: NgZone,
-    private readonly presenceService: PresenceService,
-    private readonly router: Router,
     private readonly sessionService: SessionService,
-    private readonly attendanceFacade: AttendanceFacade
+    private readonly authSessionService: AuthSessionService
   ) {}
 
   initialize(): void {
@@ -65,32 +59,12 @@ export class IdleSessionService {
     return !Number.isFinite(lastActivityAt) || Date.now() - lastActivityAt >= IdleSessionService.idleTimeoutMs;
   }
 
-  expireSession(): void {
-    if (this.expiring) {
-      return;
-    }
-
-    this.expiring = true;
-    void this.closeShiftIfNeeded().finally(() => {
-      void this.presenceService.offline().finally(() => {
-        localStorage.removeItem(STORAGE_KEYS.lastActivityAt);
-        this.sessionService.clearSession();
-        void this.router.navigate(['/auth/access']);
-        this.expiring = false;
-      });
-    });
-  }
-
   /**
-   * Si el empleado queda inactivo con su turno ya terminado pero sin marcar OFFLINE, cerramos su
-   * jornada antes del logout para que igual quede su marca (el backend la estampa en su salida).
-   * Si la inactividad ocurre dentro de su horario, NO cerramos: solo se cierra sesion y podra
-   * reanudar al volver a entrar.
+   * Expiracion por inactividad. Delega en el teardown unico y guardado de AuthSessionService, el mismo
+   * que usa el interceptor, para que timer, guards e interceptor sigan un solo camino idempotente.
    */
-  private async closeShiftIfNeeded(): Promise<void> {
-    if (this.attendanceFacade.currentStatus() === 'ONLINE' && this.attendanceFacade.isPastSalida()) {
-      await this.attendanceFacade.closeShiftSilently();
-    }
+  expireSession(): void {
+    this.authSessionService.expireIdleSession();
   }
 
   private registerActivityListeners(): void {
@@ -100,10 +74,8 @@ export class IdleSessionService {
     }
 
     const activityEvents: Array<keyof WindowEventMap> = ['click', 'keydown', 'pointerdown', 'touchstart'];
-    this.ngZone.runOutsideAngular(() => {
-      activityEvents.forEach((eventName) => {
-        windowRef.addEventListener(eventName, this.handleUserActivity, { passive: true });
-      });
+    activityEvents.forEach((eventName) => {
+      windowRef.addEventListener(eventName, this.handleUserActivity, { passive: true });
     });
   }
 
@@ -117,13 +89,11 @@ export class IdleSessionService {
       return;
     }
 
-    this.ngZone.runOutsideAngular(() => {
-      this.checkTimerId = windowRef.setInterval(() => {
-        if (this.hasExpired()) {
-          this.ngZone.run(() => this.expireSession());
-        }
-      }, this.checkIntervalMs);
-    });
+    this.checkTimerId = windowRef.setInterval(() => {
+      if (this.hasExpired()) {
+        this.expireSession();
+      }
+    }, this.checkIntervalMs);
   }
 
   private isBrowser(): boolean {

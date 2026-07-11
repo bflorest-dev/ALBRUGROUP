@@ -26,6 +26,7 @@ export class AuthSessionService {
   private readonly presenceService = inject(PresenceService);
   private readonly router = inject(Router);
   private refreshInFlight$: Observable<string> | null = null;
+  private idleExpiring = false;
 
   refreshAccessToken(): Observable<string> {
     const refreshToken = this.tokenService.getRefreshToken();
@@ -76,8 +77,20 @@ export class AuthSessionService {
     }
   }
 
+  /**
+   * Teardown unico por inactividad, idempotente. Lo invocan el interceptor y (delegado) el timer y los
+   * guards de ruta; el guard de reentrada evita que varias requests concurrentes con sesion vencida
+   * disparen multiples offline/navegaciones. La jornada la cierra el job de reconciliacion del backend.
+   */
   expireIdleSession(): void {
-    void this.presenceService.offline().finally(() => this.clearSessionAndRedirect());
+    if (this.idleExpiring) {
+      return;
+    }
+    this.idleExpiring = true;
+    void this.presenceService.offline().finally(() => {
+      this.clearSessionAndRedirect();
+      this.idleExpiring = false;
+    });
   }
 
   clearSessionAndRedirect(): void {

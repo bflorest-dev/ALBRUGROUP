@@ -2,7 +2,7 @@ import { DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { catchError, filter, firstValueFrom, map, of, startWith, switchMap, timeout } from 'rxjs';
+import { catchError, filter, map, of, startWith, switchMap, timeout } from 'rxjs';
 import { ApiErrorResponse } from '../../shared/models/api/api-error-response';
 import { DetalleAsistenciaResponse } from '../../shared/models/schedule/detalle-asistencia-response';
 import {
@@ -136,6 +136,11 @@ export class AttendanceFacade {
    */
   readonly statusConfirmed = signal(false);
   /**
+   * Contador que incrementa cada vez que una SALIDA (marcar OFFLINE) se registra con exito. Lo observa
+   * el layout para cerrar la sesion (logout) tras marcar OFFLINE: marcar OFFLINE = terminar tu jornada.
+   */
+  readonly salidaSuccessTick = signal(0);
+  /**
    * Indica que el asesor esta gestionando un lead. Mientras sea true se conserva la presencia
    * aunque su horario haya terminado (gracia para terminar el lead en gestion antes de cerrar turno).
    */
@@ -251,6 +256,9 @@ export class AttendanceFacade {
         this.isLoading.set(false);
         this.errorMessage.set('');
         void this.syncPresence(state.detail);
+        if (state.actionId === 'REGISTRAR_SALIDA') {
+          this.salidaSuccessTick.update((n) => n + 1);
+        }
         return;
       }
 
@@ -309,8 +317,9 @@ export class AttendanceFacade {
         return;
       }
 
-      // El ADMINISTRADOR no marca asistencia; su badge es fijo ONLINE en el layout.
-      if (session.primaryRole === 'ADMINISTRADOR') {
+      // ADMINISTRADOR y COMMUNITY no marcan asistencia; su badge es fijo ONLINE en el layout
+      // (isAlwaysOnlineRole). Coherente con el guard de initialize() en private-layout.
+      if (session.primaryRole === 'ADMINISTRADOR' || session.primaryRole === 'COMMUNITY') {
         return;
       }
 
@@ -364,6 +373,7 @@ export class AttendanceFacade {
     this.autoCheckInRetried = false;
     this.attendanceDetail.set(null);
     this.statusConfirmed.set(false);
+    this.salidaSuccessTick.set(0);
     this.managingLeadActive.set(false);
     this.isLoading.set(false);
     this.errorMessage.set('');
@@ -668,21 +678,6 @@ export class AttendanceFacade {
   private nowMinutes(): number {
     const now = new Date();
     return now.getHours() * 60 + now.getMinutes();
-  }
-
-  /**
-   * Cierre best-effort de la jornada antes de un logout por inactividad. Lo usa IdleSessionService
-   * cuando el empleado queda inactivo con su turno ya terminado, para que igual quede su marca OFFLINE
-   * (el backend la estampa en la salida programada).
-   */
-  async closeShiftSilently(): Promise<void> {
-    try {
-      const detail = await firstValueFrom(this.attendanceService.registrarSalida(this.buildMovementRequest()));
-      this.attendanceDetail.set(detail);
-      void this.syncPresence(detail);
-    } catch {
-      // Silencioso: es un cierre best-effort previo al logout.
-    }
   }
 
   private getErrorMessage(error: HttpErrorResponse, fallbackMessage: string): string {

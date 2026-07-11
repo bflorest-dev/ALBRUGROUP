@@ -103,7 +103,6 @@ export class AsesorVentasWorkspaceFacade {
   private initialized = false;
   private initializeInFlight = false;
   private lastAttendanceStatus: EstadoAsistencia | null = null;
-  private autoCloseArmed = false;
   private lastNotificationAt = 0;
   private readonly operationalGate = this.operationalGateService.createGate('asesor-ventas-workspace');
 
@@ -326,25 +325,6 @@ export class AsesorVentasWorkspaceFacade {
     // para que pueda terminarlo antes de cerrar turno (y el GTR no lo marque como abandonador aun).
     effect(() => {
       this.attendanceFacade.setManagingLeadActive(this.isManagingLead());
-    });
-
-    // Opcion B: el asesor puede vaciar toda su bandeja despues de su salida. Cuando queda sin
-    // leads y sin lead en gestion, cerramos su turno automaticamente. El flag autoCloseArmed
-    // evita que el effect se dispare mas de una vez (se resetea en clearBoardForOffline).
-    effect(() => {
-      const pastSalida = this.attendanceFacade.isPastSalida();
-      const total = this.totalElements();
-      const managing = this.isManagingLead();
-
-      if (!pastSalida || managing || !this.initialized || this.autoCloseArmed) {
-        return;
-      }
-
-      if (total === 0) {
-        this.autoCloseArmed = true;
-        this.attendanceFacade.submitAction('REGISTRAR_SALIDA');
-        this.successMessage.set('Vaciaste tu bandeja. Cerramos tu turno automáticamente.');
-      }
     });
   }
 
@@ -755,8 +735,8 @@ export class AsesorVentasWorkspaceFacade {
       this.errorMessage.set('Marca ONLINE para realizar esta accion.');
       return;
     }
-    // Si el horario ya termino y esta cerrando su ultimo lead en gestion, al terminar se
-    // registra su salida automaticamente (cierre de turno).
+    // Si el horario ya termino y esta cerrando su ultimo lead en gestion, se lo indicamos al
+    // terminar. Ya NO se cierra el turno automaticamente: el asesor decide cuando marcar OFFLINE.
     const wasLastManagedInWrapUp = this.wrapUpActive() && this.isManagingLead();
     const detail = this.detail();
     if (!detail || this.tipificacionForm.invalid) {
@@ -827,10 +807,10 @@ export class AsesorVentasWorkspaceFacade {
         // (awaited) antes de cerrar para que salga de la bandeja del asesor y del GTR.
         await this.liberarAtencionPendiente();
         this.closeDetail();
-        // El cierre del turno lo maneja el effect de auto-cierre (Opcion B): cuando la bandeja
-        // quede en 0 despues de reconciliar, dispara REGISTRAR_SALIDA automaticamente.
+        // Tu turno ya terminó, pero no cerramos nada automáticamente: sigues ONLINE y decides
+        // cuándo marcar OFFLINE.
         if (wasLastManagedInWrapUp) {
-          this.successMessage.set('Lead tipificado. Si era el último, cerramos tu turno en un momento.');
+          this.successMessage.set('Lead tipificado. Tu turno ya terminó: puedes marcar OFFLINE cuando quieras.');
         }
         await this.reconcile(detail.id);
       }
@@ -1822,7 +1802,6 @@ export class AsesorVentasWorkspaceFacade {
 
   private clearBoardForOffline(): void {
     this.initialized = false;
-    this.autoCloseArmed = false;
     this.rows.set([]);
     this.detail.set(null);
     this.selectedLeadId.set(null);

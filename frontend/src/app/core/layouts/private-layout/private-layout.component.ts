@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { BadgeModule } from 'primeng/badge';
@@ -78,6 +78,9 @@ export class PrivateLayoutComponent {
   protected readonly adminDeleteLeadsVisible = signal(this.readAdminDeleteLeadsVisible());
   protected readonly attendanceErrorMessage = signal('');
   private attendanceInitialized = false;
+  // Ultimo tick de salida ya procesado: al marcar OFFLINE (REGISTRAR_SALIDA) cerramos la sesion, y
+  // este contador evita re-disparar el logout en un layout recreado tras un re-login.
+  private handledSalidaTick = this.attendanceFacade.salidaSuccessTick();
   protected readonly session = this.sessionService.session;
   protected readonly isAdmin = computed(() => this.session()?.primaryRole === 'ADMINISTRADOR');
   protected readonly isAlwaysOnlineRole = computed(() => {
@@ -243,6 +246,17 @@ export class PrivateLayoutComponent {
       if (this.session()?.primaryRole === 'ADMINISTRADOR') {
         this.equiposNav.ensureLoaded();
       }
+    });
+
+    // Marcar OFFLINE = terminar la jornada: al registrarse la salida con exito, cerramos la sesion
+    // (logout completo, limpia token y envia al login) para que la marcacion sea coherente.
+    effect(() => {
+      const tick = this.attendanceFacade.salidaSuccessTick();
+      if (tick === this.handledSalidaTick) {
+        return;
+      }
+      this.handledSalidaTick = tick;
+      untracked(() => void this.authSessionService.logout());
     });
 
     effect(() => {
