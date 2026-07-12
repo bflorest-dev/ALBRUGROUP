@@ -1048,6 +1048,15 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return `${row.prefijo} ${row.lead}`.trim();
   }
 
+  protected leadCountryCode(row: LeadVentaResponse | LeadDetalleResponse): string {
+    return row.prefijo === '+51' ? 'PE' : (row.prefijo ?? '').replace(/^\+/, '');
+  }
+
+  protected assignedShortName(value?: string | null): string {
+    const words = (value ?? '').trim().split(/\s+/).filter(Boolean);
+    return words.length ? words.slice(0, 2).join(' ') : '-';
+  }
+
   // Logo del proveedor del plan ofrecido (WIN/CLARO). Devuelve string estable (o null): seguro en template.
   protected providerLogo(nombreProveedor?: string | null): string | null {
     return resolveProviderLogo(nombreProveedor);

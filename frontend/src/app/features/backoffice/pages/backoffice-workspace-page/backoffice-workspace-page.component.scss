@@ -125,7 +125,49 @@ p,
 .col-fecha,
 .col-gestion {
   white-space: nowrap;
-  width: 8rem;
+  width: 7rem;
+}
+
+.col-lead {
+  white-space: nowrap;
+}
+
+.col-asignado {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.date-stack {
+  align-items: center;
+  display: grid;
+  gap: 0.12rem;
+  justify-items: center;
+  line-height: 1.12;
+  min-height: 2.05rem;
+  text-align: center;
+}
+
+.date-stack span {
+  color: #41526b;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.date-stack strong {
+  color: #10243f;
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.lead-cell__prefix {
+  color: #10243f;
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  margin-right: 0.28rem;
+  vertical-align: baseline;
 }
 
 .col-proveedor {

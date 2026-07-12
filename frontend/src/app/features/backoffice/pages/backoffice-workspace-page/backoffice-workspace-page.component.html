@@ -235,8 +235,16 @@
 
       <ng-template #body let-row>
         <tr [class.row-new]="row.isNew">
-          <td class="col-fecha">{{ row.lastEntryAt | date: 'dd/MM HH:mm' }}</td>
-          <td class="col-lead"><strong>{{ leadPhone(row) }}</strong></td>
+          <td class="col-fecha">
+            <div class="date-stack">
+              <span>{{ row.lastEntryAt ? (row.lastEntryAt | date: 'dd/MM/yyyy') : '-' }}</span>
+              <strong>{{ row.lastEntryAt ? (row.lastEntryAt | date: 'hh:mm a') : '' }}</strong>
+            </div>
+          </td>
+          <td class="col-lead">
+            <span class="lead-cell__prefix">{{ leadCountryCode(row) }}</span>
+            <strong>{{ row.lead }}</strong>
+          </td>
           <td class="col-documento">{{ display(row.numeroDocumentoTitularServicio) }}</td>
           <td class="col-proveedor">
             @if (providerLogo(row.nombreProveedorSnapshot); as logo) {
@@ -249,7 +257,7 @@
           </td>
           <td class="col-estado"><p-tag [severity]="estadoSeverity(row.estadoSeguimiento)" [value]="display(row.estadoSeguimiento)" /></td>
           @if (section() === 'plataforma') {
-            <td class="col-asignado">{{ display(row.nombreAsesorAsignado) }}</td>
+            <td class="col-asignado">{{ assignedShortName(row.nombreAsesorAsignado) }}</td>
           }
           <td class="col-plan">
             @if (row.nombrePlanSnapshot) {
@@ -290,7 +298,12 @@
               }
             </td>
           }
-          <td class="col-gestion">{{ row.ultimaTipificacionAt ? (row.ultimaTipificacionAt | date: 'dd/MM HH:mm') : '-' }}</td>
+          <td class="col-gestion">
+            <div class="date-stack">
+              <span>{{ row.ultimaTipificacionAt ? (row.ultimaTipificacionAt | date: 'dd/MM/yyyy') : '-' }}</span>
+              <strong>{{ row.ultimaTipificacionAt ? (row.ultimaTipificacionAt | date: 'hh:mm a') : '' }}</strong>
+            </div>
+          </td>
           <td class="col-actions">
             @if (section() === 'plataforma') {
               @if (row.idAsesorAsignado) {
