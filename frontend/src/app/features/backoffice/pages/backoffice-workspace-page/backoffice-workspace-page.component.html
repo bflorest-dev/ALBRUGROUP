@@ -508,6 +508,8 @@
                 [showIcon]="true"
                 icon="pi pi-clock"
                 appendTo="body"
+                (onSelect)="normalizeScheduledTime()"
+                (focusout)="normalizeScheduledTime()"
               />
             </label>
           }

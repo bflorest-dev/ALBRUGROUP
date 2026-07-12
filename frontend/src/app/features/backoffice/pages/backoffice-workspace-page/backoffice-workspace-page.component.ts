@@ -754,7 +754,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.notify('warn', 'Selecciona tipificacion y subtipificacion.');
       return;
     }
-    const raw = this.tipificacionForm.getRawValue();
     if (this.requiresInstallDate() && !this.tipificacionForm.controls.fechaInstalacion.value) {
       this.notify('warn', 'La fecha de instalacion es obligatoria para pasar a POSTVENTA.');
       return;
@@ -765,6 +764,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     //   'La fecha de instalacion no puede ser anterior a hoy.'
     // )) return;
     if (this.requiresProgramming()) {
+      this.normalizeScheduledTime();
       if (!this.tipificacionForm.controls.fechaProgramacion.value || !this.tipificacionForm.controls.horaProgramada.value) {
         this.notify('warn', 'Ingresa fecha y hora de programacion.');
         return;
@@ -775,6 +775,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       //   'La fecha de programacion no puede ser anterior a hoy.'
       // )) return;
     }
+    const raw = this.tipificacionForm.getRawValue();
     if (this.requiresSecSot()) {
       const sec = this.resolveSecForTipification(raw.sec, detail.sec);
       const sot = this.resolveSotForTipification(raw.sot, detail.sot);
@@ -1122,7 +1123,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         codigoSubtipificacion: '',
         fechaInstalacion: '',
         fechaProgramacion: isProgramado ? detail?.fechaProgramacion ?? '' : '',
-        horaProgramada: isProgramado ? detail?.horaProgramada ?? '' : ''
+        horaProgramada: isProgramado ? detail?.horaProgramada ?? this.defaultProgrammingTime() : ''
       },
       { emitEvent: false }
     );
@@ -1138,6 +1139,40 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       },
       { emitEvent: false }
     );
+  }
+
+  private defaultProgrammingTime(): string {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:00`;
+  }
+
+  protected normalizeScheduledTime(): void {
+    const control = this.tipificacionForm.controls.horaProgramada;
+    const normalized = this.roundToQuarterHour(control.value);
+    if (!normalized || normalized === control.value) {
+      return;
+    }
+    control.setValue(normalized, { emitEvent: false });
+    control.markAsDirty();
+    control.markAsTouched();
+  }
+
+  private roundToQuarterHour(value: string | null): string {
+    if (!value) {
+      return '';
+    }
+    const match = /^(\d{1,2}):(\d{1,2})/.exec(String(value).trim());
+    if (!match) {
+      return value;
+    }
+    let hour = Math.min(23, Math.max(0, Number(match[1])));
+    const minute = Math.min(59, Math.max(0, Number(match[2])));
+    let roundedMinute = Math.round(minute / 15) * 15;
+    if (roundedMinute === 60) {
+      hour = (hour + 1) % 24;
+      roundedMinute = 0;
+    }
+    return `${String(hour).padStart(2, '0')}:${String(roundedMinute).padStart(2, '0')}`;
   }
 
   protected onTipoDocumentoChanged(): void {
