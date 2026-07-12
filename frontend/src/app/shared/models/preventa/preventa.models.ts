@@ -392,6 +392,11 @@ export interface LeadRealtimeEvent {
   idAsesorAnterior?: number | null;
   codigoTipificacion?: string | null;
   codigoSubtipificacion?: string | null;
+  idCampanaAnterior?: number | null;
+  idCampanaNueva?: number | null;
+  nombreCampanaAnterior?: string | null;
+  nombreCampanaNueva?: string | null;
+  eventosActualizados?: number;
   totalProcesados?: number;
   totalRegistrados?: number;
   totalFallidos?: number;

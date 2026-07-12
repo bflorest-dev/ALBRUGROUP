@@ -1,0 +1,162 @@
+<section class="campaign-correction-page">
+  <p-confirmDialog appendTo="body" />
+
+  <p-card styleClass="campaign-correction-hero">
+    <div class="hero-content">
+      <span class="eyebrow">COMMUNITY</span>
+      <h1>Corrección de campaña</h1>
+      <p>Busca un lead y corrige la campaña asociada. El cambio también actualizará sus eventos.</p>
+    </div>
+  </p-card>
+
+  @if (successMessage()) {
+    <p-message severity="success" [text]="successMessage() ?? ''" />
+  }
+  @if (errorMessage()) {
+    <p-message severity="error" [text]="errorMessage() ?? ''" />
+  }
+
+  <p-card styleClass="campaign-correction-card">
+    <div class="search-row">
+      <label>
+        <span>Número de lead</span>
+        <input
+          pInputText
+          type="text"
+          inputmode="numeric"
+          [ngModel]="leadQuery()"
+          (ngModelChange)="leadQuery.set($event)"
+          (keydown.enter)="search()"
+          placeholder="Ej. 916855497"
+        />
+      </label>
+      <button
+        pButton
+        type="button"
+        icon="pi pi-search"
+        label="Buscar"
+        [loading]="isLoading()"
+        (click)="search()"
+      ></button>
+    </div>
+  </p-card>
+
+  @if (candidates().length > 1) {
+    <p-card styleClass="campaign-correction-card">
+      <ng-template #title>Coincidencias encontradas</ng-template>
+      <p-table [value]="candidates()" styleClass="p-datatable-sm" [rowHover]="true">
+        <ng-template #header>
+          <tr>
+            <th>Lead</th>
+            <th>Etapa</th>
+            <th>Campaña actual</th>
+            <th>Asesor</th>
+            <th>Eventos</th>
+            <th>Acción</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-candidate>
+          <tr [class.selected-row]="selectedCandidate()?.idLead === candidate.idLead">
+            <td><strong>{{ candidate.prefijo }} {{ candidate.lead }}</strong></td>
+            <td><p-tag [value]="display(candidate.etapa)" severity="info" /></td>
+            <td>{{ campaignLabel(candidate) }}</td>
+            <td>{{ display(candidate.nombreAsesorAsignado) }}</td>
+            <td>{{ candidate.cantidadEventos }}</td>
+            <td>
+              <button
+                pButton
+                type="button"
+                size="small"
+                label="Elegir"
+                icon="pi pi-check"
+                severity="secondary"
+                (click)="selectCandidate(candidate)"
+              ></button>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-card>
+  }
+
+  @if (selectedCandidate(); as selected) {
+    <p-card styleClass="campaign-correction-card">
+      <ng-template #title>Lead seleccionado</ng-template>
+      <div class="selected-grid">
+        <div>
+          <span>Lead</span>
+          <strong>{{ selected.prefijo }} {{ selected.lead }}</strong>
+        </div>
+        <div>
+          <span>Etapa</span>
+          <strong>{{ display(selected.etapa) }}</strong>
+        </div>
+        <div>
+          <span>Estado</span>
+          <strong>{{ display(selected.estado) }}</strong>
+        </div>
+        <div>
+          <span>Campaña actual</span>
+          <strong>{{ campaignLabel(selected) }}</strong>
+        </div>
+        <div>
+          <span>Asesor</span>
+          <strong>{{ display(selected.nombreAsesorAsignado) }}</strong>
+        </div>
+        <div>
+          <span>Eventos asociados</span>
+          <strong>{{ selected.cantidadEventos }}</strong>
+        </div>
+        <div>
+          <span>Creado</span>
+          <strong>{{ selected.createdAt | date: 'dd/MM/yyyy HH:mm' }}</strong>
+        </div>
+        <div>
+          <span>Última actualización</span>
+          <strong>{{ selected.updatedAt ? (selected.updatedAt | date: 'dd/MM/yyyy HH:mm') : '-' }}</strong>
+        </div>
+      </div>
+
+      <div class="correction-row">
+        <label>
+          <span>Nueva campaña</span>
+          <p-select
+            [options]="campaignOptions()"
+            optionLabel="label"
+            optionValue="value"
+            [ngModel]="selectedCampaignId()"
+            (ngModelChange)="selectedCampaignId.set($event)"
+            placeholder="Elige una campaña"
+            appendTo="body"
+          />
+        </label>
+        <button
+          pButton
+          type="button"
+          icon="pi pi-save"
+          label="Guardar corrección"
+          [loading]="isSaving()"
+          (click)="confirmCorrection()"
+        ></button>
+      </div>
+    </p-card>
+  }
+
+  @if (lastResult(); as result) {
+    <p-card styleClass="campaign-correction-result">
+      <div>
+        <span>Antes</span>
+        <strong>{{ result.nombreCampanaAnterior || 'Sin campaña' }}</strong>
+      </div>
+      <i class="pi pi-arrow-right" aria-hidden="true"></i>
+      <div>
+        <span>Ahora</span>
+        <strong>{{ result.nombreCampanaNueva || 'Sin campaña' }}</strong>
+      </div>
+      <div>
+        <span>Eventos actualizados</span>
+        <strong>{{ result.eventosActualizados }}</strong>
+      </div>
+    </p-card>
+  }
+</section>

@@ -101,6 +101,33 @@ export type CampanaGastoResumenPeriodoResponse = {
   campanas?: CampanaGastoCampanaResumenResponse[] | null;
 };
 
+export type LeadCampanaCorreccionCandidatoResponse = {
+  idLead: number;
+  prefijo?: string | null;
+  lead: string;
+  etapa?: string | null;
+  estado?: string | null;
+  idCampanaActual?: number | null;
+  nombreCampanaActual?: string | null;
+  idEquipo?: number | null;
+  nombreAsesorAsignado?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  cantidadEventos: number;
+};
+
+export type LeadCampanaCorreccionResponse = {
+  idLead: number;
+  lead: string;
+  idCampanaAnterior?: number | null;
+  nombreCampanaAnterior?: string | null;
+  idCampanaNueva?: number | null;
+  nombreCampanaNueva?: string | null;
+  idEquipoAnterior?: number | null;
+  idEquipoNuevo?: number | null;
+  eventosActualizados: number;
+};
+
 export type AdicionalResponse = LeadEntity & {
   precioUnitario?: number;
   idProveedor?: number;
@@ -240,6 +267,19 @@ export class CommunityLeadService {
   listarCampanas(activo?: boolean): Observable<CampanaResponse[]> {
     const params = this.optionalActivoParam(activo);
     return this.http.get<CampanaResponse[]>(`${this.leadUrl}/campanas`, { params });
+  }
+
+  buscarCorreccionCampanaLead(lead: string): Observable<LeadCampanaCorreccionCandidatoResponse[]> {
+    return this.http.get<LeadCampanaCorreccionCandidatoResponse[]>(`${this.leadUrl}/preventa/correcciones/campana`, {
+      params: new HttpParams().set('lead', lead)
+    });
+  }
+
+  corregirCampanaLead(idLead: number, idCampana: number | null): Observable<LeadCampanaCorreccionResponse> {
+    return this.http.patch<LeadCampanaCorreccionResponse>(
+      `${this.leadUrl}/preventa/correcciones/campana/${idLead}`,
+      { idCampana }
+    );
   }
 
   actualizarWhatsappCampana(

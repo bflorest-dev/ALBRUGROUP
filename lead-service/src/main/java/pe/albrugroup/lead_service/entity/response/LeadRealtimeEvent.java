@@ -22,6 +22,11 @@ public class LeadRealtimeEvent {
     private Long idAsesorAnterior;
     private String codigoTipificacion;
     private String codigoSubtipificacion;
+    private Long idCampanaAnterior;
+    private Long idCampanaNueva;
+    private String nombreCampanaAnterior;
+    private String nombreCampanaNueva;
+    private Integer eventosActualizados;
     private Integer totalProcesados;
     private Integer totalRegistrados;
     private Integer totalFallidos;

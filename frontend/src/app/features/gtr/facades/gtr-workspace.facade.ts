@@ -3097,6 +3097,7 @@ export class GtrWorkspaceFacade {
               'GESTION_INICIADA',
               'TIPIFICACION',
               'ATENCION_CERRADA',
+              'CAMPANA_CORREGIDA',
               'ELIMINACION'
             ].includes(event.tipo)
           ) {

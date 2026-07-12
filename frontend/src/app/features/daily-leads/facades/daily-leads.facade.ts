@@ -1,10 +1,11 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Subscription } from 'rxjs';
 import type { TipificationPaletteByCode } from '../../../shared/components/tipification-stack/tipification-stack.component';
 import { EventoResponse } from '../../../shared/models/preventa/preventa.models';
 import { formatLabel } from '../../../shared/utils/display-label';
 import { SessionService } from '../../../core/services/session.service';
+import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
 import { DailyLeadsService } from '../services/daily-leads.service';
 import {
   DailyLeadGroupFilter,
@@ -25,6 +26,8 @@ import {
 export class DailyLeadsFacade {
   private readonly service = inject(DailyLeadsService);
   private readonly session = inject(SessionService);
+  private readonly realtimeService = inject(LeadRealtimeService);
+  private readonly realtimeSubscription = new Subscription();
 
   /**
    * Roles con visibilidad global de equipos (backend: VER_TODOS_LOS_EQUIPOS) que llegan a esta
@@ -204,6 +207,7 @@ export class DailyLeadsFacade {
   readonly maxDate = this.localToday();
 
   async initialize(): Promise<void> {
+    this.startRealtime();
     await Promise.all([
       this.loadTipificationPalette(),
       this.loadEquipoCatalogo(),
@@ -258,6 +262,10 @@ export class DailyLeadsFacade {
     await Promise.all([this.loadGroups(), this.loadMetricas(), this.load(this.pageNumber())]);
   }
 
+  stopRealtime(): void {
+    this.realtimeSubscription.unsubscribe();
+  }
+
   setLeadSearchDraft(value: string): void {
     this.leadSearchDraft.set(value);
   }
@@ -288,6 +296,19 @@ export class DailyLeadsFacade {
     this.groupingMode.set(mode);
     this.selectedGroup.set(null);
     await this.load(0);
+  }
+
+  private startRealtime(): void {
+    this.realtimeSubscription.add(
+      this.realtimeService.watchTopic('/topic/leads').subscribe({
+        next: (event) => {
+          if (event.tipo === 'CAMPANA_CORREGIDA') {
+            void this.refresh();
+          }
+        },
+        error: () => undefined
+      })
+    );
   }
 
   async selectGroup(group: DailyLeadGroupItem | null | undefined): Promise<void> {

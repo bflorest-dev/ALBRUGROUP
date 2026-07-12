@@ -33,6 +33,12 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     @Query("DELETE FROM Evento e WHERE e.idLead = :idLead")
     void deleteByIdLead(@Param("idLead") Long idLead);
 
+    long countByIdLead(Long idLead);
+
+    @Modifying
+    @Query("UPDATE Evento e SET e.idCampana = :idCampana WHERE e.idLead = :idLead")
+    int actualizarCampanaPorLead(@Param("idLead") Long idLead, @Param("idCampana") Long idCampana);
+
     Page<Evento> findByIdLeadAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
             Long idLead,
             Instant fechaDesde,

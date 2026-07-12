@@ -180,6 +180,7 @@ export class PrivateLayoutComponent {
       return [
         { label: 'Mantenimiento', route: '/app/community/mantenimiento', icon: 'pi pi-database', exact: true },
         { label: 'Leads del día', route: '/app/community/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
+        { label: 'Corrección de campaña', route: '/app/community/correccion-campana', icon: 'pi pi-sync', exact: true },
         { label: 'Finanzas', route: '/app/community/finanzas', icon: 'pi pi-wallet', exact: true },
         { label: 'Metricas', route: '/app/community/metricas', icon: 'pi pi-chart-line', exact: true }
       ];

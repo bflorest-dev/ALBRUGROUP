@@ -168,6 +168,7 @@ public class DataLoader {
 
         savePermiso("CREATE_LEADS", "Puede registrar ingresos de leads", "LEAD", "CREATE");
         savePermiso("DELETE_LEADS", "Puede eliminar integralmente leads", "LEAD", "DELETE");
+        savePermiso("CORREGIR_CAMPANA_LEAD", "Puede corregir la campana asociada a un lead y sus eventos", "LEAD", "UPDATE_CAMPAIGN");
         savePermiso("ASSIGN_LEADS", "Puede asignar leads", "LEAD", "ASSIGN");
         savePermiso("READ_LEADS_ASESOR", "Puede ver bandeja y detalle de leads del asesor", "LEAD", "READ");
         savePermiso("UPDATE_LEADS_ASESOR", "Puede actualizar datos de gestion del lead", "LEAD", "UPDATE");
@@ -351,6 +352,7 @@ public class DataLoader {
                 getPermiso("DELETE_PROMOCIONES"),
                 getPermiso("READ_EVENTOS_LEADS"),
                 getPermiso("READ_LEADS_DIARIOS"),
+                getPermiso("CORREGIR_CAMPANA_LEAD"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
                 getPermiso("UPDATE_ASISTENCIAS"),
                 getPermiso("VER_TODOS_LOS_EQUIPOS")

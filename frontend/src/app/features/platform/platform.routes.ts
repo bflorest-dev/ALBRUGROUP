@@ -20,6 +20,7 @@ import { AsesorVentasHorarioPageComponent } from '../asesor-ventas/pages/asesor-
 import { AsesorVentasMisPreventasPageComponent } from '../asesor-ventas/pages/asesor-ventas-mis-preventas-page/asesor-ventas-mis-preventas-page.component';
 import { AsesorVentasMetricasPageComponent } from '../asesor-ventas/pages/asesor-ventas-metricas-page/asesor-ventas-metricas-page.component';
 import { BackofficeWorkspacePageComponent } from '../backoffice/pages/backoffice-workspace-page/backoffice-workspace-page.component';
+import { CommunityCampaignCorrectionPageComponent } from '../community/pages/community-campaign-correction-page/community-campaign-correction-page.component';
 import { CommunityWorkspacePageComponent } from '../community/pages/community-workspace-page/community-workspace-page.component';
 import { DailyLeadsPageComponent } from '../daily-leads/pages/daily-leads-page/daily-leads-page.component';
 import { GtrWorkspacePageComponent } from '../gtr/pages/gtr-workspace-page/gtr-workspace-page.component';
@@ -367,6 +368,14 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'community/leads-del-dia',
     component: DailyLeadsPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['COMMUNITY']
+    }
+  },
+  {
+    path: 'community/correccion-campana',
+    component: CommunityCampaignCorrectionPageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['COMMUNITY']

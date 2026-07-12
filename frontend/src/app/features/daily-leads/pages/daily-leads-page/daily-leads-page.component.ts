@@ -55,6 +55,7 @@ export class DailyLeadsPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.facade.stopRealtime();
     if (this.organizeCloseTimeout !== null) {
       clearTimeout(this.organizeCloseTimeout);
     }

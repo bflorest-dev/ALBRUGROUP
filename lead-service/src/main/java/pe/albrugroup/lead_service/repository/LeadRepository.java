@@ -44,6 +44,25 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     List<Lead> findByContactoIdOrderByLastEntryAtDescIdDesc(Long idContacto);
     Optional<Lead> findFirstByLeadOrderByLastEntryAtDescIdDesc(String lead);
 
+    @Query("""
+            SELECT l
+            FROM Lead l
+            LEFT JOIN FETCH l.campana c
+            LEFT JOIN FETCH c.proveedor
+            WHERE l.lead = :lead
+            ORDER BY l.lastEntryAt DESC, l.id DESC
+            """)
+    List<Lead> buscarCorreccionCampanaPorLead(@Param("lead") String lead);
+
+    @Query("""
+            SELECT l
+            FROM Lead l
+            LEFT JOIN FETCH l.campana c
+            LEFT JOIN FETCH c.proveedor
+            WHERE l.id = :idLead
+            """)
+    Optional<Lead> buscarParaCorreccionCampana(@Param("idLead") Long idLead);
+
     @Query("SELECT l.id, l.lead FROM Lead l WHERE l.id IN :ids")
     List<Object[]> findLeadNumerosByIds(@Param("ids") Collection<Long> ids);
     Optional<Lead> findByIdAndIdAsesorAsignadoAndEtapa(Long id, Long idAsesorAsignado, Etapa etapa);

@@ -14,6 +14,7 @@ import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.response.*;
+import pe.albrugroup.lead_service.service.LeadCampanaCorreccionService;
 import pe.albrugroup.lead_service.service.LeadExcelIntakeService;
 import pe.albrugroup.lead_service.service.LeadService;
 
@@ -27,6 +28,7 @@ public class PreventaController {
 
     private final LeadService  leadService;
     private final LeadExcelIntakeService leadExcelIntakeService;
+    private final LeadCampanaCorreccionService leadCampanaCorreccionService;
 
     //GTR
 
@@ -36,6 +38,22 @@ public class PreventaController {
         leadService.registrarIngresoLead(request);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/correcciones/campana") @PreAuthorize("hasAuthority('CORREGIR_CAMPANA_LEAD')")
+    public ResponseEntity<List<LeadCampanaCorreccionCandidatoResponse>> buscarCorreccionCampana(
+            @RequestParam String lead
+    ) {
+        return ResponseEntity.ok(leadCampanaCorreccionService.buscarPorLead(lead));
+    }
+
+    @PatchMapping("/correcciones/campana/{idLead}") @PreAuthorize("hasAuthority('CORREGIR_CAMPANA_LEAD')")
+    public ResponseEntity<LeadCampanaCorreccionResponse> corregirCampanaLead(
+            @PathVariable Long idLead,
+            @RequestBody(required = false) LeadCampanaCorreccionRequest request
+    ) {
+        return ResponseEntity.ok(leadCampanaCorreccionService.corregirCampana(idLead, request));
+    }
+
     @PostMapping("/intake/retroactivo") @PreAuthorize("hasAuthority('CREATE_LEADS')")
     public ResponseEntity<Void> registrarIngresoLeadRetroactivo(
             @Valid @RequestBody LeadIntakeRetroactivoRequest request
