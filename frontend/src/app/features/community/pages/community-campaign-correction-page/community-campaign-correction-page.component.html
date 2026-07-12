@@ -42,8 +42,9 @@
           pInputText
           type="text"
           inputmode="numeric"
+          maxlength="9"
           [ngModel]="leadQuery()"
-          (ngModelChange)="leadQuery.set($event)"
+          (ngModelChange)="updateLeadQuery($event)"
           (keydown.enter)="search()"
           placeholder="Ej. 916855497"
         />

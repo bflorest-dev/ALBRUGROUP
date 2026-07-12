@@ -175,6 +175,10 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
     return value === null || value === undefined || value === '' ? '-' : String(value);
   }
 
+  protected updateLeadQuery(value: string): void {
+    this.leadQuery.set(this.normalizeLead(value));
+  }
+
   protected closeCorrectionDialog(): void {
     this.correctionDialogVisible.set(false);
     this.clearCorrectionView();
@@ -234,7 +238,7 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
   }
 
   private normalizeLead(value: string): string {
-    return value.replace(/\s+/g, '').trim();
+    return value.replace(/\D+/g, '').slice(0, 9);
   }
 
   private clearMessages(): void {
