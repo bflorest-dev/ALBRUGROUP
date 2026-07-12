@@ -11,6 +11,7 @@ import pe.albrugroup.lead_service.entity.request.LeadCampanaCorreccionRequest;
 import pe.albrugroup.lead_service.entity.response.LeadCampanaCorreccionCandidatoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadCampanaCorreccionResponse;
 import pe.albrugroup.lead_service.entity.response.LeadRealtimeEvent;
+import pe.albrugroup.lead_service.entity.response.CampanaResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
@@ -39,13 +40,25 @@ public class LeadCampanaCorreccionService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<CampanaResponse> listarCampanasCompatibles(Long idLead) {
+        Lead lead = leadRepository.buscarParaCorreccionCampana(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        if (lead.getIdEquipo() == null) {
+            return List.of();
+        }
+        return campanaRepository.listarActivasPorEquipo(lead.getIdEquipo()).stream()
+                .map(this::toCampanaResponse)
+                .toList();
+    }
+
     public LeadCampanaCorreccionResponse corregirCampana(Long idLead, LeadCampanaCorreccionRequest request) {
         Lead lead = leadRepository.buscarParaCorreccionCampana(idLead)
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
 
         Campana campanaAnterior = lead.getCampana();
         Long idEquipoAnterior = lead.getIdEquipo();
-        Campana campanaNueva = obtenerCampanaNueva(request);
+        Campana campanaNueva = obtenerCampanaNueva(request, lead.getIdEquipo());
         Long idEquipoNuevo = derivarIdEquipo(campanaNueva);
 
         lead.setCampana(campanaNueva);
@@ -91,12 +104,24 @@ public class LeadCampanaCorreccionService {
         return response;
     }
 
-    private Campana obtenerCampanaNueva(LeadCampanaCorreccionRequest request) {
+    private Campana obtenerCampanaNueva(LeadCampanaCorreccionRequest request, Long idEquipoLead) {
         if (request == null || request.getIdCampana() == null) {
             return null;
         }
+        if (idEquipoLead == null) {
+            throw new BadRequestException("Este lead no tiene equipo asignado. Solo puede dejarse sin campana.");
+        }
         return campanaRepository.findByIdAndActivoTrue(request.getIdCampana())
+                .map(campana -> validarCampanaPerteneceAlEquipo(campana, idEquipoLead))
                 .orElseThrow(() -> new BadRequestException("La campana seleccionada no esta activa o no existe"));
+    }
+
+    private Campana validarCampanaPerteneceAlEquipo(Campana campana, Long idEquipoLead) {
+        Long idProveedor = campana.getProveedor() == null ? null : campana.getProveedor().getId();
+        if (idProveedor == null || !equipoProveedorRepository.existsByIdEquipoAndProveedorId(idEquipoLead, idProveedor)) {
+            throw new BadRequestException("La campana seleccionada no pertenece al equipo de este lead.");
+        }
+        return campana;
     }
 
     private Long derivarIdEquipo(Campana campana) {
@@ -123,6 +148,23 @@ public class LeadCampanaCorreccionService {
                 .createdAt(lead.getCreatedAt())
                 .updatedAt(lead.getUpdatedAt())
                 .cantidadEventos(eventoRepository.countByIdLead(lead.getId()))
+                .build();
+    }
+
+    private CampanaResponse toCampanaResponse(Campana campana) {
+        return CampanaResponse.builder()
+                .id(campana.getId())
+                .nombre(campana.getNombre())
+                .prefijo(campana.getPrefijo())
+                .numeroWhatsappEmpresa(campana.getNumeroWhatsApp())
+                .activo(campana.getActivo())
+                .idCuentaPublicitaria(campana.getCuentaPublicitaria() == null ? null : campana.getCuentaPublicitaria().getId())
+                .numeroCuenta(campana.getCuentaPublicitaria() == null ? null : campana.getCuentaPublicitaria().getNumeroCuenta())
+                .nombreCuenta(campana.getCuentaPublicitaria() == null ? null : campana.getCuentaPublicitaria().getNombreCuenta())
+                .idProveedor(campana.getProveedor() == null ? null : campana.getProveedor().getId())
+                .nombreProveedor(campana.getProveedor() == null ? null : campana.getProveedor().getNombre())
+                .createdAt(campana.getCreatedAt())
+                .updatedAt(campana.getUpdatedAt())
                 .build();
     }
 

@@ -23,4 +23,15 @@ public interface CampanaRepository extends JpaRepository<Campana, Long> {
 
     @Query("SELECT c FROM Campana c WHERE (:activo IS NULL OR c.activo = :activo)")
     List<Campana> listarPorActivo(@Param("activo") Boolean activo);
+
+    @Query("""
+            SELECT c
+            FROM Campana c
+            JOIN c.proveedor p
+            JOIN EquipoProveedor ep ON ep.proveedor = p
+            WHERE c.activo = true
+              AND ep.idEquipo = :idEquipo
+            ORDER BY c.nombre ASC
+            """)
+    List<Campana> listarActivasPorEquipo(@Param("idEquipo") Long idEquipo);
 }

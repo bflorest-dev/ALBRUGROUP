@@ -275,6 +275,10 @@ export class CommunityLeadService {
     });
   }
 
+  listarCampanasCorreccionLead(idLead: number): Observable<CampanaResponse[]> {
+    return this.http.get<CampanaResponse[]>(`${this.leadUrl}/preventa/correcciones/campana/${idLead}/campanas`);
+  }
+
   corregirCampanaLead(idLead: number, idCampana: number | null): Observable<LeadCampanaCorreccionResponse> {
     return this.http.patch<LeadCampanaCorreccionResponse>(
       `${this.leadUrl}/preventa/correcciones/campana/${idLead}`,

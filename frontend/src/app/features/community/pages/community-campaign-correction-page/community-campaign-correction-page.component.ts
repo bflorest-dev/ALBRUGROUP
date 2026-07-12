@@ -6,6 +6,7 @@ import { ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
@@ -33,6 +34,7 @@ type CampaignCorrectionOption = {
     ButtonModule,
     CardModule,
     ConfirmDialogModule,
+    DialogModule,
     InputTextModule,
     MessageModule,
     SelectModule,
@@ -56,10 +58,13 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
   protected readonly activeCampaigns = signal<CampanaResponse[]>([]);
   protected readonly selectedCampaignId = signal<number | null>(null);
   protected readonly isLoading = signal(false);
+  protected readonly isLoadingCampaigns = signal(false);
   protected readonly isSaving = signal(false);
   protected readonly successMessage = signal<string | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly lastResult = signal<LeadCampanaCorreccionResponse | null>(null);
+  protected readonly correctionDialogVisible = signal(false);
+  protected readonly correctionDialogMessage = signal<string | null>(null);
 
   protected readonly campaignOptions = computed<CampaignCorrectionOption[]>(() => [
     { label: 'Sin campaña', value: null },
@@ -69,8 +74,21 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
     }))
   ]);
 
+  protected readonly campaignScopeMessage = computed(() => {
+    const candidate = this.selectedCandidate();
+    if (!candidate) {
+      return null;
+    }
+    if (candidate.idEquipo === null || candidate.idEquipo === undefined) {
+      return 'Este lead no tiene equipo asignado. Solo puedes dejarlo sin campaña.';
+    }
+    if (!this.isLoadingCampaigns() && this.activeCampaigns().length === 0) {
+      return 'No hay campañas activas disponibles para el equipo de este lead.';
+    }
+    return null;
+  });
+
   ngOnInit(): void {
-    void this.loadCampaigns();
     this.startRealtime();
   }
 
@@ -96,10 +114,11 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
       const results = await firstValueFrom(this.leadService.buscarCorreccionCampanaLead(lead));
       this.candidates.set(results);
       if (results.length === 1) {
-        this.selectCandidate(results[0]);
+        await this.selectCandidate(results[0]);
       } else {
         this.selectedCandidate.set(null);
         this.selectedCampaignId.set(null);
+        this.activeCampaigns.set([]);
       }
       if (!results.length) {
         this.errorMessage.set('No encontramos un lead con ese número.');
@@ -113,11 +132,17 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
     }
   }
 
-  protected selectCandidate(candidate: LeadCampanaCorreccionCandidatoResponse): void {
+  protected async selectCandidate(candidate: LeadCampanaCorreccionCandidatoResponse): Promise<void> {
     this.selectedCandidate.set(candidate);
-    this.selectedCampaignId.set(candidate.idCampanaActual ?? null);
+    this.selectedCampaignId.set(null);
+    this.activeCampaigns.set([]);
     this.clearMessages();
     this.lastResult.set(null);
+    await this.loadCompatibleCampaigns(candidate);
+    const currentCampaignIsAvailable = this.activeCampaigns().some(
+      (campaign) => campaign.id === candidate.idCampanaActual
+    );
+    this.selectedCampaignId.set(currentCampaignIsAvailable ? candidate.idCampanaActual ?? null : null);
   }
 
   protected confirmCorrection(): void {
@@ -150,6 +175,11 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
     return value === null || value === undefined || value === '' ? '-' : String(value);
   }
 
+  protected closeCorrectionDialog(): void {
+    this.correctionDialogVisible.set(false);
+    this.clearCorrectionView();
+  }
+
   private async saveCorrection(candidate: LeadCampanaCorreccionCandidatoResponse): Promise<void> {
     this.isSaving.set(true);
     this.clearMessages();
@@ -158,12 +188,8 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
         this.leadService.corregirCampanaLead(candidate.idLead, this.selectedCampaignId())
       );
       this.lastResult.set(response);
-      this.successMessage.set(`Campaña corregida. Se actualizaron ${response.eventosActualizados} eventos.`);
-      await this.search(false);
-      const refreshed = this.candidates().find((item) => item.idLead === candidate.idLead);
-      if (refreshed) {
-        this.selectCandidate(refreshed);
-      }
+      this.correctionDialogMessage.set(`Campaña corregida. Se actualizaron ${response.eventosActualizados} eventos.`);
+      this.correctionDialogVisible.set(true);
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo corregir la campaña.'));
     } finally {
@@ -171,11 +197,17 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
     }
   }
 
-  private async loadCampaigns(): Promise<void> {
+  private async loadCompatibleCampaigns(candidate: LeadCampanaCorreccionCandidatoResponse): Promise<void> {
+    if (candidate.idEquipo === null || candidate.idEquipo === undefined) {
+      return;
+    }
+    this.isLoadingCampaigns.set(true);
     try {
-      this.activeCampaigns.set(await firstValueFrom(this.leadService.listarCampanas(true)));
+      this.activeCampaigns.set(await firstValueFrom(this.leadService.listarCampanasCorreccionLead(candidate.idLead)));
     } catch (error) {
-      this.errorMessage.set(this.getErrorMessage(error, 'No se pudieron cargar las campañas activas.'));
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudieron cargar las campañas del equipo.'));
+    } finally {
+      this.isLoadingCampaigns.set(false);
     }
   }
 
@@ -184,6 +216,9 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
       this.realtimeService.watchTopic('/topic/leads').subscribe({
         next: (event) => {
           if (event.tipo !== 'CAMPANA_CORREGIDA' || !event.idLead) {
+            return;
+          }
+          if (this.correctionDialogVisible()) {
             return;
           }
           const affectsCurrentResult =
@@ -205,6 +240,17 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
   private clearMessages(): void {
     this.successMessage.set(null);
     this.errorMessage.set(null);
+  }
+
+  private clearCorrectionView(): void {
+    this.leadQuery.set('');
+    this.candidates.set([]);
+    this.selectedCandidate.set(null);
+    this.activeCampaigns.set([]);
+    this.selectedCampaignId.set(null);
+    this.lastResult.set(null);
+    this.correctionDialogMessage.set(null);
+    this.clearMessages();
   }
 
   private getErrorMessage(error: unknown, fallback: string): string {

@@ -46,6 +46,11 @@ public class PreventaController {
         return ResponseEntity.ok(leadCampanaCorreccionService.buscarPorLead(lead));
     }
 
+    @GetMapping("/correcciones/campana/{idLead}/campanas") @PreAuthorize("hasAuthority('CORREGIR_CAMPANA_LEAD')")
+    public ResponseEntity<List<CampanaResponse>> listarCampanasCorreccionLead(@PathVariable Long idLead) {
+        return ResponseEntity.ok(leadCampanaCorreccionService.listarCampanasCompatibles(idLead));
+    }
+
     @PatchMapping("/correcciones/campana/{idLead}") @PreAuthorize("hasAuthority('CORREGIR_CAMPANA_LEAD')")
     public ResponseEntity<LeadCampanaCorreccionResponse> corregirCampanaLead(
             @PathVariable Long idLead,
