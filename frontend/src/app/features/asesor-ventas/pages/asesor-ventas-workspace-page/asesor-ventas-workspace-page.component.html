@@ -28,7 +28,7 @@
   @if (!facade.detailDialogOpen() && facade.wrapUpActive()) {
     <p-message
       severity="warn"
-      text="Tu turno terminó. Puedes gestionar todos los leads de tu bandeja antes de cerrar. Al vaciarla, tu turno se cerrará solo."
+      text="Tu turno terminó. Sigues en gestión hasta que marques OFFLINE cuando hayas terminado tu sesión de trabajo de hoy."
     />
   }
   @if (!facade.detailDialogOpen() && facade.successMessage()) {
