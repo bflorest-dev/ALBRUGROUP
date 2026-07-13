@@ -1333,7 +1333,7 @@ export class GtrWorkspaceFacade {
     this.activeDialog.set('typify');
     try {
       await firstValueFrom(this.preventaService.tomarGestionGtr(idLead, options));
-      await this.ensureTypifyCatalogs();
+      await this.ensureTypifyCatalogs(idLead);
       const detail = await firstValueFrom(this.preventaService.obtenerDetalleAsesor(idLead));
       this.typifyDetail.set(detail);
       this.patchTypifyForms(detail);
@@ -3330,14 +3330,12 @@ export class GtrWorkspaceFacade {
     this.campanas.set(await firstValueFrom(this.preventaService.listarCampanasActivas()));
   }
 
-  private async ensureTypifyCatalogs(): Promise<void> {
-    if (this.typifyCatalogo() && this.planes().length && this.departamentos().length) {
-      return;
-    }
+  // Catálogo del modal de tipificación: del equipo del lead (lo resuelve el backend desde el lead). Se
+  // re-trae por lead porque distintos leads pueden ser de equipos con matrices distintas; planes y
+  // departamentos sí se cachean.
+  private async ensureTypifyCatalogs(idLead: number): Promise<void> {
     const [catalogo, planes, departamentos] = await Promise.all([
-      this.typifyCatalogo()
-        ? Promise.resolve(this.typifyCatalogo()!)
-        : firstValueFrom(this.preventaService.getCatalogoTipificaciones('PREVENTA')),
+      firstValueFrom(this.preventaService.getCatalogoTipificaciones(idLead, 'PREVENTA')),
       this.planes().length ? Promise.resolve(this.planes()) : firstValueFrom(this.preventaService.listarPlanes(undefined, true)),
       this.departamentos().length ? Promise.resolve(this.departamentos()) : firstValueFrom(this.preventaService.listarDepartamentos())
     ]);
@@ -3346,9 +3344,11 @@ export class GtrWorkspaceFacade {
     this.departamentos.set(departamentos);
   }
 
+  // Dropdowns de filtro del histórico (cross-equipo): salen del catálogo AGREGADO por código. NO tocan el
+  // typifyCatalogo (ese es por lead). NOTA: el filtro masivo por tipificación aún usa ids representativos;
+  // migrarlo a filtrado por equipo es una tarea aparte (masivos por equipo).
   private async refreshCatalogoTipificaciones(): Promise<void> {
-    const catalogo = await firstValueFrom(this.preventaService.getCatalogoTipificaciones('PREVENTA'));
-    this.typifyCatalogo.set(catalogo);
+    const catalogo = await firstValueFrom(this.preventaService.getCatalogoAgregado('PREVENTA'));
     this.catalogoTipificaciones.set(
       catalogo.tipificaciones
         .map((tipificacion) => ({

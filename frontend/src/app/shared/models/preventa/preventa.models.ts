@@ -610,13 +610,23 @@ export interface TipificacionCatalogoRequest {
 
 export interface CatalogoRequest {
   etapa: string;
+  // Equipo dueño de la matriz: cada equipo tiene su propia matriz por etapa.
+  idEquipo: number;
   tipificaciones: TipificacionCatalogoRequest[];
 }
 
 export type MatrizCatalogoRequest = CatalogoRequest;
 
+// Clona la matriz de una etapa desde un equipo origen a uno destino.
+export interface ClonarMatrizRequest {
+  etapa: string;
+  idEquipoOrigen: number;
+  idEquipoDestino: number;
+}
+
 export interface CatalogoEstadoRequest {
   etapa: string;
+  idEquipo: number;
   tipificacionesActivar: number[];
   tipificacionesDesactivar: number[];
   subtipificacionesActivar: number[];

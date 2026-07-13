@@ -632,9 +632,9 @@ export class DailyLeadsFacade {
   private async loadTipificationPalette(): Promise<void> {
     try {
       const catalogResults = await Promise.allSettled([
-        firstValueFrom(this.service.getCatalogoTipificaciones('PREVENTA')),
-        firstValueFrom(this.service.getCatalogoTipificaciones('VENTA')),
-        firstValueFrom(this.service.getCatalogoTipificaciones('POSTVENTA'))
+        firstValueFrom(this.service.getCatalogoAgregado('PREVENTA')),
+        firstValueFrom(this.service.getCatalogoAgregado('VENTA')),
+        firstValueFrom(this.service.getCatalogoAgregado('POSTVENTA'))
       ]);
       const paletteByCode: TipificationPaletteByCode = {};
 

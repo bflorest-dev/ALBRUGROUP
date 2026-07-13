@@ -467,7 +467,7 @@ export class RankingFacade {
 
   private loadCatalog(): void {
     this.catalogLoaded = true;
-    this.preventaService.getCatalogoTipificaciones('PREVENTA').subscribe({
+    this.preventaService.getCatalogoAgregado('PREVENTA').subscribe({
       next: (catalogo) => {
         const palette = new Map<string, number>();
         for (const tipificacion of catalogo.tipificaciones) {

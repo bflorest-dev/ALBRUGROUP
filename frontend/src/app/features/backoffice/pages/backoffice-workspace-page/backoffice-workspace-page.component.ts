@@ -142,12 +142,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly pagePlataforma = signal(0);
   protected readonly pageGestion = signal(0);
   protected readonly pageProgramados = signal(0);
+  // Catálogo del modal de tipificación: es el del equipo del lead abierto (se trae por lead).
   protected readonly catalogo = signal<CatalogoResponse | null>(null);
+  // Catálogo AGREGADO cross-equipo para la bandeja (paleta de color y filtro por código, ambos por
+  // código, que es consistente entre equipos). No se usa para tipificar.
+  protected readonly catalogoAgregado = signal<CatalogoResponse | null>(null);
   // Paleta de color por codigo de tipificacion (mismo criterio que GTR / Leads del dia): orden -> tono.
   protected readonly tipificationPaletteByCode = computed<TipificationPaletteByCode>(() => {
     const palette: TipificationPaletteByCode = {};
     const totalPalettes = 8;
-    for (const tipificacion of this.catalogo()?.tipificaciones ?? []) {
+    for (const tipificacion of this.catalogoAgregado()?.tipificaciones ?? []) {
       const orden = tipificacion.orden;
       palette[tipificacion.codigo.toUpperCase()] = Number.isFinite(orden) && orden > 0 ? (orden - 1) % totalPalettes : 0;
     }
@@ -200,7 +204,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   ];
   protected readonly gestionTipificacionFilterOptions = computed<GestionTipificacionFilter[]>(() => [
     { label: 'Sin tipificar', value: '__SIN_TIPIFICAR__', codigo: 'Sin tipificar', descripcion: 'Leads pendientes de primera gestion' },
-    ...(this.catalogo()?.tipificaciones ?? []).map((tipificacion) => ({
+    ...(this.catalogoAgregado()?.tipificaciones ?? []).map((tipificacion) => ({
       label: tipificacion.codigo,
       value: tipificacion.codigo,
       codigo: tipificacion.codigo,
@@ -555,8 +559,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       await Promise.all([
         this.refreshPlanes(),
         this.refreshDepartamentos(),
-        // La paleta de la columna Tipificacion sale de este catalogo; si falla no bloquea la bandeja.
-        this.refreshTipificationCatalog().catch(() => undefined),
+        // La paleta y el filtro por código de la bandeja salen del catálogo agregado; si falla no bloquea.
+        this.refreshTipificationCatalogAgregado().catch(() => undefined),
         this.refreshPlataforma(false),
         this.refreshGestion(false),
         this.refreshProgramados(false)
@@ -600,7 +604,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.patchForms(detail);
       await Promise.all([this.refreshOfferCatalogs(detail.idPlan ?? 0), this.refreshEventos(idLead)]);
       try {
-        await this.refreshTipificationCatalog();
+        await this.refreshTipificationCatalog(idLead);
       } catch {
         this.notify('warn', 'Detalle abierto, pero no se pudo cargar el catalogo de tipificaciones de VENTA.');
       }
@@ -1403,12 +1407,15 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.departamentos.set(departamentos);
   }
 
-  private async refreshTipificationCatalog(): Promise<void> {
-    if (this.catalogo()) {
-      return;
-    }
-    const catalogo = await firstValueFrom(this.leadService.getCatalogoTipificaciones());
-    this.catalogo.set(catalogo);
+  // Catálogo del modal: del equipo del lead abierto (lo resuelve el backend desde el lead). Se re-trae por
+  // lead (sin cachear) porque distintos leads pueden ser de equipos con matrices distintas.
+  private async refreshTipificationCatalog(idLead: number): Promise<void> {
+    this.catalogo.set(await firstValueFrom(this.leadService.getCatalogoTipificaciones(idLead)));
+  }
+
+  // Catálogo agregado cross-equipo para la bandeja (paleta + filtro por código).
+  private async refreshTipificationCatalogAgregado(): Promise<void> {
+    this.catalogoAgregado.set(await firstValueFrom(this.leadService.getCatalogoAgregado('VENTA')));
   }
 
   private async refreshOfferCatalogs(idPlan: number): Promise<void> {

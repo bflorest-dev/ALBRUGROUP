@@ -31,6 +31,7 @@ import pe.albrugroup.lead_service.entity.request.LeadTomaGestionGtrRequest;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.AsesorLeadsPendientesResponse;
+import pe.albrugroup.lead_service.entity.response.CatalogoResponse;
 import pe.albrugroup.lead_service.entity.response.AsesorSinLeadsResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPendienteResponse;
 import pe.albrugroup.lead_service.entity.response.LeadAsignacionMasivaResponse;
@@ -128,6 +129,7 @@ public class LeadService {
     private final AdicionalRepository adicionalRepository;
     private final TipificacionRepository tipificacionRepository;
     private final SubtipificacionRepository subtipificacionRepository;
+    private final TipificacionService tipificacionService;
     private final LeadMapper leadMapper;
     private final DistritoRepository distritoRepository;
     private final ZonaReglaRepository zonaReglaRepository;
@@ -889,6 +891,15 @@ public class LeadService {
         return leadRepository.save(lead);
     }
 
+    // Catálogo de tipificaciones que aplica a un lead concreto: el equipo lo resuelve el backend desde
+    // el lead (no desde el usuario, que puede estar en varios equipos). Es la ruta que usan las vistas de
+    // gestión para mostrar exactamente la matriz que el backend usará al tipificar (misma partición por equipo).
+    public CatalogoResponse getCatalogoTipificacionesPorLead(Long idLead, Etapa etapa) {
+        Lead lead = leadRepository.findById(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        return tipificacionService.getCatalogo(etapa, lead.getIdEquipo());
+    }
+
     @Transactional
     public void tipificarLead(Long idLead, LeadTipificacionRequest request) {
         Lead lead = obtenerLeadAsignadoDelAsesor(idLead);
@@ -902,8 +913,9 @@ public class LeadService {
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
         String nombreAsesorAnterior = lead.getNombreAsesorAsignado();
 
-        Tipificacion tipificacion = tipificacionRepository.findByEtapaAndCodigoAndActivoTrue(
+        Tipificacion tipificacion = tipificacionRepository.findByEtapaAndIdEquipoAndCodigoAndActivoTrue(
                         etapaActual,
+                        lead.getIdEquipo(),
                         request.getCodigoTipificacion().trim()
                 )
                 .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getCodigoTipificacion()));
@@ -967,8 +979,9 @@ public class LeadService {
         Etapa etapaLead = lead.getEtapa();
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
 
-        Tipificacion tipificacion = tipificacionRepository.findByEtapaAndCodigoAndActivoTrue(
+        Tipificacion tipificacion = tipificacionRepository.findByEtapaAndIdEquipoAndCodigoAndActivoTrue(
                         Etapa.PREVENTA,
+                        lead.getIdEquipo(),
                         request.getCodigoTipificacion().trim()
                 )
                 .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getCodigoTipificacion()));
@@ -1027,8 +1040,9 @@ public class LeadService {
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
         String nombreAsesorAnterior = lead.getNombreAsesorAsignado();
 
-        Tipificacion tipificacion = tipificacionRepository.findByEtapaAndCodigoAndActivoTrue(
+        Tipificacion tipificacion = tipificacionRepository.findByEtapaAndIdEquipoAndCodigoAndActivoTrue(
                         etapaActual,
+                        lead.getIdEquipo(),
                         request.getCodigoTipificacion().trim()
                 )
                 .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getCodigoTipificacion()));
@@ -1102,8 +1116,9 @@ public class LeadService {
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
         String nombreAsesorAnterior = lead.getNombreAsesorAsignado();
 
-        Tipificacion tipificacion = tipificacionRepository.findByEtapaAndCodigoAndActivoTrue(
+        Tipificacion tipificacion = tipificacionRepository.findByEtapaAndIdEquipoAndCodigoAndActivoTrue(
                         etapaActual,
+                        lead.getIdEquipo(),
                         request.getCodigoTipificacion().trim()
                 )
                 .orElseThrow(() -> new NotFoundException(Tipificacion.class, request.getCodigoTipificacion()));

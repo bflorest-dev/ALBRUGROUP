@@ -119,7 +119,8 @@ CROSS JOIN (
         ('MIERCOLES'),
         ('JUEVES'),
         ('VIERNES'),
-        ('SABADO')
+        ('SABADO'),
+        ('DOMINGO')
 ) AS dias(dia);
 
 SELECT setval(

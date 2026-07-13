@@ -77,7 +77,21 @@ public class DataLoader {
         log.info("=================================");
     }
 
+    // Equipo actual que se está sembrando: lo lee saveTipificacion para sellar id_equipo sin tener que
+    // pasar el parámetro por cada una de las ~30 llamadas del seed.
+    private Long currentSeedEquipo;
+
     private void crearTipificacionesYSubtipificaciones() {
+        // Seed dev: cada equipo tiene su propia matriz. Sembramos la misma matriz base para los equipos
+        // de ejemplo (ids 1 y 2; ver auth-service DataLoader.crearEquipos()).
+        for (Long idEquipo : java.util.List.of(1L, 2L)) {
+            currentSeedEquipo = idEquipo;
+            crearMatrizSeedParaEquipoActual();
+        }
+        currentSeedEquipo = null;
+    }
+
+    private void crearMatrizSeedParaEquipoActual() {
         Tipificacion sinContacto = saveTipificacion(Etapa.PREVENTA, "SIN_CONTACTO", "No se logra la comunicacion", 1);
         saveSubtipificacion(sinContacto, "NO_CONTESTA", "No responde llamadas o chat", 1);
         saveSubtipificacion(sinContacto, "NUMERO_EQUIVOCADO", "Numero invalido o incorrecto", 2);
@@ -151,7 +165,8 @@ public class DataLoader {
     }
 
     private Tipificacion saveTipificacion(Etapa etapa, String codigo, String descripcion, Integer orden) {
-        return tipificacionRepository.findByEtapaAndCodigo(etapa, codigo)
+        Long idEquipo = currentSeedEquipo;
+        return tipificacionRepository.findByEtapaAndIdEquipoAndCodigo(etapa, idEquipo, codigo)
                 .orElseGet(() -> {
                     TipificacionRequest request = TipificacionRequest.builder()
                             .etapa(etapa)
@@ -160,6 +175,7 @@ public class DataLoader {
                             .orden(orden)
                             .build();
                     Tipificacion entity = tipificacionMapper.toEntity(request);
+                    entity.setIdEquipo(idEquipo);
                     entity.setActivo(Boolean.TRUE);
                     return tipificacionRepository.save(entity);
                 });

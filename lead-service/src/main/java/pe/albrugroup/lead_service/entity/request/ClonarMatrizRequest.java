@@ -10,32 +10,24 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
-import java.util.ArrayList;
-import java.util.List;
-
+/**
+ * Copia la matriz activa de una etapa desde un equipo origen a un equipo destino. Sirve para dar de
+ * alta la matriz de un equipo nuevo o para dejar la matriz de un equipo igual a la de otro.
+ */
 @Builder
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class CatalogoEstadoRequest {
+public class ClonarMatrizRequest {
 
     @NotNull
     @Enumerated(EnumType.STRING)
     private Etapa etapa;
 
     @NotNull
-    private Long idEquipo;
+    private Long idEquipoOrigen;
 
-    @Builder.Default
-    private List<Long> tipificacionesActivar = new ArrayList<>();
-
-    @Builder.Default
-    private List<Long> tipificacionesDesactivar = new ArrayList<>();
-
-    @Builder.Default
-    private List<Long> subtipificacionesActivar = new ArrayList<>();
-
-    @Builder.Default
-    private List<Long> subtipificacionesDesactivar = new ArrayList<>();
+    @NotNull
+    private Long idEquipoDestino;
 }

@@ -6,7 +6,7 @@ import {
   SubtipificacionCatalogoRequest,
   TipificacionCatalogoRequest
 } from '../../../shared/models/preventa/preventa.models';
-import { AdminTipificacionService } from '../services/admin-tipificacion.service';
+import { AdminTipificacionService, EquipoCatalogoItem } from '../services/admin-tipificacion.service';
 
 export type EtapaCatalogo = 'PREVENTA' | 'VENTA' | 'POSTVENTA' | 'COBRANZA';
 
@@ -52,12 +52,28 @@ export class AdminTipificacionFacade {
   ];
 
   readonly selectedEtapa = signal<EtapaCatalogo>('VENTA');
+  // Equipo seleccionado: cada equipo tiene su propia matriz por etapa.
+  readonly equipos = signal<EquipoCatalogoItem[]>([]);
+  readonly selectedEquipo = signal<number | null>(null);
   readonly drafts = signal<TipDraft[]>([]);
   readonly isLoading = signal(false);
   readonly isSaving = signal(false);
+  readonly isCloning = signal(false);
   readonly isDirty = signal(false);
   readonly openTipUids = signal<string[]>([]);
   readonly searchTerm = signal('');
+
+  // Opciones del selector de equipo (por nombre, nunca por id visible).
+  readonly equipoOptions = computed(() =>
+    this.equipos().map((equipo) => ({ label: equipo.nombre, value: equipo.id }))
+  );
+
+  // Equipos a los que se puede clonar la matriz actual (todos menos el seleccionado).
+  readonly clonarOrigenOptions = computed(() =>
+    this.equipos()
+      .filter((equipo) => equipo.id !== this.selectedEquipo())
+      .map((equipo) => ({ label: equipo.nombre, value: equipo.id }))
+  );
 
   readonly filteredDrafts = computed(() => {
     const term = this.searchTerm().trim().toUpperCase();
@@ -125,11 +141,27 @@ export class AdminTipificacionFacade {
     return this.etapaOptions.find((option) => option.value === value)?.label ?? '-';
   }
 
+  async loadEquipos(): Promise<void> {
+    const equipos = await firstValueFrom(this.service.listarEquipos());
+    this.equipos.set(equipos);
+    if (this.selectedEquipo() === null && equipos.length) {
+      this.selectedEquipo.set(equipos[0].id);
+    }
+  }
+
   async loadCatalogo(): Promise<void> {
     const etapa = this.selectedEtapa();
+    const idEquipo = this.selectedEquipo();
+    if (idEquipo === null) {
+      this.drafts.set([]);
+      this.isDirty.set(false);
+      this.openTipUids.set([]);
+      this.searchTerm.set('');
+      return;
+    }
     this.isLoading.set(true);
     try {
-      const catalogo = await firstValueFrom(this.service.getCatalogo(etapa));
+      const catalogo = await firstValueFrom(this.service.getCatalogo(etapa, idEquipo));
       this.drafts.set(this.toDrafts(catalogo, etapa));
       this.isDirty.set(false);
       this.openTipUids.set([]);
@@ -141,6 +173,36 @@ export class AdminTipificacionFacade {
 
   changeEtapa(etapa: EtapaCatalogo): void {
     this.selectedEtapa.set(etapa);
+  }
+
+  changeEquipo(idEquipo: number): void {
+    this.selectedEquipo.set(idEquipo);
+  }
+
+  equipoLabel(id: number | null): string {
+    return this.equipos().find((equipo) => equipo.id === id)?.nombre ?? '-';
+  }
+
+  // Copia la matriz de otro equipo (origen) al equipo seleccionado (destino) en la etapa actual.
+  async clonarDesde(idEquipoOrigen: number): Promise<void> {
+    const idEquipoDestino = this.selectedEquipo();
+    if (idEquipoDestino === null || idEquipoOrigen === idEquipoDestino) {
+      return;
+    }
+    this.isCloning.set(true);
+    try {
+      const catalogo = await firstValueFrom(this.service.clonarMatriz({
+        etapa: this.selectedEtapa(),
+        idEquipoOrigen,
+        idEquipoDestino
+      }));
+      this.drafts.set(this.toDrafts(catalogo, this.selectedEtapa()));
+      this.isDirty.set(false);
+      this.openTipUids.set([]);
+      this.searchTerm.set('');
+    } finally {
+      this.isCloning.set(false);
+    }
   }
 
   addTipificacion(): void {
@@ -378,6 +440,9 @@ export class AdminTipificacionFacade {
 
   /** Valida los drafts. Devuelve el primer mensaje de error o null si todo esta bien. */
   validate(): string | null {
+    if (this.selectedEquipo() === null) {
+      return 'Selecciona un equipo antes de guardar.';
+    }
     const drafts = this.drafts();
     if (!drafts.length) {
       return 'Agrega al menos una tipificacion antes de guardar.';
@@ -440,6 +505,7 @@ export class AdminTipificacionFacade {
 
   private toRequest(): MatrizCatalogoRequest {
     const etapa = this.selectedEtapa();
+    const idEquipo = this.selectedEquipo()!;
     const tipificaciones: TipificacionCatalogoRequest[] = [...this.drafts()]
       .sort((left, right) => left.orden - right.orden)
       .map((tip, tipIndex) => ({
@@ -464,7 +530,7 @@ export class AdminTipificacionFacade {
             })
           )
       }));
-    return { etapa, tipificaciones };
+    return { etapa, idEquipo, tipificaciones };
   }
 
   private toDrafts(catalogo: CatalogoResponse, etapa: EtapaCatalogo): TipDraft[] {

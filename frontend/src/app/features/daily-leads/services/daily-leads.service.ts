@@ -97,8 +97,9 @@ export class DailyLeadsService {
     return this.http.get<EquipoCatalogoItem[]>(`${this.authUrl}/equipos/catalogo`);
   }
 
-  getCatalogoTipificaciones(etapa: string): Observable<CatalogoResponse> {
-    return this.http.get<CatalogoResponse>(`${this.leadUrl}/tipificaciones/${etapa}/catalogo`);
+  // Catálogo AGREGADO cross-equipo (unión por código) para la bandeja diaria: solo para colorear.
+  getCatalogoAgregado(etapa: string): Observable<CatalogoResponse> {
+    return this.http.get<CatalogoResponse>(`${this.leadUrl}/tipificaciones/${etapa}/catalogo-agregado`);
   }
 
   /** Eventos REGISTRO del lead en el día (hora, GTR, campaña), para el despliegue de repeticiones. */

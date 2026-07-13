@@ -426,6 +426,7 @@ export class AsesorVentasWorkspaceFacade {
       await firstValueFrom(this.preventaService.iniciarGestionLead(idLead));
       const detail = await firstValueFrom(this.preventaService.obtenerDetalleAsesor(idLead));
       this.detail.set(detail);
+      await this.cargarCatalogoDelLead(idLead);
       // Atención GTR: el lead sigue en otra etapa. Es opcional tipificarlo, así que no lo marcamos
       // como obligatorio de la sesión; solo las oportunidades que el asesor cree serán obligatorias.
       if (detail.atencionOtraEtapa) {
@@ -1228,6 +1229,7 @@ export class AsesorVentasWorkspaceFacade {
 
       this.selectedLeadId.set(idLead);
       this.detail.set(detail);
+      await this.cargarCatalogoDelLead(idLead);
       this.patchForms(detail);
       await this.refreshOfferCatalogs(detail.idPlan ?? 0);
       this.detailDialogOpen.set(true);
@@ -1298,15 +1300,20 @@ export class AsesorVentasWorkspaceFacade {
     this.rows.set(this.mergeVisualRows(previous, page.content, silent));
   }
 
+  // El catálogo de tipificaciones ya no se precarga global: depende del equipo del lead y se trae por
+  // lead al abrir su gestión (ver openDetail/reopenManagedLead). Aquí solo planes y departamentos.
   private async refreshCatalogs(): Promise<void> {
-    const [catalogo, planes, departamentos] = await Promise.all([
-      firstValueFrom(this.preventaService.getCatalogoTipificaciones('PREVENTA')),
+    const [planes, departamentos] = await Promise.all([
       firstValueFrom(this.preventaService.listarPlanes(undefined, true)),
       firstValueFrom(this.preventaService.listarDepartamentos())
     ]);
-    this.catalogo.set(catalogo);
     this.planes.set(planes);
     this.departamentos.set(departamentos);
+  }
+
+  // Catálogo de tipificaciones del equipo del lead (lo resuelve el backend desde el lead).
+  private async cargarCatalogoDelLead(idLead: number): Promise<void> {
+    this.catalogo.set(await firstValueFrom(this.preventaService.getCatalogoTipificaciones(idLead, 'PREVENTA')));
   }
 
   private async refreshOfferCatalogs(idPlan: number): Promise<void> {

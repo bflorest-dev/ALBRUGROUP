@@ -87,8 +87,14 @@ export class BackofficeLeadService {
     return this.http.patch<void>(`${this.leadUrl}/venta/${idLead}/tipificacion`, request);
   }
 
-  getCatalogoTipificaciones(): Observable<CatalogoResponse> {
-    return this.http.get<CatalogoResponse>(`${this.leadUrl}/tipificaciones/VENTA/catalogo`);
+  // Catálogo VENTA para tipificar un lead concreto: el backend resuelve el equipo desde el lead.
+  getCatalogoTipificaciones(idLead: number): Observable<CatalogoResponse> {
+    return this.http.get<CatalogoResponse>(`${this.leadUrl}/tipificaciones/lead/${idLead}/VENTA/catalogo`);
+  }
+
+  // Catálogo AGREGADO cross-equipo (unión por código) para la paleta/filtro de la bandeja.
+  getCatalogoAgregado(etapa: string): Observable<CatalogoResponse> {
+    return this.http.get<CatalogoResponse>(`${this.leadUrl}/tipificaciones/${etapa}/catalogo-agregado`);
   }
 
   listarPlanes(idProveedor?: number, soloVigentes = true): Observable<PlanResponse[]> {

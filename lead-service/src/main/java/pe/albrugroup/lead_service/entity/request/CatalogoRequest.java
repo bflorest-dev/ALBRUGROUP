@@ -26,6 +26,9 @@ public class CatalogoRequest {
     @Enumerated(EnumType.STRING)
     private Etapa etapa;
 
+    @NotNull
+    private Long idEquipo;
+
     @NotEmpty
     @Valid
     @Builder.Default

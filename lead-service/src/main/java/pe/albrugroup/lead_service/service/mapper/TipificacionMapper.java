@@ -17,14 +17,17 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface TipificacionMapper {
 
+    @Mapping(target = "idEquipo", ignore = true)
     Tipificacion toEntity(TipificacionRequest request);
 
     @Mapping(target = "etapa", ignore = true)
+    @Mapping(target = "idEquipo", ignore = true)
     @Mapping(target = "activo", ignore = true)
     Tipificacion toEntity(TipificacionCatalogoRequest request);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "etapa", ignore = true)
+    @Mapping(target = "idEquipo", ignore = true)
     @Mapping(target = "activo", ignore = true)
     void updateDatosTipificacion(TipificacionCatalogoRequest request, @MappingTarget Tipificacion entity);
 

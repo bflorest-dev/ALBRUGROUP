@@ -338,8 +338,14 @@ export class PreventaLeadService {
     return this.http.post<void>(`${this.leadUrl}/preventa/${idLead}/tipificacion`, request);
   }
 
-  getCatalogoTipificaciones(etapa: string): Observable<CatalogoResponse> {
-    return this.http.get<CatalogoResponse>(`${this.leadUrl}/tipificaciones/${etapa}/catalogo`);
+  // Catálogo para tipificar un lead concreto: el backend resuelve el equipo desde el lead.
+  getCatalogoTipificaciones(idLead: number, etapa: string): Observable<CatalogoResponse> {
+    return this.http.get<CatalogoResponse>(`${this.leadUrl}/tipificaciones/lead/${idLead}/${etapa}/catalogo`);
+  }
+
+  // Catálogo AGREGADO cross-equipo (unión por código) para vistas de supervisor/ranking: colores y filtros.
+  getCatalogoAgregado(etapa: string): Observable<CatalogoResponse> {
+    return this.http.get<CatalogoResponse>(`${this.leadUrl}/tipificaciones/${etapa}/catalogo-agregado`);
   }
 
   listarCampanasActivas(): Observable<CampanaResponse[]> {

@@ -43,7 +43,16 @@ export class AdminTipificacionesPageComponent implements OnInit {
   protected readonly skeletonRows = Array.from({ length: 4 });
 
   ngOnInit(): void {
-    void this.load();
+    void this.init();
+  }
+
+  private async init(): Promise<void> {
+    try {
+      await this.facade.loadEquipos();
+    } catch {
+      this.notify('error', 'No se pudieron cargar los equipos.');
+    }
+    await this.load();
   }
 
   protected async onEtapaChange(etapa: EtapaCatalogo): Promise<void> {
@@ -52,6 +61,31 @@ export class AdminTipificacionesPageComponent implements OnInit {
     }
     this.facade.changeEtapa(etapa);
     await this.load();
+  }
+
+  protected async onEquipoChange(idEquipo: number): Promise<void> {
+    if (!this.confirmDiscardChanges()) {
+      return;
+    }
+    this.facade.changeEquipo(idEquipo);
+    await this.load();
+  }
+
+  protected async clonarDesde(idEquipoOrigen: number): Promise<void> {
+    const origen = this.facade.equipoLabel(idEquipoOrigen);
+    const destino = this.facade.equipoLabel(this.facade.selectedEquipo());
+    const mensaje = this.facade.drafts().length > 0
+      ? `Esto reemplazará la matriz de ${destino} con una copia de ${origen}. ¿Continuar?`
+      : `Se copiará la matriz de ${origen} a ${destino}.`;
+    if (!window.confirm(mensaje)) {
+      return;
+    }
+    try {
+      await this.facade.clonarDesde(idEquipoOrigen);
+      this.notify('success', `Matriz copiada desde ${origen}.`);
+    } catch {
+      this.notify('error', 'No se pudo clonar la matriz. Intenta nuevamente.');
+    }
   }
 
   @HostListener('window:beforeunload', ['$event'])
