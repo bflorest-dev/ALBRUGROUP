@@ -1,11 +1,15 @@
 :host {
   display: block;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .gxc {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .gxc__head {
@@ -74,11 +78,21 @@
 // Bloque de equipo: el acento (branding) se inyecta como --team-accent por [style] en el HTML.
 .gxc__team-block {
   display: block;
+  min-width: 0;
+  max-width: 100%;
 
   ::ng-deep .gxc__card {
     border-left: 5px solid var(--team-accent, var(--surface-border, #e5e7eb));
     overflow: hidden;
   }
+}
+
+// Contenedor de scroll horizontal: la matriz vive SOLO en el ancho disponible y scrollea dentro
+// de este bloque, sin empujar la página. La columna Tipificación queda congelada relativa a él.
+.gxc__scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .gxc__card {

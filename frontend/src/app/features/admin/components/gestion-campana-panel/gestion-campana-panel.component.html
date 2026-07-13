@@ -112,9 +112,9 @@
           <span class="gxc__team-total">{{ matriz.totalLeads }} leads gestionados</span>
         </div>
 
+        <div class="gxc__scroll">
         <p-table
           [value]="matriz.filas"
-          [scrollable]="true"
           styleClass="p-datatable-sm gxc__table"
         >
           <ng-template #colgroup>
@@ -167,6 +167,7 @@
             </tr>
           </ng-template>
         </p-table>
+        </div>
       </p-card>
       </div>
     }
