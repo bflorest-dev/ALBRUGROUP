@@ -56,20 +56,39 @@
       <div class="gxc__control gxc__control--grow">
         <span class="gxc__control-label">Campañas</span>
         <p-multiSelect
-          [options]="facade.campanaOptions()"
+          [options]="facade.campanaGroups()"
+          [group]="true"
+          optionGroupLabel="label"
+          optionGroupChildren="items"
           optionLabel="nombre"
           optionValue="key"
           [ngModel]="facade.selectedCampanaKeys()"
           [ngModelOptions]="{ standalone: true }"
           (onChange)="facade.setSelectedCampanas($event.value)"
           [filter]="true"
+          filterBy="nombre,nombreEquipo"
           [showToggleAll]="true"
           placeholder="Todas las campañas"
           selectedItemsLabel="{0} campañas"
-          [maxSelectedLabels]="2"
+          [maxSelectedLabels]="1"
           appendTo="body"
           styleClass="gxc__multiselect"
-        />
+          panelStyleClass="gxc-campaign-panel"
+        >
+          <ng-template #group let-group>
+            <div class="gxc-campaign-group">
+              <strong>{{ group.label }}</strong>
+              <span>{{ group.total }} leads</span>
+            </div>
+          </ng-template>
+
+          <ng-template #item let-campana>
+            <div class="gxc-campaign-option">
+              <span class="gxc-campaign-option__name">{{ campana.nombre }}</span>
+              <span class="gxc-campaign-option__meta">{{ campana.total }} leads</span>
+            </div>
+          </ng-template>
+        </p-multiSelect>
       </div>
     }
 

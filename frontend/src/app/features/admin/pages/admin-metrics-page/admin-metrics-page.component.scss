@@ -1,6 +1,9 @@
 .admin-page {
   display: grid;
   gap: 1.5rem;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
 }
 
 .hero {
@@ -26,6 +29,7 @@
   align-items: flex-end;
   gap: 0.75rem;
   margin-bottom: 1rem;
+  min-width: 0;
 }
 
 .metrics-toolbar app-date-field {
@@ -62,6 +66,19 @@
   border-top: 2px solid var(--app-border-soft);
   background: var(--app-surface-sunken, rgba(148, 163, 184, 0.08));
   font-weight: 700;
+}
+
+:host ::ng-deep .p-card,
+:host ::ng-deep .p-card-body,
+:host ::ng-deep .p-card-content,
+:host ::ng-deep .metrics-gxc-card {
+  max-width: 100%;
+  min-width: 0;
+}
+
+:host ::ng-deep .metrics-table .p-datatable-wrapper {
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 @media (max-width: 700px) {

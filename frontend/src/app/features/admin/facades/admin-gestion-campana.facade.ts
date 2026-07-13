@@ -50,6 +50,15 @@ export interface GestionEquipoMatriz {
 export interface GestionCampanaOption {
   key: string;
   nombre: string;
+  nombreEquipo: string;
+  total: number;
+  activa: boolean;
+}
+
+export interface GestionCampanaGroup {
+  label: string;
+  total: number;
+  items: GestionCampanaOption[];
 }
 
 const SIN_EQUIPO = 'Sin equipo';
@@ -174,19 +183,48 @@ export class AdminGestionCampanaFacade {
     return state.status === 'success' ? this.accumulate(state.data) : [];
   });
 
-  readonly campanaOptions = computed<GestionCampanaOption[]>(() => {
-    const vistos = new Map<string, string>();
+  readonly campanaGroups = computed<GestionCampanaGroup[]>(() => {
+    const keysAsignadas = new Set<string>();
+    const groups: GestionCampanaGroup[] = [];
+
     for (const equipo of this.accumulated()) {
-      for (const campana of equipo.campanas) {
-        if (!vistos.has(campana.key)) {
-          vistos.set(campana.key, campana.nombre);
-        }
+      const items = equipo.campanas
+        .filter((campana) => {
+          if (keysAsignadas.has(campana.key)) {
+            return false;
+          }
+          keysAsignadas.add(campana.key);
+          return true;
+        })
+        .map((campana) => ({
+          key: campana.key,
+          nombre: campana.nombre,
+          nombreEquipo: equipo.nombreEquipo,
+          total: campana.total,
+          activa: campana.total > 0
+        }))
+        .sort((a, b) => {
+          if (a.activa !== b.activa) {
+            return a.activa ? -1 : 1;
+          }
+          return this.compareNombre(a.nombre, SIN_CAMPANA, b.nombre);
+        });
+
+      if (items.length) {
+        groups.push({
+          label: equipo.nombreEquipo,
+          total: items.reduce((total, item) => total + item.total, 0),
+          items
+        });
       }
     }
-    return [...vistos.entries()]
-      .map(([key, nombre]) => ({ key, nombre }))
-      .sort((a, b) => this.compareNombre(a.nombre, SIN_CAMPANA, b.nombre));
+
+    return groups;
   });
+
+  readonly campanaOptions = computed<GestionCampanaOption[]>(() =>
+    this.campanaGroups().flatMap((group) => group.items)
+  );
 
   readonly matrices = computed<GestionEquipoMatriz[]>(() => {
     const seleccion = new Set(this.selectedCampanaKeys());
