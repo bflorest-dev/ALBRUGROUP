@@ -8,8 +8,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.EstadoPostventa;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+
+import java.util.HashSet;
+import java.util.Set;
 
 @Builder
 @Getter
@@ -32,4 +36,7 @@ public class SubtipificacionCatalogoRequest {
 
     private Etapa etapaCambio;
     private EstadoPostventa estadoPostventaCambio;
+
+    @Builder.Default
+    private Set<ComportamientoTipificacion> comportamientos = new HashSet<>();
 }

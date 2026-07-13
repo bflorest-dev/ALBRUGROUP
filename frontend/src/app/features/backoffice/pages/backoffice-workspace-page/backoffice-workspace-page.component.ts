@@ -277,12 +277,16 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     const codigo = this.selectedSubtipificacionCode();
     return this.subtipificaciones().find((subtipificacion) => subtipificacion.codigo === codigo);
   });
-  protected readonly requiresInstallDate = computed(() =>
-    this.selectedTipificacionCode() === 'INSTALADO' || this.selectedSubtipificacion()?.etapaCambio === 'POSTVENTA'
+  // Los campos del modal se activan por los comportamientos data-driven de la subtipi (no por el nombre).
+  protected readonly requiresInstallDate = computed(
+    () => this.selectedSubtipificacion()?.comportamientos?.includes('REQUIERE_FECHA_INSTALACION') ?? false
   );
-  protected readonly requiresProgramming = computed(() => this.selectedTipificacionCode() === 'PROGRAMADO');
+  protected readonly requiresProgramming = computed(
+    () => this.selectedSubtipificacion()?.comportamientos?.includes('REQUIERE_FECHA_PROGRAMACION') ?? false
+  );
   protected readonly requiresSecSot = computed(() =>
-    this.selectedTipificacionCode() === 'SUBIDO' && this.detail()?.requiereSecSotVenta === true
+    (this.selectedSubtipificacion()?.comportamientos?.includes('REQUIERE_SEC_SOT') ?? false)
+    && this.detail()?.requiereSecSotVenta === true
   );
   protected readonly ofertaProviderOptions = computed<OfertaProviderOption[]>(() => {
     const providersById = new Map<number, OfertaProviderOption>();
@@ -1120,14 +1124,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected onTipificacionSelected(codigo: string | null): void {
     this.selectedTipificacionCode.set(codigo ?? '');
     this.selectedSubtipificacionCode.set('');
-    const detail = this.detail();
-    const isProgramado = codigo === 'PROGRAMADO';
+    // Los campos de fecha/hora dependen del comportamiento de la SUBTIPI: al cambiar de tipi se limpian y
+    // se pre-cargan al elegir la subtipi (ver onSubtipificacionSelected).
     this.tipificacionForm.patchValue(
       {
         codigoSubtipificacion: '',
         fechaInstalacion: '',
-        fechaProgramacion: isProgramado ? detail?.fechaProgramacion ?? '' : '',
-        horaProgramada: isProgramado ? detail?.horaProgramada ?? this.defaultProgrammingTime() : ''
+        fechaProgramacion: '',
+        horaProgramada: ''
       },
       { emitEvent: false }
     );
@@ -1135,11 +1139,17 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   protected onSubtipificacionSelected(codigo: string | null): void {
     this.selectedSubtipificacionCode.set(codigo ?? '');
+    const detail = this.detail();
+    const prog = this.requiresProgramming();
     this.tipificacionForm.patchValue(
       {
         fechaInstalacion: '',
-        fechaProgramacion: this.requiresProgramming() ? this.tipificacionForm.controls.fechaProgramacion.value : '',
-        horaProgramada: this.requiresProgramming() ? this.tipificacionForm.controls.horaProgramada.value : ''
+        fechaProgramacion: prog
+          ? this.tipificacionForm.controls.fechaProgramacion.value || detail?.fechaProgramacion || ''
+          : '',
+        horaProgramada: prog
+          ? this.tipificacionForm.controls.horaProgramada.value || detail?.horaProgramada || this.defaultProgrammingTime()
+          : ''
       },
       { emitEvent: false }
     );

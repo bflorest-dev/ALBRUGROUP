@@ -149,6 +149,7 @@ export class AsesorVentasWorkspaceFacade {
   readonly pageNumber = signal(0);
   readonly catalogo = signal<CatalogoResponse | null>(null);
   readonly selectedTipificacionCode = signal('');
+  readonly selectedSubtipificacionCode = signal('');
   readonly planes = signal<PlanResponse[]>([]);
   readonly promociones = signal<PromocionComercialResponse[]>([]);
   readonly adicionales = signal<AdicionalResponse[]>([]);
@@ -273,8 +274,16 @@ export class AsesorVentasWorkspaceFacade {
   );
   // El lead abierto está en otra etapa: se atiende en solo lectura (atención GTR).
   readonly atencionOtraEtapa = computed(() => !!this.detail()?.atencionOtraEtapa);
-  readonly requiresScheduledTime = computed(() => this.selectedTipificacionCode() === 'AGENDADO');
-  readonly requiresVentaCompleta = computed(() => this.selectedTipificacionCode() === 'PREVENTA_COMPLETA');
+  // Subtipi seleccionada (objeto del catálogo) para leer sus comportamientos data-driven.
+  readonly selectedSubtipificacion = computed(() =>
+    this.subtipificaciones().find((sub) => sub.codigo === this.selectedSubtipificacionCode()) ?? null
+  );
+  readonly requiresScheduledTime = computed(
+    () => this.selectedSubtipificacion()?.comportamientos?.includes('REQUIERE_HORA_PROGRAMADA') ?? false
+  );
+  readonly requiresVentaCompleta = computed(
+    () => this.selectedSubtipificacion()?.comportamientos?.includes('ES_CIERRE_PREVENTA') ?? false
+  );
   // Métodos (NO computed): `form.dirty` no es una señal, así que un computed quedaría congelado en
   // su primer valor (pristine = false) y nunca detectaría cambios. Como métodos se evalúan frescos.
   hasUnsavedDataChanges(): boolean {
@@ -332,8 +341,15 @@ export class AsesorVentasWorkspaceFacade {
     this.realtimeSubscription.add(
       this.tipificacionForm.controls.codigoTipificacion.valueChanges.subscribe((codigo) => {
         this.selectedTipificacionCode.set(codigo);
+        // Al cambiar de tipificación se resetea la subtipi; su suscripción limpia hora si ya no aplica.
         this.tipificacionForm.controls.codigoSubtipificacion.setValue('');
-        if (codigo !== 'AGENDADO') {
+      })
+    );
+
+    this.realtimeSubscription.add(
+      this.tipificacionForm.controls.codigoSubtipificacion.valueChanges.subscribe((codigo) => {
+        this.selectedSubtipificacionCode.set(codigo ?? '');
+        if (!this.requiresScheduledTime()) {
           this.tipificacionForm.controls.horaProgramada.setValue('');
         }
       })

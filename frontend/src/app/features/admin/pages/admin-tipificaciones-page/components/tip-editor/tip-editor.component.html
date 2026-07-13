@@ -46,6 +46,7 @@
         cdkDragPreviewContainer="parent"
         class="subtip-row grid min-w-0 gap-2.5 rounded-md border border-slate-200 bg-slate-50 p-3"
         [class.has-postventa-state]="selectedEtapa === 'POSTVENTA' && sub.etapaCambio === 'POSTVENTA'"
+        [class.has-comportamientos]="comportamientoOptions.length > 0"
       >
         <ng-template cdkDragPreview>
           <div
@@ -156,7 +157,7 @@
           ></button>
         </div>
 
-        <label class="grid min-w-0 gap-1.5">
+        <label class="subtip-field subtip-field--code grid min-w-0 gap-1.5">
           <span class="text-xs font-bold text-slate-600">Código</span>
           <input
             pInputText
@@ -167,7 +168,7 @@
           />
         </label>
 
-        <label class="grid min-w-0 gap-1.5">
+        <label class="subtip-field subtip-field--description grid min-w-0 gap-1.5">
           <span class="text-xs font-bold text-slate-600">Descripción</span>
           <input
             pInputText
@@ -178,7 +179,7 @@
           />
         </label>
 
-        <label class="grid min-w-0 gap-1.5">
+        <label class="subtip-field subtip-field--result grid min-w-0 gap-1.5">
           <span class="text-xs font-bold text-slate-600">Resultado</span>
           <p-select
             class="w-full"
@@ -213,7 +214,7 @@
         </label>
 
         @if (selectedEtapa === 'POSTVENTA' && sub.etapaCambio === 'POSTVENTA') {
-          <label class="postventa-state grid min-w-0 gap-1.5">
+          <label class="subtip-field subtip-field--postventa postventa-state grid min-w-0 gap-1.5">
             <span class="text-xs font-bold text-slate-600">Estado de Postventa</span>
             <p-select
               class="w-full"
@@ -225,6 +226,26 @@
             />
           </label>
         } @else {
+        }
+
+        @if (comportamientoOptions.length) {
+          <label class="subtip-field subtip-field--behaviors grid min-w-0 gap-1.5">
+            <span class="text-xs font-bold text-slate-600">Comportamientos</span>
+            <p-multiSelect
+              class="w-full"
+              appendTo="body"
+              panelStyleClass="tip-editor-behaviors-panel"
+              [options]="comportamientoOptions"
+              optionLabel="label"
+              optionValue="value"
+              [ngModel]="sub.comportamientos"
+              placeholder="Ninguno"
+              [showToggleAll]="false"
+              [maxSelectedLabels]="1"
+              selectedItemsLabel="{0} seleccionados"
+              (ngModelChange)="updateSubtipComportamientos(sub, $event)"
+            />
+          </label>
         }
 
         <div class="subtip-actions items-center justify-end gap-1">

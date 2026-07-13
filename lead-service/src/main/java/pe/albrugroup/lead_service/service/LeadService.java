@@ -10,6 +10,7 @@ import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.*;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Base;
+import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.CriterioZona;
 import pe.albrugroup.lead_service.entity.enums.EstadoPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
@@ -925,7 +926,7 @@ public class LeadService {
                 )
                 .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getCodigoSubtipificacion()));
 
-        validarHoraProgramada(tipificacion.getCodigo(), request.getHoraProgramada());
+        validarHoraProgramada(subtipificacion, request.getHoraProgramada());
         Etapa etapaDestino = subtipificacion.getEtapaCambio();
         if (etapaDestino != null && etapaDestino != etapaActual) {
             if (etapaActual == Etapa.PREVENTA && etapaDestino == Etapa.VENTA) {
@@ -955,13 +956,13 @@ public class LeadService {
         Lead savedLead = leadRepository.save(lead);
         actualizarResumenEtapaTipificacion(
                 savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, idAsesorAnterior, nombreAsesorAnterior,
-                etapaActual == Etapa.PREVENTA && etapaDestino == Etapa.VENTA);
+                subtipificacion.getComportamientos().contains(ComportamientoTipificacion.RECIBE_MERITO));
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
         registrarEventoTipificacion(
                 savedLead.getId(),
                 idCampana,
                 etapaActual,
-                obtenerIdPlanOfrecido(lead, tipificacion.getCodigo(), subtipificacion.getCodigo()),
+                null,
                 tipificacion.getCodigo(),
                 subtipificacion.getCodigo(),
                 request.getComentario(),
@@ -990,7 +991,7 @@ public class LeadService {
                         request.getCodigoSubtipificacion().trim()
                 )
                 .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getCodigoSubtipificacion()));
-        validarHoraProgramada(tipificacion.getCodigo(), request.getHoraProgramada());
+        validarHoraProgramada(subtipificacion, request.getHoraProgramada());
 
         // Liberar la atención sin tocar la gestión del lead en su etapa actual.
         lead.setRequiereAtencionGtr(false);
@@ -1053,9 +1054,10 @@ public class LeadService {
                 .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getCodigoSubtipificacion()));
 
         Etapa etapaDestino = subtipificacion.getEtapaCambio();
-        boolean requiereProgramacion = TIPIFICACION_PROGRAMADO.equals(tipificacion.getCodigo());
+        boolean requiereProgramacion = subtipificacion.getComportamientos()
+                .contains(ComportamientoTipificacion.REQUIERE_FECHA_PROGRAMACION);
         validarProgramacionVenta(requiereProgramacion, request.getFechaProgramacion(), request.getHoraProgramada());
-        aplicarSecSotVentaSiCorresponde(lead, tipificacion.getCodigo(), request.getSec(), request.getSot());
+        aplicarSecSotVentaSiCorresponde(lead, subtipificacion, request.getSec(), request.getSot());
 
         // Atribucion de venta (merito de VENTA): el responsable es quien tipifica GRABADO, no quien
         // cambia de etapa. La mantiene el resumen por etapa (esMerito=TIPIFICACION_GRABADO mas abajo).
@@ -1082,7 +1084,7 @@ public class LeadService {
         Lead savedLead = leadRepository.save(lead);
         actualizarResumenEtapaTipificacion(
                 savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, idAsesorAnterior, nombreAsesorAnterior,
-                TIPIFICACION_GRABADO.equals(tipificacion.getCodigo()));
+                subtipificacion.getComportamientos().contains(ComportamientoTipificacion.RECIBE_MERITO));
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
         Long idPlanOfrecido = savedLead.getPlan() == null ? null : savedLead.getPlan().getId();
         registrarEventoTipificacion(
@@ -1257,8 +1259,8 @@ public class LeadService {
         }
     }
 
-    private void aplicarSecSotVentaSiCorresponde(Lead lead, String codigoTipificacion, String secRequest, String sotRequest) {
-        if (!TIPIFICACION_SUBIDO.equals(codigoTipificacion)) {
+    private void aplicarSecSotVentaSiCorresponde(Lead lead, Subtipificacion subtipificacion, String secRequest, String sotRequest) {
+        if (!subtipificacion.getComportamientos().contains(ComportamientoTipificacion.REQUIERE_SEC_SOT)) {
             return;
         }
         if (!requiereSecSotVenta(lead)) {
@@ -2239,16 +2241,16 @@ public class LeadService {
         );
     }
 
-    private void validarHoraProgramada(String codigoTipificacion, java.time.LocalTime horaProgramada) {
-        if (TIPIFICACION_AGENDADO.equals(codigoTipificacion)) {
+    private void validarHoraProgramada(Subtipificacion subtipificacion, java.time.LocalTime horaProgramada) {
+        if (subtipificacion.getComportamientos().contains(ComportamientoTipificacion.REQUIERE_HORA_PROGRAMADA)) {
             if (horaProgramada == null) {
-                throw new BadRequestException("La horaProgramada es obligatoria para la tipificacion AGENDADO");
+                throw new BadRequestException("La horaProgramada es obligatoria para esta tipificacion");
             }
             return;
         }
 
         if (horaProgramada != null) {
-            throw new BadRequestException("La horaProgramada solo se permite para la tipificacion AGENDADO");
+            throw new BadRequestException("La horaProgramada solo se permite para tipificaciones que la requieren");
         }
     }
 
@@ -2974,18 +2976,6 @@ public class LeadService {
             lead.setTieneRegistrosMismaCampanaDia(mismaCampana);
             lead.setTieneAlertaRegistrosDia(multiplesRegistros || mismaCampana);
         }
-    }
-
-    private Long obtenerIdPlanOfrecido(Lead lead, String codigoTipificacion, String codigoSubtipificacion) {
-        if (!esTipificacionPreventa(codigoTipificacion, codigoSubtipificacion)) {
-            return null;
-        }
-        return lead.getPlan() == null ? null : lead.getPlan().getId();
-    }
-
-    private boolean esTipificacionPreventa(String codigoTipificacion, String codigoSubtipificacion) {
-        return TIPIFICACION_SCORE_PREVENTA.equals(codigoTipificacion)
-                && SUBTIPIFICACION_PREVENTA.equals(codigoSubtipificacion);
     }
 
     // ── Multi-titular: oportunidades en paralelo del mismo contacto (Fase 1.5) ──

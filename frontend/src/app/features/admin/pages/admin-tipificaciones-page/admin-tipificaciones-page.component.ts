@@ -11,6 +11,7 @@ import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import { AdminTipificacionFacade, EtapaCatalogo } from '../../facades/admin-tipificacion.facade';
 import {
+  SubtipComportamientosChange,
   SubtipDropAction,
   SubtipFieldChange,
   SubtipMoveAction,
@@ -145,6 +146,10 @@ export class AdminTipificacionesPageComponent implements OnInit {
       change.field,
       change.value
     );
+  }
+
+  protected onSubtipComportamientosChange(change: SubtipComportamientosChange): void {
+    this.facade.updateSubtipComportamientos(change.tipUid, change.subUid, change.comportamientos);
   }
 
   protected dropTip(event: CdkDragDrop<unknown>): void {

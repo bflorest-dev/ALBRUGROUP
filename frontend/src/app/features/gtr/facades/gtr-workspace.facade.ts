@@ -336,6 +336,7 @@ export class GtrWorkspaceFacade {
   readonly typifyDetail = signal<LeadDetalleResponse | null>(null);
   readonly typifyCatalogo = signal<CatalogoResponse | null>(null);
   readonly selectedTipificacionCode = signal('');
+  readonly selectedSubtipificacionCode = signal('');
   readonly planes = signal<PlanResponse[]>([]);
   readonly promociones = signal<PromocionComercialResponse[]>([]);
   readonly adicionales = signal<AdicionalResponse[]>([]);
@@ -603,8 +604,15 @@ export class GtrWorkspaceFacade {
   readonly ofertaAdditionalsTotal = computed(() =>
     this.selectedOfertaAdditionals().reduce((total, adicional) => total + (adicional.precioUnitario ?? 0) * adicional.cantidad, 0)
   );
-  readonly requiresScheduledTime = computed(() => this.selectedTipificacionCode() === 'AGENDADO');
-  readonly requiresVentaCompleta = computed(() => this.selectedTipificacionCode() === 'PREVENTA_COMPLETA');
+  readonly selectedSubtipificacion = computed(() =>
+    this.subtipificaciones().find((sub) => sub.codigo === this.selectedSubtipificacionCode()) ?? null
+  );
+  readonly requiresScheduledTime = computed(
+    () => this.selectedSubtipificacion()?.comportamientos?.includes('REQUIERE_HORA_PROGRAMADA') ?? false
+  );
+  readonly requiresVentaCompleta = computed(
+    () => this.selectedSubtipificacion()?.comportamientos?.includes('ES_CIERRE_PREVENTA') ?? false
+  );
   readonly tipificacionVisualMetaByCode = computed(() => {
     const meta = new Map<string, TipificacionVisualMeta>();
     for (const option of this.catalogoTipificaciones()) {
@@ -963,7 +971,12 @@ export class GtrWorkspaceFacade {
       this.tipificacionForm.controls.codigoTipificacion.valueChanges.subscribe((codigo) => {
         this.selectedTipificacionCode.set(codigo);
         this.tipificacionForm.controls.codigoSubtipificacion.setValue('');
-        if (codigo !== 'AGENDADO') {
+      })
+    );
+    this.formSubscription.add(
+      this.tipificacionForm.controls.codigoSubtipificacion.valueChanges.subscribe((codigo) => {
+        this.selectedSubtipificacionCode.set(codigo ?? '');
+        if (!this.requiresScheduledTime()) {
           this.tipificacionForm.controls.horaProgramada.setValue('');
         }
       })

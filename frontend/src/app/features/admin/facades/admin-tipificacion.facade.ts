@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import {
   CatalogoResponse,
+  ComportamientoTipificacion,
   MatrizCatalogoRequest,
   SubtipificacionCatalogoRequest,
   TipificacionCatalogoRequest
@@ -18,6 +19,7 @@ export interface SubtipDraft {
   orden: number;
   etapaCambio: string;
   estadoPostventaCambio: string | null;
+  comportamientos: ComportamientoTipificacion[];
 }
 
 export interface TipDraft {
@@ -50,6 +52,32 @@ export class AdminTipificacionFacade {
     'EFECTIVO',
     'NO_EFECTIVO'
   ];
+
+  // Comportamientos disparables por subtipi, en lenguaje de negocio (reemplazan los códigos hardcodeados).
+  private readonly comportamientoLabels: Record<ComportamientoTipificacion, string> = {
+    REQUIERE_HORA_PROGRAMADA: 'Requiere hora',
+    REQUIERE_FECHA_PROGRAMACION: 'Requiere fecha de programación',
+    REQUIERE_FECHA_INSTALACION: 'Requiere fecha de instalación',
+    REQUIERE_SEC_SOT: 'Requiere SEC/SOT',
+    RECIBE_MERITO: 'Atribuye el mérito de la venta',
+    ES_CIERRE_PREVENTA: 'Cierra la preventa',
+    APARECE_EN_AGENDADOS_GTR: 'Aparece en Agendados (GTR)',
+    ES_CANCELACION_PROGRAMACION: 'Es programación cancelada'
+  };
+
+  // Qué comportamientos tiene sentido ofrecer en cada etapa (curado).
+  private readonly comportamientosPorEtapa: Record<EtapaCatalogo, ComportamientoTipificacion[]> = {
+    PREVENTA: ['REQUIERE_HORA_PROGRAMADA', 'APARECE_EN_AGENDADOS_GTR', 'ES_CIERRE_PREVENTA', 'RECIBE_MERITO'],
+    VENTA: ['REQUIERE_HORA_PROGRAMADA', 'REQUIERE_FECHA_PROGRAMACION', 'REQUIERE_FECHA_INSTALACION',
+            'REQUIERE_SEC_SOT', 'RECIBE_MERITO', 'ES_CANCELACION_PROGRAMACION'],
+    POSTVENTA: [],
+    COBRANZA: []
+  };
+
+  readonly comportamientoOptions = computed(() =>
+    (this.comportamientosPorEtapa[this.selectedEtapa()] ?? [])
+      .map((value) => ({ label: this.comportamientoLabels[value], value }))
+  );
 
   readonly selectedEtapa = signal<EtapaCatalogo>('VENTA');
   // Equipo seleccionado: cada equipo tiene su propia matriz por etapa.
@@ -438,6 +466,23 @@ export class AdminTipificacionFacade {
     this.isDirty.set(true);
   }
 
+  updateSubtipComportamientos(tipUid: string, subUid: string, comportamientos: ComportamientoTipificacion[]): void {
+    this.drafts.update((items) =>
+      items.map((item) => {
+        if (item.uid !== tipUid) {
+          return item;
+        }
+        return {
+          ...item,
+          subtipificaciones: item.subtipificaciones.map((sub) =>
+            sub.uid === subUid ? { ...sub, comportamientos: [...comportamientos] } : sub
+          )
+        };
+      })
+    );
+    this.isDirty.set(true);
+  }
+
   /** Valida los drafts. Devuelve el primer mensaje de error o null si todo esta bien. */
   validate(): string | null {
     if (this.selectedEquipo() === null) {
@@ -526,7 +571,8 @@ export class AdminTipificacionFacade {
                 ? this.selectedEtapa() === 'POSTVENTA'
                   ? sub.estadoPostventaCambio
                   : 'EN_SEGUIMIENTO'
-                : null
+                : null,
+              comportamientos: sub.comportamientos
             })
           )
       }));
@@ -548,7 +594,8 @@ export class AdminTipificacionFacade {
         orden: sub.orden,
         // null en backend significa "se mantiene"; lo normalizamos a la etapa actual.
         etapaCambio: sub.etapaCambio ?? etapa,
-        estadoPostventaCambio: sub.estadoPostventaCambio ?? null
+        estadoPostventaCambio: sub.estadoPostventaCambio ?? null,
+        comportamientos: sub.comportamientos ?? []
       }))
     }));
   }
@@ -572,7 +619,8 @@ export class AdminTipificacionFacade {
       descripcion: '',
       orden,
       etapaCambio: this.selectedEtapa(),
-      estadoPostventaCambio: null
+      estadoPostventaCambio: null,
+      comportamientos: []
     };
   }
 

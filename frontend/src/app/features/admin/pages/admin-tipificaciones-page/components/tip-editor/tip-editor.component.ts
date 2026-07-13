@@ -4,8 +4,10 @@ import { CdkDragDrop, DragDropModule } from '@angular/cdk/drag-drop';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { SelectModule } from 'primeng/select';
 import { TooltipModule } from 'primeng/tooltip';
+import { ComportamientoTipificacion } from '../../../../../../shared/models/preventa/preventa.models';
 import {
   EtapaCatalogo,
   SubtipDraft,
@@ -30,6 +32,12 @@ export interface SubtipAction {
   subUid: string;
 }
 
+export interface SubtipComportamientosChange {
+  tipUid: string;
+  subUid: string;
+  comportamientos: ComportamientoTipificacion[];
+}
+
 export interface SubtipMoveAction extends SubtipAction {
   direction: -1 | 1;
 }
@@ -50,7 +58,7 @@ interface EtapaCambioOption {
 
 @Component({
   selector: 'app-tip-editor',
-  imports: [NgClass, FormsModule, DragDropModule, ButtonModule, InputTextModule, SelectModule, TooltipModule],
+  imports: [NgClass, FormsModule, DragDropModule, ButtonModule, InputTextModule, MultiSelectModule, SelectModule, TooltipModule],
   templateUrl: './tip-editor.component.html',
   styleUrl: './tip-editor.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -60,14 +68,20 @@ export class TipEditorComponent {
   @Input({ required: true }) selectedEtapa!: EtapaCatalogo;
   @Input({ required: true }) etapaOptions: EtapaCambioOption[] = [];
   @Input({ required: true }) estadoPostventaOptions: string[] = [];
+  @Input() comportamientoOptions: { label: string; value: ComportamientoTipificacion }[] = [];
 
   @Output() tipFieldChange = new EventEmitter<TipFieldChange>();
   @Output() removeTip = new EventEmitter<string>();
   @Output() addSubtip = new EventEmitter<string>();
   @Output() subtipFieldChange = new EventEmitter<SubtipFieldChange>();
+  @Output() subtipComportamientosChange = new EventEmitter<SubtipComportamientosChange>();
   @Output() removeSubtip = new EventEmitter<SubtipAction>();
   @Output() moveSubtip = new EventEmitter<SubtipMoveAction>();
   @Output() subtipDrop = new EventEmitter<SubtipDropAction>();
+
+  protected updateSubtipComportamientos(sub: SubtipDraft, comportamientos: ComportamientoTipificacion[]): void {
+    this.subtipComportamientosChange.emit({ tipUid: this.tip.uid, subUid: sub.uid, comportamientos });
+  }
 
   protected updateTip(field: TipFieldChange['field'], value: string): void {
     this.tipFieldChange.emit({ uid: this.tip.uid, field, value });

@@ -7,6 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pe.albrugroup.lead_service.entity.Subtipificacion;
 import pe.albrugroup.lead_service.entity.Tipificacion;
+import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.MatrizCatalogoRequest;
 import pe.albrugroup.lead_service.entity.request.SubtipificacionCatalogoRequest;
@@ -228,6 +229,28 @@ class TipificacionServiceMatrizTest {
                 "BASE_SUB".equals(s.getCodigo())
                         && s.getTipificacion() != null
                         && EQUIPO_B.equals(s.getTipificacion().getIdEquipo())));
+    }
+
+    @Test
+    void guardarMatrizPersisteLosComportamientosDeLaSubtipi() {
+        when(tipificacionRepository.findByEtapaAndIdEquipoOrderByOrdenAsc(Etapa.PREVENTA, EQUIPO))
+                .thenReturn(List.of());
+
+        SubtipificacionCatalogoRequest sub = SubtipificacionCatalogoRequest.builder()
+                .codigo("VENTA_CERRADA").descripcion("Venta cerrada").orden(1)
+                .etapaCambio(Etapa.VENTA)
+                .comportamientos(new java.util.HashSet<>(java.util.Set.of(
+                        ComportamientoTipificacion.ES_CIERRE_PREVENTA, ComportamientoTipificacion.RECIBE_MERITO)))
+                .build();
+
+        service.guardarMatrizCatalogo(matriz(
+                tipRequest(null, "PREVENTA_COMPLETA", "Completa", List.of(sub))
+        ));
+
+        verify(subtipificacionRepository).save(argThat(s ->
+                "VENTA_CERRADA".equals(s.getCodigo())
+                        && s.getComportamientos().contains(ComportamientoTipificacion.ES_CIERRE_PREVENTA)
+                        && s.getComportamientos().contains(ComportamientoTipificacion.RECIBE_MERITO)));
     }
 
     private MatrizCatalogoRequest matriz(TipificacionCatalogoRequest... tipificaciones) {

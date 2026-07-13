@@ -582,6 +582,17 @@ export interface TipificacionResponse {
   subtipificaciones: SubtipificacionResponse[];
 }
 
+// Comportamientos data-driven que una subtipi puede disparar (espejo del enum del backend).
+export type ComportamientoTipificacion =
+  | 'REQUIERE_HORA_PROGRAMADA'
+  | 'REQUIERE_FECHA_PROGRAMACION'
+  | 'REQUIERE_FECHA_INSTALACION'
+  | 'REQUIERE_SEC_SOT'
+  | 'RECIBE_MERITO'
+  | 'ES_CIERRE_PREVENTA'
+  | 'APARECE_EN_AGENDADOS_GTR'
+  | 'ES_CANCELACION_PROGRAMACION';
+
 export interface SubtipificacionResponse {
   id: number;
   codigo: string;
@@ -589,6 +600,7 @@ export interface SubtipificacionResponse {
   orden: number;
   etapaCambio?: string | null;
   estadoPostventaCambio?: string | null;
+  comportamientos?: ComportamientoTipificacion[];
 }
 
 export interface SubtipificacionCatalogoRequest {
@@ -598,6 +610,7 @@ export interface SubtipificacionCatalogoRequest {
   orden: number;
   etapaCambio?: string | null;
   estadoPostventaCambio?: string | null;
+  comportamientos?: ComportamientoTipificacion[];
 }
 
 export interface TipificacionCatalogoRequest {

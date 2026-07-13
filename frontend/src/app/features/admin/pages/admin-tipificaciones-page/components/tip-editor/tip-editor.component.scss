@@ -2,7 +2,9 @@
   display: block;
 }
 
-:host ::ng-deep .p-select {
+:host ::ng-deep .p-select,
+:host ::ng-deep .p-multiselect {
+  min-width: 0;
   width: 100%;
 }
 
@@ -15,14 +17,21 @@
       font-size: 0.82rem;
     }
 
-    .p-select {
+    .p-select,
+    .p-multiselect {
       min-height: 2.125rem;
+      min-width: 0;
       font-size: 0.82rem;
     }
 
-    .p-select-label {
+    .p-select-label,
+    .p-multiselect-label {
+      min-width: 0;
+      overflow: hidden;
       padding: 0.35rem 0.6rem;
       line-height: 1.35;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .p-select-dropdown {
@@ -53,6 +62,10 @@
     background: #fff1f2;
     border-color: #fecdd3;
   }
+}
+
+::ng-deep .tip-editor-behaviors-panel {
+  min-width: min(22rem, calc(100vw - 2rem));
 }
 
 .subtip-list {
@@ -105,6 +118,10 @@
   display: none;
 }
 
+.subtip-field {
+  min-width: 0;
+}
+
 @container (min-width: 42rem) {
   .subtip-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -125,6 +142,31 @@
       minmax(0, 1.35fr)
       minmax(0, 1.15fr)
       6rem;
+  }
+
+  .subtip-row.has-comportamientos {
+    grid-template-columns:
+      2.25rem
+      minmax(13rem, 2fr)
+      minmax(0, 1.5fr)
+      minmax(0, 1.5fr)
+      6rem;
+  }
+
+  .subtip-row.has-comportamientos .subtip-field--code {
+    grid-column: 2;
+  }
+
+  .subtip-row.has-comportamientos .subtip-field--description {
+    grid-column: 3 / span 2;
+  }
+
+  .subtip-row.has-comportamientos .subtip-field--result {
+    grid-column: 2;
+  }
+
+  .subtip-row.has-comportamientos .subtip-field--behaviors {
+    grid-column: 3 / span 2;
   }
 
   .subtip-row.has-postventa-state {
@@ -153,5 +195,47 @@
   .subtip-actions,
   .subtip-desktop-order {
     display: flex;
+  }
+
+  .subtip-row.has-comportamientos .subtip-controls {
+    align-self: center;
+    display: grid;
+    gap: 0.15rem;
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    justify-items: center;
+  }
+
+  .subtip-row.has-comportamientos .subtip-controls > .flex {
+    display: grid;
+    gap: 0.15rem;
+    justify-items: center;
+  }
+
+  .subtip-row.has-comportamientos .subtip-mobile-order {
+    display: contents;
+  }
+
+  .subtip-row.has-comportamientos .subtip-mobile-order button:first-child {
+    order: 1;
+  }
+
+  .subtip-row.has-comportamientos .subtip-grip {
+    order: 2;
+  }
+
+  .subtip-row.has-comportamientos .subtip-mobile-order button:last-child {
+    order: 3;
+  }
+
+  .subtip-row.has-comportamientos .subtip-actions {
+    align-self: center;
+    grid-column: 5;
+    grid-row: 1 / span 2;
+    justify-content: center;
+  }
+
+  .subtip-row.has-comportamientos .subtip-desktop-order {
+    display: none;
   }
 }

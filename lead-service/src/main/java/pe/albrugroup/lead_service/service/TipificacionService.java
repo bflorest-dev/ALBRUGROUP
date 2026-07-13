@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import pe.albrugroup.lead_service.configuration.CacheNames;
 import pe.albrugroup.lead_service.entity.Subtipificacion;
 import pe.albrugroup.lead_service.entity.Tipificacion;
+import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.CatalogoEstadoRequest;
 import pe.albrugroup.lead_service.entity.request.CatalogoRequest;
@@ -282,6 +283,8 @@ public class TipificacionService {
                 target.setOrden(index + 1);
                 target.setEtapaCambio(subItem.getEtapaCambio());
                 target.setEstadoPostventaCambio(subItem.getEstadoPostventaCambio());
+                target.setComportamientos(new HashSet<>(
+                        Objects.requireNonNullElse(subItem.getComportamientos(), Set.<ComportamientoTipificacion>of())));
                 target.setActivo(Boolean.TRUE);
                 Subtipificacion saved = subtipificacionRepository.save(target);
                 subtipificacionesSeleccionadas.add(saved.getId());
@@ -331,6 +334,7 @@ public class TipificacionService {
                                         .orden(sub.getOrden())
                                         .etapaCambio(sub.getEtapaCambio())
                                         .estadoPostventaCambio(sub.getEstadoPostventaCambio())
+                                        .comportamientos(sub.getComportamientos())
                                         .build())
                                 .toList())
                         .build())

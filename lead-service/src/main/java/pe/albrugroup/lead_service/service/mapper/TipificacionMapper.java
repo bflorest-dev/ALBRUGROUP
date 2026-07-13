@@ -32,6 +32,7 @@ public interface TipificacionMapper {
     void updateDatosTipificacion(TipificacionCatalogoRequest request, @MappingTarget Tipificacion entity);
 
     @Mapping(target = "tipificacion", ignore = true)
+    @Mapping(target = "comportamientos", ignore = true)
     Subtipificacion toEntity(SubtipificacionRequest request);
 
     @Mapping(target = "tipificacion", ignore = true)
