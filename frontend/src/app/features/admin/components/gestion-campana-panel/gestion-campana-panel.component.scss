@@ -1,0 +1,235 @@
+:host {
+  display: block;
+}
+
+.gxc {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.gxc__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+  }
+}
+
+.gxc__hint {
+  margin: 0;
+  color: var(--text-color-secondary, #6b7280);
+  font-size: 0.85rem;
+}
+
+.gxc__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.gxc__control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.gxc__control-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-color-secondary, #6b7280);
+}
+
+.gxc__control--dates {
+  flex-direction: row;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.gxc__control--grow {
+  flex: 1 1 16rem;
+  min-width: 12rem;
+}
+
+::ng-deep .gxc__multiselect {
+  width: 100%;
+  min-width: 12rem;
+}
+
+.gxc__msg {
+  display: block;
+}
+
+.gxc__state {
+  margin: 0.5rem 0;
+  color: var(--text-color-secondary, #6b7280);
+}
+
+// Bloque de equipo: el acento (branding) se inyecta como --team-accent por [style] en el HTML.
+.gxc__team-block {
+  display: block;
+
+  ::ng-deep .gxc__card {
+    border-left: 5px solid var(--team-accent, var(--surface-border, #e5e7eb));
+    overflow: hidden;
+  }
+}
+
+.gxc__card {
+  display: block;
+}
+
+.gxc__card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: -1rem -1rem 0.75rem;
+  padding: 0.7rem 1rem;
+  border-bottom: 2px solid color-mix(in srgb, var(--team-accent, #94a3b8) 45%, transparent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--team-accent, #94a3b8) 20%, transparent),
+    transparent 70%
+  );
+
+  .gxc__team {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: color-mix(in srgb, var(--team-accent, #111827) 70%, #111827);
+  }
+
+  .gxc__team-total {
+    font-size: 0.85rem;
+    color: var(--text-color-secondary, #6b7280);
+    white-space: nowrap;
+  }
+}
+
+// ----- Matriz -----
+// El scroll horizontal está justificado: es una matriz de comparación donde todas las columnas
+// (campañas) son críticas. La primera columna (tipificación) y la cabecera quedan fijas.
+.gxc__table {
+  ::ng-deep table {
+    table-layout: fixed;
+    width: max-content;
+    min-width: 100%;
+  }
+
+  ::ng-deep th,
+  ::ng-deep td {
+    text-align: center;
+    white-space: nowrap;
+  }
+}
+
+// Encabezados tintados con el acento del equipo + separadores entre campañas + zebra en el cuerpo.
+::ng-deep .gxc__table thead th {
+  background: color-mix(in srgb, var(--team-accent, #94a3b8) 10%, var(--surface-card, #ffffff));
+  border-bottom: 2px solid color-mix(in srgb, var(--team-accent, #94a3b8) 32%, transparent);
+}
+
+::ng-deep .gxc__table thead .gxc-camp {
+  background: color-mix(in srgb, var(--team-accent, #94a3b8) 17%, var(--surface-card, #ffffff));
+}
+
+::ng-deep .gxc__table thead .gxc-camp,
+::ng-deep .gxc__table thead .gxc-sub.gxc-col-count,
+::ng-deep .gxc__table tbody td.gxc-col-count {
+  border-left: 2px solid color-mix(in srgb, var(--team-accent, #94a3b8) 24%, transparent);
+}
+
+::ng-deep .gxc__table tbody tr:nth-child(even):not(.gxc-row--cierre) td {
+  background: color-mix(in srgb, var(--team-accent, #94a3b8) 5%, var(--surface-card, #ffffff));
+}
+
+::ng-deep .gxc-col-tipi {
+  width: 16rem;
+  min-width: 16rem;
+  text-align: left !important;
+}
+
+::ng-deep .gxc-col-total {
+  width: 5rem;
+  min-width: 5rem;
+}
+
+::ng-deep .gxc-col-count {
+  width: 6rem;
+  min-width: 6rem;
+}
+
+::ng-deep .gxc-col-pct {
+  width: 5.5rem;
+  min-width: 5.5rem;
+}
+
+// Columna Tipificación congelada a la izquierda.
+::ng-deep .gxc-freeze {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--surface-card, #ffffff);
+  box-shadow: 1px 0 0 var(--surface-border, #e5e7eb);
+}
+
+::ng-deep thead .gxc-freeze {
+  z-index: 3;
+  background: color-mix(in srgb, var(--team-accent, #94a3b8) 10%, var(--surface-card, #ffffff));
+}
+
+// La zebra debe pintar también la celda congelada (debe quedar opaca sobre el scroll).
+::ng-deep .gxc__table tbody tr:nth-child(even):not(.gxc-row--cierre) .gxc-freeze {
+  background: color-mix(in srgb, var(--team-accent, #94a3b8) 5%, var(--surface-card, #ffffff));
+}
+
+.gxc-tipi__label {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+::ng-deep .gxc-tag {
+  margin-left: 0.4rem;
+}
+
+.gxc-camp__name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+.gxc-camp__total {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-color-secondary, #6b7280);
+}
+
+::ng-deep .gxc-col-pct {
+  color: var(--text-color-secondary, #6b7280);
+}
+
+// Fila de cierre de preventa (venta cerrada): resaltada en verde.
+::ng-deep .gxc-row--cierre > td {
+  background: var(--green-100, #dcfce7);
+  font-weight: 600;
+}
+
+::ng-deep .gxc-row--cierre > td.gxc-freeze {
+  background: var(--green-100, #dcfce7);
+}
+
+.gxc-empty {
+  text-align: center;
+  padding: 1rem;
+  color: var(--text-color-secondary, #6b7280);
+}

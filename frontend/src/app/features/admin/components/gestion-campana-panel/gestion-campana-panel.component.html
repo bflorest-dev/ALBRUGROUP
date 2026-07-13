@@ -1,0 +1,174 @@
+<section class="gxc">
+  <header class="gxc__head">
+    <h3>Gestión por campaña</h3>
+    <p class="gxc__hint">{{ facade.campoAyuda() }}</p>
+  </header>
+
+  <div class="gxc__toolbar">
+    <div class="gxc__control">
+      <span class="gxc__control-label">Tipificación</span>
+      <p-selectButton
+        [options]="facade.campoOptions"
+        optionLabel="label"
+        optionValue="value"
+        [allowEmpty]="false"
+        [ngModel]="facade.campo()"
+        [ngModelOptions]="{ standalone: true }"
+        (onChange)="facade.setCampo($event.value)"
+      />
+    </div>
+
+    <div class="gxc__control">
+      <span class="gxc__control-label">Período</span>
+      <p-selectButton
+        [options]="facade.periodoOptions"
+        optionLabel="label"
+        optionValue="value"
+        [allowEmpty]="false"
+        [ngModel]="facade.periodo()"
+        [ngModelOptions]="{ standalone: true }"
+        (onChange)="facade.setPeriodo($event.value)"
+      />
+    </div>
+
+    @if (facade.periodo() === 'personalizado') {
+      <div class="gxc__control gxc__control--dates">
+        <app-date-field
+          label="Desde"
+          inputId="gxc-desde"
+          [max]="maxDate"
+          [ngModel]="facade.customDesde()"
+          [ngModelOptions]="{ standalone: true }"
+          (ngModelChange)="facade.setCustomDesde($event)"
+        />
+        <app-date-field
+          label="Hasta"
+          inputId="gxc-hasta"
+          [max]="maxDate"
+          [ngModel]="facade.customHasta()"
+          [ngModelOptions]="{ standalone: true }"
+          (ngModelChange)="facade.setCustomHasta($event)"
+        />
+      </div>
+    }
+
+    @if (facade.campanaOptions().length > 1) {
+      <div class="gxc__control gxc__control--grow">
+        <span class="gxc__control-label">Campañas</span>
+        <p-multiSelect
+          [options]="facade.campanaOptions()"
+          optionLabel="nombre"
+          optionValue="key"
+          [ngModel]="facade.selectedCampanaKeys()"
+          [ngModelOptions]="{ standalone: true }"
+          (onChange)="facade.setSelectedCampanas($event.value)"
+          [filter]="true"
+          [showToggleAll]="true"
+          placeholder="Todas las campañas"
+          selectedItemsLabel="{0} campañas"
+          [maxSelectedLabels]="2"
+          appendTo="body"
+          styleClass="gxc__multiselect"
+        />
+      </div>
+    }
+
+    <button
+      pButton
+      type="button"
+      icon="pi pi-refresh"
+      label="Actualizar"
+      severity="secondary"
+      [outlined]="true"
+      [loading]="facade.isLoading()"
+      (click)="facade.reload()"
+    ></button>
+  </div>
+
+  @if (facade.customRangeError()) {
+    <p-message severity="warn" [text]="facade.customRangeError()!" styleClass="gxc__msg" />
+  }
+  @if (facade.hasError()) {
+    <p-message severity="error" text="No se pudo cargar el reporte de gestión por campaña." styleClass="gxc__msg" />
+  }
+
+  @if (facade.isLoading()) {
+    <p class="gxc__state">Cargando reporte...</p>
+  } @else if (facade.isEmpty()) {
+    @if (facade.hasActiveFilter()) {
+      <p class="gxc__state">
+        Ninguna campaña seleccionada tuvo gestión en el período.
+        <button pButton type="button" label="Ver todas" link (click)="facade.clearCampanaFilter()"></button>
+      </p>
+    } @else {
+      <p class="gxc__state">No hubo gestión de leads en el período seleccionado.</p>
+    }
+  } @else {
+    @for (matriz of facade.matrices(); track $index) {
+      <div class="gxc__team-block" [style.--team-accent]="matriz.accent">
+      <p-card styleClass="gxc__card">
+        <div class="gxc__card-head">
+          <span class="gxc__team">{{ matriz.nombreEquipo }}</span>
+          <span class="gxc__team-total">{{ matriz.totalLeads }} leads gestionados</span>
+        </div>
+
+        <p-table
+          [value]="matriz.filas"
+          [scrollable]="true"
+          styleClass="p-datatable-sm gxc__table"
+        >
+          <ng-template #colgroup>
+            <col class="gxc-col-tipi" />
+            <col class="gxc-col-total" />
+            @for (campana of matriz.campanas; track $index) {
+              <col class="gxc-col-count" />
+              <col class="gxc-col-pct" />
+            }
+          </ng-template>
+
+          <ng-template #header>
+            <tr>
+              <th class="gxc-col-tipi gxc-freeze" rowspan="2">Tipificación</th>
+              <th class="gxc-col-total" rowspan="2">Total</th>
+              @for (campana of matriz.campanas; track $index) {
+                <th class="gxc-camp" colspan="2">
+                  <span class="gxc-camp__name">{{ campana.nombre }}</span>
+                  <span class="gxc-camp__total">{{ campana.total }}</span>
+                </th>
+              }
+            </tr>
+            <tr>
+              @for (campana of matriz.campanas; track $index) {
+                <th class="gxc-col-count gxc-sub">Leads</th>
+                <th class="gxc-col-pct gxc-sub">%</th>
+              }
+            </tr>
+          </ng-template>
+
+          <ng-template #body let-fila>
+            <tr [class.gxc-row--cierre]="fila.esCierre">
+              <td class="gxc-col-tipi gxc-freeze">
+                <span class="gxc-tipi__label">{{ fila.label }}</span>
+                @if (fila.historica) {
+                  <p-tag value="inactiva" severity="secondary" styleClass="gxc-tag" />
+                }
+              </td>
+              <td class="gxc-col-total"><strong>{{ fila.total }}</strong></td>
+              @for (celda of fila.celdas; track $index) {
+                <td class="gxc-col-count">{{ celda.cantidad }}</td>
+                <td class="gxc-col-pct">{{ celda.porcentaje | number: '1.0-2' }}%</td>
+              }
+            </tr>
+          </ng-template>
+
+          <ng-template #emptymessage>
+            <tr>
+              <td class="gxc-empty">Sin tipificaciones para mostrar.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </p-card>
+      </div>
+    }
+  }
+</section>

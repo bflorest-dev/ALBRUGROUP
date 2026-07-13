@@ -14,9 +14,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.enums.Accion;
+import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
+import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
+import pe.albrugroup.lead_service.entity.response.GestionPorCampanaCeldaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDiarioResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionesResponse;
 import pe.albrugroup.lead_service.entity.response.LeadsDiariosMetricasEquipoResponse;
@@ -99,6 +102,16 @@ public class EventoController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
     ) {
         return ResponseEntity.ok(eventoService.obtenerMetricasRegistrosDiariosPorEquipo(fecha));
+    }
+
+    @GetMapping("/metricas/gestion-por-campana") @PreAuthorize("hasAuthority('READ_LEADS_DIARIOS')")
+    public ResponseEntity<List<GestionPorCampanaCeldaResponse>> obtenerGestionPorCampana(
+            @RequestParam(defaultValue = "PREVENTA") Etapa etapa,
+            @RequestParam(defaultValue = "MAYOR") CampoTipificacion campo,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta
+    ) {
+        return ResponseEntity.ok(eventoService.obtenerGestionPorCampana(etapa, campo, desde, hasta));
     }
 
     @GetMapping("/empleado/{idEmpleado}") @PreAuthorize("hasAuthority('READ_EVENTOS_LEADS')")

@@ -8,11 +8,13 @@ import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.Evento;
 import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.enums.Accion;
+import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
+import pe.albrugroup.lead_service.entity.response.GestionPorCampanaCeldaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDiarioResponse;
 import pe.albrugroup.lead_service.entity.response.LeadsDiariosMetricasEquipoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadsDiariosMetricasResponse;
@@ -23,6 +25,7 @@ import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.EventoRepository;
+import pe.albrugroup.lead_service.repository.LeadEtapaResumenRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
 import pe.albrugroup.lead_service.repository.projection.LeadGtrAgrupacionProjection;
 import pe.albrugroup.lead_service.repository.projection.LeadUltimaAsignacionProjection;
@@ -47,6 +50,7 @@ public class EventoService {
 
     private final EventoRepository eventoRepository;
     private final LeadRepository leadRepository;
+    private final LeadEtapaResumenRepository leadEtapaResumenRepository;
     private final CurrentUser currentUser;
     private final EventoMapper eventoMapper;
     private final PaginationService paginationService;
@@ -434,6 +438,39 @@ public class EventoService {
 
     private static long[] acumuladorEquipo(Map<Long, long[]> mapa, Long idEquipo) {
         return mapa.computeIfAbsent(idEquipo, clave -> new long[8]);
+    }
+
+    /**
+     * Reporte "gestión por campaña" para el DASHBOARD del ADMIN: cuenta leads por código de
+     * tipificación, desglosado por equipo y campaña. El {@code campo} elige el punto de tipificación
+     * (primera/última/mayor) y, con él, la fecha por la que filtra el período: así el conteo cae en el
+     * período en que se tipificó, no en el que se registró el lead. El scope de equipos lo acota el
+     * {@code equipoFilter} (visibilidad global ve todo). idEquipo/idCampana null = "Sin equipo/campaña".
+     */
+    public List<GestionPorCampanaCeldaResponse> obtenerGestionPorCampana(
+            Etapa etapa, CampoTipificacion campo, LocalDate desde, LocalDate hasta) {
+        LocalDate desdeResuelto = OperationalDateTime.resolveDate(desde);
+        LocalDate hastaResuelto = OperationalDateTime.resolveDate(hasta);
+        if (hastaResuelto.isBefore(desdeResuelto)) {
+            throw new BadRequestException("La fecha de inicio no puede ser posterior a la fecha final");
+        }
+        Instant inicio = OperationalDateTime.startOfDay(desdeResuelto);
+        Instant fin = OperationalDateTime.endExclusiveOfDay(hastaResuelto);
+
+        List<Object[]> filas = switch (campo) {
+            case PRIMERA -> leadEtapaResumenRepository.gestionPorCampanaPrimera(etapa, inicio, fin);
+            case ULTIMA -> leadEtapaResumenRepository.gestionPorCampanaUltima(etapa, inicio, fin);
+            case MAYOR -> leadEtapaResumenRepository.gestionPorCampanaMayor(etapa, inicio, fin);
+        };
+
+        return filas.stream()
+                .map(fila -> new GestionPorCampanaCeldaResponse(
+                        (Long) fila[0],
+                        (Long) fila[1],
+                        (String) fila[2],
+                        (String) fila[3],
+                        (Long) fila[4]))
+                .toList();
     }
 
     private void validarFiltroAgrupacion(

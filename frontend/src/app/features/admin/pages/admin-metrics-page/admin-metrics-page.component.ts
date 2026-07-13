@@ -8,6 +8,7 @@ import { MessageModule } from 'primeng/message';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
+import { GestionCampanaPanelComponent } from '../../components/gestion-campana-panel/gestion-campana-panel.component';
 import { AdminDailyMetricsService, LeadsDiariosMetricasEquipo } from '../../services/admin-daily-metrics.service';
 import { AdminEquipoService } from '../../services/admin-equipo.service';
 
@@ -30,7 +31,17 @@ interface DashboardMetricRow {
 /** DASHBOARD del ADMIN: métricas del día de "Leads del día" desglosadas por equipo. */
 @Component({
   selector: 'app-admin-metrics-page',
-  imports: [DecimalPipe, FormsModule, ButtonModule, CardModule, MessageModule, TableModule, TagModule, DateFieldComponent],
+  imports: [
+    DecimalPipe,
+    FormsModule,
+    ButtonModule,
+    CardModule,
+    MessageModule,
+    TableModule,
+    TagModule,
+    DateFieldComponent,
+    GestionCampanaPanelComponent
+  ],
   templateUrl: './admin-metrics-page.component.html',
   styleUrl: './admin-metrics-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
