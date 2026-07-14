@@ -1,22 +1,32 @@
 <p-card styleClass="mis-preventas-board">
   <ng-template #title>
     <span class="board-title">
-      Preventas que cerraste
-      <p-tag severity="info" [value]="facade.totalElements().toString()" />
+      Mis Preventas
+      <p-tag severity="info" [value]="facade.resumen().cerradas.toString()" />
     </span>
   </ng-template>
-  <ng-template #subtitle>Seguimiento de tus leads que pasaron a venta</ng-template>
+  <ng-template #subtitle>Seguimiento mensual de tus ventas cerradas</ng-template>
+
+  <section class="stats-grid" aria-label="Resumen mensual">
+    <article class="stat stat--closed">
+      <span>Cerradas</span>
+      <strong>{{ facade.resumen().cerradas }}</strong>
+    </article>
+    <article class="stat stat--installed">
+      <span>Instaladas</span>
+      <strong>{{ facade.resumen().instaladas }}</strong>
+    </article>
+    <article class="stat stat--rejected">
+      <span>Rechazadas</span>
+      <strong>{{ facade.resumen().rechazadas }}</strong>
+    </article>
+    <article class="stat stat--conversion">
+      <span>Conversion</span>
+      <strong>{{ facade.conversionLabel() }}</strong>
+    </article>
+  </section>
 
   <div class="board-filters">
-    <p-selectButton
-      [options]="facade.periodOptions"
-      optionLabel="label"
-      optionValue="value"
-      [allowEmpty]="false"
-      [ngModel]="facade.period()"
-      [ngModelOptions]="{ standalone: true }"
-      (onChange)="facade.setPeriod($event.value)"
-    />
     <p-datepicker
       view="month"
       dateFormat="MM yy"
@@ -34,57 +44,57 @@
 
   <p-table
     [value]="facade.rows()"
-    dataKey="id"
+    dataKey="idEventoCierre"
     [loading]="facade.isLoading()"
     [rowHover]="true"
     [scrollable]="true"
     scrollHeight="flex"
-    [tableStyle]="{ 'min-width': '860px' }"
-    styleClass="p-datatable-sm"
+    [tableStyle]="{ 'min-width': '960px' }"
+    styleClass="p-datatable-sm mis-preventas-table"
   >
     <ng-template #header>
       <tr>
-        <th>Lead</th>
-        <th>Etapa actual</th>
-        <th>Tipificación</th>
-        <th>Última actualización</th>
-        <th class="col-actions">Acciones</th>
+        <th class="col-fecha">Fecha registro</th>
+        <th class="col-lead">Lead</th>
+        <th class="col-documento">Documento</th>
+        <th class="col-etapa">Etapa actual</th>
+        <th class="col-estado">Estado</th>
+        <th class="col-fecha">Fecha instalacion/rechazo</th>
       </tr>
     </ng-template>
 
     <ng-template #body let-row>
       <tr>
-        <td>
-          <strong>{{ facade.leadPhone(row) }}</strong>
+        <td class="col-fecha">
+          <div class="date-stack">
+            <span>{{ row.fechaRegistro ? (row.fechaRegistro | date: 'dd/MM/yyyy') : '-' }}</span>
+            <strong>{{ row.fechaRegistro ? (row.fechaRegistro | date: 'hh:mm a') : '' }}</strong>
+          </div>
         </td>
-        <td>
-          <p-tag [severity]="facade.etapaSeverity(row.etapa)" [value]="facade.etapaLabel(row.etapa)" />
+        <td class="col-lead">
+          <span class="lead-cell__prefix">{{ facade.leadCountryCode(row) }}</span>
+          <strong>{{ row.lead }}</strong>
         </td>
-        <td>
-          <app-tipification-stack
-            [codigoTipificacion]="row.codigoTipificacion"
-            [codigoSubtipificacion]="row.codigoSubtipificacion"
-          />
+        <td class="col-documento">{{ facade.display(row.numeroDocumento) }}</td>
+        <td class="col-etapa">
+          <p-tag [severity]="facade.etapaSeverity(row.etapaActual)" [value]="facade.etapaLabel(row.etapaActual)" />
         </td>
-        <td>{{ row.updatedAt | date: 'dd/MM/yyyy hh:mm a' }}</td>
-        <td>
-          <button
-            pButton
-            type="button"
-            icon="pi pi-eye"
-            label="Ver"
-            size="small"
-            severity="secondary"
-            (click)="facade.openDetail(row)"
-          ></button>
+        <td class="col-estado">
+          <p-tag [severity]="facade.estadoSeverity(row.estado)" [value]="facade.display(row.estado)" />
+        </td>
+        <td class="col-fecha">
+          <div class="date-stack">
+            <span>{{ row.fechaInstalacionRechazo ? (row.fechaInstalacionRechazo | date: 'dd/MM/yyyy') : '-' }}</span>
+            <strong>{{ row.fechaInstalacionRechazo ? (row.fechaInstalacionRechazo | date: 'hh:mm a') : '' }}</strong>
+          </div>
         </td>
       </tr>
     </ng-template>
 
     <ng-template #emptymessage>
       <tr>
-        <td colspan="5">
-          <span class="helper--centered">Todavía no has cerrado ninguna preventa.</span>
+        <td colspan="6">
+          <span class="helper--centered">Todavia no hay preventas cerradas en este mes.</span>
         </td>
       </tr>
     </ng-template>

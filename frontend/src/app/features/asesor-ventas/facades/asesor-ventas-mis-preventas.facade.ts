@@ -5,6 +5,7 @@ import {
   AdicionalResponse,
   LeadDetalleResponse,
   MisPreventaResponse,
+  MisPreventasResumenResponse,
   PageQuery,
   PlanResponse,
   UbigeoItem
@@ -42,9 +43,14 @@ export class AsesorVentasMisPreventasFacade {
   readonly isLoadingDetail = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly rows = signal<MisPreventaResponse[]>([]);
+  readonly resumen = signal<MisPreventasResumenResponse>({ cerradas: 0, instaladas: 0, rechazadas: 0 });
   readonly totalElements = signal(0);
   readonly totalPages = signal(0);
   readonly pageNumber = signal(0);
+  readonly conversion = computed(() => {
+    const resumen = this.resumen();
+    return resumen.cerradas > 0 ? (resumen.instaladas / resumen.cerradas) * 100 : 0;
+  });
 
   readonly detailDialogOpen = signal(false);
   readonly detail = signal<LeadDetalleResponse | null>(null);
@@ -131,7 +137,7 @@ export class AsesorVentasMisPreventasFacade {
     this.isLoading.set(true);
     this.errorMessage.set(null);
     try {
-      await this.refreshPage();
+      await Promise.all([this.refreshPage(), this.refreshResumen()]);
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo cargar tus preventas.'));
     } finally {
@@ -180,12 +186,12 @@ export class AsesorVentasMisPreventasFacade {
   async openDetail(row: MisPreventaResponse): Promise<void> {
     this.detailDialogOpen.set(true);
     this.detail.set(null);
-    this.selectedEtapa.set(row.etapa ?? null);
+    this.selectedEtapa.set(row.etapaActual ?? null);
     this.activeDataTab.set('datos');
     this.isLoadingDetail.set(true);
     this.errorMessage.set(null);
     try {
-      const detail = await firstValueFrom(this.preventaService.obtenerDetalleMiPreventa(row.id));
+      const detail = await firstValueFrom(this.preventaService.obtenerDetalleMiPreventa(row.idLead));
       this.detail.set(detail);
       this.buildDetailView(detail);
     } catch (error) {
@@ -210,13 +216,13 @@ export class AsesorVentasMisPreventasFacade {
   etapaLabel(etapa: string | null | undefined): string {
     switch (etapa) {
       case 'PREVENTA':
-        return 'En preventa';
+        return 'PREVENTA';
       case 'VENTA':
-        return 'En venta';
+        return 'VENTA';
       case 'POSTVENTA':
-        return 'Postventa';
+        return 'POSTVENTA';
       default:
-        return etapa ? this.capitalizeFirst(etapa.toLowerCase()) : '-';
+        return etapa ? etapa.toUpperCase() : '-';
     }
   }
 
@@ -237,6 +243,34 @@ export class AsesorVentasMisPreventasFacade {
     return `${row.prefijo ?? ''} ${row.lead ?? ''}`.trim();
   }
 
+  leadCountryCode(row: { prefijo?: string | null }): string {
+    return row.prefijo === '+51' ? 'PE' : (row.prefijo ?? '').replace(/^\+/, '');
+  }
+
+  estadoSeverity(estado: string | null | undefined): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
+    switch ((estado ?? '').toUpperCase()) {
+      case 'ACTIVO':
+      case 'INGRESADO':
+        return 'success';
+      case 'PROGRAMADO':
+        return 'info';
+      case 'SUBSANABLE':
+        return 'warn';
+      case 'RECHAZADA':
+        return 'danger';
+      default:
+        return 'secondary';
+    }
+  }
+
+  display(value: string | number | null | undefined): string {
+    return value === null || value === undefined || value === '' ? '-' : String(value);
+  }
+
+  conversionLabel(): string {
+    return `${this.conversion().toFixed(1)}%`;
+  }
+
   private async refreshPage(): Promise<void> {
     const query: PageQuery = {
       pageNumber: this.pageNumber(),
@@ -249,6 +283,11 @@ export class AsesorVentasMisPreventasFacade {
     this.rows.set(page.content);
     this.totalElements.set(page.totalElements);
     this.totalPages.set(page.totalPages);
+  }
+
+  private async refreshResumen(): Promise<void> {
+    const { desde, hasta } = this.resolveRange();
+    this.resumen.set(await firstValueFrom(this.preventaService.obtenerResumenMisPreventas(desde, hasta)));
   }
 
   /**

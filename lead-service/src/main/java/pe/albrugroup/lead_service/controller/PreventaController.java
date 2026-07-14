@@ -282,6 +282,14 @@ public class PreventaController {
         var leads = leadService.listarMisPreventas(pageRequest, fechaDesde, fechaHasta);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
+    @GetMapping("/asesor-ventas/mis-preventas/resumen") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
+    public ResponseEntity<MisPreventasResumenResponse> obtenerResumenMisPreventas(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta
+    ) {
+        var resumen = leadService.obtenerResumenMisPreventas(fechaDesde, fechaHasta);
+        return ResponseEntity.status(HttpStatus.OK).body(resumen);
+    }
     // 1.2. Ver (read-only) el detalle actual de una preventa propia
     @GetMapping("/{idLead}/detalle-mi-preventa") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
     public ResponseEntity<LeadDetalleResponse> obtenerDetalleMiPreventa(@PathVariable Long idLead) {

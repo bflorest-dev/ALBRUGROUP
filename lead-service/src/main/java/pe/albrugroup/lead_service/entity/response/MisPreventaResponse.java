@@ -9,21 +9,25 @@ import pe.albrugroup.lead_service.entity.enums.Etapa;
 import java.time.Instant;
 
 /**
- * Vista delgada de un lead que el asesor paso a VENTA (tipificacion PREVENTA_COMPLETA /
- * subtipificacion VENTA_CERRADA). Expone su etapa actual y su ultima actualizacion para que
- * el asesor pueda dar seguimiento sin poder editar.
+ * Vista de seguimiento de un cierre PREVENTA_COMPLETA / VENTA_CERRADA. Cada fila representa un
+ * evento de cierre, no un lead unico: el mismo lead puede aparecer mas de una vez si fue cerrado
+ * por asesores distintos en intentos diferentes.
  */
 @Getter
 @Builder
 @AllArgsConstructor
 public class MisPreventaResponse {
 
-    private Long id;
+    private Long idEventoCierre;
+    private Long idLead;
     private String prefijo;
     private String lead;
-    private Etapa etapa;
+    private String numeroDocumento;
+    private Instant fechaRegistro;
+    private Etapa etapaActual;
     private EstadoPostventa estadoPostventa;
-    private Instant updatedAt;
+    private String estado;
+    private Instant fechaInstalacionRechazo;
     private String codigoTipificacion;
     private String codigoSubtipificacion;
 }

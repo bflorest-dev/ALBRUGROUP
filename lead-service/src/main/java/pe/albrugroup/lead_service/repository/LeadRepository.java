@@ -16,7 +16,6 @@ import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
-import pe.albrugroup.lead_service.entity.response.MisPreventaResponse;
 import pe.albrugroup.lead_service.repository.projection.AsesorCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.AsesorPreventaCantidadProjection;
 import pe.albrugroup.lead_service.repository.projection.AsesorProveedorPreventaProjection;
@@ -1016,42 +1015,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     Optional<Lead> buscarDetalleAsesorCualquierEtapa(
             @Param("idLead") Long idLead,
             @Param("idAsesor") Long idAsesor
-    );
-
-    // Listado read-only de "mis preventas": leads cuya preventa concreto el asesor (merito de la
-    // etapa PREVENTA en LeadEtapaResumen: idAsesorMerito/fechaMerito). Filtro opcional por rango de
-    // fecha de cierre (fechaMerito) para ver preventas del dia/semana/mes. Lead es raiz para conservar
-    // el @Filter por equipo. Muestra la ultima actualizacion para el seguimiento.
-    @Query(value = """
-            SELECT new pe.albrugroup.lead_service.entity.response.MisPreventaResponse(
-                       l.id,
-                       l.prefijo,
-                       l.lead,
-                       l.etapa,
-                       l.estadoPostventa,
-                       l.updatedAt,
-                       l.codigoTipificacion,
-                       l.codigoSubtipificacion)
-            FROM Lead l
-            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
-            WHERE r.idAsesorMerito = :idAsesor
-              AND r.fechaMerito >= :fechaDesde
-              AND r.fechaMerito < :fechaHasta
-            ORDER BY r.fechaMerito DESC
-            """,
-            countQuery = """
-            SELECT COUNT(r)
-            FROM Lead l
-            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
-            WHERE r.idAsesorMerito = :idAsesor
-              AND r.fechaMerito >= :fechaDesde
-              AND r.fechaMerito < :fechaHasta
-            """)
-    Page<MisPreventaResponse> listarMisPreventas(
-            @Param("idAsesor") Long idAsesor,
-            @Param("fechaDesde") Instant fechaDesde,
-            @Param("fechaHasta") Instant fechaHasta,
-            Pageable pageable
     );
 
     // Detalle completo de un lead por id, sin filtro de asesor ni etapa (la autorizacion del caso

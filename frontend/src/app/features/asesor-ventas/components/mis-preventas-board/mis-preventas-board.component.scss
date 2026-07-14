@@ -4,10 +4,6 @@
   gap: 0.55rem;
 }
 
-.col-actions {
-  min-width: 7rem;
-}
-
 .board-filters {
   align-items: center;
   display: flex;
@@ -21,6 +17,113 @@
   opacity: 0.72;
   padding: 1.5rem 0;
   text-align: center;
+}
+
+.stats-grid {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0.2rem 0 0.85rem;
+}
+
+.stat {
+  border: 1px solid #d9e2ec;
+  border-left-width: 0.28rem;
+  border-radius: 8px;
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0.75rem 0.85rem;
+}
+
+.stat span {
+  color: #536579;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.stat strong {
+  color: #10243f;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.stat--closed {
+  border-left-color: #2563eb;
+}
+
+.stat--installed {
+  border-left-color: #15803d;
+}
+
+.stat--rejected {
+  border-left-color: #dc2626;
+}
+
+.stat--conversion {
+  border-left-color: #7c3aed;
+}
+
+.col-fecha {
+  white-space: nowrap;
+}
+
+.col-lead {
+  white-space: nowrap;
+}
+
+.col-documento {
+  white-space: nowrap;
+}
+
+.col-etapa,
+.col-estado {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.date-stack {
+  align-items: center;
+  display: grid;
+  gap: 0.12rem;
+  justify-items: center;
+  line-height: 1.12;
+  min-height: 2.05rem;
+  text-align: center;
+}
+
+.date-stack span {
+  color: #41526b;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.date-stack strong {
+  color: #10243f;
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.lead-cell__prefix {
+  color: #10243f;
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  margin-right: 0.28rem;
+  vertical-align: baseline;
+}
+
+@media (max-width: 900px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 :host ::ng-deep {
@@ -39,10 +142,48 @@
     color: #304438;
     font-size: 0.76rem;
     letter-spacing: 0.04em;
+    text-align: center;
     text-transform: uppercase;
+    white-space: nowrap;
   }
 
   .mis-preventas-board .p-datatable-tbody > tr > td {
+    text-align: center;
     vertical-align: middle;
+  }
+
+  .mis-preventas-table table {
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  .mis-preventas-table th:nth-child(1),
+  .mis-preventas-table td:nth-child(1) {
+    width: 12%;
+  }
+
+  .mis-preventas-table th:nth-child(2),
+  .mis-preventas-table td:nth-child(2) {
+    width: 17%;
+  }
+
+  .mis-preventas-table th:nth-child(3),
+  .mis-preventas-table td:nth-child(3) {
+    width: 13%;
+  }
+
+  .mis-preventas-table th:nth-child(4),
+  .mis-preventas-table td:nth-child(4) {
+    width: 13%;
+  }
+
+  .mis-preventas-table th:nth-child(5),
+  .mis-preventas-table td:nth-child(5) {
+    width: 20%;
+  }
+
+  .mis-preventas-table th:nth-child(6),
+  .mis-preventas-table td:nth-child(6) {
+    width: 25%;
   }
 }

@@ -832,6 +832,127 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
 
     Optional<Evento> findTopByIdLeadAndAccionAndTipificacionOrderByCreatedAtDesc(Long idLead, Accion accion, String tipificacion);
 
+    @Query(value = """
+            SELECT e, l
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.idActor = :idAsesor
+              AND e.accion = :accion
+              AND e.etapa = :etapa
+              AND e.tipificacion = :tipificacion
+              AND e.subtipificacion = :subtipificacion
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt < :fechaHasta
+            ORDER BY e.createdAt DESC, e.id DESC
+            """,
+            countQuery = """
+            SELECT COUNT(e)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.idActor = :idAsesor
+              AND e.accion = :accion
+              AND e.etapa = :etapa
+              AND e.tipificacion = :tipificacion
+              AND e.subtipificacion = :subtipificacion
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt < :fechaHasta
+            """)
+    Page<Object[]> listarCierresMisPreventas(
+            @Param("idAsesor") Long idAsesor,
+            @Param("accion") Accion accion,
+            @Param("etapa") Etapa etapa,
+            @Param("tipificacion") String tipificacion,
+            @Param("subtipificacion") String subtipificacion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT e
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.idActor = :idAsesor
+              AND e.accion = :accion
+              AND e.etapa = :etapa
+              AND e.tipificacion = :tipificacion
+              AND e.subtipificacion = :subtipificacion
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt < :fechaHasta
+            ORDER BY e.createdAt DESC, e.id DESC
+            """)
+    List<Evento> listarCierresMisPreventasResumen(
+            @Param("idAsesor") Long idAsesor,
+            @Param("accion") Accion accion,
+            @Param("etapa") Etapa etapa,
+            @Param("tipificacion") String tipificacion,
+            @Param("subtipificacion") String subtipificacion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta
+    );
+
+    @Query("""
+            SELECT MIN(e.createdAt)
+            FROM Evento e
+            WHERE e.idLead = :idLead
+              AND e.accion = :accion
+              AND e.etapa = :etapa
+              AND e.tipificacion = :tipificacion
+              AND e.subtipificacion = :subtipificacion
+              AND e.createdAt > :fechaCierre
+            """)
+    Optional<Instant> buscarFechaSiguienteCierrePreventa(
+            @Param("idLead") Long idLead,
+            @Param("accion") Accion accion,
+            @Param("etapa") Etapa etapa,
+            @Param("tipificacion") String tipificacion,
+            @Param("subtipificacion") String subtipificacion,
+            @Param("fechaCierre") Instant fechaCierre
+    );
+
+    @Query("""
+            SELECT e, s.etapaCambio
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            JOIN Tipificacion t ON t.etapa = e.etapa AND t.idEquipo = l.idEquipo AND t.codigo = e.tipificacion
+            JOIN Subtipificacion s ON s.tipificacion = t AND s.codigo = e.subtipificacion
+            WHERE e.idLead = :idLead
+              AND e.accion = :accion
+              AND e.etapa = :etapa
+              AND e.createdAt > :fechaDesde
+              AND e.createdAt < :fechaHasta
+              AND s.etapaCambio IN :etapasDestino
+            ORDER BY e.createdAt ASC, e.id ASC
+            """)
+    List<Object[]> buscarResultadoIntentoVenta(
+            @Param("idLead") Long idLead,
+            @Param("accion") Accion accion,
+            @Param("etapa") Etapa etapa,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("etapasDestino") Collection<Etapa> etapasDestino,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT e
+            FROM Evento e
+            WHERE e.idLead = :idLead
+              AND e.accion = :accion
+              AND e.etapa = :etapa
+              AND e.createdAt > :fechaDesde
+              AND e.createdAt < :fechaHasta
+            ORDER BY e.createdAt DESC, e.id DESC
+            """)
+    List<Evento> buscarUltimaGestionVentaIntento(
+            @Param("idLead") Long idLead,
+            @Param("accion") Accion accion,
+            @Param("etapa") Etapa etapa,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            Pageable pageable
+    );
+
     Optional<Evento> findTopByIdLeadAndIdActorAndAccionInOrderByCreatedAtDesc(
             Long idLead,
             Long idActor,

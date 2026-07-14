@@ -36,6 +36,7 @@ import {
   LeadIntakeMasivoExcelResponse,
   MasivoLeadFilters,
   MisPreventaResponse,
+  MisPreventasResumenResponse,
   OportunidadHermana,
   LeadSnapshotsRequest,
   LeadOfertaComercialRequest,
@@ -306,6 +307,19 @@ export class PreventaLeadService {
       params = params.set('fechaHasta', fechaHasta);
     }
     return this.http.get<LeadPage<MisPreventaResponse>>(`${this.leadUrl}/preventa/asesor-ventas/mis-preventas`, {
+      params
+    });
+  }
+
+  obtenerResumenMisPreventas(fechaDesde?: string, fechaHasta?: string): Observable<MisPreventasResumenResponse> {
+    let params = new HttpParams();
+    if (fechaDesde) {
+      params = params.set('fechaDesde', fechaDesde);
+    }
+    if (fechaHasta) {
+      params = params.set('fechaHasta', fechaHasta);
+    }
+    return this.http.get<MisPreventasResumenResponse>(`${this.leadUrl}/preventa/asesor-ventas/mis-preventas/resumen`, {
       params
     });
   }

@@ -1,14 +1,11 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DatePickerModule } from 'primeng/datepicker';
 import { PaginatorModule } from 'primeng/paginator';
-import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { TipificationStackComponent } from '../../../../shared/components/tipification-stack/tipification-stack.component';
 import { AsesorVentasMisPreventasFacade } from '../../facades/asesor-ventas-mis-preventas.facade';
 
 @Component({
@@ -16,14 +13,11 @@ import { AsesorVentasMisPreventasFacade } from '../../facades/asesor-ventas-mis-
   imports: [
     DatePipe,
     FormsModule,
-    ButtonModule,
     CardModule,
     DatePickerModule,
     PaginatorModule,
-    SelectButtonModule,
     TableModule,
-    TagModule,
-    TipificationStackComponent
+    TagModule
   ],
   templateUrl: './mis-preventas-board.component.html',
   styleUrl: './mis-preventas-board.component.scss',

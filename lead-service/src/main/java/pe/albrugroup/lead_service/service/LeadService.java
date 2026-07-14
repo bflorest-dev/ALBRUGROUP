@@ -55,6 +55,7 @@ import pe.albrugroup.lead_service.entity.response.InternetResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPostventaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadRealtimeEvent;
 import pe.albrugroup.lead_service.entity.response.MisPreventaResponse;
+import pe.albrugroup.lead_service.entity.response.MisPreventasResumenResponse;
 import pe.albrugroup.lead_service.entity.response.OportunidadHermanaResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.entity.response.PlanAdicionalResponse;
@@ -719,13 +720,141 @@ public class LeadService {
         // Postgres provocan "could not determine data type of parameter" (42P18).
         Instant desde = fechaDesde == null ? Instant.EPOCH : OperationalDateTime.startOfDay(fechaDesde);
         Instant hasta = fechaHasta == null ? MIS_PREVENTAS_FECHA_HASTA_ABIERTA : OperationalDateTime.endExclusiveOfDay(fechaHasta);
-        var page = leadRepository.listarMisPreventas(
+        var page = eventoRepository.listarCierresMisPreventas(
                 currentUser.empleadoID(),
+                Accion.TIPIFICACION,
+                Etapa.PREVENTA,
+                TIPIFICACION_PREVENTA_COMPLETA,
+                SUBTIPIFICACION_VENTA_CERRADA,
                 desde,
                 hasta,
                 org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
         );
-        return PageResponse.from(page);
+        return PageResponse.<MisPreventaResponse>builder()
+                .page(page.getNumber())
+                .size(page.getSize())
+                .totalPages(page.getTotalPages())
+                .totalElements(page.getTotalElements())
+                .content(page.getContent().stream().map(this::toMisPreventaResponse).toList())
+                .build();
+    }
+
+    public MisPreventasResumenResponse obtenerResumenMisPreventas(LocalDate fechaDesde, LocalDate fechaHasta) {
+        Instant desde = fechaDesde == null ? Instant.EPOCH : OperationalDateTime.startOfDay(fechaDesde);
+        Instant hasta = fechaHasta == null ? MIS_PREVENTAS_FECHA_HASTA_ABIERTA : OperationalDateTime.endExclusiveOfDay(fechaHasta);
+        List<Evento> cierres = eventoRepository.listarCierresMisPreventasResumen(
+                currentUser.empleadoID(),
+                Accion.TIPIFICACION,
+                Etapa.PREVENTA,
+                TIPIFICACION_PREVENTA_COMPLETA,
+                SUBTIPIFICACION_VENTA_CERRADA,
+                desde,
+                hasta
+        );
+
+        long instaladas = 0;
+        long rechazadas = 0;
+        for (Evento cierre : cierres) {
+            IntentoVentaResultado resultado = resolverResultadoIntento(cierre);
+            if (resultado.etapaDestino() == Etapa.POSTVENTA) {
+                instaladas++;
+            } else if (resultado.etapaDestino() == Etapa.PREVENTA) {
+                rechazadas++;
+            }
+        }
+
+        return new MisPreventasResumenResponse(cierres.size(), instaladas, rechazadas);
+    }
+
+    private MisPreventaResponse toMisPreventaResponse(Object[] row) {
+        Evento cierre = (Evento) row[0];
+        Lead lead = (Lead) row[1];
+        IntentoVentaResultado resultado = resolverResultadoIntento(cierre);
+        Etapa etapaActual = resultado.etapaDestino() == null ? Etapa.VENTA : resultado.etapaDestino();
+        Evento gestionVenta = resultado.evento() == null ? buscarUltimaGestionVentaIntento(cierre) : resultado.evento();
+
+        return MisPreventaResponse.builder()
+                .idEventoCierre(cierre.getId())
+                .idLead(lead.getId())
+                .prefijo(lead.getPrefijo())
+                .lead(lead.getLead())
+                .numeroDocumento(numeroDocumentoPreventa(lead))
+                .fechaRegistro(cierre.getCreatedAt())
+                .etapaActual(etapaActual)
+                .estadoPostventa(lead.getEstadoPostventa())
+                .estado(estadoMisPreventa(etapaActual, gestionVenta))
+                .fechaInstalacionRechazo(resultado.evento() == null ? null : resultado.evento().getCreatedAt())
+                .codigoTipificacion(gestionVenta == null ? null : gestionVenta.getTipificacion())
+                .codigoSubtipificacion(gestionVenta == null ? null : gestionVenta.getSubtipificacion())
+                .build();
+    }
+
+    private String numeroDocumentoPreventa(Lead lead) {
+        if (lead.getDatosPreventa() != null && lead.getDatosPreventa().getNumeroDocumentoTitularServicio() != null) {
+            return lead.getDatosPreventa().getNumeroDocumentoTitularServicio();
+        }
+        return lead.getNumeroDocumentoTitularServicioSnapshot();
+    }
+
+    private IntentoVentaResultado resolverResultadoIntento(Evento cierre) {
+        Instant fechaHasta = fechaSiguienteCierre(cierre);
+        List<Object[]> resultados = eventoRepository.buscarResultadoIntentoVenta(
+                cierre.getIdLead(),
+                Accion.TIPIFICACION,
+                Etapa.VENTA,
+                cierre.getCreatedAt(),
+                fechaHasta,
+                List.of(Etapa.POSTVENTA, Etapa.PREVENTA),
+                org.springframework.data.domain.PageRequest.of(0, 1)
+        );
+        if (resultados.isEmpty()) {
+            return new IntentoVentaResultado(null, null);
+        }
+        Object[] row = resultados.get(0);
+        return new IntentoVentaResultado((Evento) row[0], (Etapa) row[1]);
+    }
+
+    private Evento buscarUltimaGestionVentaIntento(Evento cierre) {
+        List<Evento> gestiones = eventoRepository.buscarUltimaGestionVentaIntento(
+                cierre.getIdLead(),
+                Accion.TIPIFICACION,
+                Etapa.VENTA,
+                cierre.getCreatedAt(),
+                fechaSiguienteCierre(cierre),
+                org.springframework.data.domain.PageRequest.of(0, 1)
+        );
+        return gestiones.isEmpty() ? null : gestiones.get(0);
+    }
+
+    private Instant fechaSiguienteCierre(Evento cierre) {
+        return eventoRepository.buscarFechaSiguienteCierrePreventa(
+                cierre.getIdLead(),
+                Accion.TIPIFICACION,
+                Etapa.PREVENTA,
+                TIPIFICACION_PREVENTA_COMPLETA,
+                SUBTIPIFICACION_VENTA_CERRADA,
+                cierre.getCreatedAt()
+        ).orElse(MIS_PREVENTAS_FECHA_HASTA_ABIERTA);
+    }
+
+    private String estadoMisPreventa(Etapa etapaActual, Evento gestionVenta) {
+        if (etapaActual == Etapa.PREVENTA) {
+            return "RECHAZADA";
+        }
+        if (etapaActual == Etapa.POSTVENTA) {
+            return "ACTIVO";
+        }
+        if (gestionVenta == null || gestionVenta.getTipificacion() == null || gestionVenta.getTipificacion().isBlank()) {
+            return "SIN INGRESAR";
+        }
+        String codigo = gestionVenta.getTipificacion().trim().toUpperCase();
+        if (TIPIFICACION_PROGRAMADO.equals(codigo)) {
+            return "PROGRAMADO";
+        }
+        if ("OBSERVADA".equals(codigo)) {
+            return "SUBSANABLE";
+        }
+        return "INGRESADO";
     }
 
     public LeadDetalleResponse obtenerDetalleMiPreventa(Long idLead) {
@@ -3609,6 +3738,8 @@ public class LeadService {
         }
         return item;
     }
+
+    private record IntentoVentaResultado(Evento evento, Etapa etapaDestino) { }
 
     private static final class ResumenSupervisorVentasAccumulator {
         private final Long idAsesor;

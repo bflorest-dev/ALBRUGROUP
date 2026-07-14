@@ -371,15 +371,25 @@ export interface LeadAdicionalDetalleResponse {
 }
 
 export interface MisPreventaResponse {
-  id: number;
+  idEventoCierre: number;
+  idLead: number;
   prefijo: string;
   lead: string;
-  etapa?: Etapa | string | null;
+  numeroDocumento?: string | null;
+  fechaRegistro?: string | null;
+  etapaActual?: Etapa | string | null;
   estadoPostventa?: string | null;
-  updatedAt?: string | null;
-  // Tipificacion actual del lead: permite al asesor ver en que estado quedo su preventa.
+  estado?: string | null;
+  fechaInstalacionRechazo?: string | null;
+  // Ultima gestion de venta dentro del intento; queda disponible para auditoria visual futura.
   codigoTipificacion?: string | null;
   codigoSubtipificacion?: string | null;
+}
+
+export interface MisPreventasResumenResponse {
+  cerradas: number;
+  instaladas: number;
+  rechazadas: number;
 }
 
 export interface LeadRealtimeEvent {
