@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input, OnChanges, OnInit, SimpleChanges, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -35,11 +35,20 @@ import { AdminGestionCampanaFacade } from '../../facades/admin-gestion-campana.f
   styleUrl: './gestion-campana-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class GestionCampanaPanelComponent implements OnInit {
+export class GestionCampanaPanelComponent implements OnChanges, OnInit {
+  @Input() selectedEquipoId: number | null = null;
+
   protected readonly facade = inject(AdminGestionCampanaFacade);
   protected readonly maxDate = this.localToday();
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if ('selectedEquipoId' in changes) {
+      this.facade.setSelectedEquipoId(this.selectedEquipoId);
+    }
+  }
+
   ngOnInit(): void {
+    this.facade.setSelectedEquipoId(this.selectedEquipoId);
     this.facade.start();
   }
 

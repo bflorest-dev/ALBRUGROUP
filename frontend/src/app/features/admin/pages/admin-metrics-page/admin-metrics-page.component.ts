@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
+import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
@@ -15,6 +16,7 @@ import { AdminEquipoService } from '../../services/admin-equipo.service';
 const SIN_EQUIPO = 'Sin equipo';
 
 interface DashboardMetricRow {
+  idEquipo: number | null;
   equipo: string;
   registros: number; // A
   leadsUnicos: number; // B
@@ -37,6 +39,7 @@ interface DashboardMetricRow {
     ButtonModule,
     CardModule,
     MessageModule,
+    SelectModule,
     TableModule,
     TagModule,
     DateFieldComponent,
@@ -55,11 +58,23 @@ export class AdminMetricsPageComponent implements OnInit {
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal('');
   private readonly raw = signal<LeadsDiariosMetricasEquipo[]>([]);
+  private readonly equipos = signal<Array<{ id: number; nombre: string; activo: boolean }>>([]);
   private readonly equipoNombreById = signal<Map<number, string>>(new Map());
+  protected readonly selectedEquipoId = signal<number | null>(null);
+
+  protected readonly equipoOptions = computed(() => [
+    { label: 'Todos los equipos', value: null as number | null },
+    ...this.equipos()
+      .filter((equipo) => equipo.activo !== false)
+      .map((equipo) => ({ label: equipo.nombre, value: equipo.id }))
+      .sort((left, right) => left.label.localeCompare(right.label))
+  ]);
 
   protected readonly rows = computed<DashboardMetricRow[]>(() => {
     const nombres = this.equipoNombreById();
+    const selectedEquipoId = this.selectedEquipoId();
     return this.raw()
+      .filter((metrica) => selectedEquipoId === null || metrica.idEquipo === selectedEquipoId)
       .map((metrica) => this.toRow(metrica, nombres))
       .sort((left, right) => {
         if (left.equipo === SIN_EQUIPO) return 1;
@@ -88,6 +103,7 @@ export class AdminMetricsPageComponent implements OnInit {
       { registros: 0, leadsUnicos: 0, repetidos: 0, leadsRepetidos: 0, tipificados: 0, bloque1: 0, bloque2: 0, bloque3: 0, ventaCerrada: 0 }
     );
     return {
+      idEquipo: null,
       equipo: 'Total',
       ...acc,
       porcentaje: acc.registros > 0 ? (acc.leadsUnicos / acc.registros) * 100 : 0
@@ -103,6 +119,10 @@ export class AdminMetricsPageComponent implements OnInit {
     await this.load();
   }
 
+  protected onEquipoChange(value: number | null): void {
+    this.selectedEquipoId.set(value ?? null);
+  }
+
   protected async load(): Promise<void> {
     this.isLoading.set(true);
     this.errorMessage.set('');
@@ -111,6 +131,7 @@ export class AdminMetricsPageComponent implements OnInit {
         firstValueFrom(this.metricsService.obtenerPorEquipo(this.fecha() || undefined)),
         firstValueFrom(this.equipoService.listarEquipos())
       ]);
+      this.equipos.set(equipos);
       this.equipoNombreById.set(new Map(equipos.map((equipo) => [equipo.id, equipo.nombre])));
       this.raw.set(metricas);
     } catch {
@@ -125,6 +146,7 @@ export class AdminMetricsPageComponent implements OnInit {
     const equipo =
       metrica.idEquipo == null ? SIN_EQUIPO : nombres.get(metrica.idEquipo) ?? `Equipo ${metrica.idEquipo}`;
     return {
+      idEquipo: metrica.idEquipo,
       equipo,
       registros: metrica.registros,
       leadsUnicos: metrica.leadsUnicos,

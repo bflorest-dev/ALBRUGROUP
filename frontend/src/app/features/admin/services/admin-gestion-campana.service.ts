@@ -8,6 +8,13 @@ import { CatalogoResponse } from '../../../shared/models/preventa/preventa.model
 export type GestionCampoTipi = 'PRIMERA' | 'ULTIMA' | 'MAYOR';
 
 /**
+ * Cohorte del reporte (espejo del enum del backend):
+ *  - GESTIONADOS: leads tipificados en el período (ancla en la fecha de la tipificación).
+ *  - INGRESADOS: leads con evento REGISTRO en el período (ancla en el registro), por su tipi actual.
+ */
+export type GestionModo = 'GESTIONADOS' | 'INGRESADOS';
+
+/**
  * Celda cruda del reporte: cantidad de leads de una campaña cuya tipificación (según el campo
  * elegido) en la etapa es `codigoTipificacion`, dentro del período. idEquipo/idCampana null =
  * "Sin equipo"/"Sin campaña". El pivote a matriz equipo → campaña lo hace el facade.
@@ -27,15 +34,17 @@ export class AdminGestionCampanaService {
 
   /**
    * Reporte gestión por campaña. Si se omiten `desde`/`hasta`, el backend usa el día operativo de
-   * hoy (America/Lima). El período filtra por la fecha de la tipificación elegida, no por el registro.
+   * hoy (America/Lima). El `modo` define el ancla del período: GESTIONADOS = fecha de la tipificación;
+   * INGRESADOS = fecha del evento REGISTRO.
    */
   obtenerGestionPorCampana(
     campo: GestionCampoTipi,
+    modo: GestionModo,
     desde?: string,
     hasta?: string,
     etapa: string = 'PREVENTA'
   ): Observable<GestionPorCampanaCelda[]> {
-    let params = new HttpParams().set('etapa', etapa).set('campo', campo);
+    let params = new HttpParams().set('etapa', etapa).set('campo', campo).set('modo', modo);
     if (desde) {
       params = params.set('desde', desde);
     }

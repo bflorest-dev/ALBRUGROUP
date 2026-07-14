@@ -36,6 +36,22 @@
   min-width: 12rem;
 }
 
+.metrics-filter {
+  display: grid;
+  gap: 0.35rem;
+  min-width: min(16rem, 100%);
+}
+
+.metrics-filter span {
+  color: var(--app-text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+:host ::ng-deep .metrics-filter .p-select {
+  width: 100%;
+}
+
 .metrics-message {
   display: block;
   margin-bottom: 1rem;

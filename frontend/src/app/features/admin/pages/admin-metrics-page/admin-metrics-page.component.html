@@ -14,6 +14,18 @@
         [ngModel]="fecha()"
         (ngModelChange)="onFechaChange($event)"
       />
+      <label class="metrics-filter">
+        <span>Equipo</span>
+        <p-select
+          inputId="dashboard-equipo"
+          [options]="equipoOptions()"
+          [ngModel]="selectedEquipoId()"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+          (ngModelChange)="onEquipoChange($event)"
+        />
+      </label>
       <button
         pButton
         type="button"
@@ -98,6 +110,6 @@
   </p-card>
 
   <p-card styleClass="metrics-gxc-card">
-    <app-gestion-campana-panel />
+    <app-gestion-campana-panel [selectedEquipoId]="selectedEquipoId()" />
   </p-card>
 </section>

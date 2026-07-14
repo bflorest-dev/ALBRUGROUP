@@ -10,6 +10,7 @@ import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.enums.ModoConteo;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
@@ -448,7 +449,7 @@ public class EventoService {
      * {@code equipoFilter} (visibilidad global ve todo). idEquipo/idCampana null = "Sin equipo/campaña".
      */
     public List<GestionPorCampanaCeldaResponse> obtenerGestionPorCampana(
-            Etapa etapa, CampoTipificacion campo, LocalDate desde, LocalDate hasta) {
+            Etapa etapa, CampoTipificacion campo, ModoConteo modo, LocalDate desde, LocalDate hasta) {
         LocalDate desdeResuelto = OperationalDateTime.resolveDate(desde);
         LocalDate hastaResuelto = OperationalDateTime.resolveDate(hasta);
         if (hastaResuelto.isBefore(desdeResuelto)) {
@@ -457,10 +458,17 @@ public class EventoService {
         Instant inicio = OperationalDateTime.startOfDay(desdeResuelto);
         Instant fin = OperationalDateTime.endExclusiveOfDay(hastaResuelto);
 
-        List<Object[]> filas = switch (campo) {
-            case PRIMERA -> leadEtapaResumenRepository.gestionPorCampanaPrimera(etapa, inicio, fin);
-            case ULTIMA -> leadEtapaResumenRepository.gestionPorCampanaUltima(etapa, inicio, fin);
-            case MAYOR -> leadEtapaResumenRepository.gestionPorCampanaMayor(etapa, inicio, fin);
+        List<Object[]> filas = switch (modo) {
+            case GESTIONADOS -> switch (campo) {
+                case PRIMERA -> leadEtapaResumenRepository.gestionPorCampanaPrimera(etapa, inicio, fin);
+                case ULTIMA -> leadEtapaResumenRepository.gestionPorCampanaUltima(etapa, inicio, fin);
+                case MAYOR -> leadEtapaResumenRepository.gestionPorCampanaMayor(etapa, inicio, fin);
+            };
+            case INGRESADOS -> switch (campo) {
+                case PRIMERA -> leadEtapaResumenRepository.ingresadosPorCampanaPrimera(Accion.REGISTRO, etapa, inicio, fin);
+                case ULTIMA -> leadEtapaResumenRepository.ingresadosPorCampanaUltima(Accion.REGISTRO, etapa, inicio, fin);
+                case MAYOR -> leadEtapaResumenRepository.ingresadosPorCampanaMayor(Accion.REGISTRO, etapa, inicio, fin);
+            };
         };
 
         return filas.stream()

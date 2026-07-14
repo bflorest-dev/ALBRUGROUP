@@ -6,6 +6,19 @@
 
   <div class="gxc__toolbar">
     <div class="gxc__control">
+      <span class="gxc__control-label">Modo</span>
+      <p-selectButton
+        [options]="facade.modoOptions"
+        optionLabel="label"
+        optionValue="value"
+        [allowEmpty]="false"
+        [ngModel]="facade.modo()"
+        [ngModelOptions]="{ standalone: true }"
+        (onChange)="facade.setModo($event.value)"
+      />
+    </div>
+
+    <div class="gxc__control">
       <span class="gxc__control-label">Tipificación</span>
       <p-selectButton
         [options]="facade.campoOptions"

@@ -6,6 +6,7 @@ import { AdminEquipoService } from '../services/admin-equipo.service';
 import {
   AdminGestionCampanaService,
   GestionCampoTipi,
+  GestionModo,
   GestionPorCampanaCelda
 } from '../services/admin-gestion-campana.service';
 
@@ -76,7 +77,7 @@ const BRAND_ACCENTS: Array<{ match: string; accent: string }> = [
 ];
 const FALLBACK_ACCENTS = ['#5b6cff', '#8e24aa', '#00897b', '#6d4c41', '#546e7a', '#c2185b'];
 
-type Criteria = { requestId: number; campo: GestionCampoTipi; desde?: string; hasta?: string };
+type Criteria = { requestId: number; campo: GestionCampoTipi; modo: GestionModo; desde?: string; hasta?: string };
 
 type LoadResult = { celdas: GestionPorCampanaCelda[]; catalogo: CatalogoResponse; nombresEquipo: Map<number, string> };
 
@@ -114,16 +115,22 @@ export class AdminGestionCampanaFacade {
   private readonly criteria = signal<Criteria | null>(null);
 
   readonly campo = signal<GestionCampoTipi>('MAYOR');
+  readonly modo = signal<GestionModo>('GESTIONADOS');
   readonly periodo = signal<GestionPeriodo>('dia');
   readonly customDesde = signal('');
   readonly customHasta = signal('');
   readonly customRangeError = signal<string | null>(null);
   readonly selectedCampanaKeys = signal<string[]>([]);
+  readonly selectedEquipoId = signal<number | null>(null);
 
   readonly campoOptions: Array<{ label: string; value: GestionCampoTipi }> = [
     { label: 'Mayor', value: 'MAYOR' },
     { label: 'Última', value: 'ULTIMA' },
     { label: 'Primera', value: 'PRIMERA' }
+  ];
+  readonly modoOptions: Array<{ label: string; value: GestionModo }> = [
+    { label: 'Gestionados', value: 'GESTIONADOS' },
+    { label: 'Ingresados', value: 'INGRESADOS' }
   ];
   readonly periodoOptions: Array<{ label: string; value: GestionPeriodo }> = [
     { label: 'Hoy', value: 'dia' },
@@ -132,14 +139,12 @@ export class AdminGestionCampanaFacade {
   ];
 
   readonly campoAyuda = computed(() => {
-    switch (this.campo()) {
-      case 'PRIMERA':
-        return 'Cuenta cada lead según su primera tipificación en el período elegido.';
-      case 'ULTIMA':
-        return 'Cuenta cada lead según su última tipificación en el período elegido.';
-      default:
-        return 'Cuenta cada lead según su mayor tipificación alcanzada en el período elegido.';
+    const campoTexto =
+      this.campo() === 'PRIMERA' ? 'primera' : this.campo() === 'ULTIMA' ? 'última' : 'mayor';
+    if (this.modo() === 'INGRESADOS') {
+      return `Leads registrados en el período, contados por su ${campoTexto} tipificación actual.`;
     }
+    return `Leads contados por su ${campoTexto} tipificación ocurrida en el período elegido.`;
   });
 
   private readonly state = toSignal(
@@ -149,7 +154,7 @@ export class AdminGestionCampanaFacade {
           return of<State>({ status: 'idle' });
         }
         return forkJoin({
-          celdas: this.service.obtenerGestionPorCampana(criteria.campo, criteria.desde, criteria.hasta),
+          celdas: this.service.obtenerGestionPorCampana(criteria.campo, criteria.modo, criteria.desde, criteria.hasta),
           catalogo: this.service.obtenerCatalogoAgregado(),
           equipos: this.equipoService.listarEquipos()
         }).pipe(
@@ -183,11 +188,19 @@ export class AdminGestionCampanaFacade {
     return state.status === 'success' ? this.accumulate(state.data) : [];
   });
 
+  private readonly visibleAccumulated = computed<AccEquipo[]>(() => {
+    const selectedEquipoId = this.selectedEquipoId();
+    if (selectedEquipoId === null) {
+      return this.accumulated();
+    }
+    return this.accumulated().filter((equipo) => equipo.idEquipo === selectedEquipoId);
+  });
+
   readonly campanaGroups = computed<GestionCampanaGroup[]>(() => {
     const keysAsignadas = new Set<string>();
     const groups: GestionCampanaGroup[] = [];
 
-    for (const equipo of this.accumulated()) {
+    for (const equipo of this.visibleAccumulated()) {
       const items = equipo.campanas
         .filter((campana) => {
           if (keysAsignadas.has(campana.key)) {
@@ -229,7 +242,7 @@ export class AdminGestionCampanaFacade {
   readonly matrices = computed<GestionEquipoMatriz[]>(() => {
     const seleccion = new Set(this.selectedCampanaKeys());
     const filtrar = seleccion.size > 0;
-    return this.accumulated()
+    return this.visibleAccumulated()
       .map((equipo) => this.buildMatriz(equipo, filtrar ? seleccion : null))
       .filter((matriz) => matriz.campanas.length > 0);
   });
@@ -250,6 +263,14 @@ export class AdminGestionCampanaFacade {
       return;
     }
     this.campo.set(campo);
+    this.reload();
+  }
+
+  setModo(modo: GestionModo | null | undefined): void {
+    if (!modo || this.modo() === modo) {
+      return;
+    }
+    this.modo.set(modo);
     this.reload();
   }
 
@@ -278,6 +299,15 @@ export class AdminGestionCampanaFacade {
     this.selectedCampanaKeys.set(keys ?? []);
   }
 
+  setSelectedEquipoId(idEquipo: number | null | undefined): void {
+    const normalized = idEquipo ?? null;
+    if (normalized === this.selectedEquipoId()) {
+      return;
+    }
+    this.selectedEquipoId.set(normalized);
+    this.selectedCampanaKeys.set([]);
+  }
+
   clearCampanaFilter(): void {
     this.selectedCampanaKeys.set([]);
   }
@@ -290,6 +320,7 @@ export class AdminGestionCampanaFacade {
     this.criteria.set({
       requestId: ++this.requestId,
       campo: this.campo(),
+      modo: this.modo(),
       desde: range.desde,
       hasta: range.hasta
     });
