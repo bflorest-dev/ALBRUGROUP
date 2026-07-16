@@ -42,71 +42,17 @@
       <p-message severity="error" [text]="errorMessage()" styleClass="metrics-message" />
     }
 
-    <p-table
-      [value]="rows()"
-      [loading]="isLoading()"
-      [scrollable]="true"
-      [tableStyle]="{ 'min-width': '62rem' }"
-      styleClass="p-datatable-sm metrics-table"
-    >
-      <ng-template #header>
-        <tr>
-          <th class="metrics-team-col">Equipo</th>
-          <th>Registros</th>
-          <th>Leads únicos</th>
-          <th>Repetidos</th>
-          <th>% Válidos</th>
-          <th>Con repet.</th>
-          <th>Tipificados</th>
-          <th>Rango 1-3 / 4-6 / 7-8</th>
-          <th>Venta cerrada</th>
-        </tr>
-      </ng-template>
-
-      <ng-template #body let-row>
-        <tr>
-          <td class="metrics-team-col"><strong>{{ row.equipo }}</strong></td>
-          <td>{{ row.registros }}</td>
-          <td>{{ row.leadsUnicos }}</td>
-          <td>{{ row.repetidos }}</td>
-          <td>{{ row.porcentaje | number: '1.0-1' }}%</td>
-          <td>{{ row.leadsRepetidos }}</td>
-          <td>{{ row.tipificados }}</td>
-          <td>{{ row.bloque1 }} / {{ row.bloque2 }} / {{ row.bloque3 }}</td>
-          <td>{{ row.ventaCerrada }}</td>
-        </tr>
-      </ng-template>
-
-      <ng-template #footer>
-        @if (total(); as t) {
-          <tr class="metrics-total">
-            <td class="metrics-team-col"><strong>{{ t.equipo }}</strong></td>
-            <td>{{ t.registros }}</td>
-            <td>{{ t.leadsUnicos }}</td>
-            <td>{{ t.repetidos }}</td>
-            <td>{{ t.porcentaje | number: '1.0-1' }}%</td>
-            <td>{{ t.leadsRepetidos }}</td>
-            <td>{{ t.tipificados }}</td>
-            <td>{{ t.bloque1 }} / {{ t.bloque2 }} / {{ t.bloque3 }}</td>
-            <td>{{ t.ventaCerrada }}</td>
-          </tr>
+    @if (gaugeCards().length) {
+      <app-team-metric-gauges [cards]="gaugeCards()" />
+    } @else {
+      <div class="metrics-empty">
+        @if (isLoading()) {
+          Cargando métricas...
+        } @else {
+          No hubo registros en esta fecha.
         }
-      </ng-template>
-
-      <ng-template #emptymessage>
-        <tr>
-          <td colspan="9">
-            <div class="metrics-empty">
-              @if (isLoading()) {
-                Cargando métricas...
-              } @else {
-                No hubo registros en esta fecha.
-              }
-            </div>
-          </td>
-        </tr>
-      </ng-template>
-    </p-table>
+      </div>
+    }
   </p-card>
 
   <p-card styleClass="metrics-gxc-card">

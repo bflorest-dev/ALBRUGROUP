@@ -43,6 +43,7 @@ public class Mapper {
                 .id(equipo.getId())
                 .nombre(equipo.getNombre())
                 .descripcion(equipo.getDescripcion())
+                .color(equipo.getColor())
                 .activo(equipo.getActivo())
                 .build();
     }

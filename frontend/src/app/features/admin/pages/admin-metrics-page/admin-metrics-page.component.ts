@@ -1,4 +1,3 @@
-import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
@@ -6,10 +5,11 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
-import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
 import { GestionCampanaPanelComponent } from '../../components/gestion-campana-panel/gestion-campana-panel.component';
+import { TeamMetricGaugesComponent } from '../../components/team-metric-gauges/team-metric-gauges.component';
+import { DashboardGaugeCard, resolveGaugeColors } from '../../models/dashboard-gauge.model';
 import { AdminDailyMetricsService, LeadsDiariosMetricasEquipo } from '../../services/admin-daily-metrics.service';
 import { AdminEquipoService } from '../../services/admin-equipo.service';
 
@@ -34,16 +34,15 @@ interface DashboardMetricRow {
 @Component({
   selector: 'app-admin-metrics-page',
   imports: [
-    DecimalPipe,
     FormsModule,
     ButtonModule,
     CardModule,
     MessageModule,
     SelectModule,
-    TableModule,
     TagModule,
     DateFieldComponent,
-    GestionCampanaPanelComponent
+    GestionCampanaPanelComponent,
+    TeamMetricGaugesComponent
   ],
   templateUrl: './admin-metrics-page.component.html',
   styleUrl: './admin-metrics-page.component.scss',
@@ -58,8 +57,9 @@ export class AdminMetricsPageComponent implements OnInit {
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal('');
   private readonly raw = signal<LeadsDiariosMetricasEquipo[]>([]);
-  private readonly equipos = signal<Array<{ id: number; nombre: string; activo: boolean }>>([]);
+  private readonly equipos = signal<Array<{ id: number; nombre: string; color?: string | null; activo: boolean }>>([]);
   private readonly equipoNombreById = signal<Map<number, string>>(new Map());
+  private readonly equipoColorById = signal<Map<number, string>>(new Map());
   protected readonly selectedEquipoId = signal<number | null>(null);
 
   protected readonly equipoOptions = computed(() => [
@@ -110,6 +110,17 @@ export class AdminMetricsPageComponent implements OnInit {
     };
   });
 
+  protected readonly gaugeCards = computed<DashboardGaugeCard[]>(() => {
+    const rows = this.rows();
+    const colorById = this.equipoColorById();
+    const cards = rows.map((row) => this.toCard(row, row.idEquipo != null ? colorById.get(row.idEquipo) : null, false));
+    const total = this.total();
+    if (total && rows.length > 1) {
+      cards.push(this.toCard(total, null, true));
+    }
+    return cards;
+  });
+
   ngOnInit(): void {
     void this.load();
   }
@@ -133,6 +144,9 @@ export class AdminMetricsPageComponent implements OnInit {
       ]);
       this.equipos.set(equipos);
       this.equipoNombreById.set(new Map(equipos.map((equipo) => [equipo.id, equipo.nombre])));
+      this.equipoColorById.set(
+        new Map(equipos.filter((equipo) => equipo.color).map((equipo) => [equipo.id, equipo.color as string]))
+      );
       this.raw.set(metricas);
     } catch {
       this.errorMessage.set('No se pudieron cargar las métricas del día.');
@@ -158,6 +172,25 @@ export class AdminMetricsPageComponent implements OnInit {
       bloque2: metrica.bloqueOrden2,
       bloque3: metrica.bloqueOrden3,
       ventaCerrada: metrica.leadsVentaCerrada
+    };
+  }
+
+  private toCard(row: DashboardMetricRow, color: string | null | undefined, isTotal: boolean): DashboardGaugeCard {
+    const colors = resolveGaugeColors(isTotal ? null : color);
+    return {
+      key: isTotal ? 'total' : row.idEquipo == null ? 'sin-equipo' : String(row.idEquipo),
+      equipo: row.equipo,
+      registros: row.registros,
+      leadsUnicos: row.leadsUnicos,
+      repetidos: row.repetidos,
+      leadsRepetidos: row.leadsRepetidos,
+      tipificados: row.tipificados,
+      ventaCerrada: row.ventaCerrada,
+      pctValidos: row.porcentaje,
+      pctGestion: row.leadsUnicos > 0 ? (row.tipificados / row.leadsUnicos) * 100 : 0,
+      from: colors.from,
+      to: colors.to,
+      isTotal
     };
   }
 

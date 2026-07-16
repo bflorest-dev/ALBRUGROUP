@@ -61,6 +61,7 @@ public class EquipoService implements IEquipo {
         Equipo equipo = equipoRepository.save(Equipo.builder()
                 .nombre(nombre)
                 .descripcion(request.getDescripcion())
+                .color(normalizarColor(request.getColor()))
                 .activo(true)
                 .build());
         log.info("Equipo creado: {} (ID: {})", equipo.getNombre(), equipo.getId());
@@ -90,6 +91,10 @@ public class EquipoService implements IEquipo {
         }
         if (request.getDescripcion() != null) {
             equipo.setDescripcion(request.getDescripcion());
+        }
+        // Color: null = no se toca; cadena vacía = se limpia (vuelve a gris por defecto).
+        if (request.getColor() != null) {
+            equipo.setColor(normalizarColor(request.getColor()));
         }
         if (request.getActivo() != null) {
             equipo.setActivo(request.getActivo());
@@ -145,6 +150,15 @@ public class EquipoService implements IEquipo {
                         .roles(usuario.getRoles().stream().map(Rol::getNombre).collect(Collectors.toSet()))
                         .build())
                 .toList();
+    }
+
+    // Normaliza el color de marca: cadena vacía/espacios -> null (sin color); en otro caso, hex en
+    // mayúsculas. El formato ya fue validado en el DTO (@Pattern), aquí solo se estandariza.
+    private String normalizarColor(String color) {
+        if (color == null || color.isBlank()) {
+            return null;
+        }
+        return color.trim().toUpperCase();
     }
 
     private void validarMembresia(Usuario usuario, Set<Long> idsSolicitados) {

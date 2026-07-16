@@ -30,7 +30,9 @@
       </ng-template>
       <ng-template pTemplate="body" let-equipo>
         <tr class="equipos-row" (click)="abrirEditar(equipo)">
-          <td class="equipos-row__name">{{ equipo.nombre }}</td>
+          <td class="equipos-row__name">
+            <span class="equipos-swatch" [style.background]="equipo.color || '#9AA5B1'"></span>{{ equipo.nombre }}
+          </td>
           <td>{{ equipo.descripcion || '—' }}</td>
         </tr>
       </ng-template>
@@ -66,6 +68,23 @@
         rows="2"
         placeholder="Ej: WIN, PERUFIBRA, MIFIBRA"
       ></textarea>
+    </div>
+
+    <div class="equipos-field">
+      <label>Color del equipo</label>
+      <div class="equipos-color">
+        <p-colorPicker [(ngModel)]="formColor" format="hex" appendTo="body" />
+        <span
+          class="equipos-color__preview"
+          [class.equipos-color__preview--empty]="!formColor"
+          [style.background]="formColor"
+        ></span>
+        <span class="equipos-color__value">{{ formColor || 'Sin color (gris)' }}</span>
+        @if (formColor) {
+          <p-button label="Quitar" [text]="true" size="small" (onClick)="formColor = ''" />
+        }
+      </div>
+      <small class="equipos-hint">Se usa en los medidores del dashboard; el degradado se genera a partir de este color.</small>
     </div>
 
     <div class="equipos-field">

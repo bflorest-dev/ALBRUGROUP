@@ -18,6 +18,11 @@ public class Equipo {
     private String nombre;
     private String descripcion;
 
+    // Color de marca del equipo en formato '#RRGGBB'. El frontend deriva de aquí
+    // las tonalidades del degradado de sus medidores. Null = sin color (gris por defecto).
+    @Column(length = 9)
+    private String color;
+
     @Column(nullable = false)
     @Builder.Default
     private Boolean activo = true;

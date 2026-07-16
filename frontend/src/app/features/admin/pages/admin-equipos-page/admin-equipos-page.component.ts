@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { ColorPickerModule } from 'primeng/colorpicker';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
@@ -37,6 +38,7 @@ interface GrupoEmpleados {
     FormsModule,
     ButtonModule,
     CardModule,
+    ColorPickerModule,
     ConfirmDialogModule,
     DialogModule,
     InputTextModule,
@@ -87,6 +89,8 @@ export class AdminEquiposPageComponent implements OnInit {
   // Campos del formulario del modal
   protected formNombre = '';
   protected formDescripcion = '';
+  // Color en hex CON '#' ('#RRGGBB'), tal como lo emite el p-colorPicker. Vacío = sin color (gris por defecto).
+  protected formColor = '';
   protected formProveedores: number[] = [];
   protected formProveedorFallback: number | null = null;
   protected formProveedorFallbackOptions: ProveedorLite[] = [];
@@ -143,6 +147,7 @@ export class AdminEquiposPageComponent implements OnInit {
     this.miembrosOriginales.set([]);
     this.formNombre = '';
     this.formDescripcion = '';
+    this.formColor = '';
     this.formProveedores = [];
     this.formProveedorFallback = null;
     this.formProveedorFallbackOptions = [];
@@ -154,6 +159,7 @@ export class AdminEquiposPageComponent implements OnInit {
     this.editandoId.set(equipo.id);
     this.formNombre = equipo.nombre;
     this.formDescripcion = equipo.descripcion ?? '';
+    this.formColor = equipo.color ?? '';
     try {
       const [proveedoresEquipo, miembros] = await Promise.all([
         firstValueFrom(this.service.listarProveedoresDeEquipo(equipo.id)),
@@ -194,8 +200,8 @@ export class AdminEquiposPageComponent implements OnInit {
       this.dialogVisible.set(false);
       this.notify('success', this.editandoId() ? 'Equipo actualizado.' : 'Equipo creado.');
       await this.cargar();
-    } catch {
-      this.notify('error', 'No se pudo guardar el equipo. ¿Quizás el nombre ya existe?');
+    } catch (err) {
+      this.notify('error', this.mensajeErrorGuardar(err));
     } finally {
       this.guardando.set(false);
     }
@@ -218,12 +224,16 @@ export class AdminEquiposPageComponent implements OnInit {
 
   private async guardarEquipoBase(nombre: string): Promise<number> {
     const descripcion = this.formDescripcion.trim() || undefined;
+    // formColor ya viene como '#RRGGBB' (o ''). '' se envía para limpiar el color
+    // (backend lo normaliza a null = gris por defecto). Se tolera un '#' faltante por robustez.
+    const raw = this.formColor.trim();
+    const color = raw ? (raw.startsWith('#') ? raw : `#${raw}`) : '';
     const id = this.editandoId();
     if (id) {
-      await firstValueFrom(this.service.actualizarEquipo(id, { nombre, descripcion }));
+      await firstValueFrom(this.service.actualizarEquipo(id, { nombre, descripcion, color }));
       return id;
     }
-    const creado = await firstValueFrom(this.service.crearEquipo(nombre, descripcion));
+    const creado = await firstValueFrom(this.service.crearEquipo(nombre, descripcion, color || null));
     return creado.id;
   }
 
@@ -295,6 +305,20 @@ export class AdminEquiposPageComponent implements OnInit {
     } finally {
       this.sincronizando.set(false);
     }
+  }
+
+  // Prefiere el mensaje real del backend (conflicto de nombre, formato de color inválido) sobre un
+  // texto genérico, para que el error del toast sea legible y accionable.
+  private mensajeErrorGuardar(err: unknown): string {
+    const e = err as { status?: number; error?: { message?: string; details?: string[] } };
+    const detalle = e?.error?.details?.[0];
+    if (e?.status === 400 && detalle) {
+      return detalle;
+    }
+    if (e?.status === 409 && e.error?.message) {
+      return e.error.message;
+    }
+    return 'No se pudo guardar el equipo. Revisa los datos e inténtalo de nuevo.';
   }
 
   private notify(severity: 'success' | 'info' | 'warn' | 'error', detail: string): void {

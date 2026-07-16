@@ -7,6 +7,7 @@ export interface EquipoResponse {
   id: number;
   nombre: string;
   descripcion?: string;
+  color?: string | null;
   activo: boolean;
 }
 
@@ -45,13 +46,13 @@ export class AdminEquipoService {
     return this.http.get<EquipoResponse[]>(this.authEquiposUrl);
   }
 
-  crearEquipo(nombre: string, descripcion?: string): Observable<EquipoResponse> {
-    return this.http.post<EquipoResponse>(this.authEquiposUrl, { nombre, descripcion });
+  crearEquipo(nombre: string, descripcion?: string, color?: string | null): Observable<EquipoResponse> {
+    return this.http.post<EquipoResponse>(this.authEquiposUrl, { nombre, descripcion, color });
   }
 
   actualizarEquipo(
     id: number,
-    body: { nombre?: string; descripcion?: string; activo?: boolean }
+    body: { nombre?: string; descripcion?: string; color?: string | null; activo?: boolean }
   ): Observable<EquipoResponse> {
     return this.http.patch<EquipoResponse>(`${this.authEquiposUrl}/${id}`, body);
   }

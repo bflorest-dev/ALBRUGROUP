@@ -1,0 +1,39 @@
+<div class="gauges-grid">
+  @for (c of cards(); track c.key) {
+    <article class="team-card" [class.team-card--total]="c.isTotal">
+      <header class="team-card__head">
+        <span class="team-card__name">{{ c.equipo }}</span>
+        <span class="team-card__badge">{{ c.registros }} registros</span>
+      </header>
+
+      <div class="team-card__gauges">
+        <div class="gauge-block">
+          <app-semicircle-gauge [value]="c.pctValidos" label="Calidad de la base" [from]="c.from" [to]="c.to" />
+          <p class="gauge-line">{{ c.leadsUnicos }} de {{ c.registros }} únicos</p>
+          <p class="gauge-sub">
+            @if (c.repetidos > 0) {
+              {{ c.repetidos }} {{ c.repetidos === 1 ? 'repetido' : 'repetidos' }} · {{ c.leadsRepetidos }} con
+              repetición
+            } @else {
+              Sin registros repetidos
+            }
+          </p>
+        </div>
+
+        <div class="gauge-block">
+          <app-semicircle-gauge [value]="c.pctGestion" label="Gestión" [from]="c.from" [to]="c.to" />
+          <p class="gauge-line">{{ c.tipificados }} de {{ c.leadsUnicos }} gestionados</p>
+          <p class="gauge-sub">
+            @if (c.ventaCerrada > 0) {
+              <span class="gauge-sale" [style.color]="c.to">
+                {{ c.ventaCerrada }} {{ c.ventaCerrada === 1 ? 'venta' : 'ventas' }} en preventa
+              </span>
+            } @else {
+              Sin ventas aún
+            }
+          </p>
+        </div>
+      </div>
+    </article>
+  }
+</div>

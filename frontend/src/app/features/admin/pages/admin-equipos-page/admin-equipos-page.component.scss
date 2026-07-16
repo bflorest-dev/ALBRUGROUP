@@ -43,6 +43,16 @@
   font-weight: 600;
 }
 
+.equipos-swatch {
+  display: inline-block;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+  vertical-align: -1px;
+  border: 1px solid var(--app-border-soft);
+}
+
 .equipos-hint {
   margin: 0;
   color: var(--text-color-secondary);
@@ -80,6 +90,36 @@
 .equipos-field textarea,
 .equipos-field .equipos-grow {
   width: 100%;
+}
+
+.equipos-color {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.equipos-color__preview {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.35rem;
+  border: 1px solid var(--app-border-soft);
+}
+
+.equipos-color__preview--empty {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--app-surface-soft),
+    var(--app-surface-soft) 4px,
+    var(--app-border-soft) 4px,
+    var(--app-border-soft) 8px
+  );
+}
+
+.equipos-color__value {
+  font-size: 0.85rem;
+  color: var(--app-text-muted);
+  text-transform: uppercase;
 }
 
 .equipos-footer__delete {
