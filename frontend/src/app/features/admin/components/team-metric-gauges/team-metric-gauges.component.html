@@ -12,10 +12,10 @@
           <p class="gauge-line">{{ c.leadsUnicos }} de {{ c.registros }} únicos</p>
           <p class="gauge-sub">
             @if (c.repetidos > 0) {
-              {{ c.repetidos }} {{ c.repetidos === 1 ? 'repetido' : 'repetidos' }} · {{ c.leadsRepetidos }} con
-              repetición
+              {{ c.repetidos }} multi registro{{ c.repetidos === 1 ? '' : 's' }} · {{ c.leadsRepetidos }} doble
+              click{{ c.leadsRepetidos === 1 ? '' : 's' }}
             } @else {
-              Sin registros repetidos
+              Sin multi registros
             }
           </p>
         </div>
@@ -26,7 +26,7 @@
           <p class="gauge-sub">
             @if (c.ventaCerrada > 0) {
               <span class="gauge-sale" [style.color]="c.to">
-                {{ c.ventaCerrada }} {{ c.ventaCerrada === 1 ? 'venta' : 'ventas' }} en preventa
+                {{ c.ventaCerrada }} {{ c.ventaCerrada === 1 ? 'preventa lograda' : 'preventas logradas' }}
               </span>
             } @else {
               Sin ventas aún
