@@ -81,15 +81,15 @@ type SelectOption<T> = {
   value: T;
 };
 
-type TipificacionSelectOption = SelectOption<number> & {
+type TipificacionSelectOption = SelectOption<string> & {
   codigo: string;
   descripcion: string;
 };
 
-type SubtipificacionSelectOption = SelectOption<number> & {
+type SubtipificacionSelectOption = SelectOption<string> & {
   codigo: string;
   descripcion: string;
-  idTipificacion: number;
+  codigoTipificacion: string;
 };
 
 type TipificacionVisualMeta = {
@@ -348,7 +348,7 @@ export class GtrWorkspaceFacade {
   readonly activeDataTab = signal<LeadCommercialDataTab>('datos');
   readonly showComment = signal(false);
   readonly isLoadingTypifyDetail = signal(false);
-  readonly selectedMasivoTipificacionIds = signal<Set<number>>(new Set());
+  readonly selectedMasivoTipificacionCodes = signal<Set<string>>(new Set());
   readonly subtipificacionFilter = signal('');
   readonly activeDialog = signal<GtrDialog>(null);
   // Recuerda desde que dialogo se abrio el historial para volver a el al cerrarlo (p. ej. la busqueda).
@@ -531,8 +531,8 @@ export class GtrWorkspaceFacade {
   readonly masivoFiltersForm = this.fb.group({
     idProveedor: [0],
     etapa: [''],
-    tipificaciones: [[] as number[]],
-    subtipificaciones: [[] as number[]],
+    tipificaciones: [[] as string[]],
+    subtipificaciones: [[] as string[]],
     fechaDesde: [''],
     fechaHasta: ['']
   });
@@ -777,11 +777,11 @@ export class GtrWorkspaceFacade {
       return this.catalogoSubtipificaciones();
     }
 
-    const selected = this.selectedMasivoTipificacionIds();
+    const selected = this.selectedMasivoTipificacionCodes();
     if (!selected.size) {
       return [];
     }
-    return this.catalogoSubtipificaciones().filter((option) => selected.has(option.idTipificacion));
+    return this.catalogoSubtipificaciones().filter((option) => selected.has(option.codigoTipificacion));
   });
 
   readonly sectionTitle = computed(() => {
@@ -2522,21 +2522,21 @@ export class GtrWorkspaceFacade {
       ultimasTipificaciones: [],
       ingresos: []
     });
-    this.selectedMasivoTipificacionIds.set(new Set());
+    this.selectedMasivoTipificacionCodes.set(new Set());
     this.subtipificacionFilter.set('');
     this.historicosStateService.clear();
   }
 
   onMasivoTipificacionesChange(): void {
     const selected = new Set(this.masivoFiltersForm.controls.tipificaciones.value);
-    this.selectedMasivoTipificacionIds.set(selected);
+    this.selectedMasivoTipificacionCodes.set(selected);
     if (!selected.size) {
       this.masivoFiltersForm.controls.subtipificaciones.setValue([]);
       return;
     }
 
     const validIds = new Set(
-      this.catalogoSubtipificaciones().filter((option) => selected.has(option.idTipificacion)).map((option) => option.value)
+      this.catalogoSubtipificaciones().filter((option) => selected.has(option.codigoTipificacion)).map((option) => option.value)
     );
     this.masivoFiltersForm.controls.subtipificaciones.setValue(
       this.masivoFiltersForm.controls.subtipificaciones.value.filter((id) => validIds.has(id))
@@ -2549,13 +2549,13 @@ export class GtrWorkspaceFacade {
 
     for (const subtipificacion of this.catalogoSubtipificaciones()) {
       if (selectedSubtipificaciones.has(subtipificacion.value)) {
-        selectedTipificaciones.add(subtipificacion.idTipificacion);
+        selectedTipificaciones.add(subtipificacion.codigoTipificacion);
       }
     }
 
     const nextTipificaciones = [...selectedTipificaciones];
     this.masivoFiltersForm.controls.tipificaciones.setValue(nextTipificaciones);
-    this.selectedMasivoTipificacionIds.set(new Set(nextTipificaciones));
+    this.selectedMasivoTipificacionCodes.set(new Set(nextTipificaciones));
   }
 
   onMasivoSubtipificacionesFilter(value: string | null | undefined): void {
@@ -3369,7 +3369,7 @@ export class GtrWorkspaceFacade {
           descripcion: tipificacion.descripcion,
           label: `${tipificacion.codigo} || ${tipificacion.descripcion}`,
           orden: tipificacion.orden,
-          value: tipificacion.id
+          value: tipificacion.codigo
         }))
         .sort((left, right) => left.label.localeCompare(right.label))
     );
@@ -3379,10 +3379,10 @@ export class GtrWorkspaceFacade {
           tipificacion.subtipificaciones.map((subtipificacion) => ({
             codigo: subtipificacion.codigo,
             descripcion: subtipificacion.descripcion,
-            idTipificacion: tipificacion.id,
+            codigoTipificacion: tipificacion.codigo,
             label: `${subtipificacion.codigo} || ${subtipificacion.descripcion}`,
             orden: subtipificacion.orden,
-            value: subtipificacion.id
+            value: subtipificacion.codigo
           }))
         )
         .sort((left, right) => left.label.localeCompare(right.label))
@@ -3852,8 +3852,8 @@ export class GtrWorkspaceFacade {
     return {
       idProveedor: raw.idProveedor || undefined,
       etapa: raw.etapa || undefined,
-      tipificaciones: raw.tipificaciones.length ? raw.tipificaciones : undefined,
-      subtipificaciones: raw.subtipificaciones.length ? raw.subtipificaciones : undefined,
+      codigosTipificacion: raw.tipificaciones.length ? raw.tipificaciones : undefined,
+      codigosSubtipificacion: raw.subtipificaciones.length ? raw.subtipificaciones : undefined,
       fechaDesde: raw.fechaDesde || undefined,
       fechaHasta: raw.fechaHasta || undefined
     };
@@ -3906,7 +3906,7 @@ export class GtrWorkspaceFacade {
     }
 
     this.masivoFiltersForm.reset(state.filters);
-    this.selectedMasivoTipificacionIds.set(new Set(state.filters.tipificaciones));
+    this.selectedMasivoTipificacionCodes.set(new Set(state.filters.tipificaciones));
     this.subtipificacionFilter.set('');
     this.masivoRows.set(state.rows);
     this.masivoTotalElements.set(state.totalElements);
@@ -3946,8 +3946,8 @@ export class GtrWorkspaceFacade {
   private historicosFiltersKey(filters: GtrHistoricosFiltersFormValue): string {
     return JSON.stringify({
       ...filters,
-      tipificaciones: [...filters.tipificaciones].sort((left, right) => left - right),
-      subtipificaciones: [...filters.subtipificaciones].sort((left, right) => left - right)
+      tipificaciones: [...filters.tipificaciones].sort((left, right) => left.localeCompare(right)),
+      subtipificaciones: [...filters.subtipificaciones].sort((left, right) => left.localeCompare(right))
     });
   }
 
@@ -4172,7 +4172,7 @@ export class GtrWorkspaceFacade {
     this.masivoPageNumber.set(0);
     this.masivoSearched.set(false);
     this.lastMasivoSearchFiltersKey = null;
-    this.selectedMasivoTipificacionIds.set(new Set());
+    this.selectedMasivoTipificacionCodes.set(new Set());
     this.subtipificacionFilter.set('');
     this.historicosStateService.clear();
     this.selectedIds.set(new Set());

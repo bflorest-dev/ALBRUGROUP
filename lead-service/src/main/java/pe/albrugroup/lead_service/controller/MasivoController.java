@@ -35,8 +35,8 @@ public class MasivoController {
     public ResponseEntity<PageResponse<LeadGtrResponse>> listarLeadsMasivo(
             @RequestParam(required = false) Long idProveedor,
             @RequestParam(required = false) Etapa etapa,
-            @RequestParam(required = false) List<Long> tipificaciones,
-            @RequestParam(required = false) List<Long> subtipificaciones,
+            @RequestParam(required = false) List<String> codigosTipificacion,
+            @RequestParam(required = false) List<String> codigosSubtipificacion,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta,
             @RequestParam(required = false) TipoGrupoGtr tipoGrupo,
@@ -50,8 +50,8 @@ public class MasivoController {
         var leads = masivoService.listarLeads(
                 idProveedor,
                 etapa,
-                tipificaciones,
-                subtipificaciones,
+                codigosTipificacion,
+                codigosSubtipificacion,
                 fechaDesde,
                 fechaHasta,
                 tipoGrupo,
@@ -69,16 +69,16 @@ public class MasivoController {
     public ResponseEntity<LeadGtrAgrupacionesResponse> listarAgrupacionesLeadsMasivo(
             @RequestParam(required = false) Long idProveedor,
             @RequestParam(required = false) Etapa etapa,
-            @RequestParam(required = false) List<Long> tipificaciones,
-            @RequestParam(required = false) List<Long> subtipificaciones,
+            @RequestParam(required = false) List<String> codigosTipificacion,
+            @RequestParam(required = false) List<String> codigosSubtipificacion,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta
     ) {
         return ResponseEntity.ok(masivoService.listarAgrupaciones(
                 idProveedor,
                 etapa,
-                tipificaciones,
-                subtipificaciones,
+                codigosTipificacion,
+                codigosSubtipificacion,
                 fechaDesde,
                 fechaHasta
         ));

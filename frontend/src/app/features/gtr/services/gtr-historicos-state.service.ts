@@ -4,8 +4,8 @@ import { LeadGtrResponse } from '../../../shared/models/preventa/preventa.models
 export type GtrHistoricosFiltersFormValue = {
   idProveedor: number;
   etapa: string;
-  tipificaciones: number[];
-  subtipificaciones: number[];
+  tipificaciones: string[];
+  subtipificaciones: string[];
   fechaDesde: string;
   fechaHasta: string;
 };

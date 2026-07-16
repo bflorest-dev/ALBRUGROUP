@@ -3,6 +3,7 @@ package pe.albrugroup.lead_service.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
@@ -31,7 +32,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class MasivoService {
 
-    private static final List<Long> FILTRO_VACIO = List.of(-1L);
+    private static final List<Long> EQUIPOS_FILTRO_VACIO = List.of(-1L);
+    private static final List<String> CODIGOS_FILTRO_VACIO = List.of("__SIN_CODIGO__");
     private static final List<String> TIPIFICACIONES_EXCLUIDAS_MASIVO = List.of(
             "PREVENTA_COMPLETA"
     );
@@ -40,6 +42,7 @@ public class MasivoService {
     private final LeadRepository leadRepository;
     private final PaginationService paginationService;
     private final LeadAsignacionCounterService leadAsignacionCounterService;
+    private final CurrentUser currentUser;
 
     private static final Map<String, String> MASIVO_SORT_FIELDS = Map.of(
             "lastEntryAt", "lastEntryAt",
@@ -54,8 +57,8 @@ public class MasivoService {
     public PageResponse<LeadGtrResponse> listarLeads(
             Long idProveedor,
             Etapa etapa,
-            List<Long> tipificaciones,
-            List<Long> subtipificaciones,
+            List<String> codigosTipificacion,
+            List<String> codigosSubtipificacion,
             LocalDate fechaDesde,
             LocalDate fechaHasta,
             TipoGrupoGtr tipoGrupo,
@@ -66,9 +69,11 @@ public class MasivoService {
             boolean sinValor,
             PageRequest pageRequest
     ) {
-        FiltrosMasivo filtros = prepararFiltros(idProveedor, etapa, tipificaciones, subtipificaciones, fechaDesde, fechaHasta);
+        FiltrosMasivo filtros = prepararFiltros(
+                idProveedor, etapa, codigosTipificacion, codigosSubtipificacion, fechaDesde, fechaHasta);
         validarFiltroAgrupacionMasivo(tipoGrupo, estadoGrupo, codigoTipificacion, fechaIngreso, sinValor);
         RangoFechas rangoIngreso = resolverRangoIngreso(fechaIngreso);
+        EquipoScope equipos = resolverEquiposActuales();
 
         var leads = leadRepository.listarLeadsMasivo(
                 filtros.filtrarProveedor(),
@@ -76,10 +81,12 @@ public class MasivoService {
                 filtros.filtrarEtapa(),
                 filtros.etapaParam(),
                 filtros.filtrarTipificaciones(),
-                filtros.tipificacionesParam(),
+                filtros.codigosTipificacionParam(),
                 filtros.filtrarSubtipificaciones(),
-                filtros.subtipificacionesParam(),
+                filtros.codigosSubtipificacionParam(),
                 TIPIFICACIONES_EXCLUIDAS_MASIVO,
+                equipos.filtrar(),
+                equipos.ids(),
                 filtros.filtrarFechaDesde(),
                 filtros.fechaDesdeParam(),
                 filtros.filtrarFechaHasta(),
@@ -108,12 +115,14 @@ public class MasivoService {
     public LeadGtrAgrupacionesResponse listarAgrupaciones(
             Long idProveedor,
             Etapa etapa,
-            List<Long> tipificaciones,
-            List<Long> subtipificaciones,
+            List<String> codigosTipificacion,
+            List<String> codigosSubtipificacion,
             LocalDate fechaDesde,
             LocalDate fechaHasta
     ) {
-        FiltrosMasivo filtros = prepararFiltros(idProveedor, etapa, tipificaciones, subtipificaciones, fechaDesde, fechaHasta);
+        FiltrosMasivo filtros = prepararFiltros(
+                idProveedor, etapa, codigosTipificacion, codigosSubtipificacion, fechaDesde, fechaHasta);
+        EquipoScope equipos = resolverEquiposActuales();
         return new LeadGtrAgrupacionesResponse(
                 List.of(),
                 List.of(),
@@ -125,10 +134,12 @@ public class MasivoService {
                                 filtros.filtrarEtapa(),
                                 filtros.etapaParam(),
                                 filtros.filtrarTipificaciones(),
-                                filtros.tipificacionesParam(),
+                                filtros.codigosTipificacionParam(),
                                 filtros.filtrarSubtipificaciones(),
-                                filtros.subtipificacionesParam(),
+                                filtros.codigosSubtipificacionParam(),
                                 TIPIFICACIONES_EXCLUIDAS_MASIVO,
+                                equipos.filtrar(),
+                                equipos.ids(),
                                 filtros.filtrarFechaDesde(),
                                 filtros.fechaDesdeParam(),
                                 filtros.filtrarFechaHasta(),
@@ -144,10 +155,12 @@ public class MasivoService {
                                 filtros.filtrarEtapa(),
                                 filtros.etapaParam(),
                                 filtros.filtrarTipificaciones(),
-                                filtros.tipificacionesParam(),
+                                filtros.codigosTipificacionParam(),
                                 filtros.filtrarSubtipificaciones(),
-                                filtros.subtipificacionesParam(),
+                                filtros.codigosSubtipificacionParam(),
                                 TIPIFICACIONES_EXCLUIDAS_MASIVO,
+                                equipos.filtrar(),
+                                equipos.ids(),
                                 filtros.filtrarFechaDesde(),
                                 filtros.fechaDesdeParam(),
                                 filtros.filtrarFechaHasta(),
@@ -161,10 +174,12 @@ public class MasivoService {
                                 filtros.filtrarEtapa(),
                                 filtros.etapaParam().name(),
                                 filtros.filtrarTipificaciones(),
-                                filtros.tipificacionesParam(),
+                                filtros.codigosTipificacionParam(),
                                 filtros.filtrarSubtipificaciones(),
-                                filtros.subtipificacionesParam(),
+                                filtros.codigosSubtipificacionParam(),
                                 TIPIFICACIONES_EXCLUIDAS_MASIVO,
+                                equipos.filtrar(),
+                                equipos.ids(),
                                 filtros.filtrarFechaDesde(),
                                 filtros.fechaDesdeParam(),
                                 filtros.filtrarFechaHasta(),
@@ -179,13 +194,13 @@ public class MasivoService {
     private FiltrosMasivo prepararFiltros(
             Long idProveedor,
             Etapa etapa,
-            List<Long> tipificaciones,
-            List<Long> subtipificaciones,
+            List<String> codigosTipificacion,
+            List<String> codigosSubtipificacion,
             LocalDate fechaDesde,
             LocalDate fechaHasta
     ) {
-        List<Long> tipificacionesFiltro = normalizarIds(tipificaciones);
-        List<Long> subtipificacionesFiltro = normalizarIds(subtipificaciones);
+        List<String> tipificacionesFiltro = normalizarCodigos(codigosTipificacion);
+        List<String> subtipificacionesFiltro = normalizarCodigos(codigosSubtipificacion);
         RangoFechas rangoFechas = resolverRangoFechas(fechaDesde, fechaHasta);
         boolean filtrarProveedor = idProveedor != null;
         boolean filtrarEtapa = etapa != null;
@@ -197,9 +212,9 @@ public class MasivoService {
                 filtrarEtapa,
                 filtrarEtapa ? etapa : Etapa.PREVENTA,
                 !tipificacionesFiltro.isEmpty(),
-                tipificacionesFiltro.isEmpty() ? FILTRO_VACIO : tipificacionesFiltro,
+                tipificacionesFiltro.isEmpty() ? CODIGOS_FILTRO_VACIO : tipificacionesFiltro,
                 !subtipificacionesFiltro.isEmpty(),
-                subtipificacionesFiltro.isEmpty() ? FILTRO_VACIO : subtipificacionesFiltro,
+                subtipificacionesFiltro.isEmpty() ? CODIGOS_FILTRO_VACIO : subtipificacionesFiltro,
                 filtrarFechaDesde,
                 filtrarFechaDesde ? rangoFechas.inicio() : Instant.EPOCH,
                 filtrarFechaHasta,
@@ -207,11 +222,12 @@ public class MasivoService {
         );
     }
 
-    private List<Long> normalizarIds(List<Long> ids) {
-        if (ids == null) { return List.of(); }
+    private List<String> normalizarCodigos(List<String> codigos) {
+        if (codigos == null) { return List.of(); }
 
-        return ids.stream()
-                .filter(id -> id != null && id > 0)
+        return codigos.stream()
+                .map(this::normalizarCodigoAgrupacion)
+                .filter(codigo -> codigo != null && !codigo.isBlank())
                 .distinct()
                 .toList();
     }
@@ -427,7 +443,21 @@ public class MasivoService {
                 .toList();
     }
 
+    private EquipoScope resolverEquiposActuales() {
+        if (currentUser.tieneVisibilidadGlobalEquipos()) {
+            return new EquipoScope(false, EQUIPOS_FILTRO_VACIO);
+        }
+        List<Long> equiposUsuario = currentUser.equipos();
+        if (equiposUsuario == null || equiposUsuario.isEmpty()) {
+            return new EquipoScope(true, EQUIPOS_FILTRO_VACIO);
+        }
+        return new EquipoScope(true, equiposUsuario);
+    }
+
     private record RangoFechas(Instant inicio, Instant fin) {
+    }
+
+    private record EquipoScope(boolean filtrar, List<Long> ids) {
     }
 
     private record FiltrosMasivo(
@@ -436,9 +466,9 @@ public class MasivoService {
             boolean filtrarEtapa,
             Etapa etapaParam,
             boolean filtrarTipificaciones,
-            List<Long> tipificacionesParam,
+            List<String> codigosTipificacionParam,
             boolean filtrarSubtipificaciones,
-            List<Long> subtipificacionesParam,
+            List<String> codigosSubtipificacionParam,
             boolean filtrarFechaDesde,
             Instant fechaDesdeParam,
             boolean filtrarFechaHasta,

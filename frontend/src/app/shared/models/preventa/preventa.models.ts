@@ -178,8 +178,8 @@ export interface AgendadosGtrResumenResponse {
 export interface MasivoLeadFilters {
   idProveedor?: number;
   etapa?: Etapa | string;
-  tipificaciones?: number[];
-  subtipificaciones?: number[];
+  codigosTipificacion?: string[];
+  codigosSubtipificacion?: string[];
   fechaDesde?: string;
   fechaHasta?: string;
   tipoGrupo?: LeadGtrGroupType;

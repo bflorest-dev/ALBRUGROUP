@@ -462,11 +462,11 @@ export class PreventaLeadService {
     if (filters.etapa) {
       params = params.set('etapa', filters.etapa);
     }
-    for (const id of filters.tipificaciones ?? []) {
-      params = params.append('tipificaciones', id);
+    for (const codigo of filters.codigosTipificacion ?? []) {
+      params = params.append('codigosTipificacion', codigo);
     }
-    for (const id of filters.subtipificaciones ?? []) {
-      params = params.append('subtipificaciones', id);
+    for (const codigo of filters.codigosSubtipificacion ?? []) {
+      params = params.append('codigosSubtipificacion', codigo);
     }
     if (filters.fechaDesde) {
       params = params.set('fechaDesde', filters.fechaDesde);

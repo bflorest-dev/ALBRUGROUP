@@ -464,6 +464,7 @@ public class LeadService {
 
     public AgendadosGtrResumenResponse obtenerResumenAgendadosGtr() {
         OperationalDateTime.InstantRange hoy = OperationalDateTime.dayRange(null);
+        RankingEquipoScope equipos = resolverEquiposActuales();
         Map<String, Long> programadosHoyPorHora = new LinkedHashMap<>();
         for (int hora = 0; hora < 24; hora++) {
             programadosHoyPorHora.put(String.format("%02d", hora), 0L);
@@ -474,19 +475,23 @@ public class LeadService {
                         TIPIFICACION_AGENDADO,
                         Accion.TIPIFICACION,
                         hoy.inicio(),
-                        hoy.fin())
+                        hoy.fin(),
+                        equipos.filtrar(),
+                        equipos.ids())
                 .forEach(item -> programadosHoyPorHora.merge(
                         String.format("%02d", item.getHoraProgramada().getHour()),
                         item.getCantidad(),
                         Long::sum));
 
-        long totalActivos = leadRepository.contarAgendadosGtrActivos(Etapa.PREVENTA, TIPIFICACION_AGENDADO);
+        long totalActivos = leadRepository.contarAgendadosGtrActivos(
+                Etapa.PREVENTA, TIPIFICACION_AGENDADO, equipos.filtrar(), equipos.ids());
         return new AgendadosGtrResumenResponse(totalActivos, programadosHoyPorHora);
     }
 
     private Page<LeadAgendadoGtrResponse> listarAgendadosGtrOrdenados(PageRequest pageRequest) {
         validarDirection(pageRequest.getDirection());
         boolean desc = "desc".equalsIgnoreCase(pageRequest.getDirection());
+        RankingEquipoScope equipos = resolverEquiposActuales();
         var pageable = org.springframework.data.domain.PageRequest.of(
                 pageRequest.getPageNumber(),
                 pageRequest.getPageSize()
@@ -497,16 +502,20 @@ public class LeadService {
         if ("agendado".equals(pageRequest.getSortBy())) {
             return desc
                     ? leadRepository.listarLeadsAgendadosGtrPorAgendadoDesc(
-                            Etapa.PREVENTA, TIPIFICACION_AGENDADO, Accion.TIPIFICACION, pageable)
+                            Etapa.PREVENTA, TIPIFICACION_AGENDADO, Accion.TIPIFICACION,
+                            equipos.filtrar(), equipos.ids(), pageable)
                     : leadRepository.listarLeadsAgendadosGtrPorAgendadoAsc(
-                            Etapa.PREVENTA, TIPIFICACION_AGENDADO, Accion.TIPIFICACION, pageable);
+                            Etapa.PREVENTA, TIPIFICACION_AGENDADO, Accion.TIPIFICACION,
+                            equipos.filtrar(), equipos.ids(), pageable);
         }
 
         return desc
                 ? leadRepository.listarLeadsAgendadosGtrPorHoraDesc(
-                        Etapa.PREVENTA, TIPIFICACION_AGENDADO, Accion.TIPIFICACION, pageable)
+                        Etapa.PREVENTA, TIPIFICACION_AGENDADO, Accion.TIPIFICACION,
+                        equipos.filtrar(), equipos.ids(), pageable)
                 : leadRepository.listarLeadsAgendadosGtrPorHoraAsc(
-                        Etapa.PREVENTA, TIPIFICACION_AGENDADO, Accion.TIPIFICACION, pageable);
+                        Etapa.PREVENTA, TIPIFICACION_AGENDADO, Accion.TIPIFICACION,
+                        equipos.filtrar(), equipos.ids(), pageable);
     }
 
     private void validarDirection(String direction) {
