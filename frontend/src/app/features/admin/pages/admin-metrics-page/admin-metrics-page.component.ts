@@ -187,7 +187,7 @@ export class AdminMetricsPageComponent implements OnInit {
       tipificados: row.tipificados,
       ventaCerrada: row.ventaCerrada,
       pctValidos: row.porcentaje,
-      pctGestion: row.leadsUnicos > 0 ? (row.tipificados / row.leadsUnicos) * 100 : 0,
+      pctConversion: row.leadsUnicos > 0 ? (row.ventaCerrada / row.leadsUnicos) * 100 : 0,
       from: colors.from,
       to: colors.to,
       isTotal

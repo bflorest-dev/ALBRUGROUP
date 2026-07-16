@@ -9,7 +9,7 @@ export interface DashboardGaugeCard {
   tipificados: number; // F
   ventaCerrada: number; // H
   pctValidos: number; // E = B / A
-  pctGestion: number; // F / B
+  pctConversion: number; // H / B (preventas / leads únicos)
   from: string;
   to: string;
   isTotal: boolean;
