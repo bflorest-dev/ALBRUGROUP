@@ -1,65 +1,51 @@
-.metrics-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
+.daily-gauges {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
   margin-bottom: 1rem;
+  min-width: 0;
 }
 
-.metric {
-  flex: 1 1 8rem;
-  min-width: 7.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  padding: 0.6rem 0.85rem;
+.daily-gauge {
+  min-width: 0;
+  padding: 0.85rem 1rem;
   border: 1px solid var(--app-border-soft);
   border-radius: 0.5rem;
   background: var(--app-surface-raised);
   box-shadow: var(--app-shadow-soft);
+  text-align: center;
 }
 
-.metric__value {
-  font-size: 1.35rem;
-  font-weight: 800;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
+.daily-gauge__line {
+  margin: 0.25rem 0 0;
+  font-size: 0.84rem;
+  color: var(--app-text-muted);
 }
 
-.metric__label {
-  font-size: 0.72rem;
+.daily-gauge__sub {
+  margin: 0.15rem 0 0;
+  min-height: 2rem;
+  font-size: 0.75rem;
+  color: var(--role-muted);
+}
+
+.daily-gauge__success {
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  color: var(--app-text-muted);
-}
-
-.metric__value--blocks i {
-  margin: 0 0.35rem;
-  font-style: normal;
-  color: var(--app-text-muted);
-  font-weight: 500;
-}
-
-.metric--wide {
-  flex: 1 1 12rem;
-}
-
-.metric--accent .metric__value {
-  color: var(--role-accent, #2563eb);
-}
-
-.metric--success .metric__value {
   color: #16a34a;
 }
 
-@media (max-width: 640px) {
-  .metric {
-    flex: 1 1 6.5rem;
-    min-width: 6.5rem;
-    padding: 0.5rem 0.6rem;
+@media (max-width: 52rem) {
+  .daily-gauges {
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  }
+}
+
+@media (max-width: 30rem) {
+  .daily-gauge {
+    padding: 0.75rem;
   }
 
-  .metric__value {
-    font-size: 1.15rem;
+  .daily-gauge__sub {
+    min-height: 0;
   }
 }

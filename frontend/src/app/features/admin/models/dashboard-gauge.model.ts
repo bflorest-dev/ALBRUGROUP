@@ -7,8 +7,12 @@ export interface DashboardGaugeCard {
   repetidos: number; // C = A - B
   leadsRepetidos: number; // D
   tipificados: number; // F
+  bloque1: number;
+  bloque2: number;
+  bloque3: number; // G
   ventaCerrada: number; // H
   pctValidos: number; // E = B / A
+  pctGestion: number; // F / B (tipificados / leads unicos)
   pctConversion: number; // H / B (preventas / leads únicos)
   from: string;
   to: string;

@@ -319,6 +319,7 @@ public class EventoService {
                                 leadNormalizado
                         )
                 ),
+                List.of(),
                 mapearAgrupacionesTipificacion(
                         eventoRepository.agruparRegistrosDiariosPorUltimaTipificacion(
                                 Accion.REGISTRO,

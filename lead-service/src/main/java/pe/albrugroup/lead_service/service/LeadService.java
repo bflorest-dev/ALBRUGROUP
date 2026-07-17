@@ -227,6 +227,7 @@ public class LeadService {
                         tipoGrupo == TipoGrupoGtr.CAMPANA,
                         tipoGrupo == TipoGrupoGtr.PRIMERA_TIPIFICACION,
                         tipoGrupo == TipoGrupoGtr.ULTIMA_TIPIFICACION,
+                        tipoGrupo == TipoGrupoGtr.MAYOR_TIPIFICACION,
                         idGrupo,
                         estadoGrupo,
                         normalizarCodigoAgrupacion(codigoTipificacion),
@@ -266,6 +267,15 @@ public class LeadService {
                 ),
                 mapearAgrupacionesTipificacion(
                         leadRepository.agruparBandejaGtrPorPrimeraTipificacion(
+                                Etapa.PREVENTA,
+                                rangoDia.inicio(),
+                                rangoDia.fin(),
+                                equipos.filtrar(),
+                                equipos.ids()
+                        )
+                ),
+                mapearAgrupacionesTipificacion(
+                        leadRepository.agruparBandejaGtrPorMayorTipificacion(
                                 Etapa.PREVENTA,
                                 rangoDia.inicio(),
                                 rangoDia.fin(),
@@ -2465,6 +2475,7 @@ public class LeadService {
         }
 
         if ((tipoGrupo == TipoGrupoGtr.PRIMERA_TIPIFICACION
+                || tipoGrupo == TipoGrupoGtr.MAYOR_TIPIFICACION
                 || tipoGrupo == TipoGrupoGtr.ULTIMA_TIPIFICACION)
                 && normalizarCodigoAgrupacion(codigoTipificacion) == null) {
             throw new BadRequestException("Debes indicar la tipificacion seleccionada");

@@ -1,36 +1,48 @@
-<div class="metrics-bar" role="group" aria-label="Métricas del día">
-  <div class="metric">
-    <span class="metric__value">{{ metrics().registros }}</span>
-    <span class="metric__label">Registros</span>
-  </div>
-  <div class="metric">
-    <span class="metric__value">{{ metrics().leadsUnicos }}</span>
-    <span class="metric__label">Leads únicos</span>
-  </div>
-  <div class="metric">
-    <span class="metric__value">{{ metrics().repetidos }}</span>
-    <span class="metric__label">Repetidos</span>
-  </div>
-  <div class="metric metric--accent">
-    <span class="metric__value">{{ metrics().porcentajeValidos | number: '1.0-1' }}%</span>
-    <span class="metric__label">Válidos</span>
-  </div>
-  <div class="metric">
-    <span class="metric__value">{{ metrics().leadsRepetidos }}</span>
-    <span class="metric__label">Con repeticiones</span>
-  </div>
-  <div class="metric">
-    <span class="metric__value">{{ metrics().leadsTipificados }}</span>
-    <span class="metric__label">Tipificados</span>
-  </div>
-  <div class="metric metric--wide">
-    <span class="metric__value metric__value--blocks">
-      {{ metrics().bloque1 }}<i>/</i>{{ metrics().bloque2 }}<i>/</i>{{ metrics().bloque3 }}
-    </span>
-    <span class="metric__label">Rango 1-3 / 4-6 / 7-8</span>
-  </div>
-  <div class="metric metric--success">
-    <span class="metric__value">{{ metrics().ventaCerrada }}</span>
-    <span class="metric__label">Venta cerrada</span>
-  </div>
+<div class="daily-gauges" role="group" aria-label="M&eacute;tricas del d&iacute;a">
+  <article class="daily-gauge">
+    <app-semicircle-gauge
+      [value]="metrics().porcentajeValidos"
+      label="Calidad de la base"
+      [from]="gaugeFrom"
+      [to]="gaugeTo"
+    />
+    <p class="daily-gauge__line">{{ metrics().leadsUnicos }} de {{ metrics().registros }} &uacute;nicos</p>
+    <p class="daily-gauge__sub">
+      @if (metrics().repetidos > 0) {
+        {{ metrics().repetidos }} multi registro{{ metrics().repetidos === 1 ? '' : 's' }} - {{ metrics().leadsRepetidos }}
+        doble click{{ metrics().leadsRepetidos === 1 ? '' : 's' }}
+      } @else {
+        Sin multi registros
+      }
+    </p>
+  </article>
+
+  <article class="daily-gauge">
+    <app-semicircle-gauge [value]="pctGestion()" label="Gesti&oacute;n" [from]="gaugeFrom" [to]="gaugeTo" />
+    <p class="daily-gauge__line">{{ metrics().leadsTipificados }} de {{ metrics().leadsUnicos }} gestionados</p>
+    <p class="daily-gauge__sub">
+      {{ metrics().bloque1 }} / {{ metrics().bloque2 }} / {{ metrics().bloque3 }} en rangos clave
+    </p>
+  </article>
+
+  <article class="daily-gauge">
+    <app-semicircle-gauge [value]="pctConversion()" label="Conversi&oacute;n" [from]="gaugeFrom" [to]="gaugeTo" />
+    <p class="daily-gauge__line">
+      @if (metrics().ventaCerrada > 0) {
+        <span class="daily-gauge__success">
+          {{ metrics().ventaCerrada }} {{ metrics().ventaCerrada === 1 ? 'preventa' : 'preventas' }} de
+          {{ metrics().leadsUnicos }} &uacute;nicos
+        </span>
+      } @else {
+        {{ metrics().ventaCerrada }} preventas de {{ metrics().leadsUnicos }} &uacute;nicos
+      }
+    </p>
+    <p class="daily-gauge__sub">
+      @if (metrics().ventaCerrada > 0) {
+        Venta lograda
+      } @else {
+        Sin ventas a&uacute;n
+      }
+    </p>
+  </article>
 </div>

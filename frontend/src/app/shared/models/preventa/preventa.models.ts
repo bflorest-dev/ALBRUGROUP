@@ -97,6 +97,8 @@ export interface LeadGtrResponse {
   direccionSnapshot?: string | null;
   primeraCodigoTipificacion?: string | null;
   primeraCodigoSubtipificacion?: string | null;
+  mayorRangoCodigoTipificacion?: string | null;
+  mayorRangoCodigoSubtipificacion?: string | null;
   codigoTipificacion?: string | null;
   codigoSubtipificacion?: string | null;
   nombrePlanOfrecido?: string | null;
@@ -116,6 +118,7 @@ export type LeadGtrGroupType =
   | 'ESTADO'
   | 'INGRESO'
   | 'PRIMERA_TIPIFICACION'
+  | 'MAYOR_TIPIFICACION'
   | 'ULTIMA_TIPIFICACION';
 
 export type LeadGtrGroupMode = 'SIN_AGRUPAR' | LeadGtrGroupType;
@@ -135,6 +138,7 @@ export interface LeadGtrGroupsResponse {
   campanas: LeadGtrGroupItemResponse[];
   estados: LeadGtrGroupItemResponse[];
   primerasTipificaciones: LeadGtrGroupItemResponse[];
+  mayoresTipificaciones: LeadGtrGroupItemResponse[];
   ultimasTipificaciones: LeadGtrGroupItemResponse[];
   ingresos?: LeadGtrGroupItemResponse[];
 }

@@ -150,6 +150,7 @@ public class MasivoService {
                         "Sin estado"
                 ),
                 List.of(),
+                List.of(),
                 mapearAgrupacionesTipificacion(
                         leadRepository.agruparLeadsMasivoPorUltimaTipificacion(
                                 filtros.filtrarProveedor(),

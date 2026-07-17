@@ -126,7 +126,7 @@
     [rowHover]="true"
     [scrollable]="true"
     scrollHeight="flex"
-    [tableStyle]="{ 'min-width': '1260px' }"
+    [tableStyle]="{ 'min-width': '1360px' }"
     styleClass="p-datatable-sm gtr-table"
   >
     <ng-template #header>
@@ -146,6 +146,7 @@
         <th>Base</th>
         <th>Documento</th>
         <th>Primera tipificacion</th>
+        <th>Mayor tipificacion</th>
         <th>Ultima tipificacion</th>
         <th>Estado</th>
         <th>Asesor</th>
@@ -188,6 +189,18 @@
         <td>{{ facade.display(row.numeroDocumentoTitularServicio) }}</td>
         <td>
           @if (facade.tipificacionParts(row.primeraCodigoTipificacion, row.primeraCodigoSubtipificacion); as tip) {
+            <div class="tip-stack">
+              <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion)" />
+              <span class="tip-stack__line"></span>
+              <p-tag
+                [value]="tip.subtipificacion"
+                [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion')"
+              />
+            </div>
+          }
+        </td>
+        <td>
+          @if (facade.tipificacionParts(row.mayorRangoCodigoTipificacion, row.mayorRangoCodigoSubtipificacion); as tip) {
             <div class="tip-stack">
               <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion)" />
               <span class="tip-stack__line"></span>

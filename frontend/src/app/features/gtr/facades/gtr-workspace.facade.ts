@@ -277,6 +277,7 @@ export class GtrWorkspaceFacade {
     campanas: [],
     estados: [],
     primerasTipificaciones: [],
+    mayoresTipificaciones: [],
     ultimasTipificaciones: [],
     ingresos: []
   });
@@ -289,6 +290,7 @@ export class GtrWorkspaceFacade {
     campanas: [],
     estados: [],
     primerasTipificaciones: [],
+    mayoresTipificaciones: [],
     ultimasTipificaciones: [],
     ingresos: []
   });
@@ -817,6 +819,7 @@ export class GtrWorkspaceFacade {
     { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
     { label: 'Proveedor', value: 'CAMPANA' },
     { label: 'Primera tipificación', value: 'PRIMERA_TIPIFICACION' },
+    { label: 'Mayor tipificación', value: 'MAYOR_TIPIFICACION' },
     { label: 'Última tipificación', value: 'ULTIMA_TIPIFICACION' },
     { label: 'Estado', value: 'ESTADO' },
     { label: 'Asesor', value: 'ASESOR' }
@@ -858,6 +861,8 @@ export class GtrWorkspaceFacade {
         return groups.estados;
       case 'PRIMERA_TIPIFICACION':
         return groups.primerasTipificaciones;
+      case 'MAYOR_TIPIFICACION':
+        return groups.mayoresTipificaciones;
       case 'ULTIMA_TIPIFICACION':
         return groups.ultimasTipificaciones;
       default:
@@ -2519,6 +2524,7 @@ export class GtrWorkspaceFacade {
       campanas: [],
       estados: [],
       primerasTipificaciones: [],
+      mayoresTipificaciones: [],
       ultimasTipificaciones: [],
       ingresos: []
     });
@@ -3308,6 +3314,7 @@ export class GtrWorkspaceFacade {
       campanas: groups.campanas ?? [],
       estados: groups.estados ?? [],
       primerasTipificaciones: groups.primerasTipificaciones ?? [],
+      mayoresTipificaciones: groups.mayoresTipificaciones ?? [],
       ultimasTipificaciones: groups.ultimasTipificaciones ?? []
     });
 
@@ -3329,6 +3336,7 @@ export class GtrWorkspaceFacade {
       campanas: [],
       estados: groups.estados ?? [],
       primerasTipificaciones: [],
+      mayoresTipificaciones: [],
       ultimasTipificaciones: groups.ultimasTipificaciones ?? [],
       ingresos: groups.ingresos ?? []
     });
