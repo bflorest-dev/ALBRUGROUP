@@ -15,8 +15,11 @@ public enum ComportamientoTipificacion {
     REQUIERE_FECHA_INSTALACION,
     /** El modal muestra los campos SEC/SOT (antes: tipi SUBIDO), sujeto a que el proveedor lo requiera. */
     REQUIERE_SEC_SOT,
-    /** La subtipi que atribuye el mérito de su etapa al asesor que la usa (PREVENTA: cierre de venta;
-     *  VENTA: instalación). Una sola subtipi por matriz/etapa debería tenerla. */
+    /** Atribuye el mérito de su etapa al asesor que la usa (PREVENTA: cierre de venta; VENTA:
+     *  instalación). Varias subtipis de una misma etapa pueden llevarla: en PREVENTA la tienen todas
+     *  las que cierran hacia venta, incluidas las que quedan pendientes por causa del cliente, porque
+     *  el asesor ya hizo su parte. Se sobrescribe en cada uso: si el lead vuelve a la etapa y alguien
+     *  la cierra de nuevo, el mérito pasa a ese asesor. */
     RECIBE_MERITO,
     /** Cierra la preventa hacia venta / cuenta como preventa completa (antes: PREVENTA_COMPLETA + VENTA_CERRADA). */
     ES_CIERRE_PREVENTA,
