@@ -831,6 +831,7 @@ export class AsesorVentasWorkspaceFacade {
         if (wasLastManagedInWrapUp) {
           this.successMessage.set('Lead tipificado. Tu turno ya terminó: puedes marcar OFFLINE cuando quieras.');
         }
+        this.removeLeadFromBoard(detail.id);
         await this.reconcile(detail.id);
       }
     );
