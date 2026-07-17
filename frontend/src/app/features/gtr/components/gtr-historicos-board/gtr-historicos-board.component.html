@@ -14,18 +14,19 @@
   >
     <app-date-field label="Desde" formControlName="fechaDesde" />
     <app-date-field label="Hasta" formControlName="fechaHasta" />
-    <label>
+    <label class="historicos-mode">
       <span>Tipo de tipificación</span>
-      <p-select
-        formControlName="campoTipificacion"
+      <p-selectButton
         [options]="facade.historicosCampoTipificacionOptions"
         optionLabel="label"
         optionValue="value"
-        appendTo="body"
-        (onChange)="onCampoTipificacionChange()"
+        [allowEmpty]="false"
+        [ngModel]="facade.masivoFiltersForm.controls.campoTipificacion.value"
+        [ngModelOptions]="{ standalone: true }"
+        (onChange)="onCampoTipificacionChange($any($event.value))"
       />
     </label>
-    <label class="historicos-filter-wide">
+    <label class="historicos-filter-half">
       <span>Tipificaciones</span>
       <p-multiselect
         formControlName="tipificaciones"
@@ -50,7 +51,7 @@
         </ng-template>
       </p-multiselect>
     </label>
-    <label class="historicos-filter-wide">
+    <label class="historicos-filter-half">
       <span>Subtipificaciones</span>
       <p-multiselect
         formControlName="subtipificaciones"

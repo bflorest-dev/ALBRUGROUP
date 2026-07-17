@@ -8,7 +8,7 @@
 .form-grid {
   display: grid;
   gap: 0.85rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 label {
@@ -19,8 +19,22 @@ label {
   gap: 0.35rem;
 }
 
-.historicos-filter-wide {
-  grid-column: 1 / -1;
+.form-grid > app-date-field,
+.historicos-mode {
+  grid-column: span 2;
+}
+
+.historicos-filter-half {
+  grid-column: span 3;
+}
+
+.historicos-mode {
+  color: var(--app-text-muted);
+  display: grid;
+  font-size: 0.78rem;
+  font-weight: 800;
+  gap: 0.35rem;
+  min-width: 0;
 }
 
 .dialog-actions {
@@ -88,8 +102,31 @@ label {
 
 :host ::ng-deep .p-select,
 :host ::ng-deep .p-multiselect,
-:host ::ng-deep .p-inputtext {
+:host ::ng-deep .p-inputtext,
+:host ::ng-deep .p-selectbutton {
   width: 100%;
+}
+
+:host ::ng-deep .historicos-mode .p-selectbutton {
+  background: var(--app-surface-soft);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 0.45rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 0.2rem;
+}
+
+:host ::ng-deep .historicos-mode .p-togglebutton,
+:host ::ng-deep .historicos-mode .p-selectbutton .p-button {
+  min-width: 0;
+  width: 100%;
+}
+
+:host ::ng-deep .historicos-mode .p-togglebutton-content,
+:host ::ng-deep .historicos-mode .p-button-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 :host ::ng-deep .historicos-multiselect {
@@ -143,7 +180,13 @@ label {
 
 @media (max-width: 900px) {
   .form-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form-grid > app-date-field,
+  .historicos-mode,
+  .historicos-filter-half {
+    grid-column: 1 / -1;
   }
 
   .board-toolbar {

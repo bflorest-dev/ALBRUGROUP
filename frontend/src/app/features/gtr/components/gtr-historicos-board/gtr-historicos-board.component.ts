@@ -7,9 +7,11 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { PaginatorModule } from 'primeng/paginator';
 import { PopoverModule } from 'primeng/popover';
 import { SelectModule } from 'primeng/select';
+import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
+import { CampoTipificacion } from '../../../../shared/models/preventa/preventa.models';
 import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
 import { GtrLeadSelectControlComponent } from '../gtr-lead-select-control/gtr-lead-select-control.component';
 
@@ -26,6 +28,7 @@ import { GtrLeadSelectControlComponent } from '../gtr-lead-select-control/gtr-le
     PaginatorModule,
     PopoverModule,
     SelectModule,
+    SelectButtonModule,
     TableModule,
     TagModule,
     DateFieldComponent,
@@ -60,7 +63,8 @@ export class GtrHistoricosBoardComponent {
     void this.facade.setHistoricosGroupingMode(value);
   }
 
-  protected onCampoTipificacionChange(): void {
+  protected onCampoTipificacionChange(value: CampoTipificacion): void {
+    this.facade.masivoFiltersForm.controls.campoTipificacion.setValue(value);
     this.facade.syncHistoricosCampoTipificacion();
   }
 

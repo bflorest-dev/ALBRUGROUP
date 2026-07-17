@@ -876,8 +876,8 @@ export class GtrWorkspaceFacade {
     { label: 'Ingreso', value: 'INGRESO' }
   ]);
   readonly historicosCampoTipificacionOptions: SelectOption<CampoTipificacion>[] = [
-    { label: 'Última', value: 'ULTIMA' },
     { label: 'Mayor', value: 'MAYOR' },
+    { label: 'Última', value: 'ULTIMA' },
     { label: 'Primera', value: 'PRIMERA' }
   ];
   readonly historicosSortOptions = computed<Array<{ label: string; value: GtrHistoricosSortField }>>(() => [
