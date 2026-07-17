@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { filter } from 'rxjs';
 import { BadgeModule } from 'primeng/badge';
 import { AttendanceFacade } from '../../facades/attendance.facade';
 import { AttendanceRealtimeService } from '../../services/attendance-realtime.service';
@@ -70,11 +71,12 @@ export class PrivateLayoutComponent {
   private readonly sessionService = inject(SessionService);
   private readonly gtrAgendadosAlertFacade = inject(GtrAgendadosAlertFacade);
   private readonly equiposNav = inject(EquiposNavService);
+  private readonly router = inject(Router);
   protected readonly profileMenuOpen = signal(false);
   protected readonly mobileMenuOpen = signal(false);
-  // Grupos expandibles del sidebar (clave = label del padre). Colaboradores
-  // arranca abierto para que sus categorias esten a la vista.
-  protected readonly expandedGroups = signal<Record<string, boolean>>({ Colaboradores: true });
+  // Grupos expandibles del sidebar (clave = label del padre).
+  protected readonly expandedGroups = signal<Record<string, boolean>>({});
+  private readonly currentUrl = signal(this.router.url);
   protected readonly adminDeleteLeadsVisible = signal(this.readAdminDeleteLeadsVisible());
   protected readonly attendanceErrorMessage = signal('');
   private attendanceInitialized = false;
@@ -241,6 +243,13 @@ export class PrivateLayoutComponent {
   }
 
   constructor() {
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((event) => this.currentUrl.set(event.urlAfterRedirects));
+
     // El submenu de COLABORADORES se arma con los equipos activos; se cargan una
     // sola vez cuando la sesion es de ADMINISTRADOR.
     effect(() => {
@@ -295,6 +304,16 @@ export class PrivateLayoutComponent {
             }
           });
       }
+    });
+
+    effect(() => {
+      const isAdminColaboradores = this.currentUrl().startsWith('/app/admin/colaboradores');
+      this.expandedGroups.update((current) => {
+        if ((current['Colaboradores'] ?? false) === isAdminColaboradores) {
+          return current;
+        }
+        return { ...current, Colaboradores: isAdminColaboradores };
+      });
     });
   }
 

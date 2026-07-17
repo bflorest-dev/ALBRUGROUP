@@ -11,6 +11,8 @@ export interface LeadDiarioResponse {
   nombreCampana?: string | null;
   primeraCodigoTipificacion?: string | null;
   primeraCodigoSubtipificacion?: string | null;
+  mayorRangoCodigoTipificacion?: string | null;
+  mayorRangoCodigoSubtipificacion?: string | null;
   codigoTipificacion?: string | null;
   codigoSubtipificacion?: string | null;
   ultimoNombreAsesorAsignado?: string | null;
@@ -52,6 +54,8 @@ export interface DailyLeadRowView {
   totalRegistrosDia: number;
   primeraCodigoTipificacion?: string | null;
   primeraCodigoSubtipificacion?: string | null;
+  mayorRangoCodigoTipificacion?: string | null;
+  mayorRangoCodigoSubtipificacion?: string | null;
   codigoTipificacion?: string | null;
   codigoSubtipificacion?: string | null;
   isPlaceholder?: boolean;
@@ -62,6 +66,7 @@ export type DailyLeadGroupType =
   | 'CAMPANA'
   | 'EQUIPO'
   | 'PRIMERA_TIPIFICACION'
+  | 'MAYOR_TIPIFICACION'
   | 'ULTIMA_TIPIFICACION';
 
 export type DailyLeadGroupMode = 'SIN_AGRUPAR' | DailyLeadGroupType;
@@ -90,6 +95,7 @@ export interface DailyLeadGroupsResponse {
   campanas: DailyLeadGroupItem[];
   equipos: DailyLeadGroupItem[];
   primerasTipificaciones: DailyLeadGroupItem[];
+  mayoresTipificaciones: DailyLeadGroupItem[];
   ultimasTipificaciones: DailyLeadGroupItem[];
   /** Total de eventos REGISTRO del día (incluye repeticiones). Leads únicos = suma de agrupación por asesor. */
   totalRegistros?: number | null;

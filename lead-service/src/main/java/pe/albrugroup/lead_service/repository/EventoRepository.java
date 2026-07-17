@@ -236,10 +236,12 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                        r.fechaIngresoEtapa,
                        l.idEquipo,
                        c.nombre,
-                       r.primeraCodigoTipificacion,
-                       r.primeraCodigoSubtipificacion,
-                       r.ultimaCodigoTipificacion,
-                       r.ultimaCodigoSubtipificacion,
+                        r.primeraCodigoTipificacion,
+                        r.primeraCodigoSubtipificacion,
+                        r.mayorRangoCodigoTipificacion,
+                        r.mayorRangoCodigoSubtipificacion,
+                        r.ultimaCodigoTipificacion,
+                        r.ultimaCodigoSubtipificacion,
                        r.nombreAsesorUltimaGestion,
                        CAST(COALESCE(r.totalAsignaciones, 0) AS long),
                        0L)
@@ -306,6 +308,22 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                         AND (
                             (:codigoSubtipificacion IS NULL AND r.ultimaCodigoSubtipificacion IS NULL)
                             OR r.ultimaCodigoSubtipificacion = :codigoSubtipificacion
+                        )
+                    )
+              )
+              AND (
+                    :filtrarMayorTipificacion = false
+                    OR (
+                        :sinValor = true
+                        AND r.mayorRangoCodigoTipificacion IS NULL
+                        AND r.mayorRangoCodigoSubtipificacion IS NULL
+                    )
+                    OR (
+                        :sinValor = false
+                        AND r.mayorRangoCodigoTipificacion = :codigoTipificacion
+                        AND (
+                            (:codigoSubtipificacion IS NULL AND r.mayorRangoCodigoSubtipificacion IS NULL)
+                            OR r.mayorRangoCodigoSubtipificacion = :codigoSubtipificacion
                         )
                     )
               )
@@ -378,6 +396,22 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                         )
                     )
               )
+              AND (
+                    :filtrarMayorTipificacion = false
+                    OR (
+                        :sinValor = true
+                        AND r.mayorRangoCodigoTipificacion IS NULL
+                        AND r.mayorRangoCodigoSubtipificacion IS NULL
+                    )
+                    OR (
+                        :sinValor = false
+                        AND r.mayorRangoCodigoTipificacion = :codigoTipificacion
+                        AND (
+                            (:codigoSubtipificacion IS NULL AND r.mayorRangoCodigoSubtipificacion IS NULL)
+                            OR r.mayorRangoCodigoSubtipificacion = :codigoSubtipificacion
+                        )
+                    )
+              )
             """)
     Page<LeadDiarioResponse> listarRegistrosDiarios(
             @Param("accion") Accion accion,
@@ -388,6 +422,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("filtrarCampana") boolean filtrarCampana,
             @Param("filtrarEquipo") boolean filtrarEquipo,
             @Param("filtrarPrimeraTipificacion") boolean filtrarPrimeraTipificacion,
+            @Param("filtrarMayorTipificacion") boolean filtrarMayorTipificacion,
             @Param("filtrarUltimaTipificacion") boolean filtrarUltimaTipificacion,
             @Param("idGrupo") Long idGrupo,
             @Param("codigoTipificacion") String codigoTipificacion,
@@ -547,6 +582,40 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             GROUP BY r.primeraCodigoTipificacion, r.primeraCodigoSubtipificacion
             """)
     List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorPrimeraTipificacion(
+            @Param("accion") Accion accion,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("filtrarLead") boolean filtrarLead,
+            @Param("lead") String lead
+    );
+
+    @Query("""
+            SELECT NULL AS idGrupo,
+                   NULL AS etiqueta,
+                   r.mayorRangoCodigoTipificacion AS codigoTipificacion,
+                   r.mayorRangoCodigoSubtipificacion AS codigoSubtipificacion,
+                   COUNT(e.id) AS cantidad
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = e.etapa
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND NOT EXISTS (
+                    SELECT 1 FROM Evento anterior
+                    WHERE anterior.idLead = e.idLead
+                      AND anterior.accion = :accion
+                      AND anterior.createdAt >= :inicio
+                      AND anterior.createdAt < :fin
+                      AND (
+                            anterior.createdAt < e.createdAt
+                            OR (anterior.createdAt = e.createdAt AND anterior.id < e.id)
+                      )
+              )
+              AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
+            GROUP BY r.mayorRangoCodigoTipificacion, r.mayorRangoCodigoSubtipificacion
+            """)
+    List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorMayorTipificacion(
             @Param("accion") Accion accion,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin,

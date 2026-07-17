@@ -40,12 +40,12 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'admin',
     pathMatch: 'full',
-    redirectTo: 'admin/colaboradores'
+    redirectTo: 'admin/dashboard'
   },
   {
     path: 'admin/inicio',
     pathMatch: 'full',
-    redirectTo: 'admin/colaboradores'
+    redirectTo: 'admin/dashboard'
   },
   {
     path: 'admin/dashboard',

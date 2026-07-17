@@ -113,6 +113,7 @@ export class DailyLeadsFacade {
     campanas: [],
     equipos: [],
     primerasTipificaciones: [],
+    mayoresTipificaciones: [],
     ultimasTipificaciones: []
   });
   /** Nombre de equipo por id, para mostrar los chips de la agrupación "Equipo". */
@@ -150,6 +151,7 @@ export class DailyLeadsFacade {
     }
     options.push(
       { label: 'Primera tipificación', value: 'PRIMERA_TIPIFICACION' },
+      { label: 'Mayor tipificación', value: 'MAYOR_TIPIFICACION' },
       { label: 'Última tipificación', value: 'ULTIMA_TIPIFICACION' }
     );
     return options;
@@ -198,6 +200,8 @@ export class DailyLeadsFacade {
       }
       case 'PRIMERA_TIPIFICACION':
         return groups.primerasTipificaciones;
+      case 'MAYOR_TIPIFICACION':
+        return groups.mayoresTipificaciones;
       case 'ULTIMA_TIPIFICACION':
         return groups.ultimasTipificaciones;
       default:
@@ -574,6 +578,8 @@ export class DailyLeadsFacade {
       totalRegistrosDia: item.totalRegistrosDia ?? 1,
       primeraCodigoTipificacion: item.primeraCodigoTipificacion,
       primeraCodigoSubtipificacion: item.primeraCodigoSubtipificacion,
+      mayorRangoCodigoTipificacion: item.mayorRangoCodigoTipificacion,
+      mayorRangoCodigoSubtipificacion: item.mayorRangoCodigoSubtipificacion,
       codigoTipificacion: item.codigoTipificacion,
       codigoSubtipificacion: item.codigoSubtipificacion
     };

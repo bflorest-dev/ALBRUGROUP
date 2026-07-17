@@ -64,6 +64,7 @@ public class EventoService {
             "campana", "c.nombre",
             "lead", "l.lead",
             "primeraTipificacion", "r.primeraCodigoTipificacion",
+            "mayorTipificacion", "r.mayorRangoCodigoTipificacion",
             "ultimaTipificacion", "r.ultimaCodigoTipificacion"
     );
 
@@ -228,6 +229,7 @@ public class EventoService {
                 tipoGrupo == TipoGrupoGtr.CAMPANA,
                 tipoGrupo == TipoGrupoGtr.EQUIPO,
                 tipoGrupo == TipoGrupoGtr.PRIMERA_TIPIFICACION,
+                tipoGrupo == TipoGrupoGtr.MAYOR_TIPIFICACION,
                 tipoGrupo == TipoGrupoGtr.ULTIMA_TIPIFICACION,
                 idGrupo,
                 normalizarCodigo(codigoTipificacion),
@@ -319,7 +321,15 @@ public class EventoService {
                                 leadNormalizado
                         )
                 ),
-                List.of(),
+                mapearAgrupacionesTipificacion(
+                        eventoRepository.agruparRegistrosDiariosPorMayorTipificacion(
+                                Accion.REGISTRO,
+                                rango.inicio(),
+                                rango.fin(),
+                                leadNormalizado != null,
+                                leadNormalizado
+                        )
+                ),
                 mapearAgrupacionesTipificacion(
                         eventoRepository.agruparRegistrosDiariosPorUltimaTipificacion(
                                 Accion.REGISTRO,
@@ -504,6 +514,7 @@ public class EventoService {
             throw new BadRequestException("Debes indicar el grupo seleccionado");
         }
         if ((tipoGrupo == TipoGrupoGtr.PRIMERA_TIPIFICACION
+                || tipoGrupo == TipoGrupoGtr.MAYOR_TIPIFICACION
                 || tipoGrupo == TipoGrupoGtr.ULTIMA_TIPIFICACION)
                 && normalizarCodigo(codigoTipificacion) == null) {
             throw new BadRequestException("Debes indicar la tipificación seleccionada");

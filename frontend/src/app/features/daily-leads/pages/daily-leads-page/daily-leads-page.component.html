@@ -194,7 +194,7 @@
       [loading]="facade.isLoading()"
       [rowHover]="true"
       [scrollable]="true"
-      [tableStyle]="{ 'min-width': '1280px', 'table-layout': 'fixed' }"
+      [tableStyle]="{ 'min-width': '1400px', 'table-layout': 'fixed' }"
       styleClass="p-datatable-sm daily-leads__table"
     >
       <ng-template #header>
@@ -207,6 +207,7 @@
           <th>Asignaciones</th>
           <th>Campaña</th>
           <th>Primera tipificacion</th>
+          <th>Mayor tipificacion</th>
           <th>Ultima tipificacion</th>
           <th class="daily-leads__actions-col">Historial</th>
         </tr>
@@ -216,7 +217,7 @@
         @if (row.isPlaceholder) {
           <tr class="daily-leads__placeholder-row" aria-hidden="true">
             <td class="daily-leads__expander-col"></td>
-            <td colspan="9"></td>
+            <td colspan="10"></td>
           </tr>
         } @else {
         <tr class="daily-leads__data-row">
@@ -269,6 +270,13 @@
           </td>
           <td>
             <app-tipification-stack
+              [codigoTipificacion]="row.mayorRangoCodigoTipificacion"
+              [codigoSubtipificacion]="row.mayorRangoCodigoSubtipificacion"
+              [paletteByCode]="facade.tipificationPaletteByCode()"
+            />
+          </td>
+          <td>
+            <app-tipification-stack
               [codigoTipificacion]="row.codigoTipificacion"
               [codigoSubtipificacion]="row.codigoSubtipificacion"
               [paletteByCode]="facade.tipificationPaletteByCode()"
@@ -296,12 +304,12 @@
         @if (facade.loadingRegistrosLeadId() === row.idLead) {
           <tr class="daily-leads__registros-row">
             <td class="daily-leads__expander-col"></td>
-            <td colspan="9" class="daily-leads__registros-note">Cargando registros...</td>
+            <td colspan="10" class="daily-leads__registros-note">Cargando registros...</td>
           </tr>
         } @else if (facade.registrosByLead()[row.idLead]?.length) {
           <tr class="daily-leads__registros-row daily-leads__registros-row--head">
             <td class="daily-leads__expander-col"></td>
-            <td colspan="9" class="daily-leads__registros-note">Otros registros de hoy para este lead</td>
+            <td colspan="10" class="daily-leads__registros-note">Otros registros de hoy para este lead</td>
           </tr>
           @for (registro of facade.registrosByLead()[row.idLead]; track $index) {
             <tr class="daily-leads__registros-row">
@@ -317,19 +325,20 @@
               <td></td>
               <td></td>
               <td></td>
+              <td></td>
             </tr>
           }
         } @else {
           <tr class="daily-leads__registros-row">
             <td class="daily-leads__expander-col"></td>
-            <td colspan="9" class="daily-leads__registros-note">No hay registros adicionales.</td>
+            <td colspan="10" class="daily-leads__registros-note">No hay registros adicionales.</td>
           </tr>
         }
       </ng-template>
 
       <ng-template #emptymessage>
         <tr>
-          <td colspan="10">
+          <td colspan="11">
             @if (facade.isLoading()) {
               <div class="daily-leads__empty">Cargando...</div>
             } @else {
