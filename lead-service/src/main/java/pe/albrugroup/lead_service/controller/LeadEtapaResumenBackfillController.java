@@ -38,4 +38,10 @@ public class LeadEtapaResumenBackfillController {
         backfillService.backfillUnLead(idLead);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/numero/{lead}") @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<Void> backfillPorNumeroLead(@PathVariable String lead) {
+        backfillService.backfillPorNumeroLead(lead);
+        return ResponseEntity.ok().build();
+    }
 }

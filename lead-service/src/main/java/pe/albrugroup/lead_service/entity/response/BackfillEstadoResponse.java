@@ -7,6 +7,8 @@ public record BackfillEstadoResponse(
         boolean enEjecucion,
         int procesados,
         int total,
+        int fallidos,
+        String ultimoError,
         Instant iniciadoEn,
         Instant finalizadoEn
 ) {

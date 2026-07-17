@@ -21,6 +21,6 @@ public interface SubtipificacionRepository extends JpaRepository<Subtipificacion
     // Catalogo plano (etapa, codigoTipificacion, codigoSubtipificacion, etapaCambio, estadoPostventaCambio)
     // para el backfill: la etapa de cambio reconstruye avances; el estado postventa reconstruye el merito
     // de COBRANZA (estado final) al reproducir eventos.
-    @Query("SELECT t.etapa, t.codigo, s.codigo, s.etapaCambio, s.estadoPostventaCambio FROM Subtipificacion s JOIN s.tipificacion t")
+    @Query("SELECT t.idEquipo, t.etapa, t.codigo, s.codigo, s.etapaCambio, s.estadoPostventaCambio FROM Subtipificacion s JOIN s.tipificacion t")
     List<Object[]> listarCambiosEtapa();
 }

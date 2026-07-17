@@ -8,11 +8,10 @@
   <p-card>
     <div class="op">
       <div class="op__info">
-        <h3>Reconstruir métricas por etapa</h3>
+        <h3>Resumen de leads</h3>
         <p>
-          Recalcula la primera y última tipificación, la de mayor rango, el mérito y el último asesor
-          de cada lead en cada etapa, a partir de su historial. Úsalo una sola vez después de un
-          despliegue; el sistema mantiene estos datos al día por sí solo.
+          Reconstruye la primera, mayor y ultima tipificacion de cada lead desde su historial.
+          Usalo despues de cambios importantes en la matriz de tipificaciones.
         </p>
       </div>
 
@@ -21,7 +20,7 @@
           pButton
           type="button"
           icon="pi pi-database"
-          label="Reconstruir"
+          label="Recalcular resumen"
           [loading]="isStarting()"
           [disabled]="enEjecucion() || isStarting()"
           (click)="pedirConfirmacion()"
@@ -32,23 +31,58 @@
     @if (errorMessage()) {
       <p-message severity="error" [text]="errorMessage()" styleClass="op__message" />
     }
+    @if (successMessage()) {
+      <p-message severity="success" [text]="successMessage()" styleClass="op__message" />
+    }
 
     @if (estado(); as estado) {
       <div class="op__status">
         @if (estado.enEjecucion) {
           <p-tag severity="warn" icon="pi pi-spin pi-spinner" [value]="progresoLabel()" />
+          <p-progressBar [value]="progreso()" [showValue]="true" styleClass="op__progress" />
         } @else if (estado.finalizadoEn) {
           <p-tag severity="success" icon="pi pi-check-circle" [value]="progresoLabel()" />
         } @else {
           <p-tag severity="secondary" [value]="progresoLabel()" />
         }
+        @if (estado.ultimoError) {
+          <span class="op__last-error">{{ estado.ultimoError }}</span>
+        }
       </div>
     }
+
+    <div class="op__single">
+      <div class="op__single-copy">
+        <h4>Recalcular un lead</h4>
+        <p>Sirve para validar un caso puntual antes de ejecutar el recalculo general.</p>
+      </div>
+      <div class="op__single-form">
+        <input
+          pInputText
+          type="text"
+          inputmode="numeric"
+          placeholder="Numero de lead"
+          [ngModel]="leadDraft()"
+          (ngModelChange)="onLeadDraftChange($event)"
+        />
+        <button
+          pButton
+          type="button"
+          icon="pi pi-refresh"
+          label="Recalcular lead"
+          severity="secondary"
+          [outlined]="true"
+          [loading]="isRunningSingle()"
+          [disabled]="enEjecucion() || isRunningSingle() || !leadDraft()"
+          (click)="recalcularLead()"
+        ></button>
+      </div>
+    </div>
   </p-card>
 </section>
 
 <p-dialog
-  header="Reconstruir métricas por etapa"
+  header="Recalcular resumen de leads"
   [visible]="confirmVisible()"
   (visibleChange)="!$event && cancelar()"
   [modal]="true"
@@ -58,11 +92,11 @@
   styleClass="op-confirm-dialog"
 >
   <p class="op-confirm__text">
-    Se recalcularán las métricas por etapa de todos los leads a partir de su historial. Corre en
-    segundo plano y puede tardar varios minutos. Es seguro repetirlo. ¿Continuar?
+    Se reconstruira el resumen de todos los leads a partir de su historial. Corre en segundo plano
+    y puede tardar varios minutos. Es seguro repetirlo. Continuar?
   </p>
   <div class="op-confirm__actions">
     <button pButton type="button" severity="secondary" [outlined]="true" label="Cancelar" (click)="cancelar()"></button>
-    <button pButton type="button" icon="pi pi-database" label="Reconstruir" (click)="ejecutar()"></button>
+    <button pButton type="button" icon="pi pi-database" label="Recalcular" (click)="ejecutar()"></button>
   </div>
 </p-dialog>

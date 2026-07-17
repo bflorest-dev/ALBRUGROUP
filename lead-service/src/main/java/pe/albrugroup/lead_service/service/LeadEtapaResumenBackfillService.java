@@ -69,6 +69,8 @@ public class LeadEtapaResumenBackfillService {
     private final AtomicBoolean enEjecucion = new AtomicBoolean(false);
     private volatile int procesados = 0;
     private volatile int total = 0;
+    private volatile int fallidos = 0;
+    private volatile String ultimoError;
     private volatile Instant iniciadoEn;
     private volatile Instant finalizadoEn;
 
@@ -79,6 +81,8 @@ public class LeadEtapaResumenBackfillService {
         }
         procesados = 0;
         total = 0;
+        fallidos = 0;
+        ultimoError = null;
         finalizadoEn = null;
         iniciadoEn = OperationalDateTime.now();
         executor.submit(this::ejecutarBackfillCompleto);
@@ -87,18 +91,22 @@ public class LeadEtapaResumenBackfillService {
 
     /** Estado del backfill en curso o del último ejecutado (para el botón del panel ADMIN). */
     public BackfillEstadoResponse estadoActual() {
-        return new BackfillEstadoResponse(enEjecucion.get(), procesados, total, iniciadoEn, finalizadoEn);
+        return new BackfillEstadoResponse(enEjecucion.get(), procesados, total, fallidos, ultimoError, iniciadoEn, finalizadoEn);
     }
 
     private void ejecutarBackfillCompleto() {
         try {
             Catalogo catalogo = cargarCatalogo();
-            List<Long> ids = leadRepository.findAllLeadIds();
-            total = ids.size();
-            for (Long idLead : ids) {
+            List<Object[]> leads = leadRepository.findAllLeadIdsAndEquipos();
+            total = leads.size();
+            for (Object[] lead : leads) {
+                Long idLead = (Long) lead[0];
+                Long idEquipo = (Long) lead[1];
                 try {
-                    ejecutarEnTransaccionNueva(() -> backfillLead(idLead, catalogo));
+                    ejecutarEnTransaccionNueva(() -> backfillLead(idLead, idEquipo, catalogo));
                 } catch (Exception e) {
+                    fallidos++;
+                    ultimoError = "Lead " + idLead + ": " + e.getMessage();
                     log.warn("Backfill LeadEtapaResumen fallo para lead {}: {}", idLead, e.getMessage());
                 }
                 procesados++;
@@ -114,7 +122,28 @@ public class LeadEtapaResumenBackfillService {
     /** Reconstruye el resumen de un lead puntual (síncrono, útil para verificar casos concretos). */
     public void backfillUnLead(Long idLead) {
         Catalogo catalogo = cargarCatalogo();
-        ejecutarEnTransaccionNueva(() -> backfillLead(idLead, catalogo));
+        Long idEquipo = leadRepository.findById(idLead)
+                .map(lead -> lead.getIdEquipo())
+                .orElseThrow(() -> new IllegalArgumentException("Lead no encontrado"));
+        ejecutarEnTransaccionNueva(() -> backfillLead(idLead, idEquipo, catalogo));
+    }
+
+    /** Reconstruye todos los leads que coinciden con el numero visible, usando su equipo real. */
+    public void backfillPorNumeroLead(String lead) {
+        if (lead == null || lead.isBlank()) {
+            throw new IllegalArgumentException("Debes indicar el numero de lead");
+        }
+        String normalizado = lead.replaceAll("\\s+", "");
+        List<Object[]> leads = leadRepository.findLeadIdsAndEquiposByLead(normalizado);
+        if (leads.isEmpty()) {
+            throw new IllegalArgumentException("Lead no encontrado");
+        }
+        Catalogo catalogo = cargarCatalogo();
+        for (Object[] row : leads) {
+            Long idLead = (Long) row[0];
+            Long idEquipo = (Long) row[1];
+            ejecutarEnTransaccionNueva(() -> backfillLead(idLead, idEquipo, catalogo));
+        }
     }
 
     @PreDestroy
@@ -122,7 +151,7 @@ public class LeadEtapaResumenBackfillService {
         executor.shutdownNow();
     }
 
-    private void backfillLead(Long idLead, Catalogo catalogo) {
+    private void backfillLead(Long idLead, Long idEquipo, Catalogo catalogo) {
         resumenRepository.deleteByIdLead(idLead);
 
         List<Evento> eventos = eventoRepository.findAllByIdLeadOrderByCreatedAtAscIdAsc(idLead);
@@ -144,14 +173,14 @@ public class LeadEtapaResumenBackfillService {
             } else if (accion == Accion.ASIGNACION) {
                 resumenService.registrarAsignacion(idLead, etapa, evento.getCreatedAt());
             } else if (accion == Accion.TIPIFICACION) {
-                Integer orden = catalogo.orden(etapa, evento.getTipificacion());
+                Integer orden = catalogo.orden(idEquipo, etapa, evento.getTipificacion());
                 resumenService.registrarTipificacion(
                         idLead, etapa, evento.getTipificacion(), evento.getSubtipificacion(),
                         orden, evento.getIdActor(), evento.getNombreActor(), evento.getCreatedAt());
 
-                Etapa destino = catalogo.etapaCambio(etapa, evento.getTipificacion(), evento.getSubtipificacion());
+                Etapa destino = catalogo.etapaCambio(idEquipo, etapa, evento.getTipificacion(), evento.getSubtipificacion());
                 EstadoPostventa estadoPostventaCambio =
-                        catalogo.estadoPostventaCambio(etapa, evento.getTipificacion(), evento.getSubtipificacion());
+                        catalogo.estadoPostventaCambio(idEquipo, etapa, evento.getTipificacion(), evento.getSubtipificacion());
 
                 // Mérito por etapa: mismas condiciones que los hooks en vivo (LeadService), pero
                 // reconstruidas desde el evento (el actor que concretó la etapa).
@@ -187,9 +216,9 @@ public class LeadEtapaResumenBackfillService {
     private Catalogo cargarCatalogo() {
         Map<String, Integer> ordenPorTipificacion = new HashMap<>();
         for (Tipificacion tipificacion : tipificacionRepository.findAll()) {
-            if (tipificacion.getEtapa() != null && tipificacion.getCodigo() != null) {
+            if (tipificacion.getIdEquipo() != null && tipificacion.getEtapa() != null && tipificacion.getCodigo() != null) {
                 ordenPorTipificacion.putIfAbsent(
-                        claveTipificacion(tipificacion.getEtapa(), tipificacion.getCodigo()),
+                        claveTipificacion(tipificacion.getIdEquipo(), tipificacion.getEtapa(), tipificacion.getCodigo()),
                         tipificacion.getOrden());
             }
         }
@@ -197,13 +226,14 @@ public class LeadEtapaResumenBackfillService {
         Map<String, Etapa> etapaCambioPorSubtipificacion = new HashMap<>();
         Map<String, EstadoPostventa> estadoPostventaCambioPorSubtipificacion = new HashMap<>();
         for (Object[] fila : subtipificacionRepository.listarCambiosEtapa()) {
-            Etapa etapa = (Etapa) fila[0];
-            String codigoTip = (String) fila[1];
-            String codigoSub = (String) fila[2];
-            Etapa etapaCambio = (Etapa) fila[3];
-            EstadoPostventa estadoPostventaCambio = (EstadoPostventa) fila[4];
-            if (etapa != null && codigoTip != null && codigoSub != null) {
-                String clave = claveSubtipificacion(etapa, codigoTip, codigoSub);
+            Long idEquipo = (Long) fila[0];
+            Etapa etapa = (Etapa) fila[1];
+            String codigoTip = (String) fila[2];
+            String codigoSub = (String) fila[3];
+            Etapa etapaCambio = (Etapa) fila[4];
+            EstadoPostventa estadoPostventaCambio = (EstadoPostventa) fila[5];
+            if (idEquipo != null && etapa != null && codigoTip != null && codigoSub != null) {
+                String clave = claveSubtipificacion(idEquipo, etapa, codigoTip, codigoSub);
                 etapaCambioPorSubtipificacion.putIfAbsent(clave, etapaCambio);
                 if (estadoPostventaCambio != null) {
                     estadoPostventaCambioPorSubtipificacion.putIfAbsent(clave, estadoPostventaCambio);
@@ -215,12 +245,12 @@ public class LeadEtapaResumenBackfillService {
                 ordenPorTipificacion, etapaCambioPorSubtipificacion, estadoPostventaCambioPorSubtipificacion);
     }
 
-    private static String claveTipificacion(Etapa etapa, String codigoTipificacion) {
-        return etapa.name() + "|" + codigoTipificacion;
+    private static String claveTipificacion(Long idEquipo, Etapa etapa, String codigoTipificacion) {
+        return idEquipo + "|" + etapa.name() + "|" + codigoTipificacion;
     }
 
-    private static String claveSubtipificacion(Etapa etapa, String codigoTipificacion, String codigoSubtipificacion) {
-        return etapa.name() + "|" + codigoTipificacion + "|" + codigoSubtipificacion;
+    private static String claveSubtipificacion(Long idEquipo, Etapa etapa, String codigoTipificacion, String codigoSubtipificacion) {
+        return idEquipo + "|" + etapa.name() + "|" + codigoTipificacion + "|" + codigoSubtipificacion;
     }
 
     /** Catálogo plano en memoria: orden de la tipificación, etapa de cambio y estado postventa de cambio. */
@@ -228,26 +258,26 @@ public class LeadEtapaResumenBackfillService {
             Map<String, Integer> ordenPorTipificacion,
             Map<String, Etapa> etapaCambioPorSubtipificacion,
             Map<String, EstadoPostventa> estadoPostventaCambioPorSubtipificacion) {
-        Integer orden(Etapa etapa, String codigoTipificacion) {
-            if (etapa == null || codigoTipificacion == null) {
+        Integer orden(Long idEquipo, Etapa etapa, String codigoTipificacion) {
+            if (idEquipo == null || etapa == null || codigoTipificacion == null) {
                 return null;
             }
-            return ordenPorTipificacion.get(claveTipificacion(etapa, codigoTipificacion));
+            return ordenPorTipificacion.get(claveTipificacion(idEquipo, etapa, codigoTipificacion));
         }
 
-        Etapa etapaCambio(Etapa etapa, String codigoTipificacion, String codigoSubtipificacion) {
-            if (etapa == null || codigoTipificacion == null || codigoSubtipificacion == null) {
+        Etapa etapaCambio(Long idEquipo, Etapa etapa, String codigoTipificacion, String codigoSubtipificacion) {
+            if (idEquipo == null || etapa == null || codigoTipificacion == null || codigoSubtipificacion == null) {
                 return null;
             }
-            return etapaCambioPorSubtipificacion.get(claveSubtipificacion(etapa, codigoTipificacion, codigoSubtipificacion));
+            return etapaCambioPorSubtipificacion.get(claveSubtipificacion(idEquipo, etapa, codigoTipificacion, codigoSubtipificacion));
         }
 
-        EstadoPostventa estadoPostventaCambio(Etapa etapa, String codigoTipificacion, String codigoSubtipificacion) {
-            if (etapa == null || codigoTipificacion == null || codigoSubtipificacion == null) {
+        EstadoPostventa estadoPostventaCambio(Long idEquipo, Etapa etapa, String codigoTipificacion, String codigoSubtipificacion) {
+            if (idEquipo == null || etapa == null || codigoTipificacion == null || codigoSubtipificacion == null) {
                 return null;
             }
             return estadoPostventaCambioPorSubtipificacion.get(
-                    claveSubtipificacion(etapa, codigoTipificacion, codigoSubtipificacion));
+                    claveSubtipificacion(idEquipo, etapa, codigoTipificacion, codigoSubtipificacion));
         }
     }
 }

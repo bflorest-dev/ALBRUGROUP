@@ -8,6 +8,8 @@ export interface MetricsBackfillEstado {
   enEjecucion: boolean;
   procesados: number;
   total: number;
+  fallidos: number;
+  ultimoError: string | null;
   iniciadoEn: string | null;
   finalizadoEn: string | null;
 }
@@ -25,5 +27,9 @@ export class AdminMetricsBackfillService {
   /** Consulta el progreso del backfill (para refrescar mientras corre). */
   estado(): Observable<MetricsBackfillEstado> {
     return this.http.get<MetricsBackfillEstado>(`${this.baseUrl}/estado`);
+  }
+
+  recalcularLead(lead: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/numero/${encodeURIComponent(lead)}`, {});
   }
 }

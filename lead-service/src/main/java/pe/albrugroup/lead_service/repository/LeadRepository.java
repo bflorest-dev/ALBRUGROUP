@@ -1548,4 +1548,10 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     // Todos los ids de lead (para iterar en el backfill de LeadEtapaResumen). Sin usuario => sin @Filter.
     @Query("SELECT l.id FROM Lead l ORDER BY l.id")
     List<Long> findAllLeadIds();
+
+    @Query("SELECT l.id, l.idEquipo FROM Lead l ORDER BY l.id")
+    List<Object[]> findAllLeadIdsAndEquipos();
+
+    @Query("SELECT l.id, l.idEquipo FROM Lead l WHERE l.lead = :lead ORDER BY l.lastEntryAt DESC, l.id DESC")
+    List<Object[]> findLeadIdsAndEquiposByLead(@Param("lead") String lead);
 }
