@@ -122,6 +122,7 @@ export type LeadGtrGroupType =
   | 'ULTIMA_TIPIFICACION';
 
 export type LeadGtrGroupMode = 'SIN_AGRUPAR' | LeadGtrGroupType;
+export type CampoTipificacion = 'PRIMERA' | 'MAYOR' | 'ULTIMA';
 
 export interface LeadGtrGroupItemResponse {
   idGrupo?: number | null;
@@ -172,6 +173,7 @@ export interface LeadAgendadoGtrResponse {
   fechaAgendamiento?: string | null;
   comentario?: string | null;
   horaProgramada?: string | null;
+  fechaProgramacion?: string | null;
 }
 
 export interface AgendadosGtrResumenResponse {
@@ -184,6 +186,7 @@ export interface MasivoLeadFilters {
   etapa?: Etapa | string;
   codigosTipificacion?: string[];
   codigosSubtipificacion?: string[];
+  campoTipificacion?: CampoTipificacion;
   fechaDesde?: string;
   fechaHasta?: string;
   tipoGrupo?: LeadGtrGroupType;

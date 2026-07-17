@@ -20,6 +20,7 @@ import {
   AsesorLeadsPendientesResponse,
   BaseLead,
   CampanaResponse,
+  CampoTipificacion,
   CampoCaptura,
   CampoConfigItem,
   CatalogoResponse,
@@ -128,7 +129,7 @@ type GtrPlatformSortField =
   | 'nombreAsesorAsignado';
 type GtrHistoricosSortField = 'lastEntryAt' | 'codigoTipificacion' | 'estado' | 'nombreAsesorAsignado';
 type GtrPlatformSortDirection = 'asc' | 'desc';
-type GtrHistoricosGroupMode = 'SIN_AGRUPAR' | 'ULTIMA_TIPIFICACION' | 'ESTADO' | 'INGRESO';
+type GtrHistoricosGroupMode = 'SIN_AGRUPAR' | 'PRIMERA_TIPIFICACION' | 'MAYOR_TIPIFICACION' | 'ULTIMA_TIPIFICACION' | 'ESTADO' | 'INGRESO';
 type AdvisorEventGroupMode = 'SIN_AGRUPAR' | 'LEAD' | 'EVENTO' | 'DETALLE';
 type AdvisorEventSortField = 'createdAt' | 'accion' | 'lead' | 'detalle';
 type AdvisorEventSortDirection = 'asc' | 'desc' | null;
@@ -531,8 +532,7 @@ export class GtrWorkspaceFacade {
   });
 
   readonly masivoFiltersForm = this.fb.group({
-    idProveedor: [0],
-    etapa: [''],
+    campoTipificacion: ['ULTIMA' as CampoTipificacion],
     tipificaciones: [[] as string[]],
     subtipificaciones: [[] as string[]],
     fechaDesde: [''],
@@ -764,15 +764,9 @@ export class GtrWorkspaceFacade {
     return this.campanas().find((campana) => Number(campana.id) === selectedId)?.nombre ?? 'Campaña seleccionada';
   });
 
-  // Tabla plana ordenada por el criterio activo. El backend decide qué filas trae cada página;
-  // este orden client-side mantiene la página visualmente consistente (incl. inserts realtime).
-  readonly agendadosView = computed<VisualLeadAgendadoGtr[]>(() => {
-    const field = this.agendadosSortField();
-    const factor = this.agendadosSortDirection() === 'desc' ? -1 : 1;
-    return [...this.agendadosRows()].sort(
-      (left, right) => (this.agendadoSortValue(left, field) - this.agendadoSortValue(right, field)) * factor
-    );
-  });
+  // El backend es la única fuente del orden: ordena y pagina por el criterio activo (agendado o
+  // fecha-hora de la cita). No se reordena en cliente para no descuadrar la paginación entre páginas.
+  readonly agendadosView = computed<VisualLeadAgendadoGtr[]>(() => this.agendadosRows());
   readonly availableSubtipificaciones = computed(() => {
     const hasActiveFilter = this.subtipificacionFilter().trim().length > 0;
     if (hasActiveFilter) {
@@ -875,18 +869,23 @@ export class GtrWorkspaceFacade {
     this.platformSortField() === 'lastEntryAt' &&
     this.platformSortDirection() === 'desc'
   );
-  readonly historicosGroupingModeOptions: Array<{ label: string; value: GtrHistoricosGroupMode }> = [
+  readonly historicosGroupingModeOptions = computed<Array<{ label: string; value: GtrHistoricosGroupMode }>>(() => [
     { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
-    { label: 'Última tipificación', value: 'ULTIMA_TIPIFICACION' },
+    { label: this.historicosTipificacionColumnLabel(), value: this.historicosTipificacionGroupMode() },
     { label: 'Estado', value: 'ESTADO' },
     { label: 'Ingreso', value: 'INGRESO' }
+  ]);
+  readonly historicosCampoTipificacionOptions: SelectOption<CampoTipificacion>[] = [
+    { label: 'Última', value: 'ULTIMA' },
+    { label: 'Mayor', value: 'MAYOR' },
+    { label: 'Primera', value: 'PRIMERA' }
   ];
-  readonly historicosSortOptions: Array<{ label: string; value: GtrHistoricosSortField }> = [
+  readonly historicosSortOptions = computed<Array<{ label: string; value: GtrHistoricosSortField }>>(() => [
     { label: 'Ingreso', value: 'lastEntryAt' },
-    { label: 'Última tipificación', value: 'codigoTipificacion' },
+    { label: this.historicosTipificacionColumnLabel(), value: 'codigoTipificacion' },
     { label: 'Estado', value: 'estado' },
     { label: 'Asesor', value: 'nombreAsesorAsignado' }
-  ];
+  ]);
   readonly historicosSortDirectionOptions = computed<Array<{ label: string; value: GtrPlatformSortDirection }>>(() =>
     this.historicosSortField() === 'lastEntryAt'
       ? [
@@ -905,6 +904,10 @@ export class GtrWorkspaceFacade {
         return groups.estados;
       case 'INGRESO':
         return groups.ingresos ?? [];
+      case 'PRIMERA_TIPIFICACION':
+        return groups.primerasTipificaciones;
+      case 'MAYOR_TIPIFICACION':
+        return groups.mayoresTipificaciones;
       case 'ULTIMA_TIPIFICACION':
         return groups.ultimasTipificaciones;
       default:
@@ -2374,6 +2377,19 @@ export class GtrWorkspaceFacade {
     }
   }
 
+  syncHistoricosCampoTipificacion(): void {
+    const mode = this.historicosGroupingMode();
+    if (
+      mode !== 'PRIMERA_TIPIFICACION' &&
+      mode !== 'MAYOR_TIPIFICACION' &&
+      mode !== 'ULTIMA_TIPIFICACION'
+    ) {
+      return;
+    }
+    this.historicosGroupingMode.set(this.historicosTipificacionGroupMode());
+    this.historicosSelectedGroup.set(null);
+  }
+
   async selectHistoricosGroup(group: LeadGtrGroupItemResponse | null | undefined): Promise<void> {
     this.historicosSelectedGroup.set(group ?? null);
     this.masivoPageNumber.set(0);
@@ -2501,8 +2517,7 @@ export class GtrWorkspaceFacade {
       return;
     }
     this.masivoFiltersForm.reset({
-      idProveedor: 0,
-      etapa: '',
+      campoTipificacion: 'ULTIMA',
       tipificaciones: [],
       subtipificaciones: [],
       fechaDesde: '',
@@ -2860,6 +2875,39 @@ export class GtrWorkspaceFacade {
       return codigoDisplay;
     }
     return `${codigoDisplay} / ${subcodigoDisplay}`;
+  }
+
+  historicosTipificacionGroupMode(): Extract<GtrHistoricosGroupMode, 'PRIMERA_TIPIFICACION' | 'MAYOR_TIPIFICACION' | 'ULTIMA_TIPIFICACION'> {
+    switch (this.masivoFiltersForm.controls.campoTipificacion.value) {
+      case 'PRIMERA':
+        return 'PRIMERA_TIPIFICACION';
+      case 'MAYOR':
+        return 'MAYOR_TIPIFICACION';
+      default:
+        return 'ULTIMA_TIPIFICACION';
+    }
+  }
+
+  historicosTipificacionColumnLabel(): string {
+    switch (this.masivoFiltersForm.controls.campoTipificacion.value) {
+      case 'PRIMERA':
+        return 'Primera tipificación';
+      case 'MAYOR':
+        return 'Mayor tipificación';
+      default:
+        return 'Última tipificación';
+    }
+  }
+
+  historicosTipificacionParts(row: LeadGtrResponse): { tipificacion: string; subtipificacion: string } {
+    switch (this.masivoFiltersForm.controls.campoTipificacion.value) {
+      case 'PRIMERA':
+        return this.tipificacionParts(row.primeraCodigoTipificacion, row.primeraCodigoSubtipificacion);
+      case 'MAYOR':
+        return this.tipificacionParts(row.mayorRangoCodigoTipificacion, row.mayorRangoCodigoSubtipificacion);
+      default:
+        return this.tipificacionParts(row.codigoTipificacion, row.codigoSubtipificacion);
+    }
   }
 
   tipificacionParts(codigo?: string | null, subcodigo?: string | null): { tipificacion: string; subtipificacion: string } {
@@ -3335,8 +3383,8 @@ export class GtrWorkspaceFacade {
       asesores: [],
       campanas: [],
       estados: groups.estados ?? [],
-      primerasTipificaciones: [],
-      mayoresTipificaciones: [],
+      primerasTipificaciones: groups.primerasTipificaciones ?? [],
+      mayoresTipificaciones: groups.mayoresTipificaciones ?? [],
       ultimasTipificaciones: groups.ultimasTipificaciones ?? [],
       ingresos: groups.ingresos ?? []
     });
@@ -3858,10 +3906,9 @@ export class GtrWorkspaceFacade {
   private getMasivoBaseFilters(): MasivoLeadFilters {
     const raw = this.masivoFiltersForm.getRawValue();
     return {
-      idProveedor: raw.idProveedor || undefined,
-      etapa: raw.etapa || undefined,
       codigosTipificacion: raw.tipificaciones.length ? raw.tipificaciones : undefined,
       codigosSubtipificacion: raw.subtipificaciones.length ? raw.subtipificaciones : undefined,
+      campoTipificacion: raw.campoTipificacion,
       fechaDesde: raw.fechaDesde || undefined,
       fechaHasta: raw.fechaHasta || undefined
     };
@@ -3881,7 +3928,7 @@ export class GtrWorkspaceFacade {
     if (mode === 'ESTADO' && group.etiqueta && !group.sinValor) {
       filter.estado = group.etiqueta;
     }
-    if (mode === 'ULTIMA_TIPIFICACION') {
+    if (mode === this.historicosTipificacionGroupMode()) {
       if (group.codigoTipificacion) {
         filter.codigoTipificacion = group.codigoTipificacion;
       }
@@ -3898,8 +3945,7 @@ export class GtrWorkspaceFacade {
   private currentHistoricosFiltersFormValue(): GtrHistoricosFiltersFormValue {
     const raw = this.masivoFiltersForm.getRawValue();
     return {
-      idProveedor: raw.idProveedor,
-      etapa: raw.etapa,
+      campoTipificacion: raw.campoTipificacion,
       tipificaciones: [...raw.tipificaciones],
       subtipificaciones: [...raw.subtipificaciones],
       fechaDesde: raw.fechaDesde,
@@ -3913,7 +3959,13 @@ export class GtrWorkspaceFacade {
       return;
     }
 
-    this.masivoFiltersForm.reset(state.filters);
+    this.masivoFiltersForm.reset({
+      campoTipificacion: state.filters.campoTipificacion ?? 'ULTIMA',
+      tipificaciones: state.filters.tipificaciones,
+      subtipificaciones: state.filters.subtipificaciones,
+      fechaDesde: state.filters.fechaDesde,
+      fechaHasta: state.filters.fechaHasta
+    });
     this.selectedMasivoTipificacionCodes.set(new Set(state.filters.tipificaciones));
     this.subtipificacionFilter.set('');
     this.masivoRows.set(state.rows);
@@ -4012,14 +4064,6 @@ export class GtrWorkspaceFacade {
     };
   }
 
-  private agendadoSortValue(row: LeadAgendadoGtrResponse, field: AgendadosSortField): number {
-    if (field === 'agendado') {
-      const ts = row.fechaAgendamiento ? new Date(row.fechaAgendamiento).getTime() : NaN;
-      return isNaN(ts) ? Number.MAX_SAFE_INTEGER : ts;
-    }
-    return this.getScheduledDate(row)?.getTime() ?? Number.MAX_SAFE_INTEGER;
-  }
-
   /** Fecha y hora en que el asesor tipifico AGENDADO (Evento.createdAt), con año. */
   agendadoTipificadoLabel(row: LeadAgendadoGtrResponse): string {
     if (!row.fechaAgendamiento) {
@@ -4029,7 +4073,7 @@ export class GtrWorkspaceFacade {
     return isNaN(d.getTime()) ? '-' : this.formatDateTimeLabel(d);
   }
 
-  /** Fecha y hora de la cita: mismo día de la tipificación + la hora elegida, con año. */
+  /** Fecha y hora de la cita, con año. La fecha la resuelve el backend (fechaProgramacion). */
   agendadoProgramadoLabel(row: LeadAgendadoGtrResponse): string {
     const scheduled = this.getScheduledDate(row);
     return scheduled ? this.formatDateTimeLabel(scheduled) : 'Sin hora';
@@ -4048,14 +4092,17 @@ export class GtrWorkspaceFacade {
     if (!row.horaProgramada) {
       return null;
     }
-    // fechaAgendamiento es un Instant ISO (p.ej. "2026-05-29T18:02:38.782953Z"):
-    // extraer solo la parte de fecha local antes de combinar con horaProgramada.
-    let dateStr = this.today;
-    if (row.fechaAgendamiento) {
-      const d = new Date(row.fechaAgendamiento);
-      if (!isNaN(d.getTime())) {
-        dateStr = this.formatLocalDate(d);
+    // La fecha de la cita la persiste el backend en fechaProgramacion (YYYY-MM-DD) aplicando la regla
+    // hora-anterior => día siguiente. Fallback defensivo a la fecha del agendamiento si no viniera.
+    let dateStr = row.fechaProgramacion ?? null;
+    if (!dateStr) {
+      if (row.fechaAgendamiento) {
+        const d = new Date(row.fechaAgendamiento);
+        if (!isNaN(d.getTime())) {
+          dateStr = this.formatLocalDate(d);
+        }
       }
+      dateStr = dateStr ?? this.today;
     }
     // Normalizar hora a "HH:mm:ss" (recortar nanosegundos si los hubiera)
     const timeStr = String(row.horaProgramada).substring(0, 8);

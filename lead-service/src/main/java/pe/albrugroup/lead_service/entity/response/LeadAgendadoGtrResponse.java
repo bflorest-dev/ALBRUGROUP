@@ -9,6 +9,7 @@ import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Getter
@@ -36,4 +37,5 @@ public class LeadAgendadoGtrResponse {
     private Instant fechaAgendamiento;
     private String comentario;
     private LocalTime horaProgramada;
+    private LocalDate fechaProgramacion;
 }

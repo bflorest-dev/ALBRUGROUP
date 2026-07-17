@@ -9,33 +9,23 @@
 
   <form
     class="form-grid"
-    style="grid-template-columns: repeat(4, minmax(0, 1fr));"
     [formGroup]="facade.masivoFiltersForm"
     (ngSubmit)="facade.buscarMasivos()"
   >
-    <label>
-      <span>Proveedor</span>
-      <p-select
-        formControlName="idProveedor"
-        [options]="facade.providerOptions()"
-        optionLabel="label"
-        optionValue="value"
-        appendTo="body"
-      />
-    </label>
-    <label>
-      <span>Etapa</span>
-      <p-select
-        formControlName="etapa"
-        [options]="facade.etapaOptions"
-        optionLabel="label"
-        optionValue="value"
-        appendTo="body"
-      />
-    </label>
     <app-date-field label="Desde" formControlName="fechaDesde" />
     <app-date-field label="Hasta" formControlName="fechaHasta" />
-    <label style="grid-column: span 2;">
+    <label>
+      <span>Tipo de tipificación</span>
+      <p-select
+        formControlName="campoTipificacion"
+        [options]="facade.historicosCampoTipificacionOptions"
+        optionLabel="label"
+        optionValue="value"
+        appendTo="body"
+        (onChange)="onCampoTipificacionChange()"
+      />
+    </label>
+    <label class="historicos-filter-wide">
       <span>Tipificaciones</span>
       <p-multiselect
         formControlName="tipificaciones"
@@ -60,7 +50,7 @@
         </ng-template>
       </p-multiselect>
     </label>
-    <label style="grid-column: span 2;">
+    <label class="historicos-filter-wide">
       <span>Subtipificaciones</span>
       <p-multiselect
         formControlName="subtipificaciones"
@@ -138,7 +128,7 @@
           <label for="gtr-historicos-grouping">Agrupar por</label>
           <p-select
             inputId="gtr-historicos-grouping"
-            [options]="facade.historicosGroupingModeOptions"
+            [options]="facade.historicosGroupingModeOptions()"
             [ngModel]="facade.historicosGroupingMode()"
             optionLabel="label"
             optionValue="value"
@@ -174,7 +164,7 @@
           <label for="gtr-historicos-sort">Ordenar por</label>
           <p-select
             inputId="gtr-historicos-sort"
-            [options]="facade.historicosSortOptions"
+            [options]="facade.historicosSortOptions()"
             [ngModel]="facade.historicosSortField()"
             optionLabel="label"
             optionValue="value"
@@ -234,7 +224,7 @@
         <th>Proveedor</th>
         <th>Base</th>
         <th>Documento</th>
-        <th>Ultima tipificacion</th>
+        <th>{{ facade.historicosTipificacionColumnLabel() }}</th>
         <th>Estado</th>
         <th>Asesor</th>
         <th>Ingreso</th>
@@ -265,7 +255,7 @@
         <td>{{ facade.display(row.base) }}</td>
         <td>{{ facade.display(row.numeroDocumentoTitularServicio) }}</td>
         <td>
-          @if (facade.tipificacionParts(row.codigoTipificacion, row.codigoSubtipificacion); as tip) {
+          @if (facade.historicosTipificacionParts(row); as tip) {
             <div class="tip-stack">
               <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion)" />
               <span class="tip-stack__line"></span>

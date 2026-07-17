@@ -2,6 +2,7 @@ package pe.albrugroup.lead_service.configuration;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.YearMonth;
 import java.time.ZoneId;
 
@@ -61,6 +62,18 @@ public final class OperationalDateTime {
 
     public static LocalDate toOperationalDate(Instant instant) {
         return instant.atZone(ZONE).toLocalDate();
+    }
+
+    /**
+     * Fecha de la cita de un AGENDADO a partir de la hora elegida por el asesor, relativa al momento
+     * de la tipificacion (todo en America/Lima). Si la hora es anterior a la hora en que se tipifica,
+     * la cita es para el dia siguiente; si es igual o posterior, es para el mismo dia. La fecha queda
+     * congelada en ese instante: no depende de "ahora" al leerla despues.
+     */
+    public static LocalDate scheduledDateFromTime(Instant tipificadoEn, LocalTime horaProgramada) {
+        var momento = tipificadoEn.atZone(ZONE);
+        LocalDate dia = momento.toLocalDate();
+        return horaProgramada.isBefore(momento.toLocalTime()) ? dia.plusDays(1) : dia;
     }
 
     public record InstantRange(Instant inicio, Instant fin) {

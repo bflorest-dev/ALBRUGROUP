@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
+import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
@@ -61,6 +62,7 @@ public class MasivoService {
             Etapa etapa,
             List<String> codigosTipificacion,
             List<String> codigosSubtipificacion,
+            CampoTipificacion campoTipificacion,
             LocalDate fechaDesde,
             LocalDate fechaHasta,
             TipoGrupoGtr tipoGrupo,
@@ -71,9 +73,11 @@ public class MasivoService {
             boolean sinValor,
             PageRequest pageRequest
     ) {
+        CampoTipificacion campoResuelto = resolverCampoTipificacion(campoTipificacion);
+        TipoGrupoGtr tipoTipificacionGrupo = tipoGrupoTipificacion(campoResuelto);
         FiltrosMasivo filtros = prepararFiltros(
-                idProveedor, etapa, codigosTipificacion, codigosSubtipificacion, fechaDesde, fechaHasta);
-        validarFiltroAgrupacionMasivo(tipoGrupo, estadoGrupo, codigoTipificacion, fechaIngreso, sinValor);
+                null, Etapa.PREVENTA, codigosTipificacion, codigosSubtipificacion, fechaDesde, fechaHasta);
+        validarFiltroAgrupacionMasivo(tipoGrupo, estadoGrupo, codigoTipificacion, fechaIngreso, sinValor, tipoTipificacionGrupo);
         RangoFechas rangoIngreso = resolverRangoIngreso(fechaIngreso);
         EquipoScope equipos = resolverEquiposActuales();
 
@@ -93,8 +97,14 @@ public class MasivoService {
                 filtros.fechaDesdeParam(),
                 filtros.filtrarFechaHasta(),
                 filtros.fechaHastaParam(),
+                Etapa.PREVENTA,
+                campoResuelto == CampoTipificacion.PRIMERA,
+                campoResuelto == CampoTipificacion.MAYOR,
+                campoResuelto == CampoTipificacion.ULTIMA,
                 tipoGrupo == TipoGrupoGtr.ESTADO,
                 estadoGrupo,
+                tipoGrupo == TipoGrupoGtr.PRIMERA_TIPIFICACION,
+                tipoGrupo == TipoGrupoGtr.MAYOR_TIPIFICACION,
                 tipoGrupo == TipoGrupoGtr.ULTIMA_TIPIFICACION,
                 normalizarCodigoAgrupacion(codigoTipificacion),
                 normalizarCodigoAgrupacion(codigoSubtipificacion),
@@ -119,12 +129,17 @@ public class MasivoService {
             Etapa etapa,
             List<String> codigosTipificacion,
             List<String> codigosSubtipificacion,
+            CampoTipificacion campoTipificacion,
             LocalDate fechaDesde,
             LocalDate fechaHasta
     ) {
+        CampoTipificacion campoResuelto = resolverCampoTipificacion(campoTipificacion);
         FiltrosMasivo filtros = prepararFiltros(
-                idProveedor, etapa, codigosTipificacion, codigosSubtipificacion, fechaDesde, fechaHasta);
+                null, Etapa.PREVENTA, codigosTipificacion, codigosSubtipificacion, fechaDesde, fechaHasta);
         EquipoScope equipos = resolverEquiposActuales();
+        List<LeadGtrAgrupacionItemResponse> tipificaciones = mapearAgrupacionesTipificacion(
+                agruparPorCampoTipificacion(campoResuelto, filtros, equipos)
+        );
         return new LeadGtrAgrupacionesResponse(
                 List.of(),
                 List.of(),
@@ -145,31 +160,17 @@ public class MasivoService {
                                 filtros.filtrarFechaDesde(),
                                 filtros.fechaDesdeParam(),
                                 filtros.filtrarFechaHasta(),
-                                filtros.fechaHastaParam()
+                                filtros.fechaHastaParam(),
+                                Etapa.PREVENTA,
+                                campoResuelto == CampoTipificacion.PRIMERA,
+                                campoResuelto == CampoTipificacion.MAYOR,
+                                campoResuelto == CampoTipificacion.ULTIMA
                         ),
                         "Sin estado"
                 ),
-                List.of(),
-                List.of(),
-                mapearAgrupacionesTipificacion(
-                        leadRepository.agruparLeadsMasivoPorUltimaTipificacion(
-                                filtros.filtrarProveedor(),
-                                filtros.idProveedorParam(),
-                                filtros.filtrarEtapa(),
-                                filtros.etapaParam(),
-                                filtros.filtrarTipificaciones(),
-                                filtros.codigosTipificacionParam(),
-                                filtros.filtrarSubtipificaciones(),
-                                filtros.codigosSubtipificacionParam(),
-                                TIPIFICACIONES_EXCLUIDAS_MASIVO,
-                                equipos.filtrar(),
-                                equipos.ids(),
-                                filtros.filtrarFechaDesde(),
-                                filtros.fechaDesdeParam(),
-                                filtros.filtrarFechaHasta(),
-                                filtros.fechaHastaParam()
-                        )
-                ),
+                campoResuelto == CampoTipificacion.PRIMERA ? tipificaciones : List.of(),
+                campoResuelto == CampoTipificacion.MAYOR ? tipificaciones : List.of(),
+                campoResuelto == CampoTipificacion.ULTIMA ? tipificaciones : List.of(),
                 mapearAgrupacionesIngreso(
                         leadRepository.agruparLeadsMasivoPorIngreso(
                                 filtros.filtrarProveedor(),
@@ -186,12 +187,91 @@ public class MasivoService {
                                 filtros.filtrarFechaDesde(),
                                 filtros.fechaDesdeParam(),
                                 filtros.filtrarFechaHasta(),
-                                filtros.fechaHastaParam()
+                                filtros.fechaHastaParam(),
+                                Etapa.PREVENTA.name(),
+                                campoResuelto == CampoTipificacion.PRIMERA,
+                                campoResuelto == CampoTipificacion.MAYOR,
+                                campoResuelto == CampoTipificacion.ULTIMA
                         )
                 ),
                 // La vista masiva no usa el total de registros del día (es exclusivo de "Leads del día").
                 null
         );
+    }
+
+    private CampoTipificacion resolverCampoTipificacion(CampoTipificacion campoTipificacion) {
+        return campoTipificacion == null ? CampoTipificacion.ULTIMA : campoTipificacion;
+    }
+
+    private TipoGrupoGtr tipoGrupoTipificacion(CampoTipificacion campoTipificacion) {
+        return switch (campoTipificacion) {
+            case PRIMERA -> TipoGrupoGtr.PRIMERA_TIPIFICACION;
+            case MAYOR -> TipoGrupoGtr.MAYOR_TIPIFICACION;
+            case ULTIMA -> TipoGrupoGtr.ULTIMA_TIPIFICACION;
+        };
+    }
+
+    private List<LeadGtrAgrupacionProjection> agruparPorCampoTipificacion(
+            CampoTipificacion campoTipificacion,
+            FiltrosMasivo filtros,
+            EquipoScope equipos
+    ) {
+        return switch (campoTipificacion) {
+            case PRIMERA -> leadRepository.agruparLeadsMasivoPorPrimeraTipificacion(
+                    filtros.filtrarProveedor(),
+                    filtros.idProveedorParam(),
+                    filtros.filtrarEtapa(),
+                    filtros.etapaParam(),
+                    filtros.filtrarTipificaciones(),
+                    filtros.codigosTipificacionParam(),
+                    filtros.filtrarSubtipificaciones(),
+                    filtros.codigosSubtipificacionParam(),
+                    TIPIFICACIONES_EXCLUIDAS_MASIVO,
+                    equipos.filtrar(),
+                    equipos.ids(),
+                    filtros.filtrarFechaDesde(),
+                    filtros.fechaDesdeParam(),
+                    filtros.filtrarFechaHasta(),
+                    filtros.fechaHastaParam(),
+                    Etapa.PREVENTA
+            );
+            case MAYOR -> leadRepository.agruparLeadsMasivoPorMayorTipificacion(
+                    filtros.filtrarProveedor(),
+                    filtros.idProveedorParam(),
+                    filtros.filtrarEtapa(),
+                    filtros.etapaParam(),
+                    filtros.filtrarTipificaciones(),
+                    filtros.codigosTipificacionParam(),
+                    filtros.filtrarSubtipificaciones(),
+                    filtros.codigosSubtipificacionParam(),
+                    TIPIFICACIONES_EXCLUIDAS_MASIVO,
+                    equipos.filtrar(),
+                    equipos.ids(),
+                    filtros.filtrarFechaDesde(),
+                    filtros.fechaDesdeParam(),
+                    filtros.filtrarFechaHasta(),
+                    filtros.fechaHastaParam(),
+                    Etapa.PREVENTA
+            );
+            case ULTIMA -> leadRepository.agruparLeadsMasivoPorUltimaTipificacion(
+                    filtros.filtrarProveedor(),
+                    filtros.idProveedorParam(),
+                    filtros.filtrarEtapa(),
+                    filtros.etapaParam(),
+                    filtros.filtrarTipificaciones(),
+                    filtros.codigosTipificacionParam(),
+                    filtros.filtrarSubtipificaciones(),
+                    filtros.codigosSubtipificacionParam(),
+                    TIPIFICACIONES_EXCLUIDAS_MASIVO,
+                    equipos.filtrar(),
+                    equipos.ids(),
+                    filtros.filtrarFechaDesde(),
+                    filtros.fechaDesdeParam(),
+                    filtros.filtrarFechaHasta(),
+                    filtros.fechaHastaParam(),
+                    Etapa.PREVENTA
+            );
+        };
     }
 
     private FiltrosMasivo prepararFiltros(
@@ -279,7 +359,8 @@ public class MasivoService {
             EstadoSeguimiento estadoGrupo,
             String codigoTipificacion,
             LocalDate fechaIngreso,
-            boolean sinValor
+            boolean sinValor,
+            TipoGrupoGtr tipoTipificacionGrupo
     ) {
         if (tipoGrupo == null) {
             if (estadoGrupo != null || codigoTipificacion != null || fechaIngreso != null || sinValor) {
@@ -296,7 +377,7 @@ public class MasivoService {
             throw new BadRequestException("Debes indicar el estado seleccionado");
         }
 
-        if (tipoGrupo == TipoGrupoGtr.ULTIMA_TIPIFICACION && normalizarCodigoAgrupacion(codigoTipificacion) == null) {
+        if (tipoGrupo == tipoTipificacionGrupo && normalizarCodigoAgrupacion(codigoTipificacion) == null) {
             throw new BadRequestException("Debes indicar la tipificacion seleccionada");
         }
 
@@ -305,7 +386,7 @@ public class MasivoService {
         }
 
         if (tipoGrupo != TipoGrupoGtr.ESTADO
-                && tipoGrupo != TipoGrupoGtr.ULTIMA_TIPIFICACION
+                && tipoGrupo != tipoTipificacionGrupo
                 && tipoGrupo != TipoGrupoGtr.INGRESO) {
             throw new BadRequestException("Agrupacion no disponible para historicos");
         }

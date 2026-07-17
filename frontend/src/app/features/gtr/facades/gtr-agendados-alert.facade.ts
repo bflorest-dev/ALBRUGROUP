@@ -16,14 +16,21 @@ export class GtrAgendadosAlertFacade {
   readonly totalActivos = signal(0);
   readonly programadosHoyPorHora = signal<Record<string, number>>({});
   readonly currentHour = computed(() => this.getLimaHour(this.currentClock()));
+  // Programados para hoy = citas cuya fecha cae hoy (el backend ya aplica la regla de fecha).
+  readonly totalProgramadosHoy = computed(() =>
+    Object.values(this.programadosHoyPorHora()).reduce((sum, value) => sum + value, 0)
+  );
   readonly programadosHoraActual = computed(() => this.programadosHoyPorHora()[this.currentHour()] ?? 0);
   readonly hasCurrentHourWarning = computed(() => this.programadosHoraActual() > 0);
   readonly accessibleLabel = computed(() => {
-    const total = this.totalActivos();
+    const total = this.totalProgramadosHoy();
     const currentHourCount = this.programadosHoraActual();
+    if (total === 0) {
+      return 'Sin citas programadas para hoy.';
+    }
     return currentHourCount > 0
-      ? `${total} agendados; ${currentHourCount} programados durante esta hora.`
-      : `${total} agendados.`;
+      ? `${total} programados para hoy; ${currentHourCount} en esta hora.`
+      : `${total} programados para hoy.`;
   });
 
   start(): void {

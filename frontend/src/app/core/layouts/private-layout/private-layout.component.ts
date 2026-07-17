@@ -212,7 +212,7 @@ export class PrivateLayoutComponent {
           label: 'Agendados',
           route: '/app/gtr/agendados',
           icon: 'pi pi-calendar',
-          badge: this.gtrAgendadosAlertFacade.totalActivos(),
+          badge: this.gtrAgendadosAlertFacade.totalProgramadosHoy(),
           alertActive: this.gtrAgendadosAlertFacade.hasCurrentHourWarning(),
           alertLabel: this.gtrAgendadosAlertFacade.accessibleLabel(),
           exact: true

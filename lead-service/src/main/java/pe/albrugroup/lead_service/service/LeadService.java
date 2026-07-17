@@ -474,19 +474,21 @@ public class LeadService {
     }
 
     public AgendadosGtrResumenResponse obtenerResumenAgendadosGtr() {
-        OperationalDateTime.InstantRange hoy = OperationalDateTime.dayRange(null);
+        java.time.LocalDate hoy = OperationalDateTime.today();
         RankingEquipoScope equipos = resolverEquiposActuales();
         Map<String, Long> programadosHoyPorHora = new LinkedHashMap<>();
         for (int hora = 0; hora < 24; hora++) {
             programadosHoyPorHora.put(String.format("%02d", hora), 0L);
         }
 
+        // Programados para HOY = citas cuya fecha_programacion cae hoy, sin importar cuando se
+        // tipificaron (un agendado de ayer con hora ya pasada quedo programado para hoy). Se agrupa
+        // por la hora de la cita para poder avisar cuando hay citas en la hora en curso.
         leadRepository.contarAgendadosGtrHoyPorHora(
                         Etapa.PREVENTA,
                         COMPORTAMIENTO_AGENDADO,
                         Accion.TIPIFICACION,
-                        hoy.inicio(),
-                        hoy.fin(),
+                        hoy,
                         equipos.filtrar(),
                         equipos.ids())
                 .forEach(item -> programadosHoyPorHora.merge(
@@ -2305,6 +2307,12 @@ public class LeadService {
             String comentario,
             java.time.LocalTime horaProgramada
     ) {
+        // AGENDADO de preventa: el asesor solo elige la hora de la cita. La fecha se deriva y se
+        // guarda aqui con la regla de negocio (hora anterior a la hora actual => manana; igual o
+        // posterior => hoy), para que la cita quede con fecha-hora completa y ordenable.
+        java.time.LocalDate fechaProgramacion = horaProgramada == null
+                ? null
+                : OperationalDateTime.scheduledDateFromTime(OperationalDateTime.now(), horaProgramada);
         eventoService.registrarEvento(
                 RegistrarEventoRequest.builder()
                         .idLead(idLead)
@@ -2315,6 +2323,7 @@ public class LeadService {
                         .tipificacion(tipificacion)
                         .subtipificacion(subtipificacion)
                         .comentario(comentario)
+                        .fechaProgramacion(fechaProgramacion)
                         .horaProgramada(horaProgramada)
                         .build()
         );

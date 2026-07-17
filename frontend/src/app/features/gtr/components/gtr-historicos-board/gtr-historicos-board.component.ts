@@ -60,6 +60,10 @@ export class GtrHistoricosBoardComponent {
     void this.facade.setHistoricosGroupingMode(value);
   }
 
+  protected onCampoTipificacionChange(): void {
+    this.facade.syncHistoricosCampoTipificacion();
+  }
+
   protected onGroupChange(value: unknown): void {
     void this.facade.selectHistoricosGroup(value as Parameters<GtrWorkspaceFacade['selectHistoricosGroup']>[0]);
   }

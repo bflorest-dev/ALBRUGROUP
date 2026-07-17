@@ -468,6 +468,9 @@ export class PreventaLeadService {
     for (const codigo of filters.codigosSubtipificacion ?? []) {
       params = params.append('codigosSubtipificacion', codigo);
     }
+    if (filters.campoTipificacion) {
+      params = params.set('campoTipificacion', filters.campoTipificacion);
+    }
     if (filters.fechaDesde) {
       params = params.set('fechaDesde', filters.fechaDesde);
     }

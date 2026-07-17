@@ -26,6 +26,7 @@ import pe.albrugroup.lead_service.repository.projection.TipificacionCantidadProj
 import pe.albrugroup.lead_service.repository.projection.SubtipificacionCantidadProjection;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -370,6 +371,84 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     @Query("""
             SELECT NULL AS idGrupo,
                    NULL AS etiqueta,
+                   r.primeraCodigoTipificacion AS codigoTipificacion,
+                   r.primeraCodigoSubtipificacion AS codigoSubtipificacion,
+                   COUNT(l.id) AS cantidad
+            FROM Lead l
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor p
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapaResumen
+            WHERE (:filtrarProveedor = false OR p.id = :idProveedor)
+              AND (:filtrarEtapa = false OR l.etapa = :etapa)
+              AND (r.ultimaCodigoTipificacion IS NULL OR r.ultimaCodigoTipificacion NOT IN :codigosTipificacionExcluidos)
+              AND (:filtrarTipificaciones = false OR r.primeraCodigoTipificacion IN :codigosTipificacion)
+              AND (:filtrarSubtipificaciones = false OR r.primeraCodigoSubtipificacion IN :codigosSubtipificacion)
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+              AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
+              AND (:filtrarFechaHasta = false OR l.lastEntryAt < :fechaHasta)
+            GROUP BY r.primeraCodigoTipificacion, r.primeraCodigoSubtipificacion
+            """)
+    List<LeadGtrAgrupacionProjection> agruparLeadsMasivoPorPrimeraTipificacion(
+            @Param("filtrarProveedor") boolean filtrarProveedor,
+            @Param("idProveedor") Long idProveedor,
+            @Param("filtrarEtapa") boolean filtrarEtapa,
+            @Param("etapa") Etapa etapa,
+            @Param("filtrarTipificaciones") boolean filtrarTipificaciones,
+            @Param("codigosTipificacion") Collection<String> codigosTipificacion,
+            @Param("filtrarSubtipificaciones") boolean filtrarSubtipificaciones,
+            @Param("codigosSubtipificacion") Collection<String> codigosSubtipificacion,
+            @Param("codigosTipificacionExcluidos") Collection<String> codigosTipificacionExcluidos,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds,
+            @Param("filtrarFechaDesde") boolean filtrarFechaDesde,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("filtrarFechaHasta") boolean filtrarFechaHasta,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("etapaResumen") Etapa etapaResumen
+    );
+
+    @Query("""
+            SELECT NULL AS idGrupo,
+                   NULL AS etiqueta,
+                   r.mayorRangoCodigoTipificacion AS codigoTipificacion,
+                   r.mayorRangoCodigoSubtipificacion AS codigoSubtipificacion,
+                   COUNT(l.id) AS cantidad
+            FROM Lead l
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor p
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapaResumen
+            WHERE (:filtrarProveedor = false OR p.id = :idProveedor)
+              AND (:filtrarEtapa = false OR l.etapa = :etapa)
+              AND (r.ultimaCodigoTipificacion IS NULL OR r.ultimaCodigoTipificacion NOT IN :codigosTipificacionExcluidos)
+              AND (:filtrarTipificaciones = false OR r.mayorRangoCodigoTipificacion IN :codigosTipificacion)
+              AND (:filtrarSubtipificaciones = false OR r.mayorRangoCodigoSubtipificacion IN :codigosSubtipificacion)
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+              AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
+              AND (:filtrarFechaHasta = false OR l.lastEntryAt < :fechaHasta)
+            GROUP BY r.mayorRangoCodigoTipificacion, r.mayorRangoCodigoSubtipificacion
+            """)
+    List<LeadGtrAgrupacionProjection> agruparLeadsMasivoPorMayorTipificacion(
+            @Param("filtrarProveedor") boolean filtrarProveedor,
+            @Param("idProveedor") Long idProveedor,
+            @Param("filtrarEtapa") boolean filtrarEtapa,
+            @Param("etapa") Etapa etapa,
+            @Param("filtrarTipificaciones") boolean filtrarTipificaciones,
+            @Param("codigosTipificacion") Collection<String> codigosTipificacion,
+            @Param("filtrarSubtipificaciones") boolean filtrarSubtipificaciones,
+            @Param("codigosSubtipificacion") Collection<String> codigosSubtipificacion,
+            @Param("codigosTipificacionExcluidos") Collection<String> codigosTipificacionExcluidos,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds,
+            @Param("filtrarFechaDesde") boolean filtrarFechaDesde,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("filtrarFechaHasta") boolean filtrarFechaHasta,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("etapaResumen") Etapa etapaResumen
+    );
+
+    @Query("""
+            SELECT NULL AS idGrupo,
+                   NULL AS etiqueta,
                    r.ultimaCodigoTipificacion AS codigoTipificacion,
                    r.ultimaCodigoSubtipificacion AS codigoSubtipificacion,
                    COUNT(l.id) AS cantidad
@@ -521,7 +600,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 0L,
                 e.createdAt,
                 e.comentario,
-                e.horaProgramada
+                e.horaProgramada,
+                e.fechaProgramacion
             )
             FROM Lead l
             JOIN Evento e ON e.idLead = l.id
@@ -554,7 +634,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     AND es.subtipificacion = r.mayorRangoCodigoSubtipificacion
                     AND es.horaProgramada IS NOT NULL
               )
-            ORDER BY e.horaProgramada ASC, e.createdAt ASC
+            ORDER BY e.fechaProgramacion ASC, e.horaProgramada ASC, e.createdAt ASC
             """)
     Page<LeadAgendadoGtrResponse> listarLeadsAgendadosGtrPorHoraAsc(
             @Param("etapa") Etapa etapa,
@@ -588,7 +668,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 0L,
                 e.createdAt,
                 e.comentario,
-                e.horaProgramada
+                e.horaProgramada,
+                e.fechaProgramacion
             )
             FROM Lead l
             JOIN Evento e ON e.idLead = l.id
@@ -621,7 +702,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     AND es.subtipificacion = r.mayorRangoCodigoSubtipificacion
                     AND es.horaProgramada IS NOT NULL
               )
-            ORDER BY e.horaProgramada DESC, e.createdAt DESC
+            ORDER BY e.fechaProgramacion DESC, e.horaProgramada DESC, e.createdAt DESC
             """)
     Page<LeadAgendadoGtrResponse> listarLeadsAgendadosGtrPorHoraDesc(
             @Param("etapa") Etapa etapa,
@@ -655,7 +736,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 0L,
                 e.createdAt,
                 e.comentario,
-                e.horaProgramada
+                e.horaProgramada,
+                e.fechaProgramacion
             )
             FROM Lead l
             JOIN Evento e ON e.idLead = l.id
@@ -722,7 +804,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 0L,
                 e.createdAt,
                 e.comentario,
-                e.horaProgramada
+                e.horaProgramada,
+                e.fechaProgramacion
             )
             FROM Lead l
             JOIN Evento e ON e.idLead = l.id
@@ -821,8 +904,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND e.tipificacion = r.mayorRangoCodigoTipificacion
               AND e.subtipificacion = r.mayorRangoCodigoSubtipificacion
               AND e.horaProgramada IS NOT NULL
-              AND e.createdAt >= :inicioDia
-              AND e.createdAt < :finDia
               AND e.createdAt = (
                   SELECT MAX(es.createdAt)
                   FROM Evento es
@@ -832,14 +913,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     AND es.subtipificacion = r.mayorRangoCodigoSubtipificacion
                     AND es.horaProgramada IS NOT NULL
               )
+              AND e.fechaProgramacion = :hoy
             GROUP BY e.horaProgramada
             """)
     List<HoraProgramadaCantidadProjection> contarAgendadosGtrHoyPorHora(
             @Param("etapa") Etapa etapa,
             @Param("comportamiento") ComportamientoTipificacion comportamiento,
             @Param("accionTipificacion") Accion accionTipificacion,
-            @Param("inicioDia") Instant inicioDia,
-            @Param("finDia") Instant finDia,
+            @Param("hoy") LocalDate hoy,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds
     );
@@ -1243,12 +1324,22 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             FROM Lead l
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
-            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapaResumen
             WHERE (:filtrarProveedor = false OR p.id = :idProveedor)
               AND (:filtrarEtapa = false OR l.etapa = :etapa)
               AND (r.ultimaCodigoTipificacion IS NULL OR r.ultimaCodigoTipificacion NOT IN :codigosTipificacionExcluidos)
-              AND (:filtrarTipificaciones = false OR l.codigoTipificacion IN :codigosTipificacion)
-              AND (:filtrarSubtipificaciones = false OR l.codigoSubtipificacion IN :codigosSubtipificacion)
+              AND (
+                    :filtrarTipificaciones = false
+                    OR (:usarPrimeraTipificacion = true AND r.primeraCodigoTipificacion IN :codigosTipificacion)
+                    OR (:usarMayorTipificacion = true AND r.mayorRangoCodigoTipificacion IN :codigosTipificacion)
+                    OR (:usarUltimaTipificacion = true AND r.ultimaCodigoTipificacion IN :codigosTipificacion)
+              )
+              AND (
+                    :filtrarSubtipificaciones = false
+                    OR (:usarPrimeraTipificacion = true AND r.primeraCodigoSubtipificacion IN :codigosSubtipificacion)
+                    OR (:usarMayorTipificacion = true AND r.mayorRangoCodigoSubtipificacion IN :codigosSubtipificacion)
+                    OR (:usarUltimaTipificacion = true AND r.ultimaCodigoSubtipificacion IN :codigosSubtipificacion)
+              )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
               AND (:filtrarFechaHasta = false OR l.lastEntryAt < :fechaHasta)
@@ -1256,6 +1347,30 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     :filtrarEstadoGrupo = false
                     OR (:sinValorGrupo = true AND l.estado IS NULL)
                     OR (:sinValorGrupo = false AND l.estado = :estadoGrupo)
+              )
+              AND (
+                    :filtrarPrimeraTipificacionGrupo = false
+                    OR (:sinValorGrupo = true AND r.primeraCodigoTipificacion IS NULL)
+                    OR (
+                        :sinValorGrupo = false
+                        AND r.primeraCodigoTipificacion = :codigoTipificacionGrupo
+                        AND (
+                            (:codigoSubtipificacionGrupo IS NULL AND r.primeraCodigoSubtipificacion IS NULL)
+                            OR r.primeraCodigoSubtipificacion = :codigoSubtipificacionGrupo
+                        )
+                    )
+              )
+              AND (
+                    :filtrarMayorTipificacionGrupo = false
+                    OR (:sinValorGrupo = true AND r.mayorRangoCodigoTipificacion IS NULL)
+                    OR (
+                        :sinValorGrupo = false
+                        AND r.mayorRangoCodigoTipificacion = :codigoTipificacionGrupo
+                        AND (
+                            (:codigoSubtipificacionGrupo IS NULL AND r.mayorRangoCodigoSubtipificacion IS NULL)
+                            OR r.mayorRangoCodigoSubtipificacion = :codigoSubtipificacionGrupo
+                        )
+                    )
               )
               AND (
                     :filtrarUltimaTipificacionGrupo = false
@@ -1292,8 +1407,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("fechaDesde") Instant fechaDesde,
             @Param("filtrarFechaHasta") boolean filtrarFechaHasta,
             @Param("fechaHasta") Instant fechaHasta,
+            @Param("etapaResumen") Etapa etapaResumen,
+            @Param("usarPrimeraTipificacion") boolean usarPrimeraTipificacion,
+            @Param("usarMayorTipificacion") boolean usarMayorTipificacion,
+            @Param("usarUltimaTipificacion") boolean usarUltimaTipificacion,
             @Param("filtrarEstadoGrupo") boolean filtrarEstadoGrupo,
             @Param("estadoGrupo") EstadoSeguimiento estadoGrupo,
+            @Param("filtrarPrimeraTipificacionGrupo") boolean filtrarPrimeraTipificacionGrupo,
+            @Param("filtrarMayorTipificacionGrupo") boolean filtrarMayorTipificacionGrupo,
             @Param("filtrarUltimaTipificacionGrupo") boolean filtrarUltimaTipificacionGrupo,
             @Param("codigoTipificacionGrupo") String codigoTipificacionGrupo,
             @Param("codigoSubtipificacionGrupo") String codigoSubtipificacionGrupo,
@@ -1313,12 +1434,22 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             FROM Lead l
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
-            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapaResumen
             WHERE (:filtrarProveedor = false OR p.id = :idProveedor)
               AND (:filtrarEtapa = false OR l.etapa = :etapa)
               AND (r.ultimaCodigoTipificacion IS NULL OR r.ultimaCodigoTipificacion NOT IN :codigosTipificacionExcluidos)
-              AND (:filtrarTipificaciones = false OR l.codigoTipificacion IN :codigosTipificacion)
-              AND (:filtrarSubtipificaciones = false OR l.codigoSubtipificacion IN :codigosSubtipificacion)
+              AND (
+                    :filtrarTipificaciones = false
+                    OR (:usarPrimeraTipificacion = true AND r.primeraCodigoTipificacion IN :codigosTipificacion)
+                    OR (:usarMayorTipificacion = true AND r.mayorRangoCodigoTipificacion IN :codigosTipificacion)
+                    OR (:usarUltimaTipificacion = true AND r.ultimaCodigoTipificacion IN :codigosTipificacion)
+              )
+              AND (
+                    :filtrarSubtipificaciones = false
+                    OR (:usarPrimeraTipificacion = true AND r.primeraCodigoSubtipificacion IN :codigosSubtipificacion)
+                    OR (:usarMayorTipificacion = true AND r.mayorRangoCodigoSubtipificacion IN :codigosSubtipificacion)
+                    OR (:usarUltimaTipificacion = true AND r.ultimaCodigoSubtipificacion IN :codigosSubtipificacion)
+              )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
               AND (:filtrarFechaHasta = false OR l.lastEntryAt < :fechaHasta)
@@ -1339,7 +1470,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("filtrarFechaDesde") boolean filtrarFechaDesde,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("filtrarFechaHasta") boolean filtrarFechaHasta,
-            @Param("fechaHasta") Instant fechaHasta
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("etapaResumen") Etapa etapaResumen,
+            @Param("usarPrimeraTipificacion") boolean usarPrimeraTipificacion,
+            @Param("usarMayorTipificacion") boolean usarMayorTipificacion,
+            @Param("usarUltimaTipificacion") boolean usarUltimaTipificacion
     );
 
     @Query("""
@@ -1351,12 +1486,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             FROM Lead l
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
-            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapaResumen
             WHERE (:filtrarProveedor = false OR p.id = :idProveedor)
               AND (:filtrarEtapa = false OR l.etapa = :etapa)
               AND (r.ultimaCodigoTipificacion IS NULL OR r.ultimaCodigoTipificacion NOT IN :codigosTipificacionExcluidos)
-              AND (:filtrarTipificaciones = false OR l.codigoTipificacion IN :codigosTipificacion)
-              AND (:filtrarSubtipificaciones = false OR l.codigoSubtipificacion IN :codigosSubtipificacion)
+              AND (:filtrarTipificaciones = false OR r.ultimaCodigoTipificacion IN :codigosTipificacion)
+              AND (:filtrarSubtipificaciones = false OR r.ultimaCodigoSubtipificacion IN :codigosSubtipificacion)
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (:filtrarFechaDesde = false OR l.lastEntryAt >= :fechaDesde)
               AND (:filtrarFechaHasta = false OR l.lastEntryAt < :fechaHasta)
@@ -1377,7 +1512,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("filtrarFechaDesde") boolean filtrarFechaDesde,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("filtrarFechaHasta") boolean filtrarFechaHasta,
-            @Param("fechaHasta") Instant fechaHasta
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("etapaResumen") Etapa etapaResumen
     );
 
     @Query(value = """
@@ -1389,12 +1525,22 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             FROM lead l
             LEFT JOIN campana c ON c.id = l.id_campana
             LEFT JOIN proveedor p ON p.id = c.id_proveedor
-            LEFT JOIN lead_etapa_resumen r ON r.id_lead = l.id AND r.etapa = l.etapa
+            LEFT JOIN lead_etapa_resumen r ON r.id_lead = l.id AND r.etapa = CAST(:etapaResumen AS text)
             WHERE (:filtrarProveedor = false OR p.id = :idProveedor)
               AND (:filtrarEtapa = false OR l.etapa = CAST(:etapa AS text))
               AND (r.ultima_codigo_tipificacion IS NULL OR r.ultima_codigo_tipificacion NOT IN (:codigosTipificacionExcluidos))
-              AND (:filtrarTipificaciones = false OR l.codigo_tipificacion IN (:codigosTipificacion))
-              AND (:filtrarSubtipificaciones = false OR l.codigo_subtipificacion IN (:codigosSubtipificacion))
+              AND (
+                    :filtrarTipificaciones = false
+                    OR (:usarPrimeraTipificacion = true AND r.primera_codigo_tipificacion IN (:codigosTipificacion))
+                    OR (:usarMayorTipificacion = true AND r.mayor_rango_codigo_tipificacion IN (:codigosTipificacion))
+                    OR (:usarUltimaTipificacion = true AND r.ultima_codigo_tipificacion IN (:codigosTipificacion))
+              )
+              AND (
+                    :filtrarSubtipificaciones = false
+                    OR (:usarPrimeraTipificacion = true AND r.primera_codigo_subtipificacion IN (:codigosSubtipificacion))
+                    OR (:usarMayorTipificacion = true AND r.mayor_rango_codigo_subtipificacion IN (:codigosSubtipificacion))
+                    OR (:usarUltimaTipificacion = true AND r.ultima_codigo_subtipificacion IN (:codigosSubtipificacion))
+              )
               AND (:filtrarEquipos = false OR l.id_equipo IN (:equipoIds))
               AND (:filtrarFechaDesde = false OR l.last_entry_at >= :fechaDesde)
               AND (:filtrarFechaHasta = false OR l.last_entry_at < :fechaHasta)
@@ -1415,7 +1561,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("filtrarFechaDesde") boolean filtrarFechaDesde,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("filtrarFechaHasta") boolean filtrarFechaHasta,
-            @Param("fechaHasta") Instant fechaHasta
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("etapaResumen") String etapaResumen,
+            @Param("usarPrimeraTipificacion") boolean usarPrimeraTipificacion,
+            @Param("usarMayorTipificacion") boolean usarMayorTipificacion,
+            @Param("usarUltimaTipificacion") boolean usarUltimaTipificacion
     );
 
     // ── Ranking GTR: preventas concretadas leidas del resumen por etapa (LeadEtapaResumen) ──
