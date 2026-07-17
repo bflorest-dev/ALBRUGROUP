@@ -23,7 +23,7 @@
         <div class="gauge-block">
           <app-semicircle-gauge [value]="c.pctGestion" label="Gesti&oacute;n" [from]="c.from" [to]="c.to" />
           <p class="gauge-line">{{ c.tipificados }} de {{ c.leadsUnicos }} gestionados</p>
-          <p class="gauge-sub">{{ c.bloque1 }} / {{ c.bloque2 }} / {{ c.bloque3 }} en rangos clave</p>
+          <p class="gauge-sub"></p>
         </div>
 
         <div class="gauge-block">
@@ -37,13 +37,7 @@
               {{ c.ventaCerrada }} preventas de {{ c.leadsUnicos }} &uacute;nicos
             }
           </p>
-          <p class="gauge-sub">
-            @if (c.ventaCerrada > 0) {
-              Venta lograda
-            } @else {
-              Sin ventas a&uacute;n
-            }
-          </p>
+          <p class="gauge-sub">Preventas Cerradas</p>
         </div>
       </div>
     </article>

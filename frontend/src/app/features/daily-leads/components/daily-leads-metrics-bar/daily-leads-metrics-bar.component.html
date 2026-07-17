@@ -20,9 +20,7 @@
   <article class="daily-gauge">
     <app-semicircle-gauge [value]="pctGestion()" label="Gesti&oacute;n" [from]="gaugeFrom" [to]="gaugeTo" />
     <p class="daily-gauge__line">{{ metrics().leadsTipificados }} de {{ metrics().leadsUnicos }} gestionados</p>
-    <p class="daily-gauge__sub">
-      {{ metrics().bloque1 }} / {{ metrics().bloque2 }} / {{ metrics().bloque3 }} en rangos clave
-    </p>
+    <p class="daily-gauge__sub"></p>
   </article>
 
   <article class="daily-gauge">
@@ -37,12 +35,6 @@
         {{ metrics().ventaCerrada }} preventas de {{ metrics().leadsUnicos }} &uacute;nicos
       }
     </p>
-    <p class="daily-gauge__sub">
-      @if (metrics().ventaCerrada > 0) {
-        Venta lograda
-      } @else {
-        Sin ventas a&uacute;n
-      }
-    </p>
+    <p class="daily-gauge__sub">Preventas Cerradas</p>
   </article>
 </div>
