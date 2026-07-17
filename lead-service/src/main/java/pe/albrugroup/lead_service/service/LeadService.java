@@ -1678,6 +1678,7 @@ public class LeadService {
                 savedLead.getIdAsesorAsignado(),
                 savedLead.getNombreAsesorAsignado()
         );
+        leadEtapaResumenService.registrarAsignacion(savedLead.getId(), savedLead.getEtapa(), OperationalDateTime.now());
         notificarCambioLead("ASIGNACION", savedLead, null, idAsesorAnterior);
     }
 
@@ -3149,6 +3150,7 @@ public class LeadService {
                 currentUser.empleadoID(),
                 currentUser.nombreCompleto().trim()
         );
+        leadEtapaResumenService.registrarAsignacion(saved.getId(), saved.getEtapa(), OperationalDateTime.now());
         notificarCambioLead("REGISTRO", saved, null, null);
         return saved.getId();
     }

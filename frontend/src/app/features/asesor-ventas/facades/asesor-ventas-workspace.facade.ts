@@ -102,6 +102,8 @@ export class AsesorVentasWorkspaceFacade {
   private readonly saturationThreshold = 10;
   private initialized = false;
   private initializeInFlight = false;
+  private reconcileQueued = false;
+  private reconcileQueuedLeadId: number | null = null;
   private lastAttendanceStatus: EstadoAsistencia | null = null;
   private lastNotificationAt = 0;
   private readonly operationalGate = this.operationalGateService.createGate('asesor-ventas-workspace');
@@ -1263,19 +1265,43 @@ export class AsesorVentasWorkspaceFacade {
   }
 
   private async reconcile(changedLeadId?: number): Promise<void> {
-    if (this.isReconciling() || !this.canDisplayOperationalData()) {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
+
+    if (this.isReconciling()) {
+      this.reconcileQueued = true;
+      if (changedLeadId) {
+        this.reconcileQueuedLeadId = changedLeadId;
+      }
       return;
     }
 
     this.isReconciling.set(true);
     try {
-      await this.refreshPage(true);
-      if (changedLeadId && this.selectedLeadId() === changedLeadId) {
-        await this.refreshOpenDetail(changedLeadId);
-      }
+      let leadIdToRefresh: number | null | undefined = changedLeadId ?? null;
+      do {
+        this.reconcileQueued = false;
+        this.reconcileQueuedLeadId = null;
+        await this.refreshPage(true);
+        if (leadIdToRefresh && this.selectedLeadId() === leadIdToRefresh) {
+          await this.refreshOpenDetail(leadIdToRefresh);
+        }
+        leadIdToRefresh = this.reconcileQueuedLeadId;
+      } while (this.reconcileQueued && this.canDisplayOperationalData());
     } finally {
       this.isReconciling.set(false);
     }
+  }
+
+  private removeLeadFromBoard(idLead: number): void {
+    const before = this.rows().length;
+    this.rows.update((rows) => rows.filter((row) => row.id !== idLead));
+    if (this.rows().length === before) {
+      return;
+    }
+    this.totalElements.update((total) => Math.max(0, total - 1));
+    this.workspaceState.setAssignedLeadCount(this.totalElements());
   }
 
   private async refreshOpenDetail(idLead: number): Promise<void> {
