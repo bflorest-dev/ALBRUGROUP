@@ -30,6 +30,8 @@ public class LeadGtrResponse {
     private String direccionSnapshot;
     private String primeraCodigoTipificacion;
     private String primeraCodigoSubtipificacion;
+    private String mayorRangoCodigoTipificacion;
+    private String mayorRangoCodigoSubtipificacion;
     private String codigoTipificacion;
     private String codigoSubtipificacion;
     private String nombrePlanOfrecido;

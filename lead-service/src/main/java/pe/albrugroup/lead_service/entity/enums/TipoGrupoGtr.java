@@ -7,5 +7,6 @@ public enum TipoGrupoGtr {
     ESTADO,
     INGRESO,
     PRIMERA_TIPIFICACION,
+    MAYOR_TIPIFICACION,
     ULTIMA_TIPIFICACION
 }

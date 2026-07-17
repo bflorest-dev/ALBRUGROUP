@@ -96,6 +96,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.direccionSnapshot,
                 r.primeraCodigoTipificacion,
                 r.primeraCodigoSubtipificacion,
+                r.mayorRangoCodigoTipificacion,
+                r.mayorRangoCodigoSubtipificacion,
                 r.ultimaCodigoTipificacion,
                 r.ultimaCodigoSubtipificacion,
                 l.nombrePlanSnapshot,
@@ -149,6 +151,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.direccionSnapshot,
                 r.primeraCodigoTipificacion,
                 r.primeraCodigoSubtipificacion,
+                r.mayorRangoCodigoTipificacion,
+                r.mayorRangoCodigoSubtipificacion,
                 r.ultimaCodigoTipificacion,
                 r.ultimaCodigoSubtipificacion,
                 l.nombrePlanSnapshot,
@@ -216,6 +220,22 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                         )
                     )
               )
+              AND (
+                    :filtrarMayorTipificacion = false
+                    OR (
+                        :sinValor = true
+                        AND r.mayorRangoCodigoTipificacion IS NULL
+                        AND r.mayorRangoCodigoSubtipificacion IS NULL
+                    )
+                    OR (
+                        :sinValor = false
+                        AND r.mayorRangoCodigoTipificacion = :codigoTipificacion
+                        AND (
+                            (:codigoSubtipificacion IS NULL AND r.mayorRangoCodigoSubtipificacion IS NULL)
+                            OR r.mayorRangoCodigoSubtipificacion = :codigoSubtipificacion
+                        )
+                    )
+              )
             ORDER BY l.lastEntryAt DESC
             """)
     Page<LeadGtrResponse> listarBandejaGtrFiltrada(
@@ -228,6 +248,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("filtrarCampana") boolean filtrarCampana,
             @Param("filtrarPrimeraTipificacion") boolean filtrarPrimeraTipificacion,
             @Param("filtrarUltimaTipificacion") boolean filtrarUltimaTipificacion,
+            @Param("filtrarMayorTipificacion") boolean filtrarMayorTipificacion,
             @Param("idGrupo") Long idGrupo,
             @Param("estadoGrupo") EstadoSeguimiento estadoGrupo,
             @Param("codigoTipificacion") String codigoTipificacion,
@@ -317,6 +338,28 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             GROUP BY r.primeraCodigoTipificacion, r.primeraCodigoSubtipificacion
             """)
     List<LeadGtrAgrupacionProjection> agruparBandejaGtrPorPrimeraTipificacion(
+            @Param("etapa") Etapa etapa,
+            @Param("inicioDia") Instant inicioDia,
+            @Param("finDia") Instant finDia,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query("""
+            SELECT NULL AS idGrupo,
+                   NULL AS etiqueta,
+                   r.mayorRangoCodigoTipificacion AS codigoTipificacion,
+                   r.mayorRangoCodigoSubtipificacion AS codigoSubtipificacion,
+                   COUNT(l.id) AS cantidad
+            FROM Lead l
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            WHERE l.etapa = :etapa
+              AND l.lastEntryAt >= :inicioDia
+              AND l.lastEntryAt < :finDia
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            GROUP BY r.mayorRangoCodigoTipificacion, r.mayorRangoCodigoSubtipificacion
+            """)
+    List<LeadGtrAgrupacionProjection> agruparBandejaGtrPorMayorTipificacion(
             @Param("etapa") Etapa etapa,
             @Param("inicioDia") Instant inicioDia,
             @Param("finDia") Instant finDia,
@@ -1184,6 +1227,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.direccionSnapshot,
                 r.primeraCodigoTipificacion,
                 r.primeraCodigoSubtipificacion,
+                r.mayorRangoCodigoTipificacion,
+                r.mayorRangoCodigoSubtipificacion,
                 r.ultimaCodigoTipificacion,
                 r.ultimaCodigoSubtipificacion,
                 l.nombrePlanSnapshot,
