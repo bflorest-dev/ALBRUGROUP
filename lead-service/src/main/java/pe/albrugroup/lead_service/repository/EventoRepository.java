@@ -712,7 +712,8 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("fin") Instant fin
     );
 
-    // H: leads registrados hoy cuya última tipificación (etapa indicada) es la que avanza de etapa.
+    // H: leads registrados hoy cuya última tipificación de la etapa es la preventa. La subtipi no
+    // discrimina: COMPLETA, INCOMPLETA, DESAPROBADA y los PENDIENTE son la misma preventa con matices.
     @Query("""
             SELECT COUNT(DISTINCT e.idLead)
             FROM Evento e
@@ -722,15 +723,13 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.ultimaCodigoTipificacion = :codigoTipificacion
-              AND r.ultimaCodigoSubtipificacion = :codigoSubtipificacion
             """)
     long contarLeadsDiariosPorUltimaTipificacion(
             @Param("accion") Accion accion,
             @Param("etapaResumen") Etapa etapaResumen,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin,
-            @Param("codigoTipificacion") String codigoTipificacion,
-            @Param("codigoSubtipificacion") String codigoSubtipificacion
+            @Param("codigoTipificacion") String codigoTipificacion
     );
 
     // --- Métricas de "Leads del día" DESGLOSADAS por equipo (idEquipo null = "Sin equipo") ---
@@ -806,7 +805,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("fin") Instant fin
     );
 
-    // H por equipo: [idEquipo, leadsVentaCerrada].
+    // H por equipo: [idEquipo, leadsPreventa].
     @Query("""
             SELECT l.idEquipo, COUNT(DISTINCT e.idLead)
             FROM Evento e
@@ -816,7 +815,6 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
               AND r.ultimaCodigoTipificacion = :codigoTipificacion
-              AND r.ultimaCodigoSubtipificacion = :codigoSubtipificacion
             GROUP BY l.idEquipo
             """)
     List<Object[]> contarLeadsDiariosVentaCerradaPorEquipo(
@@ -824,8 +822,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("etapaResumen") Etapa etapaResumen,
             @Param("inicio") Instant inicio,
             @Param("fin") Instant fin,
-            @Param("codigoTipificacion") String codigoTipificacion,
-            @Param("codigoSubtipificacion") String codigoSubtipificacion
+            @Param("codigoTipificacion") String codigoTipificacion
     );
 
     Optional<Evento> findTopByIdLeadAndAccionOrderByCreatedAtDesc(Long idLead, Accion accion);

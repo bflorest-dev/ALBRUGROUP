@@ -339,8 +339,9 @@ public class EventoService {
         );
     }
 
-    private static final String TIPIFICACION_PREVENTA_COMPLETA = "PREVENTA_COMPLETA";
-    private static final String SUBTIPIFICACION_VENTA_CERRADA = "VENTA_CERRADA";
+    // Una preventa es cualquier lead cuya ultima tipificacion de la etapa sea PREVENTA: la subtipi solo
+    // matiza el desenlace (COMPLETA, INCOMPLETA, DESAPROBADA, los PENDIENTE) y no cambia que sea preventa.
+    private static final String TIPIFICACION_PREVENTA = "PREVENTA";
 
     /**
      * Métricas del día para "Leads del día" (día completo con el scope de equipo del usuario).
@@ -357,7 +358,7 @@ public class EventoService {
         long leadsRepetidos = eventoRepository.listarLeadsDiariosConRepeticion(Accion.REGISTRO, inicio, fin).size();
         long leadsTipificados = eventoRepository.contarLeadsDiariosTipificados(Accion.REGISTRO, Etapa.PREVENTA, inicio, fin);
         long leadsVentaCerrada = eventoRepository.contarLeadsDiariosPorUltimaTipificacion(
-                Accion.REGISTRO, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA_COMPLETA, SUBTIPIFICACION_VENTA_CERRADA);
+                Accion.REGISTRO, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA);
 
         long bloque1 = 0;
         long bloque2 = 0;
@@ -424,7 +425,7 @@ public class EventoService {
             }
         }
         for (Object[] fila : eventoRepository.contarLeadsDiariosVentaCerradaPorEquipo(
-                Accion.REGISTRO, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA_COMPLETA, SUBTIPIFICACION_VENTA_CERRADA)) {
+                Accion.REGISTRO, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA)) {
             acumuladorEquipo(porEquipo, (Long) fila[0])[7] = (Long) fila[1];
         }
 

@@ -34,8 +34,10 @@ public class MasivoService {
 
     private static final List<Long> EQUIPOS_FILTRO_VACIO = List.of(-1L);
     private static final List<String> CODIGOS_FILTRO_VACIO = List.of("__SIN_CODIGO__");
+    // Un lead cuya preventa ya se cerro no vuelve al masivo. La tipi PREVENTA es "gestion de preventa
+    // finalizada": todas sus subtipis son desenlaces, asi que se excluye la tipi entera.
     private static final List<String> TIPIFICACIONES_EXCLUIDAS_MASIVO = List.of(
-            "PREVENTA_COMPLETA"
+            "PREVENTA"
     );
     private static final DateTimeFormatter ETIQUETA_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 

@@ -141,7 +141,10 @@ public class LeadService {
     private final LeadAsignacionCounterService leadAsignacionCounterService;
     private final LeadEtapaResumenService leadEtapaResumenService;
 
-    private static final String TIPIFICACION_AGENDADO = "AGENDADO";
+    // La bandeja de Agendados GTR ya no cuelga de una tipi: el concepto vive en el comportamiento, que
+    // cada equipo marca en las subtipis que correspondan (hoy, varias de NO DESEA).
+    private static final ComportamientoTipificacion COMPORTAMIENTO_AGENDADO =
+            ComportamientoTipificacion.APARECE_EN_AGENDADOS_GTR;
     private static final String TIPIFICACION_PROGRAMADO = "PROGRAMADO";
     private static final String SUBTIPIFICACION_PROGRAMACION_CANCELADA = "PROGRAMACION_CANCELADA";
     private static final String TIPIFICACION_SCORE_PREVENTA = "SCORE_PREVENTA";
@@ -472,7 +475,7 @@ public class LeadService {
 
         leadRepository.contarAgendadosGtrHoyPorHora(
                         Etapa.PREVENTA,
-                        TIPIFICACION_AGENDADO,
+                        COMPORTAMIENTO_AGENDADO,
                         Accion.TIPIFICACION,
                         hoy.inicio(),
                         hoy.fin(),
@@ -484,7 +487,7 @@ public class LeadService {
                         Long::sum));
 
         long totalActivos = leadRepository.contarAgendadosGtrActivos(
-                Etapa.PREVENTA, TIPIFICACION_AGENDADO, equipos.filtrar(), equipos.ids());
+                Etapa.PREVENTA, COMPORTAMIENTO_AGENDADO, equipos.filtrar(), equipos.ids());
         return new AgendadosGtrResumenResponse(totalActivos, programadosHoyPorHora);
     }
 
@@ -502,19 +505,19 @@ public class LeadService {
         if ("agendado".equals(pageRequest.getSortBy())) {
             return desc
                     ? leadRepository.listarLeadsAgendadosGtrPorAgendadoDesc(
-                            Etapa.PREVENTA, TIPIFICACION_AGENDADO, Accion.TIPIFICACION,
+                            Etapa.PREVENTA, COMPORTAMIENTO_AGENDADO, Accion.TIPIFICACION,
                             equipos.filtrar(), equipos.ids(), pageable)
                     : leadRepository.listarLeadsAgendadosGtrPorAgendadoAsc(
-                            Etapa.PREVENTA, TIPIFICACION_AGENDADO, Accion.TIPIFICACION,
+                            Etapa.PREVENTA, COMPORTAMIENTO_AGENDADO, Accion.TIPIFICACION,
                             equipos.filtrar(), equipos.ids(), pageable);
         }
 
         return desc
                 ? leadRepository.listarLeadsAgendadosGtrPorHoraDesc(
-                        Etapa.PREVENTA, TIPIFICACION_AGENDADO, Accion.TIPIFICACION,
+                        Etapa.PREVENTA, COMPORTAMIENTO_AGENDADO, Accion.TIPIFICACION,
                         equipos.filtrar(), equipos.ids(), pageable)
                 : leadRepository.listarLeadsAgendadosGtrPorHoraAsc(
-                        Etapa.PREVENTA, TIPIFICACION_AGENDADO, Accion.TIPIFICACION,
+                        Etapa.PREVENTA, COMPORTAMIENTO_AGENDADO, Accion.TIPIFICACION,
                         equipos.filtrar(), equipos.ids(), pageable);
     }
 
@@ -2677,7 +2680,7 @@ public class LeadService {
         return leadRepository.listarPendientesAsesorVentas(
                 idAsesor,
                 Etapa.PREVENTA,
-                TIPIFICACION_AGENDADO,
+                COMPORTAMIENTO_AGENDADO,
                 List.of(EstadoSeguimiento.ASIGNADO, EstadoSeguimiento.EN_GESTION),
                 paginationService.toPageable(pageRequest, LEAD_ASESOR_SORT_FIELDS)
         );

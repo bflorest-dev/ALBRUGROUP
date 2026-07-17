@@ -11,3 +11,4 @@ PLAN_OPORTUNIDADES.md
 frontend/public/version.json
 docker/postgres/users-seed/users.xlsx
 docker/postgres/users-seed/~$users.xlsx
+CLAUDE.md

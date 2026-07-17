@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.enums.Accion;
+import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse;
@@ -408,7 +409,19 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND l.estado IN :estados
               AND (
                     (l.etapa = :etapa
-                        AND (l.codigoTipificacion IS NULL OR l.codigoTipificacion = :codigoAgendado))
+                        AND (
+                            l.codigoTipificacion IS NULL
+                            OR EXISTS (
+                                SELECT 1
+                                FROM Subtipificacion sa
+                                JOIN sa.tipificacion ta
+                                WHERE ta.idEquipo = l.idEquipo
+                                  AND ta.etapa = l.etapa
+                                  AND ta.codigo = l.codigoTipificacion
+                                  AND sa.codigo = l.codigoSubtipificacion
+                                  AND :comportamiento MEMBER OF sa.comportamientos
+                            )
+                        ))
                     OR l.requiereAtencionGtr = true
               )
             ORDER BY l.lastEntryAt DESC
@@ -416,7 +429,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     Page<Lead> listarPendientesAsesorVentas(
             @Param("idAsesor") Long idAsesor,
             @Param("etapa") Etapa etapa,
-            @Param("codigoAgendado") String codigoAgendado,
+            @Param("comportamiento") ComportamientoTipificacion comportamiento,
             @Param("estados") Collection<EstadoSeguimiento> estados,
             Pageable pageable
     );
@@ -473,22 +486,29 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN c.proveedor p
             LEFT JOIN l.datosPreventa dp
             WHERE l.etapa = :etapa
-              AND l.codigoTipificacion = :codigoAgendado
+              AND EXISTS (
+                  SELECT 1
+                  FROM Subtipificacion sa
+                  JOIN sa.tipificacion ta
+                  WHERE ta.idEquipo = l.idEquipo
+                    AND ta.etapa = l.etapa
+                    AND ta.codigo = l.codigoTipificacion
+                    AND sa.codigo = l.codigoSubtipificacion
+                    AND :comportamiento MEMBER OF sa.comportamientos
+              )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND e.accion = :accionTipificacion
-              AND e.tipificacion = :codigoAgendado
               AND e.createdAt = (
                   SELECT MAX(es.createdAt)
                   FROM Evento es
                   WHERE es.idLead = l.id
                     AND es.accion = :accionTipificacion
-                    AND es.tipificacion = :codigoAgendado
               )
             ORDER BY e.horaProgramada ASC, e.createdAt ASC
             """)
     Page<LeadAgendadoGtrResponse> listarLeadsAgendadosGtrPorHoraAsc(
             @Param("etapa") Etapa etapa,
-            @Param("codigoAgendado") String codigoAgendado,
+            @Param("comportamiento") ComportamientoTipificacion comportamiento,
             @Param("accionTipificacion") Accion accionTipificacion,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds,
@@ -526,22 +546,29 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN c.proveedor p
             LEFT JOIN l.datosPreventa dp
             WHERE l.etapa = :etapa
-              AND l.codigoTipificacion = :codigoAgendado
+              AND EXISTS (
+                  SELECT 1
+                  FROM Subtipificacion sa
+                  JOIN sa.tipificacion ta
+                  WHERE ta.idEquipo = l.idEquipo
+                    AND ta.etapa = l.etapa
+                    AND ta.codigo = l.codigoTipificacion
+                    AND sa.codigo = l.codigoSubtipificacion
+                    AND :comportamiento MEMBER OF sa.comportamientos
+              )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND e.accion = :accionTipificacion
-              AND e.tipificacion = :codigoAgendado
               AND e.createdAt = (
                   SELECT MAX(es.createdAt)
                   FROM Evento es
                   WHERE es.idLead = l.id
                     AND es.accion = :accionTipificacion
-                    AND es.tipificacion = :codigoAgendado
               )
             ORDER BY e.horaProgramada DESC, e.createdAt DESC
             """)
     Page<LeadAgendadoGtrResponse> listarLeadsAgendadosGtrPorHoraDesc(
             @Param("etapa") Etapa etapa,
-            @Param("codigoAgendado") String codigoAgendado,
+            @Param("comportamiento") ComportamientoTipificacion comportamiento,
             @Param("accionTipificacion") Accion accionTipificacion,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds,
@@ -579,22 +606,29 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN c.proveedor p
             LEFT JOIN l.datosPreventa dp
             WHERE l.etapa = :etapa
-              AND l.codigoTipificacion = :codigoAgendado
+              AND EXISTS (
+                  SELECT 1
+                  FROM Subtipificacion sa
+                  JOIN sa.tipificacion ta
+                  WHERE ta.idEquipo = l.idEquipo
+                    AND ta.etapa = l.etapa
+                    AND ta.codigo = l.codigoTipificacion
+                    AND sa.codigo = l.codigoSubtipificacion
+                    AND :comportamiento MEMBER OF sa.comportamientos
+              )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND e.accion = :accionTipificacion
-              AND e.tipificacion = :codigoAgendado
               AND e.createdAt = (
                   SELECT MAX(es.createdAt)
                   FROM Evento es
                   WHERE es.idLead = l.id
                     AND es.accion = :accionTipificacion
-                    AND es.tipificacion = :codigoAgendado
               )
             ORDER BY e.createdAt ASC
             """)
     Page<LeadAgendadoGtrResponse> listarLeadsAgendadosGtrPorAgendadoAsc(
             @Param("etapa") Etapa etapa,
-            @Param("codigoAgendado") String codigoAgendado,
+            @Param("comportamiento") ComportamientoTipificacion comportamiento,
             @Param("accionTipificacion") Accion accionTipificacion,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds,
@@ -632,22 +666,29 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN c.proveedor p
             LEFT JOIN l.datosPreventa dp
             WHERE l.etapa = :etapa
-              AND l.codigoTipificacion = :codigoAgendado
+              AND EXISTS (
+                  SELECT 1
+                  FROM Subtipificacion sa
+                  JOIN sa.tipificacion ta
+                  WHERE ta.idEquipo = l.idEquipo
+                    AND ta.etapa = l.etapa
+                    AND ta.codigo = l.codigoTipificacion
+                    AND sa.codigo = l.codigoSubtipificacion
+                    AND :comportamiento MEMBER OF sa.comportamientos
+              )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND e.accion = :accionTipificacion
-              AND e.tipificacion = :codigoAgendado
               AND e.createdAt = (
                   SELECT MAX(es.createdAt)
                   FROM Evento es
                   WHERE es.idLead = l.id
                     AND es.accion = :accionTipificacion
-                    AND es.tipificacion = :codigoAgendado
               )
             ORDER BY e.createdAt DESC
             """)
     Page<LeadAgendadoGtrResponse> listarLeadsAgendadosGtrPorAgendadoDesc(
             @Param("etapa") Etapa etapa,
-            @Param("codigoAgendado") String codigoAgendado,
+            @Param("comportamiento") ComportamientoTipificacion comportamiento,
             @Param("accionTipificacion") Accion accionTipificacion,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds,
@@ -658,12 +699,21 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             SELECT COUNT(l)
             FROM Lead l
             WHERE l.etapa = :etapa
-              AND l.codigoTipificacion = :codigoAgendado
+              AND EXISTS (
+                  SELECT 1
+                  FROM Subtipificacion sa
+                  JOIN sa.tipificacion ta
+                  WHERE ta.idEquipo = l.idEquipo
+                    AND ta.etapa = l.etapa
+                    AND ta.codigo = l.codigoTipificacion
+                    AND sa.codigo = l.codigoSubtipificacion
+                    AND :comportamiento MEMBER OF sa.comportamientos
+              )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             """)
     long contarAgendadosGtrActivos(
             @Param("etapa") Etapa etapa,
-            @Param("codigoAgendado") String codigoAgendado,
+            @Param("comportamiento") ComportamientoTipificacion comportamiento,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds
     );
@@ -673,10 +723,18 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             FROM Lead l
             JOIN Evento e ON e.idLead = l.id
             WHERE l.etapa = :etapa
-              AND l.codigoTipificacion = :codigoAgendado
+              AND EXISTS (
+                  SELECT 1
+                  FROM Subtipificacion sa
+                  JOIN sa.tipificacion ta
+                  WHERE ta.idEquipo = l.idEquipo
+                    AND ta.etapa = l.etapa
+                    AND ta.codigo = l.codigoTipificacion
+                    AND sa.codigo = l.codigoSubtipificacion
+                    AND :comportamiento MEMBER OF sa.comportamientos
+              )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND e.accion = :accionTipificacion
-              AND e.tipificacion = :codigoAgendado
               AND e.horaProgramada IS NOT NULL
               AND e.createdAt >= :inicioDia
               AND e.createdAt < :finDia
@@ -685,13 +743,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                   FROM Evento es
                   WHERE es.idLead = l.id
                     AND es.accion = :accionTipificacion
-                    AND es.tipificacion = :codigoAgendado
               )
             GROUP BY e.horaProgramada
             """)
     List<HoraProgramadaCantidadProjection> contarAgendadosGtrHoyPorHora(
             @Param("etapa") Etapa etapa,
-            @Param("codigoAgendado") String codigoAgendado,
+            @Param("comportamiento") ComportamientoTipificacion comportamiento,
             @Param("accionTipificacion") Accion accionTipificacion,
             @Param("inicioDia") Instant inicioDia,
             @Param("finDia") Instant finDia,
