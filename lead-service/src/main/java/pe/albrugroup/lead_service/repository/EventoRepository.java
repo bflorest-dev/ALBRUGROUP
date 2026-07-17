@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.albrugroup.lead_service.entity.Evento;
 import pe.albrugroup.lead_service.entity.enums.Accion;
+import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.response.LeadDiarioResponse;
 import pe.albrugroup.lead_service.entity.response.RegistroDiarioLeadResponse;
@@ -836,8 +837,15 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.idActor = :idAsesor
               AND e.accion = :accion
               AND e.etapa = :etapa
-              AND e.tipificacion = :tipificacion
-              AND e.subtipificacion = :subtipificacion
+              AND EXISTS (
+                  SELECT 1 FROM Subtipificacion sc
+                  JOIN sc.tipificacion tc
+                  WHERE tc.idEquipo = l.idEquipo
+                    AND tc.etapa = e.etapa
+                    AND tc.codigo = e.tipificacion
+                    AND sc.codigo = e.subtipificacion
+                    AND :comportamientoCierre MEMBER OF sc.comportamientos
+              )
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
             ORDER BY e.createdAt DESC, e.id DESC
@@ -849,8 +857,15 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.idActor = :idAsesor
               AND e.accion = :accion
               AND e.etapa = :etapa
-              AND e.tipificacion = :tipificacion
-              AND e.subtipificacion = :subtipificacion
+              AND EXISTS (
+                  SELECT 1 FROM Subtipificacion sc
+                  JOIN sc.tipificacion tc
+                  WHERE tc.idEquipo = l.idEquipo
+                    AND tc.etapa = e.etapa
+                    AND tc.codigo = e.tipificacion
+                    AND sc.codigo = e.subtipificacion
+                    AND :comportamientoCierre MEMBER OF sc.comportamientos
+              )
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
             """)
@@ -858,8 +873,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("idAsesor") Long idAsesor,
             @Param("accion") Accion accion,
             @Param("etapa") Etapa etapa,
-            @Param("tipificacion") String tipificacion,
-            @Param("subtipificacion") String subtipificacion,
+            @Param("comportamientoCierre") ComportamientoTipificacion comportamientoCierre,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             Pageable pageable
@@ -872,8 +886,15 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.idActor = :idAsesor
               AND e.accion = :accion
               AND e.etapa = :etapa
-              AND e.tipificacion = :tipificacion
-              AND e.subtipificacion = :subtipificacion
+              AND EXISTS (
+                  SELECT 1 FROM Subtipificacion sc
+                  JOIN sc.tipificacion tc
+                  WHERE tc.idEquipo = l.idEquipo
+                    AND tc.etapa = e.etapa
+                    AND tc.codigo = e.tipificacion
+                    AND sc.codigo = e.subtipificacion
+                    AND :comportamientoCierre MEMBER OF sc.comportamientos
+              )
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
             ORDER BY e.createdAt DESC, e.id DESC
@@ -882,8 +903,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("idAsesor") Long idAsesor,
             @Param("accion") Accion accion,
             @Param("etapa") Etapa etapa,
-            @Param("tipificacion") String tipificacion,
-            @Param("subtipificacion") String subtipificacion,
+            @Param("comportamientoCierre") ComportamientoTipificacion comportamientoCierre,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta
     );
@@ -891,19 +911,26 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     @Query("""
             SELECT MIN(e.createdAt)
             FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
             WHERE e.idLead = :idLead
               AND e.accion = :accion
               AND e.etapa = :etapa
-              AND e.tipificacion = :tipificacion
-              AND e.subtipificacion = :subtipificacion
+              AND EXISTS (
+                  SELECT 1 FROM Subtipificacion sc
+                  JOIN sc.tipificacion tc
+                  WHERE tc.idEquipo = l.idEquipo
+                    AND tc.etapa = e.etapa
+                    AND tc.codigo = e.tipificacion
+                    AND sc.codigo = e.subtipificacion
+                    AND :comportamientoCierre MEMBER OF sc.comportamientos
+              )
               AND e.createdAt > :fechaCierre
             """)
     Optional<Instant> buscarFechaSiguienteCierrePreventa(
             @Param("idLead") Long idLead,
             @Param("accion") Accion accion,
             @Param("etapa") Etapa etapa,
-            @Param("tipificacion") String tipificacion,
-            @Param("subtipificacion") String subtipificacion,
+            @Param("comportamientoCierre") ComportamientoTipificacion comportamientoCierre,
             @Param("fechaCierre") Instant fechaCierre
     );
 
@@ -1045,9 +1072,17 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                    e.nombreActor AS nombreAsesor,
                    COUNT(DISTINCT e.idLead) AS cantidad
             FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
             WHERE e.accion = :accion
-              AND e.tipificacion = :tipificacion
-              AND e.subtipificacion = :subtipificacion
+              AND EXISTS (
+                  SELECT 1 FROM Subtipificacion sc
+                  JOIN sc.tipificacion tc
+                  WHERE tc.idEquipo = l.idEquipo
+                    AND tc.etapa = e.etapa
+                    AND tc.codigo = e.tipificacion
+                    AND sc.codigo = e.subtipificacion
+                    AND :comportamientoCierre MEMBER OF sc.comportamientos
+              )
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
               AND (:filtrarAsesores = false OR e.idActor IN :asesorIds)
@@ -1055,8 +1090,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             """)
     List<AsesorCantidadProjection> resumirPreventasPorAsesor(
             @Param("accion") Accion accion,
-            @Param("tipificacion") String tipificacion,
-            @Param("subtipificacion") String subtipificacion,
+            @Param("comportamientoCierre") ComportamientoTipificacion comportamientoCierre,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("filtrarAsesores") boolean filtrarAsesores,
@@ -1071,13 +1105,21 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
               AND e.accion IN :acciones
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
-              AND (e.tipificacion IS NULL OR e.tipificacion <> :tipificacionPreventaCompleta)
+              AND NOT EXISTS (
+                  SELECT 1 FROM Subtipificacion sc
+                  JOIN sc.tipificacion tc
+                  WHERE tc.idEquipo = l.idEquipo
+                    AND tc.etapa = e.etapa
+                    AND tc.codigo = e.tipificacion
+                    AND sc.codigo = e.subtipificacion
+                    AND :comportamientoCierre MEMBER OF sc.comportamientos
+              )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             """)
     long contarGestionadosGtr(
             @Param("etapa") Etapa etapa,
             @Param("acciones") Collection<Accion> acciones,
-            @Param("tipificacionPreventaCompleta") String tipificacionPreventaCompleta,
+            @Param("comportamientoCierre") ComportamientoTipificacion comportamientoCierre,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("filtrarEquipos") boolean filtrarEquipos,
@@ -1106,16 +1148,22 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             FROM Evento e
             JOIN Lead l ON l.id = e.idLead
             WHERE e.accion = :accion
-              AND e.tipificacion = :tipificacion
-              AND e.subtipificacion = :subtipificacion
+              AND EXISTS (
+                  SELECT 1 FROM Subtipificacion sc
+                  JOIN sc.tipificacion tc
+                  WHERE tc.idEquipo = l.idEquipo
+                    AND tc.etapa = e.etapa
+                    AND tc.codigo = e.tipificacion
+                    AND sc.codigo = e.subtipificacion
+                    AND :comportamientoCierre MEMBER OF sc.comportamientos
+              )
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             """)
     long contarPreventasGtr(
             @Param("accion") Accion accion,
-            @Param("tipificacion") String tipificacion,
-            @Param("subtipificacion") String subtipificacion,
+            @Param("comportamientoCierre") ComportamientoTipificacion comportamientoCierre,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("filtrarEquipos") boolean filtrarEquipos,
@@ -1125,18 +1173,25 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     @Query("""
             SELECT COUNT(DISTINCT e.idLead)
             FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
             WHERE e.idCampana = :idCampana
               AND e.accion = :accion
-              AND e.tipificacion = :tipificacion
-              AND e.subtipificacion = :subtipificacion
+              AND EXISTS (
+                  SELECT 1 FROM Subtipificacion sc
+                  JOIN sc.tipificacion tc
+                  WHERE tc.idEquipo = l.idEquipo
+                    AND tc.etapa = e.etapa
+                    AND tc.codigo = e.tipificacion
+                    AND sc.codigo = e.subtipificacion
+                    AND :comportamientoCierre MEMBER OF sc.comportamientos
+              )
               AND e.createdAt >= :fechaDesde
               AND e.createdAt <= :fechaHasta
             """)
     long contarVentasCerradasPorCampanaYRango(
             @Param("idCampana") Long idCampana,
             @Param("accion") Accion accion,
-            @Param("tipificacion") String tipificacion,
-            @Param("subtipificacion") String subtipificacion,
+            @Param("comportamientoCierre") ComportamientoTipificacion comportamientoCierre,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta
     );
@@ -1163,11 +1218,19 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                    p.nombre AS nombreProveedor,
                    COUNT(e.id) AS cantidad
             FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
             JOIN Plan pl ON pl.id = e.idPlanOfrecido
             JOIN pl.proveedor p
             WHERE e.accion = :accion
-              AND e.tipificacion = :tipificacion
-              AND e.subtipificacion = :subtipificacion
+              AND EXISTS (
+                  SELECT 1 FROM Subtipificacion sc
+                  JOIN sc.tipificacion tc
+                  WHERE tc.idEquipo = l.idEquipo
+                    AND tc.etapa = e.etapa
+                    AND tc.codigo = e.tipificacion
+                    AND sc.codigo = e.subtipificacion
+                    AND :comportamientoCierre MEMBER OF sc.comportamientos
+              )
               AND e.createdAt >= :fechaDesde
               AND e.createdAt < :fechaHasta
               AND (:filtrarAsesores = false OR e.idActor IN :asesorIds)
@@ -1175,8 +1238,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             """)
     List<AsesorProveedorCantidadProjection> resumirPreventasMensualesPorProveedor(
             @Param("accion") Accion accion,
-            @Param("tipificacion") String tipificacion,
-            @Param("subtipificacion") String subtipificacion,
+            @Param("comportamientoCierre") ComportamientoTipificacion comportamientoCierre,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("filtrarAsesores") boolean filtrarAsesores,

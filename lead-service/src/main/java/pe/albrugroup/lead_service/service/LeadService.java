@@ -147,18 +147,17 @@ public class LeadService {
             ComportamientoTipificacion.APARECE_EN_AGENDADOS_GTR;
     private static final String TIPIFICACION_PROGRAMADO = "PROGRAMADO";
     private static final String SUBTIPIFICACION_PROGRAMACION_CANCELADA = "PROGRAMACION_CANCELADA";
-    private static final String TIPIFICACION_SCORE_PREVENTA = "SCORE_PREVENTA";
-    private static final String TIPIFICACION_PREVENTA_COMPLETA = "PREVENTA_COMPLETA";
-    private static final String TIPIFICACION_GRABADO = "GRABADO";
-    private static final String TIPIFICACION_SUBIDO = "SUBIDO";
+    // "Cerró la preventa hacia venta": las subtipis con este comportamiento (COMPLETA y los PENDIENTE
+    // que avanzan por causa del cliente). Reemplaza al viejo par PREVENTA_COMPLETA / VENTA_CERRADA, que
+    // era una sola subtipi antes de que la etapa se abriera en matices.
+    private static final ComportamientoTipificacion COMPORTAMIENTO_CIERRE_PREVENTA =
+            ComportamientoTipificacion.ES_CIERRE_PREVENTA;
     private static final Instant MIS_PREVENTAS_FECHA_HASTA_ABIERTA = Instant.parse("9999-01-01T00:00:00Z");
     // Tope de gestiones que un asesor puede tener "aparcadas" (EN_GESTION) al mismo tiempo. Permite
     // trabajar varios leads en paralelo cuando alguno se retrasa, pero fuerza a cerrar antes de
     // seguir acumulando. Se valida en backend porque el asesor puede abrir varias pestañas que no
     // comparten estado entre sí.
     private static final long MAX_GESTIONES_SIMULTANEAS = 3;
-    private static final String SUBTIPIFICACION_PREVENTA = "PREVENTA";
-    private static final String SUBTIPIFICACION_VENTA_CERRADA = "VENTA_CERRADA";
     private static final LocalTime HORA_MINIMA_REGISTRO_RETROACTIVO = LocalTime.of(18, 0);
     private static final LocalTime HORA_MAXIMA_REGISTRO_RETROACTIVO = LocalTime.of(23, 59);
     private static final List<Accion> ACCIONES_GESTION_LEAD = List.of(Accion.CONTACTO, Accion.TIPIFICACION);
@@ -433,7 +432,7 @@ public class LeadService {
         long gestionados = eventoRepository.contarGestionadosGtr(
                 Etapa.PREVENTA,
                 ACCIONES_GESTION_LEAD,
-                TIPIFICACION_PREVENTA_COMPLETA,
+                COMPORTAMIENTO_CIERRE_PREVENTA,
                 rangoDia.inicio(),
                 rangoDia.fin(),
                 equipos.filtrar(),
@@ -441,8 +440,7 @@ public class LeadService {
         );
         long preventas = eventoRepository.contarPreventasGtr(
                 Accion.TIPIFICACION,
-                TIPIFICACION_PREVENTA_COMPLETA,
-                SUBTIPIFICACION_VENTA_CERRADA,
+                COMPORTAMIENTO_CIERRE_PREVENTA,
                 rangoDia.inicio(),
                 rangoDia.fin(),
                 equipos.filtrar(),
@@ -487,7 +485,7 @@ public class LeadService {
                         Long::sum));
 
         long totalActivos = leadRepository.contarAgendadosGtrActivos(
-                Etapa.PREVENTA, COMPORTAMIENTO_AGENDADO, equipos.filtrar(), equipos.ids());
+                Etapa.PREVENTA, COMPORTAMIENTO_AGENDADO, Accion.TIPIFICACION, equipos.filtrar(), equipos.ids());
         return new AgendadosGtrResumenResponse(totalActivos, programadosHoyPorHora);
     }
 
@@ -659,8 +657,7 @@ public class LeadService {
 
         eventoRepository.resumirPreventasPorAsesor(
                         Accion.TIPIFICACION,
-                        TIPIFICACION_SCORE_PREVENTA,
-                        SUBTIPIFICACION_PREVENTA,
+                        COMPORTAMIENTO_CIERRE_PREVENTA,
                         rangoHoy.inicio(),
                         rangoHoy.fin(),
                         filtrarAsesores,
@@ -673,8 +670,7 @@ public class LeadService {
 
         eventoRepository.resumirPreventasMensualesPorProveedor(
                         Accion.TIPIFICACION,
-                        TIPIFICACION_SCORE_PREVENTA,
-                        SUBTIPIFICACION_PREVENTA,
+                        COMPORTAMIENTO_CIERRE_PREVENTA,
                         rangoMes.inicio(),
                         rangoMes.fin(),
                         filtrarAsesores,
@@ -736,8 +732,7 @@ public class LeadService {
                 currentUser.empleadoID(),
                 Accion.TIPIFICACION,
                 Etapa.PREVENTA,
-                TIPIFICACION_PREVENTA_COMPLETA,
-                SUBTIPIFICACION_VENTA_CERRADA,
+                COMPORTAMIENTO_CIERRE_PREVENTA,
                 desde,
                 hasta,
                 org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
@@ -758,8 +753,7 @@ public class LeadService {
                 currentUser.empleadoID(),
                 Accion.TIPIFICACION,
                 Etapa.PREVENTA,
-                TIPIFICACION_PREVENTA_COMPLETA,
-                SUBTIPIFICACION_VENTA_CERRADA,
+                COMPORTAMIENTO_CIERRE_PREVENTA,
                 desde,
                 hasta
         );
@@ -843,8 +837,7 @@ public class LeadService {
                 cierre.getIdLead(),
                 Accion.TIPIFICACION,
                 Etapa.PREVENTA,
-                TIPIFICACION_PREVENTA_COMPLETA,
-                SUBTIPIFICACION_VENTA_CERRADA,
+                COMPORTAMIENTO_CIERRE_PREVENTA,
                 cierre.getCreatedAt()
         ).orElse(MIS_PREVENTAS_FECHA_HASTA_ABIERTA);
     }
@@ -1200,8 +1193,9 @@ public class LeadService {
         validarProgramacionVenta(requiereProgramacion, request.getFechaProgramacion(), request.getHoraProgramada());
         aplicarSecSotVentaSiCorresponde(lead, subtipificacion, request.getSec(), request.getSot());
 
-        // Atribucion de venta (merito de VENTA): el responsable es quien tipifica GRABADO, no quien
-        // cambia de etapa. La mantiene el resumen por etapa (esMerito=TIPIFICACION_GRABADO mas abajo).
+        // Atribucion de venta (merito de VENTA): el responsable es quien tipifica la subtipi marcada con
+        // RECIBE_MERITO (hoy INSTALADO / SERVICIO INSTALADO), no quien cambia de etapa. La mantiene el
+        // resumen por etapa (esMerito mas abajo, resuelto por comportamiento).
 
         if (etapaDestino != null && etapaDestino != etapaActual) {
             aplicarDatosPostventaSiCorresponde(lead, etapaDestino, request.getFechaInstalacion());

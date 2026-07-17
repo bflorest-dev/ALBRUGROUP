@@ -470,8 +470,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                    AND epFallback.fallbackLeadSinCampana = true),
                 l.base,
                 dp.nombreTitularServicio,
-                l.codigoTipificacion,
-                l.codigoSubtipificacion,
+                r.mayorRangoCodigoTipificacion,
+                r.mayorRangoCodigoSubtipificacion,
                 l.nombreAsesorAsignado,
                 e.nombreActor,
                 l.estado,
@@ -482,6 +482,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             )
             FROM Lead l
             JOIN Evento e ON e.idLead = l.id
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
             LEFT JOIN l.datosPreventa dp
@@ -492,17 +493,23 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                   JOIN sa.tipificacion ta
                   WHERE ta.idEquipo = l.idEquipo
                     AND ta.etapa = l.etapa
-                    AND ta.codigo = l.codigoTipificacion
-                    AND sa.codigo = l.codigoSubtipificacion
+                    AND ta.codigo = r.mayorRangoCodigoTipificacion
+                    AND sa.codigo = r.mayorRangoCodigoSubtipificacion
                     AND :comportamiento MEMBER OF sa.comportamientos
               )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND e.accion = :accionTipificacion
+              AND e.tipificacion = r.mayorRangoCodigoTipificacion
+              AND e.subtipificacion = r.mayorRangoCodigoSubtipificacion
+              AND e.horaProgramada IS NOT NULL
               AND e.createdAt = (
                   SELECT MAX(es.createdAt)
                   FROM Evento es
                   WHERE es.idLead = l.id
                     AND es.accion = :accionTipificacion
+                    AND es.tipificacion = r.mayorRangoCodigoTipificacion
+                    AND es.subtipificacion = r.mayorRangoCodigoSubtipificacion
+                    AND es.horaProgramada IS NOT NULL
               )
             ORDER BY e.horaProgramada ASC, e.createdAt ASC
             """)
@@ -530,8 +537,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                    AND epFallback.fallbackLeadSinCampana = true),
                 l.base,
                 dp.nombreTitularServicio,
-                l.codigoTipificacion,
-                l.codigoSubtipificacion,
+                r.mayorRangoCodigoTipificacion,
+                r.mayorRangoCodigoSubtipificacion,
                 l.nombreAsesorAsignado,
                 e.nombreActor,
                 l.estado,
@@ -542,6 +549,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             )
             FROM Lead l
             JOIN Evento e ON e.idLead = l.id
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
             LEFT JOIN l.datosPreventa dp
@@ -552,17 +560,23 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                   JOIN sa.tipificacion ta
                   WHERE ta.idEquipo = l.idEquipo
                     AND ta.etapa = l.etapa
-                    AND ta.codigo = l.codigoTipificacion
-                    AND sa.codigo = l.codigoSubtipificacion
+                    AND ta.codigo = r.mayorRangoCodigoTipificacion
+                    AND sa.codigo = r.mayorRangoCodigoSubtipificacion
                     AND :comportamiento MEMBER OF sa.comportamientos
               )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND e.accion = :accionTipificacion
+              AND e.tipificacion = r.mayorRangoCodigoTipificacion
+              AND e.subtipificacion = r.mayorRangoCodigoSubtipificacion
+              AND e.horaProgramada IS NOT NULL
               AND e.createdAt = (
                   SELECT MAX(es.createdAt)
                   FROM Evento es
                   WHERE es.idLead = l.id
                     AND es.accion = :accionTipificacion
+                    AND es.tipificacion = r.mayorRangoCodigoTipificacion
+                    AND es.subtipificacion = r.mayorRangoCodigoSubtipificacion
+                    AND es.horaProgramada IS NOT NULL
               )
             ORDER BY e.horaProgramada DESC, e.createdAt DESC
             """)
@@ -590,8 +604,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                    AND epFallback.fallbackLeadSinCampana = true),
                 l.base,
                 dp.nombreTitularServicio,
-                l.codigoTipificacion,
-                l.codigoSubtipificacion,
+                r.mayorRangoCodigoTipificacion,
+                r.mayorRangoCodigoSubtipificacion,
                 l.nombreAsesorAsignado,
                 e.nombreActor,
                 l.estado,
@@ -602,6 +616,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             )
             FROM Lead l
             JOIN Evento e ON e.idLead = l.id
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
             LEFT JOIN l.datosPreventa dp
@@ -612,17 +627,23 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                   JOIN sa.tipificacion ta
                   WHERE ta.idEquipo = l.idEquipo
                     AND ta.etapa = l.etapa
-                    AND ta.codigo = l.codigoTipificacion
-                    AND sa.codigo = l.codigoSubtipificacion
+                    AND ta.codigo = r.mayorRangoCodigoTipificacion
+                    AND sa.codigo = r.mayorRangoCodigoSubtipificacion
                     AND :comportamiento MEMBER OF sa.comportamientos
               )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND e.accion = :accionTipificacion
+              AND e.tipificacion = r.mayorRangoCodigoTipificacion
+              AND e.subtipificacion = r.mayorRangoCodigoSubtipificacion
+              AND e.horaProgramada IS NOT NULL
               AND e.createdAt = (
                   SELECT MAX(es.createdAt)
                   FROM Evento es
                   WHERE es.idLead = l.id
                     AND es.accion = :accionTipificacion
+                    AND es.tipificacion = r.mayorRangoCodigoTipificacion
+                    AND es.subtipificacion = r.mayorRangoCodigoSubtipificacion
+                    AND es.horaProgramada IS NOT NULL
               )
             ORDER BY e.createdAt ASC
             """)
@@ -650,8 +671,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                    AND epFallback.fallbackLeadSinCampana = true),
                 l.base,
                 dp.nombreTitularServicio,
-                l.codigoTipificacion,
-                l.codigoSubtipificacion,
+                r.mayorRangoCodigoTipificacion,
+                r.mayorRangoCodigoSubtipificacion,
                 l.nombreAsesorAsignado,
                 e.nombreActor,
                 l.estado,
@@ -662,6 +683,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             )
             FROM Lead l
             JOIN Evento e ON e.idLead = l.id
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
             LEFT JOIN l.datosPreventa dp
@@ -672,17 +694,23 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                   JOIN sa.tipificacion ta
                   WHERE ta.idEquipo = l.idEquipo
                     AND ta.etapa = l.etapa
-                    AND ta.codigo = l.codigoTipificacion
-                    AND sa.codigo = l.codigoSubtipificacion
+                    AND ta.codigo = r.mayorRangoCodigoTipificacion
+                    AND sa.codigo = r.mayorRangoCodigoSubtipificacion
                     AND :comportamiento MEMBER OF sa.comportamientos
               )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND e.accion = :accionTipificacion
+              AND e.tipificacion = r.mayorRangoCodigoTipificacion
+              AND e.subtipificacion = r.mayorRangoCodigoSubtipificacion
+              AND e.horaProgramada IS NOT NULL
               AND e.createdAt = (
                   SELECT MAX(es.createdAt)
                   FROM Evento es
                   WHERE es.idLead = l.id
                     AND es.accion = :accionTipificacion
+                    AND es.tipificacion = r.mayorRangoCodigoTipificacion
+                    AND es.subtipificacion = r.mayorRangoCodigoSubtipificacion
+                    AND es.horaProgramada IS NOT NULL
               )
             ORDER BY e.createdAt DESC
             """)
@@ -698,6 +726,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     @Query("""
             SELECT COUNT(l)
             FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             WHERE l.etapa = :etapa
               AND EXISTS (
                   SELECT 1
@@ -705,15 +734,25 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                   JOIN sa.tipificacion ta
                   WHERE ta.idEquipo = l.idEquipo
                     AND ta.etapa = l.etapa
-                    AND ta.codigo = l.codigoTipificacion
-                    AND sa.codigo = l.codigoSubtipificacion
+                    AND ta.codigo = r.mayorRangoCodigoTipificacion
+                    AND sa.codigo = r.mayorRangoCodigoSubtipificacion
                     AND :comportamiento MEMBER OF sa.comportamientos
+              )
+              AND EXISTS (
+                  SELECT 1
+                  FROM Evento e
+                  WHERE e.idLead = l.id
+                    AND e.accion = :accionTipificacion
+                    AND e.tipificacion = r.mayorRangoCodigoTipificacion
+                    AND e.subtipificacion = r.mayorRangoCodigoSubtipificacion
+                    AND e.horaProgramada IS NOT NULL
               )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             """)
     long contarAgendadosGtrActivos(
             @Param("etapa") Etapa etapa,
             @Param("comportamiento") ComportamientoTipificacion comportamiento,
+            @Param("accionTipificacion") Accion accionTipificacion,
             @Param("filtrarEquipos") boolean filtrarEquipos,
             @Param("equipoIds") Collection<Long> equipoIds
     );
@@ -722,6 +761,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             SELECT e.horaProgramada AS horaProgramada, COUNT(l) AS cantidad
             FROM Lead l
             JOIN Evento e ON e.idLead = l.id
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             WHERE l.etapa = :etapa
               AND EXISTS (
                   SELECT 1
@@ -729,12 +769,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                   JOIN sa.tipificacion ta
                   WHERE ta.idEquipo = l.idEquipo
                     AND ta.etapa = l.etapa
-                    AND ta.codigo = l.codigoTipificacion
-                    AND sa.codigo = l.codigoSubtipificacion
+                    AND ta.codigo = r.mayorRangoCodigoTipificacion
+                    AND sa.codigo = r.mayorRangoCodigoSubtipificacion
                     AND :comportamiento MEMBER OF sa.comportamientos
               )
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND e.accion = :accionTipificacion
+              AND e.tipificacion = r.mayorRangoCodigoTipificacion
+              AND e.subtipificacion = r.mayorRangoCodigoSubtipificacion
               AND e.horaProgramada IS NOT NULL
               AND e.createdAt >= :inicioDia
               AND e.createdAt < :finDia
@@ -743,6 +785,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                   FROM Evento es
                   WHERE es.idLead = l.id
                     AND es.accion = :accionTipificacion
+                    AND es.tipificacion = r.mayorRangoCodigoTipificacion
+                    AND es.subtipificacion = r.mayorRangoCodigoSubtipificacion
+                    AND es.horaProgramada IS NOT NULL
               )
             GROUP BY e.horaProgramada
             """)

@@ -51,7 +51,7 @@ class CampanaGastoServiceTest {
         when(registroRepository.saveAndFlush(any(CampanaGastoRegistro.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(registroRepository.save(any(CampanaGastoRegistro.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(eventoRepository.contarRegistrosPorCampanaYRango(anyLong(), any(), any(), any())).thenReturn(0L);
-        when(eventoRepository.contarVentasCerradasPorCampanaYRango(anyLong(), any(), any(), any(), any(), any())).thenReturn(0L);
+        when(eventoRepository.contarVentasCerradasPorCampanaYRango(anyLong(), any(), any(), any(), any())).thenReturn(0L);
 
         CampanaGastoResponse response = service.registrarGasto(1L, request(12));
 
@@ -79,7 +79,7 @@ class CampanaGastoServiceTest {
         when(registroRepository.saveAndFlush(any(CampanaGastoRegistro.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(registroRepository.save(any(CampanaGastoRegistro.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(eventoRepository.contarRegistrosPorCampanaYRango(anyLong(), any(), any(), any())).thenReturn(0L);
-        when(eventoRepository.contarVentasCerradasPorCampanaYRango(anyLong(), any(), any(), any(), any(), any())).thenReturn(0L);
+        when(eventoRepository.contarVentasCerradasPorCampanaYRango(anyLong(), any(), any(), any(), any())).thenReturn(0L);
 
         CampanaGastoResponse response = service.registrarGasto(1L, request(18));
 
@@ -99,7 +99,7 @@ class CampanaGastoServiceTest {
         when(registroRepository.saveAndFlush(any(CampanaGastoRegistro.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(registroRepository.save(any(CampanaGastoRegistro.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(eventoRepository.contarRegistrosPorCampanaYRango(anyLong(), any(), any(), any())).thenReturn(0L);
-        when(eventoRepository.contarVentasCerradasPorCampanaYRango(anyLong(), any(), any(), any(), any(), any())).thenReturn(0L);
+        when(eventoRepository.contarVentasCerradasPorCampanaYRango(anyLong(), any(), any(), any(), any())).thenReturn(0L);
 
         CampanaGastoResponse response = service.registrarGasto(1L, request(12));
 

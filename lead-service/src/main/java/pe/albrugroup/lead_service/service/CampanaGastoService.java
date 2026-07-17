@@ -7,6 +7,7 @@ import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.Campana;
 import pe.albrugroup.lead_service.entity.CampanaGastoRegistro;
 import pe.albrugroup.lead_service.entity.enums.Accion;
+import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.request.CampanaGastoRequest;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoCampanaResumenResponse;
 import pe.albrugroup.lead_service.entity.response.CampanaGastoResponse;
@@ -37,8 +38,10 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class CampanaGastoService {
 
-    private static final String TIPIFICACION_PREVENTA_COMPLETA = "PREVENTA_COMPLETA";
-    private static final String SUBTIPIFICACION_VENTA_CERRADA = "VENTA_CERRADA";
+    // Ventas cerradas de la campana: las subtipis de preventa que avanzan a venta (comportamiento
+    // ES_CIERRE_PREVENTA), no un par de codigos fijo.
+    private static final ComportamientoTipificacion COMPORTAMIENTO_CIERRE_PREVENTA =
+            ComportamientoTipificacion.ES_CIERRE_PREVENTA;
 
     private final CampanaGastoRegistroRepository registroRepository;
     private final CampanaRepository campanaRepository;
@@ -281,8 +284,7 @@ public class CampanaGastoService {
         registro.setVentasCerradas((int) eventoRepository.contarVentasCerradasPorCampanaYRango(
                 idCampana,
                 Accion.TIPIFICACION,
-                TIPIFICACION_PREVENTA_COMPLETA,
-                SUBTIPIFICACION_VENTA_CERRADA,
+                COMPORTAMIENTO_CIERRE_PREVENTA,
                 inicioDia,
                 createdAt
         ));
