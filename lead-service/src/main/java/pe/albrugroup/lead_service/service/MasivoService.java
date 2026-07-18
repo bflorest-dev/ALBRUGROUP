@@ -35,11 +35,10 @@ public class MasivoService {
 
     private static final List<Long> EQUIPOS_FILTRO_VACIO = List.of(-1L);
     private static final List<String> CODIGOS_FILTRO_VACIO = List.of("__SIN_CODIGO__");
-    // Un lead cuya preventa ya se cerro no vuelve al masivo. La tipi PREVENTA es "gestion de preventa
-    // finalizada": todas sus subtipis son desenlaces, asi que se excluye la tipi entera.
-    private static final List<String> TIPIFICACIONES_EXCLUIDAS_MASIVO = List.of(
-            "PREVENTA"
-    );
+    // La bandeja historica ya esta acotada a leads en PREVENTA. No excluimos codigos reales:
+    // PREVENTA + INCOMPLETA/DESAPROBADA deben poder buscarse, y PREVENTA + COMPLETA ya no aparece
+    // porque el lead avanzo de etapa.
+    private static final List<String> TIPIFICACIONES_EXCLUIDAS_MASIVO = CODIGOS_FILTRO_VACIO;
     private static final DateTimeFormatter ETIQUETA_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final LeadRepository leadRepository;

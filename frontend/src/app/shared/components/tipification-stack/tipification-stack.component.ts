@@ -24,10 +24,10 @@ export class TipificationStackComponent {
   protected readonly hasSubtipificacion = computed(() => this.hasValue(this.codigoSubtipificacion()));
   protected readonly hasAnyValue = computed(() => this.hasTipificacion() || this.hasSubtipificacion());
   protected readonly tipificacionClass = computed(() =>
-    this.tagClass(this.codigoTipificacion(), 'tipificacion', this.isProgramacionCancelada())
+    this.tagClass(this.codigoTipificacion(), 'tipificacion', this.isDangerTipification())
   );
   protected readonly subtipificacionClass = computed(() =>
-    this.tagClass(this.codigoTipificacion(), 'subtipificacion', this.isProgramacionCancelada())
+    this.tagClass(this.codigoTipificacion(), 'subtipificacion', this.isDangerTipification())
   );
 
   private tagClass(
@@ -48,6 +48,16 @@ export class TipificationStackComponent {
   private isProgramacionCancelada(): boolean {
     return this.normalizeCode(this.codigoTipificacion()) === 'PROGRAMADO'
       && this.normalizeCode(this.codigoSubtipificacion()) === 'PROGRAMACION_CANCELADA';
+  }
+
+  private isPreventaDesaprobada(): boolean {
+    const subtipificacion = this.normalizeCode(this.codigoSubtipificacion());
+    return this.normalizeCode(this.codigoTipificacion()) === 'PREVENTA'
+      && (subtipificacion === 'DESAPROBADA' || subtipificacion === 'DESAPROBADO');
+  }
+
+  private isDangerTipification(): boolean {
+    return this.isProgramacionCancelada() || this.isPreventaDesaprobada();
   }
 
   private formatCode(value: string | null | undefined): string {
