@@ -130,6 +130,9 @@ public class DataLoader {
         saveSubtipificacion(scorePreventa, "PREVENTA_INCOMPLETA", "Score validado en etapa de preventa", 1);
         saveSubtipificacion(scorePreventa, "PDTE_SCORE", "Validacion de score pendiente", 2);
 
+        Tipificacion preventa = saveTipificacion(Etapa.PREVENTA, "PREVENTA", "Gestion de preventa finalizada", 8);
+        saveSubtipificacion(preventa, "DESAPROBADA", "Venta devuelta por validacion desaprobada", 3, Etapa.PREVENTA);
+
         Tipificacion preventaCompleta = saveTipificacion(Etapa.PREVENTA, "PREVENTA_COMPLETA", "Gestion de preventa finalizada", 8);
         saveSubtipificacion(preventaCompleta, "VENTA_CERRADA", "Venta cerrada en la gestion actual", 1, Etapa.VENTA);
         saveSubtipificacion(preventaCompleta, "VC_SIGUIENTE_MES", "Venta proyectada para el siguiente mes", 2);
