@@ -96,6 +96,23 @@ p,
   user-select: none;
 }
 
+.campaign-maintenance-table__text {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.campaign-maintenance-table__whatsapp {
+  min-width: 0;
+}
+
+.campaign-maintenance-table__whatsapp .p-button {
+  flex: 0 0 auto;
+}
+
 .zone-rule-builder {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 1rem;
@@ -297,6 +314,44 @@ label,
     0 0 0 4px color-mix(in srgb, var(--role-accent) 72%, transparent 28%);
   opacity: 1;
   transform: translateY(-1px);
+}
+
+:host ::ng-deep .campaign-maintenance-table td,
+:host ::ng-deep .campaign-maintenance-table th {
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+:host ::ng-deep .campaign-maintenance-table th {
+  white-space: nowrap;
+}
+
+:host ::ng-deep .campaign-maintenance-table__campaign-col {
+  width: 25%;
+}
+
+:host ::ng-deep .campaign-maintenance-table__provider-col {
+  width: 10%;
+}
+
+:host ::ng-deep .campaign-maintenance-table__account-col {
+  width: 21%;
+}
+
+:host ::ng-deep .campaign-maintenance-table__whatsapp-col {
+  width: 18%;
+}
+
+:host ::ng-deep .campaign-maintenance-table__created-col {
+  width: 10%;
+}
+
+:host ::ng-deep .campaign-maintenance-table__status-col {
+  width: 8%;
+}
+
+:host ::ng-deep .campaign-maintenance-table__actions-col {
+  width: 8%;
 }
 
 .dialog-actions {

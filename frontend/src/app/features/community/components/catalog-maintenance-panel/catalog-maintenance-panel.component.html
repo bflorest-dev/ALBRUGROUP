@@ -217,26 +217,46 @@
                   />
                 </div>
               </div>
-              <p-table [value]="facade.campanasSorted()" [paginator]="true" [rows]="8" [rowHover]="true" styleClass="p-datatable-sm">
+              <p-table
+                [value]="facade.campanasSorted()"
+                [paginator]="true"
+                [rows]="8"
+                [rowHover]="true"
+                [scrollable]="true"
+                [tableStyle]="{ 'min-width': '1080px', 'table-layout': 'fixed' }"
+                styleClass="p-datatable-sm campaign-maintenance-table"
+              >
                 <ng-template #header>
                   <tr>
-                    <th>Campaña</th>
-                    <th>Proveedor</th>
-                    <th>Cuenta</th>
-                    <th>WhatsApp</th>
-                    <th>Creado</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
+                    <th class="campaign-maintenance-table__campaign-col">Campaña</th>
+                    <th class="campaign-maintenance-table__provider-col">Proveedor</th>
+                    <th class="campaign-maintenance-table__account-col">Cuenta</th>
+                    <th class="campaign-maintenance-table__whatsapp-col">WhatsApp</th>
+                    <th class="campaign-maintenance-table__created-col">Creado</th>
+                    <th class="campaign-maintenance-table__status-col">Estado</th>
+                    <th class="campaign-maintenance-table__actions-col">Acciones</th>
                   </tr>
                 </ng-template>
                 <ng-template #body let-campana>
                   <tr>
-                    <td><strong>{{ campana.nombre }}</strong></td>
-                    <td>{{ display(campana.nombreProveedor) }}</td>
-                    <td>{{ display(campana.nombreCuenta) }}</td>
-                    <td>
-                      <div class="inline-action">
-                        <span>{{ facade.campaignWhatsappLabel(campana) }}</span>
+                    <td class="campaign-maintenance-table__campaign-col">
+                      <strong class="campaign-maintenance-table__text" [title]="campana.nombre">{{ campana.nombre }}</strong>
+                    </td>
+                    <td class="campaign-maintenance-table__provider-col">
+                      <span class="campaign-maintenance-table__text" [title]="display(campana.nombreProveedor)">
+                        {{ display(campana.nombreProveedor) }}
+                      </span>
+                    </td>
+                    <td class="campaign-maintenance-table__account-col">
+                      <span class="campaign-maintenance-table__text" [title]="display(campana.nombreCuenta)">
+                        {{ display(campana.nombreCuenta) }}
+                      </span>
+                    </td>
+                    <td class="campaign-maintenance-table__whatsapp-col">
+                      <div class="inline-action campaign-maintenance-table__whatsapp">
+                        <span class="campaign-maintenance-table__text" [title]="facade.campaignWhatsappLabel(campana)">
+                          {{ facade.campaignWhatsappLabel(campana) }}
+                        </span>
                         <button
                           pButton
                           type="button"
@@ -248,12 +268,12 @@
                         ></button>
                       </div>
                     </td>
-                    <td class="compact-date-cell">
+                    <td class="compact-date-cell campaign-maintenance-table__created-col">
                       <span class="compact-date-cell__time">{{ compactTimePart(campana.createdAt) }}</span>
                       <span class="compact-date-cell__date">{{ compactDatePart(campana.createdAt) }}</span>
                     </td>
-                    <td><p-tag [severity]="statusSeverity(campana.activo)" [value]="statusLabel(campana.activo)" /></td>
-                    <td>
+                    <td class="campaign-maintenance-table__status-col"><p-tag [severity]="statusSeverity(campana.activo)" [value]="statusLabel(campana.activo)" /></td>
+                    <td class="campaign-maintenance-table__actions-col">
                       <button
                         pButton
                         type="button"
