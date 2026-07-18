@@ -10,8 +10,10 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import pe.albrugroup.lead_service.entity.request.*;
+import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.enums.ModoConteo;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.response.*;
 import pe.albrugroup.lead_service.service.LeadCampanaCorreccionService;
@@ -172,9 +174,11 @@ public class PreventaController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
             @RequestParam(defaultValue = "true") boolean soloActivos,
-            @RequestParam(required = false) Long idEquipo
+            @RequestParam(required = false) Long idEquipo,
+            @RequestParam(defaultValue = "GESTIONADOS") ModoConteo modo,
+            @RequestParam(defaultValue = "MAYOR") CampoTipificacion campo
     ) {
-        return ResponseEntity.ok(leadService.listarTipificacionesRankingGtr(desde, hasta, soloActivos, idEquipo));
+        return ResponseEntity.ok(leadService.listarTipificacionesRankingGtr(desde, hasta, soloActivos, idEquipo, modo, campo));
     }
 
     @GetMapping("/gtr/tipificaciones/{codigoTipificacion}/subtipificaciones") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
@@ -183,10 +187,12 @@ public class PreventaController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
             @RequestParam(defaultValue = "true") boolean soloActivos,
-            @RequestParam(required = false) Long idEquipo
+            @RequestParam(required = false) Long idEquipo,
+            @RequestParam(defaultValue = "GESTIONADOS") ModoConteo modo,
+            @RequestParam(defaultValue = "MAYOR") CampoTipificacion campo
     ) {
         return ResponseEntity.ok(leadService.listarSubtipificacionesRankingGtr(
-                codigoTipificacion, desde, hasta, soloActivos, idEquipo));
+                codigoTipificacion, desde, hasta, soloActivos, idEquipo, modo, campo));
     }
 
     @PostMapping("/gtr/{idLead}/tomar-gestion")

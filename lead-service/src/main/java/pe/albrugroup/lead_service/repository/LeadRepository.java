@@ -1623,23 +1623,125 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     );
 
     // ── Ranking GTR: tipificaciones/subtipificaciones por LEADS (no eventos) ──
-    // Cuenta LEADS distintos por su Tipificacion de Mayor Rango en PREVENTA (uno por lead), no la
-    // suma de intentos. Periodo = mayorRangoAt dentro de [desde, hasta). Lead es raiz (@Filter por
-    // equipo); soloActivos no aplica aqui (no hay un actor unico por lead de mayor rango).
+    // Cuenta LEADS distintos por su tipificacion en PREVENTA (uno por lead), no la suma de intentos.
+    // El :campo elige el punto de tipificacion (PRIMERA/ULTIMA/MAYOR) tal como en el DASHBOARD del ADMIN.
+    //
+    // Dos cohortes (modo):
+    //  - GESTIONADOS: el periodo filtra por la FECHA de la tipificacion del campo elegido (primera/
+    //    ultima/mayorRangoAt), no por el registro del lead.
+    //  - INGRESADOS: cohorte = leads con evento REGISTRO en el periodo (los "leads del dia"), agrupados
+    //    por su tipificacion actual del campo elegido.
+    // soloActivos no aplica (no hay un actor unico por lead). Lead es raiz (@Filter por equipo) y se
+    // acota tambien por equipoIds explicitos, igual que el resto del ranking GTR.
+
+    // El modo es un booleano :ingresados. GESTIONADOS (false): el periodo filtra por la fecha de la
+    // tipificacion del campo. INGRESADOS (true): el lead entra si tuvo un evento REGISTRO en el periodo
+    // (cohorte "leads del dia"), agrupado por su tipificacion actual del campo. El GROUP BY es una
+    // expresion fija (sin parametro) para que Postgres lo empate con el SELECT.
 
     @Query("""
-            SELECT TRIM(r.mayorRangoCodigoTipificacion) AS tipificacion,
-                   COUNT(r.id) AS cantidad
+            SELECT TRIM(r.primeraCodigoTipificacion) AS tipificacion, COUNT(r.id) AS cantidad
             FROM Lead l
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
-            WHERE r.mayorRangoCodigoTipificacion IS NOT NULL
-              AND TRIM(r.mayorRangoCodigoTipificacion) <> ''
-              AND r.mayorRangoAt >= :fechaDesde
-              AND r.mayorRangoAt < :fechaHasta
+            WHERE r.primeraCodigoTipificacion IS NOT NULL AND TRIM(r.primeraCodigoTipificacion) <> ''
+              AND ((:ingresados = false AND r.primeraTipificacionAt >= :fechaDesde AND r.primeraTipificacionAt < :fechaHasta)
+                   OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento e
+                              WHERE e.idLead = l.id AND e.accion = :accion
+                                AND e.createdAt >= :fechaDesde AND e.createdAt < :fechaHasta)))
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            GROUP BY TRIM(r.primeraCodigoTipificacion)
+            """)
+    List<TipificacionCantidadProjection> resumirTipiRankingGtrPrimera(
+            @Param("ingresados") boolean ingresados,
+            @Param("accion") Accion accion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query("""
+            SELECT TRIM(r.ultimaCodigoTipificacion) AS tipificacion, COUNT(r.id) AS cantidad
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
+            WHERE r.ultimaCodigoTipificacion IS NOT NULL AND TRIM(r.ultimaCodigoTipificacion) <> ''
+              AND ((:ingresados = false AND r.ultimaTipificacionAt >= :fechaDesde AND r.ultimaTipificacionAt < :fechaHasta)
+                   OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento e
+                              WHERE e.idLead = l.id AND e.accion = :accion
+                                AND e.createdAt >= :fechaDesde AND e.createdAt < :fechaHasta)))
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            GROUP BY TRIM(r.ultimaCodigoTipificacion)
+            """)
+    List<TipificacionCantidadProjection> resumirTipiRankingGtrUltima(
+            @Param("ingresados") boolean ingresados,
+            @Param("accion") Accion accion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query("""
+            SELECT TRIM(r.mayorRangoCodigoTipificacion) AS tipificacion, COUNT(r.id) AS cantidad
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
+            WHERE r.mayorRangoCodigoTipificacion IS NOT NULL AND TRIM(r.mayorRangoCodigoTipificacion) <> ''
+              AND ((:ingresados = false AND r.mayorRangoAt >= :fechaDesde AND r.mayorRangoAt < :fechaHasta)
+                   OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento e
+                              WHERE e.idLead = l.id AND e.accion = :accion
+                                AND e.createdAt >= :fechaDesde AND e.createdAt < :fechaHasta)))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY TRIM(r.mayorRangoCodigoTipificacion)
             """)
-    List<TipificacionCantidadProjection> resumirTipificacionesRankingGtr(
+    List<TipificacionCantidadProjection> resumirTipiRankingGtrMayor(
+            @Param("ingresados") boolean ingresados,
+            @Param("accion") Accion accion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query("""
+            SELECT COALESCE(NULLIF(TRIM(r.primeraCodigoSubtipificacion), ''), 'SIN_SUBTIPIFICACION') AS subtipificacion,
+                   COUNT(r.id) AS cantidad
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
+            WHERE TRIM(r.primeraCodigoTipificacion) = :tipificacion
+              AND ((:ingresados = false AND r.primeraTipificacionAt >= :fechaDesde AND r.primeraTipificacionAt < :fechaHasta)
+                   OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento e
+                              WHERE e.idLead = l.id AND e.accion = :accion
+                                AND e.createdAt >= :fechaDesde AND e.createdAt < :fechaHasta)))
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            GROUP BY COALESCE(NULLIF(TRIM(r.primeraCodigoSubtipificacion), ''), 'SIN_SUBTIPIFICACION')
+            """)
+    List<SubtipificacionCantidadProjection> resumirSubtipiRankingGtrPrimera(
+            @Param("ingresados") boolean ingresados,
+            @Param("accion") Accion accion,
+            @Param("tipificacion") String tipificacion,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
+    @Query("""
+            SELECT COALESCE(NULLIF(TRIM(r.ultimaCodigoSubtipificacion), ''), 'SIN_SUBTIPIFICACION') AS subtipificacion,
+                   COUNT(r.id) AS cantidad
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
+            WHERE TRIM(r.ultimaCodigoTipificacion) = :tipificacion
+              AND ((:ingresados = false AND r.ultimaTipificacionAt >= :fechaDesde AND r.ultimaTipificacionAt < :fechaHasta)
+                   OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento e
+                              WHERE e.idLead = l.id AND e.accion = :accion
+                                AND e.createdAt >= :fechaDesde AND e.createdAt < :fechaHasta)))
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            GROUP BY COALESCE(NULLIF(TRIM(r.ultimaCodigoSubtipificacion), ''), 'SIN_SUBTIPIFICACION')
+            """)
+    List<SubtipificacionCantidadProjection> resumirSubtipiRankingGtrUltima(
+            @Param("ingresados") boolean ingresados,
+            @Param("accion") Accion accion,
+            @Param("tipificacion") String tipificacion,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,
             @Param("filtrarEquipos") boolean filtrarEquipos,
@@ -1652,12 +1754,16 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             FROM Lead l
             JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = 'PREVENTA'
             WHERE TRIM(r.mayorRangoCodigoTipificacion) = :tipificacion
-              AND r.mayorRangoAt >= :fechaDesde
-              AND r.mayorRangoAt < :fechaHasta
+              AND ((:ingresados = false AND r.mayorRangoAt >= :fechaDesde AND r.mayorRangoAt < :fechaHasta)
+                   OR (:ingresados = true AND EXISTS (SELECT 1 FROM Evento e
+                              WHERE e.idLead = l.id AND e.accion = :accion
+                                AND e.createdAt >= :fechaDesde AND e.createdAt < :fechaHasta)))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY COALESCE(NULLIF(TRIM(r.mayorRangoCodigoSubtipificacion), ''), 'SIN_SUBTIPIFICACION')
             """)
-    List<SubtipificacionCantidadProjection> resumirSubtipificacionesRankingGtr(
+    List<SubtipificacionCantidadProjection> resumirSubtipiRankingGtrMayor(
+            @Param("ingresados") boolean ingresados,
+            @Param("accion") Accion accion,
             @Param("tipificacion") String tipificacion,
             @Param("fechaDesde") Instant fechaDesde,
             @Param("fechaHasta") Instant fechaHasta,

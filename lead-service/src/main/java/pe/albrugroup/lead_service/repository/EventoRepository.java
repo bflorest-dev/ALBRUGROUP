@@ -1316,6 +1316,27 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
 
     // ── Queries específicos GTR (usan soloActivos con EXISTS para asesores) ────
 
+    // Ids de actores que actuaron con un rol de la operación (ventas/GTR) en el período y scope.
+    // Filtra el ranking de asesores para que NO aparezcan backoffice/migración/otros roles que hayan
+    // tocado leads de PREVENTA sin ser parte de la operación.
+    @Query("""
+            SELECT DISTINCT e.idActor
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.idActor IS NOT NULL
+              AND e.rolActor IN :rolesPermitidos
+              AND e.createdAt >= :fechaDesde
+              AND e.createdAt < :fechaHasta
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+            """)
+    List<Long> idsAsesoresRankingGtr(
+            @Param("rolesPermitidos") Collection<String> rolesPermitidos,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
+    );
+
     @Query("""
             SELECT e.idActor AS idAsesor,
                    e.nombreActor AS nombreAsesor,

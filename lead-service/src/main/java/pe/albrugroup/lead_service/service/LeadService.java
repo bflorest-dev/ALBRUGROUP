@@ -9,6 +9,8 @@ import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.*;
 import pe.albrugroup.lead_service.entity.enums.Accion;
+import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
+import pe.albrugroup.lead_service.entity.enums.ModoConteo;
 import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.CriterioZona;
@@ -185,6 +187,11 @@ public class LeadService {
     );
     private static final Set<String> LEAD_POSTVENTA_SORT_FIELDS = Set.of(
             "lastEntryAt", "createdAt", "lead", "nombreProveedorSnapshot", "estadoPostventa", "diaCorteFacturacion"
+    );
+    // Roles que pueden figurar en el ranking de asesores GTR. Se excluyen backoffice, migración y
+    // cualquier otro rol que haya tocado leads de PREVENTA sin ser parte de la operación de ventas/GTR.
+    private static final Set<String> ROLES_RANKING_ASESOR_GTR = Set.of(
+            "ASESOR_VENTAS", "OJT", "SUPERVISOR_VENTAS", "ASESOR_GTR", "SUPERVISOR_GTR"
     );
 
     public PageResponse<LeadGtrResponse> listarBandejaGtr(
@@ -3533,6 +3540,14 @@ public class LeadService {
                             row.getIdProveedor(), row.getNombreProveedor(), row.getCantidad()));
                 });
 
+        // Solo asesores de ventas/GTR (excluye backoffice/migración/etc.). Un actor entra al ranking
+        // sólo si actuó con un rol válido en el período y scope; así no aparece un backoffice aunque
+        // haya recibido asignaciones o tipificado leads de PREVENTA.
+        Set<Long> asesoresValidos = new HashSet<>(eventoRepository.idsAsesoresRankingGtr(
+                ROLES_RANKING_ASESOR_GTR, rangoPeriodo.inicio(), rangoPeriodo.fin(),
+                equipos.filtrar(), equipos.ids()));
+        acumulados.keySet().retainAll(asesoresValidos);
+
         resolverNombresAsesoresFaltantes(acumulados);
 
         return acumulados.values().stream()
@@ -3586,13 +3601,21 @@ public class LeadService {
     }
 
     public List<GtrTipificacionRankingResponse> listarTipificacionesRankingGtr(
-            LocalDate desde, LocalDate hasta, boolean soloActivos, Long idEquipo) {
+            LocalDate desde, LocalDate hasta, boolean soloActivos, Long idEquipo,
+            ModoConteo modo, CampoTipificacion campo) {
         OperationalDateTime.InstantRange rango = resolverRangoRanking(desde, hasta);
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
-        // Cuenta LEADS por su tipificacion de mayor rango en PREVENTA (uno por lead), no eventos.
-        // soloActivos no aplica en este bloque (no hay un actor unico por lead).
-        List<TipificacionCantidadProjection> rows = leadRepository.resumirTipificacionesRankingGtr(
-                rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+        // Cuenta LEADS distintos por su tipificacion del campo elegido en PREVENTA (uno por lead), no
+        // eventos. modo/campo con la misma semantica que el DASHBOARD del ADMIN. soloActivos no aplica.
+        boolean ingresados = modo == ModoConteo.INGRESADOS;
+        List<TipificacionCantidadProjection> rows = switch (campo) {
+            case PRIMERA -> leadRepository.resumirTipiRankingGtrPrimera(
+                    ingresados, Accion.REGISTRO, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+            case ULTIMA -> leadRepository.resumirTipiRankingGtrUltima(
+                    ingresados, Accion.REGISTRO, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+            case MAYOR -> leadRepository.resumirTipiRankingGtrMayor(
+                    ingresados, Accion.REGISTRO, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+        };
         long total = rows.stream().mapToLong(TipificacionCantidadProjection::getCantidad).sum();
 
         return rows.stream()
@@ -3612,21 +3635,27 @@ public class LeadService {
             LocalDate desde,
             LocalDate hasta,
             boolean soloActivos,
-            Long idEquipo
+            Long idEquipo,
+            ModoConteo modo,
+            CampoTipificacion campo
     ) {
         if (codigoTipificacion == null || codigoTipificacion.isBlank()) {
             throw new BadRequestException("Selecciona una tipificación para ver su detalle.");
         }
         OperationalDateTime.InstantRange rango = resolverRangoRanking(desde, hasta);
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
-        // Cuenta LEADS por su tipificacion de mayor rango en PREVENTA (uno por lead), no eventos.
-        List<SubtipificacionCantidadProjection> rows = leadRepository.resumirSubtipificacionesRankingGtr(
-                codigoTipificacion.trim(),
-                rango.inicio(),
-                rango.fin(),
-                equipos.filtrar(),
-                equipos.ids()
-        );
+        // Detalle de subtipificaciones del mismo modo/campo que el diagrama de tipificaciones: leads
+        // distintos cuyo campo de tipificacion es la tipi elegida, desglosados por su subtipi del campo.
+        boolean ingresados = modo == ModoConteo.INGRESADOS;
+        String tipi = codigoTipificacion.trim();
+        List<SubtipificacionCantidadProjection> rows = switch (campo) {
+            case PRIMERA -> leadRepository.resumirSubtipiRankingGtrPrimera(
+                    ingresados, Accion.REGISTRO, tipi, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+            case ULTIMA -> leadRepository.resumirSubtipiRankingGtrUltima(
+                    ingresados, Accion.REGISTRO, tipi, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+            case MAYOR -> leadRepository.resumirSubtipiRankingGtrMayor(
+                    ingresados, Accion.REGISTRO, tipi, rango.inicio(), rango.fin(), equipos.filtrar(), equipos.ids());
+        };
         long total = rows.stream().mapToLong(SubtipificacionCantidadProjection::getCantidad).sum();
 
         return rows.stream()
