@@ -173,11 +173,15 @@ export class PreventaLeadService {
     desde: string,
     hasta?: string,
     soloActivos = true,
-    idEquipo?: number | null
+    idEquipo?: number | null,
+    modo?: string,
+    campo?: string
   ): Observable<GtrTipificacionRankingResponse[]> {
     let params = new HttpParams().set('desde', desde).set('soloActivos', soloActivos);
     if (hasta) params = params.set('hasta', hasta);
     if (idEquipo !== null && idEquipo !== undefined) params = params.set('idEquipo', idEquipo);
+    if (modo) params = params.set('modo', modo);
+    if (campo) params = params.set('campo', campo);
     return this.http.get<GtrTipificacionRankingResponse[]>(`${this.leadUrl}/preventa/gtr/tipificaciones`, { params });
   }
 
@@ -186,11 +190,15 @@ export class PreventaLeadService {
     desde: string,
     hasta?: string,
     soloActivos = true,
-    idEquipo?: number | null
+    idEquipo?: number | null,
+    modo?: string,
+    campo?: string
   ): Observable<GtrSubtipificacionRankingResponse[]> {
     let params = new HttpParams().set('desde', desde).set('soloActivos', soloActivos);
     if (hasta) params = params.set('hasta', hasta);
     if (idEquipo !== null && idEquipo !== undefined) params = params.set('idEquipo', idEquipo);
+    if (modo) params = params.set('modo', modo);
+    if (campo) params = params.set('campo', campo);
     return this.http.get<GtrSubtipificacionRankingResponse[]>(
       `${this.leadUrl}/preventa/gtr/tipificaciones/${encodeURIComponent(codigoTipificacion)}/subtipificaciones`,
       { params }

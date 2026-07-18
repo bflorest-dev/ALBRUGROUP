@@ -19,8 +19,38 @@
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.9rem;
   min-width: 0;
+}
+
+.ranking-day {
+  align-items: center;
+  color: #475569;
+  display: flex;
+  font-size: 0.78rem;
+  font-weight: 800;
+  gap: 0.4rem;
+}
+
+.ranking-tipi-toggles {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+}
+
+.ranking-tipi-toggles__group {
+  align-items: center;
+  display: flex;
+  gap: 0.4rem;
+
+  small {
+    color: #475569;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
 }
 
 .ranking-custom-range {

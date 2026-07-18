@@ -1,44 +1,41 @@
 <div class="ranking-view">
   <div class="ranking-toolbar">
     <div class="ranking-toolbar__left">
-      @if (periodMode === 'selector') {
-        <p-selectbutton
-          [options]="facade.periodOptions"
-          [ngModel]="facade.period()"
-          optionLabel="label"
-          optionValue="value"
-          (onChange)="onPeriodChange($any($event.value))"
+      <label class="ranking-day">
+        <span>Día</span>
+        <p-datepicker
+          [ngModel]="facade.selectedDay()"
+          dateFormat="dd/mm/yy"
+          [showIcon]="true"
+          [maxDate]="facade.today"
+          appendTo="body"
+          (ngModelChange)="onDayChange($event)"
         />
-      }
-      @if (periodMode === 'selector' && facade.period() === 'personalizado') {
-        <div class="ranking-custom-range">
-          <label class="ranking-custom-range__field">
-            <span>Desde</span>
-            <p-datepicker
-              [ngModel]="facade.customDesdeDate()"
-              dateFormat="dd/mm/yy"
-              [showIcon]="true"
-              appendTo="body"
-              (ngModelChange)="onCustomDesdeDateChange($event)"
-            />
-          </label>
-          <label class="ranking-custom-range__field">
-            <span>Hasta</span>
-            <p-datepicker
-              [ngModel]="facade.customHastaDate()"
-              dateFormat="dd/mm/yy"
-              [showIcon]="true"
-              appendTo="body"
-              (ngModelChange)="onCustomHastaDateChange($event)"
-            />
-          </label>
-          @if (facade.customRangeError()) {
-            <p-message severity="warn" [text]="facade.customRangeError()!" />
-          } @else if (!facade.customDesde() || !facade.customHasta()) {
-            <span class="ranking-custom-range__hint">Completa ambas fechas.</span>
-          }
-        </div>
-      }
+      </label>
+      <div class="ranking-tipi-toggles">
+        <span class="ranking-tipi-toggles__group">
+          <small>Modo</small>
+          <p-selectbutton
+            [options]="facade.modoOptions"
+            [ngModel]="facade.modo()"
+            optionLabel="label"
+            optionValue="value"
+            [allowEmpty]="false"
+            (onChange)="onModoChange($any($event.value))"
+          />
+        </span>
+        <span class="ranking-tipi-toggles__group">
+          <small>Tipificación</small>
+          <p-selectbutton
+            [options]="facade.campoOptions"
+            [ngModel]="facade.campo()"
+            optionLabel="label"
+            optionValue="value"
+            [allowEmpty]="false"
+            (onChange)="onCampoChange($any($event.value))"
+          />
+        </span>
+      </div>
     </div>
     <button
       pButton
@@ -192,17 +189,27 @@
           </p-card>
 
           <p-card styleClass="ranking-board">
-            <ng-template #title><span class="ranking-board__title">Tipificaciones más usadas</span></ng-template>
-            <p-table class="ranking-desktop-table" [value]="block.tipificaciones" [rowHover]="true" [tableStyle]="{ 'min-width': '560px' }" styleClass="p-datatable-sm ranking-table">
-              <ng-template #header><tr><th>Tipificación</th><th style="width:5rem;text-align:right">Registros</th><th style="width:9rem">Porcentaje</th><th style="width:8rem"></th></tr></ng-template>
-              <ng-template #body let-row><tr><td><p-tag [value]="facade.display(row.codigoTipificacion)" [styleClass]="facade.tipificacionTagClass(row.codigoTipificacion)" /></td><td style="text-align:right"><strong>{{ facade.display(row.cantidad) }}</strong></td><td><p-progressbar [value]="row.porcentaje" [showValue]="true" styleClass="ranking-progress" /></td><td><button pButton type="button" label="Ver detalle" icon="pi pi-search" severity="secondary" [text]="true" size="small" (click)="facade.openTipificacionDetail(row.codigoTipificacion, block.idEquipo)"></button></td></tr></ng-template>
-              <ng-template #emptymessage><tr><td colspan="4" class="ranking-empty">Aún no hay tipificaciones en este período.</td></tr></ng-template>
-            </p-table>
-            <div class="ranking-mobile-list">
-              @for (row of block.tipificaciones; track row.codigoTipificacion) {
-                <article class="ranking-mobile-item"><header><p-tag [value]="facade.display(row.codigoTipificacion)" [styleClass]="facade.tipificacionTagClass(row.codigoTipificacion)" /><p-tag [value]="facade.display(row.cantidad) + ' registros'" severity="info" /></header><p-progressbar [value]="row.porcentaje" [showValue]="true" styleClass="ranking-progress" /><button pButton type="button" label="Ver detalle" icon="pi pi-search" severity="secondary" [outlined]="true" (click)="facade.openTipificacionDetail(row.codigoTipificacion, block.idEquipo)"></button></article>
-              } @empty { <p class="ranking-empty">Aún no hay tipificaciones en este período.</p> }
-            </div>
+            <ng-template #title><span class="ranking-board__title">Resumen de Tipificaciones</span></ng-template>
+            @if (facade.isDrilled(block.idEquipo)) {
+              <app-ranking-donut
+                [segments]="facade.drillSegments()"
+                level="subtipi"
+                [interactive]="false"
+                [loading]="facade.drillLoading()"
+                [errorText]="facade.drillError()"
+                [showBack]="true"
+                backLabel="Volver a tipificaciones"
+                emptyMessage="No hay subtipificaciones para mostrar."
+                (back)="facade.closeDrill()"
+              />
+            } @else {
+              <app-ranking-donut
+                [segments]="block.donutSegments"
+                level="tipi"
+                [interactive]="true"
+                (segmentClick)="facade.openDrill($event, block.idEquipo)"
+              />
+            }
           </p-card>
         </div>
       </section>
@@ -211,25 +218,4 @@
     }
   }
 
-  <p-dialog
-    [header]="facade.detailTipificacion() ? 'Detalle de ' + facade.detailTipificacion() : 'Detalle de tipificación'"
-    [visible]="facade.detailOpen()"
-    (visibleChange)="!$event && facade.closeTipificacionDetail()"
-    [modal]="true"
-    [draggable]="false"
-    appendTo="body"
-    styleClass="ranking-detail-dialog"
-  >
-    @if (facade.detailLoading()) {
-      <div class="ranking-loading"><p-progress-spinner ariaLabel="Cargando detalle" /><span>Cargando detalle...</span></div>
-    } @else if (facade.detailError()) {
-      <p-message severity="error" [text]="facade.detailError()!" />
-    } @else {
-      <p-table [value]="facade.detailRows()" styleClass="p-datatable-sm ranking-table">
-        <ng-template #header><tr><th>Subtipificación</th><th style="text-align:right">Registros</th><th>Porcentaje</th></tr></ng-template>
-        <ng-template #body let-row><tr><td><p-tag [value]="facade.display(row.codigoSubtipificacion)" [styleClass]="facade.tipificacionTagClass(facade.detailTipificacion(), 'subtipificacion')" /></td><td style="text-align:right"><strong>{{ facade.display(row.cantidad) }}</strong></td><td><p-progressbar [value]="row.porcentaje" [showValue]="true" styleClass="ranking-progress" /></td></tr></ng-template>
-        <ng-template #emptymessage><tr><td colspan="3" class="ranking-empty">No hay subtipificaciones para mostrar.</td></tr></ng-template>
-      </p-table>
-    }
-  </p-dialog>
 </div>

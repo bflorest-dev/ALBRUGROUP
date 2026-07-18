@@ -1,0 +1,95 @@
+<div class="donut">
+  @if (showBack()) {
+    <div class="donut__head">
+      <button
+        pButton
+        type="button"
+        size="small"
+        severity="secondary"
+        [text]="true"
+        icon="pi pi-arrow-left"
+        [label]="backLabel()"
+        (click)="onBack()"
+      ></button>
+    </div>
+  }
+
+  @if (loading()) {
+    <p class="donut__state">Cargando…</p>
+  } @else if (errorText()) {
+    <p class="donut__state donut__state--error">{{ errorText() }}</p>
+  } @else if (arcs().length === 0) {
+    <p class="donut__state">{{ emptyMessage() }}</p>
+  } @else {
+    <div class="donut__body">
+      <div class="donut__chart" [class.donut__chart--interactive]="interactive()">
+        <svg viewBox="0 0 200 200" role="img" aria-label="Distribución por tipificación">
+          @if (isFullRing()) {
+            <circle
+              cx="100"
+              cy="100"
+              [attr.r]="ringRadius"
+              fill="none"
+              [attr.stroke]="arcs()[0].color"
+              [attr.stroke-width]="ringWidth"
+              class="donut__seg"
+              (mouseenter)="hovered.set(arcs()[0].codigo)"
+              (mouseleave)="hovered.set(null)"
+              (click)="onSegment(arcs()[0].codigo)"
+            />
+          } @else {
+            @for (arc of arcs(); track arc.codigo) {
+              <path
+                [attr.d]="arc.d"
+                [attr.fill]="arc.color"
+                class="donut__seg"
+                [class.donut__seg--dim]="hovered() && hovered() !== arc.codigo"
+                (mouseenter)="hovered.set(arc.codigo)"
+                (mouseleave)="hovered.set(null)"
+                (click)="onSegment(arc.codigo)"
+              />
+            }
+          }
+
+          @for (arc of arcs(); track arc.codigo) {
+            @if (arc.showLabel) {
+              <text
+                [attr.x]="arc.labelX"
+                [attr.y]="arc.labelY"
+                text-anchor="middle"
+                dominant-baseline="central"
+                class="donut__seg-value"
+                [class.donut__seg-value--dim]="hovered() && hovered() !== arc.codigo"
+                (mouseenter)="hovered.set(arc.codigo)"
+                (mouseleave)="hovered.set(null)"
+                (click)="onSegment(arc.codigo)"
+              >{{ sectorLabel(arc) }}</text>
+            }
+          }
+
+          <text x="100" y="95" text-anchor="middle" class="donut__total">{{ total() }}</text>
+          <text x="100" y="114" text-anchor="middle" class="donut__total-label">leads</text>
+        </svg>
+        @if (interactive() && hovered()) {
+          <span class="donut__hint"><i class="pi pi-search" aria-hidden="true"></i> Ver detalle</span>
+        }
+      </div>
+
+      <ul class="donut__legend">
+        @for (segment of segments(); track segment.codigo) {
+          <li
+            class="donut__legend-item"
+            [class.donut__legend-item--interactive]="interactive()"
+            [class.donut__legend-item--dim]="hovered() && hovered() !== segment.codigo"
+            (mouseenter)="hovered.set(segment.codigo)"
+            (mouseleave)="hovered.set(null)"
+            (click)="onSegment(segment.codigo)"
+          >
+            <span class="donut__swatch" [style.background]="color(segment)"></span>
+            <span class="donut__legend-label" [title]="segment.label">{{ segment.label }}</span>
+          </li>
+        }
+      </ul>
+    </div>
+  }
+</div>

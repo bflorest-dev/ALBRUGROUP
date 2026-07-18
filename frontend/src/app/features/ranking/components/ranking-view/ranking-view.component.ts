@@ -1,81 +1,67 @@
 import { ChangeDetectionStrategy, Component, Input, OnInit, inject } from '@angular/core';
-import { CommonModule, UpperCasePipe } from '@angular/common';
+import { UpperCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DatePickerModule } from 'primeng/datepicker';
-import { DialogModule } from 'primeng/dialog';
 import { MessageModule } from 'primeng/message';
 import { PopoverModule } from 'primeng/popover';
-import { ProgressBarModule } from 'primeng/progressbar';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { SelectModule } from 'primeng/select';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { RankingFacade, RankingPeriod, RankingSortDirection, RankingSortField } from '../../facades/ranking.facade';
-
-export type RankingPeriodMode = 'fixed-day' | 'selector';
+import {
+  RankingCampo,
+  RankingFacade,
+  RankingModo,
+  RankingSortDirection,
+  RankingSortField
+} from '../../facades/ranking.facade';
+import { RankingDonutComponent } from '../ranking-donut/ranking-donut.component';
 
 @Component({
   selector: 'app-ranking-view',
   standalone: true,
   imports: [
-    CommonModule,
-    FormsModule,
     UpperCasePipe,
+    FormsModule,
     ButtonModule,
     CardModule,
     DatePickerModule,
-    DialogModule,
     MessageModule,
     PopoverModule,
-    ProgressBarModule,
     ProgressSpinnerModule,
     SelectModule,
     SelectButtonModule,
     TableModule,
-    TagModule
+    TagModule,
+    RankingDonutComponent
   ],
   templateUrl: './ranking-view.component.html',
   styleUrl: './ranking-view.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RankingViewComponent implements OnInit {
-  @Input() periodMode: RankingPeriodMode = 'fixed-day';
   @Input() showTeamOrganization = false;
 
   protected readonly facade = inject(RankingFacade);
   private organizeCloseTimeout: ReturnType<typeof setTimeout> | null = null;
 
   ngOnInit(): void {
-    this.facade.start({
-      lockedToDay: this.periodMode === 'fixed-day',
-      allowTeamOrganization: this.showTeamOrganization
-    });
+    this.facade.start({ allowTeamOrganization: this.showTeamOrganization });
   }
 
-  protected onPeriodChange(value: RankingPeriod | null | undefined): void {
-    if (!value) {
-      return;
-    }
-    this.facade.setPeriod(value);
+  protected onDayChange(value: Date | null): void {
+    this.facade.setSelectedDay(value);
   }
 
-  protected onCustomDesdeChange(value: string): void {
-    this.facade.setCustomDesde(value);
+  protected onModoChange(value: RankingModo | null | undefined): void {
+    this.facade.setModo(value);
   }
 
-  protected onCustomHastaChange(value: string): void {
-    this.facade.setCustomHasta(value);
-  }
-
-  protected onCustomDesdeDateChange(value: Date | null): void {
-    this.facade.setCustomDesdeDate(value);
-  }
-
-  protected onCustomHastaDateChange(value: Date | null): void {
-    this.facade.setCustomHastaDate(value);
+  protected onCampoChange(value: RankingCampo | null | undefined): void {
+    this.facade.setCampo(value);
   }
 
   protected onOrganizeEnter(): void {
@@ -110,6 +96,5 @@ export class RankingViewComponent implements OnInit {
 
   protected onSortDirectionChange(value: RankingSortDirection | null | undefined, popover: { hide: () => void }): void {
     this.facade.setSortDirection(value);
-    popover.hide();
   }
 }

@@ -9,8 +9,9 @@ import {
 import { AdminEquipoService, EquipoResponse } from '../../admin/services/admin-equipo.service';
 import { PreventaLeadService } from '../../preventa/services/preventa-lead.service';
 
-export type RankingPeriod = 'dia' | 'mes' | 'historico' | 'personalizado';
 export type RankingGroupingMode = 'SIN_AGRUPAR' | 'EQUIPO';
+export type RankingModo = 'GESTIONADOS' | 'INGRESADOS';
+export type RankingCampo = 'MAYOR' | 'ULTIMA' | 'PRIMERA';
 export type RankingSortField =
   | 'conversion'
   | 'nuevosGestionadosPeriodo'
@@ -21,26 +22,39 @@ export type RankingSortField =
   | 'nombreAsesor';
 export type RankingSortDirection = 'asc' | 'desc';
 
+/** Un tramo del donut de tipificaciones/subtipificaciones. colorIndex mapea a la paleta del donut. */
+export interface RankingDonutSegment {
+  codigo: string;
+  label: string;
+  cantidad: number;
+  porcentaje: number;
+  colorIndex: number;
+}
+
 export type RankingBlock = {
   idEquipo: number | null;
   nombreEquipo: string;
   ranking: RankingAdvisorView[];
-  tipificaciones: GtrTipificacionRankingResponse[];
+  donutSegments: RankingDonutSegment[];
 };
 
 export type RankingAdvisorView = GtrRankingAsesorResponse & {
   conversion: number;
 };
 
-type RankingBlockResponse = Omit<RankingBlock, 'ranking'> & {
+type RankingBlockResponse = {
+  idEquipo: number | null;
+  nombreEquipo: string;
   ranking: GtrRankingAsesorResponse[];
+  tipificaciones: GtrTipificacionRankingResponse[];
 };
 
 type RankingRequest = {
   requestId: number;
   desde: string;
   hasta: string;
-  soloActivos: boolean;
+  modo: RankingModo;
+  campo: RankingCampo;
   silent: boolean;
   blocks: Array<{ idEquipo: number | null; nombreEquipo: string }>;
 };
@@ -58,7 +72,8 @@ type DetailRequest = {
   idEquipo: number | null;
   desde: string;
   hasta: string;
-  soloActivos: boolean;
+  modo: RankingModo;
+  campo: RankingCampo;
 };
 
 type DetailState =
@@ -73,7 +88,12 @@ type DetailState =
     }
   | { status: 'error'; requestId: number; codigoTipificacion: string; idEquipo: number | null; message: string };
 
-const HISTORICAL_DESDE = '2000-01-01';
+interface TipiMeta {
+  descripcion: string;
+  orden: number;
+  subtipis: Map<string, { descripcion: string; orden: number }>;
+}
+
 const PALETTE_SIZE = 8;
 
 @Injectable()
@@ -88,24 +108,33 @@ export class RankingFacade {
   private teamsLoaded = false;
   private readonly rankingSignal = signal<RankingRequest | null>(null);
   private readonly detailSignal = signal<DetailRequest | null>(null);
-  private readonly today = this.formatLocalDate(new Date());
 
-  readonly lockedToDay = signal(false);
+  readonly today = this.startOfDay(new Date());
   readonly allowTeamOrganization = signal(false);
-  readonly period = signal<RankingPeriod>('dia');
-  readonly soloActivos = signal(false);
-  readonly customDesde = signal<string>('');
-  readonly customHasta = signal<string>('');
-  readonly customDesdeDate = computed(() => this.parseLocalDate(this.customDesde()));
-  readonly customHastaDate = computed(() => this.parseLocalDate(this.customHasta()));
-  readonly customRangeError = signal<string | null>(null);
-  readonly paletteByCodigo = signal<ReadonlyMap<string, number>>(new Map());
+  readonly selectedDay = signal<Date>(this.startOfDay(new Date()));
+  readonly modo = signal<RankingModo>('GESTIONADOS');
+  readonly campo = signal<RankingCampo>('MAYOR');
+  private readonly catalog = signal<ReadonlyMap<string, TipiMeta>>(new Map());
   readonly groupingMode = signal<RankingGroupingMode>('SIN_AGRUPAR');
   readonly selectedTeamId = signal<number | null>(null);
   readonly sortField = signal<RankingSortField>('conversion');
   readonly sortDirection = signal<RankingSortDirection>('desc');
   readonly teams = signal<EquipoResponse[]>([]);
-  readonly detailOpen = signal(false);
+  // Drill activo (una tipificación a la vez, por bloque): su donut muestra subtipificaciones.
+  readonly activeDrill = signal<{ idEquipo: number | null; codigo: string } | null>(null);
+
+  readonly showMonthlyPreventas = computed(() => true);
+  readonly periodPreventasLabel = computed(() => 'Preventas del día');
+
+  readonly modoOptions: Array<{ label: string; value: RankingModo }> = [
+    { label: 'Gestionados', value: 'GESTIONADOS' },
+    { label: 'Ingresados', value: 'INGRESADOS' }
+  ];
+  readonly campoOptions: Array<{ label: string; value: RankingCampo }> = [
+    { label: 'Mayor', value: 'MAYOR' },
+    { label: 'Última', value: 'ULTIMA' },
+    { label: 'Primera', value: 'PRIMERA' }
+  ];
 
   private readonly rankingState = toSignal(
     toObservable(this.rankingSignal).pipe(
@@ -114,17 +143,14 @@ export class RankingFacade {
         forkJoin(
           req.blocks.map((block) =>
             forkJoin({
-              ranking: this.preventaService.listarRankingGtr(
-                req.desde,
-                req.hasta,
-                false,
-                block.idEquipo
-              ),
+              ranking: this.preventaService.listarRankingGtr(req.desde, req.hasta, false, block.idEquipo),
               tipificaciones: this.preventaService.listarTipificacionesRankingGtr(
                 req.desde,
                 req.hasta,
                 false,
-                block.idEquipo
+                block.idEquipo,
+                req.modo,
+                req.campo
               )
             }).pipe(map((data): RankingBlockResponse => ({ ...block, ...data })))
           )
@@ -156,8 +182,10 @@ export class RankingFacade {
             request.codigoTipificacion,
             request.desde,
             request.hasta,
-            request.soloActivos,
-            request.idEquipo
+            false,
+            request.idEquipo,
+            request.modo,
+            request.campo
           )
           .pipe(
             map<GtrSubtipificacionRankingResponse[], DetailState>((rows) => ({
@@ -194,10 +222,12 @@ export class RankingFacade {
       return [];
     }
     return state.blocks.map((block) => ({
-      ...block,
+      idEquipo: block.idEquipo,
+      nombreEquipo: block.nombreEquipo,
       ranking: block.ranking
         .map((row) => ({ ...row, conversion: this.calcularConversion(row) }))
-        .sort((a, b) => this.compareRankingRows(a, b))
+        .sort((a, b) => this.compareRankingRows(a, b)),
+      donutSegments: this.buildTipiSegments(block.tipificaciones)
     }));
   });
   readonly isLoading = computed(() => this.rankingState().status === 'loading');
@@ -210,10 +240,7 @@ export class RankingFacade {
     const selected = this.selectedTeamId();
     return selected === null ? this.teams() : this.teams().filter((team) => team.id === selected);
   });
-  readonly teamOptions = computed(() => this.teams().map((team) => ({
-    label: this.teamLabel(team),
-    value: team.id
-  })));
+  readonly teamOptions = computed(() => this.teams().map((team) => ({ label: this.teamLabel(team), value: team.id })));
   readonly organizationSummary = computed(() => {
     const sort = this.sortOptions.find((option) => option.value === this.sortField())?.label ?? 'Conversión';
     const direction = this.sortDirectionOptions().find((option) => option.value === this.sortDirection())?.label ?? 'Mayor cantidad primero';
@@ -247,39 +274,33 @@ export class RankingFacade {
           { label: 'Menor cantidad primero', value: 'asc' }
         ]
   );
-  readonly detailRows = computed(() => {
-    const state = this.detailState();
-    return state.status === 'success' ? state.rows : [];
+
+  // ── Drill de subtipificaciones ──────────────────────────────────────────
+  readonly drillTitle = computed(() => {
+    const drill = this.activeDrill();
+    return drill ? this.labelForTipi(drill.codigo) : '';
   });
-  readonly detailLoading = computed(() => this.detailState().status === 'loading');
-  readonly detailError = computed(() => {
+  readonly drillLoading = computed(() => this.detailState().status === 'loading');
+  readonly drillError = computed(() => {
     const state = this.detailState();
     return state.status === 'error' ? state.message : null;
   });
-  readonly detailTipificacion = computed(() => {
+  readonly drillSegments = computed<RankingDonutSegment[]>(() => {
     const state = this.detailState();
-    return state.status === 'idle' ? '' : state.codigoTipificacion;
+    const drill = this.activeDrill();
+    if (!drill || state.status !== 'success' || state.codigoTipificacion !== drill.codigo) {
+      return [];
+    }
+    return this.buildSubtipiSegments(drill.codigo, state.rows);
   });
 
-  readonly periodOptions: Array<{ label: string; value: RankingPeriod }> = [
-    { label: 'Hoy', value: 'dia' },
-    { label: 'Este mes', value: 'mes' },
-    { label: 'Personalizado', value: 'personalizado' }
-  ];
-  readonly showMonthlyPreventas = computed(() => this.period() === 'dia');
-  readonly periodPreventasLabel = computed(() =>
-    this.period() === 'dia' ? 'Preventas de hoy' : 'Preventas del período'
-  );
+  isDrilled(idEquipo: number | null): boolean {
+    const drill = this.activeDrill();
+    return drill !== null && drill.idEquipo === idEquipo;
+  }
 
-  start(options: { period?: RankingPeriod; lockedToDay?: boolean; allowTeamOrganization?: boolean } = {}): void {
-    const locked = options.lockedToDay ?? false;
-    this.lockedToDay.set(locked);
+  start(options: { allowTeamOrganization?: boolean } = {}): void {
     this.allowTeamOrganization.set(options.allowTeamOrganization ?? false);
-    if (locked) {
-      this.period.set('dia');
-    } else if (options.period) {
-      this.period.set(options.period);
-    }
     if (!this.catalogLoaded) this.loadCatalog();
     if (this.allowTeamOrganization() && !this.teamsLoaded) this.loadTeams();
     if (!this.started) {
@@ -290,36 +311,33 @@ export class RankingFacade {
     }
   }
 
-  setPeriod(period: RankingPeriod): void {
-    if (this.lockedToDay() || this.period() === period) return;
-    this.period.set(period);
-    this.customRangeError.set(null);
-    if (period !== 'personalizado' || this.hasValidCustomRange()) this.refresh(false);
+  setSelectedDay(value: Date | null): void {
+    if (!value) return;
+    const day = this.startOfDay(value);
+    if (day.getTime() === this.selectedDay().getTime()) return;
+    this.selectedDay.set(day);
+    this.refresh(false);
   }
 
-  setCustomDesde(value: string): void {
-    this.customDesde.set(value ?? '');
-    this.maybeRefreshCustom();
+  setModo(value: RankingModo | null | undefined): void {
+    if (!value || this.modo() === value) return;
+    this.modo.set(value);
+    this.closeDrill();
+    this.refresh(false);
   }
 
-  setCustomHasta(value: string): void {
-    this.customHasta.set(value ?? '');
-    this.maybeRefreshCustom();
-  }
-
-  setCustomDesdeDate(value: Date | null): void {
-    this.setCustomDesde(value ? this.formatLocalDate(value) : '');
-  }
-
-  setCustomHastaDate(value: Date | null): void {
-    this.setCustomHasta(value ? this.formatLocalDate(value) : '');
+  setCampo(value: RankingCampo | null | undefined): void {
+    if (!value || this.campo() === value) return;
+    this.campo.set(value);
+    this.closeDrill();
+    this.refresh(false);
   }
 
   setGroupingMode(mode: RankingGroupingMode | null | undefined): void {
     if (!this.allowTeamOrganization() || !mode || this.groupingMode() === mode) return;
     this.groupingMode.set(mode);
     this.selectedTeamId.set(null);
-    this.closeTipificacionDetail();
+    this.closeDrill();
     this.refresh(false);
   }
 
@@ -327,7 +345,7 @@ export class RankingFacade {
     const selected = idEquipo ?? null;
     if (this.selectedTeamId() === selected) return;
     this.selectedTeamId.set(selected);
-    this.closeTipificacionDetail();
+    this.closeDrill();
     this.refresh(false);
   }
 
@@ -342,53 +360,41 @@ export class RankingFacade {
     this.sortDirection.set(direction);
   }
 
-  toggleSoloActivos(): void {
-    this.soloActivos.set(false);
-    if (this.period() !== 'personalizado' || this.hasValidCustomRange()) this.refresh(false);
-  }
-
   refresh(silent = true): void {
-    const range = this.resolveRange();
-    if (!range) return;
-    this.closeTipificacionDetail();
+    this.closeDrill();
+    const day = this.formatLocalDate(this.selectedDay());
     this.rankingSignal.set({
       requestId: ++this.requestId,
-      desde: range.desde,
-      hasta: range.hasta,
-      soloActivos: false,
+      desde: day,
+      hasta: day,
+      modo: this.modo(),
+      campo: this.campo(),
       silent,
       blocks: this.resolveBlocks()
     });
   }
 
-  openTipificacionDetail(codigoTipificacion: string, idEquipo: number | null): void {
-    const range = this.resolveRange();
-    if (!range || !codigoTipificacion) return;
-    this.detailOpen.set(true);
+  openDrill(codigoTipificacion: string, idEquipo: number | null): void {
+    if (!codigoTipificacion) return;
+    const day = this.formatLocalDate(this.selectedDay());
+    this.activeDrill.set({ idEquipo, codigo: codigoTipificacion });
     this.detailSignal.set({
       requestId: ++this.detailRequestId,
       codigoTipificacion,
       idEquipo,
-      desde: range.desde,
-      hasta: range.hasta,
-      soloActivos: false
+      desde: day,
+      hasta: day,
+      modo: this.modo(),
+      campo: this.campo()
     });
   }
 
-  closeTipificacionDetail(): void {
-    this.detailOpen.set(false);
+  closeDrill(): void {
+    if (this.activeDrill() !== null) this.activeDrill.set(null);
   }
 
   teamLabel(team: EquipoResponse): string {
     return team.activo ? team.nombre : `${team.nombre} (inactivo)`;
-  }
-
-  tipificacionTagClass(codigo?: string | null, kind: 'tipificacion' | 'subtipificacion' = 'tipificacion'): string {
-    const normalized = (codigo ?? '').toUpperCase();
-    const base = 'ranking-tip-tag';
-    if (!normalized) return `${base} ${base}--neutral ${base}--${kind}`;
-    const paletteIndex = this.paletteByCodigo().get(normalized) ?? this.hashPalette(normalized);
-    return `${base} ${base}--palette-${paletteIndex} ${base}--${kind}`;
   }
 
   display(value: unknown): string {
@@ -424,6 +430,47 @@ export class RankingFacade {
     return row[field] ?? 0;
   }
 
+  private buildTipiSegments(rows: GtrTipificacionRankingResponse[]): RankingDonutSegment[] {
+    const catalog = this.catalog();
+    return rows
+      .map((row) => {
+        const meta = catalog.get((row.codigoTipificacion ?? '').toUpperCase());
+        const segment: RankingDonutSegment = {
+          codigo: row.codigoTipificacion ?? '',
+          label: this.display(row.codigoTipificacion),
+          cantidad: row.cantidad,
+          porcentaje: row.porcentaje,
+          colorIndex: this.paletteFromOrden(meta?.orden ?? 0)
+        };
+        return { segment, orden: meta?.orden ?? Number.MAX_SAFE_INTEGER };
+      })
+      .sort((a, b) => a.orden - b.orden || b.segment.cantidad - a.segment.cantidad)
+      .map((item) => item.segment);
+  }
+
+  private buildSubtipiSegments(codigoTipi: string, rows: GtrSubtipificacionRankingResponse[]): RankingDonutSegment[] {
+    const submap = this.catalog().get((codigoTipi ?? '').toUpperCase())?.subtipis;
+    return rows
+      .map((row, index) => {
+        const meta = submap?.get((row.codigoSubtipificacion ?? '').toUpperCase());
+        const segment: RankingDonutSegment = {
+          codigo: row.codigoSubtipificacion ?? '',
+          label: this.display(row.codigoSubtipificacion),
+          cantidad: row.cantidad,
+          porcentaje: row.porcentaje,
+          colorIndex: this.paletteFromOrden(meta?.orden ?? index + 1)
+        };
+        return { segment, orden: meta?.orden ?? Number.MAX_SAFE_INTEGER - (rows.length - index) };
+      })
+      .sort((a, b) => a.orden - b.orden || b.segment.cantidad - a.segment.cantidad)
+      .map((item) => item.segment);
+  }
+
+  private labelForTipi(codigo: string): string {
+    const meta = this.catalog().get((codigo ?? '').toUpperCase());
+    return meta?.descripcion?.trim() || this.display(codigo);
+  }
+
   private resolveBlocks(): Array<{ idEquipo: number | null; nombreEquipo: string }> {
     if (!this.allowTeamOrganization() || this.groupingMode() === 'SIN_AGRUPAR') {
       return [{ idEquipo: null, nombreEquipo: 'Total general' }];
@@ -431,52 +478,24 @@ export class RankingFacade {
     return this.visibleTeams().map((team) => ({ idEquipo: team.id, nombreEquipo: this.teamLabel(team) }));
   }
 
-  private maybeRefreshCustom(): void {
-    if (this.period() === 'personalizado' && this.hasValidCustomRange()) {
-      this.customRangeError.set(null);
-      this.refresh(false);
-    }
-  }
-
-  private hasValidCustomRange(): boolean {
-    const desde = this.customDesde();
-    const hasta = this.customHasta();
-    if (!desde || !hasta) {
-      this.customRangeError.set(null);
-      return false;
-    }
-    if (desde > hasta) {
-      this.customRangeError.set('La fecha de inicio no puede ser posterior a la fecha final.');
-      return false;
-    }
-    return true;
-  }
-
-  private resolveRange(): { desde: string; hasta: string } | null {
-    switch (this.period()) {
-      case 'dia': return { desde: this.today, hasta: this.today };
-      case 'mes': return { desde: `${this.today.substring(0, 8)}01`, hasta: this.today };
-      case 'historico': return { desde: HISTORICAL_DESDE, hasta: this.today };
-      case 'personalizado': {
-        const desde = this.customDesde();
-        const hasta = this.customHasta();
-        return desde && hasta && desde <= hasta ? { desde, hasta } : null;
-      }
-    }
-  }
-
   private loadCatalog(): void {
     this.catalogLoaded = true;
     this.preventaService.getCatalogoAgregado('PREVENTA').subscribe({
       next: (catalogo) => {
-        const palette = new Map<string, number>();
-        for (const tipificacion of catalogo.tipificaciones) {
-          const code = (tipificacion.codigo ?? '').toUpperCase();
-          if (code) palette.set(code, this.paletteFromOrden(tipificacion.orden));
+        const map = new Map<string, TipiMeta>();
+        for (const tipi of catalogo.tipificaciones) {
+          const code = (tipi.codigo ?? '').toUpperCase();
+          if (!code) continue;
+          const subtipis = new Map<string, { descripcion: string; orden: number }>();
+          for (const sub of tipi.subtipificaciones ?? []) {
+            const subCode = (sub.codigo ?? '').toUpperCase();
+            if (subCode) subtipis.set(subCode, { descripcion: sub.descripcion, orden: sub.orden });
+          }
+          map.set(code, { descripcion: tipi.descripcion, orden: tipi.orden, subtipis });
         }
-        this.paletteByCodigo.set(palette);
+        this.catalog.set(map);
       },
-      error: () => this.catalogLoaded = false
+      error: () => (this.catalogLoaded = false)
     });
   }
 
@@ -487,7 +506,7 @@ export class RankingFacade {
         this.teams.set([...teams].sort((a, b) => a.nombre.localeCompare(b.nombre)));
         if (this.groupingMode() === 'EQUIPO') this.refresh(false);
       },
-      error: () => this.teamsLoaded = false
+      error: () => (this.teamsLoaded = false)
     });
   }
 
@@ -495,10 +514,8 @@ export class RankingFacade {
     return Number.isFinite(orden) && orden > 0 ? (orden - 1) % PALETTE_SIZE : 0;
   }
 
-  private hashPalette(value: string): number {
-    let hash = 0;
-    for (let index = 0; index < value.length; index++) hash = (hash * 31 + value.charCodeAt(index)) | 0;
-    return Math.abs(hash) % PALETTE_SIZE;
+  private startOfDay(date: Date): Date {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   }
 
   private formatLocalDate(date: Date): string {
@@ -506,16 +523,5 @@ export class RankingFacade {
     const month = `${date.getMonth() + 1}`.padStart(2, '0');
     const day = `${date.getDate()}`.padStart(2, '0');
     return `${year}-${month}-${day}`;
-  }
-
-  private parseLocalDate(value: string): Date | null {
-    if (!value) {
-      return null;
-    }
-    const [year, month, day] = value.split('-').map(Number);
-    if (!year || !month || !day) {
-      return null;
-    }
-    return new Date(year, month - 1, day);
   }
 }
