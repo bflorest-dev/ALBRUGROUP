@@ -207,6 +207,16 @@
 
             <p-card styleClass="community-table-card">
               <ng-template #title>Campañas</ng-template>
+              <div class="campaign-table-toolbar">
+                <div class="campaign-inactive-switch">
+                  <label for="campaigns-show-inactive">Mostrar inactivas</label>
+                  <p-toggleswitch
+                    inputId="campaigns-show-inactive"
+                    [ngModel]="facade.mostrarCampanasInactivas()"
+                    (ngModelChange)="facade.setShowInactiveCampaigns($event)"
+                  />
+                </div>
+              </div>
               <p-table [value]="facade.campanasSorted()" [paginator]="true" [rows]="8" [rowHover]="true" styleClass="p-datatable-sm">
                 <ng-template #header>
                   <tr>

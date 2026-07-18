@@ -113,6 +113,10 @@ export interface LeadsDiariosMetricas {
   leadsVentaCerrada: number; // H
 }
 
+export interface LeadsDiariosMetricasEquipo extends LeadsDiariosMetricas {
+  idEquipo: number | null;
+}
+
 /** Modelo de vista de la barra de métricas (incluye C y E ya calculados). */
 export interface DailyLeadsMetricsView {
   registros: number; // A

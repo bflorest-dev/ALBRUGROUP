@@ -111,6 +111,7 @@ export class CommunityWorkspaceFacade {
     [...this.cuentas()].sort((a, b) => (b.activo !== false ? 1 : 0) - (a.activo !== false ? 1 : 0))
   );
   readonly campanas = signal<CampanaResponse[]>([]);
+  readonly mostrarCampanasInactivas = signal(false);
   readonly campanasActivas = computed(() => this.campanas().filter((campana) => campana.activo !== false));
   readonly campanasSorted = computed(() =>
     [...this.campanas()].sort((a, b) => (b.activo !== false ? 1 : 0) - (a.activo !== false ? 1 : 0))
@@ -464,7 +465,7 @@ export class CommunityWorkspaceFacade {
       const results = await Promise.allSettled([
         this.loadList('cuentas', () => firstValueFrom(this.leadService.listarCuentas())),
         this.loadList('cuentas activas', () => firstValueFrom(this.leadService.listarCuentasActivas())),
-        this.loadList('campanas', () => firstValueFrom(this.leadService.listarCampanas())),
+        this.refreshCampaigns(),
         this.loadList('adicionales', () => this.loadAdditionalsByProviders(proveedores)),
         this.loadList('planes', () => firstValueFrom(this.leadService.listarPlanes())),
         this.loadList('promociones', () => firstValueFrom(this.leadService.listarPromociones({}))),
@@ -795,6 +796,15 @@ export class CommunityWorkspaceFacade {
     await this.saveAction(() => this.leadService.alternarCampana(idCampana), 'Estado de campa�a actualizado.', () =>
       this.refreshCampaigns()
     );
+  }
+
+  async setShowInactiveCampaigns(value: boolean): Promise<void> {
+    if (this.mostrarCampanasInactivas() === value) {
+      return;
+    }
+
+    this.mostrarCampanasInactivas.set(value);
+    await this.refreshCampaigns();
   }
 
   selectPlanCatalogProvider(idProveedor: number): void {
@@ -1253,7 +1263,8 @@ export class CommunityWorkspaceFacade {
   }
 
   private async refreshCampaigns(): Promise<void> {
-    this.campanas.set(await firstValueFrom(this.leadService.listarCampanas()));
+    const activeFilter = this.mostrarCampanasInactivas() ? undefined : true;
+    this.campanas.set(await firstValueFrom(this.leadService.listarCampanas(activeFilter)));
   }
 
   private async refreshPlansData(): Promise<void> {

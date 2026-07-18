@@ -77,6 +77,25 @@ p,
   margin-bottom: 1rem;
 }
 
+.campaign-table-toolbar {
+  align-items: center;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.85rem;
+}
+
+.campaign-inactive-switch {
+  align-items: center;
+  color: var(--role-primary);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.82rem;
+  font-weight: 800;
+  gap: 0.65rem;
+  line-height: 1.2;
+  user-select: none;
+}
+
 .zone-rule-builder {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 1rem;
@@ -412,5 +431,9 @@ label,
   .plan-additional-field--toggle {
     min-height: auto;
     padding-top: 0;
+  }
+
+  .campaign-table-toolbar {
+    justify-content: flex-start;
   }
 }

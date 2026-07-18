@@ -13,6 +13,7 @@ import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
+import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { PhoneNumberFieldComponent } from '../../../../shared/components/phone-number-field/phone-number-field.component';
 import { CommunitySection, CommunityWorkspaceFacade } from '../../facades/community-workspace.facade';
 import { CampanaResponse } from '../../services/community-lead.service';
@@ -43,6 +44,7 @@ export const CATALOG_MAINTENANCE_SECTIONS: { id: CommunitySection; label: string
     TableModule,
     TabsModule,
     TagModule,
+    ToggleSwitchModule,
     PhoneNumberFieldComponent
   ],
   templateUrl: './catalog-maintenance-panel.component.html',

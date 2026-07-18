@@ -19,6 +19,7 @@ import {
   DailyLeadsMetricsView,
   LeadDiarioResponse,
   LeadsDiariosMetricas,
+  LeadsDiariosMetricasEquipo,
   RegistroDiarioLeadResponse
 } from '../models/daily-lead.model';
 
@@ -66,8 +67,9 @@ export class DailyLeadsFacade {
     ];
   });
   readonly metricas = signal<LeadsDiariosMetricas | null>(null);
+  readonly metricasPorEquipo = signal<LeadsDiariosMetricasEquipo[]>([]);
   readonly metricasView = computed<DailyLeadsMetricsView | null>(() => {
-    const m = this.metricas();
+    const m = this.currentMetricas();
     if (!m) {
       return null;
     }
@@ -508,12 +510,44 @@ export class DailyLeadsFacade {
 
   private async loadMetricas(): Promise<void> {
     try {
-      const metricas = await firstValueFrom(this.service.obtenerMetricas(this.fecha() || undefined));
+      const [metricas, metricasPorEquipo] = await Promise.all([
+        firstValueFrom(this.service.obtenerMetricas(this.fecha() || undefined)),
+        firstValueFrom(this.service.obtenerMetricasPorEquipo(this.fecha() || undefined))
+      ]);
       this.metricas.set(metricas);
+      this.metricasPorEquipo.set(metricasPorEquipo);
     } catch {
       // Métricas opcionales: si fallan, la barra se oculta y la tabla sigue funcionando.
       this.metricas.set(null);
+      this.metricasPorEquipo.set([]);
     }
+  }
+
+  private currentMetricas(): LeadsDiariosMetricas | null {
+    const group = this.selectedGroup();
+    if (this.groupingMode() !== 'EQUIPO' || !group) {
+      return this.metricas();
+    }
+    if (group.sinValor) {
+      return this.metricasPorEquipo().find((metricas) => metricas.idEquipo === null) ?? this.emptyMetricas();
+    }
+    if (group.idGrupo === null || group.idGrupo === undefined) {
+      return this.emptyMetricas();
+    }
+    return this.metricasPorEquipo().find((metricas) => metricas.idEquipo === group.idGrupo) ?? this.emptyMetricas();
+  }
+
+  private emptyMetricas(): LeadsDiariosMetricas {
+    return {
+      registros: 0,
+      leadsUnicos: 0,
+      leadsRepetidos: 0,
+      leadsTipificados: 0,
+      bloqueOrden1: 0,
+      bloqueOrden2: 0,
+      bloqueOrden3: 0,
+      leadsVentaCerrada: 0
+    };
   }
 
   private async loadGroups(): Promise<void> {

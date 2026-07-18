@@ -11,6 +11,7 @@ import {
   DailyLeadSortField,
   LeadDiarioResponse,
   LeadsDiariosMetricas,
+  LeadsDiariosMetricasEquipo,
   RegistroDiarioLeadResponse
 } from '../models/daily-lead.model';
 
@@ -77,6 +78,17 @@ export class DailyLeadsService {
       params = params.set('fecha', fecha);
     }
     return this.http.get<LeadsDiariosMetricas>(`${this.leadUrl}/eventos/registros-diarios/metricas`, { params });
+  }
+
+  obtenerMetricasPorEquipo(fecha?: string): Observable<LeadsDiariosMetricasEquipo[]> {
+    let params = new HttpParams();
+    if (fecha) {
+      params = params.set('fecha', fecha);
+    }
+    return this.http.get<LeadsDiariosMetricasEquipo[]>(
+      `${this.leadUrl}/eventos/registros-diarios/metricas-por-equipo`,
+      { params }
+    );
   }
 
   listarAgrupacionesRegistrosDiarios(fecha?: string, lead?: string): Observable<DailyLeadGroupsResponse> {
