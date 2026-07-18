@@ -2917,12 +2917,24 @@ export class GtrWorkspaceFacade {
     };
   }
 
-  tipificacionTagClass(codigo?: string | null, kind: 'tipificacion' | 'subtipificacion' = 'tipificacion'): string {
+  tipificacionTagClass(
+    codigo?: string | null,
+    kind: 'tipificacion' | 'subtipificacion' = 'tipificacion',
+    subcodigo?: string | null
+  ): string {
     const normalized = this.display(codigo).toUpperCase();
     const base = 'gtr-tip-tag';
+    if (this.isPreventaDesaprobada(normalized, subcodigo)) {
+      return `${base} ${base}--danger ${base}--${kind}`;
+    }
     const meta = this.tipificacionVisualMetaByCode().get(normalized);
     const tone = meta ? `palette-${meta.paletteIndex}` : 'neutral';
     return `${base} ${base}--${tone} ${base}--${kind}`;
+  }
+
+  private isPreventaDesaprobada(codigo: string, subcodigo?: string | null): boolean {
+    const subtipificacion = this.display(subcodigo).toUpperCase();
+    return codigo === 'PREVENTA' && (subtipificacion === 'DESAPROBADA' || subtipificacion === 'DESAPROBADO');
   }
 
   leadPrefixLabel(prefijo?: string | null): string {

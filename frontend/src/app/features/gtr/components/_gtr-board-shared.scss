@@ -88,6 +88,11 @@ td small {
   --tip-fg: #fef2f2;
 }
 
+:host ::ng-deep .gtr-tip-tag--danger {
+  --tip-bg: #dc2626;
+  --tip-fg: #fef2f2;
+}
+
 :host ::ng-deep .gtr-tip-tag--subtipificacion.gtr-tip-tag--neutral,
 :host ::ng-deep .gtr-tip-tag--subtipificacion.gtr-tip-tag--palette-0 {
   --tip-bg: #64748b;
@@ -124,6 +129,11 @@ td small {
 }
 
 :host ::ng-deep .gtr-tip-tag--subtipificacion.gtr-tip-tag--palette-7 {
+  --tip-bg: #fca5a5;
+  --tip-fg: #7f1d1d;
+}
+
+:host ::ng-deep .gtr-tip-tag--subtipificacion.gtr-tip-tag--danger {
   --tip-bg: #fca5a5;
   --tip-fg: #7f1d1d;
 }

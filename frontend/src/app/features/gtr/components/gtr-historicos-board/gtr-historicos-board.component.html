@@ -258,11 +258,11 @@
         <td>
           @if (facade.historicosTipificacionParts(row); as tip) {
             <div class="tip-stack">
-              <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion)" />
+              <p-tag [value]="tip.tipificacion" [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'tipificacion', tip.subtipificacion)" />
               <span class="tip-stack__line"></span>
               <p-tag
                 [value]="tip.subtipificacion"
-                [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion')"
+                [styleClass]="facade.tipificacionTagClass(tip.tipificacion, 'subtipificacion', tip.subtipificacion)"
               />
             </div>
           }
