@@ -307,39 +307,40 @@ p,
   padding: 1rem;
 }
 
+.tipification-bar,
+.tipification-main,
+.tipification-extra {
+  display: grid;
+}
+
 .tipification-bar {
-  align-items: stretch;
-  display: grid;
-  gap: 1rem;
-  grid-template-columns: 9.5rem minmax(0, 1fr);
+  gap: .9rem;
 }
 
-.tipification-actions {
-  align-content: start;
-  display: grid;
-  gap: 0.75rem;
-}
-
-.tipification-fields {
+.tipification-main {
   align-items: end;
-  display: grid;
-  gap: 0.8rem;
-  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
-  min-width: 0;
+  gap: .8rem;
+  grid-template-columns: 10rem 1fr 1fr 10rem;
 }
 
-.comment-field,
-.wide {
-  grid-column: 1 / -1;
+.tipification-extra {
+  align-items: end;
+  gap: .8rem;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.tipification-comment-action {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .tipification-field {
-  min-width: 0;
+  min-width:0;
 }
 
-.tipification-actions > button {
-  justify-content: flex-start;
-  width: 100%;
+.tipification-main > button,
+.tipification-comment-action > button {
+  width: 10rem;
 }
 
 .form-grid {
@@ -391,15 +392,12 @@ label {
   max-width: 22rem;
 }
 
-.lead-search-spacer {
-  flex: 1 1 auto;
-}
-
 .lead-search-summary {
   color: var(--role-muted);
   flex: 0 1 auto;
   font-size: 0.78rem;
   font-weight: 700;
+  margin-left: auto;
   min-width: 10rem;
   text-align: right;
 }
@@ -407,11 +405,6 @@ label {
 .lead-search-note {
   display: block;
   margin-bottom: 0.75rem;
-}
-
-.oferta-note {
-  display: block;
-  margin-top: 1rem;
 }
 
 .dialog-actions {
@@ -532,21 +525,23 @@ app-lead-commercial-data-tabs {
     flex-direction: column;
   }
 
-  .tipification-bar,
+  .tipification-main,
+  .tipification-extra,
   .form-grid {
     grid-template-columns: 1fr 1fr;
   }
 
-  .comment-field,
-  .wide {
-    grid-column: 1 / -1;
-  }
 }
 
 @media (max-width: 720px) {
-  .tipification-bar,
+  .tipification-main,
+  .tipification-extra,
   .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .tipification-comment-action > button {
+    width: 100%;
   }
 
   .hero-actions,
