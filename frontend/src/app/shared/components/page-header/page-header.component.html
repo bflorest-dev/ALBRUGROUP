@@ -1,0 +1,23 @@
+<header
+  class="page-header"
+  [class.app-glass]="isGlass()"
+  [class.page-header--solid]="isSolid()"
+  [class.page-header--plain]="isPlain()"
+>
+  <div class="page-header__text">
+    @if (eyebrow()) {
+      <span class="page-header__eyebrow">
+        <span class="page-header__eyebrow-mark" aria-hidden="true"></span>
+        {{ eyebrow() }}
+      </span>
+    }
+    <h1 class="page-header__title">{{ title() }}</h1>
+    @if (description()) {
+      <p class="page-header__desc">{{ description() }}</p>
+    }
+  </div>
+
+  <div class="page-header__actions">
+    <ng-content></ng-content>
+  </div>
+</header>

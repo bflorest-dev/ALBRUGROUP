@@ -382,11 +382,35 @@
 }
 
 .content {
+  position: relative;
   padding: 2rem;
   display: grid;
   align-content: start;
   gap: 0.55rem;
   min-width: 0;
+}
+
+/*
+ * Fondo ambiental tintado por rol: dos halos radiales suaves detras del contenido.
+ * Le da al vidrio (.app-glass) algo que difuminar, para que se perciba como cristal.
+ * Fijo al viewport (no a la pagina, que puede ser muy larga) para que el tinte quede
+ * siempre en las esquinas visibles; deja libre el ancho del sidebar (292px). Puramente
+ * decorativo: no captura eventos y queda por debajo del contenido.
+ */
+.content::before {
+  content: '';
+  position: fixed;
+  inset: 0 0 0 292px;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 46rem at 100% 0%, color-mix(in srgb, var(--role-accent) 30%, transparent), transparent 58%),
+    radial-gradient(58rem 46rem at 8% 100%, color-mix(in srgb, var(--role-primary) 26%, transparent), transparent 58%);
+}
+
+.content > * {
+  position: relative;
+  z-index: 1;
 }
 
 @media (max-width: 900px) {
@@ -497,6 +521,11 @@
 
   .content {
     padding: 1rem;
+  }
+
+  /* Sin sidebar lateral: el fondo ambiental cubre todo el ancho, bajo el topbar. */
+  .content::before {
+    inset: 4rem 0 0 0;
   }
 
   .content app-top-banner {

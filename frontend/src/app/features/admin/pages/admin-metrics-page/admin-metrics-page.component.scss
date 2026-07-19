@@ -6,23 +6,6 @@
   overflow-x: clip;
 }
 
-.hero {
-  padding: 1.25rem;
-  border: 1px solid var(--app-border-soft);
-  border-radius: 0.5rem;
-  background: var(--app-surface-raised);
-  box-shadow: var(--app-shadow-soft);
-}
-
-.hero h2 {
-  margin: 0.75rem 0;
-}
-
-.hero p {
-  margin-bottom: 0;
-  color: var(--role-muted);
-}
-
 .metrics-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -74,9 +57,5 @@
 @media (max-width: 700px) {
   .admin-page {
     gap: 1rem;
-  }
-
-  .hero {
-    padding: 1rem;
   }
 }

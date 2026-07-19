@@ -145,7 +145,6 @@ p,
   gap: 0.12rem;
   justify-items: center;
   line-height: 1.12;
-  min-height: 2.05rem;
   text-align: center;
 }
 
@@ -163,11 +162,9 @@ p,
 
 .lead-cell__prefix {
   color: #10243f;
-  display: inline-block;
   font-size: 0.72rem;
   font-weight: 800;
   margin-right: 0.28rem;
-  vertical-align: baseline;
 }
 
 .col-proveedor {
@@ -201,7 +198,6 @@ p,
   align-items: center;
   display: inline-flex;
   justify-content: center;
-  min-width: 0;
   width: 100%;
 }
 
@@ -242,7 +238,6 @@ p,
 }
 
 .plan-cell__tachado {
-  font-size: 0.72rem;
   opacity: 0.6;
   text-decoration: line-through;
 }
@@ -329,9 +324,15 @@ p,
   grid-template-columns: repeat(4, 1fr);
 }
 
-.tipification-comment-action {
-  display: flex;
-  justify-content: flex-end;
+.tipification-comment-row {
+  align-items: end;
+  display: grid;
+  gap: .8rem;
+  grid-template-columns: 1fr 10rem;
+}
+
+.tipification-comment-row:not(.tipification-comment-row--open) > button {
+  grid-column: 2;
 }
 
 .tipification-field {
@@ -339,8 +340,8 @@ p,
 }
 
 .tipification-main > button,
-.tipification-comment-action > button {
-  width: 10rem;
+.tipification-comment-row > button {
+  width: 100%;
 }
 
 .form-grid {
@@ -402,13 +403,7 @@ label {
   text-align: right;
 }
 
-.lead-search-note {
-  display: block;
-  margin-bottom: 0.75rem;
-}
-
 .dialog-actions {
-  display: flex;
   justify-content: flex-end;
   padding-top: 0.25rem;
 }
@@ -535,13 +530,14 @@ app-lead-commercial-data-tabs {
 
 @media (max-width: 720px) {
   .tipification-main,
+  .tipification-comment-row,
   .tipification-extra,
   .form-grid {
     grid-template-columns: 1fr;
   }
 
-  .tipification-comment-action > button {
-    width: 100%;
+  .tipification-comment-row:not(.tipification-comment-row--open) > button {
+    grid-column: 1;
   }
 
   .hero-actions,

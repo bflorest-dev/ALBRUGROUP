@@ -1,0 +1,112 @@
+# Sistema de diseño
+
+Lista de reglas de diseño **puntuales y reutilizables** del frontend. El objetivo es
+que un mismo elemento se resuelva **siempre igual** en todas las tabs de todos los roles,
+en vez de reinventarlo cada vez. Cada regla nace de una decisión tomada y validada; al
+fijarla aquí deja de ser "criterio del momento" y pasa a ser el patrón oficial.
+
+Complementa `AGENTS.md`, `FRONTEND_ARCHITECTURE.md`, `ADMIN_RESPONSIVE_GUIDE.md`,
+`RESPONSIVE_DATA_TABLES.md` y `SIDEBAR_LAYOUT_CONTRACT.md`.
+
+Toda regla usa las variables de tema por rol (`--role-*`) y de app (`--app-*`) definidas
+en `src/styles.scss`, de modo que un solo patrón toma el color de cada rol automáticamente.
+
+---
+
+## Regla 1 — Encabezado de página (`app-page-header`)
+
+**Qué es:** el bloque superior de toda tab (título del tab + contexto + acciones de la página).
+
+**Componente:** `src/app/shared/components/page-header/` (`<app-page-header>`).
+Presentacional puro, `OnPush`, sin facade ni HTTP.
+
+**Estructura fija (de arriba a abajo):**
+
+1. **Eyebrow** — contexto o rol, en mayúsculas, color `--role-accent`, con una pequeña
+   barra de acento delante. Reemplaza la vieja píldora `<p-tag>`. Opcional pero recomendado.
+2. **Título** — grande (`clamp(1.9rem, 3vw, 2.5rem)`, peso 700) con **degradado tonal**
+   `--role-primary → --role-secondary` recortado al texto. Es el realce principal.
+   Lleva color sólido de respaldo (`--role-primary`) vía `@supports`, y en modo oscuro se
+   aclara conservando el tinte del rol (para no quedar navy sobre fondo navy).
+3. **Descripción** — **opcional**. Usarla solo cuando el título no basta para entender la tab.
+   Dejó de ser el default: el título carga el énfasis.
+4. **Acciones** — slot `<ng-content>` a la derecha, en zona fija (independiente del largo
+   del título). En pantallas angostas baja debajo del título ocupando el ancho.
+
+**API:**
+
+```html
+<app-page-header
+  eyebrow="Administrador"
+  title="Dashboard"
+  description="Métricas del día por equipo."
+  [variant]="'glass'"
+>
+  <!-- opcional: botones/acciones de la página -->
+  <button pButton icon="pi pi-refresh" label="Actualizar"></button>
+</app-page-header>
+```
+
+- `title` (obligatorio), `eyebrow`, `description` (ambos opcionales).
+- `variant`: `'glass'` (default, ver Regla 2) · `'solid'` (tarjeta opaca, para tabs con
+  tablas densas debajo) · `'plain'` (suelto sobre el fondo, sin superficie).
+
+**Prohibido:**
+
+- Volver a maquetar un encabezado a mano (`.hero`, `<h1>` suelto, `<p-tag>` de rol) en una tab.
+- Poner una descripción "por defecto" bajo cada título.
+- Anclar las acciones a algo cuyo ancho dependa del texto del título.
+
+**Reemplaza:** los tres encabezados divergentes que existían (píldora `<p-tag>` en Dashboard,
+`p-card` + eyebrow en Ranking, `p-card` + fila de acciones en Backoffice).
+
+---
+
+## Regla 2 — Superficie de vidrio esmerilado (`.app-glass`)
+
+**Qué es:** superficie translúcida con desenfoque del fondo, para que el contenido tenga una
+base estable y legible mientras el fondo de la app se asoma difuso. Es la superficie por
+defecto del encabezado y la base para futuras cards "hero".
+
+**Clase global:** `.app-glass` (definida en `src/styles.scss`, reutilizable en cualquier
+componente porque la hoja es global).
+
+**Tokens (light + dark en `styles.scss`):**
+
+- `--app-glass-bg`, `--app-glass-border`, `--app-glass-blur`, `--app-glass-shadow`.
+
+**Comportamiento resuelto:**
+
+- **Contraste:** la superficie translúcida siempre queda lo bastante clara para el texto,
+  sin importar el fondo. Resuelve el problema de contraste de poner contenido suelto sobre
+  el fondo tintado de la app.
+- **Modo oscuro:** el cristal se vuelve translúcido oscuro automáticamente.
+- **Fallback:** sin soporte de `backdrop-filter` cae a `--app-surface-raised` (casi opaca);
+  nunca se rompe.
+
+**Cuándo usarlo / cuándo no:**
+
+- ✅ Encabezados y cards de nivel "hero".
+- ❌ **Nunca detrás de tablas densas de datos.** Ahí la legibilidad manda: usar superficie
+  sólida (`--app-surface`). El blur también tiene costo de rendimiento; reservarlo.
+
+**Depende del fondo ambiental (ver abajo):** el vidrio solo se percibe cuando hay algo con
+color detrás que difuminar. Sobre un fondo plano se ve igual que una tarjeta blanca. Por eso
+el layout privado tiene un fondo ambiental que el cristal aprovecha.
+
+### Fondo ambiental del layout
+
+`main.content::before` en `private-layout.component.scss` pinta dos halos radiales muy
+suaves, tintados con `--role-accent` y `--role-primary` (~15% vía `color-mix`), detrás del
+contenido de **todos los paneles**. Es decorativo (`pointer-events: none`, `z-index: 0`;
+el contenido va en `z-index: 1`) y toma el color de cada rol automáticamente. Sin él, la
+Regla 2 no tiene efecto visible.
+
+---
+
+## Cómo agregar una regla nueva
+
+1. Tomar la decisión de diseño con el usuario y validarla visualmente.
+2. Implementarla como componente `shared` o utilidad global reutilizable (no suelta en una tab).
+3. Documentarla aquí con: qué es, dónde vive, API/uso, qué prohíbe y qué reemplaza.
+4. Migrar las vistas existentes al patrón cuando se toquen.

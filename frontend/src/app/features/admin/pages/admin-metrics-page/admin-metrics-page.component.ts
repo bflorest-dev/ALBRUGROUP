@@ -5,8 +5,8 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
-import { TagModule } from 'primeng/tag';
 import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
+import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
 import { GestionCampanaPanelComponent } from '../../components/gestion-campana-panel/gestion-campana-panel.component';
 import { TeamMetricGaugesComponent } from '../../components/team-metric-gauges/team-metric-gauges.component';
 import { DashboardGaugeCard, resolveGaugeColors } from '../../models/dashboard-gauge.model';
@@ -39,8 +39,8 @@ interface DashboardMetricRow {
     CardModule,
     MessageModule,
     SelectModule,
-    TagModule,
     DateFieldComponent,
+    PageHeaderComponent,
     GestionCampanaPanelComponent,
     TeamMetricGaugesComponent
   ],

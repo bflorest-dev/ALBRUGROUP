@@ -470,17 +470,6 @@
             ></button>
           </div>
 
-          <div class="tipification-comment-action">
-            <button
-              pButton
-              type="button"
-              icon="pi pi-comment"
-              [label]="showComment() ? 'Ocultar comentario' : 'Comentario'"
-              severity="secondary"
-              (click)="toggleComment()"
-            ></button>
-          </div>
-
           @if (requiresInstallDate() || requiresProgramming() || requiresSecSot()) {
             <div class="tipification-extra">
               @if (requiresInstallDate()) {
@@ -532,7 +521,10 @@
               }
 
               @if (requiresSecSot()) {
-                <label class="tipification-field tipification-field--code">
+                <label
+                  class="tipification-field tipification-field--code"
+                  [style.grid-column]="requiresSecSot() && !requiresProgramming() && !requiresInstallDate() ? '3' : null"
+                >
                   <span>SEC</span>
                   <input
                     pInputText
@@ -563,12 +555,23 @@
             </div>
           }
 
-          @if (showComment()) {
-            <label class="comment-field">
-              <span>Comentario opcional</span>
-              <textarea pTextarea rows="3" formControlName="comentario"></textarea>
-            </label>
-          }
+          <div class="tipification-comment-row" [class.tipification-comment-row--open]="showComment()">
+            @if (showComment()) {
+              <label class="comment-field">
+                <span>Comentario opcional</span>
+                <input pInputText type="text" formControlName="comentario" autocomplete="off" />
+              </label>
+            }
+
+            <button
+              pButton
+              type="button"
+              icon="pi pi-comment"
+              [label]="showComment() ? 'Ocultar comentario' : 'Comentario'"
+              severity="secondary"
+              (click)="toggleComment()"
+            ></button>
+          </div>
         </form>
 
         <app-lead-commercial-data-tabs
