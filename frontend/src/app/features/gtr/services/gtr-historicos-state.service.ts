@@ -15,6 +15,7 @@ export type GtrHistoricosState = {
   totalElements: number;
   totalPages: number;
   pageNumber: number;
+  pageSize: number;
   searched: boolean;
   selectedIds: number[];
 };

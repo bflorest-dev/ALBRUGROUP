@@ -306,24 +306,17 @@
           </td>
           <td class="col-actions">
             @if (section() === 'plataforma') {
-              @if (row.idAsesorAsignado) {
-                <p-tag
-                  [severity]="isMine(row) ? 'info' : 'secondary'"
-                  [icon]="isMine(row) ? 'pi pi-user' : 'pi pi-lock'"
-                  [value]="isMine(row) ? 'Tuyo' : 'Tomado'"
-                />
-              } @else {
-                <button
-                  pButton
-                  type="button"
-                  icon="pi pi-user-plus"
-                  label="Asignarmelo"
-                  size="small"
-                  [disabled]="isSaving() || !canMutateOperationalData()"
-                  [loading]="isSaving()"
-                  (click)="tomarLead(row)"
-                ></button>
-              }
+              <button
+                pButton
+                type="button"
+                icon="pi pi-briefcase"
+                label="Gestionar"
+                size="small"
+                [severity]="row.idAsesorAsignado && !isMine(row) ? 'warn' : undefined"
+                [disabled]="isSaving() || !canMutateOperationalData()"
+                [loading]="isSaving()"
+                (click)="tomarLead(row)"
+              ></button>
             } @else {
               <button
                 pButton
@@ -414,16 +407,29 @@
         </header>
 
         <form class="tipification-bar" [formGroup]="tipificacionForm" (ngSubmit)="tipificar()">
-          <button
-            pButton
-            type="button"
-            icon="pi pi-phone"
-            label="Contacto"
-            severity="secondary"
-            [disabled]="!canMutateOperationalData()"
-            [loading]="isSaving()"
-            (click)="registrarContacto()"
-          ></button>
+          <div class="tipification-actions">
+            <button
+              pButton
+              type="button"
+              icon="pi pi-phone"
+              label="Contacto"
+              severity="secondary"
+              [disabled]="!canMutateOperationalData()"
+              [loading]="isSaving()"
+              (click)="registrarContacto()"
+            ></button>
+            <button pButton type="button" icon="pi pi-comment" [label]="showComment() ? 'Ocultar comentario' : 'Comentario'" severity="secondary" (click)="toggleComment()"></button>
+            <button
+              pButton
+              type="submit"
+              icon="pi pi-check"
+              label="Tipificar"
+              [disabled]="!canMutateOperationalData()"
+              [loading]="isSaving()"
+            ></button>
+          </div>
+
+          <div class="tipification-fields">
 
           <label class="tipification-field tipification-field--wide">
             <span>Tipificacion</span>
@@ -544,15 +550,7 @@
             </label>
           }
 
-          <button pButton type="button" icon="pi pi-comment" [label]="showComment() ? 'Ocultar comentario' : 'Comentario'" severity="secondary" (click)="toggleComment()"></button>
-          <button
-            pButton
-            type="submit"
-            icon="pi pi-check"
-            label="Tipificar"
-            [disabled]="!canMutateOperationalData()"
-            [loading]="isSaving()"
-          ></button>
+          </div>
 
           @if (showComment()) {
             <label class="comment-field">

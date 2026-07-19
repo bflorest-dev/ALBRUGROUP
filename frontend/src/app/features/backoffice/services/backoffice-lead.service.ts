@@ -13,6 +13,7 @@ import {
   LeadOfertaComercialRequest,
   LeadPage,
   LeadTipificacionVentaRequest,
+  LeadTomaVentaRequest,
   LeadVentaResponse,
   PageQuery,
   PlanResponse,
@@ -53,8 +54,8 @@ export class BackofficeLeadService {
     });
   }
 
-  tomarLead(idLead: number): Observable<void> {
-    return this.http.patch<void>(`${this.leadUrl}/venta/${idLead}/asignacion`, {});
+  tomarLead(idLead: number, request: LeadTomaVentaRequest = {}): Observable<void> {
+    return this.http.patch<void>(`${this.leadUrl}/venta/${idLead}/asignacion`, request);
   }
 
   registrarContacto(idLead: number): Observable<void> {

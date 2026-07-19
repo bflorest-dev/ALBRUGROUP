@@ -19,6 +19,7 @@ import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaComercialRequest;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionVentaRequest;
+import pe.albrugroup.lead_service.entity.request.LeadTomaVentaRequest;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadContextoLookupResponse;
@@ -75,8 +76,14 @@ public class VentaController {
     // 3. Asignarse el lead, ahora la diferencia seria que el mismo backoffice se asigna lead si mismo
     // Una vez un backoffice se haga responsable de un lead, otro no podra hacerlo durante esa etapa.
     @PatchMapping("/{idLead}/asignacion") @PreAuthorize("hasAuthority('ASSIGN_LEADS')")
-    public ResponseEntity<Void> tomarLeadVenta(@PathVariable Long idLead) {
-        leadService.tomarLeadDisponible(idLead, Etapa.VENTA);
+    public ResponseEntity<Void> tomarLeadVenta(
+            @PathVariable Long idLead,
+            @RequestBody(required = false) LeadTomaVentaRequest request
+    ) {
+        leadService.tomarLeadVenta(
+                idLead,
+                request != null && Boolean.TRUE.equals(request.getConfirmarReasignacion())
+        );
         return ResponseEntity.noContent().build();
     }
     // 4. Registrar evento de contacto con el Lead

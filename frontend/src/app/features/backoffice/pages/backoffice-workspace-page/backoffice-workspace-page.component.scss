@@ -308,10 +308,24 @@ p,
 }
 
 .tipification-bar {
+  align-items: stretch;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 9.5rem minmax(0, 1fr);
+}
+
+.tipification-actions {
+  align-content: start;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.tipification-fields {
   align-items: end;
   display: grid;
   gap: 0.8rem;
-  grid-template-columns: auto minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(8.5rem, 0.7fr) minmax(8.5rem, 0.7fr) auto auto;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  min-width: 0;
 }
 
 .comment-field,
@@ -323,13 +337,9 @@ p,
   min-width: 0;
 }
 
-.tipification-field--code,
-.tipification-field--time {
-  min-width: 8.5rem;
-}
-
-.tipification-bar > button {
-  white-space: nowrap;
+.tipification-actions > button {
+  justify-content: flex-start;
+  width: 100%;
 }
 
 .form-grid {

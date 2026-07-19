@@ -230,7 +230,8 @@ export class GtrWorkspaceFacade {
   private readonly operationalGate = this.operationalGateService.createGate('gtr-workspace');
 
   readonly pageSize = 12;
-  readonly historicosPageSize = 20;
+  readonly historicosPageSizeOptions = [10, 20, 50];
+  readonly historicosPageSize = signal(20);
   readonly today = this.formatLocalDate(new Date());
   readonly todayLabel = this.formatReadableDate(new Date());
   readonly section = signal<GtrSection>('plataforma');
@@ -2500,14 +2501,18 @@ export class GtrWorkspaceFacade {
     await this.refreshMasivos();
   }
 
-  async changeMasivoPage(pageNumber: number): Promise<void> {
+  async changeMasivoPage(pageNumber: number, pageSize = this.historicosPageSize()): Promise<void> {
     if (!this.canDisplayOperationalData()) {
       return;
     }
-    if (pageNumber === this.masivoPageNumber()) {
+    const safePageSize = this.normalizeHistoricosPageSize(pageSize);
+    const pageSizeChanged = safePageSize !== this.historicosPageSize();
+    const nextPageNumber = pageSizeChanged ? 0 : pageNumber;
+    if (nextPageNumber === this.masivoPageNumber() && !pageSizeChanged) {
       return;
     }
-    this.masivoPageNumber.set(pageNumber);
+    this.historicosPageSize.set(safePageSize);
+    this.masivoPageNumber.set(nextPageNumber);
     await this.refreshMasivos();
   }
 
@@ -3340,7 +3345,7 @@ export class GtrWorkspaceFacade {
       const page = await firstValueFrom(
         this.preventaService.listarLeadsMasivo(this.getMasivoFilters(), {
           pageNumber: this.masivoPageNumber(),
-          pageSize: this.historicosPageSize,
+          pageSize: this.historicosPageSize(),
           sortBy: this.historicosSortField(),
           direction: this.historicosSortDirection()
         })
@@ -3984,6 +3989,7 @@ export class GtrWorkspaceFacade {
     this.masivoTotalElements.set(state.totalElements);
     this.masivoTotalPages.set(state.totalPages);
     this.masivoPageNumber.set(state.pageNumber);
+    this.historicosPageSize.set(this.normalizeHistoricosPageSize(state.pageSize));
     this.masivoSearched.set(state.searched);
     if (this.section() === 'historicos') {
       this.selectedIds.set(new Set(state.selectedIds));
@@ -4006,9 +4012,14 @@ export class GtrWorkspaceFacade {
       totalElements: filtersMatchLastSearch ? this.masivoTotalElements() : 0,
       totalPages: filtersMatchLastSearch ? this.masivoTotalPages() : 0,
       pageNumber: filtersMatchLastSearch ? this.masivoPageNumber() : 0,
+      pageSize: this.historicosPageSize(),
       searched: filtersMatchLastSearch,
       selectedIds
     });
+  }
+
+  private normalizeHistoricosPageSize(pageSize: number | null | undefined): number {
+    return this.historicosPageSizeOptions.includes(Number(pageSize)) ? Number(pageSize) : 20;
   }
 
   private getStoredHistoricosSelectedIds(): Set<number> {

@@ -1,4 +1,5 @@
 import { DatePipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -62,6 +63,13 @@ type VisualLeadVenta = LeadVentaResponse & {
 type AdicionalSeleccionado = { idAdicional: number; cantidad: number };
 type OfertaProviderOption = { id: number; nombre: string };
 type ToastSeverity = 'success' | 'info' | 'warn' | 'error';
+type AssignmentConflictDetails = {
+  tipo?: string;
+  idAsesorActual?: number | null;
+  nombreAsesorActual?: string | null;
+  requiereConfirmarReasignacion?: boolean;
+  requiereConfirmarLeadEnGestion?: boolean;
+};
 
 @Component({
   selector: 'app-backoffice-workspace-page',
@@ -378,7 +386,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   });
   protected readonly boardSubtitle = computed(() => {
     switch (this.section()) {
-      case 'plataforma': return 'Toma leads disponibles para iniciar gestion.';
+      case 'plataforma': return 'Gestiona leads en venta y revisa quien los tiene asignados.';
       case 'programados': return 'Gestiona tus leads programados por fecha y hora cercana.';
       default: return 'Gestiona, edita, tipifica y revisa historial.';
     }
@@ -583,14 +591,50 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (!this.ensureCanMutate()) {
       return;
     }
-    await this.saveAction(
-      () => this.leadService.tomarLead(row.id),
-      'Lead asignado a tu gestion.',
-      async () => {
+    await this.takeAndOpenLead(row);
+  }
+
+  private async takeAndOpenLead(row: LeadVentaResponse, confirmarReasignacion = false): Promise<void> {
+    this.isSaving.set(true);
+    try {
+      await firstValueFrom(this.leadService.tomarLead(row.id, { confirmarReasignacion }));
+      await this.refreshPlataforma(true);
+      await this.openDetail(row.id);
+    } catch (error) {
+      if (!this.openTakeoverConfirmation(error, row)) {
+        this.notify('error', this.getErrorMessage(error, 'No se pudo gestionar el lead.'));
         await this.reconcile();
-        await this.router.navigate(['/app/backoffice/gestion']);
       }
-    );
+    } finally {
+      this.isSaving.set(false);
+    }
+  }
+
+  private openTakeoverConfirmation(error: unknown, row: LeadVentaResponse): boolean {
+    if (!(error instanceof HttpErrorResponse) || error.status !== 409) {
+      return false;
+    }
+    const details = (error.error as { details?: AssignmentConflictDetails } | null)?.details;
+    const needsConfirmation =
+      Boolean(details?.requiereConfirmarReasignacion) ||
+      Boolean(details?.requiereConfirmarLeadEnGestion) ||
+      details?.tipo === 'CONFIRMACION_ASIGNACION_REQUERIDA' ||
+      details?.tipo === 'LEAD_EN_GESTION';
+    if (!needsConfirmation) {
+      return false;
+    }
+    const currentAdvisor = details?.nombreAsesorActual || row.nombreAsesorAsignado || 'otro Backoffice';
+    this.confirmationService.confirm({
+      header: 'Gestionar lead asignado',
+      message: `Este lead esta siendo gestionado por ${currentAdvisor}. Si continuas, pasara a tu gestion.`,
+      icon: 'pi pi-exclamation-triangle',
+      acceptLabel: 'Si, gestionar',
+      rejectLabel: 'Cancelar',
+      acceptButtonStyleClass: 'p-button-warning',
+      rejectButtonStyleClass: 'p-button-text',
+      accept: () => void this.takeAndOpenLead(row, true)
+    });
+    return true;
   }
 
   protected async openDetail(idLead: number): Promise<void> {
@@ -1239,7 +1283,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private resolveSection(value: unknown): BackofficeSection {
-    return value === 'gestion' || value === 'programados' ? value : 'plataforma';
+    return value === 'programados' ? value : 'plataforma';
   }
 
   private toBackendDate(value: Date | string | null): string {

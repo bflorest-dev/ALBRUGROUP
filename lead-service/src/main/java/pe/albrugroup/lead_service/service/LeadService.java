@@ -1246,7 +1246,9 @@ public class LeadService {
             lead.setCodigoTipificacion(tipificacion.getCodigo());
             lead.setIdSubtipificacion(subtipificacion.getId());
             lead.setCodigoSubtipificacion(subtipificacion.getCodigo());
-            moverAEnGestionSiAplica(lead);
+            lead.setEstado(EstadoSeguimiento.GESTIONADO);
+            lead.setIdAsesorAsignado(null);
+            lead.setNombreAsesorAsignado(null);
         }
 
         Lead savedLead = leadRepository.save(lead);
@@ -1738,6 +1740,36 @@ public class LeadService {
         notificarCambioLead("ASIGNACION", savedLead, null, idAsesorAnterior);
     }
 
+    @Transactional
+    public void tomarLeadVenta(Long idLead, boolean confirmarReasignacion) {
+        Lead lead = leadRepository.findByIdAndEtapa(idLead, Etapa.VENTA)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
+        Long idAsesorActual = currentUser.empleadoID();
+        boolean mismoAsesor = idAsesorAnterior != null && idAsesorAnterior.equals(idAsesorActual);
+
+        validarTomaVentaPermitida(lead, confirmarReasignacion);
+
+        lead.setIdAsesorAsignado(idAsesorActual);
+        lead.setNombreAsesorAsignado(currentUser.nombreCompleto().trim());
+        lead.setEstado(EstadoSeguimiento.EN_GESTION);
+        lead.setLastEntryAt(OperationalDateTime.now());
+
+        Lead savedLead = leadRepository.save(lead);
+        Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
+        if (!mismoAsesor) {
+            registrarEventoAsignacion(
+                    savedLead.getId(),
+                    idCampana,
+                    savedLead.getEtapa(),
+                    savedLead.getIdAsesorAsignado(),
+                    savedLead.getNombreAsesorAsignado()
+            );
+            leadEtapaResumenService.registrarAsignacion(savedLead.getId(), savedLead.getEtapa(), OperationalDateTime.now());
+        }
+        notificarCambioLead("ASIGNACION", savedLead, null, idAsesorAnterior);
+    }
+
     public LeadAsignacionMasivaResponse asignarLeads(LeadAsignacionMasivaRequest request) {
         List<Long> idsLead = request.getIdsLead().stream()
                 .filter(id -> id != null && id > 0)
@@ -2006,6 +2038,33 @@ public class LeadService {
                 || lead.getIdSubtipificacion() != null || lead.getCodigoSubtipificacion() != null) {
             throw new ConflictException("El Lead ya no se encuentra disponible para ser tomado");
         }
+    }
+
+    private void validarTomaVentaPermitida(Lead lead, boolean confirmarReasignacion) {
+        Long idAsesorActual = lead.getIdAsesorAsignado();
+        if (idAsesorActual == null) {
+            return;
+        }
+        if (idAsesorActual.equals(currentUser.empleadoID())) {
+            return;
+        }
+        if (confirmarReasignacion) {
+            return;
+        }
+        throw new ConflictException(
+                "Este lead esta siendo gestionado por otro Backoffice",
+                lead.getId(),
+                detalleConfirmacionAsignacion(
+                        "CONFIRMACION_ASIGNACION_REQUERIDA",
+                        idAsesorActual,
+                        lead.getNombreAsesorAsignado(),
+                        true,
+                        false,
+                        lead.getEstado() == EstadoSeguimiento.EN_GESTION,
+                        lead.getId(),
+                        currentUser.empleadoID()
+                )
+        );
     }
 
     @Transactional

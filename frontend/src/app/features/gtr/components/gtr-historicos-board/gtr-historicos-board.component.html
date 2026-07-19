@@ -206,7 +206,7 @@
     [rowHover]="true"
     [scrollable]="true"
     scrollHeight="flex"
-    [tableStyle]="{ 'min-width': '1240px' }"
+    [tableStyle]="{ 'min-width': '1340px' }"
     styleClass="p-datatable-sm gtr-table"
   >
     <ng-template #header>
@@ -297,6 +297,16 @@
             <button
               pButton
               type="button"
+              icon="pi pi-cog"
+              label="Gestionar"
+              size="small"
+              severity="secondary"
+              [disabled]="!facade.canMutateOperationalData()"
+              (click)="facade.openSnapshot(row)"
+            ></button>
+            <button
+              pButton
+              type="button"
               icon="pi pi-history"
               size="small"
               severity="secondary"
@@ -326,9 +336,10 @@
   </p-table>
 
   <p-paginator
-    [first]="facade.masivoPageNumber() * facade.historicosPageSize"
-    [rows]="facade.historicosPageSize"
+    [first]="facade.masivoPageNumber() * facade.historicosPageSize()"
+    [rows]="facade.historicosPageSize()"
+    [rowsPerPageOptions]="facade.historicosPageSizeOptions"
     [totalRecords]="facade.masivoTotalElements()"
-    (onPageChange)="facade.changeMasivoPage($event.page ?? 0)"
+    (onPageChange)="facade.changeMasivoPage($event.page ?? 0, $event.rows ?? facade.historicosPageSize())"
   />
 </p-card>

@@ -308,12 +308,8 @@ export const PLATFORM_ROUTES: Routes = [
   },
   {
     path: 'backoffice/gestion',
-    component: BackofficeWorkspacePageComponent,
-    canActivate: [roleGuard],
-    data: {
-      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE'],
-      section: 'gestion'
-    }
+    pathMatch: 'full',
+    redirectTo: 'backoffice/plataforma'
   },
   {
     path: 'backoffice/programados',
