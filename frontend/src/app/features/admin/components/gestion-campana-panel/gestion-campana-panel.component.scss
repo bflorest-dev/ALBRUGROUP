@@ -14,30 +14,13 @@
   width: 100%;
 }
 
-.gxc__head {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-
-  h3 {
-    margin: 0;
-    font-size: 1.15rem;
-    font-weight: 600;
-  }
-}
-
-.gxc__hint {
-  margin: 0;
-  color: var(--text-color-secondary, #6b7280);
-  font-size: 0.85rem;
-}
-
-.gxc__toolbar {
+// Fila propia de controles bajo el subtítulo, pegada a la derecha y consistente en todo ancho.
+.gxc__controls {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 1rem;
-  max-width: 100%;
+  justify-content: flex-end;
+  gap: 0.75rem;
   min-width: 0;
 }
 
@@ -54,21 +37,16 @@
   color: var(--text-color-secondary, #6b7280);
 }
 
-.gxc__control--dates {
-  flex-direction: row;
-  gap: 0.75rem;
-  align-items: flex-end;
-}
-
-.gxc__control--grow {
-  flex: 1 1 16rem;
-  min-width: 12rem;
-  max-width: 100%;
+// Campañas: compacto y pegado a la derecha, debajo de los controles.
+.gxc__campanas {
+  display: flex;
+  justify-content: flex-end;
 }
 
 ::ng-deep .gxc__multiselect {
-  width: 100%;
-  min-width: 12rem;
+  width: 20rem;
+  max-width: 100%;
+  min-width: 0;
 }
 
 ::ng-deep .gxc-campaign-panel {

@@ -1,0 +1,21 @@
+<div class="section-header">
+  <span class="section-header__lead">
+    <h2 class="section-header__title">{{ title() }}</h2>
+
+    @if (description()) {
+      <button
+        type="button"
+        class="section-header__info"
+        [pTooltip]="description()!"
+        tooltipPosition="top"
+        [attr.aria-label]="description()"
+      >
+        <i class="pi pi-info-circle" aria-hidden="true"></i>
+      </button>
+    }
+  </span>
+
+  <span class="section-header__actions">
+    <ng-content></ng-content>
+  </span>
+</div>

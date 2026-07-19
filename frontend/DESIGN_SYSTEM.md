@@ -104,6 +104,43 @@ Regla 2 no tiene efecto visible.
 
 ---
 
+## Regla 3 — Encabezado de sección / subtítulo (`app-section-header`)
+
+**Qué es:** el subtítulo de un bloque **dentro** de una tab (una sección de la página, no el
+título del tab). Es el patrón hermano de la Regla 1, un nivel abajo.
+
+**Componente:** `src/app/shared/components/section-header/` (`<app-section-header>`).
+Presentacional puro, `OnPush`.
+
+**Estructura fija:**
+
+1. **Subtítulo** — mismo degradado tonal por rol que el título (`--role-primary → --role-secondary`),
+   peso 700, pero más chico (`clamp(1.15rem, 1.6vw, 1.4rem)`). Mismo fallback sólido y versión
+   clara en oscuro. Es `<h2>` (bajo el `<h1>` del `app-page-header`).
+2. **Ícono de info** — `pi pi-info-circle` (el mismo del banner), en `--role-accent`, a la
+   derecha del subtítulo. Es un `<button>` accesible (`aria-label` = descripción, `cursor: help`).
+3. **Descripción → tooltip** — la ayuda **no va como texto plano en el flujo**. Se pasa por
+   `description` y aparece en un `pTooltip` (PrimeNG) al hacer hover o foco sobre el ícono.
+   Si no hay descripción, no se muestra el ícono.
+4. **Acciones** — slot `<ng-content>` opcional a la derecha (se oculta si va vacío).
+
+**API:**
+
+```html
+<app-section-header title="Gestión por campaña" [description]="facade.campoAyuda()" />
+```
+
+**Regla de copy:** las descripciones/ayudas de sección van **siempre** dentro del tooltip del
+ícono, nunca como párrafo bajo el subtítulo. El subtítulo carga el énfasis; la ayuda es
+secundaria y bajo demanda.
+
+**Prohibido:**
+
+- Subtítulos con `<h3>`/`<h4>` sueltos y una `<p>` de ayuda debajo.
+- Texto explicativo permanente ocupando espacio junto al subtítulo.
+
+---
+
 ## Cómo agregar una regla nueva
 
 1. Tomar la decisión de diseño con el usuario y validarla visualmente.

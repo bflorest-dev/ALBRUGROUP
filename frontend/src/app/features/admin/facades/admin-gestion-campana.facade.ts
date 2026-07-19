@@ -1,4 +1,4 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { CatalogoResponse } from '../../../shared/models/preventa/preventa.models';
@@ -10,7 +10,7 @@ import {
   GestionPorCampanaCelda
 } from '../services/admin-gestion-campana.service';
 
-export type GestionPeriodo = 'dia' | 'mes' | 'personalizado';
+export type GestionPeriodo = 'dia' | 'semana' | 'mes';
 
 /** Columna de campaña dentro de la matriz de un equipo. */
 export interface GestionCampanaColumn {
@@ -79,7 +79,13 @@ const FALLBACK_ACCENTS = ['#5b6cff', '#8e24aa', '#00897b', '#6d4c41', '#546e7a',
 
 type Criteria = { requestId: number; campo: GestionCampoTipi; modo: GestionModo; desde?: string; hasta?: string };
 
-type LoadResult = { celdas: GestionPorCampanaCelda[]; catalogo: CatalogoResponse; nombresEquipo: Map<number, string> };
+type EquipoOption = { label: string; value: number };
+type LoadResult = {
+  celdas: GestionPorCampanaCelda[];
+  catalogo: CatalogoResponse;
+  nombresEquipo: Map<number, string>;
+  equipoOptions: EquipoOption[];
+};
 
 type State =
   | { status: 'idle' }
@@ -117,9 +123,6 @@ export class AdminGestionCampanaFacade {
   readonly campo = signal<GestionCampoTipi>('MAYOR');
   readonly modo = signal<GestionModo>('GESTIONADOS');
   readonly periodo = signal<GestionPeriodo>('dia');
-  readonly customDesde = signal('');
-  readonly customHasta = signal('');
-  readonly customRangeError = signal<string | null>(null);
   readonly selectedCampanaKeys = signal<string[]>([]);
   readonly selectedEquipoId = signal<number | null>(null);
 
@@ -134,8 +137,8 @@ export class AdminGestionCampanaFacade {
   ];
   readonly periodoOptions: Array<{ label: string; value: GestionPeriodo }> = [
     { label: 'Hoy', value: 'dia' },
-    { label: 'Este mes', value: 'mes' },
-    { label: 'Personalizado', value: 'personalizado' }
+    { label: 'Semanal', value: 'semana' },
+    { label: 'Mensual', value: 'mes' }
   ];
 
   readonly campoAyuda = computed(() => {
@@ -164,7 +167,11 @@ export class AdminGestionCampanaFacade {
             data: {
               celdas,
               catalogo,
-              nombresEquipo: new Map(equipos.map((equipo) => [equipo.id, equipo.nombre]))
+              nombresEquipo: new Map(equipos.map((equipo) => [equipo.id, equipo.nombre])),
+              equipoOptions: equipos
+                .filter((equipo) => equipo.activo !== false)
+                .map((equipo) => ({ label: equipo.nombre, value: equipo.id }))
+                .sort((left, right) => left.label.localeCompare(right.label))
             }
           })),
           startWith<State>({ status: 'loading', requestId: criteria.requestId }),
@@ -180,6 +187,23 @@ export class AdminGestionCampanaFacade {
     return status === 'loading' || status === 'idle';
   });
   readonly hasError = computed(() => this.state().status === 'error');
+
+  /** Equipos disponibles para el selector (activos). Poblado tras la primera carga. */
+  readonly equipoOptions = computed<EquipoOption[]>(() => {
+    const state = this.state();
+    return state.status === 'success' ? state.data.equipoOptions : [];
+  });
+
+  constructor() {
+    // El bloque muestra un solo equipo. Al llegar las opciones, elegir el primero por defecto
+    // (client-side: cambiar de equipo filtra el pivote, no vuelve a pegar al backend).
+    effect(() => {
+      const options = this.equipoOptions();
+      if (options.length && this.selectedEquipoId() === null) {
+        untracked(() => this.selectedEquipoId.set(options[0].value));
+      }
+    });
+  }
 
   // Pivote completo (con todas las campañas). Se memoiza aparte del filtro de columnas para no
   // recalcularlo cuando solo cambia el MultiSelect de campañas.
@@ -279,20 +303,7 @@ export class AdminGestionCampanaFacade {
       return;
     }
     this.periodo.set(periodo);
-    this.customRangeError.set(null);
-    if (periodo !== 'personalizado' || this.hasValidCustomRange()) {
-      this.reload();
-    }
-  }
-
-  setCustomDesde(value: string): void {
-    this.customDesde.set(value ?? '');
-    this.maybeReloadCustom();
-  }
-
-  setCustomHasta(value: string): void {
-    this.customHasta.set(value ?? '');
-    this.maybeReloadCustom();
+    this.reload();
   }
 
   setSelectedCampanas(keys: string[] | null | undefined): void {
@@ -314,9 +325,6 @@ export class AdminGestionCampanaFacade {
 
   reload(): void {
     const range = this.resolveRange();
-    if (range === null) {
-      return; // período personalizado incompleto/ inválido: no dispares la carga
-    }
     this.criteria.set({
       requestId: ++this.requestId,
       campo: this.campo(),
@@ -328,44 +336,37 @@ export class AdminGestionCampanaFacade {
 
   // ---- internos ----
 
-  private maybeReloadCustom(): void {
-    if (this.periodo() === 'personalizado' && this.hasValidCustomRange()) {
-      this.customRangeError.set(null);
-      this.reload();
-    }
-  }
-
-  private hasValidCustomRange(): boolean {
-    const desde = this.customDesde();
-    const hasta = this.customHasta();
-    if (!desde || !hasta) {
-      this.customRangeError.set(null);
-      return false;
-    }
-    if (desde > hasta) {
-      this.customRangeError.set('La fecha de inicio no puede ser posterior a la fecha final.');
-      return false;
-    }
-    return true;
-  }
-
   /** Devuelve las cotas a enviar. `undefined` en una cota = el backend usa el día operativo de hoy. */
-  private resolveRange(): { desde?: string; hasta?: string } | null {
+  private resolveRange(): { desde?: string; hasta?: string } {
     switch (this.periodo()) {
       case 'dia':
         return { desde: undefined, hasta: undefined };
+      case 'semana':
+        return { desde: this.weekStart(), hasta: undefined };
       case 'mes':
         return { desde: `${this.localToday().substring(0, 8)}01`, hasta: undefined };
-      case 'personalizado':
-        return this.hasValidCustomRange() ? { desde: this.customDesde(), hasta: this.customHasta() } : null;
     }
   }
 
-  private localToday(): string {
+  /**
+   * Inicio de la semana operativa: el sábado más reciente ≤ hoy (la semana de la empresa va de
+   * sábado a viernes). Fecha local del navegador (America/Lima para los usuarios), sin `toISOString`.
+   */
+  private weekStart(): string {
     const now = new Date();
-    const month = `${now.getMonth() + 1}`.padStart(2, '0');
-    const day = `${now.getDate()}`.padStart(2, '0');
-    return `${now.getFullYear()}-${month}-${day}`;
+    const daysSinceSaturday = (now.getDay() - 6 + 7) % 7; // getDay: 0=Dom .. 6=Sáb
+    const saturday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysSinceSaturday);
+    return this.formatLocal(saturday);
+  }
+
+  private localToday(): string {
+    return this.formatLocal(new Date());
+  }
+
+  private formatLocal(date: Date): string {
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${date.getFullYear()}-${month}-${day}`;
   }
 
   private campanaKey(idCampana: number | null): string {

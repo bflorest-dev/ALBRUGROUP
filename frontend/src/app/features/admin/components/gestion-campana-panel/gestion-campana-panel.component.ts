@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, Input, OnChanges, OnInit, SimpleChanges, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -8,7 +8,8 @@ import { MultiSelectModule } from 'primeng/multiselect';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
+import { TooltipModule } from 'primeng/tooltip';
+import { SectionHeaderComponent } from '../../../../shared/components/section-header/section-header.component';
 import { AdminGestionCampanaFacade } from '../../facades/admin-gestion-campana.facade';
 
 /**
@@ -28,34 +29,18 @@ import { AdminGestionCampanaFacade } from '../../facades/admin-gestion-campana.f
     SelectButtonModule,
     TableModule,
     TagModule,
-    DateFieldComponent
+    TooltipModule,
+    SectionHeaderComponent
   ],
   providers: [AdminGestionCampanaFacade],
   templateUrl: './gestion-campana-panel.component.html',
   styleUrl: './gestion-campana-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class GestionCampanaPanelComponent implements OnChanges, OnInit {
-  @Input() selectedEquipoId: number | null = null;
-
+export class GestionCampanaPanelComponent implements OnInit {
   protected readonly facade = inject(AdminGestionCampanaFacade);
-  protected readonly maxDate = this.localToday();
-
-  ngOnChanges(changes: SimpleChanges): void {
-    if ('selectedEquipoId' in changes) {
-      this.facade.setSelectedEquipoId(this.selectedEquipoId);
-    }
-  }
 
   ngOnInit(): void {
-    this.facade.setSelectedEquipoId(this.selectedEquipoId);
     this.facade.start();
-  }
-
-  private localToday(): string {
-    const now = new Date();
-    const month = `${now.getMonth() + 1}`.padStart(2, '0');
-    const day = `${now.getDate()}`.padStart(2, '0');
-    return `${now.getFullYear()}-${month}-${day}`;
   }
 }
