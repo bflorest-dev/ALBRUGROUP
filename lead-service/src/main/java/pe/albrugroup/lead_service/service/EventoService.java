@@ -398,11 +398,20 @@ public class EventoService {
      * Mismas métricas del día pero desglosadas por equipo (para el DASHBOARD del ADMIN). Un usuario
      * con visibilidad global ve todos los equipos; uno acotado, solo el suyo (via equipoFilter).
      * idEquipo null = "Sin equipo".
+     *
+     * <p>La cohorte son los leads con evento {@code REGISTRO} en el período (modo INGRESADOS). El
+     * {@code campo} elige el punto de tipificación (primera/última/mayor) con el que se calculan
+     * tipificados, bloques y venta cerrada. Omitir el rango equivale al día operativo de hoy.
      */
-    public List<LeadsDiariosMetricasEquipoResponse> obtenerMetricasRegistrosDiariosPorEquipo(LocalDate fecha) {
-        OperationalDateTime.InstantRange rango = OperationalDateTime.dayRange(fecha);
-        Instant inicio = rango.inicio();
-        Instant fin = rango.fin();
+    public List<LeadsDiariosMetricasEquipoResponse> obtenerMetricasRegistrosDiariosPorEquipo(
+            LocalDate desde, LocalDate hasta, CampoTipificacion campo) {
+        LocalDate desdeResuelto = OperationalDateTime.resolveDate(desde);
+        LocalDate hastaResuelto = OperationalDateTime.resolveDate(hasta);
+        if (hastaResuelto.isBefore(desdeResuelto)) {
+            throw new BadRequestException("La fecha de inicio no puede ser posterior a la fecha final");
+        }
+        Instant inicio = OperationalDateTime.startOfDay(desdeResuelto);
+        Instant fin = OperationalDateTime.endExclusiveOfDay(hastaResuelto);
 
         // Acumulador por equipo: [registros, leadsUnicos, repetidos, tipificados, b1, b2, b3, ventaCerrada].
         Map<Long, long[]> porEquipo = new LinkedHashMap<>();
@@ -415,12 +424,10 @@ public class EventoService {
         for (Object[] fila : eventoRepository.listarLeadsDiariosConRepeticionPorEquipo(Accion.REGISTRO, inicio, fin)) {
             acumuladorEquipo(porEquipo, (Long) fila[0])[2] += 1;
         }
-        for (Object[] fila : eventoRepository.contarLeadsDiariosTipificadosPorEquipo(
-                Accion.REGISTRO, Etapa.PREVENTA, inicio, fin)) {
+        for (Object[] fila : tipificadosPorEquipoSegunCampo(campo, inicio, fin)) {
             acumuladorEquipo(porEquipo, (Long) fila[0])[3] = (Long) fila[1];
         }
-        for (Object[] fila : eventoRepository.agruparLeadsDiariosPorOrdenPorEquipo(
-                Accion.REGISTRO, Etapa.PREVENTA, inicio, fin)) {
+        for (Object[] fila : bloquesPorEquipoSegunCampo(campo, inicio, fin)) {
             long[] acc = acumuladorEquipo(porEquipo, (Long) fila[0]);
             Integer orden = (Integer) fila[1];
             long cantidad = (Long) fila[2];
@@ -435,8 +442,7 @@ public class EventoService {
                 acc[6] += cantidad;
             }
         }
-        for (Object[] fila : eventoRepository.contarLeadsDiariosVentaCerradaPorEquipo(
-                Accion.REGISTRO, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA)) {
+        for (Object[] fila : ventaCerradaPorEquipoSegunCampo(campo, inicio, fin)) {
             acumuladorEquipo(porEquipo, (Long) fila[0])[7] = (Long) fila[1];
         }
 
@@ -451,6 +457,40 @@ public class EventoService {
 
     private static long[] acumuladorEquipo(Map<Long, long[]> mapa, Long idEquipo) {
         return mapa.computeIfAbsent(idEquipo, clave -> new long[8]);
+    }
+
+    // El punto de tipificación se elige por consulta: JPQL no permite parametrizar la columna.
+    private List<Object[]> tipificadosPorEquipoSegunCampo(CampoTipificacion campo, Instant inicio, Instant fin) {
+        return switch (campo) {
+            case PRIMERA -> eventoRepository.contarLeadsDiariosTipificadosPorEquipoPrimera(
+                    Accion.REGISTRO, Etapa.PREVENTA, inicio, fin);
+            case ULTIMA -> eventoRepository.contarLeadsDiariosTipificadosPorEquipoUltima(
+                    Accion.REGISTRO, Etapa.PREVENTA, inicio, fin);
+            case MAYOR -> eventoRepository.contarLeadsDiariosTipificadosPorEquipoMayor(
+                    Accion.REGISTRO, Etapa.PREVENTA, inicio, fin);
+        };
+    }
+
+    private List<Object[]> bloquesPorEquipoSegunCampo(CampoTipificacion campo, Instant inicio, Instant fin) {
+        return switch (campo) {
+            case PRIMERA -> eventoRepository.agruparLeadsDiariosPorOrdenPorEquipoPrimera(
+                    Accion.REGISTRO, Etapa.PREVENTA, inicio, fin);
+            case ULTIMA -> eventoRepository.agruparLeadsDiariosPorOrdenPorEquipoUltima(
+                    Accion.REGISTRO, Etapa.PREVENTA, inicio, fin);
+            case MAYOR -> eventoRepository.agruparLeadsDiariosPorOrdenPorEquipoMayor(
+                    Accion.REGISTRO, Etapa.PREVENTA, inicio, fin);
+        };
+    }
+
+    private List<Object[]> ventaCerradaPorEquipoSegunCampo(CampoTipificacion campo, Instant inicio, Instant fin) {
+        return switch (campo) {
+            case PRIMERA -> eventoRepository.contarLeadsDiariosVentaCerradaPorEquipoPrimera(
+                    Accion.REGISTRO, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA);
+            case ULTIMA -> eventoRepository.contarLeadsDiariosVentaCerradaPorEquipoUltima(
+                    Accion.REGISTRO, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA);
+            case MAYOR -> eventoRepository.contarLeadsDiariosVentaCerradaPorEquipoMayor(
+                    Accion.REGISTRO, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA);
+        };
     }
 
     /**

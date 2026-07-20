@@ -98,11 +98,21 @@ public class EventoController {
         return ResponseEntity.ok(eventoService.obtenerMetricasRegistrosDiarios(fecha));
     }
 
+    /**
+     * `fecha` se mantiene por compatibilidad (la usan el DASHBOARD y "Leads del día") y equivale a
+     * desde = hasta = fecha. Con los defaults la respuesta es idéntica a la versión previa.
+     */
     @GetMapping("/registros-diarios/metricas-por-equipo") @PreAuthorize("hasAuthority('READ_LEADS_DIARIOS')")
     public ResponseEntity<List<LeadsDiariosMetricasEquipoResponse>> obtenerMetricasRegistrosDiariosPorEquipo(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
+            @RequestParam(defaultValue = "ULTIMA") CampoTipificacion campo
     ) {
-        return ResponseEntity.ok(eventoService.obtenerMetricasRegistrosDiariosPorEquipo(fecha));
+        LocalDate desdeResuelto = desde != null ? desde : fecha;
+        LocalDate hastaResuelto = hasta != null ? hasta : fecha;
+        return ResponseEntity.ok(
+                eventoService.obtenerMetricasRegistrosDiariosPorEquipo(desdeResuelto, hastaResuelto, campo));
     }
 
     @GetMapping("/metricas/gestion-por-campana") @PreAuthorize("hasAuthority('READ_LEADS_DIARIOS')")

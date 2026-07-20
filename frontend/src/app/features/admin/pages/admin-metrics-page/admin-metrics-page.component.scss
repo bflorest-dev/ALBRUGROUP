@@ -6,33 +6,28 @@
   overflow-x: clip;
 }
 
-.metrics-toolbar {
+// Fila propia de controles bajo el subtítulo, pegada a la derecha (Regla 4 del sistema de diseño).
+.metrics-controls {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
+  justify-content: flex-end;
   gap: 0.75rem;
-  margin-bottom: 1rem;
+  margin: 1rem 0;
   min-width: 0;
 }
 
-.metrics-toolbar app-date-field {
-  min-width: 12rem;
-}
-
-.metrics-filter {
-  display: grid;
+.metrics-control {
+  display: flex;
+  flex-direction: column;
   gap: 0.35rem;
-  min-width: min(16rem, 100%);
+  min-width: 0;
 }
 
-.metrics-filter span {
+.metrics-control-label {
   color: var(--app-text-muted);
   font-size: 0.8rem;
-  font-weight: 700;
-}
-
-:host ::ng-deep .metrics-filter .p-select {
-  width: 100%;
+  font-weight: 600;
 }
 
 .metrics-message {

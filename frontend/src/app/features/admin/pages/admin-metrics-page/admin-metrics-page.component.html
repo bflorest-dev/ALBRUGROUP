@@ -6,35 +6,60 @@
   />
 
   <p-card>
-    <div class="metrics-toolbar">
-      <app-date-field
-        label="Fecha"
-        inputId="dashboard-fecha"
-        [max]="maxDate"
-        [ngModel]="fecha()"
-        (ngModelChange)="onFechaChange($event)"
-      />
-      <label class="metrics-filter">
-        <span>Equipo</span>
-        <p-select
-          inputId="dashboard-equipo"
+    <app-section-header
+      title="Rendimiento por equipo"
+      description="Calidad, gestión y conversión de los leads ingresados en el período, por equipo."
+    />
+
+    <div class="metrics-controls">
+      <div class="metrics-control">
+        <span class="metrics-control-label">Equipo</span>
+        <p-selectButton
           [options]="equipoOptions()"
-          [ngModel]="selectedEquipoId()"
           optionLabel="label"
           optionValue="value"
-          appendTo="body"
-          (ngModelChange)="onEquipoChange($event)"
+          [allowEmpty]="false"
+          [ngModel]="selectedEquipoId()"
+          [ngModelOptions]="{ standalone: true }"
+          (onChange)="onEquipoChange($event.value)"
         />
-      </label>
+      </div>
+
+      <div class="metrics-control">
+        <span class="metrics-control-label">Tipificación</span>
+        <p-selectButton
+          [options]="campoOptions"
+          optionLabel="label"
+          optionValue="value"
+          [allowEmpty]="false"
+          [ngModel]="campo()"
+          [ngModelOptions]="{ standalone: true }"
+          (onChange)="onCampoChange($event.value)"
+        />
+      </div>
+
+      <div class="metrics-control">
+        <span class="metrics-control-label">Período</span>
+        <app-period-selector
+          [periodo]="periodo()"
+          [dia]="dia()"
+          (periodoChange)="onPeriodoChange($event)"
+          (diaChange)="onDiaChange($event)"
+        />
+      </div>
+
       <button
         pButton
         type="button"
         icon="pi pi-refresh"
-        label="Actualizar"
         severity="secondary"
+        [rounded]="true"
         [outlined]="true"
         [loading]="isLoading()"
         (click)="load()"
+        pTooltip="Actualizar"
+        tooltipPosition="top"
+        aria-label="Actualizar"
       ></button>
     </div>
 
@@ -49,7 +74,7 @@
         @if (isLoading()) {
           Cargando métricas...
         } @else {
-          No hubo registros en esta fecha.
+          No hubo registros en el período seleccionado.
         }
       </div>
     }

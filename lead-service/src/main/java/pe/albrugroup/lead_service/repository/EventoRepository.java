@@ -837,7 +837,9 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("fin") Instant fin
     );
 
-    // F por equipo: [idEquipo, leadsTipificados].
+    // F por equipo: [idEquipo, leadsTipificados]. Una variante por punto de tipificación
+    // (primera/última/mayor rango), igual que en LeadEtapaResumenRepository: JPQL no permite
+    // parametrizar el nombre de la columna.
     @Query("""
             SELECT l.idEquipo, COUNT(DISTINCT e.idLead)
             FROM Evento e
@@ -849,7 +851,43 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
               AND r.ultimaCodigoTipificacion IS NOT NULL
             GROUP BY l.idEquipo
             """)
-    List<Object[]> contarLeadsDiariosTipificadosPorEquipo(
+    List<Object[]> contarLeadsDiariosTipificadosPorEquipoUltima(
+            @Param("accion") Accion accion,
+            @Param("etapaResumen") Etapa etapaResumen,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    @Query("""
+            SELECT l.idEquipo, COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND r.primeraCodigoTipificacion IS NOT NULL
+            GROUP BY l.idEquipo
+            """)
+    List<Object[]> contarLeadsDiariosTipificadosPorEquipoPrimera(
+            @Param("accion") Accion accion,
+            @Param("etapaResumen") Etapa etapaResumen,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    @Query("""
+            SELECT l.idEquipo, COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND r.mayorRangoCodigoTipificacion IS NOT NULL
+            GROUP BY l.idEquipo
+            """)
+    List<Object[]> contarLeadsDiariosTipificadosPorEquipoMayor(
             @Param("accion") Accion accion,
             @Param("etapaResumen") Etapa etapaResumen,
             @Param("inicio") Instant inicio,
@@ -868,7 +906,43 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
               AND r.ultimaTipificacionOrden IS NOT NULL
             GROUP BY l.idEquipo, r.ultimaTipificacionOrden
             """)
-    List<Object[]> agruparLeadsDiariosPorOrdenPorEquipo(
+    List<Object[]> agruparLeadsDiariosPorOrdenPorEquipoUltima(
+            @Param("accion") Accion accion,
+            @Param("etapaResumen") Etapa etapaResumen,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    @Query("""
+            SELECT l.idEquipo, r.primeraTipificacionOrden, COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND r.primeraTipificacionOrden IS NOT NULL
+            GROUP BY l.idEquipo, r.primeraTipificacionOrden
+            """)
+    List<Object[]> agruparLeadsDiariosPorOrdenPorEquipoPrimera(
+            @Param("accion") Accion accion,
+            @Param("etapaResumen") Etapa etapaResumen,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    @Query("""
+            SELECT l.idEquipo, r.mayorRangoOrden, COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND r.mayorRangoOrden IS NOT NULL
+            GROUP BY l.idEquipo, r.mayorRangoOrden
+            """)
+    List<Object[]> agruparLeadsDiariosPorOrdenPorEquipoMayor(
             @Param("accion") Accion accion,
             @Param("etapaResumen") Etapa etapaResumen,
             @Param("inicio") Instant inicio,
@@ -887,7 +961,45 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
               AND r.ultimaCodigoTipificacion = :codigoTipificacion
             GROUP BY l.idEquipo
             """)
-    List<Object[]> contarLeadsDiariosVentaCerradaPorEquipo(
+    List<Object[]> contarLeadsDiariosVentaCerradaPorEquipoUltima(
+            @Param("accion") Accion accion,
+            @Param("etapaResumen") Etapa etapaResumen,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("codigoTipificacion") String codigoTipificacion
+    );
+
+    @Query("""
+            SELECT l.idEquipo, COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND r.primeraCodigoTipificacion = :codigoTipificacion
+            GROUP BY l.idEquipo
+            """)
+    List<Object[]> contarLeadsDiariosVentaCerradaPorEquipoPrimera(
+            @Param("accion") Accion accion,
+            @Param("etapaResumen") Etapa etapaResumen,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("codigoTipificacion") String codigoTipificacion
+    );
+
+    @Query("""
+            SELECT l.idEquipo, COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            JOIN LeadEtapaResumen r ON r.idLead = e.idLead AND r.etapa = :etapaResumen
+            WHERE e.accion = :accion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+              AND r.mayorRangoCodigoTipificacion = :codigoTipificacion
+            GROUP BY l.idEquipo
+            """)
+    List<Object[]> contarLeadsDiariosVentaCerradaPorEquipoMayor(
             @Param("accion") Accion accion,
             @Param("etapaResumen") Etapa etapaResumen,
             @Param("inicio") Instant inicio,

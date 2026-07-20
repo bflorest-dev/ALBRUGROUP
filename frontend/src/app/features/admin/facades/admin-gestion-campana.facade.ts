@@ -2,6 +2,8 @@ import { Injectable, computed, effect, inject, signal, untracked } from '@angula
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { CatalogoResponse } from '../../../shared/models/preventa/preventa.models';
+import { esEquipoOperativo } from '../../../shared/utils/equipos-operativos';
+import { resolveMetricsRange } from '../../../shared/utils/metrics-period';
 import { AdminEquipoService } from '../services/admin-equipo.service';
 import {
   AdminGestionCampanaService,
@@ -63,13 +65,6 @@ export interface GestionCampanaGroup {
 }
 
 const SIN_EQUIPO = 'Sin equipo';
-
-/**
- * TEMPORAL: hoy solo se opera con estos equipos. Es un filtro de UI mientras la estructura no
- * permita activar/desactivar equipos. Cuando exista esa gestion, el filtro correcto es `activo`
- * del backend (aplica a todo el sistema, no solo a este control) y esta constante debe borrarse.
- */
-const EQUIPOS_OPERATIVOS = ['claroteam', 'winteam'];
 const SIN_CAMPANA = 'Sin campaña';
 const CIERRE_PREVENTA = 'ES_CIERRE_PREVENTA';
 
@@ -179,7 +174,7 @@ export class AdminGestionCampanaFacade {
               nombresEquipo: new Map(equipos.map((equipo) => [equipo.id, equipo.nombre])),
               equipoOptions: equipos
                 .filter((equipo) => equipo.activo !== false)
-                .filter((equipo) => EQUIPOS_OPERATIVOS.includes(equipo.nombre.trim().toLowerCase()))
+                .filter((equipo) => esEquipoOperativo(equipo.nombre))
                 .map((equipo) => ({ label: equipo.nombre, value: equipo.id }))
                 .sort((left, right) => left.label.localeCompare(right.label))
             }
@@ -362,38 +357,7 @@ export class AdminGestionCampanaFacade {
 
   /** Devuelve las cotas a enviar. `undefined` en una cota = el backend usa el día operativo de hoy. */
   private resolveRange(): { desde?: string; hasta?: string } {
-    switch (this.periodo()) {
-      case 'dia': {
-        // Sin dia puntual se omiten las cotas: el backend usa el dia operativo de hoy (America/Lima).
-        const dia = this.diaSeleccionado();
-        return dia ? { desde: dia, hasta: dia } : { desde: undefined, hasta: undefined };
-      }
-      case 'semana':
-        return { desde: this.weekStart(), hasta: undefined };
-      case 'mes':
-        return { desde: `${this.localToday().substring(0, 8)}01`, hasta: undefined };
-    }
-  }
-
-  /**
-   * Inicio de la semana operativa: el sábado más reciente ≤ hoy (la semana de la empresa va de
-   * sábado a viernes). Fecha local del navegador (America/Lima para los usuarios), sin `toISOString`.
-   */
-  private weekStart(): string {
-    const now = new Date();
-    const daysSinceSaturday = (now.getDay() - 6 + 7) % 7; // getDay: 0=Dom .. 6=Sáb
-    const saturday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysSinceSaturday);
-    return this.formatLocal(saturday);
-  }
-
-  private localToday(): string {
-    return this.formatLocal(new Date());
-  }
-
-  private formatLocal(date: Date): string {
-    const month = `${date.getMonth() + 1}`.padStart(2, '0');
-    const day = `${date.getDate()}`.padStart(2, '0');
-    return `${date.getFullYear()}-${month}-${day}`;
+    return resolveMetricsRange(this.periodo(), this.diaSeleccionado());
   }
 
   private campanaKey(idCampana: number | null): string {

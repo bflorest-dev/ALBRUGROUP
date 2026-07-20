@@ -4,9 +4,14 @@ import { firstValueFrom } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { MessageModule } from 'primeng/message';
-import { SelectModule } from 'primeng/select';
-import { DateFieldComponent } from '../../../../shared/components/date-field/date-field.component';
+import { SelectButtonModule } from 'primeng/selectbutton';
+import { TooltipModule } from 'primeng/tooltip';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
+import { MetricsPeriodo, PeriodSelectorComponent } from '../../../../shared/components/period-selector/period-selector.component';
+import { SectionHeaderComponent } from '../../../../shared/components/section-header/section-header.component';
+import { esEquipoOperativo } from '../../../../shared/utils/equipos-operativos';
+import { resolveMetricsRange } from '../../../../shared/utils/metrics-period';
+import { GestionCampoTipi } from '../../services/admin-gestion-campana.service';
 import { GestionCampanaPanelComponent } from '../../components/gestion-campana-panel/gestion-campana-panel.component';
 import { TeamMetricGaugesComponent } from '../../components/team-metric-gauges/team-metric-gauges.component';
 import { DashboardGaugeCard, resolveGaugeColors } from '../../models/dashboard-gauge.model';
@@ -38,9 +43,11 @@ interface DashboardMetricRow {
     ButtonModule,
     CardModule,
     MessageModule,
-    SelectModule,
-    DateFieldComponent,
+    SelectButtonModule,
+    TooltipModule,
     PageHeaderComponent,
+    PeriodSelectorComponent,
+    SectionHeaderComponent,
     GestionCampanaPanelComponent,
     TeamMetricGaugesComponent
   ],
@@ -52,8 +59,10 @@ export class AdminMetricsPageComponent implements OnInit {
   private readonly metricsService = inject(AdminDailyMetricsService);
   private readonly equipoService = inject(AdminEquipoService);
 
-  protected readonly fecha = signal('');
-  protected readonly maxDate = this.localToday();
+  protected readonly periodo = signal<MetricsPeriodo>('dia');
+  /** Día puntual elegido en el segmento "Hoy" (`YYYY-MM-DD`). `null` = hoy. */
+  protected readonly dia = signal<string | null>(null);
+  protected readonly campo = signal<GestionCampoTipi>('ULTIMA');
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal('');
   private readonly raw = signal<LeadsDiariosMetricasEquipo[]>([]);
@@ -62,13 +71,21 @@ export class AdminMetricsPageComponent implements OnInit {
   private readonly equipoColorById = signal<Map<number, string>>(new Map());
   protected readonly selectedEquipoId = signal<number | null>(null);
 
+  /** "Todos" conserva la comparación lado a lado entre equipos, que es el valor de este bloque. */
   protected readonly equipoOptions = computed(() => [
-    { label: 'Todos los equipos', value: null as number | null },
+    { label: 'Todos', value: null as number | null },
     ...this.equipos()
       .filter((equipo) => equipo.activo !== false)
+      .filter((equipo) => esEquipoOperativo(equipo.nombre))
       .map((equipo) => ({ label: equipo.nombre, value: equipo.id }))
       .sort((left, right) => left.label.localeCompare(right.label))
   ]);
+
+  protected readonly campoOptions: Array<{ label: string; value: GestionCampoTipi }> = [
+    { label: 'Mayor', value: 'MAYOR' },
+    { label: 'Primera', value: 'PRIMERA' },
+    { label: 'Última', value: 'ULTIMA' }
+  ];
 
   protected readonly rows = computed<DashboardMetricRow[]>(() => {
     const nombres = this.equipoNombreById();
@@ -125,11 +142,36 @@ export class AdminMetricsPageComponent implements OnInit {
     void this.load();
   }
 
-  protected async onFechaChange(value: string): Promise<void> {
-    this.fecha.set(value || '');
+  protected async onPeriodoChange(value: MetricsPeriodo): Promise<void> {
+    if (this.periodo() === value) {
+      return;
+    }
+    this.periodo.set(value);
+    // Salir de "día" descarta el día puntual: al volver, el segmento arranca de nuevo en "Hoy".
+    if (value !== 'dia') {
+      this.dia.set(null);
+    }
     await this.load();
   }
 
+  protected async onDiaChange(value: string): Promise<void> {
+    if (this.dia() === value) {
+      return;
+    }
+    this.dia.set(value);
+    this.periodo.set('dia');
+    await this.load();
+  }
+
+  protected async onCampoChange(value: GestionCampoTipi | null): Promise<void> {
+    if (!value || this.campo() === value) {
+      return;
+    }
+    this.campo.set(value);
+    await this.load();
+  }
+
+  /** El equipo solo filtra las tarjetas ya cargadas: no vuelve a pegar al backend. */
   protected onEquipoChange(value: number | null): void {
     this.selectedEquipoId.set(value ?? null);
   }
@@ -138,8 +180,9 @@ export class AdminMetricsPageComponent implements OnInit {
     this.isLoading.set(true);
     this.errorMessage.set('');
     try {
+      const rango = resolveMetricsRange(this.periodo(), this.dia());
       const [metricas, equipos] = await Promise.all([
-        firstValueFrom(this.metricsService.obtenerPorEquipo(this.fecha() || undefined)),
+        firstValueFrom(this.metricsService.obtenerPorEquipo(rango.desde, rango.hasta, this.campo())),
         firstValueFrom(this.equipoService.listarEquipos())
       ]);
       this.equipos.set(equipos);
@@ -198,10 +241,4 @@ export class AdminMetricsPageComponent implements OnInit {
     };
   }
 
-  private localToday(): string {
-    const now = new Date();
-    const month = `${now.getMonth() + 1}`.padStart(2, '0');
-    const day = `${now.getDate()}`.padStart(2, '0');
-    return `${now.getFullYear()}-${month}-${day}`;
-  }
 }
