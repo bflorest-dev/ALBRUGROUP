@@ -1,0 +1,17 @@
+:host {
+  display: inline-block;
+}
+
+.period {
+  display: inline-flex;
+  min-width: 0;
+}
+
+/* El calendario vive en un popover montado en `body`: no debe heredar padding del panel. */
+.period__calendar {
+  display: block;
+}
+
+:host ::ng-deep .period-day-popover .p-datepicker {
+  border: none;
+}

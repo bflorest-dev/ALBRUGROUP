@@ -12,6 +12,7 @@ import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { SessionService } from '../../../../core/services/session.service';
 import { LeadRealtimeService } from '../../../preventa/services/lead-realtime.service';
 import {
   CampanaResponse,
@@ -50,6 +51,7 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
   private readonly leadService = inject(CommunityLeadService);
   private readonly realtimeService = inject(LeadRealtimeService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly sessionService = inject(SessionService);
   private readonly realtimeSubscription = new Subscription();
 
   protected readonly leadQuery = signal('');
@@ -65,6 +67,9 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
   protected readonly lastResult = signal<LeadCampanaCorreccionResponse | null>(null);
   protected readonly correctionDialogVisible = signal(false);
   protected readonly correctionDialogMessage = signal<string | null>(null);
+  protected readonly pageEyebrow = computed(() =>
+    this.sessionService.primaryRole() === 'ADMINISTRADOR' ? 'ADMIN' : 'COMMUNITY'
+  );
 
   protected readonly campaignOptions = computed<CampaignCorrectionOption[]>(() => [
     { label: 'Sin campaña', value: null },

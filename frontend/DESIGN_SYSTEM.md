@@ -151,6 +151,36 @@ secundaria y bajo demanda.
 
 ---
 
+## Regla 4 — Controles de un bloque de métricas
+
+**Set estándar, en este orden:** `Equipo · Modo · Tipificación · Período` y, debajo, el selector
+de `Campañas`. Todos son controles segmentados (`p-selectButton`), en **fila propia bajo el
+subtítulo, alineada a la derecha**, cerrando con el botón de refrescar **solo ícono**.
+
+**Antes de poner estos controles en un bloque hay que verificar que el endpoint los soporte.**
+No se agregan selectores que el backend no pueda separar. Ejemplo real: el endpoint de los
+medidores (`registros-diarios/metricas-por-equipo`) solo acepta `fecha`, así que solo admite
+día puntual; `Modo`, `Tipificación` y `Campañas` ahí requieren trabajo de backend.
+
+### Período (`app-period-selector`)
+
+`src/app/shared/components/period-selector/`. Segmentado `[Hoy | Semanal | Mensual]` que además
+concentra la elección del día:
+
+- **Sin ícono de calendario** (rompería la estética del segmentado). Se abre haciendo **clic en el
+  primer segmento**, incluso si ya estaba activo.
+- Elegido un día distinto de hoy, el segmento **muestra esa fecha** (`15 jul`) en lugar de "Hoy":
+  el control nunca miente sobre lo que se está viendo. Al pasar a Semanal/Mensual vuelve a "Hoy".
+- Cierra al salir el mouse (con margen de ~320 ms para poder cruzar hacia el calendario), al elegir
+  un día, y por clic fuera / `Escape` — esto último es **obligatorio**: en táctil no existe
+  `mouseleave` y el calendario quedaría atrapado.
+- El popover usa `appendTo="body"` para no quedar recortado por el `overflow` del panel.
+
+**Semana operativa:** de **sábado a viernes** (desde el sábado más reciente ≤ hoy). Mensual, desde
+el día 01. Se calculan en el frontend con fecha local (nunca `toISOString`).
+
+---
+
 ## Cómo agregar una regla nueva
 
 1. Tomar la decisión de diseño con el usuario y validarla visualmente.

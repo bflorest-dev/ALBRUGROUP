@@ -43,14 +43,11 @@
 
       <div class="gxc__control">
         <span class="gxc__control-label">Período</span>
-        <p-selectButton
-          [options]="facade.periodoOptions"
-          optionLabel="label"
-          optionValue="value"
-          [allowEmpty]="false"
-          [ngModel]="facade.periodo()"
-          [ngModelOptions]="{ standalone: true }"
-          (onChange)="facade.setPeriodo($event.value)"
+        <app-period-selector
+          [periodo]="facade.periodo()"
+          [dia]="facade.diaSeleccionado()"
+          (periodoChange)="facade.setPeriodo($event)"
+          (diaChange)="facade.setDia($event)"
         />
       </div>
 

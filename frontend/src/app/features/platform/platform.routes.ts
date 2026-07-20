@@ -140,6 +140,14 @@ export const PLATFORM_ROUTES: Routes = [
     }
   },
   {
+    path: 'admin/correccion-campana',
+    component: CommunityCampaignCorrectionPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR']
+    }
+  },
+  {
     path: 'admin/eliminar-leads',
     component: AdminDeleteLeadsPageComponent,
     canActivate: [roleGuard],

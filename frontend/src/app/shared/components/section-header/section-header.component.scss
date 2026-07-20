@@ -59,6 +59,12 @@
   cursor: help;
   opacity: 0.72;
   transition: opacity 0.15s ease;
+  /*
+   * Correccion optica: centrar por caja deja el icono levemente alto respecto al centro
+   * visual del texto (los descendentes de la tipografia bajan el centro optico del titulo).
+   */
+  position: relative;
+  top: 0.08em;
 }
 
 .section-header__info i {

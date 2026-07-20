@@ -1,0 +1,23 @@
+<div class="period" (click)="onClick($event)" (mouseenter)="cancelarCierre()" (mouseleave)="programarCierre()">
+  <p-selectButton
+    [options]="segments()"
+    optionLabel="label"
+    optionValue="value"
+    [allowEmpty]="false"
+    [ngModel]="periodo()"
+    [ngModelOptions]="{ standalone: true }"
+    (onChange)="onSegmentChange($event.value)"
+  />
+</div>
+
+<p-popover #dayPopover appendTo="body" styleClass="period-day-popover">
+  <div class="period__calendar" (mouseenter)="cancelarCierre()" (mouseleave)="programarCierre()">
+    <p-datepicker
+      [inline]="true"
+      [maxDate]="maxDate()"
+      [ngModel]="selectedDate()"
+      [ngModelOptions]="{ standalone: true }"
+      (ngModelChange)="onPickDay($event)"
+    />
+  </div>
+</p-popover>

@@ -152,6 +152,7 @@ export class PrivateLayoutComponent {
         { label: 'Equipos', route: '/app/admin/equipos', icon: 'pi pi-th-large', exact: true },
         { label: 'Mantenimiento', route: '/app/admin/mantenimiento', icon: 'pi pi-database', exact: true },
         { label: 'Leads del día', route: '/app/admin/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
+        { label: 'CorrecciÃ³n de campaÃ±a', route: '/app/admin/correccion-campana', icon: 'pi pi-sync', exact: true },
         { label: 'Finanzas', route: '/app/admin/finanzas', icon: 'pi pi-wallet', exact: true },
         { label: 'Ranking', route: '/app/admin/ranking', icon: 'pi pi-chart-bar', exact: true },
         { label: 'Operaciones', route: '/app/admin/operaciones', icon: 'pi pi-wrench', exact: true }
@@ -161,6 +162,7 @@ export class PrivateLayoutComponent {
         items.push({ label: 'Eliminar Leads', route: '/app/admin/eliminar-leads', icon: 'pi pi-trash', exact: true });
       }
 
+      this.sortAdminMenu(items);
       return items;
     }
 
@@ -232,6 +234,36 @@ export class PrivateLayoutComponent {
 
     return [{ label: 'Inicio', route: session.homeRoute, icon: 'pi pi-home', exact: true }];
   });
+
+  private sortAdminMenu(items: SidebarItem[]): void {
+    for (const item of items) {
+      if (item.route === '/app/admin/leads-del-dia') {
+        item.label = 'Leads del Dia';
+      }
+      if (item.route === '/app/admin/correccion-campana') {
+        item.label = 'Correccion de Campana';
+      }
+    }
+    const order = new Map<string, number>([
+      ['/app/admin/dashboard', 1],
+      ['/app/admin/finanzas', 2],
+      ['/app/admin/leads-del-dia', 3],
+      ['Colaboradores', 4],
+      ['/app/admin/ranking', 5],
+      ['/app/admin/correccion-campana', 6],
+      ['/app/admin/mantenimiento', 7],
+      ['/app/admin/tipificaciones', 8],
+      ['/app/admin/equipos', 9],
+      ['/app/admin/operaciones', 10],
+      ['/app/admin/personal', 11],
+      ['/app/admin/empleabilidad', 12]
+    ]);
+    items.sort((left, right) => {
+      const leftKey = left.route ?? left.label;
+      const rightKey = right.route ?? right.label;
+      return (order.get(leftKey) ?? 99) - (order.get(rightKey) ?? 99);
+    });
+  }
 
   protected isGroupExpanded(label: string): boolean {
     return this.expandedGroups()[label] ?? false;

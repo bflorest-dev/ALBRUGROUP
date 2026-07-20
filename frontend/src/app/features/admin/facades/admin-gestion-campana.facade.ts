@@ -63,6 +63,13 @@ export interface GestionCampanaGroup {
 }
 
 const SIN_EQUIPO = 'Sin equipo';
+
+/**
+ * TEMPORAL: hoy solo se opera con estos equipos. Es un filtro de UI mientras la estructura no
+ * permita activar/desactivar equipos. Cuando exista esa gestion, el filtro correcto es `activo`
+ * del backend (aplica a todo el sistema, no solo a este control) y esta constante debe borrarse.
+ */
+const EQUIPOS_OPERATIVOS = ['claroteam', 'winteam'];
 const SIN_CAMPANA = 'Sin campaña';
 const CIERRE_PREVENTA = 'ES_CIERRE_PREVENTA';
 
@@ -121,19 +128,21 @@ export class AdminGestionCampanaFacade {
   private readonly criteria = signal<Criteria | null>(null);
 
   readonly campo = signal<GestionCampoTipi>('MAYOR');
-  readonly modo = signal<GestionModo>('GESTIONADOS');
+  readonly modo = signal<GestionModo>('INGRESADOS');
   readonly periodo = signal<GestionPeriodo>('dia');
+  /** Dia puntual elegido en el segmento "Hoy" (`YYYY-MM-DD`). `null` = hoy. */
+  readonly diaSeleccionado = signal<string | null>(null);
   readonly selectedCampanaKeys = signal<string[]>([]);
   readonly selectedEquipoId = signal<number | null>(null);
 
   readonly campoOptions: Array<{ label: string; value: GestionCampoTipi }> = [
     { label: 'Mayor', value: 'MAYOR' },
-    { label: 'Última', value: 'ULTIMA' },
-    { label: 'Primera', value: 'PRIMERA' }
+    { label: 'Primera', value: 'PRIMERA' },
+    { label: 'Última', value: 'ULTIMA' }
   ];
   readonly modoOptions: Array<{ label: string; value: GestionModo }> = [
-    { label: 'Gestionados', value: 'GESTIONADOS' },
-    { label: 'Ingresados', value: 'INGRESADOS' }
+    { label: 'Ingresados', value: 'INGRESADOS' },
+    { label: 'Gestionados', value: 'GESTIONADOS' }
   ];
   readonly periodoOptions: Array<{ label: string; value: GestionPeriodo }> = [
     { label: 'Hoy', value: 'dia' },
@@ -170,6 +179,7 @@ export class AdminGestionCampanaFacade {
               nombresEquipo: new Map(equipos.map((equipo) => [equipo.id, equipo.nombre])),
               equipoOptions: equipos
                 .filter((equipo) => equipo.activo !== false)
+                .filter((equipo) => EQUIPOS_OPERATIVOS.includes(equipo.nombre.trim().toLowerCase()))
                 .map((equipo) => ({ label: equipo.nombre, value: equipo.id }))
                 .sort((left, right) => left.label.localeCompare(right.label))
             }
@@ -303,6 +313,20 @@ export class AdminGestionCampanaFacade {
       return;
     }
     this.periodo.set(periodo);
+    // Salir de "dia" descarta el dia puntual: al volver, el segmento arranca de nuevo en "Hoy".
+    if (periodo !== 'dia') {
+      this.diaSeleccionado.set(null);
+    }
+    this.reload();
+  }
+
+  /** Dia puntual elegido en el calendario del segmento "Hoy". */
+  setDia(dia: string): void {
+    if (!dia || this.diaSeleccionado() === dia) {
+      return;
+    }
+    this.diaSeleccionado.set(dia);
+    this.periodo.set('dia');
     this.reload();
   }
 
@@ -339,8 +363,11 @@ export class AdminGestionCampanaFacade {
   /** Devuelve las cotas a enviar. `undefined` en una cota = el backend usa el día operativo de hoy. */
   private resolveRange(): { desde?: string; hasta?: string } {
     switch (this.periodo()) {
-      case 'dia':
-        return { desde: undefined, hasta: undefined };
+      case 'dia': {
+        // Sin dia puntual se omiten las cotas: el backend usa el dia operativo de hoy (America/Lima).
+        const dia = this.diaSeleccionado();
+        return dia ? { desde: dia, hasta: dia } : { desde: undefined, hasta: undefined };
+      }
       case 'semana':
         return { desde: this.weekStart(), hasta: undefined };
       case 'mes':

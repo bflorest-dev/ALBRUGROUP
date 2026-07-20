@@ -9,6 +9,7 @@ import { SelectButtonModule } from 'primeng/selectbutton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
+import { PeriodSelectorComponent } from '../../../../shared/components/period-selector/period-selector.component';
 import { SectionHeaderComponent } from '../../../../shared/components/section-header/section-header.component';
 import { AdminGestionCampanaFacade } from '../../facades/admin-gestion-campana.facade';
 
@@ -30,6 +31,7 @@ import { AdminGestionCampanaFacade } from '../../facades/admin-gestion-campana.f
     TableModule,
     TagModule,
     TooltipModule,
+    PeriodSelectorComponent,
     SectionHeaderComponent
   ],
   providers: [AdminGestionCampanaFacade],
