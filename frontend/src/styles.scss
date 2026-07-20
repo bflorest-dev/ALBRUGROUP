@@ -409,33 +409,12 @@ app-employee-access-panel .row-actions {
 }
 
 /*
- * Fondo ambiental tintado por rol detras del contenido del layout privado. Le da al vidrio
- * (.app-glass) algo que difuminar, para que se perciba como cristal. Fijo al viewport (no a la
- * pagina, que puede ser muy larga) para que el tinte quede siempre en las esquinas visibles;
- * deja libre el ancho del sidebar (292px). Decorativo: no captura eventos y va bajo el contenido.
+ * NO agregar aqui un fondo ambiental con `main.content > * { z-index }`. Se intento y rompio los
+ * overlays de todo el layout: crear un contexto de apilamiento en cada hijo directo de .content
+ * dejaba el desplegable de asistencia detras del contenido de la pagina y la mascara del drawer
+ * por encima de su propio contenido (clics que cerraban el panel). Si se retoma la idea, debe ir
+ * en una capa que NO toque el apilamiento de los hijos de .content.
  */
-main.content::before {
-  content: '';
-  position: fixed;
-  inset: 0 0 0 292px;
-  z-index: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(60rem 46rem at 100% 0%, color-mix(in srgb, var(--role-accent) 30%, transparent), transparent 58%),
-    radial-gradient(58rem 46rem at 8% 100%, color-mix(in srgb, var(--role-primary) 26%, transparent), transparent 58%);
-}
-
-main.content > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* Sin sidebar lateral (<900px): el fondo ambiental cubre todo el ancho, bajo el topbar. */
-@media (max-width: 900px) {
-  main.content::before {
-    inset: 4rem 0 0 0;
-  }
-}
 
 * {
   box-sizing: border-box;

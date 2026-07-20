@@ -90,17 +90,27 @@ componente porque la hoja es global).
 - ❌ **Nunca detrás de tablas densas de datos.** Ahí la legibilidad manda: usar superficie
   sólida (`--app-surface`). El blur también tiene costo de rendimiento; reservarlo.
 
-**Depende del fondo ambiental (ver abajo):** el vidrio solo se percibe cuando hay algo con
-color detrás que difuminar. Sobre un fondo plano se ve igual que una tarjeta blanca. Por eso
-el layout privado tiene un fondo ambiental que el cristal aprovecha.
+**Cuidado — `backdrop-filter` crea contexto de apilamiento** y además vuelve al elemento
+bloque contenedor de descendientes `position: fixed`. No envolver en `.app-glass` un
+contenedor que tenga dentro diálogos, drawers o desplegables: quedarían atrapados.
 
-### Fondo ambiental del layout
+**Sobre fondo plano el vidrio casi no se percibe** (se ve como una tarjeta blanca). Es una
+limitación aceptada: se probó darle un fondo ambiental al layout y **causó una regresión
+grave** (ver abajo). No reintentarlo por esa vía.
 
-`main.content::before` en `private-layout.component.scss` pinta dos halos radiales muy
-suaves, tintados con `--role-accent` y `--role-primary` (~15% vía `color-mix`), detrás del
-contenido de **todos los paneles**. Es decorativo (`pointer-events: none`, `z-index: 0`;
-el contenido va en `z-index: 1`) y toma el color de cada rol automáticamente. Sin él, la
-Regla 2 no tiene efecto visible.
+### ⚠️ No agregar un fondo ambiental con `z-index` en los hijos de `.content`
+
+Se intentó pintar halos de color tras el contenido (`main.content::before`) apoyándose en
+`main.content > * { position: relative; z-index: 1 }`. Eso crea **un contexto de apilamiento
+por cada hijo directo** de `.content` y rompió los overlays de todo el layout:
+
+- el desplegable de asistencia (dentro del banner superior) quedaba **detrás** del contenido
+  de la página, porque ambos eran hermanos con el mismo `z-index`;
+- la máscara del drawer (montada a nivel de `body`) quedaba **por encima** del propio drawer:
+  todo se veía oscurecido, los botones no recibían clic y cualquier clic cerraba el panel.
+
+Afectó a GTR y a cualquier rol. Está **revertido**. Si alguna vez se retoma la idea, la capa
+decorativa no debe tocar el apilamiento de los hijos de `.content`.
 
 ---
 
