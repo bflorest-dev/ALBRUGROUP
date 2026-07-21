@@ -40,6 +40,47 @@
   background: #ecfdf5;
 }
 
+.row-priority-campaign td {
+  background: #fff8dc;
+}
+
+.row-priority-campaign td:first-child {
+  border-left: 4px solid #f59e0b;
+}
+
+.row-new.row-priority-campaign td {
+  background: #fef3c7;
+}
+
+.priority-campaign-chip {
+  align-items: center;
+  background: #f59e0b;
+  border-radius: 999px;
+  color: #422006;
+  display: flex;
+  font-size: 0.68rem;
+  font-weight: 900;
+  gap: 0.28rem;
+  justify-content: center;
+  line-height: 1;
+  margin-top: 0.38rem;
+  max-width: 10.5rem;
+  padding: 0.32rem 0.55rem;
+  width: fit-content;
+}
+
+.priority-campaign-chip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.priority-campaign-chip i {
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+}
+
 .skeleton-table {
   display: grid;
   gap: 0.75rem;

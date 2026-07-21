@@ -156,6 +156,18 @@ td small {
   --p-table-row-background: rgba(31, 157, 87, 0.1);
 }
 
+.row-priority-campaign {
+  --p-table-row-background: #fff8dc;
+}
+
+.row-priority-campaign td:first-child {
+  border-left: 4px solid #f59e0b;
+}
+
+.row-selected.row-priority-campaign {
+  --p-table-row-background: #fef3c7;
+}
+
 :host ::ng-deep .gtr-table td.col-check,
 :host ::ng-deep .gtr-table th.col-check {
   padding: 0.3rem 0.4rem;
@@ -254,6 +266,34 @@ td small {
   max-height: 2.2rem;
   max-width: 8rem;
   object-fit: contain;
+}
+
+.priority-campaign-chip {
+  align-items: center;
+  background: #f59e0b;
+  border-radius: 999px;
+  color: #422006;
+  display: inline-flex;
+  font-size: 0.68rem;
+  font-weight: 900;
+  gap: 0.28rem;
+  justify-content: center;
+  line-height: 1;
+  margin-top: 0.38rem;
+  max-width: 10.5rem;
+  padding: 0.32rem 0.55rem;
+}
+
+.priority-campaign-chip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.priority-campaign-chip i {
+  font-size: 0.68rem;
+  flex: 0 0 auto;
 }
 
 .col-actions {

@@ -202,6 +202,8 @@ export interface LeadAsesorVentasResponse {
   fechaAsignacion?: string | null;
   prefijo: string;
   lead: string;
+  idCampana?: number | null;
+  nombreCampana?: string | null;
   // Snapshots del contacto (documento y direccion) que el GTR puede llenar, o el valor real de
   // preventa si ya existe: identifican el lead en la bandeja sin abrir el modal.
   numeroDocumento?: string | null;

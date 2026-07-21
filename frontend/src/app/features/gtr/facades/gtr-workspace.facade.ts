@@ -50,6 +50,7 @@ import {
 } from '../../../shared/models/preventa/preventa.models';
 import { LeadCommercialDataTab } from '../../../shared/components/lead-commercial-data-tabs/lead-commercial-data-tabs.component';
 import { buildTelUrl, buildWhatsAppUrl } from '../../../shared/utils/phone-link';
+import { PRIORITY_CAMPAIGN_LABEL, isPriorityCampaignName } from '../../../shared/utils/priority-campaign';
 import { providerLogo as resolveProviderLogo } from '../../../shared/utils/provider-logo';
 import {
   AjusteJornadaRequest,
@@ -2951,6 +2952,14 @@ export class GtrWorkspaceFacade {
 
   providerLogo(nombreProveedor?: string | null): string | null {
     return resolveProviderLogo(nombreProveedor);
+  }
+
+  priorityCampaignLabel(): string {
+    return PRIORITY_CAMPAIGN_LABEL;
+  }
+
+  isPriorityCampaign(row: { nombreCampana?: string | null }): boolean {
+    return isPriorityCampaignName(row.nombreCampana);
   }
 
   advisorDotClass(advisor: AdvisorOption): string {

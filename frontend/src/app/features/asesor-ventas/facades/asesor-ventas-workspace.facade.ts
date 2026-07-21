@@ -25,6 +25,7 @@ import {
   UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
 import { buildTelUrl, buildWhatsAppUrl } from '../../../shared/utils/phone-link';
+import { PRIORITY_CAMPAIGN_LABEL, isPriorityCampaignName } from '../../../shared/utils/priority-campaign';
 import { providerLogo as resolveProviderLogo } from '../../../shared/utils/provider-logo';
 import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
 import { PreventaLeadService } from '../../preventa/services/preventa-lead.service';
@@ -1147,6 +1148,14 @@ export class AsesorVentasWorkspaceFacade {
   // qué equipo/proveedor viene cada lead.
   providerLogo(row: { nombreProveedorCampana?: string | null; nombreProveedorEquipo?: string | null }): string | null {
     return resolveProviderLogo(row.nombreProveedorCampana ?? row.nombreProveedorEquipo);
+  }
+
+  priorityCampaignLabel(): string {
+    return PRIORITY_CAMPAIGN_LABEL;
+  }
+
+  isPriorityCampaign(row: { nombreCampana?: string | null }): boolean {
+    return isPriorityCampaignName(row.nombreCampana);
   }
 
   private telUrl(row: Pick<LeadAsesorVentasResponse, 'prefijo' | 'lead'>): string | null {

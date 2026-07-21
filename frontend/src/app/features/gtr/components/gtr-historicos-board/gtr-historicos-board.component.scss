@@ -29,11 +29,6 @@ label {
 }
 
 .historicos-mode {
-  color: var(--app-text-muted);
-  display: grid;
-  font-size: 0.78rem;
-  font-weight: 800;
-  gap: 0.35rem;
   min-width: 0;
 }
 
@@ -79,13 +74,6 @@ label {
   display: flex;
   gap: 1rem;
   justify-content: space-between;
-}
-
-.gtr-group-option span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .gtr-group-option strong {
@@ -139,12 +127,6 @@ label {
   overflow: hidden;
 }
 
-:host ::ng-deep .historicos-multiselect .p-multiselect-label {
-  align-items: center;
-  display: flex;
-  max-width: 100%;
-}
-
 :host ::ng-deep .historicos-multiselect .p-multiselect-chip-item,
 :host ::ng-deep .historicos-multiselect .p-multiselect-chip,
 :host ::ng-deep .historicos-multiselect .p-chip {
@@ -167,12 +149,9 @@ label {
   min-width: 0;
 }
 
-.catalog-option strong,
-.catalog-option span {
-  min-width: 0;
-}
-
+.gtr-group-option span,
 .catalog-option span:last-child {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

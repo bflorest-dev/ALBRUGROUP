@@ -21,6 +21,8 @@ public class LeadAsesorVentasResponse {
     private Instant fechaAsignacion;
     private String prefijo;
     private String lead;
+    private Long idCampana;
+    private String nombreCampana;
     // Snapshots del contacto que el GTR puede llenar antes o despues de asignar (o el valor real de
     // preventa si ya existe): permiten al asesor identificar el lead sin abrir el modal.
     private String numeroDocumento;

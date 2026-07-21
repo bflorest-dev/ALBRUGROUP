@@ -157,7 +157,11 @@
     </ng-template>
 
     <ng-template #body let-row>
-      <tr [class.row-new]="row.isNew" [class.row-selected]="facade.isSelected(row.id)">
+      <tr
+        [class.row-new]="row.isNew"
+        [class.row-selected]="facade.isSelected(row.id)"
+        [class.row-priority-campaign]="facade.isPriorityCampaign(row)"
+      >
         <td class="col-check">
           <app-gtr-lead-select-control
             [selected]="facade.isSelected(row.id)"
@@ -168,6 +172,12 @@
         </td>
         <td>
           <strong>{{ facade.leadPrefixLabel(row.prefijo) }} {{ row.lead }}</strong>
+          @if (facade.isPriorityCampaign(row)) {
+            <span class="priority-campaign-chip" [title]="facade.priorityCampaignLabel()">
+              <i class="pi pi-star-fill" aria-hidden="true"></i>
+              <span>{{ facade.priorityCampaignLabel() }}</span>
+            </span>
+          }
           @if (row.etapa && row.etapa !== 'PREVENTA') {
             <p-tag
               severity="warn"

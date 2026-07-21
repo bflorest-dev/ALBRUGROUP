@@ -2942,6 +2942,8 @@ public class LeadService {
         Direccion direccion = lead.getDireccion();
         String nombreProveedorCampana = lead.getCampana() == null || lead.getCampana().getProveedor() == null
                 ? null : lead.getCampana().getProveedor().getNombre();
+        Long idCampana = lead.getCampana() == null ? null : lead.getCampana().getId();
+        String nombreCampana = lead.getCampana() == null ? null : lead.getCampana().getNombre();
 
         // Valor efectivo documento/direccion: si ya existe la entidad de preventa se usa esa; si no,
         // el snapshot que pudo llenar el GTR. Misma resolucion que el detalle, para que coincidan.
@@ -2955,6 +2957,8 @@ public class LeadService {
                 fechaAsignacion,
                 lead.getPrefijo(),
                 lead.getLead(),
+                idCampana,
+                nombreCampana,
                 numeroDocumento,
                 direccionTexto,
                 lead.getEstado(),
