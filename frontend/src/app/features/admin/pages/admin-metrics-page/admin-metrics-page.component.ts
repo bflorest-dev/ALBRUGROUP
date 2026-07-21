@@ -68,7 +68,9 @@ export class AdminMetricsPageComponent implements OnInit {
   protected readonly periodo = signal<MetricsPeriodo>('dia');
   /** Día puntual elegido en el segmento "Hoy" (`YYYY-MM-DD`). `null` = hoy. */
   protected readonly dia = signal<string | null>(null);
-  protected readonly campo = signal<GestionCampoTipi>('ULTIMA');
+  // Mismo default que Gestión por campaña: dos controles idénticos en la misma pantalla no pueden
+  // arrancar en valores distintos.
+  protected readonly campo = signal<GestionCampoTipi>('MAYOR');
   protected readonly modo = signal<GestionModoMetricas>('INGRESADOS');
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal('');

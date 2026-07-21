@@ -161,6 +161,24 @@
       <p class="gxc__state">No hubo gestión de leads en el período seleccionado.</p>
     }
   } @else {
+    <div class="gxc__vista">
+      <p-selectButton
+        [options]="vistaOptions"
+        optionLabel="label"
+        optionValue="value"
+        [allowEmpty]="false"
+        [ngModel]="vista()"
+        [ngModelOptions]="{ standalone: true }"
+        (onChange)="onVistaChange($event.value)"
+        styleClass="gxc__vista-toggle"
+      />
+    </div>
+
+    @if (vista() === 'barras') {
+      @for (equipoBarras of facade.barrasPorEquipo(); track $index) {
+        <app-gestion-campana-bars [equipo]="equipoBarras" />
+      }
+    } @else {
     @for (matriz of facade.matrices(); track $index) {
       <div class="gxc__team-block" [style.--team-accent]="matriz.accent">
       <p-card styleClass="gxc__card">
@@ -227,6 +245,7 @@
         </div>
       </p-card>
       </div>
+    }
     }
   }
 </section>

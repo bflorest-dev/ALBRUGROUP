@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -12,6 +12,10 @@ import { TooltipModule } from 'primeng/tooltip';
 import { PeriodSelectorComponent } from '../../../../shared/components/period-selector/period-selector.component';
 import { SectionHeaderComponent } from '../../../../shared/components/section-header/section-header.component';
 import { AdminGestionCampanaFacade } from '../../facades/admin-gestion-campana.facade';
+import { GestionCampanaBarsComponent } from '../gestion-campana-bars/gestion-campana-bars.component';
+
+/** Formas de mirar los mismos datos. No es un filtro: no cambia la consulta, cambia el diagrama. */
+type VistaGestion = 'barras' | 'matriz';
 
 /**
  * Panel "Gestión por campaña" del DASHBOARD del ADMIN. Matriz tipificación × campaña, una por equipo,
@@ -31,6 +35,7 @@ import { AdminGestionCampanaFacade } from '../../facades/admin-gestion-campana.f
     TableModule,
     TagModule,
     TooltipModule,
+    GestionCampanaBarsComponent,
     PeriodSelectorComponent,
     SectionHeaderComponent
   ],
@@ -42,7 +47,19 @@ import { AdminGestionCampanaFacade } from '../../facades/admin-gestion-campana.f
 export class GestionCampanaPanelComponent implements OnInit {
   protected readonly facade = inject(AdminGestionCampanaFacade);
 
+  protected readonly vista = signal<VistaGestion>('barras');
+  protected readonly vistaOptions: Array<{ label: string; value: VistaGestion }> = [
+    { label: 'Barras', value: 'barras' },
+    { label: 'Matriz', value: 'matriz' }
+  ];
+
   ngOnInit(): void {
     this.facade.start();
+  }
+
+  protected onVistaChange(value: VistaGestion | null): void {
+    if (value) {
+      this.vista.set(value);
+    }
   }
 }

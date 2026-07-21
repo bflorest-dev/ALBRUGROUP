@@ -191,6 +191,44 @@ el día 01. Se calculan en el frontend con fecha local (nunca `toISOString`).
 
 ---
 
+## Regla 5 — Gráficos
+
+Antes de tocar colores, cargar la skill `dataviz`. Lo que sigue es lo ya decidido en este proyecto.
+
+**Contenedor.** Sin marcos pesados: nada de bordes gruesos de color ni bandas con degradado detrás
+del título. Los rellenos saturados son para **marcas pequeñas**, no para bloques grandes: la
+identidad del equipo entra como un **punto de color** junto al nombre, con un separador hairline y
+el total a la derecha. Un marco ruidoso compite con los datos y envejece mal.
+
+**Leyenda.** Alineada con el área de datos, no con el borde de la tarjeta. Si las barras arrancan
+después de una columna de nombres, la leyenda arranca ahí también (misma grilla, vía una variable
+CSS compartida). Una leyenda pegada al borde se ve flotando.
+
+**Color: se valida, no se estima.** Correr `dataviz/scripts/validate_palette.js` antes de shippear
+cualquier paleta, en claro **y** en oscuro. Hallazgos concretos de este proyecto:
+
+- Una rampa que "se veía bien" tenía **1.11:1** de contraste en su tono más claro — invisible.
+- Una rampa de un solo tono **no da más de ~6 pasos** distinguibles: entre el piso de contraste y el
+  tono más oscuro no hay recorrido de luminosidad suficiente. Lo que exceda va a gris neutro.
+- El modo oscuro **es su propia rampa validada**, no un volteo de la clara.
+- Derivar la rampa del color del equipo **no es automático**: el rojo pasó, el naranja falló por
+  1.99:1. Si se retoma, hay que oscurecer el extremo claro hasta cumplir (luminancia relativa
+  ≤ 0.475 contra fondo claro). Mejor aún: **restringir los colores elegibles para equipos** a tonos
+  que funcionen como escala.
+
+**Tipificaciones = escala ordenada**, no categorías sueltas: se colorean con rampa ordinal según su
+`orden` (más oscuro = desenlace más avanzado), nunca con colores arbitrarios.
+
+**Volumen bajo.** Las campañas por debajo de un mínimo se agrupan en "Otras campañas (N)": con 1
+lead cualquier desenlace es "100%" y pesa visualmente igual que una campaña de 30. Solo agrupar si
+quedan al menos dos barras individuales.
+
+**La tabla no se reemplaza.** Todo gráfico convive con su vista de tabla (accesible y auditable);
+el selector de vista alterna la **forma**, no los datos — por eso va más discreto que los controles
+de filtro y nunca se confunde con ellos.
+
+---
+
 ## Cómo agregar una regla nueva
 
 1. Tomar la decisión de diseño con el usuario y validarla visualmente.

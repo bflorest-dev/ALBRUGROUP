@@ -1,0 +1,152 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+/*
+ * Sin marco pesado: el color del equipo aparece solo como marca pequeña (el punto del encabezado).
+ * Los rellenos saturados grandes compiten con los datos y se leen ruidosos.
+ *
+ * `--bars-cols` mantiene alineadas la leyenda y las barras: la leyenda arranca donde arrancan las
+ * barras, si no queda flotando contra el borde de la tarjeta.
+ */
+.bars {
+  --bars-cols: 11rem 1fr 3rem;
+
+  display: block;
+  min-width: 0;
+  padding: 1rem 1.15rem 1.15rem;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 12px;
+  background: var(--app-surface);
+}
+
+.bars__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.7rem;
+  margin-bottom: 0.85rem;
+  border-bottom: 1px solid var(--app-border-soft);
+}
+
+.bars__team {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.bars__dot {
+  flex: 0 0 auto;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+}
+
+.bars__total {
+  font-size: 0.82rem;
+  color: var(--app-text-muted);
+  white-space: nowrap;
+}
+
+.bars__legend-row {
+  display: grid;
+  grid-template-columns: var(--bars-cols);
+  gap: 0.75rem;
+  margin-bottom: 0.8rem;
+}
+
+// Centrada sobre el área de las barras: comparte la grilla, así que no se pega al borde.
+.bars__legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+.bars__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  color: var(--app-text-muted);
+}
+
+.bars__swatch {
+  flex: 0 0 auto;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 3px;
+}
+
+// Nombre en columna fija: la barra arranca siempre igual, no se corre con el largo del texto.
+.bars__row {
+  display: grid;
+  grid-template-columns: var(--bars-cols);
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.22rem 0;
+}
+
+.bars__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+  font-size: 0.82rem;
+  color: var(--app-text);
+}
+
+.bars__name--grouped {
+  color: var(--app-text-muted);
+  font-style: italic;
+}
+
+.bars__grouped-count {
+  font-style: normal;
+}
+
+// Separación entre tramos con hueco de superficie, no con borde.
+.bars__bar {
+  display: flex;
+  gap: 2px;
+  height: 1.45rem;
+  min-width: 0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bars__seg {
+  min-width: 2px;
+  cursor: default;
+}
+
+.bars__n {
+  font-size: 0.8rem;
+  color: var(--app-text-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.bars__empty {
+  margin: 0;
+  padding: 0.5rem 0;
+  color: var(--app-text-muted);
+}
+
+@media (max-width: 700px) {
+  .bars {
+    --bars-cols: 6.5rem 1fr 2.4rem;
+    padding: 0.85rem;
+  }
+}

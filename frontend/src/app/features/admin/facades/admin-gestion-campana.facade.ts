@@ -49,6 +49,40 @@ export interface GestionEquipoMatriz {
   filas: GestionFila[];
 }
 
+/** Un tramo de la barra apilada: una tipificación dentro de una campaña. */
+export interface GestionBarraSegmento {
+  codigo: string;
+  label: string;
+  cantidad: number;
+  porcentaje: number;
+  /** Paso de la rampa ordinal. -1 = histórica o cola agrupada (gris neutro). */
+  indiceRampa: number;
+}
+
+/** Una barra: la composición de desenlaces de una campaña. */
+export interface GestionBarraCampana {
+  key: string;
+  nombre: string;
+  total: number;
+  /** >0 cuando la barra agrupa campañas de bajo volumen. */
+  campanasAgrupadas: number;
+  segmentos: GestionBarraSegmento[];
+}
+
+export interface GestionEquipoBarras {
+  idEquipo: number | null;
+  nombreEquipo: string;
+  accent: string;
+  totalLeads: number;
+  campanas: GestionBarraCampana[];
+}
+
+/**
+ * Debajo de este volumen el porcentaje de una campaña no es interpretable: con 1 lead cualquier
+ * desenlace es "100%" y grita igual que una campaña de 30. Esas campañas se agrupan.
+ */
+const MIN_LEADS_CAMPANA = 5;
+
 /** Opción del selector de campañas. */
 export interface GestionCampanaOption {
   key: string;
@@ -81,7 +115,7 @@ const FALLBACK_ACCENTS = ['#5b6cff', '#8e24aa', '#00897b', '#6d4c41', '#546e7a',
 
 type Criteria = { requestId: number; campo: GestionCampoTipi; modo: GestionModo; desde?: string; hasta?: string };
 
-type EquipoOption = { label: string; value: number };
+type EquipoOption = { label: string; value: number | null };
 type LoadResult = {
   celdas: GestionPorCampanaCelda[];
   catalogo: CatalogoResponse;
@@ -193,19 +227,33 @@ export class AdminGestionCampanaFacade {
   });
   readonly hasError = computed(() => this.state().status === 'error');
 
-  /** Equipos disponibles para el selector (activos). Poblado tras la primera carga. */
+  /**
+   * Equipos del selector, con "Todos" primero para mantener el mismo control en todos los bloques.
+   * Con "Todos" se apila una matriz por equipo.
+   */
   readonly equipoOptions = computed<EquipoOption[]>(() => {
     const state = this.state();
-    return state.status === 'success' ? state.data.equipoOptions : [];
+    if (state.status !== 'success') {
+      return [];
+    }
+    return [{ label: 'Todos', value: null }, ...state.data.equipoOptions];
   });
 
+  private aplicoEquipoPorDefecto = false;
+
   constructor() {
-    // El bloque muestra un solo equipo. Al llegar las opciones, elegir el primero por defecto
-    // (client-side: cambiar de equipo filtra el pivote, no vuelve a pegar al backend).
+    // "Todos" existe como opción, pero el arranque es con un solo equipo: la vista apilada es
+    // justamente lo que se quiso evitar. Se hace una sola vez, para no pisar la elección del usuario.
+    // (Client-side: cambiar de equipo filtra el pivote, no vuelve a pegar al backend.)
     effect(() => {
       const options = this.equipoOptions();
-      if (options.length && this.selectedEquipoId() === null) {
-        untracked(() => this.selectedEquipoId.set(options[0].value));
+      if (this.aplicoEquipoPorDefecto) {
+        return;
+      }
+      const primerEquipo = options.find((opcion) => opcion.value !== null);
+      if (primerEquipo) {
+        this.aplicoEquipoPorDefecto = true;
+        untracked(() => this.selectedEquipoId.set(primerEquipo.value));
       }
     });
   }
@@ -275,6 +323,17 @@ export class AdminGestionCampanaFacade {
       .map((equipo) => this.buildMatriz(equipo, filtrar ? seleccion : null))
       .filter((matriz) => matriz.campanas.length > 0);
   });
+
+  /** Vista de barras: una barra por campaña, ordenadas por volumen y con la cola larga agrupada. */
+  readonly barrasPorEquipo = computed<GestionEquipoBarras[]>(() =>
+    this.matrices().map((matriz) => ({
+      idEquipo: matriz.idEquipo,
+      nombreEquipo: matriz.nombreEquipo,
+      accent: matriz.accent,
+      totalLeads: matriz.totalLeads,
+      campanas: this.buildBarras(matriz)
+    }))
+  );
 
   readonly isEmpty = computed(() => this.state().status === 'success' && this.matrices().length === 0);
   readonly hasActiveFilter = computed(() => this.selectedCampanaKeys().length > 0);
@@ -454,6 +513,75 @@ export class AdminGestionCampanaFacade {
       totalLeads,
       campanas: campanas.map((campana) => ({ key: campana.key, idCampana: campana.idCampana, nombre: campana.nombre, total: campana.total })),
       filas
+    };
+  }
+
+  /**
+   * Arma las barras de un equipo: una por campaña, de mayor a menor volumen. Las campañas por
+   * debajo del mínimo se suman en una sola barra "Otras campañas", pero solo si quedan al menos dos
+   * barras individuales y hay más de una para agrupar: si no, agrupar escondería datos sin ganar nada.
+   */
+  private buildBarras(matriz: GestionEquipoMatriz): GestionBarraCampana[] {
+    const porVolumen = matriz.campanas
+      .map((campana, indice) => ({ campana, indice }))
+      .sort((left, right) => right.campana.total - left.campana.total);
+
+    const grandes = porVolumen.filter((entrada) => entrada.campana.total >= MIN_LEADS_CAMPANA);
+    const chicas = porVolumen.filter((entrada) => entrada.campana.total < MIN_LEADS_CAMPANA);
+    const agrupar = chicas.length > 1 && grandes.length >= 2;
+
+    const individuales = agrupar ? grandes : porVolumen;
+    const barras = individuales.map(({ campana, indice }) => ({
+      key: campana.key,
+      nombre: campana.nombre,
+      total: campana.total,
+      campanasAgrupadas: 0,
+      segmentos: this.segmentosDeCampana(matriz, indice, campana.total)
+    }));
+
+    if (agrupar) {
+      barras.push(this.barraAgrupada(matriz, chicas));
+    }
+    return barras;
+  }
+
+  private segmentosDeCampana(matriz: GestionEquipoMatriz, indice: number, total: number): GestionBarraSegmento[] {
+    return matriz.filas
+      .map((fila, posicion) => ({
+        codigo: fila.codigo,
+        label: fila.label,
+        cantidad: fila.celdas[indice]?.cantidad ?? 0,
+        porcentaje: total > 0 ? ((fila.celdas[indice]?.cantidad ?? 0) / total) * 100 : 0,
+        indiceRampa: fila.historica ? -1 : posicion
+      }))
+      .filter((segmento) => segmento.cantidad > 0);
+  }
+
+  /** Suma las campañas de bajo volumen en una sola barra. */
+  private barraAgrupada(
+    matriz: GestionEquipoMatriz,
+    chicas: Array<{ campana: GestionCampanaColumn; indice: number }>
+  ): GestionBarraCampana {
+    const total = chicas.reduce((suma, entrada) => suma + entrada.campana.total, 0);
+    const segmentos = matriz.filas
+      .map((fila, posicion) => {
+        const cantidad = chicas.reduce((suma, { indice }) => suma + (fila.celdas[indice]?.cantidad ?? 0), 0);
+        return {
+          codigo: fila.codigo,
+          label: fila.label,
+          cantidad,
+          porcentaje: total > 0 ? (cantidad / total) * 100 : 0,
+          indiceRampa: fila.historica ? -1 : posicion
+        };
+      })
+      .filter((segmento) => segmento.cantidad > 0);
+
+    return {
+      key: 'otras-campanas',
+      nombre: 'Otras campañas',
+      total,
+      campanasAgrupadas: chicas.length,
+      segmentos
     };
   }
 

@@ -409,6 +409,19 @@ app-employee-access-panel .row-actions {
 }
 
 /*
+ * Tooltip de un solo renglon, para graficos. PrimeNG limita el ancho y parte el texto en varias
+ * lineas; aca preferimos que crezca a lo ancho antes que romper el dato en dos. Va global porque
+ * el tooltip se monta en `body` y los estilos del componente no lo alcanzan.
+ */
+// Doble clase a proposito: PrimeNG fija `max-width: 200px` sobre `.p-tooltip` y hay que ganarle en
+// especificidad. Sin esto el texto no envuelve pero se desborda y queda recortado.
+.p-tooltip.app-tip-nowrap,
+.p-tooltip.app-tip-nowrap .p-tooltip-text {
+  max-width: none;
+  white-space: nowrap;
+}
+
+/*
  * NO agregar aqui un fondo ambiental con `main.content > * { z-index }`. Se intento y rompio los
  * overlays de todo el layout: crear un contexto de apilamiento en cada hijo directo de .content
  * dejaba el desplegable de asistencia detras del contenido de la pagina y la mascara del drawer

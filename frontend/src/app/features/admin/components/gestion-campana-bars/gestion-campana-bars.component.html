@@ -1,0 +1,51 @@
+<section class="bars">
+  <header class="bars__head">
+    <span class="bars__team">
+      <span class="bars__dot" [style.background]="equipo().accent" aria-hidden="true"></span>
+      {{ equipo().nombreEquipo }}
+    </span>
+    <span class="bars__total">{{ equipo().totalLeads }} leads gestionados</span>
+  </header>
+
+  <div class="bars__legend-row">
+    <span></span>
+    <ul class="bars__legend">
+      @for (item of leyenda(); track item.label) {
+        <li class="bars__legend-item">
+          <span class="bars__swatch" [style.background]="item.color" aria-hidden="true"></span>{{ item.label }}
+        </li>
+      }
+    </ul>
+    <span></span>
+  </div>
+
+  @for (campana of equipo().campanas; track campana.key) {
+    <div class="bars__row">
+      <span class="bars__name" [class.bars__name--grouped]="campana.campanasAgrupadas > 0">
+        {{ campana.nombre }}
+        @if (campana.campanasAgrupadas > 0) {
+          <span class="bars__grouped-count">({{ campana.campanasAgrupadas }})</span>
+        }
+      </span>
+
+      <span class="bars__bar">
+        @for (segmento of campana.segmentos; track segmento.codigo) {
+          <span
+            class="bars__seg"
+            [style.flex]="segmento.cantidad"
+            [style.background]="color(segmento)"
+            [pTooltip]="detalle(segmento)"
+            tooltipPosition="top"
+            tooltipStyleClass="app-tip-nowrap"
+          ></span>
+        }
+      </span>
+
+      <span class="bars__n">{{ campana.total }}</span>
+    </div>
+  }
+
+  @if (equipo().campanas.length === 0) {
+    <p class="bars__empty">Sin campañas con gestión en el período.</p>
+  }
+</section>

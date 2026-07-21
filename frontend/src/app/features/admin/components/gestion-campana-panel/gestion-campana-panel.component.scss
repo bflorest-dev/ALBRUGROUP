@@ -44,6 +44,20 @@
   color: var(--text-color-secondary, #6b7280);
 }
 
+/*
+ * Selector de vista: cambia el diagrama, no los datos. Va deliberadamente más discreto que los
+ * controles de arriba (que sí filtran) para que no se confundan entre sí.
+ */
+.gxc__vista {
+  display: flex;
+  justify-content: flex-end;
+}
+
+::ng-deep .gxc__vista-toggle .p-togglebutton {
+  font-size: 0.78rem;
+  padding: 0.3rem 0.7rem;
+}
+
 // Campañas: compacto y pegado a la derecha, debajo de los controles.
 .gxc__campanas {
   display: none;
