@@ -22,7 +22,7 @@
 
         <div class="gauge-block">
           <app-semicircle-gauge [value]="c.pctGestion" label="Gesti&oacute;n" [from]="c.from" [to]="c.to" />
-          <p class="gauge-line">{{ c.tipificados }} de {{ c.leadsUnicos }} gestionados</p>
+          <p class="gauge-line">{{ c.gestionNumerador }} de {{ c.gestionDenominador }} gestionados</p>
           <p class="gauge-sub"></p>
         </div>
 
@@ -31,10 +31,11 @@
           <p class="gauge-line">
             @if (c.ventaCerrada > 0) {
               <span class="gauge-sale" [style.color]="c.to">
-                {{ c.ventaCerrada }} {{ c.ventaCerrada === 1 ? 'preventa' : 'preventas' }} de {{ c.leadsUnicos }} &uacute;nicos
+                {{ c.ventaCerrada }} {{ c.ventaCerrada === 1 ? 'preventa' : 'preventas' }} de
+                {{ c.conversionDenominador }} {{ c.conversionDenominadorLabel }}
               </span>
             } @else {
-              {{ c.ventaCerrada }} preventas de {{ c.leadsUnicos }} &uacute;nicos
+              {{ c.ventaCerrada }} preventas de {{ c.conversionDenominador }} {{ c.conversionDenominadorLabel }}
             }
           </p>
           <p class="gauge-sub">Preventas Cerradas</p>

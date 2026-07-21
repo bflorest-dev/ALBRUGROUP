@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.Campana;
-import pe.albrugroup.lead_service.entity.EquipoProveedor;
 import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.request.LeadCampanaCorreccionRequest;
 import pe.albrugroup.lead_service.entity.response.LeadCampanaCorreccionCandidatoResponse;
@@ -59,10 +58,8 @@ public class LeadCampanaCorreccionService {
         Campana campanaAnterior = lead.getCampana();
         Long idEquipoAnterior = lead.getIdEquipo();
         Campana campanaNueva = obtenerCampanaNueva(request, lead.getIdEquipo());
-        Long idEquipoNuevo = derivarIdEquipo(campanaNueva);
 
         lead.setCampana(campanaNueva);
-        lead.setIdEquipo(idEquipoNuevo);
         lead.setUpdatedAt(OperationalDateTime.now());
 
         Lead savedLead = leadRepository.save(lead);
@@ -79,7 +76,7 @@ public class LeadCampanaCorreccionService {
                 .idCampanaNueva(campanaNueva == null ? null : campanaNueva.getId())
                 .nombreCampanaNueva(campanaNueva == null ? null : campanaNueva.getNombre())
                 .idEquipoAnterior(idEquipoAnterior)
-                .idEquipoNuevo(idEquipoNuevo)
+                .idEquipoNuevo(savedLead.getIdEquipo())
                 .eventosActualizados(eventosActualizados)
                 .build();
 
@@ -122,15 +119,6 @@ public class LeadCampanaCorreccionService {
             throw new BadRequestException("La campana seleccionada no pertenece al equipo de este lead.");
         }
         return campana;
-    }
-
-    private Long derivarIdEquipo(Campana campana) {
-        if (campana == null || campana.getProveedor() == null || campana.getProveedor().getId() == null) {
-            return null;
-        }
-        return equipoProveedorRepository.findFirstByProveedorId(campana.getProveedor().getId())
-                .map(EquipoProveedor::getIdEquipo)
-                .orElse(null);
     }
 
     private LeadCampanaCorreccionCandidatoResponse toCandidatoResponse(Lead lead) {

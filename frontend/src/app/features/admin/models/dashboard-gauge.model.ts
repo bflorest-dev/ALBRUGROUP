@@ -10,10 +10,17 @@ export interface DashboardGaugeCard {
   bloque1: number;
   bloque2: number;
   bloque3: number; // G
-  ventaCerrada: number; // H
-  pctValidos: number; // E = B / A
-  pctGestion: number; // F / B (tipificados / leads unicos)
-  pctConversion: number; // H / B (preventas / leads únicos)
+  ventaCerrada: number; // H = numerador de conversión (preventas)
+  pctValidos: number; // E = B / A. Siempre sobre la ingesta: no depende del modo.
+  // Numeradores/denominadores ya resueltos según el modo, para que la tarjeta no tenga que
+  // decidir nada y las etiquetas siempre digan lo que realmente se está midiendo.
+  pctGestion: number;
+  gestionNumerador: number;
+  gestionDenominador: number;
+  pctConversion: number;
+  conversionDenominador: number;
+  /** Palabra que describe el denominador de conversión: "únicos" o "gestionados". */
+  conversionDenominadorLabel: string;
   from: string;
   to: string;
   isTotal: boolean;

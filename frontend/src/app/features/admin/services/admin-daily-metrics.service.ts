@@ -14,8 +14,17 @@ export interface LeadsDiariosMetricasEquipo {
   bloqueOrden1: number; // G orden 1-3
   bloqueOrden2: number; // G orden 4-6
   bloqueOrden3: number; // G orden 7-8
-  leadsVentaCerrada: number; // H
+  leadsVentaCerrada: number; // H (en GESTIONADOS: preventas ocurridas en el período)
+  cartera: number; // solo GESTIONADOS: ingresados + traídos al período
+  gestionados: number; // solo GESTIONADOS: con tipificación ocurrida en el período
 }
+
+/**
+ * Cohorte del reporte:
+ *  - INGRESADOS: qué pasó con los leads que entraron en el período.
+ *  - GESTIONADOS: qué se hizo en el período, sin importar cuándo entró el lead.
+ */
+export type GestionModoMetricas = 'INGRESADOS' | 'GESTIONADOS';
 
 @Injectable({ providedIn: 'root' })
 export class AdminDailyMetricsService {
@@ -30,9 +39,10 @@ export class AdminDailyMetricsService {
   obtenerPorEquipo(
     desde?: string,
     hasta?: string,
-    campo: GestionCampoTipi = 'ULTIMA'
+    campo: GestionCampoTipi = 'ULTIMA',
+    modo: GestionModoMetricas = 'INGRESADOS'
   ): Observable<LeadsDiariosMetricasEquipo[]> {
-    let params = new HttpParams().set('campo', campo);
+    let params = new HttpParams().set('campo', campo).set('modo', modo);
     if (desde) {
       params = params.set('desde', desde);
     }

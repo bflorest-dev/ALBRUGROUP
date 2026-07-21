@@ -15,7 +15,11 @@ import { GestionCampoTipi } from '../../services/admin-gestion-campana.service';
 import { GestionCampanaPanelComponent } from '../../components/gestion-campana-panel/gestion-campana-panel.component';
 import { TeamMetricGaugesComponent } from '../../components/team-metric-gauges/team-metric-gauges.component';
 import { DashboardGaugeCard, resolveGaugeColors } from '../../models/dashboard-gauge.model';
-import { AdminDailyMetricsService, LeadsDiariosMetricasEquipo } from '../../services/admin-daily-metrics.service';
+import {
+  AdminDailyMetricsService,
+  GestionModoMetricas,
+  LeadsDiariosMetricasEquipo
+} from '../../services/admin-daily-metrics.service';
 import { AdminEquipoService } from '../../services/admin-equipo.service';
 
 const SIN_EQUIPO = 'Sin equipo';
@@ -33,6 +37,8 @@ interface DashboardMetricRow {
   bloque2: number;
   bloque3: number; // G
   ventaCerrada: number; // H
+  cartera: number; // solo GESTIONADOS
+  gestionados: number; // solo GESTIONADOS
 }
 
 /** DASHBOARD del ADMIN: métricas del día de "Leads del día" desglosadas por equipo. */
@@ -63,6 +69,7 @@ export class AdminMetricsPageComponent implements OnInit {
   /** Día puntual elegido en el segmento "Hoy" (`YYYY-MM-DD`). `null` = hoy. */
   protected readonly dia = signal<string | null>(null);
   protected readonly campo = signal<GestionCampoTipi>('ULTIMA');
+  protected readonly modo = signal<GestionModoMetricas>('INGRESADOS');
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal('');
   private readonly raw = signal<LeadsDiariosMetricasEquipo[]>([]);
@@ -85,6 +92,11 @@ export class AdminMetricsPageComponent implements OnInit {
     { label: 'Mayor', value: 'MAYOR' },
     { label: 'Primera', value: 'PRIMERA' },
     { label: 'Última', value: 'ULTIMA' }
+  ];
+
+  protected readonly modoOptions: Array<{ label: string; value: GestionModoMetricas }> = [
+    { label: 'Ingresados', value: 'INGRESADOS' },
+    { label: 'Gestionados', value: 'GESTIONADOS' }
   ];
 
   protected readonly rows = computed<DashboardMetricRow[]>(() => {
@@ -115,9 +127,14 @@ export class AdminMetricsPageComponent implements OnInit {
         bloque1: sum.bloque1 + row.bloque1,
         bloque2: sum.bloque2 + row.bloque2,
         bloque3: sum.bloque3 + row.bloque3,
-        ventaCerrada: sum.ventaCerrada + row.ventaCerrada
+        ventaCerrada: sum.ventaCerrada + row.ventaCerrada,
+        cartera: sum.cartera + row.cartera,
+        gestionados: sum.gestionados + row.gestionados
       }),
-      { registros: 0, leadsUnicos: 0, repetidos: 0, leadsRepetidos: 0, tipificados: 0, bloque1: 0, bloque2: 0, bloque3: 0, ventaCerrada: 0 }
+      {
+        registros: 0, leadsUnicos: 0, repetidos: 0, leadsRepetidos: 0, tipificados: 0,
+        bloque1: 0, bloque2: 0, bloque3: 0, ventaCerrada: 0, cartera: 0, gestionados: 0
+      }
     );
     return {
       idEquipo: null,
@@ -171,6 +188,14 @@ export class AdminMetricsPageComponent implements OnInit {
     await this.load();
   }
 
+  protected async onModoChange(value: GestionModoMetricas | null): Promise<void> {
+    if (!value || this.modo() === value) {
+      return;
+    }
+    this.modo.set(value);
+    await this.load();
+  }
+
   /** El equipo solo filtra las tarjetas ya cargadas: no vuelve a pegar al backend. */
   protected onEquipoChange(value: number | null): void {
     this.selectedEquipoId.set(value ?? null);
@@ -182,7 +207,9 @@ export class AdminMetricsPageComponent implements OnInit {
     try {
       const rango = resolveMetricsRange(this.periodo(), this.dia());
       const [metricas, equipos] = await Promise.all([
-        firstValueFrom(this.metricsService.obtenerPorEquipo(rango.desde, rango.hasta, this.campo())),
+        firstValueFrom(
+          this.metricsService.obtenerPorEquipo(rango.desde, rango.hasta, this.campo(), this.modo())
+        ),
         firstValueFrom(this.equipoService.listarEquipos())
       ]);
       this.equipos.set(equipos);
@@ -214,7 +241,9 @@ export class AdminMetricsPageComponent implements OnInit {
       bloque1: metrica.bloqueOrden1,
       bloque2: metrica.bloqueOrden2,
       bloque3: metrica.bloqueOrden3,
-      ventaCerrada: metrica.leadsVentaCerrada
+      ventaCerrada: metrica.leadsVentaCerrada,
+      cartera: metrica.cartera ?? 0,
+      gestionados: metrica.gestionados ?? 0
     };
   }
 
@@ -232,12 +261,36 @@ export class AdminMetricsPageComponent implements OnInit {
       bloque2: row.bloque2,
       bloque3: row.bloque3,
       ventaCerrada: row.ventaCerrada,
+      // Calidad de la base siempre mide la ingesta: no depende del modo.
       pctValidos: row.porcentaje,
-      pctGestion: row.leadsUnicos > 0 ? (row.tipificados / row.leadsUnicos) * 100 : 0,
-      pctConversion: row.leadsUnicos > 0 ? (row.ventaCerrada / row.leadsUnicos) * 100 : 0,
+      ...this.resolverIndicadores(row),
       from: colors.from,
       to: colors.to,
       isTotal
+    };
+  }
+
+  /**
+   * Gestión y conversión cambian de cohorte según el modo:
+   *  - INGRESADOS: sobre los leads que entraron en el período.
+   *  - GESTIONADOS: gestión sobre la cartera del período, y conversión sobre lo efectivamente
+   *    gestionado (mide efectividad, no cobertura).
+   */
+  private resolverIndicadores(row: DashboardMetricRow): Pick<
+    DashboardGaugeCard,
+    'pctGestion' | 'gestionNumerador' | 'gestionDenominador' | 'pctConversion' | 'conversionDenominador' | 'conversionDenominadorLabel'
+  > {
+    const esGestionados = this.modo() === 'GESTIONADOS';
+    const gestionNumerador = esGestionados ? row.gestionados : row.tipificados;
+    const gestionDenominador = esGestionados ? row.cartera : row.leadsUnicos;
+    const conversionDenominador = esGestionados ? row.gestionados : row.leadsUnicos;
+    return {
+      gestionNumerador,
+      gestionDenominador,
+      pctGestion: gestionDenominador > 0 ? (gestionNumerador / gestionDenominador) * 100 : 0,
+      conversionDenominador,
+      conversionDenominadorLabel: esGestionados ? 'gestionados' : 'únicos',
+      pctConversion: conversionDenominador > 0 ? (row.ventaCerrada / conversionDenominador) * 100 : 0
     };
   }
 

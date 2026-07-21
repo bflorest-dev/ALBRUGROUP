@@ -355,6 +355,13 @@ public class EventoService {
     private static final String TIPIFICACION_PREVENTA = "PREVENTA";
 
     /**
+     * Acciones que ponen un lead en la cartera del período: ingresó, se lo trajo de otro día, o se
+     * lo tipificó (esto último como blindaje, para que gestionados nunca exceda a la cartera).
+     */
+    private static final List<Accion> ACCIONES_CARTERA =
+            List.of(Accion.REGISTRO, Accion.ASIGNACION, Accion.TIPIFICACION);
+
+    /**
      * Métricas del día para "Leads del día" (día completo con el scope de equipo del usuario).
      * A/B/D salen de los eventos REGISTRO; F/G/H del resumen por etapa (PREVENTA). C y E se derivan
      * en el frontend a partir de A y B.
@@ -404,7 +411,7 @@ public class EventoService {
      * tipificados, bloques y venta cerrada. Omitir el rango equivale al día operativo de hoy.
      */
     public List<LeadsDiariosMetricasEquipoResponse> obtenerMetricasRegistrosDiariosPorEquipo(
-            LocalDate desde, LocalDate hasta, CampoTipificacion campo) {
+            LocalDate desde, LocalDate hasta, CampoTipificacion campo, ModoConteo modo) {
         LocalDate desdeResuelto = OperationalDateTime.resolveDate(desde);
         LocalDate hastaResuelto = OperationalDateTime.resolveDate(hasta);
         if (hastaResuelto.isBefore(desdeResuelto)) {
@@ -413,9 +420,12 @@ public class EventoService {
         Instant inicio = OperationalDateTime.startOfDay(desdeResuelto);
         Instant fin = OperationalDateTime.endExclusiveOfDay(hastaResuelto);
 
-        // Acumulador por equipo: [registros, leadsUnicos, repetidos, tipificados, b1, b2, b3, ventaCerrada].
+        // Acumulador por equipo:
+        // [registros, unicos, repetidos, tipificados, b1, b2, b3, ventaCerrada, cartera, gestionados].
         Map<Long, long[]> porEquipo = new LinkedHashMap<>();
 
+        // A, B y D describen la ingesta del período y se calculan en ambos modos: miden la calidad
+        // de la base, que no depende de la operación.
         for (Object[] fila : eventoRepository.metricasBaseRegistrosDiariosPorEquipo(Accion.REGISTRO, inicio, fin)) {
             long[] acc = acumuladorEquipo(porEquipo, (Long) fila[0]);
             acc[0] = (Long) fila[1];
@@ -424,6 +434,25 @@ public class EventoService {
         for (Object[] fila : eventoRepository.listarLeadsDiariosConRepeticionPorEquipo(Accion.REGISTRO, inicio, fin)) {
             acumuladorEquipo(porEquipo, (Long) fila[0])[2] += 1;
         }
+
+        if (modo == ModoConteo.GESTIONADOS) {
+            acumularOperacionDelPeriodo(porEquipo, inicio, fin);
+        } else {
+            acumularCohorteIngresados(porEquipo, campo, inicio, fin);
+        }
+
+        return porEquipo.entrySet().stream()
+                .map(entrada -> {
+                    long[] a = entrada.getValue();
+                    return new LeadsDiariosMetricasEquipoResponse(
+                            entrada.getKey(), a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9]);
+                })
+                .toList();
+    }
+
+    /** INGRESADOS: qué pasó con los leads que entraron en el período (cohorte de ingesta). */
+    private void acumularCohorteIngresados(
+            Map<Long, long[]> porEquipo, CampoTipificacion campo, Instant inicio, Instant fin) {
         for (Object[] fila : tipificadosPorEquipoSegunCampo(campo, inicio, fin)) {
             acumuladorEquipo(porEquipo, (Long) fila[0])[3] = (Long) fila[1];
         }
@@ -445,18 +474,28 @@ public class EventoService {
         for (Object[] fila : ventaCerradaPorEquipoSegunCampo(campo, inicio, fin)) {
             acumuladorEquipo(porEquipo, (Long) fila[0])[7] = (Long) fila[1];
         }
+    }
 
-        return porEquipo.entrySet().stream()
-                .map(entrada -> {
-                    long[] a = entrada.getValue();
-                    return new LeadsDiariosMetricasEquipoResponse(
-                            entrada.getKey(), a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]);
-                })
-                .toList();
+    /**
+     * GESTIONADOS: qué se hizo en el período, sin importar cuándo entró el lead. Los bloques por
+     * orden quedan en cero porque el Evento guarda el código de tipificación pero no su orden.
+     */
+    private void acumularOperacionDelPeriodo(Map<Long, long[]> porEquipo, Instant inicio, Instant fin) {
+        for (Object[] fila : eventoRepository.contarCarteraDelPeriodoPorEquipo(ACCIONES_CARTERA, inicio, fin)) {
+            acumuladorEquipo(porEquipo, (Long) fila[0])[8] = (Long) fila[1];
+        }
+        for (Object[] fila : eventoRepository.contarGestionadosDelPeriodoPorEquipo(
+                Accion.TIPIFICACION, Etapa.PREVENTA, inicio, fin)) {
+            acumuladorEquipo(porEquipo, (Long) fila[0])[9] = (Long) fila[1];
+        }
+        for (Object[] fila : eventoRepository.contarPreventasDelPeriodoPorEquipo(
+                Accion.TIPIFICACION, Etapa.PREVENTA, inicio, fin, TIPIFICACION_PREVENTA)) {
+            acumuladorEquipo(porEquipo, (Long) fila[0])[7] = (Long) fila[1];
+        }
     }
 
     private static long[] acumuladorEquipo(Map<Long, long[]> mapa, Long idEquipo) {
-        return mapa.computeIfAbsent(idEquipo, clave -> new long[8]);
+        return mapa.computeIfAbsent(idEquipo, clave -> new long[10]);
     }
 
     // El punto de tipificación se elige por consulta: JPQL no permite parametrizar la columna.

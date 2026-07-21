@@ -107,12 +107,13 @@ public class EventoController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
-            @RequestParam(defaultValue = "ULTIMA") CampoTipificacion campo
+            @RequestParam(defaultValue = "ULTIMA") CampoTipificacion campo,
+            @RequestParam(defaultValue = "INGRESADOS") ModoConteo modo
     ) {
         LocalDate desdeResuelto = desde != null ? desde : fecha;
         LocalDate hastaResuelto = hasta != null ? hasta : fecha;
         return ResponseEntity.ok(
-                eventoService.obtenerMetricasRegistrosDiariosPorEquipo(desdeResuelto, hastaResuelto, campo));
+                eventoService.obtenerMetricasRegistrosDiariosPorEquipo(desdeResuelto, hastaResuelto, campo, modo));
     }
 
     @GetMapping("/metricas/gestion-por-campana") @PreAuthorize("hasAuthority('READ_LEADS_DIARIOS')")

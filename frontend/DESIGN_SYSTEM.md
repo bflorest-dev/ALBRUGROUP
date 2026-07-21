@@ -158,9 +158,19 @@ de `Campañas`. Todos son controles segmentados (`p-selectButton`), en **fila pr
 subtítulo, alineada a la derecha**, cerrando con el botón de refrescar **solo ícono**.
 
 **Antes de poner estos controles en un bloque hay que verificar que el endpoint los soporte.**
-No se agregan selectores que el backend no pueda separar. Ejemplo real: el endpoint de los
-medidores (`registros-diarios/metricas-por-equipo`) solo acepta `fecha`, así que solo admite
-día puntual; `Modo`, `Tipificación` y `Campañas` ahí requieren trabajo de backend.
+No se agregan selectores que el backend no pueda separar: un toggle que no cambia nada, o que
+cambia números sin respaldo, es peor que no tenerlo.
+
+**Modo no es cosmético — cambia la cohorte, y con ella el significado de cada indicador:**
+
+- `INGRESADOS`: qué pasó con los leads que **entraron** en el período (cohorte de ingesta).
+- `GESTIONADOS`: qué se **hizo** en el período, sin importar cuándo entró el lead.
+
+Al cambiar de cohorte, numerador y denominador de cada medidor cambian. Resolverlo en el view
+model (no ramificando el template) y **actualizar también las etiquetas**: si el denominador pasa
+de "únicos" a "gestionados", el texto tiene que decirlo o la vista miente. Los indicadores que
+solo tienen lectura en una cohorte (p. ej. calidad de la base, que mide duplicados de la ingesta)
+se mantienen fijos en esa cohorte en vez de mostrar un número inventado.
 
 ### Período (`app-period-selector`)
 

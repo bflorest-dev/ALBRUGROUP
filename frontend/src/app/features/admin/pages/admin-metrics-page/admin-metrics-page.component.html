@@ -26,6 +26,19 @@
       </div>
 
       <div class="metrics-control">
+        <span class="metrics-control-label">Modo</span>
+        <p-selectButton
+          [options]="modoOptions"
+          optionLabel="label"
+          optionValue="value"
+          [allowEmpty]="false"
+          [ngModel]="modo()"
+          [ngModelOptions]="{ standalone: true }"
+          (onChange)="onModoChange($event.value)"
+        />
+      </div>
+
+      <div class="metrics-control">
         <span class="metrics-control-label">Tipificación</span>
         <p-selectButton
           [options]="campoOptions"

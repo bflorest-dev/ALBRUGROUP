@@ -1007,6 +1007,70 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             @Param("codigoTipificacion") String codigoTipificacion
     );
 
+    // --- Modo GESTIONADOS: mide la OPERACIÓN del período, no la cohorte de ingesta ---
+
+    /**
+     * Cartera del período por equipo: leads que estuvieron disponibles para trabajar, es decir los
+     * ingresados más los traídos de otros días (ASIGNACION). Se incluye TIPIFICACION como blindaje:
+     * garantiza que los gestionados sean siempre un subconjunto de la cartera, de modo que el
+     * indicador de gestión no pueda superar el 100% si algún lead se tipifica sin asignación previa.
+     */
+    @Query("""
+            SELECT l.idEquipo, COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.accion IN :acciones
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+            GROUP BY l.idEquipo
+            """)
+    List<Object[]> contarCarteraDelPeriodoPorEquipo(
+            @Param("acciones") Collection<Accion> acciones,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    /** Gestionados del período por equipo: leads con al menos una tipificación ocurrida en el rango. */
+    @Query("""
+            SELECT l.idEquipo, COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.accion = :accion
+              AND e.etapa = :etapa
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+            GROUP BY l.idEquipo
+            """)
+    List<Object[]> contarGestionadosDelPeriodoPorEquipo(
+            @Param("accion") Accion accion,
+            @Param("etapa") Etapa etapa,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin
+    );
+
+    /**
+     * Preventas OCURRIDAS en el período por equipo. A diferencia del modo INGRESADOS, cuenta el
+     * cierre por su fecha real: incluye leads traídos de otros días y excluye los que cerraron después.
+     */
+    @Query("""
+            SELECT l.idEquipo, COUNT(DISTINCT e.idLead)
+            FROM Evento e
+            JOIN Lead l ON l.id = e.idLead
+            WHERE e.accion = :accion
+              AND e.etapa = :etapa
+              AND e.tipificacion = :codigoTipificacion
+              AND e.createdAt >= :inicio
+              AND e.createdAt < :fin
+            GROUP BY l.idEquipo
+            """)
+    List<Object[]> contarPreventasDelPeriodoPorEquipo(
+            @Param("accion") Accion accion,
+            @Param("etapa") Etapa etapa,
+            @Param("inicio") Instant inicio,
+            @Param("fin") Instant fin,
+            @Param("codigoTipificacion") String codigoTipificacion
+    );
+
     Optional<Evento> findTopByIdLeadAndAccionOrderByCreatedAtDesc(Long idLead, Accion accion);
 
     Optional<Evento> findTopByIdLeadAndAccionAndTipificacionOrderByCreatedAtDesc(Long idLead, Accion accion, String tipificacion);
