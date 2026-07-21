@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { TooltipModule } from 'primeng/tooltip';
 import { formatLabel } from '../../../../shared/utils/display-label';
 import { GestionBarraSegmento, GestionEquipoBarras } from '../../facades/admin-gestion-campana.facade';
-import { colorTipificacion } from '../../models/tipificacion-ramp';
+import { colorRampa } from '../../models/tipificacion-ramp';
 
 interface LeyendaItem {
   label: string;
@@ -44,12 +44,12 @@ export class GestionCampanaBarsComponent {
       .sort((left, right) => left[1] - right[1])
       .map(([codigo, indice]) => ({
         label: formatLabel(codigo),
-        color: colorTipificacion(indice, this.oscuro())
+        color: colorRampa(indice, this.oscuro())
       }));
   });
 
   protected color(segmento: GestionBarraSegmento): string {
-    return colorTipificacion(segmento.indiceRampa, this.oscuro());
+    return colorRampa(segmento.indiceRampa, this.oscuro());
   }
 
   protected detalle(segmento: GestionBarraSegmento): string {

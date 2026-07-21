@@ -1,0 +1,172 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+/* Mismo contenedor limpio que las barras: el color del equipo solo como marca pequeña. */
+.mtx {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  padding: 1rem 1.15rem 1.15rem;
+  border: 1px solid var(--app-border-soft);
+  border-radius: 12px;
+  background: var(--app-surface);
+  overflow: hidden;
+}
+
+.mtx__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.7rem;
+  margin-bottom: 0.85rem;
+  border-bottom: 1px solid var(--app-border-soft);
+}
+
+.mtx__team {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.mtx__dot {
+  flex: 0 0 auto;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+}
+
+.mtx__total {
+  font-size: 0.82rem;
+  color: var(--app-text-muted);
+  white-space: nowrap;
+}
+
+/*
+ * Scroll horizontal acotado a este bloque: la matriz de comparación necesita todas sus columnas,
+ * pero no debe empujar la página. La columna Tipificación queda congelada relativa a este contenedor.
+ */
+.mtx__scroll {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+}
+
+.mtx__table {
+  ::ng-deep table {
+    table-layout: fixed;
+    width: max-content;
+    min-width: 100%;
+  }
+
+  ::ng-deep th,
+  ::ng-deep td {
+    text-align: center;
+    white-space: nowrap;
+  }
+}
+
+/*
+ * Cabeceras neutras a propósito: el único color de la tabla es la rampa de calor. Si la cabecera
+ * llevara el acento del equipo competiría con el dato y la intensidad dejaría de leerse.
+ */
+::ng-deep .mtx__table thead th {
+  background: var(--app-surface-soft);
+  border-bottom: 1px solid var(--app-border-soft);
+  color: var(--app-text-muted);
+  font-weight: 600;
+}
+
+::ng-deep .mtx-col-tipi {
+  width: 16rem;
+  min-width: 16rem;
+  text-align: left !important;
+}
+
+::ng-deep .mtx-col-total {
+  width: 5rem;
+  min-width: 5rem;
+}
+
+::ng-deep .mtx-col-count {
+  width: 6rem;
+  min-width: 6rem;
+}
+
+::ng-deep .mtx-col-pct {
+  width: 5.5rem;
+  min-width: 5.5rem;
+}
+
+// Celda de calor: el fondo lo pone el componente; aquí solo la tinta y el hueco de separación.
+::ng-deep .mtx-heat {
+  font-variant-numeric: tabular-nums;
+  box-shadow: inset 0 0 0 1px var(--app-surface);
+}
+
+::ng-deep .mtx-heat--claro {
+  color: #ffffff;
+}
+
+// Columna congelada: debe quedar opaca, el contenido pasa por debajo al scrollear.
+::ng-deep .mtx-freeze {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--app-surface);
+  box-shadow: 1px 0 0 var(--app-border-soft);
+}
+
+::ng-deep thead .mtx-freeze {
+  z-index: 3;
+  background: var(--app-surface-soft);
+}
+
+/*
+ * El cierre se marca en la etiqueta, no pintando la fila: el fondo ya está ocupado por la escala
+ * de calor y dos colores compitiendo en la misma celda no se leen.
+ */
+::ng-deep .mtx-row--cierre .mtx-col-tipi {
+  font-weight: 700;
+  color: var(--app-success);
+}
+
+.mtx-tipi__label {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+::ng-deep .mtx-tag {
+  margin-left: 0.4rem;
+}
+
+.mtx-camp__name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.mtx-camp__total {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--app-text-muted);
+}
+
+.mtx-empty {
+  text-align: center;
+  padding: 1rem;
+  color: var(--app-text-muted);
+}

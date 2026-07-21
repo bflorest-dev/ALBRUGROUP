@@ -219,6 +219,17 @@ cualquier paleta, en claro **y** en oscuro. Hallazgos concretos de este proyecto
 **Tipificaciones = escala ordenada**, no categorías sueltas: se colorean con rampa ordinal según su
 `orden` (más oscuro = desenlace más avanzado), nunca con colores arbitrarios.
 
+**Relleno de marca ≠ fondo de celda. Son dos escalas y no deben unificarse.** Un relleno de barra
+tiene que destacar *contra la superficie*, así que es saturado. Un fondo de celda va *detrás de una
+cifra*, así que tiene que ser pálido. Reutilizar la rampa de barras en la matriz dejó los números a
+**2.5:1** de contraste — ilegibles. Con la escala de celdas propia quedaron en 6.2:1 o mejor.
+Regla práctica: si hay texto encima, el fondo se elige por la legibilidad del texto, y se **mide**
+(luminancia relativa), no se estima.
+
+**Dos colores no pueden competir en la misma celda.** Al teñir por magnitud, un resaltado de fila
+(p. ej. pintar la fila de cierre de verde) pelea con la escala y ninguno se lee. El énfasis se
+mueve a la etiqueta de la fila (negrita y color en el texto), y el fondo queda para el dato.
+
 **Volumen bajo.** Las campañas por debajo de un mínimo se agrupan en "Otras campañas (N)": con 1
 lead cualquier desenlace es "100%" y pesa visualmente igual que una campaña de 30. Solo agrupar si
 quedan al menos dos barras individuales.
