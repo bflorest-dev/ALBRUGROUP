@@ -9,6 +9,7 @@ import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.*;
 import pe.albrugroup.lead_service.entity.enums.Accion;
+import pe.albrugroup.lead_service.entity.enums.CampoConfigurable;
 import pe.albrugroup.lead_service.entity.enums.CampoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.ModoConteo;
 import pe.albrugroup.lead_service.entity.enums.Base;
@@ -34,6 +35,7 @@ import pe.albrugroup.lead_service.entity.request.LeadTomaGestionGtrRequest;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.entity.response.AsesorLeadsPendientesResponse;
+import pe.albrugroup.lead_service.entity.response.CampoConfigResponse;
 import pe.albrugroup.lead_service.entity.response.CatalogoResponse;
 import pe.albrugroup.lead_service.entity.response.AsesorSinLeadsResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPendienteResponse;
@@ -3071,9 +3073,19 @@ public class LeadService {
                 totalAsignaciones,
                 lead.getEtapa(),
                 lead.getEtapa() != Etapa.PREVENTA,
-                equipoCampoService.resolverConfig(lead.getIdEquipo()),
+                resolverConfigCamposCaptura(lead),
                 obtenerProveedorFallbackDeEquipo(lead.getIdEquipo())
         );
+    }
+
+    private List<CampoConfigResponse> resolverConfigCamposCaptura(Lead lead) {
+        Long idProveedorPlan = lead.getPlan() == null || lead.getPlan().getProveedor() == null
+                ? null
+                : lead.getPlan().getProveedor().getId();
+        if (idProveedorPlan != null) {
+            return equipoCampoService.resolverConfigPorProveedorVisible(idProveedorPlan);
+        }
+        return equipoCampoService.resolverConfig(lead.getIdEquipo());
     }
 
     // Proveedor fallback de un equipo (null-safe). Origen a mostrar cuando el lead no tiene campaña.
@@ -3531,6 +3543,7 @@ public class LeadService {
         validarTextoObligatorio(datosPreventa.getNombreTitularServicio(), "Falta nombreTitularServicio");
         validarTextoObligatorio(datosPreventa.getCelularRegistro(), "Falta celularRegistro");
         validarTextoObligatorio(datosPreventa.getCorreo(), "Falta correo");
+        validarCamposConfigurablesObligatorios(lead, datosPreventa, direccion);
 
         validarTextoObligatorio(direccion.getUbigeoDomicilio(), "Falta ubigeoDomicilio");
         if (direccion.getTipoDomicilio() == null) {
@@ -3539,6 +3552,26 @@ public class LeadService {
         // tipoVia y via son opcionales: una direccion puede no tener via (opcion "Sin Via" en la UI).
         validarTextoObligatorio(direccion.getDireccion(), "Falta direccion");
         validarTextoObligatorio(direccion.getReferencia(), "Falta referencia");
+    }
+
+    private void validarCamposConfigurablesObligatorios(Lead lead, DatosPreventa datosPreventa, Direccion direccion) {
+        for (CampoConfigResponse campo : resolverConfigCamposCaptura(lead)) {
+            if (!campo.isVisible() || !campo.isRequerido()) {
+                continue;
+            }
+            CampoConfigurable campoConfigurable = campo.getCampo();
+            switch (campoConfigurable) {
+                case NOMBRE_MADRE -> validarTextoObligatorio(datosPreventa.getNombreMadre(), "Falta nombreMadre");
+                case NOMBRE_PADRE -> validarTextoObligatorio(datosPreventa.getNombrePadre(), "Falta nombrePadre");
+                case DOC_TITULAR_CELULAR -> validarTextoObligatorio(
+                        datosPreventa.getNumeroDocumentoTitularCelularRegistro(),
+                        "Falta numeroDocumentoTitularCelularRegistro");
+                case NOMBRE_TITULAR_CELULAR -> validarTextoObligatorio(
+                        datosPreventa.getNombreTitularCelularRegistro(),
+                        "Falta nombreTitularCelularRegistro");
+                case PLANO -> validarTextoObligatorio(direccion.getPlano(), "Falta plano");
+            }
+        }
     }
 
     private void validarTextoObligatorio(String value, String message) {

@@ -7,6 +7,7 @@ import {
   AdicionalResponse,
   AgendadosGtrResumenResponse,
   CampanaResponse,
+  CampoConfigItem,
   CatalogoResponse,
   LeadAsignacionMasivaRequest,
   LeadAsignacionMasivaResponse,
@@ -382,6 +383,10 @@ export class PreventaLeadService {
       params = params.set('idProveedor', idProveedor);
     }
     return this.http.get<PlanResponse[]>(`${this.leadUrl}/planes`, { params });
+  }
+
+  listarCamposCapturaProveedor(idProveedor: number): Observable<CampoConfigItem[]> {
+    return this.http.get<CampoConfigItem[]>(`${this.leadUrl}/proveedores/${idProveedor}/campos-captura`);
   }
 
   listarPromociones(filters: { idProveedor?: number; idZona?: number; idPlan?: number }): Observable<PromocionComercialResponse[]> {

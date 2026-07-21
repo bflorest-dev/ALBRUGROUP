@@ -15,8 +15,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.request.ProveedorRequest;
+import pe.albrugroup.lead_service.entity.response.CampoConfigResponse;
 import pe.albrugroup.lead_service.entity.response.ProveedorResponse;
 import pe.albrugroup.lead_service.service.CatalogoEquipoService;
+import pe.albrugroup.lead_service.service.EquipoCampoService;
 import pe.albrugroup.lead_service.service.ProveedorService;
 
 import java.util.List;
@@ -28,6 +30,7 @@ public class ProveedorController {
 
     private final ProveedorService proveedorService;
     private final CatalogoEquipoService catalogoEquipoService;
+    private final EquipoCampoService equipoCampoService;
 
     @PostMapping @PreAuthorize("hasAuthority('CREATE_PROVEEDORES')")
     public ResponseEntity<ProveedorResponse> registrarProveedor(@Valid @RequestBody ProveedorRequest request) {
@@ -39,6 +42,11 @@ public class ProveedorController {
     public ResponseEntity<List<ProveedorResponse>> listarProveedores(@RequestParam(required = false) Boolean activo) {
         var proveedores = catalogoEquipoService.listarProveedoresVisibles(activo);
         return ResponseEntity.ok(proveedores);
+    }
+
+    @GetMapping("/{idProveedor}/campos-captura") @PreAuthorize("hasAuthority('READ_PLANES')")
+    public ResponseEntity<List<CampoConfigResponse>> listarCamposCapturaPorProveedor(@PathVariable Long idProveedor) {
+        return ResponseEntity.ok(equipoCampoService.resolverConfigPorProveedorVisible(idProveedor));
     }
 
     @PatchMapping("/{idProveedor}/estado") @PreAuthorize("hasAuthority('UPDATE_PROVEEDORES')")

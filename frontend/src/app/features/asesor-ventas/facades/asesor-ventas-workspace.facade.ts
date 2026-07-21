@@ -41,8 +41,8 @@ type OfertaAdditionalSelection = {
 };
 
 // Mapa de cada campo configurable a su control de formulario y etiqueta (la misma que muestra el
-// modal), para validar los obligatorios al cerrar venta. La fuente de verdad de qué se muestra/exige
-// es la config del equipo del lead (camposConfig); aquí solo está el "cómo" ubicar cada control.
+// modal), para validar los obligatorios al cerrar venta. La fuente de verdad de que se muestra/exige
+// es la config efectiva (proveedor del plan si existe; si no, equipo del lead).
 const CAMPOS_CONFIGURABLES: Record<CampoCaptura, { tab: 'datos' | 'direccion'; control: string; label: string }> = {
   NOMBRE_MADRE: { tab: 'datos', control: 'nombreMadre', label: 'Madre' },
   NOMBRE_PADRE: { tab: 'datos', control: 'nombrePadre', label: 'Padre' },
@@ -157,6 +157,7 @@ export class AsesorVentasWorkspaceFacade {
   readonly promociones = signal<PromocionComercialResponse[]>([]);
   readonly adicionales = signal<AdicionalResponse[]>([]);
   readonly selectedOfertaProviderId = signal<number | null>(null);
+  private readonly camposConfigByProviderId = signal<Record<number, CampoConfigItem[]>>({});
   readonly selectedOfertaAdditionals = signal<OfertaAdditionalSelection[]>([]);
   readonly departamentos = signal<UbigeoItem[]>([]);
   readonly provinciasDomicilio = signal<UbigeoItem[]>([]);
@@ -254,10 +255,18 @@ export class AsesorVentasWorkspaceFacade {
     }
     return [...providersById.values()].sort((left, right) => left.nombre.localeCompare(right.nombre));
   });
-  // Config de campos resuelta por el backend según el EQUIPO del lead abierto (viaja en el detalle):
-  // qué campos muestra y exige el modal. Sigue al lead, así un ASESOR_VENTAS multi-equipo ve/valida
-  // los campos del equipo del lead, no del agregado de sus equipos.
-  readonly camposConfig = computed<CampoConfigItem[]>(() => this.detail()?.camposConfig ?? []);
+  // Config efectiva de campos: si hay proveedor elegido en oferta, usa sus reglas de captura; si no,
+  // usa la configuracion del equipo del lead que viaja en el detalle.
+  readonly camposConfig = computed<CampoConfigItem[]>(() => {
+    const idProveedor = this.selectedOfertaProviderId();
+    if (idProveedor) {
+      const providerConfig = this.camposConfigByProviderId()[idProveedor];
+      if (providerConfig) {
+        return providerConfig;
+      }
+    }
+    return this.detail()?.camposConfig ?? [];
+  });
   // Set de keys visibles para el componente. Ref estable por detalle (computed memoiza) y .has()
   // devuelve un primitivo: seguro con PrimeNG + OnPush (no genera refs nuevas por change detection).
   readonly camposVisibles = computed<ReadonlySet<string>>(
@@ -773,6 +782,10 @@ export class AsesorVentasWorkspaceFacade {
     const esAtencion = this.atencionOtraEtapa();
 
     if (!esAtencion && this.requiresVentaCompleta()) {
+      const idProveedor = this.selectedOfertaProviderId();
+      if (idProveedor) {
+        await this.ensureProviderCamposConfig(idProveedor);
+      }
       const message = this.getVentaCompletaMissingMessage();
       if (message) {
         this.errorMessage.set(message);
@@ -996,7 +1009,10 @@ export class AsesorVentasWorkspaceFacade {
     this.adicionales.set([]);
     this.ofertaForm.markAsDirty();
     if (idProveedor) {
-      await this.refreshProviderAdditionals(idProveedor);
+      await Promise.all([
+        this.refreshProviderAdditionals(idProveedor),
+        this.ensureProviderCamposConfig(idProveedor)
+      ]);
     }
   }
 
@@ -1375,7 +1391,8 @@ export class AsesorVentasWorkspaceFacade {
     this.ofertaForm.controls.idProveedor.setValue(idProveedor ?? 0);
     const [promociones, adicionales] = await Promise.all([
       firstValueFrom(this.preventaService.listarPromociones(idPlan ? { idPlan } : {})),
-      idProveedor ? firstValueFrom(this.preventaService.listarAdicionales(idProveedor)) : Promise.resolve([])
+      idProveedor ? firstValueFrom(this.preventaService.listarAdicionales(idProveedor)) : Promise.resolve([]),
+      idProveedor ? this.ensureProviderCamposConfig(idProveedor) : Promise.resolve()
     ]);
     this.promociones.set(promociones);
     this.adicionales.set(adicionales);
@@ -1393,6 +1410,17 @@ export class AsesorVentasWorkspaceFacade {
 
   private async refreshProviderAdditionals(idProveedor: number): Promise<void> {
     this.adicionales.set(await firstValueFrom(this.preventaService.listarAdicionales(idProveedor)));
+  }
+
+  private async ensureProviderCamposConfig(idProveedor: number): Promise<void> {
+    if (this.camposConfigByProviderId()[idProveedor]) {
+      return;
+    }
+    const config = await firstValueFrom(this.preventaService.listarCamposCapturaProveedor(idProveedor));
+    this.camposConfigByProviderId.update((current) => ({
+      ...current,
+      [idProveedor]: config
+    }));
   }
 
   private currentQuery(): PageQuery {

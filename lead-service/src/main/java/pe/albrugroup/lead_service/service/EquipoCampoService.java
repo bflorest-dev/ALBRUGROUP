@@ -3,14 +3,17 @@ package pe.albrugroup.lead_service.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.albrugroup.lead_service.entity.EquipoProveedor;
 import pe.albrugroup.lead_service.entity.EquipoCampo;
 import pe.albrugroup.lead_service.entity.enums.CampoConfigurable;
 import pe.albrugroup.lead_service.entity.response.CampoConfigResponse;
 import pe.albrugroup.lead_service.repository.EquipoCampoRepository;
+import pe.albrugroup.lead_service.repository.EquipoProveedorRepository;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -26,6 +29,8 @@ import java.util.stream.Collectors;
 public class EquipoCampoService {
 
     private final EquipoCampoRepository equipoCampoRepository;
+    private final EquipoProveedorRepository equipoProveedorRepository;
+    private final EquipoProveedorService equipoProveedorService;
 
     /** Config completa del equipo: una entrada por cada campo del catálogo (con o sin fila guardada). */
     @Transactional(readOnly = true)
@@ -49,5 +54,22 @@ public class EquipoCampoService {
                             .build();
                 })
                 .toList();
+    }
+
+    /**
+     * Config de campos que corresponde al proveedor ofrecido. Para asesores multi-equipo, el plan
+     * elegido define el proveedor y el proveedor define el equipo operativo cuyas reglas de captura
+     * aplican al cierre de PREVENTA.
+     */
+    @Transactional(readOnly = true)
+    public List<CampoConfigResponse> resolverConfigPorProveedorVisible(Long idProveedor) {
+        Set<Long> visibles = equipoProveedorService.proveedorIdsVisibles();
+        if (idProveedor == null || (visibles != null && !visibles.contains(idProveedor))) {
+            return resolverConfig(null);
+        }
+        return equipoProveedorRepository.findFirstByProveedorId(idProveedor)
+                .map(EquipoProveedor::getIdEquipo)
+                .map(this::resolverConfig)
+                .orElseGet(() -> resolverConfig(null));
     }
 }
