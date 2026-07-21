@@ -10,9 +10,10 @@ import { SectionHeaderComponent } from '../../../../shared/components/section-he
 import { AdminGestionCampanaFacade } from '../../facades/admin-gestion-campana.facade';
 import { GestionCampanaBarsComponent } from '../gestion-campana-bars/gestion-campana-bars.component';
 import { GestionCampanaMatrixComponent } from '../gestion-campana-matrix/gestion-campana-matrix.component';
+import { GestionCampanaScatterComponent } from '../gestion-campana-scatter/gestion-campana-scatter.component';
 
 /** Formas de mirar los mismos datos. No es un filtro: no cambia la consulta, cambia el diagrama. */
-type VistaGestion = 'barras' | 'matriz';
+type VistaGestion = 'barras' | 'matriz' | 'efectividad';
 
 /**
  * Panel "Gestión por campaña" del DASHBOARD del ADMIN. Matriz tipificación × campaña, una por equipo,
@@ -30,6 +31,7 @@ type VistaGestion = 'barras' | 'matriz';
     TooltipModule,
     GestionCampanaBarsComponent,
     GestionCampanaMatrixComponent,
+    GestionCampanaScatterComponent,
     PeriodSelectorComponent,
     SectionHeaderComponent
   ],
@@ -44,7 +46,8 @@ export class GestionCampanaPanelComponent implements OnInit {
   protected readonly vista = signal<VistaGestion>('barras');
   protected readonly vistaOptions: Array<{ label: string; value: VistaGestion }> = [
     { label: 'Barras', value: 'barras' },
-    { label: 'Matriz', value: 'matriz' }
+    { label: 'Matriz', value: 'matriz' },
+    { label: 'Efectividad', value: 'efectividad' }
   ];
 
   ngOnInit(): void {

@@ -1,0 +1,72 @@
+<section class="sct">
+  <header class="sct__head">
+    <span class="sct__team">
+      <span class="sct__dot" [style.background]="equipo().accent" aria-hidden="true"></span>
+      {{ equipo().nombreEquipo }}
+    </span>
+    <span class="sct__total">
+      {{ equipo().preventas }} preventa{{ equipo().preventas === 1 ? '' : 's' }} de
+      {{ equipo().totalLeads }} leads gestionados
+    </span>
+  </header>
+
+  <svg class="sct__svg" [attr.viewBox]="'0 0 ' + ancho + ' ' + alto" role="img">
+    <title>Efectividad por campaña</title>
+    <desc>Volumen gestionado en el eje horizontal y tasa de preventa en el vertical.</desc>
+
+    @for (marca of marcasY(); track marca.valor) {
+      <line class="sct__grid" [attr.x1]="margen.izq" [attr.y1]="marca.pos" [attr.x2]="ancho - margen.der" [attr.y2]="marca.pos" />
+      <text class="sct__tick" [attr.x]="margen.izq - 8" [attr.y]="marca.pos + 4" text-anchor="end">{{ marca.texto }}</text>
+    }
+
+    @for (marca of marcasX(); track marca.valor) {
+      <text class="sct__tick" [attr.x]="marca.pos" [attr.y]="alto - margen.abajo + 18" text-anchor="middle">{{ marca.texto }}</text>
+    }
+
+    <line class="sct__axis" [attr.x1]="margen.izq" [attr.y1]="margen.arriba" [attr.x2]="margen.izq" [attr.y2]="alto - margen.abajo" />
+    <line class="sct__axis" [attr.x1]="margen.izq" [attr.y1]="alto - margen.abajo" [attr.x2]="ancho - margen.der" [attr.y2]="alto - margen.abajo" />
+
+    <text class="sct__axis-label" [attr.x]="margen.izq + plotAncho / 2" [attr.y]="alto - 6" text-anchor="middle">
+      Leads gestionados
+    </text>
+    <text
+      class="sct__axis-label"
+      [attr.x]="14"
+      [attr.y]="margen.arriba + plotAlto / 2"
+      text-anchor="middle"
+      [attr.transform]="'rotate(-90 14 ' + (margen.arriba + plotAlto / 2) + ')'"
+    >
+      Tasa de preventa
+    </text>
+
+    <line class="sct__ref" [attr.x1]="margen.izq" [attr.y1]="yReferencia()" [attr.x2]="ancho - margen.der" [attr.y2]="yReferencia()" />
+    <text class="sct__ref-label" [attr.x]="ancho - margen.der" [attr.y]="yReferencia() - 6" text-anchor="end">
+      {{ textoReferencia() }}
+    </text>
+
+    @for (punto of puntos(); track punto.key) {
+      <circle
+        class="sct__dot-mark"
+        [class.sct__dot-mark--tenue]="punto.bajoVolumen"
+        [attr.cx]="punto.cx"
+        [attr.cy]="punto.cy"
+        r="7"
+        [attr.fill]="equipo().accent"
+        [pTooltip]="punto.detalle"
+        tooltipPosition="top"
+        tooltipStyleClass="app-tip-nowrap"
+      />
+      @if (punto.etiquetar) {
+        <text class="sct__point-label" [attr.x]="punto.cx" [attr.y]="punto.cy - 13" text-anchor="middle">
+          {{ punto.nombre }}
+        </text>
+      }
+    }
+  </svg>
+
+  @if (hayBajoVolumen()) {
+    <p class="sct__nota">
+      Las campañas atenuadas tienen muy pocos leads: su tasa todavía no es concluyente.
+    </p>
+  }
+</section>

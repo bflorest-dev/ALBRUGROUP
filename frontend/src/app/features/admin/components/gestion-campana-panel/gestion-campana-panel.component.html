@@ -174,13 +174,21 @@
       />
     </div>
 
-    @if (vista() === 'barras') {
-      @for (equipoBarras of facade.barrasPorEquipo(); track $index) {
-        <app-gestion-campana-bars [equipo]="equipoBarras" />
+    @switch (vista()) {
+      @case ('barras') {
+        @for (equipoBarras of facade.barrasPorEquipo(); track $index) {
+          <app-gestion-campana-bars [equipo]="equipoBarras" />
+        }
       }
-    } @else {
-      @for (matriz of facade.matrices(); track $index) {
-        <app-gestion-campana-matrix [matriz]="matriz" />
+      @case ('efectividad') {
+        @for (equipoDispersion of facade.dispersionPorEquipo(); track $index) {
+          <app-gestion-campana-scatter [equipo]="equipoDispersion" />
+        }
+      }
+      @default {
+        @for (matriz of facade.matrices(); track $index) {
+          <app-gestion-campana-matrix [matriz]="matriz" />
+        }
       }
     }
   }

@@ -30,6 +30,16 @@ export class GestionCampanaMatrixComponent {
   readonly matriz = input.required<GestionEquipoMatriz>();
   readonly oscuro = input(false);
 
+  /**
+   * Peso de la fila sobre el total del equipo. Es otra base que la de las celdas (que se calculan
+   * sobre su campaña), por eso la columna Total no se tiñe: mezclar dos escalas en el mismo color
+   * haría comparable lo que no lo es.
+   */
+  protected porcentajeDelTotal(total: number): number {
+    const totalEquipo = this.matriz().totalLeads;
+    return totalEquipo > 0 ? (total / totalEquipo) * 100 : 0;
+  }
+
   /** Fondo de la celda. Cero no se tiñe: una celda vacía debe leerse vacía. */
   protected fondo(porcentaje: number): string {
     return colorCelda(this.paso(porcentaje), this.oscuro());

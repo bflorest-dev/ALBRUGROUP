@@ -12,6 +12,7 @@
       <ng-template #colgroup>
         <col class="mtx-col-tipi" />
         <col class="mtx-col-total" />
+        <col class="mtx-col-total-pct" />
         @for (campana of matriz().campanas; track $index) {
           <col class="mtx-col-count" />
           <col class="mtx-col-pct" />
@@ -21,7 +22,7 @@
       <ng-template #header>
         <tr>
           <th class="mtx-col-tipi mtx-freeze" rowspan="2">Tipificación</th>
-          <th class="mtx-col-total" rowspan="2">Total</th>
+          <th class="mtx-total-head" colspan="2">Total</th>
           @for (campana of matriz().campanas; track $index) {
             <th class="mtx-camp" colspan="2">
               <span class="mtx-camp__name">{{ campana.nombre }}</span>
@@ -30,6 +31,8 @@
           }
         </tr>
         <tr>
+          <th class="mtx-col-total mtx-sub">Leads</th>
+          <th class="mtx-col-total-pct mtx-sub">%</th>
           @for (campana of matriz().campanas; track $index) {
             <th class="mtx-col-count mtx-sub">Leads</th>
             <th class="mtx-col-pct mtx-sub">%</th>
@@ -46,6 +49,7 @@
             }
           </td>
           <td class="mtx-col-total"><strong>{{ fila.total }}</strong></td>
+          <td class="mtx-col-total-pct">{{ porcentajeDelTotal(fila.total) | number: '1.2-2' }}%</td>
           @for (celda of fila.celdas; track $index) {
             <td
               class="mtx-col-count mtx-heat"
@@ -59,7 +63,7 @@
               [class.mtx-heat--claro]="tintaClara(celda.porcentaje)"
               [style.background]="fondo(celda.porcentaje)"
             >
-              {{ celda.porcentaje | number: '1.0-2' }}%
+              {{ celda.porcentaje | number: '1.2-2' }}%
             </td>
           }
         </tr>

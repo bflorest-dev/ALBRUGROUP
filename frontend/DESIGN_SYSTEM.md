@@ -234,6 +234,15 @@ mueve a la etiqueta de la fila (negrita y color en el texto), y el fondo queda p
 lead cualquier desenlace es "100%" y pesa visualmente igual que una campaña de 30. Solo agrupar si
 quedan al menos dos barras individuales.
 
+**Etiquetas directas, con detección de colisión.** No se etiqueta cada punto: se eligen los pocos
+que importan y, aun así, una etiqueta solo se coloca si no pisa a otra ya puesta. Dos campañas con
+volumen y tasa parecidos caen casi encima y sus nombres se superponen. Lo que no se etiqueta sigue
+siendo legible por tooltip.
+
+**Comparar tasas exige mostrar el volumen.** Ordenar campañas por tasa de conversión miente: una de
+1 lead con 1 preventa da 100%. Por eso la vista de efectividad usa el volumen como eje y atenúa —
+sin ocultar — las campañas de bajo volumen, con la tasa global del equipo como línea de referencia.
+
 **La tabla no se reemplaza.** Todo gráfico convive con su vista de tabla (accesible y auditable);
 el selector de vista alterna la **forma**, no los datos — por eso va más discreto que los controles
 de filtro y nunca se confunde con ellos.

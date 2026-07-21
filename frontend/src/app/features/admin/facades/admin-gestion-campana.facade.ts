@@ -77,6 +77,29 @@ export interface GestionEquipoBarras {
   campanas: GestionBarraCampana[];
 }
 
+/** Un punto de la dispersión: una campaña situada por volumen y efectividad. */
+export interface GestionPuntoCampana {
+  key: string;
+  nombre: string;
+  total: number;
+  preventas: number;
+  /** % de preventa sobre los leads gestionados de la campaña. */
+  tasa: number;
+  /** Con muy pocos leads la tasa no es concluyente; el punto se atenúa en vez de ocultarse. */
+  bajoVolumen: boolean;
+}
+
+export interface GestionEquipoDispersion {
+  idEquipo: number | null;
+  nombreEquipo: string;
+  accent: string;
+  totalLeads: number;
+  preventas: number;
+  /** Tasa global del equipo: la línea de referencia contra la que se comparan las campañas. */
+  tasaEquipo: number;
+  puntos: GestionPuntoCampana[];
+}
+
 /**
  * Debajo de este volumen el porcentaje de una campaña no es interpretable: con 1 lead cualquier
  * desenlace es "100%" y grita igual que una campaña de 30. Esas campañas se agrupan.
@@ -333,6 +356,35 @@ export class AdminGestionCampanaFacade {
       totalLeads: matriz.totalLeads,
       campanas: this.buildBarras(matriz)
     }))
+  );
+
+  /** Vista de efectividad: cada campaña situada por volumen gestionado y tasa de preventa. */
+  readonly dispersionPorEquipo = computed<GestionEquipoDispersion[]>(() =>
+    this.matrices().map((matriz) => {
+      const puntos = matriz.campanas.map((campana, indice) => {
+        const preventas = matriz.filas
+          .filter((fila) => fila.esCierre)
+          .reduce((suma, fila) => suma + (fila.celdas[indice]?.cantidad ?? 0), 0);
+        return {
+          key: campana.key,
+          nombre: campana.nombre,
+          total: campana.total,
+          preventas,
+          tasa: campana.total > 0 ? (preventas / campana.total) * 100 : 0,
+          bajoVolumen: campana.total < MIN_LEADS_CAMPANA
+        };
+      });
+      const preventas = puntos.reduce((suma, punto) => suma + punto.preventas, 0);
+      return {
+        idEquipo: matriz.idEquipo,
+        nombreEquipo: matriz.nombreEquipo,
+        accent: matriz.accent,
+        totalLeads: matriz.totalLeads,
+        preventas,
+        tasaEquipo: matriz.totalLeads > 0 ? (preventas / matriz.totalLeads) * 100 : 0,
+        puntos: puntos.sort((left, right) => right.total - left.total)
+      };
+    })
   );
 
   readonly isEmpty = computed(() => this.state().status === 'success' && this.matrices().length === 0);

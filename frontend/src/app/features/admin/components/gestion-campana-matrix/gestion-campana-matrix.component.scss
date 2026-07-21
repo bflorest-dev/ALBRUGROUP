@@ -92,8 +92,23 @@
 }
 
 ::ng-deep .mtx-col-total {
+  width: 4.5rem;
+  min-width: 4.5rem;
+}
+
+::ng-deep .mtx-col-total-pct {
   width: 5rem;
   min-width: 5rem;
+  color: var(--app-text-muted);
+}
+
+// La columna Total resume, no compara: se separa del bloque de campañas con un borde.
+::ng-deep .mtx-col-total-pct {
+  border-right: 2px solid var(--app-border-soft);
+}
+
+::ng-deep .mtx-total-head {
+  border-right: 2px solid var(--app-border-soft);
 }
 
 ::ng-deep .mtx-col-count {

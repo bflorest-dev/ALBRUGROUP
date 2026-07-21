@@ -53,7 +53,7 @@ export class GestionCampanaBarsComponent {
   }
 
   protected detalle(segmento: GestionBarraSegmento): string {
-    const unidad = segmento.cantidad === 1 ? 'lead' : 'leads';
-    return `${formatLabel(segmento.codigo)}: ${segmento.cantidad} ${unidad} (${Math.round(segmento.porcentaje)}%)`;
+    const unidad = segmento.cantidad === 1 ? 'Lead' : 'Leads';
+    return `${formatLabel(segmento.codigo)}: ${segmento.cantidad} ${unidad} (${segmento.porcentaje.toFixed(2)}%)`;
   }
 }
