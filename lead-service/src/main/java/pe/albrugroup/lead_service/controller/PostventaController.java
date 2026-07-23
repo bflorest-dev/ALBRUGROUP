@@ -18,10 +18,12 @@ import pe.albrugroup.lead_service.entity.request.LeadTipificacionPostventaReques
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDetalleResponse;
+import pe.albrugroup.lead_service.entity.response.LeadPostventaBandejaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPostventaResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.service.EventoService;
 import pe.albrugroup.lead_service.service.LeadService;
+import pe.albrugroup.lead_service.service.PostventaBandejaService;
 
 @RestController @Validated
 @RequiredArgsConstructor
@@ -30,6 +32,15 @@ public class PostventaController {
 
     private final LeadService leadService;
     private final EventoService eventoService;
+    private final PostventaBandejaService postventaBandejaService;
+
+    @GetMapping("/bandeja") @PreAuthorize("hasAuthority('READ_LEADS_POSTVENTA')")
+    public ResponseEntity<PageResponse<LeadPostventaBandejaResponse>> listarBandejaOperativaPostventa(
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        var leads = postventaBandejaService.listarBandeja(pageRequest);
+        return ResponseEntity.status(HttpStatus.OK).body(leads);
+    }
 
     @GetMapping @PreAuthorize("hasAuthority('READ_LEADS_POSTVENTA')")
     public ResponseEntity<PageResponse<LeadPostventaResponse>> listarBandejaPostventa(

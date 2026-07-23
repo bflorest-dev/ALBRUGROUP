@@ -12,6 +12,7 @@ import java.time.LocalDate;
 @Getter @Setter
 public class PagoPostventaUpdateRequest {
 
+    private Long idPeriodoFacturacion;
     private AportantePago aportante;
     private EstadoPagoPostventa estado;
     @DecimalMin(value = "0.01", message = "monto debe ser mayor a 0")
@@ -20,4 +21,7 @@ public class PagoPostventaUpdateRequest {
     private LocalDate fechaVencimiento;
     private LocalDate fechaPago;
     private LocalDate fechaCompromisoPago;
+    private String numeroOperacion;
+    private String canalPago;
+    private String observacion;
 }

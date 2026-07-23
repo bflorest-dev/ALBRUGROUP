@@ -1275,6 +1275,30 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     );
 
     @Query("""
+            SELECT e.idLead, e.nombreActor, e.createdAt
+            FROM Evento e
+            WHERE e.idLead IN :leadIds
+              AND e.etapa = :etapa
+              AND e.accion IN :acciones
+              AND NOT EXISTS (
+                    SELECT 1
+                    FROM Evento posterior
+                    WHERE posterior.idLead = e.idLead
+                      AND posterior.etapa = :etapa
+                      AND posterior.accion IN :acciones
+                      AND (
+                            posterior.createdAt > e.createdAt
+                            OR (posterior.createdAt = e.createdAt AND posterior.id > e.id)
+                      )
+              )
+            """)
+    List<Object[]> listarUltimaGestionPorLeadIdsEtapaYAcciones(
+            @Param("leadIds") Collection<Long> leadIds,
+            @Param("etapa") Etapa etapa,
+            @Param("acciones") Collection<Accion> acciones
+    );
+
+    @Query("""
             SELECT e.idLead, e.fechaInstalacion
             FROM Evento e
             WHERE e.idLead IN :leadIds

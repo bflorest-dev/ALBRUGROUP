@@ -40,6 +40,10 @@ public class PagoPostventa {
     @JoinColumn(name = "id_lead", nullable = false)
     private Lead lead;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_periodo_facturacion")
+    private PeriodoFacturacionPostventa periodoFacturacionPostventa;
+
     @Enumerated(EnumType.STRING)
     private AportantePago aportante;
     @Enumerated(EnumType.STRING)
@@ -50,8 +54,12 @@ public class PagoPostventa {
     private LocalDate fechaVencimiento;
     private LocalDate fechaPago;
     private LocalDate fechaCompromisoPago;
+    private String numeroOperacion;
+    private String canalPago;
+    private String observacion;
 
     @CreationTimestamp
+    @jakarta.persistence.Column(updatable = false)
     private Instant createdAt;
     @UpdateTimestamp
     private Instant updatedAt;

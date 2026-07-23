@@ -207,6 +207,34 @@ export type ZonaResponse = LeadEntity & {
   reglas?: ZonaReglaResponse[];
 };
 
+export type PlataformaDigitalResponse = LeadEntity;
+
+export type PaquetePlataformaResponse = LeadEntity & {
+  idPlataforma: number;
+  plataforma?: string;
+  cantidadMeses?: number;
+  cantidadUsuarios?: number;
+  consumeCreditos?: boolean;
+  cantidadCreditosConsumidos?: number;
+  precioVenta?: number;
+};
+
+export type CredencialPlataformaResponse = LeadEntity & {
+  idPaquete: number;
+  paquete?: string;
+  idPlataforma?: number;
+  plataforma?: string;
+  usuario?: string;
+  password?: string;
+  fechaCreacion?: string;
+  fechaExpiracion?: string;
+  estado?: string;
+  cuposTotales?: number;
+  cuposUsados?: number;
+  cuposDisponibles?: number;
+  observacion?: string;
+};
+
 export type ServiciosProveedorResponse = {
   idProveedor: number;
   nombreProveedor: string;
@@ -425,6 +453,34 @@ export class CommunityLeadService {
 
   desactivarPromocion(idPromocion: number): Observable<void> {
     return this.http.delete<void>(`${this.leadUrl}/promociones/${idPromocion}`);
+  }
+
+  registrarPlataformaDigital(request: unknown): Observable<PlataformaDigitalResponse> {
+    return this.http.post<PlataformaDigitalResponse>(`${this.leadUrl}/postventa/plataformas-digitales/plataformas`, request);
+  }
+
+  listarPlataformasDigitales(): Observable<PlataformaDigitalResponse[]> {
+    return this.http.get<PlataformaDigitalResponse[]>(`${this.leadUrl}/postventa/plataformas-digitales/plataformas`);
+  }
+
+  registrarPaquetePlataforma(request: unknown): Observable<PaquetePlataformaResponse> {
+    return this.http.post<PaquetePlataformaResponse>(`${this.leadUrl}/postventa/plataformas-digitales/paquetes`, request);
+  }
+
+  listarPaquetesPlataforma(idPlataforma: number): Observable<PaquetePlataformaResponse[]> {
+    return this.http.get<PaquetePlataformaResponse[]>(`${this.leadUrl}/postventa/plataformas-digitales/paquetes`, {
+      params: new HttpParams().set('idPlataforma', idPlataforma)
+    });
+  }
+
+  registrarCredencialPlataforma(request: unknown): Observable<CredencialPlataformaResponse> {
+    return this.http.post<CredencialPlataformaResponse>(`${this.leadUrl}/postventa/plataformas-digitales/credenciales`, request);
+  }
+
+  listarCredencialesPlataformaDisponibles(idPaquete: number): Observable<CredencialPlataformaResponse[]> {
+    return this.http.get<CredencialPlataformaResponse[]>(`${this.leadUrl}/postventa/plataformas-digitales/credenciales`, {
+      params: new HttpParams().set('idPaquete', idPaquete)
+    });
   }
 
   registrarZona(request: unknown): Observable<ZonaResponse> {

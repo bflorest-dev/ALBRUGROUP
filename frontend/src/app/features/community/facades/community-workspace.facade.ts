@@ -12,9 +12,12 @@ import {
   CampanaResponse,
   CommunityLeadService,
   CriterioZona,
+  CredencialPlataformaResponse,
   CuentaPublicitariaResponse,
   NivelGeografico,
+  PaquetePlataformaResponse,
   PlanResponse,
+  PlataformaDigitalResponse,
   PromocionComercialResponse,
   ProveedorResponse,
   ServiciosProveedorResponse,
@@ -37,7 +40,14 @@ import {
   toSnapshotFinanceRows
 } from '../../../shared/utils/campaign-finance.utils';
 
-export type CommunitySection = 'proveedores' | 'cuentas' | 'campanas' | 'zonas' | 'planes' | 'promociones';
+export type CommunitySection =
+  | 'proveedores'
+  | 'cuentas'
+  | 'campanas'
+  | 'zonas'
+  | 'planes'
+  | 'promociones'
+  | 'plataformas-digitales';
 export type CommunityPageMode = 'mantenimiento' | 'metricas' | 'finanzas';
 export type CommunityAccessMode = 'community' | 'admin';
 
@@ -166,6 +176,14 @@ export class CommunityWorkspaceFacade {
   readonly promocionesActivas = computed(() => this.promociones().filter((promocion) => promocion.activo !== false));
   readonly zonas = signal<ZonaResponse[]>([]);
   readonly zonasActivas = computed(() => this.zonas().filter((zona) => zona.activo !== false));
+  readonly plataformasDigitales = signal<PlataformaDigitalResponse[]>([]);
+  readonly plataformasDigitalesActivas = computed(() =>
+    this.plataformasDigitales().filter((plataforma) => plataforma.activo !== false)
+  );
+  readonly paquetesPlataforma = signal<PaquetePlataformaResponse[]>([]);
+  readonly credencialesPlataforma = signal<CredencialPlataformaResponse[]>([]);
+  readonly selectedDigitalPlatformId = signal(0);
+  readonly selectedCredentialPackageId = signal(0);
   readonly serviciosProveedor = signal<ServiciosProveedorResponse | null>(null);
   readonly dailyExpenseSummary = signal<CampanaGastoResumenDiarioResponse | null>(null);
   readonly monthlyExpenseSummary = signal<CampanaGastoResumenMensualResponse | null>(null);
@@ -349,6 +367,28 @@ export class CommunityWorkspaceFacade {
     idPlan: [0]
   });
 
+  readonly digitalPlatformForm = this.fb.group({
+    nombre: ['', [Validators.required]]
+  });
+
+  readonly platformPackageForm = this.fb.group({
+    idPlataforma: [0, [Validators.required, Validators.min(1)]],
+    nombre: ['', [Validators.required]],
+    cantidadMeses: [1, [Validators.required, Validators.min(1)]],
+    cantidadUsuarios: [1, [Validators.required, Validators.min(1)]],
+    consumeCreditos: [false],
+    cantidadCreditosConsumidos: [0, [Validators.min(0)]],
+    precioVenta: [0, [Validators.min(0)]]
+  });
+
+  readonly platformCredentialForm = this.fb.group({
+    idPaquete: [0, [Validators.required, Validators.min(1)]],
+    usuario: ['', [Validators.required]],
+    password: ['', [Validators.required]],
+    fechaCreacion: [this.currentDateInputValue(), [Validators.required]],
+    observacion: ['']
+  });
+
   readonly zoneForm = this.fb.group({
     nombre: ['', [Validators.required]]
   });
@@ -469,7 +509,8 @@ export class CommunityWorkspaceFacade {
         this.loadList('adicionales', () => this.loadAdditionalsByProviders(proveedores)),
         this.loadList('planes', () => firstValueFrom(this.leadService.listarPlanes())),
         this.loadList('promociones', () => firstValueFrom(this.leadService.listarPromociones({}))),
-        this.loadList('zonas', () => firstValueFrom(this.leadService.listarZonas()))
+        this.loadList('zonas', () => firstValueFrom(this.leadService.listarZonas())),
+        this.refreshDigitalPlatforms()
       ]);
 
       const failed = results
@@ -1133,6 +1174,93 @@ export class CommunityWorkspaceFacade {
     );
   }
 
+  async submitDigitalPlatform(): Promise<void> {
+    if (this.digitalPlatformForm.invalid) {
+      this.errorMessage.set('Indica el nombre de la plataforma digital.');
+      return;
+    }
+
+    await this.saveAction(
+      () => this.leadService.registrarPlataformaDigital(this.digitalPlatformForm.getRawValue()),
+      'Plataforma digital registrada.',
+      async () => {
+        this.digitalPlatformForm.reset({ nombre: '' });
+        await this.refreshDigitalPlatforms();
+      }
+    );
+  }
+
+  async submitPlatformPackage(): Promise<void> {
+    if (this.platformPackageForm.invalid) {
+      this.errorMessage.set('Completa plataforma, nombre, meses y usuarios del paquete.');
+      return;
+    }
+
+    await this.saveAction(
+      () => this.leadService.registrarPaquetePlataforma(this.buildPlatformPackageRequest()),
+      'Paquete registrado.',
+      async () => {
+        const idPlataforma = this.platformPackageForm.controls.idPlataforma.value;
+        this.platformPackageForm.patchValue({
+          nombre: '',
+          cantidadMeses: 1,
+          cantidadUsuarios: 1,
+          consumeCreditos: false,
+          cantidadCreditosConsumidos: 0,
+          precioVenta: 0
+        });
+        await this.selectDigitalPlatform(idPlataforma);
+      }
+    );
+  }
+
+  async submitPlatformCredential(): Promise<void> {
+    if (this.platformCredentialForm.invalid) {
+      this.errorMessage.set('Completa paquete, usuario, password y fecha de creacion.');
+      return;
+    }
+
+    await this.saveAction(
+      () => this.leadService.registrarCredencialPlataforma(this.buildPlatformCredentialRequest()),
+      'Credencial registrada.',
+      async () => {
+        const idPaquete = this.platformCredentialForm.controls.idPaquete.value;
+        this.platformCredentialForm.patchValue({
+          usuario: '',
+          password: '',
+          fechaCreacion: this.currentDateInputValue(),
+          observacion: ''
+        });
+        await this.selectCredentialPackage(idPaquete);
+      }
+    );
+  }
+
+  async selectDigitalPlatform(idPlataforma: number | null): Promise<void> {
+    const nextId = idPlataforma ?? 0;
+    this.selectedDigitalPlatformId.set(nextId);
+    this.platformPackageForm.patchValue({ idPlataforma: nextId });
+    this.paquetesPlataforma.set([]);
+    this.credencialesPlataforma.set([]);
+    this.selectedCredentialPackageId.set(0);
+    this.platformCredentialForm.patchValue({ idPaquete: 0 });
+    if (!nextId) {
+      return;
+    }
+    await this.refreshDigitalPackages(nextId);
+  }
+
+  async selectCredentialPackage(idPaquete: number | null): Promise<void> {
+    const nextId = idPaquete ?? 0;
+    this.selectedCredentialPackageId.set(nextId);
+    this.platformCredentialForm.patchValue({ idPaquete: nextId });
+    this.credencialesPlataforma.set([]);
+    if (!nextId) {
+      return;
+    }
+    await this.refreshDigitalCredentials(nextId);
+  }
+
   async openCreateZone(): Promise<void> {
     if (!this.ensureCanMutate()) {
       return;
@@ -1307,6 +1435,28 @@ export class CommunityWorkspaceFacade {
     this.promociones.set(await firstValueFrom(this.leadService.listarPromociones({})));
   }
 
+  private async refreshDigitalPlatforms(): Promise<void> {
+    const plataformas = await firstValueFrom(this.leadService.listarPlataformasDigitales());
+    this.plataformasDigitales.set(plataformas);
+    const selectedId = this.selectedDigitalPlatformId() || plataformas.find((plataforma) => plataforma.activo !== false)?.id || 0;
+    if (selectedId) {
+      await this.selectDigitalPlatform(selectedId);
+    }
+  }
+
+  private async refreshDigitalPackages(idPlataforma: number): Promise<void> {
+    const paquetes = await firstValueFrom(this.leadService.listarPaquetesPlataforma(idPlataforma));
+    this.paquetesPlataforma.set(paquetes);
+    const selectedId = this.selectedCredentialPackageId() || paquetes[0]?.id || 0;
+    if (selectedId) {
+      await this.selectCredentialPackage(selectedId);
+    }
+  }
+
+  private async refreshDigitalCredentials(idPaquete: number): Promise<void> {
+    this.credencialesPlataforma.set(await firstValueFrom(this.leadService.listarCredencialesPlataformaDisponibles(idPaquete)));
+  }
+
   private async refreshZones(): Promise<void> {
     this.zonas.set(await firstValueFrom(this.leadService.listarZonas()));
   }
@@ -1423,6 +1573,21 @@ export class CommunityWorkspaceFacade {
     return numericValue;
   }
 
+  private toOptionalNonNegativeNumber(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) && numericValue >= 0 ? numericValue : null;
+  }
+
+  private currentDateInputValue(): string {
+    const now = new Date();
+    const offsetMs = now.getTimezoneOffset() * 60_000;
+    return new Date(now.getTime() - offsetMs).toISOString().slice(0, 10);
+  }
+
   private buildPlanRequest(): Record<string, unknown> {
     const raw = this.createPlanForm.getRawValue();
 
@@ -1519,6 +1684,30 @@ export class CommunityWorkspaceFacade {
       idZona: scopes.includes('zona') ? raw.idZona || null : null,
       idsPlanes: scopes.includes('planes') && raw.idsPlanes.length ? raw.idsPlanes : null
     };
+  }
+
+  private buildPlatformPackageRequest(): Record<string, unknown> {
+    const raw = this.platformPackageForm.getRawValue();
+    return this.cleanObject({
+      idPlataforma: raw.idPlataforma,
+      nombre: raw.nombre,
+      cantidadMeses: raw.cantidadMeses,
+      cantidadUsuarios: raw.cantidadUsuarios,
+      consumeCreditos: raw.consumeCreditos,
+      cantidadCreditosConsumidos: raw.consumeCreditos ? raw.cantidadCreditosConsumidos : 0,
+      precioVenta: this.toOptionalNonNegativeNumber(raw.precioVenta) ?? 0
+    });
+  }
+
+  private buildPlatformCredentialRequest(): Record<string, unknown> {
+    const raw = this.platformCredentialForm.getRawValue();
+    return this.cleanObject({
+      idPaquete: raw.idPaquete,
+      usuario: raw.usuario,
+      password: raw.password,
+      fechaCreacion: raw.fechaCreacion,
+      observacion: this.toOptionalText(raw.observacion)
+    });
   }
 
   private buildZoneRequest(): Record<string, unknown> {

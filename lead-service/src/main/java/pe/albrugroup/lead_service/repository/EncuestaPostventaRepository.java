@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.albrugroup.lead_service.entity.EncuestaPostventa;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -16,6 +17,25 @@ public interface EncuestaPostventaRepository extends JpaRepository<EncuestaPostv
 
     Page<EncuestaPostventa> findByLeadIdOrderByCreatedAtDesc(Long idLead, Pageable pageable);
     List<EncuestaPostventa> findByLeadId(Long idLead);
+
+    @Query("""
+            SELECT e
+            FROM EncuestaPostventa e
+            WHERE e.lead.id IN :leadIds
+              AND NOT EXISTS (
+                    SELECT 1
+                    FROM EncuestaPostventa posterior
+                    WHERE posterior.lead.id = e.lead.id
+                      AND (
+                            posterior.createdAt > e.createdAt
+                            OR (
+                                posterior.createdAt = e.createdAt
+                                AND posterior.id > e.id
+                            )
+                      )
+              )
+            """)
+    List<EncuestaPostventa> listarUltimasPorLeadIds(@Param("leadIds") Collection<Long> leadIds);
 
     @Modifying
     @Query("DELETE FROM EncuestaPostventa e WHERE e.lead.id = :idLead")

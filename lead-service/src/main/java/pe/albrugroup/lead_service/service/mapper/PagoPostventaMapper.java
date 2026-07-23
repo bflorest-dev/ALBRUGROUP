@@ -15,6 +15,7 @@ public interface PagoPostventaMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "lead", ignore = true)
+    @Mapping(target = "periodoFacturacionPostventa", ignore = true)
     @Mapping(target = "estado", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
@@ -22,11 +23,13 @@ public interface PagoPostventaMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "lead", ignore = true)
+    @Mapping(target = "periodoFacturacionPostventa", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntity(PagoPostventaUpdateRequest request, @MappingTarget PagoPostventa entity);
 
     @Mapping(target = "idLead", source = "lead.id")
+    @Mapping(target = "idPeriodoFacturacion", source = "periodoFacturacionPostventa.id")
     PagoPostventaResponse toResponse(PagoPostventa entity);
 }

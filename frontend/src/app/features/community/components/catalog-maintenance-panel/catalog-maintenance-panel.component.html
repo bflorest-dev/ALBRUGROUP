@@ -655,6 +655,166 @@
           </section>
         </p-tabpanel>
 
+        <p-tabpanel value="plataformas-digitales">
+          <section class="stack">
+            <div class="digital-platform-grid">
+              <p-card styleClass="community-form-card">
+                <ng-template #title>Registrar plataforma</ng-template>
+                <form class="form-grid" [formGroup]="facade.digitalPlatformForm" (ngSubmit)="facade.submitDigitalPlatform()">
+                  <label class="wide">
+                    <span>Nombre</span>
+                    <input pInputText type="text" formControlName="nombre" placeholder="Netflix, Magis, Spotify" />
+                  </label>
+                  <button pButton type="submit" icon="pi pi-plus" label="Crear plataforma" [loading]="facade.isSaving()"></button>
+                </form>
+              </p-card>
+
+              <p-card styleClass="community-form-card">
+                <ng-template #title>Registrar paquete</ng-template>
+                <form class="form-grid" [formGroup]="facade.platformPackageForm" (ngSubmit)="facade.submitPlatformPackage()">
+                  <label class="wide">
+                    <span>Plataforma</span>
+                    <p-select
+                      formControlName="idPlataforma"
+                      [options]="facade.plataformasDigitalesActivas()"
+                      optionLabel="nombre"
+                      optionValue="id"
+                      placeholder="Seleccionar plataforma"
+                      appendTo="body"
+                      (onChange)="facade.selectDigitalPlatform($any($event.value))"
+                    />
+                  </label>
+                  <label>
+                    <span>Nombre</span>
+                    <input pInputText type="text" formControlName="nombre" placeholder="2 meses / 3 usuarios" />
+                  </label>
+                  <label>
+                    <span>Meses</span>
+                    <input pInputText type="number" min="1" formControlName="cantidadMeses" />
+                  </label>
+                  <label>
+                    <span>Usuarios</span>
+                    <input pInputText type="number" min="1" formControlName="cantidadUsuarios" />
+                  </label>
+                  <label>
+                    <span>Precio venta</span>
+                    <div class="input-prefix">
+                      <span>S/</span>
+                      <input pInputText type="number" min="0" step="0.01" formControlName="precioVenta" />
+                    </div>
+                  </label>
+                  <label class="checkbox-row wide">
+                    <input type="checkbox" formControlName="consumeCreditos" />
+                    <span>Consume creditos</span>
+                  </label>
+                  @if (facade.platformPackageForm.controls.consumeCreditos.value) {
+                    <label class="wide">
+                      <span>Creditos consumidos</span>
+                      <input pInputText type="number" min="0" formControlName="cantidadCreditosConsumidos" />
+                    </label>
+                  }
+                  <button pButton type="submit" icon="pi pi-plus" label="Crear paquete" [loading]="facade.isSaving()"></button>
+                </form>
+              </p-card>
+
+              <p-card styleClass="community-form-card">
+                <ng-template #title>Registrar credencial</ng-template>
+                <form class="form-grid" [formGroup]="facade.platformCredentialForm" (ngSubmit)="facade.submitPlatformCredential()">
+                  <label class="wide">
+                    <span>Paquete</span>
+                    <p-select
+                      formControlName="idPaquete"
+                      [options]="facade.paquetesPlataforma()"
+                      optionLabel="nombre"
+                      optionValue="id"
+                      placeholder="Seleccionar paquete"
+                      appendTo="body"
+                      (onChange)="facade.selectCredentialPackage($any($event.value))"
+                    />
+                  </label>
+                  <label>
+                    <span>Usuario</span>
+                    <input pInputText type="text" formControlName="usuario" autocomplete="off" />
+                  </label>
+                  <label>
+                    <span>Password</span>
+                    <input pInputText type="text" formControlName="password" autocomplete="off" />
+                  </label>
+                  <label>
+                    <span>Creacion</span>
+                    <input pInputText type="date" formControlName="fechaCreacion" />
+                  </label>
+                  <label class="wide">
+                    <span>Observacion</span>
+                    <input pInputText type="text" formControlName="observacion" />
+                  </label>
+                  <button pButton type="submit" icon="pi pi-plus" label="Guardar credencial" [loading]="facade.isSaving()"></button>
+                </form>
+              </p-card>
+            </div>
+
+            <div class="digital-platform-tables">
+              <p-card styleClass="community-table-card">
+                <ng-template #title>Paquetes</ng-template>
+                <p-table [value]="facade.paquetesPlataforma()" [paginator]="true" [rows]="6" [rowHover]="true" styleClass="p-datatable-sm">
+                  <ng-template #header>
+                    <tr>
+                      <th>Paquete</th>
+                      <th>Plataforma</th>
+                      <th>Meses</th>
+                      <th>Usuarios</th>
+                      <th>Creditos</th>
+                      <th>Precio</th>
+                    </tr>
+                  </ng-template>
+                  <ng-template #body let-paquete>
+                    <tr>
+                      <td><strong>{{ paquete.nombre }}</strong></td>
+                      <td>{{ display(paquete.plataforma) }}</td>
+                      <td>{{ display(paquete.cantidadMeses) }}</td>
+                      <td>{{ display(paquete.cantidadUsuarios) }}</td>
+                      <td>{{ paquete.consumeCreditos ? display(paquete.cantidadCreditosConsumidos) : 'No' }}</td>
+                      <td>{{ money(paquete.precioVenta) }}</td>
+                    </tr>
+                  </ng-template>
+                  <ng-template #emptymessage>
+                    <tr><td colspan="6">Selecciona una plataforma o registra su primer paquete.</td></tr>
+                  </ng-template>
+                </p-table>
+              </p-card>
+
+              <p-card styleClass="community-table-card">
+                <ng-template #title>Credenciales disponibles</ng-template>
+                <p-table [value]="facade.credencialesPlataforma()" [paginator]="true" [rows]="6" [rowHover]="true" styleClass="p-datatable-sm">
+                  <ng-template #header>
+                    <tr>
+                      <th>Usuario</th>
+                      <th>Password</th>
+                      <th>Paquete</th>
+                      <th>Expira</th>
+                      <th>Cupos</th>
+                      <th>Estado</th>
+                    </tr>
+                  </ng-template>
+                  <ng-template #body let-credencial>
+                    <tr>
+                      <td><strong>{{ credencial.usuario }}</strong></td>
+                      <td>{{ display(credencial.password) }}</td>
+                      <td>{{ display(credencial.paquete) }}</td>
+                      <td>{{ display(credencial.fechaExpiracion) }}</td>
+                      <td>{{ display(credencial.cuposDisponibles) }} / {{ display(credencial.cuposTotales) }}</td>
+                      <td><p-tag [value]="display(credencial.estado)" /></td>
+                    </tr>
+                  </ng-template>
+                  <ng-template #emptymessage>
+                    <tr><td colspan="6">Selecciona un paquete o registra credenciales disponibles.</td></tr>
+                  </ng-template>
+                </p-table>
+              </p-card>
+            </div>
+          </section>
+        </p-tabpanel>
+
       </p-tabpanels>
     </p-tabs>
     }

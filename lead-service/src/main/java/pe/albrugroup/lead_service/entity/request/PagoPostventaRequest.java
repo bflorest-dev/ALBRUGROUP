@@ -12,6 +12,8 @@ import java.time.LocalDate;
 @Getter @Setter
 public class PagoPostventaRequest {
 
+    private Long idPeriodoFacturacion;
+
     private AportantePago aportante;
 
     @NotNull(message = "monto es obligatorio")
@@ -26,4 +28,7 @@ public class PagoPostventaRequest {
 
     private LocalDate fechaPago;
     private LocalDate fechaCompromisoPago;
+    private String numeroOperacion;
+    private String canalPago;
+    private String observacion;
 }

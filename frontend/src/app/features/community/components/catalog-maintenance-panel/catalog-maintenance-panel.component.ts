@@ -24,7 +24,8 @@ export const CATALOG_MAINTENANCE_SECTIONS: { id: CommunitySection; label: string
   { id: 'campanas', label: 'Campañas', icon: 'pi pi-megaphone' },
   { id: 'zonas', label: 'Zonas', icon: 'pi pi-map-marker' },
   { id: 'planes', label: 'Planes', icon: 'pi pi-wifi' },
-  { id: 'promociones', label: 'Promociones', icon: 'pi pi-tags' }
+  { id: 'promociones', label: 'Promociones', icon: 'pi pi-tags' },
+  { id: 'plataformas-digitales', label: 'Plataformas', icon: 'pi pi-key' }
 ];
 
 @Component({

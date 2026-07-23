@@ -7,20 +7,28 @@ import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.entity.EncuestaPostventa;
 import pe.albrugroup.lead_service.entity.Lead;
+import pe.albrugroup.lead_service.entity.PeriodoFacturacionPostventa;
+import pe.albrugroup.lead_service.entity.enums.EstadoEncuestaPostventa;
+import pe.albrugroup.lead_service.entity.enums.PrioridadEncuestaPostventa;
+import pe.albrugroup.lead_service.entity.enums.StatusEncuestaPostventa;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.StatusSatisfaccion;
+import pe.albrugroup.lead_service.entity.enums.TipoEncuestaPostventa;
 import pe.albrugroup.lead_service.entity.request.EncuestaPostventaRequest;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.EncuestaPostventaResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.entity.response.SatisfaccionPostventaResponse;
+import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.EncuestaPostventaRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
+import pe.albrugroup.lead_service.repository.PeriodoFacturacionPostventaRepository;
 import pe.albrugroup.lead_service.service.mapper.EncuestaPostventaMapper;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -31,6 +39,7 @@ public class EncuestaPostventaService {
 
     private final EncuestaPostventaRepository encuestaRepository;
     private final LeadRepository leadRepository;
+    private final PeriodoFacturacionPostventaRepository periodoRepository;
     private final CurrentUser currentUser;
     private final EncuestaPostventaMapper mapper;
     private final PaginationService paginationService;
@@ -43,8 +52,19 @@ public class EncuestaPostventaService {
     @Transactional
     public EncuestaPostventaResponse registrarEncuesta(Long idLead, EncuestaPostventaRequest request) {
         Lead lead = obtenerLeadAsignadoGestionable(idLead);
+        Integer calificacion = resolverCalificacion(request);
+
         EncuestaPostventa encuesta = mapper.toEntity(request);
         encuesta.setLead(lead);
+        encuesta.setPeriodoFacturacionPostventa(obtenerPeriodoSiCorresponde(idLead, request.getIdPeriodoFacturacion()));
+        encuesta.setTipoEncuesta(resolverTipoEncuesta(request));
+        encuesta.setCalificacion(calificacion);
+        encuesta.setStatus(resolverStatusEncuesta(calificacion));
+        encuesta.setEstado(EstadoEncuestaPostventa.REALIZADA);
+        encuesta.setPrioridad(PrioridadEncuestaPostventa.NORMAL);
+        encuesta.setFechaRealizada(LocalDateTime.now());
+        encuesta.setIdAsesorEncuesta(currentUser.empleadoID());
+        encuesta.setNombreAsesorEncuesta(currentUser.nombreCompleto());
         return mapper.toResponse(encuestaRepository.save(encuesta));
     }
 
@@ -65,10 +85,14 @@ public class EncuestaPostventaService {
         }
 
         BigDecimal satisfaccionAsesor = promedio(encuestas.stream()
-                .map(EncuestaPostventa::getCalificacionAsesor)
+                .map(encuesta -> encuesta.getCalificacionAsesor() != null
+                        ? encuesta.getCalificacionAsesor()
+                        : encuesta.getCalificacion())
                 .toList());
         BigDecimal satisfaccionServicio = promedio(encuestas.stream()
-                .map(EncuestaPostventa::getCalificacionServicio)
+                .map(encuesta -> encuesta.getCalificacionServicio() != null
+                        ? encuesta.getCalificacionServicio()
+                        : encuesta.getCalificacion())
                 .toList());
         BigDecimal promedioSatisfaccion = satisfaccionAsesor
                 .add(satisfaccionServicio)
@@ -84,10 +108,16 @@ public class EncuestaPostventaService {
     }
 
     private BigDecimal promedio(List<Integer> valores) {
-        BigDecimal total = valores.stream()
+        List<Integer> valoresValidos = valores.stream()
+                .filter(valor -> valor != null)
+                .toList();
+        if (valoresValidos.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal total = valoresValidos.stream()
                 .map(BigDecimal::valueOf)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return total.divide(BigDecimal.valueOf(valores.size()), 2, RoundingMode.HALF_UP);
+        return total.divide(BigDecimal.valueOf(valoresValidos.size()), 2, RoundingMode.HALF_UP);
     }
 
     private StatusSatisfaccion resolverStatusSatisfaccion(BigDecimal promedio) {
@@ -101,6 +131,58 @@ public class EncuestaPostventaService {
             return StatusSatisfaccion.SATISFECHO;
         }
         return StatusSatisfaccion.MUY_SATISFECHO;
+    }
+
+    private PeriodoFacturacionPostventa obtenerPeriodoSiCorresponde(Long idLead, Long idPeriodoFacturacion) {
+        if (idPeriodoFacturacion == null) {
+            return null;
+        }
+        PeriodoFacturacionPostventa periodo = periodoRepository.findById(idPeriodoFacturacion)
+                .orElseThrow(() -> new NotFoundException(PeriodoFacturacionPostventa.class, idPeriodoFacturacion));
+        if (periodo.getLead() == null || !periodo.getLead().getId().equals(idLead)) {
+            throw new BadRequestException("El periodo de facturacion no pertenece al lead indicado");
+        }
+        return periodo;
+    }
+
+    private TipoEncuestaPostventa resolverTipoEncuesta(EncuestaPostventaRequest request) {
+        if (request.getTipoEncuesta() != null) {
+            return request.getTipoEncuesta();
+        }
+        return request.getIdPeriodoFacturacion() == null
+                ? TipoEncuestaPostventa.SATISFACCION_ASESOR
+                : TipoEncuestaPostventa.SATISFACCION_SERVICIO;
+    }
+
+    private Integer resolverCalificacion(EncuestaPostventaRequest request) {
+        Integer calificacion = request.getCalificacion();
+        if (calificacion == null) {
+            calificacion = request.getTipoEncuesta() == TipoEncuestaPostventa.SATISFACCION_SERVICIO
+                    ? request.getCalificacionServicio()
+                    : request.getCalificacionAsesor();
+        }
+        if (calificacion == null) {
+            calificacion = request.getCalificacionServicio() != null
+                    ? request.getCalificacionServicio()
+                    : request.getCalificacionAsesor();
+        }
+        if (calificacion == null) {
+            throw new BadRequestException("calificacion es obligatoria");
+        }
+        return calificacion;
+    }
+
+    private StatusEncuestaPostventa resolverStatusEncuesta(Integer calificacion) {
+        if (calificacion <= 4) {
+            return StatusEncuestaPostventa.MALO;
+        }
+        if (calificacion <= 6) {
+            return StatusEncuestaPostventa.REGULAR;
+        }
+        if (calificacion <= 8) {
+            return StatusEncuestaPostventa.BUENO;
+        }
+        return StatusEncuestaPostventa.EXCELENTE;
     }
 
     private Lead obtenerLeadAsignadoGestionable(Long idLead) {

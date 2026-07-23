@@ -21,6 +21,7 @@ public class PagoPostventaResponse {
 
     private Long id;
     private Long idLead;
+    private Long idPeriodoFacturacion;
     private AportantePago aportante;
     private EstadoPagoPostventa estado;
     private BigDecimal monto;
@@ -28,6 +29,9 @@ public class PagoPostventaResponse {
     private LocalDate fechaVencimiento;
     private LocalDate fechaPago;
     private LocalDate fechaCompromisoPago;
+    private String numeroOperacion;
+    private String canalPago;
+    private String observacion;
     private Instant createdAt;
     private Instant updatedAt;
 }

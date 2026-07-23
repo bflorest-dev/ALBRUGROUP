@@ -8,8 +8,10 @@ import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.PagoPostventa;
+import pe.albrugroup.lead_service.entity.PeriodoFacturacionPostventa;
 import pe.albrugroup.lead_service.entity.enums.AportantePago;
 import pe.albrugroup.lead_service.entity.enums.EstadoPagoPostventa;
+import pe.albrugroup.lead_service.entity.enums.EstadoPeriodoFacturacionPostventa;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.request.PagoPostventaRequest;
@@ -20,6 +22,7 @@ import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.LeadRepository;
 import pe.albrugroup.lead_service.repository.PagoPostventaRepository;
+import pe.albrugroup.lead_service.repository.PeriodoFacturacionPostventaRepository;
 import pe.albrugroup.lead_service.service.mapper.PagoPostventaMapper;
 
 import java.time.LocalDate;
@@ -32,6 +35,7 @@ public class PagoPostventaService {
 
     private final PagoPostventaRepository pagoRepository;
     private final LeadRepository leadRepository;
+    private final PeriodoFacturacionPostventaRepository periodoRepository;
     private final CurrentUser currentUser;
     private final PagoPostventaMapper mapper;
     private final PaginationService paginationService;
@@ -47,7 +51,9 @@ public class PagoPostventaService {
         validarFechas(request.getFechaEmision(), request.getFechaVencimiento(), request.getFechaPago(), request.getFechaCompromisoPago());
         PagoPostventa pago = mapper.toEntity(request);
         pago.setLead(lead);
+        pago.setPeriodoFacturacionPostventa(obtenerPeriodoSiCorresponde(idLead, request.getIdPeriodoFacturacion()));
         pago.setEstado(resolverEstadoPago(pago, null));
+        sincronizarPeriodoConPago(pago);
         return mapper.toResponse(pagoRepository.save(pago));
     }
 
@@ -58,8 +64,15 @@ public class PagoPostventaService {
         validarLeadAsignadoGestionable(pago.getLead());
 
         mapper.updateEntity(request, pago);
+        if (request.getIdPeriodoFacturacion() != null) {
+            pago.setPeriodoFacturacionPostventa(obtenerPeriodoSiCorresponde(
+                    pago.getLead().getId(),
+                    request.getIdPeriodoFacturacion()
+            ));
+        }
         validarFechas(pago.getFechaEmision(), pago.getFechaVencimiento(), pago.getFechaPago(), pago.getFechaCompromisoPago());
         pago.setEstado(resolverEstadoPago(pago, request.getEstado()));
+        sincronizarPeriodoConPago(pago);
         return mapper.toResponse(pagoRepository.save(pago));
     }
 
@@ -67,6 +80,17 @@ public class PagoPostventaService {
         obtenerLeadAsignadoGestionable(idLead);
         Page<PagoPostventaResponse> pagos = pagoRepository.findByLeadIdOrderByFechaVencimientoAsc(
                 idLead,
+                paginationService.toPageable(pageRequest, PAGO_SORT_FIELDS)
+        ).map(mapper::toResponse);
+        return PageResponse.from(pagos);
+    }
+
+    public PageResponse<PagoPostventaResponse> listarPagosPorPeriodo(Long idPeriodoFacturacion, PageRequest pageRequest) {
+        PeriodoFacturacionPostventa periodo = periodoRepository.findById(idPeriodoFacturacion)
+                .orElseThrow(() -> new NotFoundException(PeriodoFacturacionPostventa.class, idPeriodoFacturacion));
+        validarLeadAsignadoGestionable(periodo.getLead());
+        Page<PagoPostventaResponse> pagos = pagoRepository.findByPeriodoFacturacionPostventaIdOrderByCreatedAtDesc(
+                idPeriodoFacturacion,
                 paginationService.toPageable(pageRequest, PAGO_SORT_FIELDS)
         ).map(mapper::toResponse);
         return PageResponse.from(pagos);
@@ -94,6 +118,40 @@ public class PagoPostventaService {
             return EstadoPagoPostventa.VENCIDO;
         }
         return EstadoPagoPostventa.PENDIENTE;
+    }
+
+    private PeriodoFacturacionPostventa obtenerPeriodoSiCorresponde(Long idLead, Long idPeriodoFacturacion) {
+        if (idPeriodoFacturacion == null) {
+            return null;
+        }
+        PeriodoFacturacionPostventa periodo = periodoRepository.findById(idPeriodoFacturacion)
+                .orElseThrow(() -> new NotFoundException(PeriodoFacturacionPostventa.class, idPeriodoFacturacion));
+        if (periodo.getLead() == null || !periodo.getLead().getId().equals(idLead)) {
+            throw new BadRequestException("El periodo de facturacion no pertenece al lead indicado");
+        }
+        return periodo;
+    }
+
+    private void sincronizarPeriodoConPago(PagoPostventa pago) {
+        PeriodoFacturacionPostventa periodo = pago.getPeriodoFacturacionPostventa();
+        if (periodo == null) {
+            return;
+        }
+        periodo.setFechaEmisionConfirmada(pago.getFechaEmision());
+        periodo.setFechaVencimientoConfirmado(pago.getFechaVencimiento());
+        periodo.setMontoFacturado(pago.getMonto());
+        if (pago.getEstado() == EstadoPagoPostventa.PAGADO
+                || pago.getEstado() == EstadoPagoPostventa.CUBIERTO_EMPRESA) {
+            periodo.setEstado(EstadoPeriodoFacturacionPostventa.PAGO_CONFIRMADO);
+            return;
+        }
+        if (pago.getEstado() == EstadoPagoPostventa.VENCIDO) {
+            periodo.setEstado(EstadoPeriodoFacturacionPostventa.VENCIDO);
+            return;
+        }
+        if (pago.getEstado() == EstadoPagoPostventa.COMPROMETIDO) {
+            periodo.setEstado(EstadoPeriodoFacturacionPostventa.PAGO_PENDIENTE);
+        }
     }
 
     private void validarFechas(

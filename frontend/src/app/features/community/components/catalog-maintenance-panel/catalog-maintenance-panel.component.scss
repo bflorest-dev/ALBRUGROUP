@@ -6,7 +6,9 @@
 .plan-additionals__list,
 .plan-catalog-toolbar,
 .provider-filter-bar,
-.zone-rules-list {
+.zone-rules-list,
+.digital-platform-grid,
+.digital-platform-tables {
   display: grid;
   gap: 1rem;
 }
@@ -60,6 +62,15 @@ p,
 .section-grid {
   align-items: start;
   grid-template-columns: minmax(280px, 0.75fr) minmax(420px, 1.25fr);
+}
+
+.digital-platform-grid {
+  align-items: start;
+  grid-template-columns: repeat(3, minmax(260px, 1fr));
+}
+
+.digital-platform-tables {
+  grid-template-columns: repeat(2, minmax(320px, 1fr));
 }
 
 .form-grid {
@@ -468,6 +479,8 @@ label,
   }
 
   .section-grid,
+  .digital-platform-grid,
+  .digital-platform-tables,
   .form-grid,
   .form-grid--three,
   .filter-grid,

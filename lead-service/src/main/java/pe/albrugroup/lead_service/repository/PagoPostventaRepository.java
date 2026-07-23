@@ -17,11 +17,13 @@ public interface PagoPostventaRepository extends JpaRepository<PagoPostventa, Lo
 
     Page<PagoPostventa> findByLeadIdOrderByFechaVencimientoAsc(Long idLead, Pageable pageable);
 
+    Page<PagoPostventa> findByPeriodoFacturacionPostventaIdOrderByCreatedAtDesc(Long idPeriodoFacturacion, Pageable pageable);
+
     @Modifying
     @Query("DELETE FROM PagoPostventa p WHERE p.lead.id = :idLead")
     void deleteByLeadId(@Param("idLead") Long idLead);
 
-    @EntityGraph(attributePaths = {"lead"})
+    @EntityGraph(attributePaths = {"lead", "periodoFacturacionPostventa"})
     @Query("SELECT p FROM PagoPostventa p WHERE p.id = :id")
     Optional<PagoPostventa> findWithLeadById(@Param("id") Long id);
 }

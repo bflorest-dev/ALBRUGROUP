@@ -111,6 +111,10 @@ public class Lead {
 
     private String nombrePromocionInternaSnapshot;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_plataforma_digital_ofrecida")
+    private Plataforma plataformaDigitalOfrecida;
+
     @OneToMany(mappedBy = "lead", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<LeadAdicional> adicionales = new HashSet<>();
 

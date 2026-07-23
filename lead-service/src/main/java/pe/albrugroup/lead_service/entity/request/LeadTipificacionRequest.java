@@ -15,4 +15,5 @@ public class LeadTipificacionRequest {
     private String codigoSubtipificacion;
     private String comentario;
     private LocalTime horaProgramada;
+    private Long idPlataformaDigitalOfrecida;
 }

@@ -90,6 +90,7 @@ import pe.albrugroup.lead_service.repository.EventoRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
 import pe.albrugroup.lead_service.repository.PagoPostventaRepository;
 import pe.albrugroup.lead_service.repository.PlanRepository;
+import pe.albrugroup.lead_service.repository.PlataformaRepository;
 import pe.albrugroup.lead_service.repository.PromocionComercialRepository;
 import pe.albrugroup.lead_service.repository.SubtipificacionRepository;
 import pe.albrugroup.lead_service.repository.TipificacionRepository;
@@ -129,6 +130,7 @@ public class LeadService {
     private final EventoService eventoService;
     private final CurrentUser currentUser;
     private final PlanRepository planRepository;
+    private final PlataformaRepository plataformaRepository;
     private final PagoPostventaRepository pagoPostventaRepository;
     private final EncuestaPostventaRepository encuestaPostventaRepository;
     private final PromocionComercialRepository promocionComercialRepository;
@@ -144,6 +146,7 @@ public class LeadService {
     private final LeadRealtimeNotifier leadRealtimeNotifier;
     private final LeadAsignacionCounterService leadAsignacionCounterService;
     private final LeadEtapaResumenService leadEtapaResumenService;
+    private final CalendarioFacturacionPostventaService calendarioFacturacionPostventaService;
 
     // La bandeja de Agendados GTR ya no cuelga de una tipi: el concepto vive en el comportamiento, que
     // cada equipo marca en las subtipis que correspondan (hoy, varias de NO DESEA).
@@ -1084,6 +1087,7 @@ public class LeadService {
                 .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getCodigoSubtipificacion()));
 
         validarHoraProgramada(subtipificacion, request.getHoraProgramada());
+        aplicarPlataformaDigitalOfrecidaSiCorresponde(lead, request.getIdPlataformaDigitalOfrecida());
         Etapa etapaDestino = subtipificacion.getEtapaCambio();
         if (etapaDestino != null && etapaDestino != etapaActual) {
             if (etapaActual == Etapa.PREVENTA && etapaDestino == Etapa.VENTA) {
@@ -1173,6 +1177,15 @@ public class LeadService {
         notificarCambioLead("TIPIFICACION", savedLead, etapaLead, idAsesorAnterior, true);
     }
 
+    private void aplicarPlataformaDigitalOfrecidaSiCorresponde(Lead lead, Long idPlataformaDigitalOfrecida) {
+        if (idPlataformaDigitalOfrecida == null) {
+            return;
+        }
+        Plataforma plataforma = plataformaRepository.findById(idPlataformaDigitalOfrecida)
+                .orElseThrow(() -> new NotFoundException(Plataforma.class, idPlataformaDigitalOfrecida));
+        lead.setPlataformaDigitalOfrecida(plataforma);
+    }
+
     // Cierra la atención GTR de un lead en otra etapa cuando el asesor no lo tipifica (p. ej. solo
     // creó nuevas oportunidades). Libera al asesor sin registrar tipificación ni alterar la gestión.
     @Transactional
@@ -1254,6 +1267,9 @@ public class LeadService {
         }
 
         Lead savedLead = leadRepository.save(lead);
+        if (etapaDestino == Etapa.POSTVENTA) {
+            calendarioFacturacionPostventaService.inicializarGestionPostventa(savedLead, request.getFechaInstalacion());
+        }
         actualizarResumenEtapaTipificacion(
                 savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, idAsesorAnterior, nombreAsesorAnterior,
                 subtipificacion.getComportamientos().contains(ComportamientoTipificacion.RECIBE_MERITO));

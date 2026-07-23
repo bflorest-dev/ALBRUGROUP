@@ -54,4 +54,13 @@ public class PostventaPagoController {
         var pagos = pagoPostventaService.listarPagosPorLead(idLead, pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(pagos);
     }
+
+    @GetMapping("/periodos/{idPeriodoFacturacion}/pagos") @PreAuthorize("hasAuthority('READ_POSTVENTA_FACTURACION')")
+    public ResponseEntity<PageResponse<PagoPostventaResponse>> listarPagosPorPeriodo(
+            @PathVariable Long idPeriodoFacturacion,
+            @Valid @ModelAttribute PageRequest pageRequest
+    ) {
+        var pagos = pagoPostventaService.listarPagosPorPeriodo(idPeriodoFacturacion, pageRequest);
+        return ResponseEntity.status(HttpStatus.OK).body(pagos);
+    }
 }

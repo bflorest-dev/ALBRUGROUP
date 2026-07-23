@@ -187,6 +187,11 @@ public class DataLoader {
         // LEADS - POSTVENTA
         savePermiso("READ_LEADS_POSTVENTA", "Puede ver la bandeja de leads disponibles en postventa", "LEAD_POSTVENTA", "READ");
         savePermiso("READ_LEADS_COBRANZA", "Puede ver la bandeja de leads disponibles en cobranza", "LEAD_COBRANZA", "READ");
+        savePermiso("READ_POSTVENTA_FACTURACION", "Puede consultar periodos, facturas y pagos de postventa", "POSTVENTA_FACTURACION", "READ");
+        savePermiso("UPDATE_POSTVENTA_FACTURACION", "Puede confirmar facturas y cerrar periodos de postventa", "POSTVENTA_FACTURACION", "UPDATE");
+        savePermiso("READ_POSTVENTA_PLATAFORMA_DIGITAL", "Puede consultar plataformas digitales, paquetes, credenciales y entregas", "POSTVENTA_PLATAFORMA_DIGITAL", "READ");
+        savePermiso("CREATE_POSTVENTA_PLATAFORMA_DIGITAL", "Puede crear plataformas digitales, paquetes y credenciales", "POSTVENTA_PLATAFORMA_DIGITAL", "CREATE");
+        savePermiso("UPDATE_POSTVENTA_PLATAFORMA_DIGITAL", "Puede entregar credenciales de plataformas digitales", "POSTVENTA_PLATAFORMA_DIGITAL", "UPDATE");
 
         // EQUIPOS
         savePermiso("VER_TODOS_LOS_EQUIPOS", "Puede ver datos de todos los equipos (salta el filtro por equipo)", "EQUIPO", "READ_ALL");
@@ -496,6 +501,10 @@ public class DataLoader {
         // ASESOR POSTVENTA
         Set<Permiso> postventaPermisos = Set.of(
                 getPermiso("READ_LEADS_POSTVENTA"),
+                getPermiso("READ_POSTVENTA_FACTURACION"),
+                getPermiso("UPDATE_POSTVENTA_FACTURACION"),
+                getPermiso("READ_POSTVENTA_PLATAFORMA_DIGITAL"),
+                getPermiso("UPDATE_POSTVENTA_PLATAFORMA_DIGITAL"),
                 getPermiso("ASSIGN_LEADS"),
                 getPermiso("READ_LEADS_ASESOR"),
                 getPermiso("UPDATE_LEADS_ASESOR"),
