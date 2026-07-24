@@ -59,7 +59,7 @@ import {
 } from '../../../shared/models/schedule/jornada-efectiva-response';
 import { ScheduleAdjustmentService } from '../../../core/services/schedule-adjustment.service';
 import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
-import { PreventaLeadService } from '../../preventa/services/preventa-lead.service';
+import { EquipoOperativoResponse, PreventaLeadService } from '../../preventa/services/preventa-lead.service';
 import {
   GtrHistoricosFiltersFormValue,
   GtrHistoricosStateService
@@ -142,6 +142,7 @@ type AdvisorOption = {
   empleadoId: number;
   nombreCompleto: string;
   roles: string[];
+  equipoIds: number[];
   connected: boolean;
   operativo: boolean;
   disponibilidad?: string | null;
@@ -256,6 +257,7 @@ export class GtrWorkspaceFacade {
   readonly rows = signal<VisualLeadGtr[]>([]);
   readonly agendadosRows = signal<VisualLeadAgendadoGtr[]>([]);
   readonly masivoRows = signal<VisualLeadGtr[]>([]);
+  readonly equipos = signal<EquipoOperativoResponse[]>([]);
   readonly eventRows = signal<EventoResponse[]>([]);
   readonly tipificationHistoryRows = signal<EventoResponse[]>([]);
   readonly tipificationHistoryLoaded = signal(false);
@@ -534,6 +536,7 @@ export class GtrWorkspaceFacade {
   });
 
   readonly masivoFiltersForm = this.fb.group({
+    idEquipo: [0],
     campoTipificacion: ['ULTIMA' as CampoTipificacion],
     tipificaciones: [[] as string[]],
     subtipificaciones: [[] as string[]],
@@ -545,8 +548,7 @@ export class GtrWorkspaceFacade {
     { label: 'Todas las etapas', value: '' },
     { label: 'Preventa', value: 'PREVENTA' },
     { label: 'Venta', value: 'VENTA' },
-    { label: 'Postventa', value: 'POSTVENTA' },
-    { label: 'Cobranza', value: 'COBRANZA' }
+    { label: 'Postventa', value: 'POSTVENTA' }
   ];
   readonly tipoDocumentoOptions = ['DNI', 'CE', 'RUC'];
   readonly tipoDomicilioOptions = [
@@ -882,6 +884,16 @@ export class GtrWorkspaceFacade {
     { label: 'Última', value: 'ULTIMA' },
     { label: 'Primera', value: 'PRIMERA' }
   ];
+  readonly historicosEquipoOptions = computed<SelectOption<number>[]>(() =>
+    this.equipos()
+      .filter((equipo) => equipo.activo)
+      .map((equipo) => ({ label: equipo.nombre, value: equipo.id }))
+  );
+  readonly showHistoricosEquipoSelector = computed(() => this.historicosEquipoOptions().length > 1);
+  readonly canSearchHistoricos = computed(() =>
+    this.canDisplayOperationalData() &&
+    (!this.showHistoricosEquipoSelector() || Number(this.masivoFiltersForm.controls.idEquipo.value) > 0)
+  );
   readonly historicosSortOptions = computed<Array<{ label: string; value: GtrHistoricosSortField }>>(() => [
     { label: 'Ingreso', value: 'lastEntryAt' },
     { label: this.historicosTipificacionColumnLabel(), value: 'codigoTipificacion' },
@@ -924,6 +936,14 @@ export class GtrWorkspaceFacade {
   );
 
   readonly selectedCount = computed(() => this.selectedIds().size);
+  readonly assignmentTargetEquipoId = computed(() => {
+    const lead = this.activeAssignmentLead();
+    if (lead) {
+      return lead.idEquipo ?? null;
+    }
+    const equipos = new Set(this.selectedRowsForCurrentSection().map((row) => row.idEquipo ?? null));
+    return equipos.size === 1 ? [...equipos][0] : null;
+  });
   readonly availableAssignmentAdvisors = computed(() => {
     const availabilityOrder = new Map<string, number>([
       ['DISPONIBLE', 0],
@@ -935,6 +955,10 @@ export class GtrWorkspaceFacade {
     ]);
 
     return this.advisorsView()
+      .filter((advisor) => {
+        const idEquipo = this.assignmentTargetEquipoId();
+        return idEquipo !== null && advisor.equipoIds.includes(idEquipo);
+      })
       .filter((advisor) => availabilityOrder.has(advisor.disponibilidad ?? ''))
       .sort((left, right) => {
         const leftOrder = availabilityOrder.get(left.disponibilidad ?? '') ?? Number.MAX_SAFE_INTEGER;
@@ -949,7 +973,7 @@ export class GtrWorkspaceFacade {
   });
   readonly selectedAdvisor = computed(() => {
     const advisorId = this.selectedAssignmentAdvisorId();
-    return this.advisorsView().find((advisor) => advisor.empleadoId === advisorId) ?? null;
+    return this.availableAssignmentAdvisors().find((advisor) => advisor.empleadoId === advisorId) ?? null;
   });
   readonly selectedSnapshotLead = computed(() => {
     const lead = this.activeSnapshotLead();
@@ -1092,6 +1116,7 @@ export class GtrWorkspaceFacade {
 
     try {
       await Promise.all([
+        this.runInitialLoad('equipos', () => this.refreshEquipos(), errors),
         this.runInitialLoad('asesores', () => this.refreshAdvisors(), errors),
         this.runInitialLoad('leads pendientes', () => this.refreshPendientes(), errors),
         this.runInitialLoad('campanas', () => this.refreshCampanas(), errors),
@@ -1471,6 +1496,13 @@ export class GtrWorkspaceFacade {
 
   openAssignment(row?: LeadGtrResponse): void {
     if (!this.ensureCanMutate()) {
+      return;
+    }
+    if (!row && !this.ensureSingleTeamSelection()) {
+      return;
+    }
+    if (row && !row.idEquipo) {
+      this.errorMessage.set('No se pudo identificar el equipo del lead.');
       return;
     }
     this.assignmentForm.reset({ idAsesorAsignado: 0 });
@@ -2029,6 +2061,10 @@ export class GtrWorkspaceFacade {
     const advisor = this.selectedAdvisor();
     const idsLead = [...this.selectedIds()];
 
+    if (!this.ensureSingleTeamSelection()) {
+      return;
+    }
+
     if (!advisor || idsLead.length === 0) {
       this.errorMessage.set('Selecciona asesor y al menos un lead.');
       return;
@@ -2228,6 +2264,22 @@ export class GtrWorkspaceFacade {
     await this.reconcile();
   }
 
+  async refreshEquipos(): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
+    const equipos = await firstValueFrom(this.preventaService.listarMisEquipos());
+    this.equipos.set(equipos.filter((equipo) => equipo.activo));
+    const options = this.historicosEquipoOptions();
+    const current = Number(this.masivoFiltersForm.controls.idEquipo.value);
+    if (options.length === 1 && current !== options[0].value) {
+      this.masivoFiltersForm.controls.idEquipo.setValue(options[0].value);
+    }
+    if (options.length > 1 && current > 0 && !options.some((option) => option.value === current)) {
+      this.masivoFiltersForm.controls.idEquipo.setValue(0);
+    }
+  }
+
   async refreshAdvisors(): Promise<void> {
     if (!this.canDisplayOperationalData()) {
       return;
@@ -2235,13 +2287,13 @@ export class GtrWorkspaceFacade {
 
     let activeUsers: UsuarioResponse[] = [];
     try {
-      // Asesores, supervisores y OJT pueden recibir leads asignados.
-      const [asesores, supervisores, ojt] = await Promise.all([
-        firstValueFrom(this.preventaService.listarUsuariosActivosPorRol('ASESOR_VENTAS')),
-        firstValueFrom(this.preventaService.listarUsuariosActivosPorRol('SUPERVISOR_VENTAS')),
-        firstValueFrom(this.preventaService.listarUsuariosActivosPorRol('OJT'))
-      ]);
-      activeUsers = this.mergePorEmpleado(asesores, supervisores, ojt);
+      activeUsers = this.mergeUsersWithTeams(
+        await Promise.all(
+          this.historicosEquipoOptions().map((equipo) =>
+            firstValueFrom(this.preventaService.listarAsesoresPreventaPorEquipo(equipo.value))
+          )
+        )
+      );
     } catch (error) {
       this.advisors.set([]);
       throw new Error(this.getErrorMessage(error, 'catalogo de asesores activos'));
@@ -2270,6 +2322,23 @@ export class GtrWorkspaceFacade {
     this.advisors.set(this.mapAdvisorOptions(activeUsers, connectedUsers, monitorUsers));
   }
 
+  private mergeUsersWithTeams(lists: UsuarioResponse[][]): UsuarioResponse[] {
+    const porId = new Map<number, UsuarioResponse>();
+    for (const user of lists.flat()) {
+      const current = porId.get(user.empleadoId);
+      if (!current) {
+        porId.set(user.empleadoId, { ...user, equipoIds: [...(user.equipoIds ?? [])] });
+        continue;
+      }
+      porId.set(user.empleadoId, {
+        ...current,
+        roles: [...new Set([...(current.roles ?? []), ...(user.roles ?? [])])],
+        equipoIds: [...new Set([...(current.equipoIds ?? []), ...(user.equipoIds ?? [])])]
+      });
+    }
+    return [...porId.values()];
+  }
+
   /** Une listas de usuarios deduplicando por empleadoId. */
   private mergePorEmpleado<T extends { empleadoId: number }>(...lists: T[][]): T[] {
     const porId = new Map<number, T>();
@@ -2294,6 +2363,7 @@ export class GtrWorkspaceFacade {
           empleadoId: user.empleadoId,
           nombreCompleto: user.nombreCompleto,
           roles: user.roles ?? presence?.roles ?? [],
+          equipoIds: user.equipoIds ?? [],
           connected: !!presence,
           operativo: monitor?.operativo ?? false,
           estadoSchedule: monitor?.estadoSchedule ?? null,
@@ -2494,6 +2564,10 @@ export class GtrWorkspaceFacade {
       this.errorMessage.set('Marca ONLINE para activar esta bandeja.');
       return;
     }
+    if (!this.canSearchHistoricos()) {
+      this.errorMessage.set('Selecciona un equipo para buscar historicos.');
+      return;
+    }
     this.clearMessages();
     this.masivoSearched.set(true);
     this.masivoPageNumber.set(0);
@@ -2523,6 +2597,7 @@ export class GtrWorkspaceFacade {
       return;
     }
     this.masivoFiltersForm.reset({
+      idEquipo: this.defaultHistoricosEquipoId(),
       campoTipificacion: 'ULTIMA',
       tipificaciones: [],
       subtipificaciones: [],
@@ -2605,6 +2680,26 @@ export class GtrWorkspaceFacade {
       next.delete(idLead);
     }
     this.selectedIds.set(next);
+  }
+
+  private selectedRowsForCurrentSection(): LeadGtrResponse[] {
+    const selected = this.selectedIds();
+    const source = this.section() === 'historicos' ? this.masivoRows() : this.rows();
+    return source.filter((row) => selected.has(row.id));
+  }
+
+  private ensureSingleTeamSelection(): boolean {
+    const rows = this.selectedRowsForCurrentSection();
+    if (!rows.length) {
+      this.errorMessage.set('Selecciona al menos un lead.');
+      return false;
+    }
+    const equipos = new Set(rows.map((row) => row.idEquipo ?? null));
+    if (equipos.size !== 1 || equipos.has(null)) {
+      this.errorMessage.set('Selecciona leads del mismo equipo para asignarlos juntos.');
+      return false;
+    }
+    return true;
   }
 
   isSelected(idLead: number): boolean {
@@ -3932,6 +4027,7 @@ export class GtrWorkspaceFacade {
   private getMasivoBaseFilters(): MasivoLeadFilters {
     const raw = this.masivoFiltersForm.getRawValue();
     return {
+      idEquipo: raw.idEquipo > 0 ? raw.idEquipo : undefined,
       codigosTipificacion: raw.tipificaciones.length ? raw.tipificaciones : undefined,
       codigosSubtipificacion: raw.subtipificaciones.length ? raw.subtipificaciones : undefined,
       campoTipificacion: raw.campoTipificacion,
@@ -3971,6 +4067,7 @@ export class GtrWorkspaceFacade {
   private currentHistoricosFiltersFormValue(): GtrHistoricosFiltersFormValue {
     const raw = this.masivoFiltersForm.getRawValue();
     return {
+      idEquipo: raw.idEquipo,
       campoTipificacion: raw.campoTipificacion,
       tipificaciones: [...raw.tipificaciones],
       subtipificaciones: [...raw.subtipificaciones],
@@ -3986,6 +4083,7 @@ export class GtrWorkspaceFacade {
     }
 
     this.masivoFiltersForm.reset({
+      idEquipo: state.filters.idEquipo ?? this.defaultHistoricosEquipoId(),
       campoTipificacion: state.filters.campoTipificacion ?? 'ULTIMA',
       tipificaciones: state.filters.tipificaciones,
       subtipificaciones: state.filters.subtipificaciones,
@@ -4029,6 +4127,11 @@ export class GtrWorkspaceFacade {
 
   private normalizeHistoricosPageSize(pageSize: number | null | undefined): number {
     return this.historicosPageSizeOptions.includes(Number(pageSize)) ? Number(pageSize) : 20;
+  }
+
+  private defaultHistoricosEquipoId(): number {
+    const options = this.historicosEquipoOptions();
+    return options.length === 1 ? options[0].value : 0;
   }
 
   private getStoredHistoricosSelectedIds(): Set<number> {

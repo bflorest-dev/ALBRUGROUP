@@ -73,12 +73,14 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     Optional<Lead> findByIdAndIdAsesorAsignadoAndEtapaIn(Long id, Long idAsesorAsignado, Collection<Etapa> etapas);
     // Gestiones aparcadas del asesor: para topar cuántos leads puede tener EN_GESTION en paralelo.
     long countByIdAsesorAsignadoAndEstado(Long idAsesorAsignado, EstadoSeguimiento estado);
+    long countByIdAsesorAsignadoAndEstadoAndEtapa(Long idAsesorAsignado, EstadoSeguimiento estado, Etapa etapa);
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Lead> findByIdAndEtapa(Long id, Etapa etapa);
 
     @Query("""
             SELECT new pe.albrugroup.lead_service.entity.response.LeadGtrResponse(
                 l.id,
+                l.idEquipo,
                 l.createdAt,
                 l.lastEntryAt,
                 l.prefijo,
@@ -134,6 +136,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     @Query("""
             SELECT new pe.albrugroup.lead_service.entity.response.LeadGtrResponse(
                 l.id,
+                l.idEquipo,
                 l.createdAt,
                 l.lastEntryAt,
                 l.prefijo,
@@ -580,6 +583,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     @Query("""
             SELECT new pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse(
                 l.id,
+                l.idEquipo,
                 l.createdAt,
                 l.prefijo,
                 l.lead,
@@ -648,6 +652,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     @Query("""
             SELECT new pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse(
                 l.id,
+                l.idEquipo,
                 l.createdAt,
                 l.prefijo,
                 l.lead,
@@ -716,6 +721,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     @Query("""
             SELECT new pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse(
                 l.id,
+                l.idEquipo,
                 l.createdAt,
                 l.prefijo,
                 l.lead,
@@ -784,6 +790,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     @Query("""
             SELECT new pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse(
                 l.id,
+                l.idEquipo,
                 l.createdAt,
                 l.prefijo,
                 l.lead,
@@ -950,6 +957,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.mesesPermanenciaSnapshot,
                 l.createdAt,
                 l.lastEntryAt,
+                r.fechaIngresoEtapa,
                 l.updatedAt,
                 l.sec,
                 l.sot,
@@ -972,6 +980,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN pl.internet inter
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor cp
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             LEFT JOIN EquipoProveedor epFallback
                 ON epFallback.idEquipo = l.idEquipo
                AND epFallback.fallbackLeadSinCampana = true
@@ -1020,6 +1029,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.mesesPermanenciaSnapshot,
                 l.createdAt,
                 l.lastEntryAt,
+                r.fechaIngresoEtapa,
                 l.updatedAt,
                 l.sec,
                 l.sot,
@@ -1042,6 +1052,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN pl.internet inter
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor cp
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             LEFT JOIN EquipoProveedor epFallback
                 ON epFallback.idEquipo = l.idEquipo
                AND epFallback.fallbackLeadSinCampana = true
@@ -1092,6 +1103,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.mesesPermanenciaSnapshot,
                 l.createdAt,
                 l.lastEntryAt,
+                r.fechaIngresoEtapa,
                 l.updatedAt,
                 l.sec,
                 l.sot,
@@ -1115,6 +1127,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN pl.internet inter
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor cp
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
             LEFT JOIN EquipoProveedor epFallback
                 ON epFallback.idEquipo = l.idEquipo
                AND epFallback.fallbackLeadSinCampana = true
@@ -1147,57 +1160,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("codigoProgramacionCancelada") String codigoProgramacionCancelada,
             @Param("accionTipificacion") Accion accionTipificacion,
             @Param("fechaActual") java.time.LocalDate fechaActual,
-            Pageable pageable
-    );
-
-    @Query(value = """
-            SELECT l
-            FROM Lead l
-            LEFT JOIN FETCH l.datosPreventa
-            LEFT JOIN FETCH l.direccion
-            WHERE l.etapa = :etapa
-              AND l.idAsesorAsignado IS NULL
-              AND l.nombreAsesorAsignado IS NULL
-              AND l.idTipificacion IS NULL
-              AND l.codigoTipificacion IS NULL
-              AND l.idSubtipificacion IS NULL
-              AND l.codigoSubtipificacion IS NULL
-            ORDER BY l.lastEntryAt DESC, l.id DESC
-            """,
-            countQuery = """
-            SELECT COUNT(l)
-            FROM Lead l
-            WHERE l.etapa = :etapa
-              AND l.idAsesorAsignado IS NULL
-              AND l.nombreAsesorAsignado IS NULL
-              AND l.idTipificacion IS NULL
-              AND l.codigoTipificacion IS NULL
-              AND l.idSubtipificacion IS NULL
-              AND l.codigoSubtipificacion IS NULL
-            """)
-    Page<Lead> listarLeadsPostventaDisponibles(
-            @Param("etapa") Etapa etapa,
-            Pageable pageable
-    );
-
-    @Query(value = """
-            SELECT l
-            FROM Lead l
-            LEFT JOIN FETCH l.datosPreventa
-            LEFT JOIN FETCH l.direccion
-            WHERE l.etapa = :etapa
-              AND l.idAsesorAsignado = :idAsesor
-            ORDER BY l.lastEntryAt DESC, l.id DESC
-            """,
-            countQuery = """
-            SELECT COUNT(l)
-            FROM Lead l
-            WHERE l.etapa = :etapa
-              AND l.idAsesorAsignado = :idAsesor
-            """)
-    Page<Lead> listarLeadsPostventaAsignados(
-            @Param("etapa") Etapa etapa,
-            @Param("idAsesor") Long idAsesor,
             Pageable pageable
     );
 
@@ -1290,6 +1252,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     @Query("""
             SELECT new pe.albrugroup.lead_service.entity.response.LeadGtrResponse(
                 l.id,
+                l.idEquipo,
                 l.createdAt,
                 l.lastEntryAt,
                 l.prefijo,

@@ -202,7 +202,7 @@ public class LeadEtapaResumenBackfillService {
         return switch (etapa) {
             case PREVENTA -> destino == Etapa.VENTA;
             case VENTA -> TIPIFICACION_GRABADO.equals(codigoTipificacion);
-            case POSTVENTA -> destino == Etapa.COBRANZA;
+            case POSTVENTA -> ESTADOS_POSTVENTA_FINALES.contains(estadoPostventaCambio);
             case COBRANZA -> ESTADOS_POSTVENTA_FINALES.contains(estadoPostventaCambio);
         };
     }

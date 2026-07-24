@@ -45,7 +45,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class PlataformaDigitalPostventaService {
 
-    private static final Set<Etapa> ETAPAS_GESTION_POSTVENTA = Set.of(Etapa.POSTVENTA, Etapa.COBRANZA);
+    private static final Set<Etapa> ETAPAS_GESTION_POSTVENTA = Set.of(Etapa.POSTVENTA);
 
     private final PlataformaRepository plataformaRepository;
     private final PaquetePlataformaRepository paqueteRepository;

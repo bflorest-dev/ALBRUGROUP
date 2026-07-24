@@ -25,8 +25,6 @@ public class PagoPostventaResponse {
     private AportantePago aportante;
     private EstadoPagoPostventa estado;
     private BigDecimal monto;
-    private LocalDate fechaEmision;
-    private LocalDate fechaVencimiento;
     private LocalDate fechaPago;
     private LocalDate fechaCompromisoPago;
     private String numeroOperacion;

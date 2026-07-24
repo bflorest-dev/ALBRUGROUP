@@ -149,22 +149,13 @@ public class DataLoader {
         saveSubtipificacion(seguimientoPostventa, "CLIENTE_SATISFECHO", "Cliente conforme con el servicio", 2, null, EstadoPostventa.EN_SEGUIMIENTO);
 
         Tipificacion incidenciaPostventa = saveTipificacion(Etapa.POSTVENTA, "INCIDENCIA", "Incidencia detectada durante la postventa", 2);
-        saveSubtipificacion(incidenciaPostventa, "PAGO_PENDIENTE", "Cliente presenta pago pendiente", 1, Etapa.COBRANZA, EstadoPostventa.EN_COBRANZA);
+        saveSubtipificacion(incidenciaPostventa, "PAGO_PENDIENTE", "Cliente presenta pago pendiente", 1, null, EstadoPostventa.EN_COBRANZA);
         saveSubtipificacion(incidenciaPostventa, "RIESGO_BAJA", "Cliente presenta riesgo de baja", 2, null, EstadoPostventa.PAGO_PENDIENTE);
         saveSubtipificacion(incidenciaPostventa, "BAJA_CONFIRMADA", "Proveedor confirma baja del servicio", 3, null, EstadoPostventa.BAJA_CONFIRMADA);
 
         Tipificacion cierrePostventa = saveTipificacion(Etapa.POSTVENTA, "CIERRE", "Cierre de seguimiento postventa", 3);
         saveSubtipificacion(cierrePostventa, "EFECTIVO", "Lead cumple permanencia requerida", 1, null, EstadoPostventa.EFECTIVO);
         saveSubtipificacion(cierrePostventa, "NO_EFECTIVO", "Lead no cumple permanencia requerida", 2, null, EstadoPostventa.NO_EFECTIVO);
-
-        Tipificacion gestionCobranza = saveTipificacion(Etapa.COBRANZA, "GESTION_PAGO", "Gestion de pago pendiente", 1);
-        saveSubtipificacion(gestionCobranza, "COMPROMISO_PAGO", "Cliente asume compromiso de pago", 1, null, EstadoPostventa.PAGO_PENDIENTE);
-        saveSubtipificacion(gestionCobranza, "PAGO_CLIENTE", "Pago regularizado por el cliente", 2, Etapa.POSTVENTA, EstadoPostventa.EN_SEGUIMIENTO);
-        saveSubtipificacion(gestionCobranza, "PAGO_EMPRESA", "Pago cubierto por la empresa", 3, Etapa.POSTVENTA, EstadoPostventa.PAGO_CUBIERTO_EMPRESA);
-
-        Tipificacion cierreCobranza = saveTipificacion(Etapa.COBRANZA, "CIERRE", "Cierre de gestion de cobranza", 2);
-        saveSubtipificacion(cierreCobranza, "BAJA_CONFIRMADA", "Proveedor confirma baja del servicio", 1, null, EstadoPostventa.BAJA_CONFIRMADA);
-        saveSubtipificacion(cierreCobranza, "NO_EFECTIVO", "Lead no cumple permanencia requerida", 2, null, EstadoPostventa.NO_EFECTIVO);
     }
 
     private Tipificacion saveTipificacion(Etapa etapa, String codigo, String descripcion, Integer orden) {

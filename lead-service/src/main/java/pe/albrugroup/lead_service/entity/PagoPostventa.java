@@ -28,8 +28,7 @@ import java.time.LocalDate;
 @Entity @Getter @Setter @Builder
 @AllArgsConstructor @NoArgsConstructor
 @Table(indexes = {
-        @Index(name = "idx_pago_postventa_lead_estado", columnList = "id_lead, estado"),
-        @Index(name = "idx_pago_postventa_vencimiento", columnList = "fechaVencimiento")
+        @Index(name = "idx_pago_postventa_lead_estado", columnList = "id_lead, estado")
 })
 public class PagoPostventa {
 
@@ -50,8 +49,6 @@ public class PagoPostventa {
     private EstadoPagoPostventa estado;
 
     private BigDecimal monto;
-    private LocalDate fechaEmision;
-    private LocalDate fechaVencimiento;
     private LocalDate fechaPago;
     private LocalDate fechaCompromisoPago;
     private String numeroOperacion;

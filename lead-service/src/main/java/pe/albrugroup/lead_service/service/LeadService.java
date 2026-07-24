@@ -56,13 +56,13 @@ import pe.albrugroup.lead_service.entity.response.LeadContextoLookupResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrLookupResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
 import pe.albrugroup.lead_service.entity.response.InternetResponse;
-import pe.albrugroup.lead_service.entity.response.LeadPostventaResponse;
 import pe.albrugroup.lead_service.entity.response.LeadRealtimeEvent;
 import pe.albrugroup.lead_service.entity.response.MisPreventaResponse;
 import pe.albrugroup.lead_service.entity.response.MisPreventasResumenResponse;
 import pe.albrugroup.lead_service.entity.response.OportunidadHermanaResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.entity.response.PlanAdicionalResponse;
+import pe.albrugroup.lead_service.entity.response.PlanResponse;
 import pe.albrugroup.lead_service.entity.response.GtrRankingAsesorResponse;
 import pe.albrugroup.lead_service.entity.response.GtrTipificacionCampanaResponse;
 import pe.albrugroup.lead_service.entity.response.GtrTipificacionRankingResponse;
@@ -112,9 +112,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -147,6 +149,8 @@ public class LeadService {
     private final LeadAsignacionCounterService leadAsignacionCounterService;
     private final LeadEtapaResumenService leadEtapaResumenService;
     private final CalendarioFacturacionPostventaService calendarioFacturacionPostventaService;
+    private final PlanService planService;
+    private final AuthEquipoClient authEquipoClient;
 
     // La bandeja de Agendados GTR ya no cuelga de una tipi: el concepto vive en el comportamiento, que
     // cada equipo marca en las subtipis que correspondan (hoy, varias de NO DESEA).
@@ -191,9 +195,6 @@ public class LeadService {
     );
     private static final Set<String> LEAD_ASESOR_SORT_FIELDS = Set.of(
             "lastEntryAt", "createdAt", "lead", "estado"
-    );
-    private static final Set<String> LEAD_POSTVENTA_SORT_FIELDS = Set.of(
-            "lastEntryAt", "createdAt", "lead", "nombreProveedorSnapshot", "estadoPostventa", "diaCorteFacturacion"
     );
     // Roles que pueden figurar en el ranking de asesores GTR. Se excluyen backoffice, migración y
     // cualquier otro rol que haya tocado leads de PREVENTA sin ser parte de la operación de ventas/GTR.
@@ -600,40 +601,6 @@ public class LeadService {
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);
         return PageResponse.from(leads);
-    }
-
-    public PageResponse<LeadPostventaResponse> listarBandejaPostventa(PageRequest pageRequest) {
-        Page<Lead> leads = leadRepository.listarLeadsPostventaDisponibles(
-                Etapa.POSTVENTA,
-                paginationService.toPageable(pageRequest, LEAD_POSTVENTA_SORT_FIELDS)
-        );
-        return mapearBandejaPostventa(leads);
-    }
-
-    public PageResponse<LeadPostventaResponse> listarLeadsPostventaAsignados(PageRequest pageRequest) {
-        Page<Lead> leads = leadRepository.listarLeadsPostventaAsignados(
-                Etapa.POSTVENTA,
-                currentUser.empleadoID(),
-                paginationService.toPageable(pageRequest, LEAD_POSTVENTA_SORT_FIELDS)
-        );
-        return mapearBandejaPostventa(leads);
-    }
-
-    public PageResponse<LeadPostventaResponse> listarBandejaCobranza(PageRequest pageRequest) {
-        Page<Lead> leads = leadRepository.listarLeadsPostventaDisponibles(
-                Etapa.COBRANZA,
-                paginationService.toPageable(pageRequest, LEAD_POSTVENTA_SORT_FIELDS)
-        );
-        return mapearBandejaPostventa(leads);
-    }
-
-    public PageResponse<LeadPostventaResponse> listarLeadsCobranzaAsignados(PageRequest pageRequest) {
-        Page<Lead> leads = leadRepository.listarLeadsPostventaAsignados(
-                Etapa.COBRANZA,
-                currentUser.empleadoID(),
-                paginationService.toPageable(pageRequest, LEAD_POSTVENTA_SORT_FIELDS)
-        );
-        return mapearBandejaPostventa(leads);
     }
 
     public PageResponse<LeadAsesorVentasResponse> listarBandejaAsesorVentas(PageRequest pageRequest) {
@@ -1227,7 +1194,7 @@ public class LeadService {
         boolean requiereProgramacion = subtipificacion.getComportamientos()
                 .contains(ComportamientoTipificacion.REQUIERE_FECHA_PROGRAMACION);
         validarProgramacionVenta(requiereProgramacion, request.getFechaProgramacion(), request.getHoraProgramada());
-        aplicarSecSotVentaSiCorresponde(lead, subtipificacion, request.getSec(), request.getSot());
+        aplicarSecSotVentaSiCorresponde(lead, tipificacion, subtipificacion, request.getSec(), request.getSot());
 
         // Atribucion de venta (merito de VENTA): el responsable es quien tipifica la subtipi marcada con
         // RECIBE_MERITO (hoy INSTALADO / SERVICIO INSTALADO), no quien cambia de etapa. La mantiene el
@@ -1321,11 +1288,6 @@ public class LeadService {
         tipificarLeadSeguimientoPostventa(idLead, Etapa.POSTVENTA, request);
     }
 
-    @Transactional
-    public void tipificarLeadCobranza(Long idLead, LeadTipificacionPostventaRequest request) {
-        tipificarLeadSeguimientoPostventa(idLead, Etapa.COBRANZA, request);
-    }
-
     private void tipificarLeadSeguimientoPostventa(Long idLead, Etapa etapa, LeadTipificacionPostventaRequest request) {
         Lead lead = obtenerLeadAsignadoEnEtapa(idLead, etapa);
         Etapa etapaActual = lead.getEtapa();
@@ -1344,16 +1306,13 @@ public class LeadService {
                 )
                 .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getCodigoSubtipificacion()));
 
-        Etapa etapaDestino = subtipificacion.getEtapaCambio();
-        EstadoPostventa estadoDestino = resolverEstadoPostventaDestino(etapaActual, etapaDestino, subtipificacion);
+        Etapa etapaDestinoCatalogo = subtipificacion.getEtapaCambio();
+        EstadoPostventa estadoDestino = resolverEstadoPostventaDestino(etapaActual, etapaDestinoCatalogo, subtipificacion);
+        Etapa etapaDestino = normalizarEtapaDestinoPostventa(etapaActual, etapaDestinoCatalogo);
 
         if (estadoDestino != null) {
             lead.setEstadoPostventa(estadoDestino);
         }
-
-        // Atribucion por etapa (merito de POSTVENTA/COBRANZA): postventa se concreta al avanzar a
-        // COBRANZA; cobranza al llegar a un estado final. La mantiene el resumen por etapa
-        // (esMeritoSeguimiento mas abajo). Ver actualizarResumenEtapaTipificacion.
 
         if (etapaDestino != null && etapaDestino != etapaActual) {
             lead.setEtapa(etapaDestino);
@@ -1375,15 +1334,19 @@ public class LeadService {
                 lead.setEstado(EstadoSeguimiento.GESTIONADO);
                 lead.setIdAsesorAsignado(null);
                 lead.setNombreAsesorAsignado(null);
+            } else if (etapaActual == Etapa.POSTVENTA) {
+                // POSTVENTA es un pool compartido: al tipificar, la gestion termina y el lead se
+                // libera para que cualquier asesor pueda retomarlo despues (mismo criterio que VENTA).
+                lead.setEstado(EstadoSeguimiento.GESTIONADO);
+                lead.setIdAsesorAsignado(null);
+                lead.setNombreAsesorAsignado(null);
             } else {
                 moverAEnGestionSiAplica(lead);
             }
         }
 
         Lead savedLead = leadRepository.save(lead);
-        boolean esMeritoSeguimiento =
-                (etapaActual == Etapa.POSTVENTA && etapaDestino == Etapa.COBRANZA)
-                        || (etapaActual == Etapa.COBRANZA && esEstadoPostventaFinal(estadoDestino));
+        boolean esMeritoSeguimiento = etapaActual == Etapa.POSTVENTA && esEstadoPostventaFinal(estadoDestino);
         actualizarResumenEtapaTipificacion(
                 savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, idAsesorAnterior, nombreAsesorAnterior,
                 esMeritoSeguimiento);
@@ -1402,6 +1365,13 @@ public class LeadService {
         notificarCambioLead("TIPIFICACION", savedLead, etapaActual, idAsesorAnterior);
     }
 
+    private Etapa normalizarEtapaDestinoPostventa(Etapa etapaActual, Etapa etapaDestino) {
+        if (etapaActual == Etapa.POSTVENTA && etapaDestino == Etapa.COBRANZA) {
+            return null;
+        }
+        return etapaDestino;
+    }
+
     private EstadoPostventa resolverEstadoPostventaDestino(
             Etapa etapaActual,
             Etapa etapaDestino,
@@ -1412,9 +1382,6 @@ public class LeadService {
         }
         if (etapaDestino == Etapa.COBRANZA) {
             return EstadoPostventa.EN_COBRANZA;
-        }
-        if (etapaActual == Etapa.COBRANZA && etapaDestino == Etapa.POSTVENTA) {
-            return EstadoPostventa.EN_SEGUIMIENTO;
         }
         return null;
     }
@@ -1473,8 +1440,10 @@ public class LeadService {
         }
     }
 
-    private void aplicarSecSotVentaSiCorresponde(Lead lead, Subtipificacion subtipificacion, String secRequest, String sotRequest) {
-        if (!subtipificacion.getComportamientos().contains(ComportamientoTipificacion.REQUIERE_SEC_SOT)) {
+    private void aplicarSecSotVentaSiCorresponde(
+            Lead lead, Tipificacion tipificacion, Subtipificacion subtipificacion, String secRequest, String sotRequest) {
+        if (!subtipificacion.getComportamientos().contains(ComportamientoTipificacion.REQUIERE_SEC_SOT)
+                && !esTipificacionSubidaVenta(tipificacion)) {
             return;
         }
         if (!requiereSecSotVenta(lead)) {
@@ -1493,6 +1462,14 @@ public class LeadService {
         validarCodigoExacto(sot, 8, "SOT");
         lead.setSec(sec);
         lead.setSot(sot);
+    }
+
+    private boolean esTipificacionSubidaVenta(Tipificacion tipificacion) {
+        if (tipificacion == null || tipificacion.getCodigo() == null) {
+            return false;
+        }
+        String codigo = tipificacion.getCodigo().trim().toUpperCase(Locale.ROOT);
+        return codigo.equals("SUBIDO") || codigo.equals("INGRESADO");
     }
 
     private boolean requiereSecSotVenta(Lead lead) {
@@ -1719,8 +1696,8 @@ public class LeadService {
         }
         // Un lead ASIGNADO -> EN_GESTION cuenta como una nueva gestión aparcada. Retomar un lead que
         // ya está EN_GESTION no pasa por aquí (retorna arriba), así que no consume cupo adicional.
-        long gestionesAbiertas = leadRepository.countByIdAsesorAsignadoAndEstado(
-                currentUser.empleadoID(), EstadoSeguimiento.EN_GESTION);
+        long gestionesAbiertas = leadRepository.countByIdAsesorAsignadoAndEstadoAndEtapa(
+                currentUser.empleadoID(), EstadoSeguimiento.EN_GESTION, Etapa.PREVENTA);
         if (gestionesAbiertas >= MAX_GESTIONES_SIMULTANEAS) {
             throw new BadRequestException(
                     "Ya tienes " + MAX_GESTIONES_SIMULTANEAS
@@ -1788,6 +1765,80 @@ public class LeadService {
         notificarCambioLead("ASIGNACION", savedLead, null, idAsesorAnterior);
     }
 
+    // Toma de gestion de POSTVENTA con relevo. A diferencia de tomarLeadDisponible (que solo toma
+    // leads nuevos sin tipificacion), aqui el lead ya suele tener historial: cualquier asesor de
+    // Postventa puede gestionarlo. Mientras lo gestiona queda asignado a el; si otro lo tiene en
+    // gestion, el 409 pide confirmar el relevo. Mismo mecanismo que tomarLeadVenta.
+    @Transactional
+    public void tomarLeadPostventaGestion(Long idLead, boolean confirmarReasignacion) {
+        Lead lead = leadRepository.findByIdAndEtapa(idLead, Etapa.POSTVENTA)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
+        Long idAsesorActual = currentUser.empleadoID();
+        boolean mismoAsesor = idAsesorAnterior != null && idAsesorAnterior.equals(idAsesorActual);
+
+        validarTomaPostventaPermitida(lead, confirmarReasignacion);
+
+        lead.setIdAsesorAsignado(idAsesorActual);
+        lead.setNombreAsesorAsignado(currentUser.nombreCompleto().trim());
+        lead.setEstado(EstadoSeguimiento.EN_GESTION);
+        lead.setLastEntryAt(OperationalDateTime.now());
+
+        Lead savedLead = leadRepository.save(lead);
+        Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
+        if (!mismoAsesor) {
+            registrarEventoAsignacion(
+                    savedLead.getId(),
+                    idCampana,
+                    savedLead.getEtapa(),
+                    savedLead.getIdAsesorAsignado(),
+                    savedLead.getNombreAsesorAsignado()
+            );
+            leadEtapaResumenService.registrarAsignacion(savedLead.getId(), savedLead.getEtapa(), OperationalDateTime.now());
+        }
+        notificarCambioLead("ASIGNACION", savedLead, null, idAsesorAnterior);
+    }
+
+    private void validarTomaPostventaPermitida(Lead lead, boolean confirmarReasignacion) {
+        Long idAsesorActual = lead.getIdAsesorAsignado();
+        if (idAsesorActual == null) {
+            return;
+        }
+        if (idAsesorActual.equals(currentUser.empleadoID())) {
+            return;
+        }
+        if (confirmarReasignacion) {
+            return;
+        }
+        throw new ConflictException(
+                "Este lead esta siendo gestionado por otro asesor de Postventa",
+                lead.getId(),
+                detalleConfirmacionAsignacion(
+                        "CONFIRMACION_ASIGNACION_REQUERIDA",
+                        idAsesorActual,
+                        lead.getNombreAsesorAsignado(),
+                        true,
+                        false,
+                        lead.getEstado() == EstadoSeguimiento.EN_GESTION,
+                        lead.getId(),
+                        currentUser.empleadoID()
+                )
+        );
+    }
+
+    public List<PlanResponse> listarPlanesOfertaVenta(Long idLead) {
+        Lead lead = leadRepository.findById(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        if (lead.getEtapa() != Etapa.VENTA) {
+            throw new NotFoundException(Lead.class, idLead);
+        }
+        Proveedor proveedor = resolverProveedorOperativoVenta(lead);
+        if (proveedor == null || proveedor.getId() == null) {
+            return List.of();
+        }
+        return planService.listarPlanes(proveedor.getId(), true);
+    }
+
     public LeadAsignacionMasivaResponse asignarLeads(LeadAsignacionMasivaRequest request) {
         List<Long> idsLead = request.getIdsLead().stream()
                 .filter(id -> id != null && id > 0)
@@ -1797,6 +1848,8 @@ public class LeadService {
         if (idsLead.isEmpty()) {
             throw new BadRequestException("Debe enviar al menos un idLead valido");
         }
+
+        validarAsignacionMasivaUnSoloEquipo(idsLead);
 
         List<LeadAsignacionResultadoResponse> resultados = new ArrayList<>();
         for (Long idLead : idsLead) {
@@ -1827,6 +1880,15 @@ public class LeadService {
                 .totalFallidos(resultados.size() - totalAsignados)
                 .resultados(resultados)
                 .build();
+    }
+
+    private void validarAsignacionMasivaUnSoloEquipo(List<Long> idsLead) {
+        var equipos = leadRepository.findAllById(idsLead).stream()
+                .map(Lead::getIdEquipo)
+                .collect(Collectors.toSet());
+        if (equipos.size() > 1) {
+            throw new BadRequestException("Selecciona leads del mismo equipo para asignarlos juntos.");
+        }
     }
 
     private void ejecutarAsignacionIndependiente(
@@ -1862,6 +1924,8 @@ public class LeadService {
                 .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
 
+        validarLeadDentroAlcanceGtr(lead);
+        validarAsesorPerteneceEquipoLead(lead, idAsesorAsignado);
         validarAsignacionPermitida(
                 lead,
                 idAsesorAsignado,
@@ -1893,6 +1957,18 @@ public class LeadService {
         // Atención GTR: si el lead asignado vive en otra etapa, notificar también a la bandeja del GTR.
         notificarCambioLead("ASIGNACION", savedLead, null, idAsesorAnterior, savedLead.getEtapa() != Etapa.PREVENTA);
         propagarAsesorAHermanas(savedLead, idAsesorAsignado, savedLead.getNombreAsesorAsignado());
+    }
+
+    private void validarAsesorPerteneceEquipoLead(Lead lead, Long idAsesorAsignado) {
+        if (lead.getIdEquipo() == null) {
+            throw new BadRequestException("El Lead no tiene equipo asignado.");
+        }
+        if (idAsesorAsignado != null && idAsesorAsignado.equals(currentUser.empleadoID())) {
+            return;
+        }
+        if (!authEquipoClient.asesorPerteneceEquipo(lead.getIdEquipo(), idAsesorAsignado)) {
+            throw new BadRequestException("El asesor seleccionado no pertenece al equipo del Lead.");
+        }
     }
 
     // Coherencia multi-titular: al asignar un lead, sus hermanas (mismo contacto+equipo) en PREVENTA
@@ -2100,12 +2176,6 @@ public class LeadService {
     @Transactional
     public void registrarContactoPostventa(Long idLead) {
         Lead lead = obtenerLeadAsignadoEnEtapa(idLead, Etapa.POSTVENTA);
-        registrarContactoInterno(lead);
-    }
-
-    @Transactional
-    public void registrarContactoCobranza(Long idLead) {
-        Lead lead = obtenerLeadAsignadoEnEtapa(idLead, Etapa.COBRANZA);
         registrarContactoInterno(lead);
     }
 
@@ -2782,7 +2852,7 @@ public class LeadService {
         return switch (etapaActual) {
             case PREVENTA -> "Ese lead todavia esta en gestion inicial y aun no llega a Venta.";
             case POSTVENTA -> "Ese lead ya avanzo a Postventa.";
-            case COBRANZA -> "Ese lead ya avanzo a Cobranza.";
+            case COBRANZA -> "Ese lead ya esta en Postventa con gestion de pago pendiente.";
             case VENTA -> null;
         };
     }
@@ -2854,104 +2924,6 @@ public class LeadService {
             }
         }
         return porEquipo;
-    }
-
-    private PageResponse<LeadPostventaResponse> mapearBandejaPostventa(Page<Lead> leads) {
-        List<Lead> content = leads.getContent();
-        Map<Long, String> asesoresPreventa = obtenerUltimosActoresPorEtapaYAccion(
-                content,
-                Etapa.PREVENTA,
-                Accion.TIPIFICACION
-        );
-        Map<Long, LocalDate> fechasInstalacion = obtenerFechasInstalacionVenta(content);
-        Map<String, String> departamentosPorUbigeo = obtenerDepartamentosPorUbigeo(content);
-        Map<Long, Long> totalesAsignacion = obtenerTotalesAsignacion(content, Lead::getId);
-
-        Page<LeadPostventaResponse> responsePage = leads.map(lead -> toPostventaResponse(
-                lead,
-                asesoresPreventa.get(lead.getId()),
-                fechasInstalacion.get(lead.getId()),
-                obtenerDepartamentoLead(lead, departamentosPorUbigeo),
-                totalesAsignacion.getOrDefault(lead.getId(), 0L)
-        ));
-        return PageResponse.from(responsePage);
-    }
-
-    private LeadPostventaResponse toPostventaResponse(
-            Lead lead,
-            String asesorPreventa,
-            LocalDate fechaInstalacion,
-            String departamento,
-            long totalAsignaciones
-    ) {
-        DatosPreventa datosPreventa = lead.getDatosPreventa();
-        return new LeadPostventaResponse(
-                lead.getId(),
-                lead.getNombreProveedorSnapshot(),
-                asesorPreventa,
-                lead.getLead(),
-                datosPreventa == null ? null : datosPreventa.getTipoDocumento(),
-                datosPreventa == null ? lead.getNumeroDocumentoTitularServicioSnapshot() : datosPreventa.getNumeroDocumentoTitularServicio(),
-                datosPreventa == null ? null : datosPreventa.getNombreTitularServicio(),
-                departamento,
-                fechaInstalacion,
-                lead.getDiaCorteFacturacion(),
-                lead.getEstadoPostventa(),
-                totalAsignaciones
-        );
-    }
-
-    private Map<Long, String> obtenerUltimosActoresPorEtapaYAccion(List<Lead> leads, Etapa etapa, Accion accion) {
-        if (leads.isEmpty()) {
-            return Map.of();
-        }
-        List<Long> leadIds = leads.stream().map(Lead::getId).toList();
-        Map<Long, String> actores = new HashMap<>();
-        for (Object[] row : eventoRepository.listarUltimoActorPorLeadIdsEtapaYAccion(leadIds, etapa, accion)) {
-            actores.putIfAbsent((Long) row[0], (String) row[1]);
-        }
-        return actores;
-    }
-
-    private Map<Long, LocalDate> obtenerFechasInstalacionVenta(List<Lead> leads) {
-        if (leads.isEmpty()) {
-            return Map.of();
-        }
-        List<Long> leadIds = leads.stream().map(Lead::getId).toList();
-        Map<Long, LocalDate> fechas = new HashMap<>();
-        for (Object[] row : eventoRepository.listarUltimaFechaInstalacionPorLeadIds(leadIds, Etapa.VENTA)) {
-            fechas.putIfAbsent((Long) row[0], (LocalDate) row[1]);
-        }
-        return fechas;
-    }
-
-    private Map<String, String> obtenerDepartamentosPorUbigeo(List<Lead> leads) {
-        Set<String> ubigeos = new HashSet<>();
-        for (Lead lead : leads) {
-            Direccion direccion = lead.getDireccion();
-            if (direccion != null && direccion.getUbigeoDomicilio() != null && !direccion.getUbigeoDomicilio().isBlank()) {
-                ubigeos.add(direccion.getUbigeoDomicilio());
-            }
-        }
-        if (ubigeos.isEmpty()) {
-            return Map.of();
-        }
-
-        Map<String, String> departamentos = new HashMap<>();
-        distritoRepository.findByCodigoInWithDepartamento(ubigeos)
-                .forEach(distrito -> departamentos.put(
-                        distrito.getCodigo(),
-                        distrito.getDepartamento() == null ? null : distrito.getDepartamento().getNombre()
-                ));
-        return departamentos;
-    }
-
-    private String obtenerDepartamentoLead(Lead lead, Map<String, String> departamentosPorUbigeo) {
-        Direccion direccion = lead.getDireccion();
-        if (direccion == null || direccion.getUbigeoDomicilio() == null) {
-            return null;
-        }
-        return departamentosPorUbigeo.get(direccion.getUbigeoDomicilio());
     }
 
     private LeadAsesorVentasResponse toAsesorResponse(

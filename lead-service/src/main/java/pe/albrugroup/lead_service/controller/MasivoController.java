@@ -47,6 +47,7 @@ public class MasivoController {
             @RequestParam(required = false) String codigoSubtipificacion,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaIngreso,
             @RequestParam(defaultValue = "false") boolean sinValor,
+            @RequestParam(required = false) Long idEquipo,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
         var leads = masivoService.listarLeads(
@@ -63,6 +64,7 @@ public class MasivoController {
                 codigoSubtipificacion,
                 fechaIngreso,
                 sinValor,
+                idEquipo,
                 pageRequest
         );
         return ResponseEntity.status(HttpStatus.OK).body(leads);
@@ -76,7 +78,8 @@ public class MasivoController {
             @RequestParam(required = false) List<String> codigosSubtipificacion,
             @RequestParam(defaultValue = "ULTIMA") CampoTipificacion campoTipificacion,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta,
+            @RequestParam(required = false) Long idEquipo
     ) {
         return ResponseEntity.ok(masivoService.listarAgrupaciones(
                 idProveedor,
@@ -85,7 +88,8 @@ public class MasivoController {
                 codigosSubtipificacion,
                 campoTipificacion,
                 fechaDesde,
-                fechaHasta
+                fechaHasta,
+                idEquipo
         ));
     }
 }

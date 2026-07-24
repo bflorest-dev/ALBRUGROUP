@@ -1,0 +1,57 @@
+<p-drawer
+  [visible]="facade.drawerOpen()"
+  (visibleChange)="onVisibleChange($event)"
+  position="right"
+  styleClass="postventa-drawer"
+  [dismissible]="true"
+>
+  <ng-template #header>
+    @if (facade.selectedLead(); as lead) {
+      <div class="drawer-header">
+        <div class="drawer-header__id">
+          <span class="drawer-header__eyebrow">Gestion de Postventa</span>
+          <strong>{{ display(lead.lead) }}</strong>
+          <small>{{ display(lead.nombreCliente) }}</small>
+        </div>
+        <div class="drawer-header__tags">
+          <p-tag [severity]="badge(lead.estadoCredenciales).severity" [value]="badge(lead.estadoCredenciales).label" />
+          <p-tag [severity]="badge(lead.estadoPago).severity" [value]="badge(lead.estadoPago).label" />
+          <p-tag [severity]="badge(lead.estadoServicio).severity" [value]="badge(lead.estadoServicio).label" />
+        </div>
+      </div>
+    }
+  </ng-template>
+
+  <div class="drawer-body">
+    @if (facade.loadingContext()) {
+      <div class="drawer-skeleton">
+        @for (_ of skeletonRows; track $index) {
+          <p-skeleton height="2.2rem" />
+        }
+      </div>
+    } @else {
+      <div class="drawer-scroll">
+        <p-tabs [value]="activeTab()" (valueChange)="activeTab.set($any($event))">
+          <p-tablist>
+            <p-tab value="resumen">Resumen</p-tab>
+            <p-tab value="plataforma">Plataforma digital</p-tab>
+            <p-tab value="factura">Facturacion</p-tab>
+            <p-tab value="encuesta">Encuesta</p-tab>
+            <p-tab value="historial">Historial</p-tab>
+          </p-tablist>
+          <p-tabpanels>
+            <p-tabpanel value="resumen"><app-postventa-resumen-panel /></p-tabpanel>
+            <p-tabpanel value="plataforma"><app-postventa-plataforma-panel /></p-tabpanel>
+            <p-tabpanel value="factura"><app-postventa-facturacion-panel /></p-tabpanel>
+            <p-tabpanel value="encuesta"><app-postventa-encuesta-panel /></p-tabpanel>
+            <p-tabpanel value="historial"><app-postventa-historial-panel /></p-tabpanel>
+          </p-tabpanels>
+        </p-tabs>
+      </div>
+
+      <footer class="drawer-footer">
+        <app-postventa-tipificacion-bar />
+      </footer>
+    }
+  </div>
+</p-drawer>

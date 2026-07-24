@@ -51,6 +51,14 @@ import {
   ZonaResponse
 } from '../../../shared/models/preventa/preventa.models';
 
+export interface EquipoOperativoResponse {
+  id: number;
+  nombre: string;
+  descripcion?: string | null;
+  color?: string | null;
+  activo: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PreventaLeadService {
   private readonly http = inject(HttpClient);
@@ -431,6 +439,14 @@ export class PreventaLeadService {
     return this.http.get<UsuarioResponse[]>(`${this.authUrl}/roles/${puestoTrabajo}/usuarios`);
   }
 
+  listarMisEquipos(): Observable<EquipoOperativoResponse[]> {
+    return this.http.get<EquipoOperativoResponse[]>(`${this.authUrl}/equipos/mis-equipos`);
+  }
+
+  listarAsesoresPreventaPorEquipo(idEquipo: number): Observable<UsuarioResponse[]> {
+    return this.http.get<UsuarioResponse[]>(`${this.authUrl}/equipos/${idEquipo}/asesores-preventa`);
+  }
+
   private pageParams(query: PageQuery): HttpParams {
     return new HttpParams()
       .set('pageNumber', query.pageNumber)
@@ -471,6 +487,9 @@ export class PreventaLeadService {
     let params = new HttpParams();
     if (filters.idProveedor) {
       params = params.set('idProveedor', filters.idProveedor);
+    }
+    if (filters.idEquipo) {
+      params = params.set('idEquipo', filters.idEquipo);
     }
     if (filters.etapa) {
       params = params.set('etapa', filters.etapa);

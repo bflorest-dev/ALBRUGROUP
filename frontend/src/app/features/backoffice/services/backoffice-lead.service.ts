@@ -66,6 +66,10 @@ export class BackofficeLeadService {
     return this.http.get<LeadDetalleResponse>(`${this.leadUrl}/venta/${idLead}/detalle-asesor`);
   }
 
+  listarPlanesOferta(idLead: number): Observable<PlanResponse[]> {
+    return this.http.get<PlanResponse[]>(`${this.leadUrl}/venta/${idLead}/planes-oferta`);
+  }
+
   listarEventos(idLead: number, fecha: string, query: PageQuery): Observable<LeadPage<EventoResponse>> {
     return this.http.get<LeadPage<EventoResponse>>(`${this.leadUrl}/eventos/lead/${idLead}`, {
       params: this.pageParams(query).set('fechaDesde', fecha).set('fechaHasta', fecha)

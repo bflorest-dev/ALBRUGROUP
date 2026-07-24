@@ -72,9 +72,6 @@ public class EncuestaPostventa {
     private Long idAsesorEncuesta;
     private String nombreAsesorEncuesta;
 
-    private Integer calificacionAsesor;
-    private Integer calificacionServicio;
-
     @CreationTimestamp
     @jakarta.persistence.Column(updatable = false)
     private Instant createdAt;

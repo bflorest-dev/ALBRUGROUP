@@ -17,8 +17,6 @@ import java.math.BigDecimal;
 public class SatisfaccionPostventaResponse {
 
     private Long idLead;
-    private BigDecimal satisfaccionAsesor;
-    private BigDecimal satisfaccionServicio;
     private BigDecimal promedioSatisfaccion;
     private StatusSatisfaccion statusSatisfaccion;
 }

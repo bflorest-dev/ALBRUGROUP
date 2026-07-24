@@ -16,6 +16,7 @@ import java.time.Instant;
 public class LeadGtrResponse {
 
     private Long id;
+    private Long idEquipo;
     private Instant createdAt;
     private Instant lastEntryAt;
     private String prefijo;

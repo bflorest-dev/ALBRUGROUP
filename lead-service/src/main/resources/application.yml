@@ -21,6 +21,8 @@ app:
   cache:
     ttl:
       catalogos: 12h
+  auth:
+    base-url: ${AUTH_SERVICE_URL:http://auth-service:8081}
   lead:
     intake:
       masivo:

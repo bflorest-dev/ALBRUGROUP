@@ -1,0 +1,49 @@
+@if (facade.selectedLead(); as lead) {
+  <div class="status-row">
+    <p-tag [severity]="badge(lead.estadoCliente).severity" [value]="'Cliente: ' + badge(lead.estadoCliente).label" />
+    <p-tag [severity]="badge(lead.estadoCredenciales).severity" [value]="'Credenciales: ' + badge(lead.estadoCredenciales).label" />
+    <p-tag [severity]="badge(lead.estadoPago).severity" [value]="'Pago: ' + badge(lead.estadoPago).label" />
+    <p-tag [severity]="badge(lead.estadoServicio).severity" [value]="'Servicio: ' + badge(lead.estadoServicio).label" />
+  </div>
+
+  <div class="summary-grid">
+    <article>
+      <span>Fecha de instalacion</span>
+      <strong>{{ lead.fechaInstalacion ? (lead.fechaInstalacion | date: 'dd/MM/yyyy') : '—' }}</strong>
+    </article>
+    <article>
+      <span>Documento</span>
+      <strong>{{ display(lead.tipoDocumento) }} {{ display(lead.numeroDocumento) }}</strong>
+    </article>
+    <article>
+      <span>Telefono</span>
+      <strong>{{ display(lead.telefonoRegistro) }}</strong>
+    </article>
+    <article>
+      <span>Proveedor</span>
+      <strong>{{ display(lead.proveedor) }}</strong>
+    </article>
+    <article>
+      <span>Plan</span>
+      <strong>{{ display(lead.plan) }}</strong>
+    </article>
+    <article>
+      <span>Plataforma ofrecida</span>
+      <strong>{{ display(lead.plataformaDigitalOfrecida) }}</strong>
+    </article>
+    @if (facade.detail(); as detail) {
+      <article>
+        <span>Cliente</span>
+        <strong>{{ display(detail.nombreTitular ?? lead.nombreCliente) }}</strong>
+      </article>
+      <article>
+        <span>Correo</span>
+        <strong>{{ display(detail.correo) }}</strong>
+      </article>
+      <article>
+        <span>Direccion</span>
+        <strong>{{ display(detail.direccion) }}</strong>
+      </article>
+    }
+  </div>
+}

@@ -1,0 +1,40 @@
+<form class="tipification-bar" [formGroup]="form" (ngSubmit)="tipificar()">
+  <p-select
+    formControlName="codigoTipificacion"
+    [options]="facade.tipificaciones()"
+    optionLabel="descripcion"
+    optionValue="codigo"
+    placeholder="Tipificacion"
+    appendTo="body"
+    styleClass="tipi-select"
+    (onChange)="onTipiChange($event.value)"
+  >
+    <ng-template #item let-tipificacion>
+      <div class="tipi-option">
+        <strong>{{ tipificacion.codigo }}</strong>
+        <small>{{ tipificacion.descripcion }}</small>
+      </div>
+    </ng-template>
+  </p-select>
+
+  <p-select
+    formControlName="codigoSubtipificacion"
+    [options]="subtipificaciones()"
+    optionLabel="descripcion"
+    optionValue="codigo"
+    placeholder="Subtipificacion"
+    appendTo="body"
+    styleClass="tipi-select"
+  >
+    <ng-template #item let-subtipificacion>
+      <div class="tipi-option">
+        <strong>{{ subtipificacion.codigo }}</strong>
+        <small>{{ subtipificacion.descripcion }}</small>
+      </div>
+    </ng-template>
+  </p-select>
+
+  <input pInputText formControlName="comentario" placeholder="Comentario de la gestion" class="comment-input" />
+
+  <button pButton type="submit" icon="pi pi-send" label="Tipificar gestion" [loading]="facade.saving()"></button>
+</form>

@@ -7,4 +7,5 @@ export interface UsuarioResponse {
   passwordInicializada: boolean;
   email: string;
   roles: string[];
+  equipoIds?: number[];
 }

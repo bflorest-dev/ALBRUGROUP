@@ -83,6 +83,7 @@ export interface SupervisorVentasReporteResponse {
 
 export interface LeadGtrResponse {
   id: number;
+  idEquipo?: number | null;
   createdAt: string;
   lastEntryAt?: string | null;
   prefijo: string;
@@ -183,6 +184,7 @@ export interface AgendadosGtrResumenResponse {
 
 export interface MasivoLeadFilters {
   idProveedor?: number;
+  idEquipo?: number;
   etapa?: Etapa | string;
   codigosTipificacion?: string[];
   codigosSubtipificacion?: string[];
@@ -242,6 +244,7 @@ export interface LeadVentaResponse {
   mesesPermanenciaSnapshot?: number | null;
   createdAt?: string | null;
   lastEntryAt?: string | null;
+  fechaIngresoEtapa?: string | null;
   updatedAt?: string | null;
   totalAsignaciones?: number | null;
   fechaProgramacion?: string | null;

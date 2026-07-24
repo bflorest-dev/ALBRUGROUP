@@ -24,6 +24,7 @@ import { CommunityCampaignCorrectionPageComponent } from '../community/pages/com
 import { CommunityWorkspacePageComponent } from '../community/pages/community-workspace-page/community-workspace-page.component';
 import { DailyLeadsPageComponent } from '../daily-leads/pages/daily-leads-page/daily-leads-page.component';
 import { GtrWorkspacePageComponent } from '../gtr/pages/gtr-workspace-page/gtr-workspace-page.component';
+import { PostventaWorkspacePageComponent } from '../postventa/pages/postventa-workspace-page/postventa-workspace-page.component';
 import { PostulantesBoardPageComponent } from '../recruiter/pages/postulantes-board-page/postulantes-board-page.component';
 import { TrainingGroupsPageComponent } from '../recruiter/pages/training-groups-page/training-groups-page.component';
 import { RrhhAsistenciaPageComponent } from '../rrhh/asistencia/pages/rrhh-asistencia-page/rrhh-asistencia-page.component';
@@ -330,11 +331,10 @@ export const PLATFORM_ROUTES: Routes = [
   },
   {
     path: 'postventa',
-    component: RolePlatformPageComponent,
+    component: PostventaWorkspacePageComponent,
     canActivate: [roleGuard],
     data: {
-      roles: ['ASESOR_POSTVENTA', 'SUPERVISOR_POSTVENTA'],
-      title: 'POSTVENTA Platform'
+      roles: ['ADMINISTRADOR', 'ASESOR_POSTVENTA', 'SUPERVISOR_POSTVENTA']
     }
   },
   {

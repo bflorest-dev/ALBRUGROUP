@@ -9,7 +9,7 @@ import {
 } from '../../../shared/models/preventa/preventa.models';
 import { AdminTipificacionService, EquipoCatalogoItem } from '../services/admin-tipificacion.service';
 
-export type EtapaCatalogo = 'PREVENTA' | 'VENTA' | 'POSTVENTA' | 'COBRANZA';
+export type EtapaCatalogo = 'PREVENTA' | 'VENTA' | 'POSTVENTA';
 
 export interface SubtipDraft {
   uid: string;
@@ -39,8 +39,7 @@ export class AdminTipificacionFacade {
   readonly etapaOptions: { value: EtapaCatalogo; label: string }[] = [
     { value: 'PREVENTA', label: 'Preventa' },
     { value: 'VENTA', label: 'Venta' },
-    { value: 'POSTVENTA', label: 'Postventa' },
-    { value: 'COBRANZA', label: 'Cobranza' }
+    { value: 'POSTVENTA', label: 'Postventa' }
   ];
 
   readonly estadoPostventaOptions = [
@@ -70,8 +69,7 @@ export class AdminTipificacionFacade {
     PREVENTA: ['REQUIERE_HORA_PROGRAMADA', 'APARECE_EN_AGENDADOS_GTR', 'ES_CIERRE_PREVENTA', 'RECIBE_MERITO'],
     VENTA: ['REQUIERE_HORA_PROGRAMADA', 'REQUIERE_FECHA_PROGRAMACION', 'REQUIERE_FECHA_INSTALACION',
             'REQUIERE_SEC_SOT', 'RECIBE_MERITO', 'ES_CANCELACION_PROGRAMACION'],
-    POSTVENTA: [],
-    COBRANZA: []
+    POSTVENTA: []
   };
 
   readonly comportamientoOptions = computed(() =>

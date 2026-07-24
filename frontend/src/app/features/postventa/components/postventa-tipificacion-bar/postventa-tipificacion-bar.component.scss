@@ -1,0 +1,35 @@
+:host {
+  display: block;
+}
+
+.tipification-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+
+  ::ng-deep .tipi-select {
+    flex: 1 1 12rem;
+    min-width: 10rem;
+  }
+
+  .comment-input {
+    flex: 2 1 16rem;
+    min-width: 12rem;
+  }
+
+  button {
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+}
+
+.tipi-option {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+
+  small {
+    color: var(--role-muted);
+  }
+}

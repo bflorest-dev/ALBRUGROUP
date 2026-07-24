@@ -14,6 +14,19 @@
   >
     <app-date-field label="Desde" formControlName="fechaDesde" />
     <app-date-field label="Hasta" formControlName="fechaHasta" />
+    @if (facade.showHistoricosEquipoSelector()) {
+      <label>
+        <span>Equipo</span>
+        <p-select
+          formControlName="idEquipo"
+          [options]="facade.historicosEquipoOptions()"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Selecciona equipo"
+          appendTo="body"
+        />
+      </label>
+    }
     <label class="historicos-mode">
       <span>Tipo de tipificación</span>
       <p-selectButton
@@ -93,7 +106,7 @@
         type="submit"
         label="Buscar"
         icon="pi pi-search"
-        [disabled]="!facade.canDisplayOperationalData()"
+        [disabled]="!facade.canSearchHistoricos()"
         [loading]="facade.isLoadingMasivos()"
       ></button>
     </div>

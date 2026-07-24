@@ -1,0 +1,15 @@
+DELETE FROM rol_permiso
+WHERE permiso_id IN (
+    SELECT id FROM permisos WHERE nombre = 'READ_LEADS_COBRANZA'
+)
+OR rol_id IN (
+    SELECT id FROM roles WHERE nombre IN ('ASESOR_COBRANZA', 'SUPERVISOR_COBRANZA')
+);
+
+DELETE FROM usuario_rol
+WHERE rol_id IN (
+    SELECT id FROM roles WHERE nombre IN ('ASESOR_COBRANZA', 'SUPERVISOR_COBRANZA')
+);
+
+DELETE FROM roles WHERE nombre IN ('ASESOR_COBRANZA', 'SUPERVISOR_COBRANZA');
+DELETE FROM permisos WHERE nombre = 'READ_LEADS_COBRANZA';

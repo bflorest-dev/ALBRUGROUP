@@ -108,8 +108,7 @@ export class TipEditorComponent {
     return {
       PREVENTA: 'result-preventa',
       VENTA: 'result-venta',
-      POSTVENTA: 'result-postventa',
-      COBRANZA: 'result-cobranza'
+      POSTVENTA: 'result-postventa'
     }[etapa ?? ''] ?? '';
   }
 

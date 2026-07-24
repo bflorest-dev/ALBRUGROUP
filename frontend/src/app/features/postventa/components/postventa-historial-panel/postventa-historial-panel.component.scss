@@ -1,0 +1,18 @@
+@use '../postventa-shared' as shared;
+
+:host {
+  display: block;
+}
+
+.nested-table {
+  @include shared.nested-table;
+}
+
+.empty-hint {
+  @include shared.empty-hint;
+}
+
+.comment-cell {
+  max-width: 22rem;
+  white-space: normal;
+}

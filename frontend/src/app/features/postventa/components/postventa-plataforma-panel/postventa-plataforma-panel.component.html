@@ -1,0 +1,134 @@
+@if (!facade.tienePlataformaOfrecida()) {
+  <p-message severity="info" text="Este lead no tiene una plataforma digital ofrecida. Puedes registrar una entrega igualmente si corresponde." styleClass="panel-note" />
+}
+
+<form class="form-grid" [formGroup]="form" (ngSubmit)="guardar()">
+  <label>
+    <span>Plataforma</span>
+    <p-select
+      formControlName="idPlataforma"
+      [options]="facade.plataformas()"
+      optionLabel="nombre"
+      optionValue="id"
+      placeholder="Elige plataforma"
+      appendTo="body"
+      (onChange)="onPlataformaChange($event.value)"
+    />
+  </label>
+  <label>
+    <span>Paquete</span>
+    <p-select
+      formControlName="idPaquete"
+      [options]="facade.paquetes()"
+      optionLabel="nombre"
+      optionValue="id"
+      placeholder="Elige paquete"
+      appendTo="body"
+      (onChange)="onPaqueteChange($event.value)"
+    />
+  </label>
+  <label>
+    <span>Credencial disponible</span>
+    <p-select
+      formControlName="idCredencial"
+      [options]="facade.credenciales()"
+      optionLabel="usuario"
+      optionValue="id"
+      placeholder="Elige credencial"
+      appendTo="body"
+    >
+      <ng-template #item let-credencial>
+        <div class="select-option">
+          <strong>{{ credencial.usuario }}</strong>
+          <small>{{ display(credencial.cuposDisponibles) }} cupos libres · vence {{ display(credencial.fechaExpiracion) }}</small>
+        </div>
+      </ng-template>
+    </p-select>
+  </label>
+  <label>
+    <span>Cupos a asignar</span>
+    <p-inputNumber formControlName="cantidadUsuariosAsignados" [min]="1" [showButtons]="true" />
+  </label>
+
+  <label>
+    <span>Fecha de entrega</span>
+    <input pInputText type="date" formControlName="fechaEntrega" />
+  </label>
+  <label>
+    <span>Inicio de acceso</span>
+    <input pInputText type="date" formControlName="fechaInicioAcceso" />
+  </label>
+  <label class="checkbox-field">
+    <p-checkbox formControlName="esObsequio" [binary]="true" inputId="pv-es-obsequio" (onChange)="onObsequioChange($event.checked)" />
+    <span>Es obsequio (sin costo)</span>
+  </label>
+  @if (!esObsequio()) {
+    <label>
+      <span>Monto de venta</span>
+      <p-inputNumber formControlName="montoVenta" mode="currency" currency="PEN" locale="es-PE" [min]="0" />
+    </label>
+  }
+
+  <div class="device-block full">
+    <span class="device-block__title">Dispositivo (opcional)</span>
+    <div class="device-grid">
+      <label>
+        <span>Tipo</span>
+        <p-select formControlName="tipoDispositivo" [options]="tipoDispositivoOptions" optionLabel="label" optionValue="value" placeholder="Tipo" [showClear]="true" appendTo="body" />
+      </label>
+      <label>
+        <span>Marca</span>
+        <p-autoComplete
+          formControlName="marca"
+          [suggestions]="marcaSuggestions()"
+          optionLabel="nombre"
+          [dropdown]="true"
+          [forceSelection]="false"
+          placeholder="Elige o escribe una marca"
+          appendTo="body"
+          (completeMethod)="filtrarMarcas($event.query)"
+        />
+      </label>
+      <label>
+        <span>Descripcion</span>
+        <input pInputText formControlName="descripcionDispositivo" placeholder="Ej. modelo o detalle" />
+      </label>
+    </div>
+  </div>
+
+  <label class="full">
+    <span>Observacion</span>
+    <textarea pTextarea rows="2" formControlName="observacion"></textarea>
+  </label>
+
+  <div class="form-actions full">
+    <button pButton type="submit" icon="pi pi-check" label="Guardar entrega" [loading]="facade.saving()"></button>
+  </div>
+</form>
+
+<h3 class="panel-heading">Entregas registradas</h3>
+<p-table [value]="facade.entregas()" styleClass="p-datatable-sm nested-table" [rowHover]="true">
+  <ng-template #header>
+    <tr>
+      <th>Plataforma</th>
+      <th>Usuario</th>
+      <th>Cupos</th>
+      <th>Vigencia</th>
+      <th>Estado</th>
+      <th>Asesor</th>
+    </tr>
+  </ng-template>
+  <ng-template #body let-entrega>
+    <tr>
+      <td>{{ display(entrega.plataforma) }}</td>
+      <td>{{ display(entrega.usuario) }}</td>
+      <td>{{ display(entrega.cantidadUsuariosAsignados) }}</td>
+      <td>{{ display(entrega.fechaInicioAcceso) }} — {{ display(entrega.fechaFinAcceso) }}</td>
+      <td><p-tag [severity]="badge(entrega.estado).severity" [value]="badge(entrega.estado).label" /></td>
+      <td>{{ display(entrega.nombreAsesorEntrega) }}</td>
+    </tr>
+  </ng-template>
+  <ng-template #emptymessage>
+    <tr><td colspan="6" class="empty-hint">Sin entregas registradas.</td></tr>
+  </ng-template>
+</p-table>

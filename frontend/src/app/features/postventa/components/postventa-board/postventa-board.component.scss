@@ -1,0 +1,123 @@
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+.board-surface {
+  background: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 1rem;
+  box-shadow: var(--app-shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.06));
+  padding: 0.5rem 0.5rem 0.25rem;
+  overflow: hidden;
+}
+
+.postventa-table {
+  // Encabezados y contenidos centrados y alineados verticalmente al medio.
+  th,
+  td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .col-lead strong {
+    color: var(--role-primary);
+  }
+
+  // Tags de semaforo con ancho uniforme y texto centrado: la columna se ve ordenada.
+  .col-status ::ng-deep .p-tag {
+    min-width: 7rem;
+    justify-content: center;
+  }
+}
+
+// Nombre del cliente apilado en dos lineas dentro de su columna.
+.cliente-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+
+  span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+// Separacion por fecha: linea gruesa a lo ancho + etiqueta a la izquierda (patron Backoffice,
+// con el color del rol Postventa). HOY se resalta con el primario del rol.
+.date-divider-row td {
+  background: transparent;
+  border-top: 3px solid var(--role-accent);
+  padding: 0 0 0.1rem;
+  text-align: left;
+}
+
+.date-divider-label {
+  background: var(--role-accent);
+  border-radius: 0 0 0.45rem 0;
+  color: #ffffff;
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 0.12rem 0.75rem;
+  text-transform: uppercase;
+}
+
+.date-divider-row--today td {
+  border-top-color: var(--role-primary);
+}
+
+.date-divider-row--today .date-divider-label {
+  background: var(--role-primary);
+}
+
+.gestion-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+}
+
+.gestion-cell__date {
+  color: var(--role-muted);
+}
+
+.col-status {
+  width: 8.5rem;
+}
+
+// La accion principal queda fija a la derecha: siempre visible aunque la tabla scrollee.
+.postventa-table th.col-actions,
+.postventa-table td.col-actions {
+  width: 8.5rem;
+  text-align: center;
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: var(--app-surface);
+  box-shadow: -8px 0 8px -8px rgba(15, 23, 42, 0.18);
+}
+
+.postventa-table th.col-actions {
+  background: var(--app-surface-raised, var(--app-surface));
+}
+
+.empty-cell {
+  color: var(--role-muted);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+// Prioridad de columnas: cuando el bloque se angosta, se ocultan primero las contextuales
+// (documento, telefono, proveedor, plan). Los datos siguen disponibles en el drawer de gestion.
+@container (max-width: 82rem) {
+  .postventa-table .col-secondary {
+    display: none;
+  }
+}

@@ -16,5 +16,7 @@ public interface IEquipo {
     EquipoResponse actualizar(Long id, EquipoActualizarRequest request);
     void eliminar(Long id);
     UsuarioResponse asignarEquipos(Long empleadoId, Set<Long> equipoIds);
+    List<EquipoResponse> listarMisEquipos();
+    List<UsuarioRolResponse> listarAsesoresPreventa(Long equipoId);
     List<UsuarioRolResponse> listarMiembros(Long equipoId);
 }

@@ -40,18 +40,19 @@ public class PagoPostventaService {
     private final PagoPostventaMapper mapper;
     private final PaginationService paginationService;
 
-    private static final Set<Etapa> ETAPAS_GESTION_POSTVENTA = Set.of(Etapa.POSTVENTA, Etapa.COBRANZA);
+    private static final Set<Etapa> ETAPAS_GESTION_POSTVENTA = Set.of(Etapa.POSTVENTA);
     private static final Set<String> PAGO_SORT_FIELDS = Set.of(
-            "fechaVencimiento", "fechaEmision", "fechaPago", "estado", "monto", "createdAt"
+            "fechaPago", "fechaCompromisoPago", "estado", "monto", "createdAt"
     );
 
     @Transactional
     public PagoPostventaResponse registrarPago(Long idLead, PagoPostventaRequest request) {
         Lead lead = obtenerLeadAsignadoGestionable(idLead);
-        validarFechas(request.getFechaEmision(), request.getFechaVencimiento(), request.getFechaPago(), request.getFechaCompromisoPago());
+        PeriodoFacturacionPostventa periodo = obtenerPeriodoObligatorio(idLead, request.getIdPeriodoFacturacion());
+        validarFechas(periodo, request.getFechaPago(), request.getFechaCompromisoPago());
         PagoPostventa pago = mapper.toEntity(request);
         pago.setLead(lead);
-        pago.setPeriodoFacturacionPostventa(obtenerPeriodoSiCorresponde(idLead, request.getIdPeriodoFacturacion()));
+        pago.setPeriodoFacturacionPostventa(periodo);
         pago.setEstado(resolverEstadoPago(pago, null));
         sincronizarPeriodoConPago(pago);
         return mapper.toResponse(pagoRepository.save(pago));
@@ -70,7 +71,7 @@ public class PagoPostventaService {
                     request.getIdPeriodoFacturacion()
             ));
         }
-        validarFechas(pago.getFechaEmision(), pago.getFechaVencimiento(), pago.getFechaPago(), pago.getFechaCompromisoPago());
+        validarFechas(pago.getPeriodoFacturacionPostventa(), pago.getFechaPago(), pago.getFechaCompromisoPago());
         pago.setEstado(resolverEstadoPago(pago, request.getEstado()));
         sincronizarPeriodoConPago(pago);
         return mapper.toResponse(pagoRepository.save(pago));
@@ -78,7 +79,7 @@ public class PagoPostventaService {
 
     public PageResponse<PagoPostventaResponse> listarPagosPorLead(Long idLead, PageRequest pageRequest) {
         obtenerLeadAsignadoGestionable(idLead);
-        Page<PagoPostventaResponse> pagos = pagoRepository.findByLeadIdOrderByFechaVencimientoAsc(
+        Page<PagoPostventaResponse> pagos = pagoRepository.findByLeadIdOrderByCreatedAtDesc(
                 idLead,
                 paginationService.toPageable(pageRequest, PAGO_SORT_FIELDS)
         ).map(mapper::toResponse);
@@ -114,7 +115,8 @@ public class PagoPostventaService {
         if (pago.getFechaCompromisoPago() != null) {
             return EstadoPagoPostventa.COMPROMETIDO;
         }
-        if (pago.getFechaVencimiento() != null && pago.getFechaVencimiento().isBefore(OperationalDateTime.today())) {
+        LocalDate fechaVencimiento = resolverFechaVencimiento(pago.getPeriodoFacturacionPostventa());
+        if (fechaVencimiento != null && fechaVencimiento.isBefore(OperationalDateTime.today())) {
             return EstadoPagoPostventa.VENCIDO;
         }
         return EstadoPagoPostventa.PENDIENTE;
@@ -137,9 +139,6 @@ public class PagoPostventaService {
         if (periodo == null) {
             return;
         }
-        periodo.setFechaEmisionConfirmada(pago.getFechaEmision());
-        periodo.setFechaVencimientoConfirmado(pago.getFechaVencimiento());
-        periodo.setMontoFacturado(pago.getMonto());
         if (pago.getEstado() == EstadoPagoPostventa.PAGADO
                 || pago.getEstado() == EstadoPagoPostventa.CUBIERTO_EMPRESA) {
             periodo.setEstado(EstadoPeriodoFacturacionPostventa.PAGO_CONFIRMADO);
@@ -154,20 +153,24 @@ public class PagoPostventaService {
         }
     }
 
+    private PeriodoFacturacionPostventa obtenerPeriodoObligatorio(Long idLead, Long idPeriodoFacturacion) {
+        if (idPeriodoFacturacion == null) {
+            throw new BadRequestException("idPeriodoFacturacion es obligatorio");
+        }
+        return obtenerPeriodoSiCorresponde(idLead, idPeriodoFacturacion);
+    }
+
     private void validarFechas(
-            LocalDate fechaEmision,
-            LocalDate fechaVencimiento,
+            PeriodoFacturacionPostventa periodo,
             LocalDate fechaPago,
             LocalDate fechaCompromisoPago
     ) {
+        if (periodo == null) {
+            throw new BadRequestException("idPeriodoFacturacion es obligatorio");
+        }
+        LocalDate fechaEmision = resolverFechaEmision(periodo);
         if (fechaEmision == null) {
-            throw new BadRequestException("fechaEmision es obligatoria");
-        }
-        if (fechaVencimiento == null) {
-            throw new BadRequestException("fechaVencimiento es obligatoria");
-        }
-        if (fechaVencimiento.isBefore(fechaEmision)) {
-            throw new BadRequestException("fechaVencimiento no puede ser anterior a fechaEmision");
+            throw new BadRequestException("El periodo no tiene fecha de emision para validar el pago");
         }
         if (fechaPago != null && fechaPago.isBefore(fechaEmision)) {
             throw new BadRequestException("fechaPago no puede ser anterior a fechaEmision");
@@ -175,6 +178,24 @@ public class PagoPostventaService {
         if (fechaCompromisoPago != null && fechaCompromisoPago.isBefore(fechaEmision)) {
             throw new BadRequestException("fechaCompromisoPago no puede ser anterior a fechaEmision");
         }
+    }
+
+    private LocalDate resolverFechaEmision(PeriodoFacturacionPostventa periodo) {
+        if (periodo == null) {
+            return null;
+        }
+        return periodo.getFechaEmisionConfirmada() != null
+                ? periodo.getFechaEmisionConfirmada()
+                : periodo.getFechaEmisionEstimada();
+    }
+
+    private LocalDate resolverFechaVencimiento(PeriodoFacturacionPostventa periodo) {
+        if (periodo == null) {
+            return null;
+        }
+        return periodo.getFechaVencimientoConfirmado() != null
+                ? periodo.getFechaVencimientoConfirmado()
+                : periodo.getFechaVencimientoEstimado();
     }
 
     private Lead obtenerLeadAsignadoGestionable(Long idLead) {

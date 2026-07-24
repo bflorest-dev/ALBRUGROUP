@@ -1,0 +1,79 @@
+@use '../postventa-shared' as shared;
+
+:host {
+  display: block;
+}
+
+.form-grid {
+  @include shared.form-grid;
+}
+
+.form-actions {
+  @include shared.form-actions;
+}
+
+.panel-heading {
+  @include shared.panel-heading;
+}
+
+.nested-table {
+  @include shared.nested-table;
+}
+
+.empty-hint {
+  @include shared.empty-hint;
+}
+
+.panel-note {
+  display: block;
+  margin-bottom: 0.85rem;
+}
+
+.select-option {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+
+  small {
+    color: var(--role-muted);
+  }
+}
+
+.device-block {
+  border: 1px dashed var(--app-border);
+  border-radius: 0.75rem;
+  padding: 0.75rem 0.85rem;
+}
+
+.device-block__title {
+  color: var(--role-muted);
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 0.6rem;
+}
+
+.device-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem 1rem;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    min-width: 0;
+
+    > span {
+      color: var(--role-muted);
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+  }
+
+  ::ng-deep .p-select,
+  ::ng-deep .p-autocomplete,
+  input {
+    width: 100%;
+  }
+}

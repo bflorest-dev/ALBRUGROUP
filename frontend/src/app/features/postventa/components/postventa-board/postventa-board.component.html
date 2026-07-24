@@ -1,0 +1,123 @@
+<div class="board-surface">
+  <p-table
+    [value]="facade.rows()"
+    dataKey="idLead"
+    [loading]="facade.loadingBoard()"
+    [rowHover]="true"
+    [scrollable]="true"
+    scrollHeight="flex"
+    [tableStyle]="{ 'min-width': '1040px' }"
+    styleClass="p-datatable-sm postventa-table"
+    rowGroupMode="subheader"
+    groupRowsBy="fechaGroupSortKey"
+  >
+    <ng-template #colgroup>
+      <colgroup>
+        <col class="col-fecha" />
+        <col class="col-lead" />
+        <col class="col-cliente" />
+        <col class="col-secondary col-doc" />
+        <col class="col-secondary col-phone" />
+        <col class="col-secondary col-proveedor" />
+        <col class="col-secondary col-plan" />
+        <col class="col-status" />
+        <col class="col-status" />
+        <col class="col-status" />
+        <col class="col-status" />
+        <col class="col-gestion" />
+        <col class="col-actions" />
+      </colgroup>
+    </ng-template>
+
+    <ng-template #header>
+      <tr>
+        <th class="col-fecha">Instalación</th>
+        <th class="col-lead">Lead</th>
+        <th class="col-cliente">Cliente</th>
+        <th class="col-secondary col-doc">Documento</th>
+        <th class="col-secondary col-phone">Teléfono</th>
+        <th class="col-secondary col-proveedor">Proveedor</th>
+        <th class="col-secondary col-plan">Plan</th>
+        <th class="col-status">Estado</th>
+        <th class="col-status">Credenciales</th>
+        <th class="col-status">Pago</th>
+        <th class="col-status">Servicio</th>
+        <th class="col-gestion">Última gestión</th>
+        <th class="col-actions">Acción</th>
+      </tr>
+    </ng-template>
+
+    <ng-template #groupheader let-row>
+      <tr class="date-divider-row" [class.date-divider-row--today]="row.fechaGroupKey === 'HOY'">
+        <td [attr.colspan]="columnCount">
+          <span class="date-divider-label">{{ row.fechaGroupLabel }}</span>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template #body let-row>
+      <tr>
+        <td class="col-fecha">{{ row.fechaInstalacion ? (row.fechaInstalacion | date: 'dd/MM/yyyy') : '—' }}</td>
+        <td class="col-lead"><strong>{{ display(row.lead) }}</strong></td>
+        <td class="col-cliente">
+          <div class="cliente-cell">
+            <span>{{ row.clienteLinea1 }}</span>
+            @if (row.clienteLinea2) {
+              <span>{{ row.clienteLinea2 }}</span>
+            }
+          </div>
+        </td>
+        <td class="col-secondary col-doc">{{ display(row.numeroDocumento) }}</td>
+        <td class="col-secondary col-phone">{{ display(row.telefonoRegistro) }}</td>
+        <td class="col-secondary col-proveedor">{{ display(row.proveedor) }}</td>
+        <td class="col-secondary col-plan">{{ display(row.plan) }}</td>
+        <td class="col-status"><p-tag [severity]="badge(row.estadoCliente).severity" [value]="badge(row.estadoCliente).label" /></td>
+        <td class="col-status"><p-tag [severity]="badge(row.estadoCredenciales).severity" [value]="badge(row.estadoCredenciales).label" /></td>
+        <td class="col-status"><p-tag [severity]="badge(row.estadoPago).severity" [value]="badge(row.estadoPago).label" /></td>
+        <td class="col-status"><p-tag [severity]="badge(row.estadoServicio).severity" [value]="badge(row.estadoServicio).label" /></td>
+        <td class="col-gestion">
+          <div class="gestion-cell">
+            <span class="gestion-cell__name">{{ shortName(row.ultimoGestor) }}</span>
+            <small class="gestion-cell__date">{{ row.ultimaGestion ? (row.ultimaGestion | date: 'dd/MM/yyyy') : 'Sin gestión' }}</small>
+          </div>
+        </td>
+        <td class="col-actions">
+          <button
+            pButton
+            type="button"
+            icon="pi pi-briefcase"
+            label="Gestionar"
+            size="small"
+            [loading]="facade.saving()"
+            (click)="gestionar(row)"
+          ></button>
+        </td>
+      </tr>
+    </ng-template>
+
+    <ng-template #emptymessage>
+      <tr>
+        <td [attr.colspan]="columnCount" class="empty-cell">No hay leads en Postventa por ahora.</td>
+      </tr>
+    </ng-template>
+
+    <ng-template #loadingbody>
+      @for (_ of skeletonRows; track $index) {
+        <tr>
+          @for (__ of [].constructor(columnCount); track $index) {
+            <td><p-skeleton height="1.2rem" /></td>
+          }
+        </tr>
+      }
+    </ng-template>
+  </p-table>
+
+  <p-paginator
+    [first]="facade.pageNumber() * facade.pageSize"
+    [rows]="facade.pageSize"
+    [totalRecords]="facade.totalRows()"
+    [showCurrentPageReport]="true"
+    currentPageReportTemplate="{first} - {last} de {totalRecords}"
+    (onPageChange)="changePage($event.page ?? 0)"
+  />
+</div>

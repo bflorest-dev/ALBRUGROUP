@@ -18,4 +18,5 @@ public class UsuarioRolResponse {
     private Long empleadoId;
     private String nombreCompleto;
     private Set<String> roles;
+    private Set<Long> equipoIds;
 }

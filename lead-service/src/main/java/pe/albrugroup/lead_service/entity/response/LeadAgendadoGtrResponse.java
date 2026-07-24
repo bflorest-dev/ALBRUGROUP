@@ -20,6 +20,7 @@ import java.time.LocalTime;
 public class LeadAgendadoGtrResponse {
 
     private Long id;
+    private Long idEquipo;
     private Instant createdAt;
     private String prefijo;
     private String lead;

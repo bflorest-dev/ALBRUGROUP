@@ -168,6 +168,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly selectedTipificacionCode = signal('');
   protected readonly selectedSubtipificacionCode = signal('');
   protected readonly planes = signal<PlanResponse[]>([]);
+  protected readonly ofertaPlanes = signal<PlanResponse[]>([]);
   protected readonly promociones = signal<PromocionComercialResponse[]>([]);
   protected readonly adicionales = signal<AdicionalResponse[]>([]);
   protected readonly selectedOfertaProviderId = signal<number | null>(null);
@@ -293,12 +294,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     () => this.selectedSubtipificacion()?.comportamientos?.includes('REQUIERE_FECHA_PROGRAMACION') ?? false
   );
   protected readonly requiresSecSot = computed(() =>
-    (this.selectedSubtipificacion()?.comportamientos?.includes('REQUIERE_SEC_SOT') ?? false)
+    this.selectedSubtipificacionRequiresSecSot()
     && this.detail()?.requiereSecSotVenta === true
   );
   protected readonly ofertaProviderOptions = computed<OfertaProviderOption[]>(() => {
     const providersById = new Map<number, OfertaProviderOption>();
-    for (const plan of this.planes()) {
+    for (const plan of this.ofertaPlanes()) {
       if (plan.idProveedor) {
         providersById.set(plan.idProveedor, {
           id: plan.idProveedor,
@@ -310,7 +311,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   });
   protected readonly planOptions = computed(() => {
     const idProveedor = this.selectedOfertaProviderId();
-    const providerPlans = idProveedor ? this.planes().filter((plan) => plan.idProveedor === idProveedor) : [];
+    const providerPlans = idProveedor ? this.ofertaPlanes().filter((plan) => plan.idProveedor === idProveedor) : [];
     return [{ id: 0, nombre: 'Sin plan' }, ...providerPlans];
   });
   protected readonly promocionOptions = computed(() => [{ id: 0, reglaComercial: 'Sin promocion' }, ...this.promociones()]);
@@ -1473,7 +1474,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private async refreshOfferCatalogs(idPlan: number): Promise<void> {
-    const plan = this.planes().find((item) => item.id === idPlan);
+    const idLead = this.selectedLeadId();
+    const ofertaPlanes = idLead
+      ? await firstValueFrom(this.leadService.listarPlanesOferta(idLead))
+      : this.planes();
+    this.ofertaPlanes.set(ofertaPlanes);
+    const plan = ofertaPlanes.find((item) => item.id === idPlan);
     const idProveedor = plan?.idProveedor ?? null;
     this.selectedOfertaProviderId.set(idProveedor);
     this.ofertaForm.controls.idProveedor.setValue(idProveedor ?? 0);
@@ -1607,7 +1613,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       interior: detail.interior ?? ''
     });
     const idPlan = detail.idPlan ?? 0;
-    const idProveedor = this.planes().find((plan) => plan.id === idPlan)?.idProveedor ?? null;
+    const idProveedor = this.ofertaPlanes().find((plan) => plan.id === idPlan)?.idProveedor
+      ?? this.planes().find((plan) => plan.id === idPlan)?.idProveedor
+      ?? null;
     this.selectedOfertaProviderId.set(idProveedor);
     this.ofertaForm.patchValue({
       idProveedor: idProveedor ?? 0,
@@ -1653,7 +1661,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   ];
 
   private withFechaGroup(row: VisualLeadVenta): VisualLeadVenta {
-    const key = this.fechaGroupKeyFor(row.lastEntryAt);
+    const key = this.fechaGroupKeyFor(this.fechaIngresoEtapaValue(row));
     return {
       ...row,
       fechaGroupKey: key,
@@ -1804,12 +1812,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       if (groupCompare !== 0) {
         return groupCompare;
       }
-      return this.rowDateValue(right, 'lastEntryAt') - this.rowDateValue(left, 'lastEntryAt');
+      return this.fechaIngresoEtapaTime(right) - this.fechaIngresoEtapaTime(left);
     });
   }
 
   private fechaGroupRank(row: VisualLeadVenta): number {
-    const key = row.fechaGroupKey ?? this.fechaGroupKeyFor(row.lastEntryAt);
+    const key = row.fechaGroupKey ?? this.fechaGroupKeyFor(this.fechaIngresoEtapaValue(row));
     if (key === 'HOY') {
       return Number.MIN_SAFE_INTEGER;
     }
@@ -1835,6 +1843,24 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     const raw = row[field];
     const time = raw ? new Date(raw).getTime() : 0;
     return Number.isFinite(time) ? time : 0;
+  }
+
+  protected fechaIngresoEtapaValue(row: LeadVentaResponse): string | null | undefined {
+    return row.fechaIngresoEtapa ?? row.lastEntryAt;
+  }
+
+  private fechaIngresoEtapaTime(row: LeadVentaResponse): number {
+    const raw = this.fechaIngresoEtapaValue(row);
+    const time = raw ? new Date(raw).getTime() : 0;
+    return Number.isFinite(time) ? time : 0;
+  }
+
+  private selectedSubtipificacionRequiresSecSot(): boolean {
+    if (this.selectedSubtipificacion()?.comportamientos?.includes('REQUIERE_SEC_SOT')) {
+      return true;
+    }
+    const codigo = this.selectedTipificacionCode().trim().toUpperCase();
+    return codigo === 'SUBIDO' || codigo === 'INGRESADO';
   }
 
   private rowTextValue(row: LeadVentaResponse, field: BackofficeSortField): string {
@@ -1867,6 +1893,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.selectedSubtipificacionCode.set('');
     this.showComment.set(false);
     this.selectedOfertaProviderId.set(null);
+    this.ofertaPlanes.set([]);
     this.adicionalesSeleccionados.set([]);
     this.adicionalesDirty.set(false);
     this.provinciasDomicilio.set([]);

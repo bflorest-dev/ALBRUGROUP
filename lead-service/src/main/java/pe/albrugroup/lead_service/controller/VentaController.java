@@ -26,8 +26,11 @@ import pe.albrugroup.lead_service.entity.response.LeadContextoLookupResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
+import pe.albrugroup.lead_service.entity.response.PlanResponse;
 import pe.albrugroup.lead_service.service.EventoService;
 import pe.albrugroup.lead_service.service.LeadService;
+
+import java.util.List;
 
 @RestController @Validated
 @RequiredArgsConstructor
@@ -97,6 +100,11 @@ public class VentaController {
     public ResponseEntity<LeadDetalleResponse> obtenerDetalleLeadVenta(@PathVariable Long idLead) {
         var lead = leadService.obtenerDetalleLeadAsignado(idLead, Etapa.VENTA);
         return ResponseEntity.status(HttpStatus.OK).body(lead);
+    }
+    // 5.1. Planes comerciales del proveedor operativo del lead abierto.
+    @GetMapping("/{idLead}/planes-oferta") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
+    public ResponseEntity<List<PlanResponse>> listarPlanesOfertaVenta(@PathVariable Long idLead) {
+        return ResponseEntity.ok(leadService.listarPlanesOfertaVenta(idLead));
     }
     // 6. Ver el historial de eventos de un Lead, esto solo se permitira para el asesor asignado
     @GetMapping("/{idLead}/eventos") @PreAuthorize("hasAuthority('READ_EVENTOS_LEADS')")

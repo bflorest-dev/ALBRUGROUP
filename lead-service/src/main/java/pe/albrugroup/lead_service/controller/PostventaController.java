@@ -15,11 +15,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.LeadTipificacionPostventaRequest;
+import pe.albrugroup.lead_service.entity.request.LeadTomaVentaRequest;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPostventaBandejaResponse;
-import pe.albrugroup.lead_service.entity.response.LeadPostventaResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.service.EventoService;
 import pe.albrugroup.lead_service.service.LeadService;
@@ -42,25 +42,18 @@ public class PostventaController {
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
 
-    @GetMapping @PreAuthorize("hasAuthority('READ_LEADS_POSTVENTA')")
-    public ResponseEntity<PageResponse<LeadPostventaResponse>> listarBandejaPostventa(
-            @Valid @ModelAttribute PageRequest pageRequest
-    ) {
-        var leads = leadService.listarBandejaPostventa(pageRequest);
-        return ResponseEntity.status(HttpStatus.OK).body(leads);
-    }
-
-    @GetMapping("/asignados") @PreAuthorize("hasAuthority('READ_LEADS_POSTVENTA')")
-    public ResponseEntity<PageResponse<LeadPostventaResponse>> listarLeadsPostventaAsignados(
-            @Valid @ModelAttribute PageRequest pageRequest
-    ) {
-        var leads = leadService.listarLeadsPostventaAsignados(pageRequest);
-        return ResponseEntity.status(HttpStatus.OK).body(leads);
-    }
-
+    // Gestion compartida de POSTVENTA: al gestionar, el lead queda asignado a este asesor (lock
+    // transitorio). Si otro asesor ya lo tiene en gestion, el 409 pide confirmar el relevo; al
+    // tipificar el lead se libera de nuevo al pool (ver tipificarLeadPostventa). Mismo patron que VENTA.
     @PatchMapping("/{idLead}/asignacion") @PreAuthorize("hasAuthority('ASSIGN_LEADS')")
-    public ResponseEntity<Void> tomarLeadPostventa(@PathVariable Long idLead) {
-        leadService.tomarLeadDisponible(idLead, Etapa.POSTVENTA);
+    public ResponseEntity<Void> tomarLeadPostventa(
+            @PathVariable Long idLead,
+            @RequestBody(required = false) LeadTomaVentaRequest request
+    ) {
+        leadService.tomarLeadPostventaGestion(
+                idLead,
+                request != null && Boolean.TRUE.equals(request.getConfirmarReasignacion())
+        );
         return ResponseEntity.noContent().build();
     }
 

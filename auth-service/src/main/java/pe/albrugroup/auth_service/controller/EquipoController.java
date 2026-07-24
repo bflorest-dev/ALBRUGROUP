@@ -53,6 +53,20 @@ public class EquipoController {
         return ResponseEntity.ok(equipoService.listar());
     }
 
+    @GetMapping("/mis-equipos")
+    @PreAuthorize("hasAnyAuthority('READ_LEADS_GTR', 'ASSIGN_LEADS', 'READ_EQUIPOS')")
+    @Operation(summary = "Mis equipos", description = "Lista los equipos activos visibles para el usuario autenticado.")
+    public ResponseEntity<List<EquipoResponse>> misEquipos() {
+        return ResponseEntity.ok(equipoService.listarMisEquipos());
+    }
+
+    @GetMapping("/{id}/asesores-preventa")
+    @PreAuthorize("hasAnyAuthority('READ_LEADS_GTR', 'ASSIGN_LEADS', 'READ_EQUIPOS')")
+    @Operation(summary = "Asesores por equipo", description = "Lista asesores activos asignables para preventa en el equipo indicado.")
+    public ResponseEntity<List<UsuarioRolResponse>> listarAsesoresPreventa(@PathVariable @Positive Long id) {
+        return ResponseEntity.ok(equipoService.listarAsesoresPreventa(id));
+    }
+
     @PatchMapping("/{id}")
     @PreAuthorize("hasAuthority('UPDATE_EQUIPOS')")
     @Operation(summary = "Actualizar equipo", description = "Actualiza nombre, descripcion o estado de un equipo.")

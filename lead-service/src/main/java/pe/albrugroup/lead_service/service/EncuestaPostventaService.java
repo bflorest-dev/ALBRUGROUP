@@ -44,9 +44,9 @@ public class EncuestaPostventaService {
     private final EncuestaPostventaMapper mapper;
     private final PaginationService paginationService;
 
-    private static final Set<Etapa> ETAPAS_GESTION_POSTVENTA = Set.of(Etapa.POSTVENTA, Etapa.COBRANZA);
+    private static final Set<Etapa> ETAPAS_GESTION_POSTVENTA = Set.of(Etapa.POSTVENTA);
     private static final Set<String> ENCUESTA_SORT_FIELDS = Set.of(
-            "createdAt", "calificacionAsesor", "calificacionServicio"
+            "createdAt", "calificacion"
     );
 
     @Transactional
@@ -81,27 +81,15 @@ public class EncuestaPostventaService {
         obtenerLeadAsignadoGestionable(idLead);
         List<EncuestaPostventa> encuestas = encuestaRepository.findByLeadId(idLead);
         if (encuestas.isEmpty()) {
-            return new SatisfaccionPostventaResponse(idLead, null, null, null, null);
+            return new SatisfaccionPostventaResponse(idLead, null, null);
         }
 
-        BigDecimal satisfaccionAsesor = promedio(encuestas.stream()
-                .map(encuesta -> encuesta.getCalificacionAsesor() != null
-                        ? encuesta.getCalificacionAsesor()
-                        : encuesta.getCalificacion())
+        BigDecimal promedioSatisfaccion = promedio(encuestas.stream()
+                .map(EncuestaPostventa::getCalificacion)
                 .toList());
-        BigDecimal satisfaccionServicio = promedio(encuestas.stream()
-                .map(encuesta -> encuesta.getCalificacionServicio() != null
-                        ? encuesta.getCalificacionServicio()
-                        : encuesta.getCalificacion())
-                .toList());
-        BigDecimal promedioSatisfaccion = satisfaccionAsesor
-                .add(satisfaccionServicio)
-                .divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_UP);
 
         return new SatisfaccionPostventaResponse(
                 idLead,
-                satisfaccionAsesor,
-                satisfaccionServicio,
                 promedioSatisfaccion,
                 resolverStatusSatisfaccion(promedioSatisfaccion)
         );
@@ -156,16 +144,6 @@ public class EncuestaPostventaService {
 
     private Integer resolverCalificacion(EncuestaPostventaRequest request) {
         Integer calificacion = request.getCalificacion();
-        if (calificacion == null) {
-            calificacion = request.getTipoEncuesta() == TipoEncuestaPostventa.SATISFACCION_SERVICIO
-                    ? request.getCalificacionServicio()
-                    : request.getCalificacionAsesor();
-        }
-        if (calificacion == null) {
-            calificacion = request.getCalificacionServicio() != null
-                    ? request.getCalificacionServicio()
-                    : request.getCalificacionAsesor();
-        }
         if (calificacion == null) {
             throw new BadRequestException("calificacion es obligatoria");
         }

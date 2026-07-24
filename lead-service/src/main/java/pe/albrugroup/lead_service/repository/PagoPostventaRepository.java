@@ -15,7 +15,7 @@ import java.util.Optional;
 @Repository
 public interface PagoPostventaRepository extends JpaRepository<PagoPostventa, Long> {
 
-    Page<PagoPostventa> findByLeadIdOrderByFechaVencimientoAsc(Long idLead, Pageable pageable);
+    Page<PagoPostventa> findByLeadIdOrderByCreatedAtDesc(Long idLead, Pageable pageable);
 
     Page<PagoPostventa> findByPeriodoFacturacionPostventaIdOrderByCreatedAtDesc(Long idPeriodoFacturacion, Pageable pageable);
 

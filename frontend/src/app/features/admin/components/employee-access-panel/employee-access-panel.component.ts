@@ -77,9 +77,7 @@ export class EmployeeAccessPanelComponent {
     'ASESOR_BACKOFFICE',
     'SUPERVISOR_BACKOFFICE',
     'ASESOR_POSTVENTA',
-    'SUPERVISOR_POSTVENTA',
-    'ASESOR_COBRANZA',
-    'SUPERVISOR_COBRANZA'
+    'SUPERVISOR_POSTVENTA'
   ]);
 
   protected readonly selectedRole = signal('');

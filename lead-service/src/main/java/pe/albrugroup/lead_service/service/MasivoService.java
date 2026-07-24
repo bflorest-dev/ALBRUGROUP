@@ -70,6 +70,7 @@ public class MasivoService {
             String codigoSubtipificacion,
             LocalDate fechaIngreso,
             boolean sinValor,
+            Long idEquipo,
             PageRequest pageRequest
     ) {
         CampoTipificacion campoResuelto = resolverCampoTipificacion(campoTipificacion);
@@ -78,7 +79,7 @@ public class MasivoService {
                 null, Etapa.PREVENTA, codigosTipificacion, codigosSubtipificacion, fechaDesde, fechaHasta);
         validarFiltroAgrupacionMasivo(tipoGrupo, estadoGrupo, codigoTipificacion, fechaIngreso, sinValor, tipoTipificacionGrupo);
         RangoFechas rangoIngreso = resolverRangoIngreso(fechaIngreso);
-        EquipoScope equipos = resolverEquiposActuales();
+        EquipoScope equipos = resolverEquiposActuales(idEquipo);
 
         var leads = leadRepository.listarLeadsMasivo(
                 filtros.filtrarProveedor(),
@@ -130,12 +131,13 @@ public class MasivoService {
             List<String> codigosSubtipificacion,
             CampoTipificacion campoTipificacion,
             LocalDate fechaDesde,
-            LocalDate fechaHasta
+            LocalDate fechaHasta,
+            Long idEquipo
     ) {
         CampoTipificacion campoResuelto = resolverCampoTipificacion(campoTipificacion);
         FiltrosMasivo filtros = prepararFiltros(
                 null, Etapa.PREVENTA, codigosTipificacion, codigosSubtipificacion, fechaDesde, fechaHasta);
-        EquipoScope equipos = resolverEquiposActuales();
+        EquipoScope equipos = resolverEquiposActuales(idEquipo);
         List<LeadGtrAgrupacionItemResponse> tipificaciones = mapearAgrupacionesTipificacion(
                 agruparPorCampoTipificacion(campoResuelto, filtros, equipos)
         );
@@ -526,15 +528,26 @@ public class MasivoService {
                 .toList();
     }
 
-    private EquipoScope resolverEquiposActuales() {
+    private EquipoScope resolverEquiposActuales(Long idEquipoSolicitado) {
         if (currentUser.tieneVisibilidadGlobalEquipos()) {
-            return new EquipoScope(false, EQUIPOS_FILTRO_VACIO);
+            return idEquipoSolicitado == null
+                    ? new EquipoScope(false, EQUIPOS_FILTRO_VACIO)
+                    : new EquipoScope(true, List.of(idEquipoSolicitado));
         }
         List<Long> equiposUsuario = currentUser.equipos();
         if (equiposUsuario == null || equiposUsuario.isEmpty()) {
             return new EquipoScope(true, EQUIPOS_FILTRO_VACIO);
         }
-        return new EquipoScope(true, equiposUsuario);
+        if (idEquipoSolicitado == null) {
+            if (equiposUsuario.size() == 1) {
+                return new EquipoScope(true, List.of(equiposUsuario.getFirst()));
+            }
+            throw new BadRequestException("Selecciona un equipo para buscar historicos.");
+        }
+        if (!equiposUsuario.contains(idEquipoSolicitado)) {
+            throw new BadRequestException("No tienes acceso al equipo seleccionado.");
+        }
+        return new EquipoScope(true, List.of(idEquipoSolicitado));
     }
 
     private record RangoFechas(Instant inicio, Instant fin) {

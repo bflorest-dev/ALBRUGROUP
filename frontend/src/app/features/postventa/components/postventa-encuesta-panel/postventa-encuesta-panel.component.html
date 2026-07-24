@@ -1,0 +1,48 @@
+<form class="form-grid" [formGroup]="form" (ngSubmit)="guardar()">
+  <label>
+    <span>Tipo de encuesta</span>
+    <p-select formControlName="tipoEncuesta" [options]="tipoEncuestaOptions" optionLabel="label" optionValue="value" appendTo="body" />
+  </label>
+  <label>
+    <span>Medio de contacto</span>
+    <p-select formControlName="tipoContacto" [options]="tipoContactoOptions" optionLabel="label" optionValue="value" appendTo="body" />
+  </label>
+  <label>
+    <span>Calificacion general (1 a 10)</span>
+    <p-inputNumber formControlName="calificacion" [min]="1" [max]="10" [showButtons]="true" />
+  </label>
+  <label class="full">
+    <span>Comentario</span>
+    <textarea pTextarea rows="3" formControlName="comentario"></textarea>
+  </label>
+  <div class="form-actions full">
+    <button pButton type="submit" icon="pi pi-star" label="Registrar encuesta" [loading]="facade.saving()"></button>
+  </div>
+</form>
+
+<h3 class="panel-heading">Historial de encuestas</h3>
+<p-table [value]="facade.encuestas()" styleClass="p-datatable-sm nested-table" [rowHover]="true">
+  <ng-template #header>
+    <tr>
+      <th>Fecha</th>
+      <th>Tipo</th>
+      <th>Contacto</th>
+      <th>Calificacion</th>
+      <th>Estado</th>
+      <th>Asesor</th>
+    </tr>
+  </ng-template>
+  <ng-template #body let-encuesta>
+    <tr>
+      <td>{{ encuesta.createdAt ? (encuesta.createdAt | date: 'dd/MM/yyyy') : '—' }}</td>
+      <td>{{ display(encuesta.tipoEncuesta) }}</td>
+      <td>{{ display(encuesta.tipoContacto) }}</td>
+      <td>{{ display(encuesta.calificacion) }}</td>
+      <td><p-tag [severity]="badge(encuesta.estado).severity" [value]="badge(encuesta.estado).label" /></td>
+      <td>{{ display(encuesta.nombreAsesorEncuesta) }}</td>
+    </tr>
+  </ng-template>
+  <ng-template #emptymessage>
+    <tr><td colspan="6" class="empty-hint">Sin encuestas registradas.</td></tr>
+  </ng-template>
+</p-table>

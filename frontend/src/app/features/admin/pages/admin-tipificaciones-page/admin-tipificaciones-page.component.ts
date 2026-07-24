@@ -173,8 +173,7 @@ export class AdminTipificacionesPageComponent implements OnInit {
     return {
       PREVENTA: 'border-l-indigo-500',
       VENTA: 'border-l-emerald-500',
-      POSTVENTA: 'border-l-amber-500',
-      COBRANZA: 'border-l-rose-500'
+      POSTVENTA: 'border-l-amber-500'
     }[this.facade.selectedEtapa()];
   }
 
@@ -182,8 +181,7 @@ export class AdminTipificacionesPageComponent implements OnInit {
     return {
       PREVENTA: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
       VENTA: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-      POSTVENTA: 'bg-amber-50 text-amber-800 ring-amber-200',
-      COBRANZA: 'bg-rose-50 text-rose-700 ring-rose-200'
+      POSTVENTA: 'bg-amber-50 text-amber-800 ring-amber-200'
     }[this.facade.selectedEtapa()];
   }
 
@@ -191,8 +189,7 @@ export class AdminTipificacionesPageComponent implements OnInit {
     return {
       PREVENTA: 'bg-indigo-100 text-indigo-800',
       VENTA: 'bg-emerald-100 text-emerald-800',
-      POSTVENTA: 'bg-amber-100 text-amber-900',
-      COBRANZA: 'bg-rose-100 text-rose-800'
+      POSTVENTA: 'bg-amber-100 text-amber-900'
     }[this.facade.selectedEtapa()];
   }
 

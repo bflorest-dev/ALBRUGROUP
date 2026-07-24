@@ -1,0 +1,25 @@
+@use '../postventa-shared' as shared;
+
+:host {
+  display: block;
+}
+
+.form-grid {
+  @include shared.form-grid;
+}
+
+.form-actions {
+  @include shared.form-actions;
+}
+
+.panel-heading {
+  @include shared.panel-heading;
+}
+
+.nested-table {
+  @include shared.nested-table;
+}
+
+.empty-hint {
+  @include shared.empty-hint;
+}

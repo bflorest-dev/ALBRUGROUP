@@ -37,8 +37,6 @@ public class EncuestaPostventaResponse {
     private String comentario;
     private Long idAsesorEncuesta;
     private String nombreAsesorEncuesta;
-    private Integer calificacionAsesor;
-    private Integer calificacionServicio;
     private Instant createdAt;
     private Instant updatedAt;
 }

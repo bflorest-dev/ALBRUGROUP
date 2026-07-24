@@ -237,8 +237,8 @@
         <tr [class.row-new]="row.isNew">
           <td class="col-fecha">
             <div class="date-stack">
-              <span>{{ row.lastEntryAt ? (row.lastEntryAt | date: 'dd/MM/yyyy') : '-' }}</span>
-              <strong>{{ row.lastEntryAt ? (row.lastEntryAt | date: 'hh:mm a') : '' }}</strong>
+              <span>{{ fechaIngresoEtapaValue(row) ? (fechaIngresoEtapaValue(row) | date: 'dd/MM/yyyy') : '-' }}</span>
+              <strong>{{ fechaIngresoEtapaValue(row) ? (fechaIngresoEtapaValue(row) | date: 'hh:mm a') : '' }}</strong>
             </div>
           </td>
           <td class="col-lead">

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { CampoTipificacion, LeadGtrResponse } from '../../../shared/models/preventa/preventa.models';
 
 export type GtrHistoricosFiltersFormValue = {
+  idEquipo: number;
   campoTipificacion: CampoTipificacion;
   tipificaciones: string[];
   subtipificaciones: string[];
@@ -51,6 +52,7 @@ export class GtrHistoricosStateService {
   private cloneFilters(filters: GtrHistoricosFiltersFormValue): GtrHistoricosFiltersFormValue {
     return {
       ...filters,
+      idEquipo: filters.idEquipo ?? 0,
       tipificaciones: [...filters.tipificaciones],
       subtipificaciones: [...filters.subtipificaciones]
     };

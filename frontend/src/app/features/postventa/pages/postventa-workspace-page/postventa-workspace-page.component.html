@@ -1,0 +1,23 @@
+<section class="postventa-page">
+  <p-toast position="top-right" />
+  <p-confirmDialog />
+
+  <app-page-header eyebrow="Postventa" title="Postventa" [variant]="'solid'">
+    <div class="header-actions">
+      <p-tag severity="info" [value]="facade.totalRows() + ' leads'" />
+      <button
+        pButton
+        type="button"
+        icon="pi pi-refresh"
+        label="Actualizar"
+        severity="secondary"
+        [loading]="facade.loadingBoard()"
+        (click)="facade.loadBoard()"
+      ></button>
+    </div>
+  </app-page-header>
+
+  <app-postventa-board />
+
+  <app-postventa-gestion-drawer />
+</section>

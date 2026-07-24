@@ -22,8 +22,7 @@ public enum PuestoTrabajo {
     SUPERVISOR_GTR("supgtr"),
     ASESOR_GTR("gtr"),
     SUPERVISOR_POSTVENTA("suppost"),
-    ASESOR_POSTVENTA("post"),
-    ASESOR_COBRANZA("collection");
+    ASESOR_POSTVENTA("post");
 
     private final String englishName;
 }

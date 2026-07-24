@@ -19,12 +19,4 @@ public class EncuestaPostventaRequest {
     private Integer calificacion;
 
     private String comentario;
-
-    @Min(value = 1, message = "calificacionAsesor debe ser mayor o igual a 1")
-    @Max(value = 10, message = "calificacionAsesor debe ser menor o igual a 10")
-    private Integer calificacionAsesor;
-
-    @Min(value = 1, message = "calificacionServicio debe ser mayor o igual a 1")
-    @Max(value = 10, message = "calificacionServicio debe ser menor o igual a 10")
-    private Integer calificacionServicio;
 }

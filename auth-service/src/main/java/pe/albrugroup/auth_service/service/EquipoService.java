@@ -2,6 +2,7 @@ package pe.albrugroup.auth_service.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.auth_service.entity.Equipo;
@@ -14,10 +15,12 @@ import pe.albrugroup.auth_service.entity.request.EquipoActualizarRequest;
 import pe.albrugroup.auth_service.entity.request.EquipoRequest;
 import pe.albrugroup.auth_service.exception.BadRequestException;
 import pe.albrugroup.auth_service.exception.ConflictException;
+import pe.albrugroup.auth_service.exception.ForbiddenException;
 import pe.albrugroup.auth_service.exception.NotFoundException;
 import pe.albrugroup.auth_service.mapper.Mapper;
 import pe.albrugroup.auth_service.repository.EquipoRepository;
 import pe.albrugroup.auth_service.repository.UsuarioRepository;
+import pe.albrugroup.auth_service.security.CustomUserDetails;
 import pe.albrugroup.auth_service.usecase.IEquipo;
 
 import java.util.HashSet;
@@ -41,15 +44,21 @@ public class EquipoService implements IEquipo {
             "ASESOR_GTR", "SUPERVISOR_GTR",
             "ASESOR_VENTAS", "SUPERVISOR_VENTAS", "OJT",
             "ASESOR_BACKOFFICE", "SUPERVISOR_BACKOFFICE",
-            "ASESOR_POSTVENTA", "SUPERVISOR_POSTVENTA",
-            "ASESOR_COBRANZA"
+            "ASESOR_POSTVENTA", "SUPERVISOR_POSTVENTA"
     );
 
     // Roles operativos que SÍ pueden pertenecer a varios equipos a la vez. El ASESOR_VENTAS se
     // comparte entre equipos: cada GTR le asigna leads de su propio equipo y el aislamiento se
     // mantiene porque la partición de datos es por el equipo del lead, no por la membresía del asesor.
     private static final Set<String> ROLES_MULTIEQUIPO = Set.of(
+            "ASESOR_GTR",
             "ASESOR_VENTAS"
+    );
+
+    private static final Set<String> ROLES_ASIGNABLES_PREVENTA = Set.of(
+            "ASESOR_VENTAS",
+            "SUPERVISOR_VENTAS",
+            "OJT"
     );
 
     @Override
@@ -72,6 +81,21 @@ public class EquipoService implements IEquipo {
     @Transactional(readOnly = true)
     public List<EquipoResponse> listar() {
         return equipoRepository.findAll().stream()
+                .map(Mapper::toEquipoResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EquipoResponse> listarMisEquipos() {
+        if (tieneVisibilidadGlobalEquipos()) {
+            return equipoRepository.findAll().stream()
+                    .filter(equipo -> Boolean.TRUE.equals(equipo.getActivo()))
+                    .map(Mapper::toEquipoResponse)
+                    .toList();
+        }
+        return usuarioActual().getEquipos().stream()
+                .filter(equipo -> Boolean.TRUE.equals(equipo.getActivo()))
                 .map(Mapper::toEquipoResponse)
                 .toList();
     }
@@ -148,6 +172,30 @@ public class EquipoService implements IEquipo {
                         .empleadoId(usuario.getEmpleadoId())
                         .nombreCompleto(usuario.getNombreCompleto())
                         .roles(usuario.getRoles().stream().map(Rol::getNombre).collect(Collectors.toSet()))
+                        .equipoIds(usuario.getEquipos().stream().map(Equipo::getId).collect(Collectors.toSet()))
+                        .build())
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UsuarioRolResponse> listarAsesoresPreventa(Long equipoId) {
+        Equipo equipo = equipoRepository.findById(equipoId)
+                .orElseThrow(() -> new NotFoundException("Equipo no encontrado", equipoId));
+        if (!Boolean.TRUE.equals(equipo.getActivo())) {
+            throw new BadRequestException("El equipo seleccionado no esta activo");
+        }
+        validarEquipoVisible(equipoId);
+
+        return usuarioRepository.findDistinctByEquiposIdAndActivoTrue(equipoId).stream()
+                .filter(usuario -> usuario.getRoles().stream()
+                        .map(Rol::getNombre)
+                        .anyMatch(ROLES_ASIGNABLES_PREVENTA::contains))
+                .map(usuario -> UsuarioRolResponse.builder()
+                        .empleadoId(usuario.getEmpleadoId())
+                        .nombreCompleto(usuario.getNombreCompleto())
+                        .roles(usuario.getRoles().stream().map(Rol::getNombre).collect(Collectors.toSet()))
+                        .equipoIds(usuario.getEquipos().stream().map(Equipo::getId).collect(Collectors.toSet()))
                         .build())
                 .toList();
     }
@@ -174,5 +222,31 @@ public class EquipoService implements IEquipo {
             throw new BadRequestException(
                     "Este rol solo puede pertenecer a un equipo a la vez");
         }
+    }
+
+    private void validarEquipoVisible(Long equipoId) {
+        if (tieneVisibilidadGlobalEquipos()) {
+            return;
+        }
+        boolean pertenece = usuarioActual().getEquipos().stream()
+                .anyMatch(equipo -> equipo.getId().equals(equipoId));
+        if (!pertenece) {
+            throw new ForbiddenException("No tienes acceso a este equipo");
+        }
+    }
+
+    private boolean tieneVisibilidadGlobalEquipos() {
+        return usuarioActual().getRoles().stream().map(Rol::getNombre).anyMatch("ADMINISTRADOR"::equals)
+                || usuarioActual().getRoles().stream()
+                .flatMap(rol -> rol.getPermisos().stream())
+                .anyMatch(permiso -> "VER_TODOS_LOS_EQUIPOS".equals(permiso.getNombre()));
+    }
+
+    private Usuario usuarioActual() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof CustomUserDetails detalles) {
+            return detalles.getUsuario();
+        }
+        throw new ForbiddenException("No se pudo resolver el usuario actual");
     }
 }

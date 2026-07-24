@@ -17,8 +17,6 @@ public class PagoPostventaUpdateRequest {
     private EstadoPagoPostventa estado;
     @DecimalMin(value = "0.01", message = "monto debe ser mayor a 0")
     private BigDecimal monto;
-    private LocalDate fechaEmision;
-    private LocalDate fechaVencimiento;
     private LocalDate fechaPago;
     private LocalDate fechaCompromisoPago;
     private String numeroOperacion;

@@ -1,0 +1,23 @@
+<p-table [value]="facade.eventos()" styleClass="p-datatable-sm nested-table" [rowHover]="true">
+  <ng-template #header>
+    <tr>
+      <th>Fecha</th>
+      <th>Gestor</th>
+      <th>Tipificacion</th>
+      <th>Subtipificacion</th>
+      <th>Comentario</th>
+    </tr>
+  </ng-template>
+  <ng-template #body let-evento>
+    <tr>
+      <td>{{ evento.createdAt ? (evento.createdAt | date: 'dd/MM/yyyy hh:mm a') : '—' }}</td>
+      <td>{{ display(evento.nombreActor) }}</td>
+      <td>{{ display(evento.tipificacion) }}</td>
+      <td>{{ display(evento.subtipificacion) }}</td>
+      <td class="comment-cell">{{ display(evento.comentario) }}</td>
+    </tr>
+  </ng-template>
+  <ng-template #emptymessage>
+    <tr><td colspan="5" class="empty-hint">Sin gestiones registradas.</td></tr>
+  </ng-template>
+</p-table>

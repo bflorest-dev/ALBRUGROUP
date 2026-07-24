@@ -153,6 +153,7 @@ export class PrivateLayoutComponent {
         { label: 'Mantenimiento', route: '/app/admin/mantenimiento', icon: 'pi pi-database', exact: true },
         { label: 'Leads del día', route: '/app/admin/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
         { label: 'CorrecciÃ³n de campaÃ±a', route: '/app/admin/correccion-campana', icon: 'pi pi-sync', exact: true },
+        { label: 'Postventa', route: '/app/postventa', icon: 'pi pi-briefcase', exact: true },
         { label: 'Finanzas', route: '/app/admin/finanzas', icon: 'pi pi-wallet', exact: true },
         { label: 'Ranking', route: '/app/admin/ranking', icon: 'pi pi-chart-bar', exact: true },
         { label: 'Operaciones', route: '/app/admin/operaciones', icon: 'pi pi-wrench', exact: true }
@@ -232,6 +233,12 @@ export class PrivateLayoutComponent {
       ];
     }
 
+    if (session.primaryRole === 'ASESOR_POSTVENTA' || session.primaryRole === 'SUPERVISOR_POSTVENTA') {
+      return [
+        { label: 'Postventa', route: '/app/postventa', icon: 'pi pi-briefcase', exact: true }
+      ];
+    }
+
     return [{ label: 'Inicio', route: session.homeRoute, icon: 'pi pi-home', exact: true }];
   });
 
@@ -251,12 +258,13 @@ export class PrivateLayoutComponent {
       ['Colaboradores', 4],
       ['/app/admin/ranking', 5],
       ['/app/admin/correccion-campana', 6],
-      ['/app/admin/mantenimiento', 7],
-      ['/app/admin/tipificaciones', 8],
-      ['/app/admin/equipos', 9],
-      ['/app/admin/operaciones', 10],
-      ['/app/admin/personal', 11],
-      ['/app/admin/empleabilidad', 12]
+      ['/app/postventa', 7],
+      ['/app/admin/mantenimiento', 8],
+      ['/app/admin/tipificaciones', 9],
+      ['/app/admin/equipos', 10],
+      ['/app/admin/operaciones', 11],
+      ['/app/admin/personal', 12],
+      ['/app/admin/empleabilidad', 13]
     ]);
     items.sort((left, right) => {
       const leftKey = left.route ?? left.label;

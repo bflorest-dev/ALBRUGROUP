@@ -45,6 +45,7 @@ public class LeadResponse {
     private Integer mesesPermanenciaSnapshot;
     private Instant createdAt;
     private Instant lastEntryAt;
+    private Instant fechaIngresoEtapa;
     private Instant updatedAt;
     private String sec;
     private String sot;
