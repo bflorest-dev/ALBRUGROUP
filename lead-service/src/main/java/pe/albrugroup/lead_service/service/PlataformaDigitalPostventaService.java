@@ -112,10 +112,19 @@ public class PlataformaDigitalPostventaService {
     }
 
     public List<CredencialPlataformaResponse> listarCredencialesDisponibles(Long idPaquete) {
-        return credencialRepository.findByPaqueteIdAndEstadoOrderByFechaExpiracionAsc(
+        return listarCredenciales(idPaquete, false);
+    }
+
+    public List<CredencialPlataformaResponse> listarCredenciales(Long idPaquete, boolean incluirHistoricas) {
+        List<CredencialPlataforma> credenciales = incluirHistoricas
+                ? credencialRepository.findByPaqueteIdOrderByFechaExpiracionAsc(idPaquete)
+                : credencialRepository.findByPaqueteIdAndEstadoInOrderByFechaExpiracionAsc(
                         idPaquete,
-                        EstadoCredencialPlataforma.DISPONIBLE
-                ).stream()
+                        List.of(EstadoCredencialPlataforma.DISPONIBLE, EstadoCredencialPlataforma.ASIGNADA)
+                );
+
+        return credenciales.stream()
+                .filter(credencial -> incluirHistoricas || cuposDisponibles(credencial) > 0)
                 .map(this::toResponse)
                 .toList();
     }

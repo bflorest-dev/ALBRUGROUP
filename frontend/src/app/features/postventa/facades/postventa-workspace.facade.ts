@@ -1,7 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, firstValueFrom } from 'rxjs';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { SessionService } from '../../../core/services/session.service';
+import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
 import {
   CatalogoResponse,
   EventoResponse,
@@ -25,7 +28,8 @@ import {
   PeriodoFacturacionPostventaResponse,
   PlataformaDigitalResponse,
   PostventaAsignacionConflictDetails,
-  PostventaLeadService
+  PostventaLeadService,
+  SatisfaccionPostventaResponse
 } from '../services/postventa-lead.service';
 import { VisualLeadPostventa, splitNombreDosLineas } from '../models/postventa.vm';
 
@@ -42,8 +46,17 @@ export class PostventaWorkspaceFacade {
   private readonly service = inject(PostventaLeadService);
   private readonly messageService = inject(MessageService);
   private readonly confirmationService = inject(ConfirmationService);
+  private readonly realtime = inject(LeadRealtimeService);
+  private readonly session = inject(SessionService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly pageSize = 12;
+
+  // Realtime: eventos que justifican refrescar la bandeja (un lead entra/sale de POSTVENTA,
+  // se toma/libera o se tipifica). Ej.: BACKOFFICE tipifica "instalado" -> el lead aparece solo.
+  private static readonly REALTIME_RELEVANTE = new Set(['ASIGNACION', 'CONTACTO', 'TIPIFICACION']);
+  private readonly _reconciling = signal(false);
+  private realtimeIniciado = false;
 
   // --- Bandeja ---
   private readonly _rows = signal<VisualLeadPostventa[]>([]);
@@ -60,10 +73,14 @@ export class PostventaWorkspaceFacade {
   private readonly _selectedLead = signal<VisualLeadPostventa | null>(null);
   private readonly _loadingContext = signal(false);
   private readonly _saving = signal(false);
+  // Marca si el asesor guardo algun cambio operativo en esta gestion: si es asi, no puede cerrar el
+  // drawer sin tipificar (la tipificacion cierra la gestion y libera el lead).
+  private readonly _gestionModificada = signal(false);
   readonly drawerOpen = this._drawerOpen.asReadonly();
   readonly selectedLead = this._selectedLead.asReadonly();
   readonly loadingContext = this._loadingContext.asReadonly();
   readonly saving = this._saving.asReadonly();
+  readonly gestionModificada = this._gestionModificada.asReadonly();
 
   // --- Contexto del lead abierto ---
   private readonly _detail = signal<LeadDetalleResponse | null>(null);
@@ -72,6 +89,7 @@ export class PostventaWorkspaceFacade {
   private readonly _entregas = signal<EntregaCredencialPlataformaResponse[]>([]);
   private readonly _periodos = signal<PeriodoFacturacionPostventaResponse[]>([]);
   private readonly _encuestas = signal<EncuestaPostventaResponse[]>([]);
+  private readonly _resumenEncuestas = signal<SatisfaccionPostventaResponse | null>(null);
   private readonly _pagos = signal<PagoPostventaResponse[]>([]);
   private readonly _plataformas = signal<PlataformaDigitalResponse[]>([]);
   private readonly _paquetes = signal<PaquetePlataformaResponse[]>([]);
@@ -82,11 +100,15 @@ export class PostventaWorkspaceFacade {
   readonly entregas = this._entregas.asReadonly();
   readonly periodos = this._periodos.asReadonly();
   readonly encuestas = this._encuestas.asReadonly();
+  readonly resumenEncuestas = this._resumenEncuestas.asReadonly();
   readonly pagos = this._pagos.asReadonly();
   readonly plataformas = this._plataformas.asReadonly();
   readonly paquetes = this._paquetes.asReadonly();
   readonly credenciales = this._credenciales.asReadonly();
   readonly marcas = this._marcas.asReadonly();
+
+  // Periodo elegido en la tab Facturacion. Por defecto el vigente; permite navegar el historico.
+  private readonly _selectedPeriodoId = signal<number | null>(null);
 
   // --- Derivados ---
   readonly activePeriodo = computed<PeriodoFacturacionPostventaResponse | null>(() => {
@@ -94,6 +116,22 @@ export class PostventaWorkspaceFacade {
       (periodo) => !ESTADOS_PERIODO_CERRADO.includes(String(periodo.estado ?? ''))
     );
     return abiertos[0] ?? this._periodos()[0] ?? null;
+  });
+  readonly selectedPeriodo = computed<PeriodoFacturacionPostventaResponse | null>(() => {
+    const id = this._selectedPeriodoId();
+    return this._periodos().find((periodo) => periodo.id === id) ?? this.activePeriodo();
+  });
+  // Un periodo cerrado (pagado, baja o anulado) es solo lectura.
+  readonly selectedPeriodoCerrado = computed(() =>
+    ESTADOS_PERIODO_CERRADO.includes(String(this.selectedPeriodo()?.estado ?? ''))
+  );
+  // Pagos del periodo seleccionado (los del backend vienen por lead).
+  readonly pagosDelPeriodo = computed<PagoPostventaResponse[]>(() => {
+    const periodoId = this.selectedPeriodo()?.id;
+    if (!periodoId) {
+      return this._pagos();
+    }
+    return this._pagos().filter((pago) => pago.idPeriodoFacturacion === periodoId);
   });
   readonly tipificaciones = computed<TipificacionResponse[]>(() =>
     [...(this._catalogo()?.tipificaciones ?? [])].sort((a, b) => a.orden - b.orden)
@@ -105,16 +143,22 @@ export class PostventaWorkspaceFacade {
     return [...(tipificacion?.subtipificaciones ?? [])].sort((a, b) => a.orden - b.orden);
   }
 
+  selectPeriodo(idPeriodo: number | null): void {
+    this._selectedPeriodoId.set(idPeriodo);
+  }
+
   private readonly today = this.todayLocalDate();
 
   // ---------------------------------------------------------------------------
   // Bandeja
   // ---------------------------------------------------------------------------
-  async loadBoard(pageNumber = this._pageNumber()): Promise<void> {
-    if (this._loadingBoard()) {
+  async loadBoard(pageNumber = this._pageNumber(), silent = false): Promise<void> {
+    if (!silent && this._loadingBoard()) {
       return;
     }
-    this._loadingBoard.set(true);
+    if (!silent) {
+      this._loadingBoard.set(true);
+    }
     try {
       const page = await firstValueFrom(
         this.service.listarBandeja({
@@ -128,9 +172,64 @@ export class PostventaWorkspaceFacade {
       this._totalRows.set(page.totalElements);
       this._rows.set(page.content.map((row) => this.withFechaGroup(row)));
     } catch (error) {
-      this.notify('error', this.errorMessage(error, 'No se pudo cargar la bandeja de Postventa.'));
+      // En refrescos silenciosos (realtime) no molestamos con un toast: stompjs reintenta solo.
+      if (!silent) {
+        this.notify('error', this.errorMessage(error, 'No se pudo cargar la bandeja de Postventa.'));
+      }
     } finally {
-      this._loadingBoard.set(false);
+      if (!silent) {
+        this._loadingBoard.set(false);
+      }
+    }
+  }
+
+  /**
+   * Suscribe la bandeja al realtime de leads para que se actualice sola cuando un lead entra o sale
+   * de POSTVENTA (p. ej. BACKOFFICE tipifica "instalado"), se toma/libera o se tipifica. Idempotente.
+   */
+  startRealtime(): void {
+    if (this.realtimeIniciado) {
+      return;
+    }
+    this.realtimeIniciado = true;
+
+    this.realtime
+      .watchTopic('/topic/leads/etapa/POSTVENTA')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (event) => {
+          if (PostventaWorkspaceFacade.REALTIME_RELEVANTE.has(event.tipo)) {
+            void this.reconcile();
+          }
+        },
+        error: () => undefined
+      });
+
+    const empleadoId = this.session.getSession()?.empleadoId;
+    if (empleadoId) {
+      this.realtime
+        .watchTopic(`/topic/leads/asesor/${empleadoId}`)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (event) => {
+            if (PostventaWorkspaceFacade.REALTIME_RELEVANTE.has(event.tipo)) {
+              void this.reconcile();
+            }
+          },
+          error: () => undefined
+        });
+    }
+  }
+
+  private async reconcile(): Promise<void> {
+    if (this._reconciling()) {
+      return;
+    }
+    this._reconciling.set(true);
+    try {
+      await this.loadBoard(this._pageNumber(), true);
+    } finally {
+      this._reconciling.set(false);
     }
   }
 
@@ -196,6 +295,16 @@ export class PostventaWorkspaceFacade {
     await this.loadContext(row);
   }
 
+  // Cierre solicitado por el usuario (mask, icono X o boton): si hubo cambios sin tipificar, se
+  // bloquea el cierre y se pide tipificar; si no, cierra normal.
+  requestCloseDrawer(): void {
+    if (this._gestionModificada()) {
+      this.notify('warn', 'Registraste cambios en esta gestion. Tipificala para poder cerrarla.');
+      return;
+    }
+    this.closeDrawer();
+  }
+
   closeDrawer(): void {
     this._drawerOpen.set(false);
     this._selectedLead.set(null);
@@ -216,7 +325,7 @@ export class PostventaWorkspaceFacade {
       this._loadingContext.set(true);
     }
     try {
-      const [detail, eventos, catalogo, plataformas, marcas, entregas, periodos, encuestas, pagos] = await Promise.all([
+      const [detail, eventos, catalogo, plataformas, marcas, entregas, periodos, encuestas, resumen, pagos] = await Promise.all([
         firstValueFrom(this.service.obtenerDetalle(row.idLead)),
         firstValueFrom(this.service.listarEventos(row.idLead, this.recentPage())),
         firstValueFrom(this.service.getCatalogoTipificaciones(row.idLead)),
@@ -225,6 +334,7 @@ export class PostventaWorkspaceFacade {
         firstValueFrom(this.service.listarEntregas(row.idLead)),
         firstValueFrom(this.service.listarPeriodos(row.idLead)),
         firstValueFrom(this.service.listarEncuestas(row.idLead, this.recentPage())),
+        firstValueFrom(this.service.obtenerResumenEncuestas(row.idLead)),
         firstValueFrom(this.service.listarPagos(row.idLead, this.recentPage()))
       ]);
       this._detail.set(detail);
@@ -235,7 +345,9 @@ export class PostventaWorkspaceFacade {
       this._entregas.set(entregas);
       this._periodos.set(periodos);
       this._encuestas.set(encuestas.content);
+      this._resumenEncuestas.set(resumen);
       this._pagos.set(pagos.content);
+      this._selectedPeriodoId.set(this.activePeriodo()?.id ?? null);
     } catch (error) {
       this.notify('error', this.errorMessage(error, 'No se pudo cargar la gestion del lead.'));
     } finally {
@@ -302,9 +414,9 @@ export class PostventaWorkspaceFacade {
   // Facturacion
   // ---------------------------------------------------------------------------
   async confirmarFactura(request: PeriodoFacturacionFacturaRequest): Promise<boolean> {
-    const periodo = this.activePeriodo();
+    const periodo = this.selectedPeriodo();
     if (!periodo) {
-      this.notify('warn', 'No hay periodo de facturacion activo.');
+      this.notify('warn', 'No hay periodo de facturacion seleccionado.');
       return false;
     }
     return this.run(
@@ -316,9 +428,9 @@ export class PostventaWorkspaceFacade {
 
   async registrarPago(request: Omit<PagoPostventaRequest, 'idPeriodoFacturacion'>): Promise<boolean> {
     const lead = this._selectedLead();
-    const periodo = this.activePeriodo();
+    const periodo = this.selectedPeriodo();
     if (!lead || !periodo) {
-      this.notify('warn', 'No hay periodo de facturacion activo.');
+      this.notify('warn', 'No hay periodo de facturacion seleccionado.');
       return false;
     }
     return this.run(
@@ -329,7 +441,7 @@ export class PostventaWorkspaceFacade {
   }
 
   async cerrarPeriodo(request: CerrarPeriodoFacturacionRequest): Promise<boolean> {
-    const periodo = this.activePeriodo();
+    const periodo = this.selectedPeriodo();
     if (!periodo) {
       return false;
     }
@@ -373,6 +485,7 @@ export class PostventaWorkspaceFacade {
     this._saving.set(true);
     try {
       await firstValueFrom(action());
+      this._gestionModificada.set(true);
       this.notify('success', okMessage);
       await this.reloadOpenLead();
       return true;
@@ -391,9 +504,12 @@ export class PostventaWorkspaceFacade {
     this._entregas.set([]);
     this._periodos.set([]);
     this._encuestas.set([]);
+    this._resumenEncuestas.set(null);
     this._pagos.set([]);
     this._paquetes.set([]);
     this._credenciales.set([]);
+    this._selectedPeriodoId.set(null);
+    this._gestionModificada.set(false);
   }
 
   private recentPage() {

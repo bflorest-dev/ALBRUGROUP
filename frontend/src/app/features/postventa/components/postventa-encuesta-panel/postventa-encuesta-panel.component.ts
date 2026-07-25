@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -14,7 +14,7 @@ import { EstadoBadge, SelectOption, display, estadoBadge } from '../../models/po
 /** Encuesta de satisfaccion del cliente y su historial. */
 @Component({
   selector: 'app-postventa-encuesta-panel',
-  imports: [DatePipe, ReactiveFormsModule, ButtonModule, InputNumberModule, SelectModule, TableModule, TagModule, TextareaModule],
+  imports: [DatePipe, DecimalPipe, ReactiveFormsModule, ButtonModule, InputNumberModule, SelectModule, TableModule, TagModule, TextareaModule],
   templateUrl: './postventa-encuesta-panel.component.html',
   styleUrl: './postventa-encuesta-panel.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush

@@ -33,6 +33,28 @@
   @include shared.empty-hint;
 }
 
+.periodo-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.readonly-note {
+  display: block;
+  margin-bottom: 0.85rem;
+}
+
+.temporal-note {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.6rem;
+  color: var(--role-muted);
+  font-size: 0.78rem;
+  font-style: italic;
+}
+
 .period-card {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

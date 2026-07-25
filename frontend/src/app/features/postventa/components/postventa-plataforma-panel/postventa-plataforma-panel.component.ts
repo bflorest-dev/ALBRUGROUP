@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AutoCompleteModule } from 'primeng/autocomplete';
 import { ButtonModule } from 'primeng/button';
@@ -43,6 +43,14 @@ export class PostventaPlataformaPanelComponent {
   protected readonly esObsequio = signal(true);
   protected readonly marcaSuggestions = signal<PlataformaDigitalResponse[]>([]);
   private handledLeadId = -1;
+
+  // Estados de inventario: si falta plataforma/paquete/credencial, mostramos un vacio coherente
+  // en vez de un formulario que luego no se puede completar.
+  private readonly selectedPlataformaId = signal(0);
+  private readonly selectedPaqueteId = signal(0);
+  protected readonly noHayPlataformas = computed(() => this.facade.plataformas().length === 0);
+  protected readonly sinPaquetes = computed(() => this.selectedPlataformaId() > 0 && this.facade.paquetes().length === 0);
+  protected readonly sinCredenciales = computed(() => this.selectedPaqueteId() > 0 && this.facade.credenciales().length === 0);
 
   protected readonly tipoDispositivoOptions: SelectOption<TipoDispositivo>[] = [
     { label: 'TV', value: 'TV' },
@@ -95,6 +103,8 @@ export class PostventaPlataformaPanelComponent {
         observacion: ''
       });
       this.esObsequio.set(true);
+      this.selectedPlataformaId.set(idPlataforma ?? 0);
+      this.selectedPaqueteId.set(0);
       if (idPlataforma) {
         void this.facade.onPlataformaChanged(idPlataforma);
       }
@@ -111,11 +121,14 @@ export class PostventaPlataformaPanelComponent {
 
   protected onPlataformaChange(idPlataforma: number | null): void {
     this.form.patchValue({ idPaquete: 0, idCredencial: 0 });
+    this.selectedPlataformaId.set(idPlataforma ?? 0);
+    this.selectedPaqueteId.set(0);
     void this.facade.onPlataformaChanged(idPlataforma);
   }
 
   protected onPaqueteChange(idPaquete: number | null): void {
     this.form.patchValue({ idCredencial: 0 });
+    this.selectedPaqueteId.set(idPaquete ?? 0);
     void this.facade.onPaqueteChanged(idPaquete);
   }
 

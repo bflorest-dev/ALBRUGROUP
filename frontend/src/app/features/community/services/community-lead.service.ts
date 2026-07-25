@@ -477,9 +477,12 @@ export class CommunityLeadService {
     return this.http.post<CredencialPlataformaResponse>(`${this.leadUrl}/postventa/plataformas-digitales/credenciales`, request);
   }
 
-  listarCredencialesPlataformaDisponibles(idPaquete: number): Observable<CredencialPlataformaResponse[]> {
+  listarCredencialesPlataformaDisponibles(
+    idPaquete: number,
+    incluirHistoricas = false
+  ): Observable<CredencialPlataformaResponse[]> {
     return this.http.get<CredencialPlataformaResponse[]>(`${this.leadUrl}/postventa/plataformas-digitales/credenciales`, {
-      params: new HttpParams().set('idPaquete', idPaquete)
+      params: new HttpParams().set('idPaquete', idPaquete).set('incluirHistoricas', incluirHistoricas)
     });
   }
 

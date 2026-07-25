@@ -182,6 +182,7 @@ export class CommunityWorkspaceFacade {
   );
   readonly paquetesPlataforma = signal<PaquetePlataformaResponse[]>([]);
   readonly credencialesPlataforma = signal<CredencialPlataformaResponse[]>([]);
+  readonly mostrarCredencialesHistoricas = signal(false);
   readonly selectedDigitalPlatformId = signal(0);
   readonly selectedCredentialPackageId = signal(0);
   readonly serviciosProveedor = signal<ServiciosProveedorResponse | null>(null);
@@ -1261,6 +1262,17 @@ export class CommunityWorkspaceFacade {
     await this.refreshDigitalCredentials(nextId);
   }
 
+  async setShowHistoricalCredentials(value: boolean): Promise<void> {
+    if (this.mostrarCredencialesHistoricas() === value) {
+      return;
+    }
+    this.mostrarCredencialesHistoricas.set(value);
+    const idPaquete = this.selectedCredentialPackageId();
+    if (idPaquete) {
+      await this.refreshDigitalCredentials(idPaquete);
+    }
+  }
+
   async openCreateZone(): Promise<void> {
     if (!this.ensureCanMutate()) {
       return;
@@ -1454,7 +1466,11 @@ export class CommunityWorkspaceFacade {
   }
 
   private async refreshDigitalCredentials(idPaquete: number): Promise<void> {
-    this.credencialesPlataforma.set(await firstValueFrom(this.leadService.listarCredencialesPlataformaDisponibles(idPaquete)));
+    this.credencialesPlataforma.set(
+      await firstValueFrom(
+        this.leadService.listarCredencialesPlataformaDisponibles(idPaquete, this.mostrarCredencialesHistoricas())
+      )
+    );
   }
 
   private async refreshZones(): Promise<void> {

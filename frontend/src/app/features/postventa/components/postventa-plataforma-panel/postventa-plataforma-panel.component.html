@@ -1,7 +1,13 @@
 @if (!facade.tienePlataformaOfrecida()) {
-  <p-message severity="info" text="Este lead no tiene una plataforma digital ofrecida. Puedes registrar una entrega igualmente si corresponde." styleClass="panel-note" />
+  <p-message severity="info" text="Este lead no tiene plataforma digital contratada. Si el cliente acepta, puedes ofrecerle una para sostener la permanencia." styleClass="panel-note" />
 }
 
+@if (noHayPlataformas()) {
+  <div class="inventory-empty">
+    <i class="pi pi-box"></i>
+    <p>No hay plataformas digitales configuradas. Un administrador debe registrar el inventario (plataformas, paquetes y credenciales) antes de poder entregar.</p>
+  </div>
+} @else {
 <form class="form-grid" [formGroup]="form" (ngSubmit)="guardar()">
   <label>
     <span>Plataforma</span>
@@ -27,6 +33,9 @@
       (onChange)="onPaqueteChange($event.value)"
     />
   </label>
+  @if (sinPaquetes()) {
+    <p class="inventory-hint full">La plataforma seleccionada no tiene paquetes disponibles. Pide a un administrador que registre un paquete.</p>
+  }
   <label>
     <span>Credencial disponible</span>
     <p-select
@@ -45,6 +54,9 @@
       </ng-template>
     </p-select>
   </label>
+  @if (sinCredenciales()) {
+    <p class="inventory-hint full">Este paquete no tiene credenciales disponibles. Falta inventario: pide a un administrador que registre credenciales.</p>
+  }
   <label>
     <span>Cupos a asignar</span>
     <p-inputNumber formControlName="cantidadUsuariosAsignados" [min]="1" [showButtons]="true" />
@@ -105,6 +117,7 @@
     <button pButton type="submit" icon="pi pi-check" label="Guardar entrega" [loading]="facade.saving()"></button>
   </div>
 </form>
+}
 
 <h3 class="panel-heading">Entregas registradas</h3>
 <p-table [value]="facade.entregas()" styleClass="p-datatable-sm nested-table" [rowHover]="true">

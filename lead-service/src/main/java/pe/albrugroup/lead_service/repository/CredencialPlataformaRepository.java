@@ -6,12 +6,17 @@ import pe.albrugroup.lead_service.entity.CredencialPlataforma;
 import pe.albrugroup.lead_service.entity.enums.EstadoCredencialPlataforma;
 
 import java.util.List;
+import java.util.Collection;
 
 @Repository
 public interface CredencialPlataformaRepository extends JpaRepository<CredencialPlataforma, Long> {
 
-    List<CredencialPlataforma> findByPaqueteIdAndEstadoOrderByFechaExpiracionAsc(
+    List<CredencialPlataforma> findByPaqueteIdAndEstadoInOrderByFechaExpiracionAsc(
             Long idPaquete,
-            EstadoCredencialPlataforma estado
+            Collection<EstadoCredencialPlataforma> estados
+    );
+
+    List<CredencialPlataforma> findByPaqueteIdOrderByFechaExpiracionAsc(
+            Long idPaquete
     );
 }

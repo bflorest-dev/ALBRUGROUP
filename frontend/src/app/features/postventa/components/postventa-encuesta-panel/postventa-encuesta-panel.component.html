@@ -1,3 +1,15 @@
+@if (facade.resumenEncuestas(); as resumen) {
+  <div class="satisfaccion-resumen">
+    <div class="satisfaccion-resumen__avg">
+      <span>Promedio de satisfacción</span>
+      <strong>{{ resumen.promedioSatisfaccion != null ? (resumen.promedioSatisfaccion | number: '1.1-1') : 'Sin encuestas' }}</strong>
+    </div>
+    @if (resumen.statusSatisfaccion) {
+      <p-tag [severity]="badge(resumen.statusSatisfaccion).severity" [value]="badge(resumen.statusSatisfaccion).label" />
+    }
+  </div>
+}
+
 <form class="form-grid" [formGroup]="form" (ngSubmit)="guardar()">
   <label>
     <span>Tipo de encuesta</span>

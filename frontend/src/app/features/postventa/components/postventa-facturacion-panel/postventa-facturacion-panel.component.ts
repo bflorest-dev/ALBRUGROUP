@@ -74,9 +74,10 @@ export class PostventaFacturacionPanelComponent {
   });
 
   constructor() {
-    // Prefijar factura y pago con los datos del periodo vigente, una vez por periodo.
+    // Prefijar factura y pago con los datos del periodo seleccionado, una vez por periodo.
+    // Al navegar a otro periodo, el effect vuelve a correr y reprefija los formularios.
     effect(() => {
-      const periodo = this.facade.activePeriodo();
+      const periodo = this.facade.selectedPeriodo();
       if (!periodo || periodo.id === this.handledPeriodoId) {
         return;
       }
@@ -109,6 +110,16 @@ export class PostventaFacturacionPanelComponent {
 
   protected display(value: unknown): string {
     return display(value);
+  }
+
+  /** Etiqueta legible de un periodo para el selector: "Periodo 2 · Pago pendiente". */
+  protected periodoLabel(periodo: { numeroPeriodo?: number | null; estado?: unknown }): string {
+    const numero = periodo.numeroPeriodo ?? '—';
+    return `Periodo ${numero} · ${estadoBadge(periodo.estado).label}`;
+  }
+
+  protected onPeriodoChange(idPeriodo: number | null): void {
+    this.facade.selectPeriodo(idPeriodo);
   }
 
   protected async guardarFactura(): Promise<void> {

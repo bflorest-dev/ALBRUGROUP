@@ -171,6 +171,13 @@ export interface EncuestaPostventaResponse extends EncuestaPostventaRequest {
   createdAt?: string | null;
 }
 
+/** Resumen de satisfaccion del lead (promedio + status), calculado por el backend. */
+export interface SatisfaccionPostventaResponse {
+  idLead?: number | null;
+  promedioSatisfaccion?: number | null;
+  statusSatisfaccion?: string | null;
+}
+
 export interface PagoPostventaRequest {
   idPeriodoFacturacion?: number | null;
   aportante?: AportantePago | string | null;
@@ -296,6 +303,10 @@ export class PostventaLeadService {
 
   registrarEncuesta(idLead: number, request: EncuestaPostventaRequest): Observable<EncuestaPostventaResponse> {
     return this.http.post<EncuestaPostventaResponse>(`${this.leadUrl}/postventa/leads/${idLead}/encuestas`, request);
+  }
+
+  obtenerResumenEncuestas(idLead: number): Observable<SatisfaccionPostventaResponse> {
+    return this.http.get<SatisfaccionPostventaResponse>(`${this.leadUrl}/postventa/leads/${idLead}/encuestas/resumen`);
   }
 
   listarPagos(idLead: number, query: PageQuery): Observable<LeadPage<PagoPostventaResponse>> {

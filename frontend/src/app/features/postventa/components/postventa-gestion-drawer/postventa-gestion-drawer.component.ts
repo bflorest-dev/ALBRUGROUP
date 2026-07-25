@@ -60,7 +60,8 @@ export class PostventaGestionDrawerComponent {
 
   protected onVisibleChange(visible: boolean): void {
     if (!visible) {
-      this.facade.closeDrawer();
+      // El facade decide: si hubo cambios sin tipificar, no cierra y avisa.
+      this.facade.requestCloseDrawer();
     }
   }
 }

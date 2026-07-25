@@ -68,8 +68,11 @@ public class PostventaPlataformaDigitalController {
 
     @GetMapping("/credenciales")
     @PreAuthorize("hasAuthority('READ_POSTVENTA_PLATAFORMA_DIGITAL')")
-    public ResponseEntity<List<CredencialPlataformaResponse>> listarCredencialesDisponibles(@RequestParam Long idPaquete) {
-        return ResponseEntity.ok(plataformaDigitalService.listarCredencialesDisponibles(idPaquete));
+    public ResponseEntity<List<CredencialPlataformaResponse>> listarCredencialesDisponibles(
+            @RequestParam Long idPaquete,
+            @RequestParam(defaultValue = "false") boolean incluirHistoricas
+    ) {
+        return ResponseEntity.ok(plataformaDigitalService.listarCredenciales(idPaquete, incluirHistoricas));
     }
 
     @PostMapping("/leads/{idLead}/entregas")

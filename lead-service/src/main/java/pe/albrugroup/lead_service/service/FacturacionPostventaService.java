@@ -8,12 +8,15 @@ import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.PeriodoFacturacionPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoPeriodoFacturacionPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoPostventa;
+import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
+import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.CerrarPeriodoFacturacionRequest;
 import pe.albrugroup.lead_service.entity.request.PeriodoFacturacionFacturaRequest;
 import pe.albrugroup.lead_service.entity.response.PeriodoFacturacionPostventaResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.NotFoundException;
 import pe.albrugroup.lead_service.repository.PeriodoFacturacionPostventaRepository;
+import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.service.facturacion.CalculadoraFacturacionPostventa;
 import pe.albrugroup.lead_service.service.facturacion.CalculadoraFacturacionPostventaResolver;
 
@@ -70,6 +73,8 @@ public class FacturacionPostventaService {
         PeriodoFacturacionPostventa saved = periodoRepository.save(periodo);
         if (debeCrearSiguientePeriodo(saved, request)) {
             crearSiguientePeriodo(saved);
+        } else if (debeEnviarACobranzaPorPermanencia(saved)) {
+            enviarLeadACobranza(saved.getLead());
         }
 
         return toResponse(saved);
@@ -117,6 +122,36 @@ public class FacturacionPostventaService {
             return true;
         }
         return periodo.getNumeroPeriodo() != null && periodo.getNumeroPeriodo() < mesesPermanencia;
+    }
+
+    private boolean debeEnviarACobranzaPorPermanencia(PeriodoFacturacionPostventa periodo) {
+        if (periodo.getEstado() != EstadoPeriodoFacturacionPostventa.PAGO_CONFIRMADO) {
+            return false;
+        }
+        Lead lead = periodo.getLead();
+        if (lead == null || lead.getEtapa() != Etapa.POSTVENTA || lead.getEstadoPostventa() == EstadoPostventa.BAJA_CONFIRMADA
+                || lead.getEstadoPostventa() == EstadoPostventa.NO_EFECTIVO) {
+            return false;
+        }
+        CalendarioFacturacionPostventa calendario = periodo.getCalendarioFacturacionPostventa();
+        Integer mesesPermanencia = calendario == null ? null : calendario.getMesesPermanenciaSnapshot();
+        return mesesPermanencia != null
+                && mesesPermanencia > 0
+                && periodo.getNumeroPeriodo() != null
+                && periodo.getNumeroPeriodo() >= mesesPermanencia;
+    }
+
+    private void enviarLeadACobranza(Lead lead) {
+        lead.setEtapa(Etapa.COBRANZA);
+        lead.setLastEntryAt(OperationalDateTime.now());
+        lead.setEstado(EstadoSeguimiento.NUEVO);
+        lead.setIdAsesorAsignado(null);
+        lead.setNombreAsesorAsignado(null);
+        lead.setIdTipificacion(null);
+        lead.setCodigoTipificacion(null);
+        lead.setIdSubtipificacion(null);
+        lead.setCodigoSubtipificacion(null);
+        lead.setEstadoPostventa(EstadoPostventa.EFECTIVO);
     }
 
     private void crearSiguientePeriodo(PeriodoFacturacionPostventa periodo) {

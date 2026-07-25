@@ -32,5 +32,6 @@ export class PostventaWorkspacePageComponent implements OnInit {
 
   ngOnInit(): void {
     void this.facade.loadBoard();
+    this.facade.startRealtime();
   }
 }

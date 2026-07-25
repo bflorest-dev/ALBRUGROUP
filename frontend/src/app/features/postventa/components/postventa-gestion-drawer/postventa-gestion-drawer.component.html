@@ -3,7 +3,7 @@
   (visibleChange)="onVisibleChange($event)"
   position="right"
   styleClass="postventa-drawer"
-  [dismissible]="true"
+  [dismissible]="!facade.gestionModificada()"
 >
   <ng-template #header>
     @if (facade.selectedLead(); as lead) {
@@ -50,6 +50,12 @@
       </div>
 
       <footer class="drawer-footer">
+        @if (facade.gestionModificada()) {
+          <p class="drawer-footer__hint">
+            <i class="pi pi-info-circle"></i>
+            Registraste cambios en esta gestión: tipifícala para cerrarla.
+          </p>
+        }
         <app-postventa-tipificacion-bar />
       </footer>
     }

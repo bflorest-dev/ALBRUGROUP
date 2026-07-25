@@ -67,6 +67,9 @@ const ESTADO_BADGES: Record<string, EstadoBadge> = {
   SATISFECHO: { label: 'Satisfecho', severity: 'success' },
   INSATISFECHO: { label: 'Insatisfecho', severity: 'danger' },
   SIN_CALIFICAR: { label: 'Sin encuesta', severity: 'secondary' },
+  // Resumen de satisfaccion (StatusSatisfaccion)
+  POCO_SATISFECHO: { label: 'Poco satisfecho', severity: 'warn' },
+  NADA_SATISFECHO: { label: 'Nada satisfecho', severity: 'danger' },
   // Entregas / credenciales
   ACTIVA: { label: 'Activa', severity: 'success' },
   CANCELADA: { label: 'Cancelada', severity: 'secondary' },

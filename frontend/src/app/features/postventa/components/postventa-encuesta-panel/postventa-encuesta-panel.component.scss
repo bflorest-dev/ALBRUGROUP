@@ -23,3 +23,32 @@
 .empty-hint {
   @include shared.empty-hint;
 }
+
+.satisfaccion-resumen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--role-accent-soft);
+  border: 1px solid var(--app-border);
+  border-radius: 0.75rem;
+  padding: 0.7rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.satisfaccion-resumen__avg {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+
+  span {
+    color: var(--role-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  strong {
+    color: var(--role-primary);
+    font-size: 1.15rem;
+  }
+}
