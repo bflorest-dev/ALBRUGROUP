@@ -253,6 +253,8 @@ export interface LeadVentaResponse {
   sec?: string | null;
   sot?: string | null;
   requiereSecSotVenta?: boolean | null;
+  nombreAsesorUltimaGestion?: string | null;
+  fechaUltimaGestion?: string | null;
   // Enriquecimiento del plan ofrecido (velocidad regular y promocional) para la bandeja BackOffice.
   internetVelocidad?: number | null;
   internetUnidad?: string | null;

@@ -440,12 +440,12 @@ export class RankingFacade {
           label: this.display(row.codigoTipificacion),
           cantidad: row.cantidad,
           porcentaje: row.porcentaje,
-          colorIndex: this.paletteFromOrden(meta?.orden ?? 0)
+          colorIndex: 0
         };
         return { segment, orden: meta?.orden ?? Number.MAX_SAFE_INTEGER };
       })
       .sort((a, b) => a.orden - b.orden || b.segment.cantidad - a.segment.cantidad)
-      .map((item) => item.segment);
+      .map((item, index) => ({ ...item.segment, colorIndex: this.paletteFromPosition(index) }));
   }
 
   private buildSubtipiSegments(codigoTipi: string, rows: GtrSubtipificacionRankingResponse[]): RankingDonutSegment[] {
@@ -458,12 +458,12 @@ export class RankingFacade {
           label: this.display(row.codigoSubtipificacion),
           cantidad: row.cantidad,
           porcentaje: row.porcentaje,
-          colorIndex: this.paletteFromOrden(meta?.orden ?? index + 1)
+          colorIndex: 0
         };
         return { segment, orden: meta?.orden ?? Number.MAX_SAFE_INTEGER - (rows.length - index) };
       })
       .sort((a, b) => a.orden - b.orden || b.segment.cantidad - a.segment.cantidad)
-      .map((item) => item.segment);
+      .map((item, index) => ({ ...item.segment, colorIndex: this.paletteFromPosition(index) }));
   }
 
   private labelForTipi(codigo: string): string {
@@ -510,8 +510,8 @@ export class RankingFacade {
     });
   }
 
-  private paletteFromOrden(orden: number): number {
-    return Number.isFinite(orden) && orden > 0 ? (orden - 1) % PALETTE_SIZE : 0;
+  private paletteFromPosition(index: number): number {
+    return Number.isFinite(index) && index >= 0 ? index % PALETTE_SIZE : 0;
   }
 
   private startOfDay(date: Date): Date {

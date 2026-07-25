@@ -1,0 +1,29 @@
+<div class="star-rating" [class.star-rating--disabled]="disabled()" (mouseleave)="clearHover()">
+  <div class="stars">
+    @for (fill of fills(); track $index) {
+      <span class="star">
+        <i class="pi pi-star-fill star__base"></i>
+        <span class="star__fill" [style.width.%]="fill">
+          <i class="pi pi-star-fill"></i>
+        </span>
+        <button
+          type="button"
+          class="star__zone star__zone--left"
+          [attr.aria-label]="($index * 2 + 1) + ' de 10'"
+          [disabled]="disabled()"
+          (mouseenter)="hover($index * 2 + 1)"
+          (click)="pick($index * 2 + 1)"
+        ></button>
+        <button
+          type="button"
+          class="star__zone star__zone--right"
+          [attr.aria-label]="($index * 2 + 2) + ' de 10'"
+          [disabled]="disabled()"
+          (mouseenter)="hover($index * 2 + 2)"
+          (click)="pick($index * 2 + 2)"
+        ></button>
+      </span>
+    }
+  </div>
+  <span class="star-rating__score">{{ scoreLabel() || 'Sin calificar' }}</span>
+</div>

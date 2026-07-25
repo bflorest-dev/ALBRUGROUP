@@ -3,7 +3,9 @@ import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core'
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Observable, firstValueFrom } from 'rxjs';
 import { ConfirmationService, MessageService } from 'primeng/api';
+import { BrowserSessionService } from '../../../core/services/browser-session.service';
 import { SessionService } from '../../../core/services/session.service';
+import { buildTelUrl, buildWhatsAppUrl } from '../../../shared/utils/phone-link';
 import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
 import {
   CatalogoResponse,
@@ -48,6 +50,7 @@ export class PostventaWorkspaceFacade {
   private readonly confirmationService = inject(ConfirmationService);
   private readonly realtime = inject(LeadRealtimeService);
   private readonly session = inject(SessionService);
+  private readonly browserSession = inject(BrowserSessionService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly pageSize = 12;
@@ -76,11 +79,15 @@ export class PostventaWorkspaceFacade {
   // Marca si el asesor guardo algun cambio operativo en esta gestion: si es asi, no puede cerrar el
   // drawer sin tipificar (la tipificacion cierra la gestion y libera el lead).
   private readonly _gestionModificada = signal(false);
+  // Ultimo medio de contacto usado (boton Llamar/Chat). La encuesta lo infiere de aqui y se bloquea
+  // si aun no se ha contactado al cliente.
+  private readonly _medioContacto = signal<'LLAMADA' | 'CHAT' | null>(null);
   readonly drawerOpen = this._drawerOpen.asReadonly();
   readonly selectedLead = this._selectedLead.asReadonly();
   readonly loadingContext = this._loadingContext.asReadonly();
   readonly saving = this._saving.asReadonly();
   readonly gestionModificada = this._gestionModificada.asReadonly();
+  readonly medioContacto = this._medioContacto.asReadonly();
 
   // --- Contexto del lead abierto ---
   private readonly _detail = signal<LeadDetalleResponse | null>(null);
@@ -396,6 +403,44 @@ export class PostventaWorkspaceFacade {
   }
 
   // ---------------------------------------------------------------------------
+  // Contacto externo (abre la app del sistema y registra el evento de contacto)
+  // ---------------------------------------------------------------------------
+  llamar(): void {
+    const detail = this._detail();
+    const url = detail ? buildTelUrl(detail.prefijo, detail.lead) : null;
+    if (!url) {
+      this.notify('warn', 'El lead no tiene un numero valido para llamar.');
+      return;
+    }
+    this.browserSession.allowExternalNavigation();
+    window.location.assign(url);
+    this.registrarContacto('LLAMADA');
+  }
+
+  chat(): void {
+    const detail = this._detail();
+    const url = detail ? buildWhatsAppUrl(detail.prefijo, detail.lead) : null;
+    if (!url) {
+      this.notify('warn', 'El lead no tiene un numero valido para abrir WhatsApp.');
+      return;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+    this.registrarContacto('CHAT');
+  }
+
+  // Recuerda el medio y registra el evento de contacto (best-effort). Marca la gestion como
+  // modificada: tras contactar, el asesor debe tipificar el resultado antes de cerrar.
+  private registrarContacto(medio: 'LLAMADA' | 'CHAT'): void {
+    const lead = this._selectedLead();
+    if (!lead) {
+      return;
+    }
+    this._medioContacto.set(medio);
+    this._gestionModificada.set(true);
+    firstValueFrom(this.service.registrarContacto(lead.idLead)).catch(() => undefined);
+  }
+
+  // ---------------------------------------------------------------------------
   // Encuesta
   // ---------------------------------------------------------------------------
   async registrarEncuesta(request: EncuestaPostventaRequest): Promise<boolean> {
@@ -403,8 +448,18 @@ export class PostventaWorkspaceFacade {
     if (!lead) {
       return false;
     }
+    const medio = this._medioContacto();
+    if (!medio) {
+      this.notify('warn', 'No puedes registrar una encuesta sin haberte comunicado con el cliente. Usa Llamar o Chat primero.');
+      return false;
+    }
     return this.run(
-      () => this.service.registrarEncuesta(lead.idLead, { ...request, idPeriodoFacturacion: this.activePeriodo()?.id ?? null }),
+      () =>
+        this.service.registrarEncuesta(lead.idLead, {
+          ...request,
+          tipoContacto: medio,
+          idPeriodoFacturacion: this.activePeriodo()?.id ?? null
+        }),
       'Encuesta registrada.',
       'No se pudo registrar la encuesta.'
     );
@@ -462,7 +517,7 @@ export class PostventaWorkspaceFacade {
     }
     this._saving.set(true);
     try {
-      await firstValueFrom(this.service.registrarContacto(lead.idLead));
+      // El contacto se registra al presionar Llamar/Chat; aqui solo tipificamos el resultado.
       await firstValueFrom(this.service.tipificarLead(lead.idLead, request));
       this.notify('success', 'Gestion tipificada.');
       this.closeDrawer();
@@ -510,6 +565,7 @@ export class PostventaWorkspaceFacade {
     this._credenciales.set([]);
     this._selectedPeriodoId.set(null);
     this._gestionModificada.set(false);
+    this._medioContacto.set(null);
   }
 
   private recentPage() {

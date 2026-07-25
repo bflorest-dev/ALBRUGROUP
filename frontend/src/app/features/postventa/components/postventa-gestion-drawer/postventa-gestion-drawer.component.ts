@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
+import { ButtonModule } from 'primeng/button';
 import { DrawerModule } from 'primeng/drawer';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TabsModule } from 'primeng/tabs';
@@ -17,6 +18,7 @@ import { PostventaTipificacionBarComponent } from '../postventa-tipificacion-bar
 @Component({
   selector: 'app-postventa-gestion-drawer',
   imports: [
+    ButtonModule,
     DrawerModule,
     SkeletonModule,
     TabsModule,

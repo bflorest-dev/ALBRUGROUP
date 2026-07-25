@@ -1765,6 +1765,26 @@ public class LeadService {
         notificarCambioLead("ASIGNACION", savedLead, null, idAsesorAnterior);
     }
 
+    @Transactional
+    public void liberarAsignacionVenta(Long idLead) {
+        Lead lead = leadRepository.findByIdAndEtapa(idLead, Etapa.VENTA)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        Long idAsesorAnterior = lead.getIdAsesorAsignado();
+        if (idAsesorAnterior == null) {
+            return;
+        }
+        if (!idAsesorAnterior.equals(currentUser.empleadoID())) {
+            throw new BadRequestException("Solo quien tiene el lead en gestion puede liberarlo.");
+        }
+
+        lead.setIdAsesorAsignado(null);
+        lead.setNombreAsesorAsignado(null);
+        lead.setEstado(lead.getCodigoTipificacion() == null ? EstadoSeguimiento.NUEVO : EstadoSeguimiento.GESTIONADO);
+
+        Lead savedLead = leadRepository.save(lead);
+        notificarCambioLead("ASIGNACION_LIBERADA", savedLead, null, idAsesorAnterior);
+    }
+
     // Toma de gestion de POSTVENTA con relevo. A diferencia de tomarLeadDisponible (que solo toma
     // leads nuevos sin tipificacion), aqui el lead ya suele tener historial: cualquier asesor de
     // Postventa puede gestionarlo. Mientras lo gestiona queda asignado a el; si otro lo tiene en

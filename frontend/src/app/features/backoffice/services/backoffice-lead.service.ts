@@ -58,6 +58,10 @@ export class BackofficeLeadService {
     return this.http.patch<void>(`${this.leadUrl}/venta/${idLead}/asignacion`, request);
   }
 
+  liberarAsignacion(idLead: number): Observable<void> {
+    return this.http.delete<void>(`${this.leadUrl}/venta/${idLead}/asignacion`);
+  }
+
   registrarContacto(idLead: number): Observable<void> {
     return this.http.patch<void>(`${this.leadUrl}/venta/${idLead}/contacto`, {});
   }

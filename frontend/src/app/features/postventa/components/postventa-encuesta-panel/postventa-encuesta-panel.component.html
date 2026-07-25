@@ -10,25 +10,40 @@
   </div>
 }
 
+@if (medioLabel(); as medio) {
+  <p class="medio-contacto medio-contacto--ok">
+    <i class="pi pi-check-circle"></i>
+    Medio de contacto: <strong>{{ medio }}</strong>
+  </p>
+} @else {
+  <p class="medio-contacto medio-contacto--warn">
+    <i class="pi pi-exclamation-triangle"></i>
+    Comunícate con el cliente (Llamar o Chat, arriba) antes de registrar la encuesta.
+  </p>
+}
+
 <form class="form-grid" [formGroup]="form" (ngSubmit)="guardar()">
   <label>
     <span>Tipo de encuesta</span>
     <p-select formControlName="tipoEncuesta" [options]="tipoEncuestaOptions" optionLabel="label" optionValue="value" appendTo="body" />
   </label>
-  <label>
-    <span>Medio de contacto</span>
-    <p-select formControlName="tipoContacto" [options]="tipoContactoOptions" optionLabel="label" optionValue="value" appendTo="body" />
-  </label>
-  <label>
-    <span>Calificacion general (1 a 10)</span>
-    <p-inputNumber formControlName="calificacion" [min]="1" [max]="10" [showButtons]="true" />
+  <label class="full">
+    <span>Calificación general</span>
+    <app-star-rating formControlName="calificacion" />
   </label>
   <label class="full">
     <span>Comentario</span>
     <textarea pTextarea rows="3" formControlName="comentario"></textarea>
   </label>
   <div class="form-actions full">
-    <button pButton type="submit" icon="pi pi-star" label="Registrar encuesta" [loading]="facade.saving()"></button>
+    <button
+      pButton
+      type="submit"
+      icon="pi pi-star"
+      label="Registrar encuesta"
+      [disabled]="!facade.medioContacto()"
+      [loading]="facade.saving()"
+    ></button>
   </div>
 </form>
 

@@ -24,6 +24,23 @@
   @include shared.empty-hint;
 }
 
+.medio-contacto {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.85rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.medio-contacto--ok {
+  color: var(--role-accent);
+}
+
+.medio-contacto--warn {
+  color: #b45309;
+}
+
 .satisfaccion-resumen {
   display: flex;
   align-items: center;

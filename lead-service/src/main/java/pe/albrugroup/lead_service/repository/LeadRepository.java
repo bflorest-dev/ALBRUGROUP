@@ -962,6 +962,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.sec,
                 l.sot,
                 COALESCE(pp.requiereSecSotVenta, cp.requiereSecSotVenta, fp.requiereSecSotVenta, false),
+                r.nombreAsesorUltimaGestion,
+                r.fechaUltimaGestion,
                 0L,
                 null,
                 null,
@@ -986,13 +988,13 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                AND epFallback.fallbackLeadSinCampana = true
             LEFT JOIN epFallback.proveedor fp
             WHERE l.etapa = :etapa
-              AND (:filtrarVentana = false OR l.lastEntryAt >= :inicioVentana)
+              AND (:filtrarVentana = false OR COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :inicioVentana)
               AND (
                     :leadPattern = '%'
                     OR l.lead LIKE :leadPattern
                     OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :leadPattern
               )
-            ORDER BY l.lastEntryAt DESC,
+            ORDER BY COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) DESC,
                      l.id DESC
             """)
     Page<LeadResponse> listarBandejaVenta(
@@ -1034,6 +1036,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.sec,
                 l.sot,
                 COALESCE(pp.requiereSecSotVenta, cp.requiereSecSotVenta, fp.requiereSecSotVenta, false),
+                r.nombreAsesorUltimaGestion,
+                r.fechaUltimaGestion,
                 0L,
                 null,
                 null,
@@ -1108,6 +1112,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.sec,
                 l.sot,
                 COALESCE(pp.requiereSecSotVenta, cp.requiereSecSotVenta, fp.requiereSecSotVenta, false),
+                r.nombreAsesorUltimaGestion,
+                r.fechaUltimaGestion,
                 0L,
                 e.fechaProgramacion,
                 e.horaProgramada,

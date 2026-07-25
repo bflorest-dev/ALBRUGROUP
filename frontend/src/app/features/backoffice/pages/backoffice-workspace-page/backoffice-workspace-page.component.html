@@ -199,7 +199,7 @@
           <th class="col-proveedor">Proveedor</th>
           <th class="col-estado">Estado</th>
           @if (section() === 'plataforma') {
-            <th class="col-asignado">Asignado</th>
+            <th class="col-asignado">Ultimo Gestor</th>
           }
           <th class="col-plan">Plan</th>
           <th class="col-tipificacion">Tipificacion</th>
@@ -257,7 +257,7 @@
           </td>
           <td class="col-estado"><p-tag [severity]="estadoSeverity(row.estadoSeguimiento)" [value]="display(row.estadoSeguimiento)" /></td>
           @if (section() === 'plataforma') {
-            <td class="col-asignado">{{ assignedShortName(row.nombreAsesorAsignado) }}</td>
+            <td class="col-asignado">{{ assignedShortName(row.nombreAsesorUltimaGestion) }}</td>
           }
           <td class="col-plan">
             @if (row.nombrePlanSnapshot) {
@@ -300,8 +300,8 @@
           }
           <td class="col-gestion">
             <div class="date-stack">
-              <span>{{ row.ultimaTipificacionAt ? (row.ultimaTipificacionAt | date: 'dd/MM/yyyy') : '-' }}</span>
-              <strong>{{ row.ultimaTipificacionAt ? (row.ultimaTipificacionAt | date: 'hh:mm a') : '' }}</strong>
+              <span>{{ ultimaGestionValue(row) ? (ultimaGestionValue(row) | date: 'dd/MM/yyyy') : '-' }}</span>
+              <strong>{{ ultimaGestionValue(row) ? (ultimaGestionValue(row) | date: 'hh:mm a') : '' }}</strong>
             </div>
           </td>
           <td class="col-actions">

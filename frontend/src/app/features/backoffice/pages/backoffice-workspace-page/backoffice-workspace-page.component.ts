@@ -46,7 +46,7 @@ import { BackofficeLeadService } from '../../services/backoffice-lead.service';
 
 type BackofficeSection = 'plataforma' | 'gestion' | 'programados';
 type BackofficeGroupMode = 'SIN_AGRUPAR' | 'ESTADO' | 'ASESOR' | 'PLAN' | 'PROVEEDOR' | 'TIPIFICACION';
-type BackofficeSortField = 'lastEntryAt' | 'createdAt' | 'lead' | 'nombreAsesorAsignado' | 'estado';
+type BackofficeSortField = 'fechaIngresoEtapa' | 'lastEntryAt' | 'createdAt' | 'lead' | 'nombreAsesorAsignado' | 'estado';
 type BackofficeSortDirection = 'asc' | 'desc';
 type GestionTipificacionFilter = { label: string; value: string; codigo?: string; descripcion?: string };
 type VisualLeadVenta = LeadVentaResponse & {
@@ -120,6 +120,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private initialized = false;
   private initializeInFlight = false;
   private lastAttendanceStatus: EstadoAsistencia | null = null;
+  private detailHadOperationalAction = false;
   private readonly operationalGate = this.operationalGateService.createGate('backoffice-workspace');
 
   protected readonly pageSize = 12;
@@ -132,7 +133,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly programadosRows = signal<VisualLeadVenta[]>([]);
   protected readonly plataformaGroupingMode = signal<BackofficeGroupMode>('SIN_AGRUPAR');
   protected readonly gestionGroupingMode = signal<BackofficeGroupMode>('TIPIFICACION');
-  protected readonly plataformaSortField = signal<BackofficeSortField>('lastEntryAt');
+  protected readonly plataformaSortField = signal<BackofficeSortField>('fechaIngresoEtapa');
   protected readonly gestionSortField = signal<BackofficeSortField>('lastEntryAt');
   protected readonly plataformaSortDirection = signal<BackofficeSortDirection>('desc');
   protected readonly gestionSortDirection = signal<BackofficeSortDirection>('desc');
@@ -205,7 +206,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     { label: 'Tipificacion', value: 'TIPIFICACION' }
   ];
   protected readonly sortOptions: Array<{ label: string; value: BackofficeSortField }> = [
-    { label: 'Ultima entrada', value: 'lastEntryAt' },
+    { label: 'Fecha ingreso', value: 'fechaIngresoEtapa' },
+    { label: 'Ultima actividad', value: 'lastEntryAt' },
     { label: 'Ingreso', value: 'createdAt' },
     { label: 'Lead', value: 'lead' },
     { label: 'Asesor', value: 'nombreAsesorAsignado' },
@@ -403,13 +405,13 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return 'SIN_AGRUPAR';
   });
   protected readonly activeSortField = computed<BackofficeSortField>(() =>
-    this.section() === 'gestion' ? this.gestionSortField() : this.plataformaSortField()
+    this.section() === 'gestion' ? this.gestionSortField() : this.section() === 'programados' ? 'lastEntryAt' : this.plataformaSortField()
   );
   protected readonly activeSortDirection = computed<BackofficeSortDirection>(() =>
-    this.section() === 'gestion' ? this.gestionSortDirection() : this.plataformaSortDirection()
+    this.section() === 'gestion' ? this.gestionSortDirection() : this.section() === 'programados' ? 'desc' : this.plataformaSortDirection()
   );
   protected readonly sortDirectionOptions = computed<Array<{ label: string; value: BackofficeSortDirection }>>(() =>
-    this.activeSortField() === 'lastEntryAt' || this.activeSortField() === 'createdAt'
+    this.activeSortField() === 'fechaIngresoEtapa' || this.activeSortField() === 'lastEntryAt' || this.activeSortField() === 'createdAt'
       ? [
           { label: 'Mas antiguos', value: 'asc' },
           { label: 'Mas recientes', value: 'desc' }
@@ -424,7 +426,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly plataformaDateSeparation = computed(() =>
     this.section() === 'plataforma'
     && this.plataformaGroupingMode() === 'SIN_AGRUPAR'
-    && this.plataformaSortField() === 'lastEntryAt'
+    && this.plataformaSortField() === 'fechaIngresoEtapa'
     && this.plataformaSortDirection() === 'desc'
   );
   protected readonly activeRowGroupMode = computed(() =>
@@ -445,7 +447,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   });
   protected readonly organizationSummary = computed(() => {
     const grouping = this.groupingModeOptions.find((option) => option.value === this.activeGroupingMode())?.label ?? 'Sin agrupar';
-    const sorting = this.sortOptions.find((option) => option.value === this.activeSortField())?.label ?? 'Ultima entrada';
+    const sorting = this.sortOptions.find((option) => option.value === this.activeSortField())?.label ?? 'Fecha ingreso';
     const direction = this.sortDirectionOptions().find((option) => option.value === this.activeSortDirection())?.label ?? 'Mas recientes';
     const filters = this.section() === 'gestion' && this.gestionTipificacionFilter().length
       ? ` · ${this.gestionTipificacionFilter().length} tipificaciones`
@@ -454,7 +456,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   });
   protected readonly isOrganizationDefault = computed(() =>
     this.activeGroupingMode() === (this.section() === 'gestion' ? 'TIPIFICACION' : 'SIN_AGRUPAR') &&
-    this.activeSortField() === 'lastEntryAt' &&
+    this.activeSortField() === (this.section() === 'plataforma' ? 'fechaIngresoEtapa' : 'lastEntryAt') &&
     this.activeSortDirection() === 'desc' &&
     (this.section() !== 'gestion' || this.gestionTipificacionFilter().length === 0)
   );
@@ -650,6 +652,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     try {
       const detail = await firstValueFrom(this.leadService.obtenerDetalle(idLead));
       this.detail.set(detail);
+      this.detailHadOperationalAction = false;
       this.patchForms(detail);
       await Promise.all([this.refreshOfferCatalogs(detail.idPlan ?? 0), this.refreshEventos(idLead)]);
       try {
@@ -663,12 +666,13 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
   }
 
-  protected requestCloseDetail(): void {
+  protected async requestCloseDetail(): Promise<void> {
     if (this.hasUnsavedDataChanges()) {
       this.notify('warn', 'Hay datos sin guardar. Guarda los cambios antes de cerrar.');
       this.detailDialogOpen.set(true);
       return;
     }
+    await this.releaseCurrentLeadIfIdle();
     this.closeDetail();
   }
 
@@ -780,9 +784,13 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         }
       }
       if (failed.length) {
+        if (saved.length) {
+          this.detailHadOperationalAction = true;
+        }
         this.notify('error', `Guardado parcial. OK: ${saved.join(', ') || 'ninguno'}. Fallo: ${failed.join(' | ')}`);
       } else {
         this.notify('success', `Guardado: ${saved.join(', ')}.`);
+        this.detailHadOperationalAction = true;
       }
       await this.reconcile(detail.id);
     } finally {
@@ -1037,7 +1045,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return;
     }
     this.plataformaGroupingMode.set('SIN_AGRUPAR');
-    this.plataformaSortField.set('lastEntryAt');
+    this.plataformaSortField.set('fechaIngresoEtapa');
     this.plataformaSortDirection.set('desc');
     this.pagePlataforma.set(0);
     await this.refreshPlataforma(false);
@@ -1109,6 +1117,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected assignedShortName(value?: string | null): string {
     const words = (value ?? '').trim().split(/\s+/).filter(Boolean);
     return words.length ? words.slice(0, 2).join(' ') : '-';
+  }
+
+  protected ultimaGestionValue(row: LeadVentaResponse): string | null | undefined {
+    return row.fechaUltimaGestion ?? row.ultimaTipificacionAt;
   }
 
   // Logo del proveedor del plan ofrecido (WIN/CLARO). Devuelve string estable (o null): seguro en template.
@@ -1833,14 +1845,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   private compareRows(left: LeadVentaResponse, right: LeadVentaResponse, field: BackofficeSortField, direction: BackofficeSortDirection): number {
     const multiplier = direction === 'asc' ? 1 : -1;
-    if (field === 'lastEntryAt' || field === 'createdAt') {
+    if (field === 'fechaIngresoEtapa' || field === 'lastEntryAt' || field === 'createdAt') {
       return (this.rowDateValue(left, field) - this.rowDateValue(right, field)) * multiplier;
     }
     return this.rowTextValue(left, field).localeCompare(this.rowTextValue(right, field)) * multiplier;
   }
 
-  private rowDateValue(row: LeadVentaResponse, field: 'lastEntryAt' | 'createdAt'): number {
-    const raw = row[field];
+  private rowDateValue(row: LeadVentaResponse, field: 'fechaIngresoEtapa' | 'lastEntryAt' | 'createdAt'): number {
+    const raw = field === 'fechaIngresoEtapa' ? this.fechaIngresoEtapaValue(row) : row[field];
     const time = raw ? new Date(raw).getTime() : 0;
     return Number.isFinite(time) ? time : 0;
   }
@@ -1884,6 +1896,25 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
   }
 
+  private async releaseCurrentLeadIfIdle(): Promise<void> {
+    const detail = this.detail();
+    const idLead = this.selectedLeadId();
+    const empleadoId = this.sessionService.getSession()?.empleadoId;
+    if (!detail || !idLead || this.detailHadOperationalAction || detail.idAsesorAsignado !== empleadoId) {
+      return;
+    }
+
+    this.isSaving.set(true);
+    try {
+      await firstValueFrom(this.leadService.liberarAsignacion(idLead));
+      await this.reconcile(idLead);
+    } catch {
+      await this.reconcile();
+    } finally {
+      this.isSaving.set(false);
+    }
+  }
+
   private closeDetail(): void {
     this.detailDialogOpen.set(false);
     this.detail.set(null);
@@ -1896,6 +1927,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.ofertaPlanes.set([]);
     this.adicionalesSeleccionados.set([]);
     this.adicionalesDirty.set(false);
+    this.detailHadOperationalAction = false;
     this.provinciasDomicilio.set([]);
     this.distritosDomicilio.set([]);
   }
@@ -1919,6 +1951,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.isSaving.set(true);
     try {
       await firstValueFrom(action());
+      this.detailHadOperationalAction = true;
       this.notify('success', successMessage);
       await afterSuccess();
     } catch (error) {

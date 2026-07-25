@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -87,6 +88,11 @@ public class VentaController {
                 idLead,
                 request != null && Boolean.TRUE.equals(request.getConfirmarReasignacion())
         );
+        return ResponseEntity.noContent().build();
+    }
+    @DeleteMapping("/{idLead}/asignacion") @PreAuthorize("hasAuthority('ASSIGN_LEADS')")
+    public ResponseEntity<Void> liberarAsignacionVenta(@PathVariable Long idLead) {
+        leadService.liberarAsignacionVenta(idLead);
         return ResponseEntity.noContent().build();
     }
     // 4. Registrar evento de contacto con el Lead

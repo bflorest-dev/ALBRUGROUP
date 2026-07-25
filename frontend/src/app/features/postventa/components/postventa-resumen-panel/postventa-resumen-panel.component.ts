@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { TagModule } from 'primeng/tag';
 import { PostventaWorkspaceFacade } from '../../facades/postventa-workspace.facade';
+import { providerLogo } from '../../../../shared/utils/provider-logo';
 import { EstadoBadge, display, estadoBadge } from '../../models/postventa.vm';
 
 /** Datos del cliente y semaforos del lead abierto. Solo lectura. */
@@ -21,5 +22,9 @@ export class PostventaResumenPanelComponent {
 
   protected display(value: unknown): string {
     return display(value);
+  }
+
+  protected providerLogo(nombre?: string | null): string | null {
+    return providerLogo(nombre);
   }
 }

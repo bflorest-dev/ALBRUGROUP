@@ -10,31 +10,51 @@
   overflow: hidden;
 }
 
+// Header en 3 zonas: identidad (crece) · acciones de contacto · semáforos. Envuelve en anchos
+// chicos y su posición no depende del largo del nombre (se trunca).
 .drawer-header {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
   width: 100%;
 }
 
 .drawer-header__id {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0.15rem;
   min-width: 0;
+  margin-right: auto;
+}
+
+.drawer-header__name {
+  color: var(--role-primary);
+  font-size: 1.15rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 22rem;
+}
+
+.drawer-header__doc {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
 
   strong {
-    color: var(--role-primary);
-    font-size: 1.15rem;
+    color: var(--app-text);
+    font-size: 0.98rem;
+    letter-spacing: 0.02em;
   }
+}
 
-  small {
-    color: var(--role-muted);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+.drawer-header__doc-type {
+  color: var(--role-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .drawer-header__eyebrow {
@@ -45,11 +65,18 @@
   text-transform: uppercase;
 }
 
+.drawer-header__contact {
+  display: flex;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+}
+
 .drawer-header__tags {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
   justify-content: flex-end;
+  flex: 0 0 auto;
 }
 
 .drawer-body {

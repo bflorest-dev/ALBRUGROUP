@@ -9,10 +9,39 @@
     @if (facade.selectedLead(); as lead) {
       <div class="drawer-header">
         <div class="drawer-header__id">
-          <span class="drawer-header__eyebrow">Gestion de Postventa</span>
-          <strong>{{ display(lead.lead) }}</strong>
-          <small>{{ display(lead.nombreCliente) }}</small>
+          <span class="drawer-header__eyebrow">Gestión de Postventa</span>
+          <strong class="drawer-header__name">{{ display(facade.detail()?.nombreTitular ?? lead.nombreCliente) }}</strong>
+          <span class="drawer-header__doc">
+            <span class="drawer-header__doc-type">{{ display(lead.tipoDocumento) }}</span>
+            <strong>{{ display(lead.numeroDocumento) }}</strong>
+          </span>
         </div>
+
+        <div class="drawer-header__contact">
+          <button
+            pButton
+            type="button"
+            icon="pi pi-phone"
+            label="Llamar"
+            size="small"
+            [outlined]="facade.medioContacto() !== 'LLAMADA'"
+            [severity]="facade.medioContacto() === 'LLAMADA' ? undefined : 'secondary'"
+            [disabled]="!facade.detail()"
+            (click)="facade.llamar()"
+          ></button>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-whatsapp"
+            label="Chat"
+            size="small"
+            [outlined]="facade.medioContacto() !== 'CHAT'"
+            [severity]="facade.medioContacto() === 'CHAT' ? undefined : 'secondary'"
+            [disabled]="!facade.detail()"
+            (click)="facade.chat()"
+          ></button>
+        </div>
+
         <div class="drawer-header__tags">
           <p-tag [severity]="badge(lead.estadoCredenciales).severity" [value]="badge(lead.estadoCredenciales).label" />
           <p-tag [severity]="badge(lead.estadoPago).severity" [value]="badge(lead.estadoPago).label" />
@@ -35,15 +64,15 @@
           <p-tablist>
             <p-tab value="resumen">Resumen</p-tab>
             <p-tab value="plataforma">Plataforma digital</p-tab>
-            <p-tab value="factura">Facturacion</p-tab>
             <p-tab value="encuesta">Encuesta</p-tab>
+            <p-tab value="factura">Facturación</p-tab>
             <p-tab value="historial">Historial</p-tab>
           </p-tablist>
           <p-tabpanels>
             <p-tabpanel value="resumen"><app-postventa-resumen-panel /></p-tabpanel>
             <p-tabpanel value="plataforma"><app-postventa-plataforma-panel /></p-tabpanel>
-            <p-tabpanel value="factura"><app-postventa-facturacion-panel /></p-tabpanel>
             <p-tabpanel value="encuesta"><app-postventa-encuesta-panel /></p-tabpanel>
+            <p-tabpanel value="factura"><app-postventa-facturacion-panel /></p-tabpanel>
             <p-tabpanel value="historial"><app-postventa-historial-panel /></p-tabpanel>
           </p-tabpanels>
         </p-tabs>

@@ -1,0 +1,82 @@
+:host {
+  display: inline-block;
+}
+
+.star-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.star-rating--disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.stars {
+  display: inline-flex;
+  gap: 0.25rem;
+}
+
+.star {
+  position: relative;
+  display: inline-block;
+  width: 1.75rem;
+  height: 1.75rem;
+  line-height: 1.75rem;
+  font-size: 1.75rem;
+}
+
+// Estrella base (vacia) detras.
+.star__base {
+  color: var(--app-border, #d1d5db);
+}
+
+.star__base,
+.star__fill i {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+// Capa de relleno amarilla, recortada por ancho (0 / 50 / 100 %).
+.star__fill {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  width: 0;
+  color: #f5b301;
+}
+
+// Zonas de click/hover: mitad izquierda (media estrella) y derecha (completa).
+.star__zone {
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.star__zone--left {
+  left: 0;
+}
+
+.star__zone--right {
+  right: 0;
+}
+
+// Al pasar el mouse por las estrellas, resaltar el amarillo.
+.stars:hover .star__fill {
+  color: #ffc82c;
+}
+
+.star-rating__score {
+  color: var(--role-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-width: 4.5rem;
+}
