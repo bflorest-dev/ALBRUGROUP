@@ -64,6 +64,7 @@ export class PreventaLeadService {
   private readonly http = inject(HttpClient);
   private readonly leadUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads`;
   private readonly authUrl = `${API_CONSTANTS.gatewayBaseUrl}${API_CONSTANTS.authBasePath}`;
+  private readonly equiposUrl = `${API_CONSTANTS.gatewayBaseUrl}/auth/equipos`;
 
   // Multi-titular: crea otra oportunidad para el mismo contacto (devuelve el id de la nueva).
   crearOportunidadAdicional(idLead: number): Observable<number> {
@@ -440,11 +441,11 @@ export class PreventaLeadService {
   }
 
   listarMisEquipos(): Observable<EquipoOperativoResponse[]> {
-    return this.http.get<EquipoOperativoResponse[]>(`${this.authUrl}/equipos/mis-equipos`);
+    return this.http.get<EquipoOperativoResponse[]>(`${this.equiposUrl}/mis-equipos`);
   }
 
   listarAsesoresPreventaPorEquipo(idEquipo: number): Observable<UsuarioResponse[]> {
-    return this.http.get<UsuarioResponse[]>(`${this.authUrl}/equipos/${idEquipo}/asesores-preventa`);
+    return this.http.get<UsuarioResponse[]>(`${this.equiposUrl}/${idEquipo}/asesores-preventa`);
   }
 
   private pageParams(query: PageQuery): HttpParams {

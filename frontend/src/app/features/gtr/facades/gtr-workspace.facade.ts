@@ -890,10 +890,6 @@ export class GtrWorkspaceFacade {
       .map((equipo) => ({ label: equipo.nombre, value: equipo.id }))
   );
   readonly showHistoricosEquipoSelector = computed(() => this.historicosEquipoOptions().length > 1);
-  readonly canSearchHistoricos = computed(() =>
-    this.canDisplayOperationalData() &&
-    (!this.showHistoricosEquipoSelector() || Number(this.masivoFiltersForm.controls.idEquipo.value) > 0)
-  );
   readonly historicosSortOptions = computed<Array<{ label: string; value: GtrHistoricosSortField }>>(() => [
     { label: 'Ingreso', value: 'lastEntryAt' },
     { label: this.historicosTipificacionColumnLabel(), value: 'codigoTipificacion' },
@@ -2460,6 +2456,11 @@ export class GtrWorkspaceFacade {
     }
     this.historicosGroupingMode.set(this.historicosTipificacionGroupMode());
     this.historicosSelectedGroup.set(null);
+  }
+
+  canSearchHistoricos(): boolean {
+    return this.canDisplayOperationalData()
+      && (!this.showHistoricosEquipoSelector() || Number(this.masivoFiltersForm.controls.idEquipo.value) > 0);
   }
 
   async selectHistoricosGroup(group: LeadGtrGroupItemResponse | null | undefined): Promise<void> {
@@ -4180,6 +4181,7 @@ export class GtrWorkspaceFacade {
   private mapAgendadoToLead(row: LeadAgendadoGtrResponse): LeadGtrResponse {
     return {
       id: row.id,
+      idEquipo: row.idEquipo,
       createdAt: row.createdAt,
       prefijo: row.prefijo,
       lead: row.lead,

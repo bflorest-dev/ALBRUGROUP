@@ -255,6 +255,7 @@ public class UsuarioService implements IUsuario {
                         .empleadoId(usuario.getEmpleadoId())
                         .nombreCompleto(usuario.getNombreCompleto())
                         .roles(usuario.getRoles().stream().map(Rol::getNombre).collect(java.util.stream.Collectors.toSet()))
+                        .equipoIds(usuario.getEquipos().stream().map(Equipo::getId).collect(java.util.stream.Collectors.toSet()))
                         .build())
                 .toList();
     }

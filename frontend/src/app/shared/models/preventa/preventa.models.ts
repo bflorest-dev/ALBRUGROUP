@@ -157,6 +157,7 @@ export interface LeadGtrGroupFilter {
 
 export interface LeadAgendadoGtrResponse {
   id: number;
+  idEquipo?: number | null;
   createdAt: string;
   prefijo: string;
   lead: string;
