@@ -20,7 +20,6 @@ import pe.albrugroup.lead_service.entity.enums.EstadoEntregaCredencial;
 import pe.albrugroup.lead_service.entity.enums.EstadoPagoPeriodoPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoPeriodoFacturacionPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoPlataformaDigitalLead;
-import pe.albrugroup.lead_service.entity.enums.EstadoPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoServicioPostventa;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
@@ -211,7 +210,7 @@ public class PostventaBandejaService {
                 .plan(calendario.getPlanSnapshot())
                 .idPlataformaDigitalOfrecida(obtenerIdPlataformaDigitalOfrecida(lead))
                 .plataformaDigitalOfrecida(obtenerNombrePlataformaDigitalOfrecida(lead))
-                .estadoCliente(resolverEstadoCliente(lead.getEstadoPostventa()))
+                .estadoCliente(resolverEstadoCliente(lead.getEstadoClientePostventa()))
                 .estadoCredenciales(resolverEstadoCredenciales(lead, estadoPlataforma))
                 .estadoPago(resolverEstadoPago(periodoVigente))
                 .estadoServicio(resolverEstadoServicio(ultimaEncuesta))
@@ -221,15 +220,8 @@ public class PostventaBandejaService {
                 .build();
     }
 
-    private EstadoClientePostventa resolverEstadoCliente(EstadoPostventa estadoPostventa) {
-        if (estadoPostventa == EstadoPostventa.BAJA_CONFIRMADA
-                || estadoPostventa == EstadoPostventa.NO_EFECTIVO) {
-            return EstadoClientePostventa.BAJA;
-        }
-        if (estadoPostventa == EstadoPostventa.EN_COBRANZA) {
-            return EstadoClientePostventa.SUSPENDIDO;
-        }
-        return EstadoClientePostventa.ACTIVO;
+    private EstadoClientePostventa resolverEstadoCliente(EstadoClientePostventa estadoCliente) {
+        return estadoCliente == null ? EstadoClientePostventa.ACTIVO : estadoCliente;
     }
 
     private EstadoCredencialesPostventa resolverEstadoCredenciales(

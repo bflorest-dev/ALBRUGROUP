@@ -6,8 +6,8 @@ import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.entity.CalendarioFacturacionPostventa;
 import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.PeriodoFacturacionPostventa;
+import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoPeriodoFacturacionPostventa;
-import pe.albrugroup.lead_service.entity.enums.EstadoPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.CerrarPeriodoFacturacionRequest;
@@ -112,8 +112,7 @@ public class FacturacionPostventaService {
             return false;
         }
         Lead lead = periodo.getLead();
-        if (lead == null || lead.getEstadoPostventa() == EstadoPostventa.BAJA_CONFIRMADA
-                || lead.getEstadoPostventa() == EstadoPostventa.NO_EFECTIVO) {
+        if (lead == null || lead.getEstadoClientePostventa() == EstadoClientePostventa.BAJA) {
             return false;
         }
         CalendarioFacturacionPostventa calendario = periodo.getCalendarioFacturacionPostventa();
@@ -129,8 +128,8 @@ public class FacturacionPostventaService {
             return false;
         }
         Lead lead = periodo.getLead();
-        if (lead == null || lead.getEtapa() != Etapa.POSTVENTA || lead.getEstadoPostventa() == EstadoPostventa.BAJA_CONFIRMADA
-                || lead.getEstadoPostventa() == EstadoPostventa.NO_EFECTIVO) {
+        if (lead == null || lead.getEtapa() != Etapa.POSTVENTA
+                || lead.getEstadoClientePostventa() == EstadoClientePostventa.BAJA) {
             return false;
         }
         CalendarioFacturacionPostventa calendario = periodo.getCalendarioFacturacionPostventa();
@@ -151,7 +150,7 @@ public class FacturacionPostventaService {
         lead.setCodigoTipificacion(null);
         lead.setIdSubtipificacion(null);
         lead.setCodigoSubtipificacion(null);
-        lead.setEstadoPostventa(EstadoPostventa.EFECTIVO);
+        lead.setEstadoClientePostventa(EstadoClientePostventa.ACTIVO);
     }
 
     private void crearSiguientePeriodo(PeriodoFacturacionPostventa periodo) {

@@ -3,7 +3,6 @@ package pe.albrugroup.lead_service.entity.response;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import pe.albrugroup.lead_service.entity.enums.EstadoPostventa;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 import java.time.Instant;
@@ -25,7 +24,6 @@ public class MisPreventaResponse {
     private String numeroDocumento;
     private Instant fechaRegistro;
     private Etapa etapaActual;
-    private EstadoPostventa estadoPostventa;
     private String estado;
     private Instant fechaInstalacionRechazo;
     private String codigoTipificacion;

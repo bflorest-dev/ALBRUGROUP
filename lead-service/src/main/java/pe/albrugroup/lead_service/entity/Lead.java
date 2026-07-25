@@ -12,7 +12,7 @@ import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 import org.hibernate.annotations.UpdateTimestamp;
 import pe.albrugroup.lead_service.entity.enums.Base;
-import pe.albrugroup.lead_service.entity.enums.EstadoPostventa;
+import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
@@ -124,7 +124,7 @@ public class Lead {
     private Integer diaCorteFacturacion;
     private Integer mesesPermanenciaSnapshot;
     @Enumerated(EnumType.STRING)
-    private EstadoPostventa estadoPostventa;
+    private EstadoClientePostventa estadoClientePostventa;
 
     // La atribución histórica por etapa (mérito/fechas) y la primera tipificación viven ahora en
     // LeadEtapaResumen (una fila por (idLead, etapa)); el Lead solo conserva su estado operativo vivo.

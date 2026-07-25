@@ -282,7 +282,6 @@ public class TipificacionService {
                 target.setDescripcion(subItem.getDescripcion().trim());
                 target.setOrden(index + 1);
                 target.setEtapaCambio(subItem.getEtapaCambio());
-                target.setEstadoPostventaCambio(subItem.getEstadoPostventaCambio());
                 target.setComportamientos(new HashSet<>(
                         Objects.requireNonNullElse(subItem.getComportamientos(), Set.<ComportamientoTipificacion>of())));
                 target.setActivo(Boolean.TRUE);
@@ -333,7 +332,6 @@ public class TipificacionService {
                                         .descripcion(sub.getDescripcion())
                                         .orden(sub.getOrden())
                                         .etapaCambio(sub.getEtapaCambio())
-                                        .estadoPostventaCambio(sub.getEstadoPostventaCambio())
                                         .comportamientos(sub.getComportamientos())
                                         .build())
                                 .toList())
@@ -390,14 +388,6 @@ public class TipificacionService {
                                     "tipificacion", tipificacion.getCodigo(),
                                     "subtipificacion", subtipificacion.getCodigo()
                             )
-                    );
-                }
-                if (subtipificacion.getEtapaCambio() == Etapa.POSTVENTA
-                        && subtipificacion.getEstadoPostventaCambio() == null) {
-                    throw new BadRequestException(
-                            "La subtipificacion que pasa a POSTVENTA necesita un estado postventa",
-                            subtipificacion.getId(),
-                            null
                     );
                 }
             }

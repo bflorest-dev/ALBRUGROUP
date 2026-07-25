@@ -935,9 +935,9 @@ export class GtrWorkspaceFacade {
   readonly assignmentTargetEquipoId = computed(() => {
     const lead = this.activeAssignmentLead();
     if (lead) {
-      return lead.idEquipo ?? null;
+      return this.resolveLeadEquipoId(lead);
     }
-    const equipos = new Set(this.selectedRowsForCurrentSection().map((row) => row.idEquipo ?? null));
+    const equipos = new Set(this.selectedRowsForCurrentSection().map((row) => this.resolveLeadEquipoId(row)));
     return equipos.size === 1 ? [...equipos][0] : null;
   });
   readonly availableAssignmentAdvisors = computed(() => {
@@ -1111,8 +1111,8 @@ export class GtrWorkspaceFacade {
     sectionLoads.push(['catalogo de tipificaciones', () => this.refreshCatalogoTipificaciones()]);
 
     try {
+      await this.runInitialLoad('equipos', () => this.refreshEquipos(), errors);
       await Promise.all([
-        this.runInitialLoad('equipos', () => this.refreshEquipos(), errors),
         this.runInitialLoad('asesores', () => this.refreshAdvisors(), errors),
         this.runInitialLoad('leads pendientes', () => this.refreshPendientes(), errors),
         this.runInitialLoad('campanas', () => this.refreshCampanas(), errors),
@@ -1497,7 +1497,7 @@ export class GtrWorkspaceFacade {
     if (!row && !this.ensureSingleTeamSelection()) {
       return;
     }
-    if (row && !row.idEquipo) {
+    if (row && !this.resolveLeadEquipoId(row)) {
       this.errorMessage.set('No se pudo identificar el equipo del lead.');
       return;
     }
@@ -2280,6 +2280,9 @@ export class GtrWorkspaceFacade {
     if (!this.canDisplayOperationalData()) {
       return;
     }
+    if (!this.historicosEquipoOptions().length) {
+      await this.refreshEquipos();
+    }
 
     let activeUsers: UsuarioResponse[] = [];
     try {
@@ -2695,12 +2698,16 @@ export class GtrWorkspaceFacade {
       this.errorMessage.set('Selecciona al menos un lead.');
       return false;
     }
-    const equipos = new Set(rows.map((row) => row.idEquipo ?? null));
+    const equipos = new Set(rows.map((row) => this.resolveLeadEquipoId(row)));
     if (equipos.size !== 1 || equipos.has(null)) {
       this.errorMessage.set('Selecciona leads del mismo equipo para asignarlos juntos.');
       return false;
     }
     return true;
+  }
+
+  private resolveLeadEquipoId(row: Pick<LeadGtrResponse, 'idEquipo'>): number | null {
+    return row.idEquipo ?? (this.defaultHistoricosEquipoId() || null);
   }
 
   isSelected(idLead: number): boolean {

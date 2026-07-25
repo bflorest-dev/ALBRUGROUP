@@ -17,7 +17,6 @@ import pe.albrugroup.lead_service.entity.Subtipificacion;
 import pe.albrugroup.lead_service.entity.Telefono;
 import pe.albrugroup.lead_service.entity.Television;
 import pe.albrugroup.lead_service.entity.Tipificacion;
-import pe.albrugroup.lead_service.entity.enums.EstadoPostventa;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.Tecnologia;
 import pe.albrugroup.lead_service.entity.enums.Unidad;
@@ -141,21 +140,21 @@ public class DataLoader {
         saveSubtipificacion(listaNegra, "BLACKLIST", "Lead bloqueado por politica de blacklist", 1);
 
         Tipificacion validacionVenta = saveTipificacion(Etapa.VENTA, "VALIDACION_VENTA", "Validacion operativa de la venta", 1);
-        saveSubtipificacion(validacionVenta, "INSTALACION_CONFIRMADA", "Instalacion confirmada por backoffice", 1, Etapa.POSTVENTA, EstadoPostventa.EN_SEGUIMIENTO);
+        saveSubtipificacion(validacionVenta, "INSTALACION_CONFIRMADA", "Instalacion confirmada por backoffice", 1, Etapa.POSTVENTA);
         saveSubtipificacion(validacionVenta, "OBSERVADA", "Venta observada pendiente de regularizacion", 2);
 
         Tipificacion seguimientoPostventa = saveTipificacion(Etapa.POSTVENTA, "SEGUIMIENTO", "Seguimiento de servicio instalado", 1);
-        saveSubtipificacion(seguimientoPostventa, "SERVICIO_ACTIVO", "Cliente mantiene el servicio activo", 1, null, EstadoPostventa.EN_SEGUIMIENTO);
-        saveSubtipificacion(seguimientoPostventa, "CLIENTE_SATISFECHO", "Cliente conforme con el servicio", 2, null, EstadoPostventa.EN_SEGUIMIENTO);
+        saveSubtipificacion(seguimientoPostventa, "SERVICIO_ACTIVO", "Cliente mantiene el servicio activo", 1);
+        saveSubtipificacion(seguimientoPostventa, "CLIENTE_SATISFECHO", "Cliente conforme con el servicio", 2);
 
         Tipificacion incidenciaPostventa = saveTipificacion(Etapa.POSTVENTA, "INCIDENCIA", "Incidencia detectada durante la postventa", 2);
-        saveSubtipificacion(incidenciaPostventa, "PAGO_PENDIENTE", "Cliente presenta pago pendiente", 1, null, EstadoPostventa.EN_COBRANZA);
-        saveSubtipificacion(incidenciaPostventa, "RIESGO_BAJA", "Cliente presenta riesgo de baja", 2, null, EstadoPostventa.PAGO_PENDIENTE);
-        saveSubtipificacion(incidenciaPostventa, "BAJA_CONFIRMADA", "Proveedor confirma baja del servicio", 3, null, EstadoPostventa.BAJA_CONFIRMADA);
+        saveSubtipificacion(incidenciaPostventa, "PAGO_PENDIENTE", "Cliente presenta pago pendiente", 1);
+        saveSubtipificacion(incidenciaPostventa, "RIESGO_BAJA", "Cliente presenta riesgo de baja", 2);
+        saveSubtipificacion(incidenciaPostventa, "BAJA_CONFIRMADA", "Proveedor confirma baja del servicio", 3);
 
         Tipificacion cierrePostventa = saveTipificacion(Etapa.POSTVENTA, "CIERRE", "Cierre de seguimiento postventa", 3);
-        saveSubtipificacion(cierrePostventa, "EFECTIVO", "Lead cumple permanencia requerida", 1, null, EstadoPostventa.EFECTIVO);
-        saveSubtipificacion(cierrePostventa, "NO_EFECTIVO", "Lead no cumple permanencia requerida", 2, null, EstadoPostventa.NO_EFECTIVO);
+        saveSubtipificacion(cierrePostventa, "EFECTIVO", "Lead cumple permanencia requerida", 1);
+        saveSubtipificacion(cierrePostventa, "NO_EFECTIVO", "Lead no cumple permanencia requerida", 2);
     }
 
     private Tipificacion saveTipificacion(Etapa etapa, String codigo, String descripcion, Integer orden) {
@@ -180,24 +179,12 @@ public class DataLoader {
     }
 
     private void saveSubtipificacion(Tipificacion tipificacion, String codigo, String descripcion, Integer orden, Etapa etapaCambio) {
-        saveSubtipificacion(tipificacion, codigo, descripcion, orden, etapaCambio, null);
-    }
-
-    private void saveSubtipificacion(
-            Tipificacion tipificacion,
-            String codigo,
-            String descripcion,
-            Integer orden,
-            Etapa etapaCambio,
-            EstadoPostventa estadoPostventaCambio
-    ) {
         subtipificacionRepository.findByTipificacionIdAndCodigo(tipificacion.getId(), codigo)
                 .ifPresentOrElse(
                         subtipificacion -> {
                             subtipificacion.setDescripcion(descripcion);
                             subtipificacion.setOrden(orden);
                             subtipificacion.setEtapaCambio(etapaCambio);
-                            subtipificacion.setEstadoPostventaCambio(estadoPostventaCambio);
                             subtipificacion.setActivo(Boolean.TRUE);
                             subtipificacionRepository.save(subtipificacion);
                         },
@@ -208,7 +195,6 @@ public class DataLoader {
                             .descripcion(descripcion)
                             .orden(orden)
                             .etapaCambio(etapaCambio)
-                            .estadoPostventaCambio(estadoPostventaCambio)
                             .build();
                     Subtipificacion entity = tipificacionMapper.toEntity(request);
                     entity.setTipificacion(tipificacion);

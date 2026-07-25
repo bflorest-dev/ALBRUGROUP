@@ -393,7 +393,6 @@ export interface MisPreventaResponse {
   numeroDocumento?: string | null;
   fechaRegistro?: string | null;
   etapaActual?: Etapa | string | null;
-  estadoPostventa?: string | null;
   estado?: string | null;
   fechaInstalacionRechazo?: string | null;
   // Ultima gestion de venta dentro del intento; queda disponible para auditoria visual futura.
@@ -628,7 +627,6 @@ export interface SubtipificacionResponse {
   descripcion: string;
   orden: number;
   etapaCambio?: string | null;
-  estadoPostventaCambio?: string | null;
   comportamientos?: ComportamientoTipificacion[];
 }
 
@@ -638,7 +636,6 @@ export interface SubtipificacionCatalogoRequest {
   descripcion: string;
   orden: number;
   etapaCambio?: string | null;
-  estadoPostventaCambio?: string | null;
   comportamientos?: ComportamientoTipificacion[];
 }
 

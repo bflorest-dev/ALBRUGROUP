@@ -18,7 +18,6 @@ export interface SubtipDraft {
   descripcion: string;
   orden: number;
   etapaCambio: string;
-  estadoPostventaCambio: string | null;
   comportamientos: ComportamientoTipificacion[];
 }
 
@@ -40,16 +39,6 @@ export class AdminTipificacionFacade {
     { value: 'PREVENTA', label: 'Preventa' },
     { value: 'VENTA', label: 'Venta' },
     { value: 'POSTVENTA', label: 'Postventa' }
-  ];
-
-  readonly estadoPostventaOptions = [
-    'EN_SEGUIMIENTO',
-    'PAGO_PENDIENTE',
-    'EN_COBRANZA',
-    'PAGO_CUBIERTO_EMPRESA',
-    'BAJA_CONFIRMADA',
-    'EFECTIVO',
-    'NO_EFECTIVO'
   ];
 
   // Comportamientos disparables por subtipi, en lenguaje de negocio (reemplazan los códigos hardcodeados).
@@ -430,7 +419,7 @@ export class AdminTipificacionFacade {
   updateSubtipField(
     tipUid: string,
     subUid: string,
-    field: 'codigo' | 'descripcion' | 'orden' | 'etapaCambio' | 'estadoPostventaCambio',
+    field: 'codigo' | 'descripcion' | 'orden' | 'etapaCambio',
     value: string | number | null
   ): void {
     const current = this.drafts()
@@ -450,13 +439,7 @@ export class AdminTipificacionFacade {
             if (sub.uid !== subUid) {
               return sub;
             }
-            const next = { ...sub, [field]: value } as SubtipDraft;
-            if (field === 'etapaCambio') {
-              next.estadoPostventaCambio = value === 'POSTVENTA' && this.selectedEtapa() !== 'POSTVENTA'
-                ? 'EN_SEGUIMIENTO'
-                : null;
-            }
-            return next;
+            return { ...sub, [field]: value } as SubtipDraft;
           })
         };
       })
@@ -512,13 +495,6 @@ export class AdminTipificacionFacade {
         if (sub.orden <= 0) {
           return `La subtipificacion ${sub.codigo} necesita un orden mayor a cero.`;
         }
-        if (
-          this.selectedEtapa() === 'POSTVENTA'
-          && sub.etapaCambio === 'POSTVENTA'
-          && !sub.estadoPostventaCambio
-        ) {
-          return `La subtipificacion ${sub.codigo} pasa a Postventa: elige el estado postventa.`;
-        }
         const subNorm = sub.codigo.trim().toUpperCase();
         if (subCodigos.has(subNorm)) {
           return `El codigo de subtipificacion ${sub.codigo} esta repetido en ${tip.codigo}.`;
@@ -565,11 +541,6 @@ export class AdminTipificacionFacade {
               descripcion: sub.descripcion.trim(),
               orden: subIndex + 1,
               etapaCambio: sub.etapaCambio,
-              estadoPostventaCambio: sub.etapaCambio === 'POSTVENTA'
-                ? this.selectedEtapa() === 'POSTVENTA'
-                  ? sub.estadoPostventaCambio
-                  : 'EN_SEGUIMIENTO'
-                : null,
               comportamientos: sub.comportamientos
             })
           )
@@ -592,7 +563,6 @@ export class AdminTipificacionFacade {
         orden: sub.orden,
         // null en backend significa "se mantiene"; lo normalizamos a la etapa actual.
         etapaCambio: sub.etapaCambio ?? etapa,
-        estadoPostventaCambio: sub.estadoPostventaCambio ?? null,
         comportamientos: sub.comportamientos ?? []
       }))
     }));
@@ -617,7 +587,6 @@ export class AdminTipificacionFacade {
       descripcion: '',
       orden,
       etapaCambio: this.selectedEtapa(),
-      estadoPostventaCambio: null,
       comportamientos: []
     };
   }

@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.BatchSize;
 import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
-import pe.albrugroup.lead_service.entity.enums.EstadoPostventa;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
 import java.util.HashSet;
@@ -29,8 +28,6 @@ public class Subtipificacion {
     private Integer orden;
     @Enumerated(EnumType.STRING)
     private Etapa etapaCambio;
-    @Enumerated(EnumType.STRING)
-    private EstadoPostventa estadoPostventaCambio;
 
     // Comportamientos que dispara esta subtipi (data-driven; reemplaza los códigos hardcodeados). Ausencia
     // de un valor = false. @BatchSize evita el N+1 al cargar el catálogo (lista de subtipis).

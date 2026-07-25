@@ -85,7 +85,6 @@ public class LeadCampanaCorreccionService {
                 .idLead(savedLead.getId())
                 .etapa(savedLead.getEtapa())
                 .estado(savedLead.getEstado())
-                .estadoPostventa(savedLead.getEstadoPostventa())
                 .idAsesorAsignado(savedLead.getIdAsesorAsignado())
                 .codigoTipificacion(savedLead.getCodigoTipificacion())
                 .codigoSubtipificacion(savedLead.getCodigoSubtipificacion())

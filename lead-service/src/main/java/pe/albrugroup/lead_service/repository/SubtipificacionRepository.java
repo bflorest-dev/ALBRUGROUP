@@ -18,9 +18,7 @@ public interface SubtipificacionRepository extends JpaRepository<Subtipificacion
     Optional<Subtipificacion> findByTipificacionIdAndCodigo(Long tipificacionId, String codigo);
     Optional<Subtipificacion> findByTipificacionIdAndCodigoAndActivoTrue(Long tipificacionId, String codigo);
 
-    // Catalogo plano (etapa, codigoTipificacion, codigoSubtipificacion, etapaCambio, estadoPostventaCambio)
-    // para el backfill: la etapa de cambio reconstruye avances; el estado postventa reconstruye el merito
-    // de COBRANZA (estado final) al reproducir eventos.
-    @Query("SELECT t.idEquipo, t.etapa, t.codigo, s.codigo, s.etapaCambio, s.estadoPostventaCambio FROM Subtipificacion s JOIN s.tipificacion t")
+    // Catalogo plano para el backfill: la etapa de cambio reconstruye avances historicos.
+    @Query("SELECT t.idEquipo, t.etapa, t.codigo, s.codigo, s.etapaCambio FROM Subtipificacion s JOIN s.tipificacion t")
     List<Object[]> listarCambiosEtapa();
 }

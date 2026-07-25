@@ -15,7 +15,7 @@ import pe.albrugroup.lead_service.entity.enums.ModoConteo;
 import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.ComportamientoTipificacion;
 import pe.albrugroup.lead_service.entity.enums.CriterioZona;
-import pe.albrugroup.lead_service.entity.enums.EstadoPostventa;
+import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
@@ -780,7 +780,6 @@ public class LeadService {
                 .numeroDocumento(numeroDocumentoPreventa(lead))
                 .fechaRegistro(cierre.getCreatedAt())
                 .etapaActual(etapaActual)
-                .estadoPostventa(lead.getEstadoPostventa())
                 .estado(estadoMisPreventa(etapaActual, gestionVenta))
                 .fechaInstalacionRechazo(resultado.evento() == null ? null : resultado.evento().getCreatedAt())
                 .codigoTipificacion(gestionVenta == null ? null : gestionVenta.getTipificacion())
@@ -1307,12 +1306,7 @@ public class LeadService {
                 .orElseThrow(() -> new NotFoundException(Subtipificacion.class, request.getCodigoSubtipificacion()));
 
         Etapa etapaDestinoCatalogo = subtipificacion.getEtapaCambio();
-        EstadoPostventa estadoDestino = resolverEstadoPostventaDestino(etapaActual, etapaDestinoCatalogo, subtipificacion);
         Etapa etapaDestino = normalizarEtapaDestinoPostventa(etapaActual, etapaDestinoCatalogo);
-
-        if (estadoDestino != null) {
-            lead.setEstadoPostventa(estadoDestino);
-        }
 
         if (etapaDestino != null && etapaDestino != etapaActual) {
             lead.setEtapa(etapaDestino);
@@ -1330,11 +1324,7 @@ public class LeadService {
             lead.setIdSubtipificacion(subtipificacion.getId());
             lead.setCodigoSubtipificacion(subtipificacion.getCodigo());
 
-            if (esEstadoPostventaFinal(estadoDestino)) {
-                lead.setEstado(EstadoSeguimiento.GESTIONADO);
-                lead.setIdAsesorAsignado(null);
-                lead.setNombreAsesorAsignado(null);
-            } else if (etapaActual == Etapa.POSTVENTA) {
+            if (etapaActual == Etapa.POSTVENTA) {
                 // POSTVENTA es un pool compartido: al tipificar, la gestion termina y el lead se
                 // libera para que cualquier asesor pueda retomarlo despues (mismo criterio que VENTA).
                 lead.setEstado(EstadoSeguimiento.GESTIONADO);
@@ -1346,7 +1336,7 @@ public class LeadService {
         }
 
         Lead savedLead = leadRepository.save(lead);
-        boolean esMeritoSeguimiento = etapaActual == Etapa.POSTVENTA && esEstadoPostventaFinal(estadoDestino);
+        boolean esMeritoSeguimiento = etapaActual == Etapa.POSTVENTA && etapaDestino == Etapa.COBRANZA;
         actualizarResumenEtapaTipificacion(
                 savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, idAsesorAnterior, nombreAsesorAnterior,
                 esMeritoSeguimiento);
@@ -1372,26 +1362,6 @@ public class LeadService {
         return etapaDestino;
     }
 
-    private EstadoPostventa resolverEstadoPostventaDestino(
-            Etapa etapaActual,
-            Etapa etapaDestino,
-            Subtipificacion subtipificacion
-    ) {
-        if (subtipificacion.getEstadoPostventaCambio() != null) {
-            return subtipificacion.getEstadoPostventaCambio();
-        }
-        if (etapaDestino == Etapa.COBRANZA) {
-            return EstadoPostventa.EN_COBRANZA;
-        }
-        return null;
-    }
-
-    private boolean esEstadoPostventaFinal(EstadoPostventa estadoPostventa) {
-        return estadoPostventa == EstadoPostventa.EFECTIVO
-                || estadoPostventa == EstadoPostventa.NO_EFECTIVO
-                || estadoPostventa == EstadoPostventa.BAJA_CONFIRMADA;
-    }
-
     private void aplicarDatosPostventaSiCorresponde(Lead lead, Etapa etapaDestino, LocalDate fechaInstalacion) {
         if (etapaDestino != Etapa.POSTVENTA) {
             return;
@@ -1409,7 +1379,7 @@ public class LeadService {
 
         lead.setDiaCorteFacturacion(resolverDiaCorteFacturacion(proveedor, fechaInstalacion));
         lead.setMesesPermanenciaSnapshot(proveedor.getMesesPermanencia());
-        lead.setEstadoPostventa(EstadoPostventa.EN_SEGUIMIENTO);
+        lead.setEstadoClientePostventa(EstadoClientePostventa.ACTIVO);
     }
 
     /**
@@ -3600,7 +3570,6 @@ public class LeadService {
                 .etapa(lead.getEtapa())
                 .etapaAnterior(etapaAnterior)
                 .estado(lead.getEstado())
-                .estadoPostventa(lead.getEstadoPostventa())
                 .idAsesorAsignado(lead.getIdAsesorAsignado())
                 .idAsesorAnterior(idAsesorAnterior)
                 .codigoTipificacion(lead.getCodigoTipificacion())

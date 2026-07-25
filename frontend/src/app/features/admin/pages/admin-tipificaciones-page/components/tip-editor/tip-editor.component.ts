@@ -23,7 +23,7 @@ export interface TipFieldChange {
 export interface SubtipFieldChange {
   tipUid: string;
   subUid: string;
-  field: 'codigo' | 'descripcion' | 'etapaCambio' | 'estadoPostventaCambio';
+  field: 'codigo' | 'descripcion' | 'etapaCambio';
   value: string | null;
 }
 
@@ -67,7 +67,6 @@ export class TipEditorComponent {
   @Input({ required: true }) tip!: TipDraft;
   @Input({ required: true }) selectedEtapa!: EtapaCatalogo;
   @Input({ required: true }) etapaOptions: EtapaCambioOption[] = [];
-  @Input({ required: true }) estadoPostventaOptions: string[] = [];
   @Input() comportamientoOptions: { label: string; value: ComportamientoTipificacion }[] = [];
 
   @Output() tipFieldChange = new EventEmitter<TipFieldChange>();
