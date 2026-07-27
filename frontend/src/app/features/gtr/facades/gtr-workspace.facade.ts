@@ -314,7 +314,7 @@ export class GtrWorkspaceFacade {
   readonly agendadosPageNumber = signal(0);
   // Orden de la bandeja de agendados: 'programado' = hora de la cita; 'agendado' = momento de tipificacion.
   readonly agendadosSortField = signal<AgendadosSortField>('programado');
-  readonly agendadosSortDirection = signal<'asc' | 'desc'>('asc');
+  readonly agendadosSortDirection = signal<'asc' | 'desc'>('desc');
   readonly masivoTotalElements = signal(0);
   readonly masivoTotalPages = signal(0);
   readonly masivoPageNumber = signal(0);
