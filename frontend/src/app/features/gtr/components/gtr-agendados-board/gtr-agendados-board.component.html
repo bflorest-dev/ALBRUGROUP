@@ -30,22 +30,22 @@
             <button
               type="button"
               class="sort-header"
-              [class.sort-header--active]="facade.agendadoSortActive('agendado')"
-              (click)="facade.changeAgendadosSort('agendado')"
+              [class.sort-header--active]="facade.agendadoSortActive('programado')"
+              (click)="facade.changeAgendadosSort('programado')"
             >
-              <span>Agendado</span>
-              <i [class]="facade.agendadoSortIcon('agendado')" aria-hidden="true"></i>
+              <span>Fecha Agendada</span>
+              <i [class]="facade.agendadoSortIcon('programado')" aria-hidden="true"></i>
             </button>
           </th>
           <th class="col-sortable">
             <button
               type="button"
               class="sort-header"
-              [class.sort-header--active]="facade.agendadoSortActive('programado')"
-              (click)="facade.changeAgendadosSort('programado')"
+              [class.sort-header--active]="facade.agendadoSortActive('agendado')"
+              (click)="facade.changeAgendadosSort('agendado')"
             >
-              <span>Programado</span>
-              <i [class]="facade.agendadoSortIcon('programado')" aria-hidden="true"></i>
+              <span>Fecha Gestion</span>
+              <i [class]="facade.agendadoSortIcon('agendado')" aria-hidden="true"></i>
             </button>
           </th>
           <th>Lead</th>
@@ -61,8 +61,8 @@
 
       <ng-template #body let-row>
         <tr [class.row-new]="row.isNew" [class.row-priority-campaign]="facade.isPriorityCampaign(row)">
-          <td>{{ facade.agendadoTipificadoLabel(row) }}</td>
           <td><strong>{{ facade.agendadoProgramadoLabel(row) }}</strong></td>
+          <td>{{ facade.agendadoTipificadoLabel(row) }}</td>
           <td>
             <strong>{{ facade.leadPrefixLabel(row.prefijo) }} {{ row.lead }}</strong>
             @if (facade.isPriorityCampaign(row)) {
