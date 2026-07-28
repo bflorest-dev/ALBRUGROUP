@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.request.CerrarPeriodoFacturacionRequest;
+import pe.albrugroup.lead_service.entity.request.CorregirCorteFacturacionRequest;
 import pe.albrugroup.lead_service.entity.request.PeriodoFacturacionFacturaRequest;
+import pe.albrugroup.lead_service.entity.response.CorreccionCorteFacturacionResponse;
 import pe.albrugroup.lead_service.entity.response.PeriodoFacturacionPostventaResponse;
 import pe.albrugroup.lead_service.service.FacturacionPostventaService;
 
@@ -41,6 +43,15 @@ public class PostventaFacturacionController {
     ) {
         var periodo = facturacionPostventaService.obtenerPeriodo(idPeriodo);
         return ResponseEntity.status(HttpStatus.OK).body(periodo);
+    }
+
+    @PatchMapping("/facturacion/calendarios/{idCalendario}/corte") @PreAuthorize("hasAuthority('UPDATE_POSTVENTA_FACTURACION')")
+    public ResponseEntity<CorreccionCorteFacturacionResponse> corregirCorteCalendario(
+            @PathVariable Long idCalendario,
+            @Valid @RequestBody CorregirCorteFacturacionRequest request
+    ) {
+        var response = facturacionPostventaService.corregirCorteCalendario(idCalendario, request);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
     @PatchMapping("/periodos/{idPeriodo}/factura") @PreAuthorize("hasAuthority('UPDATE_POSTVENTA_FACTURACION')")

@@ -31,6 +31,10 @@ public class LeadPostventaBandejaResponse {
     private String telefonoRegistro;
     private String proveedor;
     private String plan;
+    private LocalDate mesCorteBase;
+    private Integer numeroCorteBase;
+    private Boolean corteCorregido;
+    private Instant fechaCorreccionCorte;
     private Long idPlataformaDigitalOfrecida;
     private String plataformaDigitalOfrecida;
     private EstadoClientePostventa estadoCliente;

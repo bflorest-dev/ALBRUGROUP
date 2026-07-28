@@ -3,7 +3,6 @@ package pe.albrugroup.lead_service.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.CalendarioFacturacionPostventa;
 import pe.albrugroup.lead_service.entity.EncuestaPostventa;
@@ -30,7 +29,6 @@ public class CalendarioFacturacionPostventaService {
     private final PeriodoFacturacionPostventaRepository periodoRepository;
     private final EncuestaPostventaRepository encuestaRepository;
     private final CalculadoraFacturacionPostventaResolver calculadoraResolver;
-    private final CurrentUser currentUser;
 
     @Transactional
     public void inicializarGestionPostventa(Lead lead, LocalDate fechaInstalacion) {
@@ -60,8 +58,6 @@ public class CalendarioFacturacionPostventaService {
                 .fechaProgramada(ahora)
                 .fechaLimite(ahora.plusHours(48))
                 .numeroEncuesta(1)
-                .idAsesorEncuesta(currentUser.empleadoID())
-                .nombreAsesorEncuesta(currentUser.nombreCompleto())
                 .build();
     }
 }

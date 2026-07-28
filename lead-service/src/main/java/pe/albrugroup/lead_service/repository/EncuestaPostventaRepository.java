@@ -8,15 +8,24 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.albrugroup.lead_service.entity.EncuestaPostventa;
+import pe.albrugroup.lead_service.entity.enums.EstadoEncuestaPostventa;
+import pe.albrugroup.lead_service.entity.enums.TipoEncuestaPostventa;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface EncuestaPostventaRepository extends JpaRepository<EncuestaPostventa, Long> {
 
     Page<EncuestaPostventa> findByLeadIdOrderByCreatedAtDesc(Long idLead, Pageable pageable);
     List<EncuestaPostventa> findByLeadId(Long idLead);
+
+    Optional<EncuestaPostventa> findFirstByLeadIdAndTipoEncuestaAndEstadoOrderByFechaProgramadaAscCreatedAtAscIdAsc(
+            Long idLead,
+            TipoEncuestaPostventa tipoEncuesta,
+            EstadoEncuestaPostventa estado
+    );
 
     @Query("""
             SELECT e

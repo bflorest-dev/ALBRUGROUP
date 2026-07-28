@@ -53,16 +53,16 @@ public class EncuestaPostventaService {
     public EncuestaPostventaResponse registrarEncuesta(Long idLead, EncuestaPostventaRequest request) {
         Lead lead = obtenerLeadAsignadoGestionable(idLead);
         Integer calificacion = resolverCalificacion(request);
+        TipoEncuestaPostventa tipoEncuesta = resolverTipoEncuesta(request);
 
-        EncuestaPostventa encuesta = mapper.toEntity(request);
-        encuesta.setLead(lead);
-        encuesta.setPeriodoFacturacionPostventa(obtenerPeriodoSiCorresponde(idLead, request.getIdPeriodoFacturacion()));
-        encuesta.setTipoEncuesta(resolverTipoEncuesta(request));
+        EncuestaPostventa encuesta = obtenerEncuestaObjetivo(lead, tipoEncuesta, request);
+        encuesta.setTipoContacto(request.getTipoContacto());
         encuesta.setCalificacion(calificacion);
         encuesta.setStatus(resolverStatusEncuesta(calificacion));
         encuesta.setEstado(EstadoEncuestaPostventa.REALIZADA);
         encuesta.setPrioridad(PrioridadEncuestaPostventa.NORMAL);
         encuesta.setFechaRealizada(LocalDateTime.now());
+        encuesta.setComentario(request.getComentario());
         encuesta.setIdAsesorEncuesta(currentUser.empleadoID());
         encuesta.setNombreAsesorEncuesta(currentUser.nombreCompleto());
         return mapper.toResponse(encuestaRepository.save(encuesta));
@@ -79,14 +79,16 @@ public class EncuestaPostventaService {
 
     public SatisfaccionPostventaResponse obtenerResumenEncuestasPorLead(Long idLead) {
         obtenerLeadAsignadoGestionable(idLead);
-        List<EncuestaPostventa> encuestas = encuestaRepository.findByLeadId(idLead);
-        if (encuestas.isEmpty()) {
+        List<Integer> calificaciones = encuestaRepository.findByLeadId(idLead).stream()
+                .filter(encuesta -> encuesta.getEstado() == EstadoEncuestaPostventa.REALIZADA)
+                .map(EncuestaPostventa::getCalificacion)
+                .filter(calificacion -> calificacion != null)
+                .toList();
+        if (calificaciones.isEmpty()) {
             return new SatisfaccionPostventaResponse(idLead, null, null);
         }
 
-        BigDecimal promedioSatisfaccion = promedio(encuestas.stream()
-                .map(EncuestaPostventa::getCalificacion)
-                .toList());
+        BigDecimal promedioSatisfaccion = promedio(calificaciones);
 
         return new SatisfaccionPostventaResponse(
                 idLead,
@@ -96,16 +98,10 @@ public class EncuestaPostventaService {
     }
 
     private BigDecimal promedio(List<Integer> valores) {
-        List<Integer> valoresValidos = valores.stream()
-                .filter(valor -> valor != null)
-                .toList();
-        if (valoresValidos.isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-        BigDecimal total = valoresValidos.stream()
+        BigDecimal total = valores.stream()
                 .map(BigDecimal::valueOf)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return total.divide(BigDecimal.valueOf(valoresValidos.size()), 2, RoundingMode.HALF_UP);
+        return total.divide(BigDecimal.valueOf(valores.size()), 2, RoundingMode.HALF_UP);
     }
 
     private StatusSatisfaccion resolverStatusSatisfaccion(BigDecimal promedio) {
@@ -140,6 +136,28 @@ public class EncuestaPostventaService {
         return request.getIdPeriodoFacturacion() == null
                 ? TipoEncuestaPostventa.SATISFACCION_ASESOR
                 : TipoEncuestaPostventa.SATISFACCION_SERVICIO;
+    }
+
+    private EncuestaPostventa obtenerEncuestaObjetivo(
+            Lead lead,
+            TipoEncuestaPostventa tipoEncuesta,
+            EncuestaPostventaRequest request
+    ) {
+        if (tipoEncuesta == TipoEncuestaPostventa.SATISFACCION_ASESOR) {
+            return encuestaRepository
+                    .findFirstByLeadIdAndTipoEncuestaAndEstadoOrderByFechaProgramadaAscCreatedAtAscIdAsc(
+                            lead.getId(),
+                            TipoEncuestaPostventa.SATISFACCION_ASESOR,
+                            EstadoEncuestaPostventa.PENDIENTE
+                    )
+                    .orElseThrow(() -> new BadRequestException("No existe una encuesta pendiente de satisfaccion del asesor para completar"));
+        }
+
+        EncuestaPostventa encuesta = mapper.toEntity(request);
+        encuesta.setLead(lead);
+        encuesta.setPeriodoFacturacionPostventa(obtenerPeriodoSiCorresponde(lead.getId(), request.getIdPeriodoFacturacion()));
+        encuesta.setTipoEncuesta(tipoEncuesta);
+        return encuesta;
     }
 
     private Integer resolverCalificacion(EncuestaPostventaRequest request) {

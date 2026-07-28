@@ -26,12 +26,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 
-@Entity
-@Getter
-@Setter
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
+@Entity @Getter @Setter @Builder
+@AllArgsConstructor @NoArgsConstructor
 @Table(indexes = {
         @Index(name = "idx_calendario_postventa_lead", columnList = "id_lead"),
         @Index(name = "idx_calendario_postventa_instalacion", columnList = "fechaInstalacion")
@@ -58,6 +54,8 @@ public class CalendarioFacturacionPostventa {
     private Integer diaCorte;
     private Integer diaEmisionEstimado;
     private Integer diaVencimiento;
+    private LocalDate mesCorteBase;
+    private Integer numeroCorteBase;
 
     @Enumerated(EnumType.STRING)
     private BloqueFacturacion bloqueFacturacion;
@@ -67,6 +65,11 @@ public class CalendarioFacturacionPostventa {
 
     @Builder.Default
     private Boolean activo = true;
+
+    @Builder.Default
+    private Boolean corteCorregido = false;
+
+    private Instant fechaCorreccionCorte;
 
     private String observacion;
 

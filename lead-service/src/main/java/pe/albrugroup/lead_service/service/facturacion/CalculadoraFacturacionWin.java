@@ -25,9 +25,7 @@ public class CalculadoraFacturacionWin implements CalculadoraFacturacionPostvent
 
     @Override
     public CalendarioFacturacionPostventa crearCalendario(Lead lead, LocalDate fechaInstalacion) {
-        BloqueFacturacion bloque = fechaInstalacion.getDayOfMonth() <= DIA_MAXIMO_BLOQUE_MISMO_MES
-                ? BloqueFacturacion.MISMO_MES
-                : BloqueFacturacion.MES_SIGUIENTE;
+        CorteWin corte = resolverCorteDesdeInstalacion(fechaInstalacion);
 
         return CalendarioFacturacionPostventa.builder()
                 .lead(lead)
@@ -39,7 +37,9 @@ public class CalculadoraFacturacionWin implements CalculadoraFacturacionPostvent
                 .tipoReglaProveedor(TipoReglaFacturacion.WIN)
                 .diaCorte(DIA_FRONTERA_BLOQUE)
                 .diaVencimiento(DIA_VENCIMIENTO)
-                .bloqueFacturacion(bloque)
+                .mesCorteBase(corte.mesCorteBase())
+                .numeroCorteBase(corte.numeroCorteBase())
+                .bloqueFacturacion(corte.bloqueFacturacion())
                 .requiereProrrateoInicial(true)
                 .activo(true)
                 .build();
@@ -50,12 +50,15 @@ public class CalculadoraFacturacionWin implements CalculadoraFacturacionPostvent
         LocalDate vencimientoPrimerPeriodo = resolverPrimerVencimiento(calendario);
         LocalDate vencimiento = vencimientoPrimerPeriodo.plusMonths(numeroPeriodo - 1L);
         LocalDate corte = ajustarDia(vencimiento.getYear(), vencimiento.getMonthValue(), DIA_FRONTERA_BLOQUE);
+        LocalDate inicio = numeroPeriodo == 1
+                ? resolverInicioPrimerPeriodo(calendario)
+                : vencimiento.minusMonths(1).plusDays(1);
 
         return PeriodoFacturacionPostventa.builder()
                 .calendarioFacturacionPostventa(calendario)
                 .lead(calendario.getLead())
                 .numeroPeriodo(numeroPeriodo)
-                .fechaInicioPeriodo(numeroPeriodo == 1 ? calendario.getFechaInstalacion() : vencimiento.minusMonths(1).plusDays(1))
+                .fechaInicioPeriodo(inicio)
                 .fechaFinPeriodo(vencimiento)
                 .fechaCorteEstimada(corte)
                 .fechaVencimientoEstimado(vencimiento)
@@ -65,6 +68,13 @@ public class CalculadoraFacturacionWin implements CalculadoraFacturacionPostvent
     }
 
     private LocalDate resolverPrimerVencimiento(CalendarioFacturacionPostventa calendario) {
+        if (calendario.getMesCorteBase() != null && calendario.getNumeroCorteBase() != null) {
+            LocalDate mesCorte = calendario.getMesCorteBase();
+            YearMonth mesVencimiento = calendario.getNumeroCorteBase() == 2
+                    ? YearMonth.from(mesCorte).plusMonths(1)
+                    : YearMonth.from(mesCorte);
+            return mesVencimiento.atDay(Math.min(DIA_VENCIMIENTO, mesVencimiento.lengthOfMonth()));
+        }
         LocalDate instalacion = calendario.getFechaInstalacion();
         YearMonth mesVencimiento = calendario.getBloqueFacturacion() == BloqueFacturacion.MES_SIGUIENTE
                 ? YearMonth.from(instalacion).plusMonths(1)
@@ -72,8 +82,29 @@ public class CalculadoraFacturacionWin implements CalculadoraFacturacionPostvent
         return mesVencimiento.atDay(Math.min(DIA_VENCIMIENTO, mesVencimiento.lengthOfMonth()));
     }
 
+    private LocalDate resolverInicioPrimerPeriodo(CalendarioFacturacionPostventa calendario) {
+        if (calendario.getMesCorteBase() != null && calendario.getNumeroCorteBase() != null) {
+            return calendario.getNumeroCorteBase() == 2
+                    ? calendario.getMesCorteBase().withDayOfMonth(DIA_FRONTERA_BLOQUE)
+                    : calendario.getMesCorteBase();
+        }
+        return calendario.getFechaInstalacion();
+    }
+
     private LocalDate ajustarDia(int year, int month, int day) {
         YearMonth yearMonth = YearMonth.of(year, month);
         return yearMonth.atDay(Math.min(day, yearMonth.lengthOfMonth()));
+    }
+
+    private CorteWin resolverCorteDesdeInstalacion(LocalDate fechaInstalacion) {
+        boolean mismoMes = fechaInstalacion.getDayOfMonth() <= DIA_MAXIMO_BLOQUE_MISMO_MES;
+        return new CorteWin(
+                YearMonth.from(fechaInstalacion).atDay(1),
+                mismoMes ? 1 : 2,
+                mismoMes ? BloqueFacturacion.MISMO_MES : BloqueFacturacion.MES_SIGUIENTE
+        );
+    }
+
+    private record CorteWin(LocalDate mesCorteBase, Integer numeroCorteBase, BloqueFacturacion bloqueFacturacion) {
     }
 }

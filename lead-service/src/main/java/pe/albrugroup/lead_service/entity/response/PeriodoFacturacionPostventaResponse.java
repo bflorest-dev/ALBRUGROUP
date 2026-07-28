@@ -21,6 +21,10 @@ public class PeriodoFacturacionPostventaResponse {
     private Long id;
     private Long idCalendarioFacturacion;
     private Long idLead;
+    private LocalDate mesCorteBase;
+    private Integer numeroCorteBase;
+    private Boolean corteCorregido;
+    private Instant fechaCorreccionCorte;
     private Integer numeroPeriodo;
     private LocalDate fechaInicioPeriodo;
     private LocalDate fechaFinPeriodo;

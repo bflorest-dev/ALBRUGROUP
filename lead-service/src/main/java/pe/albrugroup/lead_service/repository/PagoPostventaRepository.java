@@ -19,6 +19,8 @@ public interface PagoPostventaRepository extends JpaRepository<PagoPostventa, Lo
 
     Page<PagoPostventa> findByPeriodoFacturacionPostventaIdOrderByCreatedAtDesc(Long idPeriodoFacturacion, Pageable pageable);
 
+    boolean existsByPeriodoFacturacionPostventaId(Long idPeriodoFacturacion);
+
     @Modifying
     @Query("DELETE FROM PagoPostventa p WHERE p.lead.id = :idLead")
     void deleteByLeadId(@Param("idLead") Long idLead);
