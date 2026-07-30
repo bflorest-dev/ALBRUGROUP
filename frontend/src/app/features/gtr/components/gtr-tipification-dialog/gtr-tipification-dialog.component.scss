@@ -84,6 +84,10 @@ h2 {
   color: var(--app-text-muted);
 }
 
+.select-item--disabled {
+  opacity: 0.62;
+}
+
 .dialog-actions {
   display: flex;
   flex-wrap: wrap;

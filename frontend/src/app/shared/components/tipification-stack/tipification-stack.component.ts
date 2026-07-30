@@ -51,9 +51,10 @@ export class TipificationStackComponent {
   }
 
   private isPreventaDesaprobada(): boolean {
+    const tipificacion = this.normalizeCode(this.codigoTipificacion());
     const subtipificacion = this.normalizeCode(this.codigoSubtipificacion());
-    return this.normalizeCode(this.codigoTipificacion()) === 'PREVENTA'
-      && (subtipificacion === 'DESAPROBADA' || subtipificacion === 'DESAPROBADO');
+    return (tipificacion === 'PREVENTA' && (subtipificacion === 'DESAPROBADA' || subtipificacion === 'DESAPROBADO'))
+      || (tipificacion === 'NO DESEA' && subtipificacion === 'PREVENTA DESAPROBADA');
   }
 
   private isDangerTipification(): boolean {

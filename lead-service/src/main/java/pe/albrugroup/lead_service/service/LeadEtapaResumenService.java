@@ -98,6 +98,44 @@ public class LeadEtapaResumenService {
         repository.save(resumen);
     }
 
+    /** Retorno desde VENTA: descarta la preventa previa como venta no aprobada y reabre gestion. */
+    public void registrarRetornoVentaPreventa(
+            Long idLead,
+            Etapa etapa,
+            String codigoTipificacion,
+            String codigoSubtipificacion,
+            Integer orden,
+            Long idAsesorGestion,
+            String nombreAsesorGestion,
+            Instant at
+    ) {
+        LeadEtapaResumen resumen = obtenerOCrear(idLead, etapa, at);
+
+        if (resumen.getPrimeraCodigoTipificacion() == null) {
+            resumen.setPrimeraCodigoTipificacion(codigoTipificacion);
+            resumen.setPrimeraCodigoSubtipificacion(codigoSubtipificacion);
+            resumen.setPrimeraTipificacionOrden(orden);
+            resumen.setPrimeraTipificacionAt(at);
+        }
+
+        resumen.setUltimaCodigoTipificacion(codigoTipificacion);
+        resumen.setUltimaCodigoSubtipificacion(codigoSubtipificacion);
+        resumen.setUltimaTipificacionOrden(orden);
+        resumen.setUltimaTipificacionAt(at);
+
+        resumen.setMayorRangoCodigoTipificacion(codigoTipificacion);
+        resumen.setMayorRangoCodigoSubtipificacion(codigoSubtipificacion);
+        resumen.setMayorRangoOrden(orden);
+        resumen.setMayorRangoAt(at);
+
+        resumen.setTotalTipificaciones(nvl(resumen.getTotalTipificaciones(), 0) + 1);
+        resumen.setIdAsesorUltimaGestion(idAsesorGestion);
+        resumen.setNombreAsesorUltimaGestion(nombreAsesorGestion);
+        resumen.setFechaUltimaGestion(at);
+
+        repository.save(resumen);
+    }
+
     /** Cada asignacion de la etapa: incrementa el contador. */
     public void registrarAsignacion(Long idLead, Etapa etapa, Instant at) {
         LeadEtapaResumen resumen = obtenerOCrear(idLead, etapa, at);

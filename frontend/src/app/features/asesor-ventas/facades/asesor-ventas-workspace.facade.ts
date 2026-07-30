@@ -22,6 +22,7 @@ import {
   PageQuery,
   PlanResponse,
   PromocionComercialResponse,
+  SubtipificacionResponse,
   UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
 import { buildTelUrl, buildWhatsAppUrl } from '../../../shared/utils/phone-link';
@@ -32,6 +33,7 @@ import { PreventaLeadService } from '../../preventa/services/preventa-lead.servi
 
 type VisualLeadAsesor = LeadAsesorVentasResponse & { isNew?: boolean };
 type ActiveDataTab = 'datos' | 'direccion' | 'oferta';
+type SubtipificacionSelectOption = SubtipificacionResponse & { disabled?: boolean };
 type OfertaProviderOption = { id: number; nombre: string };
 type OfertaAdditionalSelection = {
   idAdicional: number;
@@ -54,6 +56,8 @@ const CAMPOS_CONFIGURABLES: Record<CampoCaptura, { tab: 'datos' | 'direccion'; c
   NOMBRE_TITULAR_CELULAR: { tab: 'datos', control: 'nombreTitularCelularRegistro', label: 'Nombre del Titular del Celular' },
   PLANO: { tab: 'direccion', control: 'plano', label: 'Plano' }
 };
+const TIPIFICACION_NO_DESEA = 'NO DESEA';
+const SUBTIPIFICACION_PREVENTA_DESAPROBADA = 'PREVENTA DESAPROBADA';
 
 export function resolveSalesAdvisorAvailability(
   status: EstadoAsistencia,
@@ -233,12 +237,17 @@ export class AsesorVentasWorkspaceFacade {
     horaProgramada: ['']
   });
 
-  readonly subtipificaciones = computed(() => {
+  readonly subtipificaciones = computed<SubtipificacionSelectOption[]>(() => {
     const codigo = this.selectedTipificacionCode();
     const subtipificaciones =
       this.catalogo()?.tipificaciones.find((tipificacion) => tipificacion.codigo === codigo)?.subtipificaciones ?? [];
 
-    return [...subtipificaciones].sort((left, right) => left.orden - right.orden);
+    return [...subtipificaciones]
+      .sort((left, right) => left.orden - right.orden)
+      .map((subtipificacion) => ({
+        ...subtipificacion,
+        disabled: this.isSubtipificacionManualBloqueada(codigo, subtipificacion.codigo)
+      }));
   });
   readonly tipificaciones = computed(() => {
     return [...(this.catalogo()?.tipificaciones ?? [])].sort((left, right) => left.orden - right.orden);
@@ -799,6 +808,10 @@ export class AsesorVentasWorkspaceFacade {
     // notificaciones realtime que recargan el detalle y resetean este formulario.
     // Si leyeramos los valores despues, llegarian vacios al backend.
     const raw = this.tipificacionForm.getRawValue();
+    if (this.isSubtipificacionManualBloqueada(raw.codigoTipificacion, raw.codigoSubtipificacion)) {
+      this.errorMessage.set('Esta opcion no esta disponible para asesores.');
+      return;
+    }
     const tipificacionPayload = {
       codigoTipificacion: raw.codigoTipificacion,
       codigoSubtipificacion: raw.codigoSubtipificacion,
@@ -1651,6 +1664,14 @@ export class AsesorVentasWorkspaceFacade {
   private isSalesAdvisorOrOjt(): boolean {
     const primaryRole = this.sessionService.getSession()?.primaryRole;
     return primaryRole === 'ASESOR_VENTAS' || primaryRole === 'OJT';
+  }
+
+  private isSubtipificacionManualBloqueada(codigoTipificacion: string, codigoSubtipificacion: string): boolean {
+    return (
+      codigoTipificacion === TIPIFICACION_NO_DESEA &&
+      codigoSubtipificacion === SUBTIPIFICACION_PREVENTA_DESAPROBADA &&
+      this.isSalesAdvisorOrOjt()
+    );
   }
 
   /** Elimina caracteres no numericos y limita la longitud del control de formulario. */

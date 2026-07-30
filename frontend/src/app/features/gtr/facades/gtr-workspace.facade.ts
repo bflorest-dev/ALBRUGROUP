@@ -579,6 +579,12 @@ export class GtrWorkspaceFacade {
 
     return [...subtipificaciones].sort((left, right) => left.orden - right.orden);
   });
+  readonly subtipificacionesGestionGtr = computed(() =>
+    this.subtipificaciones().map((subtipificacion) => ({
+      ...subtipificacion,
+      disabled: this.isRetornoVentaPreventaManualBlock(this.selectedTipificacionCode(), subtipificacion.codigo)
+    }))
+  );
   readonly tipificaciones = computed(() =>
     [...(this.typifyCatalogo()?.tipificaciones ?? [])].sort((left, right) => left.orden - right.orden)
   );
@@ -1436,6 +1442,10 @@ export class GtrWorkspaceFacade {
     }
 
     const raw = this.tipificacionForm.getRawValue();
+    if (this.isRetornoVentaPreventaManualBlock(raw.codigoTipificacion, raw.codigoSubtipificacion)) {
+      this.errorMessage.set('Esta opcion se marca automaticamente cuando Venta devuelve el lead.');
+      return;
+    }
     const tipificacionPayload = {
       codigoTipificacion: raw.codigoTipificacion,
       codigoSubtipificacion: raw.codigoSubtipificacion,
@@ -3043,7 +3053,13 @@ export class GtrWorkspaceFacade {
 
   private isPreventaDesaprobada(codigo: string, subcodigo?: string | null): boolean {
     const subtipificacion = this.display(subcodigo).toUpperCase();
-    return codigo === 'PREVENTA' && (subtipificacion === 'DESAPROBADA' || subtipificacion === 'DESAPROBADO');
+    return (codigo === 'PREVENTA' && (subtipificacion === 'DESAPROBADA' || subtipificacion === 'DESAPROBADO'))
+      || (codigo === 'NO DESEA' && subtipificacion === 'PREVENTA DESAPROBADA');
+  }
+
+  isRetornoVentaPreventaManualBlock(codigo?: string | null, subcodigo?: string | null): boolean {
+    return this.display(codigo).toUpperCase() === 'NO DESEA'
+      && this.display(subcodigo).toUpperCase() === 'PREVENTA DESAPROBADA';
   }
 
   leadPrefixLabel(prefijo?: string | null): string {

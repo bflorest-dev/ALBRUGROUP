@@ -158,8 +158,8 @@ public class LeadService {
             ComportamientoTipificacion.APARECE_EN_AGENDADOS_GTR;
     private static final String TIPIFICACION_PROGRAMADO = "PROGRAMADO";
     private static final String SUBTIPIFICACION_PROGRAMACION_CANCELADA = "PROGRAMACION_CANCELADA";
-    private static final String TIPIFICACION_RETORNO_VENTA_PREVENTA = "PREVENTA";
-    private static final String SUBTIPIFICACION_RETORNO_VENTA_PREVENTA = "DESAPROBADA";
+    private static final String TIPIFICACION_RETORNO_VENTA_PREVENTA = "NO DESEA";
+    private static final String SUBTIPIFICACION_RETORNO_VENTA_PREVENTA = "PREVENTA DESAPROBADA";
     // "Cerró la preventa hacia venta": las subtipis con este comportamiento (COMPLETA y los PENDIENTE
     // que avanzan por causa del cliente). Reemplaza al viejo par PREVENTA_COMPLETA / VENTA_CERRADA, que
     // era una sola subtipi antes de que la etapa se abriera en matices.
@@ -1240,7 +1240,7 @@ public class LeadService {
                 savedLead, etapaActual, etapaDestino, tipificacion, subtipificacion, idAsesorAnterior, nombreAsesorAnterior,
                 subtipificacion.getComportamientos().contains(ComportamientoTipificacion.RECIBE_MERITO));
         if (tipificacionRetornoPreventa != null) {
-            leadEtapaResumenService.registrarTipificacion(
+            leadEtapaResumenService.registrarRetornoVentaPreventa(
                     savedLead.getId(),
                     Etapa.PREVENTA,
                     tipificacionRetornoPreventa.tipificacion().getCodigo(),

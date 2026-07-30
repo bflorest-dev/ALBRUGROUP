@@ -61,17 +61,18 @@
           <span>Subtipificacion</span>
           <p-select
             formControlName="codigoSubtipificacion"
-            [options]="facade.subtipificaciones()"
+            [options]="facade.subtipificacionesGestionGtr()"
             optionLabel="codigo"
             optionValue="codigo"
+            optionDisabled="disabled"
             placeholder="Seleccionar"
             appendTo="body"
             [disabled]="!facade.selectedTipificacionCode() || !facade.subtipificaciones().length"
           >
             <ng-template #item let-subtipificacion>
-              <div class="select-item">
+              <div class="select-item" [class.select-item--disabled]="subtipificacion.disabled">
                 <strong>{{ subtipificacion.codigo }}</strong>
-                <small>{{ subtipificacion.descripcion }}</small>
+                <small>{{ subtipificacion.disabled ? 'Automatico por Venta' : subtipificacion.descripcion }}</small>
               </div>
             </ng-template>
           </p-select>

@@ -118,6 +118,7 @@
             [options]="facade.subtipificaciones()"
             optionLabel="codigo"
             optionValue="codigo"
+            optionDisabled="disabled"
             placeholder="Seleccionar"
             appendTo="body"
             [disabled]="!facade.selectedTipificacionCode() || !facade.subtipificaciones().length"
