@@ -47,7 +47,7 @@ type BackofficeSection = 'plataforma' | 'gestion' | 'programados';
 type BackofficeGroupMode = 'SIN_AGRUPAR' | 'ESTADO' | 'ASESOR' | 'PLAN' | 'PROVEEDOR' | 'TIPIFICACION';
 type BackofficeSortField = 'fechaIngresoEtapa' | 'lastEntryAt' | 'createdAt' | 'lead' | 'nombreAsesorAsignado' | 'estado';
 type BackofficeSortDirection = 'asc' | 'desc';
-type GestionTipificacionFilter = { label: string; value: string; codigo?: string; descripcion?: string };
+type OrganizationFilterOption = { label: string; value: string; codigo?: string; descripcion?: string };
 type VisualLeadVenta = LeadVentaResponse & {
   isNew?: boolean;
   organizationGroupHint?: string;
@@ -136,7 +136,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly gestionSortField = signal<BackofficeSortField>('lastEntryAt');
   protected readonly plataformaSortDirection = signal<BackofficeSortDirection>('desc');
   protected readonly gestionSortDirection = signal<BackofficeSortDirection>('desc');
-  protected readonly gestionTipificacionFilter = signal<string[]>([]);
+  protected readonly organizationGroupFilter = signal<string[]>([]);
   protected readonly detail = signal<LeadDetalleResponse | null>(null);
   // Campos que muestra el equipo del lead: se ven los visibles del equipo + los que tengan valor.
   protected readonly camposVisibles = computed<ReadonlySet<string>>(
@@ -211,15 +211,47 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     { label: 'Asesor', value: 'nombreAsesorAsignado' },
     { label: 'Estado', value: 'estado' }
   ];
-  protected readonly gestionTipificacionFilterOptions = computed<GestionTipificacionFilter[]>(() => [
-    { label: 'Sin tipificar', value: '__SIN_TIPIFICAR__', codigo: 'Sin tipificar', descripcion: 'Leads pendientes de primera gestion' },
-    ...(this.catalogoAgregado()?.tipificaciones ?? []).map((tipificacion) => ({
-      label: tipificacion.codigo,
-      value: tipificacion.codigo,
-      codigo: tipificacion.codigo,
-      descripcion: tipificacion.descripcion
-    }))
-  ]);
+  protected readonly activeGroupFilterOptions = computed<OrganizationFilterOption[]>(() => {
+    const mode = this.activeGroupingMode();
+    if (mode === 'SIN_AGRUPAR') {
+      return [];
+    }
+    if (mode === 'TIPIFICACION') {
+      return [
+        {
+          label: 'Sin tipificar',
+          value: this.organizationFilterValue(mode, '00:SIN_TIPIFICAR'),
+          codigo: 'Sin tipificar',
+          descripcion: 'Leads pendientes de primera gestion'
+        },
+        ...(this.catalogoAgregado()?.tipificaciones ?? []).map((tipificacion) => {
+          const group = this.tipificacionGroupValue({ codigoTipificacion: tipificacion.codigo } as LeadVentaResponse);
+          return {
+            label: tipificacion.codigo,
+            value: this.organizationFilterValue(mode, group.key),
+            codigo: tipificacion.codigo,
+            descripcion: tipificacion.descripcion
+          };
+        })
+      ];
+    }
+    const optionsByValue = new Map<string, OrganizationFilterOption>();
+    for (const row of this.sourceRowsForActiveSection()) {
+      const group = this.resolveOrganizationGroup(row, mode);
+      const value = this.organizationFilterValue(mode, group.key);
+      optionsByValue.set(value, {
+        label: group.label,
+        value,
+        codigo: group.label,
+        descripcion: group.hint
+      });
+    }
+    return [...optionsByValue.values()].sort((left, right) => left.label.localeCompare(right.label));
+  });
+  protected readonly activeGroupFilterLabel = computed(() => {
+    const grouping = this.groupingModeOptions.find((option) => option.value === this.activeGroupingMode())?.label ?? 'resultados';
+    return grouping.toLocaleLowerCase();
+  });
 
   protected readonly datosForm = this.fb.group({
     tipoDocumento: ['DNI', [Validators.required]],
@@ -447,8 +479,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     const grouping = this.groupingModeOptions.find((option) => option.value === this.activeGroupingMode())?.label ?? 'Sin agrupar';
     const sorting = this.sortOptions.find((option) => option.value === this.activeSortField())?.label ?? 'Fecha ingreso';
     const direction = this.sortDirectionOptions().find((option) => option.value === this.activeSortDirection())?.label ?? 'Mas recientes';
-    const filters = this.section() === 'gestion' && this.gestionTipificacionFilter().length
-      ? ` · ${this.gestionTipificacionFilter().length} tipificaciones`
+    const filters = this.activeGroupingMode() !== 'SIN_AGRUPAR' && this.organizationGroupFilter().length
+      ? ` · ${this.organizationGroupFilter().length} filtros`
       : '';
     return `${grouping} · ${sorting} (${direction})${filters}`;
   });
@@ -456,7 +488,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.activeGroupingMode() === (this.section() === 'gestion' ? 'TIPIFICACION' : 'SIN_AGRUPAR') &&
     this.activeSortField() === (this.section() === 'plataforma' ? 'fechaIngresoEtapa' : 'lastEntryAt') &&
     this.activeSortDirection() === 'desc' &&
-    (this.section() !== 'gestion' || this.gestionTipificacionFilter().length === 0)
+    this.organizationGroupFilter().length === 0
   );
   protected readonly activeRows = computed(() => {
     if (this.plataformaDateSeparation()) {
@@ -467,13 +499,15 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     let rows: VisualLeadVenta[];
     switch (this.section()) {
       case 'plataforma':
-        rows = this.plataformaRows().map((row) => this.withOrganizationGroup(row, this.plataformaGroupingMode()));
+        rows = this.filterRowsByActiveGroup(
+          this.plataformaRows().map((row) => this.withOrganizationGroup(row, this.plataformaGroupingMode()))
+        );
         break;
       case 'programados':
         rows = this.programadosRows();
         break;
       default:
-        rows = this.filterGestionRows(this.gestionRows()).map((row) => this.withOrganizationGroup(row, this.gestionGroupingMode()));
+        rows = this.filterRowsByActiveGroup(this.gestionRows().map((row) => this.withOrganizationGroup(row, this.gestionGroupingMode())));
         break;
     }
     return this.sortedRowsForGrouping(rows, this.activeGroupRowsBy(), this.activeSortField(), this.activeSortDirection());
@@ -1015,6 +1049,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (!mode) {
       return;
     }
+    if (mode !== this.activeGroupingMode()) {
+      this.organizationGroupFilter.set([]);
+    }
     if (this.section() === 'plataforma') {
       this.plataformaGroupingMode.set(mode);
       return;
@@ -1055,18 +1092,19 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.gestionGroupingMode.set('TIPIFICACION');
       this.gestionSortField.set('lastEntryAt');
       this.gestionSortDirection.set('desc');
-      this.gestionTipificacionFilter.set([]);
+      this.organizationGroupFilter.set([]);
       return;
     }
     this.plataformaGroupingMode.set('SIN_AGRUPAR');
     this.plataformaSortField.set('fechaIngresoEtapa');
     this.plataformaSortDirection.set('desc');
+    this.organizationGroupFilter.set([]);
     this.pagePlataforma.set(0);
     await this.refreshPlataforma(false);
   }
 
-  protected setGestionTipificacionFilter(values: string[] | null | undefined): void {
-    this.gestionTipificacionFilter.set(values ?? []);
+  protected setOrganizationGroupFilter(values: string[] | null | undefined): void {
+    this.organizationGroupFilter.set(values ?? []);
   }
 
   protected display(value: unknown): string {
@@ -1759,19 +1797,26 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     };
   }
 
-  private filterGestionRows(rows: VisualLeadVenta[]): VisualLeadVenta[] {
-    const selected = this.gestionTipificacionFilter();
+  private sourceRowsForActiveSection(): VisualLeadVenta[] {
+    if (this.section() === 'plataforma') {
+      return this.plataformaRows();
+    }
+    if (this.section() === 'gestion') {
+      return this.gestionRows();
+    }
+    return [];
+  }
+
+  private filterRowsByActiveGroup(rows: VisualLeadVenta[]): VisualLeadVenta[] {
+    if (this.activeGroupingMode() === 'SIN_AGRUPAR') {
+      return rows;
+    }
+    const selected = this.organizationGroupFilter();
     if (!selected.length) {
       return rows;
     }
-    const selectedSet = new Set(selected.map((value) => value.toLocaleUpperCase()));
-    return rows.filter((row) => {
-      const code = row.codigoTipificacion?.trim();
-      if (!code) {
-        return selectedSet.has('__SIN_TIPIFICAR__');
-      }
-      return selectedSet.has(code.toLocaleUpperCase());
-    });
+    const selectedSet = new Set(selected);
+    return rows.filter((row) => row.organizationGroupKey ? selectedSet.has(row.organizationGroupKey) : true);
   }
 
   private withOrganizationGroup(row: VisualLeadVenta, mode: BackofficeGroupMode): VisualLeadVenta {
@@ -1788,9 +1833,13 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return {
       ...row,
       organizationGroupHint: group.hint,
-      organizationGroupKey: `${mode}:${group.key}`,
+      organizationGroupKey: this.organizationFilterValue(mode, group.key),
       organizationGroupLabel: group.label
     };
+  }
+
+  private organizationFilterValue(mode: BackofficeGroupMode, key: string): string {
+    return `${mode}:${key}`;
   }
 
   private resolveOrganizationGroup(row: LeadVentaResponse, mode: BackofficeGroupMode): { hint: string; key: string; label: string } {

@@ -104,28 +104,30 @@
 
             <div class="backoffice-organize-divider"></div>
 
-            @if (section() === 'gestion') {
-              <label for="backoffice-gestion-tipificaciones">
-                <span>Ver tipificaciones</span>
+            @if (activeGroupingMode() !== 'SIN_AGRUPAR' && activeGroupFilterOptions().length) {
+              <label for="backoffice-group-filter">
+                <span>Ver {{ activeGroupFilterLabel() }}</span>
                 <p-multiselect
-                  inputId="backoffice-gestion-tipificaciones"
+                  inputId="backoffice-group-filter"
                   styleClass="backoffice-tipification-filter"
-                  [options]="gestionTipificacionFilterOptions()"
-                  [ngModel]="gestionTipificacionFilter()"
+                  [options]="activeGroupFilterOptions()"
+                  [ngModel]="organizationGroupFilter()"
                   optionLabel="label"
                   optionValue="value"
                   display="chip"
                   [maxSelectedLabels]="1"
-                  selectedItemsLabel="{0} seleccionadas"
+                  selectedItemsLabel="{0} seleccionados"
                   [filter]="true"
                   filterBy="label,codigo,descripcion"
                   appendTo="body"
-                  (onChange)="setGestionTipificacionFilter($any($event.value))"
+                  (onChange)="setOrganizationGroupFilter($any($event.value))"
                 >
-                  <ng-template #item let-tipificacion>
+                  <ng-template #item let-option>
                     <div class="select-item">
-                      <strong>{{ tipificacion.codigo }}</strong>
-                      <small>{{ tipificacion.descripcion }}</small>
+                      <strong>{{ option.codigo || option.label }}</strong>
+                      @if (option.descripcion) {
+                        <small>{{ option.descripcion }}</small>
+                      }
                     </div>
                   </ng-template>
                 </p-multiselect>
