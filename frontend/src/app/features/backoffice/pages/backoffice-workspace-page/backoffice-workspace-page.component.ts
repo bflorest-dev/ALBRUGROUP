@@ -126,6 +126,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly isLoading = signal(false);
   protected readonly isReconciling = signal(false);
   protected readonly isSaving = signal(false);
+  protected readonly leadActionId = signal<number | null>(null);
   protected readonly plataformaRows = signal<VisualLeadVenta[]>([]);
   protected readonly gestionRows = signal<VisualLeadVenta[]>([]);
   protected readonly programadosRows = signal<VisualLeadVenta[]>([]);
@@ -602,6 +603,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   private async takeAndOpenLead(row: LeadVentaResponse, confirmarReasignacion = false): Promise<void> {
     this.isSaving.set(true);
+    this.leadActionId.set(row.id);
     try {
       await firstValueFrom(this.leadService.tomarLead(row.id, { confirmarReasignacion }));
       await this.refreshPlataforma(true);
@@ -613,6 +615,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       }
     } finally {
       this.isSaving.set(false);
+      this.leadActionId.set(null);
     }
   }
 
@@ -651,6 +654,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.notify('warn', 'Guarda los cambios pendientes antes de gestionar otro lead.');
       return;
     }
+    const shouldTrackAction = this.leadActionId() === null;
+    if (shouldTrackAction) {
+      this.leadActionId.set(idLead);
+    }
     this.selectedLeadId.set(idLead);
     try {
       const detail = await firstValueFrom(this.leadService.obtenerDetalle(idLead));
@@ -666,6 +673,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.detailDrawerOpen.set(true);
     } catch (error) {
       this.notify('error', this.getErrorMessage(error, 'No se pudo abrir el detalle.'));
+    } finally {
+      if (shouldTrackAction) {
+        this.leadActionId.set(null);
+      }
     }
   }
 
@@ -1120,6 +1131,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected assignedShortName(value?: string | null): string {
     const words = (value ?? '').trim().split(/\s+/).filter(Boolean);
     return words.length ? words.slice(0, 2).join(' ') : '-';
+  }
+
+  protected isLeadActionLoading(idLead: number): boolean {
+    return this.leadActionId() === idLead;
   }
 
   protected leadProviderLabel(lead: LeadDetalleResponse): string {

@@ -309,22 +309,23 @@
               <button
                 pButton
                 type="button"
-                icon="pi pi-briefcase"
+                [icon]="isLeadActionLoading(row.id) ? '' : 'pi pi-briefcase'"
                 label="Gestionar"
                 size="small"
                 [severity]="row.idAsesorAsignado && !isMine(row) ? 'warn' : undefined"
-                [disabled]="isSaving() || !canMutateOperationalData()"
-                [loading]="isSaving()"
+                [disabled]="isSaving() || leadActionId() !== null || !canMutateOperationalData()"
+                [loading]="isLeadActionLoading(row.id)"
                 (click)="tomarLead(row)"
               ></button>
             } @else {
               <button
                 pButton
                 type="button"
-                icon="pi pi-briefcase"
+                [icon]="isLeadActionLoading(row.id) ? '' : 'pi pi-briefcase'"
                 label="Gestionar"
                 size="small"
-                [disabled]="isSaving() || !canMutateOperationalData()"
+                [disabled]="isSaving() || leadActionId() !== null || !canMutateOperationalData()"
+                [loading]="isLeadActionLoading(row.id)"
                 (click)="openDetail(row.id)"
               ></button>
             }
