@@ -380,34 +380,35 @@
     />
   </p-card>
 
-  <p-dialog
-    header="Gestion de Lead"
-    [visible]="detailDialogOpen()"
+  <p-drawer
+    [visible]="detailDrawerOpen()"
     (visibleChange)="!$event && requestCloseDetail()"
+    position="right"
     [modal]="true"
-    [draggable]="false"
-    [breakpoints]="{ '1200px': '92vw', '720px': '96vw' }"
-    styleClass="backoffice-dialog"
+    [blockScroll]="true"
+    [dismissible]="false"
+    [closeOnEscape]="false"
+    [showCloseIcon]="false"
+    styleClass="backoffice-drawer"
   >
     @if (detail(); as lead) {
-      <section class="lead-workspace">
-        <header class="lead-head">
-          <div>
-            <span class="eyebrow">Lead {{ lead.id }}</span>
-            <h2>{{ leadPhone(lead) }}</h2>
-            <p>{{ display(lead.nombreTitular) }} - {{ display(lead.nombreCampana) }}</p>
+      <ng-template #header>
+        <header class="drawer-head">
+          <div class="drawer-head__main">
+            <span class="eyebrow">{{ leadProviderLabel(lead) }}</span>
+            <h2><span>{{ leadCountryCode(lead) }}</span> {{ lead.lead }}</h2>
+            <div class="drawer-head__meta">
+              <span>{{ display(lead.nombreTitular) }}</span>
+              <span>{{ leadDocumentLabel(lead) }}</span>
+              <span>{{ leadAddressSummary(lead) }}</span>
+            </div>
           </div>
 
-          <div class="lead-tags">
+          <div class="drawer-head__actions">
             <p-tag [severity]="estadoSeverity(lead.estadoSeguimiento)" [value]="display(lead.estadoSeguimiento)" />
             @if (hasUnsavedDataChanges()) {
               <p-tag severity="warn" value="Datos sin guardar" />
             }
-          </div>
-        </header>
-
-        <form class="tipification-bar" [formGroup]="tipificacionForm" (ngSubmit)="tipificar()">
-          <div class="tipification-main">
             <button
               pButton
               type="button"
@@ -418,163 +419,14 @@
               [loading]="isSaving()"
               (click)="registrarContacto()"
             ></button>
-
-            <label class="tipification-field">
-              <span>Tipificacion</span>
-              <p-select
-                formControlName="codigoTipificacion"
-                [options]="tipificaciones()"
-                optionLabel="codigo"
-                optionValue="codigo"
-                placeholder="Seleccionar"
-                appendTo="body"
-                (onChange)="onTipificacionSelected($event.value)"
-              >
-                <ng-template #item let-tipificacion>
-                  <div class="select-item">
-                    <strong>{{ tipificacion.codigo }}</strong>
-                    <small>{{ tipificacion.descripcion }}</small>
-                  </div>
-                </ng-template>
-              </p-select>
-            </label>
-
-            <label class="tipification-field">
-              <span>Subtipificacion</span>
-              <p-select
-                formControlName="codigoSubtipificacion"
-                [options]="subtipificaciones()"
-                optionLabel="codigo"
-                optionValue="codigo"
-                placeholder="Seleccionar"
-                appendTo="body"
-                [disabled]="!selectedTipificacionCode() || !subtipificaciones().length"
-                (onChange)="onSubtipificacionSelected($event.value)"
-              >
-                <ng-template #item let-subtipificacion>
-                  <div class="select-item">
-                    <strong>{{ subtipificacion.codigo }}</strong>
-                    <small>{{ subtipificacion.descripcion }}</small>
-                  </div>
-                </ng-template>
-              </p-select>
-            </label>
-
-            <button
-              pButton
-              type="submit"
-              icon="pi pi-check"
-              label="Tipificar"
-              [disabled]="!canMutateOperationalData()"
-              [loading]="isSaving()"
-            ></button>
           </div>
+        </header>
+      </ng-template>
 
-          @if (requiresInstallDate() || requiresProgramming() || requiresSecSot()) {
-            <div class="tipification-extra">
-              @if (requiresInstallDate()) {
-                <label class="tipification-field">
-                  <span>Fecha instalacion</span>
-                  <!-- TEMPORAL: regularizacion de leads antiguos. Restaurar minDate con toPickerDate(todayDate). -->
-                  <p-datepicker
-                    [ngModel]="toPickerDate(tipificacionForm.controls.fechaInstalacion.getRawValue())"
-                    [ngModelOptions]="{ standalone: true }"
-                    dateFormat="dd/mm/yy"
-                    [minDate]="null"
-                    [showIcon]="true"
-                    appendTo="body"
-                    (ngModelChange)="setDateControl('fechaInstalacion', $event)"
-                  />
-                </label>
-              }
-
-              @if (requiresProgramming()) {
-                <label class="tipification-field">
-                  <span>Fecha programacion</span>
-                  <!-- TEMPORAL: regularizacion de leads antiguos. Restaurar minDate con toPickerDate(todayDate). -->
-                  <p-datepicker
-                    [ngModel]="toPickerDate(tipificacionForm.controls.fechaProgramacion.getRawValue())"
-                    [ngModelOptions]="{ standalone: true }"
-                    dateFormat="dd/mm/yy"
-                    [minDate]="null"
-                    [showIcon]="true"
-                    appendTo="body"
-                    (ngModelChange)="setDateControl('fechaProgramacion', $event)"
-                  />
-                </label>
-
-                <label class="tipification-field tipification-field--time">
-                  <span>Hora programacion</span>
-                  <p-datepicker
-                    formControlName="horaProgramada"
-                    dataType="string"
-                    [timeOnly]="true"
-                    hourFormat="24"
-                    [stepMinute]="15"
-                    [showIcon]="true"
-                    icon="pi pi-clock"
-                    appendTo="body"
-                    (onSelect)="normalizeScheduledTime()"
-                    (focusout)="normalizeScheduledTime()"
-                  />
-                </label>
-              }
-
-              @if (requiresSecSot()) {
-                <label
-                  class="tipification-field tipification-field--code"
-                  [style.grid-column]="requiresSecSot() && !requiresProgramming() && !requiresInstallDate() ? '3' : null"
-                >
-                  <span>SEC</span>
-                  <input
-                    pInputText
-                    type="text"
-                    inputmode="numeric"
-                    maxlength="9"
-                    autocomplete="off"
-                    formControlName="sec"
-                    placeholder="9 digitos"
-                    (input)="setFixedDigits('sec', $any($event.target).value, 9)"
-                  />
-                </label>
-
-                <label class="tipification-field tipification-field--code">
-                  <span>SOT</span>
-                  <input
-                    pInputText
-                    type="text"
-                    inputmode="numeric"
-                    maxlength="8"
-                    autocomplete="off"
-                    formControlName="sot"
-                    placeholder="8 digitos"
-                    (input)="setFixedDigits('sot', $any($event.target).value, 8)"
-                  />
-                </label>
-              }
-            </div>
-          }
-
-          <div class="tipification-comment-row" [class.tipification-comment-row--open]="showComment()">
-            @if (showComment()) {
-              <label class="comment-field">
-                <span>Comentario opcional</span>
-                <input pInputText type="text" formControlName="comentario" autocomplete="off" />
-              </label>
-            }
-
-            <button
-              pButton
-              type="button"
-              icon="pi pi-comment"
-              [label]="showComment() ? 'Ocultar comentario' : 'Comentario'"
-              severity="secondary"
-              (click)="toggleComment()"
-            ></button>
-          </div>
-        </form>
-
-        <app-lead-commercial-data-tabs
+      <section class="drawer-workspace">
+        <div class="drawer-scroll">
+          <app-lead-commercial-data-tabs
+          layoutMode="drawer"
           [datosForm]="datosForm"
           [direccionForm]="direccionForm"
           [ofertaForm]="ofertaForm"
@@ -635,7 +487,154 @@
             </ng-template>
           </p-table>
         </app-lead-commercial-data-tabs>
-        <footer class="dialog-actions">
+
+        </div>
+
+        <footer class="drawer-footer">
+          <form class="drawer-tipification" [formGroup]="tipificacionForm" (ngSubmit)="tipificar()">
+            <div class="drawer-tipification__main">
+              <label class="tipification-field">
+                <span>Tipificacion</span>
+                <p-select
+                  formControlName="codigoTipificacion"
+                  [options]="tipificaciones()"
+                  optionLabel="codigo"
+                  optionValue="codigo"
+                  placeholder="Seleccionar"
+                  appendTo="body"
+                  (onChange)="onTipificacionSelected($event.value)"
+                >
+                  <ng-template #item let-tipificacion>
+                    <div class="select-item">
+                      <strong>{{ tipificacion.codigo }}</strong>
+                      <small>{{ tipificacion.descripcion }}</small>
+                    </div>
+                  </ng-template>
+                </p-select>
+              </label>
+
+              <label class="tipification-field">
+                <span>Subtipificacion</span>
+                <p-select
+                  formControlName="codigoSubtipificacion"
+                  [options]="subtipificaciones()"
+                  optionLabel="codigo"
+                  optionValue="codigo"
+                  placeholder="Seleccionar"
+                  appendTo="body"
+                  [disabled]="!selectedTipificacionCode() || !subtipificaciones().length"
+                  (onChange)="onSubtipificacionSelected($event.value)"
+                >
+                  <ng-template #item let-subtipificacion>
+                    <div class="select-item">
+                      <strong>{{ subtipificacion.codigo }}</strong>
+                      <small>{{ subtipificacion.descripcion }}</small>
+                    </div>
+                  </ng-template>
+                </p-select>
+              </label>
+
+              <button
+                pButton
+                type="submit"
+                icon="pi pi-check"
+                label="Tipificar"
+                [disabled]="!canMutateOperationalData()"
+                [loading]="isSaving()"
+              ></button>
+            </div>
+
+            <div class="drawer-tipification__extras">
+              <label class="tipification-field">
+                <span>Fecha programacion</span>
+                <p-datepicker
+                  [ngModel]="toPickerDate(tipificacionForm.controls.fechaProgramacion.getRawValue())"
+                  [ngModelOptions]="{ standalone: true }"
+                  dateFormat="dd/mm/yy"
+                  [minDate]="null"
+                  [showIcon]="true"
+                  appendTo="body"
+                  [disabled]="!requiresProgramming() || !canMutateOperationalData()"
+                  (ngModelChange)="setDateControl('fechaProgramacion', $event)"
+                />
+              </label>
+
+              <label class="tipification-field tipification-field--time">
+                <span>Hora programacion</span>
+                <p-datepicker
+                  formControlName="horaProgramada"
+                  dataType="string"
+                  [timeOnly]="true"
+                  hourFormat="24"
+                  [stepMinute]="15"
+                  [showIcon]="true"
+                  icon="pi pi-clock"
+                  appendTo="body"
+                  [disabled]="!requiresProgramming() || !canMutateOperationalData()"
+                  (onSelect)="normalizeScheduledTime()"
+                  (focusout)="normalizeScheduledTime()"
+                />
+              </label>
+
+              <label class="tipification-field">
+                <span>Fecha instalacion</span>
+                <p-datepicker
+                  [ngModel]="toPickerDate(tipificacionForm.controls.fechaInstalacion.getRawValue())"
+                  [ngModelOptions]="{ standalone: true }"
+                  dateFormat="dd/mm/yy"
+                  [minDate]="null"
+                  [showIcon]="true"
+                  appendTo="body"
+                  [disabled]="!requiresInstallDate() || !canMutateOperationalData()"
+                  (ngModelChange)="setDateControl('fechaInstalacion', $event)"
+                />
+              </label>
+
+              <label class="tipification-field tipification-field--code">
+                <span>SEC</span>
+                <input
+                  pInputText
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="9"
+                  autocomplete="off"
+                  formControlName="sec"
+                  placeholder="9 digitos"
+                  (input)="setFixedDigits('sec', $any($event.target).value, 9)"
+                />
+              </label>
+
+              <label class="tipification-field tipification-field--code">
+                <span>SOT</span>
+                <input
+                  pInputText
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="8"
+                  autocomplete="off"
+                  formControlName="sot"
+                  placeholder="8 digitos"
+                  (input)="setFixedDigits('sot', $any($event.target).value, 8)"
+                />
+              </label>
+            </div>
+
+            <div class="drawer-tipification__comment">
+              <label class="comment-field">
+                <span>Comentario opcional</span>
+                <input
+                  pInputText
+                  type="text"
+                  formControlName="comentario"
+                  autocomplete="off"
+                  placeholder="Agrega una nota si ayuda a la siguiente gestion"
+                  [disabled]="!canMutateOperationalData()"
+                />
+              </label>
+            </div>
+          </form>
+
+          <div class="drawer-actions">
           <button
             pButton
             type="button"
@@ -646,6 +645,7 @@
             (click)="guardarCambiosLead()"
           ></button>
           <button pButton type="button" label="Cerrar" severity="secondary" (click)="requestCloseDetail()"></button>
+          </div>
         </footer>
       </section>
     } @else {
@@ -654,5 +654,5 @@
         <p-skeleton width="100%" height="16rem" />
       </div>
     }
-  </p-dialog>
+  </p-drawer>
 </section>

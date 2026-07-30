@@ -415,6 +415,121 @@ app-lead-commercial-data-tabs {
   overflow: hidden;
 }
 
+.drawer-workspace {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.drawer-head {
+  align-items: flex-start;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  width: 100%;
+}
+
+.drawer-head__main {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.drawer-head__main h2 {
+  align-items: baseline;
+  display: flex;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.drawer-head__main h2 span {
+  color: #10243f;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.drawer-head__meta {
+  color: var(--role-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.8rem;
+  min-width: 0;
+}
+
+.drawer-head__meta span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drawer-head__meta span:last-child {
+  max-width: min(44rem, 100%);
+}
+
+.drawer-head__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  justify-content: flex-end;
+}
+
+.drawer-scroll {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0 1.1rem 1rem;
+}
+
+.drawer-footer {
+  background: #ffffff;
+  border-top: 1px solid color-mix(in srgb, var(--role-accent) 16%, #ffffff 84%);
+  box-shadow: 0 -12px 24px rgba(15, 31, 51, 0.06);
+  display: grid;
+  flex: 0 0 auto;
+  gap: 0.7rem;
+  padding: 0.8rem 1.1rem 1rem;
+}
+
+.drawer-tipification {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.drawer-tipification__main {
+  align-items: end;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 9rem;
+}
+
+.drawer-tipification__extras {
+  align-items: end;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.drawer-tipification__comment {
+  display: grid;
+}
+
+.drawer-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  justify-content: flex-end;
+}
+
+.drawer-tipification__main > button,
+.drawer-actions button {
+  min-width: 8.5rem;
+}
+
 :host ::ng-deep {
   .backoffice-hero,
   .backoffice-board {
@@ -457,32 +572,41 @@ app-lead-commercial-data-tabs {
     text-align: center;
   }
 
-  .backoffice-dialog {
-    max-height: calc(100dvh - 2rem);
-    width: min(76rem, 94vw);
+  .backoffice-drawer {
+    width: min(58rem, 96vw);
   }
 
-  .backoffice-dialog .p-dialog-content {
+  .backoffice-drawer .p-drawer-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
     overflow: hidden;
+    padding: 0;
   }
 
   .tipification-bar .p-select,
   .tipification-bar .p-inputtext,
   .tipification-bar .p-datepicker,
+  .drawer-tipification .p-select,
+  .drawer-tipification .p-inputtext,
+  .drawer-tipification .p-datepicker,
   .form-grid .p-select,
   .form-grid .p-inputtext,
-  .form-grid .p-textarea,
-  .comment-field .p-textarea {
+  .form-grid .p-textarea {
     width: 100%;
   }
 
   .tipification-bar .p-select,
   .tipification-bar .p-inputtext,
-  .tipification-bar .p-datepicker {
+  .tipification-bar .p-datepicker,
+  .drawer-tipification .p-select,
+  .drawer-tipification .p-inputtext,
+  .drawer-tipification .p-datepicker {
     min-width: 0;
   }
 
-  .tipification-bar .p-select-label {
+  .tipification-bar .p-select-label,
+  .drawer-tipification .p-select-label {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -522,6 +646,7 @@ app-lead-commercial-data-tabs {
 
   .tipification-main,
   .tipification-extra,
+  .drawer-tipification__extras,
   .form-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -529,9 +654,12 @@ app-lead-commercial-data-tabs {
 }
 
 @media (max-width: 720px) {
+  .drawer-head,
+  .drawer-tipification__main,
   .tipification-main,
   .tipification-comment-row,
   .tipification-extra,
+  .drawer-tipification__extras,
   .form-grid {
     grid-template-columns: 1fr;
   }
@@ -542,14 +670,19 @@ app-lead-commercial-data-tabs {
 
   .hero-actions,
   .board-organization,
-  .dialog-actions {
+  .dialog-actions,
+  .drawer-head__actions,
+  .drawer-actions {
     align-items: stretch;
     width: 100%;
   }
 
   .hero-actions button,
   .board-organization button,
-  .dialog-actions button {
+  .dialog-actions button,
+  .drawer-head__actions button,
+  .drawer-actions button,
+  .drawer-tipification__main > button {
     width: 100%;
   }
 

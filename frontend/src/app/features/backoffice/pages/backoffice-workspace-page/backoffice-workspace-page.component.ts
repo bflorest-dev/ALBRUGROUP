@@ -10,7 +10,7 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DatePickerModule } from 'primeng/datepicker';
-import { DialogModule } from 'primeng/dialog';
+import { DrawerModule } from 'primeng/drawer';
 import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { MultiSelectModule } from 'primeng/multiselect';
@@ -21,7 +21,6 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
-import { TextareaModule } from 'primeng/textarea';
 import { ToastModule } from 'primeng/toast';
 import { SessionService } from '../../../../core/services/session.service';
 import { OperationalGateService } from '../../../../core/services/operational-gate.service';
@@ -81,7 +80,7 @@ type AssignmentConflictDetails = {
     CardModule,
     ConfirmDialogModule,
     DatePickerModule,
-    DialogModule,
+    DrawerModule,
     InputTextModule,
     MessageModule,
     MultiSelectModule,
@@ -92,7 +91,6 @@ type AssignmentConflictDetails = {
     TableModule,
     TabsModule,
     TagModule,
-    TextareaModule,
     ToastModule,
     LeadCommercialDataTabsComponent,
     TipificationStackComponent
@@ -178,9 +176,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly provinciasDomicilio = signal<UbigeoItem[]>([]);
   protected readonly distritosDomicilio = signal<UbigeoItem[]>([]);
   private readonly adicionalesDirty = signal(false);
-  protected readonly detailDialogOpen = signal(false);
+  protected readonly detailDrawerOpen = signal(false);
   protected readonly activeDataTab = signal('datos');
-  protected readonly showComment = signal(false);
   protected readonly searchInput = signal('');
   protected readonly searchTermActive = signal('');
   protected readonly isSearching = signal(false);
@@ -519,6 +516,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
       this.lastAttendanceStatus = status;
     });
+
+    effect(() => {
+      const enabled = this.requiresSecSot() && this.canMutateOperationalData();
+      this.setControlEnabled(this.tipificacionForm.controls.sec, enabled);
+      this.setControlEnabled(this.tipificacionForm.controls.sot, enabled);
+    });
   }
 
   ngOnInit(): void {
@@ -660,7 +663,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       } catch {
         this.notify('warn', 'Detalle abierto, pero no se pudo cargar el catalogo de tipificaciones de VENTA.');
       }
-      this.detailDialogOpen.set(true);
+      this.detailDrawerOpen.set(true);
     } catch (error) {
       this.notify('error', this.getErrorMessage(error, 'No se pudo abrir el detalle.'));
     }
@@ -669,7 +672,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected async requestCloseDetail(): Promise<void> {
     if (this.hasUnsavedDataChanges()) {
       this.notify('warn', 'Hay datos sin guardar. Guarda los cambios antes de cerrar.');
-      this.detailDialogOpen.set(true);
+      this.detailDrawerOpen.set(true);
       return;
     }
     await this.releaseCurrentLeadIfIdle();
@@ -850,7 +853,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         this.leadService.tipificarLead(detail.id, {
           codigoTipificacion: raw.codigoTipificacion,
           codigoSubtipificacion: raw.codigoSubtipificacion,
-          comentario: this.showComment() ? raw.comentario || null : null,
+          comentario: raw.comentario || null,
           fechaInstalacion: this.requiresInstallDate() ? raw.fechaInstalacion || null : null,
           fechaProgramacion: this.requiresProgramming() ? raw.fechaProgramacion || null : null,
           horaProgramada: this.requiresProgramming() ? raw.horaProgramada || null : null,
@@ -1119,6 +1122,23 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return words.length ? words.slice(0, 2).join(' ') : '-';
   }
 
+  protected leadProviderLabel(lead: LeadDetalleResponse): string {
+    return this.display(lead.nombreProveedorPlan ?? lead.nombreProveedorCampana ?? lead.nombreProveedorEquipo ?? lead.nombreCampana);
+  }
+
+  protected leadDocumentLabel(lead: LeadDetalleResponse): string {
+    const tipo = this.display(lead.tipoDocumento).replace('-', '').trim();
+    const numero = this.display(lead.numeroDocumentoTitularServicio).replace('-', '').trim();
+    return [tipo, numero].filter(Boolean).join(' ') || '-';
+  }
+
+  protected leadAddressSummary(lead: LeadDetalleResponse): string {
+    const parts = [lead.direccion, lead.distritoDomicilio, lead.provinciaDomicilio, lead.departamentoDomicilio]
+      .map((part) => String(part ?? '').trim())
+      .filter(Boolean);
+    return parts.length ? parts.join(' · ') : '-';
+  }
+
   protected ultimaGestionValue(row: LeadVentaResponse): string | null | undefined {
     return row.fechaUltimaGestion ?? row.ultimaTipificacionAt;
   }
@@ -1282,10 +1302,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     const distrito = this.distritosDomicilio().find((item) => item.id === idDistrito);
     this.direccionForm.controls.ubigeoDomicilio.setValue(distrito?.codigo ?? '');
     this.direccionForm.controls.ubigeoDomicilio.markAsDirty();
-  }
-
-  protected toggleComment(): void {
-    this.showComment.update((value) => !value);
   }
 
   private todayLocalDate(): string {
@@ -1648,7 +1664,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     });
     this.selectedTipificacionCode.set('');
     this.selectedSubtipificacionCode.set('');
-    this.showComment.set(false);
     this.activeDataTab.set('datos');
     this.markFormsPristine();
     void this.resolveDomicilioSelection(detail.ubigeoDomicilio ?? null);
@@ -1916,13 +1931,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   private closeDetail(): void {
-    this.detailDialogOpen.set(false);
+    this.detailDrawerOpen.set(false);
     this.detail.set(null);
     this.eventos.set([]);
     this.selectedLeadId.set(null);
     this.selectedTipificacionCode.set('');
     this.selectedSubtipificacionCode.set('');
-    this.showComment.set(false);
     this.selectedOfertaProviderId.set(null);
     this.ofertaPlanes.set([]);
     this.adicionalesSeleccionados.set([]);
@@ -1987,6 +2001,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (control.value !== normalized) {
       control.setValue(normalized);
       control.markAsDirty();
+    }
+  }
+
+  private setControlEnabled(control: AbstractControl, enabled: boolean): void {
+    if (enabled && control.disabled) {
+      control.enable({ emitEvent: false });
+    } else if (!enabled && control.enabled) {
+      control.disable({ emitEvent: false });
     }
   }
 
@@ -2083,8 +2105,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.pagePlataforma.set(0);
     this.pageGestion.set(0);
     this.pageProgramados.set(0);
-    this.detailDialogOpen.set(false);
-    this.showComment.set(false);
+    this.detailDrawerOpen.set(false);
     this.selectedOfertaProviderId.set(null);
     this.adicionalesSeleccionados.set([]);
     this.adicionalesDirty.set(false);

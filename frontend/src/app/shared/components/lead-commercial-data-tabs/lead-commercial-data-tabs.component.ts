@@ -16,6 +16,7 @@ import {
 } from '../../models/preventa/preventa.models';
 
 export type LeadCommercialDataTab = 'datos' | 'direccion' | 'oferta' | 'historial';
+export type LeadCommercialDataTabsLayoutMode = 'default' | 'drawer';
 
 export interface LeadCommercialProviderOption {
   id: number;
@@ -52,6 +53,7 @@ export class LeadCommercialDataTabsComponent {
   @Input({ required: true }) direccionForm!: FormGroup;
   @Input({ required: true }) ofertaForm!: FormGroup;
   @Input() activeTab: LeadCommercialDataTab = 'datos';
+  @Input() layoutMode: LeadCommercialDataTabsLayoutMode = 'default';
   @Input() showHistorialTab = false;
   @Input() tipoDocumentoOptions: string[] = [];
   @Input() tipoDomicilioOptions: string[] = [];

@@ -1,14 +1,15 @@
-<p-tabs [value]="activeTab" (valueChange)="activeTabChange.emit($any($event))">
-  <p-tablist>
-    <p-tab value="datos">Datos Preventa</p-tab>
-    <p-tab value="direccion">Direccion</p-tab>
-    <p-tab value="oferta">Oferta Comercial</p-tab>
-    @if (showHistorialTab) {
-      <p-tab value="historial">Historial</p-tab>
-    }
-  </p-tablist>
+<div class="commercial-tabs" [class.commercial-tabs--drawer]="layoutMode === 'drawer'">
+  <p-tabs [value]="activeTab" (valueChange)="activeTabChange.emit($any($event))">
+    <p-tablist>
+      <p-tab value="datos">{{ layoutMode === 'drawer' ? 'Datos' : 'Datos Preventa' }}</p-tab>
+      <p-tab value="direccion">Direccion</p-tab>
+      <p-tab value="oferta">{{ layoutMode === 'drawer' ? 'Plan' : 'Oferta Comercial' }}</p-tab>
+      @if (showHistorialTab) {
+        <p-tab value="historial">Historial</p-tab>
+      }
+    </p-tablist>
 
-  <p-tabpanels>
+    <p-tabpanels>
     <p-tabpanel value="datos">
       <form class="form-grid" [formGroup]="datosForm" [attr.inert]="readonly ? '' : null">
         <label>
@@ -429,5 +430,6 @@
         <ng-content select="[lead-commercial-history]" />
       </p-tabpanel>
     }
-  </p-tabpanels>
-</p-tabs>
+    </p-tabpanels>
+  </p-tabs>
+</div>
