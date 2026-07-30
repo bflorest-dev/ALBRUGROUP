@@ -145,6 +145,23 @@ export interface LeadGtrGroupsResponse {
   ingresos?: LeadGtrGroupItemResponse[];
 }
 
+export type LeadVentaGroupType = 'ESTADO' | 'PROVEEDOR' | 'PLAN' | 'ULTIMO_GESTOR' | 'TIPIFICACION';
+export type LeadVentaGroupMode = 'SIN_AGRUPAR' | LeadVentaGroupType;
+
+export interface LeadVentaGroupsResponse {
+  estados: LeadGtrGroupItemResponse[];
+  proveedores: LeadGtrGroupItemResponse[];
+  planes: LeadGtrGroupItemResponse[];
+  ultimosGestores: LeadGtrGroupItemResponse[];
+  tipificaciones: LeadGtrGroupItemResponse[];
+}
+
+export interface LeadVentaGroupFilter {
+  tipoGrupo?: LeadVentaGroupType;
+  valorGrupo?: string[];
+  sinValor?: boolean;
+}
+
 export interface LeadGtrGroupFilter {
   tipoGrupo?: LeadGtrGroupType;
   idGrupo?: number;

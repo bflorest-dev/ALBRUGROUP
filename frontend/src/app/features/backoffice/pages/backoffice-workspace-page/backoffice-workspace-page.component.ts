@@ -32,8 +32,12 @@ import {
   AdicionalResponse,
   CatalogoResponse,
   EventoResponse,
+  LeadGtrGroupItemResponse,
   LeadContextoLookupResponse,
   LeadDetalleResponse,
+  LeadVentaGroupFilter,
+  LeadVentaGroupType,
+  LeadVentaGroupsResponse,
   LeadVentaResponse,
   PageQuery,
   PlanResponse,
@@ -47,7 +51,7 @@ type BackofficeSection = 'plataforma' | 'gestion' | 'programados';
 type BackofficeGroupMode = 'SIN_AGRUPAR' | 'ESTADO' | 'ASESOR' | 'PLAN' | 'PROVEEDOR' | 'TIPIFICACION';
 type BackofficeSortField = 'fechaIngresoEtapa' | 'lastEntryAt' | 'createdAt' | 'lead' | 'nombreAsesorAsignado' | 'estado';
 type BackofficeSortDirection = 'asc' | 'desc';
-type OrganizationFilterOption = { label: string; value: string; codigo?: string; descripcion?: string };
+type OrganizationFilterOption = { label: string; value: string; codigo?: string; descripcion?: string; sinValor?: boolean; rawValue?: string | null };
 type VisualLeadVenta = LeadVentaResponse & {
   isNew?: boolean;
   organizationGroupHint?: string;
@@ -136,7 +140,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly gestionSortField = signal<BackofficeSortField>('lastEntryAt');
   protected readonly plataformaSortDirection = signal<BackofficeSortDirection>('desc');
   protected readonly gestionSortDirection = signal<BackofficeSortDirection>('desc');
-  protected readonly organizationGroupFilter = signal<string[]>([]);
+  protected readonly plataformaOrganizationGroupFilter = signal<string[]>([]);
+  protected readonly gestionOrganizationGroupFilter = signal<string[]>([]);
+  protected readonly organizationGroupFilter = computed(() =>
+    this.section() === 'gestion' ? this.gestionOrganizationGroupFilter() : this.plataformaOrganizationGroupFilter()
+  );
+  protected readonly ventaGroups = signal<LeadVentaGroupsResponse | null>(null);
   protected readonly detail = signal<LeadDetalleResponse | null>(null);
   // Campos que muestra el equipo del lead: se ven los visibles del equipo + los que tengan valor.
   protected readonly camposVisibles = computed<ReadonlySet<string>>(
@@ -213,40 +222,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   ];
   protected readonly activeGroupFilterOptions = computed<OrganizationFilterOption[]>(() => {
     const mode = this.activeGroupingMode();
-    if (mode === 'SIN_AGRUPAR') {
-      return [];
-    }
-    if (mode === 'TIPIFICACION') {
-      return [
-        {
-          label: 'Sin tipificar',
-          value: this.organizationFilterValue(mode, '00:SIN_TIPIFICAR'),
-          codigo: 'Sin tipificar',
-          descripcion: 'Leads pendientes de primera gestion'
-        },
-        ...(this.catalogoAgregado()?.tipificaciones ?? []).map((tipificacion) => {
-          const group = this.tipificacionGroupValue({ codigoTipificacion: tipificacion.codigo } as LeadVentaResponse);
-          return {
-            label: tipificacion.codigo,
-            value: this.organizationFilterValue(mode, group.key),
-            codigo: tipificacion.codigo,
-            descripcion: tipificacion.descripcion
-          };
-        })
-      ];
-    }
-    const optionsByValue = new Map<string, OrganizationFilterOption>();
-    for (const row of this.sourceRowsForActiveSection()) {
-      const group = this.resolveOrganizationGroup(row, mode);
-      const value = this.organizationFilterValue(mode, group.key);
-      optionsByValue.set(value, {
-        label: group.label,
-        value,
-        codigo: group.label,
-        descripcion: group.hint
-      });
-    }
-    return [...optionsByValue.values()].sort((left, right) => left.label.localeCompare(right.label));
+    const groups = this.ventaGroups();
+    if (mode === 'SIN_AGRUPAR' || !groups) return [];
+    return this.groupItemsForMode(groups, mode).map((item) => this.toOrganizationFilterOption(mode, item));
   });
   protected readonly activeGroupFilterLabel = computed(() => {
     const grouping = this.groupingModeOptions.find((option) => option.value === this.activeGroupingMode())?.label ?? 'resultados';
@@ -499,15 +477,13 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     let rows: VisualLeadVenta[];
     switch (this.section()) {
       case 'plataforma':
-        rows = this.filterRowsByActiveGroup(
-          this.plataformaRows().map((row) => this.withOrganizationGroup(row, this.plataformaGroupingMode()))
-        );
+        rows = this.plataformaRows().map((row) => this.withOrganizationGroup(row, this.plataformaGroupingMode()));
         break;
       case 'programados':
         rows = this.programadosRows();
         break;
       default:
-        rows = this.filterRowsByActiveGroup(this.gestionRows().map((row) => this.withOrganizationGroup(row, this.gestionGroupingMode())));
+        rows = this.gestionRows().map((row) => this.withOrganizationGroup(row, this.gestionGroupingMode()));
         break;
     }
     return this.sortedRowsForGrouping(rows, this.activeGroupRowsBy(), this.activeSortField(), this.activeSortDirection());
@@ -1045,19 +1021,23 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }, 180);
   }
 
-  protected setActiveGroupingMode(mode: BackofficeGroupMode | null | undefined): void {
+  protected async setActiveGroupingMode(mode: BackofficeGroupMode | null | undefined): Promise<void> {
     if (!mode) {
       return;
     }
     if (mode !== this.activeGroupingMode()) {
-      this.organizationGroupFilter.set([]);
+      this.setActiveOrganizationGroupFilter([]);
     }
     if (this.section() === 'plataforma') {
       this.plataformaGroupingMode.set(mode);
+      this.pagePlataforma.set(0);
+      await this.refreshCurrent(false);
       return;
     }
     if (this.section() === 'gestion') {
       this.gestionGroupingMode.set(mode);
+      this.pageGestion.set(0);
+      await this.refreshCurrent(false);
     }
   }
 
@@ -1092,19 +1072,33 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.gestionGroupingMode.set('TIPIFICACION');
       this.gestionSortField.set('lastEntryAt');
       this.gestionSortDirection.set('desc');
-      this.organizationGroupFilter.set([]);
+      this.gestionOrganizationGroupFilter.set([]);
       return;
     }
     this.plataformaGroupingMode.set('SIN_AGRUPAR');
     this.plataformaSortField.set('fechaIngresoEtapa');
     this.plataformaSortDirection.set('desc');
-    this.organizationGroupFilter.set([]);
+    this.plataformaOrganizationGroupFilter.set([]);
     this.pagePlataforma.set(0);
     await this.refreshPlataforma(false);
   }
 
-  protected setOrganizationGroupFilter(values: string[] | null | undefined): void {
-    this.organizationGroupFilter.set(values ?? []);
+  protected async setOrganizationGroupFilter(values: string[] | null | undefined): Promise<void> {
+    this.setActiveOrganizationGroupFilter(values ?? []);
+    if (this.section() === 'plataforma') {
+      this.pagePlataforma.set(0);
+    } else if (this.section() === 'gestion') {
+      this.pageGestion.set(0);
+    }
+    await this.refreshCurrent(false);
+  }
+
+  private setActiveOrganizationGroupFilter(values: string[]): void {
+    if (this.section() === 'gestion') {
+      this.gestionOrganizationGroupFilter.set(values);
+      return;
+    }
+    this.plataformaOrganizationGroupFilter.set(values);
   }
 
   protected display(value: unknown): string {
@@ -1480,9 +1474,18 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (!this.canDisplayOperationalData()) {
       return;
     }
+    if (this.section() === 'plataforma') {
+      await this.refreshOrganizationGroups('plataforma');
+    }
     const previous = this.plataformaRows();
     const term = this.searchTermActive();
-    const page = await firstValueFrom(this.leadService.listarPlataforma(this.currentQuery(this.pagePlataforma()), term || undefined));
+    const page = await firstValueFrom(
+      this.leadService.listarPlataforma(
+        this.currentQuery(this.pagePlataforma()),
+        term || undefined,
+        this.currentVentaGroupFilter('plataforma')
+      )
+    );
     this.totalPlataforma.set(page.totalElements);
     this.plataformaRows.set(this.mergeVisualRows(previous, page.content, silent));
   }
@@ -1491,9 +1494,18 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (!this.canDisplayOperationalData()) {
       return;
     }
+    if (this.section() === 'gestion') {
+      await this.refreshOrganizationGroups('gestion');
+    }
     const previous = this.gestionRows();
     const term = this.searchTermActive();
-    const page = await firstValueFrom(this.leadService.listarGestion(this.currentQuery(this.pageGestion()), term || undefined));
+    const page = await firstValueFrom(
+      this.leadService.listarGestion(
+        this.currentQuery(this.pageGestion()),
+        term || undefined,
+        this.currentVentaGroupFilter('gestion')
+      )
+    );
     this.totalGestion.set(page.totalElements);
     this.gestionRows.set(this.mergeVisualRows(previous, page.content, silent));
   }
@@ -1506,6 +1518,46 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     const page = await firstValueFrom(this.leadService.listarProgramados(this.currentQuery(this.pageProgramados())));
     this.totalProgramados.set(page.totalElements);
     this.programadosRows.set(this.mergeVisualRows(previous, page.content.map((row) => this.withProgramacionGroup(row)), silent));
+  }
+
+  private async refreshOrganizationGroups(section: 'plataforma' | 'gestion'): Promise<void> {
+    const term = this.searchTermActive();
+    try {
+      const groups = section === 'gestion'
+        ? await firstValueFrom(this.leadService.listarAgrupacionesGestion(term || undefined))
+        : await firstValueFrom(this.leadService.listarAgrupacionesPlataforma(term || undefined));
+      if (this.section() === section) {
+        this.ventaGroups.set(groups);
+      }
+    } catch {
+      this.ventaGroups.set(null);
+    }
+  }
+
+  private currentVentaGroupFilter(section: 'plataforma' | 'gestion'): LeadVentaGroupFilter | undefined {
+    const mode = section === 'gestion' ? this.gestionGroupingMode() : this.plataformaGroupingMode();
+    const tipoGrupo = this.toLeadVentaGroupType(mode);
+    if (!tipoGrupo) {
+      return undefined;
+    }
+    const selected = section === 'gestion' ? this.gestionOrganizationGroupFilter() : this.plataformaOrganizationGroupFilter();
+    const sinValor = selected.includes('__SIN_VALOR__');
+    const valorGrupo = selected.filter((value) => value !== '__SIN_VALOR__');
+    if (!sinValor && !valorGrupo.length) {
+      return undefined;
+    }
+    return { tipoGrupo, valorGrupo, sinValor };
+  }
+
+  private toLeadVentaGroupType(mode: BackofficeGroupMode): LeadVentaGroupType | null {
+    switch (mode) {
+      case 'ESTADO': return 'ESTADO';
+      case 'PROVEEDOR': return 'PROVEEDOR';
+      case 'PLAN': return 'PLAN';
+      case 'ASESOR': return 'ULTIMO_GESTOR';
+      case 'TIPIFICACION': return 'TIPIFICACION';
+      default: return null;
+    }
   }
 
   private async refreshOpenDetail(idLead: number): Promise<void> {
@@ -1797,26 +1849,27 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     };
   }
 
-  private sourceRowsForActiveSection(): VisualLeadVenta[] {
-    if (this.section() === 'plataforma') {
-      return this.plataformaRows();
+  private groupItemsForMode(groups: LeadVentaGroupsResponse, mode: BackofficeGroupMode): LeadGtrGroupItemResponse[] {
+    switch (mode) {
+      case 'ESTADO': return groups.estados;
+      case 'PROVEEDOR': return groups.proveedores;
+      case 'PLAN': return groups.planes;
+      case 'ASESOR': return groups.ultimosGestores;
+      case 'TIPIFICACION': return groups.tipificaciones;
+      default: return [];
     }
-    if (this.section() === 'gestion') {
-      return this.gestionRows();
-    }
-    return [];
   }
 
-  private filterRowsByActiveGroup(rows: VisualLeadVenta[]): VisualLeadVenta[] {
-    if (this.activeGroupingMode() === 'SIN_AGRUPAR') {
-      return rows;
-    }
-    const selected = this.organizationGroupFilter();
-    if (!selected.length) {
-      return rows;
-    }
-    const selectedSet = new Set(selected);
-    return rows.filter((row) => row.organizationGroupKey ? selectedSet.has(row.organizationGroupKey) : true);
+  private toOrganizationFilterOption(_mode: BackofficeGroupMode, item: LeadGtrGroupItemResponse): OrganizationFilterOption {
+    const value = item.sinValor ? '__SIN_VALOR__' : (item.valor ?? item.codigoTipificacion ?? item.etiqueta);
+    return {
+      label: `${item.etiqueta} (${item.cantidad})`,
+      value,
+      codigo: item.codigoTipificacion ?? item.etiqueta,
+      descripcion: item.sinValor ? 'Sin dato registrado' : `${item.cantidad} leads`,
+      sinValor: item.sinValor,
+      rawValue: item.valor ?? null
+    };
   }
 
   private withOrganizationGroup(row: VisualLeadVenta, mode: BackofficeGroupMode): VisualLeadVenta {

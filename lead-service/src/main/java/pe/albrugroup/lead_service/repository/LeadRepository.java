@@ -994,6 +994,19 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR l.lead LIKE :leadPattern
                     OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :leadPattern
               )
+              AND (
+                    :filtrarGrupo = false
+                    OR (:tipoGrupo = 'ESTADO'
+                        AND ((:sinValor = true AND l.estado IS NULL) OR CONCAT('', l.estado) IN :valoresGrupo))
+                    OR (:tipoGrupo = 'PROVEEDOR'
+                        AND ((:sinValor = true AND COALESCE(l.nombreProveedorSnapshot, '') = '') OR l.nombreProveedorSnapshot IN :valoresGrupo))
+                    OR (:tipoGrupo = 'PLAN'
+                        AND ((:sinValor = true AND COALESCE(l.nombrePlanSnapshot, '') = '') OR l.nombrePlanSnapshot IN :valoresGrupo))
+                    OR (:tipoGrupo = 'ULTIMO_GESTOR'
+                        AND ((:sinValor = true AND COALESCE(r.nombreAsesorUltimaGestion, '') = '') OR r.nombreAsesorUltimaGestion IN :valoresGrupo))
+                    OR (:tipoGrupo = 'TIPIFICACION'
+                        AND ((:sinValor = true AND COALESCE(l.codigoTipificacion, '') = '') OR l.codigoTipificacion IN :valoresGrupo))
+              )
             ORDER BY COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) DESC,
                      l.id DESC
             """)
@@ -1002,6 +1015,10 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("leadPattern") String leadPattern,
             @Param("filtrarVentana") boolean filtrarVentana,
             @Param("inicioVentana") Instant inicioVentana,
+            @Param("filtrarGrupo") boolean filtrarGrupo,
+            @Param("tipoGrupo") String tipoGrupo,
+            @Param("valoresGrupo") Collection<String> valoresGrupo,
+            @Param("sinValor") boolean sinValor,
             @Param("accionTipificacion") Accion accionTipificacion,
             Pageable pageable
     );
@@ -1068,6 +1085,19 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR l.lead LIKE :searchPattern
                     OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
               )
+              AND (
+                    :filtrarGrupo = false
+                    OR (:tipoGrupo = 'ESTADO'
+                        AND ((:sinValor = true AND l.estado IS NULL) OR CONCAT('', l.estado) IN :valoresGrupo))
+                    OR (:tipoGrupo = 'PROVEEDOR'
+                        AND ((:sinValor = true AND COALESCE(l.nombreProveedorSnapshot, '') = '') OR l.nombreProveedorSnapshot IN :valoresGrupo))
+                    OR (:tipoGrupo = 'PLAN'
+                        AND ((:sinValor = true AND COALESCE(l.nombrePlanSnapshot, '') = '') OR l.nombrePlanSnapshot IN :valoresGrupo))
+                    OR (:tipoGrupo = 'ULTIMO_GESTOR'
+                        AND ((:sinValor = true AND COALESCE(r.nombreAsesorUltimaGestion, '') = '') OR r.nombreAsesorUltimaGestion IN :valoresGrupo))
+                    OR (:tipoGrupo = 'TIPIFICACION'
+                        AND ((:sinValor = true AND COALESCE(l.codigoTipificacion, '') = '') OR l.codigoTipificacion IN :valoresGrupo))
+              )
             ORDER BY CASE WHEN l.codigoTipificacion IS NULL THEN 0 ELSE 1 END,
                      l.codigoTipificacion,
                      l.codigoSubtipificacion,
@@ -1078,8 +1108,152 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("etapa") Etapa etapa,
             @Param("idAsesor") Long idAsesor,
             @Param("searchPattern") String searchPattern,
+            @Param("filtrarGrupo") boolean filtrarGrupo,
+            @Param("tipoGrupo") String tipoGrupo,
+            @Param("valoresGrupo") Collection<String> valoresGrupo,
+            @Param("sinValor") boolean sinValor,
             @Param("accionTipificacion") Accion accionTipificacion,
             Pageable pageable
+    );
+
+    @Query("""
+            SELECT NULL AS idGrupo,
+                   CONCAT('', l.estado) AS etiqueta,
+                   NULL AS codigoTipificacion,
+                   NULL AS codigoSubtipificacion,
+                   COUNT(l.id) AS cantidad
+            FROM Lead l
+            LEFT JOIN l.datosPreventa dp
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            WHERE l.etapa = :etapa
+              AND (:filtrarAsesor = false OR l.idAsesorAsignado = :idAsesor)
+              AND (:filtrarVentana = false OR COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :inicioVentana)
+              AND (
+                    :searchPattern = '%'
+                    OR l.lead LIKE :searchPattern
+                    OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+              )
+            GROUP BY l.estado
+            """)
+    List<LeadGtrAgrupacionProjection> agruparVentaPorEstado(
+            @Param("etapa") Etapa etapa,
+            @Param("searchPattern") String searchPattern,
+            @Param("filtrarVentana") boolean filtrarVentana,
+            @Param("inicioVentana") Instant inicioVentana,
+            @Param("filtrarAsesor") boolean filtrarAsesor,
+            @Param("idAsesor") Long idAsesor
+    );
+
+    @Query("""
+            SELECT NULL AS idGrupo,
+                   l.nombreProveedorSnapshot AS etiqueta,
+                   NULL AS codigoTipificacion,
+                   NULL AS codigoSubtipificacion,
+                   COUNT(l.id) AS cantidad
+            FROM Lead l
+            LEFT JOIN l.datosPreventa dp
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            WHERE l.etapa = :etapa
+              AND (:filtrarAsesor = false OR l.idAsesorAsignado = :idAsesor)
+              AND (:filtrarVentana = false OR COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :inicioVentana)
+              AND (
+                    :searchPattern = '%'
+                    OR l.lead LIKE :searchPattern
+                    OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+              )
+            GROUP BY l.nombreProveedorSnapshot
+            """)
+    List<LeadGtrAgrupacionProjection> agruparVentaPorProveedor(
+            @Param("etapa") Etapa etapa,
+            @Param("searchPattern") String searchPattern,
+            @Param("filtrarVentana") boolean filtrarVentana,
+            @Param("inicioVentana") Instant inicioVentana,
+            @Param("filtrarAsesor") boolean filtrarAsesor,
+            @Param("idAsesor") Long idAsesor
+    );
+
+    @Query("""
+            SELECT NULL AS idGrupo,
+                   l.nombrePlanSnapshot AS etiqueta,
+                   NULL AS codigoTipificacion,
+                   NULL AS codigoSubtipificacion,
+                   COUNT(l.id) AS cantidad
+            FROM Lead l
+            LEFT JOIN l.datosPreventa dp
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            WHERE l.etapa = :etapa
+              AND (:filtrarAsesor = false OR l.idAsesorAsignado = :idAsesor)
+              AND (:filtrarVentana = false OR COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :inicioVentana)
+              AND (
+                    :searchPattern = '%'
+                    OR l.lead LIKE :searchPattern
+                    OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+              )
+            GROUP BY l.nombrePlanSnapshot
+            """)
+    List<LeadGtrAgrupacionProjection> agruparVentaPorPlan(
+            @Param("etapa") Etapa etapa,
+            @Param("searchPattern") String searchPattern,
+            @Param("filtrarVentana") boolean filtrarVentana,
+            @Param("inicioVentana") Instant inicioVentana,
+            @Param("filtrarAsesor") boolean filtrarAsesor,
+            @Param("idAsesor") Long idAsesor
+    );
+
+    @Query("""
+            SELECT NULL AS idGrupo,
+                   r.nombreAsesorUltimaGestion AS etiqueta,
+                   NULL AS codigoTipificacion,
+                   NULL AS codigoSubtipificacion,
+                   COUNT(l.id) AS cantidad
+            FROM Lead l
+            LEFT JOIN l.datosPreventa dp
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            WHERE l.etapa = :etapa
+              AND (:filtrarAsesor = false OR l.idAsesorAsignado = :idAsesor)
+              AND (:filtrarVentana = false OR COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :inicioVentana)
+              AND (
+                    :searchPattern = '%'
+                    OR l.lead LIKE :searchPattern
+                    OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+              )
+            GROUP BY r.nombreAsesorUltimaGestion
+            """)
+    List<LeadGtrAgrupacionProjection> agruparVentaPorUltimoGestor(
+            @Param("etapa") Etapa etapa,
+            @Param("searchPattern") String searchPattern,
+            @Param("filtrarVentana") boolean filtrarVentana,
+            @Param("inicioVentana") Instant inicioVentana,
+            @Param("filtrarAsesor") boolean filtrarAsesor,
+            @Param("idAsesor") Long idAsesor
+    );
+
+    @Query("""
+            SELECT NULL AS idGrupo,
+                   NULL AS etiqueta,
+                   l.codigoTipificacion AS codigoTipificacion,
+                   NULL AS codigoSubtipificacion,
+                   COUNT(l.id) AS cantidad
+            FROM Lead l
+            LEFT JOIN l.datosPreventa dp
+            LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            WHERE l.etapa = :etapa
+              AND (:filtrarAsesor = false OR l.idAsesorAsignado = :idAsesor)
+              AND (:filtrarVentana = false OR COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) >= :inicioVentana)
+              AND (
+                    :searchPattern = '%'
+                    OR l.lead LIKE :searchPattern
+                    OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
+              )
+            GROUP BY l.codigoTipificacion
+            """)
+    List<LeadGtrAgrupacionProjection> agruparVentaPorTipificacion(
+            @Param("etapa") Etapa etapa,
+            @Param("searchPattern") String searchPattern,
+            @Param("filtrarVentana") boolean filtrarVentana,
+            @Param("inicioVentana") Instant inicioVentana,
+            @Param("filtrarAsesor") boolean filtrarAsesor,
+            @Param("idAsesor") Long idAsesor
     );
 
     @Query("""

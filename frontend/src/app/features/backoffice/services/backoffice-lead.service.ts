@@ -14,6 +14,8 @@ import {
   LeadPage,
   LeadTipificacionVentaRequest,
   LeadTomaVentaRequest,
+  LeadVentaGroupFilter,
+  LeadVentaGroupsResponse,
   LeadVentaResponse,
   PageQuery,
   PlanResponse,
@@ -26,12 +28,20 @@ export class BackofficeLeadService {
   private readonly http = inject(HttpClient);
   private readonly leadUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads`;
 
-  listarPlataforma(query: PageQuery, lead?: string): Observable<LeadPage<LeadVentaResponse>> {
-    let params = this.pageParams(query);
+  listarPlataforma(query: PageQuery, lead?: string, groupFilter?: LeadVentaGroupFilter): Observable<LeadPage<LeadVentaResponse>> {
+    let params = this.groupParams(this.pageParams(query), groupFilter);
     if (lead) {
       params = params.set('lead', lead);
     }
     return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta`, { params });
+  }
+
+  listarAgrupacionesPlataforma(lead?: string): Observable<LeadVentaGroupsResponse> {
+    let params = new HttpParams();
+    if (lead) {
+      params = params.set('lead', lead);
+    }
+    return this.http.get<LeadVentaGroupsResponse>(`${this.leadUrl}/venta/agrupaciones`, { params });
   }
 
   buscarContextoLead(lead: string): Observable<LeadContextoLookupResponse> {
@@ -40,12 +50,20 @@ export class BackofficeLeadService {
     });
   }
 
-  listarGestion(query: PageQuery, buscar?: string): Observable<LeadPage<LeadVentaResponse>> {
-    let params = this.pageParams(query);
+  listarGestion(query: PageQuery, buscar?: string, groupFilter?: LeadVentaGroupFilter): Observable<LeadPage<LeadVentaResponse>> {
+    let params = this.groupParams(this.pageParams(query), groupFilter);
     if (buscar) {
       params = params.set('buscar', buscar);
     }
     return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta/asignados`, { params });
+  }
+
+  listarAgrupacionesGestion(buscar?: string): Observable<LeadVentaGroupsResponse> {
+    let params = new HttpParams();
+    if (buscar) {
+      params = params.set('buscar', buscar);
+    }
+    return this.http.get<LeadVentaGroupsResponse>(`${this.leadUrl}/venta/asignados/agrupaciones`, { params });
   }
 
   listarProgramados(query: PageQuery): Observable<LeadPage<LeadVentaResponse>> {
@@ -152,5 +170,19 @@ export class BackofficeLeadService {
       .set('pageSize', query.pageSize)
       .set('sortBy', query.sortBy)
       .set('direction', query.direction);
+  }
+
+  private groupParams(params: HttpParams, groupFilter?: LeadVentaGroupFilter): HttpParams {
+    if (!groupFilter?.tipoGrupo) {
+      return params;
+    }
+    let next = params.set('tipoGrupo', groupFilter.tipoGrupo);
+    for (const value of groupFilter.valorGrupo ?? []) {
+      next = next.append('valorGrupo', value);
+    }
+    if (groupFilter.sinValor) {
+      next = next.set('sinValor', true);
+    }
+    return next;
   }
 }

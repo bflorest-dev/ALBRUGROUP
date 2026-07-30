@@ -19,6 +19,7 @@ import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
+import pe.albrugroup.lead_service.entity.enums.TipoGrupoVenta;
 import pe.albrugroup.lead_service.entity.request.LeadAsignacionMasivaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadAsignacionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
@@ -52,6 +53,7 @@ import pe.albrugroup.lead_service.entity.response.AgendadosGtrResumenResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrMetricasResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionItemResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrAgrupacionesResponse;
+import pe.albrugroup.lead_service.entity.response.LeadVentaAgrupacionesResponse;
 import pe.albrugroup.lead_service.entity.response.LeadContextoLookupResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrLookupResponse;
 import pe.albrugroup.lead_service.entity.response.LeadGtrResponse;
@@ -552,12 +554,19 @@ public class LeadService {
         }
     }
 
-    public PageResponse<LeadResponse> listarBandejaVenta(String lead, PageRequest pageRequest) {
+    public PageResponse<LeadResponse> listarBandejaVenta(
+            String lead,
+            TipoGrupoVenta tipoGrupo,
+            List<String> valoresGrupo,
+            boolean sinValor,
+            PageRequest pageRequest
+    ) {
         String numeroLead = normalizarLead(lead);
         boolean buscando = numeroLead != null && !numeroLead.isBlank();
         String leadPattern = buscando ? numeroLead + "%" : "%";
         boolean filtrarVentana = !buscando;
         Instant inicioVentana = OperationalDateTime.now().minus(30, ChronoUnit.DAYS);
+        GrupoVentaFiltro grupo = resolverFiltroGrupoVenta(tipoGrupo, valoresGrupo, sinValor);
         // El orden lo fija la propia query (lastEntryAt DESC, id DESC): Pageable sin sort para no
         // agregar un ORDER BY extra que descuadre el orden y la paginacion entre paginas.
         Page<LeadResponse> leads = leadRepository.listarBandejaVenta(
@@ -565,6 +574,10 @@ public class LeadService {
                 leadPattern,
                 filtrarVentana,
                 inicioVentana,
+                grupo.filtrar(),
+                grupo.tipo(),
+                grupo.valores(),
+                grupo.sinValor(),
                 Accion.TIPIFICACION,
                 org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
         );
@@ -572,20 +585,46 @@ public class LeadService {
         return PageResponse.from(leads);
     }
 
-    public PageResponse<LeadResponse> listarLeadsVentaAsignados(String buscar, PageRequest pageRequest) {
+    public LeadVentaAgrupacionesResponse listarAgrupacionesBandejaVenta(String lead) {
+        String numeroLead = normalizarLead(lead);
+        boolean buscando = numeroLead != null && !numeroLead.isBlank();
+        String leadPattern = buscando ? numeroLead + "%" : "%";
+        boolean filtrarVentana = !buscando;
+        Instant inicioVentana = OperationalDateTime.now().minus(30, ChronoUnit.DAYS);
+        return mapearAgrupacionesVenta(leadPattern, filtrarVentana, inicioVentana, null);
+    }
+
+    public PageResponse<LeadResponse> listarLeadsVentaAsignados(
+            String buscar,
+            TipoGrupoVenta tipoGrupo,
+            List<String> valoresGrupo,
+            boolean sinValor,
+            PageRequest pageRequest
+    ) {
         // El orden de Gestion lo define la consulta (sin tipificar primero, luego agrupado por
         // tipificacion/subtipificacion), por eso se usa un Pageable sin sort.
         String search = normalizarLead(buscar);
         String searchPattern = search == null || search.isBlank() ? "%" : search + "%";
+        GrupoVentaFiltro grupo = resolverFiltroGrupoVenta(tipoGrupo, valoresGrupo, sinValor);
         Page<LeadResponse> leads = leadRepository.listarLeadsAsignadosPorEtapaYAsesor(
                 Etapa.VENTA,
                 currentUser.empleadoID(),
                 searchPattern,
+                grupo.filtrar(),
+                grupo.tipo(),
+                grupo.valores(),
+                grupo.sinValor(),
                 Accion.TIPIFICACION,
                 org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);
         return PageResponse.from(leads);
+    }
+
+    public LeadVentaAgrupacionesResponse listarAgrupacionesLeadsVentaAsignados(String buscar) {
+        String search = normalizarLead(buscar);
+        String searchPattern = search == null || search.isBlank() ? "%" : search + "%";
+        return mapearAgrupacionesVenta(searchPattern, false, OperationalDateTime.now(), currentUser.empleadoID());
     }
 
     public PageResponse<LeadResponse> listarLeadsVentaProgramadosAsignados(PageRequest pageRequest) {
@@ -2755,6 +2794,140 @@ public class LeadService {
         }
         return ordenarAgrupaciones(agrupaciones);
     }
+
+    private LeadVentaAgrupacionesResponse mapearAgrupacionesVenta(
+            String searchPattern,
+            boolean filtrarVentana,
+            Instant inicioVentana,
+            Long idAsesor
+    ) {
+        boolean filtrarAsesor = idAsesor != null;
+        return new LeadVentaAgrupacionesResponse(
+                mapearAgrupacionesVentaValor(
+                        leadRepository.agruparVentaPorEstado(
+                                Etapa.VENTA, searchPattern, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor),
+                        "Sin estado"
+                ),
+                mapearAgrupacionesVentaValor(
+                        leadRepository.agruparVentaPorProveedor(
+                                Etapa.VENTA, searchPattern, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor),
+                        "Sin proveedor"
+                ),
+                mapearAgrupacionesVentaValor(
+                        leadRepository.agruparVentaPorPlan(
+                                Etapa.VENTA, searchPattern, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor),
+                        "Sin plan"
+                ),
+                mapearAgrupacionesVentaValor(
+                        leadRepository.agruparVentaPorUltimoGestor(
+                                Etapa.VENTA, searchPattern, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor),
+                        "Sin gestor"
+                ),
+                mapearAgrupacionesVentaTipificacion(
+                        leadRepository.agruparVentaPorTipificacion(
+                                Etapa.VENTA, searchPattern, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor)
+                )
+        );
+    }
+
+    private List<LeadGtrAgrupacionItemResponse> mapearAgrupacionesVentaValor(
+            List<LeadGtrAgrupacionProjection> rows,
+            String etiquetaSinValor
+    ) {
+        List<LeadGtrAgrupacionItemResponse> agrupaciones = new ArrayList<>();
+        long sinValorCantidad = 0;
+        for (LeadGtrAgrupacionProjection row : rows) {
+            String etiqueta = row.getEtiqueta();
+            if (etiqueta == null || etiqueta.isBlank()) {
+                sinValorCantidad += row.getCantidad();
+                continue;
+            }
+            agrupaciones.add(new LeadGtrAgrupacionItemResponse(
+                    null,
+                    null,
+                    null,
+                    etiqueta,
+                    row.getCantidad(),
+                    false,
+                    etiqueta
+            ));
+        }
+        if (sinValorCantidad > 0) {
+            agrupaciones.add(new LeadGtrAgrupacionItemResponse(
+                    null,
+                    null,
+                    null,
+                    etiquetaSinValor,
+                    sinValorCantidad,
+                    true,
+                    null
+            ));
+        }
+        return ordenarAgrupaciones(agrupaciones);
+    }
+
+    private List<LeadGtrAgrupacionItemResponse> mapearAgrupacionesVentaTipificacion(
+            List<LeadGtrAgrupacionProjection> rows
+    ) {
+        List<LeadGtrAgrupacionItemResponse> agrupaciones = new ArrayList<>();
+        long sinTipificar = 0;
+        for (LeadGtrAgrupacionProjection row : rows) {
+            String tipificacion = normalizarCodigoAgrupacion(row.getCodigoTipificacion());
+            if (tipificacion == null) {
+                sinTipificar += row.getCantidad();
+                continue;
+            }
+            agrupaciones.add(new LeadGtrAgrupacionItemResponse(
+                    null,
+                    tipificacion,
+                    null,
+                    tipificacion,
+                    row.getCantidad(),
+                    false,
+                    tipificacion
+            ));
+        }
+        if (sinTipificar > 0) {
+            agrupaciones.add(new LeadGtrAgrupacionItemResponse(
+                    null,
+                    null,
+                    null,
+                    "Sin tipificar",
+                    sinTipificar,
+                    true,
+                    null
+            ));
+        }
+        return ordenarAgrupaciones(agrupaciones);
+    }
+
+    private GrupoVentaFiltro resolverFiltroGrupoVenta(
+            TipoGrupoVenta tipoGrupo,
+            List<String> valoresGrupo,
+            boolean sinValor
+    ) {
+        List<String> valores = valoresGrupo == null
+                ? List.of()
+                : valoresGrupo.stream()
+                .filter(valor -> valor != null && !valor.isBlank())
+                .map(String::trim)
+                .distinct()
+                .toList();
+        boolean filtrar = tipoGrupo != null && (sinValor || !valores.isEmpty());
+        return new GrupoVentaFiltro(
+                filtrar,
+                tipoGrupo == null ? "" : tipoGrupo.name(),
+                valores.isEmpty() ? List.of("__SIN_VALOR_SELECCIONADO__") : valores,
+                sinValor
+        );
+    }
+
+    private record GrupoVentaFiltro(
+            boolean filtrar,
+            String tipo,
+            List<String> valores,
+            boolean sinValor
+    ) {}
 
     private List<LeadGtrAgrupacionItemResponse> ordenarAgrupaciones(
             List<LeadGtrAgrupacionItemResponse> agrupaciones

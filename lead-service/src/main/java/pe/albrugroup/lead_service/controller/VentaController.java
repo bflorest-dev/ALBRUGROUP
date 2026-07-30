@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.enums.TipoGrupoVenta;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaComercialRequest;
@@ -26,6 +27,7 @@ import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadContextoLookupResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadResponse;
+import pe.albrugroup.lead_service.entity.response.LeadVentaAgrupacionesResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.entity.response.PlanResponse;
 import pe.albrugroup.lead_service.service.EventoService;
@@ -46,10 +48,20 @@ public class VentaController {
     @GetMapping @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
     public ResponseEntity<PageResponse<LeadResponse>> listarBandejaVenta(
             @RequestParam(required = false) String lead,
+            @RequestParam(required = false) TipoGrupoVenta tipoGrupo,
+            @RequestParam(required = false) List<String> valorGrupo,
+            @RequestParam(required = false, defaultValue = "false") boolean sinValor,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var leads = leadService.listarBandejaVenta(lead, pageRequest);
+        var leads = leadService.listarBandejaVenta(lead, tipoGrupo, valorGrupo, sinValor, pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
+    }
+    @GetMapping("/agrupaciones") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
+    public ResponseEntity<LeadVentaAgrupacionesResponse> listarAgrupacionesBandejaVenta(
+            @RequestParam(required = false) String lead
+    ) {
+        var agrupaciones = leadService.listarAgrupacionesBandejaVenta(lead);
+        return ResponseEntity.status(HttpStatus.OK).body(agrupaciones);
     }
     // 1.1. Buscar el contexto de un lead por numero: indica si esta en VENTA y disponible,
     //      o por que no se puede visualizar (otra etapa o tomado por otro asesor).
@@ -64,10 +76,20 @@ public class VentaController {
     @GetMapping("/asignados") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
     public ResponseEntity<PageResponse<LeadResponse>> listarLeadsVentaAsignados(
             @RequestParam(required = false) String buscar,
+            @RequestParam(required = false) TipoGrupoVenta tipoGrupo,
+            @RequestParam(required = false) List<String> valorGrupo,
+            @RequestParam(required = false, defaultValue = "false") boolean sinValor,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var leads = leadService.listarLeadsVentaAsignados(buscar, pageRequest);
+        var leads = leadService.listarLeadsVentaAsignados(buscar, tipoGrupo, valorGrupo, sinValor, pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
+    }
+    @GetMapping("/asignados/agrupaciones") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
+    public ResponseEntity<LeadVentaAgrupacionesResponse> listarAgrupacionesLeadsVentaAsignados(
+            @RequestParam(required = false) String buscar
+    ) {
+        var agrupaciones = leadService.listarAgrupacionesLeadsVentaAsignados(buscar);
+        return ResponseEntity.status(HttpStatus.OK).body(agrupaciones);
     }
     // 2.1. Listar los Leads PROGRAMADOS asignados al BackOffice, ordenados por fecha y hora de programacion.
     @GetMapping("/programados/asignados") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
