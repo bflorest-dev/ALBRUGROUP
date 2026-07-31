@@ -37,6 +37,10 @@ export interface LeadPostventaBandejaResponse {
   telefonoRegistro?: string | null;
   proveedor?: string | null;
   plan?: string | null;
+  mesCorteBase?: string | null;
+  numeroCorteBase?: number | null;
+  corteCorregido?: boolean | null;
+  fechaCorreccionCorte?: string | null;
   idPlataformaDigitalOfrecida?: number | null;
   plataformaDigitalOfrecida?: string | null;
   estadoCliente?: EstadoClientePostventa | string | null;
@@ -46,6 +50,11 @@ export interface LeadPostventaBandejaResponse {
   estadoPlataformaDigital?: string | null;
   ultimoGestor?: string | null;
   ultimaGestion?: string | null;
+}
+
+export interface PostventaBandejaQuery extends PageQuery {
+  mesCorteBase?: string | null;
+  numeroCorteBase?: number | null;
 }
 
 export interface PlataformaDigitalResponse {
@@ -218,7 +227,7 @@ export class PostventaLeadService {
   private readonly http = inject(HttpClient);
   private readonly leadUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads`;
 
-  listarBandeja(query: PageQuery): Observable<LeadPage<LeadPostventaBandejaResponse>> {
+  listarBandeja(query: PostventaBandejaQuery): Observable<LeadPage<LeadPostventaBandejaResponse>> {
     return this.http.get<LeadPage<LeadPostventaBandejaResponse>>(`${this.leadUrl}/postventa/bandeja`, {
       params: this.pageParams(query)
     });
@@ -317,11 +326,18 @@ export class PostventaLeadService {
     return this.http.post<PagoPostventaResponse>(`${this.leadUrl}/postventa/leads/${idLead}/pagos`, request);
   }
 
-  private pageParams(query: PageQuery): HttpParams {
-    return new HttpParams()
+  private pageParams(query: PostventaBandejaQuery): HttpParams {
+    let params = new HttpParams()
       .set('pageNumber', query.pageNumber)
       .set('pageSize', query.pageSize)
       .set('sortBy', query.sortBy)
       .set('direction', query.direction);
+    if (query.mesCorteBase) {
+      params = params.set('mesCorteBase', query.mesCorteBase);
+    }
+    if (query.numeroCorteBase) {
+      params = params.set('numeroCorteBase', query.numeroCorteBase);
+    }
+    return params;
   }
 }

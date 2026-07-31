@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import pe.albrugroup.lead_service.entity.CalendarioFacturacionPostventa;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 
+import java.time.LocalDate;
 import java.util.Optional;
 
 @Repository
@@ -36,6 +37,28 @@ public interface CalendarioFacturacionPostventaRepository extends JpaRepository<
             """)
     Page<CalendarioFacturacionPostventa> listarBandejaPostventa(
             @Param("etapa") Etapa etapa,
+            Pageable pageable
+    );
+
+    @EntityGraph(attributePaths = {
+            "lead",
+            "lead.datosPreventa",
+            "lead.plan",
+            "lead.plataformaDigitalOfrecida"
+    })
+    @Query("""
+            SELECT c
+            FROM CalendarioFacturacionPostventa c
+            JOIN c.lead l
+            WHERE l.etapa = :etapa
+              AND c.activo = true
+              AND c.mesCorteBase = :mesCorteBase
+              AND c.numeroCorteBase = :numeroCorteBase
+            """)
+    Page<CalendarioFacturacionPostventa> listarBandejaPostventaPorCorte(
+            @Param("etapa") Etapa etapa,
+            @Param("mesCorteBase") LocalDate mesCorteBase,
+            @Param("numeroCorteBase") Integer numeroCorteBase,
             Pageable pageable
     );
 }

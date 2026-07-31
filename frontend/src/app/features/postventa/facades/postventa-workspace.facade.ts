@@ -42,7 +42,16 @@ const ESTADOS_PERIODO_CERRADO = [
   'CERRADO_BAJA',
   'CERRADO_BAJA_ADEUDO'
 ];
+const TODOS_LOS_CORTES = 'TODOS';
+const MESES_PERMANENCIA_WIN = 3;
 type BeforeTipificarTask = () => Promise<boolean>;
+
+export interface CortePostventaOption {
+  readonly label: string;
+  readonly value: string;
+  readonly mesCorteBase: string | null;
+  readonly numeroCorteBase: number | null;
+}
 
 /**
  * Facade del workspace de POSTVENTA. Unica puerta funcional del feature: mantiene el estado
@@ -72,10 +81,19 @@ export class PostventaWorkspaceFacade {
   private readonly _totalRows = signal(0);
   private readonly _pageNumber = signal(0);
   private readonly _loadingBoard = signal(false);
+  private readonly _selectedCorteValue = signal(TODOS_LOS_CORTES);
   readonly rows = this._rows.asReadonly();
   readonly totalRows = this._totalRows.asReadonly();
   readonly pageNumber = this._pageNumber.asReadonly();
   readonly loadingBoard = this._loadingBoard.asReadonly();
+  readonly selectedCorteValue = this._selectedCorteValue.asReadonly();
+  readonly corteOptions = computed<CortePostventaOption[]>(() => [
+    { label: 'Todos los cortes', value: TODOS_LOS_CORTES, mesCorteBase: null, numeroCorteBase: null },
+    ...this.buildCortesWinActivos()
+  ]);
+  readonly selectedCorteLabel = computed(() =>
+    this.corteOptions().find((option) => option.value === this._selectedCorteValue())?.label ?? 'Todos los cortes'
+  );
 
   // --- Gestion (drawer) ---
   private readonly _drawerOpen = signal(false);
@@ -179,7 +197,8 @@ export class PostventaWorkspaceFacade {
           pageNumber,
           pageSize: this.pageSize,
           sortBy: 'fechaInstalacion',
-          direction: 'desc'
+          direction: 'desc',
+          ...this.selectedCorteQuery()
         })
       );
       this._pageNumber.set(page.page);
@@ -252,6 +271,15 @@ export class PostventaWorkspaceFacade {
       return;
     }
     await this.loadBoard(pageNumber);
+  }
+
+  async changeCorte(value: string | null): Promise<void> {
+    const next = value || TODOS_LOS_CORTES;
+    if (next === this._selectedCorteValue()) {
+      return;
+    }
+    this._selectedCorteValue.set(next);
+    await this.loadBoard(0);
   }
 
   // ---------------------------------------------------------------------------
@@ -648,6 +676,66 @@ export class PostventaWorkspaceFacade {
     const month = `${now.getMonth() + 1}`.padStart(2, '0');
     const day = `${now.getDate()}`.padStart(2, '0');
     return `${now.getFullYear()}-${month}-${day}`;
+  }
+
+  private selectedCorteQuery(): { mesCorteBase?: string; numeroCorteBase?: number } {
+    const selected = this.corteOptions().find((option) => option.value === this._selectedCorteValue());
+    if (!selected?.mesCorteBase || !selected.numeroCorteBase) {
+      return {};
+    }
+    return {
+      mesCorteBase: selected.mesCorteBase,
+      numeroCorteBase: selected.numeroCorteBase
+    };
+  }
+
+  private buildCortesWinActivos(): CortePostventaOption[] {
+    const [year, month, day] = this.today.split('-').map(Number);
+    const currentNumber = day >= 23 ? 2 : 1;
+    const current = { year, month, number: currentNumber };
+    const startDate = this.addMonths(year, month, -MESES_PERMANENCIA_WIN);
+    const options: CortePostventaOption[] = [];
+    let cursor = { year: startDate.year, month: startDate.month, number: 2 };
+
+    while (this.corteRank(cursor) <= this.corteRank(current)) {
+      options.push(this.toCorteOption(cursor.year, cursor.month, cursor.number));
+      cursor = this.nextCorte(cursor);
+    }
+
+    return options;
+  }
+
+  private toCorteOption(year: number, month: number, number: number): CortePostventaOption {
+    const mesCorteBase = `${year}-${String(month).padStart(2, '0')}-01`;
+    return {
+      label: `${this.monthLabel(year, month)} ${number}`,
+      value: `${mesCorteBase}#${number}`,
+      mesCorteBase,
+      numeroCorteBase: number
+    };
+  }
+
+  private nextCorte(corte: { year: number; month: number; number: number }): { year: number; month: number; number: number } {
+    if (corte.number === 1) {
+      return { ...corte, number: 2 };
+    }
+    const nextMonth = this.addMonths(corte.year, corte.month, 1);
+    return { year: nextMonth.year, month: nextMonth.month, number: 1 };
+  }
+
+  private addMonths(year: number, month: number, delta: number): { year: number; month: number } {
+    const date = new Date(year, month - 1 + delta, 1);
+    return { year: date.getFullYear(), month: date.getMonth() + 1 };
+  }
+
+  private corteRank(corte: { year: number; month: number; number: number }): number {
+    return (corte.year * 12 + corte.month) * 2 + corte.number;
+  }
+
+  private monthLabel(year: number, month: number): string {
+    const label = new Intl.DateTimeFormat('es-PE', { month: 'long' }).format(new Date(year, month - 1, 1));
+    const capitalized = label.charAt(0).toUpperCase() + label.slice(1);
+    return year === new Date().getFullYear() ? capitalized : `${capitalized} ${year}`;
   }
 
   private notify(severity: ToastSeverity, detail: string): void {

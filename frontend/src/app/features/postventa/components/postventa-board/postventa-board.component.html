@@ -1,4 +1,20 @@
 <div class="board-surface">
+  <div class="board-toolbar">
+    <div class="board-toolbar__summary">
+      <span>Corte WIN</span>
+      <strong>{{ facade.selectedCorteLabel() }}</strong>
+    </div>
+    <p-select
+      class="board-toolbar__select"
+      [options]="facade.corteOptions()"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="facade.selectedCorteValue()"
+      appendTo="body"
+      (onChange)="changeCorte($event)"
+    />
+  </div>
+
   <p-table
     [value]="facade.rows()"
     dataKey="idLead"

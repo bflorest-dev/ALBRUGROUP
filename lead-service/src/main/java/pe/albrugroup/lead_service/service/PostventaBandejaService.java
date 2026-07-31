@@ -62,12 +62,20 @@ public class PostventaBandejaService {
             Accion.ASIGNACION
     );
 
-    public PageResponse<LeadPostventaBandejaResponse> listarBandeja(PageRequest pageRequest) {
+    public PageResponse<LeadPostventaBandejaResponse> listarBandeja(
+            PageRequest pageRequest,
+            LocalDate mesCorteBase,
+            Integer numeroCorteBase
+    ) {
         Pageable pageable = paginationService.toPageable(normalizarOrden(pageRequest), BANDEJA_SORT_FIELDS);
-        Page<CalendarioFacturacionPostventa> calendarios = calendarioRepository.listarBandejaPostventa(
-                Etapa.POSTVENTA,
-                pageable
-        );
+        Page<CalendarioFacturacionPostventa> calendarios = mesCorteBase == null || numeroCorteBase == null
+                ? calendarioRepository.listarBandejaPostventa(Etapa.POSTVENTA, pageable)
+                : calendarioRepository.listarBandejaPostventaPorCorte(
+                        Etapa.POSTVENTA,
+                        mesCorteBase,
+                        numeroCorteBase,
+                        pageable
+                );
 
         List<Long> leadIds = calendarios.getContent().stream()
                 .map(CalendarioFacturacionPostventa::getLead)
