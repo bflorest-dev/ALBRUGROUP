@@ -97,6 +97,7 @@ export class PostventaFacturacionPanelComponent {
         numeroOperacion: '',
         observacion: ''
       });
+      this.actualizarEstadoAportante();
     });
     this.facade.registerBeforeTipificarTask('facturacion', () => this.guardarPendientesAntesDeTipificar());
   }
@@ -198,10 +199,6 @@ export class PostventaFacturacionPanelComponent {
     return this.pagoForm.controls.modoRegistro.value === 'COMPROMISO';
   }
 
-  protected mostrarAportanteManual(): boolean {
-    return this.pagoForm.controls.condicion.value === 'NORMAL';
-  }
-
   protected mostrarNumeroOperacion(): boolean {
     return this.mostrarPago() && this.resolverAportantePago() === 'EMPRESA';
   }
@@ -214,9 +211,11 @@ export class PostventaFacturacionPanelComponent {
         fechaPago: '',
         numeroOperacion: ''
       });
+      this.actualizarEstadoAportante();
       return;
     }
     this.pagoForm.patchValue({ fechaCompromisoPago: '' });
+    this.actualizarEstadoAportante();
   }
 
   protected onCondicionChange(condicion: CondicionPagoPostventa): void {
@@ -226,6 +225,7 @@ export class PostventaFacturacionPanelComponent {
         ? this.pagoForm.controls.numeroOperacion.value
         : ''
     });
+    this.actualizarEstadoAportante();
   }
 
   protected facturaVencida(): boolean {
@@ -253,6 +253,18 @@ export class PostventaFacturacionPanelComponent {
       return 'CLIENTE';
     }
     return this.pagoForm.controls.aportante.value;
+  }
+
+  private actualizarEstadoAportante(): void {
+    const control = this.pagoForm.controls.aportante;
+    const debeBloquearse = this.mostrarPago() && this.pagoForm.controls.condicion.value !== 'NORMAL';
+    if (debeBloquearse && control.enabled) {
+      control.disable({ emitEvent: false });
+      return;
+    }
+    if (!debeBloquearse && control.disabled) {
+      control.enable({ emitEvent: false });
+    }
   }
 
   private todayIso(): string {

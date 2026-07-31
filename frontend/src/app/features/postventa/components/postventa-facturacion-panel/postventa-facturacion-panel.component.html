@@ -97,16 +97,11 @@
         </label>
       }
 
-      @if (mostrarPago() && mostrarAportanteManual()) {
+      @if (mostrarPago()) {
         <label>
           <span>Quien paga</span>
           <p-select formControlName="aportante" [options]="aportanteOptions" optionLabel="label" optionValue="value" appendTo="body" [showClear]="true" />
         </label>
-      } @else if (mostrarPago()) {
-        <div class="derived-field">
-          <span>Quien paga</span>
-          <strong>{{ display(resolverAportantePago()) }}</strong>
-        </div>
       }
 
       <label>
