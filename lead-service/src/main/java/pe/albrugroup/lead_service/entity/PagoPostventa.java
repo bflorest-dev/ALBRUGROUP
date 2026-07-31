@@ -55,7 +55,6 @@ public class PagoPostventa {
     private LocalDate fechaPago;
     private LocalDate fechaCompromisoPago;
     private String numeroOperacion;
-    private String canalPago;
     private String observacion;
 
     @CreationTimestamp

@@ -184,7 +184,6 @@ export interface PagoPostventaRequest {
   fechaPago?: string | null;
   fechaCompromisoPago?: string | null;
   numeroOperacion?: string | null;
-  canalPago?: string | null;
   observacion?: string | null;
 }
 

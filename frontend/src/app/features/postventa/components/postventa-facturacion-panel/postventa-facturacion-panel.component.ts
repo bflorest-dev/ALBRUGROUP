@@ -66,7 +66,6 @@ export class PostventaFacturacionPanelComponent {
     fechaPago: [''],
     fechaCompromisoPago: [''],
     numeroOperacion: [''],
-    canalPago: [''],
     observacion: ['']
   });
 
@@ -96,7 +95,6 @@ export class PostventaFacturacionPanelComponent {
         fechaPago: '',
         fechaCompromisoPago: '',
         numeroOperacion: '',
-        canalPago: '',
         observacion: ''
       });
     });
@@ -157,7 +155,6 @@ export class PostventaFacturacionPanelComponent {
       fechaPago: esPago ? raw.fechaPago || null : null,
       fechaCompromisoPago: esPago ? null : raw.fechaCompromisoPago || null,
       numeroOperacion: esPago && aportante === 'EMPRESA' ? raw.numeroOperacion || null : null,
-      canalPago: raw.canalPago || null,
       observacion: raw.observacion || null
     });
     if (ok) {
@@ -281,7 +278,6 @@ export class PostventaFacturacionPanelComponent {
       raw.fechaPago
       || raw.fechaCompromisoPago
       || raw.numeroOperacion
-      || raw.canalPago
       || raw.observacion
       || raw.aportante
       || raw.condicion !== 'NORMAL'
