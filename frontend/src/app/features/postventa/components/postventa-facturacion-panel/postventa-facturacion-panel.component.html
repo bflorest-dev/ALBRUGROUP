@@ -44,7 +44,7 @@
 
   @if (!facade.selectedPeriodoCerrado()) {
     <h3 class="panel-heading">Factura</h3>
-    <form class="form-grid" [formGroup]="facturaForm" (ngSubmit)="guardarFactura()">
+    <form class="form-grid" [formGroup]="facturaForm">
       <label>
         <span>Fecha de emision</span>
         <input pInputText type="date" formControlName="fechaEmisionConfirmada" />
@@ -64,33 +64,81 @@
       @if (vencimientoInvalido) {
         <p-message class="full" severity="warn" text="El vencimiento no puede ser anterior a la emision." />
       }
-      <div class="form-actions full">
-        <button pButton type="submit" icon="pi pi-file-edit" label="Guardar factura" [disabled]="vencimientoInvalido" [loading]="facade.saving()"></button>
-      </div>
     </form>
 
-    <h3 class="panel-heading">Registrar pago</h3>
-    <form class="form-grid" [formGroup]="pagoForm" (ngSubmit)="registrarPago()">
+    <h3 class="panel-heading">Pago</h3>
+    <form class="form-grid" [formGroup]="pagoForm">
       <label>
-        <span>Quien paga</span>
-        <p-select formControlName="aportante" [options]="aportanteOptions" optionLabel="label" optionValue="value" appendTo="body" [showClear]="true" />
+        <span>Tipo de registro</span>
+        <p-select
+          formControlName="modoRegistro"
+          [options]="[
+            { label: 'Pago realizado', value: 'PAGO' },
+            { label: 'Compromiso de pago', value: 'COMPROMISO' }
+          ]"
+          optionLabel="label"
+          optionValue="value"
+          appendTo="body"
+          (onChange)="onModoRegistroChange($event.value)"
+        />
       </label>
+
+      @if (mostrarPago()) {
+        <label>
+          <span>Condicion</span>
+          <p-select
+            formControlName="condicion"
+            [options]="condicionPagoOptions"
+            optionLabel="label"
+            optionValue="value"
+            appendTo="body"
+            (onChange)="onCondicionChange($event.value)"
+          />
+        </label>
+      }
+
+      @if (mostrarPago() && mostrarAportanteManual()) {
+        <label>
+          <span>Quien paga</span>
+          <p-select formControlName="aportante" [options]="aportanteOptions" optionLabel="label" optionValue="value" appendTo="body" [showClear]="true" />
+        </label>
+      } @else if (mostrarPago()) {
+        <div class="derived-field">
+          <span>Quien paga</span>
+          <strong>{{ display(resolverAportantePago()) }}</strong>
+        </div>
+      }
+
       <label>
         <span>Monto</span>
         <p-inputNumber formControlName="monto" mode="currency" currency="PEN" locale="es-PE" [min]="0" />
       </label>
-      <label>
-        <span>Fecha de pago</span>
-        <input pInputText type="date" formControlName="fechaPago" />
-      </label>
-      <label>
-        <span>Compromiso de pago</span>
-        <input pInputText type="date" formControlName="fechaCompromisoPago" />
-      </label>
-      <label>
-        <span>Nro. de operacion</span>
-        <input pInputText formControlName="numeroOperacion" />
-      </label>
+
+      @if (mostrarPago()) {
+        <label>
+          <span>Fecha de pago</span>
+          <input pInputText type="date" formControlName="fechaPago" />
+        </label>
+      }
+
+      @if (mostrarCompromiso()) {
+        @if (registrarCompromisoDeshabilitado()) {
+          <p-message class="full" severity="info" text="El compromiso de pago solo se registra cuando la factura ya esta vencida." />
+        } @else {
+          <label>
+            <span>Compromiso de pago</span>
+            <input pInputText type="date" formControlName="fechaCompromisoPago" />
+          </label>
+        }
+      }
+
+      @if (mostrarNumeroOperacion()) {
+        <label>
+          <span>Nro. de operacion</span>
+          <input pInputText formControlName="numeroOperacion" />
+        </label>
+      }
+
       <label>
         <span>Canal</span>
         <input pInputText formControlName="canalPago" placeholder="Ej. Yape, transferencia" />
@@ -99,32 +147,6 @@
         <span>Observacion</span>
         <textarea pTextarea rows="2" formControlName="observacion"></textarea>
       </label>
-      <div class="form-actions full">
-        <button pButton type="submit" icon="pi pi-wallet" label="Registrar pago" [disabled]="pagoIncompleto()" [loading]="facade.saving()"></button>
-      </div>
-    </form>
-
-    <h3 class="panel-heading">Cerrar periodo</h3>
-    <p class="temporal-note">
-      <i class="pi pi-clock"></i>
-      Cierre temporal. Pronto el cierre se hará automático al tipificar la gestión.
-    </p>
-    <form class="close-grid" [formGroup]="cierreForm" (ngSubmit)="cerrarPeriodo()">
-      <label>
-        <span>Resultado del periodo</span>
-        <p-select formControlName="estado" [options]="cierreOptions" optionLabel="label" optionValue="value" appendTo="body" />
-      </label>
-      <label class="checkbox-field">
-        <p-checkbox formControlName="crearSiguientePeriodo" [binary]="true" inputId="pv-crear-periodo" />
-        <span>Crear el siguiente periodo</span>
-      </label>
-      <label class="full">
-        <span>Observacion de cierre</span>
-        <input pInputText formControlName="observacion" />
-      </label>
-      <div class="form-actions full">
-        <button pButton type="submit" icon="pi pi-lock" label="Cerrar periodo" severity="secondary" [loading]="facade.saving()"></button>
-      </div>
     </form>
   }
 
@@ -134,6 +156,7 @@
       <tr>
         <th>Monto</th>
         <th>Quien paga</th>
+        <th>Condicion</th>
         <th>Compromiso</th>
         <th>Pago</th>
         <th>Estado</th>
@@ -143,13 +166,14 @@
       <tr>
         <td>{{ display(pago.monto) }}</td>
         <td>{{ display(pago.aportante) }}</td>
+        <td>{{ display(pago.condicion) }}</td>
         <td>{{ display(pago.fechaCompromisoPago) }}</td>
         <td>{{ display(pago.fechaPago) }}</td>
         <td><p-tag [severity]="badge(pago.estado).severity" [value]="badge(pago.estado).label" /></td>
       </tr>
     </ng-template>
     <ng-template #emptymessage>
-      <tr><td colspan="5" class="empty-hint">Sin pagos registrados en este periodo.</td></tr>
+      <tr><td colspan="6" class="empty-hint">Sin pagos registrados en este periodo.</td></tr>
     </ng-template>
   </p-table>
 } @else {

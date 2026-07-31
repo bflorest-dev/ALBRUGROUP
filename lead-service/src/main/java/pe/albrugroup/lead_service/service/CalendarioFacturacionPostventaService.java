@@ -42,7 +42,7 @@ public class CalendarioFacturacionPostventaService {
         );
 
         PeriodoFacturacionPostventa primerPeriodo = calculadora.crearPeriodo(calendario, 1);
-        primerPeriodo.setEstado(EstadoPeriodoFacturacionPostventa.PROGRAMADO);
+        primerPeriodo.setEstado(EstadoPeriodoFacturacionPostventa.ABIERTO);
         periodoRepository.save(primerPeriodo);
 
         encuestaRepository.save(crearEncuestaInicial(lead));

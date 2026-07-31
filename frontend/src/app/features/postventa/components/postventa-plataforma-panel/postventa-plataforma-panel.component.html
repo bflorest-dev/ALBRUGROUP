@@ -8,7 +8,7 @@
     <p>No hay plataformas digitales configuradas. Un administrador debe registrar el inventario (plataformas, paquetes y credenciales) antes de poder entregar.</p>
   </div>
 } @else {
-<form class="form-grid" [formGroup]="form" (ngSubmit)="guardar()">
+<form class="form-grid" [formGroup]="form">
   <label>
     <span>Plataforma</span>
     <p-select
@@ -113,9 +113,6 @@
     <textarea pTextarea rows="2" formControlName="observacion"></textarea>
   </label>
 
-  <div class="form-actions full">
-    <button pButton type="submit" icon="pi pi-check" label="Guardar entrega" [loading]="facade.saving()"></button>
-  </div>
 </form>
 }
 

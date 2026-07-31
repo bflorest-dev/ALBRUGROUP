@@ -5,9 +5,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.entity.CalendarioFacturacionPostventa;
 import pe.albrugroup.lead_service.entity.Lead;
+import pe.albrugroup.lead_service.entity.PagoPostventa;
 import pe.albrugroup.lead_service.entity.PeriodoFacturacionPostventa;
 import pe.albrugroup.lead_service.entity.enums.BloqueFacturacion;
 import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
+import pe.albrugroup.lead_service.entity.enums.EstadoPagoPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoPeriodoFacturacionPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
@@ -30,6 +32,7 @@ import pe.albrugroup.lead_service.service.facturacion.CalculadoraFacturacionPost
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +42,10 @@ public class FacturacionPostventaService {
     private static final int NUMERO_PERIODO_INICIAL = 1;
     private static final int CORTE_WIN_PRIMERO = 1;
     private static final int CORTE_WIN_SEGUNDO = 2;
+    private static final Set<EstadoPagoPostventa> ESTADOS_PAGO_CONFIRMADO = Set.of(
+            EstadoPagoPostventa.PAGADO_CLIENTE,
+            EstadoPagoPostventa.PAGADO_EMPRESA
+    );
 
     private final CalendarioFacturacionPostventaRepository calendarioRepository;
     private final PeriodoFacturacionPostventaRepository periodoRepository;
@@ -92,7 +99,6 @@ public class FacturacionPostventaService {
         periodo.setFechaVencimientoConfirmado(request.getFechaVencimientoConfirmado());
         periodo.setMontoFacturado(request.getMontoFacturado());
         periodo.setObservacion(request.getObservacion());
-        periodo.setEstado(EstadoPeriodoFacturacionPostventa.PAGO_PENDIENTE);
 
         return toResponse(periodoRepository.save(periodo));
     }
@@ -103,15 +109,17 @@ public class FacturacionPostventaService {
             CerrarPeriodoFacturacionRequest request
     ) {
         PeriodoFacturacionPostventa periodo = obtenerPeriodoEntity(idPeriodo);
-        validarEstadoCierre(request.getEstado());
+        validarPeriodoAbierto(periodo);
+        EstadoPeriodoFacturacionPostventa estadoCierre = resolverEstadoCierre(periodo, request.getEstado());
 
-        periodo.setEstado(request.getEstado());
+        periodo.setEstado(estadoCierre);
         if (request.getObservacion() != null) {
             periodo.setObservacion(request.getObservacion());
         }
+        aplicarEstadoClientePorCierre(periodo);
 
         PeriodoFacturacionPostventa saved = periodoRepository.save(periodo);
-        if (debeCrearSiguientePeriodo(saved, request)) {
+        if (debeCrearSiguientePeriodo(saved, request.getCrearSiguientePeriodo())) {
             crearSiguientePeriodo(saved);
         } else if (debeEnviarACobranzaPorPermanencia(saved)) {
             enviarLeadACobranza(saved.getLead());
@@ -120,9 +128,39 @@ public class FacturacionPostventaService {
         return toResponse(saved);
     }
 
+    @Transactional
+    public void cerrarPeriodoPagoConfirmadoPorTipificacion(Long idLead) {
+        PeriodoFacturacionPostventa periodo = obtenerPeriodoAbiertoPorLead(idLead);
+        EstadoPeriodoFacturacionPostventa estadoCierre = resolverEstadoCierrePagoConfirmado(periodo);
+        periodo.setEstado(estadoCierre);
+        aplicarEstadoClientePorCierre(periodo);
+        PeriodoFacturacionPostventa saved = periodoRepository.save(periodo);
+        if (debeCrearSiguientePeriodo(saved, null)) {
+            crearSiguientePeriodo(saved);
+        } else if (debeEnviarACobranzaPorPermanencia(saved)) {
+            enviarLeadACobranza(saved.getLead());
+        }
+    }
+
+    @Transactional
+    public void cerrarPeriodoBajaPorTipificacion(Long idLead) {
+        PeriodoFacturacionPostventa periodo = obtenerPeriodoAbiertoPorLead(idLead);
+        periodo.setEstado(EstadoPeriodoFacturacionPostventa.CERRADO_BAJA);
+        aplicarEstadoClientePorCierre(periodo);
+        periodoRepository.save(periodo);
+    }
+
     private PeriodoFacturacionPostventa obtenerPeriodoEntity(Long idPeriodo) {
         return periodoRepository.findById(idPeriodo)
                 .orElseThrow(() -> new NotFoundException(PeriodoFacturacionPostventa.class, idPeriodo));
+    }
+
+    private PeriodoFacturacionPostventa obtenerPeriodoAbiertoPorLead(Long idLead) {
+        return periodoRepository.findTopByLeadIdAndEstadoOrderByNumeroPeriodoDesc(
+                        idLead,
+                        EstadoPeriodoFacturacionPostventa.ABIERTO
+                )
+                .orElseThrow(() -> new BadRequestException("El lead no tiene un periodo abierto para cerrar"));
     }
 
     private CalendarioFacturacionPostventa obtenerCalendarioConLead(Long idCalendario) {
@@ -179,11 +217,7 @@ public class FacturacionPostventaService {
     }
 
     private void validarPeriodoNoCerrado(PeriodoFacturacionPostventa periodo) {
-        if (periodo.getEstado() == EstadoPeriodoFacturacionPostventa.PAGO_CONFIRMADO
-                || periodo.getEstado() == EstadoPeriodoFacturacionPostventa.VENCIDO
-                || periodo.getEstado() == EstadoPeriodoFacturacionPostventa.EN_COBRANZA
-                || periodo.getEstado() == EstadoPeriodoFacturacionPostventa.BAJA
-                || periodo.getEstado() == EstadoPeriodoFacturacionPostventa.ANULADO) {
+        if (periodo.getEstado() != EstadoPeriodoFacturacionPostventa.ABIERTO) {
             throw new BadRequestException("No se puede corregir el corte porque el periodo ya esta cerrado");
         }
     }
@@ -251,22 +285,77 @@ public class FacturacionPostventaService {
         }
     }
 
-    private void validarEstadoCierre(EstadoPeriodoFacturacionPostventa estado) {
-        if (estado == EstadoPeriodoFacturacionPostventa.PROGRAMADO
-                || estado == EstadoPeriodoFacturacionPostventa.FACTURA_EMITIDA
-                || estado == EstadoPeriodoFacturacionPostventa.PAGO_PENDIENTE) {
-            throw new BadRequestException("El estado indicado no cierra el periodo: " + estado);
+    private EstadoPeriodoFacturacionPostventa resolverEstadoCierre(
+            PeriodoFacturacionPostventa periodo,
+            EstadoPeriodoFacturacionPostventa estadoSolicitado
+    ) {
+        if (estadoSolicitado == null) {
+            throw new BadRequestException("estado es obligatorio");
+        }
+        if (estadoSolicitado == EstadoPeriodoFacturacionPostventa.CERRADO_PAGO_CLIENTE
+                || estadoSolicitado == EstadoPeriodoFacturacionPostventa.CERRADO_PAGO_EMPRESA) {
+            EstadoPeriodoFacturacionPostventa estadoPorPago = resolverEstadoCierrePagoConfirmado(periodo);
+            if (estadoSolicitado != estadoPorPago) {
+                throw new BadRequestException("El estado de cierre no coincide con el pago registrado");
+            }
+            return estadoPorPago;
+        }
+        if (estadoSolicitado == EstadoPeriodoFacturacionPostventa.CERRADO_BAJA
+                || estadoSolicitado == EstadoPeriodoFacturacionPostventa.CERRADO_BAJA_ADEUDO) {
+            return estadoSolicitado;
+        }
+        throw new BadRequestException("El estado indicado no cierra el periodo: " + estadoSolicitado);
+    }
+
+    private EstadoPeriodoFacturacionPostventa resolverEstadoCierrePagoConfirmado(PeriodoFacturacionPostventa periodo) {
+        PagoPostventa pago = obtenerPagoConfirmado(periodo);
+        return pago.getEstado() == EstadoPagoPostventa.PAGADO_EMPRESA
+                ? EstadoPeriodoFacturacionPostventa.CERRADO_PAGO_EMPRESA
+                : EstadoPeriodoFacturacionPostventa.CERRADO_PAGO_CLIENTE;
+    }
+
+    private PagoPostventa obtenerPagoConfirmado(PeriodoFacturacionPostventa periodo) {
+        return pagoRepository.findTopByPeriodoFacturacionPostventaIdAndEstadoInOrderByFechaPagoDescCreatedAtDesc(
+                        periodo.getId(),
+                        ESTADOS_PAGO_CONFIRMADO
+                )
+                .orElseThrow(() -> new BadRequestException("No se puede cerrar el periodo sin un pago confirmado"));
+    }
+
+    private void validarPeriodoAbierto(PeriodoFacturacionPostventa periodo) {
+        if (periodo.getEstado() != EstadoPeriodoFacturacionPostventa.ABIERTO) {
+            throw new BadRequestException("El periodo ya esta cerrado");
+        }
+    }
+
+    private void aplicarEstadoClientePorCierre(PeriodoFacturacionPostventa periodo) {
+        Lead lead = periodo.getLead();
+        if (lead == null) {
+            return;
+        }
+        if (periodo.getEstado() == EstadoPeriodoFacturacionPostventa.CERRADO_PAGO_EMPRESA) {
+            lead.setEstadoClientePostventa(EstadoClientePostventa.SUSPENDIDO);
+            return;
+        }
+        if (periodo.getEstado() == EstadoPeriodoFacturacionPostventa.CERRADO_BAJA
+                || periodo.getEstado() == EstadoPeriodoFacturacionPostventa.CERRADO_BAJA_ADEUDO) {
+            lead.setEstadoClientePostventa(EstadoClientePostventa.BAJA);
+            return;
+        }
+        if (periodo.getEstado() == EstadoPeriodoFacturacionPostventa.CERRADO_PAGO_CLIENTE) {
+            lead.setEstadoClientePostventa(EstadoClientePostventa.ACTIVO);
         }
     }
 
     private boolean debeCrearSiguientePeriodo(
             PeriodoFacturacionPostventa periodo,
-            CerrarPeriodoFacturacionRequest request
+            Boolean crearSiguientePeriodo
     ) {
-        if (request.getCrearSiguientePeriodo() != null && !request.getCrearSiguientePeriodo()) {
+        if (crearSiguientePeriodo != null && !crearSiguientePeriodo) {
             return false;
         }
-        if (periodo.getEstado() != EstadoPeriodoFacturacionPostventa.PAGO_CONFIRMADO) {
+        if (periodo.getEstado() != EstadoPeriodoFacturacionPostventa.CERRADO_PAGO_CLIENTE
+                && periodo.getEstado() != EstadoPeriodoFacturacionPostventa.CERRADO_PAGO_EMPRESA) {
             return false;
         }
         Lead lead = periodo.getLead();
@@ -282,7 +371,8 @@ public class FacturacionPostventaService {
     }
 
     private boolean debeEnviarACobranzaPorPermanencia(PeriodoFacturacionPostventa periodo) {
-        if (periodo.getEstado() != EstadoPeriodoFacturacionPostventa.PAGO_CONFIRMADO) {
+        if (periodo.getEstado() != EstadoPeriodoFacturacionPostventa.CERRADO_PAGO_CLIENTE
+                && periodo.getEstado() != EstadoPeriodoFacturacionPostventa.CERRADO_PAGO_EMPRESA) {
             return false;
         }
         Lead lead = periodo.getLead();

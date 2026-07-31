@@ -636,7 +636,9 @@ export type ComportamientoTipificacion =
   | 'RECIBE_MERITO'
   | 'ES_CIERRE_PREVENTA'
   | 'APARECE_EN_AGENDADOS_GTR'
-  | 'ES_CANCELACION_PROGRAMACION';
+  | 'ES_CANCELACION_PROGRAMACION'
+  | 'CIERRA_PERIODO_PAGO_CONFIRMADO'
+  | 'CIERRA_PERIODO_BAJA';
 
 export interface SubtipificacionResponse {
   id: number;

@@ -3,6 +3,7 @@ package pe.albrugroup.lead_service.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import pe.albrugroup.lead_service.entity.PeriodoFacturacionPostventa;
+import pe.albrugroup.lead_service.entity.enums.EstadoPeriodoFacturacionPostventa;
 
 import java.util.Collection;
 import java.util.List;
@@ -14,6 +15,11 @@ public interface PeriodoFacturacionPostventaRepository extends JpaRepository<Per
     List<PeriodoFacturacionPostventa> findByLeadIdOrderByNumeroPeriodoAsc(Long idLead);
 
     Optional<PeriodoFacturacionPostventa> findTopByLeadIdOrderByNumeroPeriodoDesc(Long idLead);
+
+    Optional<PeriodoFacturacionPostventa> findTopByLeadIdAndEstadoOrderByNumeroPeriodoDesc(
+            Long idLead,
+            EstadoPeriodoFacturacionPostventa estado
+    );
 
     Optional<PeriodoFacturacionPostventa> findByCalendarioFacturacionPostventaIdAndNumeroPeriodo(
             Long idCalendarioFacturacionPostventa,

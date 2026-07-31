@@ -26,5 +26,7 @@ public enum ComportamientoTipificacion {
     /** La subtipi aparece en la bandeja de Agendados GTR (antes: tipi AGENDADO). Lectura diferida (reportería). */
     APARECE_EN_AGENDADOS_GTR,
     /** Cancela una programación previa (antes: subtip PROGRAMACION_CANCELADA). Lectura diferida (reportería). */
-    ES_CANCELACION_PROGRAMACION
+    ES_CANCELACION_PROGRAMACION,
+    CIERRA_PERIODO_PAGO_CONFIRMADO,
+    CIERRA_PERIODO_BAJA
 }

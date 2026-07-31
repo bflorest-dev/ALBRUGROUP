@@ -151,6 +151,7 @@ public class LeadService {
     private final LeadAsignacionCounterService leadAsignacionCounterService;
     private final LeadEtapaResumenService leadEtapaResumenService;
     private final CalendarioFacturacionPostventaService calendarioFacturacionPostventaService;
+    private final FacturacionPostventaService facturacionPostventaService;
     private final PlanService planService;
     private final AuthEquipoClient authEquipoClient;
 
@@ -158,6 +159,10 @@ public class LeadService {
     // cada equipo marca en las subtipis que correspondan (hoy, varias de NO DESEA).
     private static final ComportamientoTipificacion COMPORTAMIENTO_AGENDADO =
             ComportamientoTipificacion.APARECE_EN_AGENDADOS_GTR;
+    private static final ComportamientoTipificacion COMPORTAMIENTO_CIERRE_PAGO_POSTVENTA =
+            ComportamientoTipificacion.CIERRA_PERIODO_PAGO_CONFIRMADO;
+    private static final ComportamientoTipificacion COMPORTAMIENTO_CIERRE_BAJA_POSTVENTA =
+            ComportamientoTipificacion.CIERRA_PERIODO_BAJA;
     private static final String TIPIFICACION_PROGRAMADO = "PROGRAMADO";
     private static final String SUBTIPIFICACION_PROGRAMACION_CANCELADA = "PROGRAMACION_CANCELADA";
     private static final String TIPIFICACION_RETORNO_VENTA_PREVENTA = "NO DESEA";
@@ -1391,7 +1396,60 @@ public class LeadService {
                 request.getComentario(),
                 (java.time.LocalTime) null
         );
+        aplicarCierrePeriodoPostventaSiCorresponde(savedLead, etapaActual, tipificacion, subtipificacion);
         notificarCambioLead("TIPIFICACION", savedLead, etapaActual, idAsesorAnterior);
+    }
+
+    private void aplicarCierrePeriodoPostventaSiCorresponde(
+            Lead lead,
+            Etapa etapaActual,
+            Tipificacion tipificacion,
+            Subtipificacion subtipificacion
+    ) {
+        if (etapaActual != Etapa.POSTVENTA) {
+            return;
+        }
+        if (disparaCierrePagoPostventa(tipificacion, subtipificacion)) {
+            facturacionPostventaService.cerrarPeriodoPagoConfirmadoPorTipificacion(lead.getId());
+            return;
+        }
+        if (disparaCierreBajaPostventa(tipificacion, subtipificacion)) {
+            facturacionPostventaService.cerrarPeriodoBajaPorTipificacion(lead.getId());
+        }
+    }
+
+    private boolean disparaCierrePagoPostventa(Tipificacion tipificacion, Subtipificacion subtipificacion) {
+        return tieneComportamiento(subtipificacion, COMPORTAMIENTO_CIERRE_PAGO_POSTVENTA)
+                || (codigoEquals(tipificacion.getCodigo(), "COBRANZA")
+                && codigoEquals(subtipificacion.getCodigo(), "PAGO_CONFIRMADO"));
+    }
+
+    private boolean disparaCierreBajaPostventa(Tipificacion tipificacion, Subtipificacion subtipificacion) {
+        return tieneComportamiento(subtipificacion, COMPORTAMIENTO_CIERRE_BAJA_POSTVENTA)
+                || (codigoEquals(tipificacion.getCodigo(), "BAJA")
+                && codigoEquals(subtipificacion.getCodigo(), "FINALIZADA"));
+    }
+
+    private boolean tieneComportamiento(
+            Subtipificacion subtipificacion,
+            ComportamientoTipificacion comportamiento
+    ) {
+        return subtipificacion.getComportamientos() != null
+                && subtipificacion.getComportamientos().contains(comportamiento);
+    }
+
+    private boolean codigoEquals(String actual, String esperado) {
+        return normalizarCodigoOperativo(actual).equals(normalizarCodigoOperativo(esperado));
+    }
+
+    private String normalizarCodigoOperativo(String codigo) {
+        if (codigo == null) {
+            return "";
+        }
+        return codigo.trim()
+                .toUpperCase(Locale.ROOT)
+                .replace('-', '_')
+                .replace(' ', '_');
     }
 
     private Etapa normalizarEtapaDestinoPostventa(Etapa etapaActual, Etapa etapaDestino) {

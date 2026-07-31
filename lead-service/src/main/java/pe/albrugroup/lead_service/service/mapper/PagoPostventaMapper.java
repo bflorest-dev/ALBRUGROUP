@@ -24,6 +24,7 @@ public interface PagoPostventaMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "lead", ignore = true)
     @Mapping(target = "periodoFacturacionPostventa", ignore = true)
+    @Mapping(target = "estado", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

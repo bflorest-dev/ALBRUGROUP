@@ -4,7 +4,7 @@ import jakarta.validation.constraints.DecimalMin;
 import lombok.Getter;
 import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.AportantePago;
-import pe.albrugroup.lead_service.entity.enums.EstadoPagoPostventa;
+import pe.albrugroup.lead_service.entity.enums.CondicionPagoPostventa;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -14,7 +14,7 @@ public class PagoPostventaUpdateRequest {
 
     private Long idPeriodoFacturacion;
     private AportantePago aportante;
-    private EstadoPagoPostventa estado;
+    private CondicionPagoPostventa condicion;
     @DecimalMin(value = "0.01", message = "monto debe ser mayor a 0")
     private BigDecimal monto;
     private LocalDate fechaPago;

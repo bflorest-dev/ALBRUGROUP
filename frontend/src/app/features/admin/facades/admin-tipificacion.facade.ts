@@ -42,7 +42,7 @@ export class AdminTipificacionFacade {
   ];
 
   // Comportamientos disparables por subtipi, en lenguaje de negocio (reemplazan los códigos hardcodeados).
-  private readonly comportamientoLabels: Record<ComportamientoTipificacion, string> = {
+  private readonly comportamientoLabels: Partial<Record<ComportamientoTipificacion, string>> = {
     REQUIERE_HORA_PROGRAMADA: 'Requiere hora',
     REQUIERE_FECHA_PROGRAMACION: 'Requiere fecha de programación',
     REQUIERE_FECHA_INSTALACION: 'Requiere fecha de instalación',
@@ -58,12 +58,12 @@ export class AdminTipificacionFacade {
     PREVENTA: ['REQUIERE_HORA_PROGRAMADA', 'APARECE_EN_AGENDADOS_GTR', 'ES_CIERRE_PREVENTA', 'RECIBE_MERITO'],
     VENTA: ['REQUIERE_HORA_PROGRAMADA', 'REQUIERE_FECHA_PROGRAMACION', 'REQUIERE_FECHA_INSTALACION',
             'REQUIERE_SEC_SOT', 'RECIBE_MERITO', 'ES_CANCELACION_PROGRAMACION'],
-    POSTVENTA: []
+    POSTVENTA: ['CIERRA_PERIODO_PAGO_CONFIRMADO', 'CIERRA_PERIODO_BAJA']
   };
 
   readonly comportamientoOptions = computed(() =>
     (this.comportamientosPorEtapa[this.selectedEtapa()] ?? [])
-      .map((value) => ({ label: this.comportamientoLabels[value], value }))
+      .map((value) => ({ label: this.comportamientoLabels[value] ?? value, value }))
   );
 
   readonly selectedEtapa = signal<EtapaCatalogo>('VENTA');

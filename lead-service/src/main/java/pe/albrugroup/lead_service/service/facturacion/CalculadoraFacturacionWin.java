@@ -63,7 +63,7 @@ public class CalculadoraFacturacionWin implements CalculadoraFacturacionPostvent
                 .fechaCorteEstimada(corte)
                 .fechaVencimientoEstimado(vencimiento)
                 .montoEsperado(calendario.getMontoPlanSnapshot())
-                .estado(EstadoPeriodoFacturacionPostventa.PROGRAMADO)
+                .estado(EstadoPeriodoFacturacionPostventa.ABIERTO)
                 .build();
     }
 

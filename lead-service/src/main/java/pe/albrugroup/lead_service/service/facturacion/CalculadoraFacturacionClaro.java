@@ -58,7 +58,7 @@ public class CalculadoraFacturacionClaro implements CalculadoraFacturacionPostve
                 .fechaEmisionEstimada(emision)
                 .fechaVencimientoEstimado(vencimiento)
                 .montoEsperado(calendario.getMontoPlanSnapshot())
-                .estado(EstadoPeriodoFacturacionPostventa.PROGRAMADO)
+                .estado(EstadoPeriodoFacturacionPostventa.ABIERTO)
                 .build();
     }
 }

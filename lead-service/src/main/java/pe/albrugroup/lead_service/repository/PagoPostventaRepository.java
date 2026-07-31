@@ -9,7 +9,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.albrugroup.lead_service.entity.PagoPostventa;
+import pe.albrugroup.lead_service.entity.enums.EstadoPagoPostventa;
 
+import java.util.Collection;
 import java.util.Optional;
 
 @Repository
@@ -20,6 +22,11 @@ public interface PagoPostventaRepository extends JpaRepository<PagoPostventa, Lo
     Page<PagoPostventa> findByPeriodoFacturacionPostventaIdOrderByCreatedAtDesc(Long idPeriodoFacturacion, Pageable pageable);
 
     boolean existsByPeriodoFacturacionPostventaId(Long idPeriodoFacturacion);
+
+    Optional<PagoPostventa> findTopByPeriodoFacturacionPostventaIdAndEstadoInOrderByFechaPagoDescCreatedAtDesc(
+            Long idPeriodoFacturacion,
+            Collection<EstadoPagoPostventa> estados
+    );
 
     @Modifying
     @Query("DELETE FROM PagoPostventa p WHERE p.lead.id = :idLead")

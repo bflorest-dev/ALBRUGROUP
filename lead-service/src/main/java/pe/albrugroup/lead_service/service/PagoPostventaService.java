@@ -10,6 +10,8 @@ import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.PagoPostventa;
 import pe.albrugroup.lead_service.entity.PeriodoFacturacionPostventa;
 import pe.albrugroup.lead_service.entity.enums.AportantePago;
+import pe.albrugroup.lead_service.entity.enums.CondicionPagoPostventa;
+import pe.albrugroup.lead_service.entity.enums.EstadoClientePostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoPagoPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoPeriodoFacturacionPostventa;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
@@ -53,8 +55,9 @@ public class PagoPostventaService {
         PagoPostventa pago = mapper.toEntity(request);
         pago.setLead(lead);
         pago.setPeriodoFacturacionPostventa(periodo);
-        pago.setEstado(resolverEstadoPago(pago, null));
-        sincronizarPeriodoConPago(pago);
+        pago.setCondicion(resolverCondicion(pago.getCondicion()));
+        pago.setEstado(resolverEstadoPago(pago));
+        aplicarEstadoCliente(lead, pago);
         return mapper.toResponse(pagoRepository.save(pago));
     }
 
@@ -71,9 +74,11 @@ public class PagoPostventaService {
                     request.getIdPeriodoFacturacion()
             ));
         }
+        normalizarModoPagoActualizado(request, pago);
         validarFechas(pago.getPeriodoFacturacionPostventa(), pago.getFechaPago(), pago.getFechaCompromisoPago());
-        pago.setEstado(resolverEstadoPago(pago, request.getEstado()));
-        sincronizarPeriodoConPago(pago);
+        pago.setCondicion(resolverCondicion(pago.getCondicion()));
+        pago.setEstado(resolverEstadoPago(pago));
+        aplicarEstadoCliente(pago.getLead(), pago);
         return mapper.toResponse(pagoRepository.save(pago));
     }
 
@@ -97,29 +102,29 @@ public class PagoPostventaService {
         return PageResponse.from(pagos);
     }
 
-    private EstadoPagoPostventa resolverEstadoPago(PagoPostventa pago, EstadoPagoPostventa estadoSolicitado) {
-        if (estadoSolicitado == EstadoPagoPostventa.ANULADO) {
-            return EstadoPagoPostventa.ANULADO;
-        }
+    private EstadoPagoPostventa resolverEstadoPago(PagoPostventa pago) {
+        validarPagoVsCompromiso(pago);
         if (pago.getFechaPago() != null) {
             if (pago.getAportante() == null) {
                 throw new BadRequestException("aportante es obligatorio cuando existe fechaPago");
             }
+            validarCondicionPago(pago);
+            validarNumeroOperacion(pago);
             return pago.getAportante() == AportantePago.EMPRESA
-                    ? EstadoPagoPostventa.CUBIERTO_EMPRESA
-                    : EstadoPagoPostventa.PAGADO;
+                    ? EstadoPagoPostventa.PAGADO_EMPRESA
+                    : EstadoPagoPostventa.PAGADO_CLIENTE;
         }
         if (pago.getAportante() != null) {
             throw new BadRequestException("aportante solo se permite cuando existe fechaPago");
         }
         if (pago.getFechaCompromisoPago() != null) {
+            if (pago.getCondicion() != CondicionPagoPostventa.NORMAL) {
+                throw new BadRequestException("condicion solo se permite cuando existe fechaPago");
+            }
+            validarFacturaVencidaParaCompromiso(pago.getPeriodoFacturacionPostventa());
             return EstadoPagoPostventa.COMPROMETIDO;
         }
-        LocalDate fechaVencimiento = resolverFechaVencimiento(pago.getPeriodoFacturacionPostventa());
-        if (fechaVencimiento != null && fechaVencimiento.isBefore(OperationalDateTime.today())) {
-            return EstadoPagoPostventa.VENCIDO;
-        }
-        return EstadoPagoPostventa.PENDIENTE;
+        throw new BadRequestException("Debe registrar fechaPago o fechaCompromisoPago");
     }
 
     private PeriodoFacturacionPostventa obtenerPeriodoSiCorresponde(Long idLead, Long idPeriodoFacturacion) {
@@ -131,26 +136,10 @@ public class PagoPostventaService {
         if (periodo.getLead() == null || !periodo.getLead().getId().equals(idLead)) {
             throw new BadRequestException("El periodo de facturacion no pertenece al lead indicado");
         }
+        if (periodo.getEstado() != EstadoPeriodoFacturacionPostventa.ABIERTO) {
+            throw new BadRequestException("No se pueden registrar pagos sobre un periodo cerrado");
+        }
         return periodo;
-    }
-
-    private void sincronizarPeriodoConPago(PagoPostventa pago) {
-        PeriodoFacturacionPostventa periodo = pago.getPeriodoFacturacionPostventa();
-        if (periodo == null) {
-            return;
-        }
-        if (pago.getEstado() == EstadoPagoPostventa.PAGADO
-                || pago.getEstado() == EstadoPagoPostventa.CUBIERTO_EMPRESA) {
-            periodo.setEstado(EstadoPeriodoFacturacionPostventa.PAGO_CONFIRMADO);
-            return;
-        }
-        if (pago.getEstado() == EstadoPagoPostventa.VENCIDO) {
-            periodo.setEstado(EstadoPeriodoFacturacionPostventa.VENCIDO);
-            return;
-        }
-        if (pago.getEstado() == EstadoPagoPostventa.COMPROMETIDO) {
-            periodo.setEstado(EstadoPeriodoFacturacionPostventa.PAGO_PENDIENTE);
-        }
     }
 
     private PeriodoFacturacionPostventa obtenerPeriodoObligatorio(Long idLead, Long idPeriodoFacturacion) {
@@ -177,6 +166,74 @@ public class PagoPostventaService {
         }
         if (fechaCompromisoPago != null && fechaCompromisoPago.isBefore(fechaEmision)) {
             throw new BadRequestException("fechaCompromisoPago no puede ser anterior a fechaEmision");
+        }
+    }
+
+    private void normalizarModoPagoActualizado(PagoPostventaUpdateRequest request, PagoPostventa pago) {
+        if (request.getFechaPago() != null) {
+            pago.setFechaCompromisoPago(null);
+            return;
+        }
+        if (request.getFechaCompromisoPago() != null) {
+            pago.setFechaPago(null);
+            pago.setAportante(null);
+            pago.setNumeroOperacion(null);
+            pago.setCondicion(CondicionPagoPostventa.NORMAL);
+        }
+    }
+
+    private void validarPagoVsCompromiso(PagoPostventa pago) {
+        if (pago.getFechaPago() != null && pago.getFechaCompromisoPago() != null) {
+            throw new BadRequestException("No se puede registrar fechaPago y fechaCompromisoPago en el mismo pago");
+        }
+    }
+
+    private CondicionPagoPostventa resolverCondicion(CondicionPagoPostventa condicion) {
+        return condicion == null ? CondicionPagoPostventa.NORMAL : condicion;
+    }
+
+    private void validarCondicionPago(PagoPostventa pago) {
+        CondicionPagoPostventa condicion = resolverCondicion(pago.getCondicion());
+        if ((condicion == CondicionPagoPostventa.REINTEGRO
+                || condicion == CondicionPagoPostventa.CASHBACK_POSTVENTA)
+                && pago.getAportante() != AportantePago.EMPRESA) {
+            throw new BadRequestException("La condicion " + condicion + " se registra como pago de EMPRESA");
+        }
+        if (condicion == CondicionPagoPostventa.CASHBACK_ASESOR_VENTAS
+                && pago.getAportante() != AportantePago.CLIENTE) {
+            throw new BadRequestException("La condicion CASHBACK_ASESOR_VENTAS se registra como pago de CLIENTE");
+        }
+    }
+
+    private void validarNumeroOperacion(PagoPostventa pago) {
+        boolean requiereNumeroOperacion = pago.getAportante() == AportantePago.EMPRESA;
+        if (requiereNumeroOperacion
+                && (pago.getNumeroOperacion() == null || pago.getNumeroOperacion().isBlank())) {
+            throw new BadRequestException("numeroOperacion es obligatorio cuando paga la empresa");
+        }
+    }
+
+    private void validarFacturaVencidaParaCompromiso(PeriodoFacturacionPostventa periodo) {
+        LocalDate fechaVencimiento = resolverFechaVencimiento(periodo);
+        if (fechaVencimiento == null) {
+            throw new BadRequestException("El periodo no tiene fecha de vencimiento para registrar compromiso");
+        }
+        if (!fechaVencimiento.isBefore(OperationalDateTime.today())) {
+            throw new BadRequestException("Solo se puede registrar compromiso de pago cuando la factura esta vencida");
+        }
+    }
+
+    private void aplicarEstadoCliente(Lead lead, PagoPostventa pago) {
+        if (lead == null) {
+            return;
+        }
+        if (pago.getEstado() == EstadoPagoPostventa.PAGADO_EMPRESA
+                || pago.getEstado() == EstadoPagoPostventa.COMPROMETIDO) {
+            lead.setEstadoClientePostventa(EstadoClientePostventa.SUSPENDIDO);
+            return;
+        }
+        if (pago.getEstado() == EstadoPagoPostventa.PAGADO_CLIENTE) {
+            lead.setEstadoClientePostventa(EstadoClientePostventa.ACTIVO);
         }
     }
 

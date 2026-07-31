@@ -19,6 +19,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import pe.albrugroup.lead_service.entity.enums.AportantePago;
+import pe.albrugroup.lead_service.entity.enums.CondicionPagoPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoPagoPostventa;
 
 import java.math.BigDecimal;
@@ -47,6 +48,8 @@ public class PagoPostventa {
     private AportantePago aportante;
     @Enumerated(EnumType.STRING)
     private EstadoPagoPostventa estado;
+    @Enumerated(EnumType.STRING)
+    private CondicionPagoPostventa condicion = CondicionPagoPostventa.NORMAL;
 
     private BigDecimal monto;
     private LocalDate fechaPago;

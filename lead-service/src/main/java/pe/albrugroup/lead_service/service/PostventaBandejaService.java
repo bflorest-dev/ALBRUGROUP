@@ -258,11 +258,12 @@ public class PostventaBandejaService {
         if (periodo == null) {
             return EstadoPagoPeriodoPostventa.POR_EMITIR;
         }
-        if (periodo.getEstado() == EstadoPeriodoFacturacionPostventa.PAGO_CONFIRMADO) {
+        if (periodo.getEstado() == EstadoPeriodoFacturacionPostventa.CERRADO_PAGO_CLIENTE
+                || periodo.getEstado() == EstadoPeriodoFacturacionPostventa.CERRADO_PAGO_EMPRESA) {
             return EstadoPagoPeriodoPostventa.PAGADA;
         }
-        if (periodo.getEstado() == EstadoPeriodoFacturacionPostventa.VENCIDO
-                || periodo.getEstado() == EstadoPeriodoFacturacionPostventa.EN_COBRANZA) {
+        if (periodo.getEstado() == EstadoPeriodoFacturacionPostventa.CERRADO_BAJA
+                || periodo.getEstado() == EstadoPeriodoFacturacionPostventa.CERRADO_BAJA_ADEUDO) {
             return EstadoPagoPeriodoPostventa.VENCIDA;
         }
 

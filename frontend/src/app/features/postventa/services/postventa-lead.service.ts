@@ -15,16 +15,14 @@ export type EstadoCredencialesPostventa = 'ENTREGADAS' | 'NO_REQUIERE' | 'PENDIE
 export type EstadoPagoPeriodoPostventa = 'POR_EMITIR' | 'PENDIENTE_PAGO' | 'VENCIDA' | 'PAGADA';
 export type EstadoServicioPostventa = 'SIN_CALIFICAR' | 'INSATISFECHO' | 'SATISFECHO' | 'MUY_SATISFECHO';
 export type EstadoPeriodoFacturacionPostventa =
-  | 'PROGRAMADO'
-  | 'FACTURA_EMITIDA'
-  | 'PAGO_PENDIENTE'
-  | 'PAGO_CONFIRMADO'
-  | 'VENCIDO'
-  | 'EN_COBRANZA'
-  | 'BAJA'
-  | 'ANULADO';
+  | 'ABIERTO'
+  | 'CERRADO_PAGO_CLIENTE'
+  | 'CERRADO_PAGO_EMPRESA'
+  | 'CERRADO_BAJA'
+  | 'CERRADO_BAJA_ADEUDO';
 export type AportantePago = 'CLIENTE' | 'EMPRESA';
-export type EstadoPagoPostventa = 'PENDIENTE' | 'COMPROMETIDO' | 'PAGADO' | 'VENCIDO' | 'CUBIERTO_EMPRESA' | 'ANULADO';
+export type EstadoPagoPostventa = 'COMPROMETIDO' | 'PAGADO_CLIENTE' | 'PAGADO_EMPRESA';
+export type CondicionPagoPostventa = 'NORMAL' | 'REINTEGRO' | 'CASHBACK_ASESOR_VENTAS' | 'CASHBACK_POSTVENTA';
 export type TipoEncuestaPostventa = 'SATISFACCION_ASESOR' | 'SATISFACCION_SERVICIO';
 export type TipoContactoEncuesta = 'LLAMADA' | 'CHAT';
 export type TipoDispositivo = 'TV' | 'TV_BOX' | 'CELULAR' | 'TABLET' | 'LAPTOP';
@@ -181,6 +179,7 @@ export interface SatisfaccionPostventaResponse {
 export interface PagoPostventaRequest {
   idPeriodoFacturacion?: number | null;
   aportante?: AportantePago | string | null;
+  condicion?: CondicionPagoPostventa | string | null;
   monto: number;
   fechaPago?: string | null;
   fechaCompromisoPago?: string | null;

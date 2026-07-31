@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pe.albrugroup.lead_service.entity.enums.AportantePago;
+import pe.albrugroup.lead_service.entity.enums.CondicionPagoPostventa;
 import pe.albrugroup.lead_service.entity.enums.EstadoPagoPostventa;
 
 import java.math.BigDecimal;
@@ -24,6 +25,7 @@ public class PagoPostventaResponse {
     private Long idPeriodoFacturacion;
     private AportantePago aportante;
     private EstadoPagoPostventa estado;
+    private CondicionPagoPostventa condicion;
     private BigDecimal monto;
     private LocalDate fechaPago;
     private LocalDate fechaCompromisoPago;

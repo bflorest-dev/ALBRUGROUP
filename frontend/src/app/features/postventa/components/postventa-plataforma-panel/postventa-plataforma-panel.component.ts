@@ -109,6 +109,7 @@ export class PostventaPlataformaPanelComponent {
         void this.facade.onPlataformaChanged(idPlataforma);
       }
     });
+    this.facade.registerBeforeTipificarTask('plataforma', () => this.guardarPendienteAntesDeTipificar());
   }
 
   protected badge(value: unknown): EstadoBadge {
@@ -145,9 +146,9 @@ export class PostventaPlataformaPanelComponent {
     this.marcaSuggestions.set(q ? marcas.filter((m) => (m.nombre ?? '').toLowerCase().includes(q)) : [...marcas]);
   }
 
-  protected async guardar(): Promise<void> {
+  private async guardar(): Promise<boolean> {
     if (this.form.controls.idCredencial.invalid) {
-      return;
+      return false;
     }
     const raw = this.form.getRawValue();
     const ok = await this.facade.entregarCredencial({
@@ -162,7 +163,16 @@ export class PostventaPlataformaPanelComponent {
     });
     if (ok) {
       this.form.patchValue({ idCredencial: 0, cantidadUsuariosAsignados: 1, tipoDispositivo: '', marca: null, descripcionDispositivo: '', observacion: '' });
+      this.form.markAsPristine();
     }
+    return ok;
+  }
+
+  private async guardarPendienteAntesDeTipificar(): Promise<boolean> {
+    if (!this.form.controls.idCredencial.value) {
+      return true;
+    }
+    return this.guardar();
   }
 
   private buildDispositivos(raw: ReturnType<typeof this.form.getRawValue>) {

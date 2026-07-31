@@ -34,6 +34,10 @@ export class PostventaEncuestaPanelComponent {
   protected readonly facade = inject(PostventaWorkspaceFacade);
   private readonly fb = inject(NonNullableFormBuilder);
 
+  constructor() {
+    this.facade.registerBeforeTipificarTask('encuesta', () => this.guardarPendienteAntesDeTipificar());
+  }
+
   protected readonly tipoEncuestaOptions: SelectOption<TipoEncuestaPostventa>[] = [
     { label: 'Satisfaccion del servicio', value: 'SATISFACCION_SERVICIO' },
     { label: 'Satisfaccion con el asesor', value: 'SATISFACCION_ASESOR' }
@@ -65,9 +69,9 @@ export class PostventaEncuestaPanelComponent {
     return null;
   }
 
-  protected async guardar(): Promise<void> {
+  private async guardar(): Promise<boolean> {
     if (this.form.invalid || !this.facade.medioContacto()) {
-      return;
+      return false;
     }
     const raw = this.form.getRawValue();
     const ok = await this.facade.registrarEncuesta({
@@ -77,6 +81,20 @@ export class PostventaEncuestaPanelComponent {
     });
     if (ok) {
       this.form.reset({ tipoEncuesta: raw.tipoEncuesta, calificacion: 0, comentario: '' });
+      this.form.markAsPristine();
     }
+    return ok;
+  }
+
+  private async guardarPendienteAntesDeTipificar(): Promise<boolean> {
+    if (!this.encuestaTieneDatos()) {
+      return true;
+    }
+    return this.guardar();
+  }
+
+  private encuestaTieneDatos(): boolean {
+    const raw = this.form.getRawValue();
+    return Boolean(raw.calificacion > 0 || raw.comentario?.trim());
   }
 }

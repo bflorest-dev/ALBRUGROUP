@@ -22,7 +22,7 @@
   </p>
 }
 
-<form class="form-grid" [formGroup]="form" (ngSubmit)="guardar()">
+<form class="form-grid" [formGroup]="form">
   <label>
     <span>Tipo de encuesta</span>
     <p-select formControlName="tipoEncuesta" [options]="tipoEncuestaOptions" optionLabel="label" optionValue="value" appendTo="body" />
@@ -35,16 +35,6 @@
     <span>Comentario</span>
     <textarea pTextarea rows="3" formControlName="comentario"></textarea>
   </label>
-  <div class="form-actions full">
-    <button
-      pButton
-      type="submit"
-      icon="pi pi-star"
-      label="Registrar encuesta"
-      [disabled]="!facade.medioContacto()"
-      [loading]="facade.saving()"
-    ></button>
-  </div>
 </form>
 
 <h3 class="panel-heading">Historial de encuestas</h3>

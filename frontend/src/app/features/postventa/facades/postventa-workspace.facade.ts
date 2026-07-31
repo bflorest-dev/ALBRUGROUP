@@ -36,7 +36,13 @@ import {
 import { VisualLeadPostventa, splitNombreDosLineas } from '../models/postventa.vm';
 
 type ToastSeverity = 'success' | 'info' | 'warn' | 'error';
-const ESTADOS_PERIODO_CERRADO = ['PAGO_CONFIRMADO', 'BAJA', 'ANULADO'];
+const ESTADOS_PERIODO_CERRADO = [
+  'CERRADO_PAGO_CLIENTE',
+  'CERRADO_PAGO_EMPRESA',
+  'CERRADO_BAJA',
+  'CERRADO_BAJA_ADEUDO'
+];
+type BeforeTipificarTask = () => Promise<boolean>;
 
 /**
  * Facade del workspace de POSTVENTA. Unica puerta funcional del feature: mantiene el estado
@@ -98,6 +104,7 @@ export class PostventaWorkspaceFacade {
   private readonly _encuestas = signal<EncuestaPostventaResponse[]>([]);
   private readonly _resumenEncuestas = signal<SatisfaccionPostventaResponse | null>(null);
   private readonly _pagos = signal<PagoPostventaResponse[]>([]);
+  private readonly beforeTipificarTasks = new Map<string, BeforeTipificarTask>();
   private readonly _plataformas = signal<PlataformaDigitalResponse[]>([]);
   private readonly _paquetes = signal<PaquetePlataformaResponse[]>([]);
   private readonly _credenciales = signal<CredencialPlataformaResponse[]>([]);
@@ -507,12 +514,20 @@ export class PostventaWorkspaceFacade {
     );
   }
 
+  registerBeforeTipificarTask(key: string, task: BeforeTipificarTask): void {
+    this.beforeTipificarTasks.set(key, task);
+  }
+
   // ---------------------------------------------------------------------------
   // Tipificacion (cierra la gestion y libera el lead)
   // ---------------------------------------------------------------------------
   async tipificar(request: LeadTipificacionPostventaRequest): Promise<void> {
     const lead = this._selectedLead();
     if (!lead || this._saving()) {
+      return;
+    }
+    if (!(await this.ejecutarCambiosPendientesAntesDeTipificar())) {
+      this.notify('warn', 'Completa o corrige los cambios pendientes antes de tipificar.');
       return;
     }
     this._saving.set(true);
@@ -550,6 +565,16 @@ export class PostventaWorkspaceFacade {
     } finally {
       this._saving.set(false);
     }
+  }
+
+  private async ejecutarCambiosPendientesAntesDeTipificar(): Promise<boolean> {
+    for (const task of this.beforeTipificarTasks.values()) {
+      const ok = await task();
+      if (!ok) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private resetContext(): void {
