@@ -24,10 +24,23 @@ Ejecutar en este orden:
 3. `03_regularizar_358_preventa_simples_postventa.sql`
 4. `04_regularizar_60_venta_postventa.sql`
 5. `05_backfill_periodos_pagos_encuestas_postventa.sql`
-6. `06_validar_backfill_postventa.sql`
-7. `07_validar_coherencia_backfill_postventa.sql`
+6. `08_reparar_calendarios_periodos_postventa.sql`
+7. `06_validar_backfill_postventa.sql`
+8. `07_validar_coherencia_backfill_postventa.sql`
 
-Los scripts 1 al 5 modifican datos. Los scripts 6 y 7 son de validacion.
+Los scripts 1 al 5 modifican datos. El script 8 corrige calendarios, periodos, pagos y encuestas que hayan quedado incompletos para que los conteos por corte coincidan con el Excel. Los scripts 6 y 7 son de validacion.
+
+Si ya se ejecutaron los scripts 1 al 7 antes de esta correccion, ejecutar solo:
+
+```powershell
+.\backfill-postventa-20260801\run-local.ps1 -Only 08
+```
+
+Luego ejecutar las validaciones:
+
+```powershell
+.\backfill-postventa-20260801\run-local.ps1 -From 06
+```
 
 ## Ejecucion local
 
@@ -40,7 +53,7 @@ Ejecutar todo el paquete:
 Ejecutar un script puntual:
 
 ```powershell
-.\backfill-postventa-20260801\run-local.ps1 -Only 05
+.\backfill-postventa-20260801\run-local.ps1 -Only 08
 ```
 
 Ejecutar desde un script especifico:
@@ -73,4 +86,8 @@ docker exec albrugroup-postgres-lead-1 psql -U postgres -d lead_db -v ON_ERROR_S
 - No revertir leads `SUSPENDIDO` a `ACTIVO` solo porque el Excel actualizado figure como `ACTIVO`.
 - Los pagos nuevos del Excel actualizado si deben cerrar sus periodos correspondientes.
 - No incluir Julio 2 hasta validar organicamente por que esos leads no llegaron al sistema o a POSTVENTA.
+- El script 8 valida que todos los leads del Excel queden cubiertos por corte: Abril 2 = 65, Mayo 1 = 163, Mayo 2 = 68, Junio 1 = 223, Junio 2 = 65 y Julio 1 = 126.
+- Los conteos vivos del sistema pueden ser mayores al Excel si existen leads nativos que no pasaron por la gestion manual del archivo.
+- Solo Abril 2 y Mayo 1 pueden pasar a COBRANZA al cerrar su tercer periodo. Los demas cortes permanecen en POSTVENTA aunque tengan pagos registrados, porque aun tienen periodos pendientes dentro de permanencia.
+- En bandeja POSTVENTA, Abril 2 y Mayo 1 pueden mostrar menos leads que el Excel si una parte ya paso a COBRANZA. Para los demas cortes, el sistema deberia mostrar una cantidad igual o mayor al Excel, salvo filtros propios de la vista.
 - Si un script falla, detener la ejecucion y revisar antes de continuar.

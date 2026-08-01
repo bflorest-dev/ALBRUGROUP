@@ -22,7 +22,13 @@ WITH periodos AS (
     JOIN calendario_facturacion_postventa c ON c.id_lead = l.id AND c.activo = true
     LEFT JOIN periodo_facturacion_postventa p ON p.id_lead = l.id
     LEFT JOIN pago_postventa pp ON pp.id_periodo_facturacion = p.id
-    WHERE c.mes_corte_base BETWEEN date '2026-04-01' AND date '2026-07-01'
+    WHERE c.proveedor_snapshot = 'WIN'
+      AND (
+          (c.mes_corte_base = date '2026-04-01' AND c.numero_corte_base = 2)
+          OR (c.mes_corte_base = date '2026-05-01' AND c.numero_corte_base IN (1, 2))
+          OR (c.mes_corte_base = date '2026-06-01' AND c.numero_corte_base IN (1, 2))
+          OR (c.mes_corte_base = date '2026-07-01' AND c.numero_corte_base = 1)
+      )
 ),
 resumen AS (
     SELECT
@@ -57,22 +63,6 @@ hallazgos AS (
     WHERE periodos_abiertos > 1
     UNION ALL
     SELECT
-        'ABRIL_2_DEBE_SALIR_DE_POSTVENTA',
-        id_lead,
-        lead,
-        documento,
-        etapa,
-        estado_cliente_postventa,
-        mes_corte_base,
-        numero_corte_base,
-        coalesce(numeros_periodos_abiertos, 'sin abiertos')
-    FROM resumen
-    WHERE mes_corte_base = date '2026-04-01'
-      AND numero_corte_base = 2
-      AND etapa = 'POSTVENTA'
-      AND NOT tiene_baja
-    UNION ALL
-    SELECT
         'TERCER_PERIODO_PAGADO_DEBE_ESTAR_EN_COBRANZA',
         id_lead,
         lead,
@@ -85,7 +75,28 @@ hallazgos AS (
     FROM resumen
     WHERE tercer_periodo_pagado
       AND NOT tiene_baja
+      AND (
+          (mes_corte_base = date '2026-04-01' AND numero_corte_base = 2)
+          OR (mes_corte_base = date '2026-05-01' AND numero_corte_base = 1)
+      )
       AND etapa <> 'COBRANZA'
+    UNION ALL
+    SELECT
+        'SOLO_ABRIL2_MAYO1_PUEDE_ESTAR_EN_COBRANZA',
+        id_lead,
+        lead,
+        documento,
+        etapa,
+        estado_cliente_postventa,
+        mes_corte_base,
+        numero_corte_base,
+        'corte aun no debe pasar a cobranza'
+    FROM resumen
+    WHERE etapa = 'COBRANZA'
+      AND NOT (
+          (mes_corte_base = date '2026-04-01' AND numero_corte_base = 2)
+          OR (mes_corte_base = date '2026-05-01' AND numero_corte_base = 1)
+      )
     UNION ALL
     SELECT
         'PAGO_REGISTRADO_EN_PERIODO_ABIERTO',
@@ -114,7 +125,13 @@ WITH resumen AS (
         c.numero_corte_base
     FROM lead l
     JOIN calendario_facturacion_postventa c ON c.id_lead = l.id AND c.activo = true
-    WHERE c.mes_corte_base BETWEEN date '2026-04-01' AND date '2026-07-01'
+    WHERE c.proveedor_snapshot = 'WIN'
+      AND (
+          (c.mes_corte_base = date '2026-04-01' AND c.numero_corte_base = 2)
+          OR (c.mes_corte_base = date '2026-05-01' AND c.numero_corte_base IN (1, 2))
+          OR (c.mes_corte_base = date '2026-06-01' AND c.numero_corte_base IN (1, 2))
+          OR (c.mes_corte_base = date '2026-07-01' AND c.numero_corte_base = 1)
+      )
 )
 SELECT
     mes_corte_base,
