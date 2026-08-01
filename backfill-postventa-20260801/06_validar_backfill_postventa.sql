@@ -118,9 +118,19 @@ invalidos(campo, valor, cantidad) AS (
     WHERE dp.nombre_titular_servicio LIKE '%??%'
     GROUP BY dp.nombre_titular_servicio
     UNION ALL
+    SELECT 'datos_preventa.nombre_titular_servicio_numerico', dp.nombre_titular_servicio, count(*)
+    FROM datos_preventa dp JOIN scope s ON s.id_datos_preventa = dp.id
+    WHERE regexp_replace(coalesce(dp.nombre_titular_servicio, ''), '\s+', '', 'g') ~ '^[0-9]+$'
+    GROUP BY dp.nombre_titular_servicio
+    UNION ALL
     SELECT 'contacto.nombre_conocido_con_??', ct.nombre_conocido, count(*)
     FROM contacto ct JOIN scope s ON s.id_contacto = ct.id
     WHERE ct.nombre_conocido LIKE '%??%'
+    GROUP BY ct.nombre_conocido
+    UNION ALL
+    SELECT 'contacto.nombre_conocido_numerico', ct.nombre_conocido, count(*)
+    FROM contacto ct JOIN scope s ON s.id_contacto = ct.id
+    WHERE regexp_replace(coalesce(ct.nombre_conocido, ''), '\s+', '', 'g') ~ '^[0-9]+$'
     GROUP BY ct.nombre_conocido
 )
 SELECT * FROM invalidos ORDER BY campo, valor;

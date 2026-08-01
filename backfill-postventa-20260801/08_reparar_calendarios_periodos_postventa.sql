@@ -895,6 +895,39 @@ FROM tmp_postventa_repair_lead_match
 WHERE match_count > 1
 ON CONFLICT (metric) DO UPDATE SET value = excluded.value;
 
+WITH duplicate_calendar_deactivate AS (
+    UPDATE calendario_facturacion_postventa c
+    SET
+        activo = false,
+        corte_corregido = true,
+        observacion = concat(
+            COALESCE(NULLIF(c.observacion, ''), 'SIN_OBSERVACION'),
+            ' | BACKFILL_POSTVENTA_20260801_REPAIR: calendario duplicado desactivado por mismo lead/fecha/corte con documento distinto al Excel'
+        ),
+        updated_at = now()
+    FROM lead l
+    LEFT JOIN contacto ct ON ct.id = l.id_contacto
+    LEFT JOIN datos_preventa dp ON dp.id = l.id_datos_preventa
+    JOIN tmp_postventa_repair_src s
+      ON regexp_replace(coalesce(l.lead, ct.lead, ''), '\D', '', 'g') = s.lead
+    WHERE c.id_lead = l.id
+      AND c.activo = true
+      AND c.proveedor_snapshot = 'WIN'
+      AND c.fecha_instalacion = s.fecha_instalacion
+      AND c.mes_corte_base = date_trunc('month', s.fecha_instalacion)::date
+      AND c.numero_corte_base = s.corte_postventa
+      AND NOT EXISTS (
+          SELECT 1
+          FROM tmp_postventa_repair_lead_match lm
+          WHERE lm.id_lead = l.id
+      )
+      AND ltrim(regexp_replace(coalesce(l.numero_documento_titular_servicio_snapshot, dp.numero_documento_titular_servicio, ''), '\D', '', 'g'), '0') <> ltrim(s.documento, '0')
+    RETURNING c.id
+)
+INSERT INTO tmp_postventa_repair_metrics(metric, value)
+SELECT 'calendarios_duplicados_mismo_lead_desactivados', count(*) FROM duplicate_calendar_deactivate
+ON CONFLICT (metric) DO UPDATE SET value = excluded.value;
+
 WITH lead_normalize AS (
     UPDATE lead l
     SET
@@ -916,6 +949,36 @@ WITH lead_normalize AS (
 )
 INSERT INTO tmp_postventa_repair_metrics(metric, value)
 SELECT 'leads_normalizados', count(*) FROM lead_normalize;
+
+WITH datos_update AS (
+    UPDATE datos_preventa dp
+    SET
+        nombre_titular_servicio = lm.cliente
+    FROM lead l
+    JOIN tmp_postventa_repair_lead_match lm ON lm.id_lead = l.id
+    WHERE dp.id = l.id_datos_preventa
+      AND NULLIF(lm.cliente, '') IS NOT NULL
+      AND dp.nombre_titular_servicio IS DISTINCT FROM lm.cliente
+    RETURNING dp.id
+), contacto_update AS (
+    UPDATE contacto ct
+    SET
+        nombre_conocido = lm.cliente,
+        updated_at = now()
+    FROM lead l
+    JOIN tmp_postventa_repair_lead_match lm ON lm.id_lead = l.id
+    WHERE ct.id = l.id_contacto
+      AND NULLIF(lm.cliente, '') IS NOT NULL
+      AND ct.nombre_conocido IS DISTINCT FROM lm.cliente
+    RETURNING ct.id
+), nombre_metrics AS (
+    SELECT 'datos_preventa_nombres_actualizados' AS metric, count(*) AS value FROM datos_update
+    UNION ALL
+    SELECT 'contacto_nombres_actualizados', count(*) FROM contacto_update
+)
+INSERT INTO tmp_postventa_repair_metrics(metric, value)
+SELECT metric, value FROM nombre_metrics
+ON CONFLICT (metric) DO UPDATE SET value = excluded.value;
 
 WITH existing_calendar AS (
     SELECT lm.*, c.id AS id_calendario
