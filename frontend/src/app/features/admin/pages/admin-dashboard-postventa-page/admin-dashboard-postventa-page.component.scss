@@ -1,0 +1,16 @@
+:host {
+  display: block;
+}
+
+/* Prueba A/B: tratamiento fijo en azul marino. El `data-theme="dark"` del template hace que los
+   tokens --app-* (y los semánticos del panel vía :host-context) adopten su variante oscura, sin
+   importar el tema global del admin. */
+.pv-shell {
+  display: block;
+  background: var(--app-bg);
+  color: var(--app-text);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 18px;
+  padding: clamp(1.25rem, 2.5vw, 2rem);
+  min-height: calc(100dvh - 8rem);
+}

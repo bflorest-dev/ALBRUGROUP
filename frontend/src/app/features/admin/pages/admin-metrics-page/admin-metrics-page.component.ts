@@ -13,7 +13,6 @@ import { esEquipoOperativo } from '../../../../shared/utils/equipos-operativos';
 import { resolveMetricsRange } from '../../../../shared/utils/metrics-period';
 import { GestionCampoTipi } from '../../services/admin-gestion-campana.service';
 import { GestionCampanaPanelComponent } from '../../components/gestion-campana-panel/gestion-campana-panel.component';
-import { GestionMensualPostventaPanelComponent } from '../../components/gestion-mensual-postventa-panel/gestion-mensual-postventa-panel.component';
 import { TeamMetricGaugesComponent } from '../../components/team-metric-gauges/team-metric-gauges.component';
 import { DashboardGaugeCard, resolveGaugeColors } from '../../models/dashboard-gauge.model';
 import {
@@ -56,7 +55,6 @@ interface DashboardMetricRow {
     PeriodSelectorComponent,
     SectionHeaderComponent,
     GestionCampanaPanelComponent,
-    GestionMensualPostventaPanelComponent,
     TeamMetricGaugesComponent
   ],
   templateUrl: './admin-metrics-page.component.html',

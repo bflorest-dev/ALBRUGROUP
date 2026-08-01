@@ -1,0 +1,33 @@
+:host {
+  display: block;
+}
+
+.ph-empty {
+  display: grid;
+  place-items: center;
+  gap: 0.55rem;
+  margin-top: 1.25rem;
+  padding: clamp(2.5rem, 8vh, 5rem) 1.5rem;
+  text-align: center;
+  border: 1px dashed var(--app-border);
+  border-radius: 16px;
+  background: var(--app-surface-soft);
+  color: var(--app-text-muted);
+
+  i {
+    font-size: 2.25rem;
+    color: var(--role-accent);
+  }
+
+  &__title {
+    margin: 0;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--app-text);
+  }
+
+  &__text {
+    margin: 0;
+    max-width: 42ch;
+  }
+}

@@ -7,6 +7,8 @@ import { AdminEquiposPageComponent } from '../admin/pages/admin-equipos-page/adm
 import { AdminFinancePageComponent } from '../admin/pages/admin-finance-page/admin-finance-page.component';
 import { AdminMaintenancePageComponent } from '../admin/pages/admin-maintenance-page/admin-maintenance-page.component';
 import { AdminMetricsPageComponent } from '../admin/pages/admin-metrics-page/admin-metrics-page.component';
+import { AdminDashboardPostventaPageComponent } from '../admin/pages/admin-dashboard-postventa-page/admin-dashboard-postventa-page.component';
+import { AdminDashboardPlaceholderPageComponent } from '../admin/pages/admin-dashboard-placeholder-page/admin-dashboard-placeholder-page.component';
 import { AdminDataOpsPageComponent } from '../admin/pages/admin-data-ops-page/admin-data-ops-page.component';
 import { AdminRankingPageComponent } from '../admin/pages/admin-ranking-page/admin-ranking-page.component';
 import {
@@ -41,19 +43,52 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'admin',
     pathMatch: 'full',
-    redirectTo: 'admin/dashboard'
+    redirectTo: 'admin/dashboard/preventa'
   },
   {
     path: 'admin/inicio',
     pathMatch: 'full',
-    redirectTo: 'admin/dashboard'
+    redirectTo: 'admin/dashboard/preventa'
   },
   {
     path: 'admin/dashboard',
+    pathMatch: 'full',
+    redirectTo: 'admin/dashboard/preventa'
+  },
+  {
+    path: 'admin/dashboard/preventa',
     component: AdminMetricsPageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR']
+    }
+  },
+  {
+    path: 'admin/dashboard/postventa',
+    component: AdminDashboardPostventaPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR']
+    }
+  },
+  {
+    path: 'admin/dashboard/venta',
+    component: AdminDashboardPlaceholderPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR'],
+      titulo: 'Venta',
+      descripcion: 'Las métricas de la etapa de Venta llegarán pronto a este panel.'
+    }
+  },
+  {
+    path: 'admin/dashboard/cobranza',
+    component: AdminDashboardPlaceholderPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR'],
+      titulo: 'Cobranza',
+      descripcion: 'Las métricas de la etapa de Cobranza llegarán pronto a este panel.'
     }
   },
   {

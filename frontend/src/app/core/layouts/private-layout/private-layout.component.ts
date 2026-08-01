@@ -143,8 +143,15 @@ export class PrivateLayoutComponent {
         { label: 'Inactivos', route: '/app/admin/colaboradores/inactivos', icon: 'pi pi-user-minus', exact: true }
       ];
 
+      const dashboardChildren: SidebarItem[] = [
+        { label: 'Preventa', route: '/app/admin/dashboard/preventa', icon: 'pi pi-users', exact: true },
+        { label: 'Venta', route: '/app/admin/dashboard/venta', icon: 'pi pi-shopping-cart', exact: true },
+        { label: 'Postventa', route: '/app/admin/dashboard/postventa', icon: 'pi pi-briefcase', exact: true },
+        { label: 'Cobranza', route: '/app/admin/dashboard/cobranza', icon: 'pi pi-wallet', exact: true }
+      ];
+
       const items: SidebarItem[] = [
-        { label: 'Dashboard', route: '/app/admin/dashboard', icon: 'pi pi-chart-pie', exact: true },
+        { label: 'Dashboard', icon: 'pi pi-chart-pie', children: dashboardChildren },
         { label: 'Colaboradores', icon: 'pi pi-users', children: colaboradoresChildren },
         { label: 'Personal', route: '/app/admin/personal', icon: 'pi pi-id-card', exact: true },
         { label: 'Empleabilidad', route: '/app/admin/empleabilidad', icon: 'pi pi-briefcase' },
@@ -252,7 +259,7 @@ export class PrivateLayoutComponent {
       }
     }
     const order = new Map<string, number>([
-      ['/app/admin/dashboard', 1],
+      ['Dashboard', 1],
       ['/app/admin/finanzas', 2],
       ['/app/admin/leads-del-dia', 3],
       ['Colaboradores', 4],

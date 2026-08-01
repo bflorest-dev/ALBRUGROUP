@@ -180,6 +180,9 @@
 /* ---- Table ---- */
 .gm-table-wrap {
   overflow-x: auto;
+  background: var(--app-surface);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 14px;
 }
 
 .gm-table {
