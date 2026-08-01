@@ -32,6 +32,27 @@ def digits(value) -> str:
     return re.sub(r"\D", "", clean(value))
 
 
+def normalize_document(value) -> str:
+    document = digits(value).lstrip("0")
+    return document or digits(value)
+
+
+def normalize_client_name(value, document=None) -> str:
+    text = clean(value)
+    if not text:
+        return ""
+
+    document_norm = normalize_document(document)
+    match = re.match(r"^\s*([0-9]{6,11})(?:\s*[-/]\s*|\s+)(.+)$", text)
+    if match and normalize_document(match.group(1)) == document_norm:
+        text = match.group(2)
+
+    # Excel sometimes uses zero as the letter O inside names.
+    text = re.sub(r"(?<=[A-Za-zÁÉÍÓÚÜÑáéíóúüñ])0(?=\b|[A-Za-zÁÉÍÓÚÜÑáéíóúüñ])", "O", text)
+    text = re.sub(r"\s+", " ", text).strip(" -/")
+    return text
+
+
 def sql_text(value) -> str:
     value = clean(value)
     return "NULL" if value == "" or value.lower() == "nan" else f"'{value}'"
@@ -145,7 +166,7 @@ for sheet in ["26ABR", "26MAY", "26JUN", "26JUL"]:
         venta = ventas_by_key.get((lead, documento))
 
         tipo_documento = normalize_tipo_documento(row.iloc[3])
-        cliente = clean(row.iloc[5])
+        cliente = normalize_client_name(row.iloc[5], documento)
         fecha_instalacion = row.iloc[7]
         celular_registro = lead
         celular_referencia = lead
@@ -156,7 +177,7 @@ for sheet in ["26ABR", "26MAY", "26JUN", "26JUL"]:
         id_plataforma = "1" if "IPTV" in plataforma.upper() else "NULL"
         if venta is not None:
             tipo_documento = normalize_tipo_documento(venta.get("TIPO DOCUMENTO"))
-            cliente = clean(venta.get("NOMBRES Y APELLIDOS")) or cliente
+            cliente = normalize_client_name(venta.get("NOMBRES Y APELLIDOS"), documento) or cliente
             celular_registro = digits(venta.get("TELEFONO REGISTRO")) or lead
             celular_referencia = digits(venta.get("TELEFONO REFERENCIA")) or celular_registro
             direccion = clean(venta.get("DIRECCION"))
