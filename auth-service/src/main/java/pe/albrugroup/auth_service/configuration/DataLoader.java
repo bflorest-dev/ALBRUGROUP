@@ -187,6 +187,7 @@ public class DataLoader {
         // LEADS - POSTVENTA
         savePermiso("READ_LEADS_POSTVENTA", "Puede ver la bandeja de leads disponibles en postventa", "LEAD_POSTVENTA", "READ");
         savePermiso("READ_POSTVENTA_FACTURACION", "Puede consultar periodos, facturas y pagos de postventa", "POSTVENTA_FACTURACION", "READ");
+        savePermiso("READ_POSTVENTA_GESTION_MENSUAL", "Puede ver las metricas de gestion mensual de postventa", "POSTVENTA_FACTURACION", "READ");
         savePermiso("UPDATE_POSTVENTA_FACTURACION", "Puede confirmar facturas y cerrar periodos de postventa", "POSTVENTA_FACTURACION", "UPDATE");
         savePermiso("READ_POSTVENTA_PLATAFORMA_DIGITAL", "Puede consultar plataformas digitales, paquetes, credenciales y entregas", "POSTVENTA_PLATAFORMA_DIGITAL", "READ");
         savePermiso("CREATE_POSTVENTA_PLATAFORMA_DIGITAL", "Puede crear plataformas digitales, paquetes y credenciales", "POSTVENTA_PLATAFORMA_DIGITAL", "CREATE");
