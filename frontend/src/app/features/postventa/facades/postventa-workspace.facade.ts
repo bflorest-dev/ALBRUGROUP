@@ -44,6 +44,8 @@ const ESTADOS_PERIODO_CERRADO = [
 ];
 const TODOS_LOS_CORTES = 'TODOS';
 const MESES_PERMANENCIA_WIN = 3;
+const DIA_CIERRE_EMPRESA_POSTVENTA = 15;
+const CORTES_GRACIA_PRE_CIERRE_EMPRESA = 2;
 type BeforeTipificarTask = () => Promise<boolean>;
 
 export interface CortePostventaOption {
@@ -759,6 +761,11 @@ export class PostventaWorkspaceFacade {
     const startDate = this.addMonths(year, month, -MESES_PERMANENCIA_WIN);
     const options: CortePostventaOption[] = [];
     let cursor = { year: startDate.year, month: startDate.month, number: 2 };
+    if (day <= DIA_CIERRE_EMPRESA_POSTVENTA) {
+      for (let i = 0; i < CORTES_GRACIA_PRE_CIERRE_EMPRESA; i++) {
+        cursor = this.previousCorte(cursor);
+      }
+    }
 
     while (this.corteRank(cursor) <= this.corteRank(current)) {
       options.push(this.toCorteOption(cursor.year, cursor.month, cursor.number));
@@ -784,6 +791,14 @@ export class PostventaWorkspaceFacade {
     }
     const nextMonth = this.addMonths(corte.year, corte.month, 1);
     return { year: nextMonth.year, month: nextMonth.month, number: 1 };
+  }
+
+  private previousCorte(corte: { year: number; month: number; number: number }): { year: number; month: number; number: number } {
+    if (corte.number === 2) {
+      return { ...corte, number: 1 };
+    }
+    const previousMonth = this.addMonths(corte.year, corte.month, -1);
+    return { year: previousMonth.year, month: previousMonth.month, number: 2 };
   }
 
   private addMonths(year: number, month: number, delta: number): { year: number; month: number } {

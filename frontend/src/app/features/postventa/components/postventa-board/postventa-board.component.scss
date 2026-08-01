@@ -146,6 +146,31 @@
   width: 8.5rem;
 }
 
+.provider-cell {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  width: 100%;
+
+  img {
+    border-radius: 0.35rem;
+    display: block;
+    max-height: 2rem;
+    max-width: 6rem;
+    object-fit: contain;
+  }
+}
+
+.postventa-table .col-plan ::ng-deep .plan-tag {
+  max-width: 100%;
+
+  .p-tag-value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
 // La accion principal queda fija a la derecha: siempre visible aunque la tabla scrollee.
 .postventa-table th.col-actions,
 .postventa-table td.col-actions {
@@ -169,7 +194,7 @@
 }
 
 // Prioridad de columnas: cuando el bloque se angosta, se ocultan primero las contextuales
-// (documento, telefono, proveedor, plan). Los datos siguen disponibles en el drawer de gestion.
+// (documento, proveedor, plan). Los datos siguen disponibles en el drawer de gestion.
 @container (max-width: 82rem) {
   .postventa-table .col-secondary {
     display: none;

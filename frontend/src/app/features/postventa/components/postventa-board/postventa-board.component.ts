@@ -8,6 +8,7 @@ import { SelectChangeEvent, SelectModule } from 'primeng/select';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { providerLogo as resolveProviderLogo } from '../../../../shared/utils/provider-logo';
 import { PostventaWorkspaceFacade } from '../../facades/postventa-workspace.facade';
 import { EstadoBadge, VisualLeadPostventa, display, estadoBadge, shortName } from '../../models/postventa.vm';
 
@@ -23,7 +24,7 @@ import { EstadoBadge, VisualLeadPostventa, display, estadoBadge, shortName } fro
 export class PostventaBoardComponent {
   protected readonly facade = inject(PostventaWorkspaceFacade);
   protected readonly skeletonRows = Array.from({ length: 8 });
-  protected readonly columnCount = 13;
+  protected readonly columnCount = 12;
   protected searchTerm = '';
 
   protected badge(value: unknown): EstadoBadge {
@@ -36,6 +37,10 @@ export class PostventaBoardComponent {
 
   protected shortName(value?: string | null): string {
     return shortName(value);
+  }
+
+  protected providerLogo(nombre?: string | null): string | null {
+    return resolveProviderLogo(nombre);
   }
 
   protected async gestionar(row: VisualLeadPostventa): Promise<void> {
