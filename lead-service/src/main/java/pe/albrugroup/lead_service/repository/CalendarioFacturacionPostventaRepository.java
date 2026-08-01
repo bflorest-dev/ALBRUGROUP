@@ -18,6 +18,14 @@ public interface CalendarioFacturacionPostventaRepository extends JpaRepository<
 
     Optional<CalendarioFacturacionPostventa> findByLeadId(Long idLead);
 
+    @EntityGraph(attributePaths = {
+            "lead",
+            "lead.datosPreventa",
+            "lead.plan",
+            "lead.plataformaDigitalOfrecida"
+    })
+    Optional<CalendarioFacturacionPostventa> findWithLeadByLeadId(Long idLead);
+
     @EntityGraph(attributePaths = {"lead"})
     @Query("SELECT c FROM CalendarioFacturacionPostventa c WHERE c.id = :id")
     Optional<CalendarioFacturacionPostventa> findWithLeadById(@Param("id") Long id);

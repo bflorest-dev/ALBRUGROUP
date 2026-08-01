@@ -52,6 +52,13 @@ export interface LeadPostventaBandejaResponse {
   ultimaGestion?: string | null;
 }
 
+export interface LeadPostventaBusquedaResponse {
+  existe: boolean;
+  etapaActual?: string | null;
+  lead?: LeadPostventaBandejaResponse | null;
+  mensajeUsuario?: string | null;
+}
+
 export interface PostventaBandejaQuery extends PageQuery {
   mesCorteBase?: string | null;
   numeroCorteBase?: number | null;
@@ -233,12 +240,22 @@ export class PostventaLeadService {
     });
   }
 
+  buscarLead(buscar: string): Observable<LeadPostventaBusquedaResponse> {
+    return this.http.get<LeadPostventaBusquedaResponse>(`${this.leadUrl}/postventa/buscar`, {
+      params: new HttpParams().set('buscar', buscar)
+    });
+  }
+
   tomarLead(idLead: number, request: LeadTomaPostventaRequest = {}): Observable<void> {
     return this.http.patch<void>(`${this.leadUrl}/postventa/${idLead}/asignacion`, request);
   }
 
   obtenerDetalle(idLead: number): Observable<LeadDetalleResponse> {
     return this.http.get<LeadDetalleResponse>(`${this.leadUrl}/postventa/${idLead}/detalle-asesor`);
+  }
+
+  obtenerDetalleConsulta(idLead: number): Observable<LeadDetalleResponse> {
+    return this.http.get<LeadDetalleResponse>(`${this.leadUrl}/postventa/${idLead}/detalle-consulta`);
   }
 
   listarEventos(idLead: number, query: PageQuery): Observable<LeadPage<EventoResponse>> {

@@ -24,11 +24,13 @@ import pe.albrugroup.lead_service.entity.enums.EstadoServicioPostventa;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.LeadPostventaBandejaResponse;
+import pe.albrugroup.lead_service.entity.response.LeadPostventaBusquedaResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.repository.CalendarioFacturacionPostventaRepository;
 import pe.albrugroup.lead_service.repository.EncuestaPostventaRepository;
 import pe.albrugroup.lead_service.repository.EntregaCredencialPlataformaRepository;
 import pe.albrugroup.lead_service.repository.EventoRepository;
+import pe.albrugroup.lead_service.repository.LeadRepository;
 import pe.albrugroup.lead_service.repository.PeriodoFacturacionPostventaRepository;
 
 import java.time.LocalDate;
@@ -49,6 +51,7 @@ public class PostventaBandejaService {
     private final EncuestaPostventaRepository encuestaRepository;
     private final EntregaCredencialPlataformaRepository entregaCredencialRepository;
     private final EventoRepository eventoRepository;
+    private final LeadRepository leadRepository;
     private final PeriodoFacturacionPostventaRepository periodoRepository;
     private final PaginationService paginationService;
 
@@ -96,6 +99,55 @@ public class PostventaBandejaService {
         ));
 
         return PageResponse.from(responsePage);
+    }
+
+    public LeadPostventaBusquedaResponse buscarLead(String buscar) {
+        String criterio = buscar == null ? null : buscar.trim();
+        if (criterio == null || criterio.isBlank()) {
+            return LeadPostventaBusquedaResponse.builder()
+                    .existe(false)
+                    .mensajeUsuario("Escribe el numero de lead o documento que quieres buscar.")
+                    .build();
+        }
+
+        Lead lead = leadRepository.buscarPorLeadODocumento(criterio).stream().findFirst().orElse(null);
+        if (lead == null) {
+            return LeadPostventaBusquedaResponse.builder()
+                    .existe(false)
+                    .mensajeUsuario("No encontramos ese lead o documento en el sistema.")
+                    .build();
+        }
+        if (lead.getEtapa() != Etapa.POSTVENTA && lead.getEtapa() != Etapa.COBRANZA) {
+            return LeadPostventaBusquedaResponse.builder()
+                    .existe(true)
+                    .etapaActual(lead.getEtapa())
+                    .mensajeUsuario("El lead existe, pero actualmente esta en etapa " + lead.getEtapa() + ".")
+                    .build();
+        }
+
+        CalendarioFacturacionPostventa calendario = calendarioRepository.findWithLeadByLeadId(lead.getId())
+                .orElse(null);
+        if (calendario == null) {
+            return LeadPostventaBusquedaResponse.builder()
+                    .existe(true)
+                    .etapaActual(lead.getEtapa())
+                    .mensajeUsuario("El lead esta en " + lead.getEtapa() + ", pero aun no tiene calendario de Postventa.")
+                    .build();
+        }
+
+        Long idLead = lead.getId();
+        LeadPostventaBandejaResponse row = toResponse(
+                calendario,
+                obtenerUltimasEncuestas(List.of(idLead)).get(idLead),
+                resolverEstadosPlataforma(List.of(idLead)).getOrDefault(idLead, EstadoPlataformaDigitalLead.NO_ENTREGADA),
+                obtenerPeriodosVigentes(List.of(idLead)).get(idLead),
+                obtenerUltimasGestiones(List.of(idLead)).get(idLead)
+        );
+        return LeadPostventaBusquedaResponse.builder()
+                .existe(true)
+                .etapaActual(lead.getEtapa())
+                .lead(row)
+                .build();
     }
 
     private PageRequest normalizarOrden(PageRequest request) {

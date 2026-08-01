@@ -15,7 +15,7 @@
     </div>
   }
 
-  @if (facade.selectedPeriodoCerrado()) {
+  @if (facade.selectedPeriodoCerrado() || facade.consultaOnly()) {
     <p-message severity="info" text="Este periodo esta cerrado. Solo puedes consultarlo." styleClass="readonly-note" />
   }
 
@@ -42,7 +42,7 @@
     </div>
   </div>
 
-  @if (!facade.selectedPeriodoCerrado()) {
+  @if (!facade.selectedPeriodoCerrado() && !facade.consultaOnly()) {
     <h3 class="panel-heading">Factura</h3>
     <form class="form-grid" [formGroup]="facturaForm">
       <label>

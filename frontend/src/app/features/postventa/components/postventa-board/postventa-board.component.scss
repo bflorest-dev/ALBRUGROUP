@@ -38,6 +38,34 @@
   min-width: 12rem;
 }
 
+.board-toolbar__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+
+.lead-search {
+  align-items: center;
+  border: 1px solid var(--app-border);
+  border-radius: 0.6rem;
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.25rem;
+
+  i {
+    color: var(--role-muted);
+    margin-left: 0.35rem;
+  }
+
+  input {
+    border: 0;
+    min-width: 13rem;
+    width: 16rem;
+  }
+}
+
 .postventa-table {
   // Encabezados y contenidos centrados y alineados verticalmente al medio.
   th,

@@ -4,15 +4,36 @@
       <span>Corte WIN</span>
       <strong>{{ facade.selectedCorteLabel() }}</strong>
     </div>
-    <p-select
-      class="board-toolbar__select"
-      [options]="facade.corteOptions()"
-      optionLabel="label"
-      optionValue="value"
-      [ngModel]="facade.selectedCorteValue()"
-      appendTo="body"
-      (onChange)="changeCorte($event)"
-    />
+    <div class="board-toolbar__actions">
+      <span class="lead-search">
+        <i class="pi pi-search"></i>
+        <input
+          pInputText
+          type="search"
+          placeholder="Buscar lead o documento"
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="buscarRapido()"
+        />
+        <button
+          pButton
+          type="button"
+          icon="pi pi-search"
+          label="Buscar"
+          size="small"
+          [loading]="facade.loadingBoard()"
+          (click)="buscarRapido()"
+        ></button>
+      </span>
+      <p-select
+        class="board-toolbar__select"
+        [options]="facade.corteOptions()"
+        optionLabel="label"
+        optionValue="value"
+        [ngModel]="facade.selectedCorteValue()"
+        appendTo="body"
+        (onChange)="changeCorte($event)"
+      />
+    </div>
   </div>
 
   <p-table

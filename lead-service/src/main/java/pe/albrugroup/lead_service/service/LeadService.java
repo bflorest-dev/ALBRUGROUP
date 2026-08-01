@@ -742,6 +742,20 @@ public class LeadService {
         return toDetalleResponse(lead, fechaAsignacion, obtenerTotalAsignaciones(lead.getId()));
     }
 
+    public LeadDetalleResponse obtenerDetalleLeadPostventaConsulta(Long idLead) {
+        Lead lead = leadRepository.buscarDetalleCompletoPorId(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        if (lead.getEtapa() != Etapa.POSTVENTA && lead.getEtapa() != Etapa.COBRANZA) {
+            throw new NotFoundException(Lead.class, idLead);
+        }
+
+        Instant fechaAsignacion = eventoRepository.findTopByIdLeadAndAccionOrderByCreatedAtDesc(idLead, Accion.ASIGNACION)
+                .map(Evento::getCreatedAt)
+                .orElse(null);
+
+        return toDetalleResponse(lead, fechaAsignacion, obtenerTotalAsignaciones(lead.getId()));
+    }
+
     // El asesor de PREVENTA puede ver el detalle de cualquier lead que tenga asignado, sin importar
     // la etapa: para PREVENTA es su gestión normal; para otra etapa es una atención GTR (solo lectura).
     public LeadDetalleResponse obtenerDetalleLeadAsignado(Long idLead) {

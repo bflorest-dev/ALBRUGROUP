@@ -22,6 +22,7 @@ import pe.albrugroup.lead_service.entity.request.PageRequest;
 import pe.albrugroup.lead_service.entity.response.EventoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadDetalleResponse;
 import pe.albrugroup.lead_service.entity.response.LeadPostventaBandejaResponse;
+import pe.albrugroup.lead_service.entity.response.LeadPostventaBusquedaResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.service.EventoService;
 import pe.albrugroup.lead_service.service.LeadService;
@@ -48,6 +49,14 @@ public class PostventaController {
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
 
+    @GetMapping("/buscar") @PreAuthorize("hasAuthority('READ_LEADS_POSTVENTA')")
+    public ResponseEntity<LeadPostventaBusquedaResponse> buscarLeadPostventa(
+            @RequestParam String buscar
+    ) {
+        var lead = postventaBandejaService.buscarLead(buscar);
+        return ResponseEntity.status(HttpStatus.OK).body(lead);
+    }
+
     // Gestion compartida de POSTVENTA: al gestionar, el lead queda asignado a este asesor (lock
     // transitorio). Si otro asesor ya lo tiene en gestion, el 409 pide confirmar el relevo; al
     // tipificar el lead se libera de nuevo al pool (ver tipificarLeadPostventa). Mismo patron que VENTA.
@@ -72,6 +81,12 @@ public class PostventaController {
     @GetMapping("/{idLead}/detalle-asesor") @PreAuthorize("hasAuthority('READ_LEADS_POSTVENTA')")
     public ResponseEntity<LeadDetalleResponse> obtenerDetalleLeadPostventa(@PathVariable Long idLead) {
         var lead = leadService.obtenerDetalleLeadAsignado(idLead, Etapa.POSTVENTA);
+        return ResponseEntity.status(HttpStatus.OK).body(lead);
+    }
+
+    @GetMapping("/{idLead}/detalle-consulta") @PreAuthorize("hasAuthority('READ_LEADS_POSTVENTA')")
+    public ResponseEntity<LeadDetalleResponse> obtenerDetalleLeadPostventaConsulta(@PathVariable Long idLead) {
+        var lead = leadService.obtenerDetalleLeadPostventaConsulta(idLead);
         return ResponseEntity.status(HttpStatus.OK).body(lead);
     }
 

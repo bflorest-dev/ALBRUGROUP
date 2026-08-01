@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
 import { PaginatorModule } from 'primeng/paginator';
 import { SelectChangeEvent, SelectModule } from 'primeng/select';
 import { SkeletonModule } from 'primeng/skeleton';
@@ -14,7 +15,7 @@ import { EstadoBadge, VisualLeadPostventa, display, estadoBadge, shortName } fro
  *  separadores por fecha (Hoy / mes) al estilo Backoffice. Presentacional: usa el facade compartido. */
 @Component({
   selector: 'app-postventa-board',
-  imports: [DatePipe, FormsModule, ButtonModule, PaginatorModule, SelectModule, SkeletonModule, TableModule, TagModule],
+  imports: [DatePipe, FormsModule, ButtonModule, InputTextModule, PaginatorModule, SelectModule, SkeletonModule, TableModule, TagModule],
   templateUrl: './postventa-board.component.html',
   styleUrl: './postventa-board.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -23,6 +24,7 @@ export class PostventaBoardComponent {
   protected readonly facade = inject(PostventaWorkspaceFacade);
   protected readonly skeletonRows = Array.from({ length: 8 });
   protected readonly columnCount = 13;
+  protected searchTerm = '';
 
   protected badge(value: unknown): EstadoBadge {
     return estadoBadge(value);
@@ -46,5 +48,9 @@ export class PostventaBoardComponent {
 
   protected async changeCorte(event: SelectChangeEvent): Promise<void> {
     await this.facade.changeCorte(String(event.value ?? 'TODOS'));
+  }
+
+  protected async buscarRapido(): Promise<void> {
+    await this.facade.buscarRapido(this.searchTerm);
   }
 }

@@ -100,6 +100,7 @@ export class PostventaWorkspaceFacade {
   private readonly _selectedLead = signal<VisualLeadPostventa | null>(null);
   private readonly _loadingContext = signal(false);
   private readonly _saving = signal(false);
+  private readonly _consultaOnly = signal(false);
   // Marca si el asesor guardo algun cambio operativo en esta gestion: si es asi, no puede cerrar el
   // drawer sin tipificar (la tipificacion cierra la gestion y libera el lead).
   private readonly _gestionModificada = signal(false);
@@ -110,6 +111,7 @@ export class PostventaWorkspaceFacade {
   readonly selectedLead = this._selectedLead.asReadonly();
   readonly loadingContext = this._loadingContext.asReadonly();
   readonly saving = this._saving.asReadonly();
+  readonly consultaOnly = this._consultaOnly.asReadonly();
   readonly gestionModificada = this._gestionModificada.asReadonly();
   readonly medioContacto = this._medioContacto.asReadonly();
 
@@ -282,6 +284,33 @@ export class PostventaWorkspaceFacade {
     await this.loadBoard(0);
   }
 
+  async buscarRapido(term: string): Promise<void> {
+    const buscar = this.normalizeSearch(term);
+    if (!buscar) {
+      this.notify('warn', 'Escribe el numero de lead o documento que quieres buscar.');
+      return;
+    }
+    this._loadingBoard.set(true);
+    try {
+      const response = await firstValueFrom(this.service.buscarLead(buscar));
+      if (!response.lead) {
+        this.notify('warn', response.mensajeUsuario || 'No encontramos ese lead en Postventa.');
+        return;
+      }
+      const row = this.withFechaGroup(response.lead);
+      if (response.etapaActual === 'COBRANZA') {
+        await this.openDrawer(row, true);
+        this.notify('info', 'Lead en COBRANZA: se abre en modo consulta.');
+        return;
+      }
+      await this.gestionar(row);
+    } catch (error) {
+      this.notify('error', this.errorMessage(error, 'No se pudo buscar el lead.'));
+    } finally {
+      this._loadingBoard.set(false);
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Abrir gestion (tomar con relevo) y cerrar
   // ---------------------------------------------------------------------------
@@ -292,7 +321,7 @@ export class PostventaWorkspaceFacade {
     this._saving.set(true);
     try {
       await firstValueFrom(this.service.tomarLead(row.idLead, { confirmarReasignacion }));
-      await this.openDrawer(row);
+      await this.openDrawer(row, false);
     } catch (error) {
       if (!this.pedirConfirmacionRelevo(error, row)) {
         this.notify('error', this.errorMessage(error, 'No se pudo abrir la gestion del lead.'));
@@ -330,11 +359,12 @@ export class PostventaWorkspaceFacade {
     return true;
   }
 
-  private async openDrawer(row: VisualLeadPostventa): Promise<void> {
+  private async openDrawer(row: VisualLeadPostventa, consultaOnly: boolean): Promise<void> {
     this._selectedLead.set(row);
     this._drawerOpen.set(true);
     this.resetContext();
-    await this.loadContext(row);
+    this._consultaOnly.set(consultaOnly);
+    await this.loadContext(row, false, consultaOnly);
   }
 
   // Cierre solicitado por el usuario (mask, icono X o boton): si hubo cambios sin tipificar, se
@@ -358,19 +388,19 @@ export class PostventaWorkspaceFacade {
     if (!row) {
       return;
     }
-    await this.loadContext(row, true);
+    await this.loadContext(row, true, this._consultaOnly());
     await this.loadBoard(this._pageNumber());
   }
 
-  private async loadContext(row: VisualLeadPostventa, silent = false): Promise<void> {
+  private async loadContext(row: VisualLeadPostventa, silent = false, consultaOnly = false): Promise<void> {
     if (!silent) {
       this._loadingContext.set(true);
     }
     try {
       const [detail, eventos, catalogo, plataformas, marcas, entregas, periodos, encuestas, resumen, pagos] = await Promise.all([
-        firstValueFrom(this.service.obtenerDetalle(row.idLead)),
-        firstValueFrom(this.service.listarEventos(row.idLead, this.recentPage())),
-        firstValueFrom(this.service.getCatalogoTipificaciones(row.idLead)),
+        firstValueFrom(consultaOnly ? this.service.obtenerDetalleConsulta(row.idLead) : this.service.obtenerDetalle(row.idLead)),
+        consultaOnly ? Promise.resolve({ content: [] as EventoResponse[] }) : firstValueFrom(this.service.listarEventos(row.idLead, this.recentPage())),
+        consultaOnly ? Promise.resolve(null) : firstValueFrom(this.service.getCatalogoTipificaciones(row.idLead)),
         firstValueFrom(this.service.listarPlataformasDigitales()),
         firstValueFrom(this.service.listarMarcasDispositivo()),
         firstValueFrom(this.service.listarEntregas(row.idLead)),
@@ -441,6 +471,10 @@ export class PostventaWorkspaceFacade {
   // Contacto externo (abre la app del sistema y registra el evento de contacto)
   // ---------------------------------------------------------------------------
   llamar(): void {
+    if (this._consultaOnly()) {
+      this.notify('warn', 'Este lead esta abierto en modo consulta.');
+      return;
+    }
     const detail = this._detail();
     const url = detail ? buildTelUrl(detail.prefijo, detail.lead) : null;
     if (!url) {
@@ -453,6 +487,10 @@ export class PostventaWorkspaceFacade {
   }
 
   chat(): void {
+    if (this._consultaOnly()) {
+      this.notify('warn', 'Este lead esta abierto en modo consulta.');
+      return;
+    }
     const detail = this._detail();
     const url = detail ? buildWhatsAppUrl(detail.prefijo, detail.lead) : null;
     if (!url) {
@@ -479,6 +517,10 @@ export class PostventaWorkspaceFacade {
   // Encuesta
   // ---------------------------------------------------------------------------
   async registrarEncuesta(request: EncuestaPostventaRequest): Promise<boolean> {
+    if (this._consultaOnly()) {
+      this.notify('warn', 'Este lead esta abierto en modo consulta.');
+      return false;
+    }
     const lead = this._selectedLead();
     if (!lead) {
       return false;
@@ -504,6 +546,10 @@ export class PostventaWorkspaceFacade {
   // Facturacion
   // ---------------------------------------------------------------------------
   async confirmarFactura(request: PeriodoFacturacionFacturaRequest): Promise<boolean> {
+    if (this._consultaOnly()) {
+      this.notify('warn', 'Este lead esta abierto en modo consulta.');
+      return false;
+    }
     const periodo = this.selectedPeriodo();
     if (!periodo) {
       this.notify('warn', 'No hay periodo de facturacion seleccionado.');
@@ -517,6 +563,10 @@ export class PostventaWorkspaceFacade {
   }
 
   async registrarPago(request: Omit<PagoPostventaRequest, 'idPeriodoFacturacion'>): Promise<boolean> {
+    if (this._consultaOnly()) {
+      this.notify('warn', 'Este lead esta abierto en modo consulta.');
+      return false;
+    }
     const lead = this._selectedLead();
     const periodo = this.selectedPeriodo();
     if (!lead || !periodo) {
@@ -531,6 +581,10 @@ export class PostventaWorkspaceFacade {
   }
 
   async cerrarPeriodo(request: CerrarPeriodoFacturacionRequest): Promise<boolean> {
+    if (this._consultaOnly()) {
+      this.notify('warn', 'Este lead esta abierto en modo consulta.');
+      return false;
+    }
     const periodo = this.selectedPeriodo();
     if (!periodo) {
       return false;
@@ -552,6 +606,10 @@ export class PostventaWorkspaceFacade {
   async tipificar(request: LeadTipificacionPostventaRequest): Promise<void> {
     const lead = this._selectedLead();
     if (!lead || this._saving()) {
+      return;
+    }
+    if (this._consultaOnly()) {
+      this.notify('warn', 'Este lead esta abierto en modo consulta.');
       return;
     }
     if (!(await this.ejecutarCambiosPendientesAntesDeTipificar())) {
@@ -619,6 +677,7 @@ export class PostventaWorkspaceFacade {
     this._selectedPeriodoId.set(null);
     this._gestionModificada.set(false);
     this._medioContacto.set(null);
+    this._consultaOnly.set(false);
   }
 
   private recentPage() {
@@ -676,6 +735,10 @@ export class PostventaWorkspaceFacade {
     const month = `${now.getMonth() + 1}`.padStart(2, '0');
     const day = `${now.getDate()}`.padStart(2, '0');
     return `${now.getFullYear()}-${month}-${day}`;
+  }
+
+  private normalizeSearch(value: string): string {
+    return (value ?? '').replace(/\D/g, '').trim();
   }
 
   private selectedCorteQuery(): { mesCorteBase?: string; numeroCorteBase?: number } {

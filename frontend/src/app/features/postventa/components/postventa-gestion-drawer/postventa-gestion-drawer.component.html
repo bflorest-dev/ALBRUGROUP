@@ -9,7 +9,7 @@
     @if (facade.selectedLead(); as lead) {
       <div class="drawer-header">
         <div class="drawer-header__id">
-          <span class="drawer-header__eyebrow">Gestión de Postventa</span>
+          <span class="drawer-header__eyebrow">{{ facade.consultaOnly() ? 'Consulta de Cobranza' : 'Gestion de Postventa' }}</span>
           <strong class="drawer-header__name">{{ display(facade.detail()?.nombreTitular ?? lead.nombreCliente) }}</strong>
           <span class="drawer-header__doc">
             <span class="drawer-header__doc-type">{{ display(lead.tipoDocumento) }}</span>
@@ -26,7 +26,7 @@
             size="small"
             [outlined]="facade.medioContacto() !== 'LLAMADA'"
             [severity]="facade.medioContacto() === 'LLAMADA' ? undefined : 'secondary'"
-            [disabled]="!facade.detail()"
+            [disabled]="!facade.detail() || facade.consultaOnly()"
             (click)="facade.llamar()"
           ></button>
           <button
@@ -37,7 +37,7 @@
             size="small"
             [outlined]="facade.medioContacto() !== 'CHAT'"
             [severity]="facade.medioContacto() === 'CHAT' ? undefined : 'secondary'"
-            [disabled]="!facade.detail()"
+            [disabled]="!facade.detail() || facade.consultaOnly()"
             (click)="facade.chat()"
           ></button>
         </div>
@@ -63,15 +63,19 @@
         <p-tabs [value]="activeTab()" (valueChange)="activeTab.set($any($event))">
           <p-tablist>
             <p-tab value="resumen">Resumen</p-tab>
-            <p-tab value="plataforma">Plataforma digital</p-tab>
-            <p-tab value="encuesta">Encuesta</p-tab>
-            <p-tab value="factura">Facturación</p-tab>
+            @if (!facade.consultaOnly()) {
+              <p-tab value="plataforma">Plataforma digital</p-tab>
+              <p-tab value="encuesta">Encuesta</p-tab>
+            }
+            <p-tab value="factura">Facturacion</p-tab>
             <p-tab value="historial">Historial</p-tab>
           </p-tablist>
           <p-tabpanels>
             <p-tabpanel value="resumen"><app-postventa-resumen-panel /></p-tabpanel>
-            <p-tabpanel value="plataforma"><app-postventa-plataforma-panel /></p-tabpanel>
-            <p-tabpanel value="encuesta"><app-postventa-encuesta-panel /></p-tabpanel>
+            @if (!facade.consultaOnly()) {
+              <p-tabpanel value="plataforma"><app-postventa-plataforma-panel /></p-tabpanel>
+              <p-tabpanel value="encuesta"><app-postventa-encuesta-panel /></p-tabpanel>
+            }
             <p-tabpanel value="factura"><app-postventa-facturacion-panel /></p-tabpanel>
             <p-tabpanel value="historial"><app-postventa-historial-panel /></p-tabpanel>
           </p-tabpanels>
@@ -79,13 +83,20 @@
       </div>
 
       <footer class="drawer-footer">
-        @if (facade.gestionModificada()) {
+        @if (facade.consultaOnly()) {
           <p class="drawer-footer__hint">
             <i class="pi pi-info-circle"></i>
-            Registraste cambios en esta gestión: tipifícala para cerrarla.
+            Este lead esta en COBRANZA: puedes revisar sus periodos sin modificar la gestion.
+          </p>
+        } @else if (facade.gestionModificada()) {
+          <p class="drawer-footer__hint">
+            <i class="pi pi-info-circle"></i>
+            Registraste cambios en esta gestion: tipificala para cerrarla.
           </p>
         }
-        <app-postventa-tipificacion-bar />
+        @if (!facade.consultaOnly()) {
+          <app-postventa-tipificacion-bar />
+        }
       </footer>
     }
   </div>

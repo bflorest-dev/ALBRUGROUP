@@ -48,6 +48,17 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     @Query("""
             SELECT l
             FROM Lead l
+            LEFT JOIN FETCH l.datosPreventa dp
+            WHERE l.lead = :buscar
+               OR l.numeroDocumentoTitularServicioSnapshot = :buscar
+               OR dp.numeroDocumentoTitularServicio = :buscar
+            ORDER BY l.lastEntryAt DESC, l.id DESC
+            """)
+    List<Lead> buscarPorLeadODocumento(@Param("buscar") String buscar);
+
+    @Query("""
+            SELECT l
+            FROM Lead l
             LEFT JOIN FETCH l.campana c
             LEFT JOIN FETCH c.proveedor
             WHERE l.lead = :lead
