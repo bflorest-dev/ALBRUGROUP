@@ -1,0 +1,336 @@
+:host {
+  display: block;
+
+  /* Colores semánticos (separados del acento del rol). Claro por defecto. */
+  --gm-pagados: #0f766e;
+  --gm-impagos: #b45309;
+  --gm-bajas: #b91c1c;
+  --gm-track: var(--app-border-soft, rgba(17, 38, 60, 0.1));
+}
+
+:host-context([data-theme='dark']) {
+  --gm-pagados: #2dd4bf;
+  --gm-impagos: #fbbf24;
+  --gm-bajas: #f87171;
+}
+
+/* ---- Toolbar ---- */
+.gm-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin: 0.5rem 0 1.25rem;
+}
+
+.gm-stepper {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--app-border);
+  border-radius: 12px;
+  background: var(--app-surface);
+  overflow: hidden;
+}
+
+.gm-nav {
+  border: 0;
+  background: transparent;
+  color: var(--role-secondary, var(--app-text));
+  padding: 0 0.85rem;
+  cursor: pointer;
+  font-size: 1.15rem;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--role-accent-soft, rgba(17, 38, 60, 0.06));
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}
+
+.gm-month {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.05rem;
+  padding: 0.4rem 1.25rem;
+  min-width: 11rem;
+  text-align: center;
+  border-inline: 1px solid var(--app-border-soft);
+
+  &__kicker {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--app-text-muted);
+  }
+
+  &__name {
+    font-size: 1.02rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: var(--app-text);
+  }
+}
+
+.gm-prov {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--role-secondary, var(--app-text));
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+
+  &__dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--role-secondary, var(--app-text));
+  }
+}
+
+.gm-toolbar > .p-button {
+  margin-left: auto;
+}
+
+.gm-message {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+/* ---- KPIs ---- */
+.gm-kpis {
+  display: grid;
+  gap: 0.85rem;
+  margin-bottom: 1.35rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.gm-kpi {
+  position: relative;
+  overflow: hidden;
+  background: var(--app-surface-soft);
+  border: 1px solid var(--app-border-soft);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  display: grid;
+  gap: 0.3rem;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: var(--gm-rail, var(--role-secondary, var(--app-text)));
+  }
+
+  &__label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--app-text-muted);
+  }
+
+  &__value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--app-text);
+  }
+
+  &__sub {
+    font-size: 0.76rem;
+    color: var(--app-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &--pagados {
+    --gm-rail: var(--gm-pagados);
+  }
+  &--impagos {
+    --gm-rail: var(--gm-impagos);
+  }
+  &--bajas {
+    --gm-rail: var(--gm-bajas);
+  }
+  &--pagados .gm-kpi__value {
+    color: var(--gm-pagados);
+  }
+  &--impagos .gm-kpi__value {
+    color: var(--gm-impagos);
+  }
+  &--bajas .gm-kpi__value {
+    color: var(--gm-bajas);
+  }
+}
+
+/* ---- Table ---- */
+.gm-table-wrap {
+  overflow-x: auto;
+}
+
+.gm-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+
+  thead th {
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--app-text-muted);
+    text-align: right;
+    padding: 0.75rem 0.9rem;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--app-border);
+  }
+
+  tbody td {
+    padding: 0.65rem 0.9rem;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    border-bottom: 1px solid var(--app-border-soft);
+    white-space: nowrap;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  tbody tr:hover td {
+    background: var(--app-surface-soft);
+  }
+
+  tfoot td {
+    padding: 0.8rem 0.9rem;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    border-top: 2px solid var(--app-border);
+    background: var(--app-surface-soft);
+    font-weight: 700;
+  }
+}
+
+.gm-table thead th.gm-col-grupo,
+.gm-table tbody td.gm-col-grupo,
+.gm-table tfoot td.gm-col-grupo {
+  text-align: left;
+}
+
+th.gm-col-pag {
+  color: var(--gm-pagados);
+}
+th.gm-col-imp {
+  color: var(--gm-impagos);
+}
+th.gm-col-baj {
+  color: var(--gm-bajas);
+}
+
+.gm-grupo-name {
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.gm-num {
+  font-weight: 600;
+  color: var(--app-text);
+
+  &--total {
+    font-size: 1rem;
+  }
+  &--pag {
+    color: var(--gm-pagados);
+  }
+  &--imp {
+    color: var(--gm-impagos);
+  }
+  &--baj {
+    color: var(--gm-bajas);
+  }
+}
+
+.gm-pct {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--app-text-muted);
+  margin-top: 0.05rem;
+}
+
+.gm-split {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--app-text-muted);
+  margin-top: 0.1rem;
+}
+
+tfoot .gm-col-grupo {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.74rem;
+  color: var(--app-text-muted);
+}
+
+tfoot .gm-num--total {
+  font-size: 1.1rem;
+  color: var(--app-text);
+}
+
+/* distribution mini-bar */
+.gm-col-dist {
+  width: 132px;
+}
+
+.gm-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--gm-track);
+  min-width: 96px;
+
+  &__seg {
+    display: block;
+    height: 100%;
+
+    &--pag {
+      background: var(--gm-pagados);
+    }
+    &--imp {
+      background: var(--gm-impagos);
+    }
+    &--baj {
+      background: var(--gm-bajas);
+    }
+  }
+}
+
+.gm-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--app-text-muted);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 720px) {
+  .gm-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .gm-toolbar > .p-button {
+    margin-left: 0;
+  }
+}

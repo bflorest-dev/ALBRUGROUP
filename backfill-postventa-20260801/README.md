@@ -25,15 +25,16 @@ Ejecutar en este orden:
 4. `04_regularizar_60_venta_postventa.sql`
 5. `05_backfill_periodos_pagos_encuestas_postventa.sql`
 6. `08_reparar_calendarios_periodos_postventa.sql`
-7. `06_validar_backfill_postventa.sql`
-8. `07_validar_coherencia_backfill_postventa.sql`
+7. `09_crear_periodos_siguientes_postventa.sql`
+8. `06_validar_backfill_postventa.sql`
+9. `07_validar_coherencia_backfill_postventa.sql`
 
-Los scripts 1 al 5 modifican datos. El script 8 corrige calendarios, periodos, pagos y encuestas que hayan quedado incompletos para que los conteos por corte coincidan con el Excel. Los scripts 6 y 7 son de validacion.
+Los scripts 1 al 5 modifican datos. El script 8 corrige calendarios, periodos, pagos, encuestas, nombres y duplicados de calendario con documento incorrecto. El script 9 abre el siguiente periodo cuando un periodo pagado aun no completa permanencia, replicando el flujo organico. Los scripts 6 y 7 son de validacion.
 
-Si ya se ejecutaron los scripts 1 al 7 antes de esta correccion, ejecutar solo:
+Si ya se ejecutaron los scripts 1 al 8 antes de esta correccion de periodos siguientes, ejecutar solo:
 
 ```powershell
-.\backfill-postventa-20260801\run-local.ps1 -Only 08
+.\backfill-postventa-20260801\run-local.ps1 -Only 09
 ```
 
 Luego ejecutar las validaciones:
@@ -89,5 +90,6 @@ docker exec albrugroup-postgres-lead-1 psql -U postgres -d lead_db -v ON_ERROR_S
 - El script 8 valida que todos los leads del Excel queden cubiertos por corte: Abril 2 = 65, Mayo 1 = 163, Mayo 2 = 68, Junio 1 = 223, Junio 2 = 65 y Julio 1 = 126.
 - Los conteos vivos del sistema pueden ser mayores al Excel si existen leads nativos que no pasaron por la gestion manual del archivo.
 - Solo Abril 2 y Mayo 1 pueden pasar a COBRANZA al cerrar su tercer periodo. Los demas cortes permanecen en POSTVENTA aunque tengan pagos registrados, porque aun tienen periodos pendientes dentro de permanencia.
+- Si un periodo se cierra por pago y aun no completa permanencia, debe existir el siguiente periodo ABIERTO. Esto permite que el asesor siga gestionando el siguiente recibo sin crear periodos manuales.
 - En bandeja POSTVENTA, Abril 2 y Mayo 1 pueden mostrar menos leads que el Excel si una parte ya paso a COBRANZA. Para los demas cortes, el sistema deberia mostrar una cantidad igual o mayor al Excel, salvo filtros propios de la vista.
 - Si un script falla, detener la ejecucion y revisar antes de continuar.

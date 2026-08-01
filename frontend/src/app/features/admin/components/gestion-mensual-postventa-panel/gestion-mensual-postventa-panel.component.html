@@ -1,0 +1,166 @@
+<app-section-header
+  title="Gestión del mes"
+  description="Cada fila es un grupo de leads por corte, con el recibo que le toca gestionar ese mes. La tabla del mes cambia el día 15."
+/>
+
+<div class="gm-toolbar">
+  <div class="gm-stepper">
+    <button
+      type="button"
+      class="gm-nav"
+      (click)="facade.mesAnterior()"
+      [disabled]="facade.isLoading()"
+      aria-label="Mes anterior"
+    >‹</button>
+    <div class="gm-month">
+      <span class="gm-month__kicker">Gestión</span>
+      <span class="gm-month__name">{{ facade.mesLabel() || '—' }}</span>
+    </div>
+    <button
+      type="button"
+      class="gm-nav"
+      (click)="facade.mesSiguiente()"
+      [disabled]="facade.isLoading() || !facade.canGoNext()"
+      aria-label="Mes siguiente"
+    >›</button>
+  </div>
+
+  <span class="gm-prov"><span class="gm-prov__dot"></span>Proveedor {{ facade.proveedor() }}</span>
+
+  <button
+    pButton
+    type="button"
+    icon="pi pi-refresh"
+    severity="secondary"
+    [rounded]="true"
+    [outlined]="true"
+    [loading]="facade.isLoading()"
+    (click)="facade.recargar()"
+    pTooltip="Actualizar"
+    tooltipPosition="top"
+    aria-label="Actualizar"
+  ></button>
+</div>
+
+@if (facade.errorMessage()) {
+  <p-message severity="error" [text]="facade.errorMessage()!" styleClass="gm-message" />
+}
+
+@if (facade.totales(); as tot) {
+  <div class="gm-kpis">
+    <div class="gm-kpi">
+      <span class="gm-kpi__label">Total gestionado</span>
+      <span class="gm-kpi__value">{{ tot.total | number }}</span>
+      <span class="gm-kpi__sub">{{ facade.filas().length }} grupos de corte</span>
+    </div>
+    <div class="gm-kpi gm-kpi--pagados">
+      <span class="gm-kpi__label">Pagados</span>
+      <span class="gm-kpi__value">{{ tot.pctPagados | number: '1.1-1' }}%</span>
+      <span class="gm-kpi__sub">{{ tot.pagados | number }} recibos con pago</span>
+    </div>
+    <div class="gm-kpi gm-kpi--impagos">
+      <span class="gm-kpi__label">Impagos</span>
+      <span class="gm-kpi__value">{{ tot.pctImpagos | number: '1.1-1' }}%</span>
+      <span class="gm-kpi__sub">{{ tot.impagos | number }} recibos abiertos</span>
+    </div>
+    <div class="gm-kpi gm-kpi--bajas">
+      <span class="gm-kpi__label">Bajas</span>
+      <span class="gm-kpi__value">{{ tot.pctBajas | number: '1.1-1' }}%</span>
+      <span class="gm-kpi__sub">{{ tot.bajas | number }} recibos de baja</span>
+    </div>
+  </div>
+
+  <div class="gm-table-wrap">
+    <table class="gm-table">
+      <thead>
+        <tr>
+          <th class="gm-col-grupo">Grupo (corte · recibo)</th>
+          <th>Total</th>
+          <th class="gm-col-pag">Pagados</th>
+          <th class="gm-col-imp">Impagos</th>
+          <th class="gm-col-baj">Bajas</th>
+          <th class="gm-col-dist">Distribución</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (fila of facade.filas(); track fila.etiqueta) {
+          <tr>
+            <td class="gm-col-grupo">
+              <span class="gm-grupo-name">{{ fila.etiqueta }}</span>
+            </td>
+            <td><span class="gm-num gm-num--total">{{ fila.total | number }}</span></td>
+            <td>
+              <span class="gm-num gm-num--pag">{{ fila.pagados | number }}</span>
+              <span class="gm-pct">{{ fila.pctPagados | number: '1.1-1' }}%</span>
+              <span class="gm-split">cliente {{ fila.pagadoCliente | number }} · empresa {{ fila.pagadoEmpresa | number }}</span>
+            </td>
+            <td>
+              <span class="gm-num gm-num--imp">{{ fila.impagos | number }}</span>
+              <span class="gm-pct">{{ fila.pctImpagos | number: '1.1-1' }}%</span>
+            </td>
+            <td>
+              <span class="gm-num gm-num--baj">{{ fila.bajas | number }}</span>
+              <span class="gm-pct">{{ fila.pctBajas | number: '1.1-1' }}%</span>
+            </td>
+            <td class="gm-col-dist">
+              <div
+                class="gm-bar"
+                role="img"
+                [attr.aria-label]="'Pagados ' + fila.pagados + ', impagos ' + fila.impagos + ', bajas ' + fila.bajas"
+              >
+                @if (fila.pagados > 0) {
+                  <span class="gm-bar__seg gm-bar__seg--pag" [style.width.%]="fila.pagados / fila.total * 100"></span>
+                }
+                @if (fila.impagos > 0) {
+                  <span class="gm-bar__seg gm-bar__seg--imp" [style.width.%]="fila.impagos / fila.total * 100"></span>
+                }
+                @if (fila.bajas > 0) {
+                  <span class="gm-bar__seg gm-bar__seg--baj" [style.width.%]="fila.bajas / fila.total * 100"></span>
+                }
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+      <tfoot>
+        <tr>
+          <td class="gm-col-grupo">Total {{ facade.mesLabel() }}</td>
+          <td><span class="gm-num gm-num--total">{{ tot.total | number }}</span></td>
+          <td>
+            <span class="gm-num gm-num--pag">{{ tot.pagados | number }}</span>
+            <span class="gm-pct">{{ tot.pctPagados | number: '1.1-1' }}%</span>
+          </td>
+          <td>
+            <span class="gm-num gm-num--imp">{{ tot.impagos | number }}</span>
+            <span class="gm-pct">{{ tot.pctImpagos | number: '1.1-1' }}%</span>
+          </td>
+          <td>
+            <span class="gm-num gm-num--baj">{{ tot.bajas | number }}</span>
+            <span class="gm-pct">{{ tot.pctBajas | number: '1.1-1' }}%</span>
+          </td>
+          <td class="gm-col-dist">
+            <div class="gm-bar">
+              @if (tot.pagados > 0) {
+                <span class="gm-bar__seg gm-bar__seg--pag" [style.width.%]="tot.pagados / tot.total * 100"></span>
+              }
+              @if (tot.impagos > 0) {
+                <span class="gm-bar__seg gm-bar__seg--imp" [style.width.%]="tot.impagos / tot.total * 100"></span>
+              }
+              @if (tot.bajas > 0) {
+                <span class="gm-bar__seg gm-bar__seg--baj" [style.width.%]="tot.bajas / tot.total * 100"></span>
+              }
+            </div>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+} @else {
+  <div class="gm-empty">
+    @if (facade.isLoading()) {
+      Cargando gestión del mes...
+    } @else {
+      No hay grupos de corte con recibos para gestionar en este mes.
+    }
+  </div>
+}

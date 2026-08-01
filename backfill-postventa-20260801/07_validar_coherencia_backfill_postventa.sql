@@ -44,7 +44,17 @@ resumen AS (
             FILTER (WHERE estado_periodo = 'ABIERTO') AS numeros_periodos_abiertos,
         bool_or(estado_periodo IN ('CERRADO_BAJA', 'CERRADO_BAJA_ADEUDO')) AS tiene_baja,
         bool_or(numero_periodo = 3 AND estado_periodo IN ('CERRADO_PAGO_CLIENTE', 'CERRADO_PAGO_EMPRESA')) AS tercer_periodo_pagado,
-        bool_or(estado_periodo = 'ABIERTO' AND id_pago IS NOT NULL) AS pago_en_periodo_abierto
+        bool_or(estado_periodo = 'ABIERTO' AND id_pago IS NOT NULL) AS pago_en_periodo_abierto,
+        bool_or(
+            estado_periodo IN ('CERRADO_PAGO_CLIENTE', 'CERRADO_PAGO_EMPRESA')
+            AND numero_periodo < 3
+            AND NOT EXISTS (
+                SELECT 1
+                FROM periodo_facturacion_postventa siguiente
+                WHERE siguiente.id_lead = periodos.id_lead
+                  AND siguiente.numero_periodo = periodos.numero_periodo + 1
+            )
+        ) AS pago_sin_siguiente_periodo
     FROM periodos
     GROUP BY id_lead, lead, documento, etapa, estado_cliente_postventa, mes_corte_base, numero_corte_base
 ),
@@ -97,6 +107,21 @@ hallazgos AS (
           (mes_corte_base = date '2026-04-01' AND numero_corte_base = 2)
           OR (mes_corte_base = date '2026-05-01' AND numero_corte_base = 1)
       )
+    UNION ALL
+    SELECT
+        'PAGO_CERRADO_DEBE_ABRIR_SIGUIENTE_PERIODO',
+        id_lead,
+        lead,
+        documento,
+        etapa,
+        estado_cliente_postventa,
+        mes_corte_base,
+        numero_corte_base,
+        'periodo pagado menor a permanencia sin periodo siguiente'
+    FROM resumen
+    WHERE pago_sin_siguiente_periodo
+      AND estado_cliente_postventa <> 'BAJA'
+      AND etapa <> 'COBRANZA'
     UNION ALL
     SELECT
         'PAGO_REGISTRADO_EN_PERIODO_ABIERTO',

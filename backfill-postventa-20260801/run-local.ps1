@@ -2,9 +2,9 @@ param(
     [string]$Container = "albrugroup-postgres-lead-1",
     [string]$User = "postgres",
     [string]$Database = "lead_db",
-    [ValidateSet("01", "02", "03", "04", "05", "06", "07", "08")]
+    [ValidateSet("01", "02", "03", "04", "05", "06", "07", "08", "09")]
     [string]$Only,
-    [ValidateSet("01", "02", "03", "04", "05", "06", "07", "08")]
+    [ValidateSet("01", "02", "03", "04", "05", "06", "07", "08", "09")]
     [string]$From
 )
 
@@ -17,6 +17,7 @@ $scripts = @(
     "04_regularizar_60_venta_postventa.sql",
     "05_backfill_periodos_pagos_encuestas_postventa.sql",
     "08_reparar_calendarios_periodos_postventa.sql",
+    "09_crear_periodos_siguientes_postventa.sql",
     "06_validar_backfill_postventa.sql",
     "07_validar_coherencia_backfill_postventa.sql"
 )
