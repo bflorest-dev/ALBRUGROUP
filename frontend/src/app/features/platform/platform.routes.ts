@@ -127,6 +127,14 @@ export const PLATFORM_ROUTES: Routes = [
     }
   },
   {
+    path: 'admin/asistencia',
+    component: RrhhAsistenciaPageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR']
+    }
+  },
+  {
     path: 'admin/ranking',
     component: AdminRankingPageComponent,
     canActivate: [roleGuard],

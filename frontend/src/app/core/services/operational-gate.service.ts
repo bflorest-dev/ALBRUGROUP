@@ -1,5 +1,15 @@
 import { Injectable, Signal, computed, inject, signal } from '@angular/core';
 import { AttendanceFacade } from '../facades/attendance.facade';
+import { SessionService } from './session.service';
+
+/**
+ * Roles que no participan del flujo de asistencia: su badge es ONLINE fijo en el layout
+ * (isAlwaysOnlineRole) y el AttendanceFacade nunca los inicializa. Al no tener detalle de
+ * asistencia, isOperational() es siempre false para ellos; por eso la puerta operativa debe
+ * considerarlos operativos por definicion (si no, verian la vista bloqueada por una marcacion
+ * que nunca hacen).
+ */
+const ALWAYS_OPERATIONAL_ROLES = new Set(['ADMINISTRADOR', 'COMMUNITY']);
 
 export interface OperationalGate {
   canActivateOperationalData: Signal<boolean>;
@@ -15,11 +25,21 @@ export interface OperationalGate {
 @Injectable({ providedIn: 'root' })
 export class OperationalGateService {
   private readonly attendanceFacade = inject(AttendanceFacade);
+  private readonly sessionService = inject(SessionService);
   private readonly activatedFlows = signal<Record<string, boolean>>({});
 
+  /** Rol siempre operativo (no marca asistencia): ver ALWAYS_OPERATIONAL_ROLES. */
+  private readonly isAlwaysOperationalRole = computed(() =>
+    ALWAYS_OPERATIONAL_ROLES.has(this.sessionService.session()?.primaryRole ?? '')
+  );
+
   readonly currentStatus = computed(() => this.attendanceFacade.currentStatus());
-  readonly canActivateOperationalData = computed(() => this.attendanceFacade.isOperational());
-  readonly canMutateOperationalData = computed(() => this.attendanceFacade.isOperational());
+  readonly canActivateOperationalData = computed(
+    () => this.isAlwaysOperationalRole() || this.attendanceFacade.isOperational()
+  );
+  readonly canMutateOperationalData = computed(
+    () => this.isAlwaysOperationalRole() || this.attendanceFacade.isOperational()
+  );
   readonly shouldWarnBeforeUnload = computed(() => this.currentStatus() !== 'OFFLINE');
   /**
    * OFFLINE **confirmado por el backend**, no el OFFLINE por defecto de un estado aun sin cargar.
