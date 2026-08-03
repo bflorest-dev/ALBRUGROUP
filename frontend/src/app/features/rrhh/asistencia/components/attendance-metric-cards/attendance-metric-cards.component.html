@@ -1,0 +1,63 @@
+<div class="metric-cards" role="group" aria-label="Métricas de asistencia. Al elegir una, la bandeja muestra solo esos casos.">
+  <button
+    type="button"
+    class="metric-card"
+    [class.metric-card--active]="active() === 'all'"
+    [attr.aria-pressed]="active() === 'all'"
+    (click)="select('all')"
+  >
+    <span class="metric-card__label">Empleados</span>
+    <span class="metric-card__value">{{ kpis().empleados }}</span>
+  </button>
+
+  <button
+    type="button"
+    class="metric-card metric-card--danger"
+    [class.metric-card--active]="active() === 'faltas'"
+    [attr.aria-pressed]="active() === 'faltas'"
+    (click)="select('faltas')"
+  >
+    <span class="metric-card__label">Faltas en el mes</span>
+    <span class="metric-card__value">{{ kpis().faltas }}</span>
+    @if (faltasDelta() !== null) {
+      <span class="metric-card__delta" [class]="'metric-card__delta--' + deltaTone(faltasDelta())">
+        <i class="pi" [class.pi-arrow-down]="faltasDelta()! < 0" [class.pi-arrow-up]="faltasDelta()! > 0" aria-hidden="true"></i>
+        {{ deltaLabel(faltasDelta()) }}
+      </span>
+    }
+  </button>
+
+  <button
+    type="button"
+    class="metric-card metric-card--warn"
+    [class.metric-card--active]="active() === 'tardanzas'"
+    [attr.aria-pressed]="active() === 'tardanzas'"
+    (click)="select('tardanzas')"
+  >
+    <span class="metric-card__label">Tardanzas en el mes</span>
+    <span class="metric-card__value">{{ kpis().tardanzas }}</span>
+    @if (tardanzasDelta() !== null) {
+      <span class="metric-card__delta" [class]="'metric-card__delta--' + deltaTone(tardanzasDelta())">
+        <i class="pi" [class.pi-arrow-down]="tardanzasDelta()! < 0" [class.pi-arrow-up]="tardanzasDelta()! > 0" aria-hidden="true"></i>
+        {{ deltaLabel(tardanzasDelta()) }}
+      </span>
+    }
+  </button>
+
+  <button
+    type="button"
+    class="metric-card"
+    [class.metric-card--active]="active() === 'incidencias'"
+    [attr.aria-pressed]="active() === 'incidencias'"
+    (click)="select('incidencias')"
+  >
+    <span class="metric-card__label">Con incidencias</span>
+    <span class="metric-card__value">{{ kpis().conIncidencias }}</span>
+    @if (incidenciasDelta() !== null) {
+      <span class="metric-card__delta" [class]="'metric-card__delta--' + deltaTone(incidenciasDelta())">
+        <i class="pi" [class.pi-arrow-down]="incidenciasDelta()! < 0" [class.pi-arrow-up]="incidenciasDelta()! > 0" aria-hidden="true"></i>
+        {{ deltaLabel(incidenciasDelta()) }}
+      </span>
+    }
+  </button>
+</div>

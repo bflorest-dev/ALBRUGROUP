@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface ContactoRepository extends JpaRepository<Contacto, Long> {
 
     Optional<Contacto> findByPrefijoAndLead(String prefijo, String lead);
+    Optional<Contacto> findByUsermetaIgnoreCase(String usermeta);
 }

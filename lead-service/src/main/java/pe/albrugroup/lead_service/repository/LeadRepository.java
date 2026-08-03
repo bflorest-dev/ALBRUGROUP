@@ -38,9 +38,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
     // Dedup del intake tolerante a multi-titular: con varias oportunidades por teléfono+equipo
     // (hermanas), trabaja sobre la activa (lastEntryAt más reciente). El @Filter lo acota al equipo.
     Optional<Lead> findFirstByPrefijoAndLeadOrderByLastEntryAtDescIdDesc(String prefijo, String lead);
+    Optional<Lead> findFirstByUsermetaIgnoreCaseOrderByLastEntryAtDescIdDesc(String usermeta);
     // Intake: el lead PREVENTA del contacto (si existe) tiene prioridad para gestionarse;
     // si no hay PREVENTA, el más reciente en otra etapa se marca para atención GTR.
     Optional<Lead> findFirstByPrefijoAndLeadAndEtapaOrderByLastEntryAtDescIdDesc(String prefijo, String lead, Etapa etapa);
+    Optional<Lead> findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(Long idContacto, Etapa etapa);
     // Oportunidades del mismo contacto (acotadas al equipo por @Filter): para multi-titular.
     List<Lead> findByContactoIdOrderByLastEntryAtDescIdDesc(Long idContacto);
     Optional<Lead> findFirstByLeadOrderByLastEntryAtDescIdDesc(String lead);
@@ -131,7 +133,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE (l.etapa = :etapa OR l.requiereAtencionGtr = true)
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
-              AND l.lead LIKE :leadPattern
+              AND (l.lead LIKE :leadPattern OR LOWER(l.usermeta) LIKE LOWER(:leadPattern))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             ORDER BY l.lastEntryAt DESC
             """)
@@ -188,7 +190,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             WHERE l.etapa = :etapa
               AND l.lastEntryAt >= :inicioDia
               AND l.lastEntryAt < :finDia
-              AND l.lead LIKE :leadPattern
+              AND (l.lead LIKE :leadPattern OR LOWER(l.usermeta) LIKE LOWER(:leadPattern))
               AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND (
                     :filtrarAsesor = false

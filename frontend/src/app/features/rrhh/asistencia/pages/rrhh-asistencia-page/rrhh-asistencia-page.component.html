@@ -88,24 +88,12 @@
             ></button>
           </div>
 
-          <div class="cumplimiento-kpis">
-            <div class="kpi">
-              <span class="kpi__label">Empleados</span>
-              <span class="kpi__value">{{ facade.kpis().empleados }}</span>
-            </div>
-            <div class="kpi kpi--danger">
-              <span class="kpi__label">Faltas en el mes</span>
-              <span class="kpi__value">{{ facade.kpis().faltas }}</span>
-            </div>
-            <div class="kpi kpi--warn">
-              <span class="kpi__label">Tardanzas en el mes</span>
-              <span class="kpi__value">{{ facade.kpis().tardanzas }}</span>
-            </div>
-            <div class="kpi">
-              <span class="kpi__label">Con incidencias</span>
-              <span class="kpi__value">{{ facade.kpis().conIncidencias }}</span>
-            </div>
-          </div>
+          <app-attendance-metric-cards
+            [kpis]="facade.kpis()"
+            [deltas]="facade.kpiDeltas()"
+            [active]="facade.activeMetricFilter()"
+            (filterChange)="facade.setMetricFilter($event)"
+          />
 
           @if (facade.errorMessage()) {
             <p-message severity="error" [text]="facade.errorMessage()" />

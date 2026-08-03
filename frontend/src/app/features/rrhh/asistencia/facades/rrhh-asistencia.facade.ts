@@ -25,6 +25,8 @@ import { RrhhAsistenciaService } from '../services/rrhh-asistencia.service';
 
 export type RrhhAsistenciaSection = 'cumplimiento' | 'hoy';
 export type DrawerTab = 'cumplimiento' | 'horario';
+/** Filtro activo por card de métrica; recorta la bandeja sin alterar los totales de las cards. */
+export type MetricFilter = 'all' | 'faltas' | 'tardanzas' | 'incidencias';
 
 export interface CumplimientoRow {
   idEmpleado: number;
@@ -67,9 +69,12 @@ export class RrhhAsistenciaFacade {
   readonly selectedMonth = signal<string>(this.currentMonthValue());
   readonly puestoFilter = signal<string>('');
   readonly searchTerm = signal<string>('');
+  readonly activeMetricFilter = signal<MetricFilter>('all');
 
   private readonly empleados = signal<EmpleadoRolResponse[]>([]);
   private readonly resumenByEmpleadoId = signal<Record<number, CumplimientoResumenEmpleadoResponse>>({});
+  // Resumen del mes anterior (mismo set de empleados) para calcular los deltas de las cards.
+  private readonly prevResumenByEmpleadoId = signal<Record<number, CumplimientoResumenEmpleadoResponse>>({});
   private readonly estadosHoyByEmpleadoId = signal<Record<number, EstadoMonitorResponse>>({});
   readonly isLoading = signal<boolean>(false);
   readonly errorMessage = signal<string>('');
@@ -99,7 +104,11 @@ export class RrhhAsistenciaFacade {
     return { day: now.getDate(), total: this.daysInMonth(now.getFullYear(), now.getMonth() + 1) };
   });
 
-  readonly rows = computed<CumplimientoRow[]>(() => {
+  /**
+   * Empleados que pasan búsqueda + puesto (sin el filtro de card). Es la base de la que se calculan
+   * los KPIs y los deltas; así el total de una card no cambia al activar otra.
+   */
+  private readonly baseRows = computed<CumplimientoRow[]>(() => {
     if (!this.canDisplayOperationalData()) return [];
 
     const resumen = this.resumenByEmpleadoId();
@@ -126,6 +135,52 @@ export class RrhhAsistenciaFacade {
         };
       })
       .sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto));
+  });
+
+  /** Bandeja visible: baseRows recortada por la card activa. */
+  readonly rows = computed<CumplimientoRow[]>(() => {
+    const filter = this.activeMetricFilter();
+    const rows = this.baseRows();
+    if (filter === 'all') return rows;
+    return rows.filter((r) => {
+      if (filter === 'faltas') return r.diasSinRegistro > 0;
+      if (filter === 'tardanzas') return r.cantidadTardanzas > 0;
+      return r.diasSinRegistro > 0 || r.cantidadTardanzas > 0;
+    });
+  });
+
+  /** Totales del mes anterior sobre el mismo set de empleados; null si no hay dato previo. */
+  private readonly prevKpis = computed<{ faltas: number; tardanzas: number; conIncidencias: number } | null>(() => {
+    const prev = this.prevResumenByEmpleadoId();
+    const rows = this.baseRows();
+    if (rows.length === 0) return null;
+
+    let has = false;
+    let faltas = 0;
+    let tardanzas = 0;
+    let conIncidencias = 0;
+    for (const row of rows) {
+      const p = prev[row.idEmpleado];
+      if (!p) continue;
+      has = true;
+      faltas += p.diasSinRegistro ?? 0;
+      tardanzas += p.cantidadTardanzas ?? 0;
+      if ((p.diasSinRegistro ?? 0) > 0 || (p.cantidadTardanzas ?? 0) > 0) conIncidencias += 1;
+    }
+    return has ? { faltas, tardanzas, conIncidencias } : null;
+  });
+
+  /** Variación porcentual mes vs mes anterior por métrica; null cuando no se puede calcular. */
+  readonly kpiDeltas = computed<{ faltas: number | null; tardanzas: number | null; conIncidencias: number | null } | null>(() => {
+    const prev = this.prevKpis();
+    if (!prev) return null;
+    const cur = this.kpis();
+    const pct = (c: number, p: number) => (p === 0 ? null : Math.round(((c - p) / p) * 100));
+    return {
+      faltas: pct(cur.faltas, prev.faltas),
+      tardanzas: pct(cur.tardanzas, prev.tardanzas),
+      conIncidencias: pct(cur.conIncidencias, prev.conIncidencias)
+    };
   });
 
   /**
@@ -159,7 +214,7 @@ export class RrhhAsistenciaFacade {
   });
 
   readonly kpis = computed(() => {
-    const rows = this.rows();
+    const rows = this.baseRows();
     let faltas = 0, tardanzas = 0, conIncidencias = 0;
     for (const r of rows) {
       faltas += r.diasSinRegistro;
@@ -250,6 +305,11 @@ export class RrhhAsistenciaFacade {
     this.searchTerm.set(value ?? '');
   }
 
+  /** Click en una card: activa su filtro, o lo apaga si ya estaba activo (vuelve a "todos"). */
+  setMetricFilter(filter: MetricFilter): void {
+    this.activeMetricFilter.update((current) => (current === filter ? 'all' : filter));
+  }
+
   async recargar(): Promise<void> {
     if (!this.canDisplayOperationalData() || this.recargaEnCurso) {
       return;
@@ -268,6 +328,7 @@ export class RrhhAsistenciaFacade {
       if (empleadosCumplimiento.length === 0) {
         this.resumenByEmpleadoId.set({});
         this.estadosHoyByEmpleadoId.set({});
+        this.prevResumenByEmpleadoId.set({});
         return;
       }
 
@@ -293,6 +354,9 @@ export class RrhhAsistenciaFacade {
       for (const item of estados ?? []) estadosMap[item.idEmpleado] = item;
       this.estadosHoyByEmpleadoId.set(estadosMap);
       this.operationalGate.markActivated();
+
+      // Deltas: carga en segundo plano el mes anterior; si falla, simplemente no se muestran.
+      void this.loadPrevMonthResumen(empleadoIds);
     } catch (error) {
       this.errorMessage.set(
         this.extractErrorMessage(
@@ -874,6 +938,45 @@ export class RrhhAsistenciaFacade {
       options.push({ value, label });
     }
     return options;
+  }
+
+  /** Descarga el resumen del mes anterior (mismo set de empleados) para los deltas. Tolerante a fallos. */
+  private async loadPrevMonthResumen(empleadoIds: number[]): Promise<void> {
+    const range = this.previousMonthRangeAligned();
+    try {
+      const resumen = await firstValueFrom(
+        this.service
+          .getCumplimientoResumen({ empleadoIds, desde: range.desde, hasta: range.hasta })
+          .pipe(timeout(REQUEST_TIMEOUT_MS))
+      );
+      const map: Record<number, CumplimientoResumenEmpleadoResponse> = {};
+      for (const item of resumen.empleados) map[item.idEmpleado] = item;
+      this.prevResumenByEmpleadoId.set(map);
+    } catch {
+      this.prevResumenByEmpleadoId.set({});
+    }
+  }
+
+  private previousMonthValue(monthValue: string): string {
+    const [year, month] = monthValue.split('-').map(Number);
+    const date = new Date(year, month - 2, 1);
+    return `${date.getFullYear()}-${this.pad2(date.getMonth() + 1)}`;
+  }
+
+  /**
+   * Rango del mes anterior alineado "a la fecha": si el mes actual va por el día D, se compara contra
+   * el día 1..D del mes previo (no el mes completo). Así el delta no miente al inicio del mes, cuando
+   * un mes parcial contra uno completo daría siempre caídas enormes.
+   */
+  private previousMonthRangeAligned(): { desde: string; hasta: string } {
+    const currentRange = this.resolveMonthRange(this.selectedMonth());
+    const currentHastaDay = Number(currentRange.hasta.split('-')[2]);
+    const [year, month] = this.previousMonthValue(this.selectedMonth()).split('-').map(Number);
+    const day = Math.min(currentHastaDay, this.daysInMonth(year, month));
+    return {
+      desde: `${year}-${this.pad2(month)}-01`,
+      hasta: `${year}-${this.pad2(month)}-${this.pad2(day)}`
+    };
   }
 
   private resolveMonthRange(monthValue: string): { desde: string; hasta: string } {

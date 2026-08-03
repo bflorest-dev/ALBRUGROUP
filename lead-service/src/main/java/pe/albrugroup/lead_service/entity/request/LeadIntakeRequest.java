@@ -10,10 +10,10 @@ import pe.albrugroup.lead_service.entity.enums.Base;
 @Setter
 public class LeadIntakeRequest {
 
-    @Pattern(regexp = "^\\+\\d{1,3}$", message = "El prefijo debe tener formato +1, +51 o similar")
+    @Pattern(regexp = "^$|^\\+\\d{1,3}$", message = "El prefijo debe tener formato +1, +51 o similar")
     private String prefijo;
 
-    @Pattern(regexp = "^\\d{6,15}$", message = "El lead debe contener solo digitos")
+    @Pattern(regexp = "^$|^\\d{6,15}$", message = "El lead debe contener solo digitos")
     private String lead;
 
     private String usermeta;

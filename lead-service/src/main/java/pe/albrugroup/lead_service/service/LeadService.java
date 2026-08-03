@@ -118,6 +118,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -180,6 +181,9 @@ public class LeadService {
     private static final long MAX_GESTIONES_SIMULTANEAS = 3;
     private static final LocalTime HORA_MINIMA_REGISTRO_RETROACTIVO = LocalTime.of(18, 0);
     private static final LocalTime HORA_MAXIMA_REGISTRO_RETROACTIVO = LocalTime.of(23, 59);
+    private static final Pattern PREFIJO_PATTERN = Pattern.compile("^\\+\\d{1,3}$");
+    private static final Pattern LEAD_PATTERN = Pattern.compile("^\\d{6,15}$");
+    private static final Pattern USERMETA_PATTERN = Pattern.compile("^[A-Za-z0-9._-]{1,255}$");
     private static final List<Accion> ACCIONES_GESTION_LEAD = List.of(Accion.CONTACTO, Accion.TIPIFICACION);
     private static final Set<Base> ORIGENES_CON_CAMPANA = Set.of(Base.WHATSAPP, Base.MESSENGER);
     private static final Set<Base> ORIGENES_SIN_CAMPANA = Set.of(
@@ -221,7 +225,8 @@ public class LeadService {
             PageRequest pageRequest
     ) {
         boolean buscandoPorLead = lead != null && !lead.isBlank();
-        String leadPattern = (buscandoPorLead ? lead.trim() : "") + "%";
+        String busquedaNormalizada = normalizarBusquedaIdentidad(lead);
+        String leadPattern = (buscandoPorLead ? busquedaNormalizada : "") + "%";
         OperationalDateTime.InstantRange rangoDia = buscandoPorLead
                 ? new OperationalDateTime.InstantRange(Instant.EPOCH, Instant.ofEpochSecond(253402300799L))
                 : OperationalDateTime.dayRange(fecha);
@@ -321,19 +326,32 @@ public class LeadService {
     }
 
     public LeadGtrLookupResponse buscarContextoLeadGtr(String lead) {
-        String numeroLead = normalizarLead(lead);
-        if (numeroLead == null || numeroLead.isBlank()) {
-            throw new BadRequestException("El numero del lead es obligatorio");
+        String buscar = lead == null ? null : lead.trim();
+        if (buscar == null || buscar.isBlank()) {
+            throw new BadRequestException("Ingresa un telefono o usermeta para buscar el lead");
         }
 
-        return leadRepository.findFirstByLeadOrderByLastEntryAtDescIdDesc(numeroLead)
+        boolean buscarPorUsermeta = esBusquedaUsermeta(buscar);
+        String numeroLead = buscarPorUsermeta ? null : normalizarLead(buscar);
+        String usermeta = buscarPorUsermeta ? normalizarUsermeta(buscar) : null;
+        if (buscarPorUsermeta) {
+            validarIdentidadIntake(null, null, usermeta);
+        } else if (!LEAD_PATTERN.matcher(numeroLead).matches()) {
+            throw new BadRequestException("El lead debe contener solo digitos y tener entre 6 y 15 caracteres");
+        }
+
+        Optional<Lead> leadEncontrado = buscarPorUsermeta
+                ? leadRepository.findFirstByUsermetaIgnoreCaseOrderByLastEntryAtDescIdDesc(usermeta)
+                : leadRepository.findFirstByLeadOrderByLastEntryAtDescIdDesc(numeroLead);
+
+        return leadEncontrado
                 .map(this::mapearContextoLeadGtr)
                 .orElseGet(() -> new LeadGtrLookupResponse(
                         false,
                         null,
                         null,
                         numeroLead,
-                        null,
+                        usermeta,
                         null,
                         null,
                         false,
@@ -1635,23 +1653,28 @@ public class LeadService {
     private void registrarIngresoLead(LeadIntakeRequest request, Instant registroAt) {
         String prefijo = normalizarPrefijo(request.getPrefijo());
         String numeroLead = normalizarLead(request.getLead());
+        String usermeta = normalizarUsermeta(request.getUsermeta());
+        validarIdentidadIntake(prefijo, numeroLead, usermeta);
         Campana campana = request.getIdCampana() == null ? null : obtenerCampanaActiva(request.getIdCampana());
         validarOrigenIntake(request.getBase(), campana != null);
+        LeadIdentidad identidad = resolverIdentidadContacto(prefijo, numeroLead, usermeta);
 
         // El lead PREVENTA del contacto (si existe) tiene prioridad: es el que el GTR gestiona y
         // asigna normalmente. Si no hay ninguno en PREVENTA pero sí uno en otra etapa, lo marcamos
         // para atención GTR (visible en la bandeja diaria solo para asignarlo, sin tocar su gestión).
         Optional<Lead> leadPreventa = leadRepository
-                .findFirstByPrefijoAndLeadAndEtapaOrderByLastEntryAtDescIdDesc(prefijo, numeroLead, Etapa.PREVENTA);
+                .findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(identidad.contacto().getId(), Etapa.PREVENTA);
         if (leadPreventa.isPresent()) {
-            registrarIngresoLeadExistente(leadPreventa.get(), request, campana, registroAt);
+            registrarIngresoLeadExistente(leadPreventa.get(), identidad, request, campana, registroAt);
             return;
         }
-        leadRepository.findFirstByPrefijoAndLeadOrderByLastEntryAtDescIdDesc(prefijo, numeroLead)
-                .ifPresentOrElse(
-                        lead -> registrarAtencionGtrLeadOtraEtapa(lead, request, campana, registroAt),
-                        () -> registrarLeadNuevo(prefijo, numeroLead, request, campana, registroAt)
-                );
+        List<Lead> oportunidadesContacto =
+                leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(identidad.contacto().getId());
+        if (!oportunidadesContacto.isEmpty()) {
+            registrarAtencionGtrLeadOtraEtapa(oportunidadesContacto.get(0), identidad, request, campana, registroAt);
+            return;
+        }
+        registrarLeadNuevo(identidad, request, campana, registroAt);
     }
 
     private void validarOrigenIntake(Base origen, boolean tieneCampana) {
@@ -2302,6 +2325,67 @@ public class LeadService {
                         Contacto.builder().prefijo(prefijo).lead(numeroLead).build()));
     }
 
+    private LeadIdentidad resolverIdentidadContacto(String prefijo, String numeroLead, String usermeta) {
+        Optional<Contacto> contactoPorTelefono = tieneTelefono(prefijo, numeroLead)
+                ? contactoRepository.findByPrefijoAndLead(prefijo, numeroLead)
+                : Optional.empty();
+        Optional<Contacto> contactoPorUsermeta = usermeta == null
+                ? Optional.empty()
+                : contactoRepository.findByUsermetaIgnoreCase(usermeta);
+
+        if (contactoPorTelefono.isPresent()
+                && contactoPorUsermeta.isPresent()
+                && !contactoPorTelefono.get().getId().equals(contactoPorUsermeta.get().getId())) {
+            throw new ConflictException("El telefono y el usermeta pertenecen a contactos distintos. Revisa el lead antes de registrarlo.");
+        }
+
+        Contacto contacto = contactoPorTelefono
+                .or(() -> contactoPorUsermeta)
+                .orElseGet(() -> contactoRepository.save(
+                        Contacto.builder().prefijo(prefijo).lead(numeroLead).usermeta(usermeta).build()));
+
+        validarCompatibilidadIdentidad(contacto, prefijo, numeroLead, usermeta);
+        boolean actualizado = completarIdentidadContacto(contacto, prefijo, numeroLead, usermeta);
+        if (actualizado && contacto.getId() != null) {
+            contacto = contactoRepository.save(contacto);
+        }
+        return new LeadIdentidad(contacto.getPrefijo(), contacto.getLead(), contacto.getUsermeta(), contacto);
+    }
+
+    private void validarCompatibilidadIdentidad(Contacto contacto, String prefijo, String numeroLead, String usermeta) {
+        if (tieneTelefono(prefijo, numeroLead)
+                && tieneTelefono(contacto.getPrefijo(), contacto.getLead())
+                && (!contacto.getPrefijo().equals(prefijo) || !contacto.getLead().equals(numeroLead))) {
+            throw new ConflictException("El contacto ya tiene otro telefono registrado. Revisa el lead antes de registrarlo.");
+        }
+        if (usermeta != null
+                && contacto.getUsermeta() != null
+                && !contacto.getUsermeta().equalsIgnoreCase(usermeta)) {
+            throw new ConflictException("El contacto ya tiene otro usermeta registrado. Revisa el lead antes de registrarlo.");
+        }
+    }
+
+    private boolean completarIdentidadContacto(Contacto contacto, String prefijo, String numeroLead, String usermeta) {
+        boolean actualizado = false;
+        if (tieneTelefono(prefijo, numeroLead) && !tieneTelefono(contacto.getPrefijo(), contacto.getLead())) {
+            contacto.setPrefijo(prefijo);
+            contacto.setLead(numeroLead);
+            actualizado = true;
+        }
+        if (usermeta != null && (contacto.getUsermeta() == null || contacto.getUsermeta().isBlank())) {
+            contacto.setUsermeta(usermeta);
+            actualizado = true;
+        }
+        return actualizado;
+    }
+
+    private void sincronizarIdentidadLead(Lead lead, LeadIdentidad identidad) {
+        lead.setPrefijo(identidad.prefijo());
+        lead.setLead(identidad.lead());
+        lead.setUsermeta(identidad.usermeta());
+        lead.setContacto(identidad.contacto());
+    }
+
     // Deriva el equipo del lead: si el usuario pertenece a un único equipo, ese; si no, del
     // proveedor de la campaña (mapping equipo_proveedor). Puede ser null (contexto sin equipo).
     private Long derivarIdEquipo(Campana campana) {
@@ -2318,15 +2402,14 @@ public class LeadService {
     }
 
     private void registrarLeadNuevo(
-            String prefijo,
-            String numeroLead,
+            LeadIdentidad identidad,
             LeadIntakeRequest request,
             Campana campana,
             Instant registroAt
     ) {
         Lead lead = leadMapper.toNuevoLead(
-                prefijo, numeroLead, request.getUsermeta(), request.getBase(), campana, OperationalDateTime.now());
-        lead.setContacto(resolverContacto(prefijo, numeroLead));
+                identidad.prefijo(), identidad.lead(), identidad.usermeta(), request.getBase(), campana, OperationalDateTime.now());
+        lead.setContacto(identidad.contacto());
         lead.setIdEquipo(derivarIdEquipo(campana));
 
         Lead savedLead = leadRepository.save(lead);
@@ -2367,23 +2450,20 @@ public class LeadService {
 
     private void registrarIngresoLeadExistente(
             Lead lead,
+            LeadIdentidad identidad,
             LeadIntakeRequest request,
             Campana campana,
             Instant registroAt
     ) {
         Etapa etapaAnterior = lead.getEtapa();
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
-        lead.setPrefijo(normalizarPrefijo(request.getPrefijo()));
-        lead.setLead(normalizarLead(request.getLead()));
+        sincronizarIdentidadLead(lead, identidad);
         // Si el re-registro no indica campana, se conserva la que ya tenia el lead (no se borra).
         if (campana != null) {
             lead.setCampana(campana);
         }
         lead.setBase(request.getBase());
         lead.setLastEntryAt(OperationalDateTime.now());
-        if (lead.getContacto() == null) {
-            lead.setContacto(resolverContacto(lead.getPrefijo(), lead.getLead()));
-        }
         if (lead.getIdEquipo() == null) {
             lead.setIdEquipo(derivarIdEquipo(campana));
         }
@@ -2412,15 +2492,14 @@ public class LeadService {
     // gestionándose en su etapa actual. Solo se refresca lastEntryAt para que entre en el día.
     private void registrarAtencionGtrLeadOtraEtapa(
             Lead lead,
+            LeadIdentidad identidad,
             LeadIntakeRequest request,
             Campana campana,
             Instant registroAt
     ) {
         Etapa etapaAnterior = lead.getEtapa();
         Long idAsesorAnterior = lead.getIdAsesorAsignado();
-        if (lead.getContacto() == null) {
-            lead.setContacto(resolverContacto(lead.getPrefijo(), lead.getLead()));
-        }
+        sincronizarIdentidadLead(lead, identidad);
         if (lead.getIdEquipo() == null) {
             lead.setIdEquipo(derivarIdEquipo(campana));
         }
@@ -2749,11 +2828,72 @@ public class LeadService {
     }
 
     private String normalizarPrefijo(String prefijo) {
-        return prefijo == null ? null : prefijo.trim();
+        String normalizado = prefijo == null ? null : prefijo.trim();
+        return normalizado == null || normalizado.isBlank() ? null : normalizado;
     }
 
     private String normalizarLead(String lead) {
-        return lead == null ? null : lead.trim();
+        String normalizado = lead == null ? null : lead.trim();
+        return normalizado == null || normalizado.isBlank() ? null : normalizado;
+    }
+
+    private String normalizarUsermeta(String usermeta) {
+        if (usermeta == null) {
+            return null;
+        }
+        String normalizado = usermeta.trim();
+        if (normalizado.startsWith("@")) {
+            normalizado = normalizado.substring(1).trim();
+        }
+        return normalizado.isBlank() ? null : normalizado;
+    }
+
+    private void validarIdentidadIntake(String prefijo, String numeroLead, String usermeta) {
+        boolean tienePrefijo = prefijo != null;
+        boolean tieneLead = numeroLead != null;
+        boolean tieneUsermeta = usermeta != null;
+
+        if (!tieneLead && !tieneUsermeta && !tienePrefijo) {
+            throw new BadRequestException("Ingresa un telefono o un usermeta para registrar el lead");
+        }
+        if (tieneLead != tienePrefijo) {
+            throw new BadRequestException("Para registrar por telefono debes enviar prefijo y lead");
+        }
+        if (tienePrefijo && !PREFIJO_PATTERN.matcher(prefijo).matches()) {
+            throw new BadRequestException("El prefijo debe tener formato +1, +51 o similar");
+        }
+        if (tieneLead && !LEAD_PATTERN.matcher(numeroLead).matches()) {
+            throw new BadRequestException("El lead debe contener solo digitos y tener entre 6 y 15 caracteres");
+        }
+        if (tieneUsermeta && !USERMETA_PATTERN.matcher(usermeta).matches()) {
+            throw new BadRequestException("El usermeta solo puede contener letras, numeros, punto, guion o guion bajo");
+        }
+    }
+
+    private boolean tieneTelefono(String prefijo, String numeroLead) {
+        return prefijo != null && numeroLead != null;
+    }
+
+    private boolean esBusquedaUsermeta(String buscar) {
+        String normalizado = buscar == null ? null : buscar.trim();
+        if (normalizado == null || normalizado.isBlank()) {
+            return false;
+        }
+        return normalizado.startsWith("@") || !normalizado.matches("^\\d+$");
+    }
+
+    private String normalizarBusquedaIdentidad(String buscar) {
+        if (buscar == null || buscar.isBlank()) {
+            return "";
+        }
+        if (esBusquedaUsermeta(buscar)) {
+            String usermeta = normalizarUsermeta(buscar);
+            if (usermeta == null || !USERMETA_PATTERN.matcher(usermeta).matches()) {
+                throw new BadRequestException("El usermeta solo puede contener letras, numeros, punto, guion o guion bajo");
+            }
+            return usermeta;
+        }
+        return normalizarLead(buscar);
     }
 
     private void validarFiltroAgrupacionGtr(
@@ -3005,6 +3145,13 @@ public class LeadService {
             boolean sinValor
     ) {}
 
+    private record LeadIdentidad(
+            String prefijo,
+            String lead,
+            String usermeta,
+            Contacto contacto
+    ) {}
+
     private List<LeadGtrAgrupacionItemResponse> ordenarAgrupaciones(
             List<LeadGtrAgrupacionItemResponse> agrupaciones
     ) {
@@ -3022,8 +3169,9 @@ public class LeadService {
         Etapa etapaActual = lead.getEtapa();
         // El contacto tiene un lead PREVENTA si el resuelto lo es, o existe otra oportunidad PREVENTA.
         boolean tienePreventa = etapaActual == Etapa.PREVENTA
-                || leadRepository.findFirstByPrefijoAndLeadAndEtapaOrderByLastEntryAtDescIdDesc(
-                        lead.getPrefijo(), lead.getLead(), Etapa.PREVENTA).isPresent();
+                || (lead.getContacto() != null
+                        && leadRepository.findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(
+                                lead.getContacto().getId(), Etapa.PREVENTA).isPresent());
         // Lead en otra etapa y sin PREVENTA: el GTR puede registrarlo solo para asignar la atención.
         boolean atencionOtraEtapa = !tienePreventa;
         boolean puedeGestionarseEnGtr = tienePreventa || atencionOtraEtapa;

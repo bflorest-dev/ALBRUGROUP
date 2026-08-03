@@ -14,6 +14,7 @@ import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
 import type { OrigenTramo } from '../../../../../shared/models/schedule/cumplimiento-response';
 import { ScheduleAdjustmentDialogComponent } from '../../../../../shared/components/schedule-adjustment-dialog/schedule-adjustment-dialog.component';
+import { AttendanceMetricCardsComponent } from '../../components/attendance-metric-cards/attendance-metric-cards.component';
 import { ScheduleEditorPanelComponent } from '../../components/schedule-editor-panel/schedule-editor-panel.component';
 import {
   CumplimientoRow,
@@ -41,6 +42,7 @@ interface SelectChoice {
     MessageModule,
     ProgressSpinnerModule,
     ScheduleAdjustmentDialogComponent,
+    AttendanceMetricCardsComponent,
     ScheduleEditorPanelComponent,
     SelectModule,
     TableModule,

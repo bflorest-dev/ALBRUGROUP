@@ -10,6 +10,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import pe.albrugroup.lead_service.configuration.CurrentUser;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.Campana;
+import pe.albrugroup.lead_service.entity.Contacto;
 import pe.albrugroup.lead_service.entity.Lead;
 import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Base;
@@ -19,8 +20,10 @@ import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRetroactivoRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
 import pe.albrugroup.lead_service.exception.BadRequestException;
+import pe.albrugroup.lead_service.exception.ConflictException;
 import pe.albrugroup.lead_service.repository.AdicionalRepository;
 import pe.albrugroup.lead_service.repository.CampanaRepository;
+import pe.albrugroup.lead_service.repository.ContactoRepository;
 import pe.albrugroup.lead_service.repository.DistritoRepository;
 import pe.albrugroup.lead_service.repository.EncuestaPostventaRepository;
 import pe.albrugroup.lead_service.repository.EventoRepository;
@@ -37,6 +40,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,6 +56,7 @@ import static org.mockito.Mockito.when;
 class LeadServiceRetroactiveIntakeTest {
 
     @Mock private LeadRepository leadRepository;
+    @Mock private ContactoRepository contactoRepository;
     @Mock private CampanaRepository campanaRepository;
     @Mock private EventoRepository eventoRepository;
     @Mock private EventoService eventoService;
@@ -70,6 +75,7 @@ class LeadServiceRetroactiveIntakeTest {
     @Mock private TransactionTemplate transactionTemplate;
     @Mock private LeadRealtimeNotifier leadRealtimeNotifier;
     @Mock private LeadAsignacionCounterService leadAsignacionCounterService;
+    @Mock private LeadEtapaResumenService leadEtapaResumenService;
 
     @InjectMocks private LeadService leadService;
 
@@ -81,7 +87,11 @@ class LeadServiceRetroactiveIntakeTest {
         Instant before = Instant.now();
 
         when(campanaRepository.findByIdAndActivoTrue(7L)).thenReturn(Optional.of(campana));
-        when(leadRepository.findByPrefijoAndLead("+51", "987654321")).thenReturn(Optional.empty());
+        Contacto contacto = contactoTelefono();
+        when(contactoRepository.findByPrefijoAndLead("+51", "987654321")).thenReturn(Optional.of(contacto));
+        when(leadRepository.findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(100L, Etapa.PREVENTA))
+                .thenReturn(Optional.empty());
+        when(leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(100L)).thenReturn(List.of());
         when(leadMapper.toNuevoLead(
                 eq("+51"),
                 eq("987654321"),
@@ -93,6 +103,7 @@ class LeadServiceRetroactiveIntakeTest {
                 .id(25202L)
                 .prefijo("+51")
                 .lead("987654321")
+                .contacto(contacto)
                 .campana(campana)
                 .base(Base.WHATSAPP)
                 .etapa(Etapa.PREVENTA)
@@ -127,7 +138,11 @@ class LeadServiceRetroactiveIntakeTest {
                 .build();
 
         when(campanaRepository.findByIdAndActivoTrue(7L)).thenReturn(Optional.of(campana));
-        when(leadRepository.findByPrefijoAndLead("+51", "987654321")).thenReturn(Optional.empty());
+        Contacto contacto = contactoTelefono();
+        when(contactoRepository.findByPrefijoAndLead("+51", "987654321")).thenReturn(Optional.of(contacto));
+        when(leadRepository.findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(100L, Etapa.PREVENTA))
+                .thenReturn(Optional.empty());
+        when(leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(100L)).thenReturn(List.of());
         when(leadMapper.toNuevoLead(eq("+51"), eq("987654321"), isNull(), eq(Base.WHATSAPP), eq(campana), any(Instant.class)))
                 .thenReturn(lead);
         when(leadRepository.save(lead)).thenReturn(lead);
@@ -143,10 +158,12 @@ class LeadServiceRetroactiveIntakeTest {
         LeadIntakeRetroactivoRequest request = retroactiveRequest(LocalTime.of(20, 30));
         Campana previousCampaign = Campana.builder().id(3L).activo(true).build();
         Campana selectedCampaign = Campana.builder().id(7L).activo(true).build();
+        Contacto contacto = contactoTelefono();
         Lead existing = Lead.builder()
                 .id(25202L)
                 .prefijo("+51")
                 .lead("987654321")
+                .contacto(contacto)
                 .campana(previousCampaign)
                 .base(Base.MESSENGER)
                 .etapa(Etapa.VENTA)
@@ -158,7 +175,10 @@ class LeadServiceRetroactiveIntakeTest {
         existing.setLastEntryAt(previousEntryAt);
 
         when(campanaRepository.findByIdAndActivoTrue(7L)).thenReturn(Optional.of(selectedCampaign));
-        when(leadRepository.findByPrefijoAndLead("+51", "987654321")).thenReturn(Optional.of(existing));
+        when(contactoRepository.findByPrefijoAndLead("+51", "987654321")).thenReturn(Optional.of(contacto));
+        when(leadRepository.findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(100L, Etapa.PREVENTA))
+                .thenReturn(Optional.empty());
+        when(leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(100L)).thenReturn(List.of(existing));
         when(leadRepository.save(existing)).thenReturn(existing);
 
         leadService.registrarIngresoLeadRetroactivo(request);
@@ -166,7 +186,7 @@ class LeadServiceRetroactiveIntakeTest {
         assertThat(existing.getEtapa()).isEqualTo(Etapa.VENTA);
         assertThat(existing.getEstado()).isEqualTo(EstadoSeguimiento.EN_GESTION);
         assertThat(existing.getIdAsesorAsignado()).isEqualTo(99L);
-        assertThat(existing.getCampana()).isSameAs(selectedCampaign);
+        assertThat(existing.getCampana()).isSameAs(previousCampaign);
         assertThat(existing.getLastEntryAt()).isAfter(previousEntryAt);
         verify(eventoService).registrarEvento(
                 any(RegistrarEventoRequest.class),
@@ -176,6 +196,207 @@ class LeadServiceRetroactiveIntakeTest {
                         .atZone(OperationalDateTime.ZONE)
                         .toInstant())
         );
+    }
+
+    @Test
+    void registraLeadNuevoSoloConUsermeta() {
+        LeadIntakeRequest request = new LeadIntakeRequest();
+        request.setUsermeta("@EfrainBay");
+        request.setBase(Base.RECONTACTO);
+        Contacto contacto = Contacto.builder().id(100L).usermeta("EfrainBay").build();
+        Lead lead = Lead.builder()
+                .id(25202L)
+                .usermeta("EfrainBay")
+                .contacto(contacto)
+                .base(Base.RECONTACTO)
+                .etapa(Etapa.PREVENTA)
+                .estado(EstadoSeguimiento.NUEVO)
+                .build();
+
+        when(contactoRepository.findByUsermetaIgnoreCase("EfrainBay")).thenReturn(Optional.of(contacto));
+        when(leadRepository.findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(100L, Etapa.PREVENTA))
+                .thenReturn(Optional.empty());
+        when(leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(100L)).thenReturn(List.of());
+        when(leadMapper.toNuevoLead(isNull(), isNull(), eq("EfrainBay"), eq(Base.RECONTACTO), isNull(), any(Instant.class)))
+                .thenReturn(lead);
+        when(leadRepository.save(lead)).thenReturn(lead);
+
+        leadService.registrarIngresoLead(request);
+
+        verify(leadRepository).save(lead);
+        assertThat(lead.getPrefijo()).isNull();
+        assertThat(lead.getLead()).isNull();
+        assertThat(lead.getUsermeta()).isEqualTo("EfrainBay");
+    }
+
+    @Test
+    void registraLeadRetroactivoSoloConUsermeta() {
+        LeadIntakeRetroactivoRequest request = new LeadIntakeRetroactivoRequest();
+        request.setUsermeta("@EfrainBay");
+        request.setBase(Base.RECONTACTO);
+        request.setHoraRegistro(LocalTime.of(21, 0));
+        Contacto contacto = Contacto.builder().id(100L).usermeta("EfrainBay").build();
+        Lead lead = Lead.builder()
+                .id(25202L)
+                .usermeta("EfrainBay")
+                .contacto(contacto)
+                .base(Base.RECONTACTO)
+                .etapa(Etapa.PREVENTA)
+                .estado(EstadoSeguimiento.NUEVO)
+                .build();
+
+        when(contactoRepository.findByUsermetaIgnoreCase("EfrainBay")).thenReturn(Optional.of(contacto));
+        when(leadRepository.findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(100L, Etapa.PREVENTA))
+                .thenReturn(Optional.empty());
+        when(leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(100L)).thenReturn(List.of());
+        when(leadMapper.toNuevoLead(isNull(), isNull(), eq("EfrainBay"), eq(Base.RECONTACTO), isNull(), any(Instant.class)))
+                .thenReturn(lead);
+        when(leadRepository.save(lead)).thenReturn(lead);
+
+        leadService.registrarIngresoLeadRetroactivo(request);
+
+        verify(eventoService).registrarEvento(
+                any(RegistrarEventoRequest.class),
+                eq(OperationalDateTime.today()
+                        .minusDays(1)
+                        .atTime(21, 0)
+                        .atZone(OperationalDateTime.ZONE)
+                        .toInstant())
+        );
+    }
+
+    @Test
+    void completaTelefonoCuandoElContactoExistePorUsermeta() {
+        LeadIntakeRequest request = normalRequest();
+        request.setUsermeta("@EfrainBay");
+        Campana campana = Campana.builder().id(7L).activo(true).build();
+        Contacto contacto = Contacto.builder().id(100L).usermeta("EfrainBay").build();
+        Lead existing = Lead.builder()
+                .id(25202L)
+                .usermeta("EfrainBay")
+                .contacto(contacto)
+                .campana(campana)
+                .base(Base.WHATSAPP)
+                .etapa(Etapa.PREVENTA)
+                .estado(EstadoSeguimiento.NUEVO)
+                .build();
+
+        when(campanaRepository.findByIdAndActivoTrue(7L)).thenReturn(Optional.of(campana));
+        when(contactoRepository.findByPrefijoAndLead("+51", "987654321")).thenReturn(Optional.empty());
+        when(contactoRepository.findByUsermetaIgnoreCase("EfrainBay")).thenReturn(Optional.of(contacto));
+        when(contactoRepository.save(contacto)).thenReturn(contacto);
+        when(leadRepository.findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(100L, Etapa.PREVENTA))
+                .thenReturn(Optional.of(existing));
+        when(leadRepository.save(existing)).thenReturn(existing);
+
+        leadService.registrarIngresoLead(request);
+
+        assertThat(contacto.getPrefijo()).isEqualTo("+51");
+        assertThat(contacto.getLead()).isEqualTo("987654321");
+        assertThat(existing.getPrefijo()).isEqualTo("+51");
+        assertThat(existing.getLead()).isEqualTo("987654321");
+        assertThat(existing.getUsermeta()).isEqualTo("EfrainBay");
+    }
+
+    @Test
+    void completaUsermetaCuandoElContactoExistePorTelefono() {
+        LeadIntakeRequest request = normalRequest();
+        request.setUsermeta("@EfrainBay");
+        Campana campana = Campana.builder().id(7L).activo(true).build();
+        Contacto contacto = contactoTelefono();
+        Lead existing = Lead.builder()
+                .id(25202L)
+                .prefijo("+51")
+                .lead("987654321")
+                .contacto(contacto)
+                .campana(campana)
+                .base(Base.WHATSAPP)
+                .etapa(Etapa.PREVENTA)
+                .estado(EstadoSeguimiento.NUEVO)
+                .build();
+
+        when(campanaRepository.findByIdAndActivoTrue(7L)).thenReturn(Optional.of(campana));
+        when(contactoRepository.findByPrefijoAndLead("+51", "987654321")).thenReturn(Optional.of(contacto));
+        when(contactoRepository.findByUsermetaIgnoreCase("EfrainBay")).thenReturn(Optional.empty());
+        when(contactoRepository.save(contacto)).thenReturn(contacto);
+        when(leadRepository.findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(100L, Etapa.PREVENTA))
+                .thenReturn(Optional.of(existing));
+        when(leadRepository.save(existing)).thenReturn(existing);
+
+        leadService.registrarIngresoLead(request);
+
+        assertThat(contacto.getUsermeta()).isEqualTo("EfrainBay");
+        assertThat(existing.getUsermeta()).isEqualTo("EfrainBay");
+    }
+
+    @Test
+    void reregistroPorTelefonoNoBorraUsermetaExistente() {
+        LeadIntakeRequest request = normalRequest();
+        Campana campana = Campana.builder().id(7L).activo(true).build();
+        Contacto contacto = Contacto.builder()
+                .id(100L)
+                .prefijo("+51")
+                .lead("987654321")
+                .usermeta("EfrainBay")
+                .build();
+        Lead existing = Lead.builder()
+                .id(25202L)
+                .prefijo("+51")
+                .lead("987654321")
+                .usermeta("EfrainBay")
+                .contacto(contacto)
+                .campana(campana)
+                .base(Base.WHATSAPP)
+                .etapa(Etapa.PREVENTA)
+                .estado(EstadoSeguimiento.NUEVO)
+                .build();
+
+        when(campanaRepository.findByIdAndActivoTrue(7L)).thenReturn(Optional.of(campana));
+        when(contactoRepository.findByPrefijoAndLead("+51", "987654321")).thenReturn(Optional.of(contacto));
+        when(leadRepository.findFirstByContactoIdAndEtapaOrderByLastEntryAtDescIdDesc(100L, Etapa.PREVENTA))
+                .thenReturn(Optional.of(existing));
+        when(leadRepository.save(existing)).thenReturn(existing);
+
+        leadService.registrarIngresoLead(request);
+
+        assertThat(existing.getUsermeta()).isEqualTo("EfrainBay");
+    }
+
+    @Test
+    void rechazaTelefonoYUsermetaDeContactosDistintos() {
+        LeadIntakeRequest request = normalRequest();
+        request.setUsermeta("@EfrainBay");
+        Campana campana = Campana.builder().id(7L).activo(true).build();
+        Contacto porTelefono = contactoTelefono();
+        Contacto porUsermeta = Contacto.builder().id(200L).usermeta("EfrainBay").build();
+
+        when(campanaRepository.findByIdAndActivoTrue(7L)).thenReturn(Optional.of(campana));
+        when(contactoRepository.findByPrefijoAndLead("+51", "987654321")).thenReturn(Optional.of(porTelefono));
+        when(contactoRepository.findByUsermetaIgnoreCase("EfrainBay")).thenReturn(Optional.of(porUsermeta));
+
+        assertThatThrownBy(() -> leadService.registrarIngresoLead(request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("contactos distintos");
+    }
+
+    @Test
+    void lookupGtrEncuentraPorUsermetaConArroba() {
+        Contacto contacto = Contacto.builder().id(100L).usermeta("EfrainBay").build();
+        Lead lead = Lead.builder()
+                .id(25202L)
+                .usermeta("EfrainBay")
+                .contacto(contacto)
+                .etapa(Etapa.PREVENTA)
+                .estado(EstadoSeguimiento.NUEVO)
+                .build();
+
+        when(leadRepository.findFirstByUsermetaIgnoreCaseOrderByLastEntryAtDescIdDesc("EfrainBay"))
+                .thenReturn(Optional.of(lead));
+
+        var response = leadService.buscarContextoLeadGtr("@EfrainBay");
+
+        assertThat(response.isExiste()).isTrue();
+        assertThat(response.getUsermeta()).isEqualTo("EfrainBay");
     }
 
     @Test
@@ -227,5 +448,13 @@ class LeadServiceRetroactiveIntakeTest {
         request.setBase(Base.WHATSAPP);
         request.setHoraRegistro(hour);
         return request;
+    }
+
+    private Contacto contactoTelefono() {
+        return Contacto.builder()
+                .id(100L)
+                .prefijo("+51")
+                .lead("987654321")
+                .build();
     }
 }
