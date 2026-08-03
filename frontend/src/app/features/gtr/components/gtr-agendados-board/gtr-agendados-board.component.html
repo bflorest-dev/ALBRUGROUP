@@ -64,7 +64,7 @@
           <td><strong>{{ facade.agendadoProgramadoLabel(row) }}</strong></td>
           <td>{{ facade.agendadoTipificadoLabel(row) }}</td>
           <td>
-            <strong>{{ facade.leadPrefixLabel(row.prefijo) }} {{ row.lead }}</strong>
+            <strong>{{ facade.leadIdentity(row) }}</strong>
             @if (facade.isPriorityCampaign(row)) {
               <span class="priority-campaign-chip" [title]="facade.priorityCampaignLabel()">
                 <i class="pi pi-star-fill" aria-hidden="true"></i>

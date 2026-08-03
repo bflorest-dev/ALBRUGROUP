@@ -49,7 +49,7 @@ import {
   UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
 import { LeadCommercialDataTab } from '../../../shared/components/lead-commercial-data-tabs/lead-commercial-data-tabs.component';
-import { buildTelUrl, buildWhatsAppUrl } from '../../../shared/utils/phone-link';
+import { buildTelUrl, buildWhatsAppUrl, formatLeadIdentity, normalizeUsermeta } from '../../../shared/utils/phone-link';
 import { PRIORITY_CAMPAIGN_LABEL, isPriorityCampaignName } from '../../../shared/utils/priority-campaign';
 import { providerLogo as resolveProviderLogo } from '../../../shared/utils/provider-logo';
 import {
@@ -70,8 +70,9 @@ type VisualLeadGtr = LeadGtrResponse & { isNew?: boolean };
 /** Tipo minimo aceptado por openEventHistory — compatible con LeadGtrResponse, LeadAgendadoGtrResponse y LeadVentaResponse. */
 export interface EventHistoryTarget {
   id: number;
-  prefijo: string;
-  lead: string;
+  prefijo?: string | null;
+  lead?: string | null;
+  usermeta?: string | null;
   tieneMultiplesRegistrosDia?: boolean | null;
   tieneRegistrosMismaCampanaDia?: boolean | null;
 }
@@ -204,6 +205,7 @@ type LoadError = {
 const PERU_PHONE_PREFIX = '+51';
 const PERU_LEAD_PATTERN = /^9\d{8}$/;
 const INTERNATIONAL_LEAD_PATTERN = /^\d{6,15}$/;
+const USERMETA_PATTERN = /^@?[A-Za-z0-9._-]+$/;
 const RESTRICT_RETROACTIVE_INTAKE_BY_TIME = true;
 
 @Injectable()
@@ -215,6 +217,21 @@ export class GtrWorkspaceFacade {
   private readonly attendanceRealtimeService = inject(AttendanceRealtimeService);
   private readonly operationalGateService = inject(OperationalGateService);
   private readonly browserSessionService = inject(BrowserSessionService);
+
+  private static intakeIdentityValidator(control: AbstractControl): { identityRequired?: true; phoneIncomplete?: true } | null {
+    const group = control as FormGroup;
+    const prefijo = String(group.get('prefijo')?.value ?? '').trim();
+    const lead = String(group.get('lead')?.value ?? '').trim();
+    const usermeta = normalizeUsermeta(group.get('usermeta')?.value);
+    const hasPhone = !!prefijo && !!lead;
+    const hasPartialPhone = (!!prefijo && !lead) || (!prefijo && !!lead);
+
+    if (hasPartialPhone && !usermeta) {
+      return { phoneIncomplete: true };
+    }
+
+    return hasPhone || !!usermeta ? null : { identityRequired: true };
+  }
   private readonly presenceService = inject(PresenceService);
   private readonly presenceRealtimeService = inject(PresenceRealtimeService);
   private readonly historicosStateService = inject(GtrHistoricosStateService);
@@ -447,11 +464,12 @@ export class GtrWorkspaceFacade {
   );
 
   readonly intakeForm = this.fb.group({
-    prefijo: ['+51', [Validators.required, Validators.pattern(/^\+\d{1,3}$/)]],
-    lead: ['', [Validators.required, Validators.pattern(/^9\d{8}$/)]],
+    prefijo: [PERU_PHONE_PREFIX, [Validators.pattern(/^\+\d{1,3}$/)]],
+    lead: ['', [Validators.pattern(PERU_LEAD_PATTERN)]],
+    usermeta: ['', [Validators.pattern(USERMETA_PATTERN)]],
     idCampana: [null as number | null],
     base: [null as BaseLead | null, [Validators.required]]
-  });
+  }, { validators: GtrWorkspaceFacade.intakeIdentityValidator });
   readonly retroactiveHourControl = new FormControl<Date | null>(this.createTimeValue(19, 0), {
     validators: [Validators.required]
   });
@@ -765,6 +783,22 @@ export class GtrWorkspaceFacade {
       ? 'Ingresa un celular valido de 9 digitos que empiece con 9.'
       : 'Ingresa un numero valido para el prefijo seleccionado.'
   );
+  intakeIdentityMessage(): string | null {
+    if (!this.intakeForm.touched && !this.intakeForm.dirty) {
+      return null;
+    }
+    const errors = this.intakeForm.errors;
+    if (errors?.['phoneIncomplete']) {
+      return 'Completa prefijo y numero, o registra el usuario WhatsApp.';
+    }
+    if (errors?.['identityRequired']) {
+      return 'Ingresa un telefono completo o un usuario WhatsApp.';
+    }
+    if (this.intakeForm.controls.usermeta.invalid) {
+      return 'El usuario WhatsApp solo puede usar letras, numeros, punto, guion y guion bajo.';
+    }
+    return null;
+  }
   readonly intakeCampaignPlaceholder = computed(() => {
     const selectedId = this.selectedIntakeCampaignId();
     if (selectedId === null) {
@@ -1182,9 +1216,13 @@ export class GtrWorkspaceFacade {
     }
 
     const formValue = this.intakeForm.getRawValue();
+    const leadNumber = (formValue.lead ?? '').trim();
+    const usermeta = normalizeUsermeta(formValue.usermeta);
+    const hasPhone = !!leadNumber;
     const request: LeadIntakeRequest = {
-      prefijo: formValue.prefijo,
-      lead: formValue.lead,
+      prefijo: hasPhone ? formValue.prefijo : null,
+      lead: hasPhone ? leadNumber : null,
+      usermeta: usermeta || null,
       idCampana: formValue.idCampana || null,
       base: formValue.base as BaseLead
     };
@@ -1192,7 +1230,8 @@ export class GtrWorkspaceFacade {
       this.clearMessages();
       this.intakeError.set(null);
       try {
-        const lookup = await firstValueFrom(this.preventaService.buscarContextoLeadGtr(request.lead));
+        const lookupValue = request.lead || request.usermeta || '';
+        const lookup = await firstValueFrom(this.preventaService.buscarContextoLeadGtr(lookupValue));
         if (lookup.existe) {
           this.pendingIntakeLookup.set(lookup);
           this.activeDialog.set('intake-confirm');
@@ -1347,10 +1386,22 @@ export class GtrWorkspaceFacade {
   }
 
   normalizeLeadNumber(value: string): void {
-    const normalized = this.normalizeLeadSearchInput(value);
+    const normalized = this.normalizePhoneInput(value);
     if (this.intakeForm.controls.lead.value !== normalized) {
       this.intakeForm.controls.lead.setValue(normalized);
     }
+  }
+
+  normalizeIntakeUsermeta(value: string): void {
+    const normalized = normalizeUsermeta(value);
+    if (this.intakeForm.controls.usermeta.value !== normalized) {
+      this.intakeForm.controls.usermeta.setValue(normalized);
+    }
+  }
+
+  intakeUsermetaLabel(value?: string | null): string {
+    const meta = normalizeUsermeta(value);
+    return meta ? `@${meta}` : '-';
   }
 
   openSnapshot(row: LeadGtrResponse): void {
@@ -1475,10 +1526,10 @@ export class GtrWorkspaceFacade {
     }
   }
 
-  openWhatsAppChat(row: Pick<LeadGtrResponse, 'prefijo' | 'lead'>): void {
-    const url = this.whatsAppUrl(row.prefijo, row.lead);
+  openWhatsAppChat(row: Pick<LeadGtrResponse, 'prefijo' | 'lead' | 'usermeta'>): void {
+    const url = this.whatsAppUrl(row.prefijo, row.lead, row.usermeta);
     if (!url) {
-      this.errorMessage.set('El lead no tiene un numero valido para abrir WhatsApp.');
+      this.errorMessage.set('El lead no tiene telefono ni usermeta para abrir WhatsApp.');
       return;
     }
 
@@ -1719,7 +1770,7 @@ export class GtrWorkspaceFacade {
   async executeSearch(): Promise<void> {
     const value = this.searchQuery().trim();
     if (!value) {
-      this.errorMessage.set('Ingresa el numero del lead a buscar.');
+      this.errorMessage.set('Ingresa el telefono o usermeta del lead a buscar.');
       return;
     }
     this.searchPageNumber.set(0);
@@ -2028,7 +2079,7 @@ export class GtrWorkspaceFacade {
           confirmarGestionPrevia
         })
       );
-      this.successMessage.set(`Lead ${row.lead} asignado a ${advisor.nombreCompleto}.`);
+      this.successMessage.set(`Lead ${this.leadIdentity(row)} asignado a ${advisor.nombreCompleto}.`);
       this.closeDialog();
       await this.reconcile();
     } catch (error) {
@@ -3069,6 +3120,18 @@ export class GtrWorkspaceFacade {
     return this.display(prefijo);
   }
 
+  leadIdentity(row: { prefijo?: string | null; lead?: string | null; usermeta?: string | null }): string {
+    return formatLeadIdentity(row);
+  }
+
+  hasLeadPhone(row: { prefijo?: string | null; lead?: string | null }): boolean {
+    return !!this.telUrl(row.prefijo, row.lead);
+  }
+
+  hasLeadChat(row: { prefijo?: string | null; lead?: string | null; usermeta?: string | null }): boolean {
+    return !!this.whatsAppUrl(row.prefijo, row.lead, row.usermeta);
+  }
+
   providerLogo(nombreProveedor?: string | null): string | null {
     return resolveProviderLogo(nombreProveedor);
   }
@@ -3253,7 +3316,7 @@ export class GtrWorkspaceFacade {
   private getTakeoverLeadLabel(idLead: number): string {
     const row = this.selectedSnapshotLead();
     if (row?.id === idLead) {
-      return `${this.leadPrefixLabel(row.prefijo)} ${row.lead}`;
+      return this.leadIdentity(row);
     }
     return `Lead ${idLead}`;
   }
@@ -3266,12 +3329,23 @@ export class GtrWorkspaceFacade {
     return (value ?? '').trim().toUpperCase();
   }
 
-  private normalizeLeadSearchInput(value?: string | null): string {
+  private normalizePhoneInput(value?: string | null): string {
     const digits = (value ?? '').replace(/\D/g, '');
     if (!digits) {
       return '';
     }
     return digits.length > 9 ? digits.slice(-9) : digits;
+  }
+
+  private normalizeLeadSearchInput(value?: string | null): string {
+    const input = (value ?? '').trim();
+    if (!input) {
+      return '';
+    }
+    if (/^\+?[\d\s().-]+$/.test(input)) {
+      return this.normalizePhoneInput(input);
+    }
+    return input.replace(/\s+/g, '');
   }
 
   private buildMasivoExcelFailuresText(rows: LeadIntakeMasivoExcelResultadoResponse[]): string {
@@ -4208,6 +4282,7 @@ export class GtrWorkspaceFacade {
       createdAt: row.createdAt,
       prefijo: row.prefijo,
       lead: row.lead,
+      usermeta: row.usermeta,
       nombreCampana: row.nombreCampana,
       nombreProveedorCampana: row.nombreProveedorCampana,
       nombreProveedorEquipo: row.nombreProveedorEquipo,
@@ -4293,6 +4368,7 @@ export class GtrWorkspaceFacade {
     this.intakeForm.reset({
       prefijo: PERU_PHONE_PREFIX,
       lead: '',
+      usermeta: '',
       idCampana: null,
       base: null
     });
@@ -4314,16 +4390,16 @@ export class GtrWorkspaceFacade {
     this.intakeForm.controls.base.setValue(this.selectedIntakeCampaignId() ? 'WHATSAPP' : null);
   }
 
-  private updateIntakeLeadValidation(prefijo: string): void {
+  private updateIntakeLeadValidation(prefijo?: string | null): void {
     const leadControl = this.intakeForm.controls.lead;
     const isPeruPrefix = prefijo === PERU_PHONE_PREFIX;
 
     this.intakeNumberMaxLength.set(isPeruPrefix ? 9 : 15);
     leadControl.setValidators([
-      Validators.required,
       Validators.pattern(isPeruPrefix ? PERU_LEAD_PATTERN : INTERNATIONAL_LEAD_PATTERN)
     ]);
     leadControl.updateValueAndValidity({ emitEvent: false });
+    this.intakeForm.updateValueAndValidity({ emitEvent: false });
   }
 
   private async runInitialLoad(
@@ -4437,8 +4513,8 @@ export class GtrWorkspaceFacade {
     return this.getErrorMessage(error, 'No se pudo preparar el lead para tipificar.');
   }
 
-  private whatsAppUrl(prefijo?: string | null, lead?: string | null): string | null {
-    return buildWhatsAppUrl(prefijo, lead);
+  private whatsAppUrl(prefijo?: string | null, lead?: string | null, usermeta?: string | null): string | null {
+    return buildWhatsAppUrl(prefijo, lead, usermeta);
   }
 
   private telUrl(prefijo?: string | null, lead?: string | null): string | null {

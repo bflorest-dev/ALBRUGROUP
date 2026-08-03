@@ -10,6 +10,7 @@ import {
   PlanResponse,
   UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
+import { formatLeadIdentity } from '../../../shared/utils/phone-link';
 import { PreventaLeadService } from '../../preventa/services/preventa-lead.service';
 
 type ActiveDataTab = 'datos' | 'direccion' | 'oferta';
@@ -239,12 +240,15 @@ export class AsesorVentasMisPreventasFacade {
     }
   }
 
-  leadPhone(row: { prefijo?: string | null; lead?: string | null }): string {
-    return `${row.prefijo ?? ''} ${row.lead ?? ''}`.trim();
+  leadPhone(row: { prefijo?: string | null; lead?: string | null; usermeta?: string | null }): string {
+    return formatLeadIdentity(row);
   }
 
-  leadCountryCode(row: { prefijo?: string | null }): string {
-    return row.prefijo === '+51' ? 'PE' : (row.prefijo ?? '').replace(/^\+/, '');
+  leadCountryCode(row: { prefijo?: string | null; lead?: string | null; usermeta?: string | null }): string {
+    if (!row.prefijo || !row.lead) {
+      return '';
+    }
+    return row.prefijo === '+51' ? 'PE' : row.prefijo.replace(/^\+/, '');
   }
 
   estadoSeverity(estado: string | null | undefined): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {

@@ -9,13 +9,12 @@
 >
   <div class="search-form">
     <label class="wide">
-      <span>Numero de Lead</span>
+      <span>Telefono o @usuario</span>
       <input
         #searchInput
         pInputText
         type="text"
-        inputmode="numeric"
-        placeholder="Ej: 987654321"
+        placeholder="Ej: 987654321 o @EfrainBay"
         [value]="facade.searchQuery()"
         (input)="facade.setSearchQuery($any($event.target).value)"
         (keydown.enter)="facade.executeSearch()"
@@ -62,7 +61,7 @@
     <ng-template #body let-row>
       <tr [class.row-priority-campaign]="facade.isPriorityCampaign(row)">
         <td>
-          <strong>{{ facade.leadPrefixLabel(row.prefijo) }} {{ row.lead }}</strong>
+          <strong>{{ facade.leadIdentity(row) }}</strong>
           @if (facade.isPriorityCampaign(row)) {
             <span class="priority-campaign-chip" [title]="facade.priorityCampaignLabel()">
               <i class="pi pi-star-fill" aria-hidden="true"></i>
@@ -149,7 +148,7 @@
     <ng-template #emptymessage>
       <tr>
         <td colspan="9" style="color: var(--app-text-muted); opacity: 0.72; padding: 1.5rem 1rem; text-align: center;">
-          {{ facade.searchExecuted() ? 'No se encontraron leads.' : 'Ingresa el numero y pulsa Buscar.' }}
+          {{ facade.searchExecuted() ? 'No se encontraron leads.' : 'Ingresa telefono o @usuario y pulsa Buscar.' }}
         </td>
       </tr>
     </ng-template>

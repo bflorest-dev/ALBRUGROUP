@@ -25,7 +25,7 @@ import {
   SubtipificacionResponse,
   UbigeoItem
 } from '../../../shared/models/preventa/preventa.models';
-import { buildTelUrl, buildWhatsAppUrl } from '../../../shared/utils/phone-link';
+import { buildTelUrl, buildWhatsAppUrl, formatLeadIdentity } from '../../../shared/utils/phone-link';
 import { PRIORITY_CAMPAIGN_LABEL, isPriorityCampaignName } from '../../../shared/utils/priority-campaign';
 import { providerLogo as resolveProviderLogo } from '../../../shared/utils/provider-logo';
 import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
@@ -744,9 +744,9 @@ export class AsesorVentasWorkspaceFacade {
 
   async registrarChat(): Promise<void> {
     const detail = this.detail();
-    const url = detail ? buildWhatsAppUrl(detail.prefijo, detail.lead) : null;
+    const url = detail ? buildWhatsAppUrl(detail.prefijo, detail.lead, detail.usermeta) : null;
     if (!url) {
-      this.errorMessage.set('El lead no tiene un numero valido para abrir WhatsApp.');
+      this.errorMessage.set('El lead no tiene telefono ni usermeta para abrir WhatsApp.');
       return;
     }
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -1169,7 +1169,15 @@ export class AsesorVentasWorkspaceFacade {
   }
 
   leadPhone(row: LeadAsesorVentasResponse | LeadDetalleResponse): string {
-    return `${row.prefijo} ${row.lead}`.trim();
+    return formatLeadIdentity(row);
+  }
+
+  hasLeadPhone(row: Pick<LeadAsesorVentasResponse, 'prefijo' | 'lead'>): boolean {
+    return !!this.telUrl(row);
+  }
+
+  hasLeadChat(row: Pick<LeadAsesorVentasResponse, 'prefijo' | 'lead' | 'usermeta'>): boolean {
+    return !!buildWhatsAppUrl(row.prefijo, row.lead, row.usermeta);
   }
 
   // Logo del origen del lead: proveedor de la campaña si lo tiene; si no, el fallback del equipo del

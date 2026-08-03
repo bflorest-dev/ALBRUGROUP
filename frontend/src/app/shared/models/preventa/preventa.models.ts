@@ -21,8 +21,9 @@ export interface PageQuery {
 
 export interface LeadPendienteResponse {
   id: number;
-  prefijo: string;
-  lead: string;
+  prefijo?: string | null;
+  lead?: string | null;
+  usermeta?: string | null;
   estadoSeguimiento?: EstadoSeguimiento | string | null;
   lastEntryAt?: string | null;
 }
@@ -86,8 +87,9 @@ export interface LeadGtrResponse {
   idEquipo?: number | null;
   createdAt: string;
   lastEntryAt?: string | null;
-  prefijo: string;
-  lead: string;
+  prefijo?: string | null;
+  lead?: string | null;
+  usermeta?: string | null;
   nombreCampana?: string | null;
   nombreProveedorCampana?: string | null;
   nombreProveedorEquipo?: string | null;
@@ -176,8 +178,9 @@ export interface LeadAgendadoGtrResponse {
   id: number;
   idEquipo?: number | null;
   createdAt: string;
-  prefijo: string;
-  lead: string;
+  prefijo?: string | null;
+  lead?: string | null;
+  usermeta?: string | null;
   nombreCampana?: string | null;
   nombreProveedorCampana?: string | null;
   nombreProveedorEquipo?: string | null;
@@ -220,8 +223,9 @@ export interface MasivoLeadFilters {
 export interface LeadAsesorVentasResponse {
   id: number;
   fechaAsignacion?: string | null;
-  prefijo: string;
-  lead: string;
+  prefijo?: string | null;
+  lead?: string | null;
+  usermeta?: string | null;
   idCampana?: number | null;
   nombreCampana?: string | null;
   // Snapshots del contacto (documento y direccion) que el GTR puede llenar, o el valor real de
@@ -294,6 +298,7 @@ export interface LeadGtrLookupResponse {
   idLead?: number | null;
   prefijo?: string | null;
   lead?: string | null;
+  usermeta?: string | null;
   etapaActual?: Etapa | string | null;
   estadoActual?: EstadoSeguimiento | string | null;
   puedeGestionarseEnGtr: boolean;
@@ -405,8 +410,9 @@ export interface LeadAdicionalDetalleResponse {
 export interface MisPreventaResponse {
   idEventoCierre: number;
   idLead: number;
-  prefijo: string;
-  lead: string;
+  prefijo?: string | null;
+  lead?: string | null;
+  usermeta?: string | null;
   numeroDocumento?: string | null;
   fechaRegistro?: string | null;
   etapaActual?: Etapa | string | null;
@@ -445,8 +451,9 @@ export interface LeadRealtimeEvent {
 }
 
 export interface LeadIntakeRequest {
-  prefijo: string;
-  lead: string;
+  prefijo?: string | null;
+  lead?: string | null;
+  usermeta?: string | null;
   idCampana?: number | null;
   base: string;
 }

@@ -10,7 +10,7 @@
   </ng-template>
 
   @if (facade.activeEventsLead(); as lead) {
-    <p class="wide helper">Lead {{ facade.leadPrefixLabel(lead.prefijo) }} {{ lead.lead }}</p>
+    <p class="wide helper">Lead {{ facade.leadIdentity(lead) }}</p>
   }
 
   <div class="history-toolbar" aria-label="Tipo de historial">

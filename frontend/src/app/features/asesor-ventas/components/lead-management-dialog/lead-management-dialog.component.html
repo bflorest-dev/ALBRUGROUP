@@ -77,7 +77,7 @@
             icon="pi pi-phone"
             label="Llamar"
             severity="secondary"
-            [disabled]="!facade.canMutateOperationalData()"
+            [disabled]="!facade.canMutateOperationalData() || !facade.hasLeadPhone(lead)"
             [loading]="facade.isSaving()"
             (click)="facade.registrarLlamada()"
           ></button>
@@ -87,6 +87,7 @@
             icon="pi pi-whatsapp"
             label="Chat"
             severity="secondary"
+            [disabled]="!facade.hasLeadChat(lead)"
             [loading]="facade.isSaving()"
             (click)="facade.registrarChat()"
           ></button>
