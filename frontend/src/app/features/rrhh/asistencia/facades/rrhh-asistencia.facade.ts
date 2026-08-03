@@ -44,12 +44,58 @@ export interface MonthOption {
   label: string;
 }
 
+/** Un rol dentro de un grupo (Operativo/Estructural) con sus empleados. */
+export interface AttendanceRoleGroup {
+  rol: string;
+  label: string;
+  empleados: CumplimientoRow[];
+}
+
+/** Bandeja agrupada: personal operativo y estructural, cada uno subdividido por rol. */
+export interface AttendanceGroupedRows {
+  operativo: AttendanceRoleGroup[];
+  estructural: AttendanceRoleGroup[];
+}
+
 const REQUEST_TIMEOUT_MS = 20_000;
 const MESES_ESPANOL = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
 ];
 const DIAS_SEMANA: string[] = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
+
+// Bandeja agrupada. Orden vertical de roles operativos fijado con el usuario (supervisor antes que
+// asesor dentro de cada área; Ventas al final). Solo se pintan los roles que tengan empleados.
+const OPERATIVO_ORDER: readonly string[] = [
+  'SUPERVISOR_POSTVENTA', 'ASESOR_POSTVENTA',
+  'SUPERVISOR_BACKOFFICE', 'ASESOR_BACKOFFICE',
+  'SUPERVISOR_GTR', 'ASESOR_GTR',
+  'SUPERVISOR_VENTAS', 'ASESOR_VENTAS',
+  'ASESOR_COBRANZA'
+];
+const ESTRUCTURAL_ORDER: readonly string[] = [
+  'RRHH', 'RECLUTADOR', 'CAPACITADOR', 'COMMUNITY', 'MONITOR', 'DESARROLLADOR', 'CONTADOR'
+];
+// Etiquetas humanas por rol. Para áreas con un solo nivel (solo asesor) se usa el nombre del área;
+// Ventas distingue supervisor/asesor porque coexisten.
+const ROLE_LABELS: Record<string, string> = {
+  ASESOR_POSTVENTA: 'Postventa',
+  SUPERVISOR_POSTVENTA: 'Supervisor Postventa',
+  ASESOR_BACKOFFICE: 'Backoffice',
+  SUPERVISOR_BACKOFFICE: 'Supervisor Backoffice',
+  ASESOR_GTR: 'GTR',
+  SUPERVISOR_GTR: 'Supervisor GTR',
+  SUPERVISOR_VENTAS: 'Supervisor Ventas',
+  ASESOR_VENTAS: 'Asesor Ventas',
+  ASESOR_COBRANZA: 'Cobranza',
+  RRHH: 'RRHH',
+  RECLUTADOR: 'Reclutador',
+  CAPACITADOR: 'Capacitador',
+  COMMUNITY: 'Community',
+  MONITOR: 'Monitor',
+  DESARROLLADOR: 'Desarrollador',
+  CONTADOR: 'Contador'
+};
 const MODALIDADES_SIN_ALMUERZO = new Set(['PART_TIME', 'SEMI_FULL']);
 const PUESTOS_EXCLUIDOS_CUMPLIMIENTO = new Set(['OJT', 'ADMINISTRADOR']);
 
@@ -154,6 +200,31 @@ export class RrhhAsistenciaFacade {
       if (filter === 'tardanzas') return r.cantidadTardanzas > 0;
       return r.diasSinRegistro > 0 || r.cantidadTardanzas > 0;
     });
+  });
+
+  /** Bandeja agrupada: Operativo/Estructural → Rol, sobre la bandeja ya filtrada. */
+  readonly groupedRows = computed<AttendanceGroupedRows>(() => {
+    const byRole = new Map<string, CumplimientoRow[]>();
+    for (const row of this.rows()) {
+      const key = this.normalizeRoleLikeValue(row.puestoTrabajo);
+      const bucket = byRole.get(key);
+      if (bucket) bucket.push(row);
+      else byRole.set(key, [row]);
+    }
+
+    const build = (order: readonly string[]): AttendanceRoleGroup[] =>
+      order
+        .filter((role) => byRole.has(role))
+        .map((role) => ({ rol: role, label: ROLE_LABELS[role] ?? this.humanizeRole(role), empleados: byRole.get(role)! }));
+
+    // Roles no contemplados en ninguna lista caen en Estructural, al final, en orden alfabético.
+    const classified = new Set<string>([...OPERATIVO_ORDER, ...ESTRUCTURAL_ORDER]);
+    const otros: AttendanceRoleGroup[] = [...byRole.keys()]
+      .filter((role) => !classified.has(role))
+      .sort((a, b) => a.localeCompare(b))
+      .map((role) => ({ rol: role, label: this.humanizeRole(role), empleados: byRole.get(role)! }));
+
+    return { operativo: build(OPERATIVO_ORDER), estructural: [...build(ESTRUCTURAL_ORDER), ...otros] };
   });
 
   /** Totales del mes anterior sobre el mismo set de empleados; null si no hay dato previo. */
@@ -864,6 +935,14 @@ export class RrhhAsistenciaFacade {
 
   private normalizeRoleLikeValue(value: string | null | undefined): string {
     return (value ?? '').trim().toUpperCase().replaceAll(' ', '_');
+  }
+
+  private humanizeRole(role: string): string {
+    return role
+      .toLowerCase()
+      .split('_')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
   }
 
   private syncLunchBreakControls(): void {

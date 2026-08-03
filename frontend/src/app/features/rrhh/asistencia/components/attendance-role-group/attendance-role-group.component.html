@@ -1,0 +1,50 @@
+<section class="role-group">
+  <header class="role-group__head">
+    <span class="role-group__name">{{ group().label }}</span>
+    <span class="role-group__count">{{ group().empleados.length }}</span>
+  </header>
+
+  @for (row of group().empleados; track row.idEmpleado) {
+    <button type="button" class="emp-row" (click)="rowClick.emit(row)">
+      <span class="emp-row__person">
+        <span class="emp-row__avatar" aria-hidden="true">{{ initials(row.nombreCompleto) }}</span>
+        <span class="emp-row__name">{{ row.nombreCompleto }}</span>
+      </span>
+
+      <span class="emp-row__ratio">
+        <span class="emp-row__ratio-head">
+          <span>Asistidos</span>
+          <span>{{ asistidos(row) }}/{{ row.diasLaborables }}</span>
+        </span>
+        <span class="emp-row__bar">
+          <span class="emp-row__bar-fill" [style.width.%]="ratioPct(row)"></span>
+        </span>
+      </span>
+
+      <span class="emp-row__incidencias">
+        @if (row.diasSinRegistro === 0 && row.cantidadTardanzas === 0) {
+          <span class="inc inc--ok"><i class="pi pi-check" aria-hidden="true"></i> Sin incidencias</span>
+        } @else {
+          @if (row.diasSinRegistro > 0) {
+            <span class="inc inc--falta">
+              <span class="inc__dot"></span>{{ row.diasSinRegistro }} {{ row.diasSinRegistro === 1 ? 'falta' : 'faltas' }}
+            </span>
+          }
+          @if (row.cantidadTardanzas > 0) {
+            <span class="inc inc--tardanza">
+              <span class="inc__dot"></span>{{ row.cantidadTardanzas }} {{ row.cantidadTardanzas === 1 ? 'tardanza' : 'tardanzas' }}
+            </span>
+          }
+        }
+      </span>
+
+      <span class="emp-row__balance emp-row__balance--{{ balanceTone(row.minutosBalance) }}">
+        <span class="emp-row__thermo">
+          <span class="emp-row__thermo-center"></span>
+          <span class="emp-row__thermo-fill" [style.width.%]="balancePct(row.minutosBalance)"></span>
+        </span>
+        <span class="emp-row__balance-val">{{ balanceLabel(row.minutosBalance) }}</span>
+      </span>
+    </button>
+  }
+</section>

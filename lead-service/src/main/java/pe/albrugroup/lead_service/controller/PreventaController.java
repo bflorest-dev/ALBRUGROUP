@@ -85,6 +85,15 @@ public class PreventaController {
         return ResponseEntity.noContent().build();
     }
     // 2. Listar los Leads registrados y para gestionar Leads del día
+    @PatchMapping("/{idLead}/identidad") @PreAuthorize("hasAnyAuthority('CREATE_LEADS','UPDATE_LEADS_ASESOR')")
+    public ResponseEntity<Void> completarIdentidadLead(
+            @PathVariable Long idLead,
+            @Valid @RequestBody LeadIdentidadRequest request
+    ) {
+        leadService.completarIdentidadLead(idLead, request);
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/{idLead}") @PreAuthorize("hasAuthority('DELETE_LEADS')")
     public ResponseEntity<Void> eliminarLeadIntegral(@PathVariable Long idLead) {
         leadService.eliminarLeadIntegral(idLead);

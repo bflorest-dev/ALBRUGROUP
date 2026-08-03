@@ -1,0 +1,228 @@
+.role-group {
+  border: 1px solid var(--app-border-soft, rgba(17, 38, 60, 0.12));
+  border-radius: 0.85rem;
+  overflow: hidden;
+  background: var(--app-surface, #fff);
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.9rem;
+    background: var(--app-surface-soft, #f5f8fb);
+    border-bottom: 1px solid var(--app-border-soft, rgba(17, 38, 60, 0.12));
+  }
+
+  &__name {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--role-muted, #617389);
+  }
+
+  &__count {
+    font-size: 0.72rem;
+    color: var(--app-text-muted, #6b7280);
+  }
+}
+
+.emp-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 8rem 8.5rem 11rem;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.55rem 0.9rem;
+  border: 0;
+  border-top: 1px solid var(--app-border-soft, rgba(17, 38, 60, 0.1));
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease;
+
+  &:first-of-type {
+    border-top: 0;
+  }
+
+  &:hover {
+    background: var(--role-accent-soft, rgba(23, 48, 76, 0.05));
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--role-accent, #2563eb);
+    outline-offset: -2px;
+  }
+
+  &__person {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
+  }
+
+  &__avatar {
+    flex: none;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--role-primary, #11263c);
+    background: var(--role-accent-soft, rgba(23, 48, 76, 0.1));
+  }
+
+  &__name {
+    min-width: 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--app-text, #11263c);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  // ── Asistidos X/Y
+  &__ratio-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.68rem;
+    color: var(--app-text-muted, #6b7280);
+    margin-bottom: 0.25rem;
+  }
+
+  &__bar {
+    display: block;
+    height: 0.4rem;
+    border-radius: 0.2rem;
+    background: var(--app-surface-soft, #eef2f7);
+    border: 1px solid var(--app-border-soft, rgba(17, 38, 60, 0.1));
+    overflow: hidden;
+  }
+
+  &__bar-fill {
+    display: block;
+    height: 100%;
+    background: var(--role-secondary, #355c7d);
+  }
+
+  // ── Incidencias etiquetadas
+  &__incidencias {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .inc {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+
+    &__dot {
+      width: 0.45rem;
+      height: 0.45rem;
+      border-radius: 0.15rem;
+    }
+
+    &--falta {
+      color: rgb(185, 28, 28);
+      .inc__dot { background: rgb(220, 38, 38); }
+    }
+
+    &--tardanza {
+      color: rgb(180, 83, 9);
+      .inc__dot { background: rgb(217, 119, 6); }
+    }
+
+    &--ok {
+      color: var(--app-text-muted, #6b7280);
+      i { color: rgb(21, 128, 61); font-size: 0.8rem; }
+    }
+  }
+
+  // ── Balance termómetro divergente
+  &__balance {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  &__thermo {
+    position: relative;
+    flex: 1;
+    height: 0.5rem;
+    border-radius: 0.25rem;
+    background: var(--app-surface-soft, #eef2f7);
+    border: 1px solid var(--app-border-soft, rgba(17, 38, 60, 0.1));
+  }
+
+  &__thermo-center {
+    position: absolute;
+    top: -0.15rem;
+    bottom: -0.15rem;
+    left: 50%;
+    width: 1px;
+    background: var(--app-border, #c7d2df);
+  }
+
+  &__thermo-fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    // El borde pegado al centro va recto; solo el extremo lateral se redondea (ver por tono).
+  }
+
+  &__balance-val {
+    flex: none;
+    min-width: 4.5rem;
+    text-align: right;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  &__balance--neg {
+    // Crece hacia la izquierda desde el centro: redondear solo las esquinas izquierdas.
+    .emp-row__thermo-fill {
+      right: 50%;
+      background: rgb(220, 38, 38);
+      border-radius: 0.2rem 0 0 0.2rem;
+    }
+    .emp-row__balance-val { color: rgb(185, 28, 28); }
+  }
+
+  &__balance--pos {
+    // Crece hacia la derecha desde el centro: redondear solo las esquinas derechas.
+    .emp-row__thermo-fill {
+      left: 50%;
+      background: rgb(21, 128, 61);
+      border-radius: 0 0.2rem 0.2rem 0;
+    }
+    .emp-row__balance-val { color: rgb(21, 128, 61); }
+  }
+
+  &__balance--zero {
+    .emp-row__thermo-fill { display: none; }
+    .emp-row__balance-val { color: var(--app-text-muted, #6b7280); }
+  }
+}
+
+@media (max-width: 720px) {
+  .emp-row {
+    grid-template-columns: minmax(0, 1fr) 7rem;
+    grid-template-areas:
+      'person person'
+      'ratio incidencias'
+      'balance balance';
+    gap: 0.5rem 0.75rem;
+
+    &__person { grid-area: person; }
+    &__ratio { grid-area: ratio; }
+    &__incidencias { grid-area: incidencias; }
+    &__balance { grid-area: balance; }
+  }
+}

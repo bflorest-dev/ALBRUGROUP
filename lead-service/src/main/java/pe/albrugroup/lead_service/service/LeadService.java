@@ -24,6 +24,7 @@ import pe.albrugroup.lead_service.entity.request.LeadAsignacionMasivaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadAsignacionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
+import pe.albrugroup.lead_service.entity.request.LeadIdentidadRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRetroactivoRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaAdicionalRequest;
@@ -981,6 +982,42 @@ public class LeadService {
 
         Lead savedLead = leadRepository.save(lead);
         notificarCambioLead("SNAPSHOTS_ACTUALIZADOS", savedLead, null, null);
+    }
+
+    @Transactional
+    public void completarIdentidadLead(Long idLead, LeadIdentidadRequest request) {
+        Lead lead = leadRepository.findById(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        Contacto contacto = lead.getContacto();
+        if (contacto == null || contacto.getId() == null) {
+            throw new BadRequestException("El lead no tiene un contacto asociado para completar identidad");
+        }
+
+        String prefijo = normalizarPrefijo(request.getPrefijo());
+        String numeroLead = normalizarLead(request.getLead());
+        String usermeta = normalizarUsermeta(request.getUsermeta());
+        validarIdentidadIntake(prefijo, numeroLead, usermeta);
+        validarIdentidadParaCompletar(contacto, prefijo, numeroLead, usermeta);
+
+        boolean actualizado = completarIdentidadContacto(contacto, prefijo, numeroLead, usermeta);
+        if (!actualizado) {
+            throw new BadRequestException("El contacto no tiene datos de identidad pendientes por completar");
+        }
+
+        Contacto contactoGuardado = contactoRepository.save(contacto);
+        LeadIdentidad identidad = new LeadIdentidad(
+                contactoGuardado.getPrefijo(),
+                contactoGuardado.getLead(),
+                contactoGuardado.getUsermeta(),
+                contactoGuardado
+        );
+        List<Lead> leadsContacto = leadRepository.findByContactoIdOrderByLastEntryAtDescIdDesc(contactoGuardado.getId());
+        if (leadsContacto.isEmpty()) {
+            leadsContacto = List.of(lead);
+        }
+        leadsContacto.forEach(item -> sincronizarIdentidadLead(item, identidad));
+        List<Lead> guardados = leadRepository.saveAll(leadsContacto);
+        guardados.forEach(item -> notificarCambioLead("IDENTIDAD_ACTUALIZADA", item, null, null, item.getEtapa() != Etapa.PREVENTA));
     }
 
     @Transactional
@@ -2363,6 +2400,24 @@ public class LeadService {
                 && !contacto.getUsermeta().equalsIgnoreCase(usermeta)) {
             throw new ConflictException("El contacto ya tiene otro usermeta registrado. Revisa el lead antes de registrarlo.");
         }
+    }
+
+    private void validarIdentidadParaCompletar(Contacto contacto, String prefijo, String numeroLead, String usermeta) {
+        Optional<Contacto> contactoPorTelefono = tieneTelefono(prefijo, numeroLead)
+                ? contactoRepository.findByPrefijoAndLead(prefijo, numeroLead)
+                : Optional.empty();
+        if (contactoPorTelefono.isPresent() && !contactoPorTelefono.get().getId().equals(contacto.getId())) {
+            throw new ConflictException("El telefono pertenece a otro contacto. Revisa el lead antes de completar la identidad.");
+        }
+
+        Optional<Contacto> contactoPorUsermeta = usermeta == null
+                ? Optional.empty()
+                : contactoRepository.findByUsermetaIgnoreCase(usermeta);
+        if (contactoPorUsermeta.isPresent() && !contactoPorUsermeta.get().getId().equals(contacto.getId())) {
+            throw new ConflictException("El usermeta pertenece a otro contacto. Revisa el lead antes de completar la identidad.");
+        }
+
+        validarCompatibilidadIdentidad(contacto, prefijo, numeroLead, usermeta);
     }
 
     private boolean completarIdentidadContacto(Contacto contacto, String prefijo, String numeroLead, String usermeta) {

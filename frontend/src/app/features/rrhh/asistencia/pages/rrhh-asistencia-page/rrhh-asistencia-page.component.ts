@@ -16,6 +16,7 @@ import type { OrigenTramo } from '../../../../../shared/models/schedule/cumplimi
 import { ScheduleAdjustmentDialogComponent } from '../../../../../shared/components/schedule-adjustment-dialog/schedule-adjustment-dialog.component';
 import { AttendanceFilterBarComponent } from '../../components/attendance-filter-bar/attendance-filter-bar.component';
 import { AttendanceMetricCardsComponent } from '../../components/attendance-metric-cards/attendance-metric-cards.component';
+import { AttendanceTrayComponent } from '../../components/attendance-tray/attendance-tray.component';
 import { ScheduleEditorPanelComponent } from '../../components/schedule-editor-panel/schedule-editor-panel.component';
 import {
   CumplimientoRow,
@@ -45,6 +46,7 @@ interface SelectChoice {
     ScheduleAdjustmentDialogComponent,
     AttendanceFilterBarComponent,
     AttendanceMetricCardsComponent,
+    AttendanceTrayComponent,
     ScheduleEditorPanelComponent,
     SelectModule,
     TableModule,

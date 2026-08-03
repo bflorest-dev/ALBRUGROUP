@@ -65,52 +65,11 @@
             <p-message severity="error" [text]="facade.errorMessage()" />
           }
 
-          <p-table
-            [value]="facade.rows()"
-            dataKey="idEmpleado"
-            [rowHover]="true"
+          <app-attendance-tray
+            [grouped]="facade.groupedRows()"
             [loading]="facade.isLoading()"
-            styleClass="p-datatable-sm cumplimiento-table"
-          >
-            <ng-template #header>
-              <tr>
-                <th>Empleado</th>
-                <th>Puesto</th>
-                <th class="col-num">Días laborables</th>
-                <th class="col-num">Faltas</th>
-                <th class="col-num">Tardanzas</th>
-                <th class="col-num">Balance</th>
-              </tr>
-            </ng-template>
-
-            <ng-template #body let-row>
-              <tr class="row-clickable" (click)="openDrawer(row)">
-                <td><strong>{{ row.nombreCompleto }}</strong></td>
-                <td>{{ formatPuesto(row.puestoTrabajo) }}</td>
-                <td class="col-num">{{ row.diasLaborables }}</td>
-                <td class="col-num">
-                  <p-tag [value]="row.diasSinRegistro" [severity]="faltasSeverity(row.diasSinRegistro)" />
-                </td>
-                <td class="col-num">
-                  <p-tag [value]="row.cantidadTardanzas" [severity]="tardanzasSeverity(row.cantidadTardanzas)" />
-                </td>
-                <td class="col-num">
-                  <p-tag [value]="balanceLabel(row.minutosBalance)" [severity]="balanceSeverity(row.minutosBalance)" />
-                </td>
-              </tr>
-            </ng-template>
-
-            <ng-template #emptymessage>
-              <tr>
-                <td colspan="6">
-                  <p-message
-                    severity="info"
-                    [text]="facade.isLoading() ? 'Cargando cumplimiento del mes...' : 'Sin empleados que coincidan con los filtros.'"
-                  />
-                </td>
-              </tr>
-            </ng-template>
-          </p-table>
+            (rowClick)="openDrawer($event)"
+          />
         </div>
       </p-tabpanel>
 

@@ -1,0 +1,30 @@
+<div class="tray">
+  @if (operativoTotal() > 0) {
+    <div class="tray__label tray__label--primary">
+      <i class="pi pi-headphones" aria-hidden="true"></i>
+      <span>Personal operativo</span>
+      <span class="tray__count">{{ operativoTotal() }}</span>
+    </div>
+    @for (roleGroup of grouped().operativo; track roleGroup.rol) {
+      <app-attendance-role-group [group]="roleGroup" (rowClick)="rowClick.emit($event)" />
+    }
+  }
+
+  @if (estructuralTotal() > 0) {
+    <div class="tray__label tray__label--muted">
+      <i class="pi pi-building" aria-hidden="true"></i>
+      <span>Personal estructural</span>
+      <span class="tray__count">{{ estructuralTotal() }}</span>
+    </div>
+    @for (roleGroup of grouped().estructural; track roleGroup.rol) {
+      <app-attendance-role-group [group]="roleGroup" (rowClick)="rowClick.emit($event)" />
+    }
+  }
+
+  @if (isEmpty()) {
+    <div class="tray__empty">
+      <i class="pi" [class.pi-spin]="loading()" [class.pi-spinner]="loading()" [class.pi-inbox]="!loading()" aria-hidden="true"></i>
+      <span>{{ loading() ? 'Cargando cumplimiento del mes…' : 'Sin empleados que coincidan con los filtros.' }}</span>
+    </div>
+  }
+</div>
