@@ -90,6 +90,13 @@ export class RrhhAsistenciaFacade {
     return Array.from(unique).sort((a, b) => a.localeCompare(b));
   });
 
+  /** Nombres de los empleados del reporte, para el autocompletado del buscador. */
+  readonly empleadoNombres = computed<string[]>(() =>
+    this.empleados()
+      .map((e) => `${e.nombres} ${e.apellidos}`.trim())
+      .sort((a, b) => a.localeCompare(b))
+  );
+
   readonly monthStatus = computed<'cerrado' | 'en_curso' | 'futuro'>(() => {
     const current = this.currentMonthValue();
     const selected = this.selectedMonth();

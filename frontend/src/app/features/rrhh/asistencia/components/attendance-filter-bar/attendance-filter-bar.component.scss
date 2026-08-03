@@ -1,0 +1,37 @@
+.filter-bar {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+
+  .filter {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 12rem;
+
+    span {
+      font-size: 0.75rem;
+      color: var(--p-text-muted-color, #6b7280);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    &--search {
+      min-width: 18rem;
+      flex: 1;
+    }
+  }
+
+  // El buscador y los selects ocupan todo el ancho de su columna.
+  ::ng-deep .filter-bar__search,
+  ::ng-deep .filter-bar__search .p-autocomplete,
+  ::ng-deep .filter-bar__search input,
+  ::ng-deep p-select {
+    width: 100%;
+  }
+
+  &__refresh {
+    flex: 0 0 auto;
+  }
+}

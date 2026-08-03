@@ -1,0 +1,19 @@
+[33m❯[39m Building...
+[32m✔[39m Building...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m          [2m | [22m [1mRaw size[22m
+[32mstyles.css[39m         [2m | [22m[2mstyles[22m         [2m | [22m[36m294.57 kB[39m[2m | [22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m           [2m | [22m[36m110.66 kB[39m[2m | [22m
+[32mchunk-5DJ62XKE.js[39m  [2m | [22m[2m-[22m              [2m | [22m [36m52.56 kB[39m[2m | [22m
+[32mchunk-7WG6WB6G.js[39m  [2m | [22m[2m-[22m              [2m | [22m [36m23.60 kB[39m[2m | [22m
+
+[1m [22m                  [2m | [22m[1mInitial total[22m  [2m | [22m[1m481.39 kB[22m
+
+[1mLazy chunk files[22m   [2m | [22m[1mNames[22m          [2m | [22m [1mRaw size[22m
+[32mchunk-JKOZZU3Z.js[39m  [2m | [22m[2mplatform-routes[22m[2m | [22m  [36m4.10 MB[39m[2m | [22m
+[32mchunk-NEA4CLSG.js[39m  [2m | [22m[2mauth-routes[22m    [2m | [22m[36m226.07 kB[39m[2m | [22m
+
+Application bundle generation complete. [22.244 seconds] - 2026-08-03T18:13:34.867Z
+
+Watch mode enabled. Watching for file changes...
+NOTE: Raw file sizes do not reflect development server per-request transformations.
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m4200[22m/[39m

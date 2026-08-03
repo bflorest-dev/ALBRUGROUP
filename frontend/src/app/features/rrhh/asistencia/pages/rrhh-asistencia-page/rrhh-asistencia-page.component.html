@@ -40,53 +40,19 @@
             </div>
           </header>
 
-          <div class="cumplimiento-filters">
-            <label class="filter">
-              <span>Mes</span>
-              <p-select
-                [options]="monthSelectChoices()"
-                optionLabel="label"
-                optionValue="value"
-                [ngModel]="facade.selectedMonth()"
-                (ngModelChange)="onMonthChange($event)"
-                appendTo="body"
-              />
-            </label>
-
-            <label class="filter">
-              <span>Puesto</span>
-              <p-select
-                [options]="puestoSelectChoices()"
-                optionLabel="label"
-                optionValue="value"
-                [ngModel]="facade.puestoFilter()"
-                (ngModelChange)="onPuestoChange($event)"
-                appendTo="body"
-              />
-            </label>
-
-            <label class="filter filter--search">
-              <span>Buscar empleado</span>
-              <input
-                pInputText
-                type="text"
-                placeholder="Nombre o apellido"
-                [ngModel]="facade.searchTerm()"
-                (ngModelChange)="onSearchChange($event)"
-              />
-            </label>
-
-            <button
-              pButton
-              type="button"
-              severity="secondary"
-              [outlined]="true"
-              icon="pi pi-refresh"
-              label="Actualizar"
-              [loading]="facade.isLoading()"
-              (click)="facade.recargar()"
-            ></button>
-          </div>
+          <app-attendance-filter-bar
+            [empleadoNombres]="facade.empleadoNombres()"
+            [puestoOptions]="puestoSelectChoices()"
+            [monthOptions]="monthSelectChoices()"
+            [searchTerm]="facade.searchTerm()"
+            [puesto]="facade.puestoFilter()"
+            [selectedMonth]="facade.selectedMonth()"
+            [loading]="facade.isLoading()"
+            (searchChange)="onSearchChange($event)"
+            (puestoChange)="onPuestoChange($event)"
+            (monthChange)="onMonthChange($event)"
+            (refresh)="facade.recargar()"
+          />
 
           <app-attendance-metric-cards
             [kpis]="facade.kpis()"

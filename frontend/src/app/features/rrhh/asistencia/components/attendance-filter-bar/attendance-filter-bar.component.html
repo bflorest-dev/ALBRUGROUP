@@ -1,0 +1,55 @@
+<div class="filter-bar">
+  <label class="filter filter--search">
+    <span>Buscar empleado</span>
+    <p-autoComplete
+      [ngModel]="searchTerm()"
+      [suggestions]="suggestions()"
+      (completeMethod)="onComplete($event)"
+      (ngModelChange)="onSearchModel($event)"
+      [forceSelection]="false"
+      [minLength]="1"
+      placeholder="Nombre o apellido"
+      appendTo="body"
+      styleClass="filter-bar__search"
+    />
+  </label>
+
+  <label class="filter">
+    <span>Puesto</span>
+    <p-select
+      [options]="puestoOptions()"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="puesto()"
+      (ngModelChange)="puestoChange.emit($event)"
+      appendTo="body"
+    />
+  </label>
+
+  <label class="filter">
+    <span>Mes</span>
+    <p-select
+      [options]="monthOptions()"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="selectedMonth()"
+      (ngModelChange)="monthChange.emit($event)"
+      appendTo="body"
+    />
+  </label>
+
+  <button
+    pButton
+    type="button"
+    class="filter-bar__refresh"
+    severity="secondary"
+    [rounded]="true"
+    [outlined]="true"
+    icon="pi pi-refresh"
+    [loading]="loading()"
+    (click)="refresh.emit()"
+    pTooltip="Actualizar"
+    tooltipPosition="top"
+    aria-label="Actualizar"
+  ></button>
+</div>
