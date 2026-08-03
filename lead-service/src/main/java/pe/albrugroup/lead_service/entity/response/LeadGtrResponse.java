@@ -21,6 +21,7 @@ public class LeadGtrResponse {
     private Instant lastEntryAt;
     private String prefijo;
     private String lead;
+    private String usermeta;
     private String nombreCampana;
     private String nombreProveedorCampana;
     private String nombreProveedorEquipo;

@@ -25,6 +25,7 @@ public class LeadResponse {
     private Long id;
     private String prefijo;
     private String lead;
+    private String usermeta;
     private Etapa etapa;
     private EstadoSeguimiento estadoSeguimiento;
     private Long idAsesorAsignado;

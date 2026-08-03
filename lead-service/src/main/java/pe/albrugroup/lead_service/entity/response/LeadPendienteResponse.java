@@ -16,6 +16,7 @@ public class LeadPendienteResponse {
     private Long id;
     private String prefijo;
     private String lead;
+    private String usermeta;
     private EstadoSeguimiento estadoSeguimiento;
     private Instant lastEntryAt;
 }

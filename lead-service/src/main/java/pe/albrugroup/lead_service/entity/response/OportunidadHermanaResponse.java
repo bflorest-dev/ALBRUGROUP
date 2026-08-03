@@ -11,6 +11,7 @@ import java.time.Instant;
  */
 public record OportunidadHermanaResponse(
         Long id,
+        String usermeta,
         String numeroDocumentoTitular,
         EstadoSeguimiento estado,
         Etapa etapa,

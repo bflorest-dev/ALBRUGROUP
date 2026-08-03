@@ -21,6 +21,7 @@ public class MisPreventaResponse {
     private Long idLead;
     private String prefijo;
     private String lead;
+    private String usermeta;
     private String numeroDocumento;
     private Instant fechaRegistro;
     private Etapa etapaActual;

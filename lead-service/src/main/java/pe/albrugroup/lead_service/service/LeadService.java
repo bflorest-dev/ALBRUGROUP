@@ -335,6 +335,7 @@ public class LeadService {
                         numeroLead,
                         null,
                         null,
+                        null,
                         false,
                         false,
                         "No encontramos ese lead en el sistema."
@@ -393,6 +394,7 @@ public class LeadService {
                     .id(lead.getId())
                     .prefijo(lead.getPrefijo())
                     .lead(lead.getLead())
+                    .usermeta(lead.getUsermeta())
                     .estadoSeguimiento(lead.getEstado())
                     .lastEntryAt(lead.getLastEntryAt())
                     .build());
@@ -835,6 +837,7 @@ public class LeadService {
                 .idLead(lead.getId())
                 .prefijo(lead.getPrefijo())
                 .lead(lead.getLead())
+                .usermeta(lead.getUsermeta())
                 .numeroDocumento(numeroDocumentoPreventa(lead))
                 .fechaRegistro(cierre.getCreatedAt())
                 .etapaActual(etapaActual)
@@ -2321,7 +2324,8 @@ public class LeadService {
             Campana campana,
             Instant registroAt
     ) {
-        Lead lead = leadMapper.toNuevoLead(prefijo, numeroLead, request.getBase(), campana, OperationalDateTime.now());
+        Lead lead = leadMapper.toNuevoLead(
+                prefijo, numeroLead, request.getUsermeta(), request.getBase(), campana, OperationalDateTime.now());
         lead.setContacto(resolverContacto(prefijo, numeroLead));
         lead.setIdEquipo(derivarIdEquipo(campana));
 
@@ -2345,7 +2349,7 @@ public class LeadService {
             boolean notificarRealtime
     ) {
         Campana campana = obtenerCampanaBaseMasivo(idCampanaBaseMasivo, advertencias);
-        Lead lead = leadMapper.toNuevoLead(prefijo, numeroLead, base, campana, OperationalDateTime.now());
+        Lead lead = leadMapper.toNuevoLead(prefijo, numeroLead, null, base, campana, OperationalDateTime.now());
         aplicarSnapshotsMasivo(lead, documentoSnapshot, direccionSnapshot, advertencias);
         lead.setContacto(resolverContacto(prefijo, numeroLead));
         lead.setIdEquipo(derivarIdEquipo(campana));
@@ -3029,6 +3033,7 @@ public class LeadService {
                 lead.getId(),
                 lead.getPrefijo(),
                 lead.getLead(),
+                lead.getUsermeta(),
                 etapaActual,
                 lead.getEstado(),
                 puedeGestionarseEnGtr,
@@ -3182,6 +3187,7 @@ public class LeadService {
                 fechaAsignacion,
                 lead.getPrefijo(),
                 lead.getLead(),
+                lead.getUsermeta(),
                 idCampana,
                 nombreCampana,
                 numeroDocumento,
@@ -3238,6 +3244,7 @@ public class LeadService {
                 lead.getLastEntryAt(),
                 lead.getPrefijo(),
                 lead.getLead(),
+                lead.getUsermeta(),
                 lead.getCampana() == null ? null : lead.getCampana().getNombre(),
                 lead.getCampana() == null || lead.getCampana().getProveedor() == null ? null : lead.getCampana().getProveedor().getNombre(),
                 lead.getBase(),
@@ -3494,7 +3501,7 @@ public class LeadService {
         Lead original = obtenerLeadAsignadoDelAsesor(idLead);
 
         Lead nueva = leadMapper.toNuevoLead(
-                original.getPrefijo(), original.getLead(), original.getBase(),
+                original.getPrefijo(), original.getLead(), original.getUsermeta(), original.getBase(),
                 original.getCampana(), OperationalDateTime.now());
         nueva.setContacto(original.getContacto());
         nueva.setIdEquipo(original.getIdEquipo());
@@ -3560,6 +3567,7 @@ public class LeadService {
     private OportunidadHermanaResponse toHermanaResponse(Lead lead) {
         return new OportunidadHermanaResponse(
                 lead.getId(),
+                lead.getUsermeta(),
                 lead.getNumeroDocumentoTitularServicioSnapshot(),
                 lead.getEstado(),
                 lead.getEtapa(),

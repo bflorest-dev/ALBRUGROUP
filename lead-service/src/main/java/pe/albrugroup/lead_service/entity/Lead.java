@@ -42,6 +42,7 @@ public class Lead {
     // GTR
     private String prefijo; // +51
     private String lead; // 987654321
+    private String usermeta; // EfrainBay (sin @)
 
     // Identidad del contacto (teléfono). prefijo+lead se mantienen denormalizados aquí.
     @ManyToOne(fetch = FetchType.LAZY)

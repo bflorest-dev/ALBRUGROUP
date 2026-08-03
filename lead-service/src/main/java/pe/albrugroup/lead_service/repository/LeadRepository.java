@@ -96,6 +96,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.lastEntryAt,
                 l.prefijo,
                 l.lead,
+                l.usermeta,
                 c.nombre,
                 p.nombre,
                 (SELECT peFallback.nombre
@@ -152,6 +153,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.lastEntryAt,
                 l.prefijo,
                 l.lead,
+                l.usermeta,
                 c.nombre,
                 p.nombre,
                 (SELECT peFallback.nombre
@@ -598,6 +600,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.createdAt,
                 l.prefijo,
                 l.lead,
+                l.usermeta,
                 c.nombre,
                 p.nombre,
                 (SELECT peFallback.nombre
@@ -667,6 +670,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.createdAt,
                 l.prefijo,
                 l.lead,
+                l.usermeta,
                 c.nombre,
                 p.nombre,
                 (SELECT peFallback.nombre
@@ -736,6 +740,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.createdAt,
                 l.prefijo,
                 l.lead,
+                l.usermeta,
                 c.nombre,
                 p.nombre,
                 (SELECT peFallback.nombre
@@ -805,6 +810,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.createdAt,
                 l.prefijo,
                 l.lead,
+                l.usermeta,
                 c.nombre,
                 p.nombre,
                 (SELECT peFallback.nombre
@@ -948,6 +954,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.id,
                 l.prefijo,
                 l.lead,
+                l.usermeta,
                 l.etapa,
                 l.estado,
                 l.idAsesorAsignado,
@@ -1039,6 +1046,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.id,
                 l.prefijo,
                 l.lead,
+                l.usermeta,
                 l.etapa,
                 l.estado,
                 l.idAsesorAsignado,
@@ -1272,6 +1280,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.id,
                 l.prefijo,
                 l.lead,
+                l.usermeta,
                 l.etapa,
                 l.estado,
                 l.idAsesorAsignado,
@@ -1448,6 +1457,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                 l.lastEntryAt,
                 l.prefijo,
                 l.lead,
+                l.usermeta,
                 c.nombre,
                 p.nombre,
                 (SELECT peFallback.nombre

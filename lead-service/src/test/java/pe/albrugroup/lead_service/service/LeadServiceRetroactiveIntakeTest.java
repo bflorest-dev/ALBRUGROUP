@@ -43,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -84,6 +85,7 @@ class LeadServiceRetroactiveIntakeTest {
         when(leadMapper.toNuevoLead(
                 eq("+51"),
                 eq("987654321"),
+                isNull(),
                 eq(Base.WHATSAPP),
                 eq(campana),
                 lastEntryCaptor.capture()
@@ -126,7 +128,7 @@ class LeadServiceRetroactiveIntakeTest {
 
         when(campanaRepository.findByIdAndActivoTrue(7L)).thenReturn(Optional.of(campana));
         when(leadRepository.findByPrefijoAndLead("+51", "987654321")).thenReturn(Optional.empty());
-        when(leadMapper.toNuevoLead(eq("+51"), eq("987654321"), eq(Base.WHATSAPP), eq(campana), any(Instant.class)))
+        when(leadMapper.toNuevoLead(eq("+51"), eq("987654321"), isNull(), eq(Base.WHATSAPP), eq(campana), any(Instant.class)))
                 .thenReturn(lead);
         when(leadRepository.save(lead)).thenReturn(lead);
 

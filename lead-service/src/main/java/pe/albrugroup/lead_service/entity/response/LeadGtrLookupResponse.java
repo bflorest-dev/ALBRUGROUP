@@ -13,6 +13,7 @@ public class LeadGtrLookupResponse {
     private Long idLead;
     private String prefijo;
     private String lead;
+    private String usermeta;
     private Etapa etapaActual;
     private EstadoSeguimiento estadoActual;
     private boolean puedeGestionarseEnGtr;

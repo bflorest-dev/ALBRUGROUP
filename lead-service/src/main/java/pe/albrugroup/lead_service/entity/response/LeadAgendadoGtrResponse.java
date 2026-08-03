@@ -24,6 +24,7 @@ public class LeadAgendadoGtrResponse {
     private Instant createdAt;
     private String prefijo;
     private String lead;
+    private String usermeta;
     private String nombreCampana;
     private String nombreProveedorCampana;
     private String nombreProveedorEquipo;

@@ -26,6 +26,7 @@ public class Contacto {
 
     private String prefijo;
     private String lead;
+    private String usermeta;
 
     // Último nombre conocido (cache para bandejas/lupa sin cargar la oportunidad).
     private String nombreConocido;

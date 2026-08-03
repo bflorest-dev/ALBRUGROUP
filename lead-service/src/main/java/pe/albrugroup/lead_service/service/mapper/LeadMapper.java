@@ -20,6 +20,7 @@ public interface LeadMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "prefijo", source = "prefijo")
     @Mapping(target = "lead", source = "lead")
+    @Mapping(target = "usermeta", source = "usermeta")
     @Mapping(target = "base", source = "base")
     @Mapping(target = "campana", source = "campana")
     @Mapping(target = "lastEntryAt", source = "lastEntryAt")
@@ -49,7 +50,7 @@ public interface LeadMapper {
     @Mapping(target = "estadoClientePostventa", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    Lead toNuevoLead(String prefijo, String lead, Base base, Campana campana, Instant lastEntryAt);
+    Lead toNuevoLead(String prefijo, String lead, String usermeta, Base base, Campana campana, Instant lastEntryAt);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "tipoDocumento", source = "tipoDocumento")
