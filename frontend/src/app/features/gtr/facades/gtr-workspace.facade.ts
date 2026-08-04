@@ -232,6 +232,16 @@ export class GtrWorkspaceFacade {
 
     return hasPhone || !!usermeta ? null : { identityRequired: true };
   }
+
+  private static optionalIdentityValidator(control: AbstractControl): { phoneIncomplete?: true } | null {
+    const group = control as FormGroup;
+    const prefijo = String(group.get('prefijo')?.value ?? '').trim();
+    const lead = String(group.get('lead')?.value ?? '').trim();
+    if ((!!prefijo && !lead) || (!prefijo && !!lead)) {
+      return { phoneIncomplete: true };
+    }
+    return null;
+  }
   private readonly presenceService = inject(PresenceService);
   private readonly presenceRealtimeService = inject(PresenceRealtimeService);
   private readonly historicosStateService = inject(GtrHistoricosStateService);
@@ -266,6 +276,7 @@ export class GtrWorkspaceFacade {
   readonly isLoadingEvents = signal(false);
   readonly isLoadingTipificationHistory = signal(false);
   readonly intakeNumberMaxLength = signal(9);
+  readonly snapshotNumberMaxLength = signal(9);
   private readonly selectedIntakeCampaignId = signal<number | null>(null);
   readonly masivoExcelResultsDialogOpen = signal(false);
   readonly successMessage = signal<string | null>(null);
@@ -499,9 +510,12 @@ export class GtrWorkspaceFacade {
 
   readonly snapshotForm = this.fb.group({
     idLead: [0, [Validators.required, Validators.min(1)]],
+    prefijo: [PERU_PHONE_PREFIX, [Validators.pattern(/^\+\d{1,3}$/)]],
+    lead: ['', [Validators.pattern(PERU_LEAD_PATTERN)]],
+    usermeta: ['', [Validators.pattern(USERMETA_PATTERN)]],
     numeroDocumentoTitularServicio: [''],
     direccion: ['']
-  });
+  }, { validators: GtrWorkspaceFacade.optionalIdentityValidator });
 
   readonly datosForm = this.fb.group({
     tipoDocumento: ['', [Validators.required]],
@@ -1032,6 +1046,11 @@ export class GtrWorkspaceFacade {
       })
     );
     this.formSubscription.add(
+      this.snapshotForm.controls.prefijo.valueChanges.subscribe((prefijo) => {
+        this.updateSnapshotLeadValidation(prefijo);
+      })
+    );
+    this.formSubscription.add(
       this.intakeForm.controls.idCampana.valueChanges.subscribe((idCampana) => {
         this.selectedIntakeCampaignId.set(idCampana === null ? null : Number(idCampana));
         this.syncIntakeOriginWithCampaign();
@@ -1340,9 +1359,13 @@ export class GtrWorkspaceFacade {
     this.activeSnapshotLead.set(row);
     this.snapshotForm.reset({
       idLead: row.id,
+      prefijo: row.prefijo ?? PERU_PHONE_PREFIX,
+      lead: row.lead ?? '',
+      usermeta: row.usermeta ?? '',
       numeroDocumentoTitularServicio: row.numeroDocumentoTitularServicio ?? '',
       direccion: row.direccionSnapshot ?? ''
     });
+    this.applySnapshotIdentityDisabledState(row);
   }
 
   openNewLead(): void {
@@ -1396,6 +1419,20 @@ export class GtrWorkspaceFacade {
     const normalized = normalizeUsermeta(value);
     if (this.intakeForm.controls.usermeta.value !== normalized) {
       this.intakeForm.controls.usermeta.setValue(normalized);
+    }
+  }
+
+  normalizeSnapshotLeadNumber(value: string): void {
+    const normalized = this.normalizePhoneInput(value);
+    if (this.snapshotForm.controls.lead.value !== normalized) {
+      this.snapshotForm.controls.lead.setValue(normalized);
+    }
+  }
+
+  normalizeSnapshotUsermeta(value: string): void {
+    const normalized = normalizeUsermeta(value);
+    if (this.snapshotForm.controls.usermeta.value !== normalized) {
+      this.snapshotForm.controls.usermeta.setValue(normalized);
     }
   }
 
@@ -2006,8 +2043,12 @@ export class GtrWorkspaceFacade {
 
   cancelSnapshot(): void {
     this.activeSnapshotLead.set(null);
+    this.enableSnapshotIdentityControls();
     this.snapshotForm.reset({
       idLead: 0,
+      prefijo: PERU_PHONE_PREFIX,
+      lead: '',
+      usermeta: '',
       numeroDocumentoTitularServicio: '',
       direccion: ''
     });
@@ -2017,30 +2058,44 @@ export class GtrWorkspaceFacade {
     if (!this.ensureCanMutate()) {
       return;
     }
+    this.snapshotForm.updateValueAndValidity();
+    if (this.snapshotForm.invalid) {
+      this.snapshotForm.markAllAsTouched();
+      this.errorMessage.set(this.snapshotIdentityErrorMessage() ?? 'Revisa los datos antes de guardar.');
+      return;
+    }
+
     const raw = this.snapshotForm.getRawValue();
     const numeroDocumentoTitularServicio = raw.numeroDocumentoTitularServicio.trim();
     const direccion = raw.direccion.trim();
+    const identidadRequest = this.buildSnapshotIdentityRequest();
+    const snapshotRequest = numeroDocumentoTitularServicio || direccion
+      ? {
+          numeroDocumentoTitularServicio: numeroDocumentoTitularServicio || null,
+          direccion: direccion || null
+        }
+      : null;
 
-    if (!raw.idLead || (!numeroDocumentoTitularServicio && !direccion)) {
-      this.errorMessage.set('Selecciona un lead y completa documento o direccion.');
+    if (!raw.idLead || (!identidadRequest && !snapshotRequest)) {
+      this.errorMessage.set('Selecciona un lead y completa identidad, documento o direccion.');
       return;
     }
 
     this.isSavingSnapshot.set(true);
     this.clearMessages();
     try {
-      await firstValueFrom(
-        this.preventaService.actualizarSnapshotsLead(raw.idLead, {
-          numeroDocumentoTitularServicio: numeroDocumentoTitularServicio || null,
-          direccion: direccion || null
-        })
-      );
-      this.successMessage.set('Snapshot inicial actualizado.');
+      if (identidadRequest) {
+        await firstValueFrom(this.preventaService.completarIdentidadLead(raw.idLead, identidadRequest));
+      }
+      if (snapshotRequest) {
+        await firstValueFrom(this.preventaService.actualizarSnapshotsLead(raw.idLead, snapshotRequest));
+      }
+      this.successMessage.set(this.snapshotSuccessMessage(!!identidadRequest, !!snapshotRequest));
       this.cancelSnapshot();
       this.closeDialog();
       await this.reconcile();
     } catch (error) {
-      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo actualizar el snapshot.'));
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo guardar la informacion del lead.'));
     } finally {
       this.isSavingSnapshot.set(false);
     }
@@ -3130,6 +3185,22 @@ export class GtrWorkspaceFacade {
 
   hasLeadChat(row: { prefijo?: string | null; lead?: string | null; usermeta?: string | null }): boolean {
     return !!this.whatsAppUrl(row.prefijo, row.lead, row.usermeta);
+  }
+
+  snapshotIdentityErrorMessage(): string | null {
+    if (this.snapshotForm.errors?.['phoneIncomplete']) {
+      return 'Completa prefijo y numero para guardar el telefono del lead.';
+    }
+    if (this.snapshotForm.controls.prefijo.invalid) {
+      return 'El prefijo debe tener formato +1, +51 o similar.';
+    }
+    if (this.snapshotForm.controls.lead.invalid) {
+      return this.intakeNumberInvalidMessage();
+    }
+    if (this.snapshotForm.controls.usermeta.invalid) {
+      return 'El usuario WhatsApp solo puede usar letras, numeros, punto, guion y guion bajo.';
+    }
+    return null;
   }
 
   providerLogo(nombreProveedor?: string | null): string | null {
@@ -4390,6 +4461,67 @@ export class GtrWorkspaceFacade {
     this.intakeForm.controls.base.setValue(this.selectedIntakeCampaignId() ? 'WHATSAPP' : null);
   }
 
+  private applySnapshotIdentityDisabledState(row: { prefijo?: string | null; lead?: string | null; usermeta?: string | null }): void {
+    const hasPhone = !!row.prefijo && !!row.lead;
+    const hasUsermeta = !!normalizeUsermeta(row.usermeta);
+    const prefijoControl = this.snapshotForm.controls.prefijo;
+    const leadControl = this.snapshotForm.controls.lead;
+    const usermetaControl = this.snapshotForm.controls.usermeta;
+
+    if (hasPhone) {
+      prefijoControl.disable({ emitEvent: false });
+      leadControl.disable({ emitEvent: false });
+    } else {
+      prefijoControl.enable({ emitEvent: false });
+      leadControl.enable({ emitEvent: false });
+    }
+
+    if (hasUsermeta) {
+      usermetaControl.disable({ emitEvent: false });
+    } else {
+      usermetaControl.enable({ emitEvent: false });
+    }
+    this.updateSnapshotLeadValidation(prefijoControl.value);
+  }
+
+  private enableSnapshotIdentityControls(): void {
+    this.snapshotForm.controls.prefijo.enable({ emitEvent: false });
+    this.snapshotForm.controls.lead.enable({ emitEvent: false });
+    this.snapshotForm.controls.usermeta.enable({ emitEvent: false });
+  }
+
+  private buildSnapshotIdentityRequest(): { prefijo?: string | null; lead?: string | null; usermeta?: string | null } | null {
+    const selected = this.selectedSnapshotLead();
+    if (!selected) {
+      return null;
+    }
+    const raw = this.snapshotForm.getRawValue();
+    const prefijo = (raw.prefijo ?? '').trim();
+    const numeroLead = (raw.lead ?? '').trim();
+    const usermeta = normalizeUsermeta(raw.usermeta);
+    const request: { prefijo?: string | null; lead?: string | null; usermeta?: string | null } = {};
+
+    if ((!selected.prefijo || !selected.lead) && prefijo && numeroLead) {
+      request.prefijo = prefijo;
+      request.lead = numeroLead;
+    }
+    if (!normalizeUsermeta(selected.usermeta) && usermeta) {
+      request.usermeta = usermeta;
+    }
+
+    return request.prefijo || request.usermeta ? request : null;
+  }
+
+  private snapshotSuccessMessage(updatedIdentity: boolean, updatedSnapshot: boolean): string {
+    if (updatedIdentity && updatedSnapshot) {
+      return 'Identidad y datos iniciales actualizados.';
+    }
+    if (updatedIdentity) {
+      return 'Identidad del lead actualizada.';
+    }
+    return updatedSnapshot ? 'Snapshot inicial actualizado.' : 'Sin cambios para guardar.';
+  }
+
   private updateIntakeLeadValidation(prefijo?: string | null): void {
     const leadControl = this.intakeForm.controls.lead;
     const isPeruPrefix = prefijo === PERU_PHONE_PREFIX;
@@ -4400,6 +4532,18 @@ export class GtrWorkspaceFacade {
     ]);
     leadControl.updateValueAndValidity({ emitEvent: false });
     this.intakeForm.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private updateSnapshotLeadValidation(prefijo?: string | null): void {
+    const leadControl = this.snapshotForm.controls.lead;
+    const isPeruPrefix = prefijo === PERU_PHONE_PREFIX;
+
+    this.snapshotNumberMaxLength.set(isPeruPrefix ? 9 : 15);
+    leadControl.setValidators([
+      Validators.pattern(isPeruPrefix ? PERU_LEAD_PATTERN : INTERNATIONAL_LEAD_PATTERN)
+    ]);
+    leadControl.updateValueAndValidity({ emitEvent: false });
+    this.snapshotForm.updateValueAndValidity({ emitEvent: false });
   }
 
   private async runInitialLoad(

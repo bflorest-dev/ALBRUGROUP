@@ -506,6 +506,30 @@
     </ng-template>
 
     <form class="form-grid" [formGroup]="facade.snapshotForm" (ngSubmit)="facade.saveSnapshot()">
+      <app-phone-number-field
+        class="wide"
+        label="Numero Celular"
+        [prefixControl]="facade.snapshotForm.controls.prefijo"
+        [numberControl]="facade.snapshotForm.controls.lead"
+        [numberMaxLength]="facade.snapshotNumberMaxLength()"
+        numberPlaceholder="Numero de lead"
+        [numberInvalidMessage]="facade.snapshotIdentityErrorMessage() ?? facade.intakeNumberInvalidMessage()"
+        (focusout)="facade.normalizeSnapshotLeadNumber(facade.snapshotForm.controls.lead.value)"
+      />
+      <label class="wide">
+        <span>Usuario WhatsApp</span>
+        <input
+          pInputText
+          type="text"
+          formControlName="usermeta"
+          placeholder="@EfrainBay"
+          autocomplete="off"
+          (blur)="facade.normalizeSnapshotUsermeta(facade.snapshotForm.controls.usermeta.value)"
+        />
+      </label>
+      @if (facade.snapshotIdentityErrorMessage(); as identityMessage) {
+        <p-message class="wide" severity="warn" [text]="identityMessage" />
+      }
       <label class="wide">
         <span>Numero de documento</span>
         <input pInputText type="text" formControlName="numeroDocumentoTitularServicio" />

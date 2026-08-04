@@ -467,6 +467,12 @@ export interface LeadSnapshotsRequest {
   direccion?: string | null;
 }
 
+export interface LeadIdentidadRequest {
+  prefijo?: string | null;
+  lead?: string | null;
+  usermeta?: string | null;
+}
+
 export interface LeadAsignacionRequest {
   idAsesorAsignado: number;
   nombreAsesorAsignado: string;

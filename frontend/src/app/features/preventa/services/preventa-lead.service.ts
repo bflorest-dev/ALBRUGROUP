@@ -35,6 +35,7 @@ import {
   LeadIntakeRequest,
   LeadIntakeRetroactivoRequest,
   LeadIntakeMasivoExcelResponse,
+  LeadIdentidadRequest,
   MasivoLeadFilters,
   MisPreventaResponse,
   MisPreventasResumenResponse,
@@ -292,6 +293,10 @@ export class PreventaLeadService {
 
   actualizarSnapshotsLead(idLead: number, request: LeadSnapshotsRequest): Observable<void> {
     return this.http.patch<void>(`${this.leadUrl}/preventa/${idLead}/snapshots`, request);
+  }
+
+  completarIdentidadLead(idLead: number, request: LeadIdentidadRequest): Observable<void> {
+    return this.http.patch<void>(`${this.leadUrl}/preventa/${idLead}/identidad`, request);
   }
 
   asignarLead(idLead: number, request: LeadAsignacionRequest): Observable<void> {
