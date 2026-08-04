@@ -16,6 +16,7 @@ import {
   LeadAsesorVentasResponse,
   LeadDireccionRequest,
   LeadDetalleResponse,
+  LeadIdentidadRequest,
   LeadOfertaComercialRequest,
   LeadSnapshotsRequest,
   OportunidadHermana,
@@ -41,6 +42,10 @@ type OfertaAdditionalSelection = {
   precioUnitario?: number;
   cantidad: number;
 };
+
+const PERU_PHONE_PREFIX = '+51';
+const PERU_LEAD_PATTERN = /^9\d{8}$/;
+const INTERNATIONAL_LEAD_PATTERN = /^\d{6,15}$/;
 
 // Mapa de cada campo configurable a su control de formulario y etiqueta (la misma que muestra el
 // modal), para validar los obligatorios al cerrar venta. La fuente de verdad de que se muestra/exige
@@ -120,6 +125,8 @@ export class AsesorVentasWorkspaceFacade {
   readonly isLoading = signal(false);
   readonly isReconciling = signal(false);
   readonly isSaving = signal(false);
+  readonly identidadEditorOpen = signal(false);
+  readonly identidadNumberMaxLength = signal(9);
   readonly successMessage = signal<string | null>(null);
   readonly warningMessage = signal<string | null>(null);
   readonly errorMessage = signal<string | null>(null);
@@ -230,6 +237,11 @@ export class AsesorVentasWorkspaceFacade {
     idPromocionInterna: [0]
   });
 
+  readonly identidadForm = this.fb.group({
+    prefijo: [PERU_PHONE_PREFIX, [Validators.required, Validators.pattern(/^\+\d{1,3}$/)]],
+    lead: ['', [Validators.required, Validators.pattern(PERU_LEAD_PATTERN)]]
+  });
+
   readonly tipificacionForm = this.fb.group({
     codigoTipificacion: ['', [Validators.required]],
     codigoSubtipificacion: ['', [Validators.required]],
@@ -310,8 +322,18 @@ export class AsesorVentasWorkspaceFacade {
   hasUnsavedDataChanges(): boolean {
     return this.datosForm.dirty || this.direccionForm.dirty || this.ofertaForm.dirty;
   }
+  hasPendingIdentityChange(): boolean {
+    const detail = this.detail();
+    if (!detail || this.hasLeadPhone(detail)) {
+      return false;
+    }
+    return this.identidadForm.controls.lead.value.trim().length > 0;
+  }
+  hasPendingPreTipifyChanges(): boolean {
+    return this.hasUnsavedDataChanges() || this.hasPendingIdentityChange();
+  }
   hasUnsavedModalChanges(): boolean {
-    return this.hasUnsavedDataChanges() || this.tipificacionForm.dirty;
+    return this.hasPendingPreTipifyChanges() || this.tipificacionForm.dirty;
   }
   readonly canDisplayOperationalData = this.operationalGate.canDisplayOperationalData;
   readonly canMutateOperationalData = this.operationalGate.canMutateOperationalData;
@@ -376,6 +398,12 @@ export class AsesorVentasWorkspaceFacade {
       })
     );
 
+    this.realtimeSubscription.add(
+      this.identidadForm.controls.prefijo.valueChanges.subscribe((prefijo) => {
+        this.updateIdentidadLeadValidation(prefijo);
+      })
+    );
+
     const empleadoId = this.sessionService.getSession()?.empleadoId;
     if (empleadoId) {
       this.realtimeSubscription.add(
@@ -392,7 +420,8 @@ export class AsesorVentasWorkspaceFacade {
                 'TIPIFICACION',
                 // El GTR llena documento/direccion (snapshots) del lead ya asignado: refrescar bandeja
                 // y modal para que el asesor vea esos datos sin recargar.
-                'SNAPSHOTS_ACTUALIZADOS'
+                'SNAPSHOTS_ACTUALIZADOS',
+                'IDENTIDAD_ACTUALIZADA'
               ].includes(event.tipo)
             ) {
               void this.reconcile(event.idLead);
@@ -504,7 +533,7 @@ export class AsesorVentasWorkspaceFacade {
     // Auto-guardar lo ingresado en la oportunidad actual antes de cambiar, para no perderlo.
     // Si los datos están incompletos para guardar, guardarAntesDeTipificar avisa y no se cambia.
     const actual = this.detail();
-    if (actual && this.hasUnsavedDataChanges()) {
+    if (actual && this.hasPendingPreTipifyChanges()) {
       const guardado = await this.guardarAntesDeTipificar(actual, false);
       if (!guardado) {
         return;
@@ -537,7 +566,7 @@ export class AsesorVentasWorkspaceFacade {
     }
     // Atención GTR: el lead actual es de solo lectura, no hay nada que guardar ni validar antes de
     // crear la nueva oportunidad. En PREVENTA normal sí guardamos lo ingresado para no perderlo.
-    if (!detail.atencionOtraEtapa) {
+    if (this.hasPendingIdentityChange() || !detail.atencionOtraEtapa) {
       // Sin restricciones de documento: el asesor crea la oportunidad a voluntad (su responsabilidad).
       // Guardamos lo que ya ingresó en la oportunidad actual (sin tipificar) para no perderlo.
       const guardado = await this.guardarAntesDeTipificar(detail, false);
@@ -620,7 +649,7 @@ export class AsesorVentasWorkspaceFacade {
         this.detailDialogOpen.set(true);
         return;
       }
-      if (this.hasUnsavedDataChanges()) {
+      if (this.hasPendingPreTipifyChanges()) {
         this.errorMessage.set('Hay datos sin guardar. Guarda los cambios o limpia lo ultimo ingresado antes de cerrar.');
         this.detailDialogOpen.set(true);
         return;
@@ -633,7 +662,7 @@ export class AsesorVentasWorkspaceFacade {
       this.detailDialogOpen.set(true);
       return;
     }
-    if (this.hasUnsavedDataChanges()) {
+    if (this.hasPendingPreTipifyChanges()) {
       this.errorMessage.set('Hay datos sin guardar. Guarda los cambios o limpia lo ultimo ingresado antes de cerrar.');
       this.detailDialogOpen.set(true);
       return;
@@ -666,7 +695,7 @@ export class AsesorVentasWorkspaceFacade {
     this.clearMessages();
     // Guardar lo ingresado para no perderlo. En atención GTR los datos son de solo lectura: no hay
     // nada que guardar. Si el guardado falla, no minimizamos: el asesor ve el error y sigue aquí.
-    if (!this.atencionOtraEtapa() && this.hasUnsavedDataChanges()) {
+    if (this.hasPendingIdentityChange() || (!this.atencionOtraEtapa() && this.hasUnsavedDataChanges())) {
       const guardado = await this.guardarAntesDeTipificar(detail, false);
       if (!guardado) {
         return;
@@ -696,6 +725,12 @@ export class AsesorVentasWorkspaceFacade {
       comentario: '',
       horaProgramada: ''
     });
+    this.identidadForm.reset({
+      prefijo: PERU_PHONE_PREFIX,
+      lead: ''
+    });
+    this.identidadEditorOpen.set(false);
+    this.identidadNumberMaxLength.set(9);
     this.selectedTipificacionCode.set('');
     this.showComment.set(false);
     this.activeDataTab.set('datos');
@@ -824,7 +859,7 @@ export class AsesorVentasWorkspaceFacade {
     // antes de validar la preventa completa. El pre-chequeo ya verifico que esta todo.
     const forceFullSave = !esAtencion && this.requiresVentaCompleta();
 
-    if (!esAtencion && (forceFullSave || this.hasUnsavedDataChanges())) {
+    if (this.hasPendingIdentityChange() || (!esAtencion && (forceFullSave || this.hasUnsavedDataChanges()))) {
       const canProceed = await this.guardarAntesDeTipificar(detail, forceFullSave);
       if (!canProceed) {
         return;
@@ -865,11 +900,25 @@ export class AsesorVentasWorkspaceFacade {
   }
 
   private async guardarAntesDeTipificar(detail: LeadDetalleResponse, forceFullSave = false): Promise<boolean> {
-    if (!forceFullSave && this.isSnapshotOnly()) {
+    if (!forceFullSave && !this.hasPendingIdentityChange() && this.isSnapshotOnly()) {
       return this.saveSnapshotOnly(detail);
     }
 
     const tasks: { label: string; action: () => Promise<void>; form: { markAsPristine: () => void } }[] = [];
+
+    const identidadRequest = this.getIdentidadRequest(detail);
+    if (identidadRequest) {
+      if (this.identidadForm.invalid) {
+        this.identidadForm.markAllAsTouched();
+        this.errorMessage.set(this.identidadErrorMessage() ?? 'Completa un numero de contacto valido.');
+        return false;
+      }
+      tasks.push({
+        label: 'Identidad',
+        form: this.identidadForm,
+        action: () => firstValueFrom(this.preventaService.completarIdentidadLead(detail.id, identidadRequest))
+      });
+    }
 
     if (forceFullSave || this.datosForm.dirty) {
       if (this.datosForm.invalid) {
@@ -1183,6 +1232,50 @@ export class AsesorVentasWorkspaceFacade {
   // Logo del origen del lead: proveedor de la campaña si lo tiene; si no, el fallback del equipo del
   // lead. Mismo criterio que la bandeja GTR, para que el asesor (sobre todo el multi-equipo) sepa de
   // qué equipo/proveedor viene cada lead.
+  canShowIdentityCompletion(row: LeadDetalleResponse): boolean {
+    return !this.hasLeadPhone(row);
+  }
+
+  openIdentidadEditor(): void {
+    const detail = this.detail();
+    if (!detail || this.hasLeadPhone(detail)) {
+      return;
+    }
+    this.identidadEditorOpen.set(true);
+    if (!this.identidadForm.controls.prefijo.value.trim()) {
+      this.identidadForm.controls.prefijo.setValue(PERU_PHONE_PREFIX);
+    }
+    this.identidadForm.markAsPristine();
+    this.identidadForm.markAsUntouched();
+  }
+
+  normalizeIdentidadLeadNumber(value: string): void {
+    const normalized = this.normalizePhoneInput(value);
+    if (this.identidadForm.controls.lead.value !== normalized) {
+      this.identidadForm.controls.lead.setValue(normalized);
+    }
+  }
+
+  identidadErrorMessage(): string | null {
+    const prefijo = this.identidadForm.controls.prefijo;
+    const lead = this.identidadForm.controls.lead;
+    if (!prefijo.dirty && !prefijo.touched && !lead.dirty && !lead.touched) {
+      return null;
+    }
+    if (prefijo.hasError('required') || lead.hasError('required')) {
+      return 'Completa prefijo y numero de contacto.';
+    }
+    if (prefijo.hasError('pattern')) {
+      return 'El prefijo debe tener formato internacional, por ejemplo +51.';
+    }
+    if (lead.hasError('pattern')) {
+      return this.identidadForm.controls.prefijo.value === PERU_PHONE_PREFIX
+        ? 'El numero peruano debe iniciar en 9 y tener 9 digitos.'
+        : 'El numero debe tener entre 6 y 15 digitos.';
+    }
+    return null;
+  }
+
   providerLogo(row: { nombreProveedorCampana?: string | null; nombreProveedorEquipo?: string | null }): string | null {
     return resolveProviderLogo(row.nombreProveedorCampana ?? row.nombreProveedorEquipo);
   }
@@ -1454,6 +1547,7 @@ export class AsesorVentasWorkspaceFacade {
   }
 
   private patchForms(detail: LeadDetalleResponse): void {
+    this.patchIdentidadForm(detail);
     this.patchDatosForm(detail);
     this.patchDireccionForm(detail);
     this.patchOfertaForm(detail);
@@ -1526,6 +1620,17 @@ export class AsesorVentasWorkspaceFacade {
     });
   }
 
+  private patchIdentidadForm(detail: LeadDetalleResponse): void {
+    this.identidadEditorOpen.set(false);
+    this.identidadForm.reset({
+      prefijo: detail.prefijo ?? PERU_PHONE_PREFIX,
+      lead: detail.lead ?? ''
+    });
+    this.updateIdentidadLeadValidation(this.identidadForm.controls.prefijo.value);
+    this.identidadForm.markAsPristine();
+    this.identidadForm.markAsUntouched();
+  }
+
   private mergeVisualRows(previous: VisualLeadAsesor[], incoming: LeadAsesorVentasResponse[], animateNew: boolean): VisualLeadAsesor[] {
     const previousById = new Map(previous.map((row) => [row.id, row]));
     const newIds: number[] = [];
@@ -1559,6 +1664,7 @@ export class AsesorVentasWorkspaceFacade {
   }
 
   private markFormsPristine(): void {
+    this.identidadForm.markAsPristine();
     this.datosForm.markAsPristine();
     this.direccionForm.markAsPristine();
     this.ofertaForm.markAsPristine();
@@ -1707,8 +1813,33 @@ export class AsesorVentasWorkspaceFacade {
     }
   }
 
+  private normalizePhoneInput(value?: string | null): string {
+    return (value ?? '').replace(/\D/g, '').slice(0, this.identidadNumberMaxLength());
+  }
+
+  private updateIdentidadLeadValidation(prefijo?: string | null): void {
+    const isPeruPrefix = (prefijo ?? '').trim() === PERU_PHONE_PREFIX;
+    const pattern = isPeruPrefix ? PERU_LEAD_PATTERN : INTERNATIONAL_LEAD_PATTERN;
+    this.identidadNumberMaxLength.set(isPeruPrefix ? 9 : 15);
+    this.identidadForm.controls.lead.setValidators([Validators.required, Validators.pattern(pattern)]);
+    this.identidadForm.controls.lead.updateValueAndValidity({ emitEvent: false });
+  }
+
   private cleanObject<T extends Record<string, unknown>>(value: T): T {
     return Object.fromEntries(Object.entries(value).map(([key, entryValue]) => [key, entryValue === '' ? null : entryValue])) as T;
+  }
+
+  private getIdentidadRequest(detail: LeadDetalleResponse): LeadIdentidadRequest | null {
+    if (this.hasLeadPhone(detail)) {
+      return null;
+    }
+    const raw = this.identidadForm.getRawValue();
+    const prefijo = raw.prefijo.trim();
+    const lead = this.normalizePhoneInput(raw.lead);
+    if (!prefijo && !lead) {
+      return null;
+    }
+    return { prefijo, lead };
   }
 
   private getOfertaRequest(): LeadOfertaComercialRequest {

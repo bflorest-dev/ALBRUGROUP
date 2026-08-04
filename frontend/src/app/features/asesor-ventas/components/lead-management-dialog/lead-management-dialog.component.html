@@ -15,7 +15,37 @@
       <header class="lead-workspace__head">
         <div>
           <span class="lead-workspace__eyebrow">Gestion del Lead</span>
-          <h2 class="lead-workspace__summary">Lead | {{ facade.leadPhone(lead) }}</h2>
+          <h2 class="lead-workspace__summary">
+            <span>Lead | {{ facade.leadPhone(lead) }}</span>
+            @if (facade.canShowIdentityCompletion(lead)) {
+              <span class="lead-identity">
+                @if (facade.identidadEditorOpen()) {
+                  <app-phone-number-field
+                    class="lead-identity__phone"
+                    label="Numero de contacto"
+                    [prefixControl]="facade.identidadForm.controls.prefijo"
+                    [numberControl]="facade.identidadForm.controls.lead"
+                    [numberMaxLength]="facade.identidadNumberMaxLength()"
+                    numberPlaceholder="Numero de lead"
+                    [numberInvalidMessage]="facade.identidadErrorMessage() ?? ''"
+                    (focusout)="facade.normalizeIdentidadLeadNumber(facade.identidadForm.controls.lead.value)"
+                  />
+                } @else {
+                  <button
+                    pButton
+                    type="button"
+                    icon="pi pi-plus"
+                    label="Agregar numero de contacto"
+                    size="small"
+                    severity="secondary"
+                    [outlined]="true"
+                    [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
+                    (click)="facade.openIdentidadEditor()"
+                  ></button>
+                }
+              </span>
+            }
+          </h2>
         </div>
 
         <div class="lead-workspace__tags">

@@ -116,8 +116,24 @@ h2 {
 }
 
 .lead-workspace__summary {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   line-height: 1.2;
-  text-wrap: balance;
+}
+
+.lead-identity {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.lead-identity__phone {
+  font-size: 0.78rem;
+  max-width: 19rem;
+  width: min(19rem, 100vw - 4rem);
 }
 
 .tipification-bar {
