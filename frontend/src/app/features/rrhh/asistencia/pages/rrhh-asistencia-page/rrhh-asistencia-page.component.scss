@@ -357,6 +357,70 @@
 .employee-month {
   min-width: 0;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.month-detail__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  ::ng-deep .month-detail__select {
+    min-width: 12rem;
+  }
+}
+
+.month-detail__title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--app-text, #11263c);
+}
+
+.month-detail__log-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--role-muted, #617389);
+  margin-top: 0.25rem;
+}
+
+.drawer-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+
+  .dkpi {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: 0.75rem;
+    background: var(--app-surface-soft, #f5f8fb);
+    border: 1px solid var(--app-border-soft, rgba(17, 38, 60, 0.1));
+
+    &__label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--app-text-muted, #6b7280);
+    }
+
+    &__value {
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--app-text, #11263c);
+
+      &--danger { color: rgb(185, 28, 28); }
+      &--warn { color: rgb(180, 83, 9); }
+      &--neg { color: rgb(185, 28, 28); }
+      &--pos { color: rgb(21, 128, 61); }
+    }
+  }
 }
 
 .day-segments {

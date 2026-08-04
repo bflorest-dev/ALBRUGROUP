@@ -203,3 +203,97 @@
          ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
 
 [39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'app-attendance-month-heatmap' is not a known element:
+1. If 'app-attendance-month-heatmap' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'app-attendance-month-heatmap' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/rrhh/asistencia/pages/rrhh-asistencia-page/rrhh-asistencia-page.component.html:220:16:
+[37m      220 │                 [32m<app-attendance-month-heatmap[37m
+          ╵                 [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component RrhhAsistenciaPageComponent.
+
+    src/app/features/rrhh/asistencia/pages/rrhh-asistencia-page/rrhh-asistencia-page.component.ts:57:15:
+[37m      57 │   templateUrl: [32m'./rrhh-asistencia-page.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'dias' since it isn't a known property of 'app-attendance-month-heatmap'.
+1. If 'app-attendance-month-heatmap' is an Angular component and it has 'dias' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'app-attendance-month-heatmap' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/rrhh/asistencia/pages/rrhh-asistencia-page/rrhh-asistencia-page.component.html:221:18:
+[37m      221 │                   [32m[dias]="facade.drawerDetalleDias()"[37m
+          ╵                   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component RrhhAsistenciaPageComponent.
+
+    src/app/features/rrhh/asistencia/pages/rrhh-asistencia-page/rrhh-asistencia-page.component.ts:57:15:
+[37m      57 │   templateUrl: [32m'./rrhh-asistencia-page.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'month' since it isn't a known property of 'app-attendance-month-heatmap'.
+1. If 'app-attendance-month-heatmap' is an Angular component and it has 'month' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'app-attendance-month-heatmap' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/rrhh/asistencia/pages/rrhh-asistencia-page/rrhh-asistencia-page.component.html:222:18:
+[37m      222 │                   [32m[month]="facade.drawerSelectedMonth()"[37m
+          ╵                   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component RrhhAsistenciaPageComponent.
+
+    src/app/features/rrhh/asistencia/pages/rrhh-asistencia-page/rrhh-asistencia-page.component.ts:57:15:
+[37m      57 │   templateUrl: [32m'./rrhh-asistencia-page.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8001: 'app-attendance-month-heatmap' is not a known element:
+1. If 'app-attendance-month-heatmap' is an Angular component, then verify that it is included in the '@Component.imports' of this component.
+2. If 'app-attendance-month-heatmap' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/rrhh/asistencia/pages/rrhh-asistencia-page/rrhh-asistencia-page.component.html:220:16:
+[37m      220 │                 [32m<app-attendance-month-heatmap[37m
+          ╵                 [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component RrhhAsistenciaPageComponent.
+
+    src/app/features/rrhh/asistencia/pages/rrhh-asistencia-page/rrhh-asistencia-page.component.ts:58:15:
+[37m      58 │   templateUrl: [32m'./rrhh-asistencia-page.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'dias' since it isn't a known property of 'app-attendance-month-heatmap'.
+1. If 'app-attendance-month-heatmap' is an Angular component and it has 'dias' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'app-attendance-month-heatmap' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/rrhh/asistencia/pages/rrhh-asistencia-page/rrhh-asistencia-page.component.html:221:18:
+[37m      221 │                   [32m[dias]="facade.drawerDetalleDias()"[37m
+          ╵                   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component RrhhAsistenciaPageComponent.
+
+    src/app/features/rrhh/asistencia/pages/rrhh-asistencia-page/rrhh-asistencia-page.component.ts:58:15:
+[37m      58 │   templateUrl: [32m'./rrhh-asistencia-page.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[31mX [41;31m[[41;97mERROR[41;31m][0m [1mNG8002: Can't bind to 'month' since it isn't a known property of 'app-attendance-month-heatmap'.
+1. If 'app-attendance-month-heatmap' is an Angular component and it has 'month' input, then verify that it is included in the '@Component.imports' of this component.
+2. If 'app-attendance-month-heatmap' is a Web Component then add 'CUSTOM_ELEMENTS_SCHEMA' to the '@Component.schemas' of this component to suppress this message.
+3. To allow any property add 'NO_ERRORS_SCHEMA' to the '@Component.schemas' of this component.[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/features/rrhh/asistencia/pages/rrhh-asistencia-page/rrhh-asistencia-page.component.html:222:18:
+[37m      222 │                   [32m[month]="facade.drawerSelectedMonth()"[37m
+          ╵                   [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  Error occurs in the template of component RrhhAsistenciaPageComponent.
+
+    src/app/features/rrhh/asistencia/pages/rrhh-asistencia-page/rrhh-asistencia-page.component.ts:58:15:
+[37m      58 │   templateUrl: [32m'./rrhh-asistencia-page.component.html'[37m,
+         ╵                [32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[39m[22m

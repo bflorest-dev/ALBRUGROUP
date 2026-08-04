@@ -310,6 +310,22 @@ export class RrhhAsistenciaFacade {
   readonly drawerHorario = signal<HorarioResponse | null>(null);
   readonly drawerDetalleDias = signal<CumplimientoDetalleDiaResponse[]>([]);
   readonly isLoadingDrawer = signal<boolean>(false);
+  // Mes propio del drawer (independiente del de la bandeja) + carga de su detalle.
+  readonly drawerSelectedMonth = signal<string>(this.currentMonthValue());
+  readonly isLoadingDrawerDetalle = signal<boolean>(false);
+
+  /** Faltas, tardanzas y balance del empleado en el mes del drawer, derivados del detalle diario. */
+  readonly drawerKpis = computed(() => {
+    let faltas = 0;
+    let tardanzas = 0;
+    let balanceMin = 0;
+    for (const dia of this.drawerDetalleDias()) {
+      if (dia.laborable && !dia.horaEntradaAsistencia) faltas += 1;
+      if (dia.tardanza) tardanzas += 1;
+      balanceMin += dia.minutosBalance ?? 0;
+    }
+    return { faltas, tardanzas, balanceMin };
+  });
   readonly drawerErrorMessage = signal<string>('');
   readonly drawerSuccessMessage = signal<string>('');
   readonly isSubmittingHorario = signal<boolean>(false);
@@ -456,6 +472,33 @@ export class RrhhAsistenciaFacade {
     this.drawerTab.set(tab);
   }
 
+  /** Cambia el mes del drawer y recarga solo su detalle diario (no toca contrato ni horario). */
+  setDrawerMonth(month: string): void {
+    if (!month || month === this.drawerSelectedMonth()) return;
+    this.drawerSelectedMonth.set(month);
+    void this.reloadDrawerDetalle();
+  }
+
+  private async reloadDrawerDetalle(): Promise<void> {
+    const empleado = this.drawerEmpleado();
+    if (!empleado) return;
+    this.isLoadingDrawerDetalle.set(true);
+    this.drawerErrorMessage.set('');
+    try {
+      const range = this.resolveMonthRange(this.drawerSelectedMonth());
+      const detalle = await firstValueFrom(
+        this.service
+          .getCumplimientoDetalle({ empleadoIds: [empleado.idEmpleado], desde: range.desde, hasta: range.hasta })
+          .pipe(timeout(REQUEST_TIMEOUT_MS))
+      );
+      this.drawerDetalleDias.set(detalle.empleados[0]?.dias ?? []);
+    } catch (error) {
+      this.drawerErrorMessage.set(this.extractErrorMessage(error, 'No fue posible cargar el detalle del mes.'));
+    } finally {
+      this.isLoadingDrawerDetalle.set(false);
+    }
+  }
+
   async openEmployeeDrawer(idEmpleado: number): Promise<void> {
     if (!this.canDisplayOperationalData()) {
       this.errorMessage.set('Marca tu asistencia para revisar el detalle del equipo.');
@@ -474,11 +517,12 @@ export class RrhhAsistenciaFacade {
     this.scheduleChangeErrorMessage.set('');
     this.scheduleChangeSuccessMessage.set('');
     this.drawerTab.set('cumplimiento');
+    this.drawerSelectedMonth.set(this.selectedMonth());
     this.isDrawerVisible.set(true);
     this.isLoadingDrawer.set(true);
 
     try {
-      const range = this.resolveMonthRange(this.selectedMonth());
+      const range = this.resolveMonthRange(this.drawerSelectedMonth());
       const [contrato, horario, detalle] = await Promise.all([
         firstValueFrom(this.service.getContratoVigente(idEmpleado).pipe(timeout(REQUEST_TIMEOUT_MS))),
         firstValueFrom(this.service.getHorarioVigente(idEmpleado, this.getToday()).pipe(timeout(REQUEST_TIMEOUT_MS))),

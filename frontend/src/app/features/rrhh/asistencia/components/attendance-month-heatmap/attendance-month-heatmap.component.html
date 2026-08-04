@@ -1,0 +1,30 @@
+<div class="heatmap">
+  <div class="heatmap__legend">
+    <span class="lg lg--presente"><span class="lg__dot"></span>Presente</span>
+    <span class="lg lg--tardanza"><span class="lg__dot"></span>Tardanza</span>
+    <span class="lg lg--falta"><span class="lg__dot"></span>Falta</span>
+    <span class="lg lg--descanso"><span class="lg__dot"></span>Descanso</span>
+  </div>
+
+  <div class="heatmap__body">
+    <div class="heatmap__rows" aria-hidden="true">
+      <span>Lun</span>
+      <span></span>
+      <span>Mié</span>
+      <span></span>
+      <span>Vie</span>
+      <span></span>
+      <span></span>
+    </div>
+
+    <div class="heatmap__grid">
+      @for (cell of cells(); track $index) {
+        @if (cell.day === null) {
+          <span class="cell cell--empty"></span>
+        } @else {
+          <span class="cell cell--{{ cell.state }}" [pTooltip]="cell.tooltip" tooltipPosition="top"></span>
+        }
+      }
+    </div>
+  </div>
+</div>

@@ -1,0 +1,98 @@
+$row-h: 0.95rem;
+$gap: 0.22rem;
+
+.heatmap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.heatmap__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  font-size: 0.72rem;
+  color: var(--app-text-muted, #6b7280);
+
+  .lg {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .lg__dot {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 0.2rem;
+  }
+
+  .lg--presente .lg__dot { background: rgba(34, 197, 94, 0.35); border: 1px solid rgb(21, 128, 61); }
+  .lg--tardanza .lg__dot { background: rgba(217, 119, 6, 0.3); border: 1px solid rgb(180, 83, 9); }
+  .lg--falta .lg__dot { background: rgba(220, 38, 38, 0.25); border: 1px solid rgb(185, 28, 28); }
+  .lg--descanso .lg__dot { background: var(--app-surface-soft, #eef2f7); border: 1px solid var(--app-border, #c7d2df); }
+}
+
+// Orientación GitHub: 7 filas (Lun→Dom), columnas = semanas, llenando el ancho.
+.heatmap__body {
+  display: flex;
+  align-items: stretch;
+  gap: 0.45rem;
+}
+
+.heatmap__rows {
+  display: grid;
+  grid-template-rows: repeat(7, $row-h);
+  gap: $gap;
+
+  span {
+    display: flex;
+    align-items: center;
+    font-size: 0.62rem;
+    line-height: 1;
+    color: var(--app-text-muted, #9aa3b2);
+  }
+}
+
+.heatmap__grid {
+  flex: 1;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, $row-h);
+  grid-auto-columns: 1fr;
+  gap: $gap;
+}
+
+.cell {
+  border-radius: 0.2rem;
+  border: 1px solid transparent;
+
+  &--empty {
+    background: transparent;
+    border-color: transparent;
+  }
+
+  &--futuro {
+    background: transparent;
+    border-color: var(--app-border-soft, rgba(17, 38, 60, 0.1));
+  }
+
+  &--descanso {
+    background: var(--app-surface-soft, #eef2f7);
+    border-color: var(--app-border-soft, rgba(17, 38, 60, 0.12));
+  }
+
+  &--presente {
+    background: rgba(34, 197, 94, 0.28);
+    border-color: rgba(21, 128, 61, 0.4);
+  }
+
+  &--tardanza {
+    background: rgba(217, 119, 6, 0.3);
+    border-color: rgba(180, 83, 9, 0.45);
+  }
+
+  &--falta {
+    background: rgba(220, 38, 38, 0.28);
+    border-color: rgba(185, 28, 28, 0.45);
+  }
+}

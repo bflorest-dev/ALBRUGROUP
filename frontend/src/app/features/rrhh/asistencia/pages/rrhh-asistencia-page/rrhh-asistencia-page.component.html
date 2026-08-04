@@ -185,7 +185,51 @@
             <!-- ── Cumplimiento del mes (día a día) ── -->
             <p-tabpanel value="cumplimiento">
               <div class="employee-month">
-                @if (facade.drawerDetalleDias().length === 0) {
+                <div class="month-detail__head">
+                  <span class="month-detail__title">Asistencia del mes</span>
+                  <p-select
+                    [options]="monthSelectChoices()"
+                    optionLabel="label"
+                    optionValue="value"
+                    [ngModel]="facade.drawerSelectedMonth()"
+                    (ngModelChange)="facade.setDrawerMonth($event)"
+                    appendTo="body"
+                    styleClass="month-detail__select"
+                  />
+                </div>
+
+                <div class="drawer-kpis">
+                  <div class="dkpi">
+                    <span class="dkpi__label">Faltas</span>
+                    <span class="dkpi__value dkpi__value--danger">{{ facade.drawerKpis().faltas }}</span>
+                  </div>
+                  <div class="dkpi">
+                    <span class="dkpi__label">Tardanzas</span>
+                    <span class="dkpi__value dkpi__value--warn">{{ facade.drawerKpis().tardanzas }}</span>
+                  </div>
+                  <div class="dkpi">
+                    <span class="dkpi__label">Balance</span>
+                    <span
+                      class="dkpi__value"
+                      [class.dkpi__value--neg]="facade.drawerKpis().balanceMin < 0"
+                      [class.dkpi__value--pos]="facade.drawerKpis().balanceMin > 0"
+                    >{{ balanceLabel(facade.drawerKpis().balanceMin) }}</span>
+                  </div>
+                </div>
+
+                <app-attendance-month-heatmap
+                  [dias]="facade.drawerDetalleDias()"
+                  [month]="facade.drawerSelectedMonth()"
+                />
+
+                <div class="month-detail__log-title">Registro diario</div>
+
+                @if (facade.isLoadingDrawerDetalle()) {
+                  <div class="employee-drawer__loading">
+                    <p-progressSpinner styleClass="spinner-sm" strokeWidth="3" />
+                    <span>Cargando detalle…</span>
+                  </div>
+                } @else if (facade.drawerDetalleDias().length === 0) {
                   <p-message severity="info" text="Sin registros para este mes." />
                 } @else {
                   <p-table
