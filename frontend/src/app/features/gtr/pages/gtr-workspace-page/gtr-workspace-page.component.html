@@ -532,7 +532,14 @@
       }
       <label class="wide">
         <span>Numero de documento</span>
-        <input pInputText type="text" formControlName="numeroDocumentoTitularServicio" />
+        <input
+          pInputText
+          type="text"
+          formControlName="numeroDocumentoTitularServicio"
+          maxlength="11"
+          inputmode="numeric"
+          (input)="facade.normalizeSnapshotDocumentNumber(facade.snapshotForm.controls.numeroDocumentoTitularServicio.value)"
+        />
       </label>
       <label class="wide">
         <span>Direccion</span>

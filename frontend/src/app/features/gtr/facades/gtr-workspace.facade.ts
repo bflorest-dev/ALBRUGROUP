@@ -235,9 +235,13 @@ export class GtrWorkspaceFacade {
 
   private static optionalIdentityValidator(control: AbstractControl): { phoneIncomplete?: true } | null {
     const group = control as FormGroup;
-    const prefijo = String(group.get('prefijo')?.value ?? '').trim();
-    const lead = String(group.get('lead')?.value ?? '').trim();
-    if ((!!prefijo && !lead) || (!prefijo && !!lead)) {
+    const prefijoControl = group.get('prefijo');
+    const leadControl = group.get('lead');
+    const prefijo = String(prefijoControl?.value ?? '').trim();
+    const lead = String(leadControl?.value ?? '').trim();
+    const hasNumber = !!lead;
+    const hasCustomPrefixOnly = !!prefijo && !lead && !!prefijoControl?.dirty && prefijo !== PERU_PHONE_PREFIX;
+    if ((!prefijo && hasNumber) || hasCustomPrefixOnly) {
       return { phoneIncomplete: true };
     }
     return null;
@@ -513,7 +517,7 @@ export class GtrWorkspaceFacade {
     prefijo: [PERU_PHONE_PREFIX, [Validators.pattern(/^\+\d{1,3}$/)]],
     lead: ['', [Validators.pattern(PERU_LEAD_PATTERN)]],
     usermeta: ['', [Validators.pattern(USERMETA_PATTERN)]],
-    numeroDocumentoTitularServicio: [''],
+    numeroDocumentoTitularServicio: ['', [Validators.maxLength(11)]],
     direccion: ['']
   }, { validators: GtrWorkspaceFacade.optionalIdentityValidator });
 
@@ -1433,6 +1437,13 @@ export class GtrWorkspaceFacade {
     const normalized = normalizeUsermeta(value);
     if (this.snapshotForm.controls.usermeta.value !== normalized) {
       this.snapshotForm.controls.usermeta.setValue(normalized);
+    }
+  }
+
+  normalizeSnapshotDocumentNumber(value: string): void {
+    const normalized = value.replace(/\D/g, '').slice(0, 11);
+    if (this.snapshotForm.controls.numeroDocumentoTitularServicio.value !== normalized) {
+      this.snapshotForm.controls.numeroDocumentoTitularServicio.setValue(normalized);
     }
   }
 
