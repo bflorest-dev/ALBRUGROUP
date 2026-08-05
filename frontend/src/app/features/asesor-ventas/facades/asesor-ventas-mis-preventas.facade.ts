@@ -39,6 +39,7 @@ export class AsesorVentasMisPreventasFacade {
   // Mes a consultar cuando el periodo es 'mes' (por defecto el mes actual). Se guarda como el primer
   // dia del mes en fecha LOCAL. Refs estables (signal almacenada / campo) para no romper PrimeNG.
   readonly selectedMonth = signal<Date>(this.firstDayOfCurrentMonth());
+  readonly minMonth = this.firstDayOfRelativeMonth(-3);
   readonly maxMonth = new Date();
   readonly isLoading = signal(false);
   readonly isLoadingDetail = signal(false);
@@ -178,7 +179,7 @@ export class AsesorVentasMisPreventasFacade {
     if (!value) {
       return;
     }
-    this.selectedMonth.set(new Date(value.getFullYear(), value.getMonth(), 1));
+    this.selectedMonth.set(this.clampMonth(new Date(value.getFullYear(), value.getMonth(), 1)));
     this.period.set('mes');
     this.pageNumber.set(0);
     await this.load();
@@ -221,7 +222,7 @@ export class AsesorVentasMisPreventasFacade {
       case 'VENTA':
         return 'VENTA';
       case 'POSTVENTA':
-        return 'POSTVENTA';
+        return 'INSTALADO';
       default:
         return etapa ? etapa.toUpperCase() : '-';
     }
@@ -279,16 +280,25 @@ export class AsesorVentasMisPreventasFacade {
 
   private async refreshPage(): Promise<void> {
     const query: PageQuery = {
-      pageNumber: this.pageNumber(),
-      pageSize: this.pageSize,
+      pageNumber: this.isCurrentMonthSelected() ? this.pageNumber() : 0,
+      pageSize: this.isCurrentMonthSelected() ? this.pageSize : 500,
       sortBy: 'fechaPreventa',
       direction: 'desc'
     };
     const { desde, hasta } = this.resolveRange();
     const page = await firstValueFrom(this.preventaService.listarMisPreventasPorResumen(query, desde, hasta));
-    this.rows.set(page.content);
-    this.totalElements.set(page.totalElements);
-    this.totalPages.set(page.totalPages);
+    if (this.isCurrentMonthSelected()) {
+      this.rows.set(page.content);
+      this.totalElements.set(page.totalElements);
+      this.totalPages.set(page.totalPages);
+      return;
+    }
+
+    const visibleRows = page.content.filter((row) => row.etapaActual === 'VENTA' || row.etapaActual === 'POSTVENTA');
+    const start = this.pageNumber() * this.pageSize;
+    this.rows.set(visibleRows.slice(start, start + this.pageSize));
+    this.totalElements.set(visibleRows.length);
+    this.totalPages.set(Math.ceil(visibleRows.length / this.pageSize));
   }
 
   private async refreshResumen(): Promise<void> {
@@ -316,6 +326,29 @@ export class AsesorVentasMisPreventasFacade {
   private firstDayOfCurrentMonth(): Date {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+
+  private firstDayOfRelativeMonth(offset: number): Date {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  }
+
+  private clampMonth(month: Date): Date {
+    const candidate = new Date(month.getFullYear(), month.getMonth(), 1);
+    if (candidate < this.minMonth) {
+      return new Date(this.minMonth);
+    }
+    const maxMonth = this.firstDayOfCurrentMonth();
+    if (candidate > maxMonth) {
+      return maxMonth;
+    }
+    return candidate;
+  }
+
+  private isCurrentMonthSelected(): boolean {
+    const current = this.firstDayOfCurrentMonth();
+    const selected = this.selectedMonth();
+    return selected.getFullYear() === current.getFullYear() && selected.getMonth() === current.getMonth();
   }
 
   private toLocalDate(date: Date): string {

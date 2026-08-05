@@ -1,0 +1,34 @@
+.plan-cell {
+  align-items: center;
+  display: grid;
+  gap: 0.25rem;
+  justify-items: center;
+  min-width: 0;
+  text-align: center;
+}
+
+.plan-cell__name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plan-cell__services {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: center;
+}
+
+.plan-cell__meses {
+  font-size: 0.72rem;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.plan-cell__tachado {
+  opacity: 0.6;
+  text-decoration: line-through;
+}

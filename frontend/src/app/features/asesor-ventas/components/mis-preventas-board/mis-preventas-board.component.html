@@ -32,6 +32,7 @@
       dateFormat="MM yy"
       [ngModel]="facade.selectedMonth()"
       [ngModelOptions]="{ standalone: true }"
+      [minDate]="facade.minMonth"
       [maxDate]="facade.maxMonth"
       [readonlyInput]="true"
       [showIcon]="true"
@@ -76,7 +77,16 @@
           <strong>{{ facade.leadPhone(row) }}</strong>
         </td>
         <td class="col-documento">{{ facade.display(row.numeroDocumento) }}</td>
-        <td class="col-plan">{{ facade.display(row.plan) }}</td>
+        <td class="col-plan">
+          <app-lead-plan-summary
+            [planName]="row.plan"
+            [internetVelocidad]="row.internetVelocidad"
+            [internetUnidad]="row.internetUnidad"
+            [velocidadPromocional]="row.velocidadPromocional"
+            [mesesPromocionVelocidad]="row.mesesPromocionVelocidad"
+            [adicionales]="row.adicionales"
+          />
+        </td>
         <td class="col-departamento">{{ facade.display(row.departamento) }}</td>
         <td class="col-etapa">
           <p-tag [severity]="facade.etapaSeverity(row.etapaActual)" [value]="facade.etapaLabel(row.etapaActual)" />

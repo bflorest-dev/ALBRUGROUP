@@ -415,6 +415,11 @@ export interface MisPreventaResponse {
   usermeta?: string | null;
   numeroDocumento?: string | null;
   plan?: string | null;
+  internetVelocidad?: number | null;
+  internetUnidad?: string | null;
+  velocidadPromocional?: number | null;
+  mesesPromocionVelocidad?: number | null;
+  adicionales?: LeadAdicionalDetalleResponse[] | null;
   departamento?: string | null;
   fechaRegistro?: string | null;
   etapaActual?: Etapa | string | null;

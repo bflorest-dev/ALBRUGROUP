@@ -1,0 +1,22 @@
+@if (planName) {
+  <div class="plan-cell">
+    <strong class="plan-cell__name">{{ planName }}</strong>
+    <div class="plan-cell__services">
+      @if (velocidadPromocional && mesesPromocionVelocidad) {
+        <p-tag severity="info" [value]="speedLabel(velocidadPromocional)" />
+        <span class="plan-cell__meses">{{ mesesPromocionVelocidad }} meses</span>
+        @if (internetVelocidad) {
+          <span class="plan-cell__tachado">{{ speedLabel(internetVelocidad) }}</span>
+        }
+      } @else if (internetVelocidad) {
+        <p-tag severity="info" [value]="speedLabel(internetVelocidad)" />
+      }
+
+      @for (adicional of adicionales ?? []; track $index) {
+        <p-tag severity="secondary" [value]="additionalLabel(adicional)" />
+      }
+    </div>
+  </div>
+} @else {
+  {{ emptyLabel }}
+}

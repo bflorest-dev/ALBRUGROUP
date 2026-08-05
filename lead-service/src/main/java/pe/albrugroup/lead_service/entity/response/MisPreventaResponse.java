@@ -4,8 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.enums.Unidad;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Vista de seguimiento de un cierre PREVENTA_COMPLETA / VENTA_CERRADA. Cada fila representa un
@@ -24,6 +26,11 @@ public class MisPreventaResponse {
     private String usermeta;
     private String numeroDocumento;
     private String plan;
+    private Integer internetVelocidad;
+    private Unidad internetUnidad;
+    private Integer velocidadPromocional;
+    private Integer mesesPromocionVelocidad;
+    private List<LeadAdicionalDetalleResponse> adicionales;
     private String departamento;
     private Instant fechaRegistro;
     private Etapa etapaActual;

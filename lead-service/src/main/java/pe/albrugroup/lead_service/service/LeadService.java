@@ -932,6 +932,15 @@ public class LeadService {
                 .usermeta(lead.getUsermeta())
                 .numeroDocumento(numeroDocumentoPreventa(lead))
                 .plan(nombrePlanPreventa(lead))
+                .internetVelocidad(lead.getPlan() == null || lead.getPlan().getInternet() == null
+                        ? null
+                        : lead.getPlan().getInternet().getVelocidad())
+                .internetUnidad(lead.getPlan() == null || lead.getPlan().getInternet() == null
+                        ? null
+                        : lead.getPlan().getInternet().getUnidad())
+                .velocidadPromocional(lead.getPlan() == null ? null : lead.getPlan().getVelocidadPromocional())
+                .mesesPromocionVelocidad(lead.getPlan() == null ? null : lead.getPlan().getMesesPromocionVelocidad())
+                .adicionales(adicionalesPreventa(lead))
                 .departamento(nombreDepartamentoPreventa(lead))
                 .fechaRegistro(cierre.getCreatedAt())
                 .etapaActual(etapaActual)
@@ -972,6 +981,15 @@ public class LeadService {
                 .usermeta(lead.getUsermeta())
                 .numeroDocumento(numeroDocumentoPreventa(lead))
                 .plan(nombrePlanPreventa(lead))
+                .internetVelocidad(lead.getPlan() == null || lead.getPlan().getInternet() == null
+                        ? null
+                        : lead.getPlan().getInternet().getVelocidad())
+                .internetUnidad(lead.getPlan() == null || lead.getPlan().getInternet() == null
+                        ? null
+                        : lead.getPlan().getInternet().getUnidad())
+                .velocidadPromocional(lead.getPlan() == null ? null : lead.getPlan().getVelocidadPromocional())
+                .mesesPromocionVelocidad(lead.getPlan() == null ? null : lead.getPlan().getMesesPromocionVelocidad())
+                .adicionales(adicionalesPreventa(lead))
                 .departamento(nombreDepartamentoPreventa(lead))
                 .fechaRegistro(row.fechaVista())
                 .etapaActual(lead.getEtapa())
@@ -1009,6 +1027,22 @@ public class LeadService {
             return lead.getNombrePlanSnapshot();
         }
         return lead.getPlan() == null ? null : lead.getPlan().getNombre();
+    }
+
+    private List<LeadAdicionalDetalleResponse> adicionalesPreventa(Lead lead) {
+        return lead.getAdicionales().stream()
+                .map(adicional -> new LeadAdicionalDetalleResponse(
+                        adicional.getAdicional() == null ? null : adicional.getAdicional().getId(),
+                        adicional.getAdicional() == null ? null : adicional.getAdicional().getNombre(),
+                        adicional.getCantidad(),
+                        adicional.getPrecioUnitario(),
+                        adicional.getSubtotal()
+                ))
+                .sorted(java.util.Comparator.comparing(
+                        LeadAdicionalDetalleResponse::getNombreAdicional,
+                        java.util.Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
+                ))
+                .toList();
     }
 
     private String nombreDepartamentoPreventa(Lead lead) {

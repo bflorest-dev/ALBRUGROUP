@@ -26,6 +26,7 @@ import { SessionService } from '../../../../core/services/session.service';
 import { OperationalGateService } from '../../../../core/services/operational-gate.service';
 import { EstadoAsistencia } from '../../../../shared/models/schedule/estado-asistencia';
 import { LeadCommercialDataTabsComponent } from '../../../../shared/components/lead-commercial-data-tabs/lead-commercial-data-tabs.component';
+import { LeadPlanSummaryComponent } from '../../../../shared/components/lead-plan-summary/lead-plan-summary.component';
 import { TipificationStackComponent, TipificationPaletteByCode } from '../../../../shared/components/tipification-stack/tipification-stack.component';
 import { providerLogo as resolveProviderLogo } from '../../../../shared/utils/provider-logo';
 import {
@@ -97,6 +98,7 @@ type AssignmentConflictDetails = {
     TagModule,
     ToastModule,
     LeadCommercialDataTabsComponent,
+    LeadPlanSummaryComponent,
     TipificationStackComponent
   ],
   providers: [MessageService, ConfirmationService],

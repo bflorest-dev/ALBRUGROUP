@@ -6,6 +6,7 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { PaginatorModule } from 'primeng/paginator';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { LeadPlanSummaryComponent } from '../../../../shared/components/lead-plan-summary/lead-plan-summary.component';
 import { AsesorVentasMisPreventasFacade } from '../../facades/asesor-ventas-mis-preventas.facade';
 
 @Component({
@@ -17,7 +18,8 @@ import { AsesorVentasMisPreventasFacade } from '../../facades/asesor-ventas-mis-
     DatePickerModule,
     PaginatorModule,
     TableModule,
-    TagModule
+    TagModule,
+    LeadPlanSummaryComponent
   ],
   templateUrl: './mis-preventas-board.component.html',
   styleUrl: './mis-preventas-board.component.scss',

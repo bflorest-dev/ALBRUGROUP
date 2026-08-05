@@ -262,24 +262,13 @@
             <td class="col-asignado">{{ assignedShortName(row.nombreAsesorUltimaGestion) }}</td>
           }
           <td class="col-plan">
-            @if (row.nombrePlanSnapshot) {
-              <div class="plan-cell">
-                <strong class="plan-cell__name">{{ row.nombrePlanSnapshot }}</strong>
-                <div class="plan-cell__services">
-                  @if (row.velocidadPromocional && row.mesesPromocionVelocidad) {
-                    <p-tag severity="info" [value]="row.velocidadPromocional + ' ' + (row.internetUnidad || 'MBPS')" />
-                    <span class="plan-cell__meses">{{ row.mesesPromocionVelocidad }} meses</span>
-                    @if (row.internetVelocidad) {
-                      <span class="plan-cell__tachado">{{ row.internetVelocidad }} {{ row.internetUnidad || 'MBPS' }}</span>
-                    }
-                  } @else if (row.internetVelocidad) {
-                    <p-tag severity="info" [value]="row.internetVelocidad + ' ' + (row.internetUnidad || 'MBPS')" />
-                  }
-                </div>
-              </div>
-            } @else {
-              -
-            }
+            <app-lead-plan-summary
+              [planName]="row.nombrePlanSnapshot"
+              [internetVelocidad]="row.internetVelocidad"
+              [internetUnidad]="row.internetUnidad"
+              [velocidadPromocional]="row.velocidadPromocional"
+              [mesesPromocionVelocidad]="row.mesesPromocionVelocidad"
+            />
           </td>
           <td class="col-tipificacion">
             <app-tipification-stack
