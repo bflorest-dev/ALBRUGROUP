@@ -241,7 +241,7 @@ export class AsesorVentasMisPreventasFacade {
   }
 
   leadPhone(row: { prefijo?: string | null; lead?: string | null; usermeta?: string | null }): string {
-    return formatLeadIdentity(row);
+    return row.lead ?? row.usermeta ?? formatLeadIdentity(row);
   }
 
   leadCountryCode(row: { prefijo?: string | null; lead?: string | null; usermeta?: string | null }): string {
@@ -259,8 +259,10 @@ export class AsesorVentasMisPreventasFacade {
       case 'PROGRAMADO':
         return 'info';
       case 'SUBSANABLE':
+      case 'SUSPENDIDO':
         return 'warn';
       case 'RECHAZADA':
+      case 'BAJA':
         return 'danger';
       default:
         return 'secondary';
@@ -283,7 +285,7 @@ export class AsesorVentasMisPreventasFacade {
       direction: 'desc'
     };
     const { desde, hasta } = this.resolveRange();
-    const page = await firstValueFrom(this.preventaService.listarMisPreventas(query, desde, hasta));
+    const page = await firstValueFrom(this.preventaService.listarMisPreventasPorResumen(query, desde, hasta));
     this.rows.set(page.content);
     this.totalElements.set(page.totalElements);
     this.totalPages.set(page.totalPages);
@@ -291,7 +293,7 @@ export class AsesorVentasMisPreventasFacade {
 
   private async refreshResumen(): Promise<void> {
     const { desde, hasta } = this.resolveRange();
-    this.resumen.set(await firstValueFrom(this.preventaService.obtenerResumenMisPreventas(desde, hasta)));
+    this.resumen.set(await firstValueFrom(this.preventaService.obtenerResumenMisPreventasPorResumen(desde, hasta)));
   }
 
   /**

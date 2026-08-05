@@ -1,5 +1,7 @@
 package pe.albrugroup.lead_service.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,6 +23,70 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
 
     // Re-ejecutabilidad del backfill: se borran las filas del lead antes de reconstruirlas.
     void deleteByIdLead(Long idLead);
+
+    @Query("""
+            SELECT r, l
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            WHERE r.idAsesorMerito = :idAsesor
+              AND r.fechaMerito >= :fechaDesde
+              AND r.fechaMerito < :fechaHasta
+            ORDER BY r.fechaMerito DESC, r.id DESC
+            """)
+    Page<Object[]> listarMisPreventasPorMerito(
+            @Param("idAsesor") Long idAsesor,
+            @Param("etapa") Etapa etapa,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT l.etapa, COUNT(r.id)
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapa
+            WHERE r.idAsesorMerito = :idAsesor
+              AND r.fechaMerito >= :fechaDesde
+              AND r.fechaMerito < :fechaHasta
+            GROUP BY l.etapa
+            """)
+    List<Object[]> resumirMisPreventasPorMerito(
+            @Param("idAsesor") Long idAsesor,
+            @Param("etapa") Etapa etapa,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta
+    );
+
+    @Query("""
+            SELECT r, l, c.fechaInstalacion, rv.fechaUltimaGestion
+            FROM Lead l
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapaPreventa
+            LEFT JOIN CalendarioFacturacionPostventa c ON c.lead = l AND c.activo = true
+            LEFT JOIN LeadEtapaResumen rv ON rv.idLead = l.id AND rv.etapa = :etapaVenta
+            WHERE r.idAsesorMerito = :idAsesor
+              AND (
+                    (l.etapa = :etapaPostventa
+                     AND c.fechaInstalacion >= :fechaDesdeDate
+                     AND c.fechaInstalacion < :fechaHastaDate)
+                 OR (l.etapa = :etapaVenta
+                     AND r.fechaMerito >= :fechaDesde
+                     AND r.fechaMerito < :fechaHasta)
+                 OR (l.etapa = :etapaPreventa
+                     AND r.fechaMerito IS NULL
+                     AND rv.fechaUltimaGestion >= :fechaDesde
+                     AND rv.fechaUltimaGestion < :fechaHasta)
+              )
+            """)
+    List<Object[]> listarMisPreventasPorFechaVista(
+            @Param("idAsesor") Long idAsesor,
+            @Param("etapaPreventa") Etapa etapaPreventa,
+            @Param("etapaVenta") Etapa etapaVenta,
+            @Param("etapaPostventa") Etapa etapaPostventa,
+            @Param("fechaDesde") Instant fechaDesde,
+            @Param("fechaHasta") Instant fechaHasta,
+            @Param("fechaDesdeDate") java.time.LocalDate fechaDesdeDate,
+            @Param("fechaHastaDate") java.time.LocalDate fechaHastaDate
+    );
 
     // ===== Reporte "gestión por campaña" (DASHBOARD del ADMIN) =====
     // Cada método agrupa por (equipo, campaña, código de tipificación) contando leads distintos,

@@ -90,6 +90,7 @@ import pe.albrugroup.lead_service.repository.EquipoProveedorRepository;
 import pe.albrugroup.lead_service.repository.DistritoRepository;
 import pe.albrugroup.lead_service.repository.EncuestaPostventaRepository;
 import pe.albrugroup.lead_service.repository.EventoRepository;
+import pe.albrugroup.lead_service.repository.LeadEtapaResumenRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
 import pe.albrugroup.lead_service.repository.PagoPostventaRepository;
 import pe.albrugroup.lead_service.repository.PlanRepository;
@@ -133,6 +134,7 @@ public class LeadService {
     private final EquipoCampoService equipoCampoService;
     private final CampanaRepository campanaRepository;
     private final EventoRepository eventoRepository;
+    private final LeadEtapaResumenRepository leadEtapaResumenRepository;
     private final EventoService eventoService;
     private final CurrentUser currentUser;
     private final PlanRepository planRepository;
@@ -844,6 +846,77 @@ public class LeadService {
         return new MisPreventasResumenResponse(cierres.size(), instaladas, rechazadas);
     }
 
+    public PageResponse<MisPreventaResponse> listarMisPreventasPorResumenEtapa(
+            PageRequest pageRequest,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta
+    ) {
+        Instant desde = fechaDesde == null ? Instant.EPOCH : OperationalDateTime.startOfDay(fechaDesde);
+        Instant hasta = fechaHasta == null ? MIS_PREVENTAS_FECHA_HASTA_ABIERTA : OperationalDateTime.endExclusiveOfDay(fechaHasta);
+        LocalDate desdeDate = fechaDesde == null ? LocalDate.of(1, 1, 1) : fechaDesde;
+        LocalDate hastaDate = fechaHasta == null ? LocalDate.of(9999, 1, 1) : fechaHasta.plusDays(1);
+        List<MisPreventaResumenEtapaRow> rows = listarMisPreventasPorFechaVista(desde, hasta, desdeDate, hastaDate);
+        int pageSize = pageRequest.getPageSize();
+        int pageNumber = pageRequest.getPageNumber();
+        int totalElements = rows.size();
+        int fromIndex = Math.min(pageNumber * pageSize, totalElements);
+        int toIndex = Math.min(fromIndex + pageSize, totalElements);
+        List<MisPreventaResponse> content = rows.subList(fromIndex, toIndex).stream()
+                .map(this::toMisPreventaResumenEtapaResponse)
+                .toList();
+
+        return PageResponse.<MisPreventaResponse>builder()
+                .page(pageNumber)
+                .size(pageSize)
+                .totalPages(pageSize == 0 ? 0 : (int) Math.ceil((double) totalElements / pageSize))
+                .totalElements(totalElements)
+                .content(content)
+                .build();
+    }
+
+    private List<MisPreventaResumenEtapaRow> listarMisPreventasPorFechaVista(
+            Instant desde,
+            Instant hasta,
+            LocalDate desdeDate,
+            LocalDate hastaDate
+    ) {
+        return leadEtapaResumenRepository.listarMisPreventasPorFechaVista(
+                currentUser.empleadoID(),
+                Etapa.PREVENTA,
+                Etapa.VENTA,
+                Etapa.POSTVENTA,
+                desde,
+                hasta,
+                desdeDate,
+                hastaDate
+        ).stream()
+                .map(this::toMisPreventaResumenEtapaRow)
+                .sorted(Comparator.comparing(MisPreventaResumenEtapaRow::fechaVista)
+                        .thenComparing(row -> row.lead().getId())
+                        .reversed())
+                .toList();
+    }
+
+    public MisPreventasResumenResponse obtenerResumenMisPreventasPorResumenEtapa(LocalDate fechaDesde, LocalDate fechaHasta) {
+        Instant desde = fechaDesde == null ? Instant.EPOCH : OperationalDateTime.startOfDay(fechaDesde);
+        Instant hasta = fechaHasta == null ? MIS_PREVENTAS_FECHA_HASTA_ABIERTA : OperationalDateTime.endExclusiveOfDay(fechaHasta);
+        LocalDate desdeDate = fechaDesde == null ? LocalDate.of(1, 1, 1) : fechaDesde;
+        LocalDate hastaDate = fechaHasta == null ? LocalDate.of(9999, 1, 1) : fechaHasta.plusDays(1);
+        List<MisPreventaResumenEtapaRow> rows = listarMisPreventasPorFechaVista(desde, hasta, desdeDate, hastaDate);
+
+        long cerradas = rows.size();
+        long instaladas = 0;
+        long rechazadas = 0;
+        for (MisPreventaResumenEtapaRow row : rows) {
+            if (row.lead().getEtapa() == Etapa.POSTVENTA) {
+                instaladas++;
+            } else if (row.lead().getEtapa() == Etapa.PREVENTA && row.resumenPreventa().getFechaMerito() == null) {
+                rechazadas++;
+            }
+        }
+        return new MisPreventasResumenResponse(cerradas, instaladas, rechazadas);
+    }
+
     private MisPreventaResponse toMisPreventaResponse(Object[] row) {
         Evento cierre = (Evento) row[0];
         Lead lead = (Lead) row[1];
@@ -858,13 +931,70 @@ public class LeadService {
                 .lead(lead.getLead())
                 .usermeta(lead.getUsermeta())
                 .numeroDocumento(numeroDocumentoPreventa(lead))
+                .plan(nombrePlanPreventa(lead))
+                .departamento(nombreDepartamentoPreventa(lead))
                 .fechaRegistro(cierre.getCreatedAt())
                 .etapaActual(etapaActual)
-                .estado(estadoMisPreventa(etapaActual, gestionVenta))
+                .estado(estadoMisPreventa(lead, etapaActual, gestionVenta))
                 .fechaInstalacionRechazo(resultado.evento() == null ? null : resultado.evento().getCreatedAt())
                 .codigoTipificacion(gestionVenta == null ? null : gestionVenta.getTipificacion())
                 .codigoSubtipificacion(gestionVenta == null ? null : gestionVenta.getSubtipificacion())
                 .build();
+    }
+
+    private MisPreventaResumenEtapaRow toMisPreventaResumenEtapaRow(Object[] row) {
+        LeadEtapaResumen resumen = (LeadEtapaResumen) row[0];
+        Lead lead = (Lead) row[1];
+        LocalDate fechaInstalacion = (LocalDate) row[2];
+        Instant fechaUltimaGestionVenta = (Instant) row[3];
+        Instant fechaVista = resolverFechaVistaMisPreventa(lead, resumen, fechaInstalacion, fechaUltimaGestionVenta);
+        return new MisPreventaResumenEtapaRow(resumen, lead, fechaVista, fechaInstalacion, fechaUltimaGestionVenta);
+    }
+
+    private MisPreventaResponse toMisPreventaResumenEtapaResponse(MisPreventaResumenEtapaRow row) {
+        LeadEtapaResumen resumen = row.resumenPreventa();
+        Lead lead = row.lead();
+        Instant fechaReferenciaVenta = resumen.getFechaMerito();
+        IntentoVentaResultado resultado = fechaReferenciaVenta == null
+                ? new IntentoVentaResultado(null, null)
+                : resolverResultadoIntentoVentaDesde(lead.getId(), fechaReferenciaVenta);
+        Evento gestionVenta = fechaReferenciaVenta == null
+                ? null
+                : (resultado.evento() == null
+                        ? buscarUltimaGestionVentaDesde(lead.getId(), fechaReferenciaVenta)
+                        : resultado.evento());
+
+        return MisPreventaResponse.builder()
+                .idEventoCierre(null)
+                .idLead(lead.getId())
+                .prefijo(lead.getPrefijo())
+                .lead(lead.getLead())
+                .usermeta(lead.getUsermeta())
+                .numeroDocumento(numeroDocumentoPreventa(lead))
+                .plan(nombrePlanPreventa(lead))
+                .departamento(nombreDepartamentoPreventa(lead))
+                .fechaRegistro(row.fechaVista())
+                .etapaActual(lead.getEtapa())
+                .estado(estadoMisPreventa(lead, lead.getEtapa(), gestionVenta))
+                .fechaInstalacionRechazo(row.fechaVista())
+                .codigoTipificacion(gestionVenta == null ? null : gestionVenta.getTipificacion())
+                .codigoSubtipificacion(gestionVenta == null ? null : gestionVenta.getSubtipificacion())
+                .build();
+    }
+
+    private Instant resolverFechaVistaMisPreventa(
+            Lead lead,
+            LeadEtapaResumen resumen,
+            LocalDate fechaInstalacion,
+            Instant fechaUltimaGestionVenta
+    ) {
+        if (lead.getEtapa() == Etapa.POSTVENTA && fechaInstalacion != null) {
+            return OperationalDateTime.startOfDay(fechaInstalacion);
+        }
+        if (lead.getEtapa() == Etapa.PREVENTA && resumen.getFechaMerito() == null) {
+            return fechaUltimaGestionVenta;
+        }
+        return resumen.getFechaMerito();
     }
 
     private String numeroDocumentoPreventa(Lead lead) {
@@ -872,6 +1002,24 @@ public class LeadService {
             return lead.getDatosPreventa().getNumeroDocumentoTitularServicio();
         }
         return lead.getNumeroDocumentoTitularServicioSnapshot();
+    }
+
+    private String nombrePlanPreventa(Lead lead) {
+        if (lead.getNombrePlanSnapshot() != null && !lead.getNombrePlanSnapshot().isBlank()) {
+            return lead.getNombrePlanSnapshot();
+        }
+        return lead.getPlan() == null ? null : lead.getPlan().getNombre();
+    }
+
+    private String nombreDepartamentoPreventa(Lead lead) {
+        String ubigeo = lead.getDireccion() == null ? null : lead.getDireccion().getUbigeoDomicilio();
+        if (ubigeo == null || ubigeo.isBlank()) {
+            return null;
+        }
+        return distritoRepository.findByCodigoConUbicacion(ubigeo)
+                .map(Distrito::getDepartamento)
+                .map(Departamento::getNombre)
+                .orElse(null);
     }
 
     private IntentoVentaResultado resolverResultadoIntento(Evento cierre) {
@@ -882,6 +1030,23 @@ public class LeadService {
                 Etapa.VENTA,
                 cierre.getCreatedAt(),
                 fechaHasta,
+                List.of(Etapa.POSTVENTA, Etapa.PREVENTA),
+                org.springframework.data.domain.PageRequest.of(0, 1)
+        );
+        if (resultados.isEmpty()) {
+            return new IntentoVentaResultado(null, null);
+        }
+        Object[] row = resultados.get(0);
+        return new IntentoVentaResultado((Evento) row[0], (Etapa) row[1]);
+    }
+
+    private IntentoVentaResultado resolverResultadoIntentoVentaDesde(Long idLead, Instant fechaDesde) {
+        List<Object[]> resultados = eventoRepository.buscarResultadoIntentoVenta(
+                idLead,
+                Accion.TIPIFICACION,
+                Etapa.VENTA,
+                fechaDesde,
+                MIS_PREVENTAS_FECHA_HASTA_ABIERTA,
                 List.of(Etapa.POSTVENTA, Etapa.PREVENTA),
                 org.springframework.data.domain.PageRequest.of(0, 1)
         );
@@ -904,6 +1069,18 @@ public class LeadService {
         return gestiones.isEmpty() ? null : gestiones.get(0);
     }
 
+    private Evento buscarUltimaGestionVentaDesde(Long idLead, Instant fechaDesde) {
+        List<Evento> gestiones = eventoRepository.buscarUltimaGestionVentaIntento(
+                idLead,
+                Accion.TIPIFICACION,
+                Etapa.VENTA,
+                fechaDesde,
+                MIS_PREVENTAS_FECHA_HASTA_ABIERTA,
+                org.springframework.data.domain.PageRequest.of(0, 1)
+        );
+        return gestiones.isEmpty() ? null : gestiones.get(0);
+    }
+
     private Instant fechaSiguienteCierre(Evento cierre) {
         return eventoRepository.buscarFechaSiguienteCierrePreventa(
                 cierre.getIdLead(),
@@ -915,11 +1092,17 @@ public class LeadService {
     }
 
     private String estadoMisPreventa(Etapa etapaActual, Evento gestionVenta) {
+        return estadoMisPreventa(null, etapaActual, gestionVenta);
+    }
+
+    private String estadoMisPreventa(Lead lead, Etapa etapaActual, Evento gestionVenta) {
         if (etapaActual == Etapa.PREVENTA) {
             return "RECHAZADA";
         }
         if (etapaActual == Etapa.POSTVENTA) {
-            return "ACTIVO";
+            return lead == null || lead.getEstadoClientePostventa() == null
+                    ? "ACTIVO"
+                    : lead.getEstadoClientePostventa().name();
         }
         if (gestionVenta == null || gestionVenta.getTipificacion() == null || gestionVenta.getTipificacion().isBlank()) {
             return "SIN INGRESAR";
@@ -4365,6 +4548,13 @@ public class LeadService {
         return item;
     }
 
+    private record MisPreventaResumenEtapaRow(
+            LeadEtapaResumen resumenPreventa,
+            Lead lead,
+            Instant fechaVista,
+            LocalDate fechaInstalacion,
+            Instant fechaUltimaGestionVenta
+    ) { }
     private record IntentoVentaResultado(Evento evento, Etapa etapaDestino) { }
     private record TipificacionRetornoPreventa(Tipificacion tipificacion, Subtipificacion subtipificacion) { }
 

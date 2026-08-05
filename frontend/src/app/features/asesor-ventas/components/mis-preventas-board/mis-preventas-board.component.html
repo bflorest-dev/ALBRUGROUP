@@ -44,22 +44,23 @@
 
   <p-table
     [value]="facade.rows()"
-    dataKey="idEventoCierre"
+    dataKey="idLead"
     [loading]="facade.isLoading()"
     [rowHover]="true"
     [scrollable]="true"
     scrollHeight="flex"
-    [tableStyle]="{ 'min-width': '960px' }"
+    [tableStyle]="{ 'min-width': '1080px' }"
     styleClass="p-datatable-sm mis-preventas-table"
   >
     <ng-template #header>
       <tr>
-        <th class="col-fecha">Fecha registro</th>
+        <th class="col-fecha">Fecha registro/instalacion</th>
         <th class="col-lead">Lead</th>
         <th class="col-documento">Documento</th>
+        <th class="col-plan">Plan</th>
+        <th class="col-departamento">Departamento</th>
         <th class="col-etapa">Etapa actual</th>
         <th class="col-estado">Estado</th>
-        <th class="col-fecha">Fecha instalacion/rechazo</th>
       </tr>
     </ng-template>
 
@@ -72,28 +73,23 @@
           </div>
         </td>
         <td class="col-lead">
-          <span class="lead-cell__prefix">{{ facade.leadCountryCode(row) }}</span>
           <strong>{{ facade.leadPhone(row) }}</strong>
         </td>
         <td class="col-documento">{{ facade.display(row.numeroDocumento) }}</td>
+        <td class="col-plan">{{ facade.display(row.plan) }}</td>
+        <td class="col-departamento">{{ facade.display(row.departamento) }}</td>
         <td class="col-etapa">
           <p-tag [severity]="facade.etapaSeverity(row.etapaActual)" [value]="facade.etapaLabel(row.etapaActual)" />
         </td>
         <td class="col-estado">
           <p-tag [severity]="facade.estadoSeverity(row.estado)" [value]="facade.display(row.estado)" />
         </td>
-        <td class="col-fecha">
-          <div class="date-stack">
-            <span>{{ row.fechaInstalacionRechazo ? (row.fechaInstalacionRechazo | date: 'dd/MM/yyyy') : '-' }}</span>
-            <strong>{{ row.fechaInstalacionRechazo ? (row.fechaInstalacionRechazo | date: 'hh:mm a') : '' }}</strong>
-          </div>
-        </td>
       </tr>
     </ng-template>
 
     <ng-template #emptymessage>
       <tr>
-        <td colspan="6">
+        <td colspan="7">
           <span class="helper--centered">Todavia no hay preventas cerradas en este mes.</span>
         </td>
       </tr>

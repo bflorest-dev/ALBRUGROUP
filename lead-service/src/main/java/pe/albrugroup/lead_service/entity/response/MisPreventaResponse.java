@@ -23,6 +23,8 @@ public class MisPreventaResponse {
     private String lead;
     private String usermeta;
     private String numeroDocumento;
+    private String plan;
+    private String departamento;
     private Instant fechaRegistro;
     private Etapa etapaActual;
     private String estado;

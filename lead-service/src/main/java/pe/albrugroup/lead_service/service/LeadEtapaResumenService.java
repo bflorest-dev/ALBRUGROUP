@@ -128,6 +128,7 @@ public class LeadEtapaResumenService {
         resumen.setMayorRangoOrden(orden);
         resumen.setMayorRangoAt(at);
 
+        resumen.setFechaMerito(null);
         resumen.setTotalTipificaciones(nvl(resumen.getTotalTipificaciones(), 0) + 1);
         resumen.setIdAsesorUltimaGestion(idAsesorGestion);
         resumen.setNombreAsesorUltimaGestion(nombreAsesorGestion);

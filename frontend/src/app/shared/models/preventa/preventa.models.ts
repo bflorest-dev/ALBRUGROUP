@@ -414,6 +414,8 @@ export interface MisPreventaResponse {
   lead?: string | null;
   usermeta?: string | null;
   numeroDocumento?: string | null;
+  plan?: string | null;
+  departamento?: string | null;
   fechaRegistro?: string | null;
   etapaActual?: Etapa | string | null;
   estado?: string | null;

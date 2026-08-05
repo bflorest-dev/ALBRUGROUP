@@ -347,6 +347,32 @@ export class PreventaLeadService {
     });
   }
 
+  listarMisPreventasPorResumen(query: PageQuery, fechaDesde?: string, fechaHasta?: string): Observable<LeadPage<MisPreventaResponse>> {
+    let params = this.pageParams(query);
+    if (fechaDesde) {
+      params = params.set('fechaDesde', fechaDesde);
+    }
+    if (fechaHasta) {
+      params = params.set('fechaHasta', fechaHasta);
+    }
+    return this.http.get<LeadPage<MisPreventaResponse>>(`${this.leadUrl}/preventa/asesor-ventas/mis-preventas/por-resumen`, {
+      params
+    });
+  }
+
+  obtenerResumenMisPreventasPorResumen(fechaDesde?: string, fechaHasta?: string): Observable<MisPreventasResumenResponse> {
+    let params = new HttpParams();
+    if (fechaDesde) {
+      params = params.set('fechaDesde', fechaDesde);
+    }
+    if (fechaHasta) {
+      params = params.set('fechaHasta', fechaHasta);
+    }
+    return this.http.get<MisPreventasResumenResponse>(`${this.leadUrl}/preventa/asesor-ventas/mis-preventas/por-resumen/resumen`, {
+      params
+    });
+  }
+
   obtenerDetalleMiPreventa(idLead: number): Observable<LeadDetalleResponse> {
     return this.http.get<LeadDetalleResponse>(`${this.leadUrl}/preventa/${idLead}/detalle-mi-preventa`);
   }
