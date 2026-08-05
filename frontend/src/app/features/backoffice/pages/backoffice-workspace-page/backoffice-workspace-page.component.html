@@ -296,7 +296,7 @@
             </div>
           </td>
           <td class="col-actions">
-            @if (section() === 'plataforma') {
+            @if (section() === 'plataforma' || section() === 'programados') {
               <button
                 pButton
                 type="button"
@@ -353,7 +353,7 @@
                     No hay leads disponibles en VENTA.
                   }
                 } @else if (section() === 'programados') {
-                  No tienes leads programados pendientes.
+                  No hay leads programados pendientes.
                 } @else {
                   No tienes leads asignados en gestion.
                 }

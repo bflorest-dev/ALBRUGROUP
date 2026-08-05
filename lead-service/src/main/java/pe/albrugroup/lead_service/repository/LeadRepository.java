@@ -1335,7 +1335,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                AND epFallback.fallbackLeadSinCampana = true
             LEFT JOIN epFallback.proveedor fp
             WHERE l.etapa = :etapa
-              AND l.idAsesorAsignado = :idAsesor
               AND l.codigoTipificacion = :codigoProgramado
               AND (l.codigoSubtipificacion IS NULL OR l.codigoSubtipificacion <> :codigoProgramacionCancelada)
               AND e.accion = :accionTipificacion
@@ -1357,7 +1356,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             """)
     Page<LeadResponse> listarLeadsProgramadosVentaAsignados(
             @Param("etapa") Etapa etapa,
-            @Param("idAsesor") Long idAsesor,
             @Param("codigoProgramado") String codigoProgramado,
             @Param("codigoProgramacionCancelada") String codigoProgramacionCancelada,
             @Param("accionTipificacion") Accion accionTipificacion,

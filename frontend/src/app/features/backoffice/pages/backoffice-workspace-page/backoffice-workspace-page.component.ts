@@ -393,14 +393,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly boardTitle = computed(() => {
     switch (this.section()) {
       case 'plataforma': return 'Leads disponibles';
-      case 'programados': return 'Mis leads programados';
+      case 'programados': return 'Leads programados';
       default: return 'Mis leads en gestion';
     }
   });
   protected readonly boardSubtitle = computed(() => {
     switch (this.section()) {
       case 'plataforma': return 'Gestiona leads en venta y revisa quien los tiene asignados.';
-      case 'programados': return 'Gestiona tus leads programados por fecha y hora cercana.';
+      case 'programados': return 'Gestiona leads programados por fecha y hora cercana.';
       default: return 'Gestiona, edita, tipifica y revisa historial.';
     }
   });
@@ -618,7 +618,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.leadActionId.set(row.id);
     try {
       await firstValueFrom(this.leadService.tomarLead(row.id, { confirmarReasignacion }));
-      await this.refreshPlataforma(true);
+      if (this.section() === 'programados') {
+        await this.refreshProgramados(true);
+      } else {
+        await this.refreshPlataforma(true);
+      }
       await this.openDetail(row.id);
     } catch (error) {
       if (!this.openTakeoverConfirmation(error, row)) {

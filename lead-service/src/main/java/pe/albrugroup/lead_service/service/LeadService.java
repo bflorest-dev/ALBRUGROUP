@@ -659,7 +659,6 @@ public class LeadService {
         LocalDate hoy = OperationalDateTime.today();
         Page<LeadResponse> leads = leadRepository.listarLeadsProgramadosVentaAsignados(
                 Etapa.VENTA,
-                currentUser.empleadoID(),
                 TIPIFICACION_PROGRAMADO,
                 SUBTIPIFICACION_PROGRAMACION_CANCELADA,
                 Accion.TIPIFICACION,
