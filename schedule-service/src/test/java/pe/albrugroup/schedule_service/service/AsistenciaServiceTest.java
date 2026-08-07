@@ -261,6 +261,32 @@ class AsistenciaServiceTest {
     }
 
     @Test
+    void calculaBalanceCeroCuandoLaConexionExcedeLaJornadaProgramada() {
+        LocalDate fecha = LocalDate.of(2026, 8, 3);
+        Asistencia saved = cerrarJornadaParaCalculo(
+                fecha,
+                LocalDateTime.of(2026, 8, 3, 8, 45),
+                LocalDateTime.of(2026, 8, 3, 18, 30));
+
+        assertThat(saved.getFechaHoraIngreso()).isEqualTo(LocalDateTime.of(2026, 8, 3, 8, 45));
+        assertThat(saved.getFechaHoraSalida()).isEqualTo(LocalDateTime.of(2026, 8, 3, 18, 0));
+        assertThat(saved.getMinutosTrabajados()).isEqualTo(540);
+        assertThat(saved.getMinutosBalance()).isZero();
+    }
+
+    @Test
+    void calculaBalanceNegativoCuandoEntraTardeYSaleAntes() {
+        LocalDate fecha = LocalDate.of(2026, 8, 4);
+        Asistencia saved = cerrarJornadaParaCalculo(
+                fecha,
+                LocalDateTime.of(2026, 8, 4, 9, 5),
+                LocalDateTime.of(2026, 8, 4, 17, 54));
+
+        assertThat(saved.getMinutosTrabajados()).isEqualTo(529);
+        assertThat(saved.getMinutosBalance()).isEqualTo(-11);
+    }
+
+    @Test
     void habilitaJornadaExtraordinariaEnDiaDeDescanso() {
         LocalDate domingo = LocalDate.of(2026, 6, 14);
         LocalTime entrada = LocalTime.of(9, 0);
@@ -318,6 +344,80 @@ class AsistenciaServiceTest {
                 domingo,
                 null
         );
+    }
+
+    private Asistencia cerrarJornadaParaCalculo(LocalDate fecha, LocalDateTime ingreso, LocalDateTime salidaReal) {
+        Clock fixedClock = Clock.fixed(
+                ZonedDateTime.of(
+                        salidaReal.getYear(),
+                        salidaReal.getMonthValue(),
+                        salidaReal.getDayOfMonth(),
+                        salidaReal.getHour(),
+                        salidaReal.getMinute(),
+                        salidaReal.getSecond(),
+                        salidaReal.getNano(),
+                        OperationalDateTime.ZONE).toInstant(),
+                OperationalDateTime.ZONE);
+        OperationalDateTime.useClock(fixedClock);
+
+        Asistencia asistencia = Asistencia.builder()
+                .id(1L)
+                .idEmpleado(16L)
+                .idHorario(7L)
+                .fecha(fecha)
+                .estadoActual(EstadoAsistencia.ONLINE)
+                .entradaProgramada(LocalTime.of(9, 0))
+                .salidaProgramada(LocalTime.of(18, 0))
+                .fechaHoraIngreso(ingreso)
+                .minutosObjetivoDia(540)
+                .minutosTrabajados(0)
+                .minutosBalance(0)
+                .minutosAlmuerzoTomados(0)
+                .minutosServiciosPermitidos(20)
+                .minutosServiciosAcumulados(0)
+                .excedioServicios(false)
+                .origenTramoActual(OrigenTramo.BASE)
+                .build();
+        Horario horario = Horario.builder()
+                .id(7L)
+                .idEmpleado(16L)
+                .minutosServicios(20)
+                .detalles(List.of(HorarioDetalle.builder()
+                        .dia(mapDia(fecha))
+                        .horaEntrada(LocalTime.of(9, 0))
+                        .horaSalida(LocalTime.of(18, 0))
+                        .laborable(true)
+                        .build()))
+                .build();
+
+        try {
+            when(currentUser.empleadoID()).thenReturn(16L);
+            when(horarioRepository.findHorarioVigente(16L, fecha)).thenReturn(Optional.of(horario));
+            when(asistenciaRepository.findByIdEmpleadoAndFecha(16L, fecha)).thenReturn(Optional.of(asistencia));
+            when(asistenciaTramoRepository.findByAsistenciaIdOrderByIdAsc(1L)).thenReturn(List.of());
+            when(asistenciaRepository.save(any(Asistencia.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(mapper.toDetalleResponse(any(Asistencia.class))).thenReturn(DetalleAsistenciaResponse.builder().build());
+
+            service.registrarSalida(MovimientoAsistenciaRequest.builder().build());
+
+            ArgumentCaptor<Asistencia> captor = ArgumentCaptor.forClass(Asistencia.class);
+            verify(asistenciaRepository).save(captor.capture());
+            return captor.getValue();
+        } finally {
+            OperationalDateTime.useClock(Clock.system(OperationalDateTime.ZONE));
+        }
+    }
+
+    private Dia mapDia(LocalDate fecha) {
+        return switch (fecha.getDayOfWeek()) {
+            case MONDAY -> Dia.LUNES;
+            case TUESDAY -> Dia.MARTES;
+            case WEDNESDAY -> Dia.MIERCOLES;
+            case THURSDAY -> Dia.JUEVES;
+            case FRIDAY -> Dia.VIERNES;
+            case SATURDAY -> Dia.SABADO;
+            case SUNDAY -> Dia.DOMINGO;
+        };
     }
 
     private Asistencia asistenciaReporte(Long id, LocalDate fecha, LocalDateTime ingreso) {
