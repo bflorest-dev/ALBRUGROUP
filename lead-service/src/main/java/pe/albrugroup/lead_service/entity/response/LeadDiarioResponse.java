@@ -20,6 +20,7 @@ public class LeadDiarioResponse {
     private Long idLead;
     private String prefijo;
     private String lead;
+    private String usermeta;
     private String nombreActor;
     private String rolActor;
     private Accion accion;

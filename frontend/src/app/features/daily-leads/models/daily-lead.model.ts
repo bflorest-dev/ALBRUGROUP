@@ -3,6 +3,7 @@ export interface LeadDiarioResponse {
   idLead: number;
   prefijo: string | null;
   lead: string | null;
+  usermeta?: string | null;
   nombreActor: string | null;
   rolActor: string | null;
   accion: string;
@@ -40,6 +41,7 @@ export interface DailyLeadRowView {
   idLead: number;
   prefijo: string | null;
   lead: string | null;
+  usermeta?: string | null;
   leadDisplay: string;
   asesor: string;
   asesorDisplay: string;

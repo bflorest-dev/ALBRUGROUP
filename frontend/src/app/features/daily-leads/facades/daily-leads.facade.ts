@@ -5,6 +5,7 @@ import type { TipificationPaletteByCode } from '../../../shared/components/tipif
 import { EventoResponse } from '../../../shared/models/preventa/preventa.models';
 import { formatLabel } from '../../../shared/utils/display-label';
 import { SessionService } from '../../../core/services/session.service';
+import { formatLeadIdentity } from '../../../shared/utils/phone-link';
 import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
 import { DailyLeadsService } from '../services/daily-leads.service';
 import {
@@ -594,12 +595,13 @@ export class DailyLeadsFacade {
 
   private toRowView(item: LeadDiarioResponse): DailyLeadRowView {
     const asesor = item.nombreActor?.trim() || '-';
-    const ultimoAsesor = item.ultimoNombreAsesorAsignado?.trim() || 'Sin asignación';
+    const ultimoAsesor = item.ultimoNombreAsesorAsignado?.trim() || 'Sin Gestion';
     return {
       idLead: item.idLead,
       prefijo: item.prefijo,
       lead: item.lead,
-      leadDisplay: this.formatLead(item.prefijo, item.lead),
+      usermeta: item.usermeta,
+      leadDisplay: this.formatLead(item),
       asesor,
       asesorDisplay: this.firstWords(asesor, 2),
       rolLabel: formatLabel(item.rolActor),
@@ -619,12 +621,8 @@ export class DailyLeadsFacade {
     };
   }
 
-  private formatLead(_prefijo: string | null, lead: string | null): string {
-    const numero = lead?.trim() ?? '';
-    if (!numero) {
-      return '-';
-    }
-    return numero;
+  private formatLead(item: Pick<LeadDiarioResponse, 'prefijo' | 'lead' | 'usermeta'>): string {
+    return item.lead?.trim() || formatLeadIdentity(item);
   }
 
   private formatTime(value: string): string {
@@ -650,6 +648,7 @@ export class DailyLeadsFacade {
       idLead: -(index + 1),
       prefijo: null,
       lead: null,
+      usermeta: null,
       leadDisplay: '',
       asesor: '',
       asesorDisplay: '',

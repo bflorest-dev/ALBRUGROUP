@@ -230,6 +230,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                        e.idLead,
                        l.prefijo,
                        l.lead,
+                       l.usermeta,
                        e.nombreActor,
                        e.rolActor,
                        e.accion,
