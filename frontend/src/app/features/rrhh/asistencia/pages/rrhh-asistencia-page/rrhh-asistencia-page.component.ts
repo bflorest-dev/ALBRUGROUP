@@ -187,18 +187,25 @@ export class RrhhAsistenciaPageComponent implements OnInit {
     return `${horas.horaEntrada} – ${horas.horaSalida} · descansa ${descanso.toLowerCase()}`;
   }
 
-  protected dayStateLabel(dia: { laborable: boolean; horaEntradaAsistencia: string | null; tardanza: boolean; jornadaCerrada: boolean; minutosTrabajados: number }): string {
+  protected dayStateLabel(dia: { fecha: string; laborable: boolean; horaEntradaEstablecida: string | null; horaEntradaAsistencia: string | null; tardanza: boolean; jornadaCerrada: boolean; minutosTrabajados: number }): string {
     if (!dia.laborable) return 'Libre';
+    if (!dia.horaEntradaAsistencia && this.isPendingToday(dia)) return 'Pendiente';
     if (!dia.horaEntradaAsistencia) return 'Falta';
     if (dia.tardanza) return 'Tardanza';
     return 'Presente';
   }
 
-  protected dayStateSeverity(dia: { laborable: boolean; horaEntradaAsistencia: string | null; tardanza: boolean; jornadaCerrada: boolean }): 'success' | 'warn' | 'danger' | 'info' | 'secondary' {
+  protected dayStateSeverity(dia: { fecha: string; laborable: boolean; horaEntradaEstablecida: string | null; horaEntradaAsistencia: string | null; tardanza: boolean; jornadaCerrada: boolean }): 'success' | 'warn' | 'danger' | 'info' | 'secondary' {
     if (!dia.laborable) return 'info';
+    if (!dia.horaEntradaAsistencia && this.isPendingToday(dia)) return 'warn';
     if (!dia.horaEntradaAsistencia) return 'danger';
     if (dia.tardanza) return 'warn';
     return 'success';
+  }
+
+  private isPendingToday(dia: { fecha: string; horaEntradaEstablecida: string | null }): boolean {
+    if (!dia.horaEntradaEstablecida || dia.fecha !== this.todayValue()) return false;
+    return this.currentMinutesOfDay() < this.timeStringToMinutes(dia.horaEntradaEstablecida);
   }
 
   protected formatDate(value: string | null): string {
@@ -251,6 +258,26 @@ export class RrhhAsistenciaPageComponent implements OnInit {
       return `${value.getFullYear()}-${m}-${d}`;
     }
     return typeof value === 'string' ? value : '';
+  }
+
+  private todayValue(): string {
+    const now = new Date();
+    const month = `${now.getMonth() + 1}`.padStart(2, '0');
+    const day = `${now.getDate()}`.padStart(2, '0');
+    return `${now.getFullYear()}-${month}-${day}`;
+  }
+
+  private currentMinutesOfDay(): number {
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes();
+  }
+
+  private timeStringToMinutes(value: string): number {
+    const [hoursRaw, minutesRaw] = value.split(':');
+    const hours = Number(hoursRaw);
+    const minutes = Number(minutesRaw);
+    if (Number.isNaN(hours) || Number.isNaN(minutes)) return 0;
+    return hours * 60 + minutes;
   }
 
   protected setScheduleStartDate(value: Date | string | null): void {

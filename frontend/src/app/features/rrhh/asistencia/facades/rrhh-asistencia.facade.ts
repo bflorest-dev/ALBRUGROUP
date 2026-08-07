@@ -176,12 +176,15 @@ export class RrhhAsistenciaFacade {
       })
       .map((e) => {
         const r = resumen[e.idEmpleado];
+        const pendingToday = this.isPendingBeforeShiftToday(e.idEmpleado);
+        const diasLaborables = Math.max((r?.diasLaborables ?? 0) - (pendingToday ? 1 : 0), 0);
+        const diasSinRegistro = Math.max((r?.diasSinRegistro ?? 0) - (pendingToday ? 1 : 0), 0);
         return {
           idEmpleado: e.idEmpleado,
           nombreCompleto: `${e.nombres} ${e.apellidos}`.trim(),
           puestoTrabajo: e.puestoTrabajo,
-          diasLaborables: r?.diasLaborables ?? 0,
-          diasSinRegistro: r?.diasSinRegistro ?? 0,
+          diasLaborables,
+          diasSinRegistro,
           cantidadTardanzas: r?.cantidadTardanzas ?? 0,
           minutosBalance: r?.minutosBalance ?? 0,
           hasResumen: Boolean(r)
@@ -1161,6 +1164,13 @@ export class RrhhAsistenciaFacade {
     const m = Number(parts[1]);
     if (Number.isNaN(h) || Number.isNaN(m)) return 0;
     return h * 60 + m;
+  }
+
+  private isPendingBeforeShiftToday(idEmpleado: number): boolean {
+    if (this.selectedMonth() !== this.currentMonthValue()) return false;
+    const estado = this.estadosHoyByEmpleadoId()[idEmpleado];
+    if (!estado?.esperadoHoy || estado.tieneRegistroHoy || !estado.entradaProgramada) return false;
+    return this.currentMinutesOfDay() < this.timeStringToMinutes(estado.entradaProgramada);
   }
 
   private extractErrorMessage(error: unknown, fallback: string): string {

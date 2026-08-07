@@ -319,6 +319,7 @@
     white-space: normal;
     overflow-wrap: anywhere;
     vertical-align: top;
+    text-align: center;
   }
 
   ::ng-deep thead th {
@@ -426,6 +427,7 @@
 .day-segments {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 0.45rem;
   min-width: 0;
 }
@@ -433,6 +435,7 @@
 .day-segment {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 0.1rem;
 
   small {
