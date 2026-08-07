@@ -194,7 +194,7 @@
       [loading]="facade.isLoading()"
       [rowHover]="true"
       [scrollable]="true"
-      [tableStyle]="{ 'min-width': '1400px', 'table-layout': 'fixed' }"
+      [tableStyle]="{ 'min-width': '1500px', 'table-layout': 'fixed' }"
       styleClass="p-datatable-sm daily-leads__table"
     >
       <ng-template #header>
@@ -204,6 +204,7 @@
           <th>Lead</th>
           <th>GTR</th>
           <th>Ultimo Gestor</th>
+          <th>Ultima Asignacion</th>
           <th>Asignaciones</th>
           <th>Campaña</th>
           <th>Primera tipificacion</th>
@@ -217,7 +218,7 @@
         @if (row.isPlaceholder) {
           <tr class="daily-leads__placeholder-row" aria-hidden="true">
             <td class="daily-leads__expander-col"></td>
-            <td colspan="10"></td>
+            <td colspan="11"></td>
           </tr>
         } @else {
         <tr class="daily-leads__data-row">
@@ -253,6 +254,7 @@
           </td>
           <td class="daily-leads__person" [title]="row.asesor">{{ row.asesorDisplay }}</td>
           <td class="daily-leads__person" [title]="row.ultimoAsesor">{{ row.ultimoAsesorDisplay }}</td>
+          <td class="daily-leads__person" [title]="row.ultimaAsignacion">{{ row.ultimaAsignacionDisplay }}</td>
           <td>
             <p-tag
               [value]="facade.display(row.totalAsignacionesDia)"
@@ -304,12 +306,12 @@
         @if (facade.loadingRegistrosLeadId() === row.idLead) {
           <tr class="daily-leads__registros-row">
             <td class="daily-leads__expander-col"></td>
-            <td colspan="10" class="daily-leads__registros-note">Cargando registros...</td>
+            <td colspan="11" class="daily-leads__registros-note">Cargando registros...</td>
           </tr>
         } @else if (facade.registrosByLead()[row.idLead]?.length) {
           <tr class="daily-leads__registros-row daily-leads__registros-row--head">
             <td class="daily-leads__expander-col"></td>
-            <td colspan="10" class="daily-leads__registros-note">Otros registros de hoy para este lead</td>
+            <td colspan="11" class="daily-leads__registros-note">Otros registros de hoy para este lead</td>
           </tr>
           @for (registro of facade.registrosByLead()[row.idLead]; track $index) {
             <tr class="daily-leads__registros-row">
@@ -319,6 +321,7 @@
                 <i class="pi pi-angle-right"></i>
               </td>
               <td>{{ registro.asesor }}</td>
+              <td></td>
               <td></td>
               <td></td>
               <td class="daily-leads__campaign">{{ registro.campana }}</td>
@@ -331,14 +334,14 @@
         } @else {
           <tr class="daily-leads__registros-row">
             <td class="daily-leads__expander-col"></td>
-            <td colspan="10" class="daily-leads__registros-note">No hay registros adicionales.</td>
+            <td colspan="11" class="daily-leads__registros-note">No hay registros adicionales.</td>
           </tr>
         }
       </ng-template>
 
       <ng-template #emptymessage>
         <tr>
-          <td colspan="11">
+          <td colspan="12">
             @if (facade.isLoading()) {
               <div class="daily-leads__empty">Cargando...</div>
             } @else {

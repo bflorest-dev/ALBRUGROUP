@@ -240,11 +240,31 @@ public class EventoService {
                 pageable
         );
         Map<Long, Long> registrosDiaPorLead = contarRegistrosDia(registros.getContent(), rango);
+        Map<Long, String> ultimaAsignacionPorLead = obtenerUltimasAsignaciones(registros.getContent());
         var respuesta = registros.map(registro -> {
             registro.setTotalRegistrosDia(registrosDiaPorLead.getOrDefault(registro.getIdLead(), 1L));
+            registro.setUltimoNombreAsesorAsignacion(ultimaAsignacionPorLead.get(registro.getIdLead()));
             return registro;
         });
         return PageResponse.from(respuesta);
+    }
+
+    private Map<Long, String> obtenerUltimasAsignaciones(List<LeadDiarioResponse> registros) {
+        List<Long> idsLead = registros.stream()
+                .map(LeadDiarioResponse::getIdLead)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (idsLead.isEmpty()) {
+            return Map.of();
+        }
+        return eventoRepository.listarUltimosAsesoresAsignados(idsLead, Accion.ASIGNACION)
+                .stream()
+                .collect(Collectors.toMap(
+                        LeadUltimaAsignacionProjection::getIdLead,
+                        LeadUltimaAsignacionProjection::getNombreAsesorAsignado,
+                        (actual, ignorado) -> actual
+                ));
     }
 
     /** Cuenta cuántos eventos REGISTRO tuvo cada lead en el día (>= 1); alimenta el despliegue de repeticiones. */

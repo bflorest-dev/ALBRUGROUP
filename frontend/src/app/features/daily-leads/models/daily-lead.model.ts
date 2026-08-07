@@ -17,6 +17,7 @@ export interface LeadDiarioResponse {
   codigoTipificacion?: string | null;
   codigoSubtipificacion?: string | null;
   ultimoNombreAsesorAsignado?: string | null;
+  ultimoNombreAsesorAsignacion?: string | null;
   totalAsignacionesDia?: number | null;
   /** Cantidad de eventos REGISTRO del lead en el día (>= 1). La fila es el registro más temprano. */
   totalRegistrosDia?: number | null;
@@ -51,6 +52,8 @@ export interface DailyLeadRowView {
   campana: string;
   ultimoAsesor: string;
   ultimoAsesorDisplay: string;
+  ultimaAsignacion: string;
+  ultimaAsignacionDisplay: string;
   totalAsignacionesDia: number;
   /** Cantidad de registros del lead en el día; > 1 habilita el despliegue de repeticiones. */
   totalRegistrosDia: number;

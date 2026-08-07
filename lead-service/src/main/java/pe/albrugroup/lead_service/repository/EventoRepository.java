@@ -244,6 +244,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                         r.ultimaCodigoTipificacion,
                         r.ultimaCodigoSubtipificacion,
                        r.nombreAsesorUltimaGestion,
+                       NULL,
                        CAST(COALESCE(r.totalAsignaciones, 0) AS long),
                        0L)
             FROM Evento e

@@ -596,6 +596,7 @@ export class DailyLeadsFacade {
   private toRowView(item: LeadDiarioResponse): DailyLeadRowView {
     const asesor = item.nombreActor?.trim() || '-';
     const ultimoAsesor = item.ultimoNombreAsesorAsignado?.trim() || 'Sin Gestion';
+    const ultimaAsignacion = item.ultimoNombreAsesorAsignacion?.trim() || 'Sin asignacion';
     return {
       idLead: item.idLead,
       prefijo: item.prefijo,
@@ -610,6 +611,8 @@ export class DailyLeadsFacade {
       campana: item.nombreCampana?.trim() || 'Sin campaña',
       ultimoAsesor,
       ultimoAsesorDisplay: this.firstWords(ultimoAsesor, 2),
+      ultimaAsignacion,
+      ultimaAsignacionDisplay: this.firstWords(ultimaAsignacion, 2),
       totalAsignacionesDia: item.totalAsignacionesDia ?? 0,
       totalRegistrosDia: item.totalRegistrosDia ?? 1,
       primeraCodigoTipificacion: item.primeraCodigoTipificacion,
@@ -658,6 +661,8 @@ export class DailyLeadsFacade {
       campana: '',
       ultimoAsesor: '',
       ultimoAsesorDisplay: '',
+      ultimaAsignacion: '',
+      ultimaAsignacionDisplay: '',
       totalAsignacionesDia: 0,
       totalRegistrosDia: 1,
       isPlaceholder: true
