@@ -117,7 +117,7 @@ public class LeadCampanaCorreccionService {
     private int corregirEventosDesdeUltimoRegistro(Long idLead, Long idCampana) {
         return eventoRepository.findTopByIdLeadAndAccionOrderByCreatedAtDescIdDesc(idLead, Accion.REGISTRO)
                 .map(registro -> actualizarCampanaDesdeRegistro(idLead, idCampana, registro))
-                .orElseGet(() -> eventoRepository.actualizarCampanaPorLead(idLead, idCampana));
+                .orElse(0);
     }
 
     private int actualizarCampanaDesdeRegistro(Long idLead, Long idCampana, Evento registro) {
