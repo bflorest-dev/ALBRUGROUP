@@ -62,7 +62,7 @@
           pButton
           type="button"
           icon="pi pi-search"
-          label="Buscar Lead"
+          label="Buscar"
           severity="secondary"
           (click)="searchPopover.toggle($event)"
         ></button>
@@ -70,14 +70,13 @@
         <p-popover #searchPopover appendTo="body" styleClass="daily-leads-search-popover">
           <form class="daily-leads__search-panel" (ngSubmit)="onLeadSearchSubmit(searchPopover)">
             <label for="daily-leads-search">
-              <span>Número de lead</span>
+              <span>Lead o usermeta</span>
               <input
                 pInputText
                 id="daily-leads-search"
                 type="text"
-                inputmode="numeric"
                 autocomplete="off"
-                placeholder="Ej. 987654321"
+                placeholder="Ej. 987654321 o PedroVM"
                 [ngModel]="facade.leadSearchDraft()"
                 name="dailyLeadsSearch"
                 (ngModelChange)="onLeadSearchChange($event)"
@@ -347,7 +346,7 @@
             } @else {
               <div class="daily-leads__empty">
                 @if (facade.isLeadSearchActive()) {
-                  No encontramos ese lead en esta fecha.
+                  No encontramos ese lead o usermeta en esta fecha.
                 } @else if (facade.isToday()) {
                   Aun no se han ingresado leads hoy.
                 } @else {

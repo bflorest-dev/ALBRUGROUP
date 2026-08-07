@@ -283,7 +283,11 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                             OR (anterior.createdAt = e.createdAt AND anterior.id < e.id)
                       )
               )
-              AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
+              AND (
+                    :filtrarLead = false
+                    OR LOWER(REPLACE(COALESCE(l.lead, ''), ' ', '')) LIKE CONCAT('%', :lead, '%')
+                    OR LOWER(REPLACE(COALESCE(l.usermeta, ''), ' ', '')) LIKE CONCAT('%', :lead, '%')
+              )
               AND (
                     :filtrarAsesor = false
                     OR (:sinValor = true AND e.idActor IS NULL)
@@ -368,7 +372,11 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                             OR (anterior.createdAt = e.createdAt AND anterior.id < e.id)
                       )
               )
-              AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
+              AND (
+                    :filtrarLead = false
+                    OR LOWER(REPLACE(COALESCE(l.lead, ''), ' ', '')) LIKE CONCAT('%', :lead, '%')
+                    OR LOWER(REPLACE(COALESCE(l.usermeta, ''), ' ', '')) LIKE CONCAT('%', :lead, '%')
+              )
               AND (
                     :filtrarAsesor = false
                     OR (:sinValor = true AND e.idActor IS NULL)
@@ -497,7 +505,11 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                             OR (anterior.createdAt = e.createdAt AND anterior.id < e.id)
                       )
               )
-              AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
+              AND (
+                    :filtrarLead = false
+                    OR LOWER(REPLACE(COALESCE(l.lead, ''), ' ', '')) LIKE CONCAT('%', :lead, '%')
+                    OR LOWER(REPLACE(COALESCE(l.usermeta, ''), ' ', '')) LIKE CONCAT('%', :lead, '%')
+              )
             GROUP BY e.idActor, e.nombreActor
             """)
     List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorAsesor(
@@ -530,7 +542,11 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                             OR (anterior.createdAt = e.createdAt AND anterior.id < e.id)
                       )
               )
-              AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
+              AND (
+                    :filtrarLead = false
+                    OR LOWER(REPLACE(COALESCE(l.lead, ''), ' ', '')) LIKE CONCAT('%', :lead, '%')
+                    OR LOWER(REPLACE(COALESCE(l.usermeta, ''), ' ', '')) LIKE CONCAT('%', :lead, '%')
+              )
             GROUP BY l.idEquipo
             """)
     List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorEquipo(
@@ -564,7 +580,11 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                             OR (anterior.createdAt = e.createdAt AND anterior.id < e.id)
                       )
               )
-              AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
+              AND (
+                    :filtrarLead = false
+                    OR LOWER(REPLACE(COALESCE(l.lead, ''), ' ', '')) LIKE CONCAT('%', :lead, '%')
+                    OR LOWER(REPLACE(COALESCE(l.usermeta, ''), ' ', '')) LIKE CONCAT('%', :lead, '%')
+              )
             GROUP BY c.id, c.nombre
             """)
     List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorCampana(
@@ -598,7 +618,11 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                             OR (anterior.createdAt = e.createdAt AND anterior.id < e.id)
                       )
               )
-              AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
+              AND (
+                    :filtrarLead = false
+                    OR LOWER(REPLACE(COALESCE(l.lead, ''), ' ', '')) LIKE CONCAT('%', :lead, '%')
+                    OR LOWER(REPLACE(COALESCE(l.usermeta, ''), ' ', '')) LIKE CONCAT('%', :lead, '%')
+              )
             GROUP BY r.primeraCodigoTipificacion, r.primeraCodigoSubtipificacion
             """)
     List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorPrimeraTipificacion(
@@ -632,7 +656,11 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                             OR (anterior.createdAt = e.createdAt AND anterior.id < e.id)
                       )
               )
-              AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
+              AND (
+                    :filtrarLead = false
+                    OR LOWER(REPLACE(COALESCE(l.lead, ''), ' ', '')) LIKE CONCAT('%', :lead, '%')
+                    OR LOWER(REPLACE(COALESCE(l.usermeta, ''), ' ', '')) LIKE CONCAT('%', :lead, '%')
+              )
             GROUP BY r.mayorRangoCodigoTipificacion, r.mayorRangoCodigoSubtipificacion
             """)
     List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorMayorTipificacion(
@@ -666,7 +694,11 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
                             OR (anterior.createdAt = e.createdAt AND anterior.id < e.id)
                       )
               )
-              AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
+              AND (
+                    :filtrarLead = false
+                    OR LOWER(REPLACE(COALESCE(l.lead, ''), ' ', '')) LIKE CONCAT('%', :lead, '%')
+                    OR LOWER(REPLACE(COALESCE(l.usermeta, ''), ' ', '')) LIKE CONCAT('%', :lead, '%')
+              )
             GROUP BY r.ultimaCodigoTipificacion, r.ultimaCodigoSubtipificacion
             """)
     List<LeadGtrAgrupacionProjection> agruparRegistrosDiariosPorUltimaTipificacion(
@@ -705,7 +737,11 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
-              AND (:filtrarLead = false OR LOWER(REPLACE(l.lead, ' ', '')) LIKE CONCAT('%', :lead, '%'))
+              AND (
+                    :filtrarLead = false
+                    OR LOWER(REPLACE(COALESCE(l.lead, ''), ' ', '')) LIKE CONCAT('%', :lead, '%')
+                    OR LOWER(REPLACE(COALESCE(l.usermeta, ''), ' ', '')) LIKE CONCAT('%', :lead, '%')
+              )
             """)
     long contarRegistrosDiarios(
             @Param("accion") Accion accion,

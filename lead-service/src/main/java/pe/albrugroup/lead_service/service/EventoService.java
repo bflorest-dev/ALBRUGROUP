@@ -625,7 +625,14 @@ public class EventoService {
     }
 
     private String normalizarBusquedaLead(String lead) {
-        return lead == null || lead.isBlank() ? null : lead.replaceAll("\\s+", "").toLowerCase();
+        if (lead == null || lead.isBlank()) {
+            return null;
+        }
+        String normalizado = lead.replaceAll("\\s+", "").toLowerCase();
+        while (normalizado.startsWith("@")) {
+            normalizado = normalizado.substring(1);
+        }
+        return normalizado.isBlank() ? null : normalizado;
     }
 
     private List<LeadGtrAgrupacionItemResponse> mapearAgrupaciones(
