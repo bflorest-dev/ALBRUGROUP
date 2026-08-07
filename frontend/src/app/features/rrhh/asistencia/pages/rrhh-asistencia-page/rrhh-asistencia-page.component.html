@@ -251,7 +251,11 @@
                       <tr>
                         <td>{{ formatDate(d.fecha) }}</td>
                         <td class="col-state">
-                          <p-tag [value]="dayStateLabel(d)" [severity]="dayStateSeverity(d)" />
+                          <p-tag
+                            [value]="dayStateLabel(d)"
+                            [severity]="dayStateSeverity(d)"
+                            [styleClass]="dayStateClass(d)"
+                          />
                         </td>
                         <td>
                           @if (d.tramos?.length) {

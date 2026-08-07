@@ -203,6 +203,10 @@ export class RrhhAsistenciaPageComponent implements OnInit {
     return 'success';
   }
 
+  protected dayStateClass(dia: { fecha: string; horaEntradaEstablecida: string | null; horaEntradaAsistencia: string | null }): string | undefined {
+    return !dia.horaEntradaAsistencia && this.isPendingToday(dia) ? 'day-state-tag--pending' : undefined;
+  }
+
   private isPendingToday(dia: { fecha: string; horaEntradaEstablecida: string | null }): boolean {
     if (!dia.horaEntradaEstablecida || dia.fecha !== this.todayValue()) return false;
     return this.currentMinutesOfDay() < this.timeStringToMinutes(dia.horaEntradaEstablecida);

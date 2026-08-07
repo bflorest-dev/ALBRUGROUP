@@ -15,6 +15,11 @@
       margin-left: 0.5rem;
     }
   }
+
+  ::ng-deep .day-state-tag--pending {
+    background: #fef3c7;
+    color: #92400e;
+  }
 }
 
 .rrhh-hero {
