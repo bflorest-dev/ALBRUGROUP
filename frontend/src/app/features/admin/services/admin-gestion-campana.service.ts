@@ -23,7 +23,7 @@ export interface GestionPorCampanaCelda {
   idEquipo: number | null;
   idCampana: number | null;
   nombreCampana: string | null;
-  codigoTipificacion: string;
+  codigoTipificacion: string | null;
   cantidad: number;
 }
 

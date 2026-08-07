@@ -163,7 +163,6 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
-              AND r.primeraCodigoTipificacion IS NOT NULL
             GROUP BY l.idEquipo, c.id, c.nombre, r.primeraCodigoTipificacion
             """)
     List<Object[]> ingresadosPorCampanaPrimera(
@@ -182,7 +181,6 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
-              AND r.ultimaCodigoTipificacion IS NOT NULL
             GROUP BY l.idEquipo, c.id, c.nombre, r.ultimaCodigoTipificacion
             """)
     List<Object[]> ingresadosPorCampanaUltima(
@@ -201,7 +199,6 @@ public interface LeadEtapaResumenRepository extends JpaRepository<LeadEtapaResum
             WHERE e.accion = :accion
               AND e.createdAt >= :inicio
               AND e.createdAt < :fin
-              AND r.mayorRangoCodigoTipificacion IS NOT NULL
             GROUP BY l.idEquipo, c.id, c.nombre, r.mayorRangoCodigoTipificacion
             """)
     List<Object[]> ingresadosPorCampanaMayor(

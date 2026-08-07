@@ -105,6 +105,8 @@ export interface GestionEquipoDispersion {
  * desenlace es "100%" y grita igual que una campaña de 30. Esas campañas se agrupan.
  */
 const MIN_LEADS_CAMPANA = 5;
+const SIN_TIPIFICAR_CODIGO = 'SIN_TIPIFICAR';
+const SIN_TIPIFICAR_LABEL = '0 - SIN TIPIFICAR';
 
 /** Opción del selector de campañas. */
 export interface GestionCampanaOption {
@@ -167,6 +169,7 @@ interface AccEquipo {
   campanas: AccCampana[];
   codigos: string[]; // filas: catálogo por orden + históricos al final
   ordenPorCodigo: Map<string, number>;
+  labelsPorCodigo: Map<string, string>;
   cierres: Set<string>;
 }
 
@@ -479,6 +482,7 @@ export class AdminGestionCampanaFacade {
   private accumulate(data: LoadResult): AccEquipo[] {
     const cierres = this.cierreCodigos(data.catalogo);
     const ordenPorCodigo = new Map<string, number>();
+    const labelsPorCodigo = new Map<string, string>([[SIN_TIPIFICAR_CODIGO, SIN_TIPIFICAR_LABEL]]);
     const filasCatalogo = [...data.catalogo.tipificaciones]
       .sort((a, b) => a.orden - b.orden)
       .map((tipi) => {
@@ -494,6 +498,7 @@ export class AdminGestionCampanaFacade {
     const equipos = new Map<string, Draft>();
 
     for (const celda of data.celdas) {
+      const codigoTipificacion = celda.codigoTipificacion ?? SIN_TIPIFICAR_CODIGO;
       const equipoKey = celda.idEquipo == null ? 'null' : String(celda.idEquipo);
       const equipo = equipos.get(equipoKey) ?? { idEquipo: celda.idEquipo, campanas: new Map(), codigos: new Set<string>() };
       const campKey = this.campanaKey(celda.idCampana);
@@ -504,10 +509,10 @@ export class AdminGestionCampanaFacade {
         total: 0,
         porCodigo: new Map<string, number>()
       };
-      campana.porCodigo.set(celda.codigoTipificacion, (campana.porCodigo.get(celda.codigoTipificacion) ?? 0) + celda.cantidad);
+      campana.porCodigo.set(codigoTipificacion, (campana.porCodigo.get(codigoTipificacion) ?? 0) + celda.cantidad);
       campana.total += celda.cantidad;
       equipo.campanas.set(campKey, campana);
-      equipo.codigos.add(celda.codigoTipificacion);
+      equipo.codigos.add(codigoTipificacion);
       equipos.set(equipoKey, equipo);
     }
 
@@ -517,14 +522,18 @@ export class AdminGestionCampanaFacade {
 
     return ordenados.map((equipo, index) => {
       const nombreEquipo = this.nombreEquipo(equipo.idEquipo, data.nombresEquipo);
-      const historicos = [...equipo.codigos].filter((codigo) => !ordenPorCodigo.has(codigo)).sort((a, b) => a.localeCompare(b));
+      const tieneSinTipificar = equipo.codigos.has(SIN_TIPIFICAR_CODIGO);
+      const historicos = [...equipo.codigos]
+        .filter((codigo) => codigo !== SIN_TIPIFICAR_CODIGO && !ordenPorCodigo.has(codigo))
+        .sort((a, b) => a.localeCompare(b));
       return {
         idEquipo: equipo.idEquipo,
         nombreEquipo,
         accent: this.resolveAccent(nombreEquipo, index),
         campanas: [...equipo.campanas.values()].sort((a, b) => this.compareNombre(a.nombre, SIN_CAMPANA, b.nombre)),
-        codigos: [...filasCatalogo, ...historicos],
+        codigos: [...(tieneSinTipificar ? [SIN_TIPIFICAR_CODIGO] : []), ...filasCatalogo, ...historicos],
         ordenPorCodigo,
+        labelsPorCodigo,
         cierres
       };
     });
@@ -550,9 +559,9 @@ export class AdminGestionCampanaFacade {
       totalLeads += total;
       return {
         codigo,
-        label: orden === undefined ? codigo : `${orden} - ${codigo}`,
+        label: equipo.labelsPorCodigo.get(codigo) ?? (orden === undefined ? codigo : `${orden} - ${codigo}`),
         esCierre: equipo.cierres.has(codigo),
-        historica: orden === undefined,
+        historica: orden === undefined && codigo !== SIN_TIPIFICAR_CODIGO,
         total,
         celdas
       };
