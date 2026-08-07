@@ -35,6 +35,7 @@ import pe.albrugroup.schedule_service.repository.AsistenciaRepository;
 import pe.albrugroup.schedule_service.repository.AsistenciaTramoRepository;
 import pe.albrugroup.schedule_service.repository.AjusteJornadaRepository;
 import pe.albrugroup.schedule_service.repository.ExcepcionHorarioRepository;
+import pe.albrugroup.schedule_service.repository.HorarioRepository;
 import pe.albrugroup.schedule_service.service.mapper.AsistenciaMapper;
 import pe.albrugroup.schedule_service.service.mapper.HorarioMapper;
 
@@ -62,6 +63,8 @@ class AsistenciaServiceTest {
     private AjusteJornadaRepository ajusteJornadaRepository;
     @Mock
     private ExcepcionHorarioRepository excepcionHorarioRepository;
+    @Mock
+    private HorarioRepository horarioRepository;
     @Mock
     private HorarioService horarioService;
     @Mock
@@ -191,6 +194,67 @@ class AsistenciaServiceTest {
             assertThat(asistencia.getFechaHoraSalida()).isNull();
             assertThat(asistencia.getEstadoActual()).isEqualTo(EstadoAsistencia.ONLINE);
             assertThat(asistencia.getOrigenTramoActual()).isEqualTo(OrigenTramo.REEMPLAZO_BASE);
+        } finally {
+            OperationalDateTime.useClock(Clock.system(OperationalDateTime.ZONE));
+        }
+    }
+
+    @Test
+    void calculaMinutosTrabajadosRedondeandoMarcasAFavorDelEmpleado() {
+        LocalDate fecha = LocalDate.of(2026, 8, 1);
+        Clock fixedClock = Clock.fixed(
+                ZonedDateTime.of(2026, 8, 1, 18, 0, 10, 0, OperationalDateTime.ZONE).toInstant(),
+                OperationalDateTime.ZONE);
+        OperationalDateTime.useClock(fixedClock);
+
+        Asistencia asistencia = Asistencia.builder()
+                .id(1L)
+                .idEmpleado(16L)
+                .idHorario(7L)
+                .fecha(fecha)
+                .estadoActual(EstadoAsistencia.ONLINE)
+                .entradaProgramada(LocalTime.of(9, 0))
+                .salidaProgramada(LocalTime.of(18, 0))
+                .fechaHoraIngreso(LocalDateTime.of(2026, 8, 1, 9, 0, 56, 170_856_000))
+                .minutosObjetivoDia(540)
+                .minutosTrabajados(0)
+                .minutosBalance(0)
+                .minutosAlmuerzoTomados(0)
+                .minutosServiciosPermitidos(20)
+                .minutosServiciosAcumulados(0)
+                .excedioServicios(false)
+                .origenTramoActual(OrigenTramo.BASE)
+                .build();
+        Horario horario = Horario.builder()
+                .id(7L)
+                .idEmpleado(16L)
+                .minutosServicios(20)
+                .detalles(List.of(HorarioDetalle.builder()
+                        .dia(Dia.SABADO)
+                        .horaEntrada(LocalTime.of(9, 0))
+                        .horaSalida(LocalTime.of(18, 0))
+                        .laborable(true)
+                        .build()))
+                .build();
+
+        try {
+            when(currentUser.empleadoID()).thenReturn(16L);
+            when(horarioRepository.findHorarioVigente(16L, fecha)).thenReturn(Optional.of(horario));
+            when(asistenciaRepository.findByIdEmpleadoAndFecha(16L, fecha)).thenReturn(Optional.of(asistencia));
+            when(asistenciaTramoRepository.findByAsistenciaIdOrderByIdAsc(1L)).thenReturn(List.of());
+            when(asistenciaRepository.save(any(Asistencia.class))).thenAnswer(invocation -> invocation.getArgument(0));
+            when(mapper.toDetalleResponse(any(Asistencia.class))).thenReturn(DetalleAsistenciaResponse.builder().build());
+
+            service.registrarSalida(MovimientoAsistenciaRequest.builder().build());
+
+            ArgumentCaptor<Asistencia> captor = ArgumentCaptor.forClass(Asistencia.class);
+            verify(asistenciaRepository).save(captor.capture());
+            Asistencia saved = captor.getValue();
+            assertThat(saved.getFechaHoraIngreso())
+                    .isEqualTo(LocalDateTime.of(2026, 8, 1, 9, 0, 56, 170_856_000));
+            assertThat(saved.getFechaHoraSalida()).isEqualTo(LocalDateTime.of(2026, 8, 1, 18, 0));
+            assertThat(saved.getMinutosTrabajados()).isEqualTo(540);
+            assertThat(saved.getMinutosBalance()).isZero();
         } finally {
             OperationalDateTime.useClock(Clock.system(OperationalDateTime.ZONE));
         }

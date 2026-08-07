@@ -67,6 +67,7 @@ import java.util.Objects;
 public class AsistenciaService implements IAsistencia {
 
     private static final int MINUTOS_TOLERANCIA_TARDANZA_REPORTE = 5;
+    private static final int MINUTOS_REDONDEO_FAVOR_EMPLEADO = 0;
 
     private final AsistenciaRepository asistenciaRepository;
     private final AsistenciaTramoRepository asistenciaTramoRepository;
@@ -1491,7 +1492,10 @@ public class AsistenciaService implements IAsistencia {
             salidaEfectiva = topeSalida;
         }
 
-        long minutosJornada = Duration.between(asistencia.getFechaHoraIngreso(), salidaEfectiva).toMinutes();
+        LocalDateTime ingresoEfectivo = resolverInicioComputable(asistencia, asistencia.getFechaHoraIngreso());
+        LocalDateTime ingresoParaCalculo = redondearInicioParaCalculo(ingresoEfectivo);
+        LocalDateTime salidaParaCalculo = redondearFinParaCalculo(salidaEfectiva);
+        long minutosJornada = Duration.between(ingresoParaCalculo, salidaParaCalculo).toMinutes();
         int trabajadosSegmento = (int) Math.max(minutosJornada - asistencia.getMinutosAlmuerzoTomados() - asistencia.getMinutosServiciosAcumulados(), 0);
         // Dia partido (jornada reabierta por ampliacion): se suman los minutos de los tramos ya archivados.
         // En dias normales no hay tramos y el resultado es identico al previo.
@@ -1499,6 +1503,29 @@ public class AsistenciaService implements IAsistencia {
         int trabajados = trabajadosPrevios + trabajadosSegmento;
         asistencia.setMinutosTrabajados(trabajados);
         asistencia.setMinutosBalance(trabajados - asistencia.getMinutosObjetivoDia());
+    }
+
+    private LocalDateTime resolverInicioComputable(Asistencia asistencia, LocalDateTime ingresoReal) {
+        if (asistencia.getEntradaProgramada() == null) {
+            return ingresoReal;
+        }
+        LocalDateTime entradaProgramada = LocalDateTime.of(asistencia.getFecha(), asistencia.getEntradaProgramada());
+        if (asistencia.getSalidaProgramada() != null && !asistencia.getSalidaProgramada().isAfter(asistencia.getEntradaProgramada())) {
+            entradaProgramada = entradaProgramada.minusDays(1);
+        }
+        return ingresoReal.isBefore(entradaProgramada) ? entradaProgramada : ingresoReal;
+    }
+
+    private LocalDateTime redondearInicioParaCalculo(LocalDateTime fechaHora) {
+        return fechaHora
+                .minusMinutes(MINUTOS_REDONDEO_FAVOR_EMPLEADO)
+                .truncatedTo(ChronoUnit.MINUTES);
+    }
+
+    private LocalDateTime redondearFinParaCalculo(LocalDateTime fechaHora) {
+        LocalDateTime conGracia = fechaHora.plusMinutes(MINUTOS_REDONDEO_FAVOR_EMPLEADO);
+        LocalDateTime truncado = conGracia.truncatedTo(ChronoUnit.MINUTES);
+        return conGracia.equals(truncado) ? truncado : truncado.plusMinutes(1);
     }
 
     private int sumarMinutosTrabajadosTramos(Long asistenciaId) {
