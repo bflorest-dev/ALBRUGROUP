@@ -544,6 +544,23 @@ class LeadServiceRetroactiveIntakeTest {
     }
 
     @Test
+    void completarIdentidadRechazaTelefonoQueFiguraEnOtroLead() {
+        Contacto contacto = Contacto.builder().id(100L).usermeta("EfrainBay").build();
+        Contacto otroContacto = Contacto.builder().id(200L).build();
+        Lead lead = Lead.builder().id(25202L).contacto(contacto).etapa(Etapa.PREVENTA).build();
+        Lead otroLead = Lead.builder().id(25203L).prefijo("+51").lead("987654321").contacto(otroContacto).etapa(Etapa.PREVENTA).build();
+        LeadIdentidadRequest request = identidadRequest("+51", "987654321", null);
+
+        when(leadRepository.findById(25202L)).thenReturn(Optional.of(lead));
+        when(contactoRepository.findByPrefijoAndLead("+51", "987654321")).thenReturn(Optional.empty());
+        when(leadRepository.findByPrefijoAndLead("+51", "987654321")).thenReturn(Optional.of(otroLead));
+
+        assertThatThrownBy(() -> leadService.completarIdentidadLead(25202L, request))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("telefono ya figura en otro lead");
+    }
+
+    @Test
     void completarIdentidadRechazaUsermetaDeOtroContacto() {
         Contacto contacto = contactoTelefono();
         Contacto otroContacto = Contacto.builder().id(200L).usermeta("EfrainBay").build();

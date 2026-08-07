@@ -5,7 +5,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.lead_service.configuration.OperationalDateTime;
 import pe.albrugroup.lead_service.entity.Campana;
+import pe.albrugroup.lead_service.entity.Evento;
 import pe.albrugroup.lead_service.entity.Lead;
+import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.request.LeadCampanaCorreccionRequest;
 import pe.albrugroup.lead_service.entity.response.LeadCampanaCorreccionCandidatoResponse;
 import pe.albrugroup.lead_service.entity.response.LeadCampanaCorreccionResponse;
@@ -33,8 +35,8 @@ public class LeadCampanaCorreccionService {
 
     @Transactional(readOnly = true)
     public List<LeadCampanaCorreccionCandidatoResponse> buscarPorLead(String lead) {
-        String normalized = normalizeLead(lead);
-        return leadRepository.buscarCorreccionCampanaPorLead(normalized).stream()
+        String normalized = normalizeLeadOrUsermeta(lead);
+        return leadRepository.buscarCorreccionCampanaPorLeadOUsermeta(normalized).stream()
                 .map(this::toCandidatoResponse)
                 .toList();
     }
@@ -63,7 +65,7 @@ public class LeadCampanaCorreccionService {
         lead.setUpdatedAt(OperationalDateTime.now());
 
         Lead savedLead = leadRepository.save(lead);
-        int eventosActualizados = eventoRepository.actualizarCampanaPorLead(
+        int eventosActualizados = corregirEventosDesdeUltimoRegistro(
                 idLead,
                 campanaNueva == null ? null : campanaNueva.getId()
         );
@@ -112,6 +114,21 @@ public class LeadCampanaCorreccionService {
                 .orElseThrow(() -> new BadRequestException("La campana seleccionada no esta activa o no existe"));
     }
 
+    private int corregirEventosDesdeUltimoRegistro(Long idLead, Long idCampana) {
+        return eventoRepository.findTopByIdLeadAndAccionOrderByCreatedAtDescIdDesc(idLead, Accion.REGISTRO)
+                .map(registro -> actualizarCampanaDesdeRegistro(idLead, idCampana, registro))
+                .orElseGet(() -> eventoRepository.actualizarCampanaPorLead(idLead, idCampana));
+    }
+
+    private int actualizarCampanaDesdeRegistro(Long idLead, Long idCampana, Evento registro) {
+        return eventoRepository.actualizarCampanaPorLeadDesdeEvento(
+                idLead,
+                idCampana,
+                registro.getCreatedAt(),
+                registro.getId()
+        );
+    }
+
     private Campana validarCampanaPerteneceAlEquipo(Campana campana, Long idEquipoLead) {
         Long idProveedor = campana.getProveedor() == null ? null : campana.getProveedor().getId();
         if (idProveedor == null || !equipoProveedorRepository.existsByIdEquipoAndProveedorId(idEquipoLead, idProveedor)) {
@@ -126,6 +143,7 @@ public class LeadCampanaCorreccionService {
                 .idLead(lead.getId())
                 .prefijo(lead.getPrefijo())
                 .lead(lead.getLead())
+                .usermeta(lead.getUsermeta())
                 .etapa(lead.getEtapa())
                 .estado(lead.getEstado())
                 .idCampanaActual(campana == null ? null : campana.getId())
@@ -155,13 +173,16 @@ public class LeadCampanaCorreccionService {
                 .build();
     }
 
-    private String normalizeLead(String lead) {
+    private String normalizeLeadOrUsermeta(String lead) {
         if (lead == null || lead.isBlank()) {
-            throw new BadRequestException("Ingresa un numero de lead para buscar.");
+            throw new BadRequestException("Ingresa un numero de lead o usermeta para buscar.");
         }
         String normalized = lead.replaceAll("\\s+", "");
+        if (normalized.startsWith("@")) {
+            normalized = normalized.substring(1);
+        }
         if (normalized.isBlank()) {
-            throw new BadRequestException("Ingresa un numero de lead para buscar.");
+            throw new BadRequestException("Ingresa un numero de lead o usermeta para buscar.");
         }
         return normalized;
     }

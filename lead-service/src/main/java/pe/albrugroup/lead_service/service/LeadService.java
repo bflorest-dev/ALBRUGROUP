@@ -1213,7 +1213,7 @@ public class LeadService {
         String numeroLead = normalizarLead(request.getLead());
         String usermeta = normalizarUsermeta(request.getUsermeta());
         validarIdentidadIntake(prefijo, numeroLead, usermeta);
-        validarIdentidadParaCompletar(contacto, prefijo, numeroLead, usermeta);
+        validarIdentidadParaCompletar(lead, contacto, prefijo, numeroLead, usermeta);
 
         boolean actualizado = completarIdentidadContacto(contacto, prefijo, numeroLead, usermeta);
         if (!actualizado) {
@@ -2618,12 +2618,23 @@ public class LeadService {
         }
     }
 
-    private void validarIdentidadParaCompletar(Contacto contacto, String prefijo, String numeroLead, String usermeta) {
+    private void validarIdentidadParaCompletar(Lead lead, Contacto contacto, String prefijo, String numeroLead, String usermeta) {
         Optional<Contacto> contactoPorTelefono = tieneTelefono(prefijo, numeroLead)
                 ? contactoRepository.findByPrefijoAndLead(prefijo, numeroLead)
                 : Optional.empty();
         if (contactoPorTelefono.isPresent() && !contactoPorTelefono.get().getId().equals(contacto.getId())) {
             throw new ConflictException("El telefono pertenece a otro contacto. Revisa el lead antes de completar la identidad.");
+        }
+
+        if (tieneTelefono(prefijo, numeroLead)) {
+            leadRepository.findByPrefijoAndLead(prefijo, numeroLead)
+                    .filter(leadPorTelefono -> !leadPorTelefono.getId().equals(lead.getId()))
+                    .filter(leadPorTelefono -> leadPorTelefono.getContacto() == null
+                            || leadPorTelefono.getContacto().getId() == null
+                            || !leadPorTelefono.getContacto().getId().equals(contacto.getId()))
+                    .ifPresent(leadPorTelefono -> {
+                        throw new ConflictException("El telefono ya figura en otro lead. Revisa el lead antes de completar la identidad.");
+                    });
         }
 
         Optional<Contacto> contactoPorUsermeta = usermeta == null

@@ -104,7 +104,8 @@ export type CampanaGastoResumenPeriodoResponse = {
 export type LeadCampanaCorreccionCandidatoResponse = {
   idLead: number;
   prefijo?: string | null;
-  lead: string;
+  lead?: string | null;
+  usermeta?: string | null;
   etapa?: string | null;
   estado?: string | null;
   idCampanaActual?: number | null;
@@ -118,7 +119,7 @@ export type LeadCampanaCorreccionCandidatoResponse = {
 
 export type LeadCampanaCorreccionResponse = {
   idLead: number;
-  lead: string;
+  lead?: string | null;
   idCampanaAnterior?: number | null;
   nombreCampanaAnterior?: string | null;
   idCampanaNueva?: number | null;

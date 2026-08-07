@@ -37,16 +37,15 @@
   <p-card styleClass="campaign-correction-card">
     <div class="search-row">
       <label>
-        <span>Número de lead</span>
+        <span>Lead o usermeta</span>
         <input
           pInputText
           type="text"
-          inputmode="numeric"
-          maxlength="9"
+          maxlength="80"
           [ngModel]="leadQuery()"
           (ngModelChange)="updateLeadQuery($event)"
           (keydown.enter)="search()"
-          placeholder="Ej. 916855497"
+          placeholder="Ej. 916855497 o EfrainBay"
         />
       </label>
       <button
@@ -76,7 +75,7 @@
         </ng-template>
         <ng-template #body let-candidate>
           <tr [class.selected-row]="selectedCandidate()?.idLead === candidate.idLead">
-            <td><strong>{{ candidate.prefijo }} {{ candidate.lead }}</strong></td>
+            <td><strong>{{ identityLabel(candidate) }}</strong></td>
             <td><p-tag [value]="display(candidate.etapa)" severity="info" /></td>
             <td>{{ campaignLabel(candidate) }}</td>
             <td>{{ display(candidate.nombreAsesorAsignado) }}</td>
@@ -104,7 +103,7 @@
       <div class="selected-grid">
         <div>
           <span>Lead</span>
-          <strong>{{ selected.prefijo }} {{ selected.lead }}</strong>
+          <strong>{{ identityLabel(selected) }}</strong>
         </div>
         <div>
           <span>Etapa</span>

@@ -63,10 +63,11 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             FROM Lead l
             LEFT JOIN FETCH l.campana c
             LEFT JOIN FETCH c.proveedor
-            WHERE l.lead = :lead
+            WHERE l.lead = :buscar
+               OR LOWER(l.usermeta) = LOWER(:buscar)
             ORDER BY l.lastEntryAt DESC, l.id DESC
             """)
-    List<Lead> buscarCorreccionCampanaPorLead(@Param("lead") String lead);
+    List<Lead> buscarCorreccionCampanaPorLeadOUsermeta(@Param("buscar") String buscar);
 
     @Query("""
             SELECT l

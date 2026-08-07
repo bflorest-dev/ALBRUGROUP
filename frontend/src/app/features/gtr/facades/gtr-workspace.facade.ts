@@ -281,6 +281,7 @@ export class GtrWorkspaceFacade {
   readonly isLoadingTipificationHistory = signal(false);
   readonly intakeNumberMaxLength = signal(9);
   readonly snapshotNumberMaxLength = signal(9);
+  readonly snapshotPhoneEditorOpen = signal(false);
   private readonly selectedIntakeCampaignId = signal<number | null>(null);
   readonly masivoExcelResultsDialogOpen = signal(false);
   readonly successMessage = signal<string | null>(null);
@@ -1361,6 +1362,7 @@ export class GtrWorkspaceFacade {
 
   beginSnapshot(row: LeadGtrResponse): void {
     this.activeSnapshotLead.set(row);
+    this.snapshotPhoneEditorOpen.set(false);
     this.snapshotForm.reset({
       idLead: row.id,
       prefijo: row.prefijo ?? PERU_PHONE_PREFIX,
@@ -2054,6 +2056,7 @@ export class GtrWorkspaceFacade {
 
   cancelSnapshot(): void {
     this.activeSnapshotLead.set(null);
+    this.snapshotPhoneEditorOpen.set(false);
     this.enableSnapshotIdentityControls();
     this.snapshotForm.reset({
       idLead: 0,
@@ -3196,6 +3199,23 @@ export class GtrWorkspaceFacade {
 
   hasLeadChat(row: { prefijo?: string | null; lead?: string | null; usermeta?: string | null }): boolean {
     return !!this.whatsAppUrl(row.prefijo, row.lead, row.usermeta);
+  }
+
+  canShowSnapshotPhoneCompletion(row: { prefijo?: string | null; lead?: string | null }): boolean {
+    return !this.hasLeadPhone(row);
+  }
+
+  openSnapshotPhoneEditor(): void {
+    const lead = this.selectedSnapshotLead();
+    if (!lead || this.hasLeadPhone(lead)) {
+      return;
+    }
+    this.snapshotPhoneEditorOpen.set(true);
+    this.snapshotForm.controls.prefijo.enable({ emitEvent: false });
+    this.snapshotForm.controls.lead.enable({ emitEvent: false });
+    this.snapshotForm.controls.prefijo.setValue(this.snapshotForm.controls.prefijo.value || PERU_PHONE_PREFIX);
+    this.snapshotForm.controls.prefijo.markAsPristine();
+    this.snapshotForm.controls.lead.markAsPristine();
   }
 
   snapshotIdentityErrorMessage(): string | null {
@@ -4483,8 +4503,8 @@ export class GtrWorkspaceFacade {
       prefijoControl.disable({ emitEvent: false });
       leadControl.disable({ emitEvent: false });
     } else {
-      prefijoControl.enable({ emitEvent: false });
-      leadControl.enable({ emitEvent: false });
+      prefijoControl.disable({ emitEvent: false });
+      leadControl.disable({ emitEvent: false });
     }
 
     if (hasUsermeta) {
@@ -4512,7 +4532,7 @@ export class GtrWorkspaceFacade {
     const usermeta = normalizeUsermeta(raw.usermeta);
     const request: { prefijo?: string | null; lead?: string | null; usermeta?: string | null } = {};
 
-    if ((!selected.prefijo || !selected.lead) && prefijo && numeroLead) {
+    if (this.snapshotPhoneEditorOpen() && (!selected.prefijo || !selected.lead) && prefijo && numeroLead) {
       request.prefijo = prefijo;
       request.lead = numeroLead;
     }

@@ -1,9 +1,10 @@
-import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
+import { Injectable, OnDestroy, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { catchError, forkJoin, map, of, startWith, switchMap } from 'rxjs';
+import { Subscription, catchError, forkJoin, map, of, startWith, switchMap } from 'rxjs';
 import { CatalogoResponse } from '../../../shared/models/preventa/preventa.models';
 import { esEquipoOperativo } from '../../../shared/utils/equipos-operativos';
 import { resolveMetricsRange } from '../../../shared/utils/metrics-period';
+import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
 import { AdminEquipoService } from '../services/admin-equipo.service';
 import {
   AdminGestionCampanaService,
@@ -174,9 +175,11 @@ interface AccEquipo {
 }
 
 @Injectable()
-export class AdminGestionCampanaFacade {
+export class AdminGestionCampanaFacade implements OnDestroy {
   private readonly service = inject(AdminGestionCampanaService);
   private readonly equipoService = inject(AdminEquipoService);
+  private readonly realtimeService = inject(LeadRealtimeService);
+  private readonly realtimeSubscription = new Subscription();
 
   private requestId = 0;
   private started = false;
@@ -282,6 +285,11 @@ export class AdminGestionCampanaFacade {
         untracked(() => this.selectedEquipoId.set(primerEquipo.value));
       }
     });
+    this.startRealtime();
+  }
+
+  ngOnDestroy(): void {
+    this.realtimeSubscription.unsubscribe();
   }
 
   // Pivote completo (con todas las campañas). Se memoiza aparte del filtro de columnas para no
@@ -468,6 +476,19 @@ export class AdminGestionCampanaFacade {
   }
 
   // ---- internos ----
+
+  private startRealtime(): void {
+    this.realtimeSubscription.add(
+      this.realtimeService.watchTopic('/topic/leads').subscribe({
+        next: (event) => {
+          if (event.tipo === 'CAMPANA_CORREGIDA' && this.started) {
+            this.reload();
+          }
+        },
+        error: () => undefined
+      })
+    );
+  }
 
   /** Devuelve las cotas a enviar. `undefined` en una cota = el backend usa el día operativo de hoy. */
   private resolveRange(): { desde?: string; hasta?: string } {

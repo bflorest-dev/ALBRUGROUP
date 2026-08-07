@@ -506,16 +506,32 @@
     </ng-template>
 
     <form class="form-grid" [formGroup]="facade.snapshotForm" (ngSubmit)="facade.saveSnapshot()">
-      <app-phone-number-field
-        class="wide"
-        label="Numero Celular"
-        [prefixControl]="facade.snapshotForm.controls.prefijo"
-        [numberControl]="facade.snapshotForm.controls.lead"
-        [numberMaxLength]="facade.snapshotNumberMaxLength()"
-        numberPlaceholder="Numero de lead"
-        [numberInvalidMessage]="facade.snapshotIdentityErrorMessage() ?? facade.intakeNumberInvalidMessage()"
-        (focusout)="facade.normalizeSnapshotLeadNumber(facade.snapshotForm.controls.lead.value)"
-      />
+      @if (facade.selectedSnapshotLead(); as snapshotLead) {
+        @if (!facade.canShowSnapshotPhoneCompletion(snapshotLead) || facade.snapshotPhoneEditorOpen()) {
+          <app-phone-number-field
+            class="wide"
+            label="Numero Celular"
+            [prefixControl]="facade.snapshotForm.controls.prefijo"
+            [numberControl]="facade.snapshotForm.controls.lead"
+            [numberMaxLength]="facade.snapshotNumberMaxLength()"
+            numberPlaceholder="Numero de lead"
+            [numberInvalidMessage]="facade.snapshotIdentityErrorMessage() ?? facade.intakeNumberInvalidMessage()"
+            (focusout)="facade.normalizeSnapshotLeadNumber(facade.snapshotForm.controls.lead.value)"
+          />
+        } @else {
+          <button
+            pButton
+            class="wide"
+            type="button"
+            icon="pi pi-plus"
+            label="Agregar numero de contacto"
+            severity="secondary"
+            [outlined]="true"
+            [disabled]="facade.isSavingSnapshot() || !facade.canMutateOperationalData()"
+            (click)="facade.openSnapshotPhoneEditor()"
+          ></button>
+        }
+      }
       <label class="wide">
         <span>Usuario WhatsApp</span>
         <input

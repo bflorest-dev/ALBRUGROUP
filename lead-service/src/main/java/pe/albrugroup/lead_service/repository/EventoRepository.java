@@ -40,6 +40,23 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     @Query("UPDATE Evento e SET e.idCampana = :idCampana WHERE e.idLead = :idLead")
     int actualizarCampanaPorLead(@Param("idLead") Long idLead, @Param("idCampana") Long idCampana);
 
+    @Modifying
+    @Query("""
+            UPDATE Evento e
+            SET e.idCampana = :idCampana
+            WHERE e.idLead = :idLead
+              AND (
+                    e.createdAt > :desde
+                    OR (e.createdAt = :desde AND e.id >= :idEventoDesde)
+              )
+            """)
+    int actualizarCampanaPorLeadDesdeEvento(
+            @Param("idLead") Long idLead,
+            @Param("idCampana") Long idCampana,
+            @Param("desde") Instant desde,
+            @Param("idEventoDesde") Long idEventoDesde
+    );
+
     Page<Evento> findByIdLeadAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
             Long idLead,
             Instant fechaDesde,
@@ -61,6 +78,7 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
             Accion accion,
             Pageable pageable
     );
+    Optional<Evento> findTopByIdLeadAndAccionOrderByCreatedAtDescIdDesc(Long idLead, Accion accion);
     Page<Evento> findByIdLeadAndAccionAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
             Long idLead,
             Accion accion,

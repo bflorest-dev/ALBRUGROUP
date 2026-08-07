@@ -14,6 +14,7 @@ public class LeadCampanaCorreccionCandidatoResponse {
     private Long idLead;
     private String prefijo;
     private String lead;
+    private String usermeta;
     private Etapa etapa;
     private EstadoSeguimiento estado;
     private Long idCampanaActual;

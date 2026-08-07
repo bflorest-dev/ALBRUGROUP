@@ -102,12 +102,12 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
   }
 
   protected async search(showLoading = true): Promise<void> {
-    const lead = this.normalizeLead(this.leadQuery());
+    const lead = this.normalizeLeadOrUsermeta(this.leadQuery());
     this.clearMessages();
     this.lastResult.set(null);
 
     if (!lead) {
-      this.errorMessage.set('Ingresa un número de lead para buscar.');
+      this.errorMessage.set('Ingresa un numero de lead o usermeta para buscar.');
       return;
     }
 
@@ -126,7 +126,7 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
         this.activeCampaigns.set([]);
       }
       if (!results.length) {
-        this.errorMessage.set('No encontramos un lead con ese número.');
+        this.errorMessage.set('No encontramos un lead con ese numero o usermeta.');
       }
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo buscar el lead.'));
@@ -160,7 +160,7 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
     const targetLabel = this.campaignOptions().find((option) => option.value === this.selectedCampaignId())?.label ?? 'Sin campaña';
     this.confirmationService.confirm({
       header: 'Confirmar corrección',
-      message: `Se actualizará la campaña del lead ${candidate.lead} y sus eventos asociados a: ${targetLabel}.`,
+      message: `Se actualizará la campaña del lead ${this.identityLabel(candidate)} y sus eventos asociados a: ${targetLabel}.`,
       icon: 'pi pi-exclamation-triangle',
       acceptLabel: 'Guardar corrección',
       rejectLabel: 'Cancelar',
@@ -181,7 +181,16 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
   }
 
   protected updateLeadQuery(value: string): void {
-    this.leadQuery.set(this.normalizeLead(value));
+    this.leadQuery.set(this.normalizeLeadOrUsermeta(value));
+  }
+
+  protected identityLabel(candidate: LeadCampanaCorreccionCandidatoResponse | null): string {
+    if (!candidate) {
+      return '-';
+    }
+    const phone = [candidate.prefijo, candidate.lead].filter(Boolean).join(' ').trim();
+    const usermeta = candidate.usermeta ? `@${candidate.usermeta}` : '';
+    return phone || usermeta || '-';
   }
 
   protected closeCorrectionDialog(): void {
@@ -242,8 +251,12 @@ export class CommunityCampaignCorrectionPageComponent implements OnInit, OnDestr
     );
   }
 
-  private normalizeLead(value: string): string {
-    return value.replace(/\D+/g, '').slice(0, 9);
+  private normalizeLeadOrUsermeta(value: string): string {
+    const normalized = value.replace(/\s+/g, '');
+    if (/^\d+$/.test(normalized)) {
+      return normalized.slice(0, 9);
+    }
+    return normalized.replace(/^@+/, '').slice(0, 80);
   }
 
   private clearMessages(): void {
