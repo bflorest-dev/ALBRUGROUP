@@ -30,6 +30,7 @@ public class LeadDetalleResponse {
     private Instant lastEntryAt;
     private String prefijo;
     private String lead;
+    private String numeroParaLlamar;
     private String usermeta;
     private String nombreCampana;
     private String nombreProveedorCampana;

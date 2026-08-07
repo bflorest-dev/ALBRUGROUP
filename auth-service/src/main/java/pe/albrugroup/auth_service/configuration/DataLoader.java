@@ -172,6 +172,8 @@ public class DataLoader {
         savePermiso("ASSIGN_LEADS", "Puede asignar leads", "LEAD", "ASSIGN");
         savePermiso("READ_LEADS_ASESOR", "Puede ver bandeja y detalle de leads del asesor", "LEAD", "READ");
         savePermiso("UPDATE_LEADS_ASESOR", "Puede actualizar datos de gestion del lead", "LEAD", "UPDATE");
+        savePermiso("READ_LEAD_NUMEROS_LLAMADA", "Puede listar los numeros disponibles para llamadas de un lead", "LEAD_NUMERO_LLAMADA", "READ");
+        savePermiso("UPDATE_LEAD_NUMERO_LLAMADA", "Puede actualizar el numero operativo para llamar a un lead", "LEAD_NUMERO_LLAMADA", "UPDATE");
         savePermiso("TYPIFY_LEADS", "Puede tipificar leads", "LEAD", "TYPIFY");
         savePermiso("CONTACT_LEADS", "Puede registrar contacto de leads", "LEAD", "CONTACT");
         savePermiso("READ_LEADS_GTR", "Puede ver bandeja de leads para GTR", "LEAD", "READ");
@@ -378,6 +380,8 @@ public class DataLoader {
                 getPermiso("ASSIGN_LEADS"),
                 getPermiso("READ_LEADS_ASESOR"),
                 getPermiso("UPDATE_LEADS_ASESOR"),
+                getPermiso("READ_LEAD_NUMEROS_LLAMADA"),
+                getPermiso("UPDATE_LEAD_NUMERO_LLAMADA"),
                 getPermiso("TYPIFY_LEADS"),
                 getPermiso("CONTACT_LEADS"),
 
@@ -417,6 +421,8 @@ public class DataLoader {
 
                 getPermiso("READ_LEADS_ASESOR"),
                 getPermiso("UPDATE_LEADS_ASESOR"),
+                getPermiso("READ_LEAD_NUMEROS_LLAMADA"),
+                getPermiso("UPDATE_LEAD_NUMERO_LLAMADA"),
                 getPermiso("TYPIFY_LEADS"),
                 getPermiso("CONTACT_LEADS"),
                 getPermiso("READ_ASISTENCIAS_SELF"),
@@ -438,6 +444,8 @@ public class DataLoader {
 
                 getPermiso("READ_LEADS_ASESOR"),
                 getPermiso("UPDATE_LEADS_ASESOR"),
+                getPermiso("READ_LEAD_NUMEROS_LLAMADA"),
+                getPermiso("UPDATE_LEAD_NUMERO_LLAMADA"),
                 getPermiso("TYPIFY_LEADS"),
                 getPermiso("CONTACT_LEADS"),
 
@@ -484,6 +492,8 @@ public class DataLoader {
                 getPermiso("ASSIGN_LEADS"),
                 getPermiso("READ_LEADS_ASESOR"),
                 getPermiso("UPDATE_LEADS_ASESOR"),
+                getPermiso("READ_LEAD_NUMEROS_LLAMADA"),
+                getPermiso("UPDATE_LEAD_NUMERO_LLAMADA"),
                 getPermiso("TYPIFY_LEADS"),
                 getPermiso("READ_TIPIFICACIONES_VENTA"),
                 getPermiso("CONTACT_LEADS"),
@@ -508,6 +518,8 @@ public class DataLoader {
                 getPermiso("ASSIGN_LEADS"),
                 getPermiso("READ_LEADS_ASESOR"),
                 getPermiso("UPDATE_LEADS_ASESOR"),
+                getPermiso("READ_LEAD_NUMEROS_LLAMADA"),
+                getPermiso("UPDATE_LEAD_NUMERO_LLAMADA"),
                 getPermiso("TYPIFY_LEADS"),
                 getPermiso("CONTACT_LEADS"),
                 getPermiso("READ_TIPIFICACIONES_POSTVENTA"),

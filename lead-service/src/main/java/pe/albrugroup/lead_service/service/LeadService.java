@@ -20,6 +20,7 @@ import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoGtr;
 import pe.albrugroup.lead_service.entity.enums.TipoGrupoVenta;
+import pe.albrugroup.lead_service.entity.enums.TipoNumeroLlamada;
 import pe.albrugroup.lead_service.entity.request.LeadAsignacionMasivaRequest;
 import pe.albrugroup.lead_service.entity.request.LeadAsignacionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadDatosPreventaRequest;
@@ -27,6 +28,7 @@ import pe.albrugroup.lead_service.entity.request.LeadDireccionRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIdentidadRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRetroactivoRequest;
+import pe.albrugroup.lead_service.entity.request.LeadNumeroParaLlamarRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaAdicionalRequest;
 import pe.albrugroup.lead_service.entity.request.LeadOfertaComercialRequest;
 import pe.albrugroup.lead_service.entity.request.LeadSnapshotsRequest;
@@ -62,6 +64,7 @@ import pe.albrugroup.lead_service.entity.response.InternetResponse;
 import pe.albrugroup.lead_service.entity.response.LeadRealtimeEvent;
 import pe.albrugroup.lead_service.entity.response.MisPreventaResponse;
 import pe.albrugroup.lead_service.entity.response.MisPreventasResumenResponse;
+import pe.albrugroup.lead_service.entity.response.NumeroLlamadaResponse;
 import pe.albrugroup.lead_service.entity.response.OportunidadHermanaResponse;
 import pe.albrugroup.lead_service.entity.response.PageResponse;
 import pe.albrugroup.lead_service.entity.response.PlanAdicionalResponse;
@@ -168,6 +171,7 @@ public class LeadService {
     private static final ComportamientoTipificacion COMPORTAMIENTO_CIERRE_BAJA_POSTVENTA =
             ComportamientoTipificacion.CIERRA_PERIODO_BAJA;
     private static final String TIPIFICACION_PROGRAMADO = "PROGRAMADO";
+    private static final Pattern NUMERO_LLAMADA_PATTERN = Pattern.compile("^9\\d{8}$");
     private static final String SUBTIPIFICACION_PROGRAMACION_CANCELADA = "PROGRAMACION_CANCELADA";
     private static final String TIPIFICACION_RETORNO_VENTA_PREVENTA = "NO DESEA";
     private static final String SUBTIPIFICACION_RETORNO_VENTA_PREVENTA = "PREVENTA DESAPROBADA";
@@ -1234,6 +1238,33 @@ public class LeadService {
         leadsContacto.forEach(item -> sincronizarIdentidadLead(item, identidad));
         List<Lead> guardados = leadRepository.saveAll(leadsContacto);
         guardados.forEach(item -> notificarCambioLead("IDENTIDAD_ACTUALIZADA", item, null, null, item.getEtapa() != Etapa.PREVENTA));
+    }
+
+    public List<NumeroLlamadaResponse> listarNumerosLlamada(Long idLead) {
+        Lead lead = leadRepository.findById(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        DatosPreventa datosPreventa = lead.getDatosPreventa();
+        Map<String, NumeroLlamadaResponse> opciones = new LinkedHashMap<>();
+
+        agregarNumeroLlamada(opciones, TipoNumeroLlamada.NUMERO_PARA_LLAMAR, "Numero para llamar",
+                lead.getNumeroParaLlamar(), 1);
+        agregarNumeroLlamada(opciones, TipoNumeroLlamada.LEAD, "Numero lead", lead.getLead(), 2);
+        agregarNumeroLlamada(opciones, TipoNumeroLlamada.CELULAR_REFERENCIA, "Celular de referencia",
+                datosPreventa == null ? null : datosPreventa.getCelularReferencia(), 3);
+        agregarNumeroLlamada(opciones, TipoNumeroLlamada.CELULAR_REGISTRO, "Celular de registro",
+                datosPreventa == null ? null : datosPreventa.getCelularRegistro(), 4);
+
+        return new ArrayList<>(opciones.values());
+    }
+
+    @Transactional
+    public void actualizarNumeroParaLlamar(Long idLead, LeadNumeroParaLlamarRequest request) {
+        Lead lead = leadRepository.findById(idLead)
+                .orElseThrow(() -> new NotFoundException(Lead.class, idLead));
+        String numeroParaLlamar = normalizarNumeroParaLlamar(request.getNumeroParaLlamar());
+        lead.setNumeroParaLlamar(numeroParaLlamar);
+        Lead savedLead = leadRepository.save(lead);
+        notificarCambioLead("NUMERO_PARA_LLAMAR_ACTUALIZADO", savedLead, null, null, savedLead.getEtapa() != Etapa.PREVENTA);
     }
 
     @Transactional
@@ -2666,6 +2697,7 @@ public class LeadService {
         lead.setLead(identidad.lead());
         lead.setUsermeta(identidad.usermeta());
         lead.setContacto(identidad.contacto());
+        completarNumeroParaLlamarSiFalta(lead);
     }
 
     // Deriva el equipo del lead: si el usuario pertenece a un único equipo, ese; si no, del
@@ -2693,6 +2725,7 @@ public class LeadService {
                 identidad.prefijo(), identidad.lead(), identidad.usermeta(), request.getBase(), campana, OperationalDateTime.now());
         lead.setContacto(identidad.contacto());
         lead.setIdEquipo(derivarIdEquipo(campana));
+        completarNumeroParaLlamarSiFalta(lead);
 
         Lead savedLead = leadRepository.save(lead);
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
@@ -2718,6 +2751,7 @@ public class LeadService {
         aplicarSnapshotsMasivo(lead, documentoSnapshot, direccionSnapshot, advertencias);
         lead.setContacto(resolverContacto(prefijo, numeroLead));
         lead.setIdEquipo(derivarIdEquipo(campana));
+        completarNumeroParaLlamarSiFalta(lead);
 
         Lead savedLead = leadRepository.save(lead);
         Long idCampana = savedLead.getCampana() == null ? null : savedLead.getCampana().getId();
@@ -2826,6 +2860,7 @@ public class LeadService {
 
         lead.setPrefijo(prefijo);
         lead.setLead(numeroLead);
+        completarNumeroParaLlamarSiFalta(lead);
         lead.setCampana(campana);
         lead.setBase(base);
         lead.setLastEntryAt(OperationalDateTime.now());
@@ -3117,6 +3152,43 @@ public class LeadService {
     private String normalizarLead(String lead) {
         String normalizado = lead == null ? null : lead.trim();
         return normalizado == null || normalizado.isBlank() ? null : normalizado;
+    }
+
+    private String normalizarNumeroParaLlamar(String numeroParaLlamar) {
+        String normalizado = leadMapper.trimToNull(numeroParaLlamar);
+        if (normalizado == null || !NUMERO_LLAMADA_PATTERN.matcher(normalizado).matches()) {
+            throw new BadRequestException("numeroParaLlamar debe tener 9 digitos y empezar en 9");
+        }
+        return normalizado;
+    }
+
+    private void completarNumeroParaLlamarSiFalta(Lead lead) {
+        if (lead.getNumeroParaLlamar() != null && !lead.getNumeroParaLlamar().isBlank()) {
+            return;
+        }
+        String numeroLead = normalizarLead(lead.getLead());
+        if (numeroLead != null && NUMERO_LLAMADA_PATTERN.matcher(numeroLead).matches()) {
+            lead.setNumeroParaLlamar(numeroLead);
+        }
+    }
+
+    private void agregarNumeroLlamada(
+            Map<String, NumeroLlamadaResponse> opciones,
+            TipoNumeroLlamada tipo,
+            String label,
+            String numero,
+            int prioridad
+    ) {
+        String normalizado = leadMapper.trimToNull(numero);
+        if (normalizado == null || !NUMERO_LLAMADA_PATTERN.matcher(normalizado).matches()) {
+            return;
+        }
+        opciones.putIfAbsent(normalizado, NumeroLlamadaResponse.builder()
+                .tipo(tipo)
+                .label(label)
+                .numero(normalizado)
+                .prioridad(prioridad)
+                .build());
     }
 
     private String normalizarUsermeta(String usermeta) {
@@ -3674,6 +3746,7 @@ public class LeadService {
                 lead.getLastEntryAt(),
                 lead.getPrefijo(),
                 lead.getLead(),
+                lead.getNumeroParaLlamar(),
                 lead.getUsermeta(),
                 lead.getCampana() == null ? null : lead.getCampana().getNombre(),
                 lead.getCampana() == null || lead.getCampana().getProveedor() == null ? null : lead.getCampana().getProveedor().getNombre(),
@@ -3938,6 +4011,7 @@ public class LeadService {
         nueva.setIdAsesorAsignado(currentUser.empleadoID());
         nueva.setNombreAsesorAsignado(currentUser.nombreCompleto().trim());
         nueva.setEstado(EstadoSeguimiento.EN_GESTION);
+        completarNumeroParaLlamarSiFalta(nueva);
 
         Lead saved = leadRepository.save(nueva);
         Long idCampana = saved.getCampana() == null ? null : saved.getCampana().getId();

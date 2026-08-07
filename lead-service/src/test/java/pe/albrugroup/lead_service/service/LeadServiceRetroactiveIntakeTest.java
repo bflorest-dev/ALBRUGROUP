@@ -16,10 +16,13 @@ import pe.albrugroup.lead_service.entity.enums.Accion;
 import pe.albrugroup.lead_service.entity.enums.Base;
 import pe.albrugroup.lead_service.entity.enums.EstadoSeguimiento;
 import pe.albrugroup.lead_service.entity.enums.Etapa;
+import pe.albrugroup.lead_service.entity.enums.TipoNumeroLlamada;
 import pe.albrugroup.lead_service.entity.request.LeadIdentidadRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRequest;
 import pe.albrugroup.lead_service.entity.request.LeadIntakeRetroactivoRequest;
+import pe.albrugroup.lead_service.entity.request.LeadNumeroParaLlamarRequest;
 import pe.albrugroup.lead_service.entity.request.RegistrarEventoRequest;
+import pe.albrugroup.lead_service.entity.response.NumeroLlamadaResponse;
 import pe.albrugroup.lead_service.exception.BadRequestException;
 import pe.albrugroup.lead_service.exception.ConflictException;
 import pe.albrugroup.lead_service.repository.AdicionalRepository;
@@ -80,6 +83,69 @@ class LeadServiceRetroactiveIntakeTest {
     @Mock private LeadEtapaResumenService leadEtapaResumenService;
 
     @InjectMocks private LeadService leadService;
+
+    @Test
+    void listarNumerosLlamadaDevuelveJerarquiaSinDuplicados() {
+        Lead lead = Lead.builder()
+                .id(1L)
+                .lead("912345678")
+                .numeroParaLlamar("987654321")
+                .datosPreventa(pe.albrugroup.lead_service.entity.DatosPreventa.builder()
+                        .celularReferencia("923456789")
+                        .celularRegistro("912345678")
+                        .build())
+                .build();
+        when(leadRepository.findById(1L)).thenReturn(Optional.of(lead));
+        when(leadMapper.trimToNull(any())).thenAnswer(invocation -> {
+            String value = invocation.getArgument(0);
+            if (value == null) {
+                return null;
+            }
+            String trimmed = value.trim();
+            return trimmed.isEmpty() ? null : trimmed;
+        });
+
+        List<NumeroLlamadaResponse> numeros = leadService.listarNumerosLlamada(1L);
+
+        assertThat(numeros).extracting(NumeroLlamadaResponse::getTipo)
+                .containsExactly(
+                        TipoNumeroLlamada.NUMERO_PARA_LLAMAR,
+                        TipoNumeroLlamada.LEAD,
+                        TipoNumeroLlamada.CELULAR_REFERENCIA
+                );
+        assertThat(numeros).extracting(NumeroLlamadaResponse::getPrioridad)
+                .containsExactly(1, 2, 3);
+    }
+
+    @Test
+    void actualizarNumeroParaLlamarAceptaCelularValido() {
+        Lead lead = Lead.builder().id(1L).etapa(Etapa.PREVENTA).build();
+        LeadNumeroParaLlamarRequest request = new LeadNumeroParaLlamarRequest();
+        request.setNumeroParaLlamar("987654321");
+        when(leadRepository.findById(1L)).thenReturn(Optional.of(lead));
+        when(leadRepository.save(lead)).thenReturn(lead);
+        when(leadMapper.trimToNull("987654321")).thenReturn("987654321");
+
+        leadService.actualizarNumeroParaLlamar(1L, request);
+
+        assertThat(lead.getNumeroParaLlamar()).isEqualTo("987654321");
+        verify(leadRepository).save(lead);
+    }
+
+    @Test
+    void actualizarNumeroParaLlamarRechazaFormatoInvalido() {
+        Lead lead = Lead.builder().id(1L).build();
+        LeadNumeroParaLlamarRequest request = new LeadNumeroParaLlamarRequest();
+        request.setNumeroParaLlamar("812345678");
+        when(leadRepository.findById(1L)).thenReturn(Optional.of(lead));
+        when(leadMapper.trimToNull("812345678")).thenReturn("812345678");
+
+        assertThatThrownBy(() -> leadService.actualizarNumeroParaLlamar(1L, request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("9 digitos");
+
+        verify(leadRepository, never()).save(any());
+    }
 
     @Test
     void registraElEventoAyerYConservaElIngresoDelLeadEnElInstanteActual() {

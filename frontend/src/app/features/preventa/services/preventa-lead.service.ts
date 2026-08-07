@@ -36,9 +36,11 @@ import {
   LeadIntakeRetroactivoRequest,
   LeadIntakeMasivoExcelResponse,
   LeadIdentidadRequest,
+  LeadNumeroParaLlamarRequest,
   MasivoLeadFilters,
   MisPreventaResponse,
   MisPreventasResumenResponse,
+  NumeroLlamadaResponse,
   OportunidadHermana,
   LeadSnapshotsRequest,
   LeadOfertaComercialRequest,
@@ -66,6 +68,14 @@ export class PreventaLeadService {
   private readonly leadUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads`;
   private readonly authUrl = `${API_CONSTANTS.gatewayBaseUrl}${API_CONSTANTS.authBasePath}`;
   private readonly equiposUrl = `${API_CONSTANTS.gatewayBaseUrl}/auth/equipos`;
+
+  listarNumerosLlamada(idLead: number): Observable<NumeroLlamadaResponse[]> {
+    return this.http.get<NumeroLlamadaResponse[]>(`${this.leadUrl}/${idLead}/numeros-llamada`);
+  }
+
+  actualizarNumeroParaLlamar(idLead: number, request: LeadNumeroParaLlamarRequest): Observable<void> {
+    return this.http.patch<void>(`${this.leadUrl}/${idLead}/numero-para-llamar`, request);
+  }
 
   // Multi-titular: crea otra oportunidad para el mismo contacto (devuelve el id de la nueva).
   crearOportunidadAdicional(idLead: number): Observable<number> {

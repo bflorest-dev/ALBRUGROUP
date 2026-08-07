@@ -20,6 +20,7 @@ public interface LeadMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "prefijo", source = "prefijo")
     @Mapping(target = "lead", source = "lead")
+    @Mapping(target = "numeroParaLlamar", ignore = true)
     @Mapping(target = "usermeta", source = "usermeta")
     @Mapping(target = "base", source = "base")
     @Mapping(target = "campana", source = "campana")

@@ -344,6 +344,7 @@ export interface LeadDetalleResponse extends LeadAsesorVentasResponse {
   nombreCampana?: string | null;
   nombreProveedorCampana?: string | null;
   nombreProveedorEquipo?: string | null;
+  numeroParaLlamar?: string | null;
   base?: string | null;
   idAsesorAsignado?: number | null;
   nombreAsesorAsignado?: string | null;
@@ -550,6 +551,19 @@ export interface LeadDatosPreventaRequest {
   nombrePadre?: string | null;
   numeroDocumentoTitularCelularRegistro?: string | null;
   nombreTitularCelularRegistro?: string | null;
+}
+
+export type TipoNumeroLlamada = 'NUMERO_PARA_LLAMAR' | 'LEAD' | 'CELULAR_REFERENCIA' | 'CELULAR_REGISTRO';
+
+export interface NumeroLlamadaResponse {
+  tipo: TipoNumeroLlamada;
+  label: string;
+  numero: string;
+  prioridad: number;
+}
+
+export interface LeadNumeroParaLlamarRequest {
+  numeroParaLlamar: string;
 }
 
 export interface OportunidadHermana {
