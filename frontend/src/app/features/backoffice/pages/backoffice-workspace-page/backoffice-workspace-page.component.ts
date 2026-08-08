@@ -124,6 +124,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private readonly newRowTimers = new Map<number, number>();
   private readonly pickerDateCache = new Map<string, Date | null>();
   private organizeCloseTimeout: ReturnType<typeof setTimeout> | null = null;
+  private plataformaRequestSeq = 0;
+  private programadosRequestSeq = 0;
   private initialized = false;
   private initializeInFlight = false;
   private lastAttendanceStatus: EstadoAsistencia | null = null;
@@ -1464,33 +1466,54 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (!this.canDisplayOperationalData()) {
       return;
     }
+    const requestSeq = ++this.plataformaRequestSeq;
+    const requestKey = this.plataformaRequestKey();
     if (this.section() === 'plataforma') {
       await this.refreshOrganizationGroups();
     }
     const previous = this.plataformaRows();
     const term = this.searchTermActive();
+    const query = this.currentQuery(this.pagePlataforma(), 'plataforma');
+    const groupFilter = this.currentVentaGroupFilter();
+    const adminEquipoId = this.adminEquipoId();
     const page = await firstValueFrom(
       this.leadService.listarPlataforma(
-        this.currentQuery(this.pagePlataforma()),
+        query,
         term || undefined,
-        this.currentVentaGroupFilter(),
-        this.adminEquipoId()
+        groupFilter,
+        adminEquipoId
       )
     );
+    if (requestSeq !== this.plataformaRequestSeq || requestKey !== this.plataformaRequestKey()) {
+      return;
+    }
     this.totalPlataforma.set(page.totalElements);
-    this.plataformaRows.set(this.mergeVisualRows(previous, page.content, silent));
+    this.plataformaRows.set(this.mergeVisualRows(previous, page.content, this.shouldAnimatePlataformaRefresh(silent, previous)));
   }
 
   private async refreshProgramados(silent: boolean): Promise<void> {
     if (!this.canDisplayOperationalData()) {
       return;
     }
+    const requestSeq = ++this.programadosRequestSeq;
+    const requestKey = this.programadosRequestKey();
     const previous = this.programadosRows();
+    const query = this.currentQuery(this.pageProgramados(), 'programados');
+    const adminEquipoId = this.adminEquipoId();
     const page = await firstValueFrom(
-      this.leadService.listarProgramados(this.currentQuery(this.pageProgramados()), this.adminEquipoId())
+      this.leadService.listarProgramados(query, adminEquipoId)
     );
+    if (requestSeq !== this.programadosRequestSeq || requestKey !== this.programadosRequestKey()) {
+      return;
+    }
     this.totalProgramados.set(page.totalElements);
-    this.programadosRows.set(this.mergeVisualRows(previous, page.content.map((row) => this.withProgramacionGroup(row)), silent));
+    this.programadosRows.set(
+      this.mergeVisualRows(
+        previous,
+        page.content.map((row) => this.withProgramacionGroup(row)),
+        this.shouldAnimateProgramadosRefresh(silent, previous)
+      )
+    );
   }
 
   private async refreshOrganizationGroups(): Promise<void> {
@@ -1673,13 +1696,41 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
   }
 
-  private currentQuery(pageNumber: number): PageQuery {
+  private currentQuery(pageNumber: number, section = this.section()): PageQuery {
     return {
       pageNumber,
       pageSize: this.pageSize,
-      sortBy: this.section() === 'plataforma' ? this.plataformaSortField() : 'lastEntryAt',
-      direction: this.section() === 'plataforma' ? this.plataformaSortDirection() : 'desc'
+      sortBy: section === 'plataforma' ? this.plataformaSortField() : 'lastEntryAt',
+      direction: section === 'plataforma' ? this.plataformaSortDirection() : 'desc'
     };
+  }
+
+  private plataformaRequestKey(): string {
+    return JSON.stringify({
+      section: this.section(),
+      equipo: this.adminEquipoId(),
+      page: this.pagePlataforma(),
+      query: this.currentQuery(this.pagePlataforma(), 'plataforma'),
+      term: this.searchTermActive(),
+      group: this.currentVentaGroupFilter()
+    });
+  }
+
+  private programadosRequestKey(): string {
+    return JSON.stringify({
+      section: this.section(),
+      equipo: this.adminEquipoId(),
+      page: this.pageProgramados(),
+      query: this.currentQuery(this.pageProgramados(), 'programados')
+    });
+  }
+
+  private shouldAnimatePlataformaRefresh(silent: boolean, previous: VisualLeadVenta[]): boolean {
+    return silent && this.section() === 'plataforma' && this.pagePlataforma() === 0 && previous.length > 0;
+  }
+
+  private shouldAnimateProgramadosRefresh(silent: boolean, previous: VisualLeadVenta[]): boolean {
+    return silent && this.section() === 'programados' && this.pageProgramados() === 0 && previous.length > 0;
   }
 
   private patchForms(detail: LeadDetalleResponse): void {
@@ -1749,14 +1800,10 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   private mergeVisualRows(previous: VisualLeadVenta[], incoming: LeadVentaResponse[], animateNew: boolean): VisualLeadVenta[] {
     const previousById = new Map(previous.map((row) => [row.id, row]));
-    const newIds: number[] = [];
-    const rows = incoming.map((row) => {
-      const previousRow = previousById.get(row.id);
-      const isNew = animateNew && !previousRow;
-      if (isNew) newIds.push(row.id);
-      return { ...row, isNew: isNew || previousRow?.isNew };
-    });
-    this.scheduleNewRowReset(newIds);
+    const newIds = animateNew ? incoming.filter((row) => !previousById.has(row.id)).map((row) => row.id) : [];
+    const animatedIds = newIds.length <= 3 ? new Set(newIds) : new Set<number>();
+    const rows = incoming.map((row) => ({ ...row, isNew: animatedIds.has(row.id) }));
+    this.scheduleNewRowReset([...animatedIds]);
     return rows;
   }
 

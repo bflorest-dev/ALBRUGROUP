@@ -77,6 +77,7 @@ export class PostventaWorkspaceFacade {
   private static readonly REALTIME_RELEVANTE = new Set(['ASIGNACION', 'CONTACTO', 'TIPIFICACION']);
   private readonly _reconciling = signal(false);
   private realtimeIniciado = false;
+  private boardRequestSeq = 0;
 
   // --- Bandeja ---
   private readonly _rows = signal<VisualLeadPostventa[]>([]);
@@ -192,19 +193,25 @@ export class PostventaWorkspaceFacade {
     if (!silent && this._loadingBoard()) {
       return;
     }
+    const requestSeq = ++this.boardRequestSeq;
+    const requestKey = this.boardRequestKey(pageNumber);
     if (!silent) {
       this._loadingBoard.set(true);
     }
     try {
+      const query = {
+        pageNumber,
+        pageSize: this.pageSize,
+        sortBy: 'fechaInstalacion',
+        direction: 'desc' as const,
+        ...this.selectedCorteQuery()
+      };
       const page = await firstValueFrom(
-        this.service.listarBandeja({
-          pageNumber,
-          pageSize: this.pageSize,
-          sortBy: 'fechaInstalacion',
-          direction: 'desc',
-          ...this.selectedCorteQuery()
-        })
+        this.service.listarBandeja(query)
       );
+      if (requestSeq !== this.boardRequestSeq || requestKey !== this.boardRequestKey(pageNumber)) {
+        return;
+      }
       this._pageNumber.set(page.page);
       this._totalRows.set(page.totalElements);
       this._rows.set(page.content.map((row) => this.withFechaGroup(row)));
@@ -214,7 +221,7 @@ export class PostventaWorkspaceFacade {
         this.notify('error', this.errorMessage(error, 'No se pudo cargar la bandeja de Postventa.'));
       }
     } finally {
-      if (!silent) {
+      if (!silent && requestSeq === this.boardRequestSeq) {
         this._loadingBoard.set(false);
       }
     }
@@ -764,6 +771,17 @@ export class PostventaWorkspaceFacade {
       mesCorteBase: selected.mesCorteBase,
       numeroCorteBase: selected.numeroCorteBase
     };
+  }
+
+  private boardRequestKey(pageNumber: number): string {
+    return JSON.stringify({
+      pageNumber,
+      pageSize: this.pageSize,
+      sortBy: 'fechaInstalacion',
+      direction: 'desc',
+      corte: this._selectedCorteValue(),
+      query: this.selectedCorteQuery()
+    });
   }
 
   private buildCortesWinActivos(): CortePostventaOption[] {

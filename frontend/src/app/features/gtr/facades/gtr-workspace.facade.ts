@@ -254,6 +254,9 @@ export class GtrWorkspaceFacade {
   private readonly newRowTimers = new Map<number, number>();
   private attendanceRefreshId: number | null = null;
   private leadDataRefreshId: number | null = null;
+  private platformRequestSeq = 0;
+  private agendadosRequestSeq = 0;
+  private masivosRequestSeq = 0;
   private retroactiveWindowTimerId: number | null = null;
   private started = false;
   private realtimeStarted = false;
@@ -3757,40 +3760,57 @@ export class GtrWorkspaceFacade {
     if (!this.canDisplayOperationalData()) {
       return;
     }
+    const requestSeq = ++this.platformRequestSeq;
+    const requestKey = this.platformRequestKey();
     const previous = this.rows();
+    const query = this.currentQuery(this.pageSize);
+    const groupFilter = this.platformGroupFilter();
+    const adminEquipoId = this.adminEquipoId();
     const page = await firstValueFrom(
       this.preventaService.listarBandejaGtr(
         this.today,
-        this.currentQuery(this.pageSize),
-        this.platformGroupFilter(),
-        this.adminEquipoId()
+        query,
+        groupFilter,
+        adminEquipoId
       )
     );
+    if (requestSeq !== this.platformRequestSeq || requestKey !== this.platformRequestKey()) {
+      return;
+    }
     this.totalElements.set(page.totalElements);
     this.totalPages.set(page.totalPages);
-    this.rows.set(this.mergeVisualRows(previous, page.content, silent));
+    this.rows.set(this.mergeVisualRows(previous, page.content, this.shouldAnimatePlatformRefresh(silent, previous)));
   }
 
   private async refreshAgendados(silent: boolean): Promise<void> {
     if (!this.canDisplayOperationalData()) {
       return;
     }
+    const requestSeq = ++this.agendadosRequestSeq;
+    const requestKey = this.agendadosRequestKey();
     this.isLoadingAgendados.set(!silent);
     try {
       const previous = this.agendadosRows();
+      const query = {
+        pageNumber: this.agendadosPageNumber(),
+        pageSize: this.pageSize,
+        sortBy: this.agendadosSortField(),
+        direction: this.agendadosSortDirection()
+      };
+      const adminEquipoId = this.adminEquipoId();
       const page = await firstValueFrom(
-        this.preventaService.listarAgendadosGtr({
-          pageNumber: this.agendadosPageNumber(),
-          pageSize: this.pageSize,
-          sortBy: this.agendadosSortField(),
-          direction: this.agendadosSortDirection()
-        }, this.adminEquipoId())
+        this.preventaService.listarAgendadosGtr(query, adminEquipoId)
       );
+      if (requestSeq !== this.agendadosRequestSeq || requestKey !== this.agendadosRequestKey()) {
+        return;
+      }
       this.agendadosTotalElements.set(page.totalElements);
       this.agendadosTotalPages.set(page.totalPages);
-      this.agendadosRows.set(this.mergeVisualAgendados(previous, page.content, silent));
+      this.agendadosRows.set(this.mergeVisualAgendados(previous, page.content, this.shouldAnimateAgendadosRefresh(silent, previous)));
     } finally {
-      this.isLoadingAgendados.set(false);
+      if (requestSeq === this.agendadosRequestSeq) {
+        this.isLoadingAgendados.set(false);
+      }
     }
   }
 
@@ -3798,25 +3818,36 @@ export class GtrWorkspaceFacade {
     if (!this.canDisplayOperationalData()) {
       return;
     }
+    const requestSeq = ++this.masivosRequestSeq;
+    const requestKey = this.masivosRequestKey();
     this.isLoadingMasivos.set(true);
     try {
+      const filters = this.getMasivoFilters();
+      const query = {
+        pageNumber: this.masivoPageNumber(),
+        pageSize: this.historicosPageSize(),
+        sortBy: this.historicosSortField(),
+        direction: this.historicosSortDirection()
+      };
       const page = await firstValueFrom(
-        this.preventaService.listarLeadsMasivo(this.getMasivoFilters(), {
-          pageNumber: this.masivoPageNumber(),
-          pageSize: this.historicosPageSize(),
-          sortBy: this.historicosSortField(),
-          direction: this.historicosSortDirection()
-        })
+        this.preventaService.listarLeadsMasivo(filters, query)
       );
+      if (requestSeq !== this.masivosRequestSeq || requestKey !== this.masivosRequestKey()) {
+        return;
+      }
       this.masivoTotalElements.set(page.totalElements);
       this.masivoTotalPages.set(page.totalPages);
       this.masivoRows.set(page.content);
       this.lastMasivoSearchFiltersKey = this.historicosFiltersKey(this.currentHistoricosFiltersFormValue());
       this.saveHistoricosState();
     } catch (error) {
-      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo listar leads masivos.'));
+      if (requestSeq === this.masivosRequestSeq) {
+        this.errorMessage.set(this.getErrorMessage(error, 'No se pudo listar leads masivos.'));
+      }
     } finally {
-      this.isLoadingMasivos.set(false);
+      if (requestSeq === this.masivosRequestSeq) {
+        this.isLoadingMasivos.set(false);
+      }
     }
   }
 
@@ -4336,6 +4367,46 @@ export class GtrWorkspaceFacade {
     };
   }
 
+  private platformRequestKey(): string {
+    return JSON.stringify({
+      section: this.section(),
+      equipo: this.adminEquipoId(),
+      query: this.currentQuery(this.pageSize),
+      group: this.platformGroupFilter()
+    });
+  }
+
+  private agendadosRequestKey(): string {
+    return JSON.stringify({
+      section: this.section(),
+      equipo: this.adminEquipoId(),
+      pageNumber: this.agendadosPageNumber(),
+      pageSize: this.pageSize,
+      sortBy: this.agendadosSortField(),
+      direction: this.agendadosSortDirection()
+    });
+  }
+
+  private masivosRequestKey(): string {
+    return JSON.stringify({
+      section: this.section(),
+      searched: this.masivoSearched(),
+      filters: this.getMasivoFilters(),
+      pageNumber: this.masivoPageNumber(),
+      pageSize: this.historicosPageSize(),
+      sortBy: this.historicosSortField(),
+      direction: this.historicosSortDirection()
+    });
+  }
+
+  private shouldAnimatePlatformRefresh(silent: boolean, previous: VisualLeadGtr[]): boolean {
+    return silent && this.pageNumber() === 0 && previous.length > 0;
+  }
+
+  private shouldAnimateAgendadosRefresh(silent: boolean, previous: VisualLeadAgendadoGtr[]): boolean {
+    return silent && this.agendadosPageNumber() === 0 && previous.length > 0;
+  }
+
   private platformGroupFilter(): LeadGtrGroupFilter {
     const mode = this.platformGroupingMode();
     const group = this.platformSelectedGroup();
@@ -4507,16 +4578,10 @@ export class GtrWorkspaceFacade {
     animateNew: boolean
   ): VisualLeadGtr[] {
     const previousById = new Map(previous.map((row) => [row.id, row]));
-    const newIds: number[] = [];
-    const rows = incoming.map((row) => {
-      const previousRow = previousById.get(row.id);
-      const isNew = animateNew && !previousRow;
-      if (isNew) {
-        newIds.push(row.id);
-      }
-      return { ...row, isNew: isNew || previousRow?.isNew };
-    });
-    this.scheduleNewRowReset(newIds);
+    const newIds = animateNew ? incoming.filter((row) => !previousById.has(row.id)).map((row) => row.id) : [];
+    const animatedIds = newIds.length <= 3 ? new Set(newIds) : new Set<number>();
+    const rows = incoming.map((row) => ({ ...row, isNew: animatedIds.has(row.id) }));
+    this.scheduleNewRowReset([...animatedIds]);
     return rows;
   }
 
@@ -4526,10 +4591,10 @@ export class GtrWorkspaceFacade {
     animateNew: boolean
   ): VisualLeadAgendadoGtr[] {
     const previousById = new Map(previous.map((row) => [row.id, row]));
-    return incoming.map((row) => {
-      const previousRow = previousById.get(row.id);
-      return { ...row, isNew: animateNew && !previousRow };
-    });
+    const newIds = animateNew ? incoming.filter((row) => !previousById.has(row.id)).map((row) => row.id) : [];
+    const animatedIds = newIds.length <= 3 ? new Set(newIds) : new Set<number>();
+    this.scheduleNewRowReset([...animatedIds]);
+    return incoming.map((row) => ({ ...row, isNew: animatedIds.has(row.id) }));
   }
 
   private mapAgendadoToLead(row: LeadAgendadoGtrResponse): LeadGtrResponse {
@@ -4610,6 +4675,7 @@ export class GtrWorkspaceFacade {
       }
       const timerId = window.setTimeout(() => {
         this.rows.update((rows) => rows.map((row) => (row.id === id ? { ...row, isNew: false } : row)));
+        this.agendadosRows.update((rows) => rows.map((row) => (row.id === id ? { ...row, isNew: false } : row)));
         this.newRowTimers.delete(id);
       }, 3500);
       this.newRowTimers.set(id, timerId);
