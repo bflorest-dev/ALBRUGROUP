@@ -1,11 +1,123 @@
-@if (href) {
-  <a class="phone-button" [class.phone-button--compact]="compact" [href]="href">
-    <i class="ti ti-phone-call" aria-hidden="true"></i>
-    <span>{{ label }}</span>
-  </a>
-} @else {
-  <button type="button" class="phone-button" [class.phone-button--compact]="compact" disabled>
-    <i class="ti ti-phone-off" aria-hidden="true"></i>
-    <span>{{ label }}</span>
-  </button>
-}
+<div class="call-split" aria-label="Llamadas del lead">
+  <button
+    pButton
+    type="button"
+    icon="pi pi-phone"
+    [label]="label"
+    [size]="size"
+    [severity]="severity"
+    [disabled]="disabled || loading || isLoadingNumeros() || !canDial()"
+    [loading]="loading"
+    [title]="currentLabel()"
+    (click)="openDialer()"
+  ></button>
+  <button
+    pButton
+    type="button"
+    icon="pi pi-chevron-down"
+    [size]="size"
+    [severity]="severity"
+    class="call-split__toggle"
+    [disabled]="disabled || loading || isLoadingNumeros()"
+    [loading]="isLoadingNumeros()"
+    title="Elegir numero"
+    aria-label="Elegir numero"
+    (click)="callNumbersPopover.toggle($event)"
+  ></button>
+</div>
+
+<p-popover #callNumbersPopover appendTo="body" styleClass="lead-call-popover">
+  <div class="call-number-panel">
+    @if (loadFailed()) {
+      <span class="call-number-panel__empty">No se pudieron cargar los numeros</span>
+    } @else if (numeros().length) {
+      @if (!hasNumeroParaLlamarOption()) {
+        <div class="call-number-row">
+          @if (editingNumeroParaLlamar()) {
+            <form class="call-number-edit" (ngSubmit)="saveNumeroParaLlamar()">
+              <span>Numero para llamar</span>
+              <input
+                pInputText
+                type="text"
+                inputmode="numeric"
+                maxlength="9"
+                [ngModel]="numeroParaLlamarDraft()"
+                name="numeroParaLlamar"
+                (ngModelChange)="normalizeNumeroParaLlamarDraft($event)"
+              />
+              <button pButton type="submit" icon="pi pi-check" size="small" [loading]="isSavingNumero()" title="Guardar" aria-label="Guardar"></button>
+              <button pButton type="button" icon="pi pi-times" severity="secondary" size="small" title="Cancelar" aria-label="Cancelar" (click)="cancelNumeroParaLlamarEdit()"></button>
+            </form>
+          } @else {
+            <button type="button" class="call-number-row__main" disabled>
+              <span>Numero para llamar</span>
+              <strong>Sin numero</strong>
+            </button>
+            <button pButton type="button" icon="pi pi-pencil" severity="secondary" size="small" text title="Editar numero para llamar" aria-label="Editar numero para llamar" (click)="startEmptyNumeroParaLlamarEdit()"></button>
+          }
+        </div>
+      }
+
+      @for (numero of numeros(); track numero.tipo + '-' + numero.numero) {
+        <div class="call-number-row" [class.call-number-row--selected]="isCurrentNumero(numero)">
+          @if (editingNumeroParaLlamar() && canEditNumero(numero)) {
+            <form class="call-number-edit" (ngSubmit)="saveNumeroParaLlamar()">
+              <span>{{ numero.label }}</span>
+              <input
+                pInputText
+                type="text"
+                inputmode="numeric"
+                maxlength="9"
+                [ngModel]="numeroParaLlamarDraft()"
+                name="numeroParaLlamar"
+                (ngModelChange)="normalizeNumeroParaLlamarDraft($event)"
+              />
+              <button pButton type="submit" icon="pi pi-check" size="small" [loading]="isSavingNumero()" title="Guardar" aria-label="Guardar"></button>
+              <button pButton type="button" icon="pi pi-times" severity="secondary" size="small" title="Cancelar" aria-label="Cancelar" (click)="cancelNumeroParaLlamarEdit()"></button>
+            </form>
+          } @else {
+            <button
+              type="button"
+              class="call-number-row__main"
+              title="Llamar a este numero"
+              (click)="openDialerWithNumero(numero); callNumbersPopover.hide()"
+            >
+              <span>{{ numero.label }}</span>
+              <strong>{{ numero.numero }}</strong>
+            </button>
+            @if (canEditNumero(numero)) {
+              <button pButton type="button" icon="pi pi-pencil" severity="secondary" size="small" text title="Editar numero para llamar" aria-label="Editar numero para llamar" (click)="startNumeroParaLlamarEdit(numero)"></button>
+            } @else {
+              <button pButton type="button" icon="pi pi-phone" severity="secondary" size="small" text title="Llamar a este numero" aria-label="Llamar a este numero" (click)="openDialerWithNumero(numero); callNumbersPopover.hide()"></button>
+            }
+          }
+        </div>
+      }
+    } @else {
+      <div class="call-number-row">
+        @if (editingNumeroParaLlamar()) {
+          <form class="call-number-edit" (ngSubmit)="saveNumeroParaLlamar()">
+            <span>Numero para llamar</span>
+            <input
+              pInputText
+              type="text"
+              inputmode="numeric"
+              maxlength="9"
+              [ngModel]="numeroParaLlamarDraft()"
+              name="numeroParaLlamar"
+              (ngModelChange)="normalizeNumeroParaLlamarDraft($event)"
+            />
+            <button pButton type="submit" icon="pi pi-check" size="small" [loading]="isSavingNumero()" title="Guardar" aria-label="Guardar"></button>
+            <button pButton type="button" icon="pi pi-times" severity="secondary" size="small" title="Cancelar" aria-label="Cancelar" (click)="cancelNumeroParaLlamarEdit()"></button>
+          </form>
+        } @else {
+          <button type="button" class="call-number-row__main" disabled>
+            <span>Numero para llamar</span>
+            <strong>Sin numero</strong>
+          </button>
+          <button pButton type="button" icon="pi pi-pencil" severity="secondary" size="small" text title="Editar numero para llamar" aria-label="Editar numero para llamar" (click)="startEmptyNumeroParaLlamarEdit()"></button>
+        }
+      </div>
+    }
+  </div>
+</p-popover>

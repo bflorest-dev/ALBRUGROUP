@@ -101,16 +101,15 @@
 
       <form class="tipification-bar" [formGroup]="facade.tipificacionForm" (ngSubmit)="facade.tipificar()">
         <div class="contact-actions">
-          <button
-            pButton
-            type="button"
-            icon="pi pi-phone"
-            label="Llamar"
-            severity="secondary"
-            [disabled]="!facade.canMutateOperationalData() || !facade.hasLeadPhone(lead)"
+          <app-phone-action-button
+            [idLead]="lead.id"
+            [prefijo]="lead.prefijo"
+            [lead]="lead.lead"
+            [disabled]="!facade.canMutateOperationalData()"
             [loading]="facade.isSaving()"
-            (click)="facade.registrarLlamada()"
-          ></button>
+            (callStarted)="facade.registrarLlamadaOperativa()"
+            (callError)="facade.showCallError($event)"
+          />
           <button
             pButton
             type="button"

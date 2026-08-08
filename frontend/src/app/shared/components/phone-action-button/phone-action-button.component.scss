@@ -1,34 +1,12 @@
-.phone-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  min-height: 2.35rem;
-  padding: 0.65rem 0.85rem;
-  border: 0;
-  border-radius: 0.75rem;
-  color: #fff;
-  background: var(--role-button-bg);
-  cursor: pointer;
-  font: inherit;
-  font-weight: 800;
-  text-decoration: none;
-}
-
-.phone-button--compact {
-  width: 2.35rem;
-  padding: 0;
-}
-
-.phone-button--compact span {
-  display: none;
-}
-
-.phone-button i {
-  font-size: 1.05rem;
-}
-
-.phone-button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
+:host { display: inline-flex; }
+.call-split { display: inline-flex; }
+:host ::ng-deep .call-split .p-button { width: auto !important; }
+:host ::ng-deep .call-split .p-button:first-child { border-radius: 6px 0 0 6px; }
+:host ::ng-deep .call-split .p-button:last-child { border-left: 0; border-radius: 0 6px 6px 0; min-width: 2.25rem; }
+.call-number-panel { display: grid; min-width: 14rem; }
+.call-number-row { align-items: center; display: grid; grid-template-columns: 1fr auto; }
+.call-number-row__main { background: transparent; border: 0; cursor: pointer; display: grid; padding: .5rem .45rem; text-align: left; }
+.call-number-row__main span, .call-number-panel__empty, .call-number-edit span { color: var(--app-text-muted, #64748b); font-size: .72rem; font-weight: 800; }
+.call-number-row__main strong { color: var(--app-text, #102032); font-size: .92rem; }
+.call-number-edit { display: grid; gap: .35rem; grid-column: 1 / -1; grid-template-columns: 1fr auto auto; }
+.call-number-edit span { grid-column: 1 / -1; }

@@ -1620,6 +1620,10 @@ export class GtrWorkspaceFacade {
     this.openDialer(row);
   }
 
+  showCallError(message: string): void {
+    this.errorMessage.set(message);
+  }
+
   canEditNumeroLlamada(numero: NumeroLlamadaResponse): boolean {
     return numero.tipo === 'NUMERO_PARA_LLAMAR';
   }

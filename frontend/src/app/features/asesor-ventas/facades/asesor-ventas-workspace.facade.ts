@@ -777,6 +777,14 @@ export class AsesorVentasWorkspaceFacade {
     await this.registrarContactoOperativo('Llamada registrada.');
   }
 
+  async registrarLlamadaOperativa(): Promise<void> {
+    await this.registrarContactoOperativo('Llamada registrada.');
+  }
+
+  showCallError(message: string): void {
+    this.errorMessage.set(message);
+  }
+
   async registrarChat(): Promise<void> {
     const detail = this.detail();
     const url = detail ? buildWhatsAppUrl(detail.prefijo, detail.lead, detail.usermeta) : null;
