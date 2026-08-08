@@ -208,10 +208,7 @@ export class PhoneActionButtonComponent implements OnChanges {
     if (!phone) {
       return null;
     }
-    const prefix = (this.prefijo ?? '').trim();
-    const normalizedPrefix = prefix ? prefix.replace(/\s+/g, '') : '';
-    const dialTarget = normalizedPrefix ? `${normalizedPrefix}${phone}` : phone;
-    return `tel:${dialTarget}`;
+    return `tel:${phone}`;
   }
 
   private normalizePhoneInput(value?: string | null): string {
