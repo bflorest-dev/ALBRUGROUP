@@ -50,22 +50,6 @@ export class BackofficeLeadService {
     });
   }
 
-  listarGestion(query: PageQuery, buscar?: string, groupFilter?: LeadVentaGroupFilter): Observable<LeadPage<LeadVentaResponse>> {
-    let params = this.groupParams(this.pageParams(query), groupFilter);
-    if (buscar) {
-      params = params.set('buscar', buscar);
-    }
-    return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta/asignados`, { params });
-  }
-
-  listarAgrupacionesGestion(buscar?: string): Observable<LeadVentaGroupsResponse> {
-    let params = new HttpParams();
-    if (buscar) {
-      params = params.set('buscar', buscar);
-    }
-    return this.http.get<LeadVentaGroupsResponse>(`${this.leadUrl}/venta/asignados/agrupaciones`, { params });
-  }
-
   listarProgramados(query: PageQuery): Observable<LeadPage<LeadVentaResponse>> {
     return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta/programados/asignados`, {
       params: this.pageParams(query)

@@ -626,39 +626,6 @@ public class LeadService {
         return mapearAgrupacionesVenta(leadPattern, filtrarVentana, inicioVentana, null);
     }
 
-    public PageResponse<LeadResponse> listarLeadsVentaAsignados(
-            String buscar,
-            TipoGrupoVenta tipoGrupo,
-            List<String> valoresGrupo,
-            boolean sinValor,
-            PageRequest pageRequest
-    ) {
-        // El orden de Gestion lo define la consulta (sin tipificar primero, luego agrupado por
-        // tipificacion/subtipificacion), por eso se usa un Pageable sin sort.
-        String search = normalizarLead(buscar);
-        String searchPattern = search == null || search.isBlank() ? "%" : search + "%";
-        GrupoVentaFiltro grupo = resolverFiltroGrupoVenta(tipoGrupo, valoresGrupo, sinValor);
-        Page<LeadResponse> leads = leadRepository.listarLeadsAsignadosPorEtapaYAsesor(
-                Etapa.VENTA,
-                currentUser.empleadoID(),
-                searchPattern,
-                grupo.filtrar(),
-                grupo.tipo(),
-                grupo.valores(),
-                grupo.sinValor(),
-                Accion.TIPIFICACION,
-                org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
-        );
-        aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);
-        return PageResponse.from(leads);
-    }
-
-    public LeadVentaAgrupacionesResponse listarAgrupacionesLeadsVentaAsignados(String buscar) {
-        String search = normalizarLead(buscar);
-        String searchPattern = search == null || search.isBlank() ? "%" : search + "%";
-        return mapearAgrupacionesVenta(searchPattern, false, OperationalDateTime.now(), currentUser.empleadoID());
-    }
-
     public PageResponse<LeadResponse> listarLeadsVentaProgramadosAsignados(PageRequest pageRequest) {
         LocalDate hoy = OperationalDateTime.today();
         Page<LeadResponse> leads = leadRepository.listarLeadsProgramadosVentaAsignados(

@@ -72,26 +72,7 @@ public class VentaController {
         var response = leadService.buscarContextoLeadVenta(lead);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
-    // 2. Listar los Leads asignados al backoffice en la etapa Venta
-    @GetMapping("/asignados") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
-    public ResponseEntity<PageResponse<LeadResponse>> listarLeadsVentaAsignados(
-            @RequestParam(required = false) String buscar,
-            @RequestParam(required = false) TipoGrupoVenta tipoGrupo,
-            @RequestParam(required = false) List<String> valorGrupo,
-            @RequestParam(required = false, defaultValue = "false") boolean sinValor,
-            @Valid @ModelAttribute PageRequest pageRequest
-    ) {
-        var leads = leadService.listarLeadsVentaAsignados(buscar, tipoGrupo, valorGrupo, sinValor, pageRequest);
-        return ResponseEntity.status(HttpStatus.OK).body(leads);
-    }
-    @GetMapping("/asignados/agrupaciones") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
-    public ResponseEntity<LeadVentaAgrupacionesResponse> listarAgrupacionesLeadsVentaAsignados(
-            @RequestParam(required = false) String buscar
-    ) {
-        var agrupaciones = leadService.listarAgrupacionesLeadsVentaAsignados(buscar);
-        return ResponseEntity.status(HttpStatus.OK).body(agrupaciones);
-    }
-    // 2.1. Listar los Leads PROGRAMADOS asignados al BackOffice, ordenados por fecha y hora de programacion.
+    // 2. Listar los Leads PROGRAMADOS compartidos, ordenados por fecha y hora de programacion.
     @GetMapping("/programados/asignados") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
     public ResponseEntity<PageResponse<LeadResponse>> listarLeadsVentaProgramadosAsignados(
             @Valid @ModelAttribute PageRequest pageRequest

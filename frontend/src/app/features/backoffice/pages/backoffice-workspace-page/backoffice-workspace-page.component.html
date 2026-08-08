@@ -6,7 +6,7 @@
     <div class="hero-row">
       <div>
         <span class="eyebrow">VENTA</span>
-        <h1>{{ section() === 'plataforma' ? 'Plataforma Backoffice' : section() === 'programados' ? 'Programados Backoffice' : 'Gestion Backoffice' }}</h1>
+        <h1>{{ section() === 'programados' ? 'Programados Backoffice' : 'Plataforma Backoffice' }}</h1>
         <p>{{ isReconciling() ? 'Sincronizando cambios en tiempo real' : 'Bandeja operativa de leads en venta' }}</p>
       </div>
 
@@ -39,7 +39,7 @@
       {{ boardSubtitle() }}
     </ng-template>
 
-    @if (section() === 'plataforma' || section() === 'gestion') {
+    @if (section() === 'plataforma') {
       <div class="lead-search">
         <input
           pInputText
@@ -352,10 +352,8 @@
                   } @else {
                     No hay leads disponibles en VENTA.
                   }
-                } @else if (section() === 'programados') {
-                  No hay leads programados pendientes.
                 } @else {
-                  No tienes leads asignados en gestion.
+                  No hay leads programados pendientes.
                 }
               </div>
             }

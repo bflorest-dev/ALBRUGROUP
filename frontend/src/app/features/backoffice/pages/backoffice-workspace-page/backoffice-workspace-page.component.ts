@@ -50,7 +50,7 @@ import {
 import { LeadRealtimeService } from '../../../preventa/services/lead-realtime.service';
 import { BackofficeLeadService } from '../../services/backoffice-lead.service';
 
-type BackofficeSection = 'plataforma' | 'gestion' | 'programados';
+type BackofficeSection = 'plataforma' | 'programados';
 type BackofficeGroupMode = 'SIN_AGRUPAR' | 'ESTADO' | 'ASESOR' | 'PLAN' | 'PROVEEDOR' | 'TIPIFICACION';
 type BackofficeSortField = 'fechaIngresoEtapa' | 'lastEntryAt' | 'createdAt' | 'lead' | 'nombreAsesorAsignado' | 'estado';
 type BackofficeSortDirection = 'asc' | 'desc';
@@ -137,19 +137,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly isSaving = signal(false);
   protected readonly leadActionId = signal<number | null>(null);
   protected readonly plataformaRows = signal<VisualLeadVenta[]>([]);
-  protected readonly gestionRows = signal<VisualLeadVenta[]>([]);
   protected readonly programadosRows = signal<VisualLeadVenta[]>([]);
   protected readonly plataformaGroupingMode = signal<BackofficeGroupMode>('SIN_AGRUPAR');
-  protected readonly gestionGroupingMode = signal<BackofficeGroupMode>('TIPIFICACION');
   protected readonly plataformaSortField = signal<BackofficeSortField>('fechaIngresoEtapa');
-  protected readonly gestionSortField = signal<BackofficeSortField>('lastEntryAt');
   protected readonly plataformaSortDirection = signal<BackofficeSortDirection>('desc');
-  protected readonly gestionSortDirection = signal<BackofficeSortDirection>('desc');
   protected readonly plataformaOrganizationGroupFilter = signal<string[]>([]);
-  protected readonly gestionOrganizationGroupFilter = signal<string[]>([]);
-  protected readonly organizationGroupFilter = computed(() =>
-    this.section() === 'gestion' ? this.gestionOrganizationGroupFilter() : this.plataformaOrganizationGroupFilter()
-  );
+  protected readonly organizationGroupFilter = computed(() => this.plataformaOrganizationGroupFilter());
   protected readonly ventaGroups = signal<LeadVentaGroupsResponse | null>(null);
   protected readonly detail = signal<LeadDetalleResponse | null>(null);
   // Campos que muestra el equipo del lead: se ven los visibles del equipo + los que tengan valor.
@@ -159,10 +152,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly eventos = signal<EventoResponse[]>([]);
   protected readonly selectedLeadId = signal<number | null>(null);
   protected readonly totalPlataforma = signal(0);
-  protected readonly totalGestion = signal(0);
   protected readonly totalProgramados = signal(0);
   protected readonly pagePlataforma = signal(0);
-  protected readonly pageGestion = signal(0);
   protected readonly pageProgramados = signal(0);
   // Catálogo del modal de tipificación: es el del equipo del lead abierto (se trae por lead).
   protected readonly catalogo = signal<CatalogoResponse | null>(null);
@@ -395,33 +386,28 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
   protected readonly boardTitle = computed(() => {
     switch (this.section()) {
-      case 'plataforma': return 'Leads disponibles';
       case 'programados': return 'Leads programados';
-      default: return 'Mis leads en gestion';
+      default: return 'Leads disponibles';
     }
   });
   protected readonly boardSubtitle = computed(() => {
     switch (this.section()) {
-      case 'plataforma': return 'Gestiona leads en venta y revisa quien los tiene asignados.';
       case 'programados': return 'Gestiona leads programados por fecha y hora cercana.';
-      default: return 'Gestiona, edita, tipifica y revisa historial.';
+      default: return 'Gestiona leads en venta y revisa quien los tiene asignados.';
     }
   });
-  protected readonly canOrganizeActiveSection = computed(() => this.section() === 'plataforma' || this.section() === 'gestion');
+  protected readonly canOrganizeActiveSection = computed(() => this.section() === 'plataforma');
   protected readonly activeGroupingMode = computed<BackofficeGroupMode>(() => {
     if (this.section() === 'plataforma') {
       return this.plataformaGroupingMode();
     }
-    if (this.section() === 'gestion') {
-      return this.gestionGroupingMode();
-    }
     return 'SIN_AGRUPAR';
   });
   protected readonly activeSortField = computed<BackofficeSortField>(() =>
-    this.section() === 'gestion' ? this.gestionSortField() : this.section() === 'programados' ? 'lastEntryAt' : this.plataformaSortField()
+    this.section() === 'programados' ? 'lastEntryAt' : this.plataformaSortField()
   );
   protected readonly activeSortDirection = computed<BackofficeSortDirection>(() =>
-    this.section() === 'gestion' ? this.gestionSortDirection() : this.section() === 'programados' ? 'desc' : this.plataformaSortDirection()
+    this.section() === 'programados' ? 'desc' : this.plataformaSortDirection()
   );
   protected readonly sortDirectionOptions = computed<Array<{ label: string; value: BackofficeSortDirection }>>(() =>
     this.activeSortField() === 'fechaIngresoEtapa' || this.activeSortField() === 'lastEntryAt' || this.activeSortField() === 'createdAt'
@@ -468,7 +454,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     return `${grouping} · ${sorting} (${direction})${filters}`;
   });
   protected readonly isOrganizationDefault = computed(() =>
-    this.activeGroupingMode() === (this.section() === 'gestion' ? 'TIPIFICACION' : 'SIN_AGRUPAR') &&
+    this.activeGroupingMode() === 'SIN_AGRUPAR' &&
     this.activeSortField() === (this.section() === 'plataforma' ? 'fechaIngresoEtapa' : 'lastEntryAt') &&
     this.activeSortDirection() === 'desc' &&
     this.organizationGroupFilter().length === 0
@@ -481,14 +467,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     let rows: VisualLeadVenta[];
     switch (this.section()) {
-      case 'plataforma':
-        rows = this.plataformaRows().map((row) => this.withOrganizationGroup(row, this.plataformaGroupingMode()));
-        break;
       case 'programados':
         rows = this.programadosRows();
         break;
       default:
-        rows = this.gestionRows().map((row) => this.withOrganizationGroup(row, this.gestionGroupingMode()));
+        rows = this.plataformaRows().map((row) => this.withOrganizationGroup(row, this.plataformaGroupingMode()));
         break;
     }
     return this.sortedRowsForGrouping(rows, this.activeGroupRowsBy(), this.activeSortField(), this.activeSortDirection());
@@ -499,16 +482,14 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly tableColumnCount = computed(() => this.showSecSotColumn() ? 11 : 10);
   protected readonly activeTotal = computed(() => {
     switch (this.section()) {
-      case 'plataforma': return this.totalPlataforma();
       case 'programados': return this.totalProgramados();
-      default: return this.totalGestion();
+      default: return this.totalPlataforma();
     }
   });
   protected readonly activePage = computed(() => {
     switch (this.section()) {
-      case 'plataforma': return this.pagePlataforma();
       case 'programados': return this.pageProgramados();
-      default: return this.pageGestion();
+      default: return this.pagePlataforma();
     }
   });
 
@@ -596,7 +577,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
         // La paleta y el filtro por código de la bandeja salen del catálogo agregado; si falla no bloquea.
         this.refreshTipificationCatalogAgregado().catch(() => undefined),
         this.refreshPlataforma(false),
-        this.refreshGestion(false),
         this.refreshProgramados(false)
       ]);
       this.initialized = true;
@@ -991,8 +971,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       await this.refreshProgramados(false);
       return;
     }
-    this.pageGestion.set(pageNumber);
-    await this.refreshGestion(false);
+    this.pagePlataforma.set(pageNumber);
+    await this.refreshPlataforma(false);
   }
 
   protected setSearchInput(value: string): void {
@@ -1012,17 +992,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.searchInput.set(term);
     this.searchLookup.set(null);
     this.searchTermActive.set(term);
-    if (this.section() === 'gestion') {
-      this.pageGestion.set(0);
-    } else {
-      this.pagePlataforma.set(0);
-    }
+    this.pagePlataforma.set(0);
     this.isSearching.set(true);
     try {
-      if (this.section() === 'gestion') {
-        await this.refreshGestion(false);
-        return;
-      }
       await this.refreshPlataforma(false);
       if (!this.plataformaRows().length) {
         const lookup = await firstValueFrom(this.leadService.buscarContextoLead(term));
@@ -1039,11 +1011,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.searchInput.set('');
     this.searchTermActive.set('');
     this.searchLookup.set(null);
-    if (this.section() === 'gestion') {
-      this.pageGestion.set(0);
-      await this.refreshGestion(false);
-      return;
-    }
     this.pagePlataforma.set(0);
     await this.refreshPlataforma(false);
   }
@@ -1074,21 +1041,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.plataformaGroupingMode.set(mode);
       this.pagePlataforma.set(0);
       await this.refreshCurrent(false);
-      return;
-    }
-    if (this.section() === 'gestion') {
-      this.gestionGroupingMode.set(mode);
-      this.pageGestion.set(0);
-      await this.refreshCurrent(false);
     }
   }
 
   protected async setActiveSortField(field: BackofficeSortField | null | undefined): Promise<void> {
     if (!field) {
-      return;
-    }
-    if (this.section() === 'gestion') {
-      this.gestionSortField.set(field);
       return;
     }
     this.plataformaSortField.set(field);
@@ -1100,23 +1057,12 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     if (!direction) {
       return;
     }
-    if (this.section() === 'gestion') {
-      this.gestionSortDirection.set(direction);
-      return;
-    }
     this.plataformaSortDirection.set(direction);
     this.pagePlataforma.set(0);
     await this.refreshPlataforma(false);
   }
 
   protected async clearOrganization(): Promise<void> {
-    if (this.section() === 'gestion') {
-      this.gestionGroupingMode.set('TIPIFICACION');
-      this.gestionSortField.set('lastEntryAt');
-      this.gestionSortDirection.set('desc');
-      this.gestionOrganizationGroupFilter.set([]);
-      return;
-    }
     this.plataformaGroupingMode.set('SIN_AGRUPAR');
     this.plataformaSortField.set('fechaIngresoEtapa');
     this.plataformaSortDirection.set('desc');
@@ -1129,17 +1075,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.setActiveOrganizationGroupFilter(values ?? []);
     if (this.section() === 'plataforma') {
       this.pagePlataforma.set(0);
-    } else if (this.section() === 'gestion') {
-      this.pageGestion.set(0);
     }
     await this.refreshCurrent(false);
   }
 
   private setActiveOrganizationGroupFilter(values: string[]): void {
-    if (this.section() === 'gestion') {
-      this.gestionOrganizationGroupFilter.set(values);
-      return;
-    }
     this.plataformaOrganizationGroupFilter.set(values);
   }
 
@@ -1488,7 +1428,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     this.isReconciling.set(true);
     try {
-      await Promise.all([this.refreshPlataforma(true), this.refreshGestion(true), this.refreshProgramados(true)]);
+      await Promise.all([this.refreshPlataforma(true), this.refreshProgramados(true)]);
       if (changedLeadId && this.selectedLeadId() === changedLeadId) {
         await this.refreshOpenDetail(changedLeadId);
       }
@@ -1509,7 +1449,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       await this.refreshProgramados(silent);
       return;
     }
-    await this.refreshGestion(silent);
+    await this.refreshPlataforma(silent);
   }
 
   private async refreshPlataforma(silent: boolean): Promise<void> {
@@ -1517,7 +1457,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return;
     }
     if (this.section() === 'plataforma') {
-      await this.refreshOrganizationGroups('plataforma');
+      await this.refreshOrganizationGroups();
     }
     const previous = this.plataformaRows();
     const term = this.searchTermActive();
@@ -1525,31 +1465,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.leadService.listarPlataforma(
         this.currentQuery(this.pagePlataforma()),
         term || undefined,
-        this.currentVentaGroupFilter('plataforma')
+        this.currentVentaGroupFilter()
       )
     );
     this.totalPlataforma.set(page.totalElements);
     this.plataformaRows.set(this.mergeVisualRows(previous, page.content, silent));
-  }
-
-  private async refreshGestion(silent: boolean): Promise<void> {
-    if (!this.canDisplayOperationalData()) {
-      return;
-    }
-    if (this.section() === 'gestion') {
-      await this.refreshOrganizationGroups('gestion');
-    }
-    const previous = this.gestionRows();
-    const term = this.searchTermActive();
-    const page = await firstValueFrom(
-      this.leadService.listarGestion(
-        this.currentQuery(this.pageGestion()),
-        term || undefined,
-        this.currentVentaGroupFilter('gestion')
-      )
-    );
-    this.totalGestion.set(page.totalElements);
-    this.gestionRows.set(this.mergeVisualRows(previous, page.content, silent));
   }
 
   private async refreshProgramados(silent: boolean): Promise<void> {
@@ -1562,13 +1482,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.programadosRows.set(this.mergeVisualRows(previous, page.content.map((row) => this.withProgramacionGroup(row)), silent));
   }
 
-  private async refreshOrganizationGroups(section: 'plataforma' | 'gestion'): Promise<void> {
+  private async refreshOrganizationGroups(): Promise<void> {
     const term = this.searchTermActive();
     try {
-      const groups = section === 'gestion'
-        ? await firstValueFrom(this.leadService.listarAgrupacionesGestion(term || undefined))
-        : await firstValueFrom(this.leadService.listarAgrupacionesPlataforma(term || undefined));
-      if (this.section() === section) {
+      const groups = await firstValueFrom(this.leadService.listarAgrupacionesPlataforma(term || undefined));
+      if (this.section() === 'plataforma') {
         this.ventaGroups.set(groups);
       }
     } catch {
@@ -1576,13 +1494,13 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
   }
 
-  private currentVentaGroupFilter(section: 'plataforma' | 'gestion'): LeadVentaGroupFilter | undefined {
-    const mode = section === 'gestion' ? this.gestionGroupingMode() : this.plataformaGroupingMode();
+  private currentVentaGroupFilter(): LeadVentaGroupFilter | undefined {
+    const mode = this.plataformaGroupingMode();
     const tipoGrupo = this.toLeadVentaGroupType(mode);
     if (!tipoGrupo) {
       return undefined;
     }
-    const selected = section === 'gestion' ? this.gestionOrganizationGroupFilter() : this.plataformaOrganizationGroupFilter();
+    const selected = this.plataformaOrganizationGroupFilter();
     const sinValor = selected.includes('__SIN_VALOR__');
     const valorGrupo = selected.filter((value) => value !== '__SIN_VALOR__');
     if (!sinValor && !valorGrupo.length) {
@@ -2062,7 +1980,6 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       if (existingTimer) window.clearTimeout(existingTimer);
       const timerId = window.setTimeout(() => {
         this.plataformaRows.update((rows) => rows.map((row) => (row.id === id ? { ...row, isNew: false } : row)));
-        this.gestionRows.update((rows) => rows.map((row) => (row.id === id ? { ...row, isNew: false } : row)));
         this.programadosRows.update((rows) => rows.map((row) => (row.id === id ? { ...row, isNew: false } : row)));
         this.newRowTimers.delete(id);
       }, 3500);
@@ -2253,16 +2170,13 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     this.isReconciling.set(false);
     this.isSaving.set(false);
     this.plataformaRows.set([]);
-    this.gestionRows.set([]);
     this.programadosRows.set([]);
     this.detail.set(null);
     this.eventos.set([]);
     this.selectedLeadId.set(null);
     this.totalPlataforma.set(0);
-    this.totalGestion.set(0);
     this.totalProgramados.set(0);
     this.pagePlataforma.set(0);
-    this.pageGestion.set(0);
     this.pageProgramados.set(0);
     this.detailDrawerOpen.set(false);
     this.selectedOfertaProviderId.set(null);
