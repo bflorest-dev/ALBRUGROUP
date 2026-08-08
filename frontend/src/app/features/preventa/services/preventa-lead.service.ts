@@ -100,7 +100,8 @@ export class PreventaLeadService {
   listarBandejaGtr(
     fecha: string,
     query: PageQuery,
-    filters: LeadGtrGroupFilter = {}
+    filters: LeadGtrGroupFilter = {},
+    idEquipo?: number | null
   ): Observable<LeadPage<LeadGtrResponse>> {
     let params = this.pageParams(query).set('fecha', fecha);
     if (filters.tipoGrupo) {
@@ -121,15 +122,20 @@ export class PreventaLeadService {
     if (filters.sinValor) {
       params = params.set('sinValor', true);
     }
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
     return this.http.get<LeadPage<LeadGtrResponse>>(`${this.leadUrl}/preventa/gtr`, {
       params
     });
   }
 
-  listarAgrupacionesBandejaGtr(fecha: string): Observable<LeadGtrGroupsResponse> {
-    return this.http.get<LeadGtrGroupsResponse>(`${this.leadUrl}/preventa/gtr/agrupaciones`, {
-      params: new HttpParams().set('fecha', fecha)
-    });
+  listarAgrupacionesBandejaGtr(fecha: string, idEquipo?: number | null): Observable<LeadGtrGroupsResponse> {
+    let params = new HttpParams().set('fecha', fecha);
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
+    return this.http.get<LeadGtrGroupsResponse>(`${this.leadUrl}/preventa/gtr/agrupaciones`, { params });
   }
 
   listarLeadsPendientesPorAsesor(): Observable<AsesorLeadsPendientesResponse[]> {
@@ -226,20 +232,28 @@ export class PreventaLeadService {
     );
   }
 
-  obtenerMetricasGtr(fecha: string): Observable<LeadGtrMetricasResponse> {
-    return this.http.get<LeadGtrMetricasResponse>(`${this.leadUrl}/preventa/gtr/metricas`, {
-      params: new HttpParams().set('fecha', fecha)
-    });
+  obtenerMetricasGtr(fecha: string, idEquipo?: number | null): Observable<LeadGtrMetricasResponse> {
+    let params = new HttpParams().set('fecha', fecha);
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
+    return this.http.get<LeadGtrMetricasResponse>(`${this.leadUrl}/preventa/gtr/metricas`, { params });
   }
 
-  listarAgendadosGtr(query: PageQuery): Observable<LeadPage<LeadAgendadoGtrResponse>> {
-    return this.http.get<LeadPage<LeadAgendadoGtrResponse>>(`${this.leadUrl}/preventa/gtr/agendados`, {
-      params: this.pageParams(query)
-    });
+  listarAgendadosGtr(query: PageQuery, idEquipo?: number | null): Observable<LeadPage<LeadAgendadoGtrResponse>> {
+    let params = this.pageParams(query);
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
+    return this.http.get<LeadPage<LeadAgendadoGtrResponse>>(`${this.leadUrl}/preventa/gtr/agendados`, { params });
   }
 
-  obtenerResumenAgendadosGtr(): Observable<AgendadosGtrResumenResponse> {
-    return this.http.get<AgendadosGtrResumenResponse>(`${this.leadUrl}/preventa/gtr/agendados/resumen`);
+  obtenerResumenAgendadosGtr(idEquipo?: number | null): Observable<AgendadosGtrResumenResponse> {
+    let params = new HttpParams();
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
+    return this.http.get<AgendadosGtrResumenResponse>(`${this.leadUrl}/preventa/gtr/agendados/resumen`, { params });
   }
 
   listarEventosLead(idLead: number, fecha: string, query: PageQuery): Observable<LeadPage<EventoResponse>> {

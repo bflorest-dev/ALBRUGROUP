@@ -269,6 +269,7 @@ export class GtrWorkspaceFacade {
   readonly today = this.formatLocalDate(new Date());
   readonly todayLabel = this.formatReadableDate(new Date());
   readonly section = signal<GtrSection>('plataforma');
+  private readonly adminEquipoId = signal<number | null>(null);
   private readonly currentOperationalClock = signal(new Date());
   readonly intakeMode = signal<IntakeMode>('normal');
   readonly isLoading = signal(false);
@@ -954,9 +955,10 @@ export class GtrWorkspaceFacade {
   readonly historicosEquipoOptions = computed<SelectOption<number>[]>(() =>
     this.equipos()
       .filter((equipo) => equipo.activo)
+      .filter((equipo) => this.adminEquipoId() === null || equipo.id === this.adminEquipoId())
       .map((equipo) => ({ label: equipo.nombre, value: equipo.id }))
   );
-  readonly showHistoricosEquipoSelector = computed(() => this.historicosEquipoOptions().length > 1);
+  readonly showHistoricosEquipoSelector = computed(() => this.adminEquipoId() === null && this.historicosEquipoOptions().length > 1);
   readonly historicosSortOptions = computed<Array<{ label: string; value: GtrHistoricosSortField }>>(() => [
     { label: 'Ingreso', value: 'lastEntryAt' },
     { label: this.historicosTipificacionColumnLabel(), value: 'codigoTipificacion' },
@@ -1128,6 +1130,25 @@ export class GtrWorkspaceFacade {
     this.section.set(section);
     this.selectedIds.set(section === 'historicos' ? this.getStoredHistoricosSelectedIds() : new Set());
     if (this.started && section !== 'ranking') {
+      void this.initialize();
+    }
+  }
+
+  setAdminEquipoId(idEquipo: number | null): void {
+    if (this.adminEquipoId() === idEquipo) {
+      return;
+    }
+    if (this.section() === 'historicos') {
+      this.saveHistoricosState();
+    }
+    this.adminEquipoId.set(idEquipo);
+    if (idEquipo !== null) {
+      this.masivoFiltersForm.controls.idEquipo.setValue(idEquipo);
+    }
+    this.selectedIds.set(new Set());
+    this.platformSelectedGroup.set(null);
+    this.historicosSelectedGroup.set(null);
+    if (this.started) {
       void this.initialize();
     }
   }
@@ -2509,6 +2530,11 @@ export class GtrWorkspaceFacade {
     this.equipos.set(equipos.filter((equipo) => equipo.activo));
     const options = this.historicosEquipoOptions();
     const current = Number(this.masivoFiltersForm.controls.idEquipo.value);
+    const adminEquipoId = this.adminEquipoId();
+    if (adminEquipoId !== null && current !== adminEquipoId) {
+      this.masivoFiltersForm.controls.idEquipo.setValue(adminEquipoId);
+      return;
+    }
     if (options.length === 1 && current !== options[0].value) {
       this.masivoFiltersForm.controls.idEquipo.setValue(options[0].value);
     }
@@ -3733,7 +3759,12 @@ export class GtrWorkspaceFacade {
     }
     const previous = this.rows();
     const page = await firstValueFrom(
-      this.preventaService.listarBandejaGtr(this.today, this.currentQuery(this.pageSize), this.platformGroupFilter())
+      this.preventaService.listarBandejaGtr(
+        this.today,
+        this.currentQuery(this.pageSize),
+        this.platformGroupFilter(),
+        this.adminEquipoId()
+      )
     );
     this.totalElements.set(page.totalElements);
     this.totalPages.set(page.totalPages);
@@ -3753,7 +3784,7 @@ export class GtrWorkspaceFacade {
           pageSize: this.pageSize,
           sortBy: this.agendadosSortField(),
           direction: this.agendadosSortDirection()
-        })
+        }, this.adminEquipoId())
       );
       this.agendadosTotalElements.set(page.totalElements);
       this.agendadosTotalPages.set(page.totalPages);
@@ -3793,14 +3824,14 @@ export class GtrWorkspaceFacade {
     if (!this.canDisplayOperationalData()) {
       return;
     }
-    this.metrics.set(await firstValueFrom(this.preventaService.obtenerMetricasGtr(this.today)));
+    this.metrics.set(await firstValueFrom(this.preventaService.obtenerMetricasGtr(this.today, this.adminEquipoId())));
   }
 
   private async refreshPlatformGroups(): Promise<void> {
     if (!this.canDisplayOperationalData()) {
       return;
     }
-    const groups = await firstValueFrom(this.preventaService.listarAgrupacionesBandejaGtr(this.today));
+    const groups = await firstValueFrom(this.preventaService.listarAgrupacionesBandejaGtr(this.today, this.adminEquipoId()));
     this.platformGroups.set({
       asesores: groups.asesores ?? [],
       campanas: groups.campanas ?? [],
@@ -4349,8 +4380,9 @@ export class GtrWorkspaceFacade {
 
   private getMasivoBaseFilters(): MasivoLeadFilters {
     const raw = this.masivoFiltersForm.getRawValue();
+    const adminEquipoId = this.adminEquipoId();
     return {
-      idEquipo: raw.idEquipo > 0 ? raw.idEquipo : undefined,
+      idEquipo: adminEquipoId ?? (raw.idEquipo > 0 ? raw.idEquipo : undefined),
       codigosTipificacion: raw.tipificaciones.length ? raw.tipificaciones : undefined,
       codigosSubtipificacion: raw.subtipificaciones.length ? raw.subtipificaciones : undefined,
       campoTipificacion: raw.campoTipificacion,

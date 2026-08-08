@@ -2,7 +2,7 @@ import { DatePipe, UpperCasePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, combineLatest } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { DatePickerModule } from 'primeng/datepicker';
@@ -65,12 +65,17 @@ import { GtrTipificationDialogComponent } from '../../components/gtr-tipificatio
 })
 export class GtrWorkspacePageComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(GtrWorkspaceFacade);
+  private readonly rankingFacade = inject(RankingFacade);
   private readonly route = inject(ActivatedRoute);
   private readonly routeSubscription = new Subscription();
 
   ngOnInit(): void {
     this.routeSubscription.add(
-      this.route.data.subscribe((data) => {
+      combineLatest([this.route.data, this.route.paramMap]).subscribe(([data, params]) => {
+        const idEquipo = Number(params.get('idEquipo'));
+        const adminEquipoId = Number.isFinite(idEquipo) && idEquipo > 0 ? idEquipo : null;
+        this.facade.setAdminEquipoId(adminEquipoId);
+        this.rankingFacade.setFixedTeamId(adminEquipoId);
         const section = data['section'];
         if (section === 'plataforma' || section === 'agendados' || section === 'historicos' || section === 'ranking') {
           this.facade.setSection(section);

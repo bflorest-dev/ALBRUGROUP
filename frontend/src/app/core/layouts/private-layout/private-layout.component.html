@@ -34,14 +34,14 @@
     <nav class="menu" aria-label="Navegacion del rol">
       <span class="menu__section">Workspace</span>
 
-      @for (item of menuItems(); track item.label) {
+      @for (item of menuItems(); track itemKey(item)) {
         @if (item.children) {
           <button
             type="button"
             class="menu__item menu__item--group"
-            [class.is-open]="isGroupExpanded(item.label)"
-            [attr.aria-expanded]="isGroupExpanded(item.label)"
-            (click)="toggleGroup(item.label)"
+            [class.is-open]="isGroupExpanded(item)"
+            [attr.aria-expanded]="isGroupExpanded(item)"
+            (click)="toggleGroup(item)"
           >
             <span class="menu__item-main">
               <i [class]="item.icon" aria-hidden="true"></i>
@@ -50,30 +50,112 @@
             <i
               class="menu__item-chevron"
               [class.pi]="true"
-              [class.pi-angle-down]="isGroupExpanded(item.label)"
-              [class.pi-angle-right]="!isGroupExpanded(item.label)"
+              [class.pi-angle-down]="isGroupExpanded(item)"
+              [class.pi-angle-right]="!isGroupExpanded(item)"
               aria-hidden="true"
             ></i>
           </button>
 
-          @if (isGroupExpanded(item.label)) {
+          @if (isGroupExpanded(item)) {
             <div class="menu__subitems">
-              @for (child of item.children; track child.route) {
+              @for (child of item.children; track itemKey(child)) {
                 @if (child.startsGroup) {
                   <span class="menu__subitems-divider" aria-hidden="true"></span>
                 }
-                <a
-                  [routerLink]="child.route"
-                  routerLinkActive="is-active"
-                  [routerLinkActiveOptions]="{ exact: child.exact ?? false }"
-                  class="menu__item menu__subitem"
-                  (click)="closeMobileMenu()"
-                >
-                  <span class="menu__item-main">
-                    <i [class]="child.icon" aria-hidden="true"></i>
-                    <span>{{ child.label }}</span>
-                  </span>
-                </a>
+                @if (child.children) {
+                  <button
+                    type="button"
+                    class="menu__item menu__subitem menu__item--group"
+                    [class.is-open]="isGroupExpanded(child)"
+                    [attr.aria-expanded]="isGroupExpanded(child)"
+                    (click)="toggleGroup(child, [item])"
+                  >
+                    <span class="menu__item-main">
+                      <i [class]="child.icon" aria-hidden="true"></i>
+                      <span>{{ child.label }}</span>
+                    </span>
+                    <i
+                      class="menu__item-chevron"
+                      [class.pi]="true"
+                      [class.pi-angle-down]="isGroupExpanded(child)"
+                      [class.pi-angle-right]="!isGroupExpanded(child)"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
+
+                  @if (isGroupExpanded(child)) {
+                    <div class="menu__subitems menu__subitems--nested">
+                      @for (grandchild of child.children; track itemKey(grandchild)) {
+                        @if (grandchild.children) {
+                          <button
+                            type="button"
+                            class="menu__item menu__subitem menu__subitem--nested menu__item--group"
+                            [class.is-open]="isGroupExpanded(grandchild)"
+                            [attr.aria-expanded]="isGroupExpanded(grandchild)"
+                            (click)="toggleGroup(grandchild, [item, child])"
+                          >
+                            <span class="menu__item-main">
+                              <i [class]="grandchild.icon" aria-hidden="true"></i>
+                              <span>{{ grandchild.label }}</span>
+                            </span>
+                            <i
+                              class="menu__item-chevron"
+                              [class.pi]="true"
+                              [class.pi-angle-down]="isGroupExpanded(grandchild)"
+                              [class.pi-angle-right]="!isGroupExpanded(grandchild)"
+                              aria-hidden="true"
+                            ></i>
+                          </button>
+
+                          @if (isGroupExpanded(grandchild)) {
+                            <div class="menu__subitems menu__subitems--nested menu__subitems--deep">
+                              @for (roleTab of grandchild.children; track itemKey(roleTab)) {
+                                <a
+                                  [routerLink]="roleTab.route"
+                                  routerLinkActive="is-active"
+                                  [routerLinkActiveOptions]="{ exact: roleTab.exact ?? false }"
+                                  class="menu__item menu__subitem menu__subitem--deep"
+                                  (click)="closeMobileMenu()"
+                                >
+                                  <span class="menu__item-main">
+                                    <i [class]="roleTab.icon" aria-hidden="true"></i>
+                                    <span>{{ roleTab.label }}</span>
+                                  </span>
+                                </a>
+                              }
+                            </div>
+                          }
+                        } @else {
+                          <a
+                            [routerLink]="grandchild.route"
+                            routerLinkActive="is-active"
+                            [routerLinkActiveOptions]="{ exact: grandchild.exact ?? false }"
+                            class="menu__item menu__subitem menu__subitem--nested"
+                            (click)="closeMobileMenu()"
+                          >
+                            <span class="menu__item-main">
+                              <i [class]="grandchild.icon" aria-hidden="true"></i>
+                              <span>{{ grandchild.label }}</span>
+                            </span>
+                          </a>
+                        }
+                      }
+                    </div>
+                  }
+                } @else {
+                  <a
+                    [routerLink]="child.route"
+                    routerLinkActive="is-active"
+                    [routerLinkActiveOptions]="{ exact: child.exact ?? false }"
+                    class="menu__item menu__subitem"
+                    (click)="closeMobileMenu()"
+                  >
+                    <span class="menu__item-main">
+                      <i [class]="child.icon" aria-hidden="true"></i>
+                      <span>{{ child.label }}</span>
+                    </span>
+                  </a>
+                }
               }
             </div>
           }

@@ -111,6 +111,7 @@ public class PreventaController {
             @RequestParam(required = false) String codigoTipificacion,
             @RequestParam(required = false) String codigoSubtipificacion,
             @RequestParam(defaultValue = "false") boolean sinValor,
+            @RequestParam(required = false) Long idEquipo,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
         var leads = leadService.listarBandejaGtr(
@@ -122,6 +123,7 @@ public class PreventaController {
                 codigoTipificacion,
                 codigoSubtipificacion,
                 sinValor,
+                idEquipo,
                 pageRequest
         );
         return ResponseEntity.status(HttpStatus.OK).body(leads);
@@ -129,9 +131,10 @@ public class PreventaController {
     @GetMapping("/gtr/agrupaciones") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
     public ResponseEntity<LeadGtrAgrupacionesResponse> listarAgrupacionesBandejaGtr(
             @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+            @RequestParam(required = false) Long idEquipo
     ) {
-        return ResponseEntity.ok(leadService.listarAgrupacionesBandejaGtr(fecha));
+        return ResponseEntity.ok(leadService.listarAgrupacionesBandejaGtr(fecha, idEquipo));
     }
     @GetMapping("/gtr/lookup") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
     public ResponseEntity<LeadGtrLookupResponse> buscarContextoLeadGtr(
@@ -149,9 +152,10 @@ public class PreventaController {
     @GetMapping("/gtr/metricas") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
     public ResponseEntity<LeadGtrMetricasResponse> obtenerMetricasGtr(
             @RequestParam(required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
+            @RequestParam(required = false) Long idEquipo
     ) {
-        var metricas = leadService.obtenerMetricasGtr(fecha);
+        var metricas = leadService.obtenerMetricasGtr(fecha, idEquipo);
         return ResponseEntity.status(HttpStatus.OK).body(metricas);
     }
     // 2.2. Ranking de asesores para la vista GTR
@@ -234,14 +238,17 @@ public class PreventaController {
     // 5. Listar los Leads tipificados como AGENDADOS para que puedan ser asignados nuevamente
     @GetMapping("/gtr/agendados") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
     public ResponseEntity<PageResponse<LeadAgendadoGtrResponse>> listarAgendadosGtr(
+            @RequestParam(required = false) Long idEquipo,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var leads = leadService.listarAgendadosGtr(pageRequest);
+        var leads = leadService.listarAgendadosGtr(pageRequest, idEquipo);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
     @GetMapping("/gtr/agendados/resumen") @PreAuthorize("hasAuthority('READ_LEADS_GTR')")
-    public ResponseEntity<AgendadosGtrResumenResponse> obtenerResumenAgendadosGtr() {
-        return ResponseEntity.ok(leadService.obtenerResumenAgendadosGtr());
+    public ResponseEntity<AgendadosGtrResumenResponse> obtenerResumenAgendadosGtr(
+            @RequestParam(required = false) Long idEquipo
+    ) {
+        return ResponseEntity.ok(leadService.obtenerResumenAgendadosGtr(idEquipo));
     }
     // GENERAL. Ver detalle de un Lead
     @GetMapping("/{idLead}/detalle-asesor") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")

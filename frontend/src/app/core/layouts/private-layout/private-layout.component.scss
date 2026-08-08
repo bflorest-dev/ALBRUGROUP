@@ -165,10 +165,32 @@
   border-left: 1px solid var(--layout-sidebar-hover);
 }
 
+.menu__subitems--nested {
+  margin-left: 0.35rem;
+  padding-left: 0.65rem;
+}
+
+.menu__subitems--deep {
+  gap: 0.18rem;
+  margin-left: 0.15rem;
+  padding-left: 0.55rem;
+}
+
 .menu__subitem {
   min-height: 2.4rem;
   padding: 0.55rem 0.7rem;
   font-size: 0.92rem;
+}
+
+.menu__subitem--nested {
+  min-height: 2.25rem;
+  padding: 0.48rem 0.62rem;
+}
+
+.menu__subitem--deep {
+  min-height: 2.12rem;
+  padding: 0.42rem 0.55rem;
+  font-size: 0.86rem;
 }
 
 .menu__subitem .menu__item-main i {

@@ -208,6 +208,73 @@ export const PLATFORM_ROUTES: Routes = [
     }
   },
   {
+    path: 'admin/plataformas',
+    pathMatch: 'full',
+    redirectTo: 'admin/plataformas/postventa'
+  },
+  {
+    path: 'admin/plataformas/postventa',
+    component: PostventaWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR']
+    }
+  },
+  {
+    path: 'admin/plataformas/equipos/:idEquipo/gtr/plataforma',
+    component: GtrWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR'],
+      section: 'plataforma'
+    }
+  },
+  {
+    path: 'admin/plataformas/equipos/:idEquipo/gtr/agendados',
+    component: GtrWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR'],
+      section: 'agendados'
+    }
+  },
+  {
+    path: 'admin/plataformas/equipos/:idEquipo/gtr/historicos',
+    component: GtrWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR'],
+      section: 'historicos'
+    }
+  },
+  {
+    path: 'admin/plataformas/equipos/:idEquipo/gtr/ranking',
+    component: GtrWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR'],
+      section: 'ranking'
+    }
+  },
+  {
+    path: 'admin/plataformas/equipos/:idEquipo/backoffice/plataforma',
+    component: BackofficeWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR'],
+      section: 'plataforma'
+    }
+  },
+  {
+    path: 'admin/plataformas/equipos/:idEquipo/backoffice/programados',
+    component: BackofficeWorkspacePageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ADMINISTRADOR'],
+      section: 'programados'
+    }
+  },
+  {
     path: 'rrhh',
     pathMatch: 'full',
     redirectTo: 'rrhh/asistencia'

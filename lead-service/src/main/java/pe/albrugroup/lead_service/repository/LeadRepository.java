@@ -1028,6 +1028,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR (:tipoGrupo = 'TIPIFICACION'
                         AND ((:sinValor = true AND COALESCE(l.codigoTipificacion, '') = '') OR l.codigoTipificacion IN :valoresGrupo))
               )
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             ORDER BY COALESCE(r.fechaIngresoEtapa, l.lastEntryAt) DESC,
                      l.id DESC
             """)
@@ -1041,6 +1042,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("valoresGrupo") Collection<String> valoresGrupo,
             @Param("sinValor") boolean sinValor,
             @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds,
             Pageable pageable
     );
 
@@ -1061,6 +1064,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR l.lead LIKE :searchPattern
                     OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
               )
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.estado
             """)
     List<LeadGtrAgrupacionProjection> agruparVentaPorEstado(
@@ -1069,7 +1073,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("filtrarVentana") boolean filtrarVentana,
             @Param("inicioVentana") Instant inicioVentana,
             @Param("filtrarAsesor") boolean filtrarAsesor,
-            @Param("idAsesor") Long idAsesor
+            @Param("idAsesor") Long idAsesor,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
     );
 
     @Query("""
@@ -1089,6 +1095,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR l.lead LIKE :searchPattern
                     OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
               )
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.nombreProveedorSnapshot
             """)
     List<LeadGtrAgrupacionProjection> agruparVentaPorProveedor(
@@ -1097,7 +1104,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("filtrarVentana") boolean filtrarVentana,
             @Param("inicioVentana") Instant inicioVentana,
             @Param("filtrarAsesor") boolean filtrarAsesor,
-            @Param("idAsesor") Long idAsesor
+            @Param("idAsesor") Long idAsesor,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
     );
 
     @Query("""
@@ -1117,6 +1126,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR l.lead LIKE :searchPattern
                     OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
               )
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.nombrePlanSnapshot
             """)
     List<LeadGtrAgrupacionProjection> agruparVentaPorPlan(
@@ -1125,7 +1135,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("filtrarVentana") boolean filtrarVentana,
             @Param("inicioVentana") Instant inicioVentana,
             @Param("filtrarAsesor") boolean filtrarAsesor,
-            @Param("idAsesor") Long idAsesor
+            @Param("idAsesor") Long idAsesor,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
     );
 
     @Query("""
@@ -1145,6 +1157,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR l.lead LIKE :searchPattern
                     OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
               )
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY r.nombreAsesorUltimaGestion
             """)
     List<LeadGtrAgrupacionProjection> agruparVentaPorUltimoGestor(
@@ -1153,7 +1166,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("filtrarVentana") boolean filtrarVentana,
             @Param("inicioVentana") Instant inicioVentana,
             @Param("filtrarAsesor") boolean filtrarAsesor,
-            @Param("idAsesor") Long idAsesor
+            @Param("idAsesor") Long idAsesor,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
     );
 
     @Query("""
@@ -1173,6 +1188,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR l.lead LIKE :searchPattern
                     OR COALESCE(dp.numeroDocumentoTitularServicio, l.numeroDocumentoTitularServicioSnapshot) LIKE :searchPattern
               )
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
             GROUP BY l.codigoTipificacion
             """)
     List<LeadGtrAgrupacionProjection> agruparVentaPorTipificacion(
@@ -1181,7 +1197,9 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("filtrarVentana") boolean filtrarVentana,
             @Param("inicioVentana") Instant inicioVentana,
             @Param("filtrarAsesor") boolean filtrarAsesor,
-            @Param("idAsesor") Long idAsesor
+            @Param("idAsesor") Long idAsesor,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds
     );
 
     @Query("""
@@ -1249,6 +1267,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               AND e.fechaProgramacion IS NOT NULL
               AND e.horaProgramada IS NOT NULL
               AND e.fechaProgramacion >= :fechaActual
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
               AND e.createdAt = (
                   SELECT MAX(es.createdAt)
                   FROM Evento es
@@ -1267,6 +1286,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("codigoProgramacionCancelada") String codigoProgramacionCancelada,
             @Param("accionTipificacion") Accion accionTipificacion,
             @Param("fechaActual") java.time.LocalDate fechaActual,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds,
             Pageable pageable
     );
 

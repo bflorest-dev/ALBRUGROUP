@@ -4,7 +4,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, comp
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription, firstValueFrom } from 'rxjs';
+import { Subscription, combineLatest, firstValueFrom } from 'rxjs';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -132,6 +132,7 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
 
   protected readonly pageSize = 12;
   protected readonly section = signal<BackofficeSection>('plataforma');
+  private readonly adminEquipoId = signal<number | null>(null);
   protected readonly isLoading = signal(false);
   protected readonly isReconciling = signal(false);
   protected readonly isSaving = signal(false);
@@ -522,14 +523,21 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.route.data.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data) => {
+    combineLatest([this.route.data, this.route.paramMap]).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(([data, params]) => {
       const nextSection = this.resolveSection(data['section']);
-      if (nextSection !== this.section()) {
+      const idEquipo = Number(params.get('idEquipo'));
+      const nextAdminEquipoId = Number.isFinite(idEquipo) && idEquipo > 0 ? idEquipo : null;
+      if (nextSection !== this.section() || nextAdminEquipoId !== this.adminEquipoId()) {
         this.searchInput.set('');
         this.searchTermActive.set('');
         this.searchLookup.set(null);
         this.isSearching.set(false);
+        this.plataformaRows.set([]);
+        this.programadosRows.set([]);
+        this.totalPlataforma.set(0);
+        this.totalProgramados.set(0);
       }
+      this.adminEquipoId.set(nextAdminEquipoId);
       this.section.set(nextSection);
       void this.refreshCurrent(false);
     });
@@ -1465,7 +1473,8 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       this.leadService.listarPlataforma(
         this.currentQuery(this.pagePlataforma()),
         term || undefined,
-        this.currentVentaGroupFilter()
+        this.currentVentaGroupFilter(),
+        this.adminEquipoId()
       )
     );
     this.totalPlataforma.set(page.totalElements);
@@ -1477,7 +1486,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return;
     }
     const previous = this.programadosRows();
-    const page = await firstValueFrom(this.leadService.listarProgramados(this.currentQuery(this.pageProgramados())));
+    const page = await firstValueFrom(
+      this.leadService.listarProgramados(this.currentQuery(this.pageProgramados()), this.adminEquipoId())
+    );
     this.totalProgramados.set(page.totalElements);
     this.programadosRows.set(this.mergeVisualRows(previous, page.content.map((row) => this.withProgramacionGroup(row)), silent));
   }
@@ -1485,7 +1496,9 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private async refreshOrganizationGroups(): Promise<void> {
     const term = this.searchTermActive();
     try {
-      const groups = await firstValueFrom(this.leadService.listarAgrupacionesPlataforma(term || undefined));
+      const groups = await firstValueFrom(
+        this.leadService.listarAgrupacionesPlataforma(term || undefined, this.adminEquipoId())
+      );
       if (this.section() === 'plataforma') {
         this.ventaGroups.set(groups);
       }

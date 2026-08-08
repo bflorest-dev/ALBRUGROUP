@@ -89,7 +89,7 @@ class LeadServiceGtrGroupingTest {
                 .thenReturn(List.of(group(null, null, null, "DATO_INCONSISTENTE", 10)));
 
         LeadGtrAgrupacionesResponse response =
-                leadService.listarAgrupacionesBandejaGtr(LocalDate.of(2026, 6, 10));
+                leadService.listarAgrupacionesBandejaGtr(LocalDate.of(2026, 6, 10), null);
 
         assertThat(response.getAsesores())
                 .extracting("etiqueta", "cantidad", "sinValor")
@@ -142,6 +142,7 @@ class LeadServiceGtrGroupingTest {
                 null,
                 null,
                 false,
+                null,
                 request
         );
 
@@ -196,6 +197,7 @@ class LeadServiceGtrGroupingTest {
                 "CONTACTADO",
                 "INTERESADO",
                 false,
+                null,
                 request
         );
 
@@ -234,6 +236,7 @@ class LeadServiceGtrGroupingTest {
                 null,
                 null,
                 false,
+                null,
                 request
         )).hasMessage("Debes indicar el grupo seleccionado");
     }

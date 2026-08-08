@@ -51,16 +51,18 @@ public class VentaController {
             @RequestParam(required = false) TipoGrupoVenta tipoGrupo,
             @RequestParam(required = false) List<String> valorGrupo,
             @RequestParam(required = false, defaultValue = "false") boolean sinValor,
+            @RequestParam(required = false) Long idEquipo,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var leads = leadService.listarBandejaVenta(lead, tipoGrupo, valorGrupo, sinValor, pageRequest);
+        var leads = leadService.listarBandejaVenta(lead, tipoGrupo, valorGrupo, sinValor, idEquipo, pageRequest);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
     @GetMapping("/agrupaciones") @PreAuthorize("hasAuthority('READ_LEADS_VENTA')")
     public ResponseEntity<LeadVentaAgrupacionesResponse> listarAgrupacionesBandejaVenta(
-            @RequestParam(required = false) String lead
+            @RequestParam(required = false) String lead,
+            @RequestParam(required = false) Long idEquipo
     ) {
-        var agrupaciones = leadService.listarAgrupacionesBandejaVenta(lead);
+        var agrupaciones = leadService.listarAgrupacionesBandejaVenta(lead, idEquipo);
         return ResponseEntity.status(HttpStatus.OK).body(agrupaciones);
     }
     // 1.1. Buscar el contexto de un lead por numero: indica si esta en VENTA y disponible,
@@ -75,9 +77,10 @@ public class VentaController {
     // 2. Listar los Leads PROGRAMADOS compartidos, ordenados por fecha y hora de programacion.
     @GetMapping("/programados/asignados") @PreAuthorize("hasAuthority('READ_LEADS_ASESOR')")
     public ResponseEntity<PageResponse<LeadResponse>> listarLeadsVentaProgramadosAsignados(
+            @RequestParam(required = false) Long idEquipo,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
-        var leads = leadService.listarLeadsVentaProgramadosAsignados(pageRequest);
+        var leads = leadService.listarLeadsVentaProgramadosAsignados(pageRequest, idEquipo);
         return ResponseEntity.status(HttpStatus.OK).body(leads);
     }
     // 3. Asignarse el lead, ahora la diferencia seria que el mismo backoffice se asigna lead si mismo

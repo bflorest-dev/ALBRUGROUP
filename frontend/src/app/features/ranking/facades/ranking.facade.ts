@@ -115,6 +115,7 @@ export class RankingFacade {
   readonly modo = signal<RankingModo>('GESTIONADOS');
   readonly campo = signal<RankingCampo>('MAYOR');
   private readonly catalog = signal<ReadonlyMap<string, TipiMeta>>(new Map());
+  private readonly fixedTeamId = signal<number | null>(null);
   readonly groupingMode = signal<RankingGroupingMode>('SIN_AGRUPAR');
   readonly selectedTeamId = signal<number | null>(null);
   readonly sortField = signal<RankingSortField>('conversion');
@@ -311,6 +312,17 @@ export class RankingFacade {
     }
   }
 
+  setFixedTeamId(idEquipo: number | null): void {
+    const nextId = idEquipo && Number.isFinite(idEquipo) && idEquipo > 0 ? idEquipo : null;
+    if (this.fixedTeamId() === nextId) return;
+    this.fixedTeamId.set(nextId);
+    this.selectedTeamId.set(null);
+    this.closeDrill();
+    if (this.started) {
+      this.refresh(false);
+    }
+  }
+
   setSelectedDay(value: Date | null): void {
     if (!value) return;
     const day = this.startOfDay(value);
@@ -472,6 +484,11 @@ export class RankingFacade {
   }
 
   private resolveBlocks(): Array<{ idEquipo: number | null; nombreEquipo: string }> {
+    const fixedTeamId = this.fixedTeamId();
+    if (fixedTeamId !== null) {
+      const team = this.teams().find((item) => item.id === fixedTeamId);
+      return [{ idEquipo: fixedTeamId, nombreEquipo: team ? this.teamLabel(team) : `Equipo ${fixedTeamId}` }];
+    }
     if (!this.allowTeamOrganization() || this.groupingMode() === 'SIN_AGRUPAR') {
       return [{ idEquipo: null, nombreEquipo: 'Total general' }];
     }

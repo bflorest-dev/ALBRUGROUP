@@ -28,18 +28,29 @@ export class BackofficeLeadService {
   private readonly http = inject(HttpClient);
   private readonly leadUrl = `${API_CONSTANTS.gatewayBaseUrl}/leads`;
 
-  listarPlataforma(query: PageQuery, lead?: string, groupFilter?: LeadVentaGroupFilter): Observable<LeadPage<LeadVentaResponse>> {
+  listarPlataforma(
+    query: PageQuery,
+    lead?: string,
+    groupFilter?: LeadVentaGroupFilter,
+    idEquipo?: number | null
+  ): Observable<LeadPage<LeadVentaResponse>> {
     let params = this.groupParams(this.pageParams(query), groupFilter);
     if (lead) {
       params = params.set('lead', lead);
     }
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
     return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta`, { params });
   }
 
-  listarAgrupacionesPlataforma(lead?: string): Observable<LeadVentaGroupsResponse> {
+  listarAgrupacionesPlataforma(lead?: string, idEquipo?: number | null): Observable<LeadVentaGroupsResponse> {
     let params = new HttpParams();
     if (lead) {
       params = params.set('lead', lead);
+    }
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
     }
     return this.http.get<LeadVentaGroupsResponse>(`${this.leadUrl}/venta/agrupaciones`, { params });
   }
@@ -50,10 +61,12 @@ export class BackofficeLeadService {
     });
   }
 
-  listarProgramados(query: PageQuery): Observable<LeadPage<LeadVentaResponse>> {
-    return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta/programados/asignados`, {
-      params: this.pageParams(query)
-    });
+  listarProgramados(query: PageQuery, idEquipo?: number | null): Observable<LeadPage<LeadVentaResponse>> {
+    let params = this.pageParams(query);
+    if (idEquipo !== null && idEquipo !== undefined) {
+      params = params.set('idEquipo', idEquipo);
+    }
+    return this.http.get<LeadPage<LeadVentaResponse>>(`${this.leadUrl}/venta/programados/asignados`, { params });
   }
 
   tomarLead(idLead: number, request: LeadTomaVentaRequest = {}): Observable<void> {

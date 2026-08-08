@@ -229,6 +229,7 @@ public class LeadService {
             String codigoTipificacion,
             String codigoSubtipificacion,
             boolean sinValor,
+            Long idEquipo,
             PageRequest pageRequest
     ) {
         boolean buscandoPorLead = lead != null && !lead.isBlank();
@@ -240,7 +241,7 @@ public class LeadService {
         validarFiltroAgrupacionGtr(tipoGrupo, idGrupo, estadoGrupo, codigoTipificacion, sinValor);
 
         var pageable = paginationService.toPageableWithMapping(pageRequest, LEAD_GTR_SORT_FIELDS);
-        RankingEquipoScope equipos = resolverEquiposActuales();
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
         Page<LeadGtrResponse> leads = tipoGrupo == null
                 ? leadRepository.listarBandejaGtr(
                         Etapa.PREVENTA,
@@ -278,9 +279,9 @@ public class LeadService {
         return PageResponse.from(leads);
     }
 
-    public LeadGtrAgrupacionesResponse listarAgrupacionesBandejaGtr(LocalDate fecha) {
+    public LeadGtrAgrupacionesResponse listarAgrupacionesBandejaGtr(LocalDate fecha, Long idEquipo) {
         OperationalDateTime.InstantRange rangoDia = OperationalDateTime.dayRange(fecha);
-        RankingEquipoScope equipos = resolverEquiposActuales();
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
         return new LeadGtrAgrupacionesResponse(
                 mapearAgrupaciones(
                         leadRepository.agruparBandejaGtrPorAsesor(
@@ -468,9 +469,9 @@ public class LeadService {
         return resultado;
     }
 
-    public LeadGtrMetricasResponse obtenerMetricasGtr(LocalDate fecha) {
+    public LeadGtrMetricasResponse obtenerMetricasGtr(LocalDate fecha, Long idEquipo) {
         OperationalDateTime.InstantRange rangoDia = OperationalDateTime.dayRange(fecha);
-        RankingEquipoScope equipos = resolverEquiposActuales();
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
 
         long nuevos = leadRepository.contarMetricasGtrPorEstado(
                 Etapa.PREVENTA,
@@ -516,15 +517,15 @@ public class LeadService {
         return new LeadGtrMetricasResponse(nuevos, sinGestionar, gestionados, preventas, ingresos);
     }
 
-    public PageResponse<LeadAgendadoGtrResponse> listarAgendadosGtr(PageRequest pageRequest) {
-        Page<LeadAgendadoGtrResponse> leads = listarAgendadosGtrOrdenados(pageRequest);
+    public PageResponse<LeadAgendadoGtrResponse> listarAgendadosGtr(PageRequest pageRequest, Long idEquipo) {
+        Page<LeadAgendadoGtrResponse> leads = listarAgendadosGtrOrdenados(pageRequest, idEquipo);
         aplicarTotalesAsignacion(leads.getContent(), LeadAgendadoGtrResponse::getId, this::setTotalesAsignacion);
         return PageResponse.from(leads);
     }
 
-    public AgendadosGtrResumenResponse obtenerResumenAgendadosGtr() {
+    public AgendadosGtrResumenResponse obtenerResumenAgendadosGtr(Long idEquipo) {
         java.time.LocalDate hoy = OperationalDateTime.today();
-        RankingEquipoScope equipos = resolverEquiposActuales();
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
         Map<String, Long> programadosHoyPorHora = new LinkedHashMap<>();
         for (int hora = 0; hora < 24; hora++) {
             programadosHoyPorHora.put(String.format("%02d", hora), 0L);
@@ -550,10 +551,10 @@ public class LeadService {
         return new AgendadosGtrResumenResponse(totalActivos, programadosHoyPorHora);
     }
 
-    private Page<LeadAgendadoGtrResponse> listarAgendadosGtrOrdenados(PageRequest pageRequest) {
+    private Page<LeadAgendadoGtrResponse> listarAgendadosGtrOrdenados(PageRequest pageRequest, Long idEquipo) {
         validarDirection(pageRequest.getDirection());
         boolean desc = "desc".equalsIgnoreCase(pageRequest.getDirection());
-        RankingEquipoScope equipos = resolverEquiposActuales();
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
         var pageable = org.springframework.data.domain.PageRequest.of(
                 pageRequest.getPageNumber(),
                 pageRequest.getPageSize()
@@ -591,6 +592,7 @@ public class LeadService {
             TipoGrupoVenta tipoGrupo,
             List<String> valoresGrupo,
             boolean sinValor,
+            Long idEquipo,
             PageRequest pageRequest
     ) {
         String numeroLead = normalizarLead(lead);
@@ -599,6 +601,7 @@ public class LeadService {
         boolean filtrarVentana = !buscando;
         Instant inicioVentana = OperationalDateTime.now().minus(30, ChronoUnit.DAYS);
         GrupoVentaFiltro grupo = resolverFiltroGrupoVenta(tipoGrupo, valoresGrupo, sinValor);
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
         // El orden lo fija la propia query (lastEntryAt DESC, id DESC): Pageable sin sort para no
         // agregar un ORDER BY extra que descuadre el orden y la paginacion entre paginas.
         Page<LeadResponse> leads = leadRepository.listarBandejaVenta(
@@ -611,29 +614,35 @@ public class LeadService {
                 grupo.valores(),
                 grupo.sinValor(),
                 Accion.TIPIFICACION,
+                equipos.filtrar(),
+                equipos.ids(),
                 org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);
         return PageResponse.from(leads);
     }
 
-    public LeadVentaAgrupacionesResponse listarAgrupacionesBandejaVenta(String lead) {
+    public LeadVentaAgrupacionesResponse listarAgrupacionesBandejaVenta(String lead, Long idEquipo) {
         String numeroLead = normalizarLead(lead);
         boolean buscando = numeroLead != null && !numeroLead.isBlank();
         String leadPattern = buscando ? numeroLead + "%" : "%";
         boolean filtrarVentana = !buscando;
         Instant inicioVentana = OperationalDateTime.now().minus(30, ChronoUnit.DAYS);
-        return mapearAgrupacionesVenta(leadPattern, filtrarVentana, inicioVentana, null);
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
+        return mapearAgrupacionesVenta(leadPattern, filtrarVentana, inicioVentana, null, equipos);
     }
 
-    public PageResponse<LeadResponse> listarLeadsVentaProgramadosAsignados(PageRequest pageRequest) {
+    public PageResponse<LeadResponse> listarLeadsVentaProgramadosAsignados(PageRequest pageRequest, Long idEquipo) {
         LocalDate hoy = OperationalDateTime.today();
+        RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
         Page<LeadResponse> leads = leadRepository.listarLeadsProgramadosVentaAsignados(
                 Etapa.VENTA,
                 TIPIFICACION_PROGRAMADO,
                 SUBTIPIFICACION_PROGRAMACION_CANCELADA,
                 Accion.TIPIFICACION,
                 hoy,
+                equipos.filtrar(),
+                equipos.ids(),
                 org.springframework.data.domain.PageRequest.of(pageRequest.getPageNumber(), pageRequest.getPageSize())
         );
         aplicarTotalesAsignacion(leads.getContent(), LeadResponse::getId, LeadResponse::setTotalAsignaciones);
@@ -3336,33 +3345,39 @@ public class LeadService {
             String searchPattern,
             boolean filtrarVentana,
             Instant inicioVentana,
-            Long idAsesor
+            Long idAsesor,
+            RankingEquipoScope equipos
     ) {
         boolean filtrarAsesor = idAsesor != null;
         return new LeadVentaAgrupacionesResponse(
                 mapearAgrupacionesVentaValor(
                         leadRepository.agruparVentaPorEstado(
-                                Etapa.VENTA, searchPattern, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor),
+                                Etapa.VENTA, searchPattern, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor,
+                                equipos.filtrar(), equipos.ids()),
                         "Sin estado"
                 ),
                 mapearAgrupacionesVentaValor(
                         leadRepository.agruparVentaPorProveedor(
-                                Etapa.VENTA, searchPattern, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor),
+                                Etapa.VENTA, searchPattern, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor,
+                                equipos.filtrar(), equipos.ids()),
                         "Sin proveedor"
                 ),
                 mapearAgrupacionesVentaValor(
                         leadRepository.agruparVentaPorPlan(
-                                Etapa.VENTA, searchPattern, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor),
+                                Etapa.VENTA, searchPattern, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor,
+                                equipos.filtrar(), equipos.ids()),
                         "Sin plan"
                 ),
                 mapearAgrupacionesVentaValor(
                         leadRepository.agruparVentaPorUltimoGestor(
-                                Etapa.VENTA, searchPattern, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor),
+                                Etapa.VENTA, searchPattern, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor,
+                                equipos.filtrar(), equipos.ids()),
                         "Sin gestor"
                 ),
                 mapearAgrupacionesVentaTipificacion(
                         leadRepository.agruparVentaPorTipificacion(
-                                Etapa.VENTA, searchPattern, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor)
+                                Etapa.VENTA, searchPattern, filtrarVentana, inicioVentana, filtrarAsesor, idAsesor,
+                                equipos.filtrar(), equipos.ids())
                 )
         );
     }

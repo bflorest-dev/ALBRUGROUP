@@ -18,6 +18,7 @@ import { EquiposNavService } from '../../services/equipos-nav.service';
 
 type SidebarItem = {
   label: string;
+  key?: string;
   route?: string;
   icon: string;
   badge?: string | number;
@@ -74,7 +75,7 @@ export class PrivateLayoutComponent {
   private readonly router = inject(Router);
   protected readonly profileMenuOpen = signal(false);
   protected readonly mobileMenuOpen = signal(false);
-  // Grupos expandibles del sidebar (clave = label del padre).
+  // Grupos expandibles del sidebar (clave estable del grupo).
   protected readonly expandedGroups = signal<Record<string, boolean>>({});
   private readonly currentUrl = signal(this.router.url);
   protected readonly adminDeleteLeadsVisible = signal(this.readAdminDeleteLeadsVisible());
@@ -150,8 +151,76 @@ export class PrivateLayoutComponent {
         { label: 'Cobranza', route: '/app/admin/dashboard/cobranza', icon: 'pi pi-wallet', exact: true }
       ];
 
+      const plataformasChildren: SidebarItem[] = [
+        ...this.equiposNav.activeTeams().map((team) => ({
+          key: `plataformas-equipo-${team.id}`,
+          label: team.nombre,
+          icon: 'pi pi-building',
+          children: [
+            {
+              key: `plataformas-equipo-${team.id}-gtr`,
+              label: 'GTR',
+              icon: 'pi pi-headphones',
+              children: [
+                {
+                  label: 'Plataforma',
+                  route: `/app/admin/plataformas/equipos/${team.id}/gtr/plataforma`,
+                  icon: 'pi pi-desktop',
+                  exact: true
+                },
+                {
+                  label: 'Agendados',
+                  route: `/app/admin/plataformas/equipos/${team.id}/gtr/agendados`,
+                  icon: 'pi pi-calendar',
+                  exact: true
+                },
+                {
+                  label: 'Historicos',
+                  route: `/app/admin/plataformas/equipos/${team.id}/gtr/historicos`,
+                  icon: 'pi pi-history',
+                  exact: true
+                },
+                {
+                  label: 'Ranking',
+                  route: `/app/admin/plataformas/equipos/${team.id}/gtr/ranking`,
+                  icon: 'pi pi-chart-bar',
+                  exact: true
+                }
+              ]
+            },
+            {
+              key: `plataformas-equipo-${team.id}-backoffice`,
+              label: 'Backoffice',
+              icon: 'pi pi-briefcase',
+              children: [
+                {
+                  label: 'Plataforma',
+                  route: `/app/admin/plataformas/equipos/${team.id}/backoffice/plataforma`,
+                  icon: 'pi pi-desktop',
+                  exact: true
+                },
+                {
+                  label: 'Programados',
+                  route: `/app/admin/plataformas/equipos/${team.id}/backoffice/programados`,
+                  icon: 'pi pi-calendar-clock',
+                  exact: true
+                }
+              ]
+            }
+          ]
+        })),
+        {
+          label: 'Postventa',
+          route: '/app/admin/plataformas/postventa',
+          icon: 'pi pi-briefcase',
+          exact: true,
+          startsGroup: true
+        }
+      ];
+
       const items: SidebarItem[] = [
         { label: 'Dashboard', icon: 'pi pi-chart-pie', children: dashboardChildren },
+        { key: 'Plataformas', label: 'Plataformas', icon: 'pi pi-th-large', children: plataformasChildren },
         { label: 'Colaboradores', icon: 'pi pi-users', children: colaboradoresChildren },
         { label: 'Personal', route: '/app/admin/personal', icon: 'pi pi-id-card', exact: true },
         { label: 'Asistencia', route: '/app/admin/asistencia', icon: 'pi pi-clock', exact: true },
@@ -161,7 +230,6 @@ export class PrivateLayoutComponent {
         { label: 'Mantenimiento', route: '/app/admin/mantenimiento', icon: 'pi pi-database', exact: true },
         { label: 'Leads del día', route: '/app/admin/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
         { label: 'CorrecciÃ³n de campaÃ±a', route: '/app/admin/correccion-campana', icon: 'pi pi-sync', exact: true },
-        { label: 'Postventa', route: '/app/postventa', icon: 'pi pi-briefcase', exact: true },
         { label: 'Finanzas', route: '/app/admin/finanzas', icon: 'pi pi-wallet', exact: true },
         { label: 'Ranking', route: '/app/admin/ranking', icon: 'pi pi-chart-bar', exact: true },
         { label: 'Operaciones', route: '/app/admin/operaciones', icon: 'pi pi-wrench', exact: true }
@@ -263,11 +331,11 @@ export class PrivateLayoutComponent {
       ['Dashboard', 1],
       ['/app/admin/finanzas', 2],
       ['/app/admin/leads-del-dia', 3],
+      ['Plataformas', 3.5],
       ['Colaboradores', 4],
       ['/app/admin/asistencia', 4.5],
       ['/app/admin/ranking', 5],
       ['/app/admin/correccion-campana', 6],
-      ['/app/postventa', 7],
       ['/app/admin/mantenimiento', 8],
       ['/app/admin/tipificaciones', 9],
       ['/app/admin/equipos', 10],
@@ -276,18 +344,29 @@ export class PrivateLayoutComponent {
       ['/app/admin/empleabilidad', 13]
     ]);
     items.sort((left, right) => {
-      const leftKey = left.route ?? left.label;
-      const rightKey = right.route ?? right.label;
+      const leftKey = this.itemKey(left);
+      const rightKey = this.itemKey(right);
       return (order.get(leftKey) ?? 99) - (order.get(rightKey) ?? 99);
     });
   }
 
-  protected isGroupExpanded(label: string): boolean {
-    return this.expandedGroups()[label] ?? false;
+  protected itemKey(item: SidebarItem): string {
+    return item.key ?? item.route ?? item.label;
   }
 
-  protected toggleGroup(label: string): void {
-    this.expandedGroups.update((current) => ({ ...current, [label]: !(current[label] ?? false) }));
+  protected isGroupExpanded(item: SidebarItem): boolean {
+    return this.expandedGroups()[this.itemKey(item)] ?? false;
+  }
+
+  protected toggleGroup(item: SidebarItem, ancestors: SidebarItem[] = []): void {
+    const key = this.itemKey(item);
+    const nextValue = !(this.expandedGroups()[key] ?? false);
+    const nextGroups: Record<string, boolean> = {};
+    for (const ancestor of ancestors) {
+      nextGroups[this.itemKey(ancestor)] = true;
+    }
+    nextGroups[key] = nextValue;
+    this.expandedGroups.set(nextGroups);
   }
 
   constructor() {
@@ -355,14 +434,29 @@ export class PrivateLayoutComponent {
     });
 
     effect(() => {
-      const isAdminColaboradores = this.currentUrl().startsWith('/app/admin/colaboradores');
+      const url = this.currentUrl();
+      const isAdminColaboradores = url.startsWith('/app/admin/colaboradores');
+      const isAdminPlataformas = url.startsWith('/app/admin/plataformas');
       this.expandedGroups.update((current) => {
-        if ((current['Colaboradores'] ?? false) === isAdminColaboradores) {
-          return current;
+        if (isAdminPlataformas) {
+          const nextGroups: Record<string, boolean> = { Plataformas: true };
+          const match = /\/app\/admin\/plataformas\/equipos\/(\d+)\/([^/]+)/.exec(url);
+          if (match) {
+            nextGroups[`plataformas-equipo-${match[1]}`] = true;
+            nextGroups[`plataformas-equipo-${match[1]}-${match[2]}`] = true;
+          }
+          return this.groupsEqual(current, nextGroups) ? current : nextGroups;
         }
-        return { ...current, Colaboradores: isAdminColaboradores };
+        const nextGroups: Record<string, boolean> = isAdminColaboradores ? { Colaboradores: true } : {};
+        return this.groupsEqual(current, nextGroups) ? current : nextGroups;
       });
     });
+  }
+
+  private groupsEqual(left: Record<string, boolean>, right: Record<string, boolean>): boolean {
+    const leftKeys = Object.keys(left).filter((key) => left[key]);
+    const rightKeys = Object.keys(right).filter((key) => right[key]);
+    return leftKeys.length === rightKeys.length && leftKeys.every((key) => right[key]);
   }
 
   private getToday(): string {
