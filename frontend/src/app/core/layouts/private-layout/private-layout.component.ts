@@ -1,4 +1,17 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  HostListener,
+  ViewChild,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
@@ -63,7 +76,8 @@ const ROLE_THEME_CLASS: Record<string, string> = {
   styleUrl: './private-layout.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class PrivateLayoutComponent {
+export class PrivateLayoutComponent implements AfterViewInit {
+  @ViewChild('sidebarMenu') private sidebarMenu?: ElementRef<HTMLElement>;
   protected readonly attendanceFacade = inject(AttendanceFacade);
   private readonly authSessionService = inject(AuthSessionService);
   private readonly attendanceRealtimeService = inject(AttendanceRealtimeService);
@@ -77,10 +91,13 @@ export class PrivateLayoutComponent {
   protected readonly mobileMenuOpen = signal(false);
   // Grupos expandibles del sidebar (clave estable del grupo).
   protected readonly expandedGroups = signal<Record<string, boolean>>({});
+  protected readonly menuCanScrollUp = signal(false);
+  protected readonly menuCanScrollDown = signal(false);
   private readonly currentUrl = signal(this.router.url);
   protected readonly adminDeleteLeadsVisible = signal(this.readAdminDeleteLeadsVisible());
   protected readonly attendanceErrorMessage = signal('');
   private attendanceInitialized = false;
+  private menuScrollUpdateScheduled = false;
   // Ultimo tick de salida ya procesado: al marcar OFFLINE (REGISTRAR_SALIDA) cerramos la sesion, y
   // este contador evita re-disparar el logout en un layout recreado tras un re-login.
   private handledSalidaTick = this.attendanceFacade.salidaSuccessTick();
@@ -450,6 +467,51 @@ export class PrivateLayoutComponent {
         const nextGroups: Record<string, boolean> = isAdminColaboradores ? { Colaboradores: true } : {};
         return this.groupsEqual(current, nextGroups) ? current : nextGroups;
       });
+    });
+
+    effect(() => {
+      this.menuItems();
+      this.expandedGroups();
+      this.scheduleMenuScrollStateUpdate();
+    });
+  }
+
+  ngAfterViewInit(): void {
+    this.scheduleMenuScrollStateUpdate();
+  }
+
+  @HostListener('window:resize')
+  protected onWindowResize(): void {
+    this.scheduleMenuScrollStateUpdate();
+  }
+
+  protected updateMenuScrollState(): void {
+    const menu = this.sidebarMenu?.nativeElement;
+    if (!menu) {
+      this.menuCanScrollUp.set(false);
+      this.menuCanScrollDown.set(false);
+      return;
+    }
+    const maxScrollTop = Math.max(0, menu.scrollHeight - menu.clientHeight);
+    this.menuCanScrollUp.set(menu.scrollTop > 2);
+    this.menuCanScrollDown.set(menu.scrollTop < maxScrollTop - 2);
+  }
+
+  protected scrollMenu(direction: 'up' | 'down'): void {
+    const menu = this.sidebarMenu?.nativeElement;
+    if (!menu) return;
+    menu.scrollBy({ top: direction === 'down' ? 180 : -180, behavior: 'smooth' });
+    window.setTimeout(() => this.updateMenuScrollState(), 220);
+  }
+
+  private scheduleMenuScrollStateUpdate(): void {
+    if (this.menuScrollUpdateScheduled) {
+      return;
+    }
+    this.menuScrollUpdateScheduled = true;
+    window.setTimeout(() => {
+      this.menuScrollUpdateScheduled = false;
+      this.updateMenuScrollState();
     });
   }
 

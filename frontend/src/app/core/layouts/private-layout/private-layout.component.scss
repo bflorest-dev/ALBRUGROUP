@@ -100,11 +100,55 @@
   grid-auto-rows: max-content;
   min-height: 0;
   overflow-y: auto;
-  padding-right: 0.2rem;
+  padding-right: 0;
+  position: relative;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.menu::-webkit-scrollbar {
+  display: none;
+  height: 0;
+  width: 0;
 }
 
 .menu__section {
   padding: 0 0.75rem 0.45rem;
+}
+
+.menu__scroll-cue {
+  align-items: center;
+  appearance: none;
+  backdrop-filter: blur(8px);
+  background: color-mix(in srgb, var(--layout-sidebar-bg-deep) 84%, transparent 16%);
+  border: 1px solid color-mix(in srgb, var(--layout-sidebar-text) 18%, transparent 82%);
+  border-radius: 999px;
+  box-shadow: 0 8px 22px color-mix(in srgb, #000000 18%, transparent 82%);
+  color: var(--layout-sidebar-text);
+  cursor: pointer;
+  display: inline-flex;
+  height: 1.35rem;
+  justify-content: center;
+  justify-self: center;
+  min-height: 0;
+  padding: 0;
+  position: sticky;
+  width: 2.4rem;
+  z-index: 3;
+}
+
+.menu__scroll-cue:hover {
+  background: var(--layout-sidebar-hover);
+}
+
+.menu__scroll-cue--top {
+  top: 0;
+  margin-bottom: -0.15rem;
+}
+
+.menu__scroll-cue--bottom {
+  bottom: 0;
+  margin-top: -0.15rem;
 }
 
 .menu__item {

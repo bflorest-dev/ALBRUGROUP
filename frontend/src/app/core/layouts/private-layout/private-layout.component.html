@@ -31,7 +31,25 @@
       </span>
     </div>
 
-    <nav class="menu" aria-label="Navegacion del rol">
+    <nav
+      #sidebarMenu
+      class="menu"
+      [class.menu--has-scroll-up]="menuCanScrollUp()"
+      [class.menu--has-scroll-down]="menuCanScrollDown()"
+      aria-label="Navegacion del rol"
+      (scroll)="updateMenuScrollState()"
+    >
+      @if (menuCanScrollUp()) {
+        <button
+          type="button"
+          class="menu__scroll-cue menu__scroll-cue--top"
+          aria-label="Ver opciones anteriores"
+          (click)="scrollMenu('up')"
+        >
+          <i class="pi pi-angle-up" aria-hidden="true"></i>
+        </button>
+      }
+
       <span class="menu__section">Workspace</span>
 
       @for (item of menuItems(); track itemKey(item)) {
@@ -186,6 +204,17 @@
             }
           </a>
         }
+      }
+
+      @if (menuCanScrollDown()) {
+        <button
+          type="button"
+          class="menu__scroll-cue menu__scroll-cue--bottom"
+          aria-label="Ver mas opciones"
+          (click)="scrollMenu('down')"
+        >
+          <i class="pi pi-angle-down" aria-hidden="true"></i>
+        </button>
       }
     </nav>
 
