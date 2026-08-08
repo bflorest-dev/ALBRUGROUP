@@ -403,14 +403,21 @@ app-lead-commercial-data-tabs {
   min-width: 0;
 }
 
-.drawer-head__main h2 {
+.drawer-head__identity {
+  align-items: center;
+  display: flex;
+  min-width: 0;
+}
+
+.drawer-head__identity h2 {
   align-items: baseline;
   display: flex;
+  flex: 0 1 auto;
   gap: 0.45rem;
   min-width: 0;
 }
 
-.drawer-head__main h2 span {
+.drawer-head__identity h2 span {
   color: #10243f;
   font-size: 0.82rem;
   font-weight: 900;
@@ -433,6 +440,27 @@ app-lead-commercial-data-tabs {
 
 .drawer-head__meta span:last-child {
   max-width: min(44rem, 100%);
+}
+
+.drawer-head__contact {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.4rem;
+}
+
+.drawer-head__chat {
+  width: 8.75rem;
+}
+
+.drawer-head__status {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: flex-end;
+  margin-left: auto;
 }
 
 .drawer-head__actions {
@@ -638,12 +666,21 @@ app-lead-commercial-data-tabs {
   .hero-actions,
   .board-organization,
   .dialog-actions,
+  .drawer-head__contact,
+  .drawer-head__status,
   .drawer-head__actions,
   .drawer-actions {
     align-items: stretch;
     width: 100%;
   }
 
+  .drawer-head__contact {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .drawer-head__contact app-phone-action-button,
+  .drawer-head__contact button,
   .hero-actions button,
   .board-organization button,
   .dialog-actions button,

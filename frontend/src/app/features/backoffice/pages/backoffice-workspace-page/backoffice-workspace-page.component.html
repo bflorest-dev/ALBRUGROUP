@@ -388,7 +388,9 @@
         <header class="drawer-head">
           <div class="drawer-head__main">
             <span class="eyebrow">{{ leadProviderLabel(lead) }}</span>
-            <h2><span>{{ leadCountryCode(lead) }}</span> {{ lead.lead }}</h2>
+            <div class="drawer-head__identity">
+              <h2><span>{{ leadCountryCode(lead) }}</span> {{ lead.lead }}</h2>
+            </div>
             <div class="drawer-head__meta">
               <span>{{ display(lead.nombreTitular) }}</span>
               <span>{{ leadDocumentLabel(lead) }}</span>
@@ -397,20 +399,37 @@
           </div>
 
           <div class="drawer-head__actions">
-            <p-tag [severity]="estadoSeverity(lead.estadoSeguimiento)" [value]="display(lead.estadoSeguimiento)" />
-            @if (hasUnsavedDataChanges()) {
-              <p-tag severity="warn" value="Datos sin guardar" />
-            }
-            <button
-              pButton
-              type="button"
-              icon="pi pi-phone"
-              label="Contacto"
-              severity="secondary"
-              [disabled]="!canMutateOperationalData()"
-              [loading]="isSaving()"
-              (click)="registrarContacto()"
-            ></button>
+            <div class="drawer-head__contact">
+              <app-phone-action-button
+                [idLead]="lead.id"
+                [prefijo]="lead.prefijo"
+                [lead]="lead.lead"
+                size="small"
+                [buttonWidth]="'8.75rem'"
+                [disabled]="!canMutateOperationalData()"
+                [loading]="isSaving()"
+                (callStarted)="registrarLlamadaOperativa()"
+                (callError)="showCallError($event)"
+              />
+              <button
+                pButton
+                type="button"
+                class="drawer-head__chat"
+                icon="pi pi-whatsapp"
+                label="Chat"
+                severity="secondary"
+                size="small"
+                [disabled]="!hasLeadChat(lead) || !canMutateOperationalData()"
+                [loading]="isSaving()"
+                (click)="registrarChat()"
+              ></button>
+            </div>
+            <div class="drawer-head__status">
+              <p-tag [severity]="estadoSeverity(lead.estadoSeguimiento)" [value]="display(lead.estadoSeguimiento)" />
+              @if (hasUnsavedDataChanges()) {
+                <p-tag severity="warn" value="Datos sin guardar" />
+              }
+            </div>
           </div>
         </header>
       </ng-template>

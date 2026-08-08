@@ -27,8 +27,10 @@ import { OperationalGateService } from '../../../../core/services/operational-ga
 import { EstadoAsistencia } from '../../../../shared/models/schedule/estado-asistencia';
 import { LeadCommercialDataTabsComponent } from '../../../../shared/components/lead-commercial-data-tabs/lead-commercial-data-tabs.component';
 import { LeadPlanSummaryComponent } from '../../../../shared/components/lead-plan-summary/lead-plan-summary.component';
+import { PhoneActionButtonComponent } from '../../../../shared/components/phone-action-button/phone-action-button.component';
 import { TipificationStackComponent, TipificationPaletteByCode } from '../../../../shared/components/tipification-stack/tipification-stack.component';
 import { providerLogo as resolveProviderLogo } from '../../../../shared/utils/provider-logo';
+import { buildWhatsAppUrl } from '../../../../shared/utils/phone-link';
 import {
   AdicionalResponse,
   CatalogoResponse,
@@ -99,6 +101,7 @@ type AssignmentConflictDetails = {
     ToastModule,
     LeadCommercialDataTabsComponent,
     LeadPlanSummaryComponent,
+    PhoneActionButtonComponent,
     TipificationStackComponent
   ],
   providers: [MessageService, ConfirmationService],
@@ -712,6 +715,39 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
       return;
     }
     await this.saveAction(() => this.leadService.registrarContacto(detail.id), 'Contacto registrado.', () => this.reconcile(detail.id));
+  }
+
+  protected async registrarLlamadaOperativa(): Promise<void> {
+    const detail = this.detail();
+    if (!detail) {
+      return;
+    }
+    await this.saveAction(() => this.leadService.registrarContacto(detail.id), 'Llamada registrada.', () => this.reconcile(detail.id));
+  }
+
+  protected showCallError(message: string): void {
+    this.notify('error', message);
+  }
+
+  protected async registrarChat(): Promise<void> {
+    const detail = this.detail();
+    if (!detail) {
+      return;
+    }
+
+    const url = buildWhatsAppUrl(detail.prefijo, detail.lead, detail.usermeta);
+    if (!url) {
+      this.notify('warn', 'El lead no tiene telefono ni usermeta para abrir WhatsApp.');
+      return;
+    }
+
+    window.open(url, '_blank', 'noopener,noreferrer');
+    const idLead = detail.id;
+    await this.saveAction(() => this.leadService.registrarContacto(idLead), 'Chat registrado.', () => this.reconcile(idLead));
+  }
+
+  protected hasLeadChat(row: Pick<LeadDetalleResponse, 'prefijo' | 'lead' | 'usermeta'>): boolean {
+    return !!buildWhatsAppUrl(row.prefijo, row.lead, row.usermeta);
   }
 
   protected guardarCambiosLead(): void {
