@@ -480,6 +480,7 @@
               [idLead]="lead.id"
               [prefijo]="lead.prefijo"
               [lead]="lead.lead"
+              size="small"
               [disabled]="!facade.canMutateOperationalData()"
               (callError)="facade.showCallError($event)"
             />

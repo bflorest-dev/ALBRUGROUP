@@ -168,6 +168,14 @@ h2 {
   min-width: 0;
 }
 
+.contact-actions app-phone-action-button {
+  width: 100%;
+}
+
+:host ::ng-deep .contact-actions app-phone-action-button .call-split .p-button {
+  min-height: 42px;
+}
+
 .scheduled-field {
   min-width: 0;
 }

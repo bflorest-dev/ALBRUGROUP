@@ -4,6 +4,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   EventEmitter,
+  HostBinding,
   Inject,
   Input,
   OnChanges,
@@ -39,8 +40,11 @@ export class PhoneActionButtonComponent implements OnChanges {
   @Input() disabled = false;
   @Input() loading = false;
   @Input() label = 'Llamar';
-  @Input() size: 'small' | 'large' | undefined = 'small';
+  @Input() size: 'small' | 'large' | undefined = undefined;
   @Input() severity: 'secondary' | 'success' | 'info' | 'warn' | 'danger' | 'help' | 'contrast' | undefined = 'secondary';
+  @Input() buttonWidth: string | null = null;
+  @Input() buttonMinWidth: string | null = null;
+  @Input() toggleWidth = '2.25rem';
 
   @Output() callStarted = new EventEmitter<string>();
   @Output() callError = new EventEmitter<string>();
@@ -54,6 +58,16 @@ export class PhoneActionButtonComponent implements OnChanges {
   readonly numeroParaLlamarDraft = signal('');
 
   constructor(@Inject(DOCUMENT) private readonly document: Document) {}
+
+  @HostBinding('style.width')
+  get hostWidth(): string | null {
+    return this.buttonWidth;
+  }
+
+  @HostBinding('style.min-width')
+  get hostMinWidth(): string | null {
+    return this.buttonMinWidth;
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['idLead']) {

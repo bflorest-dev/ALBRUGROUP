@@ -107,6 +107,7 @@
             [lead]="lead.lead"
             [disabled]="!facade.canMutateOperationalData()"
             [loading]="facade.isSaving()"
+            [buttonWidth]="'100%'"
             (callStarted)="facade.registrarLlamadaOperativa()"
             (callError)="facade.showCallError($event)"
           />
