@@ -488,6 +488,18 @@ export class PostventaWorkspaceFacade {
     this.registrarContacto('LLAMADA');
   }
 
+  registrarLlamadaOperativa(): void {
+    if (this._consultaOnly()) {
+      this.notify('warn', 'Este lead esta abierto en modo consulta.');
+      return;
+    }
+    this.registrarContacto('LLAMADA');
+  }
+
+  showCallError(message: string): void {
+    this.notify('warn', message);
+  }
+
   chat(): void {
     if (this._consultaOnly()) {
       this.notify('warn', 'Este lead esta abierto en modo consulta.');

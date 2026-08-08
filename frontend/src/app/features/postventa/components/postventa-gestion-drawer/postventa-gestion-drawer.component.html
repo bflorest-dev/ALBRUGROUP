@@ -18,20 +18,22 @@
         </div>
 
         <div class="drawer-header__contact">
-          <button
-            pButton
-            type="button"
-            icon="pi pi-phone"
-            label="Llamar"
+          <app-phone-action-button
+            [idLead]="lead.idLead"
+            [prefijo]="facade.detail()?.prefijo"
+            [lead]="facade.detail()?.lead"
             size="small"
-            [outlined]="facade.medioContacto() !== 'LLAMADA'"
+            [buttonWidth]="'8.75rem'"
             [severity]="facade.medioContacto() === 'LLAMADA' ? undefined : 'secondary'"
             [disabled]="!facade.detail() || facade.consultaOnly()"
-            (click)="facade.llamar()"
-          ></button>
+            [loading]="facade.saving()"
+            (callStarted)="facade.registrarLlamadaOperativa()"
+            (callError)="facade.showCallError($event)"
+          />
           <button
             pButton
             type="button"
+            class="drawer-header__chat"
             icon="pi pi-whatsapp"
             label="Chat"
             size="small"

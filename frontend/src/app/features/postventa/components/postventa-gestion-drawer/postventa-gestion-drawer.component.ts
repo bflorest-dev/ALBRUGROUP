@@ -4,6 +4,7 @@ import { DrawerModule } from 'primeng/drawer';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TabsModule } from 'primeng/tabs';
 import { TagModule } from 'primeng/tag';
+import { PhoneActionButtonComponent } from '../../../../shared/components/phone-action-button/phone-action-button.component';
 import { PostventaWorkspaceFacade } from '../../facades/postventa-workspace.facade';
 import { EstadoBadge, display, estadoBadge } from '../../models/postventa.vm';
 import { PostventaResumenPanelComponent } from '../postventa-resumen-panel/postventa-resumen-panel.component';
@@ -23,6 +24,7 @@ import { PostventaTipificacionBarComponent } from '../postventa-tipificacion-bar
     SkeletonModule,
     TabsModule,
     TagModule,
+    PhoneActionButtonComponent,
     PostventaResumenPanelComponent,
     PostventaPlataformaPanelComponent,
     PostventaFacturacionPanelComponent,

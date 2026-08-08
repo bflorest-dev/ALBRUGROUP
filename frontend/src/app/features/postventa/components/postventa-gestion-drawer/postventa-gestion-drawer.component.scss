@@ -10,6 +10,19 @@
   overflow: hidden;
 }
 
+:host ::ng-deep .postventa-drawer .p-drawer-header {
+  align-items: flex-start;
+  padding-right: 3.5rem;
+  position: relative;
+}
+
+:host ::ng-deep .postventa-drawer .p-drawer-close-button {
+  margin: 0;
+  position: absolute;
+  right: 0.75rem;
+  top: 0.75rem;
+}
+
 // Header en 3 zonas: identidad (crece) · acciones de contacto · semáforos. Envuelve en anchos
 // chicos y su posición no depende del largo del nombre (se trunca).
 .drawer-header {
@@ -69,6 +82,10 @@
   display: flex;
   gap: 0.4rem;
   flex: 0 0 auto;
+}
+
+.drawer-header__chat {
+  width: 8.75rem;
 }
 
 .drawer-header__tags {
