@@ -41,6 +41,7 @@ import {
   LeadIntakeMasivoExcelResultadoResponse,
   LeadIntakeRequest,
   LeadIntakeRetroactivoRequest,
+  NumeroLlamadaResponse,
   LeadOfertaComercialRequest,
   MasivoLeadFilters,
   PageQuery,
@@ -278,6 +279,9 @@ export class GtrWorkspaceFacade {
   readonly isLoadingMasivos = signal(false);
   readonly isUploadingMasivoExcel = signal(false);
   readonly isLoadingEvents = signal(false);
+  readonly isLoadingNumerosLlamada = signal(false);
+  readonly isSavingNumeroParaLlamar = signal(false);
+  readonly numerosLlamadaLoadFailed = signal(false);
   readonly isLoadingTipificationHistory = signal(false);
   readonly intakeNumberMaxLength = signal(9);
   readonly snapshotNumberMaxLength = signal(9);
@@ -306,6 +310,10 @@ export class GtrWorkspaceFacade {
   readonly searchPageNumber = signal(0);
   readonly isSearching = signal(false);
   readonly searchExecuted = signal(false);
+  readonly numerosLlamada = signal<NumeroLlamadaResponse[]>([]);
+  readonly selectedNumeroLlamada = signal<NumeroLlamadaResponse | null>(null);
+  readonly editingNumeroParaLlamar = signal(false);
+  readonly numeroParaLlamarDraft = signal('');
   readonly platformGroupingMode = signal<LeadGtrGroupMode>('SIN_AGRUPAR');
   readonly platformSelectedGroup = signal<LeadGtrGroupItemResponse | null>(null);
   readonly platformSortField = signal<GtrPlatformSortField>('lastEntryAt');
@@ -1041,6 +1049,9 @@ export class GtrWorkspaceFacade {
       ?? this.searchResults().find((row) => row.id === idLead)
       ?? null;
   });
+  readonly currentNumeroLlamada = computed(() =>
+    this.selectedNumeroLlamada() ?? this.numerosLlamada()[0] ?? null
+  );
 
   constructor(@Inject(DOCUMENT) private readonly document: Document) {
     this.restoreHistoricosState();
@@ -1362,6 +1373,7 @@ export class GtrWorkspaceFacade {
 
   beginSnapshot(row: LeadGtrResponse): void {
     this.activeSnapshotLead.set(row);
+    this.resetNumerosLlamadaState();
     this.snapshotPhoneEditorOpen.set(false);
     this.snapshotForm.reset({
       idLead: row.id,
@@ -1372,6 +1384,7 @@ export class GtrWorkspaceFacade {
       direccion: row.direccionSnapshot ?? ''
     });
     this.applySnapshotIdentityDisabledState(row);
+    void this.loadNumerosLlamada(row.id);
   }
 
   openNewLead(): void {
@@ -1591,7 +1604,8 @@ export class GtrWorkspaceFacade {
       return;
     }
 
-    const url = this.telUrl(row.prefijo, row.lead);
+    const numeroElegido = this.currentNumeroLlamada()?.numero ?? row.lead;
+    const url = this.telUrl(row.prefijo, numeroElegido);
     if (!url) {
       this.errorMessage.set('El lead no tiene un numero valido para iniciar la llamada.');
       return;
@@ -1599,6 +1613,98 @@ export class GtrWorkspaceFacade {
 
     this.browserSessionService.allowExternalNavigation();
     this.document.defaultView?.location.assign(url);
+  }
+
+  openDialerWithNumero(row: Pick<LeadGtrResponse, 'prefijo' | 'lead'>, numero: NumeroLlamadaResponse): void {
+    this.selectedNumeroLlamada.set(numero);
+    this.openDialer(row);
+  }
+
+  canEditNumeroLlamada(numero: NumeroLlamadaResponse): boolean {
+    return numero.tipo === 'NUMERO_PARA_LLAMAR';
+  }
+
+  hasNumeroParaLlamarOption(): boolean {
+    return this.numerosLlamada().some((numero) => numero.tipo === 'NUMERO_PARA_LLAMAR');
+  }
+
+  startNumeroParaLlamarEdit(numero: NumeroLlamadaResponse): void {
+    if (!this.canEditNumeroLlamada(numero)) {
+      return;
+    }
+    this.numeroParaLlamarDraft.set(numero.numero);
+    this.editingNumeroParaLlamar.set(true);
+  }
+
+  startEmptyNumeroParaLlamarEdit(): void {
+    this.numeroParaLlamarDraft.set('');
+    this.editingNumeroParaLlamar.set(true);
+  }
+
+  normalizeNumeroParaLlamarDraft(value: string): void {
+    this.numeroParaLlamarDraft.set(this.normalizePhoneInput(value));
+  }
+
+  cancelNumeroParaLlamarEdit(): void {
+    this.editingNumeroParaLlamar.set(false);
+    this.numeroParaLlamarDraft.set('');
+  }
+
+  async saveNumeroParaLlamar(): Promise<void> {
+    const lead = this.selectedSnapshotLead();
+    if (!lead) {
+      this.errorMessage.set('Selecciona un lead antes de editar el numero para llamar.');
+      return;
+    }
+    const numeroParaLlamar = this.normalizePhoneInput(this.numeroParaLlamarDraft());
+    if (!/^9\d{8}$/.test(numeroParaLlamar)) {
+      this.errorMessage.set('El numero para llamar debe tener 9 digitos y empezar en 9.');
+      return;
+    }
+
+    this.isSavingNumeroParaLlamar.set(true);
+    this.clearMessages();
+    try {
+      await firstValueFrom(this.preventaService.actualizarNumeroParaLlamar(lead.id, { numeroParaLlamar }));
+      await this.loadNumerosLlamada(lead.id, numeroParaLlamar);
+      this.editingNumeroParaLlamar.set(false);
+      this.numeroParaLlamarDraft.set('');
+      this.successMessage.set('Numero para llamar actualizado.');
+    } catch (error) {
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudo actualizar el numero para llamar.'));
+    } finally {
+      this.isSavingNumeroParaLlamar.set(false);
+    }
+  }
+
+  private async loadNumerosLlamada(idLead: number, preferNumero?: string): Promise<void> {
+    this.isLoadingNumerosLlamada.set(true);
+    this.numerosLlamadaLoadFailed.set(false);
+    try {
+      const numeros = await firstValueFrom(this.preventaService.listarNumerosLlamada(idLead));
+      this.numerosLlamada.set(numeros);
+      const selected = preferNumero
+        ? numeros.find((numero) => numero.numero === preferNumero)
+        : null;
+      this.selectedNumeroLlamada.set(selected ?? numeros[0] ?? null);
+    } catch (error) {
+      this.numerosLlamada.set([]);
+      this.selectedNumeroLlamada.set(null);
+      this.numerosLlamadaLoadFailed.set(true);
+      this.errorMessage.set(this.getErrorMessage(error, 'No se pudieron cargar los numeros de llamada.'));
+    } finally {
+      this.isLoadingNumerosLlamada.set(false);
+    }
+  }
+
+  private resetNumerosLlamadaState(): void {
+    this.numerosLlamada.set([]);
+    this.selectedNumeroLlamada.set(null);
+    this.editingNumeroParaLlamar.set(false);
+    this.numeroParaLlamarDraft.set('');
+    this.numerosLlamadaLoadFailed.set(false);
+    this.isLoadingNumerosLlamada.set(false);
+    this.isSavingNumeroParaLlamar.set(false);
   }
 
   openAssignment(row?: LeadGtrResponse): void {
@@ -1894,6 +2000,7 @@ export class GtrWorkspaceFacade {
     this.activeDialog.set(null);
     this.activeAssignmentLead.set(null);
     this.activeSnapshotLead.set(null);
+    this.resetNumerosLlamadaState();
     this.typifyDetail.set(null);
     this.resetTipificationState();
     this.activeEventsLead.set(null);
@@ -3195,6 +3302,18 @@ export class GtrWorkspaceFacade {
 
   hasLeadPhone(row: { prefijo?: string | null; lead?: string | null }): boolean {
     return !!this.telUrl(row.prefijo, row.lead);
+  }
+
+  canDialLead(row: { prefijo?: string | null; lead?: string | null }): boolean {
+    return !!this.telUrl(row.prefijo, this.currentNumeroLlamada()?.numero ?? row.lead);
+  }
+
+  currentNumeroLlamadaLabel(): string {
+    return this.currentNumeroLlamada()?.label ?? 'Llamar';
+  }
+
+  isCurrentNumeroLlamada(numero: NumeroLlamadaResponse): boolean {
+    return this.currentNumeroLlamada()?.numero === numero.numero;
   }
 
   hasLeadChat(row: { prefijo?: string | null; lead?: string | null; usermeta?: string | null }): boolean {

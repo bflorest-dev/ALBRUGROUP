@@ -236,6 +236,16 @@ label {
   min-height: 2rem;
 }
 
+.call-split { display: inline-flex; }
+:host ::ng-deep .call-split .p-button:first-child { border-radius: 6px 0 0 6px; }
+:host ::ng-deep .call-split .p-button:last-child { border-left: 0; border-radius: 0 6px 6px 0; min-width: 2.25rem; }
+.call-number-panel { display: grid; }
+.call-number-row { align-items: center; display: grid; grid-template-columns: 1fr auto; }
+.call-number-row__main { background: transparent; border: 0; cursor: pointer; display: grid; padding: .5rem .45rem; text-align: left; }
+.call-number-row__main span, .call-number-panel__empty, .call-number-edit span { color: var(--app-text-muted); font-size: .72rem; font-weight: 800; }
+.call-number-edit { display: grid; gap: .35rem; grid-column: 1 / -1; grid-template-columns: 1fr auto auto; }
+.call-number-edit span { grid-column: 1 / -1; }
+
 :host ::ng-deep .gtr-dialog--snapshot .p-dialog-header {
   align-items: flex-start;
   padding-bottom: .45rem;
