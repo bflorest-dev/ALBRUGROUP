@@ -1257,6 +1257,18 @@ export class AsesorVentasWorkspaceFacade {
     this.identidadForm.markAsUntouched();
   }
 
+  cancelIdentidadEditor(): void {
+    const detail = this.detail();
+    this.identidadForm.reset({
+      prefijo: detail?.prefijo ?? PERU_PHONE_PREFIX,
+      lead: detail?.lead ?? ''
+    });
+    this.updateIdentidadLeadValidation(this.identidadForm.controls.prefijo.value);
+    this.identidadForm.markAsPristine();
+    this.identidadForm.markAsUntouched();
+    this.identidadEditorOpen.set(false);
+  }
+
   normalizeIdentidadLeadNumber(value: string): void {
     const normalized = this.normalizePhoneInput(value);
     if (this.identidadForm.controls.lead.value !== normalized) {

@@ -91,6 +91,7 @@
 }
 
 .lead-workspace__head > div:first-child {
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -129,6 +130,7 @@ h2 {
   font-size: 1.3rem;
   margin: 0;
   min-width: 0;
+  white-space: nowrap;
 }
 
 .lead-workspace__summary {
@@ -137,6 +139,7 @@ h2 {
   flex-wrap: wrap;
   gap: 0.5rem;
   line-height: 1.2;
+  min-height: 2rem;
   min-width: 0;
 }
 
@@ -147,10 +150,23 @@ h2 {
   gap: 0.45rem;
 }
 
+.lead-identity--editing {
+  align-items: center;
+  gap: 0.3rem;
+  min-width: min(22rem, 100%);
+}
+
 .lead-identity__phone {
   font-size: 0.78rem;
-  max-width: 19rem;
-  width: min(19rem, 100vw - 4rem);
+  flex: 1 1 17rem;
+  max-width: 18.5rem;
+  min-width: min(15rem, 100%);
+}
+
+.lead-identity__cancel {
+  flex: 0 0 auto;
+  height: 1.925rem;
+  width: 1.925rem;
 }
 
 .tipification-bar {
@@ -282,6 +298,30 @@ label {
   .p-tabpanels {
     padding: 0;
   }
+
+  .lead-identity__phone .phone-field {
+    display: block;
+  }
+
+  .lead-identity__phone .phone-field__label {
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+
+  .lead-identity__phone .phone-field__control {
+    min-height: 1.925rem;
+    padding-inline: 0.65rem;
+  }
+
+  .lead-identity__phone .phone-field__prefix,
+  .lead-identity__phone .phone-field__number {
+    padding-block: 0.32rem;
+  }
 }
 
 @media (max-width: 1320px) {
@@ -291,6 +331,10 @@ label {
 
   .lead-workspace__head {
     padding: 0.8rem;
+  }
+
+  .lead-workspace__head > div:first-child {
+    flex: 1 1 auto;
   }
 
   h2 {
@@ -330,6 +374,11 @@ label {
 }
 
 @media (max-width: 720px) {
+  .lead-identity--editing,
+  .lead-identity__phone {
+    width: 100%;
+  }
+
   .tipification-bar {
     grid-template-columns: 1fr;
   }

@@ -15,11 +15,11 @@
       <header class="lead-workspace__head">
         <div>
           <span class="lead-workspace__eyebrow">Gestion del Lead</span>
-          <h2 class="lead-workspace__summary">
-            <span>Lead | {{ facade.leadPhone(lead) }}</span>
+          <div class="lead-workspace__summary">
+            <h2>Lead | {{ facade.leadPhone(lead) }}</h2>
             @if (facade.canShowIdentityCompletion(lead)) {
-              <span class="lead-identity">
-                @if (facade.identidadEditorOpen()) {
+              @if (facade.identidadEditorOpen()) {
+                <span class="lead-identity lead-identity--editing">
                   <app-phone-number-field
                     class="lead-identity__phone"
                     label="Numero de contacto"
@@ -30,7 +30,23 @@
                     [numberInvalidMessage]="facade.identidadErrorMessage() ?? ''"
                     (focusout)="facade.normalizeIdentidadLeadNumber(facade.identidadForm.controls.lead.value)"
                   />
-                } @else {
+                  <button
+                    pButton
+                    type="button"
+                    class="lead-identity__cancel"
+                    icon="pi pi-times"
+                    severity="secondary"
+                    [text]="true"
+                    [rounded]="true"
+                    size="small"
+                    aria-label="Cancelar numero de contacto"
+                    title="Cancelar"
+                    [disabled]="facade.isSaving()"
+                    (click)="facade.cancelIdentidadEditor()"
+                  ></button>
+                </span>
+              } @else {
+                <span class="lead-identity">
                   <button
                     pButton
                     type="button"
@@ -42,10 +58,10 @@
                     [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
                     (click)="facade.openIdentidadEditor()"
                   ></button>
-                }
-              </span>
+                </span>
+              }
             }
-          </h2>
+          </div>
         </div>
 
         <div class="lead-workspace__tags">
