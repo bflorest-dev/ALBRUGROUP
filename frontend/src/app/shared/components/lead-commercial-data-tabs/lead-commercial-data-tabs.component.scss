@@ -6,9 +6,12 @@
 }
 
 .commercial-tabs {
+  display: flex;
+  flex-direction: column;
   height: 100%;
   min-height: 0;
   overflow: hidden;
+  position: relative;
 }
 
 .commercial-tabs__actions {
@@ -25,11 +28,70 @@
 .form-grid {
   display: grid;
   gap: 0.9rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   padding-top: 1rem;
 }
 
 .wide {
+  grid-column: 1 / -1;
+}
+
+.data-field,
+.address-field {
+  grid-column: span 4;
+}
+
+.data-field--document-type {
+  grid-column: span 2;
+}
+
+.data-field--document-number,
+.data-field--phone {
+  grid-column: span 3;
+}
+
+.data-field--ubigeo {
+  grid-column: span 2;
+}
+
+.data-field--service-owner {
+  grid-column: span 7;
+}
+
+.data-field--email {
+  grid-column: span 6;
+}
+
+.data-field--family {
+  grid-column: span 5;
+}
+
+.data-field--cell-owner-document {
+  grid-column: span 4;
+}
+
+.data-field--cell-owner-name {
+  grid-column: span 8;
+}
+
+.address-field--location,
+.address-field--home-type {
+  grid-column: span 4;
+}
+
+.address-field--street-type {
+  grid-column: span 3;
+}
+
+.address-field--street-name {
+  grid-column: span 5;
+}
+
+.address-field--main-line {
+  grid-column: 1 / -1;
+}
+
+.address-field--reference {
   grid-column: 1 / -1;
 }
 
@@ -44,12 +106,53 @@
   grid-column: 1 / -1;
 }
 
+.address-detail-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.address-detail-grid__urbanization {
+  grid-column: span 4;
+}
+
+.address-detail-grid__number,
+.address-detail-grid__block,
+.address-detail-grid__lot {
+  grid-column: span 2;
+}
+
+.address-detail-grid__floor,
+.address-detail-grid__interior {
+  grid-column: span 2;
+}
+
+.address-detail-grid__building,
+.address-detail-grid__condo {
+  grid-column: span 4;
+}
+
+.address-detail-grid__plan {
+  grid-column: span 2;
+}
+
 label {
   color: #425466;
   display: grid;
   font-size: 0.78rem;
   font-weight: 800;
   gap: 0.35rem;
+}
+
+.form-field--readonly {
+  color: #7b8798;
+}
+
+.form-field--readonly input {
+  background: #f5f7fa;
+  border-style: dashed;
+  color: #718096;
+  cursor: not-allowed;
 }
 
 .helper {
@@ -182,7 +285,7 @@ label {
 
 .commercial-tabs--drawer .form-grid {
   gap: 0.75rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   padding-top: 0.85rem;
 }
 
@@ -200,7 +303,8 @@ label {
 :host ::ng-deep {
   .p-tabs {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
     height: 100%;
     min-height: 0;
   }
@@ -223,8 +327,32 @@ label {
     flex-direction: column;
     flex: 1 1 auto;
     grid-column: 1 / -1;
+    grid-row: 2;
     min-height: 0;
     overflow: hidden;
+    position: relative;
+  }
+
+  .p-tabpanels::before,
+  .p-tabpanels::after {
+    content: '';
+    left: 0;
+    pointer-events: none;
+    position: absolute;
+    right: 0.35rem;
+    z-index: 3;
+  }
+
+  .p-tabpanels::before {
+    background: linear-gradient(to bottom, #ffffff 0%, rgba(255, 255, 255, 0));
+    height: 0.85rem;
+    top: 0;
+  }
+
+  .p-tabpanels::after {
+    background: linear-gradient(to top, #ffffff 0%, rgba(255, 255, 255, 0));
+    bottom: 0;
+    height: 1.75rem;
   }
 
   .p-tabpanel {
@@ -233,12 +361,18 @@ label {
     max-height: 100%;
     min-height: 0;
     overflow: auto;
-    padding: 0 0.25rem 0 0;
+    padding: 0 0.25rem 3.75rem 0;
+    scrollbar-width: none;
+  }
+
+  .p-tabpanel::-webkit-scrollbar {
+    display: none;
   }
 
   .form-grid .p-select,
   .form-grid .p-selectbutton,
-  .form-grid .p-inputtext {
+  .form-grid .p-inputtext,
+  .address-detail-grid .p-inputtext {
     width: 100%;
   }
 
@@ -299,7 +433,55 @@ label {
 @media (max-width: 1320px) {
   .form-grid,
   .commercial-tabs--drawer .form-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .data-field,
+  .address-field,
+  .data-field--document-type,
+  .data-field--document-number,
+  .data-field--phone,
+  .data-field--ubigeo,
+  .address-field--location,
+  .address-field--home-type,
+  .address-field--street-type {
+    grid-column: span 2;
+  }
+
+  .data-field--service-owner,
+  .data-field--email,
+  .data-field--family,
+  .data-field--cell-owner-document,
+  .address-field--street-name {
+    grid-column: span 2;
+  }
+
+  .data-field--cell-owner-name {
+    grid-column: span 4;
+  }
+
+  .address-field--main-line,
+  .address-field--reference {
+    grid-column: 1 / -1;
+  }
+
+  .address-detail-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .address-detail-grid__urbanization,
+  .address-detail-grid__building,
+  .address-detail-grid__condo {
+    grid-column: span 2;
+  }
+
+  .address-detail-grid__number,
+  .address-detail-grid__block,
+  .address-detail-grid__lot,
+  .address-detail-grid__floor,
+  .address-detail-grid__interior,
+  .address-detail-grid__plan {
+    grid-column: span 1;
   }
 
   .offer-additional-item,
@@ -312,6 +494,36 @@ label {
   .form-grid,
   .commercial-tabs--drawer .form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .data-field,
+  .address-field,
+  .data-field--document-type,
+  .data-field--document-number,
+  .data-field--phone,
+  .data-field--ubigeo,
+  .data-field--service-owner,
+  .data-field--email,
+  .data-field--family,
+  .data-field--cell-owner-document,
+  .data-field--cell-owner-name,
+  .address-field--location,
+  .address-field--home-type,
+  .address-field--street-type,
+  .address-field--street-name,
+  .address-field--main-line,
+  .address-field--reference {
+    grid-column: 1 / -1;
+  }
+
+  .address-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .address-detail-grid__urbanization,
+  .address-detail-grid__building,
+  .address-detail-grid__condo {
+    grid-column: 1 / -1;
   }
 
   .coordinate-fields {

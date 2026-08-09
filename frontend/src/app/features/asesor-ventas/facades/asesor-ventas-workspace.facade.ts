@@ -899,7 +899,7 @@ export class AsesorVentasWorkspaceFacade {
         // Tu turno ya terminó, pero no cerramos nada automáticamente: sigues ONLINE y decides
         // cuándo marcar OFFLINE.
         if (wasLastManagedInWrapUp) {
-          this.successMessage.set('Lead tipificado. Tu turno ya terminó: puedes marcar OFFLINE cuando quieras.');
+          this.mostrarExito('Lead tipificado. Tu turno ya terminó: puedes marcar OFFLINE cuando quieras.');
         }
         this.removeLeadFromBoard(detail.id);
         await this.reconcile(detail.id);
@@ -1168,19 +1168,19 @@ export class AsesorVentasWorkspaceFacade {
       case 'datos':
         this.patchDatosForm(detail);
         this.datosForm.markAsPristine();
-        this.successMessage.set('Cambios de Datos Preventa limpiados.');
+        this.mostrarExito('Cambios de Datos Preventa limpiados.');
         return;
       case 'direccion':
         this.patchDireccionForm(detail);
         this.direccionForm.markAsPristine();
         void this.resolveDomicilioSelection(detail.ubigeoDomicilio ?? null);
-        this.successMessage.set('Cambios de Direccion limpiados.');
+        this.mostrarExito('Cambios de Direccion limpiados.');
         return;
       case 'oferta':
         this.patchOfertaForm(detail);
         this.ofertaForm.markAsPristine();
         await this.refreshOfferCatalogs(detail.idPlan ?? 0);
-        this.successMessage.set('Cambios de Oferta Comercial limpiados.');
+        this.mostrarExito('Cambios de Oferta Comercial limpiados.');
         return;
     }
   }
@@ -1416,7 +1416,7 @@ export class AsesorVentasWorkspaceFacade {
       this.workspaceState.setManagingLeadState(idLead);
 
       if (restoredMessage) {
-        this.successMessage.set(restoredMessage);
+        this.mostrarExito(restoredMessage);
       }
 
       return true;

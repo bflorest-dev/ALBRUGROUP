@@ -15,7 +15,7 @@
     <p-tabpanels>
     <p-tabpanel value="datos">
       <form class="form-grid" [formGroup]="datosForm" [attr.inert]="readonly ? '' : null">
-        <label>
+        <label class="data-field data-field--document-type">
           <span>Documento</span>
           <p-select
             formControlName="tipoDocumento"
@@ -25,7 +25,7 @@
             (onChange)="tipoDocumentoChange.emit()"
           />
         </label>
-        <label>
+        <label class="data-field data-field--document-number">
           <span>Numero de Documento</span>
           <input
             pInputText
@@ -35,11 +35,11 @@
             (input)="setNumericDigits(datosForm.get('numeroDocumentoTitularServicio'), $any($event.target).value, documentoServicioMaxLength())"
           />
         </label>
-        <label>
+        <label class="data-field data-field--service-owner">
           <span>Titular del Servicio</span>
           <input pInputText type="text" formControlName="nombreTitularServicio" />
         </label>
-        <label>
+        <label class="data-field data-field--phone">
           <span>Celular a registrar</span>
           <input
             pInputText
@@ -49,7 +49,7 @@
             (input)="setNumericDigits(datosForm.get('celularRegistro'), $any($event.target).value, 9)"
           />
         </label>
-        <label>
+        <label class="data-field data-field--phone">
           <span>Celular de referencia</span>
           <input
             pInputText
@@ -59,11 +59,11 @@
             (input)="setNumericDigits(datosForm.get('celularReferencia'), $any($event.target).value, 9)"
           />
         </label>
-        <label>
+        <label class="data-field data-field--email">
           <span>Correo</span>
           <input pInputText type="email" formControlName="correo" />
         </label>
-        <label>
+        <label class="data-field data-field--ubigeo">
           <span>
             Ubigeo de Nacimiento
             <i
@@ -81,42 +81,40 @@
             (input)="setNumericDigits(datosForm.get('ubigeoNacimiento'), $any($event.target).value, 6)"
           />
         </label>
-        @if (camposVisibles.has('NOMBRE_MADRE') || tieneValor(datosForm, 'nombreMadre')) {
-          <label>
-            <span>Madre</span>
-            <input pInputText type="text" formControlName="nombreMadre" />
-          </label>
-        }
-        @if (camposVisibles.has('NOMBRE_PADRE') || tieneValor(datosForm, 'nombrePadre')) {
-          <label>
-            <span>Padre</span>
-            <input pInputText type="text" formControlName="nombrePadre" />
-          </label>
-        }
-        @if (camposVisibles.has('DOC_TITULAR_CELULAR') || tieneValor(datosForm, 'numeroDocumentoTitularCelularRegistro')) {
-          <label>
-            <span>Numero de Documento del Titular del Celular</span>
-            <input
-              pInputText
-              type="text"
-              inputmode="numeric"
-              formControlName="numeroDocumentoTitularCelularRegistro"
-              (input)="setNumericDigits(datosForm.get('numeroDocumentoTitularCelularRegistro'), $any($event.target).value, 8)"
-            />
-          </label>
-        }
-        @if (camposVisibles.has('NOMBRE_TITULAR_CELULAR') || tieneValor(datosForm, 'nombreTitularCelularRegistro')) {
-          <label class="wide">
-            <span>Nombre del Titular del Celular</span>
-            <input pInputText type="text" formControlName="nombreTitularCelularRegistro" />
-          </label>
-        }
+        <label class="data-field data-field--family" [class.form-field--readonly]="campoSoloLectura('NOMBRE_MADRE')">
+          <span>Madre</span>
+          <input pInputText type="text" formControlName="nombreMadre" [readonly]="campoSoloLectura('NOMBRE_MADRE')" />
+        </label>
+        <label class="data-field data-field--family" [class.form-field--readonly]="campoSoloLectura('NOMBRE_PADRE')">
+          <span>Padre</span>
+          <input pInputText type="text" formControlName="nombrePadre" [readonly]="campoSoloLectura('NOMBRE_PADRE')" />
+        </label>
+        <label class="data-field data-field--cell-owner-document" [class.form-field--readonly]="campoSoloLectura('DOC_TITULAR_CELULAR')">
+          <span>Numero de Documento del Titular del Celular</span>
+          <input
+            pInputText
+            type="text"
+            inputmode="numeric"
+            formControlName="numeroDocumentoTitularCelularRegistro"
+            [readonly]="campoSoloLectura('DOC_TITULAR_CELULAR')"
+            (input)="setNumericDigits(datosForm.get('numeroDocumentoTitularCelularRegistro'), $any($event.target).value, 8)"
+          />
+        </label>
+        <label class="data-field data-field--cell-owner-name" [class.form-field--readonly]="campoSoloLectura('NOMBRE_TITULAR_CELULAR')">
+          <span>Nombre del Titular del Celular</span>
+          <input
+            pInputText
+            type="text"
+            formControlName="nombreTitularCelularRegistro"
+            [readonly]="campoSoloLectura('NOMBRE_TITULAR_CELULAR')"
+          />
+        </label>
       </form>
     </p-tabpanel>
 
     <p-tabpanel value="direccion">
       <form class="form-grid" [formGroup]="direccionForm" [attr.inert]="readonly ? '' : null">
-        <label>
+        <label class="address-field address-field--location">
           <span>Departamento</span>
           <p-select
             formControlName="idDepartamentoDomicilio"
@@ -128,7 +126,7 @@
             (onChange)="departamentoDomicilioChange.emit()"
           />
         </label>
-        <label>
+        <label class="address-field address-field--location">
           <span>Provincia</span>
           <p-select
             formControlName="idProvinciaDomicilio"
@@ -141,7 +139,7 @@
             (onChange)="provinciaDomicilioChange.emit()"
           />
         </label>
-        <label>
+        <label class="address-field address-field--location">
           <span>Distrito</span>
           <p-select
             formControlName="idDistritoDomicilio"
@@ -154,11 +152,11 @@
             (onChange)="distritoDomicilioChange.emit()"
           />
         </label>
-        <label>
+        <label class="address-field address-field--home-type">
           <span>Tipo de Domicilio</span>
           <p-select formControlName="tipoDomicilio" [options]="tipoDomicilioOptions" placeholder="Seleccionar" appendTo="body" />
         </label>
-        <label>
+        <label class="address-field address-field--street-type">
           <span>Tipo de Via</span>
           <p-select
             formControlName="tipoVia"
@@ -170,12 +168,12 @@
           />
         </label>
         @if (direccionForm.get('tipoVia')?.value) {
-          <label>
+          <label class="address-field address-field--street-name">
             <span>Nombre de la Via</span>
             <input pInputText type="text" formControlName="via" />
           </label>
         }
-        <label class="wide">
+        <label class="address-field address-field--main-line">
           <span>Direccion</span>
           <input pInputText type="text" formControlName="direccion" />
         </label>
@@ -219,54 +217,54 @@
             />
           }
         </div>
-        <label class="wide">
+        <label class="address-field address-field--reference">
           <span>Referencia</span>
           <input pInputText type="text" formControlName="referencia" />
         </label>
-        <label>
-          <span>Urbanizacion</span>
-          <input pInputText type="text" formControlName="urbanizacion" />
-        </label>
-        <label>
-          <span>Numero</span>
-          <input
-            pInputText
-            type="text"
-            inputmode="numeric"
-            formControlName="numero"
-            (input)="setNumericDigits(direccionForm.get('numero'), $any($event.target).value, 10)"
-          />
-        </label>
-        <label>
-          <span>Manzana</span>
-          <input pInputText type="text" formControlName="manzana" />
-        </label>
-        <label>
-          <span>Lote</span>
-          <input pInputText type="text" formControlName="lote" />
-        </label>
-        <label>
-          <span>Edificio</span>
-          <input pInputText type="text" formControlName="nombreEdificio" />
-        </label>
-        <label>
-          <span>Condominio</span>
-          <input pInputText type="text" formControlName="nombreCondominio" />
-        </label>
-        <label>
-          <span>Piso</span>
-          <input pInputText type="text" formControlName="piso" />
-        </label>
-        <label>
-          <span>Interior</span>
-          <input pInputText type="text" formControlName="interior" />
-        </label>
-        @if (camposVisibles.has('PLANO') || tieneValor(direccionForm, 'plano')) {
-          <label>
-            <span>Plano</span>
-            <input pInputText type="text" formControlName="plano" />
+        <div class="address-detail-grid wide">
+          <label class="address-detail-grid__urbanization">
+            <span>Urbanizacion</span>
+            <input pInputText type="text" formControlName="urbanizacion" />
           </label>
-        }
+          <label class="address-detail-grid__number">
+            <span>Numero</span>
+            <input
+              pInputText
+              type="text"
+              inputmode="numeric"
+              formControlName="numero"
+              (input)="setNumericDigits(direccionForm.get('numero'), $any($event.target).value, 10)"
+            />
+          </label>
+          <label class="address-detail-grid__block">
+            <span>Manzana</span>
+            <input pInputText type="text" formControlName="manzana" />
+          </label>
+          <label class="address-detail-grid__lot">
+            <span>Lote</span>
+            <input pInputText type="text" formControlName="lote" />
+          </label>
+          <label class="address-detail-grid__plan" [class.form-field--readonly]="campoSoloLectura('PLANO')">
+            <span>Plano</span>
+            <input pInputText type="text" formControlName="plano" [readonly]="campoSoloLectura('PLANO')" />
+          </label>
+          <label class="address-detail-grid__building">
+            <span>Edificio</span>
+            <input pInputText type="text" formControlName="nombreEdificio" />
+          </label>
+          <label class="address-detail-grid__condo">
+            <span>Condominio</span>
+            <input pInputText type="text" formControlName="nombreCondominio" />
+          </label>
+          <label class="address-detail-grid__floor">
+            <span>Piso</span>
+            <input pInputText type="text" formControlName="piso" />
+          </label>
+          <label class="address-detail-grid__interior">
+            <span>Interior</span>
+            <input pInputText type="text" formControlName="interior" />
+          </label>
+        </div>
       </form>
     </p-tabpanel>
 

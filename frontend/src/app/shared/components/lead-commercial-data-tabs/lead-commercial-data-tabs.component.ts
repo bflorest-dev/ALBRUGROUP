@@ -86,6 +86,10 @@ export class LeadCommercialDataTabsComponent {
     return value !== null && value !== undefined && value !== '';
   }
 
+  protected campoSoloLectura(campo: string): boolean {
+    return this.readonly || !this.camposVisibles.has(campo);
+  }
+
   @Output() activeTabChange = new EventEmitter<LeadCommercialDataTab>();
   @Output() tipoDocumentoChange = new EventEmitter<void>();
   @Output() departamentoDomicilioChange = new EventEmitter<void>();

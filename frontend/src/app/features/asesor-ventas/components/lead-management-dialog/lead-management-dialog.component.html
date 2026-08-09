@@ -1,4 +1,4 @@
-<p-dialog
+﻿<p-dialog
   [showHeader]="false"
   [visible]="facade.detailDialogOpen()"
   (visibleChange)="!$event && facade.requestCloseDetail()"
@@ -87,7 +87,7 @@
             size="small"
             aria-label="Minimizar"
             [disabled]="facade.isSaving()"
-            title="Guarda lo ingresado y deja este Lead para después. Vuelve a tu bandeja como 'Retomar' y puedes gestionar otros mientras tanto."
+            title="Guarda lo ingresado y deja este Lead para despuÃ©s. Vuelve a tu bandeja como 'Retomar' y puedes gestionar otros mientras tanto."
             (click)="facade.minimizeDetail()"
           ></button>
         </div>
@@ -96,13 +96,13 @@
       @if (facade.wrapUpActive()) {
         <p-message
           severity="warn"
-          text="Tu turno terminó. Tipifica este lead y luego continúa con los demás de tu bandeja."
+          text="Tu turno terminÃ³. Tipifica este lead y luego continÃºa con los demÃ¡s de tu bandeja."
         />
       }
       @if (facade.atencionOtraEtapa()) {
         <p-message
           severity="info"
-          text="Este contacto ya tiene un trámite en curso en otra etapa. Sus datos son de solo lectura: comunícate con el contacto y, si quiere un nuevo servicio, crea una nueva oportunidad. Tipificar este lead es opcional y no afecta su trámite."
+          text="Este contacto ya tiene un trÃ¡mite en curso en otra etapa. Sus datos son de solo lectura: comunÃ­cate con el contacto y, si quiere un nuevo servicio, crea una nueva oportunidad. Tipificar este lead es opcional y no afecta su trÃ¡mite."
         />
       }
       @if (facade.successMessage()) {
@@ -222,40 +222,6 @@
         }
       </form>
 
-      <section class="oportunidades-contacto">
-        <div class="oportunidades-contacto__chips">
-          @if (facade.chipsOportunidades().length > 1) {
-            @for (op of facade.chipsOportunidades(); track op.id) {
-              <span
-                class="op-chip"
-                [class.op-chip--active]="op.id === facade.detail()?.id"
-                (click)="facade.cambiarOportunidad(op.id)"
-              >
-                <span class="op-chip__doc">Doc: {{ op.numeroDocumentoTitular || 'Sin Documento' }}</span>
-                @if (facade.puedeDescartar(op)) {
-                  <button
-                    type="button"
-                    class="op-chip__close"
-                    title="Descartar oportunidad vacía"
-                    [disabled]="facade.isSaving()"
-                    (click)="facade.descartarOportunidad(op.id, $event)"
-                  >×</button>
-                }
-              </span>
-            }
-          }
-        </div>
-        <button
-          pButton
-          type="button"
-          icon="pi pi-plus"
-          label="Nueva oportunidad (otro titular)"
-          severity="secondary"
-          size="small"
-          [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
-          (click)="facade.crearOportunidadAdicional()"
-        ></button>
-      </section>
 
       <app-lead-commercial-data-tabs
         [datosForm]="facade.datosForm"
@@ -286,7 +252,42 @@
         (planChange)="facade.onPlanChanged()"
         (incrementarAdicional)="facade.incrementarAdicional($event)"
         (disminuirAdicional)="facade.disminuirAdicional($event)"
-      />
+      >
+        <section class="oportunidades-contacto" lead-commercial-tabs-actions>
+          <div class="oportunidades-contacto__chips">
+            @if (facade.chipsOportunidades().length > 1) {
+              @for (op of facade.chipsOportunidades(); track op.id) {
+                <span
+                  class="op-chip"
+                  [class.op-chip--active]="op.id === facade.detail()?.id"
+                  (click)="facade.cambiarOportunidad(op.id)"
+                >
+                  <span class="op-chip__doc">Doc: {{ op.numeroDocumentoTitular || 'Sin Documento' }}</span>
+                  @if (facade.puedeDescartar(op)) {
+                    <button
+                      type="button"
+                      class="op-chip__close"
+                      title="Descartar oportunidad vacia"
+                      [disabled]="facade.isSaving()"
+                      (click)="facade.descartarOportunidad(op.id, $event)"
+                    >x</button>
+                  }
+                </span>
+              }
+            }
+          </div>
+          <button
+            pButton
+            type="button"
+            icon="pi pi-plus"
+            label="Nueva oportunidad (otro titular)"
+            severity="secondary"
+            size="small"
+            [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
+            (click)="facade.crearOportunidadAdicional()"
+          ></button>
+        </section>
+      </app-lead-commercial-data-tabs>
       <footer class="dialog-actions">
         <button
           pButton
