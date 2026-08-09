@@ -20,7 +20,13 @@
     <button type="button" class="mobile-menu-backdrop" aria-label="Cerrar menu" (click)="closeMobileMenu()"></button>
   }
 
-  <aside class="sidebar" [class.sidebar--open]="mobileMenuOpen()" aria-label="Menu principal">
+  <aside
+    #sidebar
+    class="sidebar"
+    [class.sidebar--open]="mobileMenuOpen()"
+    aria-label="Menu principal"
+    (mouseleave)="releaseSidebarPointerFocus()"
+  >
     <div class="sidebar__brand">
       <span class="brand__logo" aria-hidden="true">
         <i class="pi pi-building"></i>

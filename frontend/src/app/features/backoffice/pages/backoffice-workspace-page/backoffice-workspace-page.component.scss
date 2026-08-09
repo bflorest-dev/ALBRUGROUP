@@ -6,6 +6,12 @@
   gap: 1rem;
 }
 
+.backoffice-page {
+  --backoffice-table-min-width: 1320px;
+  min-width: 0;
+  overflow-x: clip;
+}
+
 .lead-workspace {
   height: calc(100dvh - 8rem);
   grid-template-rows: auto auto minmax(0, 1fr) auto;
@@ -174,6 +180,7 @@ p,
 .col-plan {
   max-width: 22rem;
   min-width: 0;
+  width: 9rem;
 }
 
 .col-sec-sot {
@@ -209,7 +216,6 @@ p,
   object-fit: contain;
 }
 
-// Separacion por fecha en Plataforma: linea gruesa a lo ancho + etiqueta a la izquierda.
 .date-divider-row td {
   background: transparent;
   border-top: 3px solid #d81f3c;
@@ -229,7 +235,6 @@ p,
   text-transform: uppercase;
 }
 
-// HOY resaltado con el color de la marca para diferenciarlo de los cortes de mes.
 .date-divider-row--today td {
   border-top-color: var(--role-primary);
 }
@@ -646,6 +651,138 @@ app-lead-commercial-data-tabs {
     grid-template-columns: 1fr 1fr;
   }
 
+}
+
+@media (max-width: 1439px) {
+  .backoffice-page {
+    --backoffice-table-min-width: 1120px;
+    gap: 0.75rem;
+  }
+
+  h1 {
+    font-size: 1.45rem;
+  }
+
+  h2 {
+    font-size: 1.12rem;
+  }
+
+  .lead-workspace {
+    height: calc(100dvh - 6rem);
+    max-height: calc(100dvh - 6rem);
+  }
+
+  .lead-search {
+    gap: 0.45rem;
+  }
+
+  .lead-search-input {
+    flex-basis: 13rem;
+    max-width: 17rem;
+  }
+
+  .lead-search-summary {
+    min-width: 8rem;
+  }
+
+  .col-documento {
+    width: 7rem;
+  }
+
+  .col-fecha,
+  .col-gestion {
+    width: 6.25rem;
+  }
+
+  .col-proveedor {
+    width: 5.75rem;
+  }
+
+  .col-actions {
+    min-width: 8.5rem;
+  }
+
+  .col-plan {
+    width: 7.75rem;
+  }
+
+  :host ::ng-deep {
+    .backoffice-hero .p-card-body,
+    .backoffice-board .p-card-body {
+      padding: 0.8rem;
+    }
+
+    .backoffice-table .p-datatable-thead > tr > th,
+    .event-table .p-datatable-thead > tr > th {
+      font-size: 0.68rem;
+      padding-left: 0.45rem;
+      padding-right: 0.45rem;
+    }
+
+    .backoffice-table .p-datatable-tbody > tr > td {
+      padding-left: 0.45rem;
+      padding-right: 0.45rem;
+    }
+
+    .backoffice-table app-lead-plan-summary .plan-cell__name {
+      max-width: 7.5rem;
+    }
+
+    .backoffice-table app-lead-plan-summary .p-tag {
+      white-space: nowrap;
+    }
+  }
+}
+
+@media (max-width: 1280px) and (min-width: 901px) {
+  .backoffice-page {
+    --backoffice-table-min-width: 1040px;
+  }
+
+  .eyebrow {
+    font-size: 0.68rem;
+  }
+
+  h1 {
+    font-size: 1.32rem;
+  }
+
+  p {
+    font-size: 0.82rem;
+  }
+
+  .lead-search-input {
+    max-width: 15rem;
+  }
+
+  .lead-search-summary {
+    font-size: 0.72rem;
+    min-width: 6.5rem;
+  }
+
+  .provider-cell img {
+    max-width: 4.8rem;
+  }
+
+  .col-plan {
+    width: 7.25rem;
+  }
+
+  :host ::ng-deep {
+    .backoffice-hero .p-card-body,
+    .backoffice-board .p-card-body {
+      padding: 0.7rem;
+    }
+
+    .backoffice-table app-lead-plan-summary .plan-cell__name {
+      max-width: 7rem;
+    }
+
+    .backoffice-table app-lead-plan-summary .p-tag {
+      font-size: 0.72rem;
+      padding: 0.22rem 0.42rem;
+    }
+  }
 }
 
 @media (max-width: 720px) {

@@ -77,6 +77,7 @@ const ROLE_THEME_CLASS: Record<string, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class PrivateLayoutComponent implements AfterViewInit {
+  @ViewChild('sidebar') private sidebar?: ElementRef<HTMLElement>;
   @ViewChild('sidebarMenu') private sidebarMenu?: ElementRef<HTMLElement>;
   protected readonly attendanceFacade = inject(AttendanceFacade);
   private readonly authSessionService = inject(AuthSessionService);
@@ -573,6 +574,15 @@ export class PrivateLayoutComponent implements AfterViewInit {
 
   protected closeMobileMenu(): void {
     this.mobileMenuOpen.set(false);
+  }
+
+  protected releaseSidebarPointerFocus(): void {
+    const sidebar = this.sidebar?.nativeElement;
+    const activeElement = document.activeElement;
+    if (!(activeElement instanceof HTMLElement) || !sidebar?.contains(activeElement)) {
+      return;
+    }
+    activeElement.blur();
   }
 
   protected async logout(): Promise<void> {

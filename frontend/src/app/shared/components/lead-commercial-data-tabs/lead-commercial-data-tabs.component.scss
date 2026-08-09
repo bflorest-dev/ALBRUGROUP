@@ -8,6 +8,7 @@
 .commercial-tabs {
   height: 100%;
   min-height: 0;
+  overflow: hidden;
 }
 
 .form-grid {
@@ -193,6 +194,19 @@ label {
     min-height: 0;
   }
 
+  .p-tablist {
+    flex: 0 0 auto;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .p-tablist-tab-list {
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
   .p-tabpanels {
     display: flex;
     flex-direction: column;
@@ -207,7 +221,7 @@ label {
     max-height: 100%;
     min-height: 0;
     overflow: auto;
-    padding-right: 0.25rem;
+    padding: 0 0.25rem 0 0;
   }
 
   .form-grid .p-select,
@@ -239,10 +253,25 @@ label {
 
   .commercial-tabs--drawer .p-tablist-tab-list {
     background: #ffffff;
+    border-bottom: 1px solid #dce8e3;
   }
 
   .commercial-tabs--drawer .p-tab {
-    padding: 0.8rem 0.95rem;
+    min-height: 2.65rem;
+    padding: 0.65rem 0.85rem;
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 901px) and (max-height: 800px) {
+  .commercial-tabs--drawer .form-grid {
+    gap: 0.62rem;
+    padding-top: 0.62rem;
+  }
+
+  :host ::ng-deep .commercial-tabs--drawer .p-tab {
+    min-height: 2.35rem;
+    padding: 0.5rem 0.75rem;
   }
 }
 

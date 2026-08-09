@@ -481,3 +481,30 @@ select {
   word-break: normal;
   writing-mode: horizontal-tb;
 }
+
+.lead-cell__document {
+  display: none;
+}
+
+@media (min-width: 901px) and (max-width: 1439px) {
+  .lead-cell__document {
+    display: block;
+    font-size: .72rem;
+  }
+
+  app-backoffice-workspace-page .backoffice-table :where(.col-documento) {
+    display: none;
+  }
+
+  app-backoffice-workspace-page .backoffice-page--sec-sot {
+    --backoffice-table-min-width: 980px;
+  }
+
+  app-backoffice-workspace-page .backoffice-page--sec-sot :where(.col-sec-sot) {
+    width: 4.75rem;
+  }
+
+  .drawer-footer--adaptive:not(.drawer-footer--expanded) :where(.drawer-tipification__extras,.drawer-tipification__comment) {
+    display: none !important;
+  }
+}

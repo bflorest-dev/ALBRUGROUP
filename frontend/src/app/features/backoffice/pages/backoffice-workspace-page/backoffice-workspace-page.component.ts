@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormsModule, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -110,6 +110,7 @@ type AssignmentConflictDetails = {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
+  @ViewChild('tipificationFooter') private tipificationFooter?: ElementRef<HTMLElement>;
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -187,6 +188,11 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
   private readonly adicionalesDirty = signal(false);
   protected readonly detailDrawerOpen = signal(false);
   protected readonly activeDataTab = signal('datos');
+  protected readonly tipificationFooterPinned = signal(false);
+  protected readonly tipificationOverlayOpen = signal(false);
+  protected readonly tipificationFooterExpanded = computed(() =>
+    this.tipificationFooterPinned() || this.tipificationOverlayOpen()
+  );
   protected readonly searchInput = signal('');
   protected readonly searchTermActive = signal('');
   protected readonly isSearching = signal(false);
@@ -697,6 +703,43 @@ export class BackofficeWorkspacePageComponent implements OnInit, OnDestroy {
     }
     await this.releaseCurrentLeadIfIdle();
     this.closeDetail();
+  }
+
+  protected setTipificationFooterPinned(value: boolean): void {
+    if (!value && this.tipificationOverlayOpen()) {
+      return;
+    }
+    this.tipificationFooterPinned.set(value);
+  }
+
+  protected setTipificationOverlayOpen(value: boolean): void {
+    if (value) {
+      this.tipificationFooterPinned.set(true);
+      this.tipificationOverlayOpen.set(true);
+      return;
+    }
+    window.setTimeout(() => this.tipificationOverlayOpen.set(false), 120);
+  }
+
+  @HostListener('document:pointermove', ['$event'])
+  protected releaseTipificationFooterWhenPointerLeaves(event: PointerEvent): void {
+    if (!this.tipificationFooterPinned() || this.tipificationOverlayOpen()) {
+      return;
+    }
+    const footer = this.tipificationFooter?.nativeElement;
+    if (!footer) {
+      this.tipificationFooterPinned.set(false);
+      return;
+    }
+    const rect = footer.getBoundingClientRect();
+    const insideFooter =
+      event.clientX >= rect.left &&
+      event.clientX <= rect.right &&
+      event.clientY >= rect.top &&
+      event.clientY <= rect.bottom;
+    if (!insideFooter) {
+      this.tipificationFooterPinned.set(false);
+    }
   }
 
   protected async registrarContacto(): Promise<void> {

@@ -1,4 +1,4 @@
-<section class="backoffice-page">
+<section class="backoffice-page" [class.backoffice-page--sec-sot]="showSecSotColumn()">
   <p-toast position="top-right" />
   <p-confirmDialog />
 
@@ -188,7 +188,7 @@
       [rowHover]="true"
       [scrollable]="true"
       scrollHeight="flex"
-      [tableStyle]="{ 'min-width': '1320px' }"
+      [tableStyle]="{ 'min-width': 'var(--backoffice-table-min-width, 1320px)' }"
       styleClass="p-datatable-sm backoffice-table"
       [rowGroupMode]="activeRowGroupMode()"
       [groupRowsBy]="activeGroupRowsBy()"
@@ -244,8 +244,10 @@
             </div>
           </td>
           <td class="col-lead">
-            <span class="lead-cell__prefix">{{ leadCountryCode(row) }}</span>
-            <strong>{{ row.lead }}</strong>
+            <div class="lead-cell">
+              <strong><span class="lead-cell__prefix">{{ leadCountryCode(row) }}</span>{{ row.lead }}</strong>
+              <span class="lead-cell__document">{{ display(row.numeroDocumentoTitularServicio) }}</span>
+            </div>
           </td>
           <td class="col-documento">{{ display(row.numeroDocumentoTitularServicio) }}</td>
           <td class="col-proveedor">
@@ -281,8 +283,8 @@
             <td class="col-sec-sot">
               @if (row.sec || row.sot) {
                 <div class="sec-sot-cell">
-                  <span>SEC {{ row.sec ?? '-' }}</span>
-                  <span>SOT {{ row.sot ?? '-' }}</span>
+                  <span [attr.title]="'SEC ' + (row.sec ?? '-')">{{ row.sec ?? '-' }}</span>
+                  <span [attr.title]="'SOT ' + (row.sot ?? '-')">{{ row.sot ?? '-' }}</span>
                 </div>
               } @else {
                 -
@@ -499,7 +501,13 @@
 
         </div>
 
-        <footer class="drawer-footer">
+        <footer
+          #tipificationFooter
+          class="drawer-footer drawer-footer--adaptive"
+          [class.drawer-footer--expanded]="tipificationFooterExpanded()"
+          (mouseenter)="setTipificationFooterPinned(true)"
+          (mouseleave)="setTipificationFooterPinned(false)"
+        >
           <form class="drawer-tipification" [formGroup]="tipificacionForm" (ngSubmit)="tipificar()">
             <div class="drawer-tipification__main">
               <label class="tipification-field">
@@ -511,7 +519,9 @@
                   optionValue="codigo"
                   placeholder="Seleccionar"
                   appendTo="body"
-                  (onChange)="onTipificacionSelected($event.value)"
+                  (onShow)="setTipificationOverlayOpen(true)"
+                  (onHide)="setTipificationOverlayOpen(false)"
+                  (onChange)="onTipificacionSelected($event.value); setTipificationOverlayOpen(false)"
                 >
                   <ng-template #item let-tipificacion>
                     <div class="select-item">
@@ -532,7 +542,9 @@
                   placeholder="Seleccionar"
                   appendTo="body"
                   [disabled]="!selectedTipificacionCode() || !subtipificaciones().length"
-                  (onChange)="onSubtipificacionSelected($event.value)"
+                  (onShow)="setTipificationOverlayOpen(true)"
+                  (onHide)="setTipificationOverlayOpen(false)"
+                  (onChange)="onSubtipificacionSelected($event.value); setTipificationOverlayOpen(false)"
                 >
                   <ng-template #item let-subtipificacion>
                     <div class="select-item">
@@ -564,7 +576,9 @@
                   [showIcon]="true"
                   appendTo="body"
                   [disabled]="!requiresProgramming() || !canMutateOperationalData()"
-                  (ngModelChange)="setDateControl('fechaProgramacion', $event)"
+                  (onShow)="setTipificationOverlayOpen(true)"
+                  (onHide)="setTipificationOverlayOpen(false)"
+                  (ngModelChange)="setDateControl('fechaProgramacion', $event); setTipificationOverlayOpen(false)"
                 />
               </label>
 
@@ -580,7 +594,9 @@
                   icon="pi pi-clock"
                   appendTo="body"
                   [disabled]="!requiresProgramming() || !canMutateOperationalData()"
-                  (onSelect)="normalizeScheduledTime()"
+                  (onShow)="setTipificationOverlayOpen(true)"
+                  (onHide)="setTipificationOverlayOpen(false)"
+                  (onSelect)="normalizeScheduledTime(); setTipificationOverlayOpen(false)"
                   (focusout)="normalizeScheduledTime()"
                 />
               </label>
@@ -595,7 +611,9 @@
                   [showIcon]="true"
                   appendTo="body"
                   [disabled]="!requiresInstallDate() || !canMutateOperationalData()"
-                  (ngModelChange)="setDateControl('fechaInstalacion', $event)"
+                  (onShow)="setTipificationOverlayOpen(true)"
+                  (onHide)="setTipificationOverlayOpen(false)"
+                  (ngModelChange)="setDateControl('fechaInstalacion', $event); setTipificationOverlayOpen(false)"
                 />
               </label>
 

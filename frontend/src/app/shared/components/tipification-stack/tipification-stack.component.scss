@@ -7,7 +7,7 @@
   align-items: flex-start;
   display: inline-grid;
   gap: 0.18rem;
-  width: 10.85rem;
+  width: var(--tipification-stack-width, 10.85rem);
 }
 
 .tipification-stack__line {
@@ -21,7 +21,7 @@
   display: inline-block;
   font-size: 0.78rem;
   font-weight: 700;
-  max-width: 10.85rem;
+  max-width: var(--tipification-stack-width, 10.85rem);
   overflow: hidden;
   text-align: center;
   text-overflow: ellipsis;
@@ -35,10 +35,28 @@
   font-size: 0.68rem;
   font-weight: 800;
   justify-content: center;
+  max-width: var(--tipification-stack-width, 10.85rem);
   min-height: 1.5rem;
   text-align: center;
   white-space: nowrap;
-  width: 10.85rem;
+  width: var(--tipification-stack-width, 10.85rem);
+}
+
+:host ::ng-deep .tipification-stack__tag .p-tag-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:host-context(app-backoffice-workspace-page) {
+  --tipification-stack-width: 9.5rem;
+}
+
+@media (min-width: 901px) and (max-width: 1439px) {
+  :host-context(app-backoffice-workspace-page) {
+    --tipification-stack-width: 8.75rem;
+  }
 }
 
 :host ::ng-deep .tipification-stack__tag--subtipificacion {
