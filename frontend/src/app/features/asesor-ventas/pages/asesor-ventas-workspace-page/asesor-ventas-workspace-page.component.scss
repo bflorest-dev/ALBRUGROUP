@@ -8,14 +8,17 @@
 .asesor-hero__content {
   align-items: center;
   display: flex;
+  gap: 1rem;
   justify-content: space-between;
 }
 
 .asesor-hero__actions {
   align-items: center;
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
   gap: 0.6rem;
+  justify-content: flex-end;
 }
 
 .asesor-hero__eyebrow {
@@ -46,14 +49,22 @@ p {
   }
 }
 
-@media (max-width: 1320px) {
-  .asesor-hero__content {
-    align-items: flex-start;
-    flex-direction: column;
+@media (min-width: 721px) and (max-width: 1439px) {
+  h1 {
+    font-size: 1.45rem;
+  }
+
+  :host ::ng-deep .asesor-hero .p-card-body {
+    padding: 0.8rem 1rem;
   }
 }
 
 @media (max-width: 720px) {
+  .asesor-hero__content {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .asesor-hero__actions {
     align-items: stretch;
     width: 100%;

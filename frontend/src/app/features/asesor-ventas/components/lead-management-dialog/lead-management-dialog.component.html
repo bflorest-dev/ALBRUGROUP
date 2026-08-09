@@ -65,11 +65,11 @@
             pButton
             type="button"
             class="lead-workspace__minimize"
-            icon="pi pi-window-minimize"
-            label="Minimizar"
+            icon="pi pi-times"
             severity="secondary"
             [outlined]="true"
             size="small"
+            aria-label="Minimizar"
             [disabled]="facade.isSaving()"
             title="Guarda lo ingresado y deja este Lead para después. Vuelve a tu bandeja como 'Retomar' y puedes gestionar otros mientras tanto."
             (click)="facade.minimizeDetail()"

@@ -12,6 +12,15 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.5rem;
+  margin-bottom: -2.85rem;
+  min-height: 2.85rem;
+  pointer-events: none;
+  position: relative;
+  z-index: 2;
+}
+
+.oportunidades-contacto > * {
+  pointer-events: auto;
 }
 
 .oportunidades-contacto__chips {
@@ -81,11 +90,17 @@
   padding: 1rem;
 }
 
+.lead-workspace__head > div:first-child {
+  min-width: 0;
+}
+
 .lead-workspace__tags {
   align-items: center;
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
   gap: 0.6rem;
+  justify-content: flex-end;
 }
 
 // Ancla la acción de minimizar al extremo derecho del cluster del header, independientemente del
@@ -113,6 +128,7 @@ h2 {
   color: #102032;
   font-size: 1.3rem;
   margin: 0;
+  min-width: 0;
 }
 
 .lead-workspace__summary {
@@ -121,6 +137,7 @@ h2 {
   flex-wrap: wrap;
   gap: 0.5rem;
   line-height: 1.2;
+  min-width: 0;
 }
 
 .lead-identity {
@@ -143,7 +160,7 @@ h2 {
   border-radius: 12px;
   display: grid;
   gap: 0.8rem;
-  grid-template-columns: minmax(0, auto) minmax(14rem, 1fr) minmax(14rem, 1fr) minmax(9rem, 11rem) minmax(0, auto) minmax(0, auto);
+  grid-template-columns: minmax(10rem, .75fr) minmax(11rem, 1fr) minmax(11rem, 1fr) minmax(7.5rem, .55fr) minmax(7.5rem, .55fr);
   padding: 0.9rem;
 }
 
@@ -268,25 +285,36 @@ label {
 }
 
 @media (max-width: 1320px) {
+  .lead-workspace {
+    gap: 0.75rem;
+  }
+
   .lead-workspace__head {
-    align-items: flex-start;
-    flex-direction: column;
+    padding: 0.8rem;
+  }
+
+  h2 {
+    font-size: 1.15rem;
+  }
+
+  .lead-workspace__tags {
+    gap: 0.45rem;
+  }
+
+  .lead-workspace__provider {
+    max-width: 3rem;
   }
 
   .tipification-bar {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.6rem;
+    grid-template-columns: minmax(8.5rem, .7fr) minmax(10rem, 1fr) minmax(10rem, 1fr) minmax(6.5rem, .52fr) minmax(6.5rem, .52fr);
+    padding: 0.75rem;
   }
 
-  .contact-actions {
-    grid-column: span 2;
-  }
-
-  .tipification-bar__field--tipificacion,
-  .tipification-bar__field--subtipificacion,
-  .scheduled-field,
-  .tipification-bar__comment-toggle,
-  .tipification-bar__submit {
-    grid-column: span 2;
+  .tipification-bar__submit,
+  .tipification-bar__comment-toggle {
+    padding-left: 0.65rem;
+    padding-right: 0.65rem;
   }
 }
 

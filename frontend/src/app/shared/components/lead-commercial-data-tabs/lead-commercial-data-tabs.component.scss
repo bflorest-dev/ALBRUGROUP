@@ -11,6 +11,17 @@
   overflow: hidden;
 }
 
+.commercial-tabs__actions {
+  align-items: center;
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.commercial-tabs__actions:empty {
+  display: none;
+}
+
 .form-grid {
   display: grid;
   gap: 0.9rem;
@@ -188,8 +199,8 @@ label {
 
 :host ::ng-deep {
   .p-tabs {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
     height: 100%;
     min-height: 0;
   }
@@ -211,6 +222,7 @@ label {
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
+    grid-column: 1 / -1;
     min-height: 0;
     overflow: hidden;
   }
@@ -249,6 +261,15 @@ label {
 
   .p-tabpanels {
     padding: 0;
+  }
+
+  .commercial-tabs--drawer .p-tabs {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .commercial-tabs--drawer .commercial-tabs__actions {
+    display: none;
   }
 
   .commercial-tabs--drawer .p-tablist-tab-list {
