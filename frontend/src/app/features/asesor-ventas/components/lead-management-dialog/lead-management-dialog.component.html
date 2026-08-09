@@ -200,7 +200,7 @@
           type="button"
           class="tipification-bar__comment-toggle"
           icon="pi pi-comment"
-          [label]="facade.showComment() ? 'Ocultar comentario' : 'Comentario'"
+          [label]="facade.showComment() ? 'Ocultar' : 'Comentario'"
           severity="secondary"
           (click)="facade.toggleComment()"
         ></button>
@@ -217,7 +217,7 @@
         @if (facade.showComment()) {
           <label class="comment-field">
             <span>Comentario opcional</span>
-            <textarea pTextarea rows="3" formControlName="comentario"></textarea>
+            <input pInputText type="text" formControlName="comentario" />
           </label>
         }
       </form>
