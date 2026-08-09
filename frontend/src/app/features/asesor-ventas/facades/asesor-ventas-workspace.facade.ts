@@ -1259,9 +1259,10 @@ export class AsesorVentasWorkspaceFacade {
 
   cancelIdentidadEditor(): void {
     const detail = this.detail();
+    const resetToEmptyIdentity = !detail || !this.hasLeadPhone(detail);
     this.identidadForm.reset({
-      prefijo: detail?.prefijo ?? PERU_PHONE_PREFIX,
-      lead: detail?.lead ?? ''
+      prefijo: resetToEmptyIdentity ? '' : detail.prefijo ?? PERU_PHONE_PREFIX,
+      lead: resetToEmptyIdentity ? '' : detail.lead ?? ''
     });
     this.updateIdentidadLeadValidation(this.identidadForm.controls.prefijo.value);
     this.identidadForm.markAsPristine();
@@ -1856,7 +1857,7 @@ export class AsesorVentasWorkspaceFacade {
     const raw = this.identidadForm.getRawValue();
     const prefijo = raw.prefijo.trim();
     const lead = this.normalizePhoneInput(raw.lead);
-    if (!prefijo && !lead) {
+    if (!lead) {
       return null;
     }
     return { prefijo, lead };
