@@ -27,6 +27,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)
@@ -42,18 +43,15 @@ public class MasivoService {
     private static final DateTimeFormatter ETIQUETA_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final LeadRepository leadRepository;
-    private final PaginationService paginationService;
     private final LeadAsignacionCounterService leadAsignacionCounterService;
     private final CurrentUser currentUser;
 
-    private static final Map<String, String> MASIVO_SORT_FIELDS = Map.of(
-            "lastEntryAt", "lastEntryAt",
-            "createdAt", "createdAt",
-            "id", "id",
-            "lead", "lead",
-            "nombreAsesorAsignado", "nombreAsesorAsignado",
-            "estado", "estado",
-            "codigoTipificacion", "codigoTipificacion"
+    private static final Set<String> MASIVO_SORT_FIELDS = Set.of(
+            "lastEntryAt",
+            "createdAt",
+            "nombreAsesorAsignado",
+            "estado",
+            "codigoTipificacion"
     );
 
     public PageResponse<LeadGtrResponse> listarLeads(
@@ -78,8 +76,15 @@ public class MasivoService {
         FiltrosMasivo filtros = prepararFiltros(
                 null, Etapa.PREVENTA, codigosTipificacion, codigosSubtipificacion, fechaDesde, fechaHasta);
         validarFiltroAgrupacionMasivo(tipoGrupo, estadoGrupo, codigoTipificacion, fechaIngreso, sinValor, tipoTipificacionGrupo);
+        LeadOrderingRules.validarPageRequest(pageRequest, MASIVO_SORT_FIELDS);
+        boolean sortDesc = LeadOrderingRules.isDesc(pageRequest);
+        var estadoOrden = LeadOrderingRules.estadoSeguimientoOrden();
         RangoFechas rangoIngreso = resolverRangoIngreso(fechaIngreso);
         EquipoScope equipos = resolverEquiposActuales(idEquipo);
+        var pageable = org.springframework.data.domain.PageRequest.of(
+                pageRequest.getPageNumber(),
+                pageRequest.getPageSize()
+        );
 
         var leads = leadRepository.listarLeadsMasivo(
                 filtros.filtrarProveedor(),
@@ -112,7 +117,13 @@ public class MasivoService {
                 rangoIngreso.inicio(),
                 rangoIngreso.fin(),
                 sinValor,
-                paginationService.toPageableWithMapping(pageRequest, MASIVO_SORT_FIELDS)
+                pageRequest.getSortBy(),
+                sortDesc,
+                estadoOrden.nuevo(),
+                estadoOrden.enGestion(),
+                estadoOrden.asignado(),
+                estadoOrden.gestionado(),
+                pageable
         );
         var totales = leadAsignacionCounterService.contarAsignacionesPorLeadIds(
                 leads.getContent().stream().map(LeadGtrResponse::getId).toList()

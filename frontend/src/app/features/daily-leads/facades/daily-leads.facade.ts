@@ -161,23 +161,29 @@ export class DailyLeadsFacade {
   });
   readonly sortOptions: Array<{ label: string; value: DailyLeadSortField }> = [
     { label: 'Hora de registro', value: 'createdAt' },
-    { label: 'GTR', value: 'nombreActor' },
-    { label: 'Campaña', value: 'campana' },
-    { label: 'Lead', value: 'lead' },
+    { label: 'Asignaciones', value: 'totalAsignacionesDia' },
     { label: 'Primera tipificación', value: 'primeraTipificacion' },
+    { label: 'Mayor tipificación', value: 'mayorTipificacion' },
     { label: 'Última tipificación', value: 'ultimaTipificacion' }
   ];
-  readonly sortDirectionOptions = computed<Array<{ label: string; value: DailyLeadSortDirection }>>(() =>
-    this.sortField() === 'createdAt'
-      ? [
-          { label: 'Más antiguos', value: 'asc' },
-          { label: 'Más recientes', value: 'desc' }
-        ]
-      : [
-          { label: 'A–Z', value: 'asc' },
-          { label: 'Z–A', value: 'desc' }
-        ]
-  );
+  readonly sortDirectionOptions = computed<Array<{ label: string; value: DailyLeadSortDirection }>>(() => {
+    if (this.sortField() === 'createdAt') {
+      return [
+        { label: 'Más antiguos', value: 'asc' },
+        { label: 'Más recientes', value: 'desc' }
+      ];
+    }
+    if (this.sortField() === 'totalAsignacionesDia') {
+      return [
+        { label: 'Menos asignaciones', value: 'asc' },
+        { label: 'Más asignaciones', value: 'desc' }
+      ];
+    }
+    return [
+      { label: 'Orden natural', value: 'asc' },
+      { label: 'Orden inverso', value: 'desc' }
+    ];
+  });
   readonly organizationSummary = computed(() => {
     const grouping = this.groupingModeOptions().find((option) => option.value === this.groupingMode())?.label;
     const sorting = this.sortOptions.find((option) => option.value === this.sortField())?.label;
@@ -339,6 +345,7 @@ export class DailyLeadsFacade {
       return;
     }
     this.sortField.set(field);
+    this.sortDirection.set(this.defaultSortDirection(field));
     await this.load(0);
   }
 
@@ -348,6 +355,41 @@ export class DailyLeadsFacade {
     }
     this.sortDirection.set(direction);
     await this.load(0);
+  }
+
+  async changeColumnSort(field: DailyLeadSortField): Promise<void> {
+    const defaultDirection = this.defaultSortDirection(field);
+    if (this.sortField() !== field) {
+      this.sortField.set(field);
+      this.sortDirection.set(defaultDirection);
+    } else if (this.sortDirection() === defaultDirection) {
+      this.sortDirection.set(defaultDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.sortField.set('createdAt');
+      this.sortDirection.set('desc');
+    }
+    await this.load(0);
+  }
+
+  sortActive(field: DailyLeadSortField): boolean {
+    return this.sortField() === field;
+  }
+
+  sortIcon(field: DailyLeadSortField): string {
+    if (this.sortField() !== field) {
+      return 'pi pi-sort-alt';
+    }
+    return this.sortDirection() === 'asc' ? 'pi pi-sort-amount-up-alt' : 'pi pi-sort-amount-down';
+  }
+
+  sortLabel(field: DailyLeadSortField, label: string): string {
+    if (this.sortField() !== field) {
+      return `Ordenar por ${label}`;
+    }
+    if (this.sortDirection() === this.defaultSortDirection(field)) {
+      return `Orden activo por ${label}. Presiona para invertir.`;
+    }
+    return `Orden activo por ${label}. Presiona para volver al orden inicial.`;
   }
 
   isGroupSelected(group: DailyLeadGroupItem): boolean {
@@ -705,6 +747,10 @@ export class DailyLeadsFacade {
       return 0;
     }
     return (orden - 1) % totalPalettes;
+  }
+
+  private defaultSortDirection(field: DailyLeadSortField): DailyLeadSortDirection {
+    return field === 'createdAt' || field === 'totalAsignacionesDia' ? 'desc' : 'asc';
   }
 
   private selectedHistoryDate(): string {

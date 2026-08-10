@@ -1667,6 +1667,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
             LEFT JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = :etapaResumen
+            LEFT JOIN Tipificacion tPrimera ON tPrimera.codigo = r.primeraCodigoTipificacion AND tPrimera.etapa = :etapaResumen AND tPrimera.idEquipo = l.idEquipo
+            LEFT JOIN Subtipificacion sPrimera ON sPrimera.tipificacion = tPrimera AND sPrimera.codigo = r.primeraCodigoSubtipificacion
+            LEFT JOIN Tipificacion tMayor ON tMayor.codigo = r.mayorRangoCodigoTipificacion AND tMayor.etapa = :etapaResumen AND tMayor.idEquipo = l.idEquipo
+            LEFT JOIN Subtipificacion sMayor ON sMayor.tipificacion = tMayor AND sMayor.codigo = r.mayorRangoCodigoSubtipificacion
+            LEFT JOIN Tipificacion tUltima ON tUltima.codigo = r.ultimaCodigoTipificacion AND tUltima.etapa = :etapaResumen AND tUltima.idEquipo = l.idEquipo
+            LEFT JOIN Subtipificacion sUltima ON sUltima.tipificacion = tUltima AND sUltima.codigo = r.ultimaCodigoSubtipificacion
             WHERE (:filtrarProveedor = false OR p.id = :idProveedor)
               AND (:filtrarEtapa = false OR l.etapa = :etapa)
               AND (r.ultimaCodigoTipificacion IS NULL OR r.ultimaCodigoTipificacion NOT IN :codigosTipificacionExcluidos)
@@ -1731,7 +1737,72 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                     OR (:sinValorGrupo = true AND l.lastEntryAt IS NULL)
                     OR (:sinValorGrupo = false AND l.lastEntryAt >= :ingresoInicio AND l.lastEntryAt < :ingresoFin)
               )
-            ORDER BY l.lastEntryAt DESC, l.id DESC
+            ORDER BY
+              CASE WHEN :sortBy = 'createdAt' AND :sortDesc = false THEN l.createdAt END ASC,
+              CASE WHEN :sortBy = 'createdAt' AND :sortDesc = true THEN l.createdAt END DESC,
+              CASE WHEN :sortBy = 'lastEntryAt' AND :sortDesc = false THEN l.lastEntryAt END ASC,
+              CASE WHEN :sortBy = 'lastEntryAt' AND :sortDesc = true THEN l.lastEntryAt END DESC,
+              CASE WHEN :sortBy = 'nombreAsesorAsignado' AND :sortDesc = false THEN l.nombreAsesorAsignado END ASC,
+              CASE WHEN :sortBy = 'nombreAsesorAsignado' AND :sortDesc = true THEN l.nombreAsesorAsignado END DESC,
+
+              CASE WHEN :sortBy = 'estado' AND :sortDesc = false THEN
+                CASE
+                  WHEN l.estado = :estadoNuevo THEN 1
+                  WHEN l.estado = :estadoEnGestion THEN 2
+                  WHEN l.estado = :estadoAsignado THEN 3
+                  WHEN l.estado = :estadoGestionado THEN 4
+                  ELSE 99
+                END
+              END ASC,
+              CASE WHEN :sortBy = 'estado' AND :sortDesc = true THEN
+                CASE
+                  WHEN l.estado = :estadoNuevo THEN 1
+                  WHEN l.estado = :estadoEnGestion THEN 2
+                  WHEN l.estado = :estadoAsignado THEN 3
+                  WHEN l.estado = :estadoGestionado THEN 4
+                  ELSE 99
+                END
+              END DESC,
+
+              CASE
+                WHEN :sortBy = 'codigoTipificacion' THEN
+                  CASE
+                    WHEN :usarPrimeraTipificacion = true AND tPrimera.orden IS NULL THEN 1
+                    WHEN :usarMayorTipificacion = true AND tMayor.orden IS NULL THEN 1
+                    WHEN :usarUltimaTipificacion = true AND tUltima.orden IS NULL THEN 1
+                    ELSE 0
+                  END
+                ELSE 0
+              END ASC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = false AND :usarPrimeraTipificacion = true THEN tPrimera.orden END ASC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = true AND :usarPrimeraTipificacion = true THEN tPrimera.orden END DESC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = false AND :usarPrimeraTipificacion = true THEN sPrimera.orden END ASC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = true AND :usarPrimeraTipificacion = true THEN sPrimera.orden END DESC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = false AND :usarPrimeraTipificacion = true THEN r.primeraCodigoTipificacion END ASC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = true AND :usarPrimeraTipificacion = true THEN r.primeraCodigoTipificacion END DESC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = false AND :usarPrimeraTipificacion = true THEN r.primeraCodigoSubtipificacion END ASC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = true AND :usarPrimeraTipificacion = true THEN r.primeraCodigoSubtipificacion END DESC,
+
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = false AND :usarMayorTipificacion = true THEN tMayor.orden END ASC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = true AND :usarMayorTipificacion = true THEN tMayor.orden END DESC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = false AND :usarMayorTipificacion = true THEN sMayor.orden END ASC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = true AND :usarMayorTipificacion = true THEN sMayor.orden END DESC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = false AND :usarMayorTipificacion = true THEN r.mayorRangoCodigoTipificacion END ASC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = true AND :usarMayorTipificacion = true THEN r.mayorRangoCodigoTipificacion END DESC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = false AND :usarMayorTipificacion = true THEN r.mayorRangoCodigoSubtipificacion END ASC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = true AND :usarMayorTipificacion = true THEN r.mayorRangoCodigoSubtipificacion END DESC,
+
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = false AND :usarUltimaTipificacion = true THEN tUltima.orden END ASC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = true AND :usarUltimaTipificacion = true THEN tUltima.orden END DESC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = false AND :usarUltimaTipificacion = true THEN sUltima.orden END ASC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = true AND :usarUltimaTipificacion = true THEN sUltima.orden END DESC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = false AND :usarUltimaTipificacion = true THEN r.ultimaCodigoTipificacion END ASC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = true AND :usarUltimaTipificacion = true THEN r.ultimaCodigoTipificacion END DESC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = false AND :usarUltimaTipificacion = true THEN r.ultimaCodigoSubtipificacion END ASC,
+              CASE WHEN :sortBy = 'codigoTipificacion' AND :sortDesc = true AND :usarUltimaTipificacion = true THEN r.ultimaCodigoSubtipificacion END DESC,
+
+              l.lastEntryAt DESC,
+              l.id DESC
             """)
     Page<LeadGtrResponse> listarLeadsMasivo(
             @Param("filtrarProveedor") boolean filtrarProveedor,
@@ -1764,6 +1835,12 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("ingresoInicio") Instant ingresoInicio,
             @Param("ingresoFin") Instant ingresoFin,
             @Param("sinValorGrupo") boolean sinValorGrupo,
+            @Param("sortBy") String sortBy,
+            @Param("sortDesc") boolean sortDesc,
+            @Param("estadoNuevo") EstadoSeguimiento estadoNuevo,
+            @Param("estadoEnGestion") EstadoSeguimiento estadoEnGestion,
+            @Param("estadoAsignado") EstadoSeguimiento estadoAsignado,
+            @Param("estadoGestionado") EstadoSeguimiento estadoGestionado,
             Pageable pageable
     );
 

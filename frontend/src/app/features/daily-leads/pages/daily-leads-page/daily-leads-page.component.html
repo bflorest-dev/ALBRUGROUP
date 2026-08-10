@@ -199,16 +199,76 @@
       <ng-template #header>
         <tr>
           <th class="daily-leads__expander-col"></th>
-          <th>Hora Registro</th>
+          <th>
+            <button
+              type="button"
+              class="daily-leads__sort-header"
+              [class.daily-leads__sort-header--active]="facade.sortActive('createdAt')"
+              [attr.aria-label]="facade.sortLabel('createdAt', 'hora registro')"
+              [title]="facade.sortLabel('createdAt', 'hora registro')"
+              (click)="facade.changeColumnSort('createdAt')"
+            >
+              <span>Hora Registro</span>
+              <i [class]="facade.sortIcon('createdAt')" aria-hidden="true"></i>
+            </button>
+          </th>
           <th>Lead</th>
           <th>GTR</th>
           <th>Ultimo Gestor</th>
           <th>Ultima Asignacion</th>
-          <th>Asignaciones</th>
+          <th>
+            <button
+              type="button"
+              class="daily-leads__sort-header"
+              [class.daily-leads__sort-header--active]="facade.sortActive('totalAsignacionesDia')"
+              [attr.aria-label]="facade.sortLabel('totalAsignacionesDia', 'asignaciones')"
+              [title]="facade.sortLabel('totalAsignacionesDia', 'asignaciones')"
+              (click)="facade.changeColumnSort('totalAsignacionesDia')"
+            >
+              <span>Asignaciones</span>
+              <i [class]="facade.sortIcon('totalAsignacionesDia')" aria-hidden="true"></i>
+            </button>
+          </th>
           <th>Campaña</th>
-          <th>Primera tipificacion</th>
-          <th>Mayor tipificacion</th>
-          <th>Ultima tipificacion</th>
+          <th>
+            <button
+              type="button"
+              class="daily-leads__sort-header"
+              [class.daily-leads__sort-header--active]="facade.sortActive('primeraTipificacion')"
+              [attr.aria-label]="facade.sortLabel('primeraTipificacion', 'primera tipificación')"
+              [title]="facade.sortLabel('primeraTipificacion', 'primera tipificación')"
+              (click)="facade.changeColumnSort('primeraTipificacion')"
+            >
+              <span>Primera tipificación</span>
+              <i [class]="facade.sortIcon('primeraTipificacion')" aria-hidden="true"></i>
+            </button>
+          </th>
+          <th>
+            <button
+              type="button"
+              class="daily-leads__sort-header"
+              [class.daily-leads__sort-header--active]="facade.sortActive('mayorTipificacion')"
+              [attr.aria-label]="facade.sortLabel('mayorTipificacion', 'mayor tipificación')"
+              [title]="facade.sortLabel('mayorTipificacion', 'mayor tipificación')"
+              (click)="facade.changeColumnSort('mayorTipificacion')"
+            >
+              <span>Mayor tipificación</span>
+              <i [class]="facade.sortIcon('mayorTipificacion')" aria-hidden="true"></i>
+            </button>
+          </th>
+          <th>
+            <button
+              type="button"
+              class="daily-leads__sort-header"
+              [class.daily-leads__sort-header--active]="facade.sortActive('ultimaTipificacion')"
+              [attr.aria-label]="facade.sortLabel('ultimaTipificacion', 'última tipificación')"
+              [title]="facade.sortLabel('ultimaTipificacion', 'última tipificación')"
+              (click)="facade.changeColumnSort('ultimaTipificacion')"
+            >
+              <span>Última tipificación</span>
+              <i [class]="facade.sortIcon('ultimaTipificacion')" aria-hidden="true"></i>
+            </button>
+          </th>
           <th class="daily-leads__actions-col">Historial</th>
         </tr>
       </ng-template>

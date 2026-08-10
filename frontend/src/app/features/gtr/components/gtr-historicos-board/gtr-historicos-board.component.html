@@ -238,10 +238,46 @@
         <th>Proveedor</th>
         <th>Base</th>
         <th>Documento</th>
-        <th>{{ facade.historicosTipificacionColumnLabel() }}</th>
-        <th>Estado</th>
+        <th class="col-sortable">
+          <button
+            type="button"
+            class="sort-header"
+            [class.sort-header--active]="facade.historicosSortActive('codigoTipificacion')"
+            [attr.aria-label]="facade.historicosSortLabel('codigoTipificacion', facade.historicosTipificacionColumnLabel())"
+            [title]="facade.historicosSortLabel('codigoTipificacion', facade.historicosTipificacionColumnLabel())"
+            (click)="facade.changeHistoricosColumnSort('codigoTipificacion')"
+          >
+            <span>{{ facade.historicosTipificacionColumnLabel() }}</span>
+            <i [class]="facade.historicosSortIcon('codigoTipificacion')" aria-hidden="true"></i>
+          </button>
+        </th>
+        <th class="col-sortable">
+          <button
+            type="button"
+            class="sort-header"
+            [class.sort-header--active]="facade.historicosSortActive('estado')"
+            [attr.aria-label]="facade.historicosSortLabel('estado', 'estado')"
+            [title]="facade.historicosSortLabel('estado', 'estado')"
+            (click)="facade.changeHistoricosColumnSort('estado')"
+          >
+            <span>Estado</span>
+            <i [class]="facade.historicosSortIcon('estado')" aria-hidden="true"></i>
+          </button>
+        </th>
         <th>Asesor</th>
-        <th>Ingreso</th>
+        <th class="col-sortable">
+          <button
+            type="button"
+            class="sort-header"
+            [class.sort-header--active]="facade.historicosSortActive('lastEntryAt')"
+            [attr.aria-label]="facade.historicosSortLabel('lastEntryAt', 'ingreso')"
+            [title]="facade.historicosSortLabel('lastEntryAt', 'ingreso')"
+            (click)="facade.changeHistoricosColumnSort('lastEntryAt')"
+          >
+            <span>Ingreso</span>
+            <i [class]="facade.historicosSortIcon('lastEntryAt')" aria-hidden="true"></i>
+          </button>
+        </th>
         <th class="col-actions">Acciones</th>
       </tr>
     </ng-template>

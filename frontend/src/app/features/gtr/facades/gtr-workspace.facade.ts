@@ -966,17 +966,24 @@ export class GtrWorkspaceFacade {
     { label: 'Estado', value: 'estado' },
     { label: 'Asesor', value: 'nombreAsesorAsignado' }
   ]);
-  readonly historicosSortDirectionOptions = computed<Array<{ label: string; value: GtrPlatformSortDirection }>>(() =>
-    this.historicosSortField() === 'lastEntryAt'
-      ? [
-          { label: 'Más antiguos', value: 'asc' },
-          { label: 'Más recientes', value: 'desc' }
-        ]
-      : [
-          { label: 'A-Z', value: 'asc' },
-          { label: 'Z-A', value: 'desc' }
-        ]
-  );
+  readonly historicosSortDirectionOptions = computed<Array<{ label: string; value: GtrPlatformSortDirection }>>(() => {
+    if (this.historicosSortField() === 'lastEntryAt') {
+      return [
+        { label: 'Más antiguos', value: 'asc' },
+        { label: 'Más recientes', value: 'desc' }
+      ];
+    }
+    if (this.historicosSortField() === 'nombreAsesorAsignado') {
+      return [
+        { label: 'A-Z', value: 'asc' },
+        { label: 'Z-A', value: 'desc' }
+      ];
+    }
+    return [
+      { label: 'Orden natural', value: 'asc' },
+      { label: 'Orden inverso', value: 'desc' }
+    ];
+  });
   readonly historicosActiveGroupOptions = computed<LeadGtrGroupItemResponse[]>(() => {
     const groups = this.historicosGroups();
     switch (this.historicosGroupingMode()) {
@@ -2789,7 +2796,7 @@ export class GtrWorkspaceFacade {
       return;
     }
     this.historicosSortField.set(field);
-    this.historicosSortDirection.set(field === 'lastEntryAt' ? 'desc' : 'asc');
+    this.historicosSortDirection.set(this.defaultHistoricosSortDirection(field));
     this.masivoPageNumber.set(0);
     if (this.masivoSearched()) {
       await this.refreshMasivos();
@@ -2805,6 +2812,50 @@ export class GtrWorkspaceFacade {
     if (this.masivoSearched()) {
       await this.refreshMasivos();
     }
+  }
+
+  async changeHistoricosColumnSort(field: GtrHistoricosSortField): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
+
+    const defaultDirection = this.defaultHistoricosSortDirection(field);
+
+    if (this.historicosSortField() !== field) {
+      this.historicosSortField.set(field);
+      this.historicosSortDirection.set(defaultDirection);
+    } else if (this.historicosSortDirection() === defaultDirection) {
+      this.historicosSortDirection.set(defaultDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.historicosSortField.set('lastEntryAt');
+      this.historicosSortDirection.set('desc');
+    }
+
+    this.masivoPageNumber.set(0);
+    if (this.masivoSearched()) {
+      await this.refreshMasivos();
+    }
+  }
+
+  historicosSortActive(field: GtrHistoricosSortField): boolean {
+    return this.historicosSortField() === field;
+  }
+
+  historicosSortIcon(field: GtrHistoricosSortField): string {
+    if (this.historicosSortField() !== field) {
+      return 'pi pi-sort-alt';
+    }
+    return this.historicosSortDirection() === 'asc' ? 'pi pi-sort-amount-up-alt' : 'pi pi-sort-amount-down';
+  }
+
+  historicosSortLabel(field: GtrHistoricosSortField, label: string): string {
+    if (this.historicosSortField() !== field) {
+      return `Ordenar por ${label}`;
+    }
+    if (this.historicosSortDirection() === this.defaultHistoricosSortDirection(field)) {
+      return `Orden activo por ${label}. Presiona para invertir.`;
+    }
+    return `Orden activo por ${label}. Presiona para volver al orden inicial.`;
   }
 
   async clearHistoricosOrganization(): Promise<void> {
@@ -4427,6 +4478,10 @@ export class GtrWorkspaceFacade {
 
   private defaultAgendadosSortDirection(field: AgendadosSortField): GtrPlatformSortDirection {
     return field === 'programado' || field === 'agendado' ? 'desc' : 'asc';
+  }
+
+  private defaultHistoricosSortDirection(field: GtrHistoricosSortField): GtrPlatformSortDirection {
+    return field === 'lastEntryAt' ? 'desc' : 'asc';
   }
 
   private platformRequestKey(): string {

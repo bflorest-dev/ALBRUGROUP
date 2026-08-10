@@ -28,10 +28,6 @@ label {
   grid-column: span 3;
 }
 
-.historicos-mode {
-  min-width: 0;
-}
-
 .dialog-actions {
   align-items: center;
   display: flex;
@@ -59,14 +55,22 @@ label {
   gap: 0.38rem;
 }
 
-.gtr-organize-field label {
-  color: var(--app-text);
-  font-size: 0.8rem;
-  font-weight: 700;
+.sort-header {
+  all: unset;
+  cursor: pointer;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
-.gtr-organize-divider {
-  border-top: 1px solid var(--app-border-soft);
+.sort-header i {
+  margin-left: 0.35rem;
+  opacity: 0.55;
+}
+
+.sort-header--active,
+.sort-header--active i {
+  color: var(--role-accent);
+  opacity: 1;
 }
 
 .gtr-group-option {

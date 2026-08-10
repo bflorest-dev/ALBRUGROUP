@@ -198,6 +198,24 @@
     justify-content: center;
   }
 
+  &__sort-header {
+    all: unset;
+    cursor: pointer;
+    font-weight: 700;
+    white-space: nowrap;
+
+    i {
+      margin-left: 0.35rem;
+      opacity: 0.55;
+    }
+  }
+
+  &__sort-header--active,
+  &__sort-header--active i {
+    color: var(--role-accent);
+    opacity: 1;
+  }
+
   &__time,
   &__person {
     font-variant-numeric: tabular-nums;

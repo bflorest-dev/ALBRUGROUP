@@ -58,14 +58,12 @@ public class EventoService {
     private final LeadAsignacionCounterService leadAsignacionCounterService;
 
     private static final Set<String> EVENTO_SORT_FIELDS = Set.of("createdAt", "accion", "etapa", "tipificacion", "subtipificacion");
-    private static final Map<String, String> LEADS_DIARIOS_SORT_FIELDS = Map.of(
-            "createdAt", "r.fechaIngresoEtapa",
-            "nombreActor", "nombreActor",
-            "campana", "c.nombre",
-            "lead", "l.lead",
-            "primeraTipificacion", "r.primeraCodigoTipificacion",
-            "mayorTipificacion", "r.mayorRangoCodigoTipificacion",
-            "ultimaTipificacion", "r.ultimaCodigoTipificacion"
+    private static final Set<String> LEADS_DIARIOS_SORT_FIELDS = Set.of(
+            "createdAt",
+            "totalAsignacionesDia",
+            "primeraTipificacion",
+            "mayorTipificacion",
+            "ultimaTipificacion"
     );
 
     @Transactional
@@ -218,7 +216,12 @@ public class EventoService {
         validarFiltroAgrupacion(tipoGrupo, idGrupo, codigoTipificacion, sinValor);
         String leadNormalizado = normalizarBusquedaLead(lead);
 
-        var pageable = paginationService.toPageableWithMapping(pageRequest, LEADS_DIARIOS_SORT_FIELDS);
+        LeadOrderingRules.validarPageRequest(pageRequest, LEADS_DIARIOS_SORT_FIELDS);
+        boolean sortDesc = LeadOrderingRules.isDesc(pageRequest);
+        var pageable = org.springframework.data.domain.PageRequest.of(
+                pageRequest.getPageNumber(),
+                pageRequest.getPageSize()
+        );
 
         var registros = eventoRepository.listarRegistrosDiarios(
                 Accion.REGISTRO,
@@ -237,6 +240,8 @@ public class EventoService {
                 leadNormalizado != null,
                 leadNormalizado,
                 sinValor,
+                pageRequest.getSortBy(),
+                sortDesc,
                 pageable
         );
         Map<Long, Long> registrosDiaPorLead = contarRegistrosDia(registros.getContent(), rango);

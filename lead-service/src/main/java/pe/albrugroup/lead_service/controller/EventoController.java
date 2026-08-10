@@ -60,8 +60,12 @@ public class EventoController {
             @RequestParam(required = false) String codigoSubtipificacion,
             @RequestParam(required = false) String lead,
             @RequestParam(defaultValue = "false") boolean sinValor,
+            @RequestParam(required = false, name = "direction") String directionParam,
             @Valid @ModelAttribute PageRequest pageRequest
     ) {
+        if (directionParam == null) {
+            pageRequest.setDirection("desc");
+        }
         var registros = eventoService.listarRegistrosDiarios(
                 fecha,
                 tipoGrupo,
