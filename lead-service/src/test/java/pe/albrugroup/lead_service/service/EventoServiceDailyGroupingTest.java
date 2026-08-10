@@ -85,7 +85,6 @@ class EventoServiceDailyGroupingTest {
                 .pageNumber(0)
                 .pageSize(10)
                 .build();
-        when(paginationService.toPageableWithMapping(eq(request), any())).thenReturn(Pageable.unpaged());
         when(eventoRepository.listarRegistrosDiarios(
                 eq(Accion.REGISTRO),
                 eq(Etapa.PREVENTA),
@@ -102,6 +101,8 @@ class EventoServiceDailyGroupingTest {
                 eq("INTERESADO"),
                 eq(false),
                 eq(null),
+                eq(false),
+                eq("createdAt"),
                 eq(false),
                 any(Pageable.class)
         )).thenReturn(new PageImpl<>(List.of()));
@@ -134,6 +135,8 @@ class EventoServiceDailyGroupingTest {
                 eq(false),
                 eq(null),
                 eq(false),
+                eq("createdAt"),
+                eq(false),
                 any(Pageable.class)
         );
     }
@@ -144,7 +147,6 @@ class EventoServiceDailyGroupingTest {
                 .pageNumber(0)
                 .pageSize(10)
                 .build();
-        when(paginationService.toPageableWithMapping(eq(request), any())).thenReturn(Pageable.unpaged());
         when(eventoRepository.listarRegistrosDiarios(
                 eq(Accion.REGISTRO),
                 eq(Etapa.PREVENTA),
@@ -161,6 +163,8 @@ class EventoServiceDailyGroupingTest {
                 eq(null),
                 eq(true),
                 eq("987654321"),
+                eq(false),
+                eq("createdAt"),
                 eq(false),
                 any(Pageable.class)
         )).thenReturn(new PageImpl<>(List.of()));
@@ -192,6 +196,8 @@ class EventoServiceDailyGroupingTest {
                 eq(null),
                 eq(true),
                 eq("987654321"),
+                eq(false),
+                eq("createdAt"),
                 eq(false),
                 any(Pageable.class)
         );

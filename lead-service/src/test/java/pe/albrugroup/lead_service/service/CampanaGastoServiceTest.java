@@ -18,6 +18,7 @@ import pe.albrugroup.lead_service.repository.EventoRepository;
 import pe.albrugroup.lead_service.repository.LeadRepository;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Optional;
 
@@ -73,9 +74,15 @@ class CampanaGastoServiceTest {
                 .fechaCarga(hoy)
                 .createdAt(OperationalDateTime.previousDayClosure(hoy))
                 .build();
+        Instant inicio = OperationalDateTime.startOfDay(hoy);
+        Instant fin = OperationalDateTime.endExclusiveOfDay(hoy);
         when(campanaRepository.findActiveByIdForUpdate(1L)).thenReturn(Optional.of(campana));
         when(registroRepository.existsByCampanaIdAndFechaCarga(1L, hoy)).thenReturn(true);
-        when(registroRepository.findTopByCampanaIdAndFechaCargaOrderByIdDesc(1L, hoy)).thenReturn(Optional.of(primerRegistro));
+        when(registroRepository.findTopByCampanaIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
+                1L,
+                inicio,
+                fin
+        )).thenReturn(Optional.of(primerRegistro));
         when(registroRepository.saveAndFlush(any(CampanaGastoRegistro.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(registroRepository.save(any(CampanaGastoRegistro.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(eventoRepository.contarRegistrosPorCampanaYRango(anyLong(), any(), any(), any())).thenReturn(0L);
@@ -85,7 +92,11 @@ class CampanaGastoServiceTest {
 
         assertThat(response.getCierreRetroactivo()).isFalse();
         assertThat(OperationalDateTime.toOperationalDate(response.getCreatedAt())).isEqualTo(hoy);
-        verify(registroRepository).findTopByCampanaIdAndFechaCargaOrderByIdDesc(1L, hoy);
+        verify(registroRepository).findTopByCampanaIdAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtDesc(
+                1L,
+                inicio,
+                fin
+        );
     }
 
     @Test
