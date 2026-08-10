@@ -121,7 +121,7 @@ const CAMPOS_CONFIGURABLES: Record<CampoCaptura, { tab: 'datos' | 'direccion'; c
   PLANO: { tab: 'direccion', control: 'plano', label: 'Plano' }
 };
 
-type AgendadosSortField = 'programado' | 'agendado';
+type AgendadosSortField = 'programado' | 'agendado' | 'tipificacion' | 'estado';
 type GtrPlatformSortField =
   | 'lastEntryAt'
   | 'createdAt'
@@ -2852,11 +2852,15 @@ export class GtrWorkspaceFacade {
     if (!this.canDisplayOperationalData()) {
       return;
     }
-    if (this.agendadosSortField() === field) {
-      this.agendadosSortDirection.update((direction) => (direction === 'asc' ? 'desc' : 'asc'));
-    } else {
+    const defaultDirection = this.defaultAgendadosSortDirection(field);
+    if (this.agendadosSortField() !== field) {
       this.agendadosSortField.set(field);
-      this.agendadosSortDirection.set('asc');
+      this.agendadosSortDirection.set(defaultDirection);
+    } else if (this.agendadosSortDirection() === defaultDirection) {
+      this.agendadosSortDirection.set(defaultDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.agendadosSortField.set('programado');
+      this.agendadosSortDirection.set('desc');
     }
     this.agendadosPageNumber.set(0);
     await this.refreshAgendados(false);
@@ -2871,6 +2875,16 @@ export class GtrWorkspaceFacade {
       return 'pi pi-sort-alt';
     }
     return this.agendadosSortDirection() === 'asc' ? 'pi pi-sort-amount-up-alt' : 'pi pi-sort-amount-down';
+  }
+
+  agendadoSortLabel(field: AgendadosSortField, label: string): string {
+    if (this.agendadosSortField() !== field) {
+      return `Ordenar por ${label}`;
+    }
+    if (this.agendadosSortDirection() === this.defaultAgendadosSortDirection(field)) {
+      return `Orden activo por ${label}. Presiona para invertir.`;
+    }
+    return `Orden activo por ${label}. Presiona para volver al orden inicial.`;
   }
 
   async buscarMasivos(): Promise<void> {
@@ -4409,6 +4423,10 @@ export class GtrWorkspaceFacade {
 
   private defaultPlatformSortDirection(field: GtrPlatformSortField): GtrPlatformSortDirection {
     return field === 'lastEntryAt' || field === 'createdAt' ? 'desc' : 'asc';
+  }
+
+  private defaultAgendadosSortDirection(field: AgendadosSortField): GtrPlatformSortDirection {
+    return field === 'programado' || field === 'agendado' ? 'desc' : 'asc';
   }
 
   private platformRequestKey(): string {

@@ -208,6 +208,12 @@ public class LeadService {
             "ultimaTipificacion",
             "estado"
     );
+    private static final Set<String> LEAD_AGENDADOS_GTR_SORT_FIELDS = Set.of(
+            "programado",
+            "agendado",
+            "tipificacion",
+            "estado"
+    );
     private static final Set<String> LEAD_ASESOR_SORT_FIELDS = Set.of(
             "lastEntryAt", "createdAt", "lead", "estado"
     );
@@ -568,32 +574,36 @@ public class LeadService {
 
     private Page<LeadAgendadoGtrResponse> listarAgendadosGtrOrdenados(PageRequest pageRequest, Long idEquipo) {
         LeadOrderingRules.validarDirection(pageRequest.getDirection());
+        String sortBy = normalizarSortByAgendadosGtr(pageRequest.getSortBy());
+        if (!LEAD_AGENDADOS_GTR_SORT_FIELDS.contains(sortBy)) {
+            throw new BadRequestException("Campo de ordenamiento no permitido: " + pageRequest.getSortBy());
+        }
         boolean desc = LeadOrderingRules.isDesc(pageRequest);
+        var estadoOrden = LeadOrderingRules.estadoSeguimientoOrden();
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
         var pageable = org.springframework.data.domain.PageRequest.of(
                 pageRequest.getPageNumber(),
                 pageRequest.getPageSize()
         );
 
-        // "agendado" ordena por el momento en que se tipifico (Evento.createdAt);
-        // "programado" (default) ordena por la hora de la cita (Evento.horaProgramada).
-        if ("agendado".equals(pageRequest.getSortBy())) {
-            return desc
-                    ? leadRepository.listarLeadsAgendadosGtrPorAgendadoDesc(
-                            Etapa.PREVENTA, COMPORTAMIENTO_AGENDADO, Accion.TIPIFICACION,
-                            equipos.filtrar(), equipos.ids(), pageable)
-                    : leadRepository.listarLeadsAgendadosGtrPorAgendadoAsc(
-                            Etapa.PREVENTA, COMPORTAMIENTO_AGENDADO, Accion.TIPIFICACION,
-                            equipos.filtrar(), equipos.ids(), pageable);
-        }
+        return leadRepository.listarLeadsAgendadosGtrOrdenados(
+                Etapa.PREVENTA,
+                COMPORTAMIENTO_AGENDADO,
+                Accion.TIPIFICACION,
+                equipos.filtrar(),
+                equipos.ids(),
+                sortBy,
+                desc,
+                estadoOrden.nuevo(),
+                estadoOrden.enGestion(),
+                estadoOrden.asignado(),
+                estadoOrden.gestionado(),
+                pageable
+        );
+    }
 
-        return desc
-                ? leadRepository.listarLeadsAgendadosGtrPorHoraDesc(
-                        Etapa.PREVENTA, COMPORTAMIENTO_AGENDADO, Accion.TIPIFICACION,
-                        equipos.filtrar(), equipos.ids(), pageable)
-                : leadRepository.listarLeadsAgendadosGtrPorHoraAsc(
-                        Etapa.PREVENTA, COMPORTAMIENTO_AGENDADO, Accion.TIPIFICACION,
-                        equipos.filtrar(), equipos.ids(), pageable);
+    private String normalizarSortByAgendadosGtr(String sortBy) {
+        return "createdAt".equals(sortBy) ? "programado" : sortBy;
     }
 
     public PageResponse<LeadResponse> listarBandejaVenta(

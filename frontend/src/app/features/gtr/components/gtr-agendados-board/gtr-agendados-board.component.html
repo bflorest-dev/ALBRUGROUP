@@ -31,6 +31,8 @@
               type="button"
               class="sort-header"
               [class.sort-header--active]="facade.agendadoSortActive('programado')"
+              [attr.aria-label]="facade.agendadoSortLabel('programado', 'fecha agendada')"
+              [title]="facade.agendadoSortLabel('programado', 'fecha agendada')"
               (click)="facade.changeAgendadosSort('programado')"
             >
               <span>Fecha Agendada</span>
@@ -42,6 +44,8 @@
               type="button"
               class="sort-header"
               [class.sort-header--active]="facade.agendadoSortActive('agendado')"
+              [attr.aria-label]="facade.agendadoSortLabel('agendado', 'fecha gestion')"
+              [title]="facade.agendadoSortLabel('agendado', 'fecha gestion')"
               (click)="facade.changeAgendadosSort('agendado')"
             >
               <span>Fecha Gestion</span>
@@ -51,10 +55,34 @@
           <th>Lead</th>
           <th>Proveedor</th>
           <th>Base</th>
-          <th>Tipificacion</th>
+          <th class="col-sortable">
+            <button
+              type="button"
+              class="sort-header"
+              [class.sort-header--active]="facade.agendadoSortActive('tipificacion')"
+              [attr.aria-label]="facade.agendadoSortLabel('tipificacion', 'tipificacion')"
+              [title]="facade.agendadoSortLabel('tipificacion', 'tipificacion')"
+              (click)="facade.changeAgendadosSort('tipificacion')"
+            >
+              <span>Tipificacion</span>
+              <i [class]="facade.agendadoSortIcon('tipificacion')" aria-hidden="true"></i>
+            </button>
+          </th>
           <th>Asesor</th>
           <th>Comentario</th>
-          <th>Estado</th>
+          <th class="col-sortable">
+            <button
+              type="button"
+              class="sort-header"
+              [class.sort-header--active]="facade.agendadoSortActive('estado')"
+              [attr.aria-label]="facade.agendadoSortLabel('estado', 'estado')"
+              [title]="facade.agendadoSortLabel('estado', 'estado')"
+              (click)="facade.changeAgendadosSort('estado')"
+            >
+              <span>Estado</span>
+              <i [class]="facade.agendadoSortIcon('estado')" aria-hidden="true"></i>
+            </button>
+          </th>
           <th class="col-actions">Acciones</th>
         </tr>
       </ng-template>

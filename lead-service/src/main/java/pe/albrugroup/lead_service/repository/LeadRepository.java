@@ -756,6 +756,130 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             LEFT JOIN l.campana c
             LEFT JOIN c.proveedor p
             LEFT JOIN l.datosPreventa dp
+            LEFT JOIN Tipificacion tAgenda ON tAgenda.codigo = r.mayorRangoCodigoTipificacion
+                AND tAgenda.etapa = l.etapa
+                AND tAgenda.idEquipo = l.idEquipo
+            LEFT JOIN Subtipificacion sAgenda ON sAgenda.tipificacion = tAgenda
+                AND sAgenda.codigo = r.mayorRangoCodigoSubtipificacion
+            WHERE l.etapa = :etapa
+              AND EXISTS (
+                  SELECT 1
+                  FROM Subtipificacion sa
+                  JOIN sa.tipificacion ta
+                  WHERE ta.idEquipo = l.idEquipo
+                    AND ta.etapa = l.etapa
+                    AND ta.codigo = r.mayorRangoCodigoTipificacion
+                    AND sa.codigo = r.mayorRangoCodigoSubtipificacion
+                    AND :comportamiento MEMBER OF sa.comportamientos
+              )
+              AND (:filtrarEquipos = false OR l.idEquipo IN :equipoIds)
+              AND e.accion = :accionTipificacion
+              AND e.tipificacion = r.mayorRangoCodigoTipificacion
+              AND e.subtipificacion = r.mayorRangoCodigoSubtipificacion
+              AND e.horaProgramada IS NOT NULL
+              AND e.createdAt = (
+                  SELECT MAX(es.createdAt)
+                  FROM Evento es
+                  WHERE es.idLead = l.id
+                    AND es.accion = :accionTipificacion
+                    AND es.tipificacion = r.mayorRangoCodigoTipificacion
+                    AND es.subtipificacion = r.mayorRangoCodigoSubtipificacion
+                    AND es.horaProgramada IS NOT NULL
+              )
+            ORDER BY
+              CASE WHEN :sortBy = 'programado' AND :sortDesc = false THEN e.fechaProgramacion END ASC,
+              CASE WHEN :sortBy = 'programado' AND :sortDesc = true THEN e.fechaProgramacion END DESC,
+              CASE WHEN :sortBy = 'programado' AND :sortDesc = false THEN e.horaProgramada END ASC,
+              CASE WHEN :sortBy = 'programado' AND :sortDesc = true THEN e.horaProgramada END DESC,
+              CASE WHEN :sortBy = 'programado' AND :sortDesc = false THEN e.createdAt END ASC,
+              CASE WHEN :sortBy = 'programado' AND :sortDesc = true THEN e.createdAt END DESC,
+
+              CASE WHEN :sortBy = 'agendado' AND :sortDesc = false THEN e.createdAt END ASC,
+              CASE WHEN :sortBy = 'agendado' AND :sortDesc = true THEN e.createdAt END DESC,
+
+              CASE WHEN :sortBy = 'estado' AND :sortDesc = false THEN
+                CASE
+                  WHEN l.estado = :estadoNuevo THEN 1
+                  WHEN l.estado = :estadoEnGestion THEN 2
+                  WHEN l.estado = :estadoAsignado THEN 3
+                  WHEN l.estado = :estadoGestionado THEN 4
+                  ELSE 99
+                END
+              END ASC,
+              CASE WHEN :sortBy = 'estado' AND :sortDesc = true THEN
+                CASE
+                  WHEN l.estado = :estadoNuevo THEN 1
+                  WHEN l.estado = :estadoEnGestion THEN 2
+                  WHEN l.estado = :estadoAsignado THEN 3
+                  WHEN l.estado = :estadoGestionado THEN 4
+                  ELSE 99
+                END
+              END DESC,
+
+              CASE WHEN :sortBy = 'tipificacion' AND tAgenda.orden IS NULL THEN 1 ELSE 0 END ASC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = false THEN tAgenda.orden END ASC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = true THEN tAgenda.orden END DESC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = false THEN sAgenda.orden END ASC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = true THEN sAgenda.orden END DESC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = false THEN r.mayorRangoCodigoTipificacion END ASC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = true THEN r.mayorRangoCodigoTipificacion END DESC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = false THEN r.mayorRangoCodigoSubtipificacion END ASC,
+              CASE WHEN :sortBy = 'tipificacion' AND :sortDesc = true THEN r.mayorRangoCodigoSubtipificacion END DESC,
+
+              e.fechaProgramacion DESC,
+              e.horaProgramada DESC,
+              e.createdAt DESC,
+              l.id DESC
+            """)
+    Page<LeadAgendadoGtrResponse> listarLeadsAgendadosGtrOrdenados(
+            @Param("etapa") Etapa etapa,
+            @Param("comportamiento") ComportamientoTipificacion comportamiento,
+            @Param("accionTipificacion") Accion accionTipificacion,
+            @Param("filtrarEquipos") boolean filtrarEquipos,
+            @Param("equipoIds") Collection<Long> equipoIds,
+            @Param("sortBy") String sortBy,
+            @Param("sortDesc") boolean sortDesc,
+            @Param("estadoNuevo") EstadoSeguimiento estadoNuevo,
+            @Param("estadoEnGestion") EstadoSeguimiento estadoEnGestion,
+            @Param("estadoAsignado") EstadoSeguimiento estadoAsignado,
+            @Param("estadoGestionado") EstadoSeguimiento estadoGestionado,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT new pe.albrugroup.lead_service.entity.response.LeadAgendadoGtrResponse(
+                l.id,
+                l.idEquipo,
+                l.createdAt,
+                l.prefijo,
+                l.lead,
+                l.usermeta,
+                c.nombre,
+                p.nombre,
+                (SELECT peFallback.nombre
+                 FROM EquipoProveedor epFallback
+                 JOIN epFallback.proveedor peFallback
+                 WHERE epFallback.idEquipo = l.idEquipo
+                   AND epFallback.fallbackLeadSinCampana = true),
+                l.base,
+                dp.nombreTitularServicio,
+                r.mayorRangoCodigoTipificacion,
+                r.mayorRangoCodigoSubtipificacion,
+                l.nombreAsesorAsignado,
+                e.nombreActor,
+                l.estado,
+                0L,
+                e.createdAt,
+                e.comentario,
+                e.horaProgramada,
+                e.fechaProgramacion
+            )
+            FROM Lead l
+            JOIN Evento e ON e.idLead = l.id
+            JOIN LeadEtapaResumen r ON r.idLead = l.id AND r.etapa = l.etapa
+            LEFT JOIN l.campana c
+            LEFT JOIN c.proveedor p
+            LEFT JOIN l.datosPreventa dp
             WHERE l.etapa = :etapa
               AND EXISTS (
                   SELECT 1
