@@ -145,13 +145,85 @@
         <th>Proveedor</th>
         <th>Base</th>
         <th>Documento</th>
-        <th>Primera tipificacion</th>
-        <th>Mayor tipificacion</th>
-        <th>Ultima tipificacion</th>
-        <th>Estado</th>
+        <th class="col-sortable">
+          <button
+            type="button"
+            class="sort-header"
+            [class.sort-header--active]="facade.platformSortActive('primeraTipificacion')"
+            [attr.aria-label]="facade.platformSortLabel('primeraTipificacion', 'primera tipificacion')"
+            [title]="facade.platformSortLabel('primeraTipificacion', 'primera tipificacion')"
+            (click)="facade.changePlatformColumnSort('primeraTipificacion')"
+          >
+            <span>Primera tipificacion</span>
+            <i [class]="facade.platformSortIcon('primeraTipificacion')" aria-hidden="true"></i>
+          </button>
+        </th>
+        <th class="col-sortable">
+          <button
+            type="button"
+            class="sort-header"
+            [class.sort-header--active]="facade.platformSortActive('mayorTipificacion')"
+            [attr.aria-label]="facade.platformSortLabel('mayorTipificacion', 'mayor tipificacion')"
+            [title]="facade.platformSortLabel('mayorTipificacion', 'mayor tipificacion')"
+            (click)="facade.changePlatformColumnSort('mayorTipificacion')"
+          >
+            <span>Mayor tipificacion</span>
+            <i [class]="facade.platformSortIcon('mayorTipificacion')" aria-hidden="true"></i>
+          </button>
+        </th>
+        <th class="col-sortable">
+          <button
+            type="button"
+            class="sort-header"
+            [class.sort-header--active]="facade.platformSortActive('ultimaTipificacion')"
+            [attr.aria-label]="facade.platformSortLabel('ultimaTipificacion', 'ultima tipificacion')"
+            [title]="facade.platformSortLabel('ultimaTipificacion', 'ultima tipificacion')"
+            (click)="facade.changePlatformColumnSort('ultimaTipificacion')"
+          >
+            <span>Ultima tipificacion</span>
+            <i [class]="facade.platformSortIcon('ultimaTipificacion')" aria-hidden="true"></i>
+          </button>
+        </th>
+        <th class="col-sortable">
+          <button
+            type="button"
+            class="sort-header"
+            [class.sort-header--active]="facade.platformSortActive('estado')"
+            [attr.aria-label]="facade.platformSortLabel('estado', 'estado')"
+            [title]="facade.platformSortLabel('estado', 'estado')"
+            (click)="facade.changePlatformColumnSort('estado')"
+          >
+            <span>Estado</span>
+            <i [class]="facade.platformSortIcon('estado')" aria-hidden="true"></i>
+          </button>
+        </th>
         <th>Asesor</th>
-        <th>Ingreso</th>
-        <th>Ultima Gestion</th>
+        <th class="col-sortable">
+          <button
+            type="button"
+            class="sort-header"
+            [class.sort-header--active]="facade.platformSortActive('createdAt')"
+            [attr.aria-label]="facade.platformSortLabel('createdAt', 'ingreso')"
+            [title]="facade.platformSortLabel('createdAt', 'ingreso')"
+            (click)="facade.changePlatformColumnSort('createdAt')"
+          >
+            <span>Ingreso</span>
+            <i [class]="facade.platformSortIcon('createdAt')" aria-hidden="true"></i>
+          </button>
+        </th>
+        <th class="col-sortable">
+          <button
+            type="button"
+            class="sort-header"
+            [class.sort-header--active]="facade.platformSortActive('lastEntryAt')"
+            [attr.aria-label]="facade.platformSortLabel('lastEntryAt', 'ultima gestion')"
+            [title]="facade.platformSortLabel('lastEntryAt', 'ultima gestion')"
+            (click)="facade.changePlatformColumnSort('lastEntryAt')"
+          >
+            <span>Ultima Gestion</span>
+            <i [class]="facade.platformSortIcon('lastEntryAt')" aria-hidden="true"></i>
+          </button>
+        </th>
         <th class="col-actions">Acciones</th>
       </tr>
     </ng-template>

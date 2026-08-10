@@ -125,11 +125,10 @@ type AgendadosSortField = 'programado' | 'agendado';
 type GtrPlatformSortField =
   | 'lastEntryAt'
   | 'createdAt'
-  | 'campana'
-  | 'primeraCodigoTipificacion'
-  | 'codigoTipificacion'
-  | 'estado'
-  | 'nombreAsesorAsignado';
+  | 'primeraTipificacion'
+  | 'mayorTipificacion'
+  | 'ultimaTipificacion'
+  | 'estado';
 type GtrHistoricosSortField = 'lastEntryAt' | 'codigoTipificacion' | 'estado' | 'nombreAsesorAsignado';
 type GtrPlatformSortDirection = 'asc' | 'desc';
 type GtrHistoricosGroupMode = 'SIN_AGRUPAR' | 'PRIMERA_TIPIFICACION' | 'MAYOR_TIPIFICACION' | 'ULTIMA_TIPIFICACION' | 'ESTADO' | 'INGRESO';
@@ -896,11 +895,10 @@ export class GtrWorkspaceFacade {
   readonly platformSortOptions: Array<{ label: string; value: GtrPlatformSortField }> = [
     { label: 'Última gestión', value: 'lastEntryAt' },
     { label: 'Ingreso', value: 'createdAt' },
-    { label: 'Proveedor', value: 'campana' },
-    { label: 'Primera tipificación', value: 'primeraCodigoTipificacion' },
-    { label: 'Última tipificación', value: 'codigoTipificacion' },
-    { label: 'Estado', value: 'estado' },
-    { label: 'Asesor', value: 'nombreAsesorAsignado' }
+    { label: 'Primera tipificación', value: 'primeraTipificacion' },
+    { label: 'Mayor tipificación', value: 'mayorTipificacion' },
+    { label: 'Última tipificación', value: 'ultimaTipificacion' },
+    { label: 'Estado', value: 'estado' }
   ];
   readonly platformSortDirectionOptions = computed<Array<{ label: string; value: GtrPlatformSortDirection }>>(() =>
     this.platformSortField() === 'lastEntryAt' || this.platformSortField() === 'createdAt'
@@ -2683,7 +2681,7 @@ export class GtrWorkspaceFacade {
       return;
     }
     this.platformSortField.set(field);
-    this.platformSortDirection.set(field === 'lastEntryAt' || field === 'createdAt' ? 'desc' : 'asc');
+    this.platformSortDirection.set(this.defaultPlatformSortDirection(field));
     this.pageNumber.set(0);
     await this.refreshPage(false);
   }
@@ -2704,6 +2702,48 @@ export class GtrWorkspaceFacade {
     this.platformSortDirection.set('desc');
     this.pageNumber.set(0);
     await this.refreshPage(false);
+  }
+
+  async changePlatformColumnSort(field: GtrPlatformSortField): Promise<void> {
+    if (!this.canDisplayOperationalData()) {
+      return;
+    }
+
+    const defaultDirection = this.defaultPlatformSortDirection(field);
+
+    if (this.platformSortField() !== field) {
+      this.platformSortField.set(field);
+      this.platformSortDirection.set(defaultDirection);
+    } else if (this.platformSortDirection() === defaultDirection) {
+      this.platformSortDirection.set(defaultDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.platformSortField.set('lastEntryAt');
+      this.platformSortDirection.set('desc');
+    }
+
+    this.pageNumber.set(0);
+    await this.refreshPage(false);
+  }
+
+  platformSortActive(field: GtrPlatformSortField): boolean {
+    return this.platformSortField() === field;
+  }
+
+  platformSortIcon(field: GtrPlatformSortField): string {
+    if (this.platformSortField() !== field) {
+      return 'pi pi-sort-alt';
+    }
+    return this.platformSortDirection() === 'asc' ? 'pi pi-sort-amount-up-alt' : 'pi pi-sort-amount-down';
+  }
+
+  platformSortLabel(field: GtrPlatformSortField, label: string): string {
+    if (this.platformSortField() !== field) {
+      return `Ordenar por ${label}`;
+    }
+    if (this.platformSortDirection() === this.defaultPlatformSortDirection(field)) {
+      return `Orden activo por ${label}. Presiona para invertir.`;
+    }
+    return `Orden activo por ${label}. Presiona para volver al orden inicial.`;
   }
 
   async setHistoricosGroupingMode(mode: GtrHistoricosGroupMode): Promise<void> {
@@ -4365,6 +4405,10 @@ export class GtrWorkspaceFacade {
       sortBy: this.platformSortField(),
       direction: this.platformSortDirection()
     };
+  }
+
+  private defaultPlatformSortDirection(field: GtrPlatformSortField): GtrPlatformSortDirection {
+    return field === 'lastEntryAt' || field === 'createdAt' ? 'desc' : 'asc';
   }
 
   private platformRequestKey(): string {

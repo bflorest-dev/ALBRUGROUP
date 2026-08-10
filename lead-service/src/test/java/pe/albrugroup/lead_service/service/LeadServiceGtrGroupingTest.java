@@ -122,7 +122,6 @@ class LeadServiceGtrGroupingTest {
                 .direction("desc")
                 .build();
         Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 12);
-        when(paginationService.toPageableWithMapping(eq(request), any())).thenReturn(pageable);
         when(leadRepository.listarBandejaGtr(
                 eq(Etapa.PREVENTA),
                 eq("%"),
@@ -130,6 +129,12 @@ class LeadServiceGtrGroupingTest {
                 any(Instant.class),
                 anyBoolean(),
                 anyCollection(),
+                eq("lastEntryAt"),
+                eq(true),
+                eq(EstadoSeguimiento.NUEVO),
+                eq(EstadoSeguimiento.EN_GESTION),
+                eq(EstadoSeguimiento.ASIGNADO),
+                eq(EstadoSeguimiento.GESTIONADO),
                 eq(pageable)
         )).thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
@@ -153,6 +158,12 @@ class LeadServiceGtrGroupingTest {
                 any(Instant.class),
                 anyBoolean(),
                 anyCollection(),
+                eq("lastEntryAt"),
+                eq(true),
+                eq(EstadoSeguimiento.NUEVO),
+                eq(EstadoSeguimiento.EN_GESTION),
+                eq(EstadoSeguimiento.ASIGNADO),
+                eq(EstadoSeguimiento.GESTIONADO),
                 eq(pageable)
         );
     }
@@ -166,7 +177,6 @@ class LeadServiceGtrGroupingTest {
                 .direction("desc")
                 .build();
         Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 12);
-        when(paginationService.toPageableWithMapping(eq(request), any())).thenReturn(pageable);
         when(leadRepository.listarBandejaGtrFiltrada(
                 eq(Etapa.PREVENTA),
                 eq("%"),
@@ -185,6 +195,12 @@ class LeadServiceGtrGroupingTest {
                 eq(false),
                 anyBoolean(),
                 anyCollection(),
+                eq("lastEntryAt"),
+                eq(true),
+                eq(EstadoSeguimiento.NUEVO),
+                eq(EstadoSeguimiento.EN_GESTION),
+                eq(EstadoSeguimiento.ASIGNADO),
+                eq(EstadoSeguimiento.GESTIONADO),
                 eq(pageable)
         )).thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
@@ -219,6 +235,12 @@ class LeadServiceGtrGroupingTest {
                 eq(false),
                 anyBoolean(),
                 anyCollection(),
+                eq("lastEntryAt"),
+                eq(true),
+                eq(EstadoSeguimiento.NUEVO),
+                eq(EstadoSeguimiento.EN_GESTION),
+                eq(EstadoSeguimiento.ASIGNADO),
+                eq(EstadoSeguimiento.GESTIONADO),
                 eq(pageable)
         );
     }
@@ -239,6 +261,27 @@ class LeadServiceGtrGroupingTest {
                 null,
                 request
         )).hasMessage("Debes indicar el grupo seleccionado");
+    }
+
+    @Test
+    void rechazaOrdenamientoNoPermitidoEnBandejaDiaria() {
+        PageRequest request = PageRequest.builder()
+                .sortBy("lead")
+                .direction("asc")
+                .build();
+
+        assertThatThrownBy(() -> leadService.listarBandejaGtr(
+                LocalDate.of(2026, 6, 10),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                false,
+                null,
+                request
+        )).hasMessage("Campo de ordenamiento no permitido: lead");
     }
 
     private LeadGtrAgrupacionProjection group(

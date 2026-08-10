@@ -200,16 +200,13 @@ public class LeadService {
             Base.MASIVO,
             Base.SIN_IDENTIFICAR
     );
-    private static final Map<String, String> LEAD_GTR_SORT_FIELDS = Map.ofEntries(
-            Map.entry("lastEntryAt", "lastEntryAt"),
-            Map.entry("createdAt", "createdAt"),
-            Map.entry("lead", "lead"),
-            Map.entry("nombreAsesorAsignado", "nombreAsesorAsignado"),
-            Map.entry("estado", "estado"),
-            Map.entry("campana", "c.nombre"),
-            // La primera tipificacion vive en el resumen por etapa (alias r), no en el Lead.
-            Map.entry("primeraCodigoTipificacion", "r.primeraCodigoTipificacion"),
-            Map.entry("codigoTipificacion", "codigoTipificacion")
+    private static final Set<String> LEAD_GTR_SORT_FIELDS = Set.of(
+            "lastEntryAt",
+            "createdAt",
+            "primeraTipificacion",
+            "mayorTipificacion",
+            "ultimaTipificacion",
+            "estado"
     );
     private static final Set<String> LEAD_ASESOR_SORT_FIELDS = Set.of(
             "lastEntryAt", "createdAt", "lead", "estado"
@@ -240,7 +237,12 @@ public class LeadService {
                 : OperationalDateTime.dayRange(fecha);
         validarFiltroAgrupacionGtr(tipoGrupo, idGrupo, estadoGrupo, codigoTipificacion, sinValor);
 
-        var pageable = paginationService.toPageableWithMapping(pageRequest, LEAD_GTR_SORT_FIELDS);
+        validarOrdenBandejaGtr(pageRequest);
+        boolean sortDesc = "desc".equalsIgnoreCase(pageRequest.getDirection());
+        var pageable = org.springframework.data.domain.PageRequest.of(
+                pageRequest.getPageNumber(),
+                pageRequest.getPageSize()
+        );
         RankingEquipoScope equipos = resolverEquiposRanking(idEquipo);
         Page<LeadGtrResponse> leads = tipoGrupo == null
                 ? leadRepository.listarBandejaGtr(
@@ -250,6 +252,12 @@ public class LeadService {
                         rangoDia.fin(),
                         equipos.filtrar(),
                         equipos.ids(),
+                        pageRequest.getSortBy(),
+                        sortDesc,
+                        EstadoSeguimiento.NUEVO,
+                        EstadoSeguimiento.EN_GESTION,
+                        EstadoSeguimiento.ASIGNADO,
+                        EstadoSeguimiento.GESTIONADO,
                         pageable
                 )
                 : leadRepository.listarBandejaGtrFiltrada(
@@ -270,6 +278,12 @@ public class LeadService {
                         sinValor,
                         equipos.filtrar(),
                         equipos.ids(),
+                        pageRequest.getSortBy(),
+                        sortDesc,
+                        EstadoSeguimiento.NUEVO,
+                        EstadoSeguimiento.EN_GESTION,
+                        EstadoSeguimiento.ASIGNADO,
+                        EstadoSeguimiento.GESTIONADO,
                         pageable
                 );
         aplicarTotalesAsignacion(leads.getContent(), LeadGtrResponse::getId, this::setTotalesAsignacion);
@@ -584,6 +598,13 @@ public class LeadService {
     private void validarDirection(String direction) {
         if (!direction.equalsIgnoreCase("asc") && !direction.equalsIgnoreCase("desc")) {
             throw new BadRequestException("direction debe ser asc o desc");
+        }
+    }
+
+    private void validarOrdenBandejaGtr(PageRequest pageRequest) {
+        validarDirection(pageRequest.getDirection());
+        if (!LEAD_GTR_SORT_FIELDS.contains(pageRequest.getSortBy())) {
+            throw new BadRequestException("Campo de ordenamiento no permitido: " + pageRequest.getSortBy());
         }
     }
 
