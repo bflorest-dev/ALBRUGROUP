@@ -6,15 +6,24 @@ import { PaginatorModule } from 'primeng/paginator';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
 import { GtrWorkspaceFacade } from '../../facades/gtr-workspace.facade';
 
 @Component({
   selector: 'app-gtr-agendados-board',
-  imports: [UpperCasePipe, ButtonModule, CardModule, PaginatorModule, ProgressSpinnerModule, TableModule, TagModule],
+  imports: [UpperCasePipe, ButtonModule, CardModule, PaginatorModule, ProgressSpinnerModule, TableModule, TagModule, TooltipModule],
   templateUrl: './gtr-agendados-board.component.html',
   styleUrl: './gtr-agendados-board.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GtrAgendadosBoardComponent {
   protected readonly facade = inject(GtrWorkspaceFacade);
+
+  protected dateTimeParts(value: string): { date: string; time: string } {
+    if (!value || value === '-') {
+      return { date: '-', time: '' };
+    }
+    const [date, time] = value.split(/\s+/, 2);
+    return { date: date || '-', time: time || '' };
+  }
 }

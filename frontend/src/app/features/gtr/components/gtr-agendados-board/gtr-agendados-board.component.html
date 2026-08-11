@@ -21,7 +21,6 @@
       [value]="facade.agendadosView()"
       dataKey="id"
       [rowHover]="true"
-      [tableStyle]="{ 'min-width': '1040px' }"
       styleClass="p-datatable-sm gtr-table"
     >
       <ng-template #header>
@@ -89,10 +88,28 @@
 
       <ng-template #body let-row>
         <tr [class.row-new]="row.isNew" [class.row-priority-campaign]="facade.isPriorityCampaign(row)">
-          <td><strong>{{ facade.agendadoProgramadoLabel(row) }}</strong></td>
-          <td>{{ facade.agendadoTipificadoLabel(row) }}</td>
           <td>
-            <strong>{{ facade.leadIdentity(row) }}</strong>
+            @if (dateTimeParts(facade.agendadoProgramadoLabel(row)); as scheduled) {
+              <div class="datetime-stack">
+                <span>{{ scheduled.date }}</span>
+                @if (scheduled.time) {
+                  <strong>{{ scheduled.time }}</strong>
+                }
+              </div>
+            }
+          </td>
+          <td>
+            @if (dateTimeParts(facade.agendadoTipificadoLabel(row)); as managed) {
+              <div class="datetime-stack">
+                <span>{{ managed.date }}</span>
+                @if (managed.time) {
+                  <strong>{{ managed.time }}</strong>
+                }
+              </div>
+            }
+          </td>
+          <td>
+            <strong class="lead-value">{{ facade.display(row.lead || row.usermeta) }}</strong>
             @if (facade.isPriorityCampaign(row)) {
               <span class="priority-campaign-chip" [title]="facade.priorityCampaignLabel()">
                 <i class="pi pi-star-fill" aria-hidden="true"></i>
@@ -122,8 +139,22 @@
               </div>
             }
           </td>
-          <td>{{ facade.display(row.nombreAsesorTipifico ?? row.nombreAsesorAsignado) | uppercase }}</td>
-          <td>{{ facade.display(row.comentario) }}</td>
+          <td [title]="facade.display(row.nombreAsesorTipifico ?? row.nombreAsesorAsignado)">
+            {{ facade.advisorShortName(row.nombreAsesorTipifico ?? row.nombreAsesorAsignado) | uppercase }}
+          </td>
+          <td>
+            <button
+              type="button"
+              class="comment-trigger"
+              [class.comment-trigger--empty]="!row.comentario?.trim()"
+              [title]="row.comentario?.trim() || 'Sin comentario'"
+              [pTooltip]="row.comentario?.trim() || 'Sin comentario'"
+              tooltipPosition="left"
+              [attr.aria-label]="row.comentario?.trim() ? 'Ver comentario: ' + row.comentario.trim() : 'Sin comentario'"
+            >
+              <i class="pi pi-comment" aria-hidden="true"></i>
+            </button>
+          </td>
           <td>
             <p-tag
               [severity]="facade.estadoSeverity(row.estadoSeguimiento)"
@@ -142,8 +173,8 @@
                 (click)="facade.openAgendadoAssignment(row)"
               >
                 <span class="gtr-assign-button__action">
-                  <i class="pi pi-user-plus" aria-hidden="true"></i>
-                  <span>Asignar</span>
+                  <i class="pi pi-send" aria-hidden="true"></i>
+                  <span class="gtr-assign-button__label">Asignar</span>
                 </span>
                 <span class="gtr-assign-button__count">{{ facade.display(row.totalAsignaciones ?? 0) }}</span>
               </button>
@@ -153,6 +184,7 @@
                 icon="pi pi-history"
                 size="small"
                 severity="secondary"
+                class="history-trigger"
                 [disabled]="facade.isLoadingEvents()"
                 title="Ver historial"
                 aria-label="Ver historial"

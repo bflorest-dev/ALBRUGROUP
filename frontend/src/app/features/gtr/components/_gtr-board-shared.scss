@@ -175,7 +175,9 @@ td small {
 }
 
 :host ::ng-deep .gtr-table td.col-check,
-:host ::ng-deep .gtr-table th.col-check {
+:host ::ng-deep .gtr-table th.col-check,
+:host ::ng-deep .gtr-table td.col-status,
+:host ::ng-deep .gtr-table th.col-status {
   overflow: visible;
   padding: 0.3rem 0.4rem;
   text-overflow: clip;

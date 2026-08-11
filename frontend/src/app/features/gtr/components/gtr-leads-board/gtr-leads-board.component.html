@@ -240,7 +240,7 @@
             </span>
           </div>
         </th>
-        <th class="col-sortable">
+        <th class="col-sortable col-status">
           <button
             type="button"
             class="sort-header"
@@ -395,7 +395,7 @@
             }
           </div>
         </td>
-        <td>
+        <td class="col-status">
           <p-tag
             [severity]="facade.estadoSeverity(row.estadoSeguimiento)"
             [value]="facade.display(row.estadoSeguimiento)"

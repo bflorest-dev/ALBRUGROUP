@@ -130,10 +130,3 @@
 :host ::ng-deep .gtr-dialog--events {
   width: min(62rem, calc(100vw - 1rem));
 }
-
-@media (min-width: 901px) {
-  :host ::ng-deep .gtr-dialog--events {
-    margin-left: 292px;
-    width: min(62rem, calc(100vw - 292px - 2rem));
-  }
-}

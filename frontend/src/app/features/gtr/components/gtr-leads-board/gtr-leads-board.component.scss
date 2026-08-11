@@ -222,10 +222,6 @@
     display: grid;
   }
 
-  .tip-view:hover .tip-view__label,
-  .tip-view:focus-within .tip-view__label {
-    display: block;
-  }
 }
 
 @media (max-width: 1280px) {
