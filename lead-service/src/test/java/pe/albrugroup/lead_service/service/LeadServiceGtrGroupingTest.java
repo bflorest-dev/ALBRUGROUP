@@ -259,6 +259,83 @@ class LeadServiceGtrGroupingTest {
     }
 
     @Test
+    void permiteFiltrarPlataformaPorTipificacionSinSubtipificacion() {
+        PageRequest request = PageRequest.builder()
+                .pageNumber(0)
+                .pageSize(12)
+                .sortBy("lastEntryAt")
+                .direction("desc")
+                .build();
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 12);
+        when(leadRepository.listarBandejaGtrFiltrada(
+                eq(Etapa.PREVENTA),
+                eq("%"),
+                any(Instant.class),
+                any(Instant.class),
+                eq(false),
+                eq(false),
+                eq(false),
+                eq(false),
+                eq(false),
+                eq(true),
+                eq((Long) null),
+                eq((EstadoSeguimiento) null),
+                eq("CONTACTADO"),
+                eq((String) null),
+                eq(false),
+                anyBoolean(),
+                anyCollection(),
+                eq("lastEntryAt"),
+                eq(true),
+                eq(EstadoSeguimiento.NUEVO),
+                eq(EstadoSeguimiento.EN_GESTION),
+                eq(EstadoSeguimiento.ASIGNADO),
+                eq(EstadoSeguimiento.GESTIONADO),
+                eq(pageable)
+        )).thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+        leadService.listarBandejaGtr(
+                LocalDate.of(2026, 6, 10),
+                null,
+                TipoGrupoGtr.MAYOR_TIPIFICACION,
+                null,
+                null,
+                "CONTACTADO",
+                null,
+                false,
+                null,
+                request
+        );
+
+        verify(leadRepository).listarBandejaGtrFiltrada(
+                eq(Etapa.PREVENTA),
+                eq("%"),
+                any(Instant.class),
+                any(Instant.class),
+                eq(false),
+                eq(false),
+                eq(false),
+                eq(false),
+                eq(false),
+                eq(true),
+                eq((Long) null),
+                eq((EstadoSeguimiento) null),
+                eq("CONTACTADO"),
+                eq((String) null),
+                eq(false),
+                anyBoolean(),
+                anyCollection(),
+                eq("lastEntryAt"),
+                eq(true),
+                eq(EstadoSeguimiento.NUEVO),
+                eq(EstadoSeguimiento.EN_GESTION),
+                eq(EstadoSeguimiento.ASIGNADO),
+                eq(EstadoSeguimiento.GESTIONADO),
+                eq(pageable)
+        );
+    }
+
+    @Test
     void exigeIdentificadorAlFiltrarPorAsesor() {
         PageRequest request = PageRequest.builder().build();
 

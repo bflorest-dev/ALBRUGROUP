@@ -57,7 +57,50 @@
           />
         </div>
 
-        @if (facade.platformGroupingMode() !== 'SIN_AGRUPAR') {
+        @if (facade.isPlatformTipificationGrouping()) {
+          <div class="gtr-organize-field">
+            <label for="gtr-platform-tipification-group">Tipificación</label>
+            <p-select
+              inputId="gtr-platform-tipification-group"
+              [ngModel]="facade.platformSelectedTipificationGroup()"
+              [options]="facade.platformTipificationGroupOptions()"
+              optionLabel="etiqueta"
+              [showClear]="true"
+              emptyMessage="No hay opciones disponibles"
+              (onChange)="onTipificationGroupChange($event.value)"
+            >
+              <ng-template #item let-group>
+                <div class="gtr-group-option">
+                  <span>{{ group.etiqueta }}</span>
+                  <strong>{{ group.cantidad }}</strong>
+                </div>
+              </ng-template>
+            </p-select>
+          </div>
+
+          @if (facade.platformSelectedTipificationGroup() && !facade.platformSelectedTipificationGroup()?.sinValor) {
+            <div class="gtr-organize-field">
+              <label for="gtr-platform-subtipification-group">Subtipificación</label>
+              <p-select
+                inputId="gtr-platform-subtipification-group"
+                [ngModel]="facade.platformSelectedSubtipificationGroup()"
+                [options]="facade.platformSubtipificationGroupOptions()"
+                optionLabel="codigoSubtipificacion"
+                [showClear]="true"
+                emptyMessage="No hay opciones disponibles"
+                placeholder="Todas"
+                (onChange)="onSubtipificationGroupChange($event.value)"
+              >
+                <ng-template #item let-group>
+                  <div class="gtr-group-option">
+                    <span>{{ group.codigoSubtipificacion }}</span>
+                    <strong>{{ group.cantidad }}</strong>
+                  </div>
+                </ng-template>
+              </p-select>
+            </div>
+          }
+        } @else if (facade.platformGroupingMode() !== 'SIN_AGRUPAR') {
           <div class="gtr-organize-field">
             <label for="gtr-platform-group">Filtrar grupo</label>
             <p-select

@@ -59,6 +59,18 @@ export class GtrLeadsBoardComponent {
     void this.facade.selectPlatformGroup(value as Parameters<GtrWorkspaceFacade['selectPlatformGroup']>[0]);
   }
 
+  protected onTipificationGroupChange(value: unknown): void {
+    void this.facade.selectPlatformTipificationGroup(
+      value as Parameters<GtrWorkspaceFacade['selectPlatformTipificationGroup']>[0]
+    );
+  }
+
+  protected onSubtipificationGroupChange(value: unknown): void {
+    void this.facade.selectPlatformSubtipificationGroup(
+      value as Parameters<GtrWorkspaceFacade['selectPlatformSubtipificationGroup']>[0]
+    );
+  }
+
   protected onSortFieldChange(
     value: Parameters<GtrWorkspaceFacade['setPlatformSortField']>[0]
   ): void {

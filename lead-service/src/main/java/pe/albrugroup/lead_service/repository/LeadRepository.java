@@ -288,7 +288,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                         :sinValor = false
                         AND r.primeraCodigoTipificacion = :codigoTipificacion
                         AND (
-                            (:codigoSubtipificacion IS NULL AND r.primeraCodigoSubtipificacion IS NULL)
+                            :codigoSubtipificacion IS NULL
                             OR r.primeraCodigoSubtipificacion = :codigoSubtipificacion
                         )
                     )
@@ -304,7 +304,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                         :sinValor = false
                         AND r.ultimaCodigoTipificacion = :codigoTipificacion
                         AND (
-                            (:codigoSubtipificacion IS NULL AND r.ultimaCodigoSubtipificacion IS NULL)
+                            :codigoSubtipificacion IS NULL
                             OR r.ultimaCodigoSubtipificacion = :codigoSubtipificacion
                         )
                     )
@@ -320,7 +320,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
                         :sinValor = false
                         AND r.mayorRangoCodigoTipificacion = :codigoTipificacion
                         AND (
-                            (:codigoSubtipificacion IS NULL AND r.mayorRangoCodigoSubtipificacion IS NULL)
+                            :codigoSubtipificacion IS NULL
                             OR r.mayorRangoCodigoSubtipificacion = :codigoSubtipificacion
                         )
                     )

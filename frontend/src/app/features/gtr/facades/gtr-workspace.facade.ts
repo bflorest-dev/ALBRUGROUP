@@ -885,7 +885,7 @@ export class GtrWorkspaceFacade {
 
   readonly platformGroupingModeOptions: Array<{ label: string; value: LeadGtrGroupMode }> = [
     { label: 'Sin agrupar', value: 'SIN_AGRUPAR' },
-    { label: 'Proveedor', value: 'CAMPANA' },
+    { label: 'Campaña', value: 'CAMPANA' },
     { label: 'Primera tipificación', value: 'PRIMERA_TIPIFICACION' },
     { label: 'Mayor tipificación', value: 'MAYOR_TIPIFICACION' },
     { label: 'Última tipificación', value: 'ULTIMA_TIPIFICACION' },
@@ -935,6 +935,83 @@ export class GtrWorkspaceFacade {
       default:
         return [];
     }
+  });
+  readonly isPlatformTipificationGrouping = computed(() =>
+    this.isPlatformTipificationGroupMode(this.platformGroupingMode())
+  );
+  readonly platformTipificationGroupOptions = computed<LeadGtrGroupItemResponse[]>(() => {
+    if (!this.isPlatformTipificationGrouping()) {
+      return [];
+    }
+
+    const quantities = new Map<string, number>();
+    const labels = new Map<string, string>();
+    let sinTipificar = 0;
+    for (const group of this.platformActiveGroupOptions()) {
+      if (group.sinValor) {
+        sinTipificar += group.cantidad;
+        continue;
+      }
+      const codigo = group.codigoTipificacion?.trim();
+      if (!codigo) {
+        continue;
+      }
+      quantities.set(codigo, (quantities.get(codigo) ?? 0) + group.cantidad);
+      labels.set(codigo, codigo);
+    }
+
+    const options: LeadGtrGroupItemResponse[] = [...quantities.entries()].map(([codigo, cantidad]) => ({
+      idGrupo: null,
+      codigoTipificacion: codigo,
+      codigoSubtipificacion: null,
+      etiqueta: labels.get(codigo) ?? codigo,
+      cantidad,
+      sinValor: false
+    }));
+    if (sinTipificar > 0) {
+      options.push({
+        idGrupo: null,
+        codigoTipificacion: null,
+        codigoSubtipificacion: null,
+        etiqueta: 'Sin tipificar',
+        cantidad: sinTipificar,
+        sinValor: true
+      });
+    }
+    return this.sortPlatformGroupOptions(options);
+  });
+  readonly platformSelectedTipificationGroup = computed<LeadGtrGroupItemResponse | null>(() => {
+    const selected = this.platformSelectedGroup();
+    if (!selected || !this.isPlatformTipificationGrouping()) {
+      return null;
+    }
+    return this.platformTipificationGroupOptions().find((option) =>
+      Boolean(option.sinValor) === Boolean(selected.sinValor)
+      && (option.codigoTipificacion ?? null) === (selected.codigoTipificacion ?? null)
+    ) ?? null;
+  });
+  readonly platformSubtipificationGroupOptions = computed<LeadGtrGroupItemResponse[]>(() => {
+    const selected = this.platformSelectedTipificationGroup();
+    if (!selected || selected.sinValor || !selected.codigoTipificacion) {
+      return [];
+    }
+    return this.sortPlatformGroupOptions(
+      this.platformActiveGroupOptions().filter((group) =>
+        !group.sinValor
+        && group.codigoTipificacion === selected.codigoTipificacion
+        && !!group.codigoSubtipificacion
+      )
+    );
+  });
+  readonly platformSelectedSubtipificationGroup = computed<LeadGtrGroupItemResponse | null>(() => {
+    const selected = this.platformSelectedGroup();
+    if (!selected?.codigoSubtipificacion || !this.isPlatformTipificationGrouping()) {
+      return null;
+    }
+    return this.platformSubtipificationGroupOptions().find((option) =>
+      option.codigoTipificacion === selected.codigoTipificacion
+      && option.codigoSubtipificacion === selected.codigoSubtipificacion
+    ) ?? null;
   });
   readonly isPlatformOrganizationDefault = computed(() =>
     this.platformGroupingMode() === 'SIN_AGRUPAR' &&
@@ -2679,6 +2756,23 @@ export class GtrWorkspaceFacade {
 
   async selectPlatformGroup(group: LeadGtrGroupItemResponse | null | undefined): Promise<void> {
     this.platformSelectedGroup.set(group ?? null);
+    this.pageNumber.set(0);
+    await this.refreshPage(false);
+  }
+
+  async selectPlatformTipificationGroup(group: LeadGtrGroupItemResponse | null | undefined): Promise<void> {
+    this.platformSelectedGroup.set(group ? { ...group, codigoSubtipificacion: null } : null);
+    this.pageNumber.set(0);
+    await this.refreshPage(false);
+  }
+
+  async selectPlatformSubtipificationGroup(group: LeadGtrGroupItemResponse | null | undefined): Promise<void> {
+    if (group) {
+      this.platformSelectedGroup.set(group);
+    } else {
+      const selected = this.platformSelectedTipificationGroup();
+      this.platformSelectedGroup.set(selected ? { ...selected, codigoSubtipificacion: null } : null);
+    }
     this.pageNumber.set(0);
     await this.refreshPage(false);
   }
@@ -4571,7 +4665,25 @@ export class GtrWorkspaceFacade {
     return filter;
   }
 
+  private isPlatformTipificationGroupMode(mode: LeadGtrGroupMode): boolean {
+    return mode === 'PRIMERA_TIPIFICACION'
+      || mode === 'MAYOR_TIPIFICACION'
+      || mode === 'ULTIMA_TIPIFICACION';
+  }
+
+  private sortPlatformGroupOptions(groups: LeadGtrGroupItemResponse[]): LeadGtrGroupItemResponse[] {
+    return [...groups].sort((left, right) =>
+      right.cantidad - left.cantidad
+      || left.etiqueta.localeCompare(right.etiqueta, undefined, { sensitivity: 'base' })
+    );
+  }
+
   private samePlatformGroup(left: LeadGtrGroupItemResponse, right: LeadGtrGroupItemResponse): boolean {
+    if (this.isPlatformTipificationGroupMode(this.platformGroupingMode())
+        && right.codigoTipificacion
+        && !right.codigoSubtipificacion) {
+      return !left.sinValor && left.codigoTipificacion === right.codigoTipificacion;
+    }
     return Boolean(left.sinValor) === Boolean(right.sinValor)
       && (left.idGrupo ?? null) === (right.idGrupo ?? null)
       && (left.codigoTipificacion ?? null) === (right.codigoTipificacion ?? null)
