@@ -1365,7 +1365,7 @@ export class GtrWorkspaceFacade {
       );
       await Promise.all([
         this.reconcile(),
-        this.masivoSearched() ? this.refreshMasivos() : Promise.resolve()
+        this.masivoSearched() && this.section() !== 'historicos' ? this.refreshMasivos() : Promise.resolve()
       ]);
     } catch (error) {
       this.errorMessage.set(this.getErrorMessage(error, 'No se pudo procesar el Excel.'));
@@ -3852,7 +3852,7 @@ export class GtrWorkspaceFacade {
         section === 'plataforma' ? this.refreshMetrics() : Promise.resolve(),
         section === 'plataforma' ? this.refreshPlatformGroups() : Promise.resolve(),
         section === 'agendados' ? this.refreshAgendados(true) : Promise.resolve(),
-        section === 'historicos' && this.masivoSearched() ? this.refreshMasivos() : Promise.resolve(),
+        section === 'historicos' && this.masivoSearched() ? this.refreshMasivos(true) : Promise.resolve(),
         this.refreshAdvisors(),
         this.refreshPendientes()
       ]);
@@ -3919,13 +3919,15 @@ export class GtrWorkspaceFacade {
     }
   }
 
-  private async refreshMasivos(): Promise<void> {
+  private async refreshMasivos(silent = false): Promise<void> {
     if (!this.canDisplayOperationalData()) {
       return;
     }
     const requestSeq = ++this.masivosRequestSeq;
     const requestKey = this.masivosRequestKey();
-    this.isLoadingMasivos.set(true);
+    if (!silent) {
+      this.isLoadingMasivos.set(true);
+    }
     try {
       const filters = this.getMasivoFilters();
       const query = {
@@ -3942,7 +3944,9 @@ export class GtrWorkspaceFacade {
       }
       this.masivoTotalElements.set(page.totalElements);
       this.masivoTotalPages.set(page.totalPages);
-      this.masivoRows.set(page.content);
+      if (this.masivoRowsSignature(this.masivoRows()) !== this.masivoRowsSignature(page.content)) {
+        this.masivoRows.set(page.content);
+      }
       this.lastMasivoSearchFiltersKey = this.historicosFiltersKey(this.currentHistoricosFiltersFormValue());
       this.saveHistoricosState();
     } catch (error) {
@@ -3950,7 +3954,7 @@ export class GtrWorkspaceFacade {
         this.errorMessage.set(this.getErrorMessage(error, 'No se pudo listar leads masivos.'));
       }
     } finally {
-      if (requestSeq === this.masivosRequestSeq) {
+      if (!silent && requestSeq === this.masivosRequestSeq) {
         this.isLoadingMasivos.set(false);
       }
     }
@@ -4514,6 +4518,22 @@ export class GtrWorkspaceFacade {
       sortBy: this.historicosSortField(),
       direction: this.historicosSortDirection()
     });
+  }
+
+  private masivoRowsSignature(rows: LeadGtrResponse[]): string {
+    return rows
+      .map((row) => [
+        row.id,
+        row.estadoSeguimiento ?? '',
+        row.codigoTipificacion ?? '',
+        row.codigoSubtipificacion ?? '',
+        row.nombreAsesorAsignado ?? '',
+        row.totalAsignaciones ?? '',
+        row.numeroDocumentoTitularServicio ?? '',
+        row.lastEntryAt ?? '',
+        row.createdAt ?? ''
+      ].join(':'))
+      .join('|');
   }
 
   private shouldAnimatePlatformRefresh(silent: boolean, previous: VisualLeadGtr[]): boolean {
