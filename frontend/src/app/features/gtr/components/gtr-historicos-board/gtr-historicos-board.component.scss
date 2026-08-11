@@ -1,14 +1,9 @@
 @use '../gtr-board-shared';
 
-:host ::ng-deep .gtr-board {
-  border: 1px solid var(--app-border-soft);
-  box-shadow: var(--app-shadow-soft);
-}
-
 .form-grid {
   display: grid;
   gap: 0.85rem;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
 }
 
 label {
@@ -21,11 +16,7 @@ label {
 
 .form-grid > app-date-field,
 .historicos-mode {
-  grid-column: span 2;
-}
-
-.historicos-filter-half {
-  grid-column: span 3;
+  grid-column: span 4;
 }
 
 .dialog-actions {
@@ -40,8 +31,12 @@ label {
   display: flex;
   flex-wrap: wrap;
   gap: 0.65rem;
-  justify-content: flex-start;
-  margin: 0.9rem 0;
+  justify-content: flex-end;
+  margin: 1rem 0 0.9rem;
+}
+
+.board-toolbar > button:first-child {
+  margin-right: auto;
 }
 
 .gtr-organize-panel {
@@ -71,25 +66,6 @@ label {
 .sort-header--active i {
   color: var(--role-accent);
   opacity: 1;
-}
-
-.gtr-group-option {
-  align-items: center;
-  display: flex;
-  gap: 1rem;
-  justify-content: space-between;
-}
-
-.gtr-group-option strong {
-  align-items: center;
-  background: var(--app-surface-soft);
-  border-radius: 999px;
-  display: inline-flex;
-  font-size: 0.75rem;
-  font-variant-numeric: tabular-nums;
-  justify-content: center;
-  min-width: 1.75rem;
-  padding: 0.16rem 0.38rem;
 }
 
 :host ::ng-deep .p-select,
@@ -153,12 +129,57 @@ label {
   min-width: 0;
 }
 
-.gtr-group-option span,
 .catalog-option span:last-child {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+:host ::ng-deep .gtr-table :is(th, td):nth-child(1) {
+  width: 3.2rem;
+}
+
+:host ::ng-deep .gtr-table :is(th, td):nth-child(2) {
+  width: 6.4rem;
+}
+
+:host ::ng-deep .gtr-table :is(th, td):nth-child(3) {
+  width: 4.8rem;
+}
+
+:host ::ng-deep .gtr-table :is(th, td):nth-child(4) {
+  width: 7.2rem;
+}
+
+:host ::ng-deep .gtr-table :is(th, td):nth-child(5) {
+  width: 5rem;
+}
+
+:host ::ng-deep .gtr-table :is(th, td):nth-child(6) {
+  width: 10.8rem;
+}
+
+:host ::ng-deep .gtr-table :is(th, td):nth-child(7) {
+  width: 7.2rem;
+}
+
+:host ::ng-deep .gtr-table :is(th, td):nth-child(8) {
+  width: 6rem;
+}
+
+:host ::ng-deep .gtr-table :is(th, td):nth-child(9) {
+  width: 5.4rem;
+}
+
+:host ::ng-deep .gtr-table :is(th, td):nth-child(10) {
+  width: 5.2rem;
+}
+
+@media (max-width: 1439px) {
+  :host ::ng-deep .gtr-table :is(th, td):nth-child(6) {
+    width: 9.6rem;
+  }
 }
 
 @media (max-width: 900px) {
@@ -168,12 +189,16 @@ label {
 
   .form-grid > app-date-field,
   .historicos-mode,
-  .historicos-filter-half {
+  .filter-action-row {
     grid-column: 1 / -1;
   }
 
   .board-toolbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .board-toolbar > button:first-child {
+    margin-right: 0;
   }
 }
