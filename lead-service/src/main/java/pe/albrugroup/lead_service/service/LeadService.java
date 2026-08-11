@@ -316,10 +316,9 @@ public class LeadService {
                 ),
                 // La bandeja GTR ya está acotada al equipo del usuario; no se agrupa por equipo.
                 List.of(),
-                mapearAgrupaciones(
+                mapearAgrupacionesPorEtiqueta(
                         leadRepository.agruparBandejaGtrPorEstado(
-                                Etapa.PREVENTA, rangoDia.inicio(), rangoDia.fin(), equipos.filtrar(), equipos.ids()),
-                        "Sin estado"
+                                Etapa.PREVENTA, rangoDia.inicio(), rangoDia.fin(), equipos.filtrar(), equipos.ids())
                 ),
                 mapearAgrupacionesTipificacion(
                         leadRepository.agruparBandejaGtrPorPrimeraTipificacion(
@@ -3323,6 +3322,30 @@ public class LeadService {
                     true
             ));
         }
+        return ordenarAgrupaciones(agrupaciones);
+    }
+
+    private List<LeadGtrAgrupacionItemResponse> mapearAgrupacionesPorEtiqueta(
+            List<LeadGtrAgrupacionProjection> rows
+    ) {
+        Map<String, Long> cantidades = new LinkedHashMap<>();
+        for (LeadGtrAgrupacionProjection row : rows) {
+            String etiqueta = normalizarCodigoAgrupacion(row.getEtiqueta());
+            if (etiqueta == null) {
+                continue;
+            }
+            cantidades.merge(etiqueta, row.getCantidad(), Long::sum);
+        }
+
+        List<LeadGtrAgrupacionItemResponse> agrupaciones = new ArrayList<>();
+        cantidades.forEach((etiqueta, cantidad) -> agrupaciones.add(new LeadGtrAgrupacionItemResponse(
+                null,
+                null,
+                null,
+                etiqueta,
+                cantidad,
+                false
+        )));
         return ordenarAgrupaciones(agrupaciones);
     }
 

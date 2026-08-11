@@ -78,6 +78,13 @@ class LeadServiceGtrGroupingTest {
         when(leadRepository.agruparBandejaGtrPorCampana(
                 eq(Etapa.PREVENTA), any(Instant.class), any(Instant.class), anyBoolean(), anyCollection()))
                 .thenReturn(List.of(group(null, null, null, null, 10)));
+        when(leadRepository.agruparBandejaGtrPorEstado(
+                eq(Etapa.PREVENTA), any(Instant.class), any(Instant.class), anyBoolean(), anyCollection()))
+                .thenReturn(List.of(
+                        group(null, "NUEVO", null, null, 7),
+                        group(null, "ASIGNADO", null, null, 3),
+                        group(null, null, null, null, 2)
+                ));
         when(leadRepository.agruparBandejaGtrPorPrimeraTipificacion(
                 eq(Etapa.PREVENTA), any(Instant.class), any(Instant.class), anyBoolean(), anyCollection()))
                 .thenReturn(List.of(
@@ -103,6 +110,12 @@ class LeadServiceGtrGroupingTest {
                 .containsExactly(
                         org.assertj.core.groups.Tuple.tuple("CONTACTADO / INTERESADO", 6L),
                         org.assertj.core.groups.Tuple.tuple("Sin tipificar", 4L)
+                );
+        assertThat(response.getEstados())
+                .extracting("etiqueta", "cantidad", "sinValor")
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("NUEVO", 7L, false),
+                        org.assertj.core.groups.Tuple.tuple("ASIGNADO", 3L, false)
                 );
         assertThat(response.getUltimasTipificaciones())
                 .singleElement()
