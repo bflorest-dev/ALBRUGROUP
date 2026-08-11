@@ -1,6 +1,13 @@
 .gtr-page {
   display: grid;
   gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+:host,
+.gtr-page > * {
+  min-width: 0;
 }
 
 // ── Hero / cabecera ──────────────────────────────────────────

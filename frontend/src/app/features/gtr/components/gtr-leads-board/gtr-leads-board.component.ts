@@ -32,6 +32,12 @@ import { GtrLeadSelectControlComponent } from '../gtr-lead-select-control/gtr-le
 })
 export class GtrLeadsBoardComponent {
   protected readonly facade = inject(GtrWorkspaceFacade);
+  protected readonly visibleTipificationColumnOptions: { label: string; value: 'primera' | 'mayor' | 'ultima' }[] = [
+    { label: 'Ultima', value: 'ultima' },
+    { label: 'Mayor', value: 'mayor' },
+    { label: 'Primera', value: 'primera' }
+  ];
+  protected visibleTipificationColumn: 'primera' | 'mayor' | 'ultima' = 'ultima';
   private organizeCloseTimeout: ReturnType<typeof setTimeout> | null = null;
 
   protected onOrganizeEnter(): void {
@@ -85,5 +91,9 @@ export class GtrLeadsBoardComponent {
 
   protected onClearOrganization(): void {
     void this.facade.clearPlatformOrganization();
+  }
+
+  protected setVisibleTipificationColumn(value: 'primera' | 'mayor' | 'ultima'): void {
+    this.visibleTipificationColumn = value;
   }
 }

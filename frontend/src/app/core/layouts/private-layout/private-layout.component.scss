@@ -25,8 +25,6 @@
   align-self: start;
   height: 100vh;
   height: 100dvh;
-  max-height: 100vh;
-  max-height: 100dvh;
   position: sticky;
   top: 0;
   display: flex;
@@ -55,7 +53,7 @@
 }
 
 .sidebar__brand {
-  gap: 0.85rem;
+  gap: .85rem;
   padding: 0.65rem 0.55rem 1rem;
 }
 
@@ -122,7 +120,7 @@
 }
 
 .menu__section {
-  padding: 0 0.75rem 0.45rem;
+  padding: 0 .75rem 0.45rem;
 }
 
 .menu__scroll-cue {
@@ -162,15 +160,13 @@
 
 .menu__item {
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: .75rem;
   min-height: 2.75rem;
   padding: 0.72rem 0.82rem;
   border-radius: 0.42rem;
   color: var(--layout-sidebar-muted);
+  position: relative;
   text-decoration: none;
-  transition:
-    background-color 0.16s ease,
-    color 0.16s ease;
 }
 
 .menu__item:hover {
@@ -186,7 +182,6 @@
     0 10px 28px color-mix(in srgb, #000000 12%, transparent 88%);
 }
 
-/* Encabezado expandible (COLABORADORES): reset del boton para que herede el look de item. */
 .menu__item--group {
   width: 100%;
   border: none;
@@ -200,20 +195,17 @@
 .menu__item-chevron {
   flex: 0 0 auto;
   width: 1rem;
-  font-size: 0.85rem;
   color: var(--layout-sidebar-icon);
-  transition: color 0.16s ease;
 }
 
 .menu__item--group.is-open .menu__item-chevron {
   color: var(--layout-sidebar-text);
 }
 
-/* Sub-items de un grupo: leve sangria y su propio divisor de bloque. */
 .menu__subitems {
   display: grid;
   gap: 0.25rem;
-  padding-left: 0.85rem;
+  padding-left: .85rem;
   margin: 0.1rem 0 0.15rem;
   border-left: 1px solid var(--layout-sidebar-hover);
 }
@@ -264,9 +256,9 @@
 }
 
 .menu__item-main i {
-  width: 1.1rem;
+  width: 1.35rem;
+  text-align: center;
   color: var(--layout-sidebar-icon);
-  font-size: 1rem;
 }
 
 .menu__item-main span {
@@ -374,8 +366,8 @@
 }
 
 .profile-menu__item {
-  gap: 0.75rem;
-  padding: 0.72rem 0.85rem;
+  gap: .75rem;
+  padding: 0.72rem .85rem;
   border-radius: 0.38rem;
   background: transparent;
 }
@@ -418,9 +410,9 @@
 }
 
 .profile-button {
-  gap: 0.75rem;
+  gap: .75rem;
   justify-content: space-between;
-  padding: 0.75rem;
+  padding: .75rem;
   border-radius: 0.55rem;
   background: rgba(255, 255, 255, 0.1);
 }
@@ -457,11 +449,17 @@
 }
 
 .content {
+  box-sizing: border-box;
   position: relative;
   padding: var(--layout-content-padding);
   display: grid;
   align-content: start;
   gap: 0.55rem;
+  min-width: 0;
+}
+
+:host ::ng-deep .content > * {
+  max-width: 100%;
   min-width: 0;
 }
 
@@ -479,7 +477,6 @@
   .sidebar:hover,
   .sidebar:focus-within {
     --layout-sidebar-width: 292px;
-    box-shadow: 18px 0 42px color-mix(in srgb, #000000 18%, transparent 82%);
     padding: 1.25rem;
     z-index: 100;
   }
@@ -488,7 +485,6 @@
   .menu__section,
   .menu__item-main span,
   .menu__item-chevron,
-  .menu__item-alert,
   .profile-button__copy,
   .profile-button > i,
   .profile-menu,
@@ -512,8 +508,6 @@
   .sidebar:focus-within .menu__item-main span,
   .sidebar:hover .menu__item-chevron,
   .sidebar:focus-within .menu__item-chevron,
-  .sidebar:hover .menu__item-alert,
-  .sidebar:focus-within .menu__item-alert,
   .sidebar:hover .profile-button__copy,
   .sidebar:focus-within .profile-button__copy,
   .sidebar:hover .profile-button > i,
@@ -526,6 +520,15 @@
     pointer-events: auto;
     width: auto;
     max-width: none;
+  }
+
+  .menu__item-alert {
+    display: none;
+  }
+
+  .sidebar:hover .menu__item-alert,
+  .sidebar:focus-within .menu__item-alert {
+    display: inline-flex;
   }
 
   .sidebar:hover .menu__subitems,
@@ -558,13 +561,13 @@
 
   .sidebar:hover .profile-button,
   .sidebar:focus-within .profile-button {
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
+    padding-left: .75rem;
+    padding-right: .75rem;
   }
 
   .sidebar:hover .sidebar__brand,
   .sidebar:focus-within .sidebar__brand {
-    gap: 0.85rem;
+    gap: .85rem;
     justify-content: flex-start;
     padding-left: 0.55rem;
     padding-right: 0.55rem;
@@ -591,13 +594,13 @@
 
   .sidebar:hover .profile-button,
   .sidebar:focus-within .profile-button {
-    gap: 0.75rem;
+    gap: .75rem;
   }
 }
 
 @media (min-width: 901px) and (max-height: 800px) {
   .layout-shell {
-    --layout-content-padding: 0.75rem 1rem;
+    --layout-content-padding: .75rem 1rem;
   }
 
   .sidebar {
@@ -634,11 +637,11 @@
     box-shadow: 0 8px 28px rgba(15, 23, 42, 0.14);
     color: #ffffff;
     display: grid;
-    gap: 0.75rem;
+    gap: .75rem;
     grid-template-columns: auto minmax(0, 1fr) auto;
     left: 0;
     min-height: 4rem;
-    padding: 0.65rem 0.85rem;
+    padding: 0.65rem .85rem;
     position: fixed;
     right: 0;
     top: 0;
@@ -754,6 +757,6 @@
   }
 
   .content {
-    padding: 0.75rem;
+    padding: .75rem;
   }
 }
