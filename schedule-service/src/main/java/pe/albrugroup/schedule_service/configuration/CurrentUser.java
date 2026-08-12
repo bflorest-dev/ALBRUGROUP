@@ -23,4 +23,17 @@ public class CurrentUser {
         }
         return empleadoId;
     }
+
+    /** Roles del token (sin el prefijo ROLE_ de Spring Security). Vacio si no autenticado. */
+    public java.util.List<String> roles() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getAuthorities() == null) {
+            return java.util.List.of();
+        }
+        return auth.getAuthorities().stream()
+                .map(org.springframework.security.core.GrantedAuthority::getAuthority)
+                .filter(a -> a.startsWith("ROLE_"))
+                .map(a -> a.substring("ROLE_".length()))
+                .toList();
+    }
 }
