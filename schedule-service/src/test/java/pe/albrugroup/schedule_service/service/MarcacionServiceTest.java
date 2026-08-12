@@ -8,17 +8,27 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pe.albrugroup.schedule_service.configuration.CurrentUser;
 import pe.albrugroup.schedule_service.configuration.OperationalDateTime;
+import pe.albrugroup.schedule_service.entity.AjusteJornada;
 import pe.albrugroup.schedule_service.entity.Asistencia;
+import pe.albrugroup.schedule_service.entity.AsistenciaTramo;
+import pe.albrugroup.schedule_service.entity.DiaNoLaborable;
+import pe.albrugroup.schedule_service.entity.enums.AlcanceDiaNoLaborable;
+import pe.albrugroup.schedule_service.entity.enums.TipoDiaNoLaborable;
 import pe.albrugroup.schedule_service.entity.Horario;
 import pe.albrugroup.schedule_service.entity.HorarioDetalle;
 import pe.albrugroup.schedule_service.entity.SesionEstado;
 import pe.albrugroup.schedule_service.entity.enums.Dia;
 import pe.albrugroup.schedule_service.entity.enums.EstadoAjusteJornada;
 import pe.albrugroup.schedule_service.entity.enums.EstadoAsistencia;
+import pe.albrugroup.schedule_service.entity.enums.OrigenAjusteJornada;
+import pe.albrugroup.schedule_service.entity.enums.OrigenTramo;
+import pe.albrugroup.schedule_service.entity.enums.RazonAjuste;
 import pe.albrugroup.schedule_service.entity.enums.TipoSesionEstado;
+import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleDiaResponse;
 import pe.albrugroup.schedule_service.exception.BadRequestException;
 import pe.albrugroup.schedule_service.repository.AjusteJornadaRepository;
 import pe.albrugroup.schedule_service.repository.AsistenciaRepository;
+import pe.albrugroup.schedule_service.repository.AsistenciaTramoRepository;
 import pe.albrugroup.schedule_service.repository.ExcepcionHorarioRepository;
 import pe.albrugroup.schedule_service.repository.HorarioRepository;
 import pe.albrugroup.schedule_service.repository.SesionEstadoRepository;
@@ -45,10 +55,12 @@ import static org.mockito.Mockito.when;
 class MarcacionServiceTest {
 
     @Mock AsistenciaRepository asistenciaRepository;
+    @Mock AsistenciaTramoRepository asistenciaTramoRepository;
     @Mock SesionEstadoRepository sesionEstadoRepository;
     @Mock HorarioRepository horarioRepository;
     @Mock ExcepcionHorarioRepository excepcionRepository;
     @Mock AjusteJornadaRepository ajusteRepository;
+    @Mock pe.albrugroup.schedule_service.repository.DiaNoLaborableRepository diaNoLaborableRepository;
     @Mock ParametroAsistenciaResolver parametroAsistenciaResolver;
     @Mock CurrentUser currentUser;
     @Mock AttendanceRealtimeNotifier notifier;
@@ -76,6 +88,8 @@ class MarcacionServiceTest {
         lenient().when(sesionEstadoRepository.findByAsistenciaIdOrderByInicioAsc(anyLong())).thenReturn(List.of());
         lenient().when(sesionEstadoRepository.findByAsistenciaIdAndTipoOrderByInicioAsc(anyLong(), any()))
                 .thenReturn(List.of());
+        lenient().when(asistenciaTramoRepository.findByAsistenciaIdOrderByIdAsc(anyLong())).thenReturn(List.of());
+        lenient().when(diaNoLaborableRepository.findByFecha(any())).thenReturn(List.of());
         // El almacen simula la fila: save la guarda, findByIdEmpleadoAndFecha la devuelve (create-then-read).
         lenient().when(asistenciaRepository.save(any(Asistencia.class))).thenAnswer(i -> {
             Asistencia a = i.getArgument(0);
@@ -229,6 +243,71 @@ class MarcacionServiceTest {
         assertThat(almacen.get().getMinutosAlmuerzoTomados()).isEqualTo(72);
     }
 
+    // ===================== Horas extra (dia partido) =====================
+
+    @Test
+    void periodoAdicionalCuentaComoHorasExtraSinTocarLaBase() {
+        // Base 8-17 ya cerrada (480 trabajados). GTR abre ampliacion 19-21.
+        Asistencia base = asistenciaOnline(LocalDateTime.of(2026, 8, 10, 8, 0), 60);
+        base.setFechaHoraSalida(LocalDateTime.of(2026, 8, 10, 17, 0));
+        base.setEstadoActual(EstadoAsistencia.OFFLINE);
+        base.setMinutosTrabajados(480);
+        base.setMinutosBalance(0);
+        base.setOrigenTramoActual(OrigenTramo.BASE);
+        almacen.set(base);
+
+        AjusteJornada ampliacion = AjusteJornada.builder()
+                .id(50L).idEmpleado(EMP).horario(horario).fechaOperativa(DIA)
+                .inicio(LocalDateTime.of(2026, 8, 10, 19, 0)).fin(LocalDateTime.of(2026, 8, 10, 21, 0))
+                .estado(EstadoAjusteJornada.ACTIVO).origen(OrigenAjusteJornada.TRAMO_ADICIONAL)
+                .razon(RazonAjuste.AMPLIACION_OPERATIVA).motivo("Período extra").creadoPor(99L)
+                .build();
+        lenient().when(ajusteRepository.findByIdEmpleadoAndFechaOperativaAndEstadoOrderByInicioAsc(
+                EMP, DIA, EstadoAjusteJornada.ACTIVO)).thenReturn(List.of(ampliacion));
+        lenient().when(ajusteRepository.findById(50L)).thenReturn(Optional.of(ampliacion));
+
+        // Los tramos archivados se acumulan en una lista viva.
+        List<AsistenciaTramo> tramos = new java.util.ArrayList<>();
+        when(asistenciaTramoRepository.save(any(AsistenciaTramo.class))).thenAnswer(i -> {
+            AsistenciaTramo t = i.getArgument(0);
+            tramos.add(t);
+            return t;
+        });
+        when(asistenciaTramoRepository.findByAsistenciaIdOrderByIdAsc(anyLong())).thenReturn(tramos);
+
+        reloj(19, 0);
+        service.registrarIngreso(); // re-ingreso al tramo extra
+        assertThat(almacen.get().getEstadoActual()).isEqualTo(EstadoAsistencia.ONLINE);
+        assertThat(almacen.get().getOrigenTramoActual()).isEqualTo(OrigenTramo.TRAMO_ADICIONAL);
+
+        reloj(21, 0);
+        DetalleDiaResponse dia = service.registrarSalida();
+
+        Asistencia a = almacen.get();
+        assertThat(a.getMinutosTrabajados()).isEqualTo(480); // base intacta
+        assertThat(a.getMinutosExtra()).isEqualTo(120);      // 19-21 -> horas extra
+        assertThat(a.getMinutosBalance()).isZero();
+        // El dia muestra ambos periodos (base archivado + extra actual).
+        assertThat(dia.getTramos()).hasSize(2);
+        assertThat(dia.getTramos().get(0).getOrigen()).isEqualTo(OrigenTramo.BASE);
+        assertThat(dia.getTramos().get(1).getOrigen()).isEqualTo(OrigenTramo.TRAMO_ADICIONAL);
+    }
+
+    // ===================== Dia no laborable =====================
+
+    @Test
+    void diaLibreGlobalImpideMarcarIngreso() {
+        reloj(8, 0);
+        DiaNoLaborable feriado = DiaNoLaborable.builder()
+                .alcance(AlcanceDiaNoLaborable.GLOBAL).refId(null).fecha(DIA)
+                .laborable(false).tipo(TipoDiaNoLaborable.FERIADO).build();
+        when(diaNoLaborableRepository.findByFecha(DIA)).thenReturn(List.of(feriado));
+
+        assertThatThrownBy(() -> service.registrarIngreso())
+                .isInstanceOf(BadRequestException.class);
+        assertThat(almacen.get()).isNull();
+    }
+
     // ===================== helpers =====================
 
     private void reloj(int hh, int mm) {
@@ -237,9 +316,10 @@ class MarcacionServiceTest {
                 OperationalDateTime.ZONE);
         OperationalDateTime.useClock(clock);
         JornadaEfectivaResolver resolver = new JornadaEfectivaResolver(
-                horarioRepository, excepcionRepository, ajusteRepository, clock);
-        service = new MarcacionService(asistenciaRepository, sesionEstadoRepository, resolver,
-                parametroAsistenciaResolver, horarioRepository, currentUser, notifier);
+                horarioRepository, excepcionRepository, ajusteRepository, diaNoLaborableRepository, clock);
+        service = new MarcacionService(asistenciaRepository, asistenciaTramoRepository, ajusteRepository,
+                sesionEstadoRepository, resolver, parametroAsistenciaResolver, horarioRepository,
+                currentUser, notifier);
     }
 
     private Horario horarioTodosLosDias(LocalTime entrada, LocalTime salida, LocalTime almIn, LocalTime almOut) {

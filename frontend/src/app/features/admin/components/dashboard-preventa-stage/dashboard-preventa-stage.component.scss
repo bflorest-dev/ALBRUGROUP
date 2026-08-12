@@ -1,0 +1,56 @@
+.admin-page {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+// Fila propia de controles bajo el subtítulo, pegada a la derecha (Regla 4 del sistema de diseño).
+.metrics-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  min-width: 0;
+}
+
+.metrics-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.metrics-control-label {
+  color: var(--app-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.metrics-message {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.metrics-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--app-text-muted);
+}
+
+:host ::ng-deep .p-card,
+:host ::ng-deep .p-card-body,
+:host ::ng-deep .p-card-content,
+:host ::ng-deep .metrics-gxc-card {
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 700px) {
+  .admin-page {
+    gap: 1rem;
+  }
+}

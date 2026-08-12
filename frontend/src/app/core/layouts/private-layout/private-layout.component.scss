@@ -38,8 +38,7 @@
     radial-gradient(circle at 15% 0%, var(--layout-sidebar-glow), transparent 34%),
     linear-gradient(180deg, var(--layout-sidebar-bg) 0%, var(--layout-sidebar-bg-deep) 100%);
   transition:
-    padding 0.18s ease,
-    width 0.18s ease;
+    padding 0.18s ease;
   width: var(--layout-sidebar-width);
   z-index: 20;
 }
@@ -149,18 +148,19 @@
 }
 
 .menu__scroll-cue--top {
-  top: 0;
-  margin-bottom: -0.15rem;
+  top: -0.35rem;
+  margin-bottom: 0.05rem;
 }
 
 .menu__scroll-cue--bottom {
-  bottom: 0;
-  margin-top: -0.15rem;
+  bottom: 0.35rem;
+  margin-top: 0.05rem;
 }
 
 .menu__item {
   justify-content: space-between;
   gap: .75rem;
+  width: 100%;
   min-height: 2.75rem;
   padding: 0.72rem 0.82rem;
   border-radius: 0.42rem;
@@ -500,9 +500,7 @@
     overflow: hidden;
   }
 
-  .menu__subitems {
-    display: none;
-  }
+  .menu__subitems { display: none; }
 
   .sidebar:hover .brand__copy,
   .sidebar:focus-within .brand__copy,
@@ -543,9 +541,9 @@
   .sidebar__brand,
   .menu__item,
   .profile-button {
+    gap: 0;
     justify-content: center;
-    padding-left: 0;
-    padding-right: 0;
+    padding-inline: 0;
   }
 
   .sidebar:hover .sidebar__brand,
@@ -559,8 +557,8 @@
 
   .sidebar:hover .menu__item,
   .sidebar:focus-within .menu__item {
-    padding-left: 0.82rem;
-    padding-right: 0.82rem;
+    gap: .75rem;
+    padding-inline: .82rem;
   }
 
   .sidebar:hover .profile-button,

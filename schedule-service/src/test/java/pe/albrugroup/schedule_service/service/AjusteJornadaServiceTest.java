@@ -33,6 +33,7 @@ class AjusteJornadaServiceTest {
     @Mock HorarioRepository horarioRepository;
     @Mock ExcepcionHorarioRepository excepcionRepository;
     @Mock AsistenciaRepository asistenciaRepository;
+    @Mock DiaNoLaborableRepository diaNoLaborableRepository;
     @Mock AttendanceRealtimeNotifier notifier;
     @Mock CurrentUser currentUser;
 
@@ -48,8 +49,9 @@ class AjusteJornadaServiceTest {
         properties = new ScheduleEngineProperties();
         properties.setMode(ScheduleEngineProperties.Mode.ADMIN);
         properties.setEffectiveFrom(LocalDate.of(2026, 6, 15));
+        lenient().when(diaNoLaborableRepository.findByFecha(any())).thenReturn(List.of());
         JornadaEfectivaResolver resolver = new JornadaEfectivaResolver(
-                horarioRepository, excepcionRepository, ajusteRepository, clock);
+                horarioRepository, excepcionRepository, ajusteRepository, diaNoLaborableRepository, clock);
         service = new AjusteJornadaService(
                 ajusteRepository,
                 horarioRepository,
@@ -190,7 +192,7 @@ class AjusteJornadaServiceTest {
                 .thenReturn(Optional.empty());
 
         JornadaEfectivaResponse jornada = new JornadaEfectivaResolver(
-                horarioRepository, excepcionRepository, ajusteRepository, clock)
+                horarioRepository, excepcionRepository, ajusteRepository, diaNoLaborableRepository, clock)
                 .resolver(horario, LocalDate.of(2026, 6, 15), List.of(adicional));
 
         assertThat(jornada.getTramos()).hasSize(2);

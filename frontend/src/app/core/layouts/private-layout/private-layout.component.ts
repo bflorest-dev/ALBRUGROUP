@@ -281,7 +281,8 @@ export class PrivateLayoutComponent implements AfterViewInit {
         { label: 'Leads del día', route: '/app/community/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
         { label: 'Corrección de campaña', route: '/app/community/correccion-campana', icon: 'pi pi-sync', exact: true },
         { label: 'Finanzas', route: '/app/community/finanzas', icon: 'pi pi-wallet', exact: true },
-        { label: 'Metricas', route: '/app/community/metricas', icon: 'pi pi-chart-line', exact: true }
+        { label: 'Metricas', route: '/app/community/metricas', icon: 'pi pi-chart-line', exact: true },
+        { label: 'Dashboard', route: '/app/community/dashboard', icon: 'pi pi-chart-pie', exact: true }
       ];
     }
 
@@ -298,7 +299,8 @@ export class PrivateLayoutComponent implements AfterViewInit {
       return [
         { label: 'Monitoreo', route: '/app/supervisor-ventas/monitoreo', icon: 'pi pi-chart-line', exact: true },
         { label: 'Gestion', route: '/app/supervisor-ventas/gestion', icon: 'pi pi-desktop', exact: true },
-        { label: 'Reporte de Ventas', route: '/app/supervisor-ventas/reporte', icon: 'pi pi-file', exact: true }
+        { label: 'Reporte de Ventas', route: '/app/supervisor-ventas/reporte', icon: 'pi pi-file', exact: true },
+        { label: 'Dashboard', route: '/app/supervisor-ventas/dashboard', icon: 'pi pi-chart-pie', exact: true }
       ];
     }
 
@@ -316,20 +318,23 @@ export class PrivateLayoutComponent implements AfterViewInit {
         },
         { label: 'Historicos', route: '/app/gtr/historicos', icon: 'pi pi-history', exact: true },
         { label: 'Leads del día', route: '/app/gtr/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
-        { label: 'Ranking', route: '/app/gtr/ranking', icon: 'pi pi-chart-bar', exact: true }
+        { label: 'Ranking', route: '/app/gtr/ranking', icon: 'pi pi-chart-bar', exact: true },
+        { label: 'Dashboard', route: '/app/gtr/dashboard', icon: 'pi pi-chart-pie', exact: true }
       ];
     }
 
     if (session.primaryRole === 'ASESOR_BACKOFFICE' || session.primaryRole === 'SUPERVISOR_BACKOFFICE') {
       return [
         { label: 'Plataforma', route: '/app/backoffice/plataforma', icon: 'pi pi-desktop', exact: true },
-        { label: 'Programados', route: '/app/backoffice/programados', icon: 'pi pi-calendar-clock', exact: true }
+        { label: 'Programados', route: '/app/backoffice/programados', icon: 'pi pi-calendar-clock', exact: true },
+        { label: 'Dashboard', route: '/app/backoffice/dashboard', icon: 'pi pi-chart-pie', exact: true }
       ];
     }
 
     if (session.primaryRole === 'ASESOR_POSTVENTA' || session.primaryRole === 'SUPERVISOR_POSTVENTA') {
       return [
-        { label: 'Postventa', route: '/app/postventa', icon: 'pi pi-briefcase', exact: true }
+        { label: 'Postventa', route: '/app/postventa', icon: 'pi pi-briefcase', exact: true },
+        { label: 'Dashboard', route: '/app/postventa/dashboard', icon: 'pi pi-chart-pie', exact: true }
       ];
     }
 

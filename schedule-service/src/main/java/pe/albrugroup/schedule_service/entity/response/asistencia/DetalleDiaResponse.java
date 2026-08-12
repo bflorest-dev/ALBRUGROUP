@@ -9,6 +9,7 @@ import pe.albrugroup.schedule_service.entity.enums.OrigenAlmuerzo;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 /**
  * Read model del dia para la marcacion nueva (/asistencia/v2). Refleja el estado del dia del
@@ -52,4 +53,10 @@ public class DetalleDiaResponse {
     private Integer minutosPausaActivaHoy;
     private Integer minutosCapacitacionHoy;
     private Boolean sesionEnCurso;
+
+    /**
+     * Desglose de tramos del dia. Solo se llena en dias partidos (jornada reabierta por una
+     * ampliacion): tramos base (mañana) + tramos extra (tarde). En dias normales queda vacio.
+     */
+    private List<TramoAsistenciaResponse> tramos;
 }

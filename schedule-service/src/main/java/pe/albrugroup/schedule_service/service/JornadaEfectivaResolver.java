@@ -5,9 +5,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.albrugroup.schedule_service.entity.AjusteJornada;
+import pe.albrugroup.schedule_service.entity.DiaNoLaborable;
 import pe.albrugroup.schedule_service.entity.ExcepcionHorario;
 import pe.albrugroup.schedule_service.entity.Horario;
 import pe.albrugroup.schedule_service.entity.HorarioDetalle;
+import pe.albrugroup.schedule_service.entity.enums.AlcanceDiaNoLaborable;
 import pe.albrugroup.schedule_service.entity.enums.Dia;
 import pe.albrugroup.schedule_service.entity.enums.EstadoAjusteJornada;
 import pe.albrugroup.schedule_service.entity.enums.OrigenAjusteJornada;
@@ -16,6 +18,7 @@ import pe.albrugroup.schedule_service.entity.response.horario.JornadaEfectivaRes
 import pe.albrugroup.schedule_service.entity.response.horario.TramoJornadaResponse;
 import pe.albrugroup.schedule_service.exception.NotFoundException;
 import pe.albrugroup.schedule_service.repository.AjusteJornadaRepository;
+import pe.albrugroup.schedule_service.repository.DiaNoLaborableRepository;
 import pe.albrugroup.schedule_service.repository.ExcepcionHorarioRepository;
 import pe.albrugroup.schedule_service.repository.HorarioRepository;
 
@@ -32,6 +35,7 @@ public class JornadaEfectivaResolver {
     private final HorarioRepository horarioRepository;
     private final ExcepcionHorarioRepository excepcionHorarioRepository;
     private final AjusteJornadaRepository ajusteJornadaRepository;
+    private final DiaNoLaborableRepository diaNoLaborableRepository;
     private final Clock operationalClock;
 
     @Transactional(readOnly = true)
@@ -99,6 +103,13 @@ public class JornadaEfectivaResolver {
     }
 
     BaseDiaria resolverBase(Horario horario, LocalDate fecha) {
+        // Dia no laborable (feriado / vacaciones / permiso), precedencia EMPLEADO > GLOBAL. laborable=false
+        // => dia libre; laborable=true => override "si trabaja" (continua la resolucion normal).
+        DiaNoLaborable diaNoLaborable = resolverDiaNoLaborable(horario.getIdEmpleado(), fecha);
+        if (diaNoLaborable != null && !Boolean.TRUE.equals(diaNoLaborable.getLaborable())) {
+            return new BaseDiaria(false, null, null);
+        }
+
         ExcepcionHorario excepcion = excepcionHorarioRepository
                 .findByHorarioIdAndFecha(horario.getId(), fecha).orElse(null);
         if (excepcion != null) {
@@ -153,6 +164,21 @@ public class JornadaEfectivaResolver {
     static boolean overlaps(LocalDateTime leftStart, LocalDateTime leftEnd,
                             LocalDateTime rightStart, LocalDateTime rightEnd) {
         return leftStart.isBefore(rightEnd) && rightStart.isBefore(leftEnd);
+    }
+
+    /** Override de calendario aplicable a (empleado, fecha): el mas angosto gana (EMPLEADO > GLOBAL). */
+    private DiaNoLaborable resolverDiaNoLaborable(Long idEmpleado, LocalDate fecha) {
+        List<DiaNoLaborable> dias = diaNoLaborableRepository.findByFecha(fecha);
+        if (dias.isEmpty()) {
+            return null;
+        }
+        return dias.stream()
+                .filter(d -> d.getAlcance() == AlcanceDiaNoLaborable.EMPLEADO && idEmpleado.equals(d.getRefId()))
+                .findFirst()
+                .orElseGet(() -> dias.stream()
+                        .filter(d -> d.getAlcance() == AlcanceDiaNoLaborable.GLOBAL)
+                        .findFirst()
+                        .orElse(null));
     }
 
     private Dia mapearDia(DayOfWeek dayOfWeek) {

@@ -8,7 +8,10 @@ import { AdminFinancePageComponent } from '../admin/pages/admin-finance-page/adm
 import { AdminMaintenancePageComponent } from '../admin/pages/admin-maintenance-page/admin-maintenance-page.component';
 import { AdminMetricsPageComponent } from '../admin/pages/admin-metrics-page/admin-metrics-page.component';
 import { AdminDashboardPostventaPageComponent } from '../admin/pages/admin-dashboard-postventa-page/admin-dashboard-postventa-page.component';
-import { AdminDashboardPlaceholderPageComponent } from '../admin/pages/admin-dashboard-placeholder-page/admin-dashboard-placeholder-page.component';
+import { DashboardCobranzaStageComponent } from '../admin/components/dashboard-cobranza-stage/dashboard-cobranza-stage.component';
+import { DashboardPostventaStageComponent } from '../admin/components/dashboard-postventa-stage/dashboard-postventa-stage.component';
+import { DashboardPreventaStageComponent } from '../admin/components/dashboard-preventa-stage/dashboard-preventa-stage.component';
+import { DashboardVentaStageComponent } from '../admin/components/dashboard-venta-stage/dashboard-venta-stage.component';
 import { AdminDataOpsPageComponent } from '../admin/pages/admin-data-ops-page/admin-data-ops-page.component';
 import { AdminRankingPageComponent } from '../admin/pages/admin-ranking-page/admin-ranking-page.component';
 import {
@@ -73,22 +76,18 @@ export const PLATFORM_ROUTES: Routes = [
   },
   {
     path: 'admin/dashboard/venta',
-    component: AdminDashboardPlaceholderPageComponent,
+    component: DashboardVentaStageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR'],
-      titulo: 'Venta',
-      descripcion: 'Las métricas de la etapa de Venta llegarán pronto a este panel.'
     }
   },
   {
     path: 'admin/dashboard/cobranza',
-    component: AdminDashboardPlaceholderPageComponent,
+    component: DashboardCobranzaStageComponent,
     canActivate: [roleGuard],
     data: {
       roles: ['ADMINISTRADOR'],
-      titulo: 'Cobranza',
-      descripcion: 'Las métricas de la etapa de Cobranza llegarán pronto a este panel.'
     }
   },
   {
@@ -383,6 +382,14 @@ export const PLATFORM_ROUTES: Routes = [
     }
   },
   {
+    path: 'gtr/dashboard',
+    component: DashboardPreventaStageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ASESOR_GTR', 'SUPERVISOR_GTR']
+    }
+  },
+  {
     path: 'asesor-ventas',
     pathMatch: 'full',
     redirectTo: 'asesor-ventas/plataforma'
@@ -437,6 +444,22 @@ export const PLATFORM_ROUTES: Routes = [
     data: {
       roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE'],
       section: 'programados'
+    }
+  },
+  {
+    path: 'backoffice/dashboard',
+    component: DashboardVentaStageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ASESOR_BACKOFFICE', 'SUPERVISOR_BACKOFFICE']
+    }
+  },
+  {
+    path: 'postventa/dashboard',
+    component: DashboardPostventaStageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['ASESOR_POSTVENTA', 'SUPERVISOR_POSTVENTA']
     }
   },
   {
@@ -496,6 +519,14 @@ export const PLATFORM_ROUTES: Routes = [
     }
   },
   {
+    path: 'community/dashboard',
+    component: DashboardPreventaStageComponent,
+    canActivate: [roleGuard],
+    data: {
+      roles: ['COMMUNITY']
+    }
+  },
+  {
     path: 'monitor',
     component: RolePlatformPageComponent,
     canActivate: [roleGuard],
@@ -524,6 +555,12 @@ export const PLATFORM_ROUTES: Routes = [
   {
     path: 'supervisor-ventas/reporte',
     component: SupervisorVentasReportePageComponent,
+    canActivate: [roleGuard],
+    data: { roles: ['SUPERVISOR_VENTAS'] }
+  },
+  {
+    path: 'supervisor-ventas/dashboard',
+    component: DashboardVentaStageComponent,
     canActivate: [roleGuard],
     data: { roles: ['SUPERVISOR_VENTAS'] }
   }

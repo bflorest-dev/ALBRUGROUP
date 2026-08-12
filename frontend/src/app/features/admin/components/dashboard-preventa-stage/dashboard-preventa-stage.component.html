@@ -1,0 +1,99 @@
+<section class="admin-page">
+  <app-page-header
+    eyebrow="Dashboard"
+    title="Preventa"
+    description="Métricas del día por equipo de la etapa de preventa."
+  />
+
+  <p-card>
+    <app-section-header
+      title="Rendimiento por equipo"
+      description="Calidad, gestión y conversión de los leads ingresados en el período, por equipo."
+    />
+
+    <div class="metrics-controls">
+      <div class="metrics-control">
+        <span class="metrics-control-label">Equipo</span>
+        <p-selectButton
+          [options]="equipoOptions()"
+          optionLabel="label"
+          optionValue="value"
+          [allowEmpty]="false"
+          [ngModel]="selectedEquipoId()"
+          [ngModelOptions]="{ standalone: true }"
+          (onChange)="onEquipoChange($event.value)"
+        />
+      </div>
+
+      <div class="metrics-control">
+        <span class="metrics-control-label">Modo</span>
+        <p-selectButton
+          [options]="modoOptions"
+          optionLabel="label"
+          optionValue="value"
+          [allowEmpty]="false"
+          [ngModel]="modo()"
+          [ngModelOptions]="{ standalone: true }"
+          (onChange)="onModoChange($event.value)"
+        />
+      </div>
+
+      <div class="metrics-control">
+        <span class="metrics-control-label">Tipificación</span>
+        <p-selectButton
+          [options]="campoOptions"
+          optionLabel="label"
+          optionValue="value"
+          [allowEmpty]="false"
+          [ngModel]="campo()"
+          [ngModelOptions]="{ standalone: true }"
+          (onChange)="onCampoChange($event.value)"
+        />
+      </div>
+
+      <div class="metrics-control">
+        <span class="metrics-control-label">Período</span>
+        <app-period-selector
+          [periodo]="periodo()"
+          [dia]="dia()"
+          (periodoChange)="onPeriodoChange($event)"
+          (diaChange)="onDiaChange($event)"
+        />
+      </div>
+
+      <button
+        pButton
+        type="button"
+        icon="pi pi-refresh"
+        severity="secondary"
+        [rounded]="true"
+        [outlined]="true"
+        [loading]="isLoading()"
+        (click)="load()"
+        pTooltip="Actualizar"
+        tooltipPosition="top"
+        aria-label="Actualizar"
+      ></button>
+    </div>
+
+    @if (errorMessage()) {
+      <p-message severity="error" [text]="errorMessage()" styleClass="metrics-message" />
+    }
+
+    @if (gaugeCards().length) {
+      <app-team-metric-gauges [cards]="gaugeCards()" />
+    } @else {
+      <div class="metrics-empty">
+        @if (isLoading()) {
+          Cargando métricas...
+        } @else {
+          No hubo registros en el período seleccionado.
+        }
+      </div>
+    }
+  </p-card>
+
+  <p-card styleClass="metrics-gxc-card">
+    <app-gestion-campana-panel />
+  </p-card>
+</section>
