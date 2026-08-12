@@ -10,7 +10,9 @@ import pe.albrugroup.schedule_service.entity.Asistencia;
 import pe.albrugroup.schedule_service.entity.Horario;
 import pe.albrugroup.schedule_service.entity.enums.EstadoAjusteJornada;
 import pe.albrugroup.schedule_service.entity.enums.OrigenAjusteJornada;
+import pe.albrugroup.schedule_service.entity.enums.RazonAjuste;
 import pe.albrugroup.schedule_service.entity.request.horario.AjusteJornadaRequest;
+import pe.albrugroup.schedule_service.entity.request.horario.RegistrarAjusteRequest;
 import pe.albrugroup.schedule_service.entity.response.horario.*;
 import pe.albrugroup.schedule_service.exception.BadRequestException;
 import pe.albrugroup.schedule_service.exception.NotFoundException;
@@ -19,6 +21,7 @@ import pe.albrugroup.schedule_service.repository.AsistenciaRepository;
 import pe.albrugroup.schedule_service.repository.HorarioRepository;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -88,6 +91,91 @@ public class AjusteJornadaService {
         actualizarTramoActivo(idEmpleado, validated);
         publicarCambio(idEmpleado, validated.fecha());
         return toResponse(nuevo);
+    }
+
+    /**
+     * Registro de ajuste v2: con RAZON explicita + autorizacion fina (rol + razon + limite). Convive con
+     * {@link #registrar}. La mecanica (origen, overlap-replace) se reusa; se agrega razon y rolAutor.
+     * El efecto en la marcacion (refresco de snapshot / horas extra) se maneja en 3.2.b.
+     */
+    @Transactional
+    public AjusteJornadaResponse registrarV2(Long idEmpleado, RegistrarAjusteRequest request) {
+        AjusteJornadaRequest base = AjusteJornadaRequest.builder()
+                .inicio(request.getInicio()).fin(request.getFin()).motivo(request.getMotivo()).build();
+        ValidatedAdjustment validated = validarYNormalizar(idEmpleado, base);
+
+        // Desplazamiento del base (para el limite del corrimiento por supervisor).
+        JornadaEfectivaResolver.BaseDiaria baseDiaria = jornadaResolver.resolverBase(validated.horario(), validated.fecha());
+        long desplazamientoMin = baseDiaria.laborable() && baseDiaria.inicio() != null
+                ? Math.abs(Duration.between(baseDiaria.inicio(), validated.inicio()).toMinutes())
+                : 0;
+        validarAutorizacionAjuste(request.getRazon(), currentUser.roles(), desplazamientoMin);
+
+        horarioRepository.findByIdForUpdate(validated.horario().getId())
+                .orElseThrow(() -> new NotFoundException(Horario.class, validated.horario().getId()));
+        List<AjusteJornada> activos = ajusteRepository
+                .findForUpdateByIdEmpleadoAndFechaOperativaAndEstado(
+                        idEmpleado, validated.fecha(), EstadoAjusteJornada.ACTIVO);
+        List<AjusteJornada> reemplazados = activos.stream()
+                .filter(item -> JornadaEfectivaResolver.overlaps(
+                        item.getInicio(), item.getFin(), validated.inicio(), validated.fin()))
+                .toList();
+
+        AjusteJornada nuevo = ajusteRepository.save(AjusteJornada.builder()
+                .idEmpleado(idEmpleado)
+                .horario(validated.horario())
+                .fechaOperativa(validated.fecha())
+                .inicio(validated.inicio())
+                .fin(validated.fin())
+                .estado(EstadoAjusteJornada.ACTIVO)
+                .origen(validated.origen())
+                .razon(request.getRazon())
+                .rolAutor(rolPrincipal(currentUser.roles()))
+                .motivo(request.getMotivo().trim())
+                .creadoPor(currentUser.empleadoID())
+                .build());
+
+        reemplazados.forEach(anterior -> {
+            anterior.setEstado(EstadoAjusteJornada.REEMPLAZADO);
+            anterior.setReemplazadoPor(nuevo);
+        });
+        ajusteRepository.saveAll(reemplazados);
+        publicarCambio(idEmpleado, validated.fecha());
+        return toResponse(nuevo);
+    }
+
+    /**
+     * Autorizacion fina por razon (Fork 6): el permiso grueso EXTEND_HORARIO ya se valido en el
+     * controller; aqui se aplican las reglas de rol + limite que un permiso booleano no expresa.
+     */
+    private void validarAutorizacionAjuste(RazonAjuste razon, List<String> roles, long desplazamientoMin) {
+        boolean admin = roles.contains("ADMINISTRADOR");
+        switch (razon) {
+            case AMPLIACION_OPERATIVA -> { /* cualquiera con EXTEND_HORARIO */ }
+            case CORRIMIENTO_COMPENSADA -> {
+                if (admin) {
+                    return;
+                }
+                boolean supervisor = roles.contains("SUPERVISOR_VENTAS") || roles.contains("SUPERVISOR_GTR");
+                if (!supervisor) {
+                    throw new BadRequestException("Solo un supervisor o el administrador pueden aplicar una tardanza compensada");
+                }
+                if (desplazamientoMin > 60) {
+                    throw new BadRequestException("Un supervisor solo puede desplazar el horario hasta 1 hora; para más, requiere al administrador");
+                }
+            }
+            case CORRIMIENTO_JUSTIFICADA -> {
+                if (!admin && !roles.contains("RRHH")) {
+                    throw new BadRequestException("Solo RRHH puede aplicar una tardanza justificada");
+                }
+            }
+            case COMPENSACION ->
+                    throw new BadRequestException("La compensación de horas se gestiona en el cierre mensual");
+        }
+    }
+
+    private String rolPrincipal(List<String> roles) {
+        return roles == null || roles.isEmpty() ? null : roles.getFirst();
     }
 
     @Transactional(readOnly = true)
