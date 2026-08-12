@@ -6,6 +6,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import pe.albrugroup.schedule_service.entity.enums.EstadoAjusteJornada;
 import pe.albrugroup.schedule_service.entity.enums.OrigenAjusteJornada;
+import pe.albrugroup.schedule_service.entity.enums.RazonAjuste;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -53,6 +54,18 @@ public class AjusteJornada {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private OrigenAjusteJornada origen;
+
+    /**
+     * Intencion (ortogonal a {@code origen}). Decide status del dia, balance y autorizacion.
+     * Nullable: filas previas al rediseno se rellenan en el backfill.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30)
+    private RazonAjuste razon;
+
+    /** Rol del autor del ajuste (auditoria + reglas de autorizacion en la capa service). */
+    @Column(name = "rol_autor", length = 50)
+    private String rolAutor;
 
     @Column(nullable = false, length = 300)
     private String motivo;

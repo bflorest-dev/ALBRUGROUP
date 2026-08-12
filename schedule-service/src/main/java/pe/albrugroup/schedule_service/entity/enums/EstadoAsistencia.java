@@ -5,5 +5,6 @@ public enum EstadoAsistencia {
     ONLINE,
     ALMUERZO,
     SERVICIOS,
+    PAUSA_ACTIVA,
     CAPACITACION
 }

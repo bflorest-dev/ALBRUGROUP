@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import pe.albrugroup.schedule_service.entity.enums.EstadoAsistencia;
+import pe.albrugroup.schedule_service.entity.enums.OrigenAlmuerzo;
 import pe.albrugroup.schedule_service.entity.enums.OrigenTramo;
 
 import java.time.Instant;
@@ -40,6 +41,21 @@ public class Asistencia {
     private LocalDateTime fechaHoraInicioAlmuerzo;
     private LocalDateTime fechaHoraFinAlmuerzo;
     private LocalDateTime fechaHoraInicioServiciosActual;
+
+    // Split de almuerzo (rediseno): el ESTADO se separa de la MARCACION REAL (contador).
+    /** Momento en que entro al estado ALMUERZO (marca manual o forzado). */
+    private LocalDateTime almuerzoEstadoDesde;
+    /** Inicio real del almuerzo (arranca al vaciar bandeja, para roles que gestionan leads). */
+    private LocalDateTime almuerzoRealInicio;
+    private LocalDateTime almuerzoRealFin;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "origen_almuerzo", length = 20)
+    private OrigenAlmuerzo origenAlmuerzo;
+
+    /** Tiempo extra autorizado (minutos exactos), separado del balance. Nunca negativo. */
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer minutosExtra = 0;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ajuste_jornada_actual_id")
