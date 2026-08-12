@@ -256,8 +256,12 @@
 }
 
 .menu__item-main i {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 1.35rem;
   width: 1.35rem;
-  text-align: center;
+  height: 1.35rem;
+  line-height: 1;
   color: var(--layout-sidebar-icon);
 }
 
@@ -579,6 +583,7 @@
   }
 
   .menu__item-main {
+    width: 100%;
     justify-content: center;
   }
 
