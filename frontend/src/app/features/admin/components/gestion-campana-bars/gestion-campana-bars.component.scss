@@ -13,8 +13,10 @@
 .bars {
   --bars-cols: 11rem 1fr 3rem;
 
-  display: block;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  min-height: var(--gxc-diagram-min-height, clamp(26rem, 52vh, 30rem));
   padding: 1rem 1.15rem 1.15rem;
   border: 1px solid var(--app-border-soft);
   border-radius: 12px;
@@ -86,6 +88,15 @@
   width: 0.65rem;
   height: 0.65rem;
   border-radius: 3px;
+}
+
+.bars__body {
+  align-content: start;
+  align-content: safe center;
+  display: grid;
+  flex: 1 1 auto;
+  min-height: 13rem;
+  overflow-y: auto;
 }
 
 // Nombre en columna fija: la barra arranca siempre igual, no se corre con el largo del texto.

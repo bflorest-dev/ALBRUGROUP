@@ -163,33 +163,37 @@
   } @else {
     <div class="gxc__vista">
       <p-selectButton
+        class="gxc__vista-toggle"
         [options]="vistaOptions"
         optionLabel="label"
         optionValue="value"
         [allowEmpty]="false"
+        [fluid]="true"
         [ngModel]="vista()"
         [ngModelOptions]="{ standalone: true }"
         (onChange)="onVistaChange($event.value)"
-        styleClass="gxc__vista-toggle"
+        styleClass="gxc__vista-toggle-option"
       />
     </div>
 
-    @switch (vista()) {
-      @case ('barras') {
-        @for (equipoBarras of facade.barrasPorEquipo(); track $index) {
-          <app-gestion-campana-bars [equipo]="equipoBarras" />
+    <div class="gxc__diagram">
+      @switch (vista()) {
+        @case ('barras') {
+          @for (equipoBarras of facade.barrasPorEquipo(); track $index) {
+            <app-gestion-campana-bars [equipo]="equipoBarras" />
+          }
+        }
+        @case ('efectividad') {
+          @for (equipoDispersion of facade.dispersionPorEquipo(); track $index) {
+            <app-gestion-campana-scatter [equipo]="equipoDispersion" />
+          }
+        }
+        @default {
+          @for (matriz of facade.matrices(); track $index) {
+            <app-gestion-campana-matrix [matriz]="matriz" />
+          }
         }
       }
-      @case ('efectividad') {
-        @for (equipoDispersion of facade.dispersionPorEquipo(); track $index) {
-          <app-gestion-campana-scatter [equipo]="equipoDispersion" />
-        }
-      }
-      @default {
-        @for (matriz of facade.matrices(); track $index) {
-          <app-gestion-campana-matrix [matriz]="matriz" />
-        }
-      }
-    }
+    </div>
   }
 </section>

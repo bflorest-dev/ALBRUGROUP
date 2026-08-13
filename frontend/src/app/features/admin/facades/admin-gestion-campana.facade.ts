@@ -543,7 +543,6 @@ export class AdminGestionCampanaFacade implements OnDestroy {
 
     return ordenados.map((equipo, index) => {
       const nombreEquipo = this.nombreEquipo(equipo.idEquipo, data.nombresEquipo);
-      const tieneSinTipificar = equipo.codigos.has(SIN_TIPIFICAR_CODIGO);
       const historicos = [...equipo.codigos]
         .filter((codigo) => codigo !== SIN_TIPIFICAR_CODIGO && !ordenPorCodigo.has(codigo))
         .sort((a, b) => a.localeCompare(b));
@@ -552,7 +551,7 @@ export class AdminGestionCampanaFacade implements OnDestroy {
         nombreEquipo,
         accent: this.resolveAccent(nombreEquipo, index),
         campanas: [...equipo.campanas.values()].sort((a, b) => this.compareNombre(a.nombre, SIN_CAMPANA, b.nombre)),
-        codigos: [...(tieneSinTipificar ? [SIN_TIPIFICAR_CODIGO] : []), ...filasCatalogo, ...historicos],
+        codigos: [SIN_TIPIFICAR_CODIGO, ...filasCatalogo, ...historicos],
         ordenPorCodigo,
         labelsPorCodigo,
         cierres

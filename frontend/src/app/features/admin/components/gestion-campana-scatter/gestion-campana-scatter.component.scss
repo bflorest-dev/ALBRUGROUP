@@ -7,6 +7,7 @@
 .sct {
   display: block;
   min-width: 0;
+  min-height: var(--gxc-diagram-min-height, clamp(26rem, 52vh, 30rem));
   padding: 1rem 1.15rem 1.15rem;
   border: 1px solid var(--app-border-soft);
   border-radius: 12px;
@@ -49,7 +50,7 @@
 .sct__svg {
   display: block;
   width: 100%;
-  height: auto;
+  height: clamp(18rem, 34vh, 22rem);
   overflow: visible;
 }
 

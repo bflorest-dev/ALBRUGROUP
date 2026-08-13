@@ -19,6 +19,7 @@
     <span></span>
   </div>
 
+  <div class="bars__body">
   @for (campana of equipo().campanas; track campana.key) {
     <div class="bars__row">
       <span class="bars__name" [class.bars__name--grouped]="campana.campanasAgrupadas > 0">
@@ -48,4 +49,5 @@
   @if (equipo().campanas.length === 0) {
     <p class="bars__empty">Sin campañas con gestión en el período.</p>
   }
+  </div>
 </section>
