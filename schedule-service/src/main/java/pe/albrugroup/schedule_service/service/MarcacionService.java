@@ -11,7 +11,9 @@ import pe.albrugroup.schedule_service.entity.AsistenciaTramo;
 import pe.albrugroup.schedule_service.entity.Horario;
 import pe.albrugroup.schedule_service.entity.SesionEstado;
 import pe.albrugroup.schedule_service.entity.enums.Dia;
+import pe.albrugroup.schedule_service.entity.enums.EstadoAjusteJornada;
 import pe.albrugroup.schedule_service.entity.enums.EstadoAsistencia;
+import pe.albrugroup.schedule_service.entity.enums.OrigenAjusteJornada;
 import pe.albrugroup.schedule_service.entity.enums.OrigenAlmuerzo;
 import pe.albrugroup.schedule_service.entity.enums.OrigenTramo;
 import pe.albrugroup.schedule_service.entity.enums.RazonAjuste;
@@ -73,7 +75,7 @@ public class MarcacionService {
             throw new BadRequestException("No tienes un horario programado para ingresar en este momento");
         }
         EffectiveParams params = parametroAsistenciaResolver.resolve(currentUser.roles());
-        validarVentanaIngreso(ahora, tramo.getInicio(), tramo.getFin(), params);
+        validarVentanaIngreso(ahora, tramo.getInicio(), tramo.getFin(), params, Boolean.TRUE.equals(tramo.getBase()));
 
         Asistencia asistencia = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, hoy).orElse(null);
         if (asistencia == null) {
@@ -419,7 +421,8 @@ public class MarcacionService {
      * despues del fin del turno. La tolerancia (PRESENTE vs TARDANZA) y el descuento se derivan/aplican
      * fuera (reporte / ms de calculo); aqui solo se decide si la marca se permite.
      */
-    private void validarVentanaIngreso(LocalDateTime ahora, LocalDateTime inicio, LocalDateTime fin, EffectiveParams params) {
+    private void validarVentanaIngreso(LocalDateTime ahora, LocalDateTime inicio, LocalDateTime fin,
+                                       EffectiveParams params, boolean esBase) {
         if (ahora.isAfter(fin)) {
             throw new BadRequestException("El turno de hoy ya terminó; no puedes marcar ingreso");
         }
@@ -431,7 +434,10 @@ public class MarcacionService {
             }
             return;
         }
-        if (desfaseMin >= params.bloqueoTardanzaMin()) {
+        // El bloqueo por tardanza es un concepto del BASE: llegar tarde exige corregir el horario. En un
+        // tramo EXTRA (horas extra) no hay tardanza: entrar mas tarde solo reduce el extra ganado, se permite
+        // marcar en cualquier momento de la ventana.
+        if (esBase && desfaseMin >= params.bloqueoTardanzaMin()) {
             throw new BadRequestException(
                     "Superaste la tolerancia de " + params.bloqueoTardanzaMin()
                             + " min; tu supervisor o RRHH deben corregir tu horario para permitir la marca");
@@ -453,12 +459,19 @@ public class MarcacionService {
                                        TramoJornadaResponse tramo, JornadaEfectivaResponse jornada) {
         Horario horario = horarioRepository.findById(jornada.getIdHorario())
                 .orElseThrow(() -> new NotFoundException("Horario no encontrado", jornada.getIdHorario()));
+        // Si la marca cae en un tramo extra CONTIGUO al borde del base, se ancla al base (sesion continua):
+        // tardanza/salida/objetivo se miden contra el base; el tiempo en la ventana extra va a minutosExtra
+        // (lo atribuye recalcularMinutos). Un extra CON HUECO no se ancla: sigue el flujo de dia partido.
+        TramoJornadaResponse anchor = anclarABaseSiContiguo(jornada, tramo);
+        OrigenTramo origen = mapOrigenTramo(anchor);
         VentanaAlmuerzo almuerzo = resolverAlmuerzoProgramado(horario, fecha);
         int minutosAlmuerzoProgramado = almuerzo == null ? 0
                 : (int) Duration.between(almuerzo.inicio(), almuerzo.fin()).toMinutes();
-        // Objetivo = jornada NETA = ventana de trabajo menos el almuerzo programado.
-        int objetivo = Math.max(
-                (int) Duration.between(tramo.getInicio(), tramo.getFin()).toMinutes() - minutosAlmuerzoProgramado, 0);
+        // Objetivo = jornada NETA del BASE (ventana menos almuerzo programado). Un tramo extra no tiene
+        // objetivo (horas extra): las horas extra no perjudican el balance del horario programado.
+        int objetivo = esBaseOrigen(origen)
+                ? Math.max((int) Duration.between(anchor.getInicio(), anchor.getFin()).toMinutes() - minutosAlmuerzoProgramado, 0)
+                : 0;
         // Nota: minutos_servicios_* / excedio_servicios son columnas viejas (NOT NULL) que se conservan
         // durante la transicion; el nuevo flujo usa sesion_estado. Se dropean en Fase 7.
         return asistenciaRepository.save(Asistencia.builder()
@@ -466,8 +479,8 @@ public class MarcacionService {
                 .idHorario(horario.getId())
                 .fecha(fecha)
                 .estadoActual(EstadoAsistencia.OFFLINE)
-                .entradaProgramada(tramo.getInicio().toLocalTime())
-                .salidaProgramada(tramo.getFin().toLocalTime())
+                .entradaProgramada(anchor.getInicio().toLocalTime())
+                .salidaProgramada(anchor.getFin().toLocalTime())
                 .inicioAlmuerzoProgramado(almuerzo == null ? null : almuerzo.inicio())
                 .finAlmuerzoProgramado(almuerzo == null ? null : almuerzo.fin())
                 .minutosObjetivoDia(objetivo)
@@ -479,10 +492,28 @@ public class MarcacionService {
                 .excedioServicios(Boolean.FALSE)
                 .minutosExtra(0)
                 .minutosCompensados(0)
-                .origenTramoActual(mapOrigenTramo(tramo))
-                .ajusteJornadaActual(tramo.getIdAjuste() == null ? null
-                        : ajusteJornadaRepository.findById(tramo.getIdAjuste()).orElse(null))
+                .origenTramoActual(origen)
+                .ajusteJornadaActual(anchor.getIdAjuste() == null ? null
+                        : ajusteJornadaRepository.findById(anchor.getIdAjuste()).orElse(null))
                 .build());
+    }
+
+    /**
+     * Si {@code tramo} es un tramo extra (no base) CONTIGUO al borde de un tramo base (extra-antes que pega
+     * con la entrada base, o extra-despues que pega con la salida base), devuelve el tramo BASE para anclar
+     * la asistencia como una sesion continua. Si {@code tramo} ya es base, o el extra tiene HUECO respecto
+     * del base (no pega), devuelve el mismo {@code tramo} (flujo normal / dia partido).
+     */
+    private TramoJornadaResponse anclarABaseSiContiguo(JornadaEfectivaResponse jornada, TramoJornadaResponse tramo) {
+        if (tramo == null || Boolean.TRUE.equals(tramo.getBase()) || jornada == null) {
+            return tramo;
+        }
+        return jornada.getTramos().stream()
+                .filter(t -> Boolean.TRUE.equals(t.getBase()))
+                .filter(base -> base.getInicio().equals(tramo.getFin())   // extra-antes: pega con la entrada base
+                        || base.getFin().equals(tramo.getInicio()))       // extra-despues: pega con la salida base
+                .findFirst()
+                .orElse(tramo);
     }
 
     /**
@@ -514,6 +545,14 @@ public class MarcacionService {
             case EXTRA -> extra += segmento;
             case COMPENSACION -> compensado += segmento;
         }
+        // Sesion continua: si el segmento actual es el BASE y la marca cruzo un borde hacia un tramo extra
+        // CONTIGUO (extra-antes / extra-despues sin OFFLINE), el tiempo trabajado en esas ventanas extra se
+        // atribuye a su cubeta. trabajadoSegmentoActual ya capo el BASE a [entrada, salida], asi que aqui no
+        // hay doble conteo. El gate (segmento actual = BASE) excluye el dia partido (segmento actual = extra,
+        // ya contado por su cubeta) y evita el doble conteo.
+        int[] extraContiguo = minutosExtraContiguos(asistencia);
+        extra += extraContiguo[0];
+        compensado += extraContiguo[1];
         asistencia.setMinutosTrabajados(base);
         asistencia.setMinutosExtra(extra);
         asistencia.setMinutosCompensados(compensado);
@@ -547,6 +586,52 @@ public class MarcacionService {
         int servicios = sumarSesionesCerradasDesde(a.getId(), TipoSesionEstado.SERVICIOS, a.getFechaHoraIngreso());
         int pausa = sumarPausaCapadaDesde(a.getId(), a.getFechaHoraIngreso());
         return (int) Math.max(jornada - almuerzo - servicios - pausa, 0);
+    }
+
+    /**
+     * Minutos trabajados en ventanas extra CONTIGUAS al borde del base, durante una sesion continua
+     * (el empleado cruzo el borde sin marcar OFFLINE). Devuelve {@code [extra, compensacion]}.
+     *
+     * Solo aplica cuando el segmento actual es el BASE: es la firma de la sesion continua. En el dia
+     * partido el segmento actual es el tramo extra (lo cuenta su propia cubeta), asi que se retorna cero
+     * para no duplicar. Cada ventana se topa a lo realmente autorizado por su interseccion con las marcas.
+     */
+    private int[] minutosExtraContiguos(Asistencia a) {
+        if (!esBaseOrigen(a.getOrigenTramoActual())
+                || a.getFechaHoraIngreso() == null || a.getFechaHoraSalida() == null
+                || a.getEntradaProgramada() == null || a.getSalidaProgramada() == null) {
+            return new int[]{0, 0};
+        }
+        LocalDateTime baseInicio = LocalDateTime.of(a.getFecha(), a.getEntradaProgramada());
+        LocalDateTime baseFin = topeSalida(a);
+        List<AjusteJornada> ajustes = ajusteJornadaRepository
+                .findByIdEmpleadoAndFechaOperativaAndEstadoOrderByInicioAsc(
+                        a.getIdEmpleado(), a.getFecha(), EstadoAjusteJornada.ACTIVO);
+        int extra = 0, compensado = 0;
+        for (AjusteJornada aj : ajustes) {
+            if (aj.getOrigen() == OrigenAjusteJornada.REEMPLAZO_BASE
+                    || aj.getInicio() == null || aj.getFin() == null) {
+                continue; // REEMPLAZO_BASE sustituye el base, no es tiempo extra
+            }
+            boolean contiguo = aj.getFin().equals(baseInicio) || aj.getInicio().equals(baseFin);
+            if (!contiguo) {
+                continue; // con hueco -> no es sesion continua (dia partido)
+            }
+            int min = overlapMinutos(a.getFechaHoraIngreso(), a.getFechaHoraSalida(), aj.getInicio(), aj.getFin());
+            if (aj.getRazon() == RazonAjuste.COMPENSACION) {
+                compensado += min;
+            } else {
+                extra += min;
+            }
+        }
+        return new int[]{extra, compensado};
+    }
+
+    /** Minutos de interseccion entre [aInicio, aFin] y [bInicio, bFin] (0 si no se solapan). */
+    private int overlapMinutos(LocalDateTime aInicio, LocalDateTime aFin, LocalDateTime bInicio, LocalDateTime bFin) {
+        LocalDateTime inicio = aInicio.isAfter(bInicio) ? aInicio : bInicio;
+        LocalDateTime fin = aFin.isBefore(bFin) ? aFin : bFin;
+        return (int) Math.max(Duration.between(inicio, fin).toMinutes(), 0);
     }
 
     // --- Re-ingreso (dia partido): archivar el segmento base y reabrir para el tramo extra ---
@@ -809,7 +894,8 @@ public class MarcacionService {
         if (tramo == null) {
             return false;
         }
-        if (!ventanaIngresoAbierta(OperationalDateTime.nowLocalDateTime(), tramo.getInicio(), tramo.getFin(), params)) {
+        if (!ventanaIngresoAbierta(OperationalDateTime.nowLocalDateTime(), tramo.getInicio(), tramo.getFin(), params,
+                Boolean.TRUE.equals(tramo.getBase()))) {
             return false;
         }
         if (asistencia == null) {
@@ -822,7 +908,8 @@ public class MarcacionService {
     }
 
     /** Predicado de la ventana de ingreso (mismos limites que validarVentanaIngreso, sin lanzar). */
-    private boolean ventanaIngresoAbierta(LocalDateTime ahora, LocalDateTime inicio, LocalDateTime fin, EffectiveParams params) {
+    private boolean ventanaIngresoAbierta(LocalDateTime ahora, LocalDateTime inicio, LocalDateTime fin,
+                                          EffectiveParams params, boolean esBase) {
         if (ahora.isAfter(fin)) {
             return false;
         }
@@ -830,7 +917,7 @@ public class MarcacionService {
         if (desfaseMin < 0) {
             return -desfaseMin <= params.margenAdelantoMin();
         }
-        return desfaseMin < params.bloqueoTardanzaMin();
+        return !esBase || desfaseMin < params.bloqueoTardanzaMin();
     }
 
     /** Ventana de marca de almuerzo: desde 15 min antes de la hora programada (sin ventana -> libre). */

@@ -335,6 +335,117 @@ class MarcacionServiceTest {
         assertThat(dia.getMinutosCompensados()).isEqualTo(30);
     }
 
+    // ===================== Horas extra (tramo contiguo = sesion continua) =====================
+
+    @Test
+    void extraAntesContiguoSeAnclaAlBaseYCuentaComoExtra() {
+        // Base 13:00-18:00 (sin almuerzo). Extra 12:00-13:00 pegado a la entrada base. Marca 12:22 y sigue
+        // trabajando hasta 18:05 SIN OFFLINE -> una sola sesion. Tardanza/objetivo contra el base 13:00.
+        horarioBase(LocalTime.of(13, 0), LocalTime.of(18, 0));
+        stubAjustes(ampliacion(70L, LocalTime.of(12, 0), LocalTime.of(13, 0)));
+
+        reloj(12, 22);
+        service.registrarIngreso();
+        Asistencia a = almacen.get();
+        assertThat(a.getEstadoActual()).isEqualTo(EstadoAsistencia.ONLINE);
+        assertThat(a.getEntradaProgramada()).isEqualTo(LocalTime.of(13, 0)); // anclado al base, no al extra
+        assertThat(a.getSalidaProgramada()).isEqualTo(LocalTime.of(18, 0));
+        assertThat(a.getOrigenTramoActual()).isEqualTo(OrigenTramo.BASE);
+        assertThat(a.getMinutosObjetivoDia()).isEqualTo(300);
+
+        reloj(18, 5);
+        service.registrarSalida();
+        a = almacen.get();
+        assertThat(a.getFechaHoraIngreso()).isEqualTo(LocalDateTime.of(2026, 8, 10, 12, 22)); // marca real
+        assertThat(a.getFechaHoraSalida()).isEqualTo(LocalDateTime.of(2026, 8, 10, 18, 5));
+        assertThat(a.getMinutosTrabajados()).isEqualTo(300); // base completa
+        assertThat(a.getMinutosExtra()).isEqualTo(38);        // 12:22-13:00
+        assertThat(a.getMinutosBalance()).isZero();
+    }
+
+    @Test
+    void extraDespuesContiguoSeAnclaAlBaseYCuentaComoExtra() {
+        // Base 13:00-18:00. Extra 18:00-20:00 pegado a la salida base. Marca 12:59, se queda hasta 20:01
+        // SIN marcar OFFLINE al cruzar las 18:00 -> sesion continua.
+        horarioBase(LocalTime.of(13, 0), LocalTime.of(18, 0));
+        stubAjustes(ampliacion(71L, LocalTime.of(18, 0), LocalTime.of(20, 0)));
+
+        reloj(12, 59);
+        service.registrarIngreso();
+        Asistencia a = almacen.get();
+        assertThat(a.getEntradaProgramada()).isEqualTo(LocalTime.of(13, 0));
+        assertThat(a.getSalidaProgramada()).isEqualTo(LocalTime.of(18, 0));
+        assertThat(a.getOrigenTramoActual()).isEqualTo(OrigenTramo.BASE);
+        assertThat(a.getMinutosObjetivoDia()).isEqualTo(300);
+
+        reloj(20, 1);
+        service.registrarSalida();
+        a = almacen.get();
+        assertThat(a.getMinutosTrabajados()).isEqualTo(300);
+        assertThat(a.getMinutosExtra()).isEqualTo(120); // 18:00-20:00
+        assertThat(a.getMinutosBalance()).isZero();
+    }
+
+    @Test
+    void extraEnAmbosBordesContiguosEnUnaSolaSesion() {
+        // Extra antes (12:00-13:00) Y despues (18:00-20:00) del base 13:00-18:00, sesion continua 12:22-20:01.
+        horarioBase(LocalTime.of(13, 0), LocalTime.of(18, 0));
+        stubAjustes(ampliacion(72L, LocalTime.of(12, 0), LocalTime.of(13, 0)),
+                ampliacion(73L, LocalTime.of(18, 0), LocalTime.of(20, 0)));
+
+        reloj(12, 22);
+        service.registrarIngreso();
+        assertThat(almacen.get().getOrigenTramoActual()).isEqualTo(OrigenTramo.BASE);
+
+        reloj(20, 1);
+        service.registrarSalida();
+        Asistencia a = almacen.get();
+        assertThat(a.getMinutosTrabajados()).isEqualTo(300);
+        assertThat(a.getMinutosExtra()).isEqualTo(38 + 120);
+        assertThat(a.getMinutosBalance()).isZero();
+    }
+
+    @Test
+    void tramoExtraConHuecoSigueSiendoDiaPartidoYNoContaminaElObjetivo() {
+        // Extra 09:00-10:00 DISJUNTO del base 13:00-18:00 (hay hueco). NO se ancla ni fusiona: es dia partido
+        // y exige OFFLINE para cruzar el hueco. Marca 08:58->10:03 (extra), luego 13:03->17:58 (base).
+        horarioBase(LocalTime.of(13, 0), LocalTime.of(18, 0));
+        stubAjustes(ampliacion(74L, LocalTime.of(9, 0), LocalTime.of(10, 0)));
+        List<AsistenciaTramo> tramos = new java.util.ArrayList<>();
+        when(asistenciaTramoRepository.save(any(AsistenciaTramo.class))).thenAnswer(i -> {
+            AsistenciaTramo t = i.getArgument(0);
+            tramos.add(t);
+            return t;
+        });
+        when(asistenciaTramoRepository.findByAsistenciaIdOrderByIdAsc(anyLong())).thenReturn(tramos);
+
+        reloj(8, 58); // 2 min antes del extra (margen 5): permitido
+        service.registrarIngreso();
+        Asistencia a = almacen.get();
+        assertThat(a.getOrigenTramoActual()).isEqualTo(OrigenTramo.TRAMO_ADICIONAL);
+        assertThat(a.getEntradaProgramada()).isEqualTo(LocalTime.of(9, 0));
+        assertThat(a.getMinutosObjetivoDia()).isZero(); // fix objetivo: el extra no aporta objetivo
+
+        reloj(10, 3);
+        service.registrarSalida();
+        assertThat(almacen.get().getMinutosExtra()).isEqualTo(60);
+        assertThat(almacen.get().getMinutosBalance()).isZero();
+
+        reloj(13, 3); // re-ingreso al base (3 min tarde, dentro del bloqueo)
+        service.registrarIngreso();
+        a = almacen.get();
+        assertThat(a.getOrigenTramoActual()).isEqualTo(OrigenTramo.BASE);
+        assertThat(a.getEntradaProgramada()).isEqualTo(LocalTime.of(13, 0)); // tardanza contra el base, no las 9:00
+        assertThat(a.getMinutosObjetivoDia()).isEqualTo(300);
+
+        reloj(17, 58);
+        service.registrarSalida();
+        a = almacen.get();
+        assertThat(a.getMinutosTrabajados()).isEqualTo(295); // 13:03-17:58
+        assertThat(a.getMinutosExtra()).isEqualTo(60);         // 09:00-10:00, intacto
+        assertThat(a.getMinutosBalance()).isEqualTo(-5);       // 3 tarde + 2 antes, solo contra el base
+    }
+
     // ===================== Dia no laborable =====================
 
     @Test
@@ -362,6 +473,36 @@ class MarcacionServiceTest {
         service = new MarcacionService(asistenciaRepository, asistenciaTramoRepository, ajusteRepository,
                 sesionEstadoRepository, resolver, parametroAsistenciaResolver, horarioRepository,
                 currentUser, notifier);
+    }
+
+    /** Reconfigura el horario base (sin almuerzo) y re-stubea los repos de horario para esa jornada. */
+    private void horarioBase(LocalTime entrada, LocalTime salida) {
+        List<HorarioDetalle> detalles = Arrays.stream(Dia.values())
+                .map(d -> HorarioDetalle.builder()
+                        .dia(d).laborable(true).horaEntrada(entrada).horaSalida(salida)
+                        .build())
+                .toList();
+        horario = Horario.builder().id(7L).idEmpleado(EMP).minutosServicios(15).detalles(detalles).build();
+        lenient().when(horarioRepository.findHorarioVigente(EMP, DIA)).thenReturn(Optional.of(horario));
+        lenient().when(horarioRepository.findById(7L)).thenReturn(Optional.of(horario));
+    }
+
+    private AjusteJornada ampliacion(long id, LocalTime inicio, LocalTime fin) {
+        return AjusteJornada.builder()
+                .id(id).idEmpleado(EMP).horario(horario).fechaOperativa(DIA)
+                .inicio(LocalDateTime.of(DIA, inicio)).fin(LocalDateTime.of(DIA, fin))
+                .estado(EstadoAjusteJornada.ACTIVO).origen(OrigenAjusteJornada.TRAMO_ADICIONAL)
+                .razon(RazonAjuste.AMPLIACION_OPERATIVA).motivo("Horas extra").creadoPor(99L)
+                .build();
+    }
+
+    private void stubAjustes(AjusteJornada... ajustes) {
+        List<AjusteJornada> lista = List.of(ajustes);
+        lenient().when(ajusteRepository.findByIdEmpleadoAndFechaOperativaAndEstadoOrderByInicioAsc(
+                EMP, DIA, EstadoAjusteJornada.ACTIVO)).thenReturn(lista);
+        for (AjusteJornada aj : ajustes) {
+            lenient().when(ajusteRepository.findById(aj.getId())).thenReturn(Optional.of(aj));
+        }
     }
 
     private Horario horarioTodosLosDias(LocalTime entrada, LocalTime salida, LocalTime almIn, LocalTime almOut) {

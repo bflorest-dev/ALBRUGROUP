@@ -211,6 +211,34 @@ class ResumenMensualServiceTest {
         assertThat(r.getDiasLaborables()).isEqualTo(31);
     }
 
+    @Test
+    void diaConExtraContiguoAncladaAlBaseEsPresenteYSumaExtra() {
+        // Asistencia de un dia con extra-antes contiguo ya resuelta por el motor: anclada al base (entrada
+        // 13:00), marca 12:22, 24 min a minutosExtra, balance 0. El resumen debe leerla como PRESENTE (la
+        // tardanza se mide contra el base 13:00) y sumar el extra al mensual sin tocar el balance.
+        when(resumenRepository.findByIdEmpleadoAndAnioAndMes(EMP, ANIO, JULIO)).thenReturn(Optional.empty());
+        LocalDate fecha = LocalDate.of(ANIO, JULIO, 1);
+        Asistencia a = Asistencia.builder()
+                .id(1L).idEmpleado(EMP).idHorario(7L).fecha(fecha)
+                .estadoActual(EstadoAsistencia.OFFLINE)
+                .entradaProgramada(LocalTime.of(13, 0)).salidaProgramada(LocalTime.of(18, 0))
+                .fechaHoraIngreso(LocalDateTime.of(fecha, LocalTime.of(12, 22)))
+                .fechaHoraSalida(LocalDateTime.of(fecha, LocalTime.of(18, 5)))
+                .minutosObjetivoDia(300).minutosTrabajados(300).minutosBalance(0).minutosExtra(24)
+                .build();
+        when(asistenciaRepository.findByIdEmpleadoAndFechaBetweenOrderByFechaAsc(eq(EMP), any(), any()))
+                .thenReturn(List.of(a));
+        when(ajusteRepository.findByIdEmpleadoAndFechaOperativaBetweenAndEstado(eq(EMP), any(), any(), eq(EstadoAjusteJornada.ACTIVO)))
+                .thenReturn(List.of());
+
+        ResumenMensualResponse r = service.obtener(EMP, ANIO, JULIO);
+
+        assertThat(r.getDiasPresente()).isEqualTo(1);   // 12:22 vs base 13:00 -> no tardanza
+        assertThat(r.getDiasTardanza()).isZero();
+        assertThat(r.getMinutosExtra()).isEqualTo(24);  // el extra suma al mensual
+        assertThat(r.getBalanceFinal()).isZero();       // el extra no toca el balance
+    }
+
     // ===================== helpers =====================
 
     /** Escenario de julio: 5 dias con marca (presente/tardanza/compensada/justificada/extra), resto falta. */
