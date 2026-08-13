@@ -3,6 +3,7 @@ export type EstadoAsistencia =
   | 'ONLINE'
   | 'ALMUERZO'
   | 'SERVICIOS'
+  | 'PAUSA_ACTIVA'
   | 'CAPACITACION';
 
 export type AttendanceActionId =
@@ -11,7 +12,10 @@ export type AttendanceActionId =
   | 'INICIAR_ALMUERZO'
   | 'FINALIZAR_ALMUERZO'
   | 'INICIAR_SERVICIOS'
-  | 'FINALIZAR_SERVICIOS';
+  | 'FINALIZAR_SERVICIOS'
+  | 'INICIAR_PAUSA_ACTIVA'
+  | 'FINALIZAR_PAUSA_ACTIVA'
+  | 'FINALIZAR_CAPACITACION';
 
 export type AttendanceStatusMeta = {
   color: string;
@@ -19,10 +23,22 @@ export type AttendanceStatusMeta = {
 };
 
 export type AttendanceActionOption = {
-  id: AttendanceActionId;
+  /** Clave estable para el @for del picker. Los display-only (sin accion) igual la necesitan. */
+  key: string;
+  /**
+   * Accion que dispara al seleccionar. null = opcion display-only (p. ej. CAPACITACION para el asesor,
+   * que la activa un rol externo): se muestra en el catalogo pero nunca es clickeable.
+   */
+  actionId: AttendanceActionId | null;
   targetStatus: EstadoAsistencia;
   label: string;
-  helperText: string;
+  /**
+   * true = clickeable ahora. Si es false la opcion se muestra igual (mostrar + deshabilitar + motivo),
+   * pero no se puede seleccionar. La compuerta es autoritativa del backend; el motivo lo compone el front.
+   */
+  enabled: boolean;
+  /** Copy en lenguaje de usuario del porque esta deshabilitada (solo cuando enabled=false). */
+  disabledReason?: string;
 };
 
 export const ATTENDANCE_STATUS_META: Record<EstadoAsistencia, AttendanceStatusMeta> = {
@@ -41,6 +57,10 @@ export const ATTENDANCE_STATUS_META: Record<EstadoAsistencia, AttendanceStatusMe
   SERVICIOS: {
     color: '#41b8d5',
     label: 'SERVICIOS'
+  },
+  PAUSA_ACTIVA: {
+    color: '#12b5a5',
+    label: 'PAUSA ACTIVA'
   },
   CAPACITACION: {
     color: '#ff9b54',

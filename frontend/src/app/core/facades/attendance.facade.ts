@@ -4,14 +4,13 @@ import { Injectable, computed, effect, inject, signal, untracked } from '@angula
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, filter, map, of, startWith, switchMap, timeout } from 'rxjs';
 import { ApiErrorResponse } from '../../shared/models/api/api-error-response';
-import { DetalleAsistenciaResponse } from '../../shared/models/schedule/detalle-asistencia-response';
+import { DetalleDiaResponse } from '../../shared/models/schedule/detalle-dia-response';
 import {
   ATTENDANCE_STATUS_META,
   AttendanceActionId,
   AttendanceActionOption,
   EstadoAsistencia
 } from '../../shared/models/schedule/estado-asistencia';
-import { MovimientoAsistenciaRequest } from '../../shared/models/schedule/movimiento-asistencia-request';
 import { AttendanceService } from '../services/attendance.service';
 import { DisponibilidadOperativa, PresenceService } from '../services/presence.service';
 import { SessionService } from '../services/session.service';
@@ -23,7 +22,7 @@ type LoadRequest = {
 type LoadState =
   | { status: 'idle' }
   | { status: 'loading'; requestId: number }
-  | { status: 'success'; requestId: number; detail: DetalleAsistenciaResponse | null }
+  | { status: 'success'; requestId: number; detail: DetalleDiaResponse | null }
   | { status: 'error'; requestId: number; message: string };
 
 type ActionRequest = {
@@ -34,7 +33,7 @@ type ActionRequest = {
 type ActionState =
   | { status: 'idle' }
   | { status: 'loading'; requestId: number; actionId: AttendanceActionId }
-  | { status: 'success'; requestId: number; actionId: AttendanceActionId; detail: DetalleAsistenciaResponse }
+  | { status: 'success'; requestId: number; actionId: AttendanceActionId; detail: DetalleDiaResponse }
   | { status: 'error'; requestId: number; message: string };
 
 @Injectable({
@@ -49,9 +48,12 @@ export class AttendanceFacade {
   private nextRequestId = 1;
   private initialized = false;
   private pollTimerId: ReturnType<typeof setInterval> | null = null;
+  private tickTimerId: ReturnType<typeof setInterval> | null = null;
   private autoCheckInArmed = false;
   private autoCheckInRequestId: number | null = null;
   private autoCheckInRetried = false;
+  private pausaAutoReturned = false;
+  private bandejaReported = false;
   private readonly maxLoadRetries = 3;
   private readonly loadRetryDelayMs = 3000;
   private loadRetryCount = 0;
@@ -59,6 +61,10 @@ export class AttendanceFacade {
 
   private readonly loadRequest = signal<LoadRequest | null>(null);
   private readonly actionRequest = signal<ActionRequest | null>(null);
+  // Latido de 1 s para los cronometros (elapsed = ahora - ancla del backend). Solo lo leen los timers.
+  private readonly nowTick = signal(Date.now());
+  // Cantidad de leads en bandeja (la reporta el layout/workspace); decide bandejaVacia al iniciar almuerzo.
+  private readonly assignedLeadCount = signal(0);
 
   private readonly loadState = toSignal(
     toObservable(this.loadRequest).pipe(
@@ -127,7 +133,7 @@ export class AttendanceFacade {
     { initialValue: { status: 'idle' } }
   );
 
-  readonly attendanceDetail = signal<DetalleAsistenciaResponse | null>(null);
+  readonly attendanceDetail = signal<DetalleDiaResponse | null>(null);
   /**
    * true SOLO cuando el backend ha confirmado el estado (load/accion exitosos). Mientras sea false
    * el cliente no debe pintar OFFLINE ni limpiar bandejas: es un estado "sin confirmar" (verificando),
@@ -148,7 +154,7 @@ export class AttendanceFacade {
   readonly rawStatus = computed<EstadoAsistencia>(
     () => this.attendanceDetail()?.estadoActual ?? 'OFFLINE'
   );
-  readonly isWithinSchedule = computed(() => Boolean(this.attendanceDetail()?.dentroHorario));
+  readonly isWithinSchedule = computed(() => Boolean(this.attendanceDetail()?.enTurnoActivo));
   readonly isOperational = computed(() => Boolean(this.attendanceDetail()?.operativo));
   /**
    * Jornada abierta (ONLINE) cuya hora de salida programada ya paso. Lo usan las vistas con cierre
@@ -180,27 +186,48 @@ export class AttendanceFacade {
   readonly availableActions = computed<AttendanceActionOption[]>(() =>
     // Sin confirmacion del backend no ofrecemos acciones: el estado aun es "verificando", no un
     // OFFLINE real, y mostrar un boton aqui seria enganoso.
-    this.statusConfirmed() ? this.resolveAvailableActions(this.currentStatus()) : []
+    this.statusConfirmed() ? this.resolveStateOptions() : []
+  );
+
+  /** Texto del cronometro (MM:SS) del estado cronometrado en curso, o null si no aplica. */
+  readonly timerText = computed<string | null>(() => {
+    const timer = this.activeTimer();
+    return timer ? this.formatMmSs(timer.elapsed) : null;
+  });
+  /** true cuando el estado supero su tiempo estimado (el pill lo pinta en rojo parpadeante). */
+  readonly timerOver = computed<boolean>(() => {
+    const timer = this.activeTimer();
+    return Boolean(timer && timer.threshold !== null && timer.elapsed >= timer.threshold);
+  });
+  /**
+   * Entro a ALMUERZO pero el contador real aun no arranco (rol con bandeja y leads pendientes).
+   * El layout muestra el modal "termina tu gestion" mientras sea true.
+   */
+  readonly lunchWait = computed<boolean>(() => {
+    const detail = this.attendanceDetail();
+    return Boolean(detail && detail.estadoActual === 'ALMUERZO' && !detail.almuerzoRealInicio);
+  });
+  readonly lunchDurationMinutes = computed<number | null>(
+    () => this.attendanceDetail()?.minutosAlmuerzoProgramado ?? null
   );
 
   readonly scheduleHint = computed<string>(() => {
-    if (this.availableActions().length > 0) return '';
+    if (this.availableActions().some((option) => option.enabled)) return '';
     if (this.currentStatus() === 'CAPACITACION') return '';
 
     const detail = this.attendanceDetail();
     if (!detail) return '';
 
     if (detail.jornadaCerrada) return 'Tu jornada de hoy ya está cerrada.';
-    if (!detail.idHorario) return 'No tienes turno programado para hoy.';
+    if (!detail.idHorario && !detail.tieneHorario) return 'No tienes turno programado para hoy.';
 
     const entrada = detail.entradaProgramada?.substring(0, 5) ?? null;
     const salida = detail.salidaProgramada?.substring(0, 5) ?? null;
 
     if (entrada && salida) {
-      const now = new Date();
-      const nowStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      if (nowStr < entrada) return `Tu turno comienza a las ${entrada}.`;
-      if (nowStr > salida) return `Tu turno terminó a las ${salida}.`;
+      const now = this.nowHhMm();
+      if (now < entrada) return `Tu turno comienza a las ${entrada}.`;
+      if (now > salida) return `Tu turno terminó a las ${salida}.`;
     } else if (entrada) {
       return `Tu turno comienza a las ${entrada}.`;
     }
@@ -304,6 +331,28 @@ export class AttendanceFacade {
       }
     });
 
+    // Auto-retorno de PAUSA_ACTIVA: cuando el cronometro pasa el tope (maxMinutosPausaActiva) volvemos a
+    // ONLINE una sola vez. El backend tiene su propio safety-net por reconciliacion; esto lo hace inmediato.
+    effect(() => {
+      const detail = this.attendanceDetail();
+      const over = this.timerOver();
+      if (!detail || detail.estadoActual !== 'PAUSA_ACTIVA') {
+        this.pausaAutoReturned = false;
+        return;
+      }
+      if (over && !this.pausaAutoReturned) {
+        this.pausaAutoReturned = true;
+        untracked(() => this.submitAction('FINALIZAR_PAUSA_ACTIVA'));
+      }
+    });
+
+    // Rearmar el reporte de bandeja vacia cuando ya no estamos esperando (salio de ALMUERZO o arranco el contador).
+    effect(() => {
+      if (!this.lunchWait()) {
+        this.bandejaReported = false;
+      }
+    });
+
     // Reactividad a la sesion. AttendanceFacade es singleton providedIn:root y sobrevive al logout,
     // asi que si no lo reseteamos aqui, tras un logout/login SPA (sin recarga de pagina) el badge se
     // queda con el estado de la sesion anterior hasta un F5 (y filtra estado entre usuarios). Este
@@ -331,6 +380,8 @@ export class AttendanceFacade {
       // Al volver el foco a la pestana (p. ej. tras inactividad/backgrounding) re-consultamos el
       // estado real en vez de arrastrar uno viejo. Refresco por evento, no polling.
       this.document.addEventListener('visibilitychange', this.handleVisibilityChange);
+      // Latido de 1 s para los cronometros en vivo.
+      this.tickTimerId = setInterval(() => this.nowTick.set(Date.now()), 1000);
     }
   }
 
@@ -371,10 +422,13 @@ export class AttendanceFacade {
     this.autoCheckInArmed = false;
     this.autoCheckInRequestId = null;
     this.autoCheckInRetried = false;
+    this.pausaAutoReturned = false;
+    this.bandejaReported = false;
     this.attendanceDetail.set(null);
     this.statusConfirmed.set(false);
     this.salidaSuccessTick.set(0);
     this.managingLeadActive.set(false);
+    this.assignedLeadCount.set(0);
     this.isLoading.set(false);
     this.errorMessage.set('');
   }
@@ -414,31 +468,73 @@ export class AttendanceFacade {
   }
 
   private executeAction(actionId: AttendanceActionId) {
-    const payload = this.buildMovementRequest();
-
     switch (actionId) {
       case 'REGISTRAR_INGRESO':
-        return this.attendanceService.registrarIngreso(payload);
+        return this.attendanceService.registrarIngreso();
       case 'REGISTRAR_SALIDA':
-        return this.attendanceService.registrarSalida(payload);
+        return this.attendanceService.registrarSalida();
       case 'INICIAR_ALMUERZO':
-        return this.attendanceService.iniciarAlmuerzo(payload);
+        return this.attendanceService.iniciarAlmuerzo(this.isBandejaVacia());
       case 'FINALIZAR_ALMUERZO':
-        return this.attendanceService.finalizarAlmuerzo(payload);
+        return this.attendanceService.finalizarAlmuerzo();
       case 'INICIAR_SERVICIOS':
-        return this.attendanceService.iniciarServicios(payload);
+        return this.attendanceService.iniciarServicios();
       case 'FINALIZAR_SERVICIOS':
-        return this.attendanceService.finalizarServicios(payload);
+        return this.attendanceService.finalizarServicios();
+      case 'INICIAR_PAUSA_ACTIVA':
+        return this.attendanceService.iniciarPausaActiva();
+      case 'FINALIZAR_PAUSA_ACTIVA':
+        return this.attendanceService.finalizarPausaActiva();
+      case 'FINALIZAR_CAPACITACION':
+        return this.attendanceService.finalizarCapacitacion();
     }
   }
 
-  private buildMovementRequest(): MovimientoAsistenciaRequest {
-    return {
-      fechaHora: this.formatLocalDateTime(new Date())
-    };
+  /**
+   * bandejaVacia al iniciar ALMUERZO: para roles que gestionan leads en tiempo real depende de si su
+   * bandeja esta vacia (si no, el contador espera a que se vacie). Para el resto arranca de inmediato.
+   * SUPERVISOR_VENTAS tambien gestiona leads, pero su bandeja se cablea con su propio workspace (fase
+   * posterior); aqui solo ASESOR_VENTAS/OJT tienen conteo confiable.
+   */
+  private isBandejaVacia(): boolean {
+    const role = this.sessionService.getSession()?.primaryRole;
+    const gestionaLeads = role === 'ASESOR_VENTAS' || role === 'OJT';
+    if (!gestionaLeads) {
+      return true;
+    }
+    return this.assignedLeadCount() === 0;
   }
 
-  private async syncPresence(detail: DetalleAsistenciaResponse | null): Promise<void> {
+  /** El layout reporta el tamano de la bandeja; decide bandejaVacia al iniciar almuerzo y dispara la senal. */
+  setAssignedLeadCount(count: number): void {
+    this.assignedLeadCount.set(count);
+  }
+
+  /**
+   * Senal "bandeja vacia": si el asesor esta en ALMUERZO esperando (contador sin arrancar) y su bandeja
+   * quedo vacia, avisa al backend para que arranque el contador real. Idempotente (guard + backend).
+   */
+  reportBandejaVaciaSiCorresponde(): void {
+    const detail = this.attendanceDetail();
+    if (!detail || detail.estadoActual !== 'ALMUERZO' || detail.almuerzoRealInicio) {
+      return;
+    }
+    if (this.bandejaReported) {
+      return;
+    }
+    this.bandejaReported = true;
+    this.attendanceService.notificarBandejaVacia().subscribe({
+      next: (updated) => {
+        this.attendanceDetail.set(updated);
+        this.statusConfirmed.set(true);
+      },
+      error: () => {
+        this.bandejaReported = false;
+      }
+    });
+  }
+
+  private async syncPresence(detail: DetalleDiaResponse | null): Promise<void> {
     if (this.shouldHavePresence(detail)) {
       await this.presenceService.start();
       await this.syncSalesAdvisorDisponibilidad(detail?.estadoActual ?? 'OFFLINE');
@@ -448,12 +544,13 @@ export class AttendanceFacade {
     await this.presenceService.offline();
   }
 
-  private shouldHavePresence(detail: DetalleAsistenciaResponse | null): boolean {
-    // Mantener presencia tambien en pausas dentro de horario (almuerzo/servicios/capacitacion):
+  private shouldHavePresence(detail: DetalleDiaResponse | null): boolean {
+    // Mantener presencia tambien en pausas dentro de horario (almuerzo/servicios/pausa/capacitacion):
     // el asesor sigue conectado (disponibilidad OCUPADO) y debe seguir visible en el monitoreo.
     const enPausa =
       detail?.estadoActual === 'ALMUERZO' ||
       detail?.estadoActual === 'SERVICIOS' ||
+      detail?.estadoActual === 'PAUSA_ACTIVA' ||
       detail?.estadoActual === 'CAPACITACION';
     return Boolean(detail?.operativo) || this.managingLeadActive() || enPausa;
   }
@@ -500,6 +597,7 @@ export class AttendanceFacade {
     switch (status) {
       case 'ALMUERZO':
       case 'SERVICIOS':
+      case 'PAUSA_ACTIVA':
       case 'CAPACITACION':
         return 'OCUPADO';
       default:
@@ -509,87 +607,166 @@ export class AttendanceFacade {
     }
   }
 
-  private formatLocalDateTime(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
+  // ===================== Cronometros =====================
 
-    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+  private activeTimer(): { elapsed: number; threshold: number | null } | null {
+    const detail = this.attendanceDetail();
+    if (!detail) {
+      return null;
+    }
+    const now = this.nowTick();
+
+    if (detail.estadoActual === 'ALMUERZO') {
+      const start = this.parseTs(detail.almuerzoRealInicio);
+      if (start === null) {
+        // Esperando bandeja vacia: aun no hay contador.
+        return null;
+      }
+      const threshold = detail.minutosAlmuerzoProgramado != null ? detail.minutosAlmuerzoProgramado * 60 : null;
+      return { elapsed: Math.max(Math.floor((now - start) / 1000), 0), threshold };
+    }
+
+    if (
+      detail.estadoActual === 'SERVICIOS' ||
+      detail.estadoActual === 'PAUSA_ACTIVA' ||
+      detail.estadoActual === 'CAPACITACION'
+    ) {
+      const start = this.parseTs(detail.sesionActualInicio);
+      if (start === null) {
+        return null;
+      }
+      let threshold: number | null = null;
+      if (detail.estadoActual === 'SERVICIOS') {
+        threshold = detail.minutosServiciosTope != null ? detail.minutosServiciosTope * 60 : null;
+      } else if (detail.estadoActual === 'PAUSA_ACTIVA') {
+        threshold = detail.maxMinutosPausaActiva != null ? detail.maxMinutosPausaActiva * 60 : null;
+      }
+      // CAPACITACION: sin tope -> nunca en rojo.
+      return { elapsed: Math.max(Math.floor((now - start) / 1000), 0), threshold };
+    }
+
+    return null;
   }
 
-  private resolveAvailableActions(status: EstadoAsistencia): AttendanceActionOption[] {
-    const dentroHorario = this.isWithinSchedule();
-
-    switch (status) {
-      case 'OFFLINE':
-        // El ingreso solo se puede registrar dentro del horario (el backend no permite ingresar
-        // despues de la hora de salida).
-        return dentroHorario
-          ? [
-              {
-                id: 'REGISTRAR_INGRESO',
-                targetStatus: 'ONLINE',
-                label: 'ONLINE',
-                helperText: 'Registrar ingreso'
-              }
-            ]
-          : [];
-      case 'ONLINE': {
-        const actions: AttendanceActionOption[] = [];
-        if (dentroHorario) {
-          actions.push(
-            {
-              id: 'INICIAR_ALMUERZO',
-              targetStatus: 'ALMUERZO',
-              label: 'ALMUERZO',
-              helperText: 'Iniciar almuerzo'
-            },
-            {
-              id: 'INICIAR_SERVICIOS',
-              targetStatus: 'SERVICIOS',
-              label: 'SERVICIOS',
-              helperText: 'Iniciar servicios'
-            }
-          );
-        }
-        // OFFLINE siempre disponible mientras la jornada siga abierta, incluso despues de la salida,
-        // para que el empleado pueda cerrar su turno cuando termine.
-        actions.push({
-          id: 'REGISTRAR_SALIDA',
-          targetStatus: 'OFFLINE',
-          label: 'OFFLINE',
-          helperText: 'Registrar salida'
-        });
-        return actions;
-      }
-      case 'ALMUERZO':
-        return dentroHorario
-          ? [
-              {
-                id: 'FINALIZAR_ALMUERZO',
-                targetStatus: 'ONLINE',
-                label: 'ONLINE',
-                helperText: 'Finalizar almuerzo'
-              }
-            ]
-          : [];
-      case 'SERVICIOS':
-        return dentroHorario
-          ? [
-              {
-                id: 'FINALIZAR_SERVICIOS',
-                targetStatus: 'ONLINE',
-                label: 'ONLINE',
-                helperText: 'Finalizar servicios'
-              }
-            ]
-          : [];
-      case 'CAPACITACION':
-        return [];
+  private parseTs(value: string | null | undefined): number | null {
+    if (!value) {
+      return null;
     }
+    const ms = new Date(value).getTime();
+    return Number.isNaN(ms) ? null : ms;
+  }
+
+  private formatMmSs(totalSeconds: number): string {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }
+
+  // ===================== Catalogo de acciones =====================
+
+  private resolveStateOptions(): AttendanceActionOption[] {
+    const detail = this.attendanceDetail();
+    if (!detail) {
+      return [];
+    }
+
+    switch (this.currentStatus()) {
+      case 'OFFLINE': {
+        const puede = Boolean(detail.puedeMarcarIngreso);
+        return [
+          {
+            key: 'INGRESO',
+            actionId: 'REGISTRAR_INGRESO',
+            targetStatus: 'ONLINE',
+            label: 'ONLINE',
+            enabled: puede,
+            disabledReason: puede ? undefined : this.ingresoDisabledReason(detail)
+          }
+        ];
+      }
+      case 'ONLINE':
+        return [
+          this.buildOption('ALMUERZO', 'INICIAR_ALMUERZO', 'ALMUERZO', 'Almuerzo',
+            Boolean(detail.puedeIniciarAlmuerzo), this.almuerzoDisabledReason(detail)),
+          this.buildOption('SERVICIOS', 'INICIAR_SERVICIOS', 'SERVICIOS', 'Servicios',
+            Boolean(detail.puedeIniciarServicios), this.serviciosDisabledReason(detail)),
+          this.buildOption('PAUSA_ACTIVA', 'INICIAR_PAUSA_ACTIVA', 'PAUSA_ACTIVA', 'Pausa activa',
+            Boolean(detail.puedeIniciarPausaActiva), this.pausaDisabledReason(detail)),
+          {
+            key: 'CAPACITACION',
+            actionId: null,
+            targetStatus: 'CAPACITACION',
+            label: 'Capacitación',
+            enabled: false,
+            disabledReason: 'La activa tu supervisor'
+          },
+          this.buildOption('OFFLINE', 'REGISTRAR_SALIDA', 'OFFLINE', 'Offline',
+            Boolean(detail.puedeMarcarSalida), 'Vuelve a ONLINE para marcar salida')
+        ];
+      case 'ALMUERZO':
+        return [this.returnOption('FINALIZAR_ALMUERZO')];
+      case 'SERVICIOS':
+        return [this.returnOption('FINALIZAR_SERVICIOS')];
+      case 'PAUSA_ACTIVA':
+        return [this.returnOption('FINALIZAR_PAUSA_ACTIVA')];
+      case 'CAPACITACION':
+        return [
+          {
+            key: 'ONLINE',
+            actionId: 'FINALIZAR_CAPACITACION',
+            targetStatus: 'ONLINE',
+            label: 'Salir a ONLINE',
+            enabled: true
+          }
+        ];
+    }
+  }
+
+  private buildOption(
+    key: string,
+    actionId: AttendanceActionId,
+    targetStatus: EstadoAsistencia,
+    label: string,
+    enabled: boolean,
+    disabledReason: string
+  ): AttendanceActionOption {
+    return { key, actionId, targetStatus, label, enabled, disabledReason: enabled ? undefined : disabledReason };
+  }
+
+  private returnOption(actionId: AttendanceActionId): AttendanceActionOption {
+    return { key: 'ONLINE', actionId, targetStatus: 'ONLINE', label: 'ONLINE', enabled: true };
+  }
+
+  private ingresoDisabledReason(detail: DetalleDiaResponse): string {
+    if (detail.jornadaCerrada) return 'Tu jornada de hoy ya está cerrada.';
+    if (!detail.idHorario && !detail.tieneHorario) return 'No tienes turno programado para hoy.';
+    const entrada = detail.entradaProgramada?.substring(0, 5) ?? null;
+    const salida = detail.salidaProgramada?.substring(0, 5) ?? null;
+    const now = this.nowHhMm();
+    if (entrada && now < entrada) return `Podrás marcar poco antes de las ${entrada}.`;
+    if (salida && now > salida) return `Tu turno terminó a las ${salida}.`;
+    return 'Estás fuera de tu horario para marcar ingreso.';
+  }
+
+  private almuerzoDisabledReason(detail: DetalleDiaResponse): string {
+    if (!detail.enTurnoActivo) return 'Disponible dentro de tu turno.';
+    if (detail.almuerzoRealFin) return 'Ya tomaste tu almuerzo de hoy.';
+    const inicio = detail.inicioAlmuerzoProgramado;
+    if (inicio) {
+      const desde = this.minusMinutesHhMm(inicio, 15);
+      if (desde) return `Disponible desde las ${desde}.`;
+    }
+    return 'Disponible cerca de tu hora de almuerzo.';
+  }
+
+  private serviciosDisabledReason(detail: DetalleDiaResponse): string {
+    if (!detail.enTurnoActivo) return 'Disponible dentro de tu turno.';
+    return 'Alcanzaste tu límite de servicios de hoy.';
+  }
+
+  private pausaDisabledReason(detail: DetalleDiaResponse): string {
+    if (!detail.enTurnoActivo) return 'Disponible dentro de tu turno.';
+    return 'Ya usaste tu pausa activa de hoy.';
   }
 
   /**
@@ -598,7 +775,7 @@ export class AttendanceFacade {
    * ya esta dentro de horario, se marca ONLINE una sola vez. Si el empleado se conecta DESPUES de su
    * entrada sin marcar (caso 2A), NO se auto-marca: debe marcar ONLINE manualmente.
    */
-  private evaluateAttendanceAutomation(detail: DetalleAsistenciaResponse | null): void {
+  private evaluateAttendanceAutomation(detail: DetalleDiaResponse | null): void {
     this.clearPollTimer();
 
     if (
@@ -612,7 +789,7 @@ export class AttendanceFacade {
       return;
     }
 
-    if (detail.dentroHorario) {
+    if (detail.enTurnoActivo) {
       // Ya dentro de horario y sin ingreso.
       if (this.autoCheckInArmed) {
         // Estabamos esperando que llegara su hora de entrada: marcar ONLINE automaticamente.
@@ -639,7 +816,7 @@ export class AttendanceFacade {
     if (this.pollTimerId !== null) {
       return;
     }
-    // El backend es la autoridad de "ya es tu hora": recargamos hasta que confirme dentroHorario.
+    // El backend es la autoridad de "ya es tu hora": recargamos hasta que confirme enTurnoActivo.
     this.pollTimerId = setInterval(() => this.reload(), 60000);
   }
 
@@ -650,12 +827,12 @@ export class AttendanceFacade {
     }
   }
 
-  private isBeforeEntrada(detail: DetalleAsistenciaResponse): boolean {
+  private isBeforeEntrada(detail: DetalleDiaResponse): boolean {
     const entradaMin = this.toMinutes(detail.entradaProgramada);
     return entradaMin !== null && this.nowMinutes() < entradaMin;
   }
 
-  private isAfterSalida(detail: DetalleAsistenciaResponse): boolean {
+  private isAfterSalida(detail: DetalleDiaResponse): boolean {
     const salidaMin = this.toMinutes(detail.salidaProgramada);
     const entradaMin = this.toMinutes(detail.entradaProgramada);
     if (salidaMin === null || entradaMin === null || salidaMin <= entradaMin) {
@@ -675,9 +852,26 @@ export class AttendanceFacade {
     return hours * 60 + minutes;
   }
 
+  private minusMinutesHhMm(time: string, minutes: number): string | null {
+    const [hours, mins] = time.split(':').map(Number);
+    if (Number.isNaN(hours) || Number.isNaN(mins)) {
+      return null;
+    }
+    let total = hours * 60 + mins - minutes;
+    if (total < 0) {
+      total += 24 * 60;
+    }
+    return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+  }
+
   private nowMinutes(): number {
     const now = new Date();
     return now.getHours() * 60 + now.getMinutes();
+  }
+
+  private nowHhMm(): string {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   }
 
   private getErrorMessage(error: HttpErrorResponse, fallbackMessage: string): string {

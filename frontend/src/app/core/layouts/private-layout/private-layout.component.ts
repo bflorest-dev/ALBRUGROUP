@@ -133,6 +133,18 @@ export class PrivateLayoutComponent implements AfterViewInit {
   protected readonly attendanceHint = computed(() =>
     this.isAlwaysOnlineRole() ? '' : this.attendanceFacade.scheduleHint()
   );
+  protected readonly attendanceTimerText = computed(() =>
+    this.isAlwaysOnlineRole() ? null : this.attendanceFacade.timerText()
+  );
+  protected readonly attendanceTimerOver = computed(() =>
+    this.isAlwaysOnlineRole() ? false : this.attendanceFacade.timerOver()
+  );
+  protected readonly attendanceLunchWait = computed(() =>
+    this.isAlwaysOnlineRole() ? false : this.attendanceFacade.lunchWait()
+  );
+  protected readonly attendanceLunchDuration = computed(() =>
+    this.isAlwaysOnlineRole() ? null : this.attendanceFacade.lunchDurationMinutes()
+  );
   protected readonly themeClass = computed(() => {
     const primaryRole = this.session()?.primaryRole;
     return primaryRole ? ROLE_THEME_CLASS[primaryRole] ?? 'theme-admin' : 'theme-admin';
@@ -419,6 +431,18 @@ export class PrivateLayoutComponent implements AfterViewInit {
       untracked(() => void this.authSessionService.logout());
     });
 
+    // Contrato "bandeja vacia" (fase schedule): el frontend reporta el vaciado. Si el asesor entro a
+    // ALMUERZO y su bandeja quedo vacia, avisamos para que arranque el contador real. El emisor pasara
+    // a lead-service (WebSocket) en una fase posterior sin tocar schedule (mismo contrato).
+    effect(() => {
+      const count = this.asesorVentasState.assignedLeadCount();
+      const waiting = this.attendanceFacade.lunchWait();
+      this.attendanceFacade.setAssignedLeadCount(count);
+      if (waiting && count === 0) {
+        untracked(() => this.attendanceFacade.reportBandejaVaciaSiCorresponde());
+      }
+    });
+
     effect(() => {
       const session = this.session();
 
@@ -445,9 +469,14 @@ export class PrivateLayoutComponent implements AfterViewInit {
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
             next: (event) => {
+              if (event.fecha !== this.getToday()) {
+                return;
+              }
+              // EXCEPCION_HORARIO_AFECTADA: le corrigieron el horario. ASISTENCIA_ESTADO_CAMBIADO: un rol
+              // externo cambio su estado (p. ej. lo pusieron en CAPACITACION) -> refrescar el badge en vivo.
               if (
-                event.tipo === 'EXCEPCION_HORARIO_AFECTADA' &&
-                event.fecha === this.getToday()
+                event.tipo === 'EXCEPCION_HORARIO_AFECTADA' ||
+                event.tipo === 'ASISTENCIA_ESTADO_CAMBIADO'
               ) {
                 this.attendanceFacade.reload();
               }

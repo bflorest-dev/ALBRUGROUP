@@ -9,7 +9,14 @@
       [attr.aria-expanded]="isOpen()"
       (click)="toggleOpen()"
     >
-      <p-tag [value]="statusLabel" [style]="statusTagStyle()" />
+      @if (timerText) {
+        <span class="attendance-status__timer" [style.background]="statusColor" [style.borderColor]="statusColor">
+          <i class="pi pi-clock" aria-hidden="true"></i>
+          <span class="attendance-status__timer-value" [class.is-over]="timerOver">{{ timerText }}</span>
+        </span>
+      } @else {
+        <p-tag [value]="statusLabel" [style]="statusTagStyle()" />
+      }
       @if (isLoading) {
         <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
       } @else {
@@ -24,10 +31,19 @@
     @if (isOpen() && !disabled) {
       <div class="attendance-status__menu">
         @if (actions.length) {
-          @for (action of actions; track action.id) {
-            <button type="button" class="attendance-status__option" (click)="selectAction(action)">
-              <p-tag [value]="action.label" [style]="statusTagStyle(getOptionColor(action))" />
-            </button>
+          @for (action of actions; track action.key) {
+            @if (action.enabled) {
+              <button type="button" class="attendance-status__option" (click)="selectAction(action)">
+                <p-tag [value]="action.label" [style]="statusTagStyle(getOptionColor(action))" />
+              </button>
+            } @else {
+              <div class="attendance-status__option is-disabled">
+                <p-tag [value]="action.label" [style]="statusTagStyle(getOptionColor(action))" />
+                @if (action.disabledReason) {
+                  <span class="attendance-status__option-reason">{{ action.disabledReason }}</span>
+                }
+              </div>
+            }
           }
         } @else {
           <span class="attendance-status__empty">Sin acciones</span>
@@ -85,5 +101,24 @@
         ></button>
       </div>
     }
+  </p-dialog>
+
+  <p-dialog
+    [visible]="showLunchWait()"
+    [modal]="true"
+    [closable]="false"
+    [draggable]="false"
+    [resizable]="false"
+    styleClass="attendance-lunch-dialog"
+  >
+    <div class="attendance-lunch">
+      <div class="attendance-lunch__icon"><i class="pi pi-clock" aria-hidden="true"></i></div>
+      <h4 class="attendance-lunch__title">Aún tienes gestión pendiente</h4>
+      <p class="attendance-lunch__text">
+        Culmina tu gestión pendiente para poder empezar tu horario de almuerzo
+        <strong>({{ lunchDurationLabel() }})</strong>.
+      </p>
+      <button pButton type="button" label="Aceptar" (click)="acknowledgeLunch()"></button>
+    </div>
   </p-dialog>
 </section>

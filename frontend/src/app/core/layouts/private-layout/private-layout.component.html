@@ -284,6 +284,10 @@
         [errorMessage]="attendancePickerErrorMessage()"
         [disabled]="isAttendancePickerDisabled()"
         [hint]="attendanceHint()"
+        [timerText]="attendanceTimerText()"
+        [timerOver]="attendanceTimerOver()"
+        [lunchWaitVisible]="attendanceLunchWait()"
+        [lunchDurationMinutes]="attendanceLunchDuration()"
         (actionSelected)="submitAttendanceAction($event)"
         (retry)="attendanceFacade.reload()"
       />

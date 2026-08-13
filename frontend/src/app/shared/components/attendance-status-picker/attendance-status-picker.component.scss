@@ -147,3 +147,94 @@
   flex-wrap: wrap;
   margin-top: 1.25rem;
 }
+
+// Cronometro dentro del mismo espacio del pill (mismo ancho que el p-tag), sin cambiar el tamano.
+.attendance-status__timer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  width: 8.25rem;
+  min-height: 1.55rem;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 0.35rem;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.attendance-status__timer i {
+  color: #ffffff;
+  font-size: 0.76rem;
+}
+
+.attendance-status__timer-value {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.attendance-status__timer-value.is-over {
+  animation: attendance-timer-blink 1s steps(1) infinite;
+  color: #7a0f0f;
+}
+
+@keyframes attendance-timer-blink {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+// Opcion deshabilitada: se muestra igual (mostrar + deshabilitar + motivo), atenuada y no clickeable.
+.attendance-status__option.is-disabled {
+  flex-direction: column;
+  gap: 0.15rem;
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.attendance-status__option.is-disabled:hover {
+  background: transparent;
+}
+
+.attendance-status__option-reason {
+  font-size: 0.68rem;
+  line-height: 1.2;
+  color: var(--app-text-muted);
+  text-align: center;
+}
+
+.attendance-lunch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  max-width: 20rem;
+  padding: 0.5rem 0.5rem 0.25rem;
+}
+
+.attendance-lunch__icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(243, 194, 71, 0.18);
+  color: #b7791f;
+  font-size: 1.15rem;
+}
+
+.attendance-lunch__title {
+  margin: 0.25rem 0 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.attendance-lunch__text {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--app-text-muted);
+}

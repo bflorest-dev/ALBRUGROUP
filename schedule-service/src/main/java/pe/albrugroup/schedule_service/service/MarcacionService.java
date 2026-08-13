@@ -708,16 +708,26 @@ public class MarcacionService {
         Asistencia asistencia = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, fecha).orElse(null);
 
         boolean esHoy = fecha.equals(OperationalDateTime.today());
-        boolean dentroHorario = esHoy && jornada != null && jornada.getTramoActual() != null;
+        boolean enTurnoActivo = esHoy && jornada != null && jornada.getTramoActual() != null;
+        EffectiveParams params = parametroAsistenciaResolver.resolve(currentUser.roles());
 
         DetalleDiaResponse.DetalleDiaResponseBuilder b = DetalleDiaResponse.builder()
                 .idEmpleado(idEmpleado)
                 .fecha(fecha)
                 .tieneHorario(jornada != null)
-                .dentroHorario(dentroHorario);
+                .enTurnoActivo(enTurnoActivo)
+                .maxMinutosPausaActiva(params.maxMinutosPausaActiva())
+                .puedeMarcarIngreso(puedeMarcarIngresoAhora(jornada, asistencia, esHoy, params));
 
         if (asistencia != null) {
             SesionTotales tot = totales(asistencia.getId());
+            boolean online = esHoy
+                    && asistencia.getEstadoActual() == EstadoAsistencia.ONLINE
+                    && asistencia.getFechaHoraIngreso() != null
+                    && asistencia.getFechaHoraSalida() == null;
+            int serviciosUsado = sumarSesionesCerradas(asistencia.getId(), TipoSesionEstado.SERVICIOS);
+            int usosPausa = sesionEstadoRepository
+                    .findByAsistenciaIdAndTipoOrderByInicioAsc(asistencia.getId(), TipoSesionEstado.PAUSA_ACTIVA).size();
             return b
                     .idHorario(asistencia.getIdHorario())
                     .estadoActual(asistencia.getEstadoActual())
@@ -727,11 +737,21 @@ public class MarcacionService {
                     .fechaHoraSalida(asistencia.getFechaHoraSalida())
                     .jornadaCerrada(asistencia.getFechaHoraSalida() != null)
                     .operativo(asistencia.getEstadoActual() == EstadoAsistencia.ONLINE && esHoy)
+                    .puedeMarcarSalida(online)
+                    .puedeIniciarAlmuerzo(online && enTurnoActivo
+                            && asistencia.getAlmuerzoRealFin() == null
+                            && ventanaAlmuerzoAbierta(asistencia))
+                    .puedeIniciarServicios(online && enTurnoActivo
+                            && serviciosUsado < safe(asistencia.getMinutosServiciosPermitidos()))
+                    .puedeIniciarPausaActiva(online && enTurnoActivo
+                            && usosPausa < params.maxUsosPausaActivaDia())
                     .minutosObjetivoDia(asistencia.getMinutosObjetivoDia())
                     .minutosTrabajados(asistencia.getMinutosTrabajados())
                     .minutosBalance(asistencia.getMinutosBalance())
                     .minutosExtra(asistencia.getMinutosExtra())
                     .minutosCompensados(asistencia.getMinutosCompensados())
+                    .inicioAlmuerzoProgramado(asistencia.getInicioAlmuerzoProgramado())
+                    .minutosAlmuerzoProgramado(minutosEntre(asistencia.getInicioAlmuerzoProgramado(), asistencia.getFinAlmuerzoProgramado()))
                     .almuerzoEstadoDesde(asistencia.getAlmuerzoEstadoDesde())
                     .almuerzoRealInicio(asistencia.getAlmuerzoRealInicio())
                     .almuerzoRealFin(asistencia.getAlmuerzoRealFin())
@@ -741,11 +761,16 @@ public class MarcacionService {
                     .minutosPausaActivaHoy(tot.pausa())
                     .minutosCapacitacionHoy(tot.capacitacion())
                     .sesionEnCurso(tot.enCurso())
+                    .minutosServiciosTope(asistencia.getMinutosServiciosPermitidos())
+                    .sesionActualTipo(tot.sesionActualTipo())
+                    .sesionActualInicio(tot.sesionActualInicio())
                     .tramos(construirTramos(asistencia))
                     .build();
         }
 
         TramoJornadaResponse tramoRef = tramoReferencia(jornada);
+        Horario horario = jornada != null ? horarioRepository.findById(jornada.getIdHorario()).orElse(null) : null;
+        VentanaAlmuerzo almuerzo = horario != null ? resolverAlmuerzoProgramado(horario, fecha) : null;
         return b
                 .idHorario(jornada != null ? jornada.getIdHorario() : null)
                 .estadoActual(EstadoAsistencia.OFFLINE)
@@ -753,18 +778,76 @@ public class MarcacionService {
                 .salidaProgramada(tramoRef != null ? tramoRef.getFin().toLocalTime() : null)
                 .jornadaCerrada(false)
                 .operativo(false)
+                .puedeMarcarSalida(false)
+                .puedeIniciarAlmuerzo(false)
+                .puedeIniciarServicios(false)
+                .puedeIniciarPausaActiva(false)
                 .minutosObjetivoDia(objetivoJornada(jornada))
                 .minutosTrabajados(0)
                 .minutosBalance(0)
                 .minutosExtra(0)
                 .minutosCompensados(0)
+                .inicioAlmuerzoProgramado(almuerzo != null ? almuerzo.inicio() : null)
+                .minutosAlmuerzoProgramado(almuerzo != null ? (int) Duration.between(almuerzo.inicio(), almuerzo.fin()).toMinutes() : null)
                 .minutosAlmuerzoTomados(0)
                 .minutosServiciosHoy(0)
                 .minutosPausaActivaHoy(0)
                 .minutosCapacitacionHoy(0)
                 .sesionEnCurso(false)
+                .minutosServiciosTope(horario != null ? horario.getMinutosServicios() : null)
                 .tramos(List.of())
                 .build();
+    }
+
+    /** Espeja la aceptacion de registrarIngreso: true sii marcar ingreso ahora seria aceptado. */
+    private boolean puedeMarcarIngresoAhora(JornadaEfectivaResponse jornada, Asistencia asistencia,
+                                            boolean esHoy, EffectiveParams params) {
+        if (!esHoy) {
+            return false;
+        }
+        TramoJornadaResponse tramo = tramoParaIngreso(jornada);
+        if (tramo == null) {
+            return false;
+        }
+        if (!ventanaIngresoAbierta(OperationalDateTime.nowLocalDateTime(), tramo.getInicio(), tramo.getFin(), params)) {
+            return false;
+        }
+        if (asistencia == null) {
+            return true;
+        }
+        if (asistencia.getFechaHoraSalida() != null) {
+            return esTramoReingreso(asistencia, tramo);
+        }
+        return asistencia.getFechaHoraIngreso() == null;
+    }
+
+    /** Predicado de la ventana de ingreso (mismos limites que validarVentanaIngreso, sin lanzar). */
+    private boolean ventanaIngresoAbierta(LocalDateTime ahora, LocalDateTime inicio, LocalDateTime fin, EffectiveParams params) {
+        if (ahora.isAfter(fin)) {
+            return false;
+        }
+        long desfaseMin = Duration.between(inicio, ahora).toMinutes();
+        if (desfaseMin < 0) {
+            return -desfaseMin <= params.margenAdelantoMin();
+        }
+        return desfaseMin < params.bloqueoTardanzaMin();
+    }
+
+    /** Ventana de marca de almuerzo: desde 15 min antes de la hora programada (sin ventana -> libre). */
+    private boolean ventanaAlmuerzoAbierta(Asistencia a) {
+        LocalTime lunchStart = a.getInicioAlmuerzoProgramado();
+        if (lunchStart == null) {
+            return true;
+        }
+        LocalDateTime desde = LocalDateTime.of(a.getFecha(), lunchStart).minusMinutes(VENTANA_MARCA_ALMUERZO_MIN);
+        return !OperationalDateTime.nowLocalDateTime().isBefore(desde);
+    }
+
+    private Integer minutosEntre(LocalTime inicio, LocalTime fin) {
+        if (inicio == null || fin == null) {
+            return null;
+        }
+        return (int) Math.max(Duration.between(inicio, fin).toMinutes(), 0);
     }
 
     private TramoJornadaResponse tramoReferencia(JornadaEfectivaResponse jornada) {
@@ -797,6 +880,8 @@ public class MarcacionService {
         int pausa = 0;
         int capacitacion = 0;
         boolean enCurso = false;
+        TipoSesionEstado abiertaTipo = null;
+        LocalDateTime abiertaInicio = null;
         for (SesionEstado sesion : sesiones) {
             LocalDateTime fin = sesion.getFin() != null ? sesion.getFin() : ahora;
             int minutos = (int) Math.max(Duration.between(sesion.getInicio(), fin).toMinutes(), 0);
@@ -807,10 +892,13 @@ public class MarcacionService {
             }
             if (sesion.getFin() == null) {
                 enCurso = true;
+                abiertaTipo = sesion.getTipo();
+                abiertaInicio = sesion.getInicio();
             }
         }
-        return new SesionTotales(servicios, pausa, capacitacion, enCurso);
+        return new SesionTotales(servicios, pausa, capacitacion, enCurso, abiertaTipo, abiertaInicio);
     }
 
-    private record SesionTotales(int servicios, int pausa, int capacitacion, boolean enCurso) {}
+    private record SesionTotales(int servicios, int pausa, int capacitacion, boolean enCurso,
+                                 TipoSesionEstado sesionActualTipo, LocalDateTime sesionActualInicio) {}
 }

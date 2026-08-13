@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { DetalleAsistenciaResponse } from '../../shared/models/schedule/detalle-asistencia-response';
+import type { DetalleDiaResponse } from '../../shared/models/schedule/detalle-dia-response';
 import { AttendanceService } from '../services/attendance.service';
 import { PresenceService } from '../services/presence.service';
 import { SessionService } from '../services/session.service';
@@ -10,29 +10,45 @@ import { AttendanceFacade } from './attendance.facade';
 describe('AttendanceFacade schedule automation', () => {
   let facade: AttendanceFacade;
 
-  const detail = (overrides: Partial<DetalleAsistenciaResponse>): DetalleAsistenciaResponse => ({
+  const detail = (overrides: Partial<DetalleDiaResponse>): DetalleDiaResponse => ({
     idEmpleado: 21,
-    idHorario: 7,
     fecha: '2026-06-15',
+    idHorario: 7,
     estadoActual: 'OFFLINE',
+    tieneHorario: true,
+    enTurnoActivo: false,
+    operativo: false,
+    jornadaCerrada: false,
+    puedeMarcarIngreso: false,
+    puedeMarcarSalida: false,
+    puedeIniciarAlmuerzo: false,
+    puedeIniciarServicios: false,
+    puedeIniciarPausaActiva: false,
     entradaProgramada: '17:00:00',
     salidaProgramada: '19:00:00',
-    inicioAlmuerzoProgramado: null,
-    finAlmuerzoProgramado: null,
     fechaHoraIngreso: null,
     fechaHoraSalida: null,
-    fechaHoraInicioAlmuerzo: null,
-    fechaHoraFinAlmuerzo: null,
     minutosObjetivoDia: 120,
     minutosTrabajados: 0,
     minutosBalance: -120,
+    minutosExtra: 0,
+    minutosCompensados: 0,
+    inicioAlmuerzoProgramado: null,
+    minutosAlmuerzoProgramado: null,
+    almuerzoEstadoDesde: null,
+    almuerzoRealInicio: null,
+    almuerzoRealFin: null,
+    origenAlmuerzo: null,
     minutosAlmuerzoTomados: 0,
-    minutosServiciosPermitidos: 20,
-    minutosServiciosAcumulados: 0,
-    excedioServicios: false,
-    jornadaCerrada: false,
-    dentroHorario: false,
-    operativo: false,
+    minutosServiciosHoy: 0,
+    minutosPausaActivaHoy: 0,
+    minutosCapacitacionHoy: 0,
+    sesionEnCurso: false,
+    minutosServiciosTope: 20,
+    maxMinutosPausaActiva: 5,
+    sesionActualTipo: null,
+    sesionActualInicio: null,
+    tramos: [],
     ...overrides
   });
 
@@ -49,8 +65,12 @@ describe('AttendanceFacade schedule automation', () => {
             registrarSalida: vi.fn(() => of(detail({ jornadaCerrada: true }))),
             iniciarAlmuerzo: vi.fn(),
             finalizarAlmuerzo: vi.fn(),
+            notificarBandejaVacia: vi.fn(),
             iniciarServicios: vi.fn(),
-            finalizarServicios: vi.fn()
+            finalizarServicios: vi.fn(),
+            iniciarPausaActiva: vi.fn(),
+            finalizarPausaActiva: vi.fn(),
+            finalizarCapacitacion: vi.fn()
           }
         },
         {
@@ -80,12 +100,12 @@ describe('AttendanceFacade schedule automation', () => {
     const reload = vi.spyOn(facade, 'reload');
     const submit = vi.spyOn(facade, 'submitAction');
 
-    facade['evaluateAttendanceAutomation'](detail({ dentroHorario: false }));
+    facade['evaluateAttendanceAutomation'](detail({ enTurnoActivo: false }));
     vi.advanceTimersByTime(60_000);
     expect(reload).toHaveBeenCalledOnce();
 
     vi.setSystemTime(new Date(2026, 5, 15, 17, 0));
-    facade['evaluateAttendanceAutomation'](detail({ dentroHorario: true }));
+    facade['evaluateAttendanceAutomation'](detail({ enTurnoActivo: true }));
     expect(submit).toHaveBeenCalledWith('REGISTRAR_INGRESO');
   });
 
@@ -93,7 +113,7 @@ describe('AttendanceFacade schedule automation', () => {
     vi.setSystemTime(new Date(2026, 5, 15, 17, 2));
     const submit = vi.spyOn(facade, 'submitAction');
 
-    facade['evaluateAttendanceAutomation'](detail({ dentroHorario: true }));
+    facade['evaluateAttendanceAutomation'](detail({ enTurnoActivo: true }));
 
     expect(submit).not.toHaveBeenCalled();
   });

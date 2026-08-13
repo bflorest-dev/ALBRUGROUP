@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import pe.albrugroup.schedule_service.entity.enums.EstadoAsistencia;
 import pe.albrugroup.schedule_service.entity.enums.OrigenAlmuerzo;
+import pe.albrugroup.schedule_service.entity.enums.TipoSesionEstado;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,9 +28,18 @@ public class DetalleDiaResponse {
 
     private EstadoAsistencia estadoActual;
     private Boolean tieneHorario;
-    private Boolean dentroHorario;
+    /** Dentro del tramo de turno activo ahora (base de pausas + display). NO responde "¿puedo marcar?". */
+    private Boolean enTurnoActivo;
     private Boolean operativo;
     private Boolean jornadaCerrada;
+
+    // Compuertas: un booleano por decision de UI, autoritativo. El frontend habilita/deshabilita con esto,
+    // sin recalcular ventanas con el reloj local. Espejan las validaciones del camino de escritura.
+    private Boolean puedeMarcarIngreso;
+    private Boolean puedeMarcarSalida;
+    private Boolean puedeIniciarAlmuerzo;
+    private Boolean puedeIniciarServicios;
+    private Boolean puedeIniciarPausaActiva;
 
     private LocalTime entradaProgramada;
     private LocalTime salidaProgramada;
@@ -43,6 +53,8 @@ public class DetalleDiaResponse {
     private Integer minutosCompensados;
 
     // Almuerzo (split): estado vs. marcacion real.
+    private LocalTime inicioAlmuerzoProgramado;
+    private Integer minutosAlmuerzoProgramado;
     private LocalDateTime almuerzoEstadoDesde;
     private LocalDateTime almuerzoRealInicio;
     private LocalDateTime almuerzoRealFin;
@@ -54,6 +66,13 @@ public class DetalleDiaResponse {
     private Integer minutosPausaActivaHoy;
     private Integer minutosCapacitacionHoy;
     private Boolean sesionEnCurso;
+
+    // Umbrales para el aviso de desbalance/tope (el frontend pinta en rojo al superarlos) y anclas de
+    // cronometro de la sesion abierta (SERVICIOS/PAUSA_ACTIVA/CAPACITACION). El almuerzo ancla en almuerzoRealInicio.
+    private Integer minutosServiciosTope;
+    private Integer maxMinutosPausaActiva;
+    private TipoSesionEstado sesionActualTipo;
+    private LocalDateTime sesionActualInicio;
 
     /**
      * Desglose de tramos del dia. Solo se llena en dias partidos (jornada reabierta por una
