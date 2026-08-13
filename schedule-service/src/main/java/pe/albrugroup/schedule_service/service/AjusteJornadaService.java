@@ -110,6 +110,9 @@ public class AjusteJornadaService {
                 ? Math.abs(Duration.between(baseDiaria.inicio(), validated.inicio()).toMinutes())
                 : 0;
         validarAutorizacionAjuste(request.getRazon(), currentUser.roles(), desplazamientoMin);
+        if (request.getRazon() == RazonAjuste.COMPENSACION) {
+            validarCompensacion(idEmpleado, validated);
+        }
 
         horarioRepository.findByIdForUpdate(validated.horario().getId())
                 .orElseThrow(() -> new NotFoundException(Horario.class, validated.horario().getId()));
@@ -169,9 +172,59 @@ public class AjusteJornadaService {
                     throw new BadRequestException("Solo RRHH puede aplicar una tardanza justificada");
                 }
             }
-            case COMPENSACION ->
-                    throw new BadRequestException("La compensación de horas se gestiona en el cierre mensual");
+            case COMPENSACION -> {
+                // Cualquiera con EXTEND_HORARIO; el guard real es el deficit (ver validarCompensacion).
+            }
         }
+    }
+
+    /**
+     * Precondicion de compensacion (§2.1): tramo ADITIVO (no reemplaza el base), el empleado DEBE horas
+     * ese mes, y lo programado no excede el deficit pendiente. El deficit se DERIVA de los balances
+     * diarios negativos del mes; lo ya reservado por otras compensaciones activas se descuenta. Regla
+     * mensual: el deficit se calcula sobre el mes de la fecha, asi que compensar en un mes sin deficit
+     * (p. ej. el mes siguiente) se rechaza solo.
+     */
+    private void validarCompensacion(Long idEmpleado, ValidatedAdjustment validated) {
+        if (validated.origen() == OrigenAjusteJornada.REEMPLAZO_BASE) {
+            throw new BadRequestException("La compensacion se agrega fuera del horario; no reemplaza el base");
+        }
+        java.time.YearMonth mes = java.time.YearMonth.from(validated.fecha());
+        int deficitBruto = deficitBrutoMes(idEmpleado, mes);
+        if (deficitBruto <= 0) {
+            throw new BadRequestException("El empleado no debe horas este mes; no hay deficit que compensar");
+        }
+        int pendiente = deficitBruto - compensacionPlaneadaMes(idEmpleado, mes);
+        if (pendiente <= 0) {
+            throw new BadRequestException("El deficit del mes ya esta cubierto por compensaciones programadas");
+        }
+        int nuevo = (int) Duration.between(validated.inicio(), validated.fin()).toMinutes();
+        if (nuevo > pendiente) {
+            throw new BadRequestException(
+                    "La compensacion (" + nuevo + " min) excede el deficit pendiente del mes (" + pendiente + " min)");
+        }
+    }
+
+    /** Deficit del mes en minutos (positivo): suma de los balances diarios negativos. */
+    private int deficitBrutoMes(Long idEmpleado, java.time.YearMonth mes) {
+        return asistenciaRepository
+                .findByIdEmpleadoAndFechaBetweenOrderByFechaAsc(idEmpleado, mes.atDay(1), mes.atEndOfMonth()).stream()
+                .mapToInt(a -> Math.max(-safe(a.getMinutosBalance()), 0))
+                .sum();
+    }
+
+    /** Minutos ya reservados por tramos de COMPENSACION activos del mes (por su ventana programada). */
+    private int compensacionPlaneadaMes(Long idEmpleado, java.time.YearMonth mes) {
+        return ajusteRepository
+                .findByIdEmpleadoAndFechaOperativaBetweenAndEstado(
+                        idEmpleado, mes.atDay(1), mes.atEndOfMonth(), EstadoAjusteJornada.ACTIVO).stream()
+                .filter(a -> a.getRazon() == RazonAjuste.COMPENSACION)
+                .mapToInt(a -> (int) Duration.between(a.getInicio(), a.getFin()).toMinutes())
+                .sum();
+    }
+
+    private int safe(Integer valor) {
+        return valor == null ? 0 : valor;
     }
 
     private String rolPrincipal(List<String> roles) {

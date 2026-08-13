@@ -293,6 +293,48 @@ class MarcacionServiceTest {
         assertThat(dia.getTramos().get(1).getOrigen()).isEqualTo(OrigenTramo.TRAMO_ADICIONAL);
     }
 
+    @Test
+    void tramoDeCompensacionCuentaComoCompensadoNoComoExtra() {
+        // Base 8-17 cerrada pero corta (450 trabajados, debe 30 -> balance -30). Se abre COMPENSACION 19-19:30.
+        Asistencia base = asistenciaOnline(LocalDateTime.of(2026, 8, 10, 8, 0), 90);
+        base.setFechaHoraSalida(LocalDateTime.of(2026, 8, 10, 17, 0));
+        base.setEstadoActual(EstadoAsistencia.OFFLINE);
+        base.setMinutosTrabajados(450);
+        base.setMinutosBalance(-30);
+        base.setOrigenTramoActual(OrigenTramo.BASE);
+        almacen.set(base);
+
+        AjusteJornada compensacion = AjusteJornada.builder()
+                .id(60L).idEmpleado(EMP).horario(horario).fechaOperativa(DIA)
+                .inicio(LocalDateTime.of(2026, 8, 10, 19, 0)).fin(LocalDateTime.of(2026, 8, 10, 19, 30))
+                .estado(EstadoAjusteJornada.ACTIVO).origen(OrigenAjusteJornada.TRAMO_ADICIONAL)
+                .razon(RazonAjuste.COMPENSACION).motivo("Recupera 30 min").creadoPor(99L)
+                .build();
+        lenient().when(ajusteRepository.findByIdEmpleadoAndFechaOperativaAndEstadoOrderByInicioAsc(
+                EMP, DIA, EstadoAjusteJornada.ACTIVO)).thenReturn(List.of(compensacion));
+        lenient().when(ajusteRepository.findById(60L)).thenReturn(Optional.of(compensacion));
+
+        List<AsistenciaTramo> tramos = new java.util.ArrayList<>();
+        when(asistenciaTramoRepository.save(any(AsistenciaTramo.class))).thenAnswer(i -> {
+            AsistenciaTramo t = i.getArgument(0);
+            tramos.add(t);
+            return t;
+        });
+        when(asistenciaTramoRepository.findByAsistenciaIdOrderByIdAsc(anyLong())).thenReturn(tramos);
+
+        reloj(19, 0);
+        service.registrarIngreso();
+        reloj(19, 30);
+        DetalleDiaResponse dia = service.registrarSalida();
+
+        Asistencia a = almacen.get();
+        assertThat(a.getMinutosTrabajados()).isEqualTo(450);   // base intacta
+        assertThat(a.getMinutosExtra()).isZero();              // NO es hora extra
+        assertThat(a.getMinutosCompensados()).isEqualTo(30);   // va a su propia cubeta
+        assertThat(a.getMinutosBalance()).isEqualTo(-30);      // el balance diario no cambia (neutraliza en el mes)
+        assertThat(dia.getMinutosCompensados()).isEqualTo(30);
+    }
+
     // ===================== Dia no laborable =====================
 
     @Test

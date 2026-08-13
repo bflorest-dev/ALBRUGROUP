@@ -38,6 +38,10 @@ public class ResumenAsistenciaMensual {
     private Integer diasLaborables;
     private Integer diasPresente;
     private Integer diasTardanza;
+    /** Sub-conteo de diasTardanza con corrimiento COMPENSADA (SUP/ADMIN). */
+    private Integer diasTardanzaCompensada;
+    /** Sub-conteo de diasTardanza con corrimiento JUSTIFICADA (RRHH). */
+    private Integer diasTardanzaJustificada;
     private Integer diasFalta;
     private Integer minutosObjetivo;
     private Integer minutosTrabajados;

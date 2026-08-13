@@ -14,6 +14,7 @@ import pe.albrugroup.schedule_service.entity.enums.Dia;
 import pe.albrugroup.schedule_service.entity.enums.EstadoAsistencia;
 import pe.albrugroup.schedule_service.entity.enums.OrigenAlmuerzo;
 import pe.albrugroup.schedule_service.entity.enums.OrigenTramo;
+import pe.albrugroup.schedule_service.entity.enums.RazonAjuste;
 import pe.albrugroup.schedule_service.entity.enums.TipoSesionEstado;
 import pe.albrugroup.schedule_service.entity.request.asistencia.IniciarAlmuerzoRequest;
 import pe.albrugroup.schedule_service.entity.response.asistencia.DetalleDiaResponse;
@@ -477,6 +478,7 @@ public class MarcacionService {
                 .minutosServiciosAcumulados(0)
                 .excedioServicios(Boolean.FALSE)
                 .minutosExtra(0)
+                .minutosCompensados(0)
                 .origenTramoActual(mapOrigenTramo(tramo))
                 .ajusteJornadaActual(tramo.getIdAjuste() == null ? null
                         : ajusteJornadaRepository.findById(tramo.getIdAjuste()).orElse(null))
@@ -490,29 +492,48 @@ public class MarcacionService {
      * Se descuentan ALMUERZO + SERVICIOS + PAUSA_ACTIVA. CAPACITACION NO se descuenta (tiempo autorizado).
      */
     /**
-     * Recalcula los totales del dia agregando tramos archivados + segmento actual, clasificados por
-     * origen: los tramos BASE/REEMPLAZO_BASE alimentan minutosTrabajados y el balance; los tramos
-     * extra (AMPLIACION / JORNADA_EXTRAORDINARIA / TRAMO_ADICIONAL) alimentan minutosExtra. El status
-     * del dia (derivado en el reporte) sale de la base, no del extra.
+     * Recalcula los totales del dia agregando tramos archivados + segmento actual, clasificados en 3
+     * cubetas por origen + razon: BASE/REEMPLAZO_BASE -> minutosTrabajados y balance; aditivos con
+     * razon COMPENSACION -> minutosCompensados (neutraliza deficit, no da positivo aqui); el resto de
+     * aditivos (AMPLIACION operativa) -> minutosExtra. El status del dia (derivado) sale de la base.
      */
     private void recalcularMinutos(Asistencia asistencia) {
         int segmento = trabajadoSegmentoActual(asistencia);
-        boolean base = esBaseOrigen(asistencia.getOrigenTramoActual());
         List<AsistenciaTramo> archivados = asistenciaTramoRepository.findByAsistenciaIdOrderByIdAsc(asistencia.getId());
-        int baseArchivado = archivados.stream()
-                .filter(t -> esBaseOrigen(t.getOrigen()))
-                .mapToInt(AsistenciaTramo::getMinutosTrabajados).sum();
-        int extraArchivado = archivados.stream()
-                .filter(t -> !esBaseOrigen(t.getOrigen()))
-                .mapToInt(AsistenciaTramo::getMinutosTrabajados).sum();
+        int base = 0, extra = 0, compensado = 0;
+        for (AsistenciaTramo t : archivados) {
+            int mt = safe(t.getMinutosTrabajados());
+            switch (cubeta(t.getOrigen(), razonDe(t.getAjusteJornada()))) {
+                case BASE -> base += mt;
+                case EXTRA -> extra += mt;
+                case COMPENSACION -> compensado += mt;
+            }
+        }
+        switch (cubeta(asistencia.getOrigenTramoActual(), razonDe(asistencia.getAjusteJornadaActual()))) {
+            case BASE -> base += segmento;
+            case EXTRA -> extra += segmento;
+            case COMPENSACION -> compensado += segmento;
+        }
+        asistencia.setMinutosTrabajados(base);
+        asistencia.setMinutosExtra(extra);
+        asistencia.setMinutosCompensados(compensado);
+        // Invariante: balance <= 0. Trabajar de mas por cuenta propia NO da positivo; extra y compensacion
+        // viven en sus propios acumuladores, separados del balance.
+        asistencia.setMinutosBalance(Math.min(base - safe(asistencia.getMinutosObjetivoDia()), 0));
+    }
 
-        int baseTrabajado = baseArchivado + (base ? segmento : 0);
-        int extraTrabajado = extraArchivado + (base ? 0 : segmento);
-        asistencia.setMinutosTrabajados(baseTrabajado);
-        asistencia.setMinutosExtra(extraTrabajado);
-        // Invariante: balance <= 0. Trabajar de mas por cuenta propia NO da positivo; el tiempo extra
-        // autorizado vive en minutosExtra, separado del balance.
-        asistencia.setMinutosBalance(Math.min(baseTrabajado - safe(asistencia.getMinutosObjetivoDia()), 0));
+    private enum Cubeta { BASE, EXTRA, COMPENSACION }
+
+    /** Cubeta de un tramo: base (objetivo/balance), compensacion (neutraliza deficit) o extra. */
+    private Cubeta cubeta(OrigenTramo origen, RazonAjuste razon) {
+        if (esBaseOrigen(origen)) {
+            return Cubeta.BASE;
+        }
+        return razon == RazonAjuste.COMPENSACION ? Cubeta.COMPENSACION : Cubeta.EXTRA;
+    }
+
+    private RazonAjuste razonDe(AjusteJornada ajuste) {
+        return ajuste == null ? null : ajuste.getRazon();
     }
 
     /** Minutos trabajados del segmento ACTUAL (con topes de entrada/salida), menos sus pausas. */
@@ -547,7 +568,7 @@ public class MarcacionService {
         List<AsistenciaTramo> previos = asistenciaTramoRepository.findByAsistenciaIdOrderByIdAsc(a.getId());
         int previosObjetivo = previos.stream().mapToInt(AsistenciaTramo::getMinutosObjetivo).sum();
         int previosTrabajados = previos.stream().mapToInt(AsistenciaTramo::getMinutosTrabajados).sum();
-        int totalDia = safe(a.getMinutosTrabajados()) + safe(a.getMinutosExtra());
+        int totalDia = safe(a.getMinutosTrabajados()) + safe(a.getMinutosExtra()) + safe(a.getMinutosCompensados());
         asistenciaTramoRepository.save(AsistenciaTramo.builder()
                 .asistencia(a)
                 .origen(a.getOrigenTramoActual() == null ? OrigenTramo.BASE : a.getOrigenTramoActual())
@@ -635,7 +656,7 @@ public class MarcacionService {
             previosObjetivo += t.getMinutosObjetivo();
             previosTrabajados += t.getMinutosTrabajados();
         }
-        int totalDia = safe(a.getMinutosTrabajados()) + safe(a.getMinutosExtra());
+        int totalDia = safe(a.getMinutosTrabajados()) + safe(a.getMinutosExtra()) + safe(a.getMinutosCompensados());
         tramos.add(TramoAsistenciaResponse.builder()
                 .origen(a.getOrigenTramoActual() == null ? OrigenTramo.BASE : a.getOrigenTramoActual())
                 .horaEntradaEstablecida(a.getEntradaProgramada())
@@ -710,6 +731,7 @@ public class MarcacionService {
                     .minutosTrabajados(asistencia.getMinutosTrabajados())
                     .minutosBalance(asistencia.getMinutosBalance())
                     .minutosExtra(asistencia.getMinutosExtra())
+                    .minutosCompensados(asistencia.getMinutosCompensados())
                     .almuerzoEstadoDesde(asistencia.getAlmuerzoEstadoDesde())
                     .almuerzoRealInicio(asistencia.getAlmuerzoRealInicio())
                     .almuerzoRealFin(asistencia.getAlmuerzoRealFin())
@@ -735,6 +757,7 @@ public class MarcacionService {
                 .minutosTrabajados(0)
                 .minutosBalance(0)
                 .minutosExtra(0)
+                .minutosCompensados(0)
                 .minutosAlmuerzoTomados(0)
                 .minutosServiciosHoy(0)
                 .minutosPausaActivaHoy(0)

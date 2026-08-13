@@ -502,6 +502,10 @@
 
   .menu__subitems { display: none; }
 
+  .menu__section {
+    display: none;
+  }
+
   .sidebar:hover .brand__copy,
   .sidebar:focus-within .brand__copy,
   .sidebar:hover .menu__section,
@@ -536,6 +540,11 @@
   .sidebar:hover .menu__subitems,
   .sidebar:focus-within .menu__subitems {
     display: grid;
+  }
+
+  .sidebar:hover .menu__section,
+  .sidebar:focus-within .menu__section {
+    display: block;
   }
 
   .sidebar__brand,

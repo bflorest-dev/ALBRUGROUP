@@ -57,6 +57,11 @@ public class Asistencia {
     @Column(nullable = false)
     private Integer minutosExtra = 0;
 
+    /** Tiempo trabajado en tramos de COMPENSACION (minutos exactos), separado del balance y del extra. */
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer minutosCompensados = 0;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ajuste_jornada_actual_id")
     private AjusteJornada ajusteJornadaActual;

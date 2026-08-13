@@ -40,6 +40,7 @@ public class DetalleDiaResponse {
     private Integer minutosTrabajados;
     private Integer minutosBalance;
     private Integer minutosExtra;
+    private Integer minutosCompensados;
 
     // Almuerzo (split): estado vs. marcacion real.
     private LocalDateTime almuerzoEstadoDesde;

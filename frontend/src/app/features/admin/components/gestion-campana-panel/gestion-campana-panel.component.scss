@@ -50,12 +50,23 @@
  */
 .gxc__vista {
   display: flex;
-  justify-content: flex-end;
+  justify-content: stretch;
+  width: 100%;
+}
+
+::ng-deep .gxc__vista-toggle {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  width: 100%;
 }
 
 ::ng-deep .gxc__vista-toggle .p-togglebutton {
+  justify-content: center;
   font-size: 0.78rem;
+  min-width: 0;
   padding: 0.3rem 0.7rem;
+  width: 100%;
 }
 
 // Campañas: compacto y pegado a la derecha, debajo de los controles.

@@ -23,6 +23,13 @@ public interface AjusteJornadaRepository extends JpaRepository<AjusteJornada, Lo
             LocalDate fechaOperativa
     );
 
+    List<AjusteJornada> findByIdEmpleadoAndFechaOperativaBetweenAndEstado(
+            Long idEmpleado,
+            LocalDate desde,
+            LocalDate hasta,
+            EstadoAjusteJornada estado
+    );
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     List<AjusteJornada> findForUpdateByIdEmpleadoAndFechaOperativaAndEstado(
             Long idEmpleado,
