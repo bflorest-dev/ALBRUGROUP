@@ -9,6 +9,7 @@ type TimelineBlock = {
   widthPct: number;
   kind: 'base' | 'exist' | 'new';
   label: string;
+  title: string;
 };
 
 /**
@@ -63,11 +64,81 @@ export class GtrScheduleExtensionDialogComponent {
       .map((item) => ({ inicioMin: this.toMin(item.inicio), finMin: this.toMin(item.fin) }))
   );
 
+  // Los extras registrados se muestran fusionados por tramos contiguos: importa cuanto tiempo extra hay,
+  // no en cuantos ajustes se registro. Los ajustes siguen separados en el backend (solo es presentacion).
+  private readonly mergedExisting = computed(() => {
+    const items = [...this.existing()].sort((a, b) => a.inicioMin - b.inicioMin);
+    const runs: { inicioMin: number; finMin: number }[] = [];
+    for (const item of items) {
+      const last = runs[runs.length - 1];
+      if (last && item.inicioMin <= last.finMin) {
+        last.finMin = Math.max(last.finMin, item.finMin);
+      } else {
+        runs.push({ inicioMin: item.inicioMin, finMin: item.finMin });
+      }
+    }
+    return runs;
+  });
+
   protected readonly hasBase = computed(() => this.base() !== null);
   private readonly winStart = computed(() => { const b = this.base(); return b ? b.inicioMin - this.MAX : 0; });
   private readonly winEnd = computed(() => { const b = this.base(); return b ? b.finMin + this.MAX : 24 * 60; });
   protected readonly winStartHm = computed(() => this.fmtHm(this.winStart()));
   protected readonly winEndHm = computed(() => this.fmtHm(this.winEnd()));
+
+  // Anclaje contiguo: el tiempo nuevo se agrega desde el borde del extra ya registrado que pega con el base
+  // (no desde el base), para que se sume sin solaparse. Ej. si ya hay 09:30-10:00, el nuevo va antes de 09:30.
+  private readonly beforeAnchor = computed(() => {
+    const b = this.base();
+    return b ? this.walkChain(b.inicioMin, this.existing(), 'left') : 0;
+  });
+  private readonly afterAnchor = computed(() => {
+    const b = this.base();
+    return b ? this.walkChain(b.finMin, this.existing(), 'right') : 0;
+  });
+
+  // Cupo restante hacia cada lado: hasta la ventana (base +/- 4h) o el extra disjunto mas cercano.
+  protected readonly maxBefore = computed(() => {
+    const anchor = this.beforeAnchor();
+    let limit = this.winStart();
+    for (const extra of this.existing()) {
+      if (extra.finMin <= anchor) limit = Math.max(limit, extra.finMin);
+    }
+    return Math.max(0, Math.floor((anchor - limit) / this.STEP) * this.STEP);
+  });
+  protected readonly maxAfter = computed(() => {
+    const anchor = this.afterAnchor();
+    let limit = this.winEnd();
+    for (const extra of this.existing()) {
+      if (extra.inicioMin >= anchor) limit = Math.min(limit, extra.inicioMin);
+    }
+    return Math.max(0, Math.floor((limit - anchor) / this.STEP) * this.STEP);
+  });
+
+  private walkChain(from: number, extras: { inicioMin: number; finMin: number }[], dir: 'left' | 'right'): number {
+    let anchor = from;
+    const used = new Set<number>();
+    let moved = true;
+    while (moved) {
+      moved = false;
+      for (let i = 0; i < extras.length; i++) {
+        if (used.has(i)) continue;
+        if (dir === 'left' && extras[i].finMin === anchor) {
+          anchor = extras[i].inicioMin;
+          used.add(i);
+          moved = true;
+          break;
+        }
+        if (dir === 'right' && extras[i].inicioMin === anchor) {
+          anchor = extras[i].finMin;
+          used.add(i);
+          moved = true;
+          break;
+        }
+      }
+    }
+    return anchor;
+  }
 
   protected readonly blocks = computed<TimelineBlock[]>(() => {
     const b = this.base();
@@ -76,20 +147,38 @@ export class GtrScheduleExtensionDialogComponent {
     const span = this.winEnd() - ws;
     const pos = (min: number) => ((min - ws) / span) * 100;
     const width = (start: number, end: number) => ((end - start) / span) * 100;
+    const range = (start: number, end: number) => this.fmtHm(start) + '–' + this.fmtHm(end);
     const out: TimelineBlock[] = [];
-    for (const extra of this.existing()) {
-      out.push({ leftPct: pos(extra.inicioMin), widthPct: width(extra.inicioMin, extra.finMin), kind: 'exist', label: 'Extra' });
+    for (const run of this.mergedExisting()) {
+      out.push({
+        leftPct: pos(run.inicioMin), widthPct: width(run.inicioMin, run.finMin), kind: 'exist',
+        label: '+' + this.fmtDur(run.finMin - run.inicioMin), title: 'Horas extra registradas ' + range(run.inicioMin, run.finMin)
+      });
     }
     if (this.before() > 0) {
-      out.push({ leftPct: pos(b.inicioMin - this.before()), widthPct: width(b.inicioMin - this.before(), b.inicioMin), kind: 'new', label: '+' + this.fmtDur(this.before()) });
+      const anchor = this.beforeAnchor();
+      out.push({
+        leftPct: pos(anchor - this.before()), widthPct: width(anchor - this.before(), anchor), kind: 'new',
+        label: '+' + this.fmtDur(this.before()), title: 'Nuevo ' + range(anchor - this.before(), anchor)
+      });
     }
-    out.push({ leftPct: pos(b.inicioMin), widthPct: width(b.inicioMin, b.finMin), kind: 'base', label: this.fmtHm(b.inicioMin) + '–' + this.fmtHm(b.finMin) });
+    out.push({
+      leftPct: pos(b.inicioMin), widthPct: width(b.inicioMin, b.finMin), kind: 'base',
+      label: range(b.inicioMin, b.finMin), title: 'Horario base ' + range(b.inicioMin, b.finMin)
+    });
     if (this.after() > 0) {
-      out.push({ leftPct: pos(b.finMin), widthPct: width(b.finMin, b.finMin + this.after()), kind: 'new', label: '+' + this.fmtDur(this.after()) });
+      const anchor = this.afterAnchor();
+      out.push({
+        leftPct: pos(anchor), widthPct: width(anchor, anchor + this.after()), kind: 'new',
+        label: '+' + this.fmtDur(this.after()), title: 'Nuevo ' + range(anchor, anchor + this.after())
+      });
     }
     const det = this.detachedRange();
     if (det) {
-      out.push({ leftPct: pos(det.start), widthPct: width(det.start, det.end), kind: 'new', label: 'Extra ' + this.fmtHm(det.start) + '–' + this.fmtHm(det.end) });
+      out.push({
+        leftPct: pos(det.start), widthPct: width(det.start, det.end), kind: 'new',
+        label: '+' + this.fmtDur(det.end - det.start), title: 'Nuevo ' + range(det.start, det.end)
+      });
     }
     return out;
   });
@@ -127,7 +216,8 @@ export class GtrScheduleExtensionDialogComponent {
 
   protected adjust(kind: 'before' | 'after', delta: number): void {
     const target = kind === 'before' ? this.before : this.after;
-    target.set(Math.max(0, Math.min(this.MAX, target() + delta * this.STEP)));
+    const max = kind === 'before' ? this.maxBefore() : this.maxAfter();
+    target.set(Math.max(0, Math.min(max, target() + delta * this.STEP)));
   }
 
   protected toggleDetached(): void {
@@ -148,8 +238,14 @@ export class GtrScheduleExtensionDialogComponent {
     if (!b || !this.canSave()) return;
     const motivo = this.motivo().trim();
     const requests: AjusteJornadaRequest[] = [];
-    if (this.before() > 0) requests.push(this.segment(b.fecha, b.inicioMin - this.before(), b.inicioMin, motivo));
-    if (this.after() > 0) requests.push(this.segment(b.fecha, b.finMin, b.finMin + this.after(), motivo));
+    if (this.before() > 0) {
+      const anchor = this.beforeAnchor();
+      requests.push(this.segment(b.fecha, anchor - this.before(), anchor, motivo));
+    }
+    if (this.after() > 0) {
+      const anchor = this.afterAnchor();
+      requests.push(this.segment(b.fecha, anchor, anchor + this.after(), motivo));
+    }
     const det = this.detachedRange();
     if (det) requests.push(this.segment(b.fecha, det.start, det.end, motivo));
     void this.facade.submitScheduleExtension(requests);

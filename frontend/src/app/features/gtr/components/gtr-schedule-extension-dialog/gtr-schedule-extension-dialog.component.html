@@ -35,6 +35,7 @@
             class="ext__block ext__block--{{ block.kind }}"
             [style.left.%]="block.leftPct"
             [style.width.%]="block.widthPct"
+            [attr.title]="block.title"
           >
             @if (block.kind === 'base') {
               <i class="pi pi-lock ext__lock" aria-hidden="true"></i>
@@ -56,7 +57,7 @@
           <div class="ext__step">
             <button type="button" (click)="adjust('before', -1)" [disabled]="before() === 0" aria-label="Menos">−</button>
             <span class="ext__val">{{ beforeLabel() }}</span>
-            <button type="button" (click)="adjust('before', 1)" aria-label="Más">+</button>
+            <button type="button" (click)="adjust('before', 1)" [disabled]="before() >= maxBefore()" aria-label="Más">+</button>
           </div>
         </div>
 
@@ -66,7 +67,7 @@
           <div class="ext__step">
             <button type="button" (click)="adjust('after', -1)" [disabled]="after() === 0" aria-label="Menos">−</button>
             <span class="ext__val">{{ afterLabel() }}</span>
-            <button type="button" (click)="adjust('after', 1)" aria-label="Más">+</button>
+            <button type="button" (click)="adjust('after', 1)" [disabled]="after() >= maxAfter()" aria-label="Más">+</button>
           </div>
         </div>
 
