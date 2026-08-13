@@ -192,6 +192,8 @@ export class AdminGestionCampanaFacade implements OnDestroy {
   readonly diaSeleccionado = signal<string | null>(null);
   readonly selectedCampanaKeys = signal<string[]>([]);
   readonly selectedEquipoId = signal<number | null>(null);
+  private readonly isEquipoLocked = signal(false);
+  private readonly lockedEquipoId = signal<number | null>(null);
 
   readonly campoOptions: Array<{ label: string; value: GestionCampoTipi }> = [
     { label: 'Mayor', value: 'MAYOR' },
@@ -265,6 +267,10 @@ export class AdminGestionCampanaFacade implements OnDestroy {
     if (state.status !== 'success') {
       return [];
     }
+    const lockedEquipoId = this.lockedEquipoId();
+    if (this.isEquipoLocked()) {
+      return state.data.equipoOptions.filter((equipo) => equipo.value === lockedEquipoId);
+    }
     return [{ label: 'Todos', value: null }, ...state.data.equipoOptions];
   });
 
@@ -277,6 +283,12 @@ export class AdminGestionCampanaFacade implements OnDestroy {
     effect(() => {
       const options = this.equipoOptions();
       if (this.aplicoEquipoPorDefecto) {
+        return;
+      }
+      const lockedEquipoId = this.lockedEquipoId();
+      if (this.isEquipoLocked()) {
+        this.aplicoEquipoPorDefecto = true;
+        untracked(() => this.selectedEquipoId.set(lockedEquipoId));
         return;
       }
       const primerEquipo = options.find((opcion) => opcion.value !== null);
@@ -301,6 +313,9 @@ export class AdminGestionCampanaFacade implements OnDestroy {
 
   private readonly visibleAccumulated = computed<AccEquipo[]>(() => {
     const selectedEquipoId = this.selectedEquipoId();
+    if (this.isEquipoLocked() && selectedEquipoId === null) {
+      return [];
+    }
     if (selectedEquipoId === null) {
       return this.accumulated();
     }
@@ -452,11 +467,27 @@ export class AdminGestionCampanaFacade implements OnDestroy {
   }
 
   setSelectedEquipoId(idEquipo: number | null | undefined): void {
+    const lockedEquipoId = this.lockedEquipoId();
+    if (this.isEquipoLocked()) {
+      if (this.selectedEquipoId() !== lockedEquipoId) {
+        this.selectedEquipoId.set(lockedEquipoId);
+        this.selectedCampanaKeys.set([]);
+      }
+      return;
+    }
     const normalized = idEquipo ?? null;
     if (normalized === this.selectedEquipoId()) {
       return;
     }
     this.selectedEquipoId.set(normalized);
+    this.selectedCampanaKeys.set([]);
+  }
+
+  lockEquipo(idEquipo: number | null): void {
+    this.isEquipoLocked.set(true);
+    this.lockedEquipoId.set(idEquipo);
+    this.aplicoEquipoPorDefecto = true;
+    this.selectedEquipoId.set(idEquipo);
     this.selectedCampanaKeys.set([]);
   }
 

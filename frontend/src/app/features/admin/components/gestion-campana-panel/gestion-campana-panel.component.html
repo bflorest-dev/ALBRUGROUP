@@ -1,7 +1,22 @@
 <section class="gxc">
-  <app-section-header title="Gestión por campaña" [description]="facade.campoAyuda()" />
+  <app-section-header title="Gestión por campaña" [description]="facade.campoAyuda()">
+    <button
+      pButton
+      type="button"
+      icon="pi pi-refresh"
+      severity="secondary"
+      [rounded]="true"
+      [outlined]="true"
+      [loading]="facade.isLoading()"
+      (click)="facade.reload()"
+      pTooltip="Actualizar"
+      tooltipPosition="top"
+      aria-label="Actualizar"
+    ></button>
+  </app-section-header>
 
-  <div class="gxc__controls">
+  @if (showControls()) {
+    <div class="gxc__controls">
       @if (facade.campanaOptions().length > 1) {
         <div class="gxc__control gxc__control--campaign">
           <span class="gxc__control-label">Campañas</span>
@@ -42,18 +57,20 @@
         </div>
       }
 
-      <div class="gxc__control">
-        <span class="gxc__control-label">Equipo</span>
-        <p-selectButton
-          [options]="facade.equipoOptions()"
-          optionLabel="label"
-          optionValue="value"
-          [allowEmpty]="false"
-          [ngModel]="facade.selectedEquipoId()"
-          [ngModelOptions]="{ standalone: true }"
-          (onChange)="facade.setSelectedEquipoId($event.value)"
-        />
-      </div>
+      @if (showEquipoSelector()) {
+        <div class="gxc__control">
+          <span class="gxc__control-label">Equipo</span>
+          <p-selectButton
+            [options]="facade.equipoOptions()"
+            optionLabel="label"
+            optionValue="value"
+            [allowEmpty]="false"
+            [ngModel]="facade.selectedEquipoId()"
+            [ngModelOptions]="{ standalone: true }"
+            (onChange)="facade.setSelectedEquipoId($event.value)"
+          />
+        </div>
+      }
 
       <div class="gxc__control">
         <span class="gxc__control-label">Modo</span>
@@ -91,20 +108,8 @@
         />
       </div>
 
-      <button
-        pButton
-        type="button"
-        icon="pi pi-refresh"
-        severity="secondary"
-        [rounded]="true"
-        [outlined]="true"
-        [loading]="facade.isLoading()"
-        (click)="facade.reload()"
-        pTooltip="Actualizar"
-        tooltipPosition="top"
-        aria-label="Actualizar"
-      ></button>
-  </div>
+    </div>
+  }
 
   @if (facade.campanaOptions().length > 1) {
     <div class="gxc__campanas">

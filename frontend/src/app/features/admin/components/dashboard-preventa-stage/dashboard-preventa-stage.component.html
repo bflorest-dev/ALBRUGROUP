@@ -5,25 +5,27 @@
     description="Métricas del día por equipo de la etapa de preventa."
   />
 
-  <p-card>
+  <p-card styleClass="metrics-filter-card">
     <app-section-header
-      title="Rendimiento por equipo"
-      description="Calidad, gestión y conversión de los leads ingresados en el período, por equipo."
+      title="Filtros de preventa"
+      description="Contexto usado por los bloques de métricas de preventa."
     />
 
     <div class="metrics-controls">
-      <div class="metrics-control">
-        <span class="metrics-control-label">Equipo</span>
-        <p-selectButton
-          [options]="equipoOptions()"
-          optionLabel="label"
-          optionValue="value"
-          [allowEmpty]="false"
-          [ngModel]="selectedEquipoId()"
-          [ngModelOptions]="{ standalone: true }"
-          (onChange)="onEquipoChange($event.value)"
-        />
-      </div>
+      @if (showEquipoSelector()) {
+        <div class="metrics-control">
+          <span class="metrics-control-label">Equipo</span>
+          <p-selectButton
+            [options]="equipoOptions()"
+            optionLabel="label"
+            optionValue="value"
+            [allowEmpty]="false"
+            [ngModel]="selectedEquipoId()"
+            [ngModelOptions]="{ standalone: true }"
+            (onChange)="onEquipoChange($event.value)"
+          />
+        </div>
+      }
 
       <div class="metrics-control">
         <span class="metrics-control-label">Modo</span>
@@ -60,40 +62,87 @@
           (diaChange)="onDiaChange($event)"
         />
       </div>
-
-      <button
-        pButton
-        type="button"
-        icon="pi pi-refresh"
-        severity="secondary"
-        [rounded]="true"
-        [outlined]="true"
-        [loading]="isLoading()"
-        (click)="load()"
-        pTooltip="Actualizar"
-        tooltipPosition="top"
-        aria-label="Actualizar"
-      ></button>
     </div>
 
-    @if (errorMessage()) {
-      <p-message severity="error" [text]="errorMessage()" styleClass="metrics-message" />
-    }
+    <div class="metrics-view-toggle">
+      <p-selectButton
+        class="metrics-view-toggle__control"
+        [options]="dashboardViewOptions"
+        optionLabel="label"
+        optionValue="value"
+        [allowEmpty]="false"
+        [fluid]="true"
+        [ngModel]="activeView()"
+        [ngModelOptions]="{ standalone: true }"
+        (onChange)="onViewChange($event.value)"
+        styleClass="metrics-view-toggle__option"
+      />
+    </div>
+  </p-card>
 
-    @if (gaugeCards().length) {
-      <app-team-metric-gauges [cards]="gaugeCards()" />
-    } @else {
-      <div class="metrics-empty">
-        @if (isLoading()) {
-          Cargando métricas...
-        } @else {
-          No hubo registros en el período seleccionado.
+  @switch (activeView()) {
+    @case ('asesores') {
+      <p-card>
+        <app-advisor-management-summary-panel
+          [idEquipo]="selectedEquipoId()"
+          [teamScoped]="isTeamScopedDashboard()"
+          [periodo]="periodo()"
+          [dia]="dia()"
+          [modo]="modo()"
+          [campo]="campo()"
+        />
+      </p-card>
+    }
+    @case ('campanas') {
+      <p-card styleClass="metrics-gxc-card">
+        <app-gestion-campana-panel
+          [externalControls]="true"
+          [idEquipo]="selectedEquipoId()"
+          [teamScoped]="isTeamScopedDashboard()"
+          [periodo]="periodo()"
+          [dia]="dia()"
+          [modo]="modo()"
+          [campo]="campo()"
+        />
+      </p-card>
+    }
+    @default {
+      <p-card>
+        <app-section-header
+          title="Rendimiento por equipo"
+          description="Calidad, gestión y conversión de los leads ingresados en el período, por equipo."
+        >
+          <button
+            pButton
+            type="button"
+            icon="pi pi-refresh"
+            severity="secondary"
+            [rounded]="true"
+            [outlined]="true"
+            [loading]="isLoading()"
+            (click)="load()"
+            pTooltip="Actualizar"
+            tooltipPosition="top"
+            aria-label="Actualizar"
+          ></button>
+        </app-section-header>
+
+        @if (errorMessage()) {
+          <p-message severity="error" [text]="errorMessage()" styleClass="metrics-message" />
         }
-      </div>
-    }
-  </p-card>
 
-  <p-card styleClass="metrics-gxc-card">
-    <app-gestion-campana-panel />
-  </p-card>
+        @if (gaugeCards().length) {
+          <app-team-metric-gauges [cards]="gaugeCards()" />
+        } @else {
+          <div class="metrics-empty">
+            @if (isLoading()) {
+              Cargando métricas...
+            } @else {
+              No hubo registros en el período seleccionado.
+            }
+          </div>
+        }
+      </p-card>
+    }
+  }
 </section>

@@ -210,12 +210,6 @@ export class PrivateLayoutComponent implements AfterViewInit {
                   icon: 'pi pi-history',
                   exact: true
                 },
-                {
-                  label: 'Ranking',
-                  route: `/app/admin/plataformas/equipos/${team.id}/gtr/ranking`,
-                  icon: 'pi pi-chart-bar',
-                  exact: true
-                }
               ]
             },
             {
@@ -261,7 +255,6 @@ export class PrivateLayoutComponent implements AfterViewInit {
         { label: 'Leads del día', route: '/app/admin/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
         { label: 'CorrecciÃ³n de campaÃ±a', route: '/app/admin/correccion-campana', icon: 'pi pi-sync', exact: true },
         { label: 'Finanzas', route: '/app/admin/finanzas', icon: 'pi pi-wallet', exact: true },
-        { label: 'Ranking', route: '/app/admin/ranking', icon: 'pi pi-chart-bar', exact: true },
         { label: 'Operaciones', route: '/app/admin/operaciones', icon: 'pi pi-wrench', exact: true }
       ];
 
@@ -330,7 +323,6 @@ export class PrivateLayoutComponent implements AfterViewInit {
         },
         { label: 'Historicos', route: '/app/gtr/historicos', icon: 'pi pi-history', exact: true },
         { label: 'Leads del día', route: '/app/gtr/leads-del-dia', icon: 'pi pi-user-plus', exact: true },
-        { label: 'Ranking', route: '/app/gtr/ranking', icon: 'pi pi-chart-bar', exact: true },
         { label: 'Dashboard', route: '/app/gtr/dashboard', icon: 'pi pi-chart-pie', exact: true }
       ];
     }
@@ -369,7 +361,6 @@ export class PrivateLayoutComponent implements AfterViewInit {
       ['Plataformas', 3.5],
       ['Colaboradores', 4],
       ['/app/admin/asistencia', 4.5],
-      ['/app/admin/ranking', 5],
       ['/app/admin/correccion-campana', 6],
       ['/app/admin/mantenimiento', 8],
       ['/app/admin/tipificaciones', 9],

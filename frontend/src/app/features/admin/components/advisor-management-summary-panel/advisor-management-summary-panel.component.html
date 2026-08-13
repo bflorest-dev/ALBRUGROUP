@@ -1,0 +1,111 @@
+<section class="ams">
+  <app-section-header
+    title="Resumen de Gestión de asesores"
+    description="Rendimiento de asesores y distribución de tipificaciones de preventa."
+  >
+    <button
+      pButton
+      type="button"
+      icon="pi pi-refresh"
+      severity="secondary"
+      [rounded]="true"
+      [outlined]="true"
+      [loading]="facade.isRefreshing()"
+      (click)="refresh()"
+      pTooltip="Actualizar"
+      tooltipPosition="top"
+      aria-label="Actualizar"
+    ></button>
+  </app-section-header>
+
+  @if (facade.errorMessage()) {
+    <p-message severity="error" [text]="facade.errorMessage()!" />
+  }
+
+  @if (missingTeam()) {
+    <p class="ams__state">No hay equipo asignado para mostrar este resumen.</p>
+  } @else if (facade.isLoading()) {
+    <div class="ams__loading">
+      <p-progress-spinner ariaLabel="Cargando resumen" />
+      <span>Cargando resumen...</span>
+    </div>
+  } @else if (block(); as block) {
+    <div class="ams__grid">
+      <article class="ams__board ams__board--ranking">
+        <header class="ams__board-head">
+          <h3>Ranking de asesores</h3>
+          <p-tag severity="info" [value]="facade.display(block.ranking.length)" />
+        </header>
+
+        <div class="ams__ranking">
+          @for (row of block.ranking; track row.idAsesor; let rowIndex = $index) {
+            <div class="ams__row">
+              <span class="ams__rank">#{{ rowIndex + 1 }}</span>
+              <div class="ams__advisor">
+                <strong [title]="facade.display(row.nombreAsesor)">{{ shortAdvisorName(row.nombreAsesor) | uppercase }}</strong>
+                <span>{{ facade.percentage(row.conversion) }} conversión</span>
+              </div>
+              <div class="ams__metrics">
+                <span class="ams__metric">
+                  <small>1er contacto</small>
+                  <b>{{ facade.display(row.nuevosGestionadosPeriodo) }}</b>
+                </span>
+                <span class="ams__metric">
+                  <small>Asignados</small>
+                  <b>{{ facade.display(row.asignadosPeriodo) }}</b>
+                </span>
+                <span class="ams__metric">
+                  <small>Gestionados</small>
+                  <b>{{ facade.display(row.gestionadosPeriodo) }}</b>
+                </span>
+                <span class="ams__metric">
+                  <small>Oport.</small>
+                  <b>{{ facade.display(row.nuevasOportunidadesPeriodo) }}</b>
+                </span>
+                <span class="ams__metric">
+                  <small>Preventas</small>
+                  <b>{{ facade.display(row.preventasPeriodo) }}</b>
+                </span>
+                <span class="ams__metric">
+                  <small>Mes</small>
+                  <b>{{ facade.display(row.preventasMes) }}</b>
+                </span>
+              </div>
+            </div>
+          } @empty {
+            <p class="ams__state">Aún no hay datos para este período.</p>
+          }
+        </div>
+      </article>
+
+      <article class="ams__board ams__board--tipis">
+        <header class="ams__board-head">
+          <h3>Resumen de tipificaciones</h3>
+        </header>
+
+        @if (facade.isDrilled(block.idEquipo)) {
+          <app-ranking-donut
+            [segments]="facade.drillSegments()"
+            level="subtipi"
+            [interactive]="false"
+            [loading]="facade.drillLoading()"
+            [errorText]="facade.drillError()"
+            [showBack]="true"
+            backLabel="Volver"
+            emptyMessage="No hay subtipificaciones para mostrar."
+            (back)="facade.closeDrill()"
+          />
+        } @else {
+          <app-ranking-donut
+            [segments]="block.donutSegments"
+            level="tipi"
+            [interactive]="true"
+            (segmentClick)="facade.openDrill($event, block.idEquipo)"
+          />
+        }
+      </article>
+    </div>
+  } @else {
+    <p class="ams__state">Aún no hay datos para este período.</p>
+  }
+</section>

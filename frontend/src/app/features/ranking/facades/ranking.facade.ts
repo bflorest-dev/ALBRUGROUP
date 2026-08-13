@@ -59,6 +59,8 @@ type RankingRequest = {
   blocks: Array<{ idEquipo: number | null; nombreEquipo: string }>;
 };
 
+type RankingRange = { desde: string; hasta: string };
+
 type RankingState =
   | { status: 'idle' }
   | { status: 'loading'; requestId: number }
@@ -114,6 +116,7 @@ export class RankingFacade {
   readonly selectedDay = signal<Date>(this.startOfDay(new Date()));
   readonly modo = signal<RankingModo>('GESTIONADOS');
   readonly campo = signal<RankingCampo>('MAYOR');
+  private readonly fixedRange = signal<RankingRange | null>(null);
   private readonly catalog = signal<ReadonlyMap<string, TipiMeta>>(new Map());
   private readonly fixedTeamId = signal<number | null>(null);
   readonly groupingMode = signal<RankingGroupingMode>('SIN_AGRUPAR');
@@ -328,7 +331,19 @@ export class RankingFacade {
     const day = this.startOfDay(value);
     if (day.getTime() === this.selectedDay().getTime()) return;
     this.selectedDay.set(day);
+    this.fixedRange.set(null);
     this.refresh(false);
+  }
+
+  setRange(desde: string, hasta: string): void {
+    if (!desde || !hasta) return;
+    const current = this.fixedRange();
+    if (current?.desde === desde && current.hasta === hasta) return;
+    this.fixedRange.set({ desde, hasta });
+    this.closeDrill();
+    if (this.started) {
+      this.refresh(false);
+    }
   }
 
   setModo(value: RankingModo | null | undefined): void {
@@ -374,11 +389,11 @@ export class RankingFacade {
 
   refresh(silent = true): void {
     this.closeDrill();
-    const day = this.formatLocalDate(this.selectedDay());
+    const range = this.resolveRange();
     this.rankingSignal.set({
       requestId: ++this.requestId,
-      desde: day,
-      hasta: day,
+      desde: range.desde,
+      hasta: range.hasta,
       modo: this.modo(),
       campo: this.campo(),
       silent,
@@ -388,14 +403,14 @@ export class RankingFacade {
 
   openDrill(codigoTipificacion: string, idEquipo: number | null): void {
     if (!codigoTipificacion) return;
-    const day = this.formatLocalDate(this.selectedDay());
+    const range = this.resolveRange();
     this.activeDrill.set({ idEquipo, codigo: codigoTipificacion });
     this.detailSignal.set({
       requestId: ++this.detailRequestId,
       codigoTipificacion,
       idEquipo,
-      desde: day,
-      hasta: day,
+      desde: range.desde,
+      hasta: range.hasta,
       modo: this.modo(),
       campo: this.campo()
     });
@@ -440,6 +455,15 @@ export class RankingFacade {
 
   private rankingNumericValue(row: RankingAdvisorView, field: Exclude<RankingSortField, 'nombreAsesor'>): number {
     return row[field] ?? 0;
+  }
+
+  private resolveRange(): RankingRange {
+    const fixedRange = this.fixedRange();
+    if (fixedRange) {
+      return fixedRange;
+    }
+    const day = this.formatLocalDate(this.selectedDay());
+    return { desde: day, hasta: day };
   }
 
   private buildTipiSegments(rows: GtrTipificacionRankingResponse[]): RankingDonutSegment[] {

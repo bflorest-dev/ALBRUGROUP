@@ -55,8 +55,7 @@ import { PRIORITY_CAMPAIGN_LABEL, isPriorityCampaignName } from '../../../shared
 import { providerLogo as resolveProviderLogo } from '../../../shared/utils/provider-logo';
 import {
   AjusteJornadaRequest,
-  JornadaEfectivaResponse,
-  PreviewAjusteJornadaResponse
+  JornadaEfectivaResponse
 } from '../../../shared/models/schedule/jornada-efectiva-response';
 import { ScheduleAdjustmentService } from '../../../core/services/schedule-adjustment.service';
 import { LeadRealtimeService } from '../../preventa/services/lead-realtime.service';
@@ -421,7 +420,6 @@ export class GtrWorkspaceFacade {
   // --- Ampliacion de horario (modal sobre una card de asesor) ---
   readonly extensionTarget = signal<AdvisorOption | null>(null);
   readonly extensionJornada = signal<JornadaEfectivaResponse | null>(null);
-  readonly extensionPreview = signal<PreviewAjusteJornadaResponse | null>(null);
   readonly isLoadingExtensionContext = signal(false);
   readonly isSavingExtension = signal(false);
   /** Error propio del modal de ampliacion: se muestra dentro del dialogo, nunca detras. */
@@ -2466,7 +2464,6 @@ export class GtrWorkspaceFacade {
     }
     this.extensionTarget.set(advisor);
     this.extensionJornada.set(null);
-    this.extensionPreview.set(null);
     this.extensionError.set(null);
     this.activeDialog.set('schedule-extension');
     void this.loadExtensionContext(advisor.empleadoId);
@@ -2488,45 +2485,38 @@ export class GtrWorkspaceFacade {
   closeScheduleExtension(): void {
     this.extensionTarget.set(null);
     this.extensionJornada.set(null);
-    this.extensionPreview.set(null);
     this.extensionError.set(null);
     this.activeDialog.set(null);
   }
 
-  async previewScheduleExtension(request: AjusteJornadaRequest): Promise<void> {
-    if (!this.ensureCanMutate()) {
-      return;
-    }
-    const advisor = this.extensionTarget();
-    if (!advisor) return;
-    this.isLoadingExtensionContext.set(true);
-    this.extensionError.set(null);
-    try {
-      this.extensionPreview.set(
-        await firstValueFrom(
-          this.scheduleAdjustmentService.previewGtr(advisor.empleadoId, request)
-        )
-      );
-    } catch (error) {
-      this.extensionError.set(this.getErrorMessage(error, 'No se pudo preparar la vista previa.'));
-    } finally {
-      this.isLoadingExtensionContext.set(false);
-    }
-  }
-
-  async submitScheduleExtension(request: AjusteJornadaRequest): Promise<void> {
+  /**
+   * Guarda las horas extra como AMPLIACION_OPERATIVA. Cada tramo (ingresar antes / quedarse mas / periodo
+   * aparte) es un ajuste aditivo, asi que se envian como N llamadas secuenciales; si una falla se informa
+   * cuantas se guardaron y se recarga el contexto para reflejar las que si entraron.
+   */
+  async submitScheduleExtension(requests: AjusteJornadaRequest[]): Promise<void> {
     if (!this.ensureCanMutate()) return;
     const advisor = this.extensionTarget();
-    if (!advisor) return;
+    if (!advisor || requests.length === 0) return;
     this.isSavingExtension.set(true);
     this.extensionError.set(null);
+    let guardados = 0;
     try {
-      await firstValueFrom(this.scheduleAdjustmentService.registrarGtr(advisor.empleadoId, request));
-      this.successMessage.set(`Jornada de ${advisor.nombreCompleto} actualizada.`);
+      for (const request of requests) {
+        await firstValueFrom(this.scheduleAdjustmentService.registrarGtr(advisor.empleadoId, request));
+        guardados++;
+      }
+      const detalle = guardados === 1 ? '1 tramo' : `${guardados} tramos`;
+      this.successMessage.set(`Jornada de ${advisor.nombreCompleto} actualizada (${detalle}).`);
       this.closeScheduleExtension();
       await this.refreshAdvisors();
     } catch (error) {
-      this.extensionError.set(this.getErrorMessage(error, 'No se pudo guardar el ajuste de jornada.'));
+      const base = this.getErrorMessage(error, 'No se pudo guardar el ajuste de jornada.');
+      this.extensionError.set(
+        guardados > 0 ? `Se registraron ${guardados} de ${requests.length} tramos. ${base}` : base
+      );
+      // Recargar para reflejar los tramos que si se guardaron antes del error.
+      await this.loadExtensionContext(advisor.empleadoId);
     } finally {
       this.isSavingExtension.set(false);
     }

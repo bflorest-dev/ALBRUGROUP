@@ -9,10 +9,12 @@ import { TooltipModule } from 'primeng/tooltip';
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
 import { MetricsPeriodo, PeriodSelectorComponent } from '../../../../shared/components/period-selector/period-selector.component';
 import { SectionHeaderComponent } from '../../../../shared/components/section-header/section-header.component';
+import { CurrentUserTeamScopeService } from '../../../../core/services/current-user-team-scope.service';
 import { esEquipoOperativo } from '../../../../shared/utils/equipos-operativos';
 import { resolveMetricsRange } from '../../../../shared/utils/metrics-period';
 import { GestionCampoTipi } from '../../services/admin-gestion-campana.service';
 import { GestionCampanaPanelComponent } from '../../components/gestion-campana-panel/gestion-campana-panel.component';
+import { AdvisorManagementSummaryPanelComponent } from '../advisor-management-summary-panel/advisor-management-summary-panel.component';
 import { TeamMetricGaugesComponent } from '../../components/team-metric-gauges/team-metric-gauges.component';
 import { DashboardGaugeCard, resolveGaugeColors } from '../../models/dashboard-gauge.model';
 import {
@@ -23,6 +25,7 @@ import {
 import { AdminEquipoService } from '../../services/admin-equipo.service';
 
 const SIN_EQUIPO = 'Sin equipo';
+type PreventaDashboardView = 'rendimiento' | 'asesores' | 'campanas';
 
 interface DashboardMetricRow {
   idEquipo: number | null;
@@ -54,6 +57,7 @@ interface DashboardMetricRow {
     PageHeaderComponent,
     PeriodSelectorComponent,
     SectionHeaderComponent,
+    AdvisorManagementSummaryPanelComponent,
     GestionCampanaPanelComponent,
     TeamMetricGaugesComponent
   ],
@@ -64,6 +68,7 @@ interface DashboardMetricRow {
 export class DashboardPreventaStageComponent implements OnInit {
   private readonly metricsService = inject(AdminDailyMetricsService);
   private readonly equipoService = inject(AdminEquipoService);
+  private readonly teamScope = inject(CurrentUserTeamScopeService);
 
   protected readonly periodo = signal<MetricsPeriodo>('dia');
   /** Día puntual elegido en el segmento "Hoy" (`YYYY-MM-DD`). `null` = hoy. */
@@ -74,11 +79,14 @@ export class DashboardPreventaStageComponent implements OnInit {
   protected readonly modo = signal<GestionModoMetricas>('INGRESADOS');
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal('');
+  protected readonly activeView = signal<PreventaDashboardView>('rendimiento');
   private readonly raw = signal<LeadsDiariosMetricasEquipo[]>([]);
   private readonly equipos = signal<Array<{ id: number; nombre: string; color?: string | null; activo: boolean }>>([]);
   private readonly equipoNombreById = signal<Map<number, string>>(new Map());
   private readonly equipoColorById = signal<Map<number, string>>(new Map());
   protected readonly selectedEquipoId = signal<number | null>(null);
+  protected readonly isTeamScopedDashboard = signal(false);
+  private readonly lockedEquipoId = signal<number | null>(null);
 
   /** "Todos" conserva la comparación lado a lado entre equipos, que es el valor de este bloque. */
   protected readonly equipoOptions = computed(() => [
@@ -89,6 +97,7 @@ export class DashboardPreventaStageComponent implements OnInit {
       .map((equipo) => ({ label: equipo.nombre, value: equipo.id }))
       .sort((left, right) => left.label.localeCompare(right.label))
   ]);
+  protected readonly showEquipoSelector = computed(() => !this.isTeamScopedDashboard());
 
   protected readonly campoOptions: Array<{ label: string; value: GestionCampoTipi }> = [
     { label: 'Mayor', value: 'MAYOR' },
@@ -100,10 +109,18 @@ export class DashboardPreventaStageComponent implements OnInit {
     { label: 'Ingresados', value: 'INGRESADOS' },
     { label: 'Gestionados', value: 'GESTIONADOS' }
   ];
+  protected readonly dashboardViewOptions: Array<{ label: string; value: PreventaDashboardView }> = [
+    { label: 'Rendimiento', value: 'rendimiento' },
+    { label: 'Asesores', value: 'asesores' },
+    { label: 'Campañas', value: 'campanas' }
+  ];
 
   protected readonly rows = computed<DashboardMetricRow[]>(() => {
     const nombres = this.equipoNombreById();
     const selectedEquipoId = this.selectedEquipoId();
+    if (this.isTeamScopedDashboard() && selectedEquipoId === null) {
+      return [];
+    }
     return this.raw()
       .filter((metrica) => selectedEquipoId === null || metrica.idEquipo === selectedEquipoId)
       .map((metrica) => this.toRow(metrica, nombres))
@@ -157,7 +174,13 @@ export class DashboardPreventaStageComponent implements OnInit {
     return cards;
   });
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
+    this.isTeamScopedDashboard.set(this.teamScope.isDashboardTeamScoped());
+    const equipoId = await this.teamScope.getPrimaryEquipoId();
+    this.lockedEquipoId.set(equipoId);
+    if (this.isTeamScopedDashboard()) {
+      this.selectedEquipoId.set(equipoId);
+    }
     void this.load();
   }
 
@@ -200,7 +223,17 @@ export class DashboardPreventaStageComponent implements OnInit {
 
   /** El equipo solo filtra las tarjetas ya cargadas: no vuelve a pegar al backend. */
   protected onEquipoChange(value: number | null): void {
+    if (this.isTeamScopedDashboard()) {
+      this.selectedEquipoId.set(this.lockedEquipoId());
+      return;
+    }
     this.selectedEquipoId.set(value ?? null);
+  }
+
+  protected onViewChange(value: PreventaDashboardView | null): void {
+    if (value) {
+      this.activeView.set(value);
+    }
   }
 
   protected async load(): Promise<void> {
@@ -219,6 +252,9 @@ export class DashboardPreventaStageComponent implements OnInit {
       this.equipoColorById.set(
         new Map(equipos.filter((equipo) => equipo.color).map((equipo) => [equipo.id, equipo.color as string]))
       );
+      if (this.isTeamScopedDashboard()) {
+        this.selectedEquipoId.set(this.lockedEquipoId());
+      }
       this.raw.set(metricas);
     } catch {
       this.errorMessage.set('No se pudieron cargar las métricas del día.');

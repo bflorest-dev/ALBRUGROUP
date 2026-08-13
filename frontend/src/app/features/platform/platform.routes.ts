@@ -13,7 +13,6 @@ import { DashboardPostventaStageComponent } from '../admin/components/dashboard-
 import { DashboardPreventaStageComponent } from '../admin/components/dashboard-preventa-stage/dashboard-preventa-stage.component';
 import { DashboardVentaStageComponent } from '../admin/components/dashboard-venta-stage/dashboard-venta-stage.component';
 import { AdminDataOpsPageComponent } from '../admin/pages/admin-data-ops-page/admin-data-ops-page.component';
-import { AdminRankingPageComponent } from '../admin/pages/admin-ranking-page/admin-ranking-page.component';
 import {
   AdminTipificacionesPageComponent,
   canDeactivateAdminTipificaciones
@@ -134,14 +133,6 @@ export const PLATFORM_ROUTES: Routes = [
     }
   },
   {
-    path: 'admin/ranking',
-    component: AdminRankingPageComponent,
-    canActivate: [roleGuard],
-    data: {
-      roles: ['ADMINISTRADOR']
-    }
-  },
-  {
     path: 'admin/finanzas',
     component: AdminFinancePageComponent,
     canActivate: [roleGuard],
@@ -244,15 +235,6 @@ export const PLATFORM_ROUTES: Routes = [
     data: {
       roles: ['ADMINISTRADOR'],
       section: 'historicos'
-    }
-  },
-  {
-    path: 'admin/plataformas/equipos/:idEquipo/gtr/ranking',
-    component: GtrWorkspacePageComponent,
-    canActivate: [roleGuard],
-    data: {
-      roles: ['ADMINISTRADOR'],
-      section: 'ranking'
     }
   },
   {
@@ -362,15 +344,6 @@ export const PLATFORM_ROUTES: Routes = [
     data: {
       roles: ['ASESOR_GTR', 'SUPERVISOR_GTR'],
       section: 'historicos'
-    }
-  },
-  {
-    path: 'gtr/ranking',
-    component: GtrWorkspacePageComponent,
-    canActivate: [roleGuard],
-    data: {
-      roles: ['ASESOR_GTR', 'SUPERVISOR_GTR'],
-      section: 'ranking'
     }
   },
   {

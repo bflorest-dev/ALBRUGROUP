@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.stream.Collectors;
 
 @Service
@@ -128,8 +129,21 @@ public class MonitoringService {
             JsonNode request
     ) {
         requireToday(request);
+        // La ampliacion del GTR es horas extra fuera del horario (aditivo, no reemplaza el base): se rutea al
+        // motor v2 con razon=AMPLIACION_OPERATIVA. El scope de equipo se sigue validando aca (no se pierde).
+        JsonNode conRazon = withRazon(request, "AMPLIACION_OPERATIVA");
         return validarAsesorVisibleGtr(authHeader, idEmpleado)
-                .then(Mono.defer(() -> scheduleAdjustmentClient.registrar(authHeader, idEmpleado, request)));
+                .then(Mono.defer(() -> scheduleAdjustmentClient.registrarV2(authHeader, idEmpleado, conRazon)));
+    }
+
+    private JsonNode withRazon(JsonNode request, String razon) {
+        if (!(request instanceof ObjectNode)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Cuerpo de ajuste invalido");
+        }
+        ObjectNode conRazon = ((ObjectNode) request).deepCopy();
+        conRazon.put("razon", razon);
+        return conRazon;
     }
 
     private void requireToday(JsonNode request) {

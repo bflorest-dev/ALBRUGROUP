@@ -17,6 +17,26 @@
   min-width: 0;
 }
 
+.metrics-view-toggle {
+  display: flex;
+  width: 100%;
+}
+
+:host ::ng-deep .metrics-view-toggle__control.p-selectbutton {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  width: 100%;
+}
+
+:host ::ng-deep .metrics-view-toggle__option.p-togglebutton {
+  font-size: 0.84rem;
+  justify-content: center;
+  min-width: 0;
+  padding-inline: 0.5rem;
+  width: 100%;
+}
+
 .metrics-control {
   display: flex;
   flex-direction: column;
@@ -52,5 +72,10 @@
 @media (max-width: 700px) {
   .admin-page {
     gap: 1rem;
+  }
+
+  :host ::ng-deep .metrics-view-toggle__option.p-togglebutton {
+    font-size: 0.74rem;
+    padding-inline: 0.35rem;
   }
 }

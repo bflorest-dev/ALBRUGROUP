@@ -44,6 +44,19 @@ public class ScheduleAdjustmentClient {
         return post(authHeader, idEmpleado, "/ajustes", request);
     }
 
+    /**
+     * Registro v2 (motor nuevo, aditivo con RAZON): la ampliacion del GTR es horas extra fuera del base
+     * (no reemplaza el base). El endpoint se acota por EXTEND_HORARIO (token del usuario, no secreto interno).
+     */
+    public Mono<JsonNode> registrarV2(String authHeader, Long idEmpleado, JsonNode request) {
+        return scheduleWebClient.post()
+                .uri("/asistencia/v2/empleados/{idEmpleado}/ajustes", idEmpleado)
+                .header(HttpHeaders.AUTHORIZATION, authHeader)
+                .bodyValue(request)
+                .retrieve()
+                .bodyToMono(JsonNode.class);
+    }
+
     private Mono<JsonNode> post(String authHeader, Long idEmpleado, String suffix, JsonNode request) {
         return scheduleWebClient.post()
                 .uri("/horarios/internal/empleados/{idEmpleado}" + suffix, idEmpleado)
