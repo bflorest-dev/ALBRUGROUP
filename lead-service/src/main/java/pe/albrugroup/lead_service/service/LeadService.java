@@ -208,6 +208,7 @@ public class LeadService {
             "mayorTipificacion",
             "ultimaTipificacion",
             "totalAsignacionesPreventa",
+            "totalAsignacionesHoyPreventa",
             "estado"
     );
     private static final Set<String> LEAD_AGENDADOS_GTR_SORT_FIELDS = Set.of(

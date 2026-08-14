@@ -198,6 +198,24 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               CASE WHEN :sortBy = 'ultimaTipificacion' AND :sortDesc = true THEN r.ultimaCodigoSubtipificacion END DESC,
               CASE WHEN :sortBy = 'totalAsignacionesPreventa' AND :sortDesc = false THEN COALESCE(r.totalAsignaciones, 0) END ASC,
               CASE WHEN :sortBy = 'totalAsignacionesPreventa' AND :sortDesc = true THEN COALESCE(r.totalAsignaciones, 0) END DESC,
+              CASE WHEN :sortBy = 'totalAsignacionesHoyPreventa' AND :sortDesc = false THEN (
+                    SELECT COUNT(asignacion.id)
+                    FROM Evento asignacion
+                    WHERE asignacion.idLead = l.id
+                      AND asignacion.accion = pe.albrugroup.lead_service.entity.enums.Accion.ASIGNACION
+                      AND asignacion.etapa = :etapa
+                      AND asignacion.createdAt >= :inicioDia
+                      AND asignacion.createdAt < :finDia
+              ) END ASC,
+              CASE WHEN :sortBy = 'totalAsignacionesHoyPreventa' AND :sortDesc = true THEN (
+                    SELECT COUNT(asignacion.id)
+                    FROM Evento asignacion
+                    WHERE asignacion.idLead = l.id
+                      AND asignacion.accion = pe.albrugroup.lead_service.entity.enums.Accion.ASIGNACION
+                      AND asignacion.etapa = :etapa
+                      AND asignacion.createdAt >= :inicioDia
+                      AND asignacion.createdAt < :finDia
+              ) END DESC,
               l.lastEntryAt DESC,
               l.id DESC
             """)
@@ -385,6 +403,24 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
               CASE WHEN :sortBy = 'ultimaTipificacion' AND :sortDesc = true THEN r.ultimaCodigoSubtipificacion END DESC,
               CASE WHEN :sortBy = 'totalAsignacionesPreventa' AND :sortDesc = false THEN COALESCE(r.totalAsignaciones, 0) END ASC,
               CASE WHEN :sortBy = 'totalAsignacionesPreventa' AND :sortDesc = true THEN COALESCE(r.totalAsignaciones, 0) END DESC,
+              CASE WHEN :sortBy = 'totalAsignacionesHoyPreventa' AND :sortDesc = false THEN (
+                    SELECT COUNT(asignacion.id)
+                    FROM Evento asignacion
+                    WHERE asignacion.idLead = l.id
+                      AND asignacion.accion = pe.albrugroup.lead_service.entity.enums.Accion.ASIGNACION
+                      AND asignacion.etapa = :etapa
+                      AND asignacion.createdAt >= :inicioDia
+                      AND asignacion.createdAt < :finDia
+              ) END ASC,
+              CASE WHEN :sortBy = 'totalAsignacionesHoyPreventa' AND :sortDesc = true THEN (
+                    SELECT COUNT(asignacion.id)
+                    FROM Evento asignacion
+                    WHERE asignacion.idLead = l.id
+                      AND asignacion.accion = pe.albrugroup.lead_service.entity.enums.Accion.ASIGNACION
+                      AND asignacion.etapa = :etapa
+                      AND asignacion.createdAt >= :inicioDia
+                      AND asignacion.createdAt < :finDia
+              ) END DESC,
               l.lastEntryAt DESC,
               l.id DESC
             """)

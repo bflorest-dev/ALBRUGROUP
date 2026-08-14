@@ -128,6 +128,7 @@ type GtrPlatformSortField =
   | 'mayorTipificacion'
   | 'ultimaTipificacion'
   | 'totalAsignacionesPreventa'
+  | 'totalAsignacionesHoyPreventa'
   | 'estado';
 type GtrHistoricosSortField = 'lastEntryAt' | 'codigoTipificacion' | 'estado' | 'nombreAsesorAsignado';
 type GtrPlatformSortDirection = 'asc' | 'desc';
@@ -897,7 +898,7 @@ export class GtrWorkspaceFacade {
     { label: 'Primera tipificación', value: 'primeraTipificacion' },
     { label: 'Mayor tipificación', value: 'mayorTipificacion' },
     { label: 'Última tipificación', value: 'ultimaTipificacion' },
-    { label: 'Asignaciones PREVENTA', value: 'totalAsignacionesPreventa' },
+    { label: 'Asignaciones hoy', value: 'totalAsignacionesHoyPreventa' },
     { label: 'Estado', value: 'estado' }
   ];
   readonly platformSortDirectionOptions = computed<Array<{ label: string; value: GtrPlatformSortDirection }>>(() =>
@@ -906,7 +907,7 @@ export class GtrWorkspaceFacade {
           { label: 'Más antiguos', value: 'asc' },
           { label: 'Más recientes', value: 'desc' }
         ]
-      : this.platformSortField() === 'totalAsignacionesPreventa'
+      : this.platformSortField() === 'totalAsignacionesHoyPreventa'
         ? [
             { label: 'Menos asignaciones', value: 'asc' },
             { label: 'Más asignaciones', value: 'desc' }
@@ -4568,7 +4569,7 @@ export class GtrWorkspaceFacade {
   }
 
   private defaultPlatformSortDirection(field: GtrPlatformSortField): GtrPlatformSortDirection {
-    return field === 'lastEntryAt' || field === 'createdAt' || field === 'totalAsignacionesPreventa' ? 'desc' : 'asc';
+    return field === 'lastEntryAt' || field === 'createdAt' || field === 'totalAsignacionesHoyPreventa' ? 'desc' : 'asc';
   }
 
   private defaultAgendadosSortDirection(field: AgendadosSortField): GtrPlatformSortDirection {

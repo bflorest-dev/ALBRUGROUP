@@ -428,14 +428,14 @@
               size="small"
               class="gtr-assign-button"
               [disabled]="facade.isSaving() || !facade.canMutateOperationalData()"
-              title="Asignaciones PREVENTA"
+              title="Asignar"
               (click)="facade.openAssignment(row)"
             >
               <span class="gtr-assign-button__action">
                 <i class="pi pi-send" aria-hidden="true"></i>
                 <span class="gtr-assign-button__label">Asignar</span>
               </span>
-              <span class="gtr-assign-button__count">{{ facade.display(row.totalAsignacionesPreventa ?? row.totalAsignaciones ?? 0) }}</span>
+              <span class="gtr-assign-button__count">{{ facade.display(row.totalAsignacionesHoyPreventa ?? 0) }}</span>
             </button>
             <button
               pButton
