@@ -1,4 +1,24 @@
 <div class="week-editor">
+  @if (showDate || showCompensable) {
+    <div class="meta-bar">
+      @if (showDate) {
+        <label class="meta-bar__field">
+          <span>{{ dateLabel }}</span>
+          <input type="date" [value]="dateValue()" [attr.min]="minAttr() || null" (input)="onDate($any($event.target).value)" />
+        </label>
+      }
+      @if (showCompensable) {
+        <div class="meta-bar__field">
+          <span>Compensable</span>
+          <div class="seg">
+            <button type="button" class="seg__btn" [class.seg__btn--on]="compensable()" (click)="setCompensable(true)">Sí</button>
+            <button type="button" class="seg__btn" [class.seg__btn--on]="!compensable()" (click)="setCompensable(false)">No</button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
   <div class="week-editor__scope">{{ scopeLabel() }}</div>
 
   <div class="editor-bar">
@@ -28,10 +48,6 @@
         <input type="checkbox" [checked]="bLab()" (change)="toggleLaborable($any($event.target).checked)" />
       </label>
     }
-  </div>
-
-  <div class="week-editor__hint">
-    Semana · click en un día para editarlo · click de nuevo para volver a todos
   </div>
 
   <div class="timeline">
@@ -71,6 +87,10 @@
     <span><i class="legend-dot legend-dot--lunch"></i> Almuerzo</span>
     <span><i class="legend-dot legend-dot--rest"></i> Descanso</span>
   </div>
+
+  <p class="week-editor__hint">
+    * Haz click en algun dia para editarlo, vuelve hacerle click para volver a editar todos
+  </p>
 
   @if (error(); as message) {
     <p class="week-editor__error">{{ message }}</p>

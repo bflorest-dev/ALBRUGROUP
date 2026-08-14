@@ -181,6 +181,17 @@ public class HorarioService implements IHorario {
             throw new BadRequestException("La nueva fechaInicio debe ser posterior al horario actual");
         }
 
+        // Guard: no reemplazar sobre días ya marcados. Si el empleado ya tiene asistencia en la fecha nueva
+        // o posteriores, arrancar ahí dejaría la marca vieja bajo el horario nuevo (incoherencia). El nuevo
+        // horario debe iniciar en una fecha sin marcaciones (p. ej. mañana si ya marcó hoy).
+        if (asistenciaRepository.existsByIdEmpleadoAndFechaGreaterThanEqual(
+                actual.getIdEmpleado(), request.getFechaInicio())) {
+            throw new ConflictException(
+                    "El empleado ya tiene asistencia registrada en esa fecha o posteriores. "
+                            + "El nuevo horario solo puede aplicar desde una fecha sin marcaciones (por ejemplo, mañana).",
+                    request.getFechaInicio());
+        }
+
         actual.setFechaFin(request.getFechaInicio().minusDays(1));
         horarioRepository.save(actual);
 

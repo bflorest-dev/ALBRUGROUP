@@ -2024,8 +2024,17 @@ export class AdminPersonalFacade implements OnDestroy {
       this.isScheduleChangeVisible.set(false);
       void this.loadEmployeeStates();
     } catch (error) {
+      const httpError = error as HttpErrorResponse;
+      if (httpError?.status === 409) {
+        // Backend rechazo: la fecha elegida ya tiene marcaciones. Ofrecemos las salidas seguras
+        // (mismo dialogo que la correccion in-situ): la util aqui es "Desde manana".
+        this.correctionDecisionMotivo.set('Correccion administrativa');
+        this.correctionDecisionCustomDate.set(this.addDays(this.getToday(), 1));
+        this.isCorrectionDecisionVisible.set(true);
+        return;
+      }
       this.scheduleChangeErrorMessage.set(
-        this.getErrorMessage(error as HttpErrorResponse, 'No se pudo cambiar el horario.')
+        this.getErrorMessage(httpError, 'No se pudo cambiar el horario.')
       );
     }
   }

@@ -417,32 +417,6 @@
       <p-step-panel>
         <ng-template #content>
         <form [formGroup]="horarioForm" class="form-grid">
-          <label class="field">
-            <span>Fecha de inicio del horario</span>
-            <p-datepicker
-              [ngModel]="toPickerDate(horarioForm.get('fechaInicio')?.value)"
-              [ngModelOptions]="{ standalone: true }"
-              dateFormat="dd/mm/yy"
-              [showIcon]="true"
-              appendTo="body"
-              (ngModelChange)="setDateControl(horarioForm, 'fechaInicio', $event)"
-            />
-          </label>
-
-          <label class="field">
-            <span>Compensable</span>
-            <p-togglebutton
-              [ngModel]="isCompensable()"
-              [ngModelOptions]="{ standalone: true }"
-              onLabel="SI"
-              offLabel="NO"
-              onIcon="pi pi-check"
-              offIcon="pi pi-times"
-              [styleClass]="isCompensable() ? 'compensable-toggle is-yes' : 'compensable-toggle is-no'"
-              (onChange)="setCompensable($event.checked)"
-            />
-          </label>
-
           <div class="field--wide">
             <p-message severity="info" [text]="scheduleRuleHint()" />
           </div>
@@ -452,6 +426,9 @@
               [horarioForm]="horarioForm"
               [requiresLunch]="usesLunchBreak()"
               [lunchMinutes]="60"
+              [showDate]="true"
+              [showCompensable]="true"
+              dateLabel="Fecha de inicio del horario"
             />
           </div>
         </form>

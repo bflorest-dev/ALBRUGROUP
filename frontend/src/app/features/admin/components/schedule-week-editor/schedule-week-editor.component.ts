@@ -60,12 +60,20 @@ export class ScheduleWeekEditorComponent implements OnChanges {
   @Input({ required: true }) horarioForm!: FormGroup;
   @Input() requiresLunch = true;
   @Input() lunchMinutes = 60;
+  @Input() showDate = false;
+  @Input() showCompensable = false;
+  @Input() dateLabel = 'Fecha de inicio';
+  /** Fecha mínima seleccionable (ISO yyyy-mm-dd). Por defecto, hoy: nunca se elige un día pasado. */
+  @Input() minDate = '';
 
   private readonly destroyRef = inject(DestroyRef);
   private boundForm: FormGroup | null = null;
 
   protected readonly rows = signal<RawDay[]>([]);
   protected readonly selected = signal<number | null>(null);
+
+  protected readonly dateValue = signal('');
+  protected readonly compensable = signal(true);
 
   protected readonly bE = signal('');
   protected readonly bS = signal('');
@@ -130,15 +138,58 @@ export class ScheduleWeekEditorComponent implements OnChanges {
   ngOnChanges(): void {
     if (this.horarioForm === this.boundForm) return;
     this.boundForm = this.horarioForm;
-    this.horarioForm.get('modoAvanzado')?.setValue('true');
+    this.forceAdvanced();
     const detalles = this.detalles();
-    detalles.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.refresh());
+    detalles.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      // Cualquier cambio de detalles (populate/reset del facade, preset por modalidad, edición) reafirma
+      // el modo por día: asi el submit usa siempre los detalles y no los pisa el modo simple.
+      this.forceAdvanced();
+      this.refresh();
+    });
     this.refresh();
     this.resetBufferToPattern();
+    // Fecha: nunca antes del mínimo (hoy por defecto). Si el horario vigente arrancó en el pasado, el
+    // prefill se "adelanta" al mínimo para que "dejar la fecha como está" signifique aplicar desde hoy.
+    const iso = toIsoDate(String(this.horarioForm.get('fechaInicio')?.value ?? ''));
+    const min = this.minAttr();
+    const clamped = min && iso && iso < min ? min : iso;
+    this.dateValue.set(clamped);
+    if (clamped && clamped !== iso) {
+      this.horarioForm.get('fechaInicio')?.setValue(clamped);
+    }
+    this.compensable.set(this.horarioForm.get('compensable')?.value === 'true');
+  }
+
+  /** Fecha mínima efectiva (ISO): la provista, o hoy cuando se muestra el selector de fecha. */
+  protected minAttr(): string {
+    if (!this.showDate) return '';
+    return this.minDate || todayIso();
+  }
+
+  protected onDate(value: string): void {
+    const min = this.minAttr();
+    const next = min && value && value < min ? min : value;
+    const ctrl = this.horarioForm.get('fechaInicio');
+    ctrl?.setValue(next);
+    ctrl?.markAsDirty();
+    this.dateValue.set(next);
+  }
+
+  protected setCompensable(value: boolean): void {
+    this.horarioForm.get('compensable')?.setValue(value ? 'true' : 'false');
+    this.compensable.set(value);
   }
 
   private detalles(): FormArray {
     return this.horarioForm.get('detalles') as FormArray;
+  }
+
+  /** Fuerza el modo por día (sin emitir): el submit/validador usan los detalles, no el modo simple. */
+  private forceAdvanced(): void {
+    const ctrl = this.horarioForm.get('modoAvanzado');
+    if (ctrl && ctrl.value !== 'true') {
+      ctrl.setValue('true', { emitEvent: false });
+    }
   }
 
   private refresh(): void {
@@ -245,7 +296,7 @@ export class ScheduleWeekEditorComponent implements OnChanges {
   }
 
   private writeRow(index: number): void {
-    this.horarioForm.get('modoAvanzado')?.setValue('true');
+    this.forceAdvanced();
     const ctrl = this.detalles().at(index);
     ctrl.patchValue({
       horaEntrada: this.bE(),
@@ -262,7 +313,7 @@ export class ScheduleWeekEditorComponent implements OnChanges {
       return;
     }
     this.error.set(null);
-    this.horarioForm.get('modoAvanzado')?.setValue('true');
+    this.forceAdvanced();
     this.detalles().controls.forEach((ctrl) => {
       if (ctrl.get('laborable')?.value !== 'true') return;
       ctrl.patchValue({
@@ -274,6 +325,17 @@ export class ScheduleWeekEditorComponent implements OnChanges {
       ctrl.markAsDirty();
     });
   }
+}
+
+function todayIso(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function toIsoDate(value: string): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : '';
 }
 
 function toMin(value: string | null | undefined): number | null {

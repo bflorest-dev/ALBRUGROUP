@@ -10,6 +10,7 @@ import { TagModule } from 'primeng/tag';
 import { ToggleButtonModule } from 'primeng/togglebutton';
 import { EmpleadoRolResponse } from '../../../../shared/models/rrhh/empleado-rol-response';
 import { formatLabel } from '../../../../shared/utils/display-label';
+import { ScheduleWeekEditorComponent } from '../schedule-week-editor/schedule-week-editor.component';
 
 type SelectOption = {
   label: string;
@@ -33,7 +34,8 @@ type ScheduleRule = {
     MessageModule,
     SelectModule,
     TagModule,
-    ToggleButtonModule
+    ToggleButtonModule,
+    ScheduleWeekEditorComponent
   ],
   templateUrl: './contract-renewal-dialog.component.html',
   styleUrl: './contract-renewal-dialog.component.scss',

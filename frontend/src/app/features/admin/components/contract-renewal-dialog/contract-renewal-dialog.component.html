@@ -159,116 +159,17 @@
         </div>
 
         <form [formGroup]="horarioForm" class="form-grid">
-          <label class="field">
-            <span>Compensable</span>
-            <p-togglebutton
-              [ngModel]="isCompensable()"
-              [ngModelOptions]="{ standalone: true }"
-              onLabel="SI"
-              offLabel="NO"
-              onIcon="pi pi-check"
-              offIcon="pi pi-times"
-              [styleClass]="isCompensable() ? 'compensable-toggle is-yes' : 'compensable-toggle is-no'"
-              (onChange)="setCompensable($event.checked)"
-            />
-          </label>
-
           <div class="field--wide">
             <p-message severity="info" [text]="scheduleRuleHint()" />
           </div>
 
-          <div class="schedule-simple field--wide">
-            <div class="schedule-simple__times">
-              <label class="field field--time">
-                <span>Entrada</span>
-                <p-datepicker
-                  formControlName="horaEntrada"
-                  dataType="string"
-                  [timeOnly]="true"
-                  hourFormat="24"
-                  [stepMinute]="15"
-                  [showIcon]="true"
-                  icon="pi pi-clock"
-                  [class.p-invalid]="isSimpleScheduleFieldInvalid('horaEntrada')"
-                  appendTo="body"
-                  (onFocus)="captureSimpleTimes()"
-                  (onShow)="captureSimpleTimes()"
-                  (onSelect)="onEntryTimeChange()"
-                  (onInput)="onEntryTimeChange()"
-                />
-              </label>
-
-              <label class="field field--time">
-                <span>Salida</span>
-                <p-datepicker
-                  formControlName="horaSalida"
-                  dataType="string"
-                  [timeOnly]="true"
-                  hourFormat="24"
-                  [stepMinute]="15"
-                  [showIcon]="true"
-                  icon="pi pi-clock"
-                  [class.p-invalid]="isSimpleScheduleFieldInvalid('horaSalida')"
-                  appendTo="body"
-                  (onSelect)="onIndependentTimeChange()"
-                  (onInput)="onIndependentTimeChange()"
-                />
-              </label>
-
-              @if (usesLunchBreak()) {
-                <label class="field field--time">
-                  <span>Inicio almuerzo</span>
-                  <p-datepicker
-                    formControlName="inicioAlmuerzo"
-                    dataType="string"
-                    [timeOnly]="true"
-                    hourFormat="24"
-                    [stepMinute]="15"
-                    [showIcon]="true"
-                    icon="pi pi-clock"
-                    [class.p-invalid]="isSimpleScheduleFieldInvalid('inicioAlmuerzo')"
-                    appendTo="body"
-                    (onFocus)="captureSimpleTimes()"
-                    (onShow)="captureSimpleTimes()"
-                    (onSelect)="onLunchStartTimeChange()"
-                    (onInput)="onLunchStartTimeChange()"
-                  />
-                </label>
-
-                <label class="field field--time">
-                  <span>Fin almuerzo</span>
-                  <p-datepicker
-                    formControlName="finAlmuerzo"
-                    dataType="string"
-                    [timeOnly]="true"
-                    hourFormat="24"
-                    [stepMinute]="15"
-                    [showIcon]="true"
-                    icon="pi pi-clock"
-                    [class.p-invalid]="isSimpleScheduleFieldInvalid('finAlmuerzo')"
-                    appendTo="body"
-                    (onSelect)="onIndependentTimeChange()"
-                    (onInput)="onIndependentTimeChange()"
-                  />
-                </label>
-              }
-            </div>
-
-            <div class="day-strip">
-              @for (day of diasSemanaOptions; track day) {
-                <button
-                  type="button"
-                  class="day-toggle"
-                  [class.day-toggle--rest]="isRestDay(day)"
-                  (click)="selectRestDay(day)"
-                >
-                  <p-tag
-                    [value]="toLabel(day).slice(0, 3)"
-                    [severity]="isRestDay(day) ? 'secondary' : 'success'"
-                  />
-                </button>
-              }
-            </div>
+          <div class="field--wide">
+            <app-schedule-week-editor
+              [horarioForm]="horarioForm"
+              [requiresLunch]="usesLunchBreak()"
+              [lunchMinutes]="60"
+              [showCompensable]="true"
+            />
           </div>
         </form>
 

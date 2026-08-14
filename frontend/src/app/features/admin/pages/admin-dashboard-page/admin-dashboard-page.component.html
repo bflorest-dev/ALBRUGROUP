@@ -267,119 +267,14 @@
           <p-message severity="info" text="Cargando horario vigente..." />
         } @else {
           <form [formGroup]="facade.horarioForm" class="schedule-change-form">
-            <label class="field">
-              <span>Fecha de inicio</span>
-              <p-datepicker
-                [ngModel]="toPickerDate(facade.horarioForm.controls.fechaInicio.getRawValue())"
-                [ngModelOptions]="{ standalone: true }"
-                dateFormat="dd/mm/yy"
-                [showIcon]="true"
-                appendTo="body"
-                (ngModelChange)="setHorarioDate($event)"
-              />
-            </label>
-
-            <label class="field">
-              <span>Compensable</span>
-              <p-togglebutton
-                [ngModel]="isCompensable()"
-                [ngModelOptions]="{ standalone: true }"
-                onLabel="SI"
-                offLabel="NO"
-                onIcon="pi pi-check"
-                offIcon="pi pi-times"
-                [styleClass]="isCompensable() ? 'compensable-toggle is-yes' : 'compensable-toggle is-no'"
-                (onChange)="setCompensable($event.checked)"
-              />
-            </label>
-
-            <label class="field field--time">
-              <span>Entrada</span>
-              <p-datepicker
-                formControlName="horaEntrada"
-                dataType="string"
-                [timeOnly]="true"
-                hourFormat="24"
-                [stepMinute]="15"
-                [showIcon]="true"
-                icon="pi pi-clock"
-                appendTo="body"
-                (onFocus)="captureSimpleTimes()"
-                (onShow)="captureSimpleTimes()"
-                (onSelect)="onEntryTimeChange()"
-                (onInput)="onEntryTimeChange()"
-              />
-            </label>
-
-            <label class="field field--time">
-              <span>Salida</span>
-              <p-datepicker
-                formControlName="horaSalida"
-                dataType="string"
-                [timeOnly]="true"
-                hourFormat="24"
-                [stepMinute]="15"
-                [showIcon]="true"
-                icon="pi pi-clock"
-                appendTo="body"
-                (onSelect)="onIndependentTimeChange()"
-                (onInput)="onIndependentTimeChange()"
-              />
-            </label>
-
-            @if (usesLunchBreak()) {
-              <label class="field field--time">
-                <span>Inicio almuerzo</span>
-                <p-datepicker
-                  formControlName="inicioAlmuerzo"
-                  dataType="string"
-                  [timeOnly]="true"
-                  hourFormat="24"
-                  [stepMinute]="15"
-                  [showIcon]="true"
-                  icon="pi pi-clock"
-                  appendTo="body"
-                  (onFocus)="captureSimpleTimes()"
-                  (onShow)="captureSimpleTimes()"
-                  (onSelect)="onLunchStartTimeChange()"
-                  (onInput)="onLunchStartTimeChange()"
-                />
-              </label>
-
-              <label class="field field--time">
-                <span>Fin almuerzo</span>
-                <p-datepicker
-                  formControlName="finAlmuerzo"
-                  dataType="string"
-                  [timeOnly]="true"
-                  hourFormat="24"
-                  [stepMinute]="15"
-                  [showIcon]="true"
-                  icon="pi pi-clock"
-                  appendTo="body"
-                  (onSelect)="onIndependentTimeChange()"
-                  (onInput)="onIndependentTimeChange()"
-                />
-              </label>
-            }
-
             <div class="field field--wide">
-              <span>Dia de descanso</span>
-              <div class="day-strip">
-                @for (day of facade.diasSemanaOptions; track day) {
-                  <button
-                    type="button"
-                    class="day-toggle"
-                    [class.day-toggle--rest]="isRestDay(day)"
-                    (click)="selectRestDay(day)"
-                  >
-                    <p-tag
-                      [value]="day.slice(0, 3)"
-                      [severity]="isRestDay(day) ? 'secondary' : 'success'"
-                    />
-                  </button>
-                }
-              </div>
+              <app-schedule-week-editor
+                [horarioForm]="facade.horarioForm"
+                [requiresLunch]="usesLunchBreak()"
+                [lunchMinutes]="60"
+                [showDate]="true"
+                [showCompensable]="true"
+              />
             </div>
           </form>
 
@@ -495,6 +390,7 @@
               [ngModel]="toPickerDate(facade.correctionDecisionCustomDate())"
               [ngModelOptions]="{ standalone: true }"
               dateFormat="dd/mm/yy"
+              [minDate]="minDate"
               [showIcon]="true"
               appendTo="body"
               (ngModelChange)="setCorrectionCustomDate($event)"

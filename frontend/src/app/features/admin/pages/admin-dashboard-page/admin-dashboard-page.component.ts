@@ -19,6 +19,7 @@ import { EmployeeAccessPanelComponent } from '../../components/employee-access-p
 import { PersonalRegistrationPanelComponent } from '../../components/personal-registration-panel/personal-registration-panel.component';
 import { AdminPersonalFacade } from '../../facades/admin-personal.facade';
 import { ScheduleAdjustmentDialogComponent } from '../../../../shared/components/schedule-adjustment-dialog/schedule-adjustment-dialog.component';
+import { ScheduleWeekEditorComponent } from '../../components/schedule-week-editor/schedule-week-editor.component';
 
 @Component({
   selector: 'app-admin-dashboard-page',
@@ -39,7 +40,8 @@ import { ScheduleAdjustmentDialogComponent } from '../../../../shared/components
     EmployeeAccessPanelComponent,
     ContractRenewalDialogComponent,
     PersonalDataEditDialogComponent,
-    ScheduleAdjustmentDialogComponent
+    ScheduleAdjustmentDialogComponent,
+    ScheduleWeekEditorComponent
   ],
   providers: [AdminPersonalFacade],
   templateUrl: './admin-dashboard-page.component.html',
@@ -52,6 +54,7 @@ export class AdminDashboardPageComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   protected readonly mode = this.route.snapshot.data['mode'] as 'colaboradores' | 'personal';
+  protected readonly minDate = new Date();
   private simpleTimeSnapshot: {
     horaEntrada: string;
     horaSalida: string;

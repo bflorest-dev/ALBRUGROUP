@@ -15,4 +15,7 @@ public interface AsistenciaRepository extends JpaRepository<Asistencia, Long> {
     List<Asistencia> findByFechaAndFechaHoraIngresoIsNotNullAndFechaHoraSalidaIsNull(LocalDate fecha);
 
     boolean existsByIdHorarioAndFechaHoraIngresoIsNotNull(Long idHorario);
+
+    /** ¿El empleado tiene asistencia en {@code fecha} o posteriores? Guard de cambio de horario. */
+    boolean existsByIdEmpleadoAndFechaGreaterThanEqual(Long idEmpleado, LocalDate fecha);
 }
