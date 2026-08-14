@@ -383,7 +383,7 @@ export const PLATFORM_ROUTES: Routes = [
     path: 'asesor-ventas/horario',
     component: AsesorVentasHorarioPageComponent,
     canActivate: [roleGuard],
-    data: { roles: ['ASESOR_VENTAS', 'OJT'] }
+    data: { roles: ['ASESOR_VENTAS'] }
   },
   {
     path: 'asesor-ventas/metricas',

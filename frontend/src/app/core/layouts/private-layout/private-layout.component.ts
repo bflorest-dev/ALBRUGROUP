@@ -292,12 +292,15 @@ export class PrivateLayoutComponent implements AfterViewInit {
     }
 
     if (session.primaryRole === 'ASESOR_VENTAS' || session.primaryRole === 'OJT') {
-      return [
+      const items = [
         { label: 'Plataforma', route: '/app/asesor-ventas/plataforma', icon: 'pi pi-desktop', exact: true },
         { label: 'Mis Preventas', route: '/app/asesor-ventas/mis-preventas', icon: 'pi pi-check-square', exact: true },
-        { label: 'Horario', route: '/app/asesor-ventas/horario', icon: 'pi pi-calendar', exact: true },
         { label: 'Metricas', route: '/app/asesor-ventas/metricas', icon: 'pi pi-chart-bar', exact: true }
       ];
+      if (session.primaryRole === 'ASESOR_VENTAS') {
+        items.splice(2, 0, { label: 'Horario', route: '/app/asesor-ventas/horario', icon: 'pi pi-calendar', exact: true });
+      }
+      return items;
     }
 
     if (session.primaryRole === 'SUPERVISOR_VENTAS') {
