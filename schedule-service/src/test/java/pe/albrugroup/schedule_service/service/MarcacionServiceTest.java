@@ -143,6 +143,36 @@ class MarcacionServiceTest {
     }
 
     @Test
+    void ingresoOjtDentroDelHorarioSaltaBloqueoDeTardanza() {
+        when(currentUser.roles()).thenReturn(List.of("OJT"));
+        reloj(8, 25); // OJT puede marcar dentro de su horario aunque supere el bloqueo regular
+        service.registrarIngreso();
+
+        assertThat(almacen.get().getEstadoActual()).isEqualTo(EstadoAsistencia.ONLINE);
+        assertThat(almacen.get().getFechaHoraIngreso()).isEqualTo(LocalDateTime.of(2026, 8, 10, 8, 25));
+    }
+
+    @Test
+    void ingresoOjtAntesDelMargenSeSigueBloqueando() {
+        when(currentUser.roles()).thenReturn(List.of("OJT"));
+        reloj(7, 50); // antes del margen de 5 min
+
+        assertThatThrownBy(() -> service.registrarIngreso())
+                .isInstanceOf(BadRequestException.class);
+        assertThat(almacen.get()).isNull();
+    }
+
+    @Test
+    void detalleMarcaIngresoDisponibleParaOjtDentroDelHorario() {
+        when(currentUser.roles()).thenReturn(List.of("OJT"));
+        reloj(8, 25);
+
+        DetalleDiaResponse dia = service.getDia(EMP, DIA);
+
+        assertThat(dia.getPuedeMarcarIngreso()).isTrue();
+    }
+
+    @Test
     void ingresoConTardanzaDentroDelBloqueoSePermite() {
         reloj(8, 14); // 14 min tarde (< 20): permitido, sera tardanza en el reporte
         service.registrarIngreso();

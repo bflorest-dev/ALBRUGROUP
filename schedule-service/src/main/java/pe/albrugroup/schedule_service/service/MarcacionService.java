@@ -75,7 +75,8 @@ public class MarcacionService {
             throw new BadRequestException("No tienes un horario programado para ingresar en este momento");
         }
         EffectiveParams params = parametroAsistenciaResolver.resolve(currentUser.roles());
-        validarVentanaIngreso(ahora, tramo.getInicio(), tramo.getFin(), params, Boolean.TRUE.equals(tramo.getBase()));
+        validarVentanaIngreso(ahora, tramo.getInicio(), tramo.getFin(), params, Boolean.TRUE.equals(tramo.getBase()),
+                esOjt(currentUser.roles()));
 
         Asistencia asistencia = asistenciaRepository.findByIdEmpleadoAndFecha(idEmpleado, hoy).orElse(null);
         if (asistencia == null) {
@@ -422,7 +423,7 @@ public class MarcacionService {
      * fuera (reporte / ms de calculo); aqui solo se decide si la marca se permite.
      */
     private void validarVentanaIngreso(LocalDateTime ahora, LocalDateTime inicio, LocalDateTime fin,
-                                       EffectiveParams params, boolean esBase) {
+                                       EffectiveParams params, boolean esBase, boolean permiteIngresoDuranteTurno) {
         if (ahora.isAfter(fin)) {
             throw new BadRequestException("El turno de hoy ya terminó; no puedes marcar ingreso");
         }
@@ -437,7 +438,7 @@ public class MarcacionService {
         // El bloqueo por tardanza es un concepto del BASE: llegar tarde exige corregir el horario. En un
         // tramo EXTRA (horas extra) no hay tardanza: entrar mas tarde solo reduce el extra ganado, se permite
         // marcar en cualquier momento de la ventana.
-        if (esBase && desfaseMin >= params.bloqueoTardanzaMin()) {
+        if (esBase && !permiteIngresoDuranteTurno && desfaseMin >= params.bloqueoTardanzaMin()) {
             throw new BadRequestException(
                     "Superaste la tolerancia de " + params.bloqueoTardanzaMin()
                             + " min; tu supervisor o RRHH deben corregir tu horario para permitir la marca");
@@ -895,7 +896,7 @@ public class MarcacionService {
             return false;
         }
         if (!ventanaIngresoAbierta(OperationalDateTime.nowLocalDateTime(), tramo.getInicio(), tramo.getFin(), params,
-                Boolean.TRUE.equals(tramo.getBase()))) {
+                Boolean.TRUE.equals(tramo.getBase()), esOjt(currentUser.roles()))) {
             return false;
         }
         if (asistencia == null) {
@@ -909,7 +910,7 @@ public class MarcacionService {
 
     /** Predicado de la ventana de ingreso (mismos limites que validarVentanaIngreso, sin lanzar). */
     private boolean ventanaIngresoAbierta(LocalDateTime ahora, LocalDateTime inicio, LocalDateTime fin,
-                                          EffectiveParams params, boolean esBase) {
+                                          EffectiveParams params, boolean esBase, boolean permiteIngresoDuranteTurno) {
         if (ahora.isAfter(fin)) {
             return false;
         }
@@ -917,7 +918,11 @@ public class MarcacionService {
         if (desfaseMin < 0) {
             return -desfaseMin <= params.margenAdelantoMin();
         }
-        return !esBase || desfaseMin < params.bloqueoTardanzaMin();
+        return !esBase || permiteIngresoDuranteTurno || desfaseMin < params.bloqueoTardanzaMin();
+    }
+
+    private boolean esOjt(List<String> roles) {
+        return roles != null && roles.stream().anyMatch(role -> "OJT".equalsIgnoreCase(role));
     }
 
     /** Ventana de marca de almuerzo: desde 15 min antes de la hora programada (sin ventana -> libre). */
